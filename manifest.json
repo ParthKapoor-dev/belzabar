@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Method Title Updater",
-  "version": "1.0.0",
+  "name": "Belzabar: Method Title Updater",
+  "version": "1.0.1",
   "description": "Appends the method name from the automation designer to the page title",
   "permissions": [
     "activeTab"
