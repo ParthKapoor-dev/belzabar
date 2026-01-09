@@ -1039,6 +1039,9 @@
           syncBtn.textContent = originalText;
           syncBtn.disabled = false;
         } else {
+
+          syncBtn.textContent = originalText;
+          syncBtn.disabled = false;
           closeModal();
         }
       } else {
