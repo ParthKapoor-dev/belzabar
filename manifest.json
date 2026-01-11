@@ -9,13 +9,13 @@
   "host_permissions": [
     "https://nsm-dev.nc.verifi.dev/automation-designer/*"
   ],
-  "content_scripts": [
-    {
-      "matches": [
-        "https://nsm-dev.nc.verifi.dev/automation-designer/*"
-      ],
-      "js": ["content-script.js"],
-      "run_at": "document_idle"
-    }
-  ]
+   "content_scripts": [
+     {
+       "matches": [
+         "https://nsm-dev.nc.verifi.dev/automation-designer/*"
+       ],
+       "js": ["dist/content-script.js"],
+       "run_at": "document_idle"
+     }
+   ]
 }

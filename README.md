@@ -25,4 +25,12 @@ Example: `AD: vin.lookup`
 ## Source
 
 - `manifest.json` - Extension configuration
-- `content-script.js` - DOM observer and title updater
+- `src/` - Source code organized in modules
+- `dist/content-script.js` - Bundled content script (generated)
+- `bunfig.toml` - Build configuration
+- `package.json` - Metadata and scripts
+
+## Development
+
+1. Build: `bun run build` (bun handles dependencies automatically)
+2. Load `dist/` folder as unpacked extension in browser

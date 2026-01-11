@@ -1,0 +1,9 @@
+{
+  "name": "belzabar-extension",
+  "version": "1.0.1",
+  "description": "Browser extension that appends the automation designer method name to the page title",
+  "scripts": {
+    "build": "bun build src/content-script.js --outdir dist --minify",
+    "dev": "bun build src/content-script.js --outdir dist --watch"
+  }
+}
