@@ -57,15 +57,25 @@ export function findInputContainer(element) {
 export function extractDataType(container) {
   try {
     const cells = container.querySelectorAll('.service-designer__grid-cell');
-    
+
     if (cells.length < 2) {
       log('Not enough grid cells found');
       return 'Text';
     }
 
     const typeCell = cells[1]; // 2nd cell (index 1)
-    
-    // Strategy 1: Look for span with type text
+
+    // Strategy 1: Look for div.type_name elements (common in newer UI)
+    const typeNameDiv = typeCell.querySelector('.type_name');
+    if (typeNameDiv) {
+      const text = typeNameDiv.textContent?.trim();
+      if (text && text.length > 0 && text.length < 30) {
+        log('Found type from div.type_name:', text);
+        return normalizeDataType(text);
+      }
+    }
+
+    // Strategy 2: Look for span with type text
     const spans = typeCell.querySelectorAll('span');
     for (const span of spans) {
       const text = span.textContent?.trim();
@@ -78,7 +88,7 @@ export function extractDataType(container) {
       }
     }
 
-    // Strategy 2: Look in select elements
+    // Strategy 3: Look in select elements
     const select = typeCell.querySelector('.ui-select-match-text');
     if (select) {
       const text = select.textContent?.trim();
@@ -101,28 +111,54 @@ export function findTestValueElement(container) {
   try {
     // Look for the test case row
     const testCaseRow = container.querySelector('.service-designer__grid-row._test-case-row');
-    
+
     if (!testCaseRow) {
       log('Test case row not found');
       return null;
     }
 
-    // Find textarea within test case row
-    const textarea = testCaseRow.querySelector('textarea');
-    
-    if (!textarea) {
-      log('Textarea not found in test case row');
+    // Check if this is a structured data input (has nested structured data grid)
+    const isStructuredData = container.querySelector('.service-designer__grid-row._structured') !== null;
+
+    let element;
+
+    if (isStructuredData) {
+      // For structured data, prioritize the textarea in the default_value section
+      element = testCaseRow.querySelector('.wrapper-content.textarea_outer.default_value textarea');
+
+      // Fallback to any textarea if the default_value one isn't found
+      if (!element) {
+        element = testCaseRow.querySelector('textarea');
+      }
+
+      log(`Found structured data textarea for extraction`);
+    } else {
+      // For regular inputs, find textarea first (for text/json/array/map types)
+      element = testCaseRow.querySelector('textarea');
+
+      // If no textarea found, look for input elements (for integer/boolean/number/date types)
+      if (!element) {
+        // Try different input selectors in order of specificity
+        element = testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
+                  testCaseRow.querySelector('input.datepicker_input-form') ||
+                  testCaseRow.querySelector('input[type="text"]') ||
+                  testCaseRow.querySelector('input');
+      }
+    }
+
+    if (!element) {
+      log('Neither textarea nor input element found in test case row');
       return null;
     }
 
     // Verify it's visible
-    if (textarea.offsetParent === null) {
-      log('Textarea is hidden');
+    if (element.offsetParent === null) {
+      log('Test value element is hidden');
       return null;
     }
 
-    log('Found test value textarea');
-    return textarea;
+    log(`Found test value element: ${element.tagName.toLowerCase()} with placeholder "${element.placeholder || 'none'}" (structured: ${isStructuredData})`);
+    return element;
   } catch (error) {
     console.error('Error finding test value element:', error);
     return null;
