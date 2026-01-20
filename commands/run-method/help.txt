@@ -1,0 +1,12 @@
+Usage: cli run-method <PUBLISHED_ID> [PAYLOAD]
+
+Executes an Automation Method.
+
+Arguments:
+  <PUBLISHED_ID>   The unique ID of the PUBLISHED method version.
+  [PAYLOAD]        Optional. JSON string OR path to a JSON file. 
+                   Defaults to '{}' if omitted.
+
+Examples:
+  cli run-method 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}'
+  cli run-method 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json
