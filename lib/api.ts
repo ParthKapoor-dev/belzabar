@@ -22,6 +22,11 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
     } else if (options.authMode === "Raw") {
       headers.set("Authorization", session.token);
     }
+    
+    // For test method, we need the raw token in a custom header
+    if (options.headers && (options.headers as any)["Expertly-Auth-Token"] === "true") {
+        headers.set("Expertly-Auth-Token", session.token);
+    }
   };
 
   const headers = new Headers(options.headers || {});
@@ -29,7 +34,11 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
   // Default headers
   if (!headers.has("Accept")) headers.set("Accept", "application/json, text/plain, */*");
   if (!headers.has("User-Agent")) headers.set("User-Agent", "Bun/1.0 (Automation CLI)");
-  if (!headers.has("Content-Type") && options.method !== "GET" && options.method !== "HEAD") {
+  
+  // Content-Type handling: 
+  // If body is FormData, fetch automatically sets Content-Type to multipart/form-data with boundary.
+  // We should NOT set it manually in that case.
+  if (!headers.has("Content-Type") && options.method !== "GET" && options.method !== "HEAD" && !(options.body instanceof FormData)) {
       headers.set("Content-Type", "application/json");
   }
 
@@ -54,4 +63,17 @@ export async function fetchAutomationDefinition(automationId: string) {
     method: "GET",
     authMode: "Bearer"
   });
+}
+
+export async function testMethod(formData: FormData) {
+    const path = "/rest/api/automation/chain/test";
+    return apiFetch(path, {
+        method: "POST",
+        authMode: "Bearer",
+        headers: {
+            "internal-ad-execution-mode": "debug",
+            "Expertly-Auth-Token": "true" // Signal to attachAuth to inject it
+        },
+        body: formData
+    });
 }
