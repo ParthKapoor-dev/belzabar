@@ -47,3 +47,11 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
 
   return response;
 }
+
+export async function fetchAutomationDefinition(automationId: string) {
+  const path = `/rest/api/automations/${automationId}?basicinfo=false`;
+  return apiFetch(path, {
+    method: "GET",
+    authMode: "Bearer"
+  });
+}
