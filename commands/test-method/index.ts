@@ -102,8 +102,7 @@ export async function run(args: string[]) {
         } catch {
             console.log(testResult);
         }
-        console.log("--------------------
-");
+        console.log("--------------------\n");
     } else {
         console.log("\n(No Output)\n");
     }
