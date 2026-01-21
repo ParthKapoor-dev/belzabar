@@ -107,16 +107,57 @@ export async function run(args: string[]) {
         console.log("\n(No Output)\n");
     }
 
-    // Verbose Trace
-    if (flags.verbose && result.services) {
+    // Execution Trace
+    if (result.services) {
         console.log("--- Execution Trace ---");
+        
         result.services.forEach((svc: any, idx: number) => {
              const status = svc.executionStatus?.failed ? "❌ Failed" : "✅ Success";
              const time = svc.executionStatus?.executionTime?.totalTime || "0ms";
-             console.log(`[Step ${idx + 1}] ${svc.description || "Service"} : ${status} (${time})`);
+             console.log(`\n[Step ${idx + 1}] ${svc.description || "Service"} (ID: ${svc.automationId})`);
+             console.log(`   Status: ${status} (${time})`);
              
              if (svc.executionStatus?.failed) {
                  console.error(`   Error: ${JSON.stringify(svc.executionStatus.error || "Unknown Error")}`);
+             }
+
+             // Verbose Details: Inputs (Mappings)
+             if (flags.verbose && svc.mappings && svc.mappings.length > 0) {
+                 console.log(`   Inputs:`);
+                 const traverseMappings = (items: any[], indent = "     ") => {
+                    items.forEach((m: any) => {
+                        if (m.mappings && m.mappings.length > 0) {
+                            traverseMappings(m.mappings, indent);
+                        }
+                        if (m.value !== undefined) {
+                            let val = m.value;
+                            if (m.encodingType === "BASE_64" && typeof val === 'string') {
+                                try {
+                                    val = Buffer.from(val, 'base64').toString('utf-8');
+                                } catch {
+                                    val += " (DECODE FAILED)";
+                                }
+                            }
+                            console.log(`${indent}- Input (${m.automationUserInputId || "N/A"}): ${JSON.stringify(val)}`);
+                        }
+                    });
+                 };
+                 traverseMappings(svc.mappings);
+             }
+
+             // Verbose Details: Outputs
+             if (flags.verbose && svc.outputs && svc.outputs.length > 0) {
+                 console.log(`   Outputs:`);
+                 svc.outputs.forEach((out: any) => {
+                     let val = out.testResult;
+                     // Sometimes testResult is JSON string?
+                     if (typeof val === 'string' && (val.startsWith('{') || val.startsWith('['))) {
+                         try { val = JSON.parse(val); } catch {}
+                     }
+                     // Use console.dir for complex objects
+                     console.log(`     - ${out.code || "Output"}:`);
+                     console.dir(val, { depth: null, colors: true });
+                 });
              }
         });
     }
