@@ -242,7 +242,10 @@ export async function run(args: string[]) {
              const outputsArr = Array.isArray(s.outputs) ? s.outputs : Object.values(s.outputs);
              let outputIdx = 1;
              
-             for (const outDef of def.automationAPI.automationAPIOutputs) {
+             // Filter outputs that should be shown on UI
+             const visibleOutputs = def.automationAPI.automationAPIOutputs.filter(o => o.showOnUi !== false);
+
+             for (const outDef of visibleOutputs) {
                 const instanceOut = outputsArr.find((o: any) => String(o.automationAPIOutputId) === String(outDef.id));
                 const val = instanceOut ? instanceOut.code : chalk.gray("null");
                 console.log(`  ${outputIdx++}. ${outDef.displayName.padEnd(20)}: ${val}`);

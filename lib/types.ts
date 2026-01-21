@@ -82,6 +82,7 @@ export interface AutomationUserInput {
 export interface AutomationAPIOutput {
   id: string;
   displayName: string;
+  showOnUi?: boolean;
 }
 
 export interface AutomationDefinition {
