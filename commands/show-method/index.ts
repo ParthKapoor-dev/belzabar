@@ -208,13 +208,12 @@ export async function run(args: string[]) {
             let displayValue = "null";
 
             if (instanceItem && instanceItem.value !== undefined) {
-               displayValue = truncateDeep(instanceItem.value);
+               displayValue = instanceItem.value;
                
                const isBase64 = instanceItem.encodingType === "BASE_64" || inputDef.encoding === "BASE_64";
                if (isBase64 && typeof instanceItem.value === 'string') {
                   try {
-                     const decoded = Buffer.from(instanceItem.value, 'base64').toString('utf-8');
-                     displayValue = truncateDeep(decoded);
+                     displayValue = Buffer.from(instanceItem.value, 'base64').toString('utf-8');
                   } catch {
                      displayValue = instanceItem.value + " (DECODE FAILED)";
                   }
@@ -251,8 +250,7 @@ export async function run(args: string[]) {
                 console.log(`  ${outputIdx++}. ${outDef.displayName.padEnd(20)}: ${val}`);
              }
         } else if (s.outputs) {
-             const displayOutputs = truncateDeep(s.outputs);
-             console.log(JSON.stringify(displayOutputs, null, 2));
+             console.log(JSON.stringify(s.outputs, null, 2));
         } else {
             console.log("  (None)");
         }
