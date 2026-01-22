@@ -258,30 +258,41 @@ function enrichMethodForLLM(method: HydratedMethod): any {
 
   if (clone.services) {
     clone.services.forEach((svc: any) => {
-      // Decode Custom Code
+      // 1. Decode Custom Code
       if (svc.code) {
         try {
-          svc.decodedLogic = Buffer.from(svc.code, 'base64').toString('utf-8');
+          // Replace Base64 code with readable string
+          svc.code = Buffer.from(svc.code, 'base64').toString('utf-8');
         } catch {
-          svc.decodedLogic = "(Decode Failed)";
+          svc.code = "(Decode Failed)";
         }
       }
 
-      // Decode SQL in Mappings
+      // 2. Decode Mappings (SQL etc)
       if (svc.mappings && Array.isArray(svc.mappings)) {
-         const sqlMapping = svc.mappings.find((m: any) => m.mappings && m.mappings.some((sub: any) => sub.encodingType === "BASE_64"));
-         if (sqlMapping) {
-             const queryItem = sqlMapping.mappings.find((sub: any) => sub.encodingType === "BASE_64");
-             if (queryItem && queryItem.value) {
-                 try {
-                     svc.decodedLogic = Buffer.from(queryItem.value, 'base64').toString('utf-8');
-                     svc.logicType = "SQL";
-                 } catch {
-                     svc.decodedLogic = "(SQL Decode Failed)";
+         // Helper to traverse and decode
+         const decodeMappings = (items: any[]) => {
+             items.forEach(item => {
+                 if (item.encodingType === "BASE_64" && item.value) {
+                     try {
+                         item.value = Buffer.from(item.value, 'base64').toString('utf-8');
+                         item.encodingType = "PLAIN"; // Mark as decoded
+                     } catch {
+                         item.value = "(Decode Failed)";
+                     }
                  }
-             }
-         }
+                 // Recursively check nested mappings
+                 if (item.mappings && Array.isArray(item.mappings)) {
+                     decodeMappings(item.mappings);
+                 }
+             });
+         };
+         decodeMappings(svc.mappings);
       }
+      
+      // Remove artifacts from previous implementation if present (though this function creates them, so just don't add them)
+      delete svc.decodedLogic;
+      delete svc.logicType;
     });
   }
   return clone;
