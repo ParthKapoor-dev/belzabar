@@ -6,7 +6,8 @@
     "belz": "./bin/cli.ts"
   },
   "scripts": {
-    "build": "bun build --compile --minify --sourcemap ./bin/cli.ts --outfile belz",
+    "generate": "bun run utils/generate-registry.ts",
+    "build": "bun run generate && bun build --compile --minify --sourcemap ./bin/cli-build.ts --outfile belz",
     "install-cli": "bun run build && mkdir -p ~/.local/bin && mv belz ~/.local/bin/belz",
     "link": "bun link"
   },
