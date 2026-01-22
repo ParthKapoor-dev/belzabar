@@ -65,6 +65,16 @@ export async function fetchAutomationDefinition(automationId: string) {
   });
 }
 
+export async function fetchMethodDefinition(uuid: string) {
+  const path = `/rest/api/automation/chain/${uuid}`;
+  const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to fetch method: ${response.status} ${response.statusText}`);
+  }
+  return await response.json(); 
+}
+
 export async function testMethod(formData: FormData) {
     const path = "/rest/api/automation/chain/test";
     return apiFetch(path, {

@@ -1,0 +1,15 @@
+Usage: cli save-suite <uuid> [flags]
+
+Saves a regression test suite for a specific method.
+Captures the current input values and stores them as a reusable test case.
+
+Arguments:
+  <uuid>           The UUID of the method definition to verify.
+
+Flags:
+  --name <string>  (Required) Unique name for the test suite (e.g., 'smoke-test-1').
+  --inputs <file>  (Optional) Path to a JSON file containing input values.
+                   If omitted, interactive mode will be used.
+
+Example:
+  cli save-suite 123e4567-e89b... --name smoke-test-login --inputs ./inputs.json

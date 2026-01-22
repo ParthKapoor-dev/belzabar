@@ -1,26 +1,10 @@
 import { InputCollector } from "../../lib/input-collector";
-import { apiFetch, testMethod } from "../../lib/api";
+import { apiFetch, testMethod, fetchMethodDefinition } from "../../lib/api";
 import { CacheManager } from "../../lib/cache";
 import { parseMethodResponse } from "../../lib/parser";
+import { PayloadBuilder } from "../../lib/payload-builder";
+import { ErrorParser, type ParsedError } from "../../lib/error-parser";
 import type { RawMethodResponse } from "../../lib/types";
-
-async function fetchMethod(uuid: string, force = false) {
-  // We need the RAW response because we need to modify the jsonDefinition string
-  // and send the whole object back. Cache stores Hydrated.
-  // So for testing, we might prefer fetching fresh or caching RAW as well.
-  // Given the "Draft" nature, fetching fresh is safer/better.
-  // But let's check cache first for metadata/inputs logic if we want.
-  // However, since we need to send the exact structure back, let's fetch fresh.
-  
-  console.info(`[Info] Fetching Draft definition for ${uuid}...`);
-  const path = `/rest/api/automation/chain/${uuid}`;
-  const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  
-  if (!response.ok) {
-    throw new Error(`Failed to fetch method: ${response.status} ${response.statusText}`);
-  }
-  return await response.json() as RawMethodResponse;
-}
 
 export async function run(args: string[]) {
   const uuid = args[0];
@@ -37,7 +21,8 @@ export async function run(args: string[]) {
 
   try {
     // 1. Fetch Definition
-    const rawMethod = await fetchMethod(uuid, flags.force);
+    console.info(`[Info] Fetching Draft definition for ${uuid}...`);
+    const rawMethod = await fetchMethodDefinition(uuid) as RawMethodResponse;
     
     // Parse just to get inputs list
     const hydrated = parseMethodResponse(rawMethod);
@@ -47,26 +32,7 @@ export async function run(args: string[]) {
     const values = await InputCollector.collect(definedInputs, flags.inputsFile);
 
     // 3. Construct Payload
-    // We need to inject values into the inner jsonDefinition
-    let innerDef: any = {};
-    try {
-        innerDef = JSON.parse(rawMethod.jsonDefinition);
-    } catch (e) {
-        throw new Error("Failed to parse method jsonDefinition.");
-    }
-
-    if (innerDef.inputs) {
-        innerDef.inputs = innerDef.inputs.map((inp: any) => {
-            if (values.hasOwnProperty(inp.fieldCode)) {
-                return { ...inp, testValue: values[inp.fieldCode] };
-            }
-            return inp;
-        });
-    }
-
-    // Update the raw object
-    const payload = { ...rawMethod };
-    payload.jsonDefinition = JSON.stringify(innerDef);
+    const payload = PayloadBuilder.injectInputs(rawMethod, values);
 
     const formData = new FormData();
     formData.append("body", JSON.stringify(payload));
@@ -86,13 +52,27 @@ export async function run(args: string[]) {
 
     // 5. Display Results
     if (result.executionStatus?.failed) {
-        console.error("❌ Method Execution Failed.");
+        console.error("\n❌ Method Execution Failed.");
+        
+        // Identify failing step from services array
+        const failingSvc = result.services?.find((s: any) => s.executionStatus?.failed);
+        const failingIndex = result.services?.findIndex((s: any) => s.executionStatus?.failed);
+        
+        if (failingSvc && failingSvc.executionStatus) {
+            const parsedErr = ErrorParser.parse(failingSvc.executionStatus);
+            const svcName = failingSvc.description || "Service";
+            
+            console.log(`\nStep: [${failingIndex !== -1 ? failingIndex + 1 : "?"}] ${svcName}`);
+            console.log(`Error: ${parsedErr.summary}`);
+            console.log(`Details:`);
+            console.log(parsedErr.detail.split('\n').map((l: string) => "  " + l).join('\n'));
+        }
     } else {
         console.log("✅ Method Executed Successfully.");
     }
 
-    // Show Output
-    if (result.outputs && result.outputs.length > 0) {
+    // Show Output (only if success or generic output exists)
+    if (!result.executionStatus?.failed && result.outputs && result.outputs.length > 0) {
         const testResult = result.outputs[0].testResult;
         console.log("\n--- Final Output ---");
         try {
@@ -103,24 +83,31 @@ export async function run(args: string[]) {
             console.log(testResult);
         }
         console.log("--------------------\n");
-    } else {
+    } else if (!result.executionStatus?.failed) {
         console.log("\n(No Output)\n");
     }
 
     // Execution Trace
     if (result.services) {
-        console.log("--- Execution Trace ---");
+        console.log("\n--- Execution Trace ---");
         
         result.services.forEach((svc: any, idx: number) => {
-             const status = svc.executionStatus?.failed ? "❌ Failed" : "✅ Success";
+             let status = "✅ Success";
+             let isFailingStep = false;
+             let isSkipped = false;
+
+             if (svc.executionStatus?.failed) {
+                 status = "❌ Failed";
+                 isFailingStep = true;
+             } else if (!svc.executionStatus) {
+                 status = "⏭️ Skipped";
+                 isSkipped = true;
+             }
+
              const time = svc.executionStatus?.executionTime?.totalTime || "0ms";
              console.log(`\n[Step ${idx + 1}] ${svc.description || "Service"} (ID: ${svc.automationId})`);
              console.log(`   Status: ${status} (${time})`);
              
-             if (svc.executionStatus?.failed) {
-                 console.error(`   Error: ${JSON.stringify(svc.executionStatus.error || "Unknown Error")}`);
-             }
-
              // Verbose Details: Inputs (Mappings)
              if (flags.verbose && svc.mappings && svc.mappings.length > 0) {
                  console.log(`   Inputs:`);
@@ -145,8 +132,16 @@ export async function run(args: string[]) {
                  traverseMappings(svc.mappings);
              }
 
-             // Verbose Details: Outputs
-             if (flags.verbose && svc.outputs && svc.outputs.length > 0) {
+             // Handle Error Block for failing step
+             if (isFailingStep && svc.executionStatus) {
+                 const parsed = ErrorParser.parse(svc.executionStatus);
+                 console.log(`   Error: ${parsed.summary}`);
+                 console.log(`   Details:`);
+                 console.log(parsed.detail.split('\n').map(l => "     " + l).join('\n'));
+             }
+
+             // Verbose Details: Outputs (Only if successful)
+             if (flags.verbose && !isFailingStep && !isSkipped && svc.outputs && svc.outputs.length > 0) {
                  console.log(`   Outputs:`);
                  svc.outputs.forEach((out: any) => {
                      let val = out.testResult;

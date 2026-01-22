@@ -1,0 +1,12 @@
+{
+  "uuid": "draft-uuid-12345",
+  "referenceId": "ref-123",
+  "aliasName": "TestAlias",
+  "version": 1,
+  "automationState": "DRAFT",
+  "createdOn": "2023-01-01T00:00:00Z",
+  "lastUpdatedOn": "2023-01-02T00:00:00Z",
+  "lastUpdatedBy": "tester",
+  "category": { "name": "Test Category" },
+  "jsonDefinition": "{\"name\": \"LT260Owners.update\", \"summary\": \"Test Summary\", \"description\": \"Test Description\", \"inputs\": [{\"fieldCode\": \"appId\", \"name\": \"App ID\"}, {\"fieldCode\": \"inp2\"}, {\"fieldCode\": \"inp3\"}, {\"fieldCode\": \"inp4\"}, {\"fieldCode\": \"inp5\"}, {\"fieldCode\": \"inp6\"}, {\"fieldCode\": \"inp7\"}], \"services\": [{\"automationId\": \"svc1\", \"description\": \"Service 1\"}]}"
+}
