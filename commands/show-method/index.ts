@@ -1,9 +1,9 @@
-import Table from 'cli-table3';
 import chalk from 'chalk';
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { apiFetch } from "../../lib/api";
 import { parseMethodResponse } from "../../lib/parser";
+import { DisplayManager } from "../../lib/display";
 import type { RawMethodResponse, HydratedMethod } from "../../lib/types";
 
 function formatDate(ts: number): string {
@@ -12,7 +12,7 @@ function formatDate(ts: number): string {
 }
 
 async function fetchAndCache(uuid: string): Promise<HydratedMethod> {
-  console.info(`[Info] Fetching method ${uuid}...`);
+  DisplayManager.info(`Fetching method ${uuid}...`);
   const path = `/rest/api/automation/chain/${uuid}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
 
@@ -26,15 +26,15 @@ async function fetchAndCache(uuid: string): Promise<HydratedMethod> {
   const rawData = await response.json() as RawMethodResponse;
   const hydrated = parseMethodResponse(rawData);
   await CacheManager.save(uuid, hydrated);
-  console.log("Method updated in cache.");
+  DisplayManager.info("Method updated in cache.");
   return hydrated;
 }
 
 export async function run(args: string[]) {
   const uuid = args[0];
   if (!uuid || uuid.startsWith("-")) {
-    console.error("Error: Missing UUID argument.");
-    console.error("Run 'belz show-method --help' for usage.");
+    DisplayManager.error("Error: Missing UUID argument.");
+    if (!DisplayManager.isLLM) console.error("Run 'belz show-method --help' for usage.");
     process.exit(1);
   }
 
@@ -76,36 +76,36 @@ export async function run(args: string[]) {
     let method = await CacheManager.load(uuid);
 
     if (!method || flags.force) {
-      if (!method) console.log("Cache miss or expired.");
-      if (flags.force) console.log("Forcing refresh.");
+      if (!method) DisplayManager.info("Cache miss or expired.");
+      if (flags.force) DisplayManager.info("Forcing refresh.");
       method = await fetchAndCache(uuid);
     }
 
+    if (DisplayManager.isLLM) {
+      DisplayManager.object(method);
+      return;
+    }
+
     if (flags.full) {
-      console.log(JSON.stringify(method, null, 2));
+      renderFullView(method);
       return;
     }
 
     // Header / Summary
-    const summaryTable = new Table({
-      head: ['Property', 'Value'],
-      colWidths: [20, 80],
-      wordWrap: true
-    });
-
-    summaryTable.push(
-      ['Method Name', method.methodName],
-      ['Alias', method.aliasName],
-      ['Category', method.category],
-      ['State', method.state],
-      ['Version', method.version.toString()],
-      ['UUID', method.uuid],
-      ['Ref ID', method.referenceId],
-      ['Updated', `${formatDate(method.updatedOn)} by ${method.updatedBy}`],
-      ['Summary', method.summary || ""]
+    DisplayManager.table(
+      ['Property', 'Value'],
+      [
+        ['Method Name', method.methodName],
+        ['Alias', method.aliasName],
+        ['Category', method.category],
+        ['State', method.state],
+        ['Version', method.version.toString()],
+        ['UUID', method.uuid],
+        ['Ref ID', method.referenceId],
+        ['Updated', `${formatDate(method.updatedOn)} by ${method.updatedBy}`],
+        ['Summary', method.summary || ""]
+      ]
     );
-
-    console.log(summaryTable.toString());
 
     // Inputs
     if (flags.inputs) {
@@ -113,15 +113,10 @@ export async function run(args: string[]) {
       if (method.inputs.length === 0) {
         console.log("  No inputs defined.");
       } else {
-        const inputTable = new Table({
-          head: ['Field Code', 'Type', 'Required', 'Description'],
-          colWidths: [20, 15, 10, 50],
-          wordWrap: true
-        });
-        method.inputs.forEach(i => {
-          inputTable.push([i.fieldCode, i.type, i.required ? "Yes" : "No", i.description || ""]);
-        });
-        console.log(inputTable.toString());
+        DisplayManager.table(
+          ['Field Code', 'Type', 'Required', 'Description'],
+          method.inputs.map(i => [i.fieldCode, i.type, i.required ? "Yes" : "No", i.description || ""])
+        );
       }
     }
 
@@ -131,15 +126,10 @@ export async function run(args: string[]) {
       if (method.services.length === 0) {
         console.log("  No services defined.");
       } else {
-        const serviceTable = new Table({
-          head: ['#', 'ID', 'Type', 'Description'],
-          colWidths: [5, 40, 20, 40],
-          wordWrap: true
-        });
-        method.services.forEach(s => {
-          serviceTable.push([s.orderIndex, s.automationId, s.type, s.description || ""]);
-        });
-        console.log(serviceTable.toString());
+        DisplayManager.table(
+          ['#', 'ID', 'Type', 'Description'],
+          method.services.map(s => [s.orderIndex, s.automationId, s.type, s.description || ""])
+        );
       }
     }
 
@@ -147,12 +137,11 @@ export async function run(args: string[]) {
     if (flags.serviceDetail >= 0) {
       const s = method.services.find(svc => svc.orderIndex === flags.serviceDetail);
       if (!s) {
-        console.error(`\nError: Service with index ${flags.serviceDetail} not found.`);
+        DisplayManager.error(`Error: Service with index ${flags.serviceDetail} not found.`);
       } else {
         const def = await ServiceHydrator.getDefinition(s.automationId);
         
         console.log(`\nService Detail [Index ${s.orderIndex}]:`);
-        
         
         if (def) {
           console.log(`Service Category: ${def.automationAPI.automationSystem.label}`);
@@ -258,7 +247,84 @@ export async function run(args: string[]) {
     }
 
   } catch (error: any) {
-    console.error("❌ Error:", error.message || error);
+    DisplayManager.error(`Error: ${error.message || error}`);
     process.exit(1);
   }
+}
+
+function renderFullView(method: HydratedMethod) {
+  // 1. Metadata Table
+  console.log(chalk.bold.underline("\nMetadata"));
+  DisplayManager.table(
+    ['Property', 'Value'],
+    [
+      ['Name', method.methodName],
+      ['Alias', method.aliasName],
+      ['UUID', method.uuid],
+      ['State', method.state],
+      ['Version', method.version.toString()],
+      ['Description', method.summary || ""]
+    ]
+  );
+
+  // 2. Inputs Table
+  console.log(chalk.bold.underline("\nInputs"));
+  if (method.inputs.length === 0) {
+    console.log("  (No Inputs)");
+  } else {
+    DisplayManager.table(
+      ['Code', 'Type', 'Required', 'Description'],
+      method.inputs.map(i => [i.fieldCode, i.type, i.required ? "Yes" : "No", i.description || ""])
+    );
+  }
+
+  // 3. Services Detail
+  console.log(chalk.bold.underline(`\nServices (${method.services.length})`));
+  
+  method.services.forEach((svc, idx) => {
+    console.log(chalk.bold(`\n[Step ${svc.orderIndex}] ${svc.description || "Service"} (ID: ${svc.automationId})`));
+    
+    // Type Detection
+    // Try to decode Code
+    if ((svc as any).code) {
+       console.log(chalk.yellow("  Type: Custom Code (JavaScript)"));
+       try {
+           const decoded = Buffer.from((svc as any).code, 'base64').toString('utf-8');
+           console.log(chalk.gray("  --- Code Logic ---"));
+           console.log(decoded);
+           console.log(chalk.gray("  ------------------"));
+       } catch {
+           console.log("  (Code decoding failed)");
+       }
+    } 
+    // Try to decode SQL in mappings
+    else if (svc.mappings && Array.isArray(svc.mappings)) {
+       // Look for base64 encoded SQL query in mappings
+       const sqlMapping = svc.mappings.find((m: any) => m.mappings && m.mappings.some((sub: any) => sub.encodingType === "BASE_64"));
+       
+       if (sqlMapping) {
+           console.log(chalk.yellow("  Type: SQL Query"));
+           const queryItem = sqlMapping.mappings.find((sub: any) => sub.encodingType === "BASE_64");
+           if (queryItem && queryItem.value) {
+               try {
+                   const decoded = Buffer.from(queryItem.value, 'base64').toString('utf-8');
+                   console.log(chalk.gray("  --- Query ---"));
+                   console.log(decoded);
+                   console.log(chalk.gray("  -------------"));
+               } catch {
+                   console.log("  (SQL decoding failed)");
+               }
+           }
+       } else {
+           console.log(`  Type: Standard Service`);
+       }
+    } else {
+        console.log(`  Type: Standard Service`);
+    }
+
+    // List Outputs
+    if (svc.outputs && svc.outputs.length > 0) {
+        console.log("  Outputs: " + svc.outputs.map((o: any) => o.code || o.displayName).join(", "));
+    }
+  });
 }
