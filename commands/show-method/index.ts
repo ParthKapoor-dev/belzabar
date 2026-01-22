@@ -82,7 +82,7 @@ export async function run(args: string[]) {
     }
 
     if (DisplayManager.isLLM) {
-      DisplayManager.object(method);
+      DisplayManager.object(enrichMethodForLLM(method));
       return;
     }
 
@@ -250,6 +250,41 @@ export async function run(args: string[]) {
     DisplayManager.error(`Error: ${error.message || error}`);
     process.exit(1);
   }
+}
+
+function enrichMethodForLLM(method: HydratedMethod): any {
+  // Deep clone to avoid mutating logic elsewhere
+  const clone = JSON.parse(JSON.stringify(method));
+
+  if (clone.services) {
+    clone.services.forEach((svc: any) => {
+      // Decode Custom Code
+      if (svc.code) {
+        try {
+          svc.decodedLogic = Buffer.from(svc.code, 'base64').toString('utf-8');
+        } catch {
+          svc.decodedLogic = "(Decode Failed)";
+        }
+      }
+
+      // Decode SQL in Mappings
+      if (svc.mappings && Array.isArray(svc.mappings)) {
+         const sqlMapping = svc.mappings.find((m: any) => m.mappings && m.mappings.some((sub: any) => sub.encodingType === "BASE_64"));
+         if (sqlMapping) {
+             const queryItem = sqlMapping.mappings.find((sub: any) => sub.encodingType === "BASE_64");
+             if (queryItem && queryItem.value) {
+                 try {
+                     svc.decodedLogic = Buffer.from(queryItem.value, 'base64').toString('utf-8');
+                     svc.logicType = "SQL";
+                 } catch {
+                     svc.decodedLogic = "(SQL Decode Failed)";
+                 }
+             }
+         }
+      }
+    });
+  }
+  return clone;
 }
 
 function renderFullView(method: HydratedMethod) {
