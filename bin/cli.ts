@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
-import { readdirSync, existsSync } from "fs";
+import { existsSync } from "fs";
 import { join } from "path";
 import { Config } from "../lib/config";
 import { DisplayManager } from "../lib/display";
+import { CommandRegistry } from "../commands";
 
 // robust path resolution for runtime
 const commandsDir = join(import.meta.dir, "../commands");
@@ -48,17 +49,8 @@ async function main() {
     console.log("Usage: belz <command> [args]\n");
     console.log("Available Commands:");
     
-    try {
-      if (existsSync(commandsDir)) {
-        const commands = readdirSync(commandsDir, { withFileTypes: true })
-          .filter(dirent => dirent.isDirectory())
-          .map(dirent => dirent.name);
-        
-        commands.forEach(cmd => console.log(`  - ${cmd}`));
-      }
-    } catch (e) {
-      console.error("Error reading commands directory.");
-    }
+    Object.keys(CommandRegistry).forEach(cmd => console.log(`  - ${cmd}`));
+    
     console.log("\nRun 'belz <command> --help' for details.");
   };
 
@@ -67,9 +59,7 @@ async function main() {
     process.exit(0);
   }
 
-  const commandPath = join(commandsDir, commandName);
-
-  if (!existsSync(commandPath)) {
+  if (!CommandRegistry[commandName]) {
     DisplayManager.error(`Unknown command: ${commandName}`);
     listCommands();
     process.exit(1);
@@ -79,6 +69,8 @@ async function main() {
   if (args[1] === "--help" || args[1] === "-h") {
     if (DisplayManager.isLLM) process.exit(0); // Silent exit
 
+    // Try to read help.txt from source location if available
+    const commandPath = join(commandsDir, commandName);
     const helpFile = Bun.file(join(commandPath, "help.txt"));
     if (await helpFile.exists()) {
       console.log(await helpFile.text());
@@ -90,9 +82,7 @@ async function main() {
 
   // Execute Command
   try {
-    const modulePath = join(commandPath, "index.ts");
-    // Dynamic import works in runtime
-    const module = await import(modulePath);
+    const module = CommandRegistry[commandName];
     
     if (typeof module.run !== "function") {
       DisplayManager.error(`Error: Command '${commandName}' does not export a 'run' function.`);
