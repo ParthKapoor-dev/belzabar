@@ -4,12 +4,13 @@ import { CacheManager } from "../../lib/cache";
 import { parseMethodResponse } from "../../lib/parser";
 import { PayloadBuilder } from "../../lib/payload-builder";
 import { ErrorParser, type ParsedError } from "../../lib/error-parser";
+import { DisplayManager } from "../../lib/display";
 import type { RawMethodResponse } from "../../lib/types";
 
 export async function run(args: string[]) {
   const uuid = args[0];
   if (!uuid || uuid.startsWith("-")) {
-    console.error("Error: Missing UUID argument.");
+    DisplayManager.error("Error: Missing UUID argument.");
     process.exit(1);
   }
 
@@ -21,7 +22,7 @@ export async function run(args: string[]) {
 
   try {
     // 1. Fetch Definition
-    console.info(`[Info] Fetching Draft definition for ${uuid}...`);
+    DisplayManager.info(`Fetching Draft definition for ${uuid}...`);
     const rawMethod = await fetchMethodDefinition(uuid) as RawMethodResponse;
     
     // Parse just to get inputs list
@@ -38,21 +39,40 @@ export async function run(args: string[]) {
     formData.append("body", JSON.stringify(payload));
 
     // 4. Execute Test
-    console.log("\n🚀 Executing Method...");
+    DisplayManager.info("Executing Method...");
     const resultRes = await testMethod(formData);
 
     if (!resultRes.ok) {
-        console.error(`❌ Execution Failed: ${resultRes.status} ${resultRes.statusText}`);
-        const text = await resultRes.text();
-        console.error(text);
+        DisplayManager.error(`Execution Failed: ${resultRes.status} ${resultRes.statusText}`);
+        if (!DisplayManager.isLLM) {
+            const text = await resultRes.text();
+            console.error(text);
+        }
         process.exit(1);
     }
 
     const result = await resultRes.json();
 
     // 5. Display Results
+    if (DisplayManager.isLLM) {
+        // In LLM mode, output the whole result or a simplified version
+        if (flags.verbose) {
+             DisplayManager.object(result);
+        } else {
+             // Minimal result: Status + Output
+             const minimal = {
+                 success: !result.executionStatus?.failed,
+                 output: result.outputs?.[0]?.testResult || null,
+                 error: result.executionStatus?.failed ? result.executionStatus.message : null
+             };
+             DisplayManager.object(minimal);
+        }
+        return;
+    }
+
+    // HUMAN Mode Output
     if (result.executionStatus?.failed) {
-        console.error("\n❌ Method Execution Failed.");
+        DisplayManager.error("Method Execution Failed.");
         
         // Identify failing step from services array
         const failingSvc = result.services?.find((s: any) => s.executionStatus?.failed);
@@ -68,7 +88,7 @@ export async function run(args: string[]) {
             console.log(parsedErr.detail.split('\n').map((l: string) => "  " + l).join('\n'));
         }
     } else {
-        console.log("✅ Method Executed Successfully.");
+        DisplayManager.success("Method Executed Successfully.");
     }
 
     // Show Output (only if success or generic output exists)
@@ -158,7 +178,7 @@ export async function run(args: string[]) {
     }
 
   } catch (error: any) {
-    console.error("❌ Error:", error.message || error);
+    DisplayManager.error(`Error: ${error.message || error}`);
     process.exit(1);
   }
 }

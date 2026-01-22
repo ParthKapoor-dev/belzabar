@@ -2,6 +2,7 @@
 import { readdirSync, existsSync } from "fs";
 import { join } from "path";
 import { Config } from "../lib/config";
+import { DisplayManager } from "../lib/display";
 
 // robust path resolution for runtime
 const commandsDir = join(import.meta.dir, "../commands");
@@ -9,18 +10,25 @@ const commandsDir = join(import.meta.dir, "../commands");
 async function main() {
   let args = process.argv.slice(2);
 
+  // Check for LLM flag immediately
+  const llmIndex = args.indexOf("--llm");
+  if (llmIndex !== -1) {
+      DisplayManager.configure({ llm: true });
+      args.splice(llmIndex, 1);
+  }
+
   // Parse Global Flags
   const envIndex = args.findIndex(a => a === "--env" || a === "-e");
   if (envIndex !== -1) {
     if (envIndex + 1 >= args.length) {
-      console.error("Error: --env flag requires an argument.");
+      DisplayManager.error("Error: --env flag requires an argument.");
       process.exit(1);
     }
     const envName = args[envIndex + 1];
     try {
       Config.setActiveEnv(envName);
     } catch (e: any) {
-      console.error(`Error: ${e.message}`);
+      DisplayManager.error(`Error: ${e.message}`);
       process.exit(1);
     }
     args.splice(envIndex, 2);
@@ -28,12 +36,14 @@ async function main() {
 
   const activeEnv = Config.activeEnv;
   // Print Context Header (stderr)
-  console.warn(`[CLI] 🌍 Environment: ${activeEnv.name} | 👤 User: ${activeEnv.credentials.loginId || "n/a"}`);
+  DisplayManager.info(`🌍 Environment: ${activeEnv.name} | 👤 User: ${activeEnv.credentials.loginId || "n/a"}`);
 
   const commandName = args[0];
 
   // Helper to list commands
   const listCommands = () => {
+    if (DisplayManager.isLLM) return; // Don't print help in LLM mode
+    
     console.log("Automation Designer CLI");
     console.log("Usage: belz <command> [args]\n");
     console.log("Available Commands:");
@@ -60,13 +70,15 @@ async function main() {
   const commandPath = join(commandsDir, commandName);
 
   if (!existsSync(commandPath)) {
-    console.error(`Unknown command: ${commandName}`);
+    DisplayManager.error(`Unknown command: ${commandName}`);
     listCommands();
     process.exit(1);
   }
 
   // Check for Command Help
   if (args[1] === "--help" || args[1] === "-h") {
+    if (DisplayManager.isLLM) process.exit(0); // Silent exit
+
     const helpFile = Bun.file(join(commandPath, "help.txt"));
     if (await helpFile.exists()) {
       console.log(await helpFile.text());
@@ -83,14 +95,14 @@ async function main() {
     const module = await import(modulePath);
     
     if (typeof module.run !== "function") {
-      console.error(`Error: Command '${commandName}' does not export a 'run' function.`);
+      DisplayManager.error(`Error: Command '${commandName}' does not export a 'run' function.`);
       process.exit(1);
     }
 
     await module.run(args.slice(1));
 
   } catch (error) {
-    console.error(`Error executing command '${commandName}':`, error);
+    DisplayManager.error(`Error executing command '${commandName}': ${error}`);
     process.exit(1);
   }
 }
