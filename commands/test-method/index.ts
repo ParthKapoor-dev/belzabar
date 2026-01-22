@@ -55,18 +55,26 @@ export async function run(args: string[]) {
 
     // 5. Display Results
     if (DisplayManager.isLLM) {
+        const envelope = {
+            schema: "ad.method.execution",
+            version: "1.0",
+            data: {} as any
+        };
+
         // In LLM mode, output the whole result or a simplified version
         if (flags.verbose) {
-             DisplayManager.object(result);
+             envelope.data = result;
         } else {
              // Minimal result: Status + Output
-             const minimal = {
+             envelope.data = {
                  success: !result.executionStatus?.failed,
+                 status: result.executionStatus?.failed ? "FAILED" : "SUCCESS",
                  output: result.outputs?.[0]?.testResult || null,
-                 error: result.executionStatus?.failed ? result.executionStatus.message : null
+                 error: result.executionStatus?.failed ? result.executionStatus.message : null,
+                 failedStep: result.executionStatus?.failed ? result.services?.find((s: any) => s.executionStatus?.failed) : null
              };
-             DisplayManager.object(minimal);
         }
+        DisplayManager.object(envelope);
         return;
     }
 

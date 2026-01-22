@@ -1,71 +1,67 @@
-# Automation Designer CLI
+# Automation Designer CLI (Belzabar)
 
-A modular CLI tool for interacting with the Automation Designer API, supporting multiple environments (Dev, QA, UAT).
+A Bun + TypeScript CLI for interacting with Automation Designer APIs.
 
-## Setup
+## Features
 
-1.  **Install Dependencies**
-    ```bash
-    bun install
-    ```
+-   **Manage Environments**: Easy switching between Dev, QA, and Prod.
+-   **Method Inspection**: View definitions, inputs, and logic (SQL/Code).
+-   **Draft Testing**: Run draft methods with inputs and trace execution.
+-   **AI Native**: First-class support for AI agents via MCP and JSON output.
 
-2.  **Environment Configuration**
-    Create a `.env` file in the root. You can configure multiple environments.
+## 🤖 AI Agent Mode
 
-    **Template (.env):**
-    ```ini
-    # --- NSM Dev (Default) ---
-    NSM_DEV_URL=https://nsm-dev.nc.verifi.dev
-    NSM_DEV_USER=dev_user
-    NSM_DEV_PASSWORD=base64_dev_password
+This CLI is designed to be driven by AI agents (Gemini, Claude, etc.).
 
-    # --- NSM QA ---
-    NSM_QA_URL=https://nsm-qa.nc.verifi.dev
-    NSM_QA_USER=qa_user
-    NSM_QA_PASSWORD=base64_qa_password
-
-    # --- NSM UAT ---
-    NSM_UAT_URL=https://nsm-uat.nc.verifi.dev
-    NSM_UAT_USER=uat_user
-    NSM_UAT_PASSWORD=base64_uat_password
-
-    # --- Fallback (Legacy Support) ---
-    # API_USER and API_PASSWORD will be used if specific env credentials are missing
-    API_USER=fallback_user
-    API_PASSWORD=fallback_base64_pass
-    ```
-
-## Usage
-
-Run commands via the entry point:
+### Enabling AI Mode
+Pass the global flag `--llm` to any command.
+This forces **Deterministic, Minified JSON Output** and suppresses all logs/tables.
 
 ```bash
-bun run bin/cli.ts <command> [args]
+bun run bin/cli.ts show-method <UUID> --llm
 ```
 
-### Global Flags
+### Agent Contract
+See [BELZABAR_AD_AGENT.md](./BELZABAR_AD_AGENT.md) for the strict operational contract.
+This document defines "Safe Operations" and "Hallucination Boundaries".
 
-- `--env <name>` / `-e <name>`: Switch environment (default: `nsm-dev`).
+### MCP Server (Gemini)
+An MCP (Model Context Protocol) server is provided in `integrations/gemini-mcp/`.
+It exposes:
+*   `ad.show_method`
+*   `ad.test_method`
 
-### Available Commands
+## 🛠️ Usage
 
-- **envs**: List available environments.
-  ```bash
-  bun run bin/cli.ts envs
-  ```
-
-- **fetch-method**: Get details of an automation chain.
-  ```bash
-  bun run bin/cli.ts fetch-method <UUID> --env nsm-qa
-  ```
-
-- **run-method**: Execute an automation chain.
-  ```bash
-  bun run bin/cli.ts run-method <PUBLISHED_ID> ./payload.json -e nsm-uat
-  ```
-
-### Help
-
+### Installation
 ```bash
-bun run bin/cli.ts --help
+bun install
 ```
+
+### Commands
+
+**Show Method**
+```bash
+bun run bin/cli.ts show-method <UUID> [flags]
+# Flags: --full, --inputs, --services
+```
+
+**Test Method**
+```bash
+bun run bin/cli.ts test-method <UUID> --inputs data.json
+```
+
+**Save Regression Suite**
+```bash
+bun run bin/cli.ts save-suite <UUID> --name "smoke-test"
+```
+
+## 🏗️ Architecture
+
+*   **`bin/`**: Entry point.
+*   **`commands/`**: Modular command logic.
+*   **`lib/`**: Shared core (API, Auth, Display, Parser).
+*   **`integrations/`**: Adapters for external systems (MCP).
+
+## License
+Private / Internal.

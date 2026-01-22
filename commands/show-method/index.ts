@@ -82,7 +82,11 @@ export async function run(args: string[]) {
     }
 
     if (DisplayManager.isLLM) {
-      DisplayManager.object(enrichMethodForLLM(method));
+      DisplayManager.object({
+        schema: "ad.method.inspect",
+        version: "1.0",
+        data: enrichMethodForLLM(method)
+      });
       return;
     }
 
