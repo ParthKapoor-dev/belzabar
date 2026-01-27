@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { Config } from "../../lib/config";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { apiFetch } from "../../lib/api";
@@ -153,6 +154,9 @@ export async function run(args: string[]) {
           console.log(`Automation ID:    ${def.id}`);
           if (def.automationAPI.serviceChainUID) {
               console.log(`Published ID:     ${def.automationAPI.serviceChainUID}`);
+              const encodedCategory = encodeURIComponent(def.automationAPI.automationSystem.label);
+              const deepLink = `${Config.cleanBaseUrl}/automation-designer/${encodedCategory}/${def.automationAPI.serviceChainUID}`;
+              console.log(`URL:              ${chalk.cyan(deepLink)}`);
           }
         } else {
           console.log("Type:", s.type);
