@@ -26,6 +26,11 @@ export interface InputField {
   description?: string;
 }
 
+export interface LoopConfiguration {
+  executeParallel?: boolean;
+  [key: string]: any;
+}
+
 export interface ServiceStep {
   automationId: string;
   orderIndex: number;
@@ -33,6 +38,14 @@ export interface ServiceStep {
   type: string;
   mappings?: any;
   outputs?: any;
+  // Advanced Config
+  runAsync?: boolean;
+  streamCapable?: boolean;
+  repeatStepExecution?: boolean;
+  loopConfiguration?: LoopConfiguration;
+  conditionExpression?: string;
+  forceExitFromFailure?: boolean;
+  forceExitErrorMessage?: string;
 }
 
 export interface InnerDefinition {

@@ -157,6 +157,41 @@ export async function run(args: string[]) {
           console.warn("(Definition not available for deep inspection)");
         }
         
+        // --- Configuration Section ---
+        console.log(`\n\u2699\ufe0f  Configuration`);
+        
+        const treeTee = "\u251c\u2500\u2500"; 
+        const treeCorner = "\u2514\u2500\u2500"; 
+        
+        let loopStr = s.repeatStepExecution ? "\u2705 Yes" : "\u274c No";
+        if (s.repeatStepExecution && s.loopConfiguration) {
+            loopStr += ` (${s.loopConfiguration.executeParallel ? "Parallel" : "Sequential"})`;
+        }
+
+        const configItems = [
+            { label: "\u26a1 Async Execution", value: s.runAsync ? "\u2705 Yes" : "\u274c No" },
+            { label: "\uD83D\uDCE1 Stream Capable", value: s.streamCapable ? "\u2705 Yes" : "\u274c No" },
+            { label: "\u{1F501} Loop", value: loopStr },
+            { label: "\u{1F6D1} Abort on Failure", value: s.forceExitFromFailure ? "\u2705 Yes" : "\u274c No" },
+        ];
+        
+        if (s.conditionExpression) {
+            configItems.push({ label: "\u2753 Condition", value: chalk.yellow(s.conditionExpression) });
+        }
+        
+        configItems.forEach((item, index) => {
+            const isLast = index === configItems.length - 1;
+            const prefix = isLast ? treeCorner : treeTee;
+            const padLen = 22;
+            const label = item.label + ":";
+            console.log(`  ${prefix} ${label.padEnd(padLen)} ${item.value}`);
+            
+            if (item.label.includes("Abort on Failure") && s.forceExitFromFailure && s.forceExitErrorMessage) {
+                 const subPrefix = isLast ? "   " : "  \u2502"; 
+                 console.log(`${subPrefix}    Error Message:      ${chalk.red(s.forceExitErrorMessage)}`);
+            }
+        });
+
         console.log("\nInputs:");
 
         if (def) {
