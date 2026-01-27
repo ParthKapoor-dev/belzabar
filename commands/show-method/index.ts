@@ -158,25 +158,25 @@ export async function run(args: string[]) {
         }
         
         // --- Configuration Section ---
-        console.log(`\n\u2699\ufe0f  Configuration`);
+        console.log(`\nConfiguration`);
         
         const treeTee = "\u251c\u2500\u2500"; 
         const treeCorner = "\u2514\u2500\u2500"; 
         
-        let loopStr = s.repeatStepExecution ? "\u2705 Yes" : "\u274c No";
+        let loopStr = s.repeatStepExecution ? "Yes" : "No";
         if (s.repeatStepExecution && s.loopConfiguration) {
             loopStr += ` (${s.loopConfiguration.executeParallel ? "Parallel" : "Sequential"})`;
         }
 
         const configItems = [
-            { label: "\u26a1 Async Execution", value: s.runAsync ? "\u2705 Yes" : "\u274c No" },
-            { label: "\uD83D\uDCE1 Stream Capable", value: s.streamCapable ? "\u2705 Yes" : "\u274c No" },
-            { label: "\u{1F501} Loop", value: loopStr },
-            { label: "\u{1F6D1} Abort on Failure", value: s.forceExitFromFailure ? "\u2705 Yes" : "\u274c No" },
+            { label: "Async Execution", value: s.runAsync ? "Yes" : "No" },
+            { label: "Stream Capable", value: s.streamCapable ? "Yes" : "No" },
+            { label: "Loop", value: loopStr },
+            { label: "Abort on Failure", value: s.forceExitFromFailure ? "Yes" : "No" },
         ];
         
         if (s.conditionExpression) {
-            configItems.push({ label: "\u2753 Condition", value: chalk.yellow(s.conditionExpression) });
+            configItems.push({ label: "Condition", value: chalk.yellow(s.conditionExpression) });
         }
         
         configItems.forEach((item, index) => {
