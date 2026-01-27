@@ -150,6 +150,10 @@ export async function run(args: string[]) {
         if (def) {
           console.log(`Service Category: ${def.automationAPI.automationSystem.label}`);
           console.log(`Method Name:      ${def.automationAPI.label}`);
+          console.log(`Automation ID:    ${def.id}`);
+          if (def.automationAPI.serviceChainUID) {
+              console.log(`Published ID:     ${def.automationAPI.serviceChainUID}`);
+          }
         } else {
           console.log("Type:", s.type);
           console.log("ID:", s.automationId);

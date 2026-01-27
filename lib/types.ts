@@ -99,9 +99,11 @@ export interface AutomationAPIOutput {
 }
 
 export interface AutomationDefinition {
+  id: number;
   uuid: string;
   automationAPI: {
     label: string;
+    serviceChainUID?: string;
     automationSystem: {
       label: string;
     };
