@@ -8,8 +8,8 @@ export async function runCli(argv: string[], commandMap: Record<string, any>, he
   // Check for LLM flag immediately
   const llmIndex = args.indexOf("--llm");
   if (llmIndex !== -1) {
-      DisplayManager.configure({ llm: true });
-      args.splice(llmIndex, 1);
+    DisplayManager.configure({ llm: true });
+    args.splice(llmIndex, 1);
   }
 
   // Parse Global Flags
@@ -19,7 +19,7 @@ export async function runCli(argv: string[], commandMap: Record<string, any>, he
       DisplayManager.error("Error: --env flag requires an argument.");
       process.exit(1);
     }
-    const envName = args[envIndex + 1];
+    const envName = args[envIndex + 1] as string;
     try {
       Config.setActiveEnv(envName);
     } catch (e: any) {
@@ -37,13 +37,13 @@ export async function runCli(argv: string[], commandMap: Record<string, any>, he
   // Helper to list commands
   const listCommands = () => {
     if (DisplayManager.isLLM) return;
-    
+
     console.log("Automation Designer CLI");
     console.log("Usage: belz <command> [args]\n");
     console.log("Available Commands:");
-    
+
     Object.keys(commandMap).forEach(cmd => console.log(`  - ${cmd}`));
-    
+
     console.log("\nRun 'belz <command> --help' for details.");
   };
 
@@ -60,13 +60,13 @@ export async function runCli(argv: string[], commandMap: Record<string, any>, he
 
   // Check for Command Help
   if (args[1] === "--help" || args[1] === "-h") {
-    if (DisplayManager.isLLM) process.exit(0); 
+    if (DisplayManager.isLLM) process.exit(0);
 
     let helpText: string | null = null;
     if (helpResolver) {
-        helpText = await helpResolver(commandName);
+      helpText = await helpResolver(commandName);
     }
-    
+
     if (helpText) {
       console.log(helpText);
     } else {
@@ -78,7 +78,7 @@ export async function runCli(argv: string[], commandMap: Record<string, any>, he
   // Execute Command
   try {
     const module = commandMap[commandName];
-    
+
     if (typeof module.run !== "function") {
       DisplayManager.error(`Error: Command '${commandName}' does not export a 'run' function.`);
       process.exit(1);

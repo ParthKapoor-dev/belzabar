@@ -25,7 +25,7 @@ const envSchema = z.object({
   NSM_UAT_URL: z.string().default("https://nsm-uat.nc.verifi.dev"),
   NSM_UAT_USER: z.string().optional(),
   NSM_UAT_PASSWORD: z.string().optional(),
-  
+
   // Legacy Fallback (for backward compatibility)
   BASE_URL: z.string().optional(),
   API_USER: z.string().optional(),
@@ -72,20 +72,20 @@ export const Config = {
     }
     activeEnvName = name;
   },
-  
+
   get activeEnv(): Environment {
-    return environments[activeEnvName];
+    return environments[activeEnvName] as Environment;
   },
 
   getAllEnvs: () => environments,
 
-  // Backwards compatibility helpers used by existing code, 
+  // Backwards compatibility helpers used by existing code,
   // but now they dynamically point to activeEnv
   get baseUrl() { return this.activeEnv.baseUrl; },
   get cleanBaseUrl() { return this.activeEnv.baseUrl.replace(/\/$/, ""); },
   get loginId() { return this.activeEnv.credentials.loginId; },
-  get password() { 
+  get password() {
     const pwd = this.activeEnv.credentials.passwordEncoded;
-    return pwd ? atob(pwd) : ""; 
+    return pwd ? atob(pwd) : "";
   },
 };
