@@ -3,6 +3,9 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "dependencies": {
+    "@belzabar/core": "workspace:*"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },

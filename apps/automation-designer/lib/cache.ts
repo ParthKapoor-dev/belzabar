@@ -3,7 +3,7 @@ import { homedir } from "os";
 import { mkdir } from "fs/promises";
 import type { HydratedMethod } from "./types";
 
-const CACHE_DIR = join(homedir(), ".ad-cli", "cache", "methods");
+const CACHE_DIR = join(homedir(), ".belzabar-cli", "cache", "methods");
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface CacheEntry {

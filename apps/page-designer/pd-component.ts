@@ -1,16 +1,14 @@
 import { file } from "bun";
+import { apiFetch, Config } from "@belzabar/core";
 
 /**
  * CONFIGURATION
  */
-const BEARER_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InJ3SmM4d2Yydi1PeFdrX1QxZ2F6OHlpeGhQayJ9.eyJhdWQiOiIzMmQ4NWI4YS1lOWI0LTQxZTUtYTM2Zi0yNDUzMDFlZjlkMGYiLCJleHAiOjE3NzA3MTQwNjMsImlhdCI6MTc3MDYyNzY2MywiaXNzIjoibnNtLWRldi5uYy52ZXJpZmkuZGV2Iiwic3ViIjoiZmJiY2Y5NTYtNGMxZC00MGM0LWFlZGQtZjY0MGYzZWE2ZDBjIiwianRpIjoiZDdhM2RkOWUtZGFmYS00ODMxLWIyYjctZjc0OWEzZGRhZWExIiwiYXV0aGVudGljYXRpb25UeXBlIjoiUEFTU1dPUkQiLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJydXBpbkB3ZWJpbnRlbnNpdmUuY29tIiwiYXBwbGljYXRpb25JZCI6IjMyZDg1YjhhLWU5YjQtNDFlNS1hMzZmLTI0NTMwMWVmOWQwZiIsInJvbGVzIjpbXSwic2lkIjoiNzlkYzNjNDgtMjZkOS00NjMxLTlmM2MtMDZkNGYxM2FmMDM0IiwiYXV0aF90aW1lIjoxNzcwNjI3NjYzLCJ0aWQiOiJmMTNmYWFkNi01NjEzLTQzMjctYmM2Ni1iZmNhYWVmODlhZTAifQ.A_pzfgW78IYqr2677MBXmRHJN78kmRS4RPn0W_MisqcDYeZehiTlChgRlA6vJVELqFDJkMTmPgwTh8JjwiZkbQELRqIYV8BXsqFOuEM6QF5ubnCFK44aWnV4Sph1LoF3-ZjNs_hzRD2bHGW7xCjXedWgQePl8I07Vt0g_aIfxX3Z-Tw0kudXWeDTvhvZGVa7Jxvo9tXejKoKK_Pq0V7WkMK4GgWXHGpPLeHTdaEvi9ByFoSWNocJtXjNPBRwyf8L_CwR_4uNJ8a9G_Dhh6256NUQ_80-87AgJh8wy26r-BMkiE3dyzCybp1J6hod7QFWq39seM76glkJzR4kENLazg";
-const COOKIES = "<PLACEHOLDER>";
-
 const TARGET_PAGE_IDS = [
   "406735d54e938e60517ab6d91a497b20",
 ];
 
-const BASE_URL = "https://nsm-dev.nc.verifi.dev/rest/api/pagedesigner";
+const PD_BASE = "/rest/api/pagedesigner";
 
 /**
  * INTERFACES
@@ -42,18 +40,6 @@ interface ComponentSearchResponse {
   id: string;
   name: string;
 }
-
-/**
- * UTILS & PARSING
- */
-
-const COMMON_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:141.0) Gecko/20100101 Firefox/141.0",
-  "Accept": "application/json, text/plain, */*",
-  "Content-Type": "application/json",
-  "authorization": BEARER_TOKEN.startsWith("Bearer ") ? BEARER_TOKEN : `Bearer ${BEARER_TOKEN}`,
-  "Cookie": COOKIES,
-};
 
 /**
  * Core parsing logic shared between pages and components.
@@ -100,9 +86,9 @@ function extractFromConfig(configStr: string, componentsWhitelist: Set<string>):
  */
 
 async function getComponentId(name: string): Promise<string | null> {
-  const url = `${BASE_URL}/pages?name=${encodeURIComponent(name)}&apiInfoLevel=MEDIUM&status=DRAFT`;
+  const url = `${PD_BASE}/pages?name=${encodeURIComponent(name)}&apiInfoLevel=MEDIUM&status=DRAFT`;
   try {
-    const res = await fetch(url, { headers: COMMON_HEADERS });
+    const res = await apiFetch(url, { method: "GET", authMode: "Bearer" });
     if (!res.ok) return null;
     const data = (await res.json()) as ComponentSearchResponse[];
     return data.length > 0 ? data[0].id : null;
@@ -112,11 +98,11 @@ async function getComponentId(name: string): Promise<string | null> {
 }
 
 async function getComponentConfig(id: string): Promise<string | null> {
-  const url = `${BASE_URL}/pages/phrases/${id}`;
+  const url = `${PD_BASE}/pages/phrases/${id}`;
   try {
-    const res = await fetch(url, {
+    const res = await apiFetch(url, {
       method: "PUT",
-      headers: COMMON_HEADERS,
+      authMode: "Bearer",
       body: JSON.stringify({
         status: "DRAFT",
         partialUpdate: true,
@@ -182,8 +168,8 @@ class Analyzer {
   async analyzeRootPage(pageId: string) {
     console.log(`--- Processing Root Page: ${pageId} ---`);
     
-    const url = `${BASE_URL}/pages/${pageId}`;
-    const res = await fetch(url, { headers: COMMON_HEADERS });
+    const url = `${PD_BASE}/pages/${pageId}`;
+    const res = await apiFetch(url, { method: "GET", authMode: "Bearer" });
     if (!res.ok) throw new Error(`Failed to fetch root page: ${res.status}`);
     
     const data = (await res.json()) as PageDesignerResponse;

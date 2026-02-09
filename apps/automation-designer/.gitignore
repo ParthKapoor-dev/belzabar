@@ -35,4 +35,5 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .DS_Store
 
 # Local session storage (if present locally)
-.ad-cli
+
+.belzabar-cli

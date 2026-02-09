@@ -4,7 +4,7 @@ import { mkdir } from "fs/promises";
 import { fetchAutomationDefinition } from "./api";
 import type { AutomationDefinition, AutomationUserInput } from "./types";
 
-const CACHE_DIR = join(homedir(), ".ad-cli", "cache", "definitions");
+const CACHE_DIR = join(homedir(), ".belzabar-cli", "cache", "definitions");
 
 export class ServiceHydrator {
   static async ensureDir() {

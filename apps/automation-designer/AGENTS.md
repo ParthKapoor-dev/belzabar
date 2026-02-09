@@ -8,7 +8,7 @@ The project is a modular CLI built with Bun and TypeScript.
 
 - **`/bin/cli.ts`**: The entry point. Handles global flags (like `--env`) and dispatches commands.
 - **`/lib`**: Core logic shared across commands.
-  - `auth.ts`: Handles login, token persistence (in `~/.ad-cli/sessions/<env>.json`), and Base64 password decoding.
+  - `auth.ts`: Handles login, token persistence (in `~/.belzabar-cli/sessions/<env>.json`), and Base64 password decoding.
   - `api.ts`: A fetch wrapper. Handles 401 Re-auth. Uses `Config.activeEnv` to determine target URL and Auth.
   - `config.ts`: Environment variable validation (Zod) and **Environment Profile Management**.
 - **`/commands`**: Each subfolder is a CLI command.
@@ -23,8 +23,8 @@ The CLI supports multiple environments (e.g., `nsm-dev`, `nsm-qa`).
   - Override: Use global flag `--env <name>` or `-e <name>`.
   - Example: `cli fetch-method 123 --env nsm-qa`.
 - **Persistence**: Sessions are isolated per environment.
-  - `nsm-dev` -> `~/.ad-cli/sessions/nsm-dev.json`
-  - `nsm-qa`  -> `~/.ad-cli/sessions/nsm-qa.json`
+  - `nsm-dev` -> `~/.belzabar-cli/sessions/nsm-dev.json`
+  - `nsm-qa`  -> `~/.belzabar-cli/sessions/nsm-qa.json`
 
 ## 3. How to Add a New Command
 
