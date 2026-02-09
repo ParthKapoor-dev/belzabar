@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Belzabar: Method Title Updater",
+  "version": "1.0.1",
+  "description": "Appends the method name from the automation designer to the page title",
+  "permissions": [
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://nsm-dev.nc.verifi.dev/*",
+    "https://nsm-uat.nc.verifi.dev/*",
+    "https://nsm-qa.nc.verifi.dev/*"
+  ],
+   "content_scripts": [
+      {
+        "matches": [
+          "https://nsm-dev.nc.verifi.dev/automation-designer/*",
+          "https://nsm-dev.nc.verifi.dev/ui-designer/*",
+          "https://nsm-uat.nc.verifi.dev/automation-designer/*",
+          "https://nsm-uat.nc.verifi.dev/ui-designer/*",
+          "https://nsm-qa.nc.verifi.dev/automation-designer/*",
+          "https://nsm-qa.nc.verifi.dev/ui-designer/*"
+        ],
+        "js": ["dist/content-script.js"],
+        "run_at": "document_idle"
+      }
+    ]
+}
