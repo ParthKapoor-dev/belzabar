@@ -1,0 +1,13 @@
+Usage: pd show-component <NAME> [flags]
+
+Searches for a Page Designer component by name and displays its configuration.
+
+Arguments:
+  <NAME>        The name of the component to show.
+
+Flags:
+  --full        Output the full raw JSON response.
+  --help, -h    Show this help message.
+
+Example:
+  pd show-component n_s_staff_email_correspondence

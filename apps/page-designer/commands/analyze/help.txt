@@ -1,0 +1,15 @@
+Usage: pd analyze [PAGE_ID] [flags]
+
+Runs a recursive analysis of a page or components to find all nested components and Automation Designer (AD) method references.
+
+Arguments:
+  [PAGE_ID]     Optional. The UUID of the page to analyze. 
+                If omitted, uses default pages defined in config.
+
+Flags:
+  --compliance  Run compliance verification against master_ids.txt.
+  --help, -h    Show this help message.
+
+Example:
+  pd analyze
+  pd analyze 49fa2576... --compliance

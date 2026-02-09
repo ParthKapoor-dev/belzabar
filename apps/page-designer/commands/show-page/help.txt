@@ -1,0 +1,13 @@
+Usage: pd show-page <PAGE_ID> [flags]
+
+Fetches and displays the configuration of a specific Page Designer page.
+
+Arguments:
+  <PAGE_ID>     The UUID of the page to show.
+
+Flags:
+  --full        Output the full raw JSON response.
+  --help, -h    Show this help message.
+
+Example:
+  pd show-page 49fa2576...

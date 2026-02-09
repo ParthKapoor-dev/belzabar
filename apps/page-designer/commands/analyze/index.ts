@@ -1,60 +1,69 @@
 import { file } from "bun";
-import { TARGET_PAGE_IDS } from "./src/config";
-import { analyzeItem } from "./src/analyzer";
-import { printTree, collectAllAdIds } from "./src/reporter";
-import { verifyCompliance } from "./src/comparator";
-import type { ReportNode } from "./src/types";
+import { TARGET_PAGE_IDS } from "../../lib/config";
+import { analyzeItem } from "../../lib/analyzer";
+import { printTree, collectAllAdIds } from "../../lib/reporter";
+import { verifyCompliance } from "../../lib/comparator";
+import type { ReportNode } from "../../lib/types";
+import { DisplayManager } from "@belzabar/core";
 
-/**
- * MAIN ENTRY POINT
- */
+export async function run(args: string[]) {
+  const pageIdArg = args[0];
+  const targetIds = pageIdArg ? [pageIdArg] : TARGET_PAGE_IDS;
 
-async function main() {
-  console.log("🚀 Starting High-Concurrency Page Analysis...");
-  console.log("-------------------------------------------\n");
+  DisplayManager.info("Starting Page Analysis...");
 
   // 1. Load components.json
   let componentsWhitelist: Set<string>;
   try {
     const componentsFile = file("components.json");
     if (!(await componentsFile.exists())) {
-      console.error("❌ Error: components.json not found in root directory.");
+      DisplayManager.error("components.json not found in root directory.");
       process.exit(1);
     }
     const list = await componentsFile.json();
     componentsWhitelist = new Set(list);
   } catch (error) {
-    console.error("❌ Error loading components.json:", error);
+    DisplayManager.error(`Error loading components.json: ${error}`);
     process.exit(1);
   }
 
-  // 2. Load master_ids.txt (Optional but recommended for Compliance)
+  // 2. Load master_ids.txt (Optional)
   let masterIds = new Set<string>();
-  try {
-    const masterFile = file("master_ids.txt");
-    if (await masterFile.exists()) {
-      const content = await masterFile.text();
-      masterIds = new Set(content.split(",").map(id => id.trim()).filter(id => id.length > 0));
-      console.log(`✅ Loaded ${masterIds.size} approved AD IDs from master_ids.txt\n`);
-    } else {
-      console.warn("⚠️ Warning: master_ids.txt not found. Compliance check will be skipped.\n");
+  const runCompliance = args.includes("--compliance");
+  if (runCompliance) {
+    try {
+      const masterFile = file("master_ids.txt");
+      if (await masterFile.exists()) {
+        const content = await masterFile.text();
+        masterIds = new Set(content.split(",").map(id => id.trim()).filter(id => id.length > 0));
+        DisplayManager.info(`Loaded ${masterIds.size} approved AD IDs from master_ids.txt`);
+      } else {
+        DisplayManager.error("master_ids.txt not found. Compliance check skipped.");
+      }
+    } catch (error) {
+      DisplayManager.error(`Error loading master_ids.txt: ${error}`);
     }
-  } catch (error) {
-    console.error("❌ Error loading master_ids.txt:", error);
   }
 
   const allReports: ReportNode[] = [];
 
-  // 3. Run Analysis for all target pages
-  for (const pageId of TARGET_PAGE_IDS) {
-    console.log(`📡 Analyzing Root Page: ${pageId}`);
+  // 3. Run Analysis
+  for (const pageId of targetIds) {
+    DisplayManager.info(`Analyzing Root Page: ${pageId}`);
     const visited = new Set<string>();
     const report = await analyzeItem(pageId, 'PAGE', 'Root Page', visited, componentsWhitelist);
     allReports.push(report);
     
-    console.log("\n--- Visual Dependency Tree ---");
-    printTree(report);
-    console.log("");
+    if (!DisplayManager.isLLM) {
+        console.log("\n--- Visual Dependency Tree ---");
+        printTree(report);
+        console.log("");
+    }
+  }
+
+  if (DisplayManager.isLLM) {
+      DisplayManager.object(allReports);
+      return;
   }
 
   // 4. Final Master Summary
@@ -67,8 +76,8 @@ async function main() {
   console.log(`Total Count: ${masterAds.length}\n`);
 
   // 5. Compliance Verification
-  if (masterIds.size > 0) {
-    console.log("⚖️ Running Compliance Verification...");
+  if (runCompliance && masterIds.size > 0) {
+    DisplayManager.info("Running Compliance Verification...");
     const compliance = verifyCompliance(allReports, masterIds);
     
     console.log("\n-------------------------------------------");
@@ -80,9 +89,9 @@ async function main() {
     console.log("-------------------------------------------");
 
     if (compliance.isCompliant) {
-      console.log("\x1b[32m%s\x1b[0m", "✅ COMPLIANCE PASSED: All generated AD IDs are present in the Master List.");
+      DisplayManager.success("COMPLIANCE PASSED: All generated AD IDs are present in the Master List.");
     } else {
-      console.log("\x1b[31m%s\x1b[0m", "❌ COMPLIANCE FAILED: Rogue AD IDs detected!");
+      DisplayManager.error("COMPLIANCE FAILED: Rogue AD IDs detected!");
       console.log("\nROGUE ID SOURCES:");
       compliance.rogueIds.forEach(rogue => {
         console.log(`- ${rogue.id} (Found In: ${rogue.foundIn.join(", ")})`);
@@ -96,7 +105,5 @@ async function main() {
     console.log("-------------------------------------------\n");
   }
 
-  console.log("✅ Analysis Complete.");
+  DisplayManager.success("Analysis Complete.");
 }
-
-main();

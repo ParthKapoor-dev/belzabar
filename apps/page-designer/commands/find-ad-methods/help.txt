@@ -1,0 +1,15 @@
+Usage: pd find-ad-methods <ID> [flags]
+
+Lists all Automation Designer (AD) methods referenced in a page or component.
+
+Arguments:
+  <ID>          The UUID of the page, or Name of the component.
+
+Flags:
+  --recursive, -r   Deep scan through all child components.
+  --component       Treat the <ID> as a Component Name instead of a Page ID.
+  --help, -h        Show this help message.
+
+Example:
+  pd find-ad-methods 49fa2576...
+  pd find-ad-methods n_s_staff_email_correspondence --component --recursive
