@@ -1,12 +1,22 @@
 import { state } from '../../core/state.js';
-import { extractMethodName } from '../../utils/dom.js';
+import { extractMethodName, extractPageName } from '../../utils/dom.js';
 
 // Title update logic
 export function updateTitle() {
-  const methodName = extractMethodName();
-  if (!methodName || methodName === state.lastMethodName) return;
+  const pathname = window.location.pathname;
+  let name = null;
+  let prefix = '';
 
-  state.lastMethodName = methodName;
-  // const baseTitle = document.title.split(' – ')[0];
-  document.title = `${methodName}`;
+  if (pathname.startsWith('/automation-designer/')) {
+    name = extractMethodName();
+    prefix = 'AD';
+  } else if (pathname.startsWith('/ui-designer/')) {
+    name = extractPageName();
+    prefix = 'PD';
+  }
+
+  if (!name || name === state.lastMethodName) return;
+
+  state.lastMethodName = name;
+  document.title = `${prefix}: ${name}`;
 }

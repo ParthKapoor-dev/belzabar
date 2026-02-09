@@ -107,7 +107,7 @@ export function extractDataType(container) {
 }
 
 // ===== Step 4: Test Value Element Detection =====
-export function findTestValueElement(container) {
+export function findTestValueElement(container, type) {
   try {
     // Look for the test case row
     const testCaseRow = container.querySelector('.service-designer__grid-row._test-case-row');
@@ -118,20 +118,26 @@ export function findTestValueElement(container) {
     }
 
     // Check if this is a structured data input (has nested structured data grid)
-    const isStructuredData = container.querySelector('.service-designer__grid-row._structured') !== null;
+    const isStructuredData = container && container.querySelector('.service-designer__grid-row._structured') !== null;
 
     let element;
 
     if (isStructuredData) {
-      // For structured data, prioritize the textarea in the default_value section
-      element = testCaseRow.querySelector('.wrapper-content.textarea_outer.default_value textarea');
-
-      // Fallback to any textarea if the default_value one isn't found
+      // For structured data, use the main textarea (not the default_value one)
+      element = testCaseRow.querySelector('textarea:not(.wrapper-content.textarea_outer.default_value textarea)');
       if (!element) {
+        // Fallback to any textarea
         element = testCaseRow.querySelector('textarea');
       }
-
-      log(`Found structured data textarea for extraction`);
+      log(`Found structured data textarea for extraction (main: ${!!element})`);
+    } else if (type === 'Boolean') {
+      // For boolean types, look for the exp-select within boolean_response div
+      element = testCaseRow.querySelector('.boolean_response exp-select');
+      if (element) {
+        log('Found boolean select element');
+      } else {
+        log('Boolean select element not found');
+      }
     } else {
       // For regular inputs, find textarea first (for text/json/array/map types)
       element = testCaseRow.querySelector('textarea');
@@ -259,8 +265,11 @@ export function extractAllInputs(forceRefresh = false) {
         // Step 3: Extract data type
         const type = extractDataType(container);
 
+        // Check if this is structured data
+        const isStructuredData = type === 'StructuredData';
+
         // Step 4: Find test value element
-        const testValueElement = findTestValueElement(container);
+        const testValueElement = findTestValueElement(container, type);
         if (!testValueElement) {
           log(`Test value element not found for key: ${key}`);
           continue;
@@ -269,8 +278,27 @@ export function extractAllInputs(forceRefresh = false) {
         // Step 5: Extract name
         const name = extractInputName(container, key);
 
-        // Get current value
-        const currentValue = testValueElement.value || '';
+        // Get current value - for structured data, try to find the best textarea
+        let currentValue = testValueElement.value || '';
+
+        // For boolean exp-select, get value from match text
+        if (type === 'Boolean' && testValueElement.tagName.toLowerCase() === 'exp-select') {
+          const matchText = testValueElement.querySelector('.ui-select-match-text');
+          currentValue = matchText ? matchText.textContent.trim() : '';
+          log(`Got boolean value from select: ${currentValue}`);
+        }
+
+        // For structured data, if the main textarea contains "[object Object]", try the default_value textarea
+        if (isStructuredData && currentValue === '[object Object]') {
+          const testCaseRow = container.querySelector('.service-designer__grid-row._test-case-row');
+          if (testCaseRow) {
+            const defaultTextarea = testCaseRow.querySelector('.wrapper-content.textarea_outer.default_value textarea');
+            if (defaultTextarea && defaultTextarea.value && defaultTextarea.value !== '[object Object]') {
+              currentValue = defaultTextarea.value;
+              log(`Using default_value textarea for structured data: ${currentValue.substring(0, 50)}...`);
+            }
+          }
+        }
 
         // Check if mandatory
         const mandatory = isMandatory(container);

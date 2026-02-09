@@ -46,7 +46,7 @@ export function generateInputJSON(inputs) {
           break;
         
         case 'Boolean':
-          value = value === 'true' || value === '1' || value === true;
+          value = value === 'true' || value === '1' || value === true || value === 'Yes';
           break;
         
         case 'Number':

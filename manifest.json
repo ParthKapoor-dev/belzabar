@@ -7,15 +7,22 @@
     "activeTab"
   ],
   "host_permissions": [
-    "https://nsm-dev.nc.verifi.dev/automation-designer/*"
+    "https://nsm-dev.nc.verifi.dev/*",
+    "https://nsm-uat.nc.verifi.dev/*",
+    "https://nsm-qa.nc.verifi.dev/*"
   ],
    "content_scripts": [
-     {
-       "matches": [
-         "https://nsm-dev.nc.verifi.dev/automation-designer/*"
-       ],
-       "js": ["dist/content-script.js"],
-       "run_at": "document_idle"
-     }
-   ]
+      {
+        "matches": [
+          "https://nsm-dev.nc.verifi.dev/automation-designer/*",
+          "https://nsm-dev.nc.verifi.dev/ui-designer/*",
+          "https://nsm-uat.nc.verifi.dev/automation-designer/*",
+          "https://nsm-uat.nc.verifi.dev/ui-designer/*",
+          "https://nsm-qa.nc.verifi.dev/automation-designer/*",
+          "https://nsm-qa.nc.verifi.dev/ui-designer/*"
+        ],
+        "js": ["dist/content-script.js"],
+        "run_at": "document_idle"
+      }
+    ]
 }

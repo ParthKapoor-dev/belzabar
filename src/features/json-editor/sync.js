@@ -4,7 +4,7 @@ import { extractAllInputs } from './extractor.js';
 // JSON sync operations
 
 // ===== Step 6: Enhanced Value Synchronization =====
-export function populateTestValue(element, value, type) {
+export function populateTestValue(element, value, type, container) {
   if (!element) {
     console.error('No element provided for population');
     return false;
@@ -13,43 +13,95 @@ export function populateTestValue(element, value, type) {
   try {
     // Convert value to string based on type
     let stringValue = '';
-    
+
     if (value === null || value === undefined) {
       stringValue = '';
     } else if (['Json', 'Array', 'Map', 'StructuredData'].includes(type) && typeof value === 'object') {
       stringValue = JSON.stringify(value, null, 2);
     } else if (type === 'Boolean') {
-      stringValue = String(value);
+      stringValue = value ? 'Yes' : 'No';
     } else {
       stringValue = String(value);
     }
-    
-    // Set value
-    element.value = stringValue;
-    
-    // Enhanced Angular change detection
-    // Step 1: Focus
-    element.focus();
-    
-    // Step 2: Dispatch input event
-    setTimeout(() => {
+
+    // For boolean exp-select elements, handle differently
+    if (type === 'Boolean' && element.tagName.toLowerCase() === 'exp-select') {
+      // Use Angular events to set the value properly
+      const valueToSet = stringValue;
+
+      // Dispatch custom events that Angular components listen to
+      element.dispatchEvent(new CustomEvent('valueChange', {
+        detail: valueToSet,
+        bubbles: true,
+        cancelable: true
+      }));
+
+      element.dispatchEvent(new CustomEvent('selectionChange', {
+        detail: valueToSet,
+        bubbles: true,
+        cancelable: true
+      }));
+
+      // Also try standard change events
+      element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
       element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-      element.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
-      
-      // Step 3: Dispatch change event
+
+      log(`Dispatched value change events for boolean: ${valueToSet}`);
+      return true;
+    }
+
+    // For structured data inputs, just use the element found by findTestValueElement
+    const isStructuredData = container && container.querySelector('.service-designer__grid-row._structured') !== null;
+    const elementsToPopulate = [];
+
+    // For all inputs including structured data, populate the textarea with JSON
+    elementsToPopulate.push(element);
+
+    // Populate all identified elements
+    for (const el of elementsToPopulate) {
+      el.value = stringValue;
+
+      // Enhanced Angular change detection
+      el.focus();
+
+      // Use longer delays for structured data to allow Angular processing
+      const delay = isStructuredData ? 100 : 10;
+
       setTimeout(() => {
-        element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-        
-        // Step 4: Blur
+        el.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+        el.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
+
         setTimeout(() => {
-          element.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
-          element.blur();
-          
-          log(`Successfully populated value for element`);
-        }, 10);
-      }, 10);
-    }, 10);
-    
+          el.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+
+          setTimeout(() => {
+            el.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
+            el.blur();
+
+            // For structured data, re-set the value after all events to ensure it sticks
+    if (isStructuredData) {
+      // For structured data, populate the default_value textarea
+      const testCaseRow = container.querySelector('.service-designer__grid-row._test-case-row');
+      if (testCaseRow) {
+        const defaultTextarea = testCaseRow.querySelector('.wrapper-content.textarea_outer.default_value textarea');
+        if (defaultTextarea) {
+          elementsToPopulate.push(defaultTextarea);
+        } else {
+          elementsToPopulate.push(element);
+        }
+      } else {
+        elementsToPopulate.push(element);
+      }
+    } else {
+      // For regular inputs, just populate the single element
+      elementsToPopulate.push(element);
+    }
+          }, delay);
+        }, delay);
+      }, delay);
+    }
+
+    log(`Successfully populated ${elementsToPopulate.length} element(s) for ${isStructuredData ? 'structured data' : 'regular'} input`);
     return true;
   } catch (error) {
     console.error('Error populating test value:', error);
@@ -105,7 +157,7 @@ export function syncJSONToInputs(jsonString) {
     for (const [key, value] of Object.entries(data)) {
       const input = inputMap.get(key);
       if (input) {
-        const populated = populateTestValue(input.testValueElement, value, input.type);
+        const populated = populateTestValue(input.testValueElement, value, input.type, input.container);
         if (populated) {
           successCount++;
         } else {

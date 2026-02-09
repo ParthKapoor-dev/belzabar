@@ -7,6 +7,12 @@ export function extractMethodName() {
   return input.value.trim();
 }
 
+export function extractPageName() {
+  const pageTitleDiv = document.querySelector('div.page_title') || document.querySelector('div.symbol_title');
+  if (!pageTitleDiv) return null;
+  return (pageTitleDiv.innerText || pageTitleDiv.innerHTML).trim();
+}
+
 export function isEditableElement(el) {
   if (!el) return false;
   const tag = el.tagName.toLowerCase();
