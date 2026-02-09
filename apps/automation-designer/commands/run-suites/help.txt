@@ -1,0 +1,10 @@
+Usage: cli run-suites
+
+Executes all saved regression test suites found in the 'suites/' directory.
+Asserts that each method executes successfully (HTTP 200 + 'failed': false).
+
+Flags:
+  --help, -h       Show this help message.
+
+Example:
+  cli run-suites

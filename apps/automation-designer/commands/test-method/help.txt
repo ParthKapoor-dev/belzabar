@@ -1,0 +1,18 @@
+Usage: belz test-method <uuid> [flags]
+
+Execute (Run/Debug) a Draft method by injecting input values.
+
+Arguments:
+  <uuid>                The UUID of the method (chain) to test.
+
+Flags:
+  --inputs <file>       Path to a JSON file containing input values.
+                        If omitted, interactive mode is used.
+  --verbose             Show detailed execution trace for each step.
+  --force               Ignore cache and fetch fresh method definition before testing.
+  --help, -h            Show this help message.
+
+Examples:
+  belz test-method 1234-5678
+  belz test-method 1234-5678 --verbose
+  belz test-method 1234-5678 --inputs ./test-data.json

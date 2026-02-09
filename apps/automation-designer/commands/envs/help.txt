@@ -1,0 +1,8 @@
+Usage: cli envs
+
+Lists all configured environments and highlights the active one.
+Change the active environment for a command using the global --env flag.
+
+Example:
+  cli envs
+  cli fetch-method <ID> --env nsm-qa

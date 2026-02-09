@@ -1,0 +1,27 @@
+{
+  "name": "belzabar.cli",
+  "module": "index.ts",
+  "type": "module",
+  "bin": {
+    "belz": "./bin/cli.ts"
+  },
+  "scripts": {
+    "generate": "bun run utils/generate-registry.ts",
+    "build": "bun run generate && bun build --compile --minify --sourcemap ./bin/cli-build.ts --outfile belz",
+    "install-cli": "bun run build && mkdir -p ~/.local/bin && mv belz ~/.local/bin/belz",
+    "link": "bun link"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "inquirer": "9.2.14",
+    "zod": "^4.3.5"
+  }
+}

@@ -1,0 +1,10 @@
+Usage: cli fetch-method <UUID>
+
+Fetches details for a specific Automation Method by its UUID.
+Automatically resolves Draft vs Published IDs.
+
+Arguments:
+  <UUID>    The unique identifier for the method (Draft or Published).
+
+Example:
+  cli fetch-method 123e4567-e89b-12d3-a456-426614174000
