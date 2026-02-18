@@ -44,7 +44,7 @@ export async function login(): Promise<AuthSession> {
      throw new Error(`Missing credentials for environment '${envName}'. Check your .env file.`);
   }
 
-  console.warn(`[Auth] 🔄 Authenticating to ${envName} (${url})...`);
+  process.stderr.write(`[Auth] 🔄 Authenticating to ${envName} (${url})...\n`);
 
   const response = await fetch(url, {
     method: "POST",

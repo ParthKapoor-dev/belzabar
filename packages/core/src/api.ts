@@ -38,7 +38,7 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
   let response = await fetch(url, { ...options, headers });
 
   if (response.status === 401 && options.authMode !== "None") {
-    console.warn("⚠️  401 Unauthorized. Refreshing session...");
+    process.stderr.write("⚠️  401 Unauthorized. Refreshing session...\n");
     await attachAuth(headers, true);
     response = await fetch(url, { ...options, headers });
   }
