@@ -153,6 +153,18 @@ function dispatchInputEvents(element) {
   element.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function dispatchMouseClick(element) {
+  if (!element) return;
+
+  element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+  element.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+  element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+}
+
 function setFormControlValue(element, stringValue) {
   try {
     if (typeof element.focus === 'function') {
@@ -180,17 +192,80 @@ function setFormControlValue(element, stringValue) {
   }
 }
 
-function setBooleanSelectValue(element, stringValue) {
+function ensureBooleanMatchText(element, stringValue) {
+  const selectBoxText = element.querySelector('.select-box-text');
+  if (!selectBoxText) {
+    return false;
+  }
+
+  const placeholder = selectBoxText.querySelector('.ui-select-placeholder');
+  if (placeholder) {
+    placeholder.remove();
+  }
+
+  let wrapper = selectBoxText.querySelector('span.flex.items-center');
+  if (!wrapper) {
+    wrapper = document.createElement('span');
+    wrapper.className = 'flex items-center ng-star-inserted';
+    selectBoxText.appendChild(wrapper);
+  }
+
+  let matchText = wrapper.querySelector('.ui-select-match-text');
+  if (!matchText) {
+    matchText = document.createElement('span');
+    matchText.className = 'ui-select-match-text single-dropdown-wrap text_grey_darkest ng-star-inserted';
+    matchText.setAttribute('showplaceholdericon', '');
+    wrapper.appendChild(matchText);
+  }
+
+  matchText.textContent = stringValue;
+  return true;
+}
+
+function findBooleanOptionElement(root, stringValue) {
+  const expected = stringValue.trim().toLowerCase();
+  const options = root.querySelectorAll('.select-option-text');
+
+  for (const option of options) {
+    if (option.textContent?.trim().toLowerCase() === expected) {
+      return option.closest('a') || option;
+    }
+  }
+
+  return null;
+}
+
+async function setBooleanSelectValue(element, stringValue) {
   try {
-    const matchText = element.querySelector('.ui-select-match-text');
-    if (matchText) {
-      matchText.textContent = stringValue;
+    const trigger =
+      element.querySelector('[data-testid="select-option-wrapper-container"]') ||
+      element.querySelector('.ui-select-container') ||
+      element;
+
+    // Open the select first so option nodes are rendered.
+    dispatchMouseClick(trigger);
+
+    let optionToClick = null;
+    for (let attempt = 0; attempt < 12; attempt++) {
+      optionToClick = findBooleanOptionElement(element, stringValue);
+      if (optionToClick) break;
+      await sleep(25);
     }
 
+    if (optionToClick) {
+      dispatchMouseClick(optionToClick);
+      await sleep(10);
+    }
+
+    ensureBooleanMatchText(element, stringValue);
+
+    const booleanValue = stringValue === 'Yes';
     const payloads = [
       stringValue,
+      booleanValue,
       { value: stringValue, name: stringValue },
-      { label: stringValue, value: stringValue }
+      { value: booleanValue, name: stringValue },
+      { label: stringValue, value: booleanValue }
     ];
     const eventNames = ['valueChange', 'selectionChange', 'modelChange', 'ngModelChange'];
 
@@ -201,12 +276,22 @@ function setBooleanSelectValue(element, stringValue) {
           bubbles: true,
           cancelable: true
         }));
+
+        trigger.dispatchEvent(new CustomEvent(eventName, {
+          detail: payload,
+          bubbles: true,
+          cancelable: true
+        }));
       }
     }
 
     element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
     element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-    return true;
+    trigger.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+    trigger.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+
+    const selectedText = element.querySelector('.ui-select-match-text')?.textContent?.trim();
+    return selectedText === stringValue;
   } catch (error) {
     console.error('Error setting boolean select value:', error);
     return false;
@@ -243,7 +328,7 @@ function resolveWritableElements(element, type, container) {
 }
 
 // ===== Step 6: Enhanced Value Synchronization =====
-export function populateTestValue(element, value, type, container) {
+export async function populateTestValue(element, value, type, container) {
   if (!element) {
     return { success: false, error: 'No element provided for population' };
   }
@@ -262,7 +347,7 @@ export function populateTestValue(element, value, type, container) {
   for (const target of elementsToPopulate) {
     const isBooleanSelect = type === 'Boolean' && target.tagName?.toLowerCase() === 'exp-select';
     const writeSuccess = isBooleanSelect
-      ? setBooleanSelectValue(target, normalizedValue.stringValue)
+      ? await setBooleanSelectValue(target, normalizedValue.stringValue)
       : setFormControlValue(target, normalizedValue.stringValue);
 
     if (writeSuccess) {
@@ -278,7 +363,7 @@ export function populateTestValue(element, value, type, container) {
   return { success: true };
 }
 
-export function syncJSONToInputs(jsonString) {
+export async function syncJSONToInputs(jsonString) {
   try {
     const data = JSON.parse(jsonString);
     if (typeof data !== 'object' || data === null || Array.isArray(data)) {
@@ -315,7 +400,12 @@ export function syncJSONToInputs(jsonString) {
         continue;
       }
 
-      const populateResult = populateTestValue(input.testValueElement, value, input.type, input.container);
+      const populateResult = await populateTestValue(
+        input.testValueElement,
+        value,
+        input.type,
+        input.container
+      );
       if (populateResult.success) {
         filledCount++;
       } else {

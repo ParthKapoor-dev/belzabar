@@ -448,34 +448,40 @@ export function handleSyncClick() {
   infoDiv.style.color = '#93c5fd';
 
   // Small delay to show loading state
-  setTimeout(() => {
-    const result = syncJSONToInputs(jsonString);
+  setTimeout(async () => {
+    try {
+      const result = await syncJSONToInputs(jsonString);
 
-    if (result.success) {
-      errorDiv.style.display = 'none';
-      showToast(result.message || 'Inputs synced successfully!');
+      if (result.success) {
+        errorDiv.style.display = 'none';
+        showToast(result.message || 'Inputs synced successfully!');
 
-      if (result.warnings && result.warnings.length > 0) {
-        infoDiv.innerHTML = '<strong>Warning:</strong><br>' +
-          result.warnings.map((warning) => `• ${warning}`).join('<br>');
-        infoDiv.style.background = 'rgba(245, 158, 11, 0.15)';
-        infoDiv.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-        infoDiv.style.color = '#fbbf24';
-        infoDiv.style.display = 'block';
+        if (result.warnings && result.warnings.length > 0) {
+          infoDiv.innerHTML = '<strong>Warning:</strong><br>' +
+            result.warnings.map((warning) => `• ${warning}`).join('<br>');
+          infoDiv.style.background = 'rgba(245, 158, 11, 0.15)';
+          infoDiv.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+          infoDiv.style.color = '#fbbf24';
+          infoDiv.style.display = 'block';
 
-        // Don't close modal on partial success
-        syncBtn.textContent = originalText;
-        syncBtn.disabled = false;
+          // Don't close modal on partial success
+          syncBtn.textContent = originalText;
+          syncBtn.disabled = false;
+        } else {
+          syncBtn.textContent = originalText;
+          syncBtn.disabled = false;
+          closeModal();
+        }
       } else {
-
+        const errorMessages = result.errors || ['Unknown error'];
+        errorDiv.innerHTML = '<strong>Error:</strong><br>' +
+          errorMessages.map((error) => `• ${error}`).join('<br>');
+        errorDiv.style.display = 'block';
         syncBtn.textContent = originalText;
         syncBtn.disabled = false;
-        closeModal();
       }
-    } else {
-      const errorMessages = result.errors || ['Unknown error'];
-      errorDiv.innerHTML = '<strong>Error:</strong><br>' +
-        errorMessages.map((error) => `• ${error}`).join('<br>');
+    } catch (error) {
+      errorDiv.innerHTML = `<strong>Error:</strong><br>• ${error.message || 'Unknown error'}`;
       errorDiv.style.display = 'block';
       syncBtn.textContent = originalText;
       syncBtn.disabled = false;
