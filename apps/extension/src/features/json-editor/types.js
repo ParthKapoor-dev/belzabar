@@ -2,7 +2,12 @@
 export function normalizeDataType(typeString) {
   if (!typeString) return 'Text';
 
-  const normalized = typeString.trim().toLowerCase();
+  // Normalize all whitespace (including non-breaking spaces from innerHTML)
+  // so values like "Structured&nbsp;Data" map correctly.
+  const normalized = typeString
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
   
   // Map variations to standard types
   const typeMap = {

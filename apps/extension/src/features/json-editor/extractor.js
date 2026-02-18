@@ -7,18 +7,38 @@ import { normalizeDataType } from './types.js';
 // ===== Step 1: Key Detection =====
 export function findAllInputKeys() {
   try {
-    const elements = document.querySelectorAll('[id^="INPUT_LIST_"]');
     const keys = [];
+    const seenKeys = new Set();
 
-    for (const el of elements) {
-      const id = el.id;
-      if (id && id.startsWith('INPUT_LIST_')) {
-        const key = id.substring('INPUT_LIST_'.length);
-        if (key) {
-          keys.push({ key, element: el });
-          log('Found input key:', key);
+    const collectKeys = (elements) => {
+      for (const el of elements) {
+        const id = el.id;
+        if (!id) continue;
+
+        let key = null;
+
+        if (id.startsWith('INPUT_LIST_')) {
+          key = id.substring('INPUT_LIST_'.length);
+        } else {
+          const fallbackMatch = id.match(/^INPUT_LIST\d+\.(.+)$/);
+          if (fallbackMatch) {
+            key = fallbackMatch[1];
+          }
         }
+
+        if (!key || seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        keys.push({ key, element: el });
+        log('Found input key:', key);
       }
+    };
+
+    // Primary selector used by current implementation.
+    collectKeys(document.querySelectorAll('[id^="INPUT_LIST_"]'));
+
+    // Fallback for pages that only expose numeric INPUT_LIST ids.
+    if (keys.length === 0) {
+      collectKeys(document.querySelectorAll('[id^="INPUT_LIST"]'));
     }
 
     log(`Total input keys found: ${keys.length}`);
@@ -75,7 +95,17 @@ export function extractDataType(container) {
       }
     }
 
-    // Strategy 2: Look for span with type text
+    // Strategy 2: Read select match text (most reliable in current AD DOM)
+    const selectMatchText = typeCell.querySelector('.ui-select-match-text');
+    if (selectMatchText) {
+      const text = selectMatchText.textContent?.trim();
+      if (text) {
+        log('Found type from ui-select-match-text:', text);
+        return normalizeDataType(text);
+      }
+    }
+
+    // Strategy 3: Look for span with type text
     const spans = typeCell.querySelectorAll('span');
     for (const span of spans) {
       const text = span.textContent?.trim();
@@ -88,7 +118,7 @@ export function extractDataType(container) {
       }
     }
 
-    // Strategy 3: Look in select elements
+    // Strategy 4: Look in select elements
     const select = typeCell.querySelector('.ui-select-match-text');
     if (select) {
       const text = select.textContent?.trim();
@@ -117,38 +147,42 @@ export function findTestValueElement(container, type) {
       return null;
     }
 
-    // Check if this is a structured data input (has nested structured data grid)
     const isStructuredData = container && container.querySelector('.service-designer__grid-row._structured') !== null;
 
     let element;
 
     if (isStructuredData) {
-      // For structured data, use the main textarea (not the default_value one)
-      element = testCaseRow.querySelector('textarea:not(.wrapper-content.textarea_outer.default_value textarea)');
-      if (!element) {
-        // Fallback to any textarea
-        element = testCaseRow.querySelector('textarea');
-      }
-      log(`Found structured data textarea for extraction (main: ${!!element})`);
+      element =
+        testCaseRow.querySelector('.wrapper-content.textarea_outer.default_value textarea') ||
+        testCaseRow.querySelector('textarea');
+      log(`Found structured data element: ${!!element}`);
     } else if (type === 'Boolean') {
-      // For boolean types, look for the exp-select within boolean_response div
-      element = testCaseRow.querySelector('.boolean_response exp-select');
+      element =
+        testCaseRow.querySelector('.boolean_response exp-select') ||
+        testCaseRow.querySelector('exp-select');
       if (element) {
         log('Found boolean select element');
       } else {
         log('Boolean select element not found');
       }
+    } else if (type === 'Date' || type === 'DateTime') {
+      element =
+        testCaseRow.querySelector('input.datepicker_input-form') ||
+        testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
+        testCaseRow.querySelector('input[type="date"]') ||
+        testCaseRow.querySelector('input');
+    } else if (type === 'Number' || type === 'Integer') {
+      element =
+        testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
+        testCaseRow.querySelector('input[type="number"]') ||
+        testCaseRow.querySelector('input');
     } else {
-      // For regular inputs, find textarea first (for text/json/array/map types)
       element = testCaseRow.querySelector('textarea');
-
-      // If no textarea found, look for input elements (for integer/boolean/number/date types)
       if (!element) {
-        // Try different input selectors in order of specificity
-        element = testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
-                  testCaseRow.querySelector('input.datepicker_input-form') ||
-                  testCaseRow.querySelector('input[type="text"]') ||
-                  testCaseRow.querySelector('input');
+        element =
+          testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
+          testCaseRow.querySelector('input[type="text"]') ||
+          testCaseRow.querySelector('input');
       }
     }
 

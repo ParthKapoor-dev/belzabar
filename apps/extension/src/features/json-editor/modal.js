@@ -351,6 +351,9 @@ export function loadInputsIntoModal(forceRefresh = false) {
   textarea.style.display = 'none';
   errorDiv.style.display = 'none';
   infoDiv.style.display = 'none';
+  infoDiv.style.background = 'rgba(59, 130, 246, 0.15)';
+  infoDiv.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+  infoDiv.style.color = '#93c5fd';
 
   // Small delay to show loading state
   setTimeout(() => {
@@ -439,6 +442,10 @@ export function handleSyncClick() {
   syncBtn.textContent = 'Syncing...';
   syncBtn.disabled = true;
   errorDiv.style.display = 'none';
+  infoDiv.style.display = 'none';
+  infoDiv.style.background = 'rgba(59, 130, 246, 0.15)';
+  infoDiv.style.borderColor = 'rgba(59, 130, 246, 0.3)';
+  infoDiv.style.color = '#93c5fd';
 
   // Small delay to show loading state
   setTimeout(() => {
@@ -447,16 +454,15 @@ export function handleSyncClick() {
     if (result.success) {
       errorDiv.style.display = 'none';
       showToast(result.message || 'Inputs synced successfully!');
-      
-      // Show warning if there were partial errors
-      if (result.errors && result.errors.length > 0) {
-        infoDiv.innerHTML = '<strong>Warning:</strong><br>' + 
-          result.errors.map(err => `• ${err}`).join('<br>');
+
+      if (result.warnings && result.warnings.length > 0) {
+        infoDiv.innerHTML = '<strong>Warning:</strong><br>' +
+          result.warnings.map((warning) => `• ${warning}`).join('<br>');
         infoDiv.style.background = 'rgba(245, 158, 11, 0.15)';
         infoDiv.style.borderColor = 'rgba(245, 158, 11, 0.3)';
         infoDiv.style.color = '#fbbf24';
         infoDiv.style.display = 'block';
-        
+
         // Don't close modal on partial success
         syncBtn.textContent = originalText;
         syncBtn.disabled = false;
@@ -467,8 +473,9 @@ export function handleSyncClick() {
         closeModal();
       }
     } else {
-      errorDiv.innerHTML = '<strong>Error:</strong><br>' + 
-        (result.errors || ['Unknown error']).map(err => `• ${err}`).join('<br>');
+      const errorMessages = result.errors || ['Unknown error'];
+      errorDiv.innerHTML = '<strong>Error:</strong><br>' +
+        errorMessages.map((error) => `• ${error}`).join('<br>');
       errorDiv.style.display = 'block';
       syncBtn.textContent = originalText;
       syncBtn.disabled = false;
