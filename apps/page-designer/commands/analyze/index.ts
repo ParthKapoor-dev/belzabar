@@ -1,109 +1,125 @@
 import { file } from "bun";
+import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { TARGET_PAGE_IDS } from "../../lib/config";
 import { analyzeItem } from "../../lib/analyzer";
-import { printTree, collectAllAdIds } from "../../lib/reporter";
+import { collectAllAdIds, formatTreeLines } from "../../lib/reporter";
 import { verifyCompliance } from "../../lib/comparator";
-import type { ReportNode } from "../../lib/types";
-import { DisplayManager } from "@belzabar/core";
+import type { ComplianceResult, ReportNode } from "../../lib/types";
 
-export async function run(args: string[]) {
-  const pageIdArg = args[0];
-  const targetIds = pageIdArg ? [pageIdArg] : TARGET_PAGE_IDS;
+interface AnalyzeArgs {
+  pageIdArg?: string;
+  runCompliance: boolean;
+}
 
-  DisplayManager.info("Starting Page Analysis...");
+interface AnalyzeData {
+  targetIds: string[];
+  uniqueAdIds: string[];
+  compliance: ComplianceResult | null;
+  treeByRoot: Array<{ rootId: string; lines: string[] }>;
+}
 
-  // 1. Load components.json
-  let componentsWhitelist: Set<string>;
-  try {
+const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
+  schema: "pd.analyze",
+  parseArgs(args) {
+    return {
+      pageIdArg: args[0] && !args[0].startsWith("-") ? args[0] : undefined,
+      runCompliance: args.includes("--compliance"),
+    };
+  },
+  async execute({ pageIdArg, runCompliance }, context) {
+    const targetIds = pageIdArg ? [pageIdArg] : TARGET_PAGE_IDS;
+
     const componentsFile = file("components.json");
     if (!(await componentsFile.exists())) {
-      DisplayManager.error("components.json not found in root directory.");
-      process.exit(1);
+      throw new CliError("components.json not found in root directory.", {
+        code: "COMPONENTS_FILE_MISSING",
+      });
     }
     const list = await componentsFile.json();
-    componentsWhitelist = new Set(list);
-  } catch (error) {
-    DisplayManager.error(`Error loading components.json: ${error}`);
-    process.exit(1);
-  }
+    const componentsWhitelist = new Set(list);
 
-  // 2. Load master_ids.txt (Optional)
-  let masterIds = new Set<string>();
-  const runCompliance = args.includes("--compliance");
-  if (runCompliance) {
-    try {
+    let masterIds = new Set<string>();
+    if (runCompliance) {
       const masterFile = file("master_ids.txt");
       if (await masterFile.exists()) {
         const content = await masterFile.text();
-        masterIds = new Set(content.split(",").map(id => id.trim()).filter(id => id.length > 0));
-        DisplayManager.info(`Loaded ${masterIds.size} approved AD IDs from master_ids.txt`);
+        masterIds = new Set(
+          content
+            .split(",")
+            .map(id => id.trim())
+            .filter(id => id.length > 0)
+        );
       } else {
-        DisplayManager.error("master_ids.txt not found. Compliance check skipped.");
+        context.warn("master_ids.txt not found. Compliance check skipped.");
       }
-    } catch (error) {
-      DisplayManager.error(`Error loading master_ids.txt: ${error}`);
     }
-  }
 
-  const allReports: ReportNode[] = [];
-
-  // 3. Run Analysis
-  for (const pageId of targetIds) {
-    DisplayManager.info(`Analyzing Root Page: ${pageId}`);
-    const visited = new Set<string>();
-    const report = await analyzeItem(pageId, 'PAGE', 'Root Page', visited, componentsWhitelist);
-    allReports.push(report);
-    
-    if (!DisplayManager.isLLM) {
-        console.log("\n--- Visual Dependency Tree ---");
-        printTree(report);
-        console.log("");
-    }
-  }
-
-  if (DisplayManager.isLLM) {
-      DisplayManager.object(allReports);
-      return;
-  }
-
-  // 4. Final Master Summary
-  const masterAds = collectAllAdIds(allReports);
-  console.log("===========================================");
-  console.log("=== ALL UNIQUE AD IDs ===");
-  console.log("===========================================");
-  console.log(masterAds.length > 0 ? masterAds.join(", ") : "None found.");
-  console.log("===========================================");
-  console.log(`Total Count: ${masterAds.length}\n`);
-
-  // 5. Compliance Verification
-  if (runCompliance && masterIds.size > 0) {
-    DisplayManager.info("Running Compliance Verification...");
-    const compliance = verifyCompliance(allReports, masterIds);
-    
-    console.log("\n-------------------------------------------");
-    console.log("DETAILED COMPARISON REPORT");
-    console.log("-------------------------------------------");
-    console.log(`Common IDs (Master ∩ Generated):  ${compliance.commonIds.length}`);
-    console.log(`Rogue IDs  (Generated - Master): ${compliance.rogueIds.length}`);
-    console.log(`Missing IDs (Master - Generated): ${compliance.missingIds.length}`);
-    console.log("-------------------------------------------");
-
-    if (compliance.isCompliant) {
-      DisplayManager.success("COMPLIANCE PASSED: All generated AD IDs are present in the Master List.");
-    } else {
-      DisplayManager.error("COMPLIANCE FAILED: Rogue AD IDs detected!");
-      console.log("\nROGUE ID SOURCES:");
-      compliance.rogueIds.forEach(rogue => {
-        console.log(`- ${rogue.id} (Found In: ${rogue.foundIn.join(", ")})`);
+    const reports: ReportNode[] = [];
+    const treeByRoot: Array<{ rootId: string; lines: string[] }> = [];
+    for (const pageId of targetIds) {
+      const visited = new Set<string>();
+      const report = await analyzeItem(pageId, "PAGE", "Root Page", visited, componentsWhitelist);
+      reports.push(report);
+      treeByRoot.push({
+        rootId: pageId,
+        lines: formatTreeLines(report),
       });
     }
 
-    if (compliance.missingIds.length > 0) {
-      console.log("\nIDs IN MASTER BUT NOT FOUND ON PAGES:");
-      console.log(compliance.missingIds.join(", "));
-    }
-    console.log("-------------------------------------------\n");
-  }
+    const uniqueAdIds = collectAllAdIds(reports);
+    const compliance =
+      runCompliance && masterIds.size > 0 ? verifyCompliance(reports, masterIds) : null;
 
-  DisplayManager.success("Analysis Complete.");
-}
+    return ok({
+      targetIds,
+      uniqueAdIds,
+      compliance,
+      treeByRoot,
+    });
+  },
+  presentHuman(envelope, ui) {
+    if (!envelope.ok) return;
+    const data = envelope.data as AnalyzeData;
+
+    data.treeByRoot.forEach(tree => {
+      ui.section(`Visual Dependency Tree (${tree.rootId})`);
+      tree.lines.forEach(line => ui.text(line));
+    });
+
+    ui.section("All Unique AD IDs");
+    ui.text(data.uniqueAdIds.length > 0 ? data.uniqueAdIds.join(", ") : "None found.");
+    ui.text(`Total Count: ${data.uniqueAdIds.length}`);
+
+    if (data.compliance) {
+      ui.section("Compliance Report");
+      ui.table(
+        ["Metric", "Count"],
+        [
+          ["Common IDs (Master ∩ Generated)", data.compliance.commonIds.length],
+          ["Rogue IDs (Generated - Master)", data.compliance.rogueIds.length],
+          ["Missing IDs (Master - Generated)", data.compliance.missingIds.length],
+        ]
+      );
+
+      if (data.compliance.isCompliant) {
+        ui.success("Compliance passed.");
+      } else {
+        ui.warn("Compliance failed.");
+        if (data.compliance.rogueIds.length > 0) {
+          ui.section("Rogue ID Sources");
+          ui.table(
+            ["ID", "Found In"],
+            data.compliance.rogueIds.map(rogue => [rogue.id, rogue.foundIn.join(", ")])
+          );
+        }
+      }
+
+      if (data.compliance.missingIds.length > 0) {
+        ui.section("IDs In Master But Missing From Pages");
+        ui.text(data.compliance.missingIds.join(", "));
+      }
+    }
+  },
+};
+
+export default command;

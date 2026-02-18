@@ -1,19 +1,49 @@
 import { Config } from "../../lib/config";
+import { ok, type CommandModule } from "@belzabar/core";
 
-export async function run(args: string[]) {
+interface EnvRow {
+  name: string;
+  baseUrl: string;
+  active: boolean;
+}
+
+interface EnvsData {
+  project: string;
+  active: string;
+  envs: EnvRow[];
+}
+
+const command: CommandModule<undefined, EnvsData> = {
+  schema: "ad.envs",
+  parseArgs: () => undefined,
+  async execute() {
   const envs = Config.getAllEnvs();
   const active = Config.activeEnv;
+    const rows = Object.keys(envs).map((key) => {
+      const env = envs[key];
+      return {
+        name: env.name,
+        baseUrl: env.baseUrl,
+        active: env.name === active.name,
+      };
+    });
 
-  console.log("Available Environments:\n");
-  console.log(`Project: NSM`); // Grouping by project as requested
+    return ok({
+      project: "NSM",
+      active: active.name,
+      envs: rows,
+    });
+  },
+  presentHuman(envelope, ui) {
+    if (!envelope.ok) return;
+    const data = envelope.data as EnvsData;
+    ui.text("Available Environments:");
+    ui.text(`Project: ${data.project}`);
+    ui.table(
+      ["Environment", "Base URL", "Status"],
+      data.envs.map((env) => [env.name, env.baseUrl, env.active ? "Active" : ""])
+    );
+  },
+};
 
-  for (const key of Object.keys(envs)) {
-    const env = envs[key];
-    const isDefault = env.name === active.name;
-    const marker = isDefault ? "*" : " ";
-    const suffix = isDefault ? " [Active]" : "";
-    
-    console.log(`  ${marker} ${env.name.padEnd(10)} (${env.baseUrl})${suffix}`);
-  }
-  console.log("");
-}
+export default command;

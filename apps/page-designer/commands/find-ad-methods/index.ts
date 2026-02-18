@@ -1,74 +1,91 @@
+import { file } from "bun";
+import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { fetchPageConfig, fetchComponentConfig, fetchComponentIdByName } from "../../lib/api";
 import { extractReferences } from "../../lib/parser";
 import { analyzeItem } from "../../lib/analyzer";
 import { collectAllAdIds } from "../../lib/reporter";
-import { file } from "bun";
-import { DisplayManager } from "@belzabar/core";
 
-export async function run(args: string[]) {
-  const targetId = args[0];
-  if (!targetId) {
-    DisplayManager.error("Error: Missing Page ID or Component ID argument.");
-    process.exit(1);
-  }
+interface FindAdMethodsArgs {
+  targetId: string;
+  recursive: boolean;
+  type: "PAGE" | "COMPONENT";
+}
 
-  const recursive = args.includes("--recursive") || args.includes("-r");
-  const type = args.includes("--component") ? "COMPONENT" : "PAGE";
+interface FindAdMethodsData {
+  targetId: string;
+  type: "PAGE" | "COMPONENT";
+  recursive: boolean;
+  adIds: string[];
+}
 
-  try {
+const command: CommandModule<FindAdMethodsArgs, FindAdMethodsData> = {
+  schema: "pd.find-ad-methods",
+  parseArgs(args) {
+    const targetId = args[0];
+    if (!targetId || targetId.startsWith("-")) {
+      throw new CliError("Missing Page ID or Component ID argument.", {
+        code: "MISSING_TARGET_ID",
+      });
+    }
+    return {
+      targetId,
+      recursive: args.includes("--recursive") || args.includes("-r"),
+      type: args.includes("--component") ? "COMPONENT" : "PAGE",
+    };
+  },
+  async execute({ targetId, recursive, type }) {
     let adIds: string[] = [];
 
     if (recursive) {
-      // 1. Load components.json for whitelist
       const componentsFile = file("components.json");
       if (!(await componentsFile.exists())) {
-        DisplayManager.error("components.json not found. Required for recursive search.");
-        process.exit(1);
+        throw new CliError("components.json not found. Required for recursive search.", {
+          code: "COMPONENTS_FILE_MISSING",
+        });
       }
       const list = await componentsFile.json();
       const componentsWhitelist = new Set(list);
 
-      DisplayManager.info(`Deep scanning ${type} ${targetId} recursively...`);
-      const visited = new Set<string>();
-      
       let actualId = targetId;
       if (type === "COMPONENT") {
-          const id = await fetchComponentIdByName(targetId);
-          if (id) actualId = id;
+        const id = await fetchComponentIdByName(targetId);
+        if (id) actualId = id;
       }
 
+      const visited = new Set<string>();
       const report = await analyzeItem(actualId, type, "Target", visited, componentsWhitelist);
       adIds = collectAllAdIds([report]);
     } else {
-      DisplayManager.info(`Scanning ${type} ${targetId}...`);
-      const data = type === "PAGE" 
-        ? await fetchPageConfig(targetId) 
-        : await fetchComponentConfig(targetId);
-
+      const data = type === "PAGE" ? await fetchPageConfig(targetId) : await fetchComponentConfig(targetId);
       if (!data) {
-        DisplayManager.error(`Error: Failed to fetch ${type} config.`);
-        process.exit(1);
+        throw new CliError(`Failed to fetch ${type} config.`, {
+          code: "CONFIG_FETCH_FAILED",
+        });
       }
-
       const refs = extractReferences(data.configuration, new Set());
       adIds = refs.adIds;
     }
 
-    if (DisplayManager.isLLM) {
-      DisplayManager.object(adIds);
+    return ok({
+      targetId,
+      type,
+      recursive,
+      adIds,
+    });
+  },
+  presentHuman(envelope, ui) {
+    if (!envelope.ok) return;
+    const data = envelope.data as FindAdMethodsData;
+    if (data.adIds.length === 0) {
+      ui.info("No AD method references found.");
       return;
     }
+    ui.table(
+      ["#", "AD Method ID"],
+      data.adIds.map((id, idx) => [idx + 1, id])
+    );
+    ui.text(`Total: ${data.adIds.length}`);
+  },
+};
 
-    if (adIds.length === 0) {
-      DisplayManager.info("No AD method references found.");
-    } else {
-      console.log(`
-Found ${adIds.length} AD method(s):`);
-      adIds.forEach(id => console.log(`- ${id}`));
-    }
-
-  } catch (error) {
-    DisplayManager.error(`Unexpected Error: ${error}`);
-    process.exit(1);
-  }
-}
+export default command;

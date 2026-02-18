@@ -51,7 +51,7 @@ export async function analyzeItem(
     node.children = results.filter((child): child is ReportNode => child !== null);
 
   } catch (error) {
-    console.error(`  ❌ Error analyzing ${type} ${name} (${id}):`, error);
+    // Keep partial results and continue traversal for resiliency.
   }
 
   return node;

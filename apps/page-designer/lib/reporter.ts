@@ -5,25 +5,31 @@ import type { ReportNode } from "./types";
  */
 
 export function printTree(node: ReportNode, prefix: string = "", isLast: boolean = true) {
+  for (const line of formatTreeLines(node, prefix, isLast)) {
+    console.log(line);
+  }
+}
+
+export function formatTreeLines(node: ReportNode, prefix: string = "", isLast: boolean = true): string[] {
+  const lines: string[] = [];
   const marker = isLast ? "└── " : "├── ";
   const typeLabel = `[${node.type}]`;
-  
-  console.log(`${prefix}${marker}${typeLabel} ${node.name} (ID: ${node.id.substring(0, 8)}...)`);
 
+  lines.push(`${prefix}${marker}${typeLabel} ${node.name} (ID: ${node.id.substring(0, 8)}...)`);
   const nextPrefix = prefix + (isLast ? "    " : "│   ");
 
-  // Print AD IDs
   node.adIds.forEach((adId, index) => {
     const isLastAd = index === node.adIds.length - 1 && node.children.length === 0;
     const adMarker = isLastAd ? "└── " : "├── ";
-    console.log(`${nextPrefix}${adMarker}[AD] ${adId}`);
+    lines.push(`${nextPrefix}${adMarker}[AD] ${adId}`);
   });
 
-  // Print Children
   node.children.forEach((child, index) => {
     const isLastChild = index === node.children.length - 1;
-    printTree(child, nextPrefix, isLastChild);
+    lines.push(...formatTreeLines(child, nextPrefix, isLastChild));
   });
+
+  return lines;
 }
 
 export function collectAllAdIds(nodes: ReportNode[]): string[] {

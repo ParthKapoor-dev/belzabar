@@ -1,64 +1,120 @@
+import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { apiFetch } from "../../lib/api";
 
-export async function run(args: string[]) {
-  const publishedId = args[0];
-  const payloadArg = args[1];
+interface RunMethodArgs {
+  publishedId: string;
+  payloadArg?: string;
+  raw: boolean;
+}
 
-  if (!publishedId) {
-    console.error("Error: Missing Published ID.");
-    console.error("Run 'cli run-method --help' for usage.");
-    process.exit(1);
+interface RunMethodData {
+  publishedId: string;
+  path: string;
+  payloadType: string;
+  response: unknown;
+  responseFormat: "json" | "text";
+  raw?: {
+    payload: unknown;
+  };
+}
+
+async function resolvePayload(payloadArg?: string): Promise<unknown> {
+  if (!payloadArg) {
+    return {};
   }
 
-  let payload = {};
-
-  if (payloadArg) {
-    try {
-      // Check if file exists
-      const file = Bun.file(payloadArg);
-      if (await file.exists()) {
-        payload = await file.json();
-      } else {
-        // Treat as raw JSON string
-        payload = JSON.parse(payloadArg);
-      }
-    } catch (e) {
-      console.error("❌ Error: Payload argument is neither a valid file path nor valid JSON string.");
-      process.exit(1);
-    }
-  } else {
-     console.warn("⚠️  No payload provided. sending empty object '{}'.");
+  const file = Bun.file(payloadArg);
+  if (await file.exists()) {
+    return await file.json();
   }
-
-  const path = `/rest/api/automation/chain/execute/${publishedId}?encrypted=true`;
-  console.info(`[Exec] POST ${path}`);
-  // console.log("Payload:", JSON.stringify(payload, null, 2));
 
   try {
+    return JSON.parse(payloadArg);
+  } catch {
+    throw new CliError("Payload argument is neither a valid file path nor valid JSON string.", {
+      code: "INVALID_PAYLOAD",
+    });
+  }
+}
+
+const command: CommandModule<RunMethodArgs, RunMethodData> = {
+  schema: "ad.run-method",
+  parseArgs(args) {
+    const raw = args.includes("--raw");
+    const positional = args.filter(arg => arg !== "--raw");
+    const publishedId = positional[0];
+    if (!publishedId || publishedId.startsWith("-")) {
+      throw new CliError("Missing Published ID.", { code: "MISSING_PUBLISHED_ID" });
+    }
+    return {
+      publishedId,
+      payloadArg: positional[1],
+      raw,
+    };
+  },
+  async execute({ publishedId, payloadArg, raw }, context) {
+    const payload = await resolvePayload(payloadArg);
+    if (!payloadArg) {
+      context.warn("No payload provided. Using empty object '{}'.");
+    }
+
+    const path = `/rest/api/automation/chain/execute/${publishedId}?encrypted=true`;
     const response = await apiFetch(path, {
       method: "POST",
-      authMode: "Raw", // Critical: No Bearer prefix
+      authMode: "Raw",
       body: JSON.stringify(payload),
     });
 
     const text = await response.text();
-
     if (!response.ok) {
-        console.error(`❌ Execution failed (${response.status}): ${text}`);
-        process.exit(1);
+      throw new CliError(`Execution failed (${response.status})`, {
+        code: "EXECUTION_FAILED",
+        details: text,
+      });
     }
 
     try {
-        const json = JSON.parse(text);
-        console.log("✅ Execution Result:");
-        console.log(JSON.stringify(json, null, 2));
+      const json = JSON.parse(text);
+      const data: RunMethodData = {
+        publishedId,
+        path,
+        payloadType: Array.isArray(payload) ? "array" : typeof payload,
+        response: json,
+        responseFormat: "json",
+      };
+      if (raw) data.raw = { payload };
+      return ok(data);
     } catch {
-        console.log("✅ Execution Result (Text):");
-        console.log(text);
+      const data: RunMethodData = {
+        publishedId,
+        path,
+        payloadType: Array.isArray(payload) ? "array" : typeof payload,
+        response: text,
+        responseFormat: "text",
+      };
+      if (raw) data.raw = { payload };
+      return ok(data);
     }
+  },
+  presentHuman(envelope, ui) {
+    if (!envelope.ok) return;
+    const data = envelope.data as RunMethodData;
+    ui.success(`Method executed: ${data.publishedId}`);
+    ui.table(
+      ["Property", "Value"],
+      [
+        ["Path", data.path],
+        ["Payload Type", data.payloadType],
+        ["Response Format", data.responseFormat],
+      ]
+    );
+    ui.section("Execution Result");
+    ui.object(data.response);
+    if (data.raw) {
+      ui.section("Raw Data");
+      ui.object(data.raw);
+    }
+  },
+};
 
-  } catch (error) {
-    console.error("❌ Unexpected Error:", error);
-    process.exit(1);
-  }
-}
+export default command;

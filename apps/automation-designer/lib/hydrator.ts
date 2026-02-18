@@ -20,17 +20,15 @@ export class ServiceHydrator {
       try {
         return await file.json() as AutomationDefinition;
       } catch (e) {
-        console.warn(`Failed to read cache for definition ${automationId}`, e);
+        // ignore cache parse errors and fallback to network fetch
       }
     }
 
     // Fetch if missing
     try {
-      console.info(`[Info] Hydrating service definition ${automationId}...`);
       const response = await fetchAutomationDefinition(automationId);
       
       if (!response.ok) {
-        console.warn(`Failed to fetch definition ${automationId}: ${response.status}`);
         return null;
       }
 
@@ -38,7 +36,6 @@ export class ServiceHydrator {
       await Bun.write(filePath, JSON.stringify(data, null, 2));
       return data;
     } catch (e) {
-      console.error(`Error fetching definition ${automationId}:`, e);
       return null;
     }
   }
