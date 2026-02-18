@@ -44,12 +44,21 @@ async function runCli(args: string[]): Promise<any> {
       throw new Error(`CLI Failed: ${error}`);
   }
 
+  let parsed: any;
   try {
-    return JSON.parse(output);
-  } catch (e) {
+    parsed = JSON.parse(output);
+  } catch {
     // Fallback if non-JSON output (should be avoided by --llm, but safety first)
     return { raw: output, error: error };
   }
+
+  if (parsed && parsed.ok === false) {
+    const message = parsed.error?.message || "CLI command failed";
+    const details = parsed.error?.details ? ` | Details: ${JSON.stringify(parsed.error.details)}` : "";
+    throw new Error(`${message}${details}`);
+  }
+
+  return parsed;
 }
 
 // Minimal JSON-RPC handler

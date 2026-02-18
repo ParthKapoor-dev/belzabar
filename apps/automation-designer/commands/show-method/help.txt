@@ -10,11 +10,14 @@ Flags:
   --inputs              Show a table of input arguments.
   --services            Show a list of service steps.
   --service-detail <n>  Show detailed info for a specific service step (0-indexed).
-  --full                Print the entire raw JSON object.
+  --full                Include expanded per-service logic details.
+  --raw                 Include raw payloads in output data.
   --force               Ignore cache and force a fresh fetch from the API.
   --help, -h            Show this help message.
 
 Examples:
   belz show-method 1234-5678 --inputs
   belz show-method 1234-5678 --services
+  belz show-method 1234-5678 --service-detail 2 --llm
+  belz show-method 1234-5678 --service-detail 2 --raw --llm
   belz show-method 1234-5678 --force

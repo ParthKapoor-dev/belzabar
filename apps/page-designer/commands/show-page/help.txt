@@ -6,7 +6,8 @@ Arguments:
   <PAGE_ID>     The UUID of the page to show.
 
 Flags:
-  --full        Output the full raw JSON response.
+  --full        Include full configuration payload.
+  --raw         Include raw configuration string in output.
   --help, -h    Show this help message.
 
 Example:

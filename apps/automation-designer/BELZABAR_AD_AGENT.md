@@ -51,15 +51,24 @@ The CLI provides read and test access only.
 
 ## 6. Output Schemas (LLM Mode)
 
-All commands with `--llm` return strictly structured JSON.
+All commands with `--llm` return a single compact JSON envelope.
 
 **Common Envelope:**
 ```json
 {
-  "schema": "ad.<type>",
-  "version": "1.0",
-  ...data
+  "schema": "ad.<command>",
+  "version": "2.0",
+  "ok": true,
+  "command": "show-method",
+  "data": {},
+  "error": null,
+  "meta": {
+    "env": "nsm-dev",
+    "durationMs": 42
+  }
 }
 ```
 
-Do not parse standard output (logs, ASCII tables) when `--llm` is active.
+When `ok` is `false`, inspect `error.code`, `error.message`, and optional `error.details`.
+Do not parse table/log output when `--llm` is active.
+Use `--raw` only when raw payloads are explicitly required.

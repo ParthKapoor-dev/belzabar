@@ -1,4 +1,4 @@
-Usage: cli run-method <PUBLISHED_ID> [PAYLOAD]
+Usage: belz run-method <PUBLISHED_ID> [PAYLOAD] [flags]
 
 Executes an Automation Method.
 
@@ -7,6 +7,11 @@ Arguments:
   [PAYLOAD]        Optional. JSON string OR path to a JSON file. 
                    Defaults to '{}' if omitted.
 
+Flags:
+  --raw            Include raw payload in output data.
+  --help, -h       Show this help message.
+
 Examples:
-  cli run-method 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}'
-  cli run-method 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json
+  belz run-method 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}'
+  belz run-method 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json
+  belz run-method 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --raw --llm

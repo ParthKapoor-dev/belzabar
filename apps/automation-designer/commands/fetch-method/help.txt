@@ -1,4 +1,4 @@
-Usage: cli fetch-method <UUID>
+Usage: belz fetch-method <UUID> [flags]
 
 Fetches details for a specific Automation Method by its UUID.
 Automatically resolves Draft vs Published IDs.
@@ -6,5 +6,10 @@ Automatically resolves Draft vs Published IDs.
 Arguments:
   <UUID>    The unique identifier for the method (Draft or Published).
 
+Flags:
+  --raw     Include raw method payload in output.
+  --help, -h    Show this help message.
+
 Example:
-  cli fetch-method 123e4567-e89b-12d3-a456-426614174000
+  belz fetch-method 123e4567-e89b-12d3-a456-426614174000
+  belz fetch-method 123e4567-e89b-12d3-a456-426614174000 --raw --llm

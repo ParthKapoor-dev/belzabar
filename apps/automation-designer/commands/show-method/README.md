@@ -15,11 +15,14 @@ bun run bin/cli.ts show-method <UUID> [flags]
 - Can list defined Inputs (`--inputs`).
 - Can list the Service Chain (`--services`).
 - Can drill down into specific service details (`--service-detail <index>`).
+- Can include expanded service logic details (`--full`).
+- Can include raw payloads (`--raw`).
 
 ## Flags
 
 - `--inputs`: Show input arguments table.
 - `--services`: Show service chain table.
 - `--service-detail <n>`: Inspect a specific step (0-indexed).
-- `--full`: Dump raw JSON.
+- `--full`: Include expanded service logic details.
+- `--raw`: Include raw payloads in output data.
 - `--force`: Bypass cache.

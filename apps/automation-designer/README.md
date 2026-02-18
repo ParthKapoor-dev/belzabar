@@ -15,11 +15,27 @@ This CLI is designed to be driven by AI agents (Gemini, Claude, etc.).
 
 ### Enabling AI Mode
 Pass the global flag `--llm` to any command.
-This forces **Deterministic, Minified JSON Output** and suppresses all logs/tables.
+This forces **deterministic compact JSON output** and suppresses human tables.
 
 ```bash
 bun run bin/cli.ts show-method <UUID> --llm
 ```
+
+LLM output shape is standardized:
+```json
+{
+  "schema": "ad.<command>",
+  "version": "2.0",
+  "ok": true,
+  "command": "<command-name>",
+  "data": {},
+  "error": null,
+  "meta": {}
+}
+```
+
+`--llm` does not change command semantics. It returns the same command data as human mode, only rendered as compact JSON.
+Use `--raw` on supported commands when raw payloads are explicitly needed.
 
 ### Agent Contract
 See [BELZABAR_AD_AGENT.md](./BELZABAR_AD_AGENT.md) for the strict operational contract.

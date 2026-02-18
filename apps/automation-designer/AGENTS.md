@@ -29,8 +29,20 @@ The CLI supports multiple environments (e.g., `nsm-dev`, `nsm-qa`).
 ## 3. How to Add a New Command
 
 1.  Create folder: `commands/<name>/`
-2.  Create `index.ts` exporting `run(args: string[])`.
-3.  Create `help.txt` & `README.md`.
+2.  Create `index.ts` exporting a default `CommandModule` from `@belzabar/core`.
+3.  Implement:
+    - `parseArgs(args)` for validation/parsing only
+    - `execute(parsedArgs, context)` for business logic only (return `ok(...)` / throw `CliError`)
+    - optional `presentHuman(envelope, ui)` for human table/section formatting
+4.  Create `help.txt` & `README.md`.
+
+### Output Contract
+
+- `--llm` mode: runner always emits one compact JSON envelope (`schema`, `version`, `ok`, `command`, `data`, `error`, `meta`)
+- Human mode: runner/presenter handles tables and readable formatting
+- `--llm` must contain the same command data as human mode (format differs, semantics do not)
+- `--raw` is opt-in for commands that can expose raw payloads
+- Command `execute` must not print or call `process.exit`
 
 ## 4. Authentication Flow
 
