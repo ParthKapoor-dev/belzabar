@@ -8,6 +8,8 @@ import { log } from '../../core/logger.js';
 
 const COPY_BOUND_ATTR = 'data-sd-copy-bound';
 const CONTROLS_CLASS = 'sdExtensionOutputCopyControls';
+const OUTPUT_COPY_HOST_CLASS = 'sdExtensionOutputCopyHost';
+const OUTPUT_COPY_STYLES_ID = 'sdExtensionOutputCopyStyles';
 
 let outputInjectionTimer = null;
 let outputObserver = null;
@@ -53,40 +55,45 @@ async function copyText(text) {
 function createCopyButton(container) {
   const button = document.createElement('button');
   button.type = 'button';
-  button.textContent = 'Copy';
+  button.textContent = '⧉';
+  button.setAttribute('aria-label', 'Copy output JSON');
   button.setAttribute('title', 'Copy output JSON');
 
   Object.assign(button.style, {
-    padding: '6px 12px',
-    borderRadius: '6px',
+    width: '28px',
+    height: '28px',
+    padding: '0',
+    borderRadius: '8px',
     border: '1px solid rgba(59, 130, 246, 0.45)',
-    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-    color: '#ffffff',
-    fontSize: '12px',
+    background: 'rgba(15, 23, 42, 0.88)',
+    color: '#e2e8f0',
+    fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
-    marginBottom: '6px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     transition: 'transform 140ms ease, box-shadow 140ms ease, filter 140ms ease',
-    boxShadow: '0 4px 10px rgba(37, 99, 235, 0.25)'
+    boxShadow: '0 4px 10px rgba(15, 23, 42, 0.35)'
   });
 
   button.addEventListener('mouseenter', () => {
     button.style.transform = 'translateY(-1px)';
     button.style.filter = 'brightness(1.05)';
-    button.style.boxShadow = '0 6px 14px rgba(37, 99, 235, 0.32)';
+    button.style.boxShadow = '0 6px 14px rgba(15, 23, 42, 0.42)';
   });
 
   button.addEventListener('mouseleave', () => {
     button.style.transform = 'translateY(0)';
     button.style.filter = 'none';
-    button.style.boxShadow = '0 4px 10px rgba(37, 99, 235, 0.25)';
+    button.style.boxShadow = '0 4px 10px rgba(15, 23, 42, 0.35)';
   });
 
   button.onclick = async (event) => {
     event.preventDefault();
     event.stopPropagation();
 
-    const textToCopy = (container.innerText || container.textContent || '').trim();
+    const textToCopy = extractOutputText(container);
     if (!textToCopy) {
       showToast('Nothing to copy');
       return;
@@ -99,7 +106,47 @@ function createCopyButton(container) {
   return button;
 }
 
+function extractOutputText(container) {
+  const clone = container.cloneNode(true);
+  const extensionNodes = clone.querySelectorAll(`[${EXTENSION_OWNED_ATTR}]`);
+  for (const node of extensionNodes) {
+    node.remove();
+  }
+  return (clone.innerText || clone.textContent || '').trim();
+}
+
+function ensureOutputCopyStyles() {
+  if (document.getElementById(OUTPUT_COPY_STYLES_ID)) return;
+
+  const styleEl = document.createElement('style');
+  styleEl.id = OUTPUT_COPY_STYLES_ID;
+  styleEl.setAttribute(EXTENSION_OWNED_ATTR, 'true');
+  styleEl.textContent = `
+.${OUTPUT_COPY_HOST_CLASS} {
+  position: relative;
+}
+.${CONTROLS_CLASS} {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 8;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 140ms ease, visibility 140ms ease;
+}
+.${OUTPUT_COPY_HOST_CLASS}:hover > .${CONTROLS_CLASS},
+.${OUTPUT_COPY_HOST_CLASS}:focus-within > .${CONTROLS_CLASS} {
+  opacity: 1;
+  visibility: visible;
+}
+`;
+
+  document.head.appendChild(styleEl);
+}
+
 function injectCopyButtons() {
+  ensureOutputCopyStyles();
+
   const containers = document.querySelectorAll(OUTPUT_CONTAINER_SELECTOR);
   if (containers.length === 0) return;
 
@@ -110,15 +157,17 @@ function injectCopyButtons() {
     const controls = document.createElement('div');
     controls.className = CONTROLS_CLASS;
     controls.setAttribute(EXTENSION_OWNED_ATTR, 'true');
-    Object.assign(controls.style, {
-      display: 'flex',
-      justifyContent: 'flex-end',
-      width: '100%',
-      paddingRight: '10px'
-    });
+    Object.assign(controls.style, { position: 'absolute', top: '8px', right: '8px' });
 
     controls.appendChild(createCopyButton(container));
-    container.parentElement.insertBefore(controls, container);
+    container.classList.add(OUTPUT_COPY_HOST_CLASS);
+
+    const computed = window.getComputedStyle(container);
+    if (computed.position === 'static') {
+      container.style.position = 'relative';
+    }
+
+    container.appendChild(controls);
     container.setAttribute(COPY_BOUND_ATTR, 'true');
   }
 }
@@ -175,5 +224,11 @@ export function stopOutputCopyFeature() {
   const containers = document.querySelectorAll(OUTPUT_CONTAINER_SELECTOR);
   for (const container of containers) {
     container.removeAttribute(COPY_BOUND_ATTR);
+    container.classList.remove(OUTPUT_COPY_HOST_CLASS);
+  }
+
+  const styleEl = document.getElementById(OUTPUT_COPY_STYLES_ID);
+  if (styleEl) {
+    styleEl.remove();
   }
 }

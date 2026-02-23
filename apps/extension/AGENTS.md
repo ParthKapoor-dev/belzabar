@@ -7,8 +7,8 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 1. Update page title with current method/page name
 2. Trigger Run Test via keyboard shortcut (`Ctrl+Shift+Enter`) from anywhere on the page, including focused inputs/textareas
 3. Provide a JSON modal editor to bulk edit AD test inputs and sync values back to DOM controls
-4. Add a copy button near each output container to copy full output JSON and show toast feedback
-5. Add an Open launcher for native `<textarea>` controls to open a large editor modal with line numbers, inline syntax highlighting, and quick controls (language/font/copy)
+4. Add a hover-revealed copy icon inside each output container to copy full output JSON and show toast feedback
+5. Add hover-revealed overlay controls for native `<textarea>`: Open icon (top-left) + Copy icon (top-right), with Open launching a large editor modal with line numbers, inline syntax highlighting, and quick controls (language/font/copy). Overlay controls are injected via an extension-owned wrapper around each textarea for stable positioning.
 6. Provide extension settings (button near `.header_banner` + `Ctrl+,`) to enable/disable features with persisted toggles
 
 ## Tech and Runtime
@@ -38,8 +38,8 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 
 1. On load, extension reads persisted settings and enables only selected features.
 2. JSON feature injects a `📋 JSON` button near the Inputs section.
-3. Output copy feature injects a `Copy` button above each `.output-container`.
-4. Textarea editor feature injects an `Open` button inside eligible native textareas.
+3. Output copy feature injects a hover-revealed copy icon inside each `.output-container`.
+4. Textarea editor feature injects hover-revealed overlay icons inside eligible native textareas (`Open` top-left, `Copy` top-right).
 5. Open launches a large modal editor with line numbers and inline syntax highlighting (Auto/SQL/SpEL/JS), plus language/font/copy controls and Save/Cancel actions.
 6. Settings feature injects an icon-only `⚙` button near `.header_banner .page_title` and opens via `Ctrl+,`.
 7. Settings toggles enable/disable title updater, run-test shortcut, JSON editor, output copy, and textarea editor in real time.
