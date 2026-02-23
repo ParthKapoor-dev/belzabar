@@ -77,6 +77,7 @@ bun run bin/cli.ts save-suite <UUID> --name "smoke-test"
 ```bash
 bun run bin/cli.ts sql run "select * from users limit 1"
 bun run bin/cli.ts sql dbs
+bun run bin/cli.ts sql tui
 ```
 
 ## 🏗️ Architecture

@@ -21,6 +21,7 @@ The CLI provides read and test access only.
 *   `fetch-method <UUID>`: Fetches raw definition (mostly internal use, prefer `show-method`).
 *   `sql run "<query>"`: Executes SQL in DB read mode against configured DB auth accounts.
 *   `sql dbs`: Lists available DB auth configurations.
+*   `sql tui`: Starts an interactive SQL session (human mode only).
 
 **Note:** There is **NO** ability to edit code, modify stored AD SQL definitions, or change AD configuration via this CLI.
 

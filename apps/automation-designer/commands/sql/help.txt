@@ -5,6 +5,7 @@ Run SQL read-mode queries via Automation Designer database services.
 Subcommands:
   run <query>        Execute a SQL query in read mode.
   dbs                List available database auth configurations.
+  tui                Start an interactive SQL TUI session.
 
 Flags (run):
   --db <name|id>     Optional database nickname or id.
@@ -16,9 +17,21 @@ Flags (run):
 Flags (dbs):
   --raw              Include raw API response.
 
+Flags (tui):
+  --db <name|id>     Optional starting database nickname or id.
+  --format <mode>    Output format for rows: table (default) | json.
+  --timing           Print timing details after each executed statement.
+  --page-size <n>    Rows per page for result pagination (default: 50).
+  --no-history       Disable persisted query history for this session.
+
+TUI meta commands:
+  \\q, \\h, \\status, \\db, \\use <db>, \\history, \\clear, \\timing, \\format [table|json], \\last, \\r
+
 Examples:
   belz sql dbs
   belz sql run "select * from users limit 1"
   belz sql run "select * from users limit 1" --db NSM_QA_DB
   BELZ_SQL_DEFAULT_DB=NSM_QA_DB belz sql run "select now()"
   belz sql run "select * from users limit 1" --raw --llm
+  belz sql tui
+  belz sql tui --db NSM_QA_DB --format json --timing

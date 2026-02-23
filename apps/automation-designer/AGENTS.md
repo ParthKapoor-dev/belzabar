@@ -81,6 +81,7 @@ Primary binary name: `belz`
 6. MCP adapter: `integrations/gemini-mcp/server.ts`
 7. SQL command entrypoint: `commands/sql/index.ts`
 8. SQL helper modules: `lib/sql/`
+9. SQL TUI session: `lib/sql/tui/session.ts`
 
 ## Known Current Gaps
 

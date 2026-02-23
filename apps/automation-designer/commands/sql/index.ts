@@ -1,18 +1,22 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { fetchMethodDefinition, testMethod } from "../../lib/api";
-import { ErrorParser } from "../../lib/error-parser";
-import type { RawMethodResponse } from "../../lib/types";
-import { fetchSqlDatabases, fetchSqlSelectOperation } from "../../lib/sql/api";
-import { buildSqlReadPayload } from "../../lib/sql/payload";
-import { parseSqlRunResult } from "../../lib/sql/result";
-import { normalizeSqlDatabases, resolveSqlDatabase } from "../../lib/sql/selector";
+import { fetchSqlDatabases } from "../../lib/sql/api";
+import {
+  executeSqlReadQuery,
+  loadSqlExecutionContext,
+  resolveSqlDbContext,
+  DEFAULT_SQL_DB_FALLBACK,
+} from "../../lib/sql/executor";
+import { normalizeSqlDatabases } from "../../lib/sql/selector";
+import { runSqlTuiSession } from "../../lib/sql/tui/session";
+import type { SqlTuiArgs } from "../../lib/sql/tui/types";
 import type { NormalizedSqlDatabase } from "../../lib/sql/types";
 
 interface SqlArgs {
-  action: "run" | "dbs";
+  action: "run" | "dbs" | "tui";
   query?: string;
   db?: string;
   raw: boolean;
+  tui?: SqlTuiArgs;
 }
 
 interface SqlDbsData {
@@ -47,28 +51,48 @@ interface SqlRunData {
   };
 }
 
-type SqlData = SqlDbsData | SqlRunData;
+interface SqlTuiData {
+  action: "tui";
+  startedAt: number;
+  endedAt: number;
+  queryCount: number;
+  finalDatabase: {
+    id: number;
+    nickname: string;
+  };
+}
 
-function parseDbArg(args: string[]): string | undefined {
-  const explicit = args.find((arg) => arg.startsWith("--db="));
+type SqlData = SqlDbsData | SqlRunData | SqlTuiData;
+
+function getOptionValue(args: string[], name: string): string | undefined {
+  const explicit = args.find((arg) => arg.startsWith(`${name}=`));
   if (explicit) {
     const value = explicit.split("=").slice(1).join("=").trim();
     return value || undefined;
   }
 
-  const dbIndex = args.indexOf("--db");
-  if (dbIndex !== -1) {
-    const value = args[dbIndex + 1];
-    if (!value || value.startsWith("-")) {
-      throw new CliError("--db requires a database nickname or id.", {
-        code: "SQL_DB_ARG_MISSING",
-      });
-    }
+  const idx = args.indexOf(name);
+  if (idx === -1) return undefined;
+  const next = args[idx + 1];
+  if (!next || next.startsWith("-")) return undefined;
+  return next;
+}
 
-    return value;
+function parseDbArg(args: string[]): string | undefined {
+  const value = getOptionValue(args, "--db");
+  if (args.includes("--db") && !value) {
+    throw new CliError("--db requires a database nickname or id.", {
+      code: "SQL_DB_ARG_MISSING",
+    });
   }
 
-  return undefined;
+  if (args.some((arg) => arg.startsWith("--db=")) && !value) {
+    throw new CliError("--db requires a database nickname or id.", {
+      code: "SQL_DB_ARG_MISSING",
+    });
+  }
+
+  return value;
 }
 
 function parseRunQueryArgs(args: string[]): string[] {
@@ -93,12 +117,39 @@ function parseRunQueryArgs(args: string[]): string[] {
   return positional;
 }
 
+function parseTuiArgs(args: string[]): SqlTuiArgs {
+  const db = parseDbArg(args);
+
+  const formatValue = (getOptionValue(args, "--format") || "table").toLowerCase();
+  if (formatValue !== "table" && formatValue !== "json") {
+    throw new CliError("--format must be one of: table, json", {
+      code: "SQL_TUI_INVALID_FORMAT",
+    });
+  }
+
+  const pageSizeRaw = getOptionValue(args, "--page-size") || "50";
+  const pageSize = Number.parseInt(pageSizeRaw, 10);
+  if (!Number.isFinite(pageSize) || pageSize <= 0) {
+    throw new CliError("--page-size must be a positive integer.", {
+      code: "SQL_TUI_INVALID_PAGE_SIZE",
+    });
+  }
+
+  return {
+    db,
+    format: formatValue,
+    timing: args.includes("--timing"),
+    history: !args.includes("--no-history"),
+    pageSize,
+  };
+}
+
 const command: CommandModule<SqlArgs, SqlData> = {
   schema: "ad.sql",
   parseArgs(args) {
     const action = args[0];
     if (!action) {
-      throw new CliError("Missing SQL subcommand. Use one of: run, dbs.", {
+      throw new CliError("Missing SQL subcommand. Use one of: run, dbs, tui.", {
         code: "INVALID_SQL_SUBCOMMAND",
       });
     }
@@ -129,11 +180,21 @@ const command: CommandModule<SqlArgs, SqlData> = {
       };
     }
 
-    throw new CliError(`Unknown SQL subcommand '${action}'. Use one of: run, dbs.`, {
+    if (action === "tui") {
+      const rest = args.slice(1);
+      return {
+        action,
+        raw: false,
+        db: parseDbArg(rest),
+        tui: parseTuiArgs(rest),
+      };
+    }
+
+    throw new CliError(`Unknown SQL subcommand '${action}'. Use one of: run, dbs, tui.`, {
       code: "INVALID_SQL_SUBCOMMAND",
     });
   },
-  async execute(args) {
+  async execute(args, context) {
     const envDefault = process.env.BELZ_SQL_DEFAULT_DB?.trim() || undefined;
 
     if (args.action === "dbs") {
@@ -145,7 +206,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         databases,
         defaultResolution: {
           envValue: envDefault,
-          fallbackNickname: "NSM_Read_DB",
+          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
         },
       };
 
@@ -158,86 +219,54 @@ const command: CommandModule<SqlArgs, SqlData> = {
       return ok(data);
     }
 
-    const [rawDatabases, operation] = await Promise.all([
-      fetchSqlDatabases(),
-      fetchSqlSelectOperation(),
-    ]);
+    if (args.action === "run") {
+      const [dbContext, executionContext] = await Promise.all([
+        resolveSqlDbContext({
+          requestedDb: args.db,
+          envDefault,
+          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
+        }),
+        loadSqlExecutionContext(),
+      ]);
 
-    const databases = normalizeSqlDatabases(rawDatabases);
-    const resolution = resolveSqlDatabase(databases, {
-      requested: args.db,
-      envDefault,
-      fallbackNickname: "NSM_Read_DB",
-    });
-
-    if (!operation?.methodUUID) {
-      throw new CliError("SQL read operation metadata is missing methodUUID.", {
-        code: "SQL_SELECT_METADATA_INVALID",
-        details: operation,
+      const result = await executeSqlReadQuery({
+        query: args.query as string,
+        database: dbContext.resolution.selected,
+        context: executionContext,
+        raw: args.raw,
       });
-    }
 
-    const template = (await fetchMethodDefinition(operation.methodUUID)) as RawMethodResponse;
-    const payload = buildSqlReadPayload({
-      template,
-      operation,
-      dbAuthId: resolution.selected.id,
-      query: args.query as string,
-    });
-
-    const formData = new FormData();
-    formData.append("body", JSON.stringify(payload));
-
-    const response = await testMethod(formData);
-    if (!response.ok) {
-      throw new CliError(`SQL execution request failed (${response.status}).`, {
-        code: "SQL_EXECUTION_FAILED",
-        details: await response.text(),
-      });
-    }
-
-    const executionResult = await response.json();
-    const parsed = parseSqlRunResult(executionResult);
-
-    if (!parsed.success) {
-      const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
-      const parsedError = failedService?.executionStatus
-        ? ErrorParser.parse(failedService.executionStatus)
-        : null;
-
-      throw new CliError("SQL query execution failed.", {
-        code: "SQL_QUERY_FAILED",
-        details: {
-          database: resolution.selected,
-          query: args.query,
-          statusCode: parsed.statusCode,
-          error: parsedError,
-          executionStatus: executionResult?.executionStatus,
-        },
-      });
-    }
-
-    const data: SqlRunData = {
-      action: "run",
-      database: resolution.selected,
-      selectedBy: resolution.selectedBy,
-      query: args.query as string,
-      success: true,
-      statusCode: parsed.statusCode,
-      rows: parsed.rows,
-      rowCount: parsed.rowCount,
-      executionTime: parsed.executionTime,
-    };
-
-    if (args.raw) {
-      data.raw = {
-        operation,
-        payload,
-        executionResult,
+      const data: SqlRunData = {
+        action: "run",
+        database: result.database,
+        selectedBy: dbContext.resolution.selectedBy,
+        query: result.query,
+        success: true,
+        statusCode: result.statusCode,
+        rows: result.rows,
+        rowCount: result.rowCount,
+        executionTime: result.executionTime,
+        raw: result.raw,
       };
+
+      return ok(data);
     }
 
-    return ok(data);
+    if (context.outputMode === "llm") {
+      throw new CliError("sql tui is interactive and not supported with --llm.", {
+        code: "SQL_TUI_UNSUPPORTED_IN_LLM",
+      });
+    }
+
+    const tuiArgs = args.tui;
+    if (!tuiArgs) {
+      throw new CliError("Failed to parse TUI arguments.", {
+        code: "SQL_TUI_ARGS_MISSING",
+      });
+    }
+
+    const sessionSummary = await runSqlTuiSession(tuiArgs);
+    return ok(sessionSummary);
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
@@ -261,30 +290,43 @@ const command: CommandModule<SqlArgs, SqlData> = {
       return;
     }
 
-    ui.success(`SQL query executed successfully against '${data.database.nickname}'.`);
+    if (data.action === "run") {
+      ui.success(`SQL query executed successfully against '${data.database.nickname}'.`);
+      ui.table(
+        ["Property", "Value"],
+        [
+          ["Database", `${data.database.nickname} (${data.database.id})`],
+          ["Selected By", data.selectedBy],
+          ["Status Code", data.statusCode ?? ""],
+          ["Rows", data.rowCount],
+          ["Execution Time", data.executionTime ? `${data.executionTime.time} ${data.executionTime.unit}` : ""],
+          ["Query", data.query],
+        ]
+      );
+
+      ui.section("Rows");
+      if (data.rows.length === 0) {
+        ui.text("(No rows returned)");
+      } else {
+        ui.object(data.rows);
+      }
+
+      if (data.raw) {
+        ui.section("Raw Data");
+        ui.object(data.raw);
+      }
+      return;
+    }
+
+    ui.success("SQL TUI session ended.");
     ui.table(
       ["Property", "Value"],
       [
-        ["Database", `${data.database.nickname} (${data.database.id})`],
-        ["Selected By", data.selectedBy],
-        ["Status Code", data.statusCode ?? ""],
-        ["Rows", data.rowCount],
-        ["Execution Time", data.executionTime ? `${data.executionTime.time} ${data.executionTime.unit}` : ""],
-        ["Query", data.query],
+        ["Queries Executed", data.queryCount],
+        ["Final Database", `${data.finalDatabase.nickname} (${data.finalDatabase.id})`],
+        ["Duration", `${Math.max(0, data.endedAt - data.startedAt)} ms`],
       ]
     );
-
-    ui.section("Rows");
-    if (data.rows.length === 0) {
-      ui.text("(No rows returned)");
-    } else {
-      ui.object(data.rows);
-    }
-
-    if (data.raw) {
-      ui.section("Raw Data");
-      ui.object(data.raw);
-    }
   },
 };
 
