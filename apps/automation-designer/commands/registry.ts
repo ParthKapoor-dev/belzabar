@@ -4,6 +4,7 @@ import * as fetch_method from "./fetch-method/index";
 import * as envs from "./envs/index";
 import * as run_suites from "./run-suites/index";
 import * as save_suite from "./save-suite/index";
+import * as sql from "./sql/index";
 import * as show_method from "./show-method/index";
 import * as run_method from "./run-method/index";
 import * as test_method from "./test-method/index";
@@ -13,6 +14,7 @@ export const CommandRegistry: Record<string, any> = {
   "envs": envs,
   "run-suites": run_suites,
   "save-suite": save_suite,
+  "sql": sql,
   "show-method": show_method,
   "run-method": run_method,
   "test-method": test_method,

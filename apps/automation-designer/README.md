@@ -7,6 +7,7 @@ A Bun + TypeScript CLI for interacting with Automation Designer APIs.
 -   **Manage Environments**: Easy switching between Dev, QA, and Prod.
 -   **Method Inspection**: View definitions, inputs, and logic (SQL/Code).
 -   **Draft Testing**: Run draft methods with inputs and trace execution.
+-   **SQL Read Queries**: Run SQL read queries against configured DB accounts.
 -   **AI Native**: First-class support for AI agents via MCP and JSON output.
 
 ## 🤖 AI Agent Mode
@@ -70,6 +71,12 @@ bun run bin/cli.ts test-method <UUID> --inputs data.json
 **Save Regression Suite**
 ```bash
 bun run bin/cli.ts save-suite <UUID> --name "smoke-test"
+```
+
+**SQL Read Query**
+```bash
+bun run bin/cli.ts sql run "select * from users limit 1"
+bun run bin/cli.ts sql dbs
 ```
 
 ## 🏗️ Architecture

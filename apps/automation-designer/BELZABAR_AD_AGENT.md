@@ -19,8 +19,10 @@ The CLI provides read and test access only.
 *   `show-method <UUID>`: Inspects method definition (inputs, services, outputs).
 *   `test-method <UUID>`: Runs the **Draft** version of a method with provided inputs.
 *   `fetch-method <UUID>`: Fetches raw definition (mostly internal use, prefer `show-method`).
+*   `sql run "<query>"`: Executes SQL in DB read mode against configured DB auth accounts.
+*   `sql dbs`: Lists available DB auth configurations.
 
-**Note:** There is **NO** ability to edit code, modify SQL, or change configuration via this CLI.
+**Note:** There is **NO** ability to edit code, modify stored AD SQL definitions, or change AD configuration via this CLI.
 
 ## 3. Agent Mandates
 
@@ -45,7 +47,7 @@ The CLI provides read and test access only.
 
 ## 5. Hallucination Boundaries
 
-*   **Database**: You cannot see tables. You can only see the SQL in `show-method`.
+*   **Database**: You can inspect method SQL via `show-method` and run read queries via `sql run`, but you cannot mutate AD method definitions.
 *   **Code**: You cannot see external libraries. You can only see the JavaScript in `show-method`.
 *   **Fixing**: You cannot apply fixes. You must explain *what* is wrong (e.g., "Input 'id' is null but required by Service 2").
 

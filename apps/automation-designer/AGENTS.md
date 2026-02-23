@@ -36,6 +36,7 @@ Primary binary name: `belz`
 5. `run-method`
 6. `save-suite`
 7. `run-suites`
+8. `sql`
 
 ## Core Behavior Contract
 
@@ -78,6 +79,8 @@ Primary binary name: `belz`
 4. Test payload injection: `lib/payload-builder.ts`
 5. Trace error interpretation: `lib/error-parser.ts`
 6. MCP adapter: `integrations/gemini-mcp/server.ts`
+7. SQL command entrypoint: `commands/sql/index.ts`
+8. SQL helper modules: `lib/sql/`
 
 ## Known Current Gaps
 
