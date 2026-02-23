@@ -10,6 +10,8 @@ const COPY_BOUND_ATTR = 'data-sd-copy-bound';
 const CONTROLS_CLASS = 'sdExtensionOutputCopyControls';
 
 let outputInjectionTimer = null;
+let outputObserver = null;
+let initialOutputInjectionTimer = null;
 
 async function copyText(text) {
   if (navigator.clipboard?.writeText) {
@@ -131,16 +133,47 @@ function debouncedInjectCopyButtons() {
   }, 300);
 }
 
-export function initOutputCopyFeature() {
+export function startOutputCopyFeature() {
   log('Initializing output copy feature...');
 
-  setTimeout(() => {
+  initialOutputInjectionTimer = setTimeout(() => {
     injectCopyButtons();
   }, 500);
 
-  const outputObserver = new MutationObserver(() => {
-    debouncedInjectCopyButtons();
-  });
+  if (!outputObserver) {
+    outputObserver = new MutationObserver(() => {
+      debouncedInjectCopyButtons();
+    });
 
-  outputObserver.observe(document.body, OBSERVER_OPTIONS);
+    outputObserver.observe(document.body, OBSERVER_OPTIONS);
+  }
+
+  return stopOutputCopyFeature;
+}
+
+export function stopOutputCopyFeature() {
+  if (outputObserver) {
+    outputObserver.disconnect();
+    outputObserver = null;
+  }
+
+  if (outputInjectionTimer) {
+    clearTimeout(outputInjectionTimer);
+    outputInjectionTimer = null;
+  }
+
+  if (initialOutputInjectionTimer) {
+    clearTimeout(initialOutputInjectionTimer);
+    initialOutputInjectionTimer = null;
+  }
+
+  const controls = document.querySelectorAll(`.${CONTROLS_CLASS}`);
+  for (const control of controls) {
+    control.remove();
+  }
+
+  const containers = document.querySelectorAll(OUTPUT_CONTAINER_SELECTOR);
+  for (const container of containers) {
+    container.removeAttribute(COPY_BOUND_ATTR);
+  }
 }

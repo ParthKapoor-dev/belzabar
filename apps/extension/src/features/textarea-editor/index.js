@@ -7,12 +7,14 @@ import {
   TEXTAREA_EDITOR_LAUNCHER_CLASS,
   EXTENSION_OWNED_ATTR
 } from '../../config/constants.js';
-import { openTextareaEditor } from './modal.js';
+import { closeTextareaEditor, openTextareaEditor } from './modal.js';
 
 const TEXTAREA_EDITOR_ID_ATTR = 'data-sd-textarea-editor-id';
 const TEXTAREA_EDITOR_FOR_ATTR = 'data-sd-textarea-editor-for';
 const TEXTAREA_EDITOR_CONTROLS_CLASS = 'sdExtensionTextareaLauncherControls';
 let textareaEditorIdCounter = 0;
+let textareaObserver = null;
+let initialTextareaInjectionTimer = null;
 
 function getTextareaEditorId(textarea) {
   let id = textarea.getAttribute(TEXTAREA_EDITOR_ID_ATTR);
@@ -134,16 +136,49 @@ function debouncedInjectTextareaLaunchers() {
   }, 300);
 }
 
-export function initTextareaEditorFeature() {
+export function startTextareaEditorFeature() {
   log('Initializing textarea editor feature...');
 
-  setTimeout(() => {
+  initialTextareaInjectionTimer = setTimeout(() => {
     injectTextareaLaunchers();
   }, 700);
 
-  const observer = new MutationObserver(() => {
-    debouncedInjectTextareaLaunchers();
-  });
+  if (!textareaObserver) {
+    textareaObserver = new MutationObserver(() => {
+      debouncedInjectTextareaLaunchers();
+    });
 
-  observer.observe(document.body, OBSERVER_OPTIONS);
+    textareaObserver.observe(document.body, OBSERVER_OPTIONS);
+  }
+
+  return stopTextareaEditorFeature;
+}
+
+export function stopTextareaEditorFeature() {
+  if (textareaObserver) {
+    textareaObserver.disconnect();
+    textareaObserver = null;
+  }
+
+  if (initialTextareaInjectionTimer) {
+    clearTimeout(initialTextareaInjectionTimer);
+    initialTextareaInjectionTimer = null;
+  }
+
+  if (state.textareaEditorInjectionTimer) {
+    clearTimeout(state.textareaEditorInjectionTimer);
+    state.textareaEditorInjectionTimer = null;
+  }
+
+  closeTextareaEditor();
+
+  const controls = document.querySelectorAll(`.${TEXTAREA_EDITOR_CONTROLS_CLASS}`);
+  for (const control of controls) {
+    control.remove();
+  }
+
+  const textareas = document.querySelectorAll(TEXTAREA_SELECTOR);
+  for (const textarea of textareas) {
+    textarea.removeAttribute(TEXTAREA_EDITOR_BOUND_ATTR);
+  }
 }

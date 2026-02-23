@@ -8,7 +8,8 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 2. Trigger Run Test via keyboard shortcut (`Ctrl+Shift+Enter`) from anywhere on the page, including focused inputs/textareas
 3. Provide a JSON modal editor to bulk edit AD test inputs and sync values back to DOM controls
 4. Add a copy button near each output container to copy full output JSON and show toast feedback
-5. Add an Open launcher for native `<textarea>` controls to open a large editor modal with line numbers and inline syntax highlighting
+5. Add an Open launcher for native `<textarea>` controls to open a large editor modal with line numbers, inline syntax highlighting, and quick controls (language/font/copy)
+6. Provide extension settings (button near `.header_banner` + `Ctrl+,`) to enable/disable features with persisted toggles
 
 ## Tech and Runtime
 
@@ -21,25 +22,29 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 
 1. `src/content-script.js` - app bootstrap
 2. `src/config/` - selectors/constants
-3. `src/core/` - shared state + logging
+3. `src/core/` - shared state + logging + persisted settings
 4. `src/features/title-updater/` - title logic + mutation observer
 5. `src/features/keyboard/` - shortcut handler
 6. `src/features/run-test/` - run button lookup + click
 7. `src/features/json-editor/` - button injection, modal UI, input extraction, type handling, sync engine
 8. `src/features/output-copy/` - output container copy-button injection + clipboard copy
 9. `src/features/textarea-editor/` - textarea launcher injection + large modal editor
-10. `src/ui/toast.js` - toast notifications
-11. `src/utils/dom.js` - DOM utility helpers
+10. `src/features/settings/` - settings button/modal + keyboard shortcut
+11. `src/ui/toast.js` - toast notifications
+12. `src/ui/modal-lock.js` - page interaction lock while modal/dialog is open
+13. `src/utils/dom.js` - DOM utility helpers
 
 ## Feature Flow
 
-1. On load, extension initializes title updater, observer, keyboard listener, JSON feature observer, output copy observer, and textarea editor observer.
+1. On load, extension reads persisted settings and enables only selected features.
 2. JSON feature injects a `📋 JSON` button near the Inputs section.
 3. Output copy feature injects a `Copy` button above each `.output-container`.
 4. Textarea editor feature injects an `Open` button inside eligible native textareas.
-5. Open launches a large modal editor with line numbers and inline syntax highlighting (Auto/SQL/SpEL/JS), plus Save/Cancel controls for that textarea.
-6. Modal loads detected inputs and current values into formatted JSON.
-7. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
+5. Open launches a large modal editor with line numbers and inline syntax highlighting (Auto/SQL/SpEL/JS), plus language/font/copy controls and Save/Cancel actions.
+6. Settings feature injects an icon-only `⚙` button near `.header_banner .page_title` and opens via `Ctrl+,`.
+7. Settings toggles enable/disable title updater, run-test shortcut, JSON editor, output copy, and textarea editor in real time.
+8. Modal loads detected inputs and current values into formatted JSON.
+9. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
 
 ## JSON Sync Engine (Current)
 
@@ -66,6 +71,8 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 7. Output copy feature: `src/features/output-copy/index.js`
 8. Textarea editor feature: `src/features/textarea-editor/index.js`
 9. Textarea editor modal: `src/features/textarea-editor/modal.js`
+10. Settings persistence: `src/core/settings.js`
+11. Settings UI: `src/features/settings/index.js`, `src/features/settings/modal.js`
 
 ## Known Current Risks
 

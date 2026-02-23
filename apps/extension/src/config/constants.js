@@ -13,6 +13,9 @@ export const TEXTAREA_SELECTOR = 'textarea';
 export const TEXTAREA_EDITOR_BOUND_ATTR = 'data-sd-textarea-editor-bound';
 export const TEXTAREA_EDITOR_LAUNCHER_CLASS = 'sdExtensionTextareaLauncher';
 export const EXTENSION_OWNED_ATTR = 'data-sd-extension-owned';
+export const HEADER_BANNER_SELECTOR = '.header_banner';
+export const SETTINGS_BUTTON_ID = 'sdExtensionSettingsButton';
+export const SETTINGS_MODAL_ID = 'sdExtensionSettingsModal';
 
 export const OBSERVER_OPTIONS = {
   childList: true,
