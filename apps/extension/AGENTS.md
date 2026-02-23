@@ -8,6 +8,7 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 2. Trigger Run Test via keyboard shortcut (`Ctrl+Shift+Enter`) from anywhere on the page, including focused inputs/textareas
 3. Provide a JSON modal editor to bulk edit AD test inputs and sync values back to DOM controls
 4. Add a copy button near each output container to copy full output JSON and show toast feedback
+5. Add an Open launcher for native `<textarea>` controls to open a large editor modal with line numbers
 
 ## Tech and Runtime
 
@@ -26,16 +27,19 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 6. `src/features/run-test/` - run button lookup + click
 7. `src/features/json-editor/` - button injection, modal UI, input extraction, type handling, sync engine
 8. `src/features/output-copy/` - output container copy-button injection + clipboard copy
-9. `src/ui/toast.js` - toast notifications
-10. `src/utils/dom.js` - DOM utility helpers
+9. `src/features/textarea-editor/` - textarea launcher injection + large modal editor
+10. `src/ui/toast.js` - toast notifications
+11. `src/utils/dom.js` - DOM utility helpers
 
 ## Feature Flow
 
-1. On load, extension initializes title updater, observer, keyboard listener, JSON feature observer, and output copy observer.
+1. On load, extension initializes title updater, observer, keyboard listener, JSON feature observer, output copy observer, and textarea editor observer.
 2. JSON feature injects a `📋 JSON` button near the Inputs section.
 3. Output copy feature injects a `Copy` button above each `.output-container`.
-4. Modal loads detected inputs and current values into formatted JSON.
-5. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
+4. Textarea editor feature injects an `Open` button inside eligible native textareas.
+5. Open launches a large modal editor with line numbers and Save/Cancel controls for that textarea.
+6. Modal loads detected inputs and current values into formatted JSON.
+7. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
 
 ## JSON Sync Engine (Current)
 
@@ -60,6 +64,8 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 5. JSON modal/UI actions: `src/features/json-editor/modal.js`
 6. Injection logic: `src/features/json-editor/injector.js`
 7. Output copy feature: `src/features/output-copy/index.js`
+8. Textarea editor feature: `src/features/textarea-editor/index.js`
+9. Textarea editor modal: `src/features/textarea-editor/modal.js`
 
 ## Known Current Risks
 

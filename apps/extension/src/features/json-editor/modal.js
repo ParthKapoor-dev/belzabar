@@ -3,6 +3,8 @@ import { generateInputJSON } from './types.js';
 import { extractAllInputs } from './extractor.js';
 import { syncJSONToInputs } from './sync.js';
 import { showToast } from '../../ui/toast.js';
+import { EXTENSION_OWNED_ATTR } from '../../config/constants.js';
+import { lockModalInteraction, unlockModalInteraction } from '../../ui/modal-lock.js';
 
 // Modal UI component
 export function createModal() {
@@ -10,6 +12,7 @@ export function createModal() {
 
   // Modal overlay
   const overlay = document.createElement('div');
+  overlay.setAttribute(EXTENSION_OWNED_ATTR, 'true');
   Object.assign(overlay.style, {
     position: 'fixed',
     top: '0',
@@ -403,7 +406,11 @@ export function showModal() {
   const modal = createModal();
   loadInputsIntoModal(false);
 
+  const wasOpen = modal.style.display === 'flex';
   modal.style.display = 'flex';
+  if (!wasOpen) {
+    lockModalInteraction();
+  }
   
   // Focus textarea after a short delay
   setTimeout(() => {
@@ -422,8 +429,9 @@ export function showModal() {
 }
 
 export function closeModal() {
-  if (state.modalEl) {
+  if (state.modalEl && state.modalEl.style.display !== 'none') {
     state.modalEl.style.display = 'none';
+    unlockModalInteraction();
   }
 }
 

@@ -1,4 +1,8 @@
-import { OUTPUT_CONTAINER_SELECTOR, OBSERVER_OPTIONS } from '../../config/constants.js';
+import {
+  OUTPUT_CONTAINER_SELECTOR,
+  OBSERVER_OPTIONS,
+  EXTENSION_OWNED_ATTR
+} from '../../config/constants.js';
 import { showToast } from '../../ui/toast.js';
 import { log } from '../../core/logger.js';
 
@@ -20,6 +24,7 @@ async function copyText(text) {
   const textarea = document.createElement('textarea');
   textarea.value = text;
   textarea.setAttribute('readonly', '');
+  textarea.setAttribute(EXTENSION_OWNED_ATTR, 'true');
 
   Object.assign(textarea.style, {
     position: 'fixed',
@@ -102,6 +107,7 @@ function injectCopyButtons() {
 
     const controls = document.createElement('div');
     controls.className = CONTROLS_CLASS;
+    controls.setAttribute(EXTENSION_OWNED_ATTR, 'true');
     Object.assign(controls.style, {
       display: 'flex',
       justifyContent: 'flex-end',

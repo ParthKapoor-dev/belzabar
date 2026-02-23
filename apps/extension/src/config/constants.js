@@ -9,6 +9,10 @@ export const RUN_TEST_EXP_BUTTON_SELECTORS = [
 ];
 
 export const OUTPUT_CONTAINER_SELECTOR = '.output-container, .output_container';
+export const TEXTAREA_SELECTOR = 'textarea';
+export const TEXTAREA_EDITOR_BOUND_ATTR = 'data-sd-textarea-editor-bound';
+export const TEXTAREA_EDITOR_LAUNCHER_CLASS = 'sdExtensionTextareaLauncher';
+export const EXTENSION_OWNED_ATTR = 'data-sd-extension-owned';
 
 export const OBSERVER_OPTIONS = {
   childList: true,

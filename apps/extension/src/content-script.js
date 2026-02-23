@@ -4,6 +4,7 @@ import { setupObserver } from './features/title-updater/observer.js';
 import { handleKeydown } from './features/keyboard/shortcuts.js';
 import { initJSONFeature } from './features/json-editor/index.js';
 import { initOutputCopyFeature } from './features/output-copy/index.js';
+import { initTextareaEditorFeature } from './features/textarea-editor/index.js';
 
 (() => {
   'use strict';
@@ -15,6 +16,7 @@ import { initOutputCopyFeature } from './features/output-copy/index.js';
     document.addEventListener('keydown', handleKeydown, true);
     initJSONFeature();
     initOutputCopyFeature();
+    initTextareaEditorFeature();
     console.log('Extension initialized successfully');
   }
 
