@@ -178,7 +178,7 @@ export function createModal() {
     width: '100%',
     minHeight: '300px',
     padding: '12px',
-    fontFamily: '"Geist Mono", Menlo, "Courier New", monospace',
+    fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
     fontSize: '13px',
     border: '1px solid rgba(59, 130, 246, 0.3)',
     borderRadius: '8px',

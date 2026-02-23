@@ -12,6 +12,7 @@ const SAVE_BTN_ID = 'sdTextareaEditorSave';
 const LANG_SELECT_ID = 'sdTextareaEditorLanguage';
 const HIGHLIGHT_ID = 'sdTextareaEditorHighlight';
 const MODE_ID = 'sdTextareaEditorMode';
+const FONT_SIZE_SELECT_ID = 'sdTextareaEditorFontSize';
 
 const SQL_PATTERN = /(--.*$|\/\*[\s\S]*?\*\/)|('(?:''|[^'])*')|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|ALTER|DROP|TABLE|VIEW|AS|DISTINCT|CASE|WHEN|THEN|ELSE|END|NULL|IS|NOT|IN|EXISTS|LIKE|UNION|ALL|WITH)\b)|(\b\d+(?:\.\d+)?\b)/gim;
 const JS_PATTERN = /(\/\/.*$|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|new|class|extends|import|from|export|default|async|await|true|false|null|undefined)\b)|(\b\d+(?:\.\d+)?\b)/gm;
@@ -82,6 +83,15 @@ function detectLanguage(text) {
 function getSelectedLanguage() {
   const languageSelect = document.getElementById(LANG_SELECT_ID);
   return languageSelect?.value || 'auto';
+}
+
+function getSelectedFontSize() {
+  const fontSizeSelect = document.getElementById(FONT_SIZE_SELECT_ID);
+  const value = Number.parseInt(fontSizeSelect?.value || '13', 10);
+  if (Number.isFinite(value) && value >= 11 && value <= 24) {
+    return value;
+  }
+  return 13;
 }
 
 function resolveLanguage(text) {
@@ -170,12 +180,40 @@ function syncGutter() {
   }
 }
 
-function syncEditorView() {
-  syncGutter();
-  renderSyntaxLayer();
+function applyEditorFontSize(fontSize) {
+  const fontSizePx = `${fontSize}px`;
+  const editor = document.getElementById(EDITOR_ID);
+  const highlight = document.getElementById(HIGHLIGHT_ID);
+  const gutter = document.getElementById(GUTTER_ID);
+
+  if (editor) editor.style.fontSize = fontSizePx;
+  if (highlight) highlight.style.fontSize = fontSizePx;
+  if (gutter) gutter.style.fontSize = fontSizePx;
 }
 
-function closeTextareaEditor() {
+function syncSelectionRendering() {
+  const editor = document.getElementById(EDITOR_ID);
+  const highlight = document.getElementById(HIGHLIGHT_ID);
+  if (!editor || !highlight) return;
+
+  const hasSelection = (editor.selectionStart ?? 0) !== (editor.selectionEnd ?? 0);
+  if (hasSelection && document.activeElement === editor) {
+    highlight.style.visibility = 'hidden';
+    editor.style.color = '#e2e8f0';
+  } else {
+    highlight.style.visibility = 'visible';
+    editor.style.color = 'transparent';
+  }
+}
+
+function syncEditorView() {
+  applyEditorFontSize(getSelectedFontSize());
+  syncGutter();
+  renderSyntaxLayer();
+  syncSelectionRendering();
+}
+
+export function closeTextareaEditor() {
   if (!state.textareaEditorModalEl || state.textareaEditorModalEl.style.display === 'none') return;
   state.textareaEditorModalEl.style.display = 'none';
   state.textareaEditorSourceEl = null;
@@ -186,6 +224,53 @@ function syncSourceTextarea(sourceEl, value) {
   sourceEl.value = value;
   sourceEl.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
   sourceEl.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+}
+
+async function copyEditorText() {
+  const editor = document.getElementById(EDITOR_ID);
+  if (!editor) return;
+
+  const text = editor.value || '';
+  if (!text.trim()) {
+    showToast('Nothing to copy');
+    return;
+  }
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Copied editor text');
+      return;
+    } catch (error) {
+      // fall through to execCommand fallback
+      console.error('Navigator clipboard copy failed:', error);
+    }
+  }
+
+  const tempTextarea = document.createElement('textarea');
+  tempTextarea.value = text;
+  tempTextarea.setAttribute('readonly', '');
+  tempTextarea.setAttribute(EXTENSION_OWNED_ATTR, 'true');
+  Object.assign(tempTextarea.style, {
+    position: 'fixed',
+    top: '-1000px',
+    left: '-1000px',
+    opacity: '0'
+  });
+
+  document.body.appendChild(tempTextarea);
+  tempTextarea.select();
+  tempTextarea.setSelectionRange(0, tempTextarea.value.length);
+
+  let copied = false;
+  try {
+    copied = document.execCommand('copy');
+  } catch (error) {
+    console.error('Fallback clipboard copy failed:', error);
+  }
+
+  tempTextarea.remove();
+  showToast(copied ? 'Copied editor text' : 'Failed to copy');
 }
 
 function handleSave() {
@@ -284,15 +369,15 @@ export function createTextareaEditorModal() {
     display: 'none',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '20px'
+    padding: '12px'
   });
 
   const dialog = document.createElement('div');
   Object.assign(dialog.style, {
-    width: '92%',
-    maxWidth: '1180px',
-    height: '84vh',
-    maxHeight: '820px',
+    width: 'calc(100vw - 24px)',
+    height: 'calc(100vh - 24px)',
+    maxWidth: 'none',
+    maxHeight: 'none',
     borderRadius: '14px',
     overflow: 'hidden',
     display: 'flex',
@@ -367,6 +452,44 @@ export function createTextareaEditorModal() {
     languageSelect.appendChild(optionEl);
   }
 
+  const fontSizeSelect = document.createElement('select');
+  fontSizeSelect.id = FONT_SIZE_SELECT_ID;
+  Object.assign(fontSizeSelect.style, {
+    background: 'rgba(15, 23, 42, 0.75)',
+    color: '#cbd5e1',
+    border: '1px solid rgba(148, 163, 184, 0.4)',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    fontSize: '12px',
+    outline: 'none',
+    cursor: 'pointer'
+  });
+  const fontOptions = ['12', '13', '14', '16', '18'];
+  for (const optionValue of fontOptions) {
+    const optionEl = document.createElement('option');
+    optionEl.value = optionValue;
+    optionEl.textContent = `${optionValue}px`;
+    if (optionValue === '13') optionEl.selected = true;
+    fontSizeSelect.appendChild(optionEl);
+  }
+
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.textContent = 'Copy';
+  copyBtn.setAttribute('title', 'Copy editor text');
+  Object.assign(copyBtn.style, {
+    border: '1px solid rgba(148, 163, 184, 0.45)',
+    background: 'rgba(15, 23, 42, 0.75)',
+    color: '#cbd5e1',
+    borderRadius: '6px',
+    padding: '4px 10px',
+    fontSize: '12px',
+    cursor: 'pointer'
+  });
+  copyBtn.onclick = () => {
+    copyEditorText();
+  };
+
   const modeBadge = document.createElement('div');
   modeBadge.id = MODE_ID;
   modeBadge.textContent = 'AUTO';
@@ -400,7 +523,9 @@ export function createTextareaEditorModal() {
 
   header.appendChild(titleWrap);
   headerActions.appendChild(languageSelect);
+  headerActions.appendChild(fontSizeSelect);
   headerActions.appendChild(modeBadge);
+  headerActions.appendChild(copyBtn);
   headerActions.appendChild(closeBtn);
   header.appendChild(headerActions);
 
@@ -423,7 +548,7 @@ export function createTextareaEditorModal() {
     userSelect: 'none',
     textAlign: 'right',
     color: '#64748b',
-    fontFamily: '"Geist Mono", Menlo, "Courier New", monospace',
+    fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
     fontSize: '13px',
     lineHeight: '1.5',
     borderRight: '1px solid rgba(148, 163, 184, 0.2)',
@@ -449,7 +574,7 @@ export function createTextareaEditorModal() {
     overflow: 'hidden',
     pointerEvents: 'none',
     color: '#e2e8f0',
-    fontFamily: '"Geist Mono", Menlo, "Courier New", monospace',
+    fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
     fontSize: '13px',
     lineHeight: '1.5',
     whiteSpace: 'pre',
@@ -472,7 +597,7 @@ export function createTextareaEditorModal() {
     color: 'transparent',
     caretColor: '#e2e8f0',
     background: 'transparent',
-    fontFamily: '"Geist Mono", Menlo, "Courier New", monospace',
+    fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
     fontSize: '13px',
     lineHeight: '1.5',
     whiteSpace: 'pre',
@@ -482,6 +607,11 @@ export function createTextareaEditorModal() {
 
   editor.addEventListener('input', syncEditorView);
   editor.addEventListener('scroll', syncGutter);
+  editor.addEventListener('select', syncSelectionRendering);
+  editor.addEventListener('mouseup', syncSelectionRendering);
+  editor.addEventListener('keyup', syncSelectionRendering);
+  editor.addEventListener('focus', syncSelectionRendering);
+  editor.addEventListener('blur', syncSelectionRendering);
   editor.addEventListener('keydown', (event) => {
     if (event.key === 'Tab') {
       event.preventDefault();
@@ -518,7 +648,7 @@ export function createTextareaEditorModal() {
   });
 
   const helper = document.createElement('div');
-  helper.textContent = 'Single editor with syntax highlighting. Tab inserts indentation. Ctrl/Cmd+S saves. Esc closes.';
+  helper.textContent = 'Single editor with syntax highlighting. Use Copy and font size controls as needed.';
   Object.assign(helper.style, {
     color: '#94a3b8',
     fontSize: '12px'
@@ -578,6 +708,7 @@ export function createTextareaEditorModal() {
   state.textareaEditorModalEl = overlay;
   attachGlobalShortcuts();
   languageSelect.addEventListener('change', renderSyntaxLayer);
+  fontSizeSelect.addEventListener('change', syncEditorView);
 
   return state.textareaEditorModalEl;
 }
