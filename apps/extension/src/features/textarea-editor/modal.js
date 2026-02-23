@@ -10,8 +10,8 @@ const EDITOR_ID = 'sdTextareaEditorInput';
 const GUTTER_ID = 'sdTextareaEditorGutter';
 const SAVE_BTN_ID = 'sdTextareaEditorSave';
 const LANG_SELECT_ID = 'sdTextareaEditorLanguage';
-const PREVIEW_ID = 'sdTextareaEditorPreview';
-const PREVIEW_LANG_ID = 'sdTextareaEditorPreviewLang';
+const HIGHLIGHT_ID = 'sdTextareaEditorHighlight';
+const MODE_ID = 'sdTextareaEditorMode';
 
 const SQL_PATTERN = /(--.*$|\/\*[\s\S]*?\*\/)|('(?:''|[^'])*')|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|ALTER|DROP|TABLE|VIEW|AS|DISTINCT|CASE|WHEN|THEN|ELSE|END|NULL|IS|NOT|IN|EXISTS|LIKE|UNION|ALL|WITH)\b)|(\b\d+(?:\.\d+)?\b)/gim;
 const JS_PATTERN = /(\/\/.*$|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|new|class|extends|import|from|export|default|async|await|true|false|null|undefined)\b)|(\b\d+(?:\.\d+)?\b)/gm;
@@ -121,31 +121,31 @@ function highlightSpEL(text) {
   });
 }
 
-function renderSyntaxPreview() {
+function renderSyntaxLayer() {
   const editor = document.getElementById(EDITOR_ID);
-  const preview = document.getElementById(PREVIEW_ID);
-  const previewLang = document.getElementById(PREVIEW_LANG_ID);
-  if (!editor || !preview || !previewLang) return;
+  const highlight = document.getElementById(HIGHLIGHT_ID);
+  const modeEl = document.getElementById(MODE_ID);
+  if (!editor || !highlight || !modeEl) return;
 
   const resolvedLanguage = resolveLanguage(editor.value);
-  previewLang.textContent = resolvedLanguage.toUpperCase();
+  modeEl.textContent = resolvedLanguage.toUpperCase();
 
   if (resolvedLanguage === 'sql') {
-    preview.innerHTML = highlightSQL(editor.value);
+    highlight.innerHTML = highlightSQL(editor.value);
     return;
   }
 
   if (resolvedLanguage === 'javascript') {
-    preview.innerHTML = highlightJS(editor.value);
+    highlight.innerHTML = highlightJS(editor.value);
     return;
   }
 
   if (resolvedLanguage === 'spel') {
-    preview.innerHTML = highlightSpEL(editor.value);
+    highlight.innerHTML = highlightSpEL(editor.value);
     return;
   }
 
-  preview.innerHTML = escapeHtml(editor.value);
+  highlight.innerHTML = escapeHtml(editor.value || ' ');
 }
 
 function getLineCount(value) {
@@ -159,15 +159,20 @@ function buildLineNumberContent(lineCount) {
 function syncGutter() {
   const editor = document.getElementById(EDITOR_ID);
   const gutter = document.getElementById(GUTTER_ID);
+  const highlight = document.getElementById(HIGHLIGHT_ID);
   if (!editor || !gutter) return;
 
   gutter.textContent = buildLineNumberContent(getLineCount(editor.value));
   gutter.scrollTop = editor.scrollTop;
+  if (highlight) {
+    highlight.scrollTop = editor.scrollTop;
+    highlight.scrollLeft = editor.scrollLeft;
+  }
 }
 
 function syncEditorView() {
   syncGutter();
-  renderSyntaxPreview();
+  renderSyntaxLayer();
 }
 
 function closeTextareaEditor() {
@@ -362,6 +367,20 @@ export function createTextareaEditorModal() {
     languageSelect.appendChild(optionEl);
   }
 
+  const modeBadge = document.createElement('div');
+  modeBadge.id = MODE_ID;
+  modeBadge.textContent = 'AUTO';
+  Object.assign(modeBadge.style, {
+    color: '#93c5fd',
+    fontWeight: '600',
+    fontSize: '11px',
+    letterSpacing: '0.4px',
+    padding: '3px 7px',
+    borderRadius: '999px',
+    border: '1px solid rgba(96, 165, 250, 0.35)',
+    background: 'rgba(96, 165, 250, 0.15)'
+  });
+
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
   closeBtn.textContent = '×';
@@ -381,19 +400,12 @@ export function createTextareaEditorModal() {
 
   header.appendChild(titleWrap);
   headerActions.appendChild(languageSelect);
+  headerActions.appendChild(modeBadge);
   headerActions.appendChild(closeBtn);
   header.appendChild(headerActions);
 
   const body = document.createElement('div');
   Object.assign(body.style, {
-    display: 'flex',
-    flexDirection: 'column',
-    flex: '1',
-    minHeight: '0'
-  });
-
-  const editorArea = document.createElement('div');
-  Object.assign(editorArea.style, {
     display: 'flex',
     flex: '1',
     minHeight: '0'
@@ -418,6 +430,32 @@ export function createTextareaEditorModal() {
     background: 'rgba(15, 23, 42, 0.7)'
   });
 
+  const editorShell = document.createElement('div');
+  Object.assign(editorShell.style, {
+    position: 'relative',
+    flex: '1',
+    minHeight: '0',
+    background: 'rgba(15, 23, 42, 0.52)'
+  });
+
+  const highlight = document.createElement('pre');
+  highlight.id = HIGHLIGHT_ID;
+  highlight.setAttribute('aria-hidden', 'true');
+  Object.assign(highlight.style, {
+    position: 'absolute',
+    inset: '0',
+    margin: '0',
+    padding: '14px 16px',
+    overflow: 'hidden',
+    pointerEvents: 'none',
+    color: '#e2e8f0',
+    fontFamily: '"Geist Mono", Menlo, "Courier New", monospace',
+    fontSize: '13px',
+    lineHeight: '1.5',
+    whiteSpace: 'pre',
+    tabSize: '4'
+  });
+
   const editor = document.createElement('textarea');
   editor.id = EDITOR_ID;
   editor.spellcheck = false;
@@ -431,22 +469,19 @@ export function createTextareaEditorModal() {
     outline: 'none',
     margin: '0',
     padding: '14px 16px',
-    color: '#e2e8f0',
+    color: 'transparent',
+    caretColor: '#e2e8f0',
     background: 'transparent',
     fontFamily: '"Geist Mono", Menlo, "Courier New", monospace',
     fontSize: '13px',
     lineHeight: '1.5',
     whiteSpace: 'pre',
+    tabSize: '4',
     overflow: 'auto'
   });
 
   editor.addEventListener('input', syncEditorView);
-  editor.addEventListener('scroll', () => {
-    const currentGutter = document.getElementById(GUTTER_ID);
-    if (currentGutter) {
-      currentGutter.scrollTop = editor.scrollTop;
-    }
-  });
+  editor.addEventListener('scroll', syncGutter);
   editor.addEventListener('keydown', (event) => {
     if (event.key === 'Tab') {
       event.preventDefault();
@@ -466,65 +501,10 @@ export function createTextareaEditorModal() {
     }
   });
 
-  editorArea.appendChild(gutter);
-  editorArea.appendChild(editor);
-
-  const previewArea = document.createElement('div');
-  Object.assign(previewArea.style, {
-    borderTop: '1px solid rgba(148, 163, 184, 0.22)',
-    background: 'rgba(15, 23, 42, 0.66)',
-    minHeight: '160px',
-    maxHeight: '240px',
-    display: 'flex',
-    flexDirection: 'column'
-  });
-
-  const previewHeader = document.createElement('div');
-  Object.assign(previewHeader.style, {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '8px 12px',
-    borderBottom: '1px solid rgba(148, 163, 184, 0.18)',
-    color: '#94a3b8',
-    fontSize: '12px'
-  });
-
-  const previewTitle = document.createElement('div');
-  previewTitle.textContent = 'Syntax Preview';
-
-  const previewLanguage = document.createElement('div');
-  previewLanguage.id = PREVIEW_LANG_ID;
-  previewLanguage.textContent = 'AUTO';
-  Object.assign(previewLanguage.style, {
-    color: '#93c5fd',
-    fontWeight: '600',
-    letterSpacing: '0.4px'
-  });
-
-  previewHeader.appendChild(previewTitle);
-  previewHeader.appendChild(previewLanguage);
-
-  const preview = document.createElement('pre');
-  preview.id = PREVIEW_ID;
-  Object.assign(preview.style, {
-    margin: '0',
-    padding: '10px 12px',
-    overflow: 'auto',
-    flex: '1',
-    color: '#e2e8f0',
-    fontFamily: '"Geist Mono", Menlo, "Courier New", monospace',
-    fontSize: '12px',
-    lineHeight: '1.45',
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-word'
-  });
-
-  previewArea.appendChild(previewHeader);
-  previewArea.appendChild(preview);
-
-  body.appendChild(editorArea);
-  body.appendChild(previewArea);
+  editorShell.appendChild(highlight);
+  editorShell.appendChild(editor);
+  body.appendChild(gutter);
+  body.appendChild(editorShell);
 
   const footer = document.createElement('div');
   Object.assign(footer.style, {
@@ -538,7 +518,7 @@ export function createTextareaEditorModal() {
   });
 
   const helper = document.createElement('div');
-  helper.textContent = 'Tab inserts indentation. Ctrl/Cmd+S saves. Esc closes.';
+  helper.textContent = 'Single editor with syntax highlighting. Tab inserts indentation. Ctrl/Cmd+S saves. Esc closes.';
   Object.assign(helper.style, {
     color: '#94a3b8',
     fontSize: '12px'
@@ -597,7 +577,7 @@ export function createTextareaEditorModal() {
   document.body.appendChild(overlay);
   state.textareaEditorModalEl = overlay;
   attachGlobalShortcuts();
-  languageSelect.addEventListener('change', renderSyntaxPreview);
+  languageSelect.addEventListener('change', renderSyntaxLayer);
 
   return state.textareaEditorModalEl;
 }

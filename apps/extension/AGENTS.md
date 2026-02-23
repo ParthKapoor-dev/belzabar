@@ -8,7 +8,7 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 2. Trigger Run Test via keyboard shortcut (`Ctrl+Shift+Enter`) from anywhere on the page, including focused inputs/textareas
 3. Provide a JSON modal editor to bulk edit AD test inputs and sync values back to DOM controls
 4. Add a copy button near each output container to copy full output JSON and show toast feedback
-5. Add an Open launcher for native `<textarea>` controls to open a large editor modal with line numbers and syntax preview
+5. Add an Open launcher for native `<textarea>` controls to open a large editor modal with line numbers and inline syntax highlighting
 
 ## Tech and Runtime
 
@@ -37,7 +37,7 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 2. JSON feature injects a `📋 JSON` button near the Inputs section.
 3. Output copy feature injects a `Copy` button above each `.output-container`.
 4. Textarea editor feature injects an `Open` button inside eligible native textareas.
-5. Open launches a large modal editor with line numbers, syntax-highlight preview (Auto/SQL/SpEL/JS), and Save/Cancel controls for that textarea.
+5. Open launches a large modal editor with line numbers and inline syntax highlighting (Auto/SQL/SpEL/JS), plus Save/Cancel controls for that textarea.
 6. Modal loads detected inputs and current values into formatted JSON.
 7. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
 
