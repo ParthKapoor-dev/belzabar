@@ -9,6 +9,144 @@ const SUBTITLE_ID = 'sdTextareaEditorSubtitle';
 const EDITOR_ID = 'sdTextareaEditorInput';
 const GUTTER_ID = 'sdTextareaEditorGutter';
 const SAVE_BTN_ID = 'sdTextareaEditorSave';
+const LANG_SELECT_ID = 'sdTextareaEditorLanguage';
+const PREVIEW_ID = 'sdTextareaEditorPreview';
+const PREVIEW_LANG_ID = 'sdTextareaEditorPreviewLang';
+
+const SQL_PATTERN = /(--.*$|\/\*[\s\S]*?\*\/)|('(?:''|[^'])*')|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|ALTER|DROP|TABLE|VIEW|AS|DISTINCT|CASE|WHEN|THEN|ELSE|END|NULL|IS|NOT|IN|EXISTS|LIKE|UNION|ALL|WITH)\b)|(\b\d+(?:\.\d+)?\b)/gim;
+const JS_PATTERN = /(\/\/.*$|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|new|class|extends|import|from|export|default|async|await|true|false|null|undefined)\b)|(\b\d+(?:\.\d+)?\b)/gm;
+const SPEL_PATTERN = /(#\{|\})|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b(?:and|or|not|eq|ne|lt|gt|le|ge|true|false|null)\b)|(\b\d+(?:\.\d+)?\b)|(#[a-zA-Z_][\w.]*)|(T\([^)]+\))/g;
+
+const TOKEN_COLORS = {
+  comment: '#94a3b8',
+  string: '#fca5a5',
+  keyword: '#60a5fa',
+  number: '#fbbf24',
+  variable: '#22d3ee',
+  type: '#c084fc'
+};
+
+function escapeHtml(value) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function wrapToken(token, color) {
+  return `<span style="color:${color}">${escapeHtml(token)}</span>`;
+}
+
+function highlightByPattern(text, pattern, classifyMatch) {
+  let output = '';
+  let lastIndex = 0;
+  pattern.lastIndex = 0;
+
+  let match = pattern.exec(text);
+  while (match) {
+    output += escapeHtml(text.slice(lastIndex, match.index));
+    const token = match[0];
+    const color = classifyMatch(match);
+    output += color ? wrapToken(token, color) : escapeHtml(token);
+
+    lastIndex = match.index + token.length;
+    if (match.index === pattern.lastIndex) {
+      pattern.lastIndex += 1;
+    }
+    match = pattern.exec(text);
+  }
+
+  output += escapeHtml(text.slice(lastIndex));
+  return output;
+}
+
+function detectLanguage(text) {
+  const sample = text.trim();
+  if (!sample) return 'plain';
+
+  if (/#\{[^}]*\}|T\([^)]+\)|\b(eq|ne|lt|gt|le|ge|and|or|not)\b/i.test(sample)) {
+    return 'spel';
+  }
+
+  if (/\b(select|insert|update|delete|from|where|join|group\s+by|order\s+by|having|with)\b/i.test(sample)) {
+    return 'sql';
+  }
+
+  if (/\b(const|let|var|function|return|class|import|export|async|await)\b|=>|console\./.test(sample)) {
+    return 'javascript';
+  }
+
+  return 'plain';
+}
+
+function getSelectedLanguage() {
+  const languageSelect = document.getElementById(LANG_SELECT_ID);
+  return languageSelect?.value || 'auto';
+}
+
+function resolveLanguage(text) {
+  const selected = getSelectedLanguage();
+  return selected === 'auto' ? detectLanguage(text) : selected;
+}
+
+function highlightSQL(text) {
+  return highlightByPattern(text, SQL_PATTERN, (match) => {
+    if (match[1]) return TOKEN_COLORS.comment;
+    if (match[2]) return TOKEN_COLORS.string;
+    if (match[3]) return TOKEN_COLORS.keyword;
+    if (match[4]) return TOKEN_COLORS.number;
+    return '';
+  });
+}
+
+function highlightJS(text) {
+  return highlightByPattern(text, JS_PATTERN, (match) => {
+    if (match[1]) return TOKEN_COLORS.comment;
+    if (match[2]) return TOKEN_COLORS.string;
+    if (match[3]) return TOKEN_COLORS.keyword;
+    if (match[4]) return TOKEN_COLORS.number;
+    return '';
+  });
+}
+
+function highlightSpEL(text) {
+  return highlightByPattern(text, SPEL_PATTERN, (match) => {
+    if (match[1]) return TOKEN_COLORS.type;
+    if (match[2]) return TOKEN_COLORS.string;
+    if (match[3]) return TOKEN_COLORS.keyword;
+    if (match[4]) return TOKEN_COLORS.number;
+    if (match[5]) return TOKEN_COLORS.variable;
+    if (match[6]) return TOKEN_COLORS.type;
+    return '';
+  });
+}
+
+function renderSyntaxPreview() {
+  const editor = document.getElementById(EDITOR_ID);
+  const preview = document.getElementById(PREVIEW_ID);
+  const previewLang = document.getElementById(PREVIEW_LANG_ID);
+  if (!editor || !preview || !previewLang) return;
+
+  const resolvedLanguage = resolveLanguage(editor.value);
+  previewLang.textContent = resolvedLanguage.toUpperCase();
+
+  if (resolvedLanguage === 'sql') {
+    preview.innerHTML = highlightSQL(editor.value);
+    return;
+  }
+
+  if (resolvedLanguage === 'javascript') {
+    preview.innerHTML = highlightJS(editor.value);
+    return;
+  }
+
+  if (resolvedLanguage === 'spel') {
+    preview.innerHTML = highlightSpEL(editor.value);
+    return;
+  }
+
+  preview.innerHTML = escapeHtml(editor.value);
+}
 
 function getLineCount(value) {
   return Math.max(1, value.split('\n').length);
@@ -25,6 +163,11 @@ function syncGutter() {
 
   gutter.textContent = buildLineNumberContent(getLineCount(editor.value));
   gutter.scrollTop = editor.scrollTop;
+}
+
+function syncEditorView() {
+  syncGutter();
+  renderSyntaxPreview();
 }
 
 function closeTextareaEditor() {
@@ -63,7 +206,7 @@ function applyTabIndent(editor) {
   editor.value = `${before}\t${after}`;
   editor.selectionStart = start + 1;
   editor.selectionEnd = start + 1;
-  syncGutter();
+  syncEditorView();
 }
 
 function describeSource(textarea) {
@@ -99,7 +242,7 @@ function updateModalForSource(sourceEl) {
   saveBtn.style.opacity = readOnly ? '0.45' : '1';
   saveBtn.style.cursor = readOnly ? 'not-allowed' : 'pointer';
 
-  syncGutter();
+  syncEditorView();
 }
 
 function attachGlobalShortcuts() {
@@ -186,6 +329,39 @@ export function createTextareaEditorModal() {
   titleWrap.appendChild(title);
   titleWrap.appendChild(subtitle);
 
+  const headerActions = document.createElement('div');
+  Object.assign(headerActions.style, {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px'
+  });
+
+  const languageSelect = document.createElement('select');
+  languageSelect.id = LANG_SELECT_ID;
+  Object.assign(languageSelect.style, {
+    background: 'rgba(15, 23, 42, 0.75)',
+    color: '#cbd5e1',
+    border: '1px solid rgba(148, 163, 184, 0.4)',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    fontSize: '12px',
+    outline: 'none',
+    cursor: 'pointer'
+  });
+
+  const languageOptions = [
+    { value: 'auto', label: 'Auto' },
+    { value: 'sql', label: 'SQL' },
+    { value: 'spel', label: 'SpEL' },
+    { value: 'javascript', label: 'JavaScript' }
+  ];
+  for (const option of languageOptions) {
+    const optionEl = document.createElement('option');
+    optionEl.value = option.value;
+    optionEl.textContent = option.label;
+    languageSelect.appendChild(optionEl);
+  }
+
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
   closeBtn.textContent = '×';
@@ -204,10 +380,20 @@ export function createTextareaEditorModal() {
   closeBtn.onclick = closeTextareaEditor;
 
   header.appendChild(titleWrap);
-  header.appendChild(closeBtn);
+  headerActions.appendChild(languageSelect);
+  headerActions.appendChild(closeBtn);
+  header.appendChild(headerActions);
 
   const body = document.createElement('div');
   Object.assign(body.style, {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: '1',
+    minHeight: '0'
+  });
+
+  const editorArea = document.createElement('div');
+  Object.assign(editorArea.style, {
     display: 'flex',
     flex: '1',
     minHeight: '0'
@@ -254,7 +440,7 @@ export function createTextareaEditorModal() {
     overflow: 'auto'
   });
 
-  editor.addEventListener('input', syncGutter);
+  editor.addEventListener('input', syncEditorView);
   editor.addEventListener('scroll', () => {
     const currentGutter = document.getElementById(GUTTER_ID);
     if (currentGutter) {
@@ -280,8 +466,65 @@ export function createTextareaEditorModal() {
     }
   });
 
-  body.appendChild(gutter);
-  body.appendChild(editor);
+  editorArea.appendChild(gutter);
+  editorArea.appendChild(editor);
+
+  const previewArea = document.createElement('div');
+  Object.assign(previewArea.style, {
+    borderTop: '1px solid rgba(148, 163, 184, 0.22)',
+    background: 'rgba(15, 23, 42, 0.66)',
+    minHeight: '160px',
+    maxHeight: '240px',
+    display: 'flex',
+    flexDirection: 'column'
+  });
+
+  const previewHeader = document.createElement('div');
+  Object.assign(previewHeader.style, {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '8px 12px',
+    borderBottom: '1px solid rgba(148, 163, 184, 0.18)',
+    color: '#94a3b8',
+    fontSize: '12px'
+  });
+
+  const previewTitle = document.createElement('div');
+  previewTitle.textContent = 'Syntax Preview';
+
+  const previewLanguage = document.createElement('div');
+  previewLanguage.id = PREVIEW_LANG_ID;
+  previewLanguage.textContent = 'AUTO';
+  Object.assign(previewLanguage.style, {
+    color: '#93c5fd',
+    fontWeight: '600',
+    letterSpacing: '0.4px'
+  });
+
+  previewHeader.appendChild(previewTitle);
+  previewHeader.appendChild(previewLanguage);
+
+  const preview = document.createElement('pre');
+  preview.id = PREVIEW_ID;
+  Object.assign(preview.style, {
+    margin: '0',
+    padding: '10px 12px',
+    overflow: 'auto',
+    flex: '1',
+    color: '#e2e8f0',
+    fontFamily: '"Geist Mono", Menlo, "Courier New", monospace',
+    fontSize: '12px',
+    lineHeight: '1.45',
+    whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word'
+  });
+
+  previewArea.appendChild(previewHeader);
+  previewArea.appendChild(preview);
+
+  body.appendChild(editorArea);
+  body.appendChild(previewArea);
 
   const footer = document.createElement('div');
   Object.assign(footer.style, {
@@ -354,6 +597,7 @@ export function createTextareaEditorModal() {
   document.body.appendChild(overlay);
   state.textareaEditorModalEl = overlay;
   attachGlobalShortcuts();
+  languageSelect.addEventListener('change', renderSyntaxPreview);
 
   return state.textareaEditorModalEl;
 }
