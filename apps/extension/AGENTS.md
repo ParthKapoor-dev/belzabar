@@ -5,8 +5,9 @@
 This app is a browser extension content script for AD/PD web UIs. Current features:
 
 1. Update page title with current method/page name
-2. Trigger Run Test via keyboard shortcut (`Ctrl+Shift+Enter`)
+2. Trigger Run Test via keyboard shortcut (`Ctrl+Shift+Enter`) from anywhere on the page, including focused inputs/textareas
 3. Provide a JSON modal editor to bulk edit AD test inputs and sync values back to DOM controls
+4. Add a copy button near each output container to copy full output JSON and show toast feedback
 
 ## Tech and Runtime
 
@@ -24,15 +25,17 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 5. `src/features/keyboard/` - shortcut handler
 6. `src/features/run-test/` - run button lookup + click
 7. `src/features/json-editor/` - button injection, modal UI, input extraction, type handling, sync engine
-8. `src/ui/toast.js` - toast notifications
-9. `src/utils/dom.js` - DOM utility helpers
+8. `src/features/output-copy/` - output container copy-button injection + clipboard copy
+9. `src/ui/toast.js` - toast notifications
+10. `src/utils/dom.js` - DOM utility helpers
 
 ## Feature Flow
 
-1. On load, extension initializes title updater, observer, keyboard listener, and JSON feature injection observer.
+1. On load, extension initializes title updater, observer, keyboard listener, JSON feature observer, and output copy observer.
 2. JSON feature injects a `📋 JSON` button near the Inputs section.
-3. Modal loads detected inputs and current values into formatted JSON.
-4. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
+3. Output copy feature injects a `Copy` button above each `.output-container`.
+4. Modal loads detected inputs and current values into formatted JSON.
+5. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
 
 ## JSON Sync Engine (Current)
 
@@ -56,6 +59,7 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 4. JSON sync implementation: `src/features/json-editor/sync.js`
 5. JSON modal/UI actions: `src/features/json-editor/modal.js`
 6. Injection logic: `src/features/json-editor/injector.js`
+7. Output copy feature: `src/features/output-copy/index.js`
 
 ## Known Current Risks
 
