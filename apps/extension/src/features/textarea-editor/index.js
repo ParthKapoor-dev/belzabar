@@ -97,11 +97,11 @@ function ensureOverlayStyles() {
 .${TEXTAREA_EDITOR_CONTROLS_CLASS} {
   position: absolute;
   top: 6px;
-  left: 6px;
   right: 6px;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
   opacity: 0;
   visibility: hidden;
   transition: opacity 140ms ease, visibility 140ms ease;
@@ -230,11 +230,11 @@ function createLauncher(textarea) {
   Object.assign(controls.style, {
     position: 'absolute',
     top: '6px',
-    left: '6px',
     right: '6px',
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: '6px'
   });
 
   const openButton = document.createElement('button');

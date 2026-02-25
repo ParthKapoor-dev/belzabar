@@ -1,3 +1,10 @@
+import { Compartment, EditorState } from '@codemirror/state';
+import { EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { defaultKeymap, indentWithTab } from '@codemirror/commands';
+import { sql } from '@codemirror/lang-sql';
+import { javascript } from '@codemirror/lang-javascript';
+import { json } from '@codemirror/lang-json';
+import { oneDark } from '@codemirror/theme-one-dark';
 import { state } from '../../core/state.js';
 import { showToast } from '../../ui/toast.js';
 import { EXTENSION_OWNED_ATTR } from '../../config/constants.js';
@@ -7,63 +14,106 @@ const OVERLAY_ID = 'sdTextareaEditorOverlay';
 const TITLE_ID = 'sdTextareaEditorTitle';
 const SUBTITLE_ID = 'sdTextareaEditorSubtitle';
 const EDITOR_ID = 'sdTextareaEditorInput';
-const GUTTER_ID = 'sdTextareaEditorGutter';
+const EDITOR_HOST_ID = 'sdTextareaEditorHost';
 const SAVE_BTN_ID = 'sdTextareaEditorSave';
 const LANG_SELECT_ID = 'sdTextareaEditorLanguage';
-const HIGHLIGHT_ID = 'sdTextareaEditorHighlight';
-const MODE_ID = 'sdTextareaEditorMode';
 const FONT_SIZE_SELECT_ID = 'sdTextareaEditorFontSize';
 
-const SQL_PATTERN = /(--.*$|\/\*[\s\S]*?\*\/)|('(?:''|[^'])*')|(\b(?:SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|ON|GROUP|BY|ORDER|HAVING|LIMIT|OFFSET|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|ALTER|DROP|TABLE|VIEW|AS|DISTINCT|CASE|WHEN|THEN|ELSE|END|NULL|IS|NOT|IN|EXISTS|LIKE|UNION|ALL|WITH)\b)|(\b\d+(?:\.\d+)?\b)/gim;
-const JS_PATTERN = /(\/\/.*$|\/\*[\s\S]*?\*\/)|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`)|(\b(?:const|let|var|function|return|if|else|for|while|switch|case|break|continue|try|catch|finally|new|class|extends|import|from|export|default|async|await|true|false|null|undefined)\b)|(\b\d+(?:\.\d+)?\b)/gm;
-const SPEL_PATTERN = /(#\{|\})|("(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')|(\b(?:and|or|not|eq|ne|lt|gt|le|ge|true|false|null)\b)|(\b\d+(?:\.\d+)?\b)|(#[a-zA-Z_][\w.]*)|(T\([^)]+\))/g;
+const EDITOR_VERTICAL_PADDING_PX = 14;
+const EDITOR_HORIZONTAL_PADDING_PX = 16;
 
-const TOKEN_COLORS = {
-  comment: '#94a3b8',
-  string: '#fca5a5',
-  keyword: '#60a5fa',
-  number: '#fbbf24',
-  variable: '#22d3ee',
-  type: '#c084fc'
-};
+let editorView = null;
+let resolvedEditorLanguage = 'plain';
+const languageCompartment = new Compartment();
 
-function escapeHtml(value) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
-}
-
-function wrapToken(token, color) {
-  return `<span style="color:${color}">${escapeHtml(token)}</span>`;
-}
-
-function highlightByPattern(text, pattern, classifyMatch) {
-  let output = '';
-  let lastIndex = 0;
-  pattern.lastIndex = 0;
-
-  let match = pattern.exec(text);
-  while (match) {
-    output += escapeHtml(text.slice(lastIndex, match.index));
-    const token = match[0];
-    const color = classifyMatch(match);
-    output += color ? wrapToken(token, color) : escapeHtml(token);
-
-    lastIndex = match.index + token.length;
-    if (match.index === pattern.lastIndex) {
-      pattern.lastIndex += 1;
+const editorTheme = EditorView.theme(
+  {
+    '&': {
+      height: '100%',
+      fontFamily: '"Jet Brains Mono", "JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
+      backgroundColor: 'rgba(15, 23, 42, 0.52)',
+      color: '#e2e8f0'
+    },
+    '.cm-scroller': {
+      fontFamily: 'inherit',
+      lineHeight: '1.5',
+      overflow: 'auto'
+    },
+    '.cm-content': {
+      caretColor: '#e2e8f0',
+      padding: `${EDITOR_VERTICAL_PADDING_PX}px ${EDITOR_HORIZONTAL_PADDING_PX}px`,
+      minHeight: '100%',
+      letterSpacing: 'normal',
+      wordSpacing: 'normal'
+    },
+    '.cm-gutters': {
+      backgroundColor: 'rgba(15, 23, 42, 0.7)',
+      color: '#64748b',
+      borderRight: '1px solid rgba(148, 163, 184, 0.2)'
+    },
+    '.cm-lineNumbers .cm-gutterElement': {
+      minWidth: '44px',
+      padding: '0 10px 0 0',
+      textAlign: 'right'
+    },
+    '&.cm-focused': {
+      outline: 'none'
+    },
+    '&.cm-focused .cm-cursor': {
+      borderLeftColor: '#e2e8f0'
+    },
+    '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
+      backgroundColor: 'rgba(96, 165, 250, 0.35)'
     }
-    match = pattern.exec(text);
-  }
+  },
+  { dark: true }
+);
 
-  output += escapeHtml(text.slice(lastIndex));
-  return output;
+function destroyEditorView() {
+  if (!editorView) return;
+  editorView.destroy();
+  editorView = null;
+}
+
+function getEditorText() {
+  if (!editorView) return '';
+  return editorView.state.doc.toString();
+}
+
+function getSelectedFontSize() {
+  const fontSizeSelect = document.getElementById(FONT_SIZE_SELECT_ID);
+  const value = Number.parseInt(fontSizeSelect?.value || '13', 10);
+  if (Number.isFinite(value) && value >= 11 && value <= 24) {
+    return value;
+  }
+  return 13;
+}
+
+function getSelectedLanguageMode() {
+  const languageSelect = document.getElementById(LANG_SELECT_ID);
+  return languageSelect?.value || 'auto';
+}
+
+function applyEditorFontSize(fontSize) {
+  if (!editorView) return;
+  const fontSizePx = `${fontSize}px`;
+  editorView.dom.style.fontSize = fontSizePx;
+  editorView.dom.style.letterSpacing = 'normal';
+  editorView.dom.style.wordSpacing = 'normal';
 }
 
 function detectLanguage(text) {
   const sample = text.trim();
   if (!sample) return 'plain';
+
+  if ((sample.startsWith('{') && sample.endsWith('}')) || (sample.startsWith('[') && sample.endsWith(']'))) {
+    try {
+      JSON.parse(sample);
+      return 'json';
+    } catch {
+      // continue with other detectors
+    }
+  }
 
   if (/#\{[^}]*\}|T\([^)]+\)|\b(eq|ne|lt|gt|le|ge|and|or|not)\b/i.test(sample)) {
     return 'spel';
@@ -80,143 +130,83 @@ function detectLanguage(text) {
   return 'plain';
 }
 
-function getSelectedLanguage() {
-  const languageSelect = document.getElementById(LANG_SELECT_ID);
-  return languageSelect?.value || 'auto';
-}
-
-function getSelectedFontSize() {
-  const fontSizeSelect = document.getElementById(FONT_SIZE_SELECT_ID);
-  const value = Number.parseInt(fontSizeSelect?.value || '13', 10);
-  if (Number.isFinite(value) && value >= 11 && value <= 24) {
-    return value;
+function resolveLanguageMode(text, selectedMode) {
+  if (selectedMode === 'auto') {
+    return detectLanguage(text);
   }
-  return 13;
+  return selectedMode;
 }
 
-function resolveLanguage(text) {
-  const selected = getSelectedLanguage();
-  return selected === 'auto' ? detectLanguage(text) : selected;
+function getLanguageExtensionForMode(mode) {
+  if (mode === 'sql') return sql();
+  if (mode === 'javascript') return javascript();
+  if (mode === 'json') return json();
+  if (mode === 'spel') return javascript();
+  return [];
 }
 
-function highlightSQL(text) {
-  return highlightByPattern(text, SQL_PATTERN, (match) => {
-    if (match[1]) return TOKEN_COLORS.comment;
-    if (match[2]) return TOKEN_COLORS.string;
-    if (match[3]) return TOKEN_COLORS.keyword;
-    if (match[4]) return TOKEN_COLORS.number;
-    return '';
+function reconfigureEditorLanguage(mode) {
+  if (!editorView) return;
+  resolvedEditorLanguage = mode;
+  editorView.dispatch({
+    effects: languageCompartment.reconfigure(getLanguageExtensionForMode(mode))
   });
 }
 
-function highlightJS(text) {
-  return highlightByPattern(text, JS_PATTERN, (match) => {
-    if (match[1]) return TOKEN_COLORS.comment;
-    if (match[2]) return TOKEN_COLORS.string;
-    if (match[3]) return TOKEN_COLORS.keyword;
-    if (match[4]) return TOKEN_COLORS.number;
-    return '';
+function createEditorForSource(sourceEl) {
+  const host = document.getElementById(EDITOR_HOST_ID);
+  if (!host) return;
+
+  const textValue = sourceEl.value || '';
+  const readOnly = sourceEl.readOnly || sourceEl.disabled;
+  const selectedLanguageMode = getSelectedLanguageMode();
+  const initialLanguageMode = resolveLanguageMode(textValue, selectedLanguageMode);
+  resolvedEditorLanguage = initialLanguageMode;
+
+  const extensions = [
+    lineNumbers(),
+    keymap.of([indentWithTab, ...defaultKeymap]),
+    EditorState.tabSize.of(4),
+    EditorState.readOnly.of(readOnly),
+    editorTheme,
+    oneDark,
+    languageCompartment.of(getLanguageExtensionForMode(initialLanguageMode)),
+    EditorView.updateListener.of((update) => {
+      if (!update.docChanged || !editorView) return;
+      if (getSelectedLanguageMode() !== 'auto') return;
+
+      const nextMode = detectLanguage(update.state.doc.toString());
+      if (nextMode === resolvedEditorLanguage) return;
+      reconfigureEditorLanguage(nextMode);
+    })
+  ];
+
+  destroyEditorView();
+  editorView = new EditorView({
+    state: EditorState.create({
+      doc: textValue,
+      selection: { anchor: textValue.length },
+      extensions
+    }),
+    parent: host
   });
-}
 
-function highlightSpEL(text) {
-  return highlightByPattern(text, SPEL_PATTERN, (match) => {
-    if (match[1]) return TOKEN_COLORS.type;
-    if (match[2]) return TOKEN_COLORS.string;
-    if (match[3]) return TOKEN_COLORS.keyword;
-    if (match[4]) return TOKEN_COLORS.number;
-    if (match[5]) return TOKEN_COLORS.variable;
-    if (match[6]) return TOKEN_COLORS.type;
-    return '';
-  });
-}
-
-function renderSyntaxLayer() {
-  const editor = document.getElementById(EDITOR_ID);
-  const highlight = document.getElementById(HIGHLIGHT_ID);
-  const modeEl = document.getElementById(MODE_ID);
-  if (!editor || !highlight || !modeEl) return;
-
-  const resolvedLanguage = resolveLanguage(editor.value);
-  modeEl.textContent = resolvedLanguage.toUpperCase();
-
-  if (resolvedLanguage === 'sql') {
-    highlight.innerHTML = highlightSQL(editor.value);
-    return;
-  }
-
-  if (resolvedLanguage === 'javascript') {
-    highlight.innerHTML = highlightJS(editor.value);
-    return;
-  }
-
-  if (resolvedLanguage === 'spel') {
-    highlight.innerHTML = highlightSpEL(editor.value);
-    return;
-  }
-
-  highlight.innerHTML = escapeHtml(editor.value || ' ');
-}
-
-function getLineCount(value) {
-  return Math.max(1, value.split('\n').length);
-}
-
-function buildLineNumberContent(lineCount) {
-  return Array.from({ length: lineCount }, (_, index) => String(index + 1)).join('\n');
-}
-
-function syncGutter() {
-  const editor = document.getElementById(EDITOR_ID);
-  const gutter = document.getElementById(GUTTER_ID);
-  const highlight = document.getElementById(HIGHLIGHT_ID);
-  if (!editor || !gutter) return;
-
-  gutter.textContent = buildLineNumberContent(getLineCount(editor.value));
-  gutter.scrollTop = editor.scrollTop;
-  if (highlight) {
-    highlight.scrollTop = editor.scrollTop;
-    highlight.scrollLeft = editor.scrollLeft;
-  }
-}
-
-function applyEditorFontSize(fontSize) {
-  const fontSizePx = `${fontSize}px`;
-  const editor = document.getElementById(EDITOR_ID);
-  const highlight = document.getElementById(HIGHLIGHT_ID);
-  const gutter = document.getElementById(GUTTER_ID);
-
-  if (editor) editor.style.fontSize = fontSizePx;
-  if (highlight) highlight.style.fontSize = fontSizePx;
-  if (gutter) gutter.style.fontSize = fontSizePx;
-}
-
-function syncSelectionRendering() {
-  const editor = document.getElementById(EDITOR_ID);
-  const highlight = document.getElementById(HIGHLIGHT_ID);
-  if (!editor || !highlight) return;
-
-  const hasSelection = (editor.selectionStart ?? 0) !== (editor.selectionEnd ?? 0);
-  if (hasSelection && document.activeElement === editor) {
-    highlight.style.visibility = 'hidden';
-    editor.style.color = '#e2e8f0';
-  } else {
-    highlight.style.visibility = 'visible';
-    editor.style.color = 'transparent';
-  }
-}
-
-function syncEditorView() {
   applyEditorFontSize(getSelectedFontSize());
-  syncGutter();
-  renderSyntaxLayer();
-  syncSelectionRendering();
+}
+
+function handleLanguageSelectionChange() {
+  if (!editorView) return;
+
+  const selectedMode = getSelectedLanguageMode();
+  const resolvedMode = resolveLanguageMode(getEditorText(), selectedMode);
+  reconfigureEditorLanguage(resolvedMode);
 }
 
 export function closeTextareaEditor() {
   if (!state.textareaEditorModalEl || state.textareaEditorModalEl.style.display === 'none') return;
   state.textareaEditorModalEl.style.display = 'none';
   state.textareaEditorSourceEl = null;
+  destroyEditorView();
   unlockModalInteraction();
 }
 
@@ -227,10 +217,7 @@ function syncSourceTextarea(sourceEl, value) {
 }
 
 async function copyEditorText() {
-  const editor = document.getElementById(EDITOR_ID);
-  if (!editor) return;
-
-  const text = editor.value || '';
+  const text = getEditorText();
   if (!text.trim()) {
     showToast('Nothing to copy');
     return;
@@ -275,28 +262,15 @@ async function copyEditorText() {
 
 function handleSave() {
   const sourceEl = state.textareaEditorSourceEl;
-  const editor = document.getElementById(EDITOR_ID);
   const saveBtn = document.getElementById(SAVE_BTN_ID);
 
-  if (!sourceEl || !editor || !saveBtn || saveBtn.disabled) {
+  if (!sourceEl || !saveBtn || saveBtn.disabled || !editorView) {
     return;
   }
 
-  syncSourceTextarea(sourceEl, editor.value);
+  syncSourceTextarea(sourceEl, getEditorText());
   showToast('Textarea updated');
   closeTextareaEditor();
-}
-
-function applyTabIndent(editor) {
-  const start = editor.selectionStart ?? 0;
-  const end = editor.selectionEnd ?? start;
-  const before = editor.value.slice(0, start);
-  const after = editor.value.slice(end);
-
-  editor.value = `${before}\t${after}`;
-  editor.selectionStart = start + 1;
-  editor.selectionEnd = start + 1;
-  syncEditorView();
 }
 
 function describeSource(textarea) {
@@ -312,27 +286,22 @@ function describeSource(textarea) {
 function updateModalForSource(sourceEl) {
   const title = document.getElementById(TITLE_ID);
   const subtitle = document.getElementById(SUBTITLE_ID);
-  const editor = document.getElementById(EDITOR_ID);
   const saveBtn = document.getElementById(SAVE_BTN_ID);
 
-  if (!title || !subtitle || !editor || !saveBtn) return;
+  if (!title || !subtitle || !saveBtn) return;
 
   const readOnly = sourceEl.readOnly || sourceEl.disabled;
-  const textValue = sourceEl.value || '';
 
   title.textContent = 'Large Text Editor';
   subtitle.textContent = readOnly
     ? `${describeSource(sourceEl)} (read only)`
     : describeSource(sourceEl);
 
-  editor.value = textValue;
-  editor.readOnly = readOnly;
-  editor.disabled = sourceEl.disabled;
   saveBtn.disabled = readOnly;
   saveBtn.style.opacity = readOnly ? '0.45' : '1';
   saveBtn.style.cursor = readOnly ? 'not-allowed' : 'pointer';
 
-  syncEditorView();
+  createEditorForSource(sourceEl);
 }
 
 function attachGlobalShortcuts() {
@@ -426,32 +395,6 @@ export function createTextareaEditorModal() {
     gap: '10px'
   });
 
-  const languageSelect = document.createElement('select');
-  languageSelect.id = LANG_SELECT_ID;
-  Object.assign(languageSelect.style, {
-    background: 'rgba(15, 23, 42, 0.75)',
-    color: '#cbd5e1',
-    border: '1px solid rgba(148, 163, 184, 0.4)',
-    borderRadius: '6px',
-    padding: '4px 8px',
-    fontSize: '12px',
-    outline: 'none',
-    cursor: 'pointer'
-  });
-
-  const languageOptions = [
-    { value: 'auto', label: 'Auto' },
-    { value: 'sql', label: 'SQL' },
-    { value: 'spel', label: 'SpEL' },
-    { value: 'javascript', label: 'JavaScript' }
-  ];
-  for (const option of languageOptions) {
-    const optionEl = document.createElement('option');
-    optionEl.value = option.value;
-    optionEl.textContent = option.label;
-    languageSelect.appendChild(optionEl);
-  }
-
   const fontSizeSelect = document.createElement('select');
   fontSizeSelect.id = FONT_SIZE_SELECT_ID;
   Object.assign(fontSizeSelect.style, {
@@ -473,6 +416,34 @@ export function createTextareaEditorModal() {
     fontSizeSelect.appendChild(optionEl);
   }
 
+  const languageSelect = document.createElement('select');
+  languageSelect.id = LANG_SELECT_ID;
+  Object.assign(languageSelect.style, {
+    background: 'rgba(15, 23, 42, 0.75)',
+    color: '#cbd5e1',
+    border: '1px solid rgba(148, 163, 184, 0.4)',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    fontSize: '12px',
+    outline: 'none',
+    cursor: 'pointer'
+  });
+  const languageOptions = [
+    { value: 'auto', label: 'Auto' },
+    { value: 'sql', label: 'SQL' },
+    { value: 'spel', label: 'SpEL' },
+    { value: 'javascript', label: 'JavaScript' },
+    { value: 'json', label: 'JSON' },
+    { value: 'plain', label: 'Plain' }
+  ];
+  for (const option of languageOptions) {
+    const optionEl = document.createElement('option');
+    optionEl.value = option.value;
+    optionEl.textContent = option.label;
+    if (option.value === 'auto') optionEl.selected = true;
+    languageSelect.appendChild(optionEl);
+  }
+
   const copyBtn = document.createElement('button');
   copyBtn.type = 'button';
   copyBtn.textContent = 'Copy';
@@ -489,20 +460,6 @@ export function createTextareaEditorModal() {
   copyBtn.onclick = () => {
     copyEditorText();
   };
-
-  const modeBadge = document.createElement('div');
-  modeBadge.id = MODE_ID;
-  modeBadge.textContent = 'AUTO';
-  Object.assign(modeBadge.style, {
-    color: '#93c5fd',
-    fontWeight: '600',
-    fontSize: '11px',
-    letterSpacing: '0.4px',
-    padding: '3px 7px',
-    borderRadius: '999px',
-    border: '1px solid rgba(96, 165, 250, 0.35)',
-    background: 'rgba(96, 165, 250, 0.15)'
-  });
 
   const closeBtn = document.createElement('button');
   closeBtn.type = 'button';
@@ -524,7 +481,6 @@ export function createTextareaEditorModal() {
   header.appendChild(titleWrap);
   headerActions.appendChild(languageSelect);
   headerActions.appendChild(fontSizeSelect);
-  headerActions.appendChild(modeBadge);
   headerActions.appendChild(copyBtn);
   headerActions.appendChild(closeBtn);
   header.appendChild(headerActions);
@@ -536,105 +492,16 @@ export function createTextareaEditorModal() {
     minHeight: '0'
   });
 
-  const gutter = document.createElement('pre');
-  gutter.id = GUTTER_ID;
-  gutter.setAttribute('aria-hidden', 'true');
-  Object.assign(gutter.style, {
-    margin: '0',
-    padding: '14px 10px',
-    width: '60px',
-    minWidth: '60px',
-    overflow: 'hidden',
-    userSelect: 'none',
-    textAlign: 'right',
-    color: '#64748b',
-    fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
-    fontSize: '13px',
-    lineHeight: '1.5',
-    borderRight: '1px solid rgba(148, 163, 184, 0.2)',
-    background: 'rgba(15, 23, 42, 0.7)'
-  });
-
-  const editorShell = document.createElement('div');
-  Object.assign(editorShell.style, {
-    position: 'relative',
+  const editorHost = document.createElement('div');
+  editorHost.id = EDITOR_HOST_ID;
+  editorHost.setAttribute(EXTENSION_OWNED_ATTR, 'true');
+  Object.assign(editorHost.style, {
+    display: 'flex',
     flex: '1',
-    minHeight: '0',
-    background: 'rgba(15, 23, 42, 0.52)'
+    minHeight: '0'
   });
 
-  const highlight = document.createElement('pre');
-  highlight.id = HIGHLIGHT_ID;
-  highlight.setAttribute('aria-hidden', 'true');
-  Object.assign(highlight.style, {
-    position: 'absolute',
-    inset: '0',
-    margin: '0',
-    padding: '14px 16px',
-    overflow: 'hidden',
-    pointerEvents: 'none',
-    color: '#e2e8f0',
-    fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
-    fontSize: '13px',
-    lineHeight: '1.5',
-    whiteSpace: 'pre',
-    tabSize: '4'
-  });
-
-  const editor = document.createElement('textarea');
-  editor.id = EDITOR_ID;
-  editor.spellcheck = false;
-  Object.assign(editor.style, {
-    flex: '1',
-    width: '100%',
-    height: '100%',
-    minHeight: '0',
-    border: '0',
-    resize: 'none',
-    outline: 'none',
-    margin: '0',
-    padding: '14px 16px',
-    color: 'transparent',
-    caretColor: '#e2e8f0',
-    background: 'transparent',
-    fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
-    fontSize: '13px',
-    lineHeight: '1.5',
-    whiteSpace: 'pre',
-    tabSize: '4',
-    overflow: 'auto'
-  });
-
-  editor.addEventListener('input', syncEditorView);
-  editor.addEventListener('scroll', syncGutter);
-  editor.addEventListener('select', syncSelectionRendering);
-  editor.addEventListener('mouseup', syncSelectionRendering);
-  editor.addEventListener('keyup', syncSelectionRendering);
-  editor.addEventListener('focus', syncSelectionRendering);
-  editor.addEventListener('blur', syncSelectionRendering);
-  editor.addEventListener('keydown', (event) => {
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      applyTabIndent(editor);
-      return;
-    }
-
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
-      event.preventDefault();
-      handleSave();
-      return;
-    }
-
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeTextareaEditor();
-    }
-  });
-
-  editorShell.appendChild(highlight);
-  editorShell.appendChild(editor);
-  body.appendChild(gutter);
-  body.appendChild(editorShell);
+  body.appendChild(editorHost);
 
   const footer = document.createElement('div');
   Object.assign(footer.style, {
@@ -648,7 +515,7 @@ export function createTextareaEditorModal() {
   });
 
   const helper = document.createElement('div');
-  helper.textContent = 'Single editor with syntax highlighting. Use Copy and font size controls as needed.';
+  helper.textContent = 'CodeMirror editor with line numbers and syntax highlighting.';
   Object.assign(helper.style, {
     color: '#94a3b8',
     fontSize: '12px'
@@ -707,8 +574,10 @@ export function createTextareaEditorModal() {
   document.body.appendChild(overlay);
   state.textareaEditorModalEl = overlay;
   attachGlobalShortcuts();
-  languageSelect.addEventListener('change', renderSyntaxLayer);
-  fontSizeSelect.addEventListener('change', syncEditorView);
+  languageSelect.addEventListener('change', handleLanguageSelectionChange);
+  fontSizeSelect.addEventListener('change', () => {
+    applyEditorFontSize(getSelectedFontSize());
+  });
 
   return state.textareaEditorModalEl;
 }
@@ -725,10 +594,7 @@ export function openTextareaEditor(sourceEl) {
     lockModalInteraction();
   }
 
-  const editor = document.getElementById(EDITOR_ID);
-  if (editor) {
-    editor.focus();
-    editor.selectionStart = editor.value.length;
-    editor.selectionEnd = editor.value.length;
+  if (editorView) {
+    editorView.focus();
   }
 }
