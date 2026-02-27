@@ -1,11 +1,25 @@
 const SETTINGS_STORAGE_KEY = 'sdExtensionSettingsV1';
 
+export const TEXTAREA_EDITOR_LANGUAGE_OPTIONS = [
+  'auto',
+  'sql',
+  'spel',
+  'javascript',
+  'json',
+  'plain'
+];
+export const TEXTAREA_EDITOR_WRAP_OPTIONS = ['nowrap', 'wrap'];
+export const TEXTAREA_EDITOR_FONT_SIZE_OPTIONS = [12, 13, 14, 16, 18];
+
 export const DEFAULT_SETTINGS = {
   titleUpdater: true,
   runTestShortcut: true,
   jsonEditor: true,
   outputCopy: true,
-  textareaEditor: true
+  textareaEditor: true,
+  textareaEditorLanguage: 'auto',
+  textareaEditorWrap: 'nowrap',
+  textareaEditorFontSize: 13
 };
 
 export const FEATURE_SETTING_DEFINITIONS = [
@@ -36,8 +50,82 @@ export const FEATURE_SETTING_DEFINITIONS = [
   }
 ];
 
+export const EDITOR_SETTING_DEFINITIONS = [
+  {
+    key: 'textareaEditorLanguage',
+    label: 'Editor Language',
+    description: 'Default syntax highlighting mode',
+    type: 'select',
+    options: TEXTAREA_EDITOR_LANGUAGE_OPTIONS.map((value) => ({
+      value,
+      label: value === 'auto'
+        ? 'Auto'
+        : value === 'sql'
+          ? 'SQL'
+          : value === 'spel'
+            ? 'SpEL'
+            : value === 'javascript'
+              ? 'JavaScript'
+              : value === 'json'
+                ? 'JSON'
+                : 'Plain'
+    }))
+  },
+  {
+    key: 'textareaEditorWrap',
+    label: 'Editor Wrap',
+    description: 'Wrap long lines in the large editor',
+    type: 'select',
+    options: [
+      { value: 'nowrap', label: 'No Wrap' },
+      { value: 'wrap', label: 'Wrap' }
+    ]
+  },
+  {
+    key: 'textareaEditorFontSize',
+    label: 'Editor Font Size',
+    description: 'Default font size for large editor',
+    type: 'select',
+    options: TEXTAREA_EDITOR_FONT_SIZE_OPTIONS.map((value) => ({
+      value: String(value),
+      label: `${value}px`
+    }))
+  }
+];
+
 const settingListeners = new Set();
 let cachedSettings = null;
+
+function sanitizeSettingValue(key, value) {
+  if (key === 'titleUpdater'
+    || key === 'runTestShortcut'
+    || key === 'jsonEditor'
+    || key === 'outputCopy'
+    || key === 'textareaEditor') {
+    return Boolean(value);
+  }
+
+  if (key === 'textareaEditorLanguage') {
+    return TEXTAREA_EDITOR_LANGUAGE_OPTIONS.includes(value)
+      ? value
+      : DEFAULT_SETTINGS.textareaEditorLanguage;
+  }
+
+  if (key === 'textareaEditorWrap') {
+    return TEXTAREA_EDITOR_WRAP_OPTIONS.includes(value)
+      ? value
+      : DEFAULT_SETTINGS.textareaEditorWrap;
+  }
+
+  if (key === 'textareaEditorFontSize') {
+    const parsed = Number.parseInt(String(value), 10);
+    return TEXTAREA_EDITOR_FONT_SIZE_OPTIONS.includes(parsed)
+      ? parsed
+      : DEFAULT_SETTINGS.textareaEditorFontSize;
+  }
+
+  return DEFAULT_SETTINGS[key];
+}
 
 function sanitizeSettings(input) {
   const next = { ...DEFAULT_SETTINGS };
@@ -48,7 +136,7 @@ function sanitizeSettings(input) {
 
   for (const key of Object.keys(DEFAULT_SETTINGS)) {
     if (Object.prototype.hasOwnProperty.call(input, key)) {
-      next[key] = Boolean(input[key]);
+      next[key] = sanitizeSettingValue(key, input[key]);
     }
   }
 
@@ -115,7 +203,7 @@ export function setSetting(key, value) {
     return settings;
   }
 
-  const normalizedValue = Boolean(value);
+  const normalizedValue = sanitizeSettingValue(key, value);
   if (settings[key] === normalizedValue) {
     return settings;
   }
@@ -136,4 +224,3 @@ export function subscribeSettings(listener) {
     settingListeners.delete(listener);
   };
 }
-

@@ -1,4 +1,5 @@
 import {
+  EDITOR_SETTING_DEFINITIONS,
   FEATURE_SETTING_DEFINITIONS,
   loadSettings
 } from '../../core/settings.js';
@@ -10,6 +11,7 @@ import { lockModalInteraction, unlockModalInteraction } from '../../ui/modal-loc
 
 const CONTENT_ID = 'sdExtensionSettingsContent';
 const CHECKBOX_ATTR = 'data-sd-setting-key';
+const SELECT_ATTR = 'data-sd-setting-select-key';
 const SWITCH_TRACK_ATTR = 'data-sd-setting-switch-track';
 const SWITCH_THUMB_ATTR = 'data-sd-setting-switch-thumb';
 
@@ -118,6 +120,75 @@ function createSettingRow(definition) {
   return row;
 }
 
+function createEditorSettingRow(definition) {
+  const row = document.createElement('div');
+  row.setAttribute(SELECT_ATTR, definition.key);
+  Object.assign(row.style, {
+    display: 'grid',
+    gridTemplateColumns: '1fr auto',
+    gap: '12px',
+    alignItems: 'center',
+    padding: '10px 12px',
+    border: '1px solid rgba(148, 163, 184, 0.22)',
+    borderRadius: '8px',
+    background: 'rgba(15, 23, 42, 0.46)'
+  });
+
+  const textWrap = document.createElement('div');
+
+  const title = document.createElement('div');
+  title.textContent = definition.label;
+  Object.assign(title.style, {
+    color: '#e2e8f0',
+    fontSize: '13px',
+    fontWeight: '600'
+  });
+
+  const description = document.createElement('div');
+  description.textContent = definition.description;
+  Object.assign(description.style, {
+    color: '#94a3b8',
+    fontSize: '12px',
+    marginTop: '2px'
+  });
+
+  textWrap.appendChild(title);
+  textWrap.appendChild(description);
+
+  const select = document.createElement('select');
+  select.setAttribute(SELECT_ATTR, definition.key);
+  Object.assign(select.style, {
+    minWidth: '120px',
+    background: 'rgba(15, 23, 42, 0.75)',
+    color: '#cbd5e1',
+    border: '1px solid rgba(148, 163, 184, 0.4)',
+    borderRadius: '6px',
+    padding: '6px 8px',
+    fontSize: '12px',
+    outline: 'none',
+    cursor: 'pointer'
+  });
+
+  for (const option of definition.options || []) {
+    const optionEl = document.createElement('option');
+    optionEl.value = option.value;
+    optionEl.textContent = option.label;
+    select.appendChild(optionEl);
+  }
+
+  select.onchange = () => {
+    if (typeof settingsSetFn !== 'function') return;
+    const value = definition.key === 'textareaEditorFontSize'
+      ? Number.parseInt(select.value, 10)
+      : select.value;
+    settingsSetFn(definition.key, value);
+  };
+
+  row.appendChild(textWrap);
+  row.appendChild(select);
+  return row;
+}
+
 function refreshSettingRows() {
   if (!settingsModalEl) return;
   const settings = settingsGetFn();
@@ -127,6 +198,13 @@ function refreshSettingRows() {
     if (!checkbox) continue;
     checkbox.checked = Boolean(settings[def.key]);
     syncSwitchVisual(def.key, checkbox.checked);
+  }
+
+  for (const def of EDITOR_SETTING_DEFINITIONS) {
+    const select = settingsModalEl.querySelector(`select[${SELECT_ATTR}="${def.key}"]`);
+    if (!select) continue;
+    const value = settings[def.key];
+    select.value = value == null ? '' : String(value);
   }
 }
 
@@ -152,7 +230,7 @@ function createSettingsModal() {
   Object.assign(overlay.style, {
     position: 'fixed',
     inset: '0',
-    zIndex: '999996',
+    zIndex: '1000002',
     display: 'none',
     alignItems: 'center',
     justifyContent: 'center',
@@ -224,6 +302,22 @@ function createSettingsModal() {
 
   for (const def of FEATURE_SETTING_DEFINITIONS) {
     content.appendChild(createSettingRow(def));
+  }
+
+  const editorSectionTitle = document.createElement('div');
+  editorSectionTitle.textContent = 'Textarea Editor Defaults';
+  Object.assign(editorSectionTitle.style, {
+    color: '#93c5fd',
+    fontSize: '12px',
+    fontWeight: '600',
+    letterSpacing: '0.4px',
+    marginTop: '6px',
+    textTransform: 'uppercase'
+  });
+  content.appendChild(editorSectionTitle);
+
+  for (const def of EDITOR_SETTING_DEFINITIONS) {
+    content.appendChild(createEditorSettingRow(def));
   }
 
   const footer = document.createElement('div');

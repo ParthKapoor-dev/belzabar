@@ -5,10 +5,16 @@ import { sql } from '@codemirror/lang-sql';
 import { javascript } from '@codemirror/lang-javascript';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
+import {
+  loadSettings,
+  setSetting,
+  subscribeSettings
+} from '../../core/settings.js';
 import { state } from '../../core/state.js';
 import { showToast } from '../../ui/toast.js';
 import { EXTENSION_OWNED_ATTR } from '../../config/constants.js';
 import { lockModalInteraction, unlockModalInteraction } from '../../ui/modal-lock.js';
+import { openSettingsModal } from '../settings/modal.js';
 
 const OVERLAY_ID = 'sdTextareaEditorOverlay';
 const TITLE_ID = 'sdTextareaEditorTitle';
@@ -17,41 +23,56 @@ const EDITOR_ID = 'sdTextareaEditorInput';
 const EDITOR_HOST_ID = 'sdTextareaEditorHost';
 const SAVE_BTN_ID = 'sdTextareaEditorSave';
 const LANG_SELECT_ID = 'sdTextareaEditorLanguage';
+const WRAP_SELECT_ID = 'sdTextareaEditorWrapMode';
 const FONT_SIZE_SELECT_ID = 'sdTextareaEditorFontSize';
+const EDITOR_SETTINGS_BUTTON_ID = 'sdTextareaEditorSettingsButton';
 
 const EDITOR_VERTICAL_PADDING_PX = 14;
 const EDITOR_HORIZONTAL_PADDING_PX = 16;
+const EDITOR_FONT_FAMILY = '"JetBrains Mono", "Jet Brains Mono", "Geist Mono", Menlo, "Courier New", monospace';
 
 let editorView = null;
 let resolvedEditorLanguage = 'plain';
 const languageCompartment = new Compartment();
+const wrapCompartment = new Compartment();
+let unsubscribeEditorSettings = null;
 
 const editorTheme = EditorView.theme(
   {
+    '&, & *': {
+      fontFamily: `${EDITOR_FONT_FAMILY} !important`
+    },
     '&': {
       height: '100%',
-      fontFamily: '"Jet Brains Mono", "JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
+      fontFamily: EDITOR_FONT_FAMILY,
       backgroundColor: 'rgba(15, 23, 42, 0.52)',
       color: '#e2e8f0'
     },
     '.cm-scroller': {
-      fontFamily: 'inherit',
+      fontFamily: EDITOR_FONT_FAMILY,
       lineHeight: '1.5',
-      overflow: 'auto'
+      overflowX: 'scroll',
+      overflowY: 'auto'
     },
     '.cm-content': {
+      fontFamily: EDITOR_FONT_FAMILY,
       caretColor: '#e2e8f0',
       padding: `${EDITOR_VERTICAL_PADDING_PX}px ${EDITOR_HORIZONTAL_PADDING_PX}px`,
       minHeight: '100%',
       letterSpacing: 'normal',
       wordSpacing: 'normal'
     },
+    '.cm-line': {
+      fontFamily: EDITOR_FONT_FAMILY
+    },
     '.cm-gutters': {
+      fontFamily: EDITOR_FONT_FAMILY,
       backgroundColor: 'rgba(15, 23, 42, 0.7)',
       color: '#64748b',
       borderRight: '1px solid rgba(148, 163, 184, 0.2)'
     },
     '.cm-lineNumbers .cm-gutterElement': {
+      fontFamily: EDITOR_FONT_FAMILY,
       minWidth: '44px',
       padding: '0 10px 0 0',
       textAlign: 'right'
@@ -83,7 +104,7 @@ function getEditorText() {
 function getSelectedFontSize() {
   const fontSizeSelect = document.getElementById(FONT_SIZE_SELECT_ID);
   const value = Number.parseInt(fontSizeSelect?.value || '13', 10);
-  if (Number.isFinite(value) && value >= 11 && value <= 24) {
+  if (Number.isFinite(value) && [12, 13, 14, 16, 18].includes(value)) {
     return value;
   }
   return 13;
@@ -94,10 +115,52 @@ function getSelectedLanguageMode() {
   return languageSelect?.value || 'auto';
 }
 
+function getSelectedWrapMode() {
+  const wrapSelect = document.getElementById(WRAP_SELECT_ID);
+  return wrapSelect?.value || 'nowrap';
+}
+
+function getEditorSettings() {
+  const settings = loadSettings();
+  return {
+    language: settings.textareaEditorLanguage || 'auto',
+    wrap: settings.textareaEditorWrap || 'nowrap',
+    fontSize: Number.parseInt(String(settings.textareaEditorFontSize || 13), 10) || 13
+  };
+}
+
+function syncEditorControlValuesFromSettings() {
+  const settings = getEditorSettings();
+  const languageSelect = document.getElementById(LANG_SELECT_ID);
+  const wrapSelect = document.getElementById(WRAP_SELECT_ID);
+  const fontSizeSelect = document.getElementById(FONT_SIZE_SELECT_ID);
+
+  if (languageSelect && languageSelect.value !== settings.language) {
+    languageSelect.value = settings.language;
+  }
+  if (wrapSelect && wrapSelect.value !== settings.wrap) {
+    wrapSelect.value = settings.wrap;
+  }
+  if (fontSizeSelect) {
+    const nextFontValue = String(settings.fontSize);
+    if (fontSizeSelect.value !== nextFontValue) {
+      fontSizeSelect.value = nextFontValue;
+    }
+  }
+}
+
+function openMainSettingsFromEditor() {
+  openSettingsModal({
+    getSettings: loadSettings,
+    setSetting
+  });
+}
+
 function applyEditorFontSize(fontSize) {
   if (!editorView) return;
   const fontSizePx = `${fontSize}px`;
   editorView.dom.style.fontSize = fontSizePx;
+  editorView.dom.style.fontFamily = EDITOR_FONT_FAMILY;
   editorView.dom.style.letterSpacing = 'normal';
   editorView.dom.style.wordSpacing = 'normal';
 }
@@ -153,6 +216,44 @@ function reconfigureEditorLanguage(mode) {
   });
 }
 
+function getWrapExtensionForMode(mode) {
+  if (mode === 'wrap') {
+    return [
+      EditorView.lineWrapping,
+      EditorView.theme({
+        '.cm-scroller': {
+          overflowX: 'hidden'
+        },
+        '.cm-lineWrapping': {
+          whiteSpace: 'break-spaces',
+          overflowWrap: 'anywhere',
+          wordBreak: 'break-word'
+        }
+      })
+    ];
+  }
+
+  return [
+    EditorView.theme({
+      '.cm-scroller': {
+        overflowX: 'scroll'
+      },
+      '.cm-content': {
+        whiteSpace: 'pre',
+        overflowWrap: 'normal',
+        wordBreak: 'normal'
+      }
+    })
+  ];
+}
+
+function reconfigureEditorWrapMode(mode) {
+  if (!editorView) return;
+  editorView.dispatch({
+    effects: wrapCompartment.reconfigure(getWrapExtensionForMode(mode))
+  });
+}
+
 function createEditorForSource(sourceEl) {
   const host = document.getElementById(EDITOR_HOST_ID);
   if (!host) return;
@@ -160,6 +261,7 @@ function createEditorForSource(sourceEl) {
   const textValue = sourceEl.value || '';
   const readOnly = sourceEl.readOnly || sourceEl.disabled;
   const selectedLanguageMode = getSelectedLanguageMode();
+  const selectedWrapMode = getSelectedWrapMode();
   const initialLanguageMode = resolveLanguageMode(textValue, selectedLanguageMode);
   resolvedEditorLanguage = initialLanguageMode;
 
@@ -171,6 +273,7 @@ function createEditorForSource(sourceEl) {
     editorTheme,
     oneDark,
     languageCompartment.of(getLanguageExtensionForMode(initialLanguageMode)),
+    wrapCompartment.of(getWrapExtensionForMode(selectedWrapMode)),
     EditorView.updateListener.of((update) => {
       if (!update.docChanged || !editorView) return;
       if (getSelectedLanguageMode() !== 'auto') return;
@@ -198,8 +301,44 @@ function handleLanguageSelectionChange() {
   if (!editorView) return;
 
   const selectedMode = getSelectedLanguageMode();
+  setSetting('textareaEditorLanguage', selectedMode);
   const resolvedMode = resolveLanguageMode(getEditorText(), selectedMode);
   reconfigureEditorLanguage(resolvedMode);
+}
+
+function handleWrapSelectionChange() {
+  if (!editorView) return;
+  const wrapMode = getSelectedWrapMode();
+  setSetting('textareaEditorWrap', wrapMode);
+  reconfigureEditorWrapMode(wrapMode);
+}
+
+function handleFontSizeSelectionChange() {
+  const fontSize = getSelectedFontSize();
+  setSetting('textareaEditorFontSize', fontSize);
+  applyEditorFontSize(fontSize);
+}
+
+function applyEditorSettingsFromStore(settings) {
+  syncEditorControlValuesFromSettings();
+  if (!editorView) return;
+
+  const language = settings.textareaEditorLanguage || 'auto';
+  const resolvedLanguage = resolveLanguageMode(getEditorText(), language);
+  reconfigureEditorLanguage(resolvedLanguage);
+  reconfigureEditorWrapMode(settings.textareaEditorWrap || 'nowrap');
+  applyEditorFontSize(
+    Number.parseInt(String(settings.textareaEditorFontSize || 13), 10) || 13
+  );
+}
+
+function ensureEditorSettingsSubscription() {
+  if (unsubscribeEditorSettings) return;
+
+  unsubscribeEditorSettings = subscribeSettings((settings) => {
+    if (!state.textareaEditorModalEl) return;
+    applyEditorSettingsFromStore(settings);
+  });
 }
 
 export function closeTextareaEditor() {
@@ -301,6 +440,7 @@ function updateModalForSource(sourceEl) {
   saveBtn.style.opacity = readOnly ? '0.45' : '1';
   saveBtn.style.cursor = readOnly ? 'not-allowed' : 'pointer';
 
+  syncEditorControlValuesFromSettings();
   createEditorForSource(sourceEl);
 }
 
@@ -416,6 +556,30 @@ export function createTextareaEditorModal() {
     fontSizeSelect.appendChild(optionEl);
   }
 
+  const wrapSelect = document.createElement('select');
+  wrapSelect.id = WRAP_SELECT_ID;
+  Object.assign(wrapSelect.style, {
+    background: 'rgba(15, 23, 42, 0.75)',
+    color: '#cbd5e1',
+    border: '1px solid rgba(148, 163, 184, 0.4)',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    fontSize: '12px',
+    outline: 'none',
+    cursor: 'pointer'
+  });
+  const wrapOptions = [
+    { value: 'nowrap', label: 'No Wrap' },
+    { value: 'wrap', label: 'Wrap' }
+  ];
+  for (const option of wrapOptions) {
+    const optionEl = document.createElement('option');
+    optionEl.value = option.value;
+    optionEl.textContent = option.label;
+    if (option.value === 'nowrap') optionEl.selected = true;
+    wrapSelect.appendChild(optionEl);
+  }
+
   const languageSelect = document.createElement('select');
   languageSelect.id = LANG_SELECT_ID;
   Object.assign(languageSelect.style, {
@@ -443,6 +607,32 @@ export function createTextareaEditorModal() {
     if (option.value === 'auto') optionEl.selected = true;
     languageSelect.appendChild(optionEl);
   }
+
+  const settingsBtn = document.createElement('button');
+  settingsBtn.id = EDITOR_SETTINGS_BUTTON_ID;
+  settingsBtn.type = 'button';
+  settingsBtn.textContent = '⚙';
+  settingsBtn.setAttribute('title', 'Open extension settings');
+  settingsBtn.setAttribute('aria-label', 'Open extension settings');
+  Object.assign(settingsBtn.style, {
+    width: '30px',
+    height: '30px',
+    padding: '0',
+    borderRadius: '999px',
+    border: '1px solid rgba(59, 130, 246, 0.45)',
+    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+    color: '#ffffff',
+    fontSize: '16px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)',
+    lineHeight: '1'
+  });
+  settingsBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openMainSettingsFromEditor();
+  };
 
   const copyBtn = document.createElement('button');
   copyBtn.type = 'button';
@@ -480,7 +670,9 @@ export function createTextareaEditorModal() {
 
   header.appendChild(titleWrap);
   headerActions.appendChild(languageSelect);
+  headerActions.appendChild(wrapSelect);
   headerActions.appendChild(fontSizeSelect);
+  headerActions.appendChild(settingsBtn);
   headerActions.appendChild(copyBtn);
   headerActions.appendChild(closeBtn);
   header.appendChild(headerActions);
@@ -515,7 +707,7 @@ export function createTextareaEditorModal() {
   });
 
   const helper = document.createElement('div');
-  helper.textContent = 'CodeMirror editor with line numbers and syntax highlighting.';
+  helper.textContent = 'CodeMirror editor with syntax highlighting and optional line wrapping.';
   Object.assign(helper.style, {
     color: '#94a3b8',
     fontSize: '12px'
@@ -574,10 +766,11 @@ export function createTextareaEditorModal() {
   document.body.appendChild(overlay);
   state.textareaEditorModalEl = overlay;
   attachGlobalShortcuts();
+  ensureEditorSettingsSubscription();
   languageSelect.addEventListener('change', handleLanguageSelectionChange);
-  fontSizeSelect.addEventListener('change', () => {
-    applyEditorFontSize(getSelectedFontSize());
-  });
+  wrapSelect.addEventListener('change', handleWrapSelectionChange);
+  fontSizeSelect.addEventListener('change', handleFontSizeSelectionChange);
+  syncEditorControlValuesFromSettings();
 
   return state.textareaEditorModalEl;
 }

@@ -8,8 +8,8 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 2. Trigger Run Test via keyboard shortcut (`Ctrl+Shift+Enter`) from anywhere on the page, including focused inputs/textareas
 3. Provide a JSON modal editor to bulk edit AD test inputs and sync values back to DOM controls
 4. Add a hover-revealed copy icon inside each output container to copy full output JSON and show toast feedback
-5. Add hover-revealed overlay controls for native `<textarea>`: Open icon + Copy icon stacked at top-right (Open above Copy), with Open launching a large CodeMirror 6 editor modal (single editor surface) with line numbers, automatic lightweight syntax highlighting (Auto/SQL/SpEL/JS/JSON/plain), and quick controls (language/font/copy). Overlay controls are injected via an extension-owned wrapper around each textarea for stable positioning.
-6. Provide extension settings (button near `.header_banner` + `Ctrl+,`) to enable/disable features with persisted toggles
+5. Add hover-revealed overlay controls for native `<textarea>`: Open icon + Copy icon stacked at top-right (Open above Copy), with Open launching a large CodeMirror 6 editor modal (single editor surface) with line numbers, automatic lightweight syntax highlighting (Auto/SQL/SpEL/JS/JSON/plain), optional wrap mode (Wrap/No Wrap), and quick controls (language/wrap/font/copy). Overlay controls are injected via an extension-owned wrapper around each textarea for stable positioning.
+6. Provide extension settings (button near `.header_banner` + `Ctrl+,`) to enable/disable features and manage persisted textarea editor defaults (language/wrap/font size)
 
 ## Tech and Runtime
 
@@ -40,9 +40,9 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 2. JSON feature injects a `📋 JSON` button near the Inputs section.
 3. Output copy feature injects a hover-revealed copy icon inside each `.output-container`.
 4. Textarea editor feature injects hover-revealed overlay icons inside eligible native textareas (`Open` and `Copy` stacked on the top-right).
-5. Open launches a large CodeMirror modal editor with line numbers and syntax highlighting (Auto/SQL/SpEL/JS/JSON/plain), plus language/font/copy controls and Save/Cancel actions.
+5. Open launches a large CodeMirror modal editor with line numbers and syntax highlighting (Auto/SQL/SpEL/JS/JSON/plain), plus language/wrap/font/copy controls, an in-editor button to open extension settings, and Save/Cancel actions.
 6. Settings feature injects an icon-only `⚙` button near `.header_banner .page_title` and opens via `Ctrl+,`.
-7. Settings toggles enable/disable title updater, run-test shortcut, JSON editor, output copy, and textarea editor in real time.
+7. Settings toggles enable/disable title updater, run-test shortcut, JSON editor, output copy, and textarea editor in real time; settings also store textarea editor defaults (language/wrap/font size).
 8. Modal loads detected inputs and current values into formatted JSON.
 9. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
 
