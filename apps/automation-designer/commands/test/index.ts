@@ -56,7 +56,7 @@ function parseOutput(testResult: unknown): unknown {
 }
 
 const command: CommandModule<TestMethodArgs, TestMethodData> = {
-  schema: "ad.test-method",
+  schema: "ad.test",
   parseArgs(args) {
     const uuid = args[0];
     if (!uuid || uuid.startsWith("-")) {

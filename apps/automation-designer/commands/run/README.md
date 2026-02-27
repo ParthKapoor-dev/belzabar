@@ -1,11 +1,11 @@
-# Run Method Command
+# Run Command
 
 Executes an Automation Method using its Published ID.
 
 ## Usage
 
 ```bash
-bun run bin/cli.ts run-method <PUBLISHED_ID> [PAYLOAD_JSON_OR_FILE] [--raw]
+belz ad run <PUBLISHED_ID> [PAYLOAD_JSON_OR_FILE] [--raw]
 ```
 
 ## Logic

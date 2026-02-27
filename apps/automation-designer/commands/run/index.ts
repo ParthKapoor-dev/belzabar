@@ -38,7 +38,7 @@ async function resolvePayload(payloadArg?: string): Promise<unknown> {
 }
 
 const command: CommandModule<RunMethodArgs, RunMethodData> = {
-  schema: "ad.run-method",
+  schema: "ad.run",
   parseArgs(args) {
     const raw = args.includes("--raw");
     const positional = args.filter(arg => arg !== "--raw");

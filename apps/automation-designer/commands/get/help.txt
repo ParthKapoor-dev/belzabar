@@ -1,15 +1,20 @@
-Usage: belz fetch-method <UUID> [flags]
+Usage: belz ad get <UUID> [flags]
 
-Fetches details for a specific Automation Method by its UUID.
-Automatically resolves Draft vs Published IDs.
+Fetch an Automation Designer method by its UUID (draft or published).
 
 Arguments:
-  <UUID>    The unique identifier for the method (Draft or Published).
+  <UUID>              The unique identifier of the method to fetch.
 
 Flags:
-  --raw     Include raw method payload in output.
-  --help, -h    Show this help message.
+  --raw               Include raw method payload in output.
+  --help, -h          Show this help message.
 
-Example:
-  belz fetch-method 123e4567-e89b-12d3-a456-426614174000
-  belz fetch-method 123e4567-e89b-12d3-a456-426614174000 --raw --llm
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz ad get 123e4567-e89b-12d3-a456-426614174000
+  belz ad get 123e4567-e89b-12d3-a456-426614174000 --raw
+  belz ad get 123e4567-e89b-12d3-a456-426614174000 --env nsm-qa --llm

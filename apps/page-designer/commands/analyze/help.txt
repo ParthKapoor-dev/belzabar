@@ -1,15 +1,22 @@
-Usage: pd analyze [PAGE_ID] [flags]
+Usage: belz pd analyze [PAGE_ID] [flags]
 
-Runs a recursive analysis of a page or components to find all nested components and Automation Designer (AD) method references.
+Recursively analyze a page, collecting all nested components and AD method references.
+Uses the default page list from config when PAGE_ID is omitted.
 
 Arguments:
-  [PAGE_ID]     Optional. The UUID of the page to analyze. 
-                If omitted, uses default pages defined in config.
+  [PAGE_ID]           UUID of the page to analyze. Uses default pages if omitted.
 
 Flags:
-  --compliance  Run compliance verification against master_ids.txt.
-  --help, -h    Show this help message.
+  --compliance        Verify discovered AD IDs against master_ids.txt.
+  --help, -h          Show this help message.
 
-Example:
-  pd analyze
-  pd analyze 49fa2576... --compliance
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz pd analyze
+  belz pd analyze 49fa2576...
+  belz pd analyze 49fa2576... --compliance
+  belz pd analyze --compliance --llm

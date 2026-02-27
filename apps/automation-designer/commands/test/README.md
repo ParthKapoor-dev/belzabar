@@ -1,11 +1,11 @@
-# Test Method Command
+# Test Command
 
 Executes a Draft Automation Method by injecting specific input values.
 
 ## Usage
 
 ```bash
-bun run bin/cli.ts test-method <UUID> [flags]
+belz ad test <UUID> [flags]
 ```
 
 ## Logic

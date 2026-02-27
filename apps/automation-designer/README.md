@@ -8,6 +8,7 @@ A Bun + TypeScript CLI for interacting with Automation Designer APIs.
 -   **Method Inspection**: View definitions, inputs, and logic (SQL/Code).
 -   **Draft Testing**: Run draft methods with inputs and trace execution.
 -   **SQL Read Queries**: Run SQL read queries against configured DB accounts.
+-   **NSM Migrations**: Run PD/AD migrations through the DB migration tool protocol.
 -   **AI Native**: First-class support for AI agents via MCP and JSON output.
 
 ## 🤖 AI Agent Mode
@@ -19,7 +20,7 @@ Pass the global flag `--llm` to any command.
 This forces **deterministic compact JSON output** and suppresses human tables.
 
 ```bash
-bun run bin/cli.ts show-method <UUID> --llm
+belz ad show <UUID> --llm
 ```
 
 LLM output shape is standardized:
@@ -59,25 +60,31 @@ bun install
 
 **Show Method**
 ```bash
-bun run bin/cli.ts show-method <UUID> [flags]
+belz ad show <UUID> [flags]
 # Flags: --full, --inputs, --services
 ```
 
 **Test Method**
 ```bash
-bun run bin/cli.ts test-method <UUID> --inputs data.json
+belz ad test <UUID> --inputs data.json
 ```
 
 **Save Regression Suite**
 ```bash
-bun run bin/cli.ts save-suite <UUID> --name "smoke-test"
+belz ad save-suite <UUID> --name "smoke-test"
 ```
 
 **SQL Read Query**
 ```bash
-bun run bin/cli.ts sql run "select * from users limit 1"
-bun run bin/cli.ts sql dbs
-bun run bin/cli.ts sql tui
+belz ad sql run "select * from users limit 1"
+belz ad sql dbs
+belz ad sql tui
+```
+
+**NSM Migration**
+```bash
+belz migrate profiles
+belz migrate run --module PD --ids <uuid1,uuid2> --profile devncdns_qancdns
 ```
 
 ## 🏗️ Architecture

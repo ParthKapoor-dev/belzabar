@@ -1,11 +1,11 @@
-# Fetch Method Command
+# Get Command
 
 Retrieves metadata about an Automation Method.
 
 ## Usage
 
 ```bash
-bun run bin/cli.ts fetch-method <UUID>
+belz ad get <UUID>
 ```
 
 ## Logic

@@ -29,7 +29,7 @@ interface FetchMethodData {
 }
 
 const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
-  schema: "ad.fetch-method",
+  schema: "ad.get",
   parseArgs(args) {
     const uuid = args[0];
     if (!uuid || uuid.startsWith("-")) {

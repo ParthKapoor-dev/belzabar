@@ -1,14 +1,21 @@
-Usage: pd show-page <PAGE_ID> [flags]
+Usage: belz pd show-page <PAGE_ID> [flags]
 
-Fetches and displays the configuration of a specific Page Designer page.
+Fetch and display the configuration of a Page Designer page.
 
 Arguments:
-  <PAGE_ID>     The UUID of the page to show.
+  <PAGE_ID>           The UUID of the page to show.
 
 Flags:
-  --full        Include full configuration payload.
-  --raw         Include raw configuration string in output.
-  --help, -h    Show this help message.
+  --full              Include the full configuration payload.
+  --raw               Include the raw configuration string in output.
+  --help, -h          Show this help message.
 
-Example:
-  pd show-page 49fa2576...
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz pd show-page 49fa2576...
+  belz pd show-page 49fa2576... --full
+  belz pd show-page 49fa2576... --raw --llm

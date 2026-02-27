@@ -1,8 +1,17 @@
-Usage: cli envs
+Usage: belz envs [flags]
 
-Lists all configured environments and highlights the active one.
-Change the active environment for a command using the global --env flag.
+List all configured environments and show which one is active.
+Use --env <name> to switch environments for any command.
 
-Example:
-  cli envs
-  cli fetch-method <ID> --env nsm-qa
+Flags:
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz envs
+  belz envs --env nsm-qa
+  belz ad get <UUID> --env nsm-qa

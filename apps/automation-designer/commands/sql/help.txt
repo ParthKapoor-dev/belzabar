@@ -1,37 +1,41 @@
-Usage: belz sql <subcommand> [args] [flags]
+Usage: belz ad sql <subcommand> [args] [flags]
 
 Run SQL read-mode queries via Automation Designer database services.
 
 Subcommands:
-  run <query>        Execute a SQL query in read mode.
-  dbs                List available database auth configurations.
-  tui                Start an interactive SQL TUI session.
-
-Flags (run):
-  --db <name|id>     Optional database nickname or id.
-                     Default resolution order:
-                     1) BELZ_SQL_DEFAULT_DB
-                     2) NSM_Read_DB
-  --raw              Include raw operation metadata, payload, and execution response.
+  dbs                 List available database auth configurations.
+  run <QUERY>         Execute a SQL query in read mode.
+  tui                 Start an interactive SQL session.
 
 Flags (dbs):
-  --raw              Include raw API response.
+  --raw               Include raw API response.
+
+Flags (run):
+  --db <NAME|ID>      Database nickname or ID.
+                      Default resolution: BELZ_SQL_DEFAULT_DB → NSM_Read_DB
+  --raw               Include raw operation metadata and execution response.
 
 Flags (tui):
-  --db <name|id>     Optional starting database nickname or id.
-  --format <mode>    Output format for rows: table (default) | json.
-  --timing           Print timing details after each executed statement.
-  --page-size <n>    Rows per page for result pagination (default: 50).
-  --no-history       Disable persisted query history for this session.
+  --db <NAME|ID>      Starting database nickname or ID.
+  --format <MODE>     Row output format: table (default) | json.
+  --timing            Print timing details after each statement.
+  --page-size <N>     Rows per page for pagination. (default: 50)
+  --no-history        Disable persisted query history for this session.
 
 TUI meta commands:
-  \\q, \\h, \\status, \\db, \\use <db>, \\history, \\clear, \\timing, \\format [table|json], \\last, \\r
+  \q  \h  \status  \db  \use <db>  \history  \clear  \timing  \format [table|json]  \last  \r
+
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz sql dbs
-  belz sql run "select * from users limit 1"
-  belz sql run "select * from users limit 1" --db NSM_QA_DB
-  BELZ_SQL_DEFAULT_DB=NSM_QA_DB belz sql run "select now()"
-  belz sql run "select * from users limit 1" --raw --llm
-  belz sql tui
-  belz sql tui --db NSM_QA_DB --format json --timing
+  belz ad sql dbs
+  belz ad sql run "select * from users limit 1"
+  belz ad sql run "select * from users limit 1" --db NSM_QA_DB
+  belz ad sql tui
+  belz ad sql tui --db NSM_QA_DB --format json --timing
+  BELZ_SQL_DEFAULT_DB=NSM_QA_DB belz ad sql run "select now()"

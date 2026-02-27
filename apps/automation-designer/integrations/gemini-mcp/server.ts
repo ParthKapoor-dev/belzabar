@@ -91,9 +91,9 @@ async function handleMessage(message: any) {
     try {
       let result;
       if (name === "ad.show_method") {
-        result = await runCli(["show-method", args.methodUuid]);
+        result = await runCli(["show", args.methodUuid]);
       } else if (name === "ad.test_method") {
-        const cliArgs = ["test-method", args.methodUuid];
+        const cliArgs = ["test", args.methodUuid];
         if (args.inputFile) {
           cliArgs.push("--inputs", args.inputFile);
         }

@@ -296,7 +296,7 @@ async function buildServiceDetailData(method: HydratedMethod, index: number, inc
 }
 
 const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
-  schema: "ad.show-method",
+  schema: "ad.show",
   parseArgs(args) {
     const uuid = args[0];
     if (!uuid || uuid.startsWith("-")) {

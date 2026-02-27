@@ -1,20 +1,24 @@
-Usage: belz test-method <uuid> [flags]
+Usage: belz ad test <UUID> [flags]
 
-Execute (Run/Debug) a Draft method by injecting input values.
+Execute a draft Automation Designer method for testing and inspection.
 
 Arguments:
-  <uuid>                The UUID of the method (chain) to test.
+  <UUID>              The UUID of the draft method to test.
 
 Flags:
-  --inputs <file>       Path to a JSON file containing input values.
-                        If omitted, interactive mode is used.
-  --verbose             Show detailed execution trace for each step.
-  --raw                 Include raw execution payload in output.
-  --force               Ignore cache and fetch fresh method definition before testing.
-  --help, -h            Show this help message.
+  --inputs <FILE>     Path to a JSON file of input values. Prompts interactively if omitted.
+  --verbose           Show detailed execution trace for each step.
+  --force             Bypass cache and fetch a fresh method definition.
+  --raw               Include raw execution payload in output.
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz test-method 1234-5678
-  belz test-method 1234-5678 --verbose
-  belz test-method 1234-5678 --inputs ./test-data.json
-  belz test-method 1234-5678 --raw --llm
+  belz ad test 1234-5678
+  belz ad test 1234-5678 --verbose
+  belz ad test 1234-5678 --inputs ./test-data.json
+  belz ad test 1234-5678 --inputs ./test-data.json --raw --llm

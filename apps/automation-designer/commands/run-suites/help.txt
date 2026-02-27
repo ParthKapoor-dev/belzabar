@@ -1,10 +1,17 @@
-Usage: cli run-suites
+Usage: belz ad run-suites [flags]
 
-Executes all saved regression test suites found in the 'suites/' directory.
-Asserts that each method executes successfully (HTTP 200 + 'failed': false).
+Execute all saved regression test suites found in the 'suites/' directory.
+Each suite is verified for HTTP 200 and a non-failed execution result.
 
 Flags:
-  --help, -h       Show this help message.
+  --help, -h          Show this help message.
 
-Example:
-  cli run-suites
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz ad run-suites
+  belz ad run-suites --env nsm-qa
+  belz ad run-suites --llm

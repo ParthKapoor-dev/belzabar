@@ -1,15 +1,21 @@
-Usage: cli save-suite <uuid> [flags]
+Usage: belz ad save-suite <UUID> --name <NAME> [flags]
 
-Saves a regression test suite for a specific method.
-Captures the current input values and stores them as a reusable test case.
+Capture and save a regression test suite for a method.
+Stores input values for repeated use with 'belz ad run-suites'.
 
 Arguments:
-  <uuid>           The UUID of the method definition to verify.
+  <UUID>              The UUID of the method to save a test suite for.
 
 Flags:
-  --name <string>  (Required) Unique name for the test suite (e.g., 'smoke-test-1').
-  --inputs <file>  (Optional) Path to a JSON file containing input values.
-                   If omitted, interactive mode will be used.
+  --name <NAME>       Name for this test suite, e.g. 'smoke-test-login'. (required)
+  --inputs <FILE>     Path to a JSON file of input values. Prompts interactively if omitted.
+  --help, -h          Show this help message.
 
-Example:
-  cli save-suite 123e4567-e89b... --name smoke-test-login --inputs ./inputs.json
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz ad save-suite 123e4567-e89b-12d3-a456-426614174000 --name smoke-test-login
+  belz ad save-suite 123e4567-e89b-12d3-a456-426614174000 --name smoke-test-login --inputs ./inputs.json

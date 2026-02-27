@@ -1,17 +1,21 @@
-Usage: belz run-method <PUBLISHED_ID> [PAYLOAD] [flags]
+Usage: belz ad run <PUBLISHED_ID> [PAYLOAD] [flags]
 
-Executes an Automation Method.
+Execute a published Automation Designer method.
 
 Arguments:
-  <PUBLISHED_ID>   The unique ID of the PUBLISHED method version.
-  [PAYLOAD]        Optional. JSON string OR path to a JSON file. 
-                   Defaults to '{}' if omitted.
+  <PUBLISHED_ID>      The unique ID of the published method version.
+  [PAYLOAD]           JSON string or path to a JSON file. Defaults to '{}' if omitted.
 
 Flags:
-  --raw            Include raw payload in output data.
-  --help, -h       Show this help message.
+  --raw               Include raw payload in output.
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz run-method 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}'
-  belz run-method 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json
-  belz run-method 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --raw --llm
+  belz ad run 40ba5566efa95b033ef7af8f7f30ee09
+  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}'
+  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --raw --llm

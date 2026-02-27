@@ -1,23 +1,28 @@
-Usage: belz show-method <uuid> [flags]
+Usage: belz ad show <UUID> [flags]
 
-Displays details of an Automation Designer method.
-It will automatically fetch and cache the method if not present locally or if the cache is stale (5 mins).
+Display the structure and metadata of an Automation Designer method.
+The method definition is fetched and cached automatically (5-minute TTL).
 
 Arguments:
-  <uuid>                The UUID of the method (chain) to display.
+  <UUID>                  The UUID of the method to display.
 
 Flags:
-  --inputs              Show a table of input arguments.
-  --services            Show a list of service steps.
-  --service-detail <n>  Show detailed info for a specific service step (0-indexed).
-  --full                Include expanded per-service logic details.
-  --raw                 Include raw payloads in output data.
-  --force               Ignore cache and force a fresh fetch from the API.
-  --help, -h            Show this help message.
+  --inputs                Show a table of input arguments.
+  --services              Show a list of service steps.
+  --service-detail <N>    Show detailed info for the Nth service step.
+  --full                  Include expanded per-service logic details.
+  --force                 Bypass cache and fetch a fresh method definition.
+  --raw                   Include raw payloads in output.
+  --help, -h              Show this help message.
+
+Global Flags:
+  --env <name>            Set active environment. (default: nsm-dev)
+                          Available: nsm-dev | nsm-qa | nsm-uat
+  --llm                   Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz show-method 1234-5678 --inputs
-  belz show-method 1234-5678 --services
-  belz show-method 1234-5678 --service-detail 2 --llm
-  belz show-method 1234-5678 --service-detail 2 --raw --llm
-  belz show-method 1234-5678 --force
+  belz ad show 1234-5678 --inputs
+  belz ad show 1234-5678 --services
+  belz ad show 1234-5678 --service-detail 2
+  belz ad show 1234-5678 --service-detail 2 --raw --llm
+  belz ad show 1234-5678 --force

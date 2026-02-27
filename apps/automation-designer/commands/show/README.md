@@ -1,11 +1,11 @@
-# Show Method Command
+# Show Command
 
 Displays detailed metadata, inputs, and service steps for an Automation Method.
 
 ## Usage
 
 ```bash
-bun run bin/cli.ts show-method <UUID> [flags]
+belz ad show <UUID> [flags]
 ```
 
 ## Logic

@@ -16,16 +16,36 @@ export interface CliOptions {
   binaryName: string;
 }
 
-export async function runCli(
-  argv: string[],
-  commandMap: Record<string, any>,
-  options: CliOptions,
-  helpResolver?: (cmd: string) => Promise<string | null>
-) {
-  let args = argv.slice(2);
-  const startedAt = Date.now();
+export interface NamespaceDefinition {
+  name: string;
+  description: string;
+  commands: Record<string, any>;
+  helpDir?: string;
+  helpResolver?: (cmd: string) => Promise<string | null>;
+}
+
+export interface NamespacedCliOptions {
+  name: string;
+  description: string;
+  binaryName: string;
+  namespaces: Record<string, NamespaceDefinition>;
+  topLevel: Record<string, any>;
+  topLevelHelpDir?: string;
+  topLevelHelpResolver?: (cmd: string) => Promise<string | null>;
+}
+
+// ── Shared internals ────────────────────────────────────────────────────────
+
+function stripGlobalFlags(argv: string[]): {
+  args: string[];
+  outputMode: "human" | "llm";
+  envName: string | null;
+  envError: string | null;
+} {
+  let args = [...argv];
   let outputMode: "human" | "llm" = "human";
-  const warnings: string[] = [];
+  let envName: string | null = null;
+  let envError: string | null = null;
 
   const llmIndex = args.indexOf("--llm");
   if (llmIndex !== -1) {
@@ -36,51 +56,38 @@ export async function runCli(
   const envIndex = args.findIndex(a => a === "--env" || a === "-e");
   if (envIndex !== -1) {
     if (envIndex + 1 >= args.length) {
-      return exitWithEnvelope(
-        outputMode,
-        {
-          schema: `${options.binaryName}.runner`,
-          version: "2.0",
-          ok: false,
-          command: "global",
-          data: null,
-          error: { code: "MISSING_ENV_ARG", message: "Error: --env flag requires an argument." },
-          meta: {},
-        },
-        1
-      );
+      envError = "Error: --env flag requires an argument.";
+    } else {
+      envName = args[envIndex + 1] as string;
+      try {
+        Config.setActiveEnv(envName);
+      } catch (e: any) {
+        envError = `Error: ${e.message}`;
+      }
+      args.splice(envIndex, 2);
     }
-    const envName = args[envIndex + 1] as string;
-    try {
-      Config.setActiveEnv(envName);
-    } catch (e: any) {
-      return exitWithEnvelope(
-        outputMode,
-        {
-          schema: `${options.binaryName}.runner`,
-          version: "2.0",
-          ok: false,
-          command: "global",
-          data: null,
-          error: { code: "INVALID_ENV", message: `Error: ${e.message}` },
-          meta: {},
-        },
-        1
-      );
-    }
-    args.splice(envIndex, 2);
   }
 
+  return { args, outputMode, envName, envError };
+}
+
+async function dispatchCommand(
+  args: string[],
+  commandMap: Record<string, any>,
+  outputMode: "human" | "llm",
+  binaryName: string,
+  helpResolver?: (cmd: string) => Promise<string | null>
+): Promise<void> {
+  const startedAt = Date.now();
+  const warnings: string[] = [];
   const activeEnv = Config.activeEnv;
   const commandName = args[0];
 
   const listCommandsHuman = () => {
-    console.log(options.name);
-    console.log(options.description);
-    console.log(`Usage: ${options.binaryName} <command> [args]\n`);
+    console.log(`Usage: ${binaryName} <command> [args]\n`);
     console.log("Available Commands:");
     Object.keys(commandMap).forEach(cmd => console.log(`  - ${cmd}`));
-    console.log(`\nRun '${options.binaryName} <command> --help' for details.`);
+    console.log(`\nRun '${binaryName} <command> --help' for details.`);
   };
 
   if (!commandName || commandName === "--help" || commandName === "-h") {
@@ -88,16 +95,11 @@ export async function runCli(
       return exitWithEnvelope(
         outputMode,
         {
-          schema: `${options.binaryName}.help`,
+          schema: `${binaryName}.help`,
           version: "2.0",
           ok: true,
           command: "help",
-          data: {
-            name: options.name,
-            description: options.description,
-            binaryName: options.binaryName,
-            commands: Object.keys(commandMap),
-          },
+          data: { binaryName, commands: Object.keys(commandMap) },
           error: null,
           meta: {},
         },
@@ -116,7 +118,7 @@ export async function runCli(
       return exitWithEnvelope(
         outputMode,
         {
-          schema: `${options.binaryName}.runner`,
+          schema: `${binaryName}.runner`,
           version: "2.0",
           ok: false,
           command: commandName,
@@ -141,13 +143,11 @@ export async function runCli(
       return exitWithEnvelope(
         outputMode,
         {
-          schema: `${options.binaryName}.help`,
+          schema: `${binaryName}.help`,
           version: "2.0",
           ok: true,
           command: commandName,
-          data: {
-            help: helpText ?? `No help file found for '${commandName}'.`,
-          },
+          data: { help: helpText ?? `No help file found for '${commandName}'.` },
           error: null,
           meta: {},
         },
@@ -161,11 +161,9 @@ export async function runCli(
   const commandContext: CommandContext = {
     outputMode,
     env: activeEnv,
-    binaryName: options.binaryName,
+    binaryName,
     commandName,
-    warn: (message: string) => {
-      warnings.push(message);
-    },
+    warn: (message: string) => { warnings.push(message); },
   };
 
   try {
@@ -183,14 +181,231 @@ export async function runCli(
     exitWithEnvelope(outputMode, envelope, envelope.ok ? 0 : 1, command.presentHuman);
   } catch (error: unknown) {
     const normalizedError = normalizeError(error);
-    const failureResult: CommandResult = {
-      ok: false,
-      error: normalizedError,
-    };
+    const failureResult: CommandResult = { ok: false, error: normalizedError };
     const envelope = toEnvelope(commandName, command, failureResult, startedAt, activeEnv.name, warnings);
     exitWithEnvelope(outputMode, envelope, 1, command.presentHuman);
   }
 }
+
+// ── Public API ───────────────────────────────────────────────────────────────
+
+export async function runCli(
+  argv: string[],
+  commandMap: Record<string, any>,
+  options: CliOptions,
+  helpResolver?: (cmd: string) => Promise<string | null>
+) {
+  const { args, outputMode, envError } = stripGlobalFlags(argv.slice(2));
+
+  if (envError) {
+    return exitWithEnvelope(
+      outputMode,
+      {
+        schema: `${options.binaryName}.runner`,
+        version: "2.0",
+        ok: false,
+        command: "global",
+        data: null,
+        error: { code: envError.includes("requires") ? "MISSING_ENV_ARG" : "INVALID_ENV", message: envError },
+        meta: {},
+      },
+      1
+    );
+  }
+
+  if (!args[0] || args[0] === "--help" || args[0] === "-h") {
+    if (outputMode === "llm") {
+      return exitWithEnvelope(
+        outputMode,
+        {
+          schema: `${options.binaryName}.help`,
+          version: "2.0",
+          ok: true,
+          command: "help",
+          data: {
+            name: options.name,
+            description: options.description,
+            binaryName: options.binaryName,
+            commands: Object.keys(commandMap),
+          },
+          error: null,
+          meta: {},
+        },
+        0
+      );
+    }
+    console.log(options.name);
+    console.log(options.description);
+    await dispatchCommand([], commandMap, outputMode, options.binaryName, helpResolver);
+    return;
+  }
+
+  return dispatchCommand(args, commandMap, outputMode, options.binaryName, helpResolver);
+}
+
+export async function runNamespacedCli(
+  argv: string[],
+  options: NamespacedCliOptions
+): Promise<void> {
+  const { args, outputMode, envError } = stripGlobalFlags(argv.slice(2));
+
+  if (envError) {
+    return exitWithEnvelope(
+      outputMode,
+      {
+        schema: `${options.binaryName}.runner`,
+        version: "2.0",
+        ok: false,
+        command: "global",
+        data: null,
+        error: {
+          code: envError.includes("requires") ? "MISSING_ENV_ARG" : "INVALID_ENV",
+          message: envError,
+        },
+        meta: {},
+      },
+      1
+    );
+  }
+
+  const printHelp = () => {
+    console.log(options.name);
+    console.log(options.description);
+    console.log(`\nUsage: ${options.binaryName} <namespace|command> [args]\n`);
+    console.log("Namespaces:");
+    for (const [ns, def] of Object.entries(options.namespaces)) {
+      console.log(`  ${ns.padEnd(6)}  ${def.description}`);
+    }
+    if (Object.keys(options.topLevel).length > 0) {
+      console.log("\nTop-level Commands:");
+      Object.keys(options.topLevel).forEach(cmd => console.log(`  - ${cmd}`));
+    }
+    console.log(`\nRun '${options.binaryName} <namespace> --help' for namespace commands.`);
+  };
+
+  const token = args[0];
+
+  if (!token || token === "--help" || token === "-h") {
+    if (outputMode === "llm") {
+      return exitWithEnvelope(
+        outputMode,
+        {
+          schema: `${options.binaryName}.help`,
+          version: "2.0",
+          ok: true,
+          command: "help",
+          data: {
+            name: options.name,
+            description: options.description,
+            binaryName: options.binaryName,
+            namespaces: Object.fromEntries(
+              Object.entries(options.namespaces).map(([k, v]) => [k, {
+                name: v.name,
+                description: v.description,
+                commands: Object.keys(v.commands),
+              }])
+            ),
+            topLevelCommands: Object.keys(options.topLevel),
+          },
+          error: null,
+          meta: {},
+        },
+        0
+      );
+    }
+    printHelp();
+    process.exit(0);
+  }
+
+  // Namespace dispatch
+  const ns = options.namespaces[token];
+  if (ns) {
+    const remainingArgs = args.slice(1);
+    const nsBinaryName = `${options.binaryName} ${token}`;
+
+    if (!remainingArgs[0] || remainingArgs[0] === "--help" || remainingArgs[0] === "-h") {
+      if (outputMode === "llm") {
+        return exitWithEnvelope(
+          outputMode,
+          {
+            schema: `${nsBinaryName}.help`,
+            version: "2.0",
+            ok: true,
+            command: "help",
+            data: {
+              name: ns.name,
+              description: ns.description,
+              binaryName: nsBinaryName,
+              commands: Object.keys(ns.commands),
+            },
+            error: null,
+            meta: {},
+          },
+          0
+        );
+      }
+      console.log(`${ns.name} — ${ns.description}`);
+      console.log(`\nUsage: ${nsBinaryName} <command> [args]\n`);
+      console.log("Commands:");
+      Object.keys(ns.commands).forEach(cmd => console.log(`  - ${cmd}`));
+      console.log(`\nRun '${nsBinaryName} <command> --help' for details.`);
+      process.exit(0);
+    }
+
+    const helpResolver = ns.helpResolver
+      ?? (ns.helpDir
+        ? async (cmd: string) => {
+            const p = `${ns.helpDir}/${cmd}/help.txt`;
+            try {
+              const file = Bun.file(p);
+              if (await file.exists()) return await file.text();
+            } catch { /* ignore */ }
+            return null;
+          }
+        : undefined);
+
+    return dispatchCommand(remainingArgs, ns.commands, outputMode, nsBinaryName, helpResolver);
+  }
+
+  // Top-level command dispatch
+  if (options.topLevel[token]) {
+    const helpResolver = options.topLevelHelpResolver
+      ?? (options.topLevelHelpDir
+        ? async (cmd: string) => {
+            const p = `${options.topLevelHelpDir}/${cmd}/help.txt`;
+            try {
+              const file = Bun.file(p);
+              if (await file.exists()) return await file.text();
+            } catch { /* ignore */ }
+            return null;
+          }
+        : undefined);
+
+    return dispatchCommand(args, options.topLevel, outputMode, options.binaryName, helpResolver);
+  }
+
+  // Unknown
+  if (outputMode === "llm") {
+    return exitWithEnvelope(
+      outputMode,
+      {
+        schema: `${options.binaryName}.runner`,
+        version: "2.0",
+        ok: false,
+        command: token,
+        data: null,
+        error: { code: "UNKNOWN_COMMAND", message: `Unknown namespace or command: ${token}` },
+        meta: {},
+      },
+      1
+    );
+  }
+  console.error(`❌ Unknown namespace or command: ${token}`);
+  printHelp();
+  process.exit(1);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function toEnvelope(
   commandName: string,
