@@ -1,0 +1,45 @@
+Usage: belz migrate <subcommand> [flags]
+
+Run NSM migrations through the DB migration tool workflow.
+
+Subcommands:
+  profiles            Discover available NSM migration profiles.
+  run                 Start and monitor a migration run.
+
+Flags (profiles):
+  --refresh           Bypass cache and force live profile discovery.
+  --raw               Include discovery diagnostics in output.
+
+Flags (run):
+  --module <PD|AD>    Module to migrate. (required)
+  --ids <CSV>         Comma- or space-separated UUID list. (required)
+  --profile <VALUE>   Explicit NSM profile (e.g. devncdns_qancdns).
+
+  --source-env <ENV>  Source environment alias for profile derivation.
+  --target-env <ENV>  Target environment alias for profile derivation.
+                      Aliases: nsm-dev | nsm-qa | nsm-uat | nsm-stage | nsm-stage2
+
+  --ids-file <PATH>   Read UUIDs from a file (newline/comma/space separated).
+  --crud <Y|N>        Use CRUD API. (default: Y)
+  --async <Y|N>       Async migration. (default: Y)
+  --migrate-dependents <Y|N>  Migrate dependents. (default: N)
+  --script-name <TEXT>  Override script name.
+  --migration-id <UUID>  Optional migration ID field value.
+  --cleanup <auto|never>  Cleanup after stream closes. (default: auto)
+  --out <PATH>        Artifact output path (directory or .json file).
+  --raw               Include raw start response and stream events.
+  --quiet             Suppress step-by-step progress output.
+
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz migrate profiles
+  belz migrate profiles --refresh --raw
+  belz migrate run --module PD --ids 4a5384efb22322c1af9bbbe62b2b8be4 --profile devncdns_qancdns
+  belz migrate run --module AD --ids-file ./ids.txt --source-env nsm-dev --target-env nsm-qa
+  belz migrate run --module AD --ids-file ./ids.txt --source-env nsm-dev --target-env nsm-qa --out ./runs --llm

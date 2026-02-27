@@ -1,0 +1,24 @@
+Usage: belz pd inspect-url <PD_URL> [flags]
+
+Inspect a Page Designer URL and display metadata, children, and AD method references.
+
+Arguments:
+  <PD_URL>            A full Page Designer URL:
+                      https://.../ui-designer/page/<draft-id>
+                      https://.../ui-designer/symbol/<component-name>
+
+Flags:
+  --recursive, -r     Include recursive dependency tree and all AD method IDs.
+  --full              Include the full parsed configuration payload.
+  --raw               Include raw configuration and parsed URL details.
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz pd inspect-url https://nsm-dev.nc.verifi.dev/ui-designer/page/488418d9...
+  belz pd inspect-url https://nsm-dev.nc.verifi.dev/ui-designer/symbol/track_LT_264
+  belz pd inspect-url https://nsm-dev.nc.verifi.dev/ui-designer/page/488418d9... --recursive --llm

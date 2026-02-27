@@ -1,35 +1,49 @@
 #!/usr/bin/env bun
 import { readdirSync, existsSync } from "fs";
 import { join } from "path";
-import { runCli } from "../lib/runner";
+import { runBelzCli } from "../lib/runner";
 
 // Dev Mode: Discover commands dynamically
-const commandsDir = join(import.meta.dir, "../commands");
-const commandMap: Record<string, any> = {};
+const adCommandsDir = join(import.meta.dir, "../commands");
+const pdCommandsDir = join(import.meta.dir, "../../page-designer/commands");
 
-if (existsSync(commandsDir)) {
-    const items = readdirSync(commandsDir, { withFileTypes: true });
-    for (const item of items) {
-        if (item.isDirectory() && !item.name.startsWith(".")) {
-             try {
-                 // Dynamic import for dev
-                 const modulePath = join(commandsDir, item.name, "index.ts");
-                 // Use require or import
-                 // Note: Await at top level is fine in Bun
-                 commandMap[item.name] = require(modulePath); 
-             } catch (e) {
-                 // ignore invalid folders
-             }
+const TOP_LEVEL_COMMANDS = new Set(["migrate", "envs"]);
+
+function loadCommandsFromDir(dir: string): Record<string, any> {
+  const map: Record<string, any> = {};
+  if (!existsSync(dir)) return map;
+  const items = readdirSync(dir, { withFileTypes: true });
+  for (const item of items) {
+    if (item.isDirectory() && !item.name.startsWith(".")) {
+      try {
+        const modulePath = join(dir, item.name, "index.ts");
+        if (existsSync(modulePath)) {
+          map[item.name] = require(modulePath);
         }
+      } catch {
+        // ignore invalid folders
+      }
     }
+  }
+  return map;
 }
 
-// Help resolver for dev mode (read from fs)
-const helpResolver = async (cmd: string) => {
-    const p = join(commandsDir, cmd, "help.txt");
-    const file = Bun.file(p);
-    if (await file.exists()) return await file.text();
-    return null;
-};
+const allAdCommands = loadCommandsFromDir(adCommandsDir);
+const adCommands: Record<string, any> = {};
+const topLevelCommands: Record<string, any> = {};
 
-await runCli(process.argv, commandMap, helpResolver);
+for (const [name, mod] of Object.entries(allAdCommands)) {
+  if (TOP_LEVEL_COMMANDS.has(name)) {
+    topLevelCommands[name] = mod;
+  } else {
+    adCommands[name] = mod;
+  }
+}
+
+const pdCommands = loadCommandsFromDir(pdCommandsDir);
+
+await runBelzCli(process.argv, adCommands, pdCommands, topLevelCommands, {
+  ad: adCommandsDir,
+  pd: pdCommandsDir,
+  top: adCommandsDir,
+});

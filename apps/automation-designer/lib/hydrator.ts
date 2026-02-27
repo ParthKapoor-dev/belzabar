@@ -1,10 +1,10 @@
 import { join } from "path";
-import { homedir } from "os";
 import { mkdir } from "fs/promises";
+import { BELZ_CONFIG_DIR } from "@belzabar/core";
 import { fetchAutomationDefinition } from "./api";
 import type { AutomationDefinition, AutomationUserInput } from "./types";
 
-const CACHE_DIR = join(homedir(), ".belzabar-cli", "cache", "definitions");
+const CACHE_DIR = join(BELZ_CONFIG_DIR, "cache", "definitions");
 
 export class ServiceHydrator {
   static async ensureDir() {

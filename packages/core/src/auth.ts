@@ -1,10 +1,9 @@
 import { join } from "path";
 import { mkdirSync } from "fs";
-import { homedir } from "os";
-import { Config } from "./config";
+import { Config, BELZ_CONFIG_DIR } from "./config";
 import type { AuthSession } from "./types";
 
-const SESSION_DIR = join(homedir(), ".belzabar-cli", "sessions");
+const SESSION_DIR = join(BELZ_CONFIG_DIR, "sessions");
 
 function ensureSessionDir() {
   try {

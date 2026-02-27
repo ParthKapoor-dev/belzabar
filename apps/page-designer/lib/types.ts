@@ -5,11 +5,19 @@
 export interface PageConfigResponse {
   name: string;
   configuration: string; // Stringified JSON
+  [key: string]: unknown;
 }
 
 export interface ComponentSearchItem {
   id: string;
   name: string;
+  referenceId?: string;
+  status?: string;
+  isSymbol?: boolean;
+  layout?: {
+    isSymbol?: boolean;
+  };
+  [key: string]: unknown;
 }
 
 export interface LayoutNode {
@@ -75,7 +83,5 @@ export interface ComplianceResult {
 
 
 }
-
-
 
 

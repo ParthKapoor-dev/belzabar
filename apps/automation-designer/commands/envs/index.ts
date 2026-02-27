@@ -14,7 +14,7 @@ interface EnvsData {
 }
 
 const command: CommandModule<undefined, EnvsData> = {
-  schema: "ad.envs",
+  schema: "belz.envs",
   parseArgs: () => undefined,
   async execute() {
   const envs = Config.getAllEnvs();

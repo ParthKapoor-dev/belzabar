@@ -1,9 +1,9 @@
 import { join } from "path";
-import { homedir } from "os";
 import { mkdir } from "fs/promises";
+import { BELZ_CONFIG_DIR } from "@belzabar/core";
 import type { HydratedMethod } from "./types";
 
-const CACHE_DIR = join(homedir(), ".belzabar-cli", "cache", "methods");
+const CACHE_DIR = join(BELZ_CONFIG_DIR, "cache", "methods");
 const TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 interface CacheEntry {
