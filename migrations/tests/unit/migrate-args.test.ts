@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseMigrateArgs, deriveNsmProfile } from "../../lib/migration/args";
+import { parseMigrateArgs, deriveNsmProfile } from "../../lib/args";
 
 describe("migrate args", () => {
   test("parses profiles args", async () => {

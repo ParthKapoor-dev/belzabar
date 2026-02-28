@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parseMigrationOutput, stripAnsi } from "../../lib/migration/log-parser";
+import { parseMigrationOutput, stripAnsi } from "../../lib/log-parser";
 
 describe("migrate log parser", () => {
   test("strips ansi sequences", () => {

@@ -95,7 +95,7 @@ Run `bun run generate` from `cli/` to regenerate all registries (not from this d
 - `cli/commands/registry-ad.ts` — exports `ADCommandRegistry` (imports from `../../automation-designer/commands/`)
 - `cli/commands/registry-pd.ts` — exports `PDCommandRegistry` (imports from `../../page-designer/commands/`)
 - `cli/commands/registry-top.ts` — exports `TopLevelCommandRegistry` (envs + migrate)
-- `cli/commands/registry.ts` — exports legacy `CommandRegistry` (backward-compat)
+- `cli/commands/registry-help.ts` — embedded help text maps for compiled binary
 
 ## Important Files for Agents
 
@@ -109,7 +109,7 @@ Run `bun run generate` from `cli/` to regenerate all registries (not from this d
 8. SQL helper modules: `lib/sql/`
 9. SQL TUI session: `lib/sql/tui/session.ts`
 10. Migration command entrypoint: `cli/commands/migrate/index.ts`
-11. Migration helper modules: `migrations/lib/migration/`
+11. Migration helper modules: `migrations/lib/`
 
 ## Known Current Gaps
 

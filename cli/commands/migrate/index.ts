@@ -8,7 +8,7 @@ import {
   startMigrationExecution,
   streamMigrationExecution,
   writeMigrationArtifacts,
-} from "../../../migrations/lib/migration";
+} from "../../../migrations/lib";
 import type {
   CleanupExecutionResult,
   MigrateArgs,
@@ -20,7 +20,7 @@ import type {
   ParsedMigrationOutput,
   StartExecutionResult,
   StreamExecutionResult,
-} from "../../../migrations/lib/migration";
+} from "../../../migrations/lib";
 
 interface MigrateCommandDeps {
   discoverProfiles: (options?: { refresh?: boolean }) => Promise<NsmProfileResolution>;

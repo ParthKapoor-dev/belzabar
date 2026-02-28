@@ -1,5 +1,4 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { Config } from "../../lib/config";
+import { CliError, ok, Config, type CommandModule } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { apiFetch } from "../../lib/api";

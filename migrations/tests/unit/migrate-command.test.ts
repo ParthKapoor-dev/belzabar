@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { createMigrateCommand } from "../../../cli/commands/migrate";
-import type { ParsedMigrationOutput } from "../../lib/migration";
+import type { ParsedMigrationOutput } from "../../lib";
 
 describe("migrate command", () => {
   test("profiles action returns resolved profiles", async () => {

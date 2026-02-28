@@ -2,26 +2,22 @@
 
 ## Purpose
 
-This app provides CLI analysis tools for Page Designer (PD) configuration:
+This directory provides the PD command modules and lib for the Page Designer. It provides CLI analysis tools for Page Designer (PD) configuration:
 
 1. Inspect page/component configs
 2. Extract referenced AD method IDs
 3. Recursively analyze page/component dependency trees
 4. Compare discovered IDs with a local approved master list
 
-Primary binary name: `pd` (standalone) — also accessible via `belz pd <cmd>` (unified binary built in `cli/`).
+This is a **source-only module** — no standalone binary or package.json. All commands are served via `belz pd <cmd>` (unified binary built in `cli/`).
 
-## Tech and Entry Points
+## Tech
 
 1. Runtime: Bun + TypeScript
-2. Dev entrypoint: `bin/pd.ts`
-3. Build entrypoint: `bin/pd-build.ts`
-4. Command registry (generated): `commands/registry.ts`
-5. Shared CLI framework: `@belzabar/core`
+2. Commands discovered by: `cli/utils/generate-registry.ts` from `../page-designer/commands/`
+3. Shared runner/framework: `@belzabar/core`
 
-## Unified CLI Note
-
-PD commands are also exposed through the unified `belz` binary built in `apps/automation-designer/`:
+## Command Routing
 
 ```
 belz pd show-page <PAGE_ID>
@@ -31,19 +27,14 @@ belz pd analyze [PAGE_ID]
 belz pd inspect-url <PD_URL>
 ```
 
-When adding or removing PD commands:
-1. Regenerate `commands/registry.ts` in this app (`bun run generate` here) — updates the standalone `pd` binary.
-2. **Also** regenerate the unified binary registries from `cli/` (`bun run generate` there) — this updates `cli/commands/registry-pd.ts`.
-3. Rebuild the `belz` binary (`bun run build` in `cli/`).
+When adding or removing PD commands, run `bun run generate` from `cli/` — this updates `cli/commands/registry-pd.ts`.
 
 ## Directory Map
 
-1. `bin/` - CLI entrypoints
-2. `commands/` - command modules (`index.ts`, `help.txt`)
-3. `lib/` - API/parsing/analysis/report/comparator services
-4. `utils/` - registry generation helper
-5. `components.json` - component whitelist used during recursive analysis
-6. `master_ids.txt` - approved AD ID list for compliance checks
+1. `commands/` - command modules (`index.ts`, `help.txt`)
+2. `lib/` - API/parsing/analysis/report/comparator services
+3. `components.json` - component whitelist used during recursive analysis
+4. `master_ids.txt` - approved AD ID list for compliance checks
 
 ## Commands Implemented
 
@@ -79,8 +70,8 @@ When adding or removing PD commands:
 3. Recursive traversal: `lib/analyzer.ts`
 4. Tree/id reporting: `lib/reporter.ts`
 5. Compliance logic: `lib/comparator.ts`
-6. Default target page list: `lib/config.ts`
-7. PD URL parsing: `lib/url-parser.ts`
+6. PD URL parsing: `lib/url-parser.ts`
+7. Default target page IDs: inlined in `commands/analyze/index.ts`
 
 ## Known Current Gaps
 
@@ -95,7 +86,7 @@ Use `belz pd` as the command prefix for all PD commands.
 
 ## Safe Change Checklist
 
-1. If adding/removing commands, regenerate and commit `commands/registry.ts` (here) **and** `cli/commands/registry-pd.ts` (run `bun run generate` in `cli/`).
+1. If adding/removing commands, run `bun run generate` from `cli/` and commit `cli/commands/registry-pd.ts`.
 2. Keep `components.json` and `master_ids.txt` semantics documented when formats change.
 3. Keep command help text aligned with real flags and behavior.
 4. When adding a command, include a `help.txt` following the standard in `automation-designer/AGENTS.md`.

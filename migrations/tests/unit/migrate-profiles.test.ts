@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { discoverNsmProfiles, extractProfilesFromText } from "../../lib/migration/profiles";
+import { discoverNsmProfiles, extractProfilesFromText } from "../../lib/profiles";
 
 describe("migrate profiles", () => {
   test("extracts NSM profiles from text blobs", () => {
