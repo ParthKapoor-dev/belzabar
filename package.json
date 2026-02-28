@@ -2,10 +2,15 @@
   "name": "belzabar",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "cli",
+    "page-designer",
+    "apps/extension",
     "packages/*"
   ],
   "scripts": {
+    "install": "bash ./install.sh",
+    "reinstall": "bash ./reinstall.sh",
+    "belz:build": "bun run --cwd cli build",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint"
