@@ -19,7 +19,10 @@ export interface CliOptions {
 export interface NamespaceDefinition {
   name: string;
   description: string;
-  commands: Record<string, any>;
+  /** Sub-command map (ad, pd style). Mutually exclusive with `command`. */
+  commands?: Record<string, any>;
+  /** Passthrough: a single CommandModule that handles its own sub-routing (migrate style). */
+  command?: any;
   helpDir?: string;
   helpResolver?: (cmd: string) => Promise<string | null>;
 }
@@ -271,16 +274,16 @@ export async function runNamespacedCli(
   const printHelp = () => {
     console.log(options.name);
     console.log(options.description);
-    console.log(`\nUsage: ${options.binaryName} <namespace|command> [args]\n`);
-    console.log("Namespaces:");
-    for (const [ns, def] of Object.entries(options.namespaces)) {
-      console.log(`  ${ns.padEnd(6)}  ${def.description}`);
+    console.log(`\nUsage: ${options.binaryName} <module|command> [args]\n`);
+    console.log("Modules:");
+    for (const [mod, def] of Object.entries(options.namespaces)) {
+      console.log(`  ${mod.padEnd(8)}  ${def.description}`);
     }
     if (Object.keys(options.topLevel).length > 0) {
-      console.log("\nTop-level Commands:");
+      console.log("\nCommands:");
       Object.keys(options.topLevel).forEach(cmd => console.log(`  - ${cmd}`));
     }
-    console.log(`\nRun '${options.binaryName} <namespace> --help' for namespace commands.`);
+    console.log(`\nRun '${options.binaryName} <module> --help' for module commands.`);
   };
 
   const token = args[0];
@@ -298,14 +301,14 @@ export async function runNamespacedCli(
             name: options.name,
             description: options.description,
             binaryName: options.binaryName,
-            namespaces: Object.fromEntries(
+            modules: Object.fromEntries(
               Object.entries(options.namespaces).map(([k, v]) => [k, {
                 name: v.name,
                 description: v.description,
-                commands: Object.keys(v.commands),
+                commands: v.commands ? Object.keys(v.commands) : [],
               }])
             ),
-            topLevelCommands: Object.keys(options.topLevel),
+            commands: Object.keys(options.topLevel),
           },
           error: null,
           meta: {},
@@ -317,41 +320,9 @@ export async function runNamespacedCli(
     process.exit(0);
   }
 
-  // Namespace dispatch
+  // Module dispatch
   const ns = options.namespaces[token];
   if (ns) {
-    const remainingArgs = args.slice(1);
-    const nsBinaryName = `${options.binaryName} ${token}`;
-
-    if (!remainingArgs[0] || remainingArgs[0] === "--help" || remainingArgs[0] === "-h") {
-      if (outputMode === "llm") {
-        return exitWithEnvelope(
-          outputMode,
-          {
-            schema: `${nsBinaryName}.help`,
-            version: "2.0",
-            ok: true,
-            command: "help",
-            data: {
-              name: ns.name,
-              description: ns.description,
-              binaryName: nsBinaryName,
-              commands: Object.keys(ns.commands),
-            },
-            error: null,
-            meta: {},
-          },
-          0
-        );
-      }
-      console.log(`${ns.name} — ${ns.description}`);
-      console.log(`\nUsage: ${nsBinaryName} <command> [args]\n`);
-      console.log("Commands:");
-      Object.keys(ns.commands).forEach(cmd => console.log(`  - ${cmd}`));
-      console.log(`\nRun '${nsBinaryName} <command> --help' for details.`);
-      process.exit(0);
-    }
-
     const helpResolver = ns.helpResolver
       ?? (ns.helpDir
         ? async (cmd: string) => {
@@ -364,7 +335,46 @@ export async function runNamespacedCli(
           }
         : undefined);
 
-    return dispatchCommand(remainingArgs, ns.commands, outputMode, nsBinaryName, helpResolver);
+    // Passthrough module: single CommandModule that handles its own sub-routing.
+    // Pass full args (including the module token) so the command name resolves correctly.
+    if (ns.command) {
+      return dispatchCommand(args, { [token]: ns.command }, outputMode, options.binaryName, helpResolver);
+    }
+
+    // Multi-command module (ad, pd style)
+    const remainingArgs = args.slice(1);
+    const modBinaryName = `${options.binaryName} ${token}`;
+
+    if (!remainingArgs[0] || remainingArgs[0] === "--help" || remainingArgs[0] === "-h") {
+      if (outputMode === "llm") {
+        return exitWithEnvelope(
+          outputMode,
+          {
+            schema: `${modBinaryName}.help`,
+            version: "2.0",
+            ok: true,
+            command: "help",
+            data: {
+              name: ns.name,
+              description: ns.description,
+              binaryName: modBinaryName,
+              commands: Object.keys(ns.commands!),
+            },
+            error: null,
+            meta: {},
+          },
+          0
+        );
+      }
+      console.log(`${ns.name} — ${ns.description}`);
+      console.log(`\nUsage: ${modBinaryName} <command> [args]\n`);
+      console.log("Commands:");
+      Object.keys(ns.commands!).forEach(cmd => console.log(`  - ${cmd}`));
+      console.log(`\nRun '${modBinaryName} <command> --help' for details.`);
+      process.exit(0);
+    }
+
+    return dispatchCommand(remainingArgs, ns.commands!, outputMode, modBinaryName, helpResolver);
   }
 
   // Top-level command dispatch
@@ -394,13 +404,13 @@ export async function runNamespacedCli(
         ok: false,
         command: token,
         data: null,
-        error: { code: "UNKNOWN_COMMAND", message: `Unknown namespace or command: ${token}` },
+        error: { code: "UNKNOWN_COMMAND", message: `Unknown module or command: ${token}` },
         meta: {},
       },
       1
     );
   }
-  console.error(`❌ Unknown namespace or command: ${token}`);
+  console.error(`❌ Unknown module or command: ${token}`);
   printHelp();
   process.exit(1);
 }

@@ -4,6 +4,9 @@ import { TopLevelCommandRegistry } from "../commands/registry-top";
 import { ADHelpMap, PDHelpMap, TopHelpMap, makeHelpResolver } from "../commands/registry-help";
 import { runNamespacedCli } from "@belzabar/core";
 
+const { migrate, ...topLevelCommands } = TopLevelCommandRegistry;
+const topHelpResolver = makeHelpResolver(TopHelpMap);
+
 // Prod Mode: Use generated registries + embedded help text (bundled at compile time)
 await runNamespacedCli(process.argv, {
   name: "Belzabar CLI",
@@ -22,7 +25,13 @@ await runNamespacedCli(process.argv, {
       commands: PDCommandRegistry,
       helpResolver: makeHelpResolver(PDHelpMap),
     },
+    migrate: {
+      name: "Migrations",
+      description: "Run NSM database migrations.",
+      command: migrate,
+      helpResolver: topHelpResolver,
+    },
   },
-  topLevel: TopLevelCommandRegistry,
-  topLevelHelpResolver: makeHelpResolver(TopHelpMap),
+  topLevel: topLevelCommands,
+  topLevelHelpResolver: topHelpResolver,
 });
