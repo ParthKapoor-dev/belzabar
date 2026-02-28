@@ -68,6 +68,25 @@ if [[ "$IS_UPDATE" == false ]]; then
   declare -A ENV_USERS
   declare -A ENV_PASS_B64
 
+  # Prompt for .env file path if not already provided via --env-file
+  if [[ -z "$ENV_FILE" ]]; then
+    echo ""
+    read -rp "📂 Path to .env credentials file (leave blank to enter manually): " _env_file_input
+    if [[ -n "$_env_file_input" ]]; then
+      ENV_FILE="$_env_file_input"
+    fi
+  fi
+
+  _maybe_encode() {
+    local val="$1"
+    if [[ -z "$val" ]]; then echo ""; return; fi
+    if echo "$val" | base64 -d &>/dev/null 2>&1; then
+      echo "$val"
+    else
+      echo -n "$val" | base64
+    fi
+  }
+
   if [[ -n "$ENV_FILE" ]]; then
     echo "📂 Loading credentials from: $ENV_FILE"
     set -a
@@ -79,26 +98,11 @@ if [[ "$IS_UPDATE" == false ]]; then
     ENV_USERS[nsm-qa]="${NSM_QA_USER:-}"
     ENV_USERS[nsm-uat]="${NSM_UAT_USER:-}"
 
-    _maybe_encode() {
-      local val="$1"
-      if [[ -z "$val" ]]; then echo ""; return; fi
-      if echo "$val" | base64 -d &>/dev/null 2>&1; then
-        echo "$val"
-      else
-        echo -n "$val" | base64
-      fi
-    }
-
     ENV_PASS_B64[nsm-dev]="$(_maybe_encode "${NSM_DEV_PASSWORD:-}")"
     ENV_PASS_B64[nsm-qa]="$(_maybe_encode "${NSM_QA_PASSWORD:-}")"
     ENV_PASS_B64[nsm-uat]="$(_maybe_encode "${NSM_UAT_PASSWORD:-}")"
   else
     echo "🔑 Enter credentials for each environment (leave blank to skip)."
-    declare -A ENV_URLS=(
-      [nsm-dev]="https://nsm-dev.nc.verifi.dev"
-      [nsm-qa]="https://nsm-qa.nc.verifi.dev"
-      [nsm-uat]="https://nsm-uat.nc.verifi.dev"
-    )
     for env in nsm-dev nsm-qa nsm-uat; do
       echo ""
       echo "  Environment: $env (${ENV_URLS[$env]})"
