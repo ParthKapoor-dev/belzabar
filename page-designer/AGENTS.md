@@ -9,7 +9,7 @@ This app provides CLI analysis tools for Page Designer (PD) configuration:
 3. Recursively analyze page/component dependency trees
 4. Compare discovered IDs with a local approved master list
 
-Primary binary name: `pd` (standalone) — also accessible via `belz pd <cmd>` (unified binary).
+Primary binary name: `pd` (standalone) — also accessible via `belz pd <cmd>` (unified binary built in `cli/`).
 
 ## Tech and Entry Points
 
@@ -32,9 +32,9 @@ belz pd inspect-url <PD_URL>
 ```
 
 When adding or removing PD commands:
-1. Regenerate `commands/registry.ts` in this app (`bun run generate` here).
-2. **Also** regenerate the unified binary registries in `apps/automation-designer/` (`bun run generate` there) — this updates `commands/registry-pd.ts`.
-3. Rebuild the `belz` binary (`bun run build` in `apps/automation-designer/`).
+1. Regenerate `commands/registry.ts` in this app (`bun run generate` here) — updates the standalone `pd` binary.
+2. **Also** regenerate the unified binary registries from `cli/` (`bun run generate` there) — this updates `cli/commands/registry-pd.ts`.
+3. Rebuild the `belz` binary (`bun run build` in `cli/`).
 
 ## Directory Map
 
@@ -90,15 +90,15 @@ When adding or removing PD commands:
 
 ## Help Text Standard
 
-All `help.txt` files follow the standard defined in `apps/automation-designer/AGENTS.md`.
+All `help.txt` files follow the standard defined in `automation-designer/AGENTS.md`.
 Use `belz pd` as the command prefix for all PD commands.
 
 ## Safe Change Checklist
 
-1. If adding/removing commands, regenerate and commit `commands/registry.ts` (here) **and** `commands/registry-pd.ts` in `apps/automation-designer/`.
+1. If adding/removing commands, regenerate and commit `commands/registry.ts` (here) **and** `cli/commands/registry-pd.ts` (run `bun run generate` in `cli/`).
 2. Keep `components.json` and `master_ids.txt` semantics documented when formats change.
 3. Keep command help text aligned with real flags and behavior.
-4. When adding a command, include a `help.txt` following the standard in `apps/automation-designer/AGENTS.md`.
+4. When adding a command, include a `help.txt` following the standard in `automation-designer/AGENTS.md`.
 5. Avoid parser regex changes without validating against real PD payload samples.
 
 ## Maintenance Note

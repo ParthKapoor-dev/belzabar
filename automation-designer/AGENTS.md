@@ -1,41 +1,32 @@
-# AGENTS.md - Automation Designer CLI (Unified belz binary)
+# AGENTS.md - Automation Designer Module
 
 ## Purpose
 
-This app builds and owns the unified `belz` binary. It provides:
+This directory contains the **AD command modules and lib** for the Automation Designer. It provides:
 
 1. Namespaced `belz ad` commands for Automation Designer method workflows
-2. Namespaced `belz pd` commands for Page Designer analysis (PD source stays in `apps/page-designer/`)
-3. Top-level `belz migrate` and `belz envs` commands that span AD + PD
+2. Shared lib for API calls, parsing, hydration, payload building, caching
 
-Primary binary name: `belz`
+The unified `belz` binary is built from `cli/` (repo root). This directory is a source module — it has no binary or standalone entry point.
 
 ## Command Routing
 
 ```
 belz ad <cmd>      → get, show, test, run, save-suite, run-suites, sql
-belz pd <cmd>      → show-page, show-component, find-ad-methods, analyze, inspect-url
-belz migrate ...   → top-level (spans AD + PD modules)
-belz envs          → top-level (environment listing)
 ```
 
-## Tech and Entry Points
+## Tech
 
 1. Runtime: Bun + TypeScript
-2. Dev entrypoint: `bin/cli.ts` — dynamically loads both AD and PD commands
-3. Build entrypoint: `bin/cli-build.ts` — uses generated registries (bundled at compile time)
-4. Generated registries: `commands/registry-ad.ts`, `commands/registry-pd.ts`, `commands/registry-top.ts`
-5. Legacy registry: `commands/registry.ts` (backward-compat, all AD commands)
-6. Shared runner/framework: `@belzabar/core`
+2. Commands discovered by: `cli/utils/generate-registry.ts` from `../automation-designer/commands/`
+3. Shared runner/framework: `@belzabar/core`
 
 ## Directory Map
 
-1. `bin/` - CLI entrypoints
-2. `commands/` - one folder per AD command (`index.ts`, `help.txt`, optional `README.md`)
-3. `lib/` - app-level logic (api/hydration/parsing/input/payload/error parsing)
-4. `integrations/gemini-mcp/` - MCP server shim that shells out to CLI
-5. `tests/` - unit tests for parser/payload utilities
-6. `utils/generate-registry.ts` - generates the three split registries + legacy
+1. `commands/` - one folder per AD command (`index.ts`, `help.txt`, optional `README.md`)
+2. `lib/` - app-level logic (api/hydration/parsing/input/payload/error parsing)
+3. `integrations/gemini-mcp/` - MCP server shim that shells out to CLI
+4. `tests/` - unit tests for parser/payload utilities
 
 ## Commands
 
@@ -48,19 +39,6 @@ belz envs          → top-level (environment listing)
 5. `save-suite`
 6. `run-suites`
 7. `sql`
-
-### PD Commands (`belz pd <cmd>`)
-
-1. `show-page`
-2. `show-component`
-3. `find-ad-methods`
-4. `analyze`
-5. `inspect-url`
-
-### Top-level Commands (`belz <cmd>`)
-
-1. `envs`
-2. `migrate`
 
 ## Core Behavior Contract
 
@@ -112,12 +90,12 @@ All fields per-env are optional — missing ones fall back to env vars (`NSM_DEV
 
 ## Registry Generation
 
-Run `bun run generate` in `apps/automation-designer/` to regenerate all registries:
+Run `bun run generate` from `cli/` to regenerate all registries (not from this directory):
 
-- `commands/registry-ad.ts` — exports `ADCommandRegistry` (AD-only, excludes migrate + envs)
-- `commands/registry-pd.ts` — exports `PDCommandRegistry` (imports from `../../page-designer/commands/`)
-- `commands/registry-top.ts` — exports `TopLevelCommandRegistry` (migrate + envs)
-- `commands/registry.ts` — exports legacy `CommandRegistry` (all AD commands, backward-compat)
+- `cli/commands/registry-ad.ts` — exports `ADCommandRegistry` (imports from `../../automation-designer/commands/`)
+- `cli/commands/registry-pd.ts` — exports `PDCommandRegistry` (imports from `../../page-designer/commands/`)
+- `cli/commands/registry-top.ts` — exports `TopLevelCommandRegistry` (envs + migrate)
+- `cli/commands/registry.ts` — exports legacy `CommandRegistry` (backward-compat)
 
 ## Important Files for Agents
 
@@ -130,8 +108,8 @@ Run `bun run generate` in `apps/automation-designer/` to regenerate all registri
 7. SQL command entrypoint: `commands/sql/index.ts`
 8. SQL helper modules: `lib/sql/`
 9. SQL TUI session: `lib/sql/tui/session.ts`
-10. Migration command entrypoint: `commands/migrate/index.ts`
-11. Migration helper modules: `lib/migration/`
+10. Migration command entrypoint: `cli/commands/migrate/index.ts`
+11. Migration helper modules: `migrations/lib/migration/`
 
 ## Known Current Gaps
 
@@ -182,13 +160,12 @@ Rules:
 
 ## Safe Change Checklist
 
-1. If adding/removing AD commands, regenerate and commit all four registry files (`bun run generate`).
-2. If adding PD commands, regenerate from `apps/automation-designer/` as well (PD registry lives here).
-3. Keep `help.txt` and command docs aligned with actual flags.
-4. When adding a command, include a `help.txt` following the standard in this file.
-5. Preserve envelope schema stability for `--llm` consumers and MCP tools.
-6. Validate auth mode (`Bearer` vs `Raw`) for each endpoint before changing requests.
+1. If adding/removing AD commands, run `bun run generate` from `cli/` and commit all registry files.
+2. Keep `help.txt` and command docs aligned with actual flags.
+3. When adding a command, include a `help.txt` following the standard in this file.
+4. Preserve envelope schema stability for `--llm` consumers and MCP tools.
+5. Validate auth mode (`Bearer` vs `Raw`) for each endpoint before changing requests.
 
 ## Maintenance Note
 
-If this app changes (commands, behavior, API flow, file layout, output schema), update this `AGENTS.md` in the same change.
+If this module changes (commands, behavior, API flow, file layout, output schema), update this `AGENTS.md` in the same change.

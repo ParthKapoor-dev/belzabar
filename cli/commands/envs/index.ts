@@ -1,4 +1,4 @@
-import { Config } from "../../lib/config";
+import { Config } from "@belzabar/core";
 import { ok, type CommandModule } from "@belzabar/core";
 
 interface EnvRow {

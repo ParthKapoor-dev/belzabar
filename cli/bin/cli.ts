@@ -4,10 +4,9 @@ import { join } from "path";
 import { runBelzCli } from "../lib/runner";
 
 // Dev Mode: Discover commands dynamically
-const adCommandsDir = join(import.meta.dir, "../commands");
+const adCommandsDir = join(import.meta.dir, "../../automation-designer/commands");
 const pdCommandsDir = join(import.meta.dir, "../../page-designer/commands");
-
-const TOP_LEVEL_COMMANDS = new Set(["migrate", "envs"]);
+const topCommandsDir = join(import.meta.dir, "../commands"); // cli/commands/ (envs, migrate)
 
 function loadCommandsFromDir(dir: string): Record<string, any> {
   const map: Record<string, any> = {};
@@ -28,22 +27,12 @@ function loadCommandsFromDir(dir: string): Record<string, any> {
   return map;
 }
 
-const allAdCommands = loadCommandsFromDir(adCommandsDir);
-const adCommands: Record<string, any> = {};
-const topLevelCommands: Record<string, any> = {};
-
-for (const [name, mod] of Object.entries(allAdCommands)) {
-  if (TOP_LEVEL_COMMANDS.has(name)) {
-    topLevelCommands[name] = mod;
-  } else {
-    adCommands[name] = mod;
-  }
-}
-
+const adCommands = loadCommandsFromDir(adCommandsDir);
+const topLevelCommands = loadCommandsFromDir(topCommandsDir);
 const pdCommands = loadCommandsFromDir(pdCommandsDir);
 
 await runBelzCli(process.argv, adCommands, pdCommands, topLevelCommands, {
   ad: adCommandsDir,
   pd: pdCommandsDir,
-  top: adCommandsDir,
+  top: topCommandsDir,
 });

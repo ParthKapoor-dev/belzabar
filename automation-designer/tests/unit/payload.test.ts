@@ -6,7 +6,7 @@ describe("Payload Builder", () => {
   let rawData: RawMethodResponse;
 
   beforeAll(async () => {
-    const file = Bun.file("tests/fixtures/method-draft.json");
+    const file = Bun.file(import.meta.dir + "/../fixtures/method-draft.json");
     rawData = await file.json();
   });
 
