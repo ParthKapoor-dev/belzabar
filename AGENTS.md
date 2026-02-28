@@ -8,8 +8,10 @@ maintain this codebase. Before making changes in any module, read that module's 
 **Standing instruction:** Whenever you make a meaningful change to any module — new commands,
 changed behavior, new files, API changes, structural reorganization — you **must** update the
 `AGENTS.md` in that module. If the overall repository structure changes, update this root
-`AGENTS.md` as well. Keep these files accurate; they are the primary orientation documents for
-future Maintainer Agents.
+`AGENTS.md` as well. Additionally, if any functional change affects how `belz` is used (new
+commands, changed flags, changed behavior that a runtime agent would need to know about), you
+**must** also update the relevant `INIT.md` file(s) in `agents/`. Keep these files accurate;
+they are the primary orientation documents for future Maintainer Agents and runtime agents.
 
 ---
 

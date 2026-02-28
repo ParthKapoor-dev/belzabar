@@ -10,7 +10,7 @@ You are a **runtime agent** — you use `belz` to gather evidence and reason ove
 modify files in this repository. Workers will be introduced later; for now you handle the full
 investigation yourself.
 
-**Current scope:** AD diagnosis is primary. PD inspection is available when needed.
+**Current scope:** AD diagnosis is primary. PD inspection and migration operations are available when needed.
 
 ---
 
@@ -81,6 +81,22 @@ Use `belz ad <cmd> --help` for arguments, flags, and examples.
 | `belz pd find-ad-methods <ID>` | Recursively extract all AD method IDs referenced in a page/component. |
 | `belz pd inspect-url <URL>` | Parse a full PD URL and return metadata, children, and AD refs. |
 | `belz pd analyze [PAGE_ID]` | Recursive dependency tree and compliance analysis. |
+
+---
+
+## Migration Commands
+
+`belz migrate` handles NSM database migrations — moving AD methods and PD pages from one
+environment to the next using their Published IDs.
+
+| Command | What it does |
+|---------|-------------|
+| `belz migrate profiles` | List available migration profiles (source → target environment pairs) |
+| `belz migrate run` | Trigger a migration run with a selected profile and set of IDs |
+
+Use `belz migrate --help` for full usage. Migrations flow: Dev → QA → UAT → Stage → Prod.
+Only Published IDs can be migrated. If a fix isn't visible in QA, check whether it was published
+and migrated.
 
 ---
 
