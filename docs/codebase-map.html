@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Belzabar Codebase Map</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --core: #388bfd;
+    --cli: #3fb950;
+    --ad: #d29922;
+    --pd: #bc8cff;
+    --mig: #f85149;
+    --ext: #56d364;
+    --gen: #6e7681;
+    --redundant: #ff7b72;
+    --tag-bg: #1f2428;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+
+  /* ── Layout ── */
+  .header { padding: 24px 32px 0; border-bottom: 1px solid var(--border); }
+  .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+  .header p { color: var(--muted); margin-bottom: 16px; }
+  .tabs { display: flex; gap: 0; }
+  .tab { padding: 8px 18px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); font-size: 13px; transition: .15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--cli); }
+
+  .content { padding: 28px 32px; max-width: 1400px; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── Legend ── */
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Cards / boxes ── */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .card h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .card-grid { display: grid; gap: 16px; }
+  .card-grid.cols2 { grid-template-columns: 1fr 1fr; }
+  .card-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card-grid.cols4 { grid-template-columns: repeat(4, 1fr); }
+
+  /* ── Architecture diagram ── */
+  .arch-row { display: flex; gap: 16px; margin-bottom: 16px; align-items: stretch; }
+  .arch-box {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    flex: 1;
+    position: relative;
+  }
+  .arch-box.core  { border-color: var(--core); }
+  .arch-box.cli   { border-color: var(--cli); }
+  .arch-box.ad    { border-color: var(--ad); }
+  .arch-box.pd    { border-color: var(--pd); }
+  .arch-box.mig   { border-color: var(--mig); }
+  .arch-box.ext   { border-color: var(--ext); }
+  .arch-box h4 {
+    font-size: 12px; font-weight: 700; letter-spacing: .5px;
+    text-transform: uppercase; margin-bottom: 10px;
+  }
+  .arch-box.core h4 { color: var(--core); }
+  .arch-box.cli  h4 { color: var(--cli); }
+  .arch-box.ad   h4 { color: var(--ad); }
+  .arch-box.pd   h4 { color: var(--pd); }
+  .arch-box.mig  h4 { color: var(--mig); }
+  .arch-box.ext  h4 { color: var(--ext); }
+  .arch-box .badge { font-size: 11px; font-family: monospace; color: var(--muted); display: block; margin-top: 2px; }
+  .arch-box ul { list-style: none; }
+  .arch-box ul li { font-size: 12px; padding: 3px 0; color: var(--muted); border-bottom: 1px solid var(--bg3); display: flex; align-items: center; gap: 6px; }
+  .arch-box ul li:last-child { border-bottom: none; }
+  .arch-box ul li .fn { font-family: monospace; color: var(--text); font-size: 11px; }
+  .arch-box ul li .gen-tag { font-size: 10px; background: var(--bg3); color: var(--gen); border-radius: 3px; padding: 1px 5px; }
+  .arch-box ul li .dep-tag { font-size: 10px; background: var(--bg3); color: var(--redundant); border-radius: 3px; padding: 1px 5px; }
+  .arch-box .note { font-size: 11px; color: var(--muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bg3); }
+
+  /* ── Arrow connectors ── */
+  .arrow-down { text-align: center; color: var(--muted); font-size: 18px; margin: 4px 0; line-height: 1; }
+  .arrow-row { display: flex; justify-content: space-around; color: var(--muted); font-size: 16px; margin: 4px 0; }
+
+  /* ── Module tree ── */
+  .module-tree { display: flex; flex-direction: column; gap: 12px; }
+  .module-root {
+    background: var(--bg2); border: 2px solid var(--cli);
+    border-radius: 8px; padding: 12px 16px;
+    font-weight: 700; font-size: 15px; font-family: monospace;
+    color: var(--cli); text-align: center; align-self: flex-start;
+  }
+  .module-children { display: flex; gap: 12px; flex-wrap: wrap; margin-left: 24px; }
+  .module-node { background: var(--bg2); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; min-width: 180px; }
+  .module-node .node-header { padding: 8px 12px; font-weight: 600; font-size: 12px; font-family: monospace; }
+  .module-node.ad .node-header { background: rgba(210,153,34,.12); color: var(--ad); border-bottom: 1px solid rgba(210,153,34,.3); }
+  .module-node.pd .node-header { background: rgba(188,140,255,.12); color: var(--pd); border-bottom: 1px solid rgba(188,140,255,.3); }
+  .module-node.mig .node-header { background: rgba(248,81,73,.12); color: var(--mig); border-bottom: 1px solid rgba(248,81,73,.3); }
+  .module-node.top .node-header { background: rgba(63,185,80,.12); color: var(--cli); border-bottom: 1px solid rgba(63,185,80,.3); }
+  .module-node .cmd-list { padding: 8px 12px; }
+  .module-node .cmd-item { font-size: 12px; font-family: monospace; color: var(--muted); padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+  .module-node .cmd-item::before { content: '→'; color: var(--border); }
+  .module-node .src-path { font-size: 10px; color: var(--gen); padding: 6px 12px; border-top: 1px solid var(--border); }
+
+  /* ── Data flow ── */
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .flow-step {
+    display: flex; align-items: flex-start; gap: 16px;
+    padding: 14px 16px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 0;
+    position: relative;
+  }
+  .flow-step:first-child { border-radius: 8px 8px 0 0; }
+  .flow-step:last-child  { border-radius: 0 0 8px 8px; }
+  .flow-step + .flow-step { border-top: none; }
+  .flow-step:not(:last-child)::after {
+    content: '▼'; position: absolute; bottom: -14px; left: 50%;
+    transform: translateX(-50%); color: var(--muted); font-size: 12px; z-index: 1;
+    background: var(--bg); padding: 0 4px;
+  }
+  .flow-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+  .flow-body h5 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .flow-body p  { font-size: 12px; color: var(--muted); }
+  .flow-body .file-tag { display: inline-block; font-family: monospace; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; margin: 2px 2px 0 0; color: var(--text); }
+  .flow-step.s1 .flow-num { background: rgba(56,139,253,.2); color: var(--core); }
+  .flow-step.s2 .flow-num { background: rgba(63,185,80,.2); color: var(--cli); }
+  .flow-step.s3 .flow-num { background: rgba(210,153,34,.2); color: var(--ad); }
+  .flow-step.s4 .flow-num { background: rgba(210,153,34,.2); color: var(--ad); }
+  .flow-step.s5 .flow-num { background: rgba(210,153,34,.2); color: var(--ad); }
+  .flow-step.s6 .flow-num { background: rgba(56,139,253,.2); color: var(--core); }
+  .flow-step.s7 .flow-num { background: rgba(56,139,253,.2); color: var(--core); }
+
+  /* ── File table ── */
+  .file-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .file-table th { text-align: left; padding: 8px 12px; background: var(--bg3); color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--border); }
+  .file-table td { padding: 7px 12px; border-bottom: 1px solid var(--bg3); vertical-align: top; }
+  .file-table tr:hover td { background: var(--bg2); }
+  .file-table .path { font-family: monospace; color: var(--text); font-size: 11px; }
+  .file-table .desc { color: var(--muted); }
+  .file-table .role { font-size: 11px; border-radius: 4px; padding: 2px 7px; font-weight: 500; white-space: nowrap; }
+  .role-entry { background: rgba(56,139,253,.15); color: var(--core); }
+  .role-lib   { background: rgba(63,185,80,.15); color: var(--cli); }
+  .role-cmd   { background: rgba(210,153,34,.15); color: var(--ad); }
+  .role-gen   { background: rgba(110,118,129,.15); color: var(--gen); }
+  .role-dep   { background: rgba(248,81,73,.15); color: var(--redundant); }
+  .role-cfg   { background: rgba(188,140,255,.15); color: var(--pd); }
+  .section-header { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; padding: 10px 12px 4px; background: var(--bg); border-bottom: 1px solid var(--border); }
+
+  /* ── Redundancy cards ── */
+  .red-card { background: var(--bg2); border: 1px solid rgba(248,81,73,.3); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .red-card h4 { font-size: 13px; font-weight: 600; color: var(--redundant); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .red-card p  { font-size: 12px; color: var(--muted); }
+  .red-card .path { font-family: monospace; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; color: var(--text); }
+  .ok-card  { background: var(--bg2); border: 1px solid rgba(63,185,80,.3); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
+  .ok-card h4 { font-size: 13px; font-weight: 600; color: var(--cli); margin-bottom: 6px; }
+  .ok-card p  { font-size: 12px; color: var(--muted); }
+
+  /* ── Runtime diagram ── */
+  .runtime-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .runtime-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .runtime-box h4 { font-family: monospace; font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 400; }
+  .runtime-box h4 span { color: var(--text); font-weight: 600; }
+  .runtime-item { font-size: 12px; font-family: monospace; padding: 4px 0; border-bottom: 1px solid var(--bg3); display: flex; justify-content: space-between; align-items: center; }
+  .runtime-item:last-child { border-bottom: none; }
+  .runtime-item .name { color: var(--text); }
+  .runtime-item .desc { color: var(--muted); font-size: 11px; font-family: sans-serif; }
+
+  /* ── Utilities ── */
+  .h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+  .h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--muted); }
+  .mb16 { margin-bottom: 16px; }
+  .mb24 { margin-bottom: 24px; }
+  .flex { display: flex; gap: 16px; }
+  .flex-col { display: flex; flex-direction: column; gap: 16px; }
+  .spacer { height: 16px; }
+  code { font-family: monospace; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; color: var(--text); }
+  .tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 600; }
+  .tag-core { background: rgba(56,139,253,.2); color: var(--core); }
+  .tag-cli  { background: rgba(63,185,80,.2); color: var(--cli); }
+  .tag-ad   { background: rgba(210,153,34,.2); color: var(--ad); }
+  .tag-pd   { background: rgba(188,140,255,.2); color: var(--pd); }
+  .tag-mig  { background: rgba(248,81,73,.2); color: var(--mig); }
+  .tag-gen  { background: rgba(110,118,129,.2); color: var(--gen); }
+  .tag-dep  { background: rgba(248,81,73,.2); color: var(--redundant); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Belzabar Codebase Map</h1>
+  <p>Architecture, modules, data flow, and file reference for the unified <code>belz</code> CLI monorepo.</p>
+  <div class="tabs">
+    <div class="tab active" onclick="show('overview')">Overview</div>
+    <div class="tab" onclick="show('modules')">Modules</div>
+    <div class="tab" onclick="show('flow')">Data Flow</div>
+    <div class="tab" onclick="show('files')">File Reference</div>
+    <div class="tab" onclick="show('runtime')">Runtime Data</div>
+    <div class="tab" onclick="show('redundancy')">Redundancies</div>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ═══════════════════════════════════════════════════ OVERVIEW ══ -->
+<div id="overview" class="section active">
+  <div class="legend mb16">
+    <span class="legend-item"><span class="dot" style="background:var(--core)"></span> packages/core</span>
+    <span class="legend-item"><span class="dot" style="background:var(--cli)"></span> cli/</span>
+    <span class="legend-item"><span class="dot" style="background:var(--ad)"></span> automation-designer/</span>
+    <span class="legend-item"><span class="dot" style="background:var(--pd)"></span> page-designer/</span>
+    <span class="legend-item"><span class="dot" style="background:var(--mig)"></span> migrations/</span>
+    <span class="legend-item"><span class="dot" style="background:var(--ext)"></span> extension/</span>
+    <span class="legend-item"><span class="dot" style="background:var(--gen)"></span> auto-generated</span>
+  </div>
+
+  <!-- Row 1: core -->
+  <div class="arch-row">
+    <div class="arch-box core" style="max-width:400px">
+      <h4>packages/core &nbsp;<span style="font-weight:400;color:var(--muted)">@belzabar/core</span></h4>
+      <ul>
+        <li><span class="fn">config.ts</span><span style="margin-left:auto;font-size:11px">Env config, ~/.belz/config.json</span></li>
+        <li><span class="fn">auth.ts</span><span style="margin-left:auto;font-size:11px">Login, session persistence</span></li>
+        <li><span class="fn">api.ts</span><span style="margin-left:auto;font-size:11px">Fetch wrapper, auto-auth, 401 refresh</span></li>
+        <li><span class="fn">runner.ts</span><span style="margin-left:auto;font-size:11px">runCli / runNamespacedCli</span></li>
+        <li><span class="fn">command.ts</span><span style="margin-left:auto;font-size:11px">CommandModule, ok(), fail(), CliError</span></li>
+        <li><span class="fn">output.ts</span><span style="margin-left:auto;font-size:11px">renderHuman / renderLLM</span></li>
+        <li><span class="fn">types.ts</span><span style="margin-left:auto;font-size:11px">Environment, AuthSession, ApiOptions</span></li>
+        <li><span class="fn">display.ts</span><span style="margin-left:auto;font-size:11px"><span class="dep-tag">likely unused</span> DisplayManager static class</span></li>
+      </ul>
+      <p class="note">Shared by all workspaces. Install once via bun workspace.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:60px">
+      <span style="color:var(--muted);font-size:22px">⟶</span>
+      <span style="font-size:10px;color:var(--gen);margin-top:4px">used by all</span>
+    </div>
+    <div class="arch-box ext" style="max-width:240px">
+      <h4>extension/</h4>
+      <ul>
+        <li><span class="fn">manifest.json</span></li>
+        <li><span class="fn">src/</span><span style="margin-left:auto;font-size:11px">background, content, popup</span></li>
+        <li><span class="fn">scripts/</span><span style="margin-left:auto;font-size:11px">build tooling</span></li>
+        <li><span class="fn">dist/</span><span style="margin-left:auto;font-size:11px">compiled extension</span></li>
+      </ul>
+      <p class="note">Completely independent from CLI. Own build pipeline.</p>
+    </div>
+  </div>
+
+  <div class="arrow-down">↓</div>
+
+  <!-- Row 2: source modules -->
+  <div class="arch-row">
+    <div class="arch-box ad">
+      <h4>automation-designer/</h4>
+      <ul>
+        <li><span class="fn">commands/{get,run,show,test,sql,save-suite,run-suites}</span></li>
+        <li><span class="fn">lib/{api,cache,hydrator,parser,payload-builder,input-collector,error-parser}</span></li>
+        <li><span class="fn">lib/sql/{api,executor,selector,payload,result}</span></li>
+        <li><span class="fn">lib/sql/tui/{session,commands,renderer,history}</span></li>
+        <li><span class="fn">integrations/gemini-mcp/server.ts</span></li>
+        <li><span class="fn">tests/unit/ (26 tests)</span></li>
+      </ul>
+      <p class="note">Source only — no package.json, no own binary. Commands consumed by cli/.</p>
+    </div>
+    <div class="arch-box pd">
+      <h4>page-designer/</h4>
+      <ul>
+        <li><span class="fn">commands/{show-page,show-component,analyze,find-ad-methods,inspect-url}</span></li>
+        <li><span class="fn">lib/{api,analyzer,parser,comparator,reporter,url-parser,types}</span></li>
+        <li><span class="fn">components.json</span><span style="margin-left:auto;font-size:11px">component whitelist</span></li>
+        <li><span class="fn">master_ids.txt</span><span style="margin-left:auto;font-size:11px">compliance AD IDs</span></li>
+      </ul>
+      <p class="note">Source only — no package.json, no own binary. Commands consumed by cli/.</p>
+    </div>
+    <div class="arch-box mig">
+      <h4>migrations/</h4>
+      <ul>
+        <li><span class="fn">lib/index.ts</span><span style="margin-left:auto;font-size:11px">re-export barrel</span></li>
+        <li><span class="fn">lib/args.ts</span><span style="margin-left:auto;font-size:11px">parseMigrateArgs()</span></li>
+        <li><span class="fn">lib/client.ts</span><span style="margin-left:auto;font-size:11px">HTTP API calls</span></li>
+        <li><span class="fn">lib/profiles.ts</span><span style="margin-left:auto;font-size:11px">NSM profile discovery</span></li>
+        <li><span class="fn">lib/ws.ts</span><span style="margin-left:auto;font-size:11px">WebSocket stream</span></li>
+        <li><span class="fn">lib/log-parser.ts</span><span style="margin-left:auto;font-size:11px">parseMigrationOutput()</span></li>
+        <li><span class="fn">lib/artifacts.ts</span><span style="margin-left:auto;font-size:11px">write run artifacts</span></li>
+        <li><span class="fn">tests/unit/ (14 tests)</span></li>
+      </ul>
+      <p class="note">Source only — no package.json. Consumed exclusively by cli/commands/migrate/.</p>
+    </div>
+  </div>
+
+  <div class="arrow-down">↓ imported by</div>
+
+  <!-- Row 3: cli -->
+  <div class="arch-row">
+    <div class="arch-box cli" style="width:100%">
+      <h4>cli/ &nbsp;— Unified Binary Builder</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px">
+        <div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Entry Points</p>
+          <ul>
+            <li><span class="fn">bin/cli.ts</span><span style="margin-left:auto;font-size:11px">dev mode (dynamic)</span></li>
+            <li><span class="fn">bin/cli-build.ts</span><span style="margin-left:auto;font-size:11px">prod mode (static)</span></li>
+          </ul>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Top-level Commands</p>
+          <ul>
+            <li><span class="fn">commands/envs/</span><span style="margin-left:auto;font-size:11px">list environments</span></li>
+            <li><span class="fn">commands/migrate/</span><span style="margin-left:auto;font-size:11px">imports migrations/lib</span></li>
+          </ul>
+        </div>
+        <div>
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Auto-Generated Registries</p>
+          <ul>
+            <li><span class="fn">registry-ad.ts</span><span style="margin-left:auto"><span class="gen-tag">generated</span></span></li>
+            <li><span class="fn">registry-pd.ts</span><span style="margin-left:auto"><span class="gen-tag">generated</span></span></li>
+            <li><span class="fn">registry-top.ts</span><span style="margin-left:auto"><span class="gen-tag">generated</span></span></li>
+            <li><span class="fn">registry-help.ts</span><span style="margin-left:auto"><span class="gen-tag">generated</span></span></li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">Run <code>bun run generate</code> then <code>bun run build</code> to produce the <code>belz</code> binary.</p>
+    </div>
+  </div>
+
+  <div class="arrow-down">↓ compiles to</div>
+
+  <!-- Row 4: binary -->
+  <div class="arch-row" style="justify-content:center">
+    <div class="arch-box cli" style="max-width:420px;text-align:center">
+      <h4 style="text-align:center">belz &nbsp;(compiled binary)</h4>
+      <p style="font-size:12px;color:var(--muted)">Installed to <code>~/.local/bin/belz</code> via <code>bash scripts/install.sh</code></p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <span class="tag tag-ad">belz ad</span>
+        <span class="tag tag-pd">belz pd</span>
+        <span class="tag tag-mig">belz migrate</span>
+        <span class="tag tag-cli">belz envs</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ MODULES ══ -->
+<div id="modules" class="section">
+  <p class="h3">How <code>belz</code> routes commands at runtime</p>
+
+  <div style="display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap" class="mb24">
+    <div>
+      <div class="module-root">$ belz</div>
+      <div style="text-align:center;color:var(--muted);margin:6px 0">↓ routes to</div>
+      <div class="module-children">
+
+        <div class="module-node ad">
+          <div class="node-header">belz ad &lt;cmd&gt;</div>
+          <div class="cmd-list">
+            <div class="cmd-item">get &lt;UUID&gt;</div>
+            <div class="cmd-item">run &lt;UUID&gt; [payload]</div>
+            <div class="cmd-item">show &lt;UUID&gt;</div>
+            <div class="cmd-item">test &lt;UUID&gt;</div>
+            <div class="cmd-item">sql [dbs|run|tui]</div>
+            <div class="cmd-item">save-suite &lt;UUID&gt;</div>
+            <div class="cmd-item">run-suites</div>
+          </div>
+          <div class="src-path">↳ automation-designer/commands/</div>
+        </div>
+
+        <div class="module-node pd">
+          <div class="node-header">belz pd &lt;cmd&gt;</div>
+          <div class="cmd-list">
+            <div class="cmd-item">show-page &lt;UUID&gt;</div>
+            <div class="cmd-item">show-component &lt;NAME&gt;</div>
+            <div class="cmd-item">analyze [PAGE_ID]</div>
+            <div class="cmd-item">find-ad-methods &lt;ID&gt;</div>
+            <div class="cmd-item">inspect-url &lt;URL&gt;</div>
+          </div>
+          <div class="src-path">↳ page-designer/commands/</div>
+        </div>
+
+        <div class="module-node mig">
+          <div class="node-header">belz migrate &lt;sub&gt;</div>
+          <div class="cmd-list">
+            <div class="cmd-item">profiles [--refresh]</div>
+            <div class="cmd-item">run --module --ids</div>
+          </div>
+          <div class="src-path">↳ cli/commands/migrate/ + migrations/lib/</div>
+        </div>
+
+        <div class="module-node top">
+          <div class="node-header">belz envs</div>
+          <div class="cmd-list">
+            <div class="cmd-item">(lists all environments)</div>
+          </div>
+          <div class="src-path">↳ cli/commands/envs/</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="h2">How Commands Are Loaded</div>
+  <div class="card-grid cols2 mb24">
+    <div class="card">
+      <h3>Dev Mode &nbsp;<code>bun run cli/bin/cli.ts</code></h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Dynamically discovers commands at runtime using <code>fs.readdirSync</code> + <code>require()</code>.</p>
+      <div style="font-size:12px;font-family:monospace;line-height:2;color:var(--muted)">
+        adCommandsDir = <span style="color:var(--ad)">../../automation-designer/commands</span><br>
+        pdCommandsDir = <span style="color:var(--pd)">../../page-designer/commands</span><br>
+        topCommandsDir = <span style="color:var(--cli)">../commands &nbsp;(cli/commands/)</span>
+      </div>
+      <p style="font-size:11px;color:var(--gen);margin-top:8px">No registries needed. Best for development.</p>
+    </div>
+    <div class="card">
+      <h3>Prod Mode &nbsp;<code>belz</code> binary</h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Uses pre-generated registries and embedded help text. No filesystem access needed.</p>
+      <div style="font-size:12px;font-family:monospace;line-height:2;color:var(--muted)">
+        ADCommandRegistry &nbsp;← <span style="color:var(--gen)">registry-ad.ts</span><br>
+        PDCommandRegistry &nbsp;← <span style="color:var(--gen)">registry-pd.ts</span><br>
+        TopLevelRegistry &nbsp;&nbsp;← <span style="color:var(--gen)">registry-top.ts</span><br>
+        ADHelpMap / PDHelpMap ← <span style="color:var(--gen)">registry-help.ts</span>
+      </div>
+      <p style="font-size:11px;color:var(--gen);margin-top:8px">Compiled with <code>bun build --compile</code>. Help text is embedded as strings.</p>
+    </div>
+  </div>
+
+  <div class="h2">Module Dispatch Type: Regular vs Passthrough</div>
+  <div class="card-grid cols2">
+    <div class="card">
+      <h3>Regular Module &nbsp;<span class="tag tag-ad">ad</span> <span class="tag tag-pd">pd</span></h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Has a <code>commands</code> map. The runner handles routing to sub-commands.</p>
+      <div style="font-family:monospace;font-size:11px;color:var(--muted);line-height:2">
+        belz ad get → runner strips "ad" →<br>
+        dispatches "get" in ADCommandRegistry →<br>
+        calls get/index.ts
+      </div>
+    </div>
+    <div class="card">
+      <h3>Passthrough Module &nbsp;<span class="tag tag-mig">migrate</span></h3>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Has a single <code>command</code> module. Passes full args through — the command handles its own sub-routing.</p>
+      <div style="font-family:monospace;font-size:11px;color:var(--muted);line-height:2">
+        belz migrate profiles → runner keeps "migrate" →<br>
+        dispatches to MigrateModule with full args →<br>
+        migrate/index.ts routes to "profiles" internally
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ FLOW ══ -->
+<div id="flow" class="section">
+  <p class="h3 mb16">Tracing <code>belz ad get &lt;UUID&gt;</code> end-to-end</p>
+
+  <div class="flow">
+    <div class="flow-step s1">
+      <div class="flow-num">1</div>
+      <div class="flow-body">
+        <h5>Entry Point — binary invoked</h5>
+        <p>The compiled <code>belz</code> binary starts. <code>cli-build.ts</code> calls <code>runNamespacedCli(process.argv, options)</code>.</p>
+        <div style="margin-top:6px">
+          <span class="file-tag">cli/bin/cli-build.ts</span>
+          <span class="file-tag">packages/core/src/runner.ts</span>
+        </div>
+      </div>
+    </div>
+    <div class="flow-step s2">
+      <div class="flow-num">2</div>
+      <div class="flow-body">
+        <h5>Global Flags Stripped</h5>
+        <p><code>stripGlobalFlags()</code> pulls out <code>--env</code> (sets active environment on Config singleton) and <code>--llm</code> (sets outputMode). Remaining args: <code>['ad', 'get', '&lt;UUID&gt;']</code>.</p>
+        <div style="margin-top:6px">
+          <span class="file-tag">core/runner.ts → stripGlobalFlags()</span>
+          <span class="file-tag">core/config.ts → Config.setActiveEnv()</span>
+        </div>
+      </div>
+    </div>
+    <div class="flow-step s2">
+      <div class="flow-num">3</div>
+      <div class="flow-body">
+        <h5>Module Dispatch — "ad" namespace found</h5>
+        <p>Token <code>ad</code> matched in <code>options.namespaces</code>. Module type is "regular" (has <code>commands</code>). Remaining args <code>['get', '&lt;UUID&gt;']</code> passed to <code>dispatchCommand()</code>.</p>
+        <div style="margin-top:6px">
+          <span class="file-tag">core/runner.ts → namespace dispatch</span>
+          <span class="file-tag">cli/commands/registry-ad.ts (ADCommandRegistry)</span>
+        </div>
+      </div>
+    </div>
+    <div class="flow-step s3">
+      <div class="flow-num">4</div>
+      <div class="flow-body">
+        <h5>Command Module Located — get/index.ts</h5>
+        <p><code>dispatchCommand</code> finds <code>'get'</code> in <code>ADCommandRegistry</code>, resolves the CommandModule. Checks <code>args[1]</code> — not <code>--help</code>, so continues to execution.</p>
+        <div style="margin-top:6px">
+          <span class="file-tag">automation-designer/commands/get/index.ts</span>
+        </div>
+      </div>
+    </div>
+    <div class="flow-step s4">
+      <div class="flow-num">5</div>
+      <div class="flow-body">
+        <h5>parseArgs() — validates inputs</h5>
+        <p>Extracts UUID and <code>--raw</code> flag from remaining args. Returns typed <code>GetArgs</code> object.</p>
+        <div style="margin-top:6px">
+          <span class="file-tag">get/index.ts → parseArgs()</span>
+        </div>
+      </div>
+    </div>
+    <div class="flow-step s4">
+      <div class="flow-num">6</div>
+      <div class="flow-body">
+        <h5>execute() — business logic</h5>
+        <p>1. Calls <code>apiFetch()</code> → core handles auth (loads/refreshes session from <code>~/.belz/sessions/nsm-dev.json</code>), makes HTTP request to <code>GET /rest/api/automation/chain/&lt;UUID&gt;</code>.<br>
+        2. <code>parseMethodResponse()</code> extracts <code>jsonDefinition</code> → <code>HydratedMethod</code>.<br>
+        3. <code>CacheManager</code> saves result to <code>~/.belz/cache/methods/&lt;UUID&gt;.json</code>.<br>
+        4. <code>ServiceHydrator</code> fetches & caches automation definitions for each service ID.</p>
+        <div style="margin-top:6px">
+          <span class="file-tag">core/api.ts → apiFetch()</span>
+          <span class="file-tag">core/auth.ts → loadSession() / login()</span>
+          <span class="file-tag">ad/lib/parser.ts → parseMethodResponse()</span>
+          <span class="file-tag">ad/lib/cache.ts → CacheManager</span>
+          <span class="file-tag">ad/lib/hydrator.ts → ServiceHydrator</span>
+        </div>
+      </div>
+    </div>
+    <div class="flow-step s6">
+      <div class="flow-num">7</div>
+      <div class="flow-body">
+        <h5>Result Wrapped &amp; Output Rendered</h5>
+        <p>execute() returns <code>ok({ method, hydratedServiceIds })</code>. Runner wraps in <code>CommandEnvelope</code>, calls <code>renderHuman()</code> (table output) or <code>renderLLM()</code> (JSON envelope if <code>--llm</code>).</p>
+        <div style="margin-top:6px">
+          <span class="file-tag">core/command.ts → ok()</span>
+          <span class="file-tag">core/runner.ts → toEnvelope()</span>
+          <span class="file-tag">core/output.ts → renderHuman() / renderLLM()</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="h2">Authentication Flow (first call / session expired)</div>
+  <div class="flow">
+    <div class="flow-step s6">
+      <div class="flow-num">A</div>
+      <div class="flow-body">
+        <h5>apiFetch() called</h5>
+        <p><code>loadSession(env)</code> checks <code>~/.belz/sessions/&lt;env&gt;.json</code>. If missing → calls <code>login()</code>.</p>
+        <span class="file-tag">core/auth.ts → loadSession()</span>
+      </div>
+    </div>
+    <div class="flow-step s6">
+      <div class="flow-num">B</div>
+      <div class="flow-body">
+        <h5>Credentials resolved</h5>
+        <p>Reads from <code>~/.belz/config.json</code> (file wins). Falls back to env vars <code>NSM_DEV_USER</code> / <code>NSM_DEV_PASSWORD</code>. Password is base64-decoded via <code>atob()</code>.</p>
+        <span class="file-tag">core/config.ts → Config.password</span>
+      </div>
+    </div>
+    <div class="flow-step s6">
+      <div class="flow-num">C</div>
+      <div class="flow-body">
+        <h5>Login POST &amp; session saved</h5>
+        <p>POSTs to <code>/do/login</code>, extracts token, saves session to <code>~/.belz/sessions/nsm-dev.json</code>.</p>
+        <span class="file-tag">core/auth.ts → login() → saveSession()</span>
+      </div>
+    </div>
+    <div class="flow-step s6">
+      <div class="flow-num">D</div>
+      <div class="flow-body">
+        <h5>Retries on 401</h5>
+        <p>If API returns 401, clears session, re-runs login, retries original request once.</p>
+        <span class="file-tag">core/api.ts → 401 refresh logic</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ FILES ══ -->
+<div id="files" class="section">
+  <p class="h3 mb16">Complete file reference. Hover rows for highlight.</p>
+  <table class="file-table">
+    <thead>
+      <tr><th>Path</th><th>Role</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+      <tr><td colspan="3" class="section-header">ROOT</td></tr>
+      <tr><td class="path">scripts/install.sh</td><td><span class="role role-entry">script</span></td><td class="desc">Smart install: updates binary if belz exists, full first-time setup if not. Prompts for .env path or manual credentials.</td></tr>
+      <tr><td class="path">scripts/reinstall.sh</td><td><span class="role role-entry">script</span></td><td class="desc">Wipes ~/.belz/ and existing binary with confirmation, then delegates to scripts/install.sh.</td></tr>
+      <tr><td class="path">package.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Monorepo root. Workspaces: cli, extension, packages/*. Scripts: install (→ scripts/install.sh), reinstall, belz:build, build.</td></tr>
+      <tr><td class="path">turbo.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Turborepo pipeline. build depends on ^build (topological). dev is persistent, no cache.</td></tr>
+      <tr><td class="path">tsconfig.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Shared base TypeScript config. ESNext, bundler module resolution, strict mode. Extended by all workspaces.</td></tr>
+
+      <tr><td colspan="3" class="section-header">packages/core/src/  (@belzabar/core)</td></tr>
+      <tr><td class="path">index.ts</td><td><span class="role role-lib">barrel</span></td><td class="desc">Re-exports everything from core. The public API for @belzabar/core.</td></tr>
+      <tr><td class="path">config.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">BELZ_CONFIG_DIR (~/.belz/). Config singleton. Loads config.json. Manages active environment. Password base64-decoded via atob().</td></tr>
+      <tr><td class="path">auth.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">login(), loadSession(), saveSession(). Sessions persisted at ~/.belz/sessions/&lt;env&gt;.json.</td></tr>
+      <tr><td class="path">api.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">apiFetch() — main HTTP wrapper. Adds Bearer auth header, handles 401 refresh, supports Bearer/Raw/None auth modes.</td></tr>
+      <tr><td class="path">runner.ts</td><td><span class="role role-entry">runner</span></td><td class="desc">runCli() for single-namespace CLIs. runNamespacedCli() for multi-module CLIs (belz). NamespaceDefinition supports both commands map and passthrough command.</td></tr>
+      <tr><td class="path">command.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">CommandModule&lt;TArgs, TData&gt; interface. ok() / fail() result builders. CliError class. CommandEnvelope type.</td></tr>
+      <tr><td class="path">output.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">renderHuman() — colored table output. renderLLM() — JSON envelope to stdout.</td></tr>
+      <tr><td class="path">types.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">Shared types: Environment, AuthSession, ApiOptions, OutputMode.</td></tr>
+      <tr><td class="path">display.ts</td><td><span class="role role-dep">⚠ unused</span></td><td class="desc">Static DisplayManager class for human/LLM mode switching. Likely superseded by output.ts and renderHuman/renderLLM.</td></tr>
+
+      <tr><td colspan="3" class="section-header">cli/</td></tr>
+      <tr><td class="path">bin/cli.ts</td><td><span class="role role-entry">entry</span></td><td class="desc">Dev mode entrypoint. Dynamically discovers commands from 3 source dirs using readdirSync + require(). Calls runNamespacedCli() directly.</td></tr>
+      <tr><td class="path">bin/cli-build.ts</td><td><span class="role role-entry">entry</span></td><td class="desc">Prod mode entrypoint. Imports pre-generated registries and embedded help maps. Target of bun build --compile.</td></tr>
+      <tr><td class="path">utils/generate-registry.ts</td><td><span class="role role-entry">generator</span></td><td class="desc">Discovers commands from automation-designer/commands, page-designer/commands, cli/commands. Reads help.txt files. Generates 4 registry files. Run: bun run generate (from cli/).</td></tr>
+      <tr><td class="path">commands/envs/index.ts</td><td><span class="role role-cmd">command</span></td><td class="desc">belz envs — lists all configured environments (nsm-dev, nsm-qa, nsm-uat) with active flag. Imports Config from @belzabar/core.</td></tr>
+      <tr><td class="path">commands/migrate/index.ts</td><td><span class="role role-cmd">command</span></td><td class="desc">belz migrate — passthrough module. Routes to profiles or run sub-commands. Imports from migrations/lib/.</td></tr>
+      <tr><td class="path">commands/registry-ad.ts</td><td><span class="role role-gen">generated</span></td><td class="desc">AUTO-GENERATED. Imports all AD commands from automation-designer/commands/. Exports ADCommandRegistry.</td></tr>
+      <tr><td class="path">commands/registry-pd.ts</td><td><span class="role role-gen">generated</span></td><td class="desc">AUTO-GENERATED. Imports all PD commands from page-designer/commands/. Exports PDCommandRegistry.</td></tr>
+      <tr><td class="path">commands/registry-top.ts</td><td><span class="role role-gen">generated</span></td><td class="desc">AUTO-GENERATED. Imports envs and migrate from cli/commands/. Exports TopLevelCommandRegistry.</td></tr>
+      <tr><td class="path">commands/registry-help.ts</td><td><span class="role role-gen">generated</span></td><td class="desc">AUTO-GENERATED. Embeds all help.txt contents as strings. Exports ADHelpMap, PDHelpMap, TopHelpMap, makeHelpResolver(). Used by compiled binary.</td></tr>
+
+      <tr><td colspan="3" class="section-header">automation-designer/commands/</td></tr>
+      <tr><td class="path">get/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Fetch method by UUID. Parses response, caches result, hydrates service definitions.</td></tr>
+      <tr><td class="path">run/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Execute published method. Accepts UUID and optional JSON payload string.</td></tr>
+      <tr><td class="path">show/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Display method structure. Flags: --inputs, --services, --service-detail &lt;n&gt;, --full, --raw.</td></tr>
+      <tr><td class="path">test/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Test draft method with inputs. Shows per-service trace status, highlights failed steps.</td></tr>
+      <tr><td class="path">sql/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">SQL interface. Sub-commands: dbs (list databases), run &lt;db&gt; &lt;query&gt;, tui (interactive session).</td></tr>
+      <tr><td class="path">save-suite/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Save test inputs for a method as a named suite to suites/*.spec.json.</td></tr>
+      <tr><td class="path">run-suites/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Run all saved test suites and report results.</td></tr>
+
+      <tr><td colspan="3" class="section-header">automation-designer/lib/</td></tr>
+      <tr><td class="path">api.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">Re-exports core apiFetch. Adds fetchMethodDefinition(), fetchAutomationDefinition(), testMethod() for AD endpoints.</td></tr>
+      <tr><td class="path">parser.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">parseMethodResponse() — transforms raw API payload into HydratedMethod with extracted jsonDefinition.</td></tr>
+      <tr><td class="path">cache.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">CacheManager — read/write method cache at ~/.belz/cache/methods/&lt;uuid&gt;.json with 5-minute TTL.</td></tr>
+      <tr><td class="path">hydrator.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">ServiceHydrator — fetches automation definitions per serviceId, caches at ~/.belz/cache/definitions/. Provides label lookup for inputs.</td></tr>
+      <tr><td class="path">payload-builder.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">PayloadBuilder — injects collected input key/value pairs into method's jsonDefinition for test execution.</td></tr>
+      <tr><td class="path">input-collector.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">InputCollector — collects input values from a JSON file or interactive prompts. Handles BOOLEAN and nested JSON types.</td></tr>
+      <tr><td class="path">error-parser.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">ErrorParser — extracts human-readable error details from failed step execution responses.</td></tr>
+      <tr><td class="path">types.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">RawMethodResponse, HydratedMethod, InputField, ServiceStep, AutomationDefinition — domain types from AD API.</td></tr>
+      <tr><td class="path">integrations/gemini-mcp/server.ts</td><td><span class="role role-entry">mcp</span></td><td class="desc">JSON-RPC MCP server. Wraps belz CLI via shell with --llm flag. Exposes ad.show_method and ad.test_method as MCP tools for Claude.</td></tr>
+
+      <tr><td colspan="3" class="section-header">page-designer/</td></tr>
+      <tr><td class="path">commands/show-page/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Fetch and display page config by draft UUID.</td></tr>
+      <tr><td class="path">commands/show-component/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Search for and display component config by name.</td></tr>
+      <tr><td class="path">commands/analyze/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Recursive traversal from root page(s). Builds dependency tree, collects all AD method IDs, optional compliance check.</td></tr>
+      <tr><td class="path">commands/find-ad-methods/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Extract AD method IDs referenced in a page or component (shallow or recursive).</td></tr>
+      <tr><td class="path">commands/inspect-url/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Parse a PD URL (/ui-designer/page/... or /ui-designer/symbol/...), return metadata, children, AD refs.</td></tr>
+      <tr><td class="path">lib/analyzer.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">analyzeItem() — recursive page/component traversal with visited-set for cycle detection.</td></tr>
+      <tr><td class="path">lib/parser.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">Extracts AD IDs via regex on execute URLs. Extracts component refs from layout nodes.</td></tr>
+      <tr><td class="path">components.json</td><td><span class="role role-cfg">data</span></td><td class="desc">Whitelist of known component names/IDs used during recursive analysis to filter relevant nodes.</td></tr>
+      <tr><td class="path">master_ids.txt</td><td><span class="role role-cfg">data</span></td><td class="desc">Approved AD method ID list for compliance diff (rogue / missing / common categories).</td></tr>
+
+      <tr><td colspan="3" class="section-header">migrations/lib/</td></tr>
+      <tr><td class="path">index.ts</td><td><span class="role role-lib">barrel</span></td><td class="desc">Re-exports all migration functions for use by cli/commands/migrate/.</td></tr>
+      <tr><td class="path">args.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">parseMigrateArgs() — parses raw CLI args into typed MigrateArgs. Handles --module, --ids, --source-env/--target-env, --ids-file, etc.</td></tr>
+      <tr><td class="path">client.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">startMigrationExecution(), cleanupMigrationExecution() — HTTP calls to the DB migration tool API.</td></tr>
+      <tr><td class="path">profiles.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">discoverNsmProfiles() — fetches and caches available NSM migration profiles at ~/.belz/migrations/nsm-profiles.json.</td></tr>
+      <tr><td class="path">ws.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">streamMigrationExecution() — WebSocket streaming of live migration events.</td></tr>
+      <tr><td class="path">log-parser.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">parseMigrationOutput() — parses stream events into success/failure counts and summary report.</td></tr>
+      <tr><td class="path">artifacts.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">writeMigrationArtifacts() — saves execution results to a JSON file at --out path.</td></tr>
+      <tr><td class="path">constants.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">NSM_ENV_TO_PROFILE_SEGMENT mappings. NSM_SCRIPT_NAME. DB_MIGRATION_TOOL_BASE_URL.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ RUNTIME ══ -->
+<div id="runtime" class="section">
+  <p class="h3 mb16">Everything written to disk at runtime lives under <code>~/.belz/</code></p>
+
+  <div class="runtime-grid mb24">
+    <div class="runtime-box">
+      <h4><span>~/.belz/config.json</span> &nbsp;— Credentials</h4>
+      <div class="runtime-item"><span class="name">environments.nsm-dev.url</span><span class="desc">base URL</span></div>
+      <div class="runtime-item"><span class="name">environments.nsm-dev.user</span><span class="desc">login username</span></div>
+      <div class="runtime-item"><span class="name">environments.nsm-dev.password</span><span class="desc">base64-encoded password</span></div>
+      <div class="runtime-item"><span class="name">environments.nsm-qa.*</span><span class="desc">same structure</span></div>
+      <div class="runtime-item"><span class="name">environments.nsm-uat.*</span><span class="desc">same structure</span></div>
+      <p style="font-size:11px;color:var(--gen);margin-top:8px">chmod 600. Written by scripts/install.sh. Config file wins over env vars.</p>
+    </div>
+
+    <div class="runtime-box">
+      <h4><span>~/.belz/sessions/</span> &nbsp;— Auth Sessions</h4>
+      <div class="runtime-item"><span class="name">nsm-dev.json</span><span class="desc">token for dev</span></div>
+      <div class="runtime-item"><span class="name">nsm-qa.json</span><span class="desc">token for qa</span></div>
+      <div class="runtime-item"><span class="name">nsm-uat.json</span><span class="desc">token for uat</span></div>
+      <p style="font-size:11px;color:var(--gen);margin-top:8px">Created on first API call. Refreshed automatically on 401. Written by core/auth.ts.</p>
+    </div>
+
+    <div class="runtime-box">
+      <h4><span>~/.belz/cache/</span> &nbsp;— Method Cache (5-min TTL)</h4>
+      <div class="runtime-item"><span class="name">methods/&lt;uuid&gt;.json</span><span class="desc">raw + parsed method</span></div>
+      <div class="runtime-item"><span class="name">definitions/&lt;id&gt;.json</span><span class="desc">automation definition (no TTL)</span></div>
+      <p style="font-size:11px;color:var(--gen);margin-top:8px">Written by CacheManager. Methods expire in 5 min. Definitions persist until manually cleared.</p>
+    </div>
+
+    <div class="runtime-box">
+      <h4><span>~/.belz/migrations/</span> &nbsp;— Migration State</h4>
+      <div class="runtime-item"><span class="name">nsm-profiles.json</span><span class="desc">discovered NSM profiles + timestamp</span></div>
+      <p style="font-size:11px;color:var(--gen);margin-top:8px">Written by migrations/lib/profiles.ts. Bypassed with --refresh flag.</p>
+    </div>
+  </div>
+
+  <div class="h2">Local Project Files</div>
+  <div class="runtime-box" style="max-width:500px">
+    <h4><span>./suites/</span> &nbsp;— Test Suites (project-local)</h4>
+    <div class="runtime-item"><span class="name">*.spec.json</span><span class="desc">saved input sets for regression testing</span></div>
+    <p style="font-size:11px;color:var(--gen);margin-top:8px">Written by <code>belz ad save-suite</code>. Read by <code>belz ad run-suites</code>. Stored in current working directory.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ REDUNDANCY ══ -->
+<div id="redundancy" class="section">
+  <p class="h3 mb16">Previously identified redundancies — all resolved. One candidate remains.</p>
+
+  <div class="ok-card">
+    <h4>✓ Resolved — cli/lib/runner.ts</h4>
+    <p>Was: <code>runBelzCli()</code> and legacy <code>runCli()</code> wrappers with zero importers. Both entry points already called <code>runNamespacedCli()</code> from <code>@belzabar/core</code> directly.</p>
+    <p style="margin-top:6px">Deleted. <code>cli/lib/</code> directory removed.</p>
+  </div>
+
+  <div class="ok-card">
+    <h4>✓ Resolved — cli/commands/registry.ts</h4>
+    <p>Was: auto-generated legacy flat <code>CommandRegistry</code> for the old single-namespace CLI. No active importers. Only referenced by the deleted <code>page-designer/bin/pd-build.ts</code>.</p>
+    <p style="margin-top:6px">Deleted. Generator no longer produces it.</p>
+  </div>
+
+  <div class="ok-card">
+    <h4>✓ Resolved — automation-designer/lib/{config,auth,display}.ts</h4>
+    <p>Were: single-line re-exports of <code>Config</code>, <code>login/loadSession/saveSession</code>, and <code>DisplayManager</code> from <code>@belzabar/core</code>. Commands now import directly from <code>@belzabar/core</code>.</p>
+    <p style="margin-top:6px">Deleted. <code>show/index.ts</code> updated to use direct core import.</p>
+  </div>
+
+  <div class="ok-card">
+    <h4>✓ Resolved — page-designer standalone binary</h4>
+    <p>Was: <code>bin/pd.ts</code>, <code>bin/pd-build.ts</code>, <code>utils/generate-registry.ts</code>, <code>commands/registry.ts</code>, <code>package.json</code>, <code>bun.lock</code>, <code>tsconfig.json</code>. All CLI orchestration for PD is now handled by <code>cli/</code> via <code>belz pd</code>.</p>
+    <p style="margin-top:6px">All deleted. <code>page-designer</code> removed from root workspaces. Now source-only like <code>automation-designer</code>.</p>
+  </div>
+
+  <div class="ok-card">
+    <h4>✓ Resolved — migrations/lib/migration/ nesting</h4>
+    <p>Was: extra nesting level (<code>lib/migration/*.ts</code>) inconsistent with other source modules. No reason for the subdirectory since nothing else lives under <code>lib/</code>.</p>
+    <p style="margin-top:6px">Flattened to <code>migrations/lib/*.ts</code>. Imports in <code>cli/commands/migrate/</code> and all test files updated.</p>
+  </div>
+
+  <div style="height:16px"></div>
+
+  <div class="red-card">
+    <h4>⚠ Remaining — packages/core/src/display.ts</h4>
+    <p>A static <code>DisplayManager</code> class for human/LLM mode switching. Predates <code>output.ts</code>'s <code>renderHuman()</code>/<code>renderLLM()</code> pattern. Still exported from <code>@belzabar/core</code> index — but no current code appears to use it.</p>
+    <p style="margin-top:6px;color:var(--cli)">→ Audit imports across all workspaces. If unused, remove from index.ts and delete.</p>
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<script>
+function show(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

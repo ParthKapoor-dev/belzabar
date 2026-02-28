@@ -7,7 +7,20 @@
         "turbo": "^2.8.3",
       },
     },
-    "apps/automation-designer": {
+    "apps/extension": {
+      "name": "belzabar-extension",
+      "version": "1.0.1",
+      "dependencies": {
+        "@codemirror/commands": "^6.10.0",
+        "@codemirror/lang-javascript": "^6.2.4",
+        "@codemirror/lang-json": "^6.0.2",
+        "@codemirror/lang-sql": "^6.10.0",
+        "@codemirror/state": "^6.5.2",
+        "@codemirror/theme-one-dark": "^6.1.3",
+        "@codemirror/view": "^6.38.6",
+      },
+    },
+    "cli": {
       "name": "belzabar.cli",
       "bin": {
         "belz": "./bin/cli.ts",
@@ -26,31 +39,6 @@
         "typescript": "^5",
       },
     },
-    "apps/extension": {
-      "name": "belzabar-extension",
-      "version": "1.0.1",
-      "dependencies": {
-        "@codemirror/commands": "^6.10.0",
-        "@codemirror/lang-javascript": "^6.2.4",
-        "@codemirror/lang-json": "^6.0.2",
-        "@codemirror/lang-sql": "^6.10.0",
-        "@codemirror/state": "^6.5.2",
-        "@codemirror/theme-one-dark": "^6.1.3",
-        "@codemirror/view": "^6.38.6",
-      },
-    },
-    "apps/page-designer": {
-      "name": "pd-cli",
-      "dependencies": {
-        "@belzabar/core": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
-      },
-    },
     "packages/core": {
       "name": "@belzabar/core",
       "version": "0.1.0",
@@ -61,6 +49,21 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+      },
+    },
+    "page-designer": {
+      "name": "pd-cli",
+      "bin": {
+        "pd": "./bin/pd.ts",
+      },
+      "dependencies": {
+        "@belzabar/core": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+      },
+      "peerDependencies": {
+        "typescript": "^5",
       },
     },
   },
@@ -117,7 +120,7 @@
 
     "belzabar-extension": ["belzabar-extension@workspace:apps/extension"],
 
-    "belzabar.cli": ["belzabar.cli@workspace:apps/automation-designer"],
+    "belzabar.cli": ["belzabar.cli@workspace:cli"],
 
     "bl": ["bl@4.1.0", "", { "dependencies": { "buffer": "^5.5.0", "inherits": "^2.0.4", "readable-stream": "^3.4.0" } }, "sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w=="],
 
@@ -215,7 +218,7 @@
 
     "os-tmpdir": ["os-tmpdir@1.0.2", "", {}, "sha512-D2FR03Vir7FIu45XBY20mTb+/ZSWB00sjU9jdQXt83gDrI4Ztz5Fs7/yy74g2N5SVQY4xY1qDr4rNddwYRVX0g=="],
 
-    "pd-cli": ["pd-cli@workspace:apps/page-designer"],
+    "pd-cli": ["pd-cli@workspace:page-designer"],
 
     "readable-stream": ["readable-stream@3.6.2", "", { "dependencies": { "inherits": "^2.0.3", "string_decoder": "^1.1.1", "util-deprecate": "^1.0.1" } }, "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA=="],
 
@@ -277,18 +280,10 @@
 
     "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
-    "belzabar.cli/@types/bun": ["@types/bun@1.3.8", "", { "dependencies": { "bun-types": "1.3.8" } }, "sha512-3LvWJ2q5GerAXYxO2mffLTqOzEu5qnhEAlh48Vnu8WQfnmSwbgagjGZV6BoHKJztENYEDn6QmVd949W4uESRJA=="],
-
     "belzabar.cli/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
     "log-symbols/chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
 
     "ora/chalk": ["chalk@4.1.2", "", { "dependencies": { "ansi-styles": "^4.1.0", "supports-color": "^7.1.0" } }, "sha512-oKnbhFyRIXpUuez8iBMmyEa4nbj4IOQyuhc/wy9kY7/WVPcwIO9VA668Pu8RkO7+0G76SLROeyw9CpQ061i4mA=="],
-
-    "pd-cli/@types/bun": ["@types/bun@1.3.8", "", { "dependencies": { "bun-types": "1.3.8" } }, "sha512-3LvWJ2q5GerAXYxO2mffLTqOzEu5qnhEAlh48Vnu8WQfnmSwbgagjGZV6BoHKJztENYEDn6QmVd949W4uESRJA=="],
-
-    "belzabar.cli/@types/bun/bun-types": ["bun-types@1.3.8", "", { "dependencies": { "@types/node": "*" } }, "sha512-fL99nxdOWvV4LqjmC+8Q9kW3M4QTtTR1eePs94v5ctGqU8OeceWrSUaRw3JYb7tU3FkMIAjkueehrHPPPGKi5Q=="],
-
-    "pd-cli/@types/bun/bun-types": ["bun-types@1.3.8", "", { "dependencies": { "@types/node": "*" } }, "sha512-fL99nxdOWvV4LqjmC+8Q9kW3M4QTtTR1eePs94v5ctGqU8OeceWrSUaRw3JYb7tU3FkMIAjkueehrHPPPGKi5Q=="],
   }
 }
