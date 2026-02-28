@@ -14,6 +14,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 BELZ_CONFIG_DIR="${HOME}/.belz"
 INSTALL_DIR="${HOME}/.local/bin"
 ENV_FILE=""
@@ -161,13 +162,13 @@ fi
 # ── 4. Install dependencies ───────────────────────────────────────────────────
 echo ""
 echo "📦 Installing dependencies..."
-cd "$SCRIPT_DIR"
-bun install
+cd "$REPO_ROOT"
+bun install --ignore-scripts
 
 # ── 5. Build the binary ───────────────────────────────────────────────────────
 echo ""
 echo "🔨 Building belz binary..."
-cd "$SCRIPT_DIR/cli"
+cd "$REPO_ROOT/cli"
 bun run generate
 bun build --compile --minify --sourcemap ./bin/cli-build.ts --outfile belz
 

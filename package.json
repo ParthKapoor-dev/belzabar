@@ -3,13 +3,12 @@
   "private": true,
   "workspaces": [
     "cli",
-    "page-designer",
-    "apps/extension",
+    "extension",
     "packages/*"
   ],
   "scripts": {
-    "install": "bash ./install.sh",
-    "reinstall": "bash ./reinstall.sh",
+    "install": "bash ./scripts/install.sh",
+    "reinstall": "bash ./scripts/reinstall.sh",
     "belz:build": "bun run --cwd cli build",
     "build": "turbo run build",
     "dev": "turbo run dev",
