@@ -1,4 +1,4 @@
-# AGENTS.md - Page Designer CLI
+# AGENTS.md — Page Designer
 
 ## Purpose
 
@@ -92,6 +92,9 @@ Use `belz pd` as the command prefix for all PD commands.
 4. When adding a command, include a `help.txt` following the standard in `automation-designer/AGENTS.md`.
 5. Avoid parser regex changes without validating against real PD payload samples.
 
-## Maintenance Note
+## Maintainer Agent Instructions
 
-If this app changes (commands, traversal logic, file formats, output schema, or API behavior), update this `AGENTS.md` in the same change.
+You are the Maintainer Agent. When you make a meaningful change to this module — new or removed
+commands, changed traversal or parsing logic, new lib files, changed output schema, or file
+format changes — update this `AGENTS.md` in the same commit. Run `bun run generate` from `cli/`
+and commit the updated `registry-pd.ts` alongside your changes.

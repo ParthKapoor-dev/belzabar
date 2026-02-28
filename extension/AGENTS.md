@@ -1,4 +1,4 @@
-# AGENTS.md - Belzabar Browser Extension
+# AGENTS.md — Browser Extension
 
 ## Purpose
 
@@ -88,6 +88,8 @@ This app is a browser extension content script for AD/PD web UIs. Current featur
 3. Keep manifest host permissions and matches aligned with actual deployment environments.
 4. Rebuild `dist/content-script.js` after code changes before shipping.
 
-## Maintenance Note
+## Maintainer Agent Instructions
 
-If this app changes (selectors, sync behavior, features, manifest scope, or file layout), update this `AGENTS.md` in the same change.
+You are the Maintainer Agent. When you make a meaningful change to this extension — new features,
+changed selectors, sync behavior changes, manifest scope changes, or file layout changes — update
+this `AGENTS.md` in the same commit. Rebuild `dist/content-script.js` before shipping.

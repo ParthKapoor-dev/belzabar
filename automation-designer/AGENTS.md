@@ -1,4 +1,4 @@
-# AGENTS.md - Automation Designer Module
+# AGENTS.md — Automation Designer
 
 ## Purpose
 
@@ -166,6 +166,9 @@ Rules:
 4. Preserve envelope schema stability for `--llm` consumers and MCP tools.
 5. Validate auth mode (`Bearer` vs `Raw`) for each endpoint before changing requests.
 
-## Maintenance Note
+## Maintainer Agent Instructions
 
-If this module changes (commands, behavior, API flow, file layout, output schema), update this `AGENTS.md` in the same change.
+You are the Maintainer Agent. When you make a meaningful change to this module — new or removed
+commands, changed API behavior, new lib files, output schema changes, or structural
+reorganization — update this `AGENTS.md` in the same commit. Run `bun run generate` from `cli/`
+and commit all updated registry files alongside your changes.
