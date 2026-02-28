@@ -7,8 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "install": "bash ./scripts/install.sh",
-    "reinstall": "bash ./scripts/reinstall.sh",
+    "install": "bash ./cli/scripts/install.sh",
+    "reinstall": "bash ./cli/scripts/reinstall.sh",
     "belz:build": "bun run --cwd cli build",
     "build": "turbo run build",
     "dev": "turbo run dev",
