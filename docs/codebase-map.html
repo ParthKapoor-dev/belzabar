@@ -338,7 +338,7 @@
   <div class="arch-row" style="justify-content:center">
     <div class="arch-box cli" style="max-width:420px;text-align:center">
       <h4 style="text-align:center">belz &nbsp;(compiled binary)</h4>
-      <p style="font-size:12px;color:var(--muted)">Installed to <code>~/.local/bin/belz</code> via <code>bash scripts/install.sh</code></p>
+      <p style="font-size:12px;color:var(--muted)">Installed to <code>~/.local/bin/belz</code> via <code>bash cli/scripts/install.sh</code></p>
       <div style="display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap">
         <span class="tag tag-ad">belz ad</span>
         <span class="tag tag-pd">belz pd</span>
@@ -591,9 +591,7 @@
     </thead>
     <tbody>
       <tr><td colspan="3" class="section-header">ROOT</td></tr>
-      <tr><td class="path">scripts/install.sh</td><td><span class="role role-entry">script</span></td><td class="desc">Smart install: updates binary if belz exists, full first-time setup if not. Prompts for .env path or manual credentials.</td></tr>
-      <tr><td class="path">scripts/reinstall.sh</td><td><span class="role role-entry">script</span></td><td class="desc">Wipes ~/.belz/ and existing binary with confirmation, then delegates to scripts/install.sh.</td></tr>
-      <tr><td class="path">package.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Monorepo root. Workspaces: cli, extension, packages/*. Scripts: install (→ scripts/install.sh), reinstall, belz:build, build.</td></tr>
+      <tr><td class="path">package.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Monorepo root. Workspaces: cli, extension, packages/*. Scripts: install (→ cli/scripts/install.sh), reinstall, belz:build, build.</td></tr>
       <tr><td class="path">turbo.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Turborepo pipeline. build depends on ^build (topological). dev is persistent, no cache.</td></tr>
       <tr><td class="path">tsconfig.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Shared base TypeScript config. ESNext, bundler module resolution, strict mode. Extended by all workspaces.</td></tr>
 
@@ -608,7 +606,13 @@
       <tr><td class="path">types.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">Shared types: Environment, AuthSession, ApiOptions, OutputMode.</td></tr>
       <tr><td class="path">display.ts</td><td><span class="role role-dep">⚠ unused</span></td><td class="desc">Static DisplayManager class for human/LLM mode switching. Likely superseded by output.ts and renderHuman/renderLLM.</td></tr>
 
+      <tr><td colspan="3" class="section-header">agents/main-orchestrator/</td></tr>
+      <tr><td class="path">INIT.md</td><td><span class="role role-lib">context</span></td><td class="desc">Onboarding file for the Main Orchestrator runtime agent. Covers role, platform context, belz CLI structure, AD/PD/migrate command tables, investigation workflow, NSM domain notes.</td></tr>
+      <tr><td class="path">BELZABAR.md</td><td><span class="role role-lib">context</span></td><td class="desc">Copy of specs/core/BELZABAR.md co-located for agent access. Full Belzabar platform context: company, NSM project, environments, AD/PD/Report Designer details, migration workflow.</td></tr>
+
       <tr><td colspan="3" class="section-header">cli/</td></tr>
+      <tr><td class="path">scripts/install.sh</td><td><span class="role role-entry">script</span></td><td class="desc">Smart install: updates binary if belz exists, full first-time setup if not. Prompts for .env path or manual credentials. REPO_ROOT resolved two levels up from cli/scripts/.</td></tr>
+      <tr><td class="path">scripts/reinstall.sh</td><td><span class="role role-entry">script</span></td><td class="desc">Wipes ~/.belz/ and existing binary with confirmation, then delegates to cli/scripts/install.sh.</td></tr>
       <tr><td class="path">bin/cli.ts</td><td><span class="role role-entry">entry</span></td><td class="desc">Dev mode entrypoint. Dynamically discovers commands from 3 source dirs using readdirSync + require(). Calls runNamespacedCli() directly.</td></tr>
       <tr><td class="path">bin/cli-build.ts</td><td><span class="role role-entry">entry</span></td><td class="desc">Prod mode entrypoint. Imports pre-generated registries and embedded help maps. Target of bun build --compile.</td></tr>
       <tr><td class="path">utils/generate-registry.ts</td><td><span class="role role-entry">generator</span></td><td class="desc">Discovers commands from automation-designer/commands, page-designer/commands, cli/commands. Reads help.txt files. Generates 4 registry files. Run: bun run generate (from cli/).</td></tr>
@@ -675,7 +679,7 @@
       <div class="runtime-item"><span class="name">environments.nsm-dev.password</span><span class="desc">base64-encoded password</span></div>
       <div class="runtime-item"><span class="name">environments.nsm-qa.*</span><span class="desc">same structure</span></div>
       <div class="runtime-item"><span class="name">environments.nsm-uat.*</span><span class="desc">same structure</span></div>
-      <p style="font-size:11px;color:var(--gen);margin-top:8px">chmod 600. Written by scripts/install.sh. Config file wins over env vars.</p>
+      <p style="font-size:11px;color:var(--gen);margin-top:8px">chmod 600. Written by cli/scripts/install.sh. Config file wins over env vars.</p>
     </div>
 
     <div class="runtime-box">
