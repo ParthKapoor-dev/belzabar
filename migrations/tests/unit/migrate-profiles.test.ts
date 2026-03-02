@@ -32,6 +32,13 @@ describe("migrate profiles", () => {
 
     const result = await discoverNsmProfiles({ refresh: true, fetchFn });
     expect(result.source).toBe("live");
-    expect(result.profiles).toEqual(["devncdns_qancdns", "qancdns_uatncdns", "stgncdns_stg2ncdns"]);
+    // Live discovery merges with fallback, so all known profiles are present.
+    expect(result.profiles).toEqual([
+      "devncdns_qancdns",
+      "qancdns_stgncdns",
+      "qancdns_uatncdns",
+      "stgncdns_stg2ncdns",
+      "uatncdns_stgncdns",
+    ]);
   });
 });
