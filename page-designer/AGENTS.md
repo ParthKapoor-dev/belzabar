@@ -24,7 +24,7 @@ belz pd show-page <PAGE_ID>
 belz pd show-component <NAME>
 belz pd find-ad-methods <ID>
 belz pd analyze [PAGE_ID]
-belz pd inspect-url <PD_URL>
+belz pd inspect <INPUT>
 ```
 
 When adding or removing PD commands, run `bun run generate` from `cli/` — this updates `cli/commands/registry-pd.ts`.
@@ -42,7 +42,7 @@ When adding or removing PD commands, run `bun run generate` from `cli/` — this
 2. `show-component`
 3. `find-ad-methods`
 4. `analyze`
-5. `inspect-url`
+5. `inspect`
 
 ## Core Behavior Contract
 
@@ -50,7 +50,7 @@ When adding or removing PD commands, run `bun run generate` from `cli/` — this
 2. `show-page` and `show-component` fetch and summarize config payloads.
 3. `find-ad-methods` supports shallow or recursive extraction.
 4. `analyze` runs recursive analysis from one root page or default roots and can run compliance checks.
-5. `inspect-url` accepts a full PD URL (`/ui-designer/page/...` or `/ui-designer/symbol/...`) and returns quick metadata + children + AD refs, with optional recursive traversal.
+5. `inspect` accepts any of: app page URL, PD designer URL, bare hex ID (auto-detects page vs. component), or component name. Returns metadata + children + AD refs with optional recursive traversal.
 6. `--llm` mode returns envelope JSON through the shared core runner.
 
 ## Parsing and Analysis Model
@@ -77,7 +77,8 @@ When adding or removing PD commands, run `bun run generate` from `cli/` — this
 
 1. Component fetch path relies on a `PUT` endpoint with a partial-update payload; treat changes here carefully.
 2. Extraction regex assumes alphanumeric AD IDs in execute URLs.
-3. `inspect-url` metadata fields (`draftId`, `publishedId`, `versionId`) are best-effort and may be `null` when backend responses omit them.
+3. `inspect` metadata fields (`draftId`, `publishedId`, `versionId`) are best-effort and may be `null` when backend responses omit them.
+4. `inspect` app-URL resolution uses `GET /rest/api/public/pagedesigner/deployable/pages?domain=<host>&path=<path>` — the domain must match a registered deployment domain.
 
 ## Help Text Standard
 

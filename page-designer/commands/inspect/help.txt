@@ -1,0 +1,33 @@
+Usage: belz pd inspect <INPUT> [flags]
+
+Inspect any Page Designer page or component. Accepts any of the following input formats:
+
+Arguments:
+  <INPUT>             One of:
+                      • App page URL:  https://<domain>/pages/<path>
+                      • PD page URL:   https://.../ui-designer/page/<id>
+                      • PD symbol URL: https://.../ui-designer/symbol/<name>
+                      • Bare hex ID:   48b75e11e166e6b19e5796d59a936228
+                        (auto-detects page vs. component)
+                      • Component name: n_s_staff_email_correspondence
+
+Flags:
+  --recursive, -r     Include recursive dependency tree and all AD method IDs.
+                      Requires components.json in the current directory.
+  --full              Include the full parsed configuration payload.
+  --raw               Include raw configuration string and source API fields.
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz pd inspect https://staff-nss-stage.verifi-nc.com/pages/ncdot-notice-and-storage/my-profile
+  belz pd inspect https://nsm-dev.nc.verifi.dev/ui-designer/page/48b75e11e166e6b19e5796d59a936228
+  belz pd inspect https://nsm-dev.nc.verifi.dev/ui-designer/symbol/n_s_staff_email_correspondence
+  belz pd inspect 48b75e11e166e6b19e5796d59a936228
+  belz pd inspect n_s_staff_email_correspondence
+  belz pd inspect 48b75e11e166e6b19e5796d59a936228 --full
+  belz pd inspect 48b75e11e166e6b19e5796d59a936228 --recursive --llm

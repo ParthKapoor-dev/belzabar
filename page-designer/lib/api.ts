@@ -87,6 +87,17 @@ export async function fetchEntityIdsByName(
   };
 }
 
+export async function fetchDeployablePageByAppUrl(domain: string, path: string): Promise<string | null> {
+  const params = new URLSearchParams({ pageType: "ALL", domain, path });
+  const response = await apiFetch(`/rest/api/public/pagedesigner/deployable/pages?${params}`, {
+    method: "GET",
+    authMode: "Bearer",
+  });
+  if (!response.ok) return null;
+  const data = await response.json() as { deployedPages?: Array<{ referencePageId: string }> };
+  return data.deployedPages?.[0]?.referencePageId ?? null;
+}
+
 export async function fetchComponentConfig(componentId: string): Promise<PageConfigResponse | null> {
   const url = `${PD_BASE}/pages/phrases/${componentId}`;
   const response = await apiFetch(url, {
