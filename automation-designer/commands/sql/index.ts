@@ -2,7 +2,13 @@ import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { fetchSqlDatabases } from "../../lib/sql/api";
 import {
   executeSqlReadQuery,
+  executeSqlUpdate,
+  executeSqlInsert,
+  executeSqlModify,
   loadSqlExecutionContext,
+  loadSqlUpdateContext,
+  loadSqlInsertContext,
+  loadSqlModifyContext,
   resolveSqlDbContext,
   DEFAULT_SQL_DB_FALLBACK,
 } from "../../lib/sql/executor";
@@ -12,7 +18,7 @@ import type { SqlTuiArgs } from "../../lib/sql/tui/types";
 import type { NormalizedSqlDatabase } from "../../lib/sql/types";
 
 interface SqlArgs {
-  action: "run" | "dbs" | "tui";
+  action: "run" | "dbs" | "tui" | "update" | "insert" | "modify";
   query?: string;
   db?: string;
   raw: boolean;
@@ -51,6 +57,63 @@ interface SqlRunData {
   };
 }
 
+interface SqlUpdateData {
+  action: "update";
+  database: NormalizedSqlDatabase;
+  selectedBy: "--db" | "env" | "fallback";
+  query: string;
+  success: true;
+  statusCode?: number;
+  rowsAffected: number;
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  raw?: {
+    operation: unknown;
+    payload: unknown;
+    executionResult: unknown;
+  };
+}
+
+interface SqlInsertData {
+  action: "insert";
+  database: NormalizedSqlDatabase;
+  selectedBy: "--db" | "env" | "fallback";
+  query: string;
+  success: true;
+  statusCode?: number;
+  rowsAffected: number;
+  generatedValues: string[];
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  raw?: {
+    operation: unknown;
+    payload: unknown;
+    executionResult: unknown;
+  };
+}
+
+interface SqlModifyData {
+  action: "modify";
+  database: NormalizedSqlDatabase;
+  selectedBy: "--db" | "env" | "fallback";
+  query: string;
+  success: true;
+  statusCode?: number;
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  raw?: {
+    operation: unknown;
+    payload: unknown;
+    executionResult: unknown;
+  };
+}
+
 interface SqlTuiData {
   action: "tui";
   startedAt: number;
@@ -62,7 +125,7 @@ interface SqlTuiData {
   };
 }
 
-type SqlData = SqlDbsData | SqlRunData | SqlTuiData;
+type SqlData = SqlDbsData | SqlRunData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData;
 
 function getOptionValue(args: string[], name: string): string | undefined {
   const explicit = args.find((arg) => arg.startsWith(`${name}=`));
@@ -135,8 +198,16 @@ function parseTuiArgs(args: string[]): SqlTuiArgs {
     });
   }
 
+  const modeRaw = getOptionValue(args, "--mode");
+  if (modeRaw !== undefined && modeRaw !== "read" && modeRaw !== "insert" && modeRaw !== "update" && modeRaw !== "modify") {
+    throw new CliError("--mode must be one of: read, insert, update, modify", {
+      code: "SQL_TUI_INVALID_MODE",
+    });
+  }
+
   return {
     db,
+    mode: modeRaw as "read" | "insert" | "update" | "modify" | undefined,
     format: formatValue,
     timing: args.includes("--timing"),
     history: !args.includes("--no-history"),
@@ -149,7 +220,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
   parseArgs(args) {
     const action = args[0];
     if (!action) {
-      throw new CliError("Missing SQL subcommand. Use one of: run, dbs, tui.", {
+      throw new CliError("Missing SQL subcommand. Use one of: run, dbs, tui, update, insert, modify.", {
         code: "INVALID_SQL_SUBCOMMAND",
       });
     }
@@ -167,7 +238,64 @@ const command: CommandModule<SqlArgs, SqlData> = {
       const query = queryArgs[0];
 
       if (!query) {
-        throw new CliError("Missing SQL query argument. Usage: belz sql run \"select * from users limit 1\"", {
+        throw new CliError("Missing SQL query argument. Usage: belz ad sql run \"select * from users limit 1\"", {
+          code: "MISSING_SQL_QUERY",
+        });
+      }
+
+      return {
+        action,
+        query,
+        db: parseDbArg(rest),
+        raw: rest.includes("--raw"),
+      };
+    }
+
+    if (action === "update") {
+      const rest = args.slice(1);
+      const queryArgs = parseRunQueryArgs(rest);
+      const query = queryArgs[0];
+
+      if (!query) {
+        throw new CliError("Missing SQL query argument. Usage: belz ad sql update \"UPDATE table SET col = val WHERE ...\"", {
+          code: "MISSING_SQL_QUERY",
+        });
+      }
+
+      return {
+        action,
+        query,
+        db: parseDbArg(rest),
+        raw: rest.includes("--raw"),
+      };
+    }
+
+    if (action === "insert") {
+      const rest = args.slice(1);
+      const queryArgs = parseRunQueryArgs(rest);
+      const query = queryArgs[0];
+
+      if (!query) {
+        throw new CliError("Missing SQL query argument. Usage: belz ad sql insert \"INSERT INTO table (col) VALUES ('val')\"", {
+          code: "MISSING_SQL_QUERY",
+        });
+      }
+
+      return {
+        action,
+        query,
+        db: parseDbArg(rest),
+        raw: rest.includes("--raw"),
+      };
+    }
+
+    if (action === "modify") {
+      const rest = args.slice(1);
+      const queryArgs = parseRunQueryArgs(rest);
+      const query = queryArgs[0];
+
+      if (!query) {
+        throw new CliError("Missing SQL query argument. Usage: belz ad sql modify \"ALTER TABLE users ADD COLUMN age INT\"", {
           code: "MISSING_SQL_QUERY",
         });
       }
@@ -190,7 +318,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
       };
     }
 
-    throw new CliError(`Unknown SQL subcommand '${action}'. Use one of: run, dbs, tui.`, {
+    throw new CliError(`Unknown SQL subcommand '${action}'. Use one of: run, dbs, tui, update, insert, modify.`, {
       code: "INVALID_SQL_SUBCOMMAND",
     });
   },
@@ -245,6 +373,102 @@ const command: CommandModule<SqlArgs, SqlData> = {
         statusCode: result.statusCode,
         rows: result.rows,
         rowCount: result.rowCount,
+        executionTime: result.executionTime,
+        raw: result.raw,
+      };
+
+      return ok(data);
+    }
+
+    if (args.action === "update") {
+      const [dbContext, updateContext] = await Promise.all([
+        resolveSqlDbContext({
+          requestedDb: args.db,
+          envDefault,
+          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
+        }),
+        loadSqlUpdateContext(),
+      ]);
+
+      const result = await executeSqlUpdate({
+        query: args.query as string,
+        database: dbContext.resolution.selected,
+        context: updateContext,
+        raw: args.raw,
+      });
+
+      const data: SqlUpdateData = {
+        action: "update",
+        database: result.database,
+        selectedBy: dbContext.resolution.selectedBy,
+        query: result.query,
+        success: true,
+        statusCode: result.statusCode,
+        rowsAffected: result.rowsAffected,
+        executionTime: result.executionTime,
+        raw: result.raw,
+      };
+
+      return ok(data);
+    }
+
+    if (args.action === "insert") {
+      const [dbContext, insertContext] = await Promise.all([
+        resolveSqlDbContext({
+          requestedDb: args.db,
+          envDefault,
+          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
+        }),
+        loadSqlInsertContext(),
+      ]);
+
+      const result = await executeSqlInsert({
+        query: args.query as string,
+        database: dbContext.resolution.selected,
+        context: insertContext,
+        raw: args.raw,
+      });
+
+      const data: SqlInsertData = {
+        action: "insert",
+        database: result.database,
+        selectedBy: dbContext.resolution.selectedBy,
+        query: result.query,
+        success: true,
+        statusCode: result.statusCode,
+        rowsAffected: result.rowsAffected,
+        generatedValues: result.generatedValues,
+        executionTime: result.executionTime,
+        raw: result.raw,
+      };
+
+      return ok(data);
+    }
+
+    if (args.action === "modify") {
+      const [dbContext, modifyContext] = await Promise.all([
+        resolveSqlDbContext({
+          requestedDb: args.db,
+          envDefault,
+          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
+        }),
+        loadSqlModifyContext(),
+      ]);
+
+      const result = await executeSqlModify({
+        query: args.query as string,
+        database: dbContext.resolution.selected,
+        context: modifyContext,
+        raw: args.raw,
+      });
+
+      const data: SqlModifyData = {
+        action: "modify",
+        database: result.database,
+        selectedBy: dbContext.resolution.selectedBy,
+        query: result.query,
+        success: true,
+        statusCode: result.statusCode,
         executionTime: result.executionTime,
         raw: result.raw,
       };
@@ -310,6 +534,75 @@ const command: CommandModule<SqlArgs, SqlData> = {
       } else {
         ui.object(data.rows);
       }
+
+      if (data.raw) {
+        ui.section("Raw Data");
+        ui.object(data.raw);
+      }
+      return;
+    }
+
+    if (data.action === "update") {
+      ui.success(`SQL update executed successfully against '${data.database.nickname}'.`);
+      ui.table(
+        ["Property", "Value"],
+        [
+          ["Database", `${data.database.nickname} (${data.database.id})`],
+          ["Selected By", data.selectedBy],
+          ["Status Code", data.statusCode ?? ""],
+          ["Rows Affected", data.rowsAffected],
+          ["Execution Time", data.executionTime ? `${data.executionTime.time} ${data.executionTime.unit}` : ""],
+          ["Query", data.query],
+        ]
+      );
+
+      if (data.raw) {
+        ui.section("Raw Data");
+        ui.object(data.raw);
+      }
+      return;
+    }
+
+    if (data.action === "insert") {
+      ui.success(`SQL insert executed successfully against '${data.database.nickname}'.`);
+      ui.table(
+        ["Property", "Value"],
+        [
+          ["Database", `${data.database.nickname} (${data.database.id})`],
+          ["Selected By", data.selectedBy],
+          ["Status Code", data.statusCode ?? ""],
+          ["Rows Affected", data.rowsAffected],
+          ["Execution Time", data.executionTime ? `${data.executionTime.time} ${data.executionTime.unit}` : ""],
+          ["Query", data.query],
+        ]
+      );
+
+      if (data.generatedValues.length > 0) {
+        ui.section("Generated Values");
+        for (const val of data.generatedValues) {
+          ui.text(val);
+        }
+      }
+
+      if (data.raw) {
+        ui.section("Raw Data");
+        ui.object(data.raw);
+      }
+      return;
+    }
+
+    if (data.action === "modify") {
+      ui.success(`Schema modification executed successfully against '${data.database.nickname}'.`);
+      ui.table(
+        ["Property", "Value"],
+        [
+          ["Database", `${data.database.nickname} (${data.database.id})`],
+          ["Selected By", data.selectedBy],
+          ["Status Code", data.statusCode ?? ""],
+          ["Execution Time", data.executionTime ? `${data.executionTime.time} ${data.executionTime.unit}` : ""],
+          ["Query", data.query],
+        ]
+      );
 
       if (data.raw) {
         ui.section("Raw Data");

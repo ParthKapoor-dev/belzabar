@@ -1,4 +1,4 @@
-import type { SqlRunParseResult } from "./types";
+import type { SqlRunParseResult, SqlUpdateRunParseResult, SqlInsertRunParseResult, SqlModifyRunParseResult } from "./types";
 
 function parseMaybeJsonArray(value: unknown): unknown[] | null {
   if (!Array.isArray(value) && typeof value !== "string") {
@@ -75,5 +75,96 @@ export function parseSqlRunResult(result: any): SqlRunParseResult {
     statusCode,
     executionTime,
     success,
+  };
+}
+
+export function parseSqlUpdateResult(result: any): SqlUpdateRunParseResult {
+  const services = Array.isArray(result?.services) ? result.services : [];
+
+  let rowsAffected = 0;
+  for (const service of services) {
+    const outputs = Array.isArray(service?.outputs) ? service.outputs : [];
+    for (const output of outputs) {
+      const numericOutput = parseMaybeNumber(output?.testResult);
+      if (numericOutput !== null) {
+        rowsAffected = numericOutput;
+        break;
+      }
+    }
+  }
+
+  const executionStatus = result?.executionStatus || {};
+  const statusCode = parseMaybeNumber(executionStatus.statusCode) ?? undefined;
+  const totalExecutionTime = executionStatus.totalExecutionTime;
+
+  const executionTime =
+    totalExecutionTime && typeof totalExecutionTime.time === "number" && typeof totalExecutionTime.unit === "string"
+      ? { time: totalExecutionTime.time, unit: totalExecutionTime.unit }
+      : undefined;
+
+  return {
+    rowsAffected,
+    statusCode,
+    executionTime,
+    success: executionStatus.failed === false,
+  };
+}
+
+export function parseSqlInsertResult(result: any): SqlInsertRunParseResult {
+  const services = Array.isArray(result?.services) ? result.services : [];
+
+  let rowsAffected = 0;
+  const generatedValues: string[] = [];
+
+  for (const service of services) {
+    const outputs = Array.isArray(service?.outputs) ? service.outputs : [];
+    for (const output of outputs) {
+      const raw = output?.testResult;
+      if (raw == null || raw === "") continue;
+
+      const asNumber = parseMaybeNumber(raw);
+      if (asNumber !== null) {
+        if (rowsAffected === 0) rowsAffected = asNumber;
+        continue;
+      }
+
+      if (typeof raw === "string" && parseMaybeJsonArray(raw) === null) {
+        generatedValues.push(raw.trim());
+      }
+    }
+  }
+
+  const executionStatus = result?.executionStatus || {};
+  const statusCode = parseMaybeNumber(executionStatus.statusCode) ?? undefined;
+  const totalExecutionTime = executionStatus.totalExecutionTime;
+
+  const executionTime =
+    totalExecutionTime && typeof totalExecutionTime.time === "number" && typeof totalExecutionTime.unit === "string"
+      ? { time: totalExecutionTime.time, unit: totalExecutionTime.unit }
+      : undefined;
+
+  return {
+    rowsAffected,
+    generatedValues,
+    statusCode,
+    executionTime,
+    success: executionStatus.failed === false,
+  };
+}
+
+export function parseSqlModifyResult(result: any): SqlModifyRunParseResult {
+  const executionStatus = result?.executionStatus || {};
+  const statusCode = parseMaybeNumber(executionStatus.statusCode) ?? undefined;
+  const totalExecutionTime = executionStatus.totalExecutionTime;
+
+  const executionTime =
+    totalExecutionTime && typeof totalExecutionTime.time === "number" && typeof totalExecutionTime.unit === "string"
+      ? { time: totalExecutionTime.time, unit: totalExecutionTime.unit }
+      : undefined;
+
+  return {
+    statusCode,
+    executionTime,
+    success: executionStatus.failed === false,
   };
 }

@@ -1,10 +1,24 @@
 import { CliError } from "@belzabar/core";
 import readline from "node:readline";
-import { executeSqlReadQuery, resolveSqlDbContext, loadSqlExecutionContext, DEFAULT_SQL_DB_FALLBACK } from "../executor";
+import {
+  executeSqlReadQuery,
+  executeSqlUpdate,
+  executeSqlInsert,
+  executeSqlModify,
+  loadSqlExecutionContext,
+  loadSqlUpdateContext,
+  loadSqlInsertContext,
+  loadSqlModifyContext,
+  resolveSqlDbContext,
+  DEFAULT_SQL_DB_FALLBACK,
+} from "../executor";
+import { fetchSqlDatabases } from "../api";
+import { normalizeSqlDatabases, resolveSqlDatabase } from "../selector";
 import { getSqlTuiHelpText, parseSqlTuiMetaCommand, SQL_TUI_META_COMMANDS } from "./commands";
 import { loadSqlHistory, persistSqlHistory } from "./history";
 import { renderRowsWithPagination } from "./renderer";
-import type { SqlTuiArgs, SqlTuiSessionState, SqlTuiFormat } from "./types";
+import { selectFromList } from "./selector";
+import type { SqlTuiArgs, SqlTuiSessionState, SqlTuiFormat, SqlTuiMode } from "./types";
 
 interface SqlTuiSessionSummary {
   action: "tui";
@@ -31,7 +45,7 @@ function buildPrompt(state: SqlTuiSessionState): string {
     return "...> ";
   }
 
-  return `sql(${state.activeDatabase.nickname})> `;
+  return `sql(${state.activeDatabase.nickname}/${state.mode})> `;
 }
 
 function completer(line: string, dbNames: string[]): [string[], string] {
@@ -62,6 +76,16 @@ async function switchDatabase(state: SqlTuiSessionState, requestedDb: string): P
   state.activeDatabase = context.resolution.selected;
 }
 
+async function switchMode(state: SqlTuiSessionState, mode: SqlTuiMode): Promise<void> {
+  const context =
+    mode === "update" ? await loadSqlUpdateContext()
+    : mode === "insert" ? await loadSqlInsertContext()
+    : mode === "modify" ? await loadSqlModifyContext()
+    : await loadSqlExecutionContext();
+  state.mode = mode;
+  state.executionContext = context;
+}
+
 async function renderDatabases(state: SqlTuiSessionState): Promise<void> {
   const context = await resolveSqlDbContext({
     requestedDb: String(state.activeDatabase.id),
@@ -82,6 +106,7 @@ async function renderDatabases(state: SqlTuiSessionState): Promise<void> {
 function renderStatus(state: SqlTuiSessionState): void {
   console.log("\nSession status:");
   console.log(`  Database : ${state.activeDatabase.nickname} (${state.activeDatabase.id})`);
+  console.log(`  Mode     : ${state.mode}`);
   console.log(`  Format   : ${state.format}`);
   console.log(`  Timing   : ${state.timing ? "on" : "off"}`);
   console.log(`  PageSize : ${state.pageSize}`);
@@ -123,6 +148,32 @@ async function handleMetaCommand(options: {
       try {
         await switchDatabase(options.state, requested);
         console.log(`Switched to ${options.state.activeDatabase.nickname} (${options.state.activeDatabase.id}).`);
+      } catch (error: any) {
+        console.log(error.message || String(error));
+      }
+
+      return true;
+    }
+    case "mode": {
+      const requested = (meta.args[0] || "").toLowerCase().trim();
+      if (!requested) {
+        console.log(`Current mode: ${options.state.mode}`);
+        return true;
+      }
+
+      if (requested !== "read" && requested !== "insert" && requested !== "update" && requested !== "modify") {
+        console.log("Usage: \\mode [read|insert|update|modify]");
+        return true;
+      }
+
+      if (requested === options.state.mode) {
+        console.log(`Already in ${requested} mode.`);
+        return true;
+      }
+
+      try {
+        await switchMode(options.state, requested as SqlTuiMode);
+        console.log(`Switched to ${options.state.mode} mode.`);
       } catch (error: any) {
         console.log(error.message || String(error));
       }
@@ -193,20 +244,62 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
 
   const envDefault = process.env.BELZ_SQL_DEFAULT_DB?.trim() || undefined;
 
-  const [dbContext, executionContext, historyEntries] = await Promise.all([
-    resolveSqlDbContext({
-      requestedDb: args.db,
+  // Load databases first — needed for both the selector and for the session.
+  const rawDatabases = await fetchSqlDatabases();
+  const databases = normalizeSqlDatabases(rawDatabases);
+
+  // --- DB selection ---
+  let selectedDb = databases[0];
+  if (args.db) {
+    const resolution = resolveSqlDatabase(databases, {
+      requested: args.db,
       envDefault,
       fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
-    }),
-    loadSqlExecutionContext(),
+    });
+    selectedDb = resolution.selected;
+  } else {
+    const defaultIdx = Math.max(
+      0,
+      databases.findIndex((db) => db.nickname === (envDefault || DEFAULT_SQL_DB_FALLBACK))
+    );
+    const dbOptions = databases.map((db) => ({
+      label: `${db.nickname} (${db.id})${db.host ? `  ${db.host}` : ""}`,
+      value: db,
+    }));
+    selectedDb = await selectFromList("Database:", dbOptions, defaultIdx);
+  }
+
+  // --- Mode selection ---
+  let selectedMode: SqlTuiMode;
+  if (args.mode) {
+    selectedMode = args.mode;
+  } else {
+    selectedMode = await selectFromList(
+      "Mode:",
+      [
+        { label: "read   (SELECT queries)",               value: "read" as const },
+        { label: "insert (INSERT rows)",                  value: "insert" as const },
+        { label: "update (UPDATE / DELETE rows)",         value: "update" as const },
+        { label: "modify (DDL — ALTER / CREATE / DROP)",  value: "modify" as const },
+      ],
+      0
+    );
+  }
+
+  // Load execution context and history in parallel.
+  const [executionContext, historyEntries] = await Promise.all([
+    selectedMode === "update" ? loadSqlUpdateContext()
+    : selectedMode === "insert" ? loadSqlInsertContext()
+    : selectedMode === "modify" ? loadSqlModifyContext()
+    : loadSqlExecutionContext(),
     args.history ? loadSqlHistory() : Promise.resolve([]),
   ]);
 
   const state: SqlTuiSessionState = {
-    activeDatabase: dbContext.resolution.selected,
-    databases: dbContext.databases,
+    activeDatabase: selectedDb,
+    databases,
     executionContext,
+    mode: selectedMode,
     format: args.format,
     timing: args.timing,
     pageSize: args.pageSize,
@@ -256,7 +349,7 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
   });
 
   console.log("Belz SQL TUI");
-  console.log(`Connected to ${state.activeDatabase.nickname} (${state.activeDatabase.id})`);
+  console.log(`Connected to ${state.activeDatabase.nickname} (${state.activeDatabase.id}) — ${state.mode} mode`);
   console.log("Type \\h for help. End SQL with ';' to execute.");
 
   while (!exitRequested && !closed) {
@@ -299,33 +392,110 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
 
     const started = Date.now();
     try {
-      const result = await executeSqlReadQuery({
-        query,
-        database: state.activeDatabase,
-        context: state.executionContext,
-      });
+      if (state.mode === "update") {
+        const result = await executeSqlUpdate({
+          query,
+          database: state.activeDatabase,
+          context: state.executionContext,
+        });
 
-      queryCount += 1;
-      state.lastQuery = query;
+        queryCount += 1;
+        state.lastQuery = query;
 
-      const normalizedForHistory = normalizeQueryForHistory(query);
-      if (state.historyEnabled && normalizedForHistory) {
-        state.historyEntries.push(normalizedForHistory);
-        state.historyToPersist.push(normalizedForHistory);
-      }
+        const normalizedForHistory = normalizeQueryForHistory(query);
+        if (state.historyEnabled && normalizedForHistory) {
+          state.historyEntries.push(normalizedForHistory);
+          state.historyToPersist.push(normalizedForHistory);
+        }
 
-      await renderRowsWithPagination({
-        rows: result.rows,
-        format: state.format,
-        pageSize: state.pageSize,
-        ask,
-      });
+        console.log(`Rows affected: ${result.rowsAffected}`);
 
-      if (state.timing) {
-        const backendTime = result.executionTime
-          ? `${result.executionTime.time} ${result.executionTime.unit}`
-          : `${Date.now() - started} ms`;
-        console.log(`Time: ${backendTime} | Rows: ${result.rowCount}`);
+        if (state.timing) {
+          const backendTime = result.executionTime
+            ? `${result.executionTime.time} ${result.executionTime.unit}`
+            : `${Date.now() - started} ms`;
+          console.log(`Time: ${backendTime}`);
+        }
+      } else if (state.mode === "insert") {
+        const result = await executeSqlInsert({
+          query,
+          database: state.activeDatabase,
+          context: state.executionContext,
+        });
+
+        queryCount += 1;
+        state.lastQuery = query;
+
+        const normalizedForHistory = normalizeQueryForHistory(query);
+        if (state.historyEnabled && normalizedForHistory) {
+          state.historyEntries.push(normalizedForHistory);
+          state.historyToPersist.push(normalizedForHistory);
+        }
+
+        console.log(`Rows affected: ${result.rowsAffected}`);
+        if (result.generatedValues.length > 0) {
+          console.log(`Generated: ${result.generatedValues.join(", ")}`);
+        }
+
+        if (state.timing) {
+          const backendTime = result.executionTime
+            ? `${result.executionTime.time} ${result.executionTime.unit}`
+            : `${Date.now() - started} ms`;
+          console.log(`Time: ${backendTime} | Rows: ${result.rowsAffected}`);
+        }
+      } else if (state.mode === "modify") {
+        const result = await executeSqlModify({
+          query,
+          database: state.activeDatabase,
+          context: state.executionContext,
+        });
+
+        queryCount += 1;
+        state.lastQuery = query;
+
+        const normalizedForHistory = normalizeQueryForHistory(query);
+        if (state.historyEnabled && normalizedForHistory) {
+          state.historyEntries.push(normalizedForHistory);
+          state.historyToPersist.push(normalizedForHistory);
+        }
+
+        console.log("Schema modification applied.");
+
+        if (state.timing) {
+          const backendTime = result.executionTime
+            ? `${result.executionTime.time} ${result.executionTime.unit}`
+            : `${Date.now() - started} ms`;
+          console.log(`Time: ${backendTime}`);
+        }
+      } else {
+        const result = await executeSqlReadQuery({
+          query,
+          database: state.activeDatabase,
+          context: state.executionContext,
+        });
+
+        queryCount += 1;
+        state.lastQuery = query;
+
+        const normalizedForHistory = normalizeQueryForHistory(query);
+        if (state.historyEnabled && normalizedForHistory) {
+          state.historyEntries.push(normalizedForHistory);
+          state.historyToPersist.push(normalizedForHistory);
+        }
+
+        await renderRowsWithPagination({
+          rows: result.rows,
+          format: state.format,
+          pageSize: state.pageSize,
+          ask,
+        });
+
+        if (state.timing) {
+          const backendTime = result.executionTime
+            ? `${result.executionTime.time} ${result.executionTime.unit}`
+            : `${Date.now() - started} ms`;
+          console.log(`Time: ${backendTime} | Rows: ${result.rowCount}`);
+        }
       }
     } catch (error: any) {
       if (error instanceof CliError) {

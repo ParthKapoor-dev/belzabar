@@ -2,9 +2,9 @@ import { CliError } from "@belzabar/core";
 import { ErrorParser } from "../error-parser";
 import { fetchMethodDefinition, testMethod } from "../api";
 import type { RawMethodResponse } from "../types";
-import { fetchSqlDatabases, fetchSqlSelectOperation } from "./api";
+import { fetchSqlDatabases, fetchSqlSelectOperation, fetchSqlUpdateOperation, fetchSqlInsertOperation, fetchSqlModifyOperation } from "./api";
 import { buildSqlReadPayload } from "./payload";
-import { parseSqlRunResult } from "./result";
+import { parseSqlRunResult, parseSqlUpdateResult, parseSqlInsertResult, parseSqlModifyResult } from "./result";
 import { normalizeSqlDatabases, resolveSqlDatabase } from "./selector";
 import type {
   NormalizedSqlDatabase,
@@ -81,6 +81,262 @@ export async function loadSqlExecutionContext(): Promise<SqlExecutionContext> {
     operation,
     template,
   };
+}
+
+export interface ExecuteSqlUpdateResult {
+  database: NormalizedSqlDatabase;
+  query: string;
+  statusCode?: number;
+  rowsAffected: number;
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  raw?: {
+    operation: unknown;
+    payload: unknown;
+    executionResult: unknown;
+  };
+}
+
+export async function loadSqlUpdateContext(): Promise<SqlExecutionContext> {
+  const operation = await fetchSqlUpdateOperation();
+  if (!operation?.methodUUID) {
+    throw new CliError("SQL update operation metadata is missing methodUUID.", {
+      code: "SQL_UPDATE_METADATA_INVALID",
+      details: operation,
+    });
+  }
+
+  const template = (await fetchMethodDefinition(operation.methodUUID)) as RawMethodResponse;
+  return { operation, template };
+}
+
+export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<ExecuteSqlUpdateResult> {
+  const payload = buildSqlReadPayload({
+    template: options.context.template,
+    operation: options.context.operation,
+    dbAuthId: options.database.id,
+    query: options.query,
+  });
+
+  const formData = new FormData();
+  formData.append("body", JSON.stringify(payload));
+
+  const response = await testMethod(formData);
+  if (!response.ok) {
+    throw new CliError(`SQL update execution request failed (${response.status}).`, {
+      code: "SQL_UPDATE_EXECUTION_FAILED",
+      details: await response.text(),
+    });
+  }
+
+  const executionResult = await response.json();
+  const parsed = parseSqlUpdateResult(executionResult);
+
+  if (!parsed.success) {
+    const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
+    const parsedError = failedService?.executionStatus
+      ? ErrorParser.parse(failedService.executionStatus)
+      : null;
+
+    throw new CliError("SQL update execution failed.", {
+      code: "SQL_UPDATE_QUERY_FAILED",
+      details: {
+        database: options.database,
+        query: options.query,
+        statusCode: parsed.statusCode,
+        error: parsedError,
+        executionStatus: executionResult?.executionStatus,
+      },
+    });
+  }
+
+  const data: ExecuteSqlUpdateResult = {
+    database: options.database,
+    query: options.query,
+    statusCode: parsed.statusCode,
+    rowsAffected: parsed.rowsAffected,
+    executionTime: parsed.executionTime,
+  };
+
+  if (options.raw) {
+    data.raw = {
+      operation: options.context.operation,
+      payload,
+      executionResult,
+    };
+  }
+
+  return data;
+}
+
+export interface ExecuteSqlInsertResult {
+  database: NormalizedSqlDatabase;
+  query: string;
+  statusCode?: number;
+  rowsAffected: number;
+  generatedValues: string[];
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  raw?: {
+    operation: unknown;
+    payload: unknown;
+    executionResult: unknown;
+  };
+}
+
+export async function loadSqlInsertContext(): Promise<SqlExecutionContext> {
+  const operation = await fetchSqlInsertOperation();
+  if (!operation?.methodUUID) {
+    throw new CliError("SQL insert operation metadata is missing methodUUID.", {
+      code: "SQL_INSERT_METADATA_INVALID",
+      details: operation,
+    });
+  }
+
+  const template = (await fetchMethodDefinition(operation.methodUUID)) as RawMethodResponse;
+  return { operation, template };
+}
+
+export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<ExecuteSqlInsertResult> {
+  const payload = buildSqlReadPayload({
+    template: options.context.template,
+    operation: options.context.operation,
+    dbAuthId: options.database.id,
+    query: options.query,
+  });
+
+  const formData = new FormData();
+  formData.append("body", JSON.stringify(payload));
+
+  const response = await testMethod(formData);
+  if (!response.ok) {
+    throw new CliError(`SQL insert execution request failed (${response.status}).`, {
+      code: "SQL_INSERT_EXECUTION_FAILED",
+      details: await response.text(),
+    });
+  }
+
+  const executionResult = await response.json();
+  const parsed = parseSqlInsertResult(executionResult);
+
+  if (!parsed.success) {
+    const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
+    const parsedError = failedService?.executionStatus
+      ? ErrorParser.parse(failedService.executionStatus)
+      : null;
+
+    throw new CliError("SQL insert execution failed.", {
+      code: "SQL_INSERT_QUERY_FAILED",
+      details: {
+        database: options.database,
+        query: options.query,
+        statusCode: parsed.statusCode,
+        error: parsedError,
+        executionStatus: executionResult?.executionStatus,
+      },
+    });
+  }
+
+  const data: ExecuteSqlInsertResult = {
+    database: options.database,
+    query: options.query,
+    statusCode: parsed.statusCode,
+    rowsAffected: parsed.rowsAffected,
+    generatedValues: parsed.generatedValues,
+    executionTime: parsed.executionTime,
+  };
+
+  if (options.raw) {
+    data.raw = { operation: options.context.operation, payload, executionResult };
+  }
+
+  return data;
+}
+
+export interface ExecuteSqlModifyResult {
+  database: NormalizedSqlDatabase;
+  query: string;
+  statusCode?: number;
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  raw?: {
+    operation: unknown;
+    payload: unknown;
+    executionResult: unknown;
+  };
+}
+
+export async function loadSqlModifyContext(): Promise<SqlExecutionContext> {
+  const operation = await fetchSqlModifyOperation();
+  if (!operation?.methodUUID) {
+    throw new CliError("SQL modify operation metadata is missing methodUUID.", {
+      code: "SQL_MODIFY_METADATA_INVALID",
+      details: operation,
+    });
+  }
+
+  const template = (await fetchMethodDefinition(operation.methodUUID)) as RawMethodResponse;
+  return { operation, template };
+}
+
+export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<ExecuteSqlModifyResult> {
+  const payload = buildSqlReadPayload({
+    template: options.context.template,
+    operation: options.context.operation,
+    dbAuthId: options.database.id,
+    query: options.query,
+  });
+
+  const formData = new FormData();
+  formData.append("body", JSON.stringify(payload));
+
+  const response = await testMethod(formData);
+  if (!response.ok) {
+    throw new CliError(`SQL modify execution request failed (${response.status}).`, {
+      code: "SQL_MODIFY_EXECUTION_FAILED",
+      details: await response.text(),
+    });
+  }
+
+  const executionResult = await response.json();
+  const parsed = parseSqlModifyResult(executionResult);
+
+  if (!parsed.success) {
+    const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
+    const parsedError = failedService?.executionStatus
+      ? ErrorParser.parse(failedService.executionStatus)
+      : null;
+
+    throw new CliError("SQL schema modification failed.", {
+      code: "SQL_MODIFY_QUERY_FAILED",
+      details: {
+        database: options.database,
+        query: options.query,
+        statusCode: parsed.statusCode,
+        error: parsedError,
+        executionStatus: executionResult?.executionStatus,
+      },
+    });
+  }
+
+  const data: ExecuteSqlModifyResult = {
+    database: options.database,
+    query: options.query,
+    statusCode: parsed.statusCode,
+    executionTime: parsed.executionTime,
+  };
+
+  if (options.raw) {
+    data.raw = { operation: options.context.operation, payload, executionResult };
+  }
+
+  return data;
 }
 
 export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promise<ExecuteSqlReadResult> {

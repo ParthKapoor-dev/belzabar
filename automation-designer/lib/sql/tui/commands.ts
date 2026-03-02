@@ -2,17 +2,18 @@ import type { SqlTuiMetaCommand } from "./types";
 
 const HELP_TEXT = [
   "SQL TUI commands:",
-  "  \\q                 Quit session",
-  "  \\h                 Show help",
-  "  \\status            Show active DB/session settings",
-  "  \\db                List available databases",
-  "  \\use <db>          Switch database by nickname or id",
-  "  \\history           Show recent query history",
-  "  \\clear             Clear terminal",
-  "  \\timing            Toggle timing output",
+  "  \\q                   Quit session",
+  "  \\h                   Show help",
+  "  \\status              Show active DB/session settings",
+  "  \\db                  List available databases",
+  "  \\use <db>            Switch database by nickname or id",
+  "  \\mode [read|insert|update|modify]  Show or switch query mode",
+  "  \\history             Show recent query history",
+  "  \\clear               Clear terminal",
+  "  \\timing              Toggle timing output",
   "  \\format [table|json] Set output format",
-  "  \\last              Show last executed query",
-  "  \\r                 Reset current multiline buffer",
+  "  \\last                Show last executed query",
+  "  \\r                   Reset current multiline buffer",
   "",
   "SQL execution:",
   "  End statements with ';' to execute.",
@@ -25,6 +26,7 @@ export const SQL_TUI_META_COMMANDS = [
   "\\status",
   "\\db",
   "\\use",
+  "\\mode",
   "\\history",
   "\\clear",
   "\\timing",
@@ -58,6 +60,8 @@ export function parseSqlTuiMetaCommand(input: string): SqlTuiMetaCommand | null 
       return { type: "db", args, raw: trimmed };
     case "\\use":
       return { type: "use", args, raw: trimmed };
+    case "\\mode":
+      return { type: "mode", args, raw: trimmed };
     case "\\history":
       return { type: "history", args, raw: trimmed };
     case "\\clear":

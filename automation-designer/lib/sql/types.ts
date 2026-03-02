@@ -79,3 +79,37 @@ export interface BuildSqlPayloadOptions {
   dbAuthId: number;
   query: string;
 }
+
+export type SqlUpdateOperation = SqlSelectOperation;
+export type SqlInsertOperation = SqlSelectOperation;
+export type SqlModifyOperation = SqlSelectOperation;
+
+export interface SqlUpdateRunParseResult {
+  rowsAffected: number;
+  statusCode?: number;
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  success: boolean;
+}
+
+export interface SqlInsertRunParseResult {
+  rowsAffected: number;
+  generatedValues: string[];
+  statusCode?: number;
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  success: boolean;
+}
+
+export interface SqlModifyRunParseResult {
+  statusCode?: number;
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  success: boolean;
+}

@@ -1,10 +1,13 @@
 Usage: belz ad sql <subcommand> [args] [flags]
 
-Run SQL read-mode queries via Automation Designer database services.
+Run SQL queries via Automation Designer database services.
 
 Subcommands:
   dbs                 List available database auth configurations.
-  run <QUERY>         Execute a SQL query in read mode.
+  run <QUERY>         Execute a SQL read (SELECT) query.
+  update <QUERY>      Execute a SQL write (UPDATE/DELETE) query.
+  insert <QUERY>      Execute a SQL INSERT query.
+  modify <QUERY>      Execute a DDL schema change (ALTER TABLE, CREATE INDEX, etc.).
   tui                 Start an interactive SQL session.
 
 Flags (dbs):
@@ -15,15 +18,28 @@ Flags (run):
                       Default resolution: BELZ_SQL_DEFAULT_DB → NSM_Read_DB
   --raw               Include raw operation metadata and execution response.
 
+Flags (update):
+  --db <NAME|ID>      Database nickname or ID.
+  --raw               Include raw operation metadata and execution response.
+
+Flags (insert):
+  --db <NAME|ID>      Database nickname or ID.
+  --raw               Include raw operation metadata and execution response.
+
+Flags (modify):
+  --db <NAME|ID>      Database nickname or ID.
+  --raw               Include raw operation metadata and execution response.
+
 Flags (tui):
-  --db <NAME|ID>      Starting database nickname or ID.
+  --db <NAME|ID>      Pre-select database (skips interactive DB prompt).
+  --mode <MODE>       Pre-select mode: read | insert | update | modify (skips interactive mode prompt).
   --format <MODE>     Row output format: table (default) | json.
   --timing            Print timing details after each statement.
   --page-size <N>     Rows per page for pagination. (default: 50)
   --no-history        Disable persisted query history for this session.
 
 TUI meta commands:
-  \q  \h  \status  \db  \use <db>  \history  \clear  \timing  \format [table|json]  \last  \r
+  \q  \h  \status  \db  \use <db>  \mode [read|insert|update|modify]  \history  \clear  \timing  \format [table|json]  \last  \r
 
   --help, -h          Show this help message.
 
@@ -36,6 +52,12 @@ Examples:
   belz ad sql dbs
   belz ad sql run "select * from users limit 1"
   belz ad sql run "select * from users limit 1" --db NSM_QA_DB
+  belz ad sql update "UPDATE users SET status = 'active' WHERE id = 1" --db NSM_Write_DB
+  belz ad sql update "DELETE FROM logs WHERE created_at < '2024-01-01'" --db NSM_Write_DB
+  belz ad sql insert "INSERT INTO users (name) VALUES ('test')" --db NSM_Write_DB
+  belz ad sql modify "ALTER TABLE users ADD COLUMN age INT" --db NSM_Write_DB
+  belz ad sql modify "CREATE INDEX IF NOT EXISTS idx_name ON users(name)" --db NSM_Write_DB
   belz ad sql tui
   belz ad sql tui --db NSM_QA_DB --format json --timing
+  belz ad sql tui --mode insert --db NSM_Write_DB
   BELZ_SQL_DEFAULT_DB=NSM_QA_DB belz ad sql run "select now()"
