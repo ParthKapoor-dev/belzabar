@@ -8,10 +8,10 @@ maintain this codebase. Before making changes in any module, read that module's 
 **Standing instruction:** Whenever you make a meaningful change to any module — new commands,
 changed behavior, new files, API changes, structural reorganization — you **must** update the
 `AGENTS.md` in that module. If the overall repository structure changes, update this root
-`AGENTS.md` as well. Additionally, if any functional change affects how `belz` is used (new
-commands, changed flags, changed behavior that a runtime agent would need to know about), you
-**must** also update the relevant `INIT.md` file(s) in `agents/`. Keep these files accurate;
-they are the primary orientation documents for future Maintainer Agents and runtime agents.
+`AGENTS.md` as well. If you add, remove, or change flags on any command, update that command's
+`desc.txt` — this is what `belz --help-full` outputs and what runtime agents use as their
+command reference. The `INIT.md` files in `specs/` are now stable and do **not** need manual
+updates when commands change (they reference `belz --help-full` instead).
 
 ---
 
@@ -40,8 +40,7 @@ It ships two products:
 | `extension/` | Browser extension (MV3, JavaScript) | `extension/AGENTS.md` |
 | `packages/core/` | `@belzabar/core` — shared CLI framework (workspace package) | `packages/core/AGENTS.md` |
 | `docs/` | Generated/maintained documentation (codebase-map.html) | — |
-| `specs/` | Specification documents | — |
-| `agents/` | Agent-specific reference files | — |
+| `specs/` | Specification and agent reference documents (INIT.md, BELZABAR.md) | — |
 
 ---
 
@@ -121,8 +120,11 @@ See `cli/AGENTS.md` for full build and development details.
 - `--llm` flag outputs a structured JSON envelope; `--env` sets the active environment
 - `help.txt` files live alongside each command's `index.ts` and follow a strict template
   (defined in `automation-designer/AGENTS.md`)
+- `desc.txt` files live alongside each `help.txt`; one line per invocation variant in format
+  `<full invocation>  :->  <what it does>`. Collected at build time into `belz --help-full`.
+  Update `desc.txt` whenever you add, remove, or change flags on a command.
 - Registry files in `cli/commands/registry-*.ts` are auto-generated — run `bun run generate`
-  from `cli/` after adding/removing commands
+  from `cli/` after adding/removing commands (this also rebuilds `HELP_FULL_TEXT`)
 
 ---
 

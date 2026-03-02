@@ -85,13 +85,26 @@ When adding or removing PD commands, run `bun run generate` from `cli/` — this
 All `help.txt` files follow the standard defined in `automation-designer/AGENTS.md`.
 Use `belz pd` as the command prefix for all PD commands.
 
+## desc.txt Standard
+
+Every command must have a `desc.txt` alongside its `help.txt`.
+Format: one line per invocation variant, covering the base call and every meaningful flag:
+
+```
+belz pd <cmd> <args>  :->  What the base call does
+belz pd <cmd> <args> --flag  :->  What this flag adds
+```
+
+This file feeds `belz --help-full`. Update it whenever flags or subcommands change.
+
 ## Safe Change Checklist
 
 1. If adding/removing commands, run `bun run generate` from `cli/` and commit `cli/commands/registry-pd.ts`.
 2. Keep `components.json` and `master_ids.txt` semantics documented when formats change.
-3. Keep command help text aligned with real flags and behavior.
-4. When adding a command, include a `help.txt` following the standard in `automation-designer/AGENTS.md`.
-5. Avoid parser regex changes without validating against real PD payload samples.
+3. Keep command `help.txt` aligned with real flags and behavior.
+4. When adding a command, include both a `help.txt` and a `desc.txt` following the standards above.
+5. When changing flags, update `desc.txt` to keep `belz --help-full` accurate.
+6. Avoid parser regex changes without validating against real PD payload samples.
 
 ## Maintainer Agent Instructions
 

@@ -117,6 +117,20 @@ Run `bun run generate` from `cli/` to regenerate all registries (not from this d
 2. `show --service-detail` help text says 0-indexed, while lookup is by `orderIndex` value.
 3. `save-suite` writes to `suites/` path and assumes directory availability.
 
+## desc.txt Standard
+
+Every command must have a `desc.txt` alongside its `help.txt`.
+Format: one line per invocation variant, covering the base call and every meaningful flag/subcommand:
+
+```
+belz ad <cmd> <args>  :->  What the base call does
+belz ad <cmd> <args> --flag  :->  What this flag adds
+belz ad <cmd> <args> --flag <value>  :->  What this flag+value does
+```
+
+This file feeds `belz --help-full` — the canonical per-command reference for agents and LLMs.
+Update it whenever you add, remove, or change any flag or subcommand.
+
 ## Help Text Standard
 
 Every command must have a `help.txt` following this exact template:
@@ -162,9 +176,10 @@ Rules:
 
 1. If adding/removing AD commands, run `bun run generate` from `cli/` and commit all registry files.
 2. Keep `help.txt` and command docs aligned with actual flags.
-3. When adding a command, include a `help.txt` following the standard in this file.
-4. Preserve envelope schema stability for `--llm` consumers and MCP tools.
-5. Validate auth mode (`Bearer` vs `Raw`) for each endpoint before changing requests.
+3. When adding a command, include both a `help.txt` and a `desc.txt` following the standards above.
+4. When changing flags or subcommands, update `desc.txt` to match — this keeps `belz --help-full` accurate.
+5. Preserve envelope schema stability for `--llm` consumers and MCP tools.
+6. Validate auth mode (`Bearer` vs `Raw`) for each endpoint before changing requests.
 
 ## Maintainer Agent Instructions
 

@@ -169,6 +169,14 @@ Both scripts compute `REPO_ROOT` two levels up from `cli/scripts/` (`$SCRIPT_DIR
 Every command (`commands/envs/`, `commands/migrate/`, and all source-module commands) must have
 a `help.txt` following the standard defined in `automation-designer/AGENTS.md`.
 
+## desc.txt Standard
+
+Every command must also have a `desc.txt` alongside its `help.txt`.
+Format: one line per invocation variant (`<full invocation>  :->  <what it does>`).
+Covers the base call and every meaningful flag/subcommand variant.
+This file feeds `belz --help-full`. Run `bun run generate` after updating `desc.txt` to rebuild
+the embedded `HELP_FULL_TEXT` in `registry-help.ts`.
+
 ---
 
 ## Maintainer Agent Instructions
