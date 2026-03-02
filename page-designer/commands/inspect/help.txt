@@ -5,6 +5,7 @@ Inspect any Page Designer page or component. Accepts any of the following input 
 Arguments:
   <INPUT>             One of:
                       • App page URL:  https://<domain>/pages/<path>
+                      • App page URL:  https://<domain>/<app>/<page>
                       • PD page URL:   https://.../ui-designer/page/<id>
                       • PD symbol URL: https://.../ui-designer/symbol/<name>
                       • Bare hex ID:   48b75e11e166e6b19e5796d59a936228
@@ -24,6 +25,7 @@ Global Flags:
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
+  belz pd inspect https://public-nss-stage.verifi-nc.com/ncdmv-nsm/dashboard
   belz pd inspect https://staff-nss-stage.verifi-nc.com/pages/ncdot-notice-and-storage/my-profile
   belz pd inspect https://nsm-dev.nc.verifi.dev/ui-designer/page/48b75e11e166e6b19e5796d59a936228
   belz pd inspect https://nsm-dev.nc.verifi.dev/ui-designer/symbol/n_s_staff_email_correspondence

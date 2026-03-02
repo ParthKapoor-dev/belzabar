@@ -117,18 +117,28 @@ function detectInputKind(input: string): {
     }
 
     const url = new URL(input);
-    const match = url.pathname.match(/^\/pages\/(.+)/);
-    if (match) {
+    const pagesMatch = url.pathname.match(/^\/pages\/(.+)/);
+    if (pagesMatch) {
       return {
         kind: "app-url",
         entityType: "PAGE",
         domain: url.hostname,
-        path: match[1],
+        path: pagesMatch[1],
+      };
+    }
+
+    const path = url.pathname.replace(/^\//, "");
+    if (path) {
+      return {
+        kind: "app-url",
+        entityType: "PAGE",
+        domain: url.hostname,
+        path,
       };
     }
 
     throw new CliError(
-      "Unrecognized URL format. Expected a PD designer URL (/ui-designer/page or /ui-designer/symbol) or an app page URL (/pages/...).",
+      "Unrecognized URL format. Expected a PD designer URL (/ui-designer/page or /ui-designer/symbol) or an app page URL.",
       { code: "INVALID_URL" }
     );
   }
