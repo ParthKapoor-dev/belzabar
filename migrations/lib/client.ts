@@ -12,7 +12,7 @@ interface CleanupExecutionOptions {
 }
 
 function normalizeIds(ids: string[]): string {
-  return ids.join("\n");
+  return ids.join(",");
 }
 
 function getSetCookieValues(headers: Headers): string[] {

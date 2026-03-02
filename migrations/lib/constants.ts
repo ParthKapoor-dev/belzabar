@@ -17,6 +17,17 @@ export const NSM_FALLBACK_PROFILES = [
   "stgncdns_stg2ncdns",
 ] as const;
 
+export const KNOWN_MIGRATION_MODULES = [
+  "AD_Method",
+  "PD",
+  "RD",
+  "CUSTOM_PD",
+  "AD_COMPARISON_REPORT",
+  "PD_COMPARISON_REPORT",
+  "PD_MIGRATION_STATUS",
+  "AD_MIGRATION_STATUS",
+] as const;
+
 export const NSM_ENV_TO_PROFILE_SEGMENT: Record<string, string> = {
   "nsm-dev": "devncdns",
   "nsm-qa": "qancdns",

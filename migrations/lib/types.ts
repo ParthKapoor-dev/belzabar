@@ -1,6 +1,6 @@
 export type YesNo = "Y" | "N";
 
-export type MigrationModule = "PD" | "AD";
+export type MigrationModule = string;
 
 export type MigrationCleanupMode = "auto" | "never";
 

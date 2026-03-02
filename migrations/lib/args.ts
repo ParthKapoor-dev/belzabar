@@ -1,5 +1,5 @@
 import { CliError } from "@belzabar/core";
-import { NSM_ENV_TO_PROFILE_SEGMENT, NSM_SCRIPT_NAME } from "./constants";
+import { KNOWN_MIGRATION_MODULES, NSM_ENV_TO_PROFILE_SEGMENT, NSM_SCRIPT_NAME } from "./constants";
 import type { MigrateArgs, MigrationCleanupMode, MigrationModule, YesNo } from "./types";
 
 function getOptionValue(args: string[], name: string): string | undefined {
@@ -54,15 +54,25 @@ function parseCleanup(args: string[]): MigrationCleanupMode {
 }
 
 function normalizeModuleName(value: string | undefined): MigrationModule {
-  const normalized = value?.trim().toUpperCase();
-  if (normalized === "PD" || normalized === "AD") {
-    return normalized;
+  if (!value?.trim()) {
+    throw new CliError(
+      `--module is required. Known values: ${KNOWN_MIGRATION_MODULES.join(", ")}. Use --module-custom for any other value.`,
+      { code: "MIGRATE_INVALID_MODULE", details: { value } }
+    );
   }
 
-  throw new CliError("--module is required and must be one of: PD, AD.", {
-    code: "MIGRATE_INVALID_MODULE",
-    details: { value },
-  });
+  const match = KNOWN_MIGRATION_MODULES.find(
+    m => m.toLowerCase() === value.trim().toLowerCase()
+  );
+
+  if (!match) {
+    throw new CliError(
+      `Unknown module '${value}'. Known values: ${KNOWN_MIGRATION_MODULES.join(", ")}. Use --module-custom to pass an arbitrary module name.`,
+      { code: "MIGRATE_INVALID_MODULE", details: { value, known: KNOWN_MIGRATION_MODULES } }
+    );
+  }
+
+  return match;
 }
 
 function parseIdsCsv(value: string | undefined): string[] {
@@ -141,7 +151,16 @@ export async function parseMigrateArgs(args: string[]): Promise<MigrateArgs> {
 
   const rest = args.slice(1);
   const moduleValue = parseStringOption(rest, "--module") ?? parseStringOption(rest, "--module-name");
-  const moduleName = normalizeModuleName(moduleValue);
+  const customModuleValue = parseStringOption(rest, "--module-custom");
+
+  if (!moduleValue && !customModuleValue) {
+    throw new CliError(
+      `--module is required. Known values: ${KNOWN_MIGRATION_MODULES.join(", ")}. Use --module-custom for any other value.`,
+      { code: "MIGRATE_MODULE_REQUIRED" }
+    );
+  }
+
+  const moduleName = customModuleValue?.trim() ?? normalizeModuleName(moduleValue);
 
   const profile = parseStringOption(rest, "--profile");
   const sourceEnv = parseStringOption(rest, "--source-env");

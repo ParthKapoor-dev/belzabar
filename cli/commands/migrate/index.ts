@@ -27,7 +27,7 @@ interface MigrateCommandDeps {
   startExecution: (input: {
     scriptName: string;
     profile: string;
-    moduleName: "PD" | "AD";
+    moduleName: string;
     ids: string[];
     useCrud: "Y" | "N";
     isAsync: "Y" | "N";
