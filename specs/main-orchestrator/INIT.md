@@ -50,53 +50,25 @@ belz envs         — List configured environments and credentials
 **Default environment:** `nsm-dev`. Override with `--env nsm-qa` or `--env nsm-uat`.
 
 **Key flags (available on all commands):**
-- `--llm` — output structured JSON envelope instead of human-formatted text; use this when you
-  need to parse the output programmatically
+- `--llm` — output structured JSON envelope instead of human-formatted text; **always use this
+  when parsing output programmatically or in agent contexts**
 - `--help`, `-h` — full usage, argument descriptions, flags, and examples for any command
+- `--help-full` — one-liner reference for every command, subcommand, and flag across all namespaces
 
 ---
 
-## AD Commands — Your Primary Tools
+## Available Commands
 
-| Command | What it does |
-|---------|-------------|
-| `belz ad get <UUID>` | Fetch a method by UUID or referenceId. Returns metadata and input definitions. |
-| `belz ad show <UUID>` | Deep inspection: all inputs, all service steps with mappings, outputs, execution graph. |
-| `belz ad test <UUID>` | Send a test payload to a method and get the execution result. |
-| `belz ad run <UUID>` | Execute a method in live mode (uses Published ID). |
-| `belz ad save-suite <UUID>` | Save a test suite spec to disk for reproducible replay. |
-| `belz ad run-suites <UUID>` | Run all saved test suites for a method. |
-| `belz ad sql` | Open an interactive SQL session against the AD database. |
+For the current, always-up-to-date reference of every command, subcommand, and flag:
 
-Use `belz ad <cmd> --help` for arguments, flags, and examples.
+```
+belz --help-full
+```
 
----
+Use `belz <namespace> <cmd> --help` for full usage, flags, and examples for any specific command.
 
-## PD Commands — Secondary Tools
-
-| Command | What it does |
-|---------|-------------|
-| `belz pd show-page <ID>` | Inspect a page's config, child components, and AD method references. |
-| `belz pd show-component <NAME>` | Inspect a component's config and its AD method refs. |
-| `belz pd find-ad-methods <ID>` | Recursively extract all AD method IDs referenced in a page/component. |
-| `belz pd inspect-url <URL>` | Parse a full PD URL and return metadata, children, and AD refs. |
-| `belz pd analyze [PAGE_ID]` | Recursive dependency tree and compliance analysis. |
-
----
-
-## Migration Commands
-
-`belz migrate` handles NSM database migrations — moving AD methods and PD pages from one
-environment to the next using their Published IDs.
-
-| Command | What it does |
-|---------|-------------|
-| `belz migrate profiles` | List available migration profiles (source → target environment pairs) |
-| `belz migrate run` | Trigger a migration run with a selected profile and set of IDs |
-
-Use `belz migrate --help` for full usage. Migrations flow: Dev → QA → UAT → Stage → Prod.
-Only Published IDs can be migrated. If a fix isn't visible in QA, check whether it was published
-and migrated.
+Migrations flow: Dev → QA → UAT → Stage → Prod. Only Published IDs can be migrated.
+If a fix isn't visible in QA, check whether it was published and migrated.
 
 ---
 
@@ -128,6 +100,7 @@ and migrated.
 
 ## Where to Learn More
 
-- **CLI command details:** `belz <cmd> --help` (flags, arguments, examples)
+- **All commands (current):** `belz --help-full` (every command, subcommand, and flag)
+- **Command details:** `belz <namespace> <cmd> --help` (full flags, arguments, examples)
 - **Platform depth:** read `BELZABAR.md` in this directory
 - **AD method structure:** `belz ad show <UUID>` is the most informative starting point
