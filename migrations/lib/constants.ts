@@ -7,8 +7,6 @@ export const NSM_SCRIPT_NAME = "NCDNS: Migrate Source DB to Target DB";
 
 export const NSM_PROFILE_CACHE_PATH = join(BELZ_CONFIG_DIR, "migrations", "nsm-profiles.json");
 
-export const NSM_PROFILE_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
-
 export const NSM_FALLBACK_PROFILES = [
   "devncdns_qancdns",
   "qancdns_uatncdns",

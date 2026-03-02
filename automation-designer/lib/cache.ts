@@ -1,51 +1,18 @@
 import { join } from "path";
-import { mkdir } from "fs/promises";
-import { BELZ_CONFIG_DIR } from "@belzabar/core";
+import { Cache, BELZ_CONFIG_DIR } from "@belzabar/core";
 import type { HydratedMethod } from "./types";
 
-const CACHE_DIR = join(BELZ_CONFIG_DIR, "cache", "methods");
-const TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-interface CacheEntry {
-  fetchedAt: number;
-  data: HydratedMethod;
-}
+const methodCache = new Cache<HydratedMethod>({
+  dir: join(BELZ_CONFIG_DIR, "cache", "methods"),
+  ttlMs: 5 * 60 * 1000,
+});
 
 export class CacheManager {
-  static async ensureDir() {
-    await mkdir(CACHE_DIR, { recursive: true });
-  }
-
   static async save(uuid: string, data: HydratedMethod): Promise<void> {
-    await this.ensureDir();
-    const filePath = join(CACHE_DIR, `${uuid}.json`);
-    const entry: CacheEntry = {
-      fetchedAt: Date.now(),
-      data
-    };
-    await Bun.write(filePath, JSON.stringify(entry, null, 2));
+    return methodCache.save(uuid, data);
   }
 
   static async load(uuid: string): Promise<HydratedMethod | null> {
-    const filePath = join(CACHE_DIR, `${uuid}.json`);
-    const file = Bun.file(filePath);
-
-    if (!(await file.exists())) {
-      return null;
-    }
-
-    try {
-      const entry = await file.json() as CacheEntry;
-      const age = Date.now() - entry.fetchedAt;
-      
-      if (age > TTL_MS) {
-        return null; // Stale
-      }
-      
-      return entry.data;
-    } catch (e) {
-      console.warn(`Failed to read cache for ${uuid}`, e);
-      return null;
-    }
+    return methodCache.load(uuid);
   }
 }

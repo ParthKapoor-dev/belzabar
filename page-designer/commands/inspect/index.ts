@@ -2,12 +2,11 @@ import { file } from "bun";
 import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { analyzeItem } from "../../lib/analyzer";
 import {
-  fetchComponentConfig,
   fetchComponentIdByName,
   fetchDeployablePageByAppUrl,
   fetchEntityIdsByName,
-  fetchPageConfig,
 } from "../../lib/api";
+import { cachedFetchPageConfig as fetchPageConfig, cachedFetchComponentConfig as fetchComponentConfig } from "../../lib/cache";
 import { extractDirectChildComponentNames, extractReferences } from "../../lib/parser";
 import { collectAllAdIds, formatTreeLines } from "../../lib/reporter";
 import type { PageConfigResponse } from "../../lib/types";

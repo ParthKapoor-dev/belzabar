@@ -1,14 +1,13 @@
-import { mkdirSync } from "fs";
-import { dirname } from "path";
+import { join } from "path";
+import { Cache, BELZ_CONFIG_DIR } from "@belzabar/core";
 import {
   DB_MIGRATION_TOOL_BASE_URL,
   NSM_FALLBACK_PROFILES,
   NSM_PROFILE_CACHE_PATH,
-  NSM_PROFILE_CACHE_TTL_MS,
 } from "./constants";
 import type { NsmProfileResolution } from "./types";
 
-interface ProfileCacheShape {
+interface ProfileCacheData {
   fetchedAt: string;
   profiles: string[];
 }
@@ -16,11 +15,16 @@ interface ProfileCacheShape {
 interface DiscoverProfilesOptions {
   refresh?: boolean;
   fetchFn?: typeof fetch;
-  now?: () => number;
-  ttlMs?: number;
 }
 
 const PROFILE_PATTERN = /\b[a-z0-9]+ncdns_[a-z0-9]+ncdns\b/gi;
+
+const profileCache = new Cache<ProfileCacheData>({
+  dir: join(BELZ_CONFIG_DIR, "migrations"),
+  ttlMs: null,
+});
+
+const CACHE_KEY = "nsm-profiles";
 
 function normalizeProfiles(values: string[]): string[] {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
@@ -48,38 +52,11 @@ export function extractProfilesFromText(text: string): string[] {
   return normalizeProfiles(matches);
 }
 
-async function readProfileCache(): Promise<ProfileCacheShape | null> {
-  try {
-    const file = Bun.file(NSM_PROFILE_CACHE_PATH);
-    if (!(await file.exists())) return null;
-    const parsed = (await file.json()) as ProfileCacheShape;
-    if (!parsed || !Array.isArray(parsed.profiles) || typeof parsed.fetchedAt !== "string") {
-      return null;
-    }
-
-    return {
-      fetchedAt: parsed.fetchedAt,
-      profiles: normalizeProfiles(parsed.profiles),
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function writeProfileCache(data: ProfileCacheShape): Promise<void> {
-  try {
-    mkdirSync(dirname(NSM_PROFILE_CACHE_PATH), { recursive: true });
-    await Bun.write(NSM_PROFILE_CACHE_PATH, JSON.stringify(data, null, 2));
-  } catch {
-    // Cache persistence is best-effort and should not fail command execution.
-  }
-}
-
-function buildCacheResolution(cache: ProfileCacheShape, raw?: NsmProfileResolution["raw"]): NsmProfileResolution {
+function buildCacheResolution(cached: ProfileCacheData, raw?: NsmProfileResolution["raw"]): NsmProfileResolution {
   return {
-    profiles: cache.profiles,
+    profiles: cached.profiles,
     source: "cache",
-    fetchedAt: cache.fetchedAt,
+    fetchedAt: cached.fetchedAt,
     raw,
   };
 }
@@ -116,16 +93,16 @@ async function discoverProfilesLive(fetchFn: typeof fetch): Promise<NsmProfileRe
     }
   }
 
-  const normalizedProfiles = normalizeProfiles(matchedProfiles);
-  if (normalizedProfiles.length === 0) {
+  const discovered = normalizeProfiles(matchedProfiles);
+  if (discovered.length === 0) {
     throw new Error(`No NSM profiles discovered from live assets. ${errors.join(" | ")}`);
   }
 
+  // Merge with fallback so cache always contains at least the known set.
+  const normalizedProfiles = normalizeProfiles([...discovered, ...NSM_FALLBACK_PROFILES]);
+
   const fetchedAt = new Date().toISOString();
-  await writeProfileCache({
-    fetchedAt,
-    profiles: normalizedProfiles,
-  });
+  await profileCache.save(CACHE_KEY, { fetchedAt, profiles: normalizedProfiles });
 
   return {
     profiles: normalizedProfiles,
@@ -142,13 +119,10 @@ async function discoverProfilesLive(fetchFn: typeof fetch): Promise<NsmProfileRe
 
 export async function discoverNsmProfiles(options: DiscoverProfilesOptions = {}): Promise<NsmProfileResolution> {
   const fetchFn = options.fetchFn || fetch;
-  const ttlMs = options.ttlMs ?? NSM_PROFILE_CACHE_TTL_MS;
-  const now = options.now ? options.now() : Date.now();
 
-  const cached = await readProfileCache();
-  if (!options.refresh && cached) {
-    const cachedAt = Date.parse(cached.fetchedAt);
-    if (Number.isFinite(cachedAt) && now - cachedAt < ttlMs) {
+  if (!options.refresh) {
+    const cached = await profileCache.load(CACHE_KEY);
+    if (cached) {
       return buildCacheResolution(cached, {
         scannedUrls: [],
         matchedProfiles: cached.profiles,
@@ -161,22 +135,29 @@ export async function discoverNsmProfiles(options: DiscoverProfilesOptions = {})
   try {
     return await discoverProfilesLive(fetchFn);
   } catch (error) {
-    if (cached && cached.profiles.length > 0) {
-      return buildCacheResolution(cached, {
+    // On live failure, fall back to cache merged with hardcoded fallback (best available set).
+    const cached = await profileCache.load(CACHE_KEY);
+    const mergedProfiles = normalizeProfiles([
+      ...(cached?.profiles ?? []),
+      ...NSM_FALLBACK_PROFILES,
+    ]);
+
+    if (cached) {
+      return buildCacheResolution({ ...cached, profiles: mergedProfiles }, {
         scannedUrls: [],
-        matchedProfiles: cached.profiles,
+        matchedProfiles: mergedProfiles,
         errors: [error instanceof Error ? error.message : String(error)],
         cachePath: NSM_PROFILE_CACHE_PATH,
       });
     }
 
     return {
-      profiles: [...NSM_FALLBACK_PROFILES],
+      profiles: mergedProfiles,
       source: "fallback",
-      fetchedAt: new Date(now).toISOString(),
+      fetchedAt: new Date().toISOString(),
       raw: {
         scannedUrls: [],
-        matchedProfiles: [...NSM_FALLBACK_PROFILES],
+        matchedProfiles: mergedProfiles,
         errors: [error instanceof Error ? error.message : String(error)],
         cachePath: NSM_PROFILE_CACHE_PATH,
       },

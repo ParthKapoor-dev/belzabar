@@ -1,5 +1,6 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { fetchComponentIdByName, fetchComponentConfig } from "../../lib/api";
+import { fetchComponentIdByName } from "../../lib/api";
+import { cachedFetchComponentConfig as fetchComponentConfig } from "../../lib/cache";
 import { extractReferences } from "../../lib/parser";
 
 interface ShowComponentArgs {

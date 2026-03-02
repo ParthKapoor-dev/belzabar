@@ -1,5 +1,5 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { fetchPageConfig } from "../../lib/api";
+import { cachedFetchPageConfig as fetchPageConfig } from "../../lib/cache";
 import { extractReferences } from "../../lib/parser";
 
 interface ShowPageArgs {

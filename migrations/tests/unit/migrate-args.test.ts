@@ -39,7 +39,7 @@ describe("migrate args", () => {
     const parsed = await parseMigrateArgs([
       "run",
       "--module",
-      "AD",
+      "AD_Method",
       "--ids",
       "x",
       "--source-env",
@@ -51,7 +51,7 @@ describe("migrate args", () => {
     expect(parsed.action).toBe("run");
     if (parsed.action === "run") {
       expect(parsed.profile).toBe("qancdns_uatncdns");
-      expect(parsed.moduleName).toBe("AD");
+      expect(parsed.moduleName).toBe("AD_Method");
     }
   });
 

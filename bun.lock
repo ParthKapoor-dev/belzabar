@@ -7,19 +7,6 @@
         "turbo": "^2.8.3",
       },
     },
-    "apps/extension": {
-      "name": "belzabar-extension",
-      "version": "1.0.1",
-      "dependencies": {
-        "@codemirror/commands": "^6.10.0",
-        "@codemirror/lang-javascript": "^6.2.4",
-        "@codemirror/lang-json": "^6.0.2",
-        "@codemirror/lang-sql": "^6.10.0",
-        "@codemirror/state": "^6.5.2",
-        "@codemirror/theme-one-dark": "^6.1.3",
-        "@codemirror/view": "^6.38.6",
-      },
-    },
     "cli": {
       "name": "belzabar.cli",
       "bin": {
@@ -39,6 +26,19 @@
         "typescript": "^5",
       },
     },
+    "extension": {
+      "name": "belzabar-extension",
+      "version": "1.0.1",
+      "dependencies": {
+        "@codemirror/commands": "^6.10.0",
+        "@codemirror/lang-javascript": "^6.2.4",
+        "@codemirror/lang-json": "^6.0.2",
+        "@codemirror/lang-sql": "^6.10.0",
+        "@codemirror/state": "^6.5.2",
+        "@codemirror/theme-one-dark": "^6.1.3",
+        "@codemirror/view": "^6.38.6",
+      },
+    },
     "packages/core": {
       "name": "@belzabar/core",
       "version": "0.1.0",
@@ -49,21 +49,6 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
-      },
-    },
-    "page-designer": {
-      "name": "pd-cli",
-      "bin": {
-        "pd": "./bin/pd.ts",
-      },
-      "dependencies": {
-        "@belzabar/core": "workspace:*",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-      },
-      "peerDependencies": {
-        "typescript": "^5",
       },
     },
   },
@@ -118,7 +103,7 @@
 
     "base64-js": ["base64-js@1.5.1", "", {}, "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA=="],
 
-    "belzabar-extension": ["belzabar-extension@workspace:apps/extension"],
+    "belzabar-extension": ["belzabar-extension@workspace:extension"],
 
     "belzabar.cli": ["belzabar.cli@workspace:cli"],
 
@@ -217,8 +202,6 @@
     "ora": ["ora@5.4.1", "", { "dependencies": { "bl": "^4.1.0", "chalk": "^4.1.0", "cli-cursor": "^3.1.0", "cli-spinners": "^2.5.0", "is-interactive": "^1.0.0", "is-unicode-supported": "^0.1.0", "log-symbols": "^4.1.0", "strip-ansi": "^6.0.0", "wcwidth": "^1.0.1" } }, "sha512-5b6Y85tPxZZ7QytO+BQzysW31HJku27cRIlkbAXaNx+BdcVi+LlRFmVXzeF6a7JCwJpyw5c4b+YSVImQIrBpuQ=="],
 
     "os-tmpdir": ["os-tmpdir@1.0.2", "", {}, "sha512-D2FR03Vir7FIu45XBY20mTb+/ZSWB00sjU9jdQXt83gDrI4Ztz5Fs7/yy74g2N5SVQY4xY1qDr4rNddwYRVX0g=="],
-
-    "pd-cli": ["pd-cli@workspace:page-designer"],
 
     "readable-stream": ["readable-stream@3.6.2", "", { "dependencies": { "inherits": "^2.0.3", "string_decoder": "^1.1.1", "util-deprecate": "^1.0.1" } }, "sha512-9u/sniCrY3D5WdsERHzHE4G2YCXqoG5FTHUiCC4SIbr6XcLZBY05ya9EKjYek9O5xOAwjGq+1JdGBAS7Q9ScoA=="],
 
