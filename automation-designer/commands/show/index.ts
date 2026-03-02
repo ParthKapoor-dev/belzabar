@@ -104,6 +104,21 @@ function formatDate(ts: number): string {
   return new Date(ts).toLocaleString();
 }
 
+function resolveUuid(input: string): string {
+  if (input.startsWith("http://") || input.startsWith("https://")) {
+    const url = new URL(input);
+    const segments = url.pathname.split("/").filter(Boolean);
+    const last = segments[segments.length - 1];
+    if (!last || !/^[0-9a-f]{32}$/i.test(last)) {
+      throw new CliError("Could not extract a valid UUID from the given URL.", {
+        code: "INVALID_URL",
+      });
+    }
+    return last;
+  }
+  return input;
+}
+
 async function fetchAndCache(uuid: string): Promise<HydratedMethod> {
   const path = `/rest/api/automation/chain/${uuid}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
@@ -300,10 +315,11 @@ async function buildServiceDetailData(method: HydratedMethod, index: number, inc
 const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
   schema: "ad.show",
   parseArgs(args) {
-    const uuid = args[0];
-    if (!uuid || uuid.startsWith("-")) {
+    const raw = args[0];
+    if (!raw || raw.startsWith("-")) {
       throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
     }
+    const uuid = resolveUuid(raw);
 
     const flags = {
       inputs: args.includes("--inputs"),
@@ -426,8 +442,8 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
         ["Category", data.summary.category],
         ["State", data.summary.state],
         ["Version", data.summary.version],
-        ["UUID", data.summary.uuid],
-        ["Ref ID", data.summary.referenceId],
+        [data.summary.state === "PUBLISHED" ? "Published ID" : "Draft ID", data.summary.uuid],
+        [data.summary.state === "PUBLISHED" ? "Draft ID" : "Published ID", data.summary.referenceId],
         ["Updated", data.summary.updated],
         ["Summary", data.summary.summary],
         ["Inputs", data.summary.inputCount],

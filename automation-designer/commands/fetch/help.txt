@@ -1,0 +1,21 @@
+Usage: belz ad fetch <UUID|URL> [flags]
+
+Fetch an Automation Designer method by UUID or URL, cache it, and hydrate all service definitions.
+
+Arguments:
+  <UUID|URL>          The UUID of the method, or a full AD URL
+                      (e.g. https://nsm-dev.nc.verifi.dev/automation-designer/Category/426f97...).
+
+Flags:
+  --raw               Include raw method payload in output.
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz ad fetch 426f97096b0221bb830d954c45ac9f84
+  belz ad fetch https://nsm-dev.nc.verifi.dev/automation-designer/NSM.Staff/426f97096b0221bb830d954c45ac9f84
+  belz ad fetch 426f97096b0221bb830d954c45ac9f84 --raw --env nsm-qa --llm

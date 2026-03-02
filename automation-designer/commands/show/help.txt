@@ -4,7 +4,8 @@ Display the structure and metadata of an Automation Designer method.
 The method definition is fetched and cached automatically (5-minute TTL).
 
 Arguments:
-  <UUID>                  The UUID of the method to display.
+  <UUID|URL>              The UUID of the method, or a full AD URL
+                          (e.g. https://nsm-dev.nc.verifi.dev/automation-designer/Category/426f97...).
 
 Flags:
   --inputs                Show a table of input arguments.

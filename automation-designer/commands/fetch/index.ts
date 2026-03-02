@@ -28,13 +28,29 @@ interface FetchMethodData {
   };
 }
 
+function resolveUuid(input: string): string {
+  if (input.startsWith("http://") || input.startsWith("https://")) {
+    const url = new URL(input);
+    const segments = url.pathname.split("/").filter(Boolean);
+    const last = segments[segments.length - 1];
+    if (!last || !/^[0-9a-f]{32}$/i.test(last)) {
+      throw new CliError("Could not extract a valid UUID from the given URL.", {
+        code: "INVALID_URL",
+      });
+    }
+    return last;
+  }
+  return input;
+}
+
 const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
-  schema: "ad.get",
+  schema: "ad.fetch",
   parseArgs(args) {
-    const uuid = args[0];
-    if (!uuid || uuid.startsWith("-")) {
+    const raw = args[0];
+    if (!raw || raw.startsWith("-")) {
       throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
     }
+    const uuid = resolveUuid(raw);
     return {
       uuid,
       raw: args.includes("--raw"),

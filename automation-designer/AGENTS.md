@@ -12,7 +12,7 @@ The unified `belz` binary is built from `cli/` (repo root). This directory is a 
 ## Command Routing
 
 ```
-belz ad <cmd>      → get, show, test, run, save-suite, run-suites, sql
+belz ad <cmd>      → fetch, show, test, run, save-suite, run-suites, sql
 ```
 
 ## Tech
@@ -32,7 +32,7 @@ belz ad <cmd>      → get, show, test, run, save-suite, run-suites, sql
 
 ### AD Commands (`belz ad <cmd>`)
 
-1. `get`
+1. `fetch`
 2. `show`
 3. `test`
 4. `run`
