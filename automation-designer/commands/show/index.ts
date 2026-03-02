@@ -87,6 +87,9 @@ interface ShowMethodData {
     automationId: string;
     type: string;
     description: string;
+    methodName: string | null;
+    category: string | null;
+    publishedId: string | null;
   }>;
   serviceDetail?: ServiceDetailData | null;
   fullServices?: FullServiceRow[];
@@ -374,12 +377,28 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
     }
 
     if (includeServices) {
-      data.services = method.services.map(service => ({
-        orderIndex: service.orderIndex,
-        automationId: service.automationId,
-        type: service.type,
-        description: service.description || "",
-      }));
+      const total = method.services.length;
+      const enrichedServices = [];
+      for (let i = 0; i < total; i++) {
+        const service = method.services[i];
+        if (context.outputMode === "human") {
+          process.stderr.write(`\rFetching service definitions... ${i + 1}/${total}`);
+        }
+        const def = await ServiceHydrator.getDefinition(service.automationId);
+        enrichedServices.push({
+          orderIndex: service.orderIndex,
+          automationId: service.automationId,
+          type: service.type,
+          description: service.description || "",
+          methodName: def?.automationAPI.label ?? null,
+          category: def?.automationAPI.automationSystem.label ?? null,
+          publishedId: def?.automationAPI.serviceChainUID ?? null,
+        });
+      }
+      if (context.outputMode === "human") {
+        process.stderr.write(`\r${" ".repeat(50)}\r`);
+      }
+      data.services = enrichedServices;
     }
 
     if (flags.full) {
@@ -430,8 +449,15 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       ui.section("Service Chain");
       if (data.services.length === 0) ui.text("No services defined.");
       else ui.table(
-        ["#", "ID", "Type", "Description"],
-        data.services.map(service => [service.orderIndex, service.automationId, service.type, service.description])
+        ["#", "ID", "Type", "Name", "Category", "Published ID"],
+        data.services.map(service => [
+          service.orderIndex,
+          service.automationId,
+          service.type,
+          service.methodName ?? "",
+          service.category ?? "",
+          service.publishedId ?? "",
+        ])
       );
     }
 
