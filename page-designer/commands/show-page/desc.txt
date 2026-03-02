@@ -1,0 +1,3 @@
+belz pd show-page <page-id>  :->  Fetch and display a page's config, components, and AD method references
+belz pd show-page <page-id> --full  :->  Include the full configuration payload
+belz pd show-page <page-id> --raw  :->  Include raw configuration string in output

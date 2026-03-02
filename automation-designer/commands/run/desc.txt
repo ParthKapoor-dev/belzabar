@@ -1,0 +1,4 @@
+belz ad run <published-id>  :->  Execute a published method with empty payload
+belz ad run <published-id> '<json>'  :->  Execute with an inline JSON payload string
+belz ad run <published-id> <file.json>  :->  Execute with payload read from a JSON file
+belz ad run <published-id> '<json>' --raw  :->  Include raw execution payload in output

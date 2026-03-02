@@ -1,0 +1,7 @@
+belz ad show <uuid|url>  :->  Display structure and metadata of a method (auto-fetched, 5-min cache)
+belz ad show <uuid|url> --inputs  :->  Show input argument definitions
+belz ad show <uuid|url> --services  :->  Show service step names and IDs
+belz ad show <uuid|url> --service-detail <N>  :->  Show detailed info for the Nth service step
+belz ad show <uuid|url> --full  :->  Show all details including per-service logic and mappings
+belz ad show <uuid|url> --force  :->  Bypass cache and fetch a fresh method definition
+belz ad show <uuid|url> --raw  :->  Include raw payloads in output

@@ -1,0 +1,2 @@
+belz ad save-suite <uuid> --name <name>  :->  Save a named regression test suite (prompts for inputs interactively)
+belz ad save-suite <uuid> --name <name> --inputs <file>  :->  Save suite using inputs from a JSON file

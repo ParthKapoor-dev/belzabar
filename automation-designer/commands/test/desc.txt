@@ -1,0 +1,5 @@
+belz ad test <uuid>  :->  Execute a draft method; prompts for inputs interactively, returns service outputs and traces
+belz ad test <uuid> --inputs <file>  :->  Pass a JSON file of input values (skips interactive prompts)
+belz ad test <uuid> --verbose  :->  Show detailed execution trace for each step
+belz ad test <uuid> --force  :->  Bypass cache and fetch a fresh method definition before testing
+belz ad test <uuid> --raw  :->  Include raw execution payload in output

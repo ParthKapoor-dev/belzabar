@@ -1,8 +1,13 @@
 import { ADCommandRegistry } from "../commands/registry-ad";
 import { PDCommandRegistry } from "../commands/registry-pd";
 import { TopLevelCommandRegistry } from "../commands/registry-top";
-import { ADHelpMap, PDHelpMap, TopHelpMap, makeHelpResolver } from "../commands/registry-help";
+import { ADHelpMap, PDHelpMap, TopHelpMap, makeHelpResolver, HELP_FULL_TEXT } from "../commands/registry-help";
 import { runNamespacedCli } from "@belzabar/core";
+
+if (process.argv.slice(2).includes("--help-full")) {
+  console.log(HELP_FULL_TEXT);
+  process.exit(0);
+}
 
 const { migrate, ...topLevelCommands } = TopLevelCommandRegistry;
 const topHelpResolver = makeHelpResolver(TopHelpMap);

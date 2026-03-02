@@ -1,0 +1,7 @@
+belz pd inspect <app-url>  :->  Inspect a page from a live app URL (handles /pages/<path> or /<app>/<page>)
+belz pd inspect <pd-designer-url>  :->  Inspect a page or component from a PD /ui-designer URL
+belz pd inspect <hex-id>  :->  Inspect a page or component by bare hex ID (auto-detects type)
+belz pd inspect <component-name>  :->  Inspect a component by name
+belz pd inspect <input> --recursive  :->  Include full recursive dependency tree and all AD method IDs
+belz pd inspect <input> --full  :->  Include the full parsed configuration payload
+belz pd inspect <input> --raw  :->  Include raw configuration string and source API fields

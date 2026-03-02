@@ -1,0 +1,3 @@
+belz ad fetch <uuid|url>  :->  Fetch a method by UUID or AD URL; caches and hydrates service definitions
+belz ad fetch <uuid|url> --raw  :->  Include raw API response alongside the fetch result
+belz ad fetch <uuid|url> --env nsm-qa  :->  Fetch from a specific environment

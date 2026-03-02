@@ -1,0 +1,3 @@
+belz pd find-ad-methods <page-id>  :->  List all AD method IDs referenced in a page
+belz pd find-ad-methods <name> --component  :->  List all AD method IDs referenced in a named component
+belz pd find-ad-methods <page-id> --recursive  :->  Deep-scan all child components and collect every AD method ID

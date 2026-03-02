@@ -1,0 +1,3 @@
+belz pd analyze  :->  Recursively analyze all default pages; collect components and AD method references
+belz pd analyze <page-id>  :->  Recursively analyze a specific page
+belz pd analyze <page-id> --compliance  :->  Verify discovered AD IDs against master_ids.txt

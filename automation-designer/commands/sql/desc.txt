@@ -1,0 +1,8 @@
+belz ad sql dbs  :->  List available SQL database configurations and auth types
+belz ad sql run "<query>"  :->  Execute a SELECT query against the default DB
+belz ad sql run "<query>" --db <name|id>  :->  Execute SELECT against a specific database
+belz ad sql update "<query>" --db <name|id>  :->  Execute UPDATE or DELETE; returns rows affected
+belz ad sql insert "<query>" --db <name|id>  :->  Execute INSERT; returns rows affected and generated IDs/UUIDs
+belz ad sql modify "<query>" --db <name|id>  :->  Execute DDL (ALTER TABLE, CREATE INDEX, etc.)
+belz ad sql tui  :->  Start an interactive SQL session (prompts for DB and mode: read|insert|update|modify)
+belz ad sql tui --db <name|id> --mode <read|insert|update|modify>  :->  Start TUI with pre-selected DB and mode

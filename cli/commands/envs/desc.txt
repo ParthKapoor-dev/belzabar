@@ -1,0 +1,2 @@
+belz envs  :->  List all configured environments and show which is currently active
+belz envs --env nsm-qa  :->  Check the auth configuration of a specific environment

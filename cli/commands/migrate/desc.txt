@@ -1,0 +1,5 @@
+belz migrate profiles  :->  List available NSM migration profiles (source → target environment pairs)
+belz migrate profiles --refresh  :->  Bypass cache and force live profile discovery
+belz migrate run --module PD --ids <uuid> --profile <profile>  :->  Migrate a PD page to the next environment
+belz migrate run --module AD --ids-file <path> --source-env nsm-dev --target-env nsm-qa  :->  Migrate multiple AD methods using a file of IDs
+belz migrate run --module AD --ids <uuid> --source-env nsm-dev --target-env nsm-qa --out <dir> --llm  :->  Migrate and capture structured output artifacts
