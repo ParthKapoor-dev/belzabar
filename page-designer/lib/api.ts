@@ -99,17 +99,5 @@ export async function fetchDeployablePageByAppUrl(domain: string, path: string):
 }
 
 export async function fetchComponentConfig(componentId: string): Promise<PageConfigResponse | null> {
-  const url = `${PD_BASE}/pages/phrases/${componentId}`;
-  const response = await apiFetch(url, {
-    method: "PUT",
-    authMode: "Bearer",
-    body: JSON.stringify({
-      status: "DRAFT",
-      partialUpdate: true,
-      pageElementOperations: [{ key: "layout.isSymbol", operation: "UPDATE", dataType: "BOOLEAN", value: "true" }],
-      phrasesList: []
-    }),
-  });
-  if (!response.ok) return null;
-  return response.json();
+  return fetchPageConfig(componentId);
 }
