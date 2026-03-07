@@ -67,6 +67,25 @@ export function AiShell({ children }: { children: React.ReactNode }) {
     router.push("/ai")
   }
 
+  const isLoading = !initialized || !settingsLoaded
+
+  if (isLoading) {
+    return (
+      <div className="flex h-svh items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3 text-center px-8">
+          <div className="flex gap-1">
+            <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.3s]" />
+            <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.15s]" />
+            <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce" />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            creating a connection to the default workspace. please wait…
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <SessionsContext.Provider
       value={{
