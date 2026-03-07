@@ -1,23 +1,30 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useSessionsContext } from "@/lib/sessions-context"
 
 export default function AiPage() {
   const router = useRouter()
-  const { createSession } = useSessionsContext()
+  const { createSession, settings } = useSessionsContext()
   const [cwd, setCwd] = useState("")
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Pre-fill with default cwd once settings load
+  useEffect(() => {
+    if (settings.defaultCwd && !cwd) {
+      setCwd(settings.defaultCwd)
+    }
+  }, [settings.defaultCwd]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStart = async () => {
     const trimmed = cwd.trim()
     if (!trimmed) return
     setConnecting(true)
     setError(null)
-    const id = await createSession(trimmed)
+    const id = await createSession(trimmed, settings.agentProfiles.main)
     if (id) {
       router.push(`/ai/${id}`)
     } else {

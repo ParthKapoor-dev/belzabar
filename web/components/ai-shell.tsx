@@ -4,12 +4,14 @@ import { useRouter, usePathname } from "next/navigation"
 import { SessionSidebar } from "@/components/session-sidebar"
 import { SessionsContext } from "@/lib/sessions-context"
 import { useSessions } from "@/hooks/use-sessions"
+import { useSettings } from "@/hooks/use-settings"
 
 export function AiShell({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { slots, createSession, removeSession, sendPrompt, cancelPrompt, resolvePermission } =
     useSessions()
+  const { settings, update: updateSettings } = useSettings()
 
   // Derive active session id from URL: /ai/<id>
   const segments = pathname.split("/")
@@ -33,7 +35,7 @@ export function AiShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SessionsContext.Provider
-      value={{ slots, createSession, removeSession, sendPrompt, cancelPrompt, resolvePermission }}
+      value={{ slots, createSession, removeSession, sendPrompt, cancelPrompt, resolvePermission, settings, updateSettings }}
     >
       <div className="flex h-svh">
         <SessionSidebar
