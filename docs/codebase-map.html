@@ -206,6 +206,7 @@
     <div class="tab" onclick="show('files')">File Reference</div>
     <div class="tab" onclick="show('runtime')">Runtime Data</div>
     <div class="tab" onclick="show('redundancy')">Redundancies</div>
+    <div class="tab" onclick="show('web')">Web App</div>
   </div>
 </div>
 
@@ -754,6 +755,637 @@
     <p style="margin-top:6px;color:var(--cli)">→ Audit imports across all workspaces. If unused, remove from index.ts and delete.</p>
   </div>
 </div>
+
+
+<!-- ═══════════════════════════════════════════════════ WEB APP ══ -->
+<div id="web" class="section">
+
+<style>
+  /* ── Web-section extras ── */
+  .web-h2 { font-size: 16px; font-weight: 700; margin: 32px 0 12px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .web-h2::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .web-h3 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin: 20px 0 8px; }
+
+  /* flow diagram */
+  .flow-diagram { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 24px; overflow-x: auto; }
+  .flow-row { display: flex; align-items: center; gap: 0; flex-wrap: nowrap; margin-bottom: 0; }
+  .flow-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 12px; white-space: nowrap; text-align: center; min-width: 130px; }
+  .flow-box.blue   { border-color: var(--core); color: var(--core); }
+  .flow-box.green  { border-color: var(--cli);  color: var(--cli); }
+  .flow-box.yellow { border-color: var(--ad);   color: var(--ad); }
+  .flow-box.purple { border-color: var(--pd);   color: var(--pd); }
+  .flow-box.red    { border-color: var(--mig);  color: var(--mig); }
+  .flow-box.gray   { border-color: var(--gen);  color: var(--muted); }
+  .flow-box small  { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; font-weight: 400; }
+  .flow-arrow { font-size: 16px; color: var(--muted); padding: 0 6px; flex-shrink: 0; }
+  .flow-arrow.down { display: block; text-align: center; margin: 6px 0; font-size: 14px; }
+  .flow-label { font-size: 10px; color: var(--muted); text-align: center; margin-top: 3px; }
+
+  /* two-col layout */
+  .web-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .web-cols.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 900px) { .web-cols, .web-cols.cols3 { grid-template-columns: 1fr; } }
+
+  /* code block */
+  .code-block { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; font-family: 'JetBrains Mono', 'Cascadia Code', monospace; font-size: 12px; line-height: 1.7; overflow-x: auto; }
+  .code-block .k { color: #ff7b72; }   /* keyword */
+  .code-block .t { color: #79c0ff; }   /* type */
+  .code-block .s { color: #a5d6ff; }   /* string */
+  .code-block .c { color: #8b949e; }   /* comment */
+  .code-block .fn { color: #d2a8ff; }  /* function */
+  .code-block .v { color: #ffa657; }   /* value/const */
+
+  /* file tree */
+  .file-tree { font-family: monospace; font-size: 12px; line-height: 1.9; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
+  .file-tree .dir  { color: var(--core); }
+  .file-tree .file { color: var(--text); }
+  .file-tree .note { color: var(--muted); font-size: 11px; }
+
+  /* step list */
+  .steps { counter-reset: step; list-style: none; }
+  .steps li { counter-increment: step; display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--bg3); font-size: 13px; }
+  .steps li:last-child { border-bottom: none; }
+  .steps li::before { content: counter(step); min-width: 22px; height: 22px; background: var(--core); color: #fff; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .steps li span { color: var(--muted); }
+
+  /* table */
+  .web-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .web-table th { text-align: left; padding: 8px 12px; background: var(--bg3); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--border); }
+  .web-table td { padding: 8px 12px; border-bottom: 1px solid var(--bg3); vertical-align: top; }
+  .web-table td:first-child { font-family: monospace; font-size: 11px; color: var(--cli); white-space: nowrap; }
+  .web-table td code { background: var(--bg3); padding: 1px 5px; border-radius: 3px; font-size: 11px; font-family: monospace; color: var(--ad); }
+  .web-table tr:last-child td { border-bottom: none; }
+
+  /* badge tags */
+  .tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 3px; font-weight: 600; margin-right: 4px; }
+  .tag.server { background: #1a2744; color: var(--core); }
+  .tag.client { background: #1a3320; color: var(--cli); }
+  .tag.shared { background: #2d2012; color: var(--ad); }
+
+  /* highlight box */
+  .info-box { background: #131d2e; border-left: 3px solid var(--core); border-radius: 0 6px 6px 0; padding: 12px 16px; font-size: 13px; margin: 12px 0; }
+  .info-box.yellow { background: #1e1a0e; border-left-color: var(--ad); }
+  .info-box.green  { background: #0d1f14; border-left-color: var(--cli); }
+  .info-box strong { color: var(--text); }
+
+  /* SSE / sequence diagram */
+  .seq { display: grid; grid-template-columns: 120px 1fr 120px; gap: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .seq-head { background: var(--bg3); padding: 8px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; text-align: center; }
+  .seq-head.blue   { color: var(--core); }
+  .seq-head.green  { color: var(--cli); }
+  .seq-head.yellow { color: var(--ad); }
+  .seq-msg { grid-column: 1 / -1; display: grid; grid-template-columns: 120px 1fr 120px; align-items: center; padding: 6px 12px; border-top: 1px solid var(--bg3); font-size: 12px; }
+  .seq-msg .arrow { text-align: center; color: var(--muted); font-size: 18px; }
+  .seq-msg .label { color: var(--text); }
+  .seq-msg .sub   { font-size: 10px; color: var(--muted); }
+  .seq-msg.dim    { opacity: .5; }
+</style>
+
+<!-- ──────────────────────── INTRO ──────────────────────── -->
+<div class="web-h2">What is <code>web/</code>?</div>
+
+<div class="web-cols">
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Purpose</h3>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7">A Next.js 16 web application that provides a browser UI for connecting to local coding agents via the <strong style="color:var(--text)">Agent Client Protocol (ACP)</strong>. Users can open multiple chat sessions against different working directories, each backed by a live agent subprocess.</p>
+    <div class="info-box" style="margin-top:12px">
+      <strong>Key constraint:</strong> Browsers cannot spawn processes or use stdio directly. The web app solves this with a server-side <em>bridge</em> that lives in Next.js API routes (Node.js runtime) and proxies browser requests ↔ agent stdio.
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Stack</h3>
+    <table class="web-table">
+      <tr><td>Next.js 16</td><td>App Router, server + client components, API routes</td></tr>
+      <tr><td>React 19</td><td>useReducer, useContext, hooks</td></tr>
+      <tr><td>TypeScript</td><td>strict mode throughout</td></tr>
+      <tr><td>Tailwind CSS v4</td><td>utility-first styling</td></tr>
+      <tr><td>shadcn / Radix UI</td><td>accessible primitives</td></tr>
+      <tr><td>@phosphor-icons</td><td>icon set</td></tr>
+      <tr><td>@agentclientprotocol/sdk</td><td>ACP client library</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ──────────────────────── FILE STRUCTURE ──────────────────────── -->
+<div class="web-h2">File Structure</div>
+<div class="web-cols">
+  <div>
+    <div class="file-tree">
+<span class="dir">web/</span>
+├── <span class="dir">app/</span>
+│   ├── <span class="file">layout.tsx</span>          <span class="note">← root layout (ThemeProvider)</span>
+│   ├── <span class="file">page.tsx</span>             <span class="note">← redirects to /ai</span>
+│   └── <span class="dir">ai/</span>
+│       ├── <span class="file">layout.tsx</span>       <span class="note">← renders &lt;AiShell&gt;</span>
+│       ├── <span class="file">page.tsx</span>          <span class="note">← new session form</span>
+│       ├── <span class="dir">[id]/</span>
+│       │   └── <span class="file">page.tsx</span>      <span class="note">← chat view for session</span>
+│       ├── <span class="dir">settings/</span>
+│       │   └── <span class="file">page.tsx</span>      <span class="note">← settings page</span>
+│       └── <span class="dir">api/sessions/</span>     <span class="note">← REST API (Node.js)</span>
+│           ├── <span class="file">route.ts</span>      <span class="note">← GET list, POST create</span>
+│           └── <span class="dir">[id]/</span>
+│               ├── <span class="file">route.ts</span>   <span class="note">← GET info, DELETE close</span>
+│               ├── <span class="dir">prompt/route.ts</span>    <span class="note">← POST → SSE stream</span>
+│               ├── <span class="dir">cancel/route.ts</span>    <span class="note">← POST cancel</span>
+│               └── <span class="dir">permission/route.ts</span> <span class="note">← POST resolve permission</span>
+├── <span class="dir">components/</span>
+│   ├── <span class="file">ai-shell.tsx</span>         <span class="note">← shell: context, shortcuts, auto-connect</span>
+│   ├── <span class="file">session-sidebar.tsx</span>  <span class="note">← workspace + session tree</span>
+│   └── <span class="file">search-modal.tsx</span>     <span class="note">← ⌘K search overlay</span>
+├── <span class="dir">hooks/</span>
+│   ├── <span class="file">use-sessions.ts</span>      <span class="note">← multi-session reducer + localStorage</span>
+│   └── <span class="file">use-settings.ts</span>      <span class="note">← app settings + localStorage</span>
+└── <span class="dir">lib/</span>
+    ├── <span class="file">acp-bridge.ts</span>        <span class="note">← server-side ACP bridge singleton</span>
+    ├── <span class="file">acp-types.ts</span>         <span class="note">← shared types (BridgeEvent, SessionInfo…)</span>
+    └── <span class="file">sessions-context.ts</span>  <span class="note">← React context + useSessionsContext()</span>
+    </div>
+  </div>
+  <div>
+    <div class="web-h3">Runtime boundaries</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="arch-box core" style="padding:12px 14px">
+        <h4>Browser (client)</h4>
+        <ul>
+          <li><span class="fn">app/ai/[id]/page.tsx</span> <span>Chat UI</span></li>
+          <li><span class="fn">components/ai-shell.tsx</span> <span>Shell + context</span></li>
+          <li><span class="fn">components/session-sidebar.tsx</span></li>
+          <li><span class="fn">components/search-modal.tsx</span></li>
+          <li><span class="fn">hooks/use-sessions.ts</span> <span>State + localStorage</span></li>
+          <li><span class="fn">hooks/use-settings.ts</span></li>
+        </ul>
+      </div>
+      <div class="arch-box cli" style="padding:12px 14px">
+        <h4>Next.js Server (Node.js)</h4>
+        <ul>
+          <li><span class="fn">app/ai/api/sessions/**</span> <span>REST routes</span></li>
+          <li><span class="fn">lib/acp-bridge.ts</span> <span>Bridge singleton</span></li>
+        </ul>
+        <div class="note">These files use Node.js built-ins (child_process, fs, crypto). Must declare <code>export const runtime = "nodejs"</code>.</div>
+      </div>
+      <div class="arch-box ad" style="padding:12px 14px">
+        <h4>Shared (isomorphic)</h4>
+        <ul>
+          <li><span class="fn">lib/acp-types.ts</span> <span>BridgeEvent, SessionInfo</span></li>
+          <li><span class="fn">lib/sessions-context.ts</span> <span>React context type</span></li>
+        </ul>
+        <div class="note">No Node.js imports — safe to bundle on both sides.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────── ACP PROTOCOL ──────────────────────── -->
+<div class="web-h2">ACP — Agent Client Protocol</div>
+
+<div class="info-box">
+  <strong>ACP</strong> is a JSON-RPC 2.0 protocol that defines how a <em>client</em> (this web app) communicates with an <em>agent</em> (e.g. opencode). The agent runs as a child process; communication happens over <strong>stdin/stdout as newline-delimited JSON (NDJSON)</strong>, or over HTTP if the agent starts an HTTP server and announces its port.
+</div>
+
+<div class="web-h3">Protocol Handshake</div>
+<div class="flow-diagram">
+  <div style="display:grid;grid-template-columns:140px 60px 160px 60px 160px 60px 140px;align-items:center;gap:4px;margin-bottom:16px">
+    <div class="flow-box blue">Client<small>(Node.js bridge)</small></div>
+    <div class="flow-arrow" style="text-align:center">→</div>
+    <div class="flow-box green">initialize<small>protocolVersion, capabilities, clientInfo</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-box yellow">newSession<small>{ cwd, mcpServers: [] }</small></div>
+    <div class="flow-arrow">←</div>
+    <div class="flow-box green">{ sessionId }<small>opaque ID from agent</small></div>
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-top:4px">
+    After handshake the session is ready. <code>sessionId</code> must be included in every subsequent <code>prompt</code> call.
+  </div>
+</div>
+
+<div class="web-h3">Prompt / Response cycle</div>
+<div class="seq">
+  <div class="seq-head blue">Browser</div>
+  <div class="seq-head" style="background:var(--bg3);color:var(--muted)">Next.js API Route</div>
+  <div class="seq-head yellow">Agent Process</div>
+
+  <div class="seq-msg">
+    <div style="text-align:right;color:var(--muted);font-size:11px">POST /ai/api/sessions/{id}/prompt</div>
+    <div class="arrow">→</div>
+    <div></div>
+  </div>
+  <div class="seq-msg">
+    <div></div>
+    <div class="arrow">→</div>
+    <div style="color:var(--muted);font-size:11px">connection.prompt({ sessionId, prompt })</div>
+  </div>
+  <div class="seq-msg dim">
+    <div></div>
+    <div class="arrow">←</div>
+    <div style="color:var(--muted);font-size:11px">session/update: agent_thought_chunk</div>
+  </div>
+  <div class="seq-msg dim">
+    <div></div>
+    <div class="arrow">←</div>
+    <div style="color:var(--muted);font-size:11px">session/update: tool_call</div>
+  </div>
+  <div class="seq-msg dim">
+    <div></div>
+    <div class="arrow">←</div>
+    <div style="color:var(--muted);font-size:11px">session/update: agent_message_chunk</div>
+  </div>
+  <div class="seq-msg dim">
+    <div></div>
+    <div class="arrow">←</div>
+    <div style="color:var(--muted);font-size:11px">session/update: session_info_update (title)</div>
+  </div>
+  <div class="seq-msg">
+    <div style="text-align:right;font-size:11px;color:var(--cli)">data: {type:"agent_thought_chunk"…}</div>
+    <div class="arrow" style="color:var(--cli)">←</div>
+    <div style="color:var(--cli);font-size:11px">emit SSE events per notification</div>
+  </div>
+  <div class="seq-msg">
+    <div style="text-align:right;font-size:11px;color:var(--cli)">data: {type:"done",stopReason}</div>
+    <div class="arrow" style="color:var(--cli)">←</div>
+    <div style="color:var(--muted);font-size:11px">prompt() promise resolves → { stopReason }</div>
+  </div>
+</div>
+
+<div class="web-h3">Agent callback types (agent → client requests)</div>
+<table class="web-table" style="margin-top:4px">
+  <tr><th>Callback</th><th>What the agent asks for</th><th>Bridge response</th></tr>
+  <tr><td>requestPermission</td><td>Ask user to approve/reject a tool action</td><td>Emits SSE <code>permission_request</code>, stores <code>resolve</code> fn, waits for POST /permission</td></tr>
+  <tr><td>readTextFile</td><td>Read a file within cwd</td><td>fs.readFile — sandboxed to cwd via path.relative check</td></tr>
+  <tr><td>writeTextFile</td><td>Write a file within cwd</td><td>fs.writeFile — sandboxed to cwd</td></tr>
+  <tr><td>createTerminal</td><td>Spawn a shell command</td><td>child_process.spawn, returns terminalId</td></tr>
+  <tr><td>terminalOutput</td><td>Read terminal stdout/stderr</td><td>Returns rolling 64KB buffer</td></tr>
+  <tr><td>waitForTerminalExit</td><td>Block until terminal exits</td><td>Awaits exitPromise</td></tr>
+  <tr><td>killTerminal</td><td>Terminate a terminal</td><td>SIGTERM → wait 1.5s → SIGKILL</td></tr>
+  <tr><td>releaseTerminal</td><td>Clean up terminal resources</td><td>SIGTERM + clear output buffer + delete from map</td></tr>
+  <tr><td>sessionUpdate</td><td>Push session updates (streaming)</td><td>Routes each update type to emitToSubs()</td></tr>
+</table>
+
+<div class="web-h3">Session update types (streaming)</div>
+<table class="web-table">
+  <tr><th>sessionUpdate value</th><th>Content</th><th>Client effect</th></tr>
+  <tr><td>agent_message_chunk</td><td>{ content: { type:"text", text } }</td><td>Appends to <code>AssistantMessage.text</code></td></tr>
+  <tr><td>agent_thought_chunk</td><td>{ content: { type:"text", text } }</td><td>Appends to <code>AssistantMessage.thinking</code></td></tr>
+  <tr><td>tool_call</td><td>{ toolCallId, title, status, kind, rawInput }</td><td>Adds/updates <code>ToolCallState[]</code></td></tr>
+  <tr><td>tool_call_update</td><td>{ toolCallId, status, rawOutput, content }</td><td>Updates matching tool call by id</td></tr>
+  <tr><td>plan</td><td>{ entries: [{status, content}] }</td><td>Sets <code>AssistantMessage.plan</code></td></tr>
+  <tr><td>session_info_update</td><td>{ title, updatedAt }</td><td>Sets <code>SessionSlot.name</code>, shown in header + sidebar</td></tr>
+</table>
+
+<!-- ──────────────────────── BRIDGE ──────────────────────── -->
+<div class="web-h2">The ACP Bridge</div>
+
+<div class="web-cols">
+  <div>
+    <div class="web-h3">Why it exists</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px">Browsers cannot use Node.js <code>child_process</code> or pipe stdio. The bridge is a <strong style="color:var(--text)">singleton class</strong> that lives on the Next.js server, owns all agent subprocesses, and exposes them through HTTP.</p>
+    <div class="web-h3">Singleton pattern</div>
+    <div class="code-block"><span class="c">// lib/acp-bridge.ts — bottom of file</span>
+<span class="k">const</span> g = <span class="t">global</span> <span class="k">as typeof</span> global & { _acpBridge?: <span class="t">AcpBridge</span> };
+<span class="k">export const</span> <span class="v">bridge</span> = g._acpBridge ?? <span class="k">new</span> <span class="fn">AcpBridge</span>();
+<span class="k">if</span> (process.env.NODE_ENV !== <span class="s">"production"</span>) {
+  g._acpBridge = bridge;  <span class="c">// survive hot-reload in dev</span>
+}</div>
+    <div class="info-box yellow" style="margin-top:12px;font-size:12px">
+      <strong>Hot-reload safety:</strong> In development, Next.js re-evaluates modules on change. Storing the instance on <code>global</code> ensures the same bridge (and all its running agent processes) survive a hot-reload without orphaning subprocesses.
+    </div>
+  </div>
+  <div>
+    <div class="web-h3">Internal state per session</div>
+    <div class="code-block"><span class="k">type</span> <span class="t">SessionEntry</span> = {
+  id: <span class="t">string</span>;               <span class="c">// our UUID</span>
+  agentName: <span class="t">string</span>;        <span class="c">// e.g. "opencode"</span>
+  agentCommand: <span class="t">string</span>;     <span class="c">// e.g. "opencode acp"</span>
+  cwd: <span class="t">string</span>;
+  name: <span class="t">string</span> | <span class="t">undefined</span>;  <span class="c">// from session_info_update</span>
+  connection: <span class="t">ClientSideConnection</span>;
+  child: <span class="t">ChildProcess</span>;
+  acpSessionId: <span class="t">string</span>;     <span class="c">// agent's session UUID</span>
+  status: <span class="s">"idle"</span>|<span class="s">"running"</span>|<span class="s">"closed"</span>;
+  createdAt: <span class="t">string</span>;
+  subscribers: <span class="t">Set</span>&lt;(e: <span class="t">BridgeEvent</span>) =&gt; <span class="t">void</span>&gt;;
+  pendingPermission: <span class="t">PendingPermission</span> | <span class="t">undefined</span>;
+  terminals: <span class="t">Map</span>&lt;<span class="t">string</span>, <span class="t">ManagedTerminal</span>&gt;;
+};</div>
+    <div class="info-box green" style="margin-top:12px;font-size:12px">
+      <strong>Definite-assignment trick:</strong> <code>let entry!: SessionEntry</code> is used so the ACP connection callbacks can close over <code>entry</code> before it's assigned — safe because callbacks only fire during <code>prompt()</code>, which happens <em>after</em> <code>entry</code> is set.
+    </div>
+  </div>
+</div>
+
+<div class="web-h3">Permission flow (async bridge pattern)</div>
+<div class="flow-diagram">
+  <div style="display:flex;align-items:flex-start;gap:0;overflow-x:auto">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:130px">
+      <div class="flow-box yellow" style="width:100%">Agent<small>calls requestPermission</small></div>
+      <div class="flow-arrow down">↓</div>
+      <div class="flow-box gray" style="width:100%">Bridge<small>creates Promise, stores resolve fn, emits SSE permission_request</small></div>
+      <div class="flow-arrow down">↓</div>
+      <div class="flow-box gray" style="width:100%;opacity:.5">Bridge<small>…awaits…</small></div>
+    </div>
+    <div class="flow-arrow" style="align-self:flex-start;margin-top:20px;font-size:22px">→→→</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:130px">
+      <div class="flow-box blue" style="width:100%">Browser<small>receives SSE event</small></div>
+      <div class="flow-arrow down">↓</div>
+      <div class="flow-box blue" style="width:100%">Shows<small>PermissionCard UI</small></div>
+      <div class="flow-arrow down">↓</div>
+      <div class="flow-box blue" style="width:100%">User clicks<small>allow / reject</small></div>
+      <div class="flow-arrow down">↓</div>
+      <div class="flow-box blue" style="width:100%">POST /permission<small>{ requestId, optionId }</small></div>
+    </div>
+    <div class="flow-arrow" style="align-self:flex-end;margin-bottom:12px;font-size:22px">→→→</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:130px">
+      <div style="height:130px"></div>
+      <div class="flow-box green" style="width:100%">Bridge<small>resolves Promise with outcome</small></div>
+      <div class="flow-arrow down">↓</div>
+      <div class="flow-box yellow" style="width:100%">Agent<small>receives response, continues</small></div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────── STATE MANAGEMENT ──────────────────────── -->
+<div class="web-h2">Client State Management</div>
+
+<div class="web-cols">
+  <div>
+    <div class="web-h3">useReducer architecture (use-sessions.ts)</div>
+    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:10px">All session + workspace state lives in a single <code>useReducer</code>. <strong style="color:var(--text)">dispatch is stable</strong> across renders, making it safe to capture in async SSE loops without stale closure issues.</p>
+    <div class="code-block"><span class="k">type</span> <span class="t">SessionsState</span> = {
+  slots: <span class="t">SessionSlot</span>[];
+  workspaces: <span class="t">Workspace</span>[];
+  initialized: <span class="t">boolean</span>;  <span class="c">// true after server reconcile</span>
+}
+
+<span class="c">// Actions</span>
+<span class="s">"INIT"</span>              <span class="c">// load from localStorage</span>
+<span class="s">"SET_INITIALIZED"</span>   <span class="c">// server reconcile done</span>
+<span class="s">"ADD_SLOT"</span>          <span class="c">// new session created</span>
+<span class="s">"UPDATE_SLOT"</span>       <span class="c">// patch any field by id</span>
+<span class="s">"UPDATE_LAST_ASSISTANT"</span> <span class="c">// stream chunk into message</span>
+<span class="s">"APPEND_MESSAGES"</span>   <span class="c">// push user+assistant msgs</span>
+<span class="s">"REMOVE_SLOT"</span>       <span class="c">// close session</span>
+<span class="s">"ADD_WORKSPACE"</span>
+<span class="s">"UPDATE_WORKSPACE"</span>  <span class="c">// collapse/rename</span>
+<span class="s">"REMOVE_WORKSPACE"</span>  <span class="c">// orphans → default</span></div>
+  </div>
+  <div>
+    <div class="web-h3">SessionSlot shape</div>
+    <div class="code-block"><span class="k">type</span> <span class="t">SessionSlot</span> = {
+  <span class="c">// — from server SessionInfo —</span>
+  id: <span class="t">string</span>;
+  agentName: <span class="t">string</span>;
+  agentCommand: <span class="t">string</span>;
+  cwd: <span class="t">string</span>;
+  name?: <span class="t">string</span>;           <span class="c">// from ACP session_info_update</span>
+  status: <span class="s">"idle"</span>|<span class="s">"running"</span>|<span class="s">"closed"</span>;
+  createdAt: <span class="t">string</span>;       <span class="c">// ISO 8601</span>
+  workspaceId: <span class="t">string</span>;
+
+  <span class="c">// — client-only —</span>
+  connectionStatus: <span class="s">"live"</span> | <span class="s">"disconnected"</span>;
+  messages: <span class="t">Message</span>[];
+  isRunning: <span class="t">boolean</span>;
+  pendingPermission: <span class="t">PendingPermission</span> | <span class="t">null</span>;
+  connectError: <span class="t">string</span> | <span class="t">null</span>;
+  connecting: <span class="t">boolean</span>;
+};</div>
+    <div class="info-box" style="margin-top:10px;font-size:12px">
+      <strong>connectionStatus:</strong> <code>"live"</code> = server session exists (can send prompts). <code>"disconnected"</code> = only in localStorage (server restarted) — UI shows history but disables input.
+    </div>
+  </div>
+</div>
+
+<div class="web-h3">Initialization sequence (on page load)</div>
+<ol class="steps">
+  <li>Browser renders <code>AiShell</code>. <code>useSessions()</code> + <code>useSettings()</code> mount. Initial state: empty slots, default settings.</li>
+  <li><span>useEffect fires:</span> Read <code>ai:sessions</code> + <code>ai:workspaces</code> from localStorage → dispatch <code>INIT</code>. All slots start as <code>connectionStatus: "disconnected"</code>.</li>
+  <li><span>Simultaneously:</span> <code>GET /ai/api/sessions</code> hits the bridge. For each server session, dispatch <code>UPDATE_SLOT({ connectionStatus: "live" })</code>. Sessions only on server (other tab) get <code>ADD_SLOT</code>.</li>
+  <li><span>After fetch resolves:</span> dispatch <code>SET_INITIALIZED</code> → <code>state.initialized = true</code>. Loading screen disappears.</li>
+  <li><span>useSettings loads:</span> Reads <code>ai:settings</code> from localStorage → <code>settingsLoaded = true</code>.</li>
+  <li><span>Auto-connect:</span> If both initialized + settingsLoaded, and <code>settings.autoConnect = true</code>, and no live sessions exist → call <code>createSession(defaultCwd, mainAgent)</code> → navigate to <code>/ai/{id}</code>.</li>
+</ol>
+
+<!-- ──────────────────────── LOCALSTORAGE ──────────────────────── -->
+<div class="web-h2">localStorage Schema</div>
+<table class="web-table">
+  <tr><th>Key</th><th>Shape</th><th>Notes</th></tr>
+  <tr>
+    <td>ai:sessions</td>
+    <td><code>StoredRecord[]</code><br><small style="color:var(--muted)">{ id, agentName, agentCommand, cwd, name?, status, createdAt, workspaceId, messages[] }</small></td>
+    <td>Messages capped at last 200 per session on write. Written after every reducer state change (only when initialized). try/catch guards against quota errors.</td>
+  </tr>
+  <tr>
+    <td>ai:workspaces</td>
+    <td><code>Workspace[]</code><br><small style="color:var(--muted)">{ id, name, createdAt, collapsed }</small></td>
+    <td>Default "main" workspace (id=<code>"default"</code>) is always ensured on load. Orphaned sessions (from removed workspaces) fall back to default.</td>
+  </tr>
+  <tr>
+    <td>ai:settings</td>
+    <td><code>AppSettings</code><br><small style="color:var(--muted)">{ defaultCwd, autoConnect, agentProfiles: { main } }</small></td>
+    <td>Written synchronously inside the <code>update()</code> callback. Loaded once on mount via useEffect.</td>
+  </tr>
+</table>
+
+<!-- ──────────────────────── ROUTING ──────────────────────── -->
+<div class="web-h2">Routing &amp; Layout</div>
+
+<div class="web-cols">
+  <div>
+    <div class="web-h3">URL structure</div>
+    <table class="web-table">
+      <tr><th>URL</th><th>What renders</th></tr>
+      <tr><td>/</td><td>Redirects to <code>/ai</code></td></tr>
+      <tr><td>/ai</td><td>New session form (pre-filled with defaultCwd)</td></tr>
+      <tr><td>/ai/{id}</td><td>Chat view for that session — reads slot from context by URL param</td></tr>
+      <tr><td>/ai/settings</td><td>Settings page (static route — takes priority over <code>[id]</code>)</td></tr>
+    </table>
+    <div class="info-box" style="margin-top:10px;font-size:12px">
+      <strong>Active session = URL.</strong> There is no <code>activeId</code> in state. The sidebar reads <code>usePathname()</code> to highlight the active session. Switching sessions = <code>router.push("/ai/{id}")</code>.
+    </div>
+  </div>
+  <div>
+    <div class="web-h3">Layout nesting</div>
+    <div class="flow-diagram" style="padding:16px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+        <div class="flow-box gray" style="width:100%;text-align:left;padding:8px 12px"><strong>app/layout.tsx</strong> (server)<small>ThemeProvider, global fonts</small></div>
+        <div class="flow-arrow down">↓ wraps</div>
+        <div class="flow-box blue" style="width:100%;text-align:left;padding:8px 12px"><strong>app/ai/layout.tsx</strong> (server)<small>renders &lt;AiShell&gt;{children}</small></div>
+        <div class="flow-arrow down">↓ wraps</div>
+        <div class="flow-box green" style="width:100%;text-align:left;padding:8px 12px"><strong>AiShell</strong> ("use client")<small>useSessions + useSettings → SessionsContext → sidebar + {children}</small></div>
+        <div class="flow-arrow down">↓ children slot</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%">
+          <div class="flow-box yellow" style="text-align:left;padding:8px 10px"><strong>app/ai/page.tsx</strong><small>New session form</small></div>
+          <div class="flow-box yellow" style="text-align:left;padding:8px 10px"><strong>app/ai/[id]/page.tsx</strong><small>Chat UI</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="info-box" style="margin-top:10px;font-size:12px">
+      <strong>Why server layout?</strong> <code>app/ai/layout.tsx</code> is a server component that simply renders <code>&lt;AiShell&gt;</code>. AiShell is the real client boundary — it owns all hooks and provides context to every page under <code>/ai/*</code>.
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────── SSE ──────────────────────── -->
+<div class="web-h2">SSE Streaming Implementation</div>
+
+<div class="web-cols">
+  <div>
+    <div class="web-h3">Server side (prompt/route.ts)</div>
+    <div class="code-block"><span class="c">// TransformStream bridges the async prompt() call</span>
+<span class="c">// to a streaming HTTP response</span>
+<span class="k">const</span> { readable, writable } = <span class="k">new</span> <span class="t">TransformStream</span>&lt;<span class="t">Uint8Array</span>&gt;();
+<span class="k">const</span> writer = writable.<span class="fn">getWriter</span>();
+<span class="k">const</span> encoder = <span class="k">new</span> <span class="t">TextEncoder</span>();
+
+<span class="k">const</span> <span class="fn">emit</span> = (event: <span class="t">BridgeEvent</span>): <span class="t">void</span> => {
+  writer.<span class="fn">write</span>(
+    encoder.<span class="fn">encode</span>(<span class="s">`data: ${</span><span class="t">JSON</span>.<span class="fn">stringify</span>(event)<span class="s">}\n\n`</span>)
+  ).<span class="fn">catch</span>(() => {});
+};
+
+<span class="c">// Run prompt async, close stream when done</span>
+bridge.<span class="fn">sendPrompt</span>(id, message, emit)
+  .<span class="fn">finally</span>(() => writer.<span class="fn">close</span>().<span class="fn">catch</span>(() => {}));
+
+<span class="k">return new</span> <span class="t">Response</span>(readable, {
+  headers: { <span class="s">"Content-Type"</span>: <span class="s">"text/event-stream"</span>, ... }
+});</div>
+  </div>
+  <div>
+    <div class="web-h3">Client side (use-sessions.ts)</div>
+    <div class="code-block"><span class="c">// Fetch returns a streaming ReadableStream</span>
+<span class="k">const</span> reader = res.body.<span class="fn">getReader</span>();
+<span class="k">const</span> decoder = <span class="k">new</span> <span class="t">TextDecoder</span>();
+<span class="k">let</span> buf = <span class="s">""</span>;
+
+<span class="k">while</span> (<span class="t">true</span>) {
+  <span class="k">const</span> { done, value } = <span class="k">await</span> reader.<span class="fn">read</span>();
+  <span class="k">if</span> (done) <span class="k">break</span>;
+  buf += decoder.<span class="fn">decode</span>(value, { stream: <span class="t">true</span> });
+  <span class="k">const</span> lines = buf.<span class="fn">split</span>(<span class="s">"\n"</span>);
+  buf = lines.<span class="fn">pop</span>() ?? <span class="s">""</span>;
+
+  <span class="k">for</span> (<span class="k">const</span> line <span class="k">of</span> lines) {
+    <span class="k">if</span> (!line.<span class="fn">startsWith</span>(<span class="s">"data: "</span>)) <span class="k">continue</span>;
+    <span class="k">const</span> ev = <span class="t">JSON</span>.<span class="fn">parse</span>(line.<span class="fn">slice</span>(<span class="v">6</span>)) <span class="k">as</span> <span class="t">BridgeEvent</span>;
+    <span class="c">// dispatch uses stable ref — safe in async loop</span>
+    <span class="fn">dispatch</span>({ type: <span class="s">"UPDATE_LAST_ASSISTANT"</span>, id, fn });
+  }
+}</div>
+    <div class="info-box" style="margin-top:10px;font-size:12px">
+      <strong>Stale closure safety:</strong> <code>dispatch</code> from <code>useReducer</code> is guaranteed stable by React. The SSE loop closes over <code>dispatch</code> and the session's <code>id</code> (captured at sendPrompt call time) — never over mutable state.
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────── WORKSPACES ──────────────────────── -->
+<div class="web-h2">Workspaces &amp; Sessions Hierarchy</div>
+
+<div class="web-cols cols3">
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Workspace</h3>
+    <div class="code-block" style="font-size:11px"><span class="k">type</span> <span class="t">Workspace</span> = {
+  id: <span class="t">string</span>;
+  name: <span class="t">string</span>;
+  createdAt: <span class="t">string</span>;
+  collapsed: <span class="t">boolean</span>;
+}</div>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px">Always has a <code>"default"</code> workspace named <em>"main"</em>. Cannot be deleted. Orphaned sessions on workspace delete fall back to it.</p>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Sidebar structure</h3>
+    <div class="code-block" style="font-size:11px;line-height:1.6"><span class="c">sessions  [🔍] [⊞ new workspace]</span>
+──────────────────────
+<span class="v">▼ main</span>                 [+]
+  <span class="c">── today ──────────────</span>
+  <span class="cli">● belz-ai      2:30pm</span>
+  <span class="c">── yesterday ──────────</span>
+  ○ sandbox      Mar 6
+──────────────────────
+<span class="v">▶ work</span>                     <span class="c">(collapsed)</span>
+──────────────────────
+<span class="gen">⚙ settings   (⌘,)</span></div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Date grouping</h3>
+    <p style="font-size:12px;color:var(--muted);line-height:1.7">Within each workspace, sessions are sorted by <code>createdAt</code> descending and grouped into date buckets:</p>
+    <ul style="list-style:none;margin-top:8px">
+      <li style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--bg3)"><code>"today"</code> — same calendar day</li>
+      <li style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--bg3)"><code>"yesterday"</code> — prior calendar day</li>
+      <li style="font-size:12px;padding:3px 0"><code>"Mon Mar 3"</code> — formatted for older dates</li>
+    </ul>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px">Separators only shown when sessions span multiple days.</p>
+  </div>
+</div>
+
+<!-- ──────────────────────── SHORTCUTS ──────────────────────── -->
+<div class="web-h2">Keyboard Shortcuts &amp; Settings</div>
+
+<div class="web-cols">
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Global shortcuts (AiShell)</h3>
+    <table class="web-table">
+      <tr><th>Shortcut</th><th>Action</th></tr>
+      <tr><td>⌘N</td><td>Navigate to <code>/ai</code> (new session form)</td></tr>
+      <tr><td>⌘K</td><td>Open search modal</td></tr>
+      <tr><td>⌘,</td><td>Navigate to <code>/ai/settings</code></td></tr>
+    </table>
+    <div class="info-box" style="margin-top:10px;font-size:12px">Implemented via <code>window.addEventListener("keydown", handler)</code> in a <code>useEffect</code> inside AiShell. Works everywhere in the app.</div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px">AppSettings (use-settings.ts)</h3>
+    <table class="web-table">
+      <tr><th>Field</th><th>Default</th><th>Purpose</th></tr>
+      <tr><td>defaultCwd</td><td><code>/home/parth/code/sandbox/belz-ai</code></td><td>Pre-fills new session form</td></tr>
+      <tr><td>autoConnect</td><td><code>true</code></td><td>Auto-start session on load</td></tr>
+      <tr><td>agentProfiles.main</td><td><code>"opencode"</code></td><td>Agent used for auto-connect + new sessions</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ──────────────────────── AGENT REGISTRY ──────────────────────── -->
+<div class="web-h2">AGENT_REGISTRY</div>
+<p style="font-size:13px;color:var(--muted);margin-bottom:10px">Defined in <code>lib/acp-types.ts</code>. Maps agent name → shell command to spawn. Add new agents here.</p>
+<table class="web-table">
+  <tr><th>Name</th><th>Command</th><th>Notes</th></tr>
+  <tr><td>opencode</td><td><code>opencode acp</code></td><td>Starts HTTP-based ACP server; SDK handles transport automatically</td></tr>
+  <tr><td>claude</td><td><code>npx -y @zed-industries/claude-agent-acp</code></td><td>Zed's Claude adapter</td></tr>
+  <tr><td>codex</td><td><code>npx @zed-industries/codex-acp</code></td><td>Zed's Codex adapter</td></tr>
+  <tr><td>gemini</td><td><code>gemini</code></td><td>Requires <code>--experimental-acp</code> flag in newer versions</td></tr>
+  <tr><td>pi</td><td><code>npx pi-acp</code></td><td>Pi agent adapter</td></tr>
+</table>
+
+<!-- ──────────────────────── ADDING FEATURES ──────────────────────── -->
+<div class="web-h2">How To…</div>
+
+<div class="web-cols">
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Add a new agent</h3>
+    <ol class="steps" style="font-size:12px">
+      <li>Add entry to <code>AGENT_REGISTRY</code> in <code>lib/acp-types.ts</code></li>
+      <li>It automatically appears in Settings → Agent Profiles dropdown</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Add a new BridgeEvent type</h3>
+    <ol class="steps" style="font-size:12px">
+      <li>Add variant to <code>BridgeEvent</code> union in <code>lib/acp-types.ts</code></li>
+      <li>Emit it in the relevant ACP callback in <code>lib/acp-bridge.ts</code></li>
+      <li>Handle it in the SSE loop in <code>hooks/use-sessions.ts</code> → dispatch reducer action</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Add a new setting</h3>
+    <ol class="steps" style="font-size:12px">
+      <li>Add field to <code>AppSettings</code> type + <code>DEFAULT_SETTINGS</code> in <code>hooks/use-settings.ts</code></li>
+      <li>Add UI for it in <code>app/ai/settings/page.tsx</code></li>
+      <li>Read from <code>useSessionsContext().settings</code> wherever needed</li>
+    </ol>
+  </div>
+</div>
+
+</div>
+<!-- ═══════════════════════════════════════════════════════════════ -->
 
 </div><!-- /content -->
 
