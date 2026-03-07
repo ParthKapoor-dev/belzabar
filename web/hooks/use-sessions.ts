@@ -54,6 +54,7 @@ export type SessionSlot = {
   agentName: string
   agentCommand: string
   cwd: string
+  name?: string
   status: "idle" | "running" | "closed"
   createdAt: string
   workspaceId: string
@@ -160,6 +161,7 @@ type StoredRecord = {
   agentName: string
   agentCommand: string
   cwd: string
+  name?: string
   status: "idle" | "running" | "closed"
   createdAt: string
   workspaceId: string
@@ -213,6 +215,7 @@ function saveToStorage(state: SessionsState) {
       agentName: s.agentName,
       agentCommand: s.agentCommand,
       cwd: s.cwd,
+      name: s.name,
       status: s.status,
       createdAt: s.createdAt,
       workspaceId: s.workspaceId,
@@ -400,6 +403,8 @@ export function useSessions() {
               case "done":
                 upd((m) => ({ ...m, stopReason: ev.stopReason }))
                 dispatch({ type: "UPDATE_SLOT", id, patch: { pendingPermission: null } }); break
+              case "session_name":
+                dispatch({ type: "UPDATE_SLOT", id, patch: { name: ev.name } }); break
               case "error":
                 upd((m) => ({ ...m, error: ev.message })); break
             }

@@ -61,6 +61,7 @@ type SessionEntry = {
   agentName: string;
   agentCommand: string;
   cwd: string;
+  name: string | undefined;
   connection: ClientSideConnection;
   child: ChildProcess;
   acpSessionId: string;
@@ -216,6 +217,14 @@ class AcpBridge {
                 type: "plan",
                 entries: entries.map((e) => ({ status: e.status, content: e.content })),
               });
+              break;
+            }
+            case "session_info_update": {
+              const title = u.title as string | null | undefined;
+              if (typeof title === "string" && title.trim()) {
+                entry.name = title.trim();
+                emitToSubs({ type: "session_name", name: entry.name });
+              }
               break;
             }
           }
@@ -440,6 +449,7 @@ class AcpBridge {
       agentName,
       agentCommand,
       cwd,
+      name: undefined,
       connection,
       child,
       acpSessionId: sessionResult.sessionId,
@@ -544,6 +554,7 @@ class AcpBridge {
       agentName: entry.agentName,
       agentCommand: entry.agentCommand,
       cwd: entry.cwd,
+      name: entry.name,
       status: entry.status,
       createdAt: entry.createdAt,
       pendingPermission: entry.pendingPermission

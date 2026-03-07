@@ -273,7 +273,10 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
     <div className="flex flex-col h-full">
       {/* header */}
       <header className="flex shrink-0 items-center gap-2 border-b border-border px-4 py-2 text-xs">
-        <span className="font-medium truncate min-w-0">{slot.cwd}</span>
+        <span className="font-medium truncate min-w-0">{slot.name ?? slot.cwd}</span>
+        {slot.name && (
+          <span className="text-muted-foreground truncate min-w-0 text-xs hidden sm:block">{slot.cwd}</span>
+        )}
         <span
           className={cn(
             "size-1.5 rounded-full shrink-0",

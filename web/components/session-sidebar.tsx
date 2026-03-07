@@ -90,7 +90,7 @@ function SessionItem({
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1">
           <p className="text-xs font-medium truncate leading-tight flex-1">
-            {slot.connecting ? "connecting…" : basename(slot.cwd)}
+            {slot.connecting ? "connecting…" : (slot.name ?? basename(slot.cwd))}
           </p>
           <span className="text-[10px] text-muted-foreground/50 shrink-0 tabular-nums">
             {formatTime(slot.createdAt)}

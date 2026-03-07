@@ -23,6 +23,7 @@ export type SessionInfo = {
   agentName: string;
   agentCommand: string;
   cwd: string;
+  name?: string;
   status: "idle" | "running" | "closed";
   createdAt: string;
   pendingPermission?: PendingPermissionInfo;
@@ -54,5 +55,6 @@ export type BridgeEvent =
       toolCall: { title: string; kind: string | null };
       options: PermissionOption[];
     }
+  | { type: "session_name"; name: string }
   | { type: "done"; stopReason: string }
   | { type: "error"; message: string };
