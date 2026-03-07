@@ -192,6 +192,80 @@
   .tag-mig  { background: rgba(248,81,73,.2); color: var(--mig); }
   .tag-gen  { background: rgba(110,118,129,.2); color: var(--gen); }
   .tag-dep  { background: rgba(248,81,73,.2); color: var(--redundant); }
+
+  /* ── Mobile responsive ── */
+  @media (max-width: 768px) {
+    body { font-size: 13px; }
+
+    /* Header */
+    .header { padding: 14px 16px 0; }
+    .header h1 { font-size: 17px; }
+    .header p { font-size: 12px; margin-bottom: 12px; }
+
+    /* Tabs — horizontal scroll */
+    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 1px; }
+    .tab { padding: 8px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+
+    /* Content */
+    .content { padding: 14px 16px; }
+
+    /* Card grids → single column */
+    .card-grid.cols2,
+    .card-grid.cols3,
+    .card-grid.cols4 { grid-template-columns: 1fr; }
+
+    /* Arch rows → wrap */
+    .arch-row { flex-wrap: wrap; }
+    .arch-row .arch-box { min-width: 0; }
+
+    /* Runtime grid → single column */
+    .runtime-grid { grid-template-columns: 1fr; }
+
+    /* Flex utility → wrap */
+    .flex { flex-wrap: wrap; }
+
+    /* File table → horizontal scroll */
+    .file-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+
+    /* Module tree */
+    .module-children { margin-left: 12px; }
+    .module-node { min-width: 0; width: 100%; }
+
+    /* Flow steps */
+    .flow-step { flex-direction: column; gap: 8px; }
+
+    /* Web section */
+    .web-cols,
+    .web-cols.cols3 { grid-template-columns: 1fr !important; }
+    .web-h2 { font-size: 14px; }
+    .web-h3 { font-size: 11px; }
+
+    /* Sequence diagram → horizontal scroll */
+    .seq { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Web table → horizontal scroll */
+    .web-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+
+    /* Steps */
+    .steps li { gap: 8px; font-size: 12px; }
+
+    /* Info boxes */
+    .info-box { font-size: 12px; }
+
+    /* Code block — already has overflow-x: auto but ensure it on mobile */
+    .code-block { font-size: 11px; padding: 10px 12px; }
+    .file-tree  { font-size: 11px; padding: 12px; }
+  }
+
+  @media (max-width: 480px) {
+    .header h1 { font-size: 15px; }
+    .content { padding: 12px; }
+    .tab { padding: 7px 10px; font-size: 11px; }
+    .card { padding: 12px; }
+    .arch-box { padding: 10px 12px; }
+    .code-block { font-size: 10.5px; padding: 8px 10px; }
+    .flow-diagram { padding: 12px; }
+  }
 </style>
 </head>
 <body>
