@@ -34,6 +34,17 @@ export type PendingPermission = {
   options: PermissionOption[]
 }
 
+// ─── Workspace ─────────────────────────────────────────────────────────────────
+
+export const DEFAULT_WORKSPACE_ID = "default"
+
+export type Workspace = {
+  id: string
+  name: string
+  createdAt: string
+  collapsed: boolean
+}
+
 // ─── Session slot ──────────────────────────────────────────────────────────────
 
 export type ConnectionStatus = "live" | "disconnected"
@@ -45,6 +56,7 @@ export type SessionSlot = {
   cwd: string
   status: "idle" | "running" | "closed"
   createdAt: string
+  workspaceId: string
   connectionStatus: ConnectionStatus
   messages: Message[]
   isRunning: boolean
@@ -57,31 +69,42 @@ export type SessionSlot = {
 
 type SessionsState = {
   slots: SessionSlot[]
+  workspaces: Workspace[]
+  initialized: boolean
 }
 
 type SessionsAction =
-  | { type: "INIT"; slots: SessionSlot[] }
+  | { type: "INIT"; slots: SessionSlot[]; workspaces: Workspace[] }
+  | { type: "SET_INITIALIZED" }
   | { type: "ADD_SLOT"; slot: SessionSlot }
   | { type: "UPDATE_SLOT"; id: string; patch: Partial<SessionSlot> }
   | { type: "UPDATE_LAST_ASSISTANT"; id: string; fn: (m: AssistantMessage) => AssistantMessage }
   | { type: "APPEND_MESSAGES"; id: string; messages: Message[] }
   | { type: "REMOVE_SLOT"; id: string }
+  | { type: "ADD_WORKSPACE"; workspace: Workspace }
+  | { type: "UPDATE_WORKSPACE"; id: string; patch: Partial<Workspace> }
+  | { type: "REMOVE_WORKSPACE"; id: string }
 
 function reducer(state: SessionsState, action: SessionsAction): SessionsState {
   switch (action.type) {
     case "INIT":
-      return { slots: action.slots }
+      return { slots: action.slots, workspaces: action.workspaces, initialized: false }
+
+    case "SET_INITIALIZED":
+      return { ...state, initialized: true }
 
     case "ADD_SLOT":
-      return { slots: [action.slot, ...state.slots] }
+      return { ...state, slots: [action.slot, ...state.slots] }
 
     case "UPDATE_SLOT":
       return {
+        ...state,
         slots: state.slots.map((s) => (s.id === action.id ? { ...s, ...action.patch } : s)),
       }
 
     case "UPDATE_LAST_ASSISTANT":
       return {
+        ...state,
         slots: state.slots.map((slot) => {
           if (slot.id !== action.id) return slot
           const msgs = [...slot.messages]
@@ -93,13 +116,37 @@ function reducer(state: SessionsState, action: SessionsAction): SessionsState {
 
     case "APPEND_MESSAGES":
       return {
+        ...state,
         slots: state.slots.map((s) =>
           s.id === action.id ? { ...s, messages: [...s.messages, ...action.messages] } : s,
         ),
       }
 
     case "REMOVE_SLOT":
-      return { slots: state.slots.filter((s) => s.id !== action.id) }
+      return { ...state, slots: state.slots.filter((s) => s.id !== action.id) }
+
+    case "ADD_WORKSPACE":
+      return { ...state, workspaces: [...state.workspaces, action.workspace] }
+
+    case "UPDATE_WORKSPACE":
+      return {
+        ...state,
+        workspaces: state.workspaces.map((w) =>
+          w.id === action.id ? { ...w, ...action.patch } : w,
+        ),
+      }
+
+    case "REMOVE_WORKSPACE": {
+      // Orphaned sessions fall back to default workspace
+      const slots = state.slots.map((s) =>
+        s.workspaceId === action.id ? { ...s, workspaceId: DEFAULT_WORKSPACE_ID } : s,
+      )
+      return {
+        ...state,
+        slots,
+        workspaces: state.workspaces.filter((w) => w.id !== action.id),
+      }
+    }
 
     default:
       return state
@@ -115,39 +162,64 @@ type StoredRecord = {
   cwd: string
   status: "idle" | "running" | "closed"
   createdAt: string
+  workspaceId: string
   messages: Message[]
 }
 
-function loadFromStorage(): SessionSlot[] {
+const DEFAULT_WORKSPACE: Workspace = {
+  id: DEFAULT_WORKSPACE_ID,
+  name: "main",
+  createdAt: new Date(0).toISOString(),
+  collapsed: false,
+}
+
+function ensureDefaultWorkspace(workspaces: Workspace[]): Workspace[] {
+  return workspaces.find((w) => w.id === DEFAULT_WORKSPACE_ID)
+    ? workspaces
+    : [DEFAULT_WORKSPACE, ...workspaces]
+}
+
+function loadFromStorage(): { slots: SessionSlot[]; workspaces: Workspace[] } {
   try {
-    const raw = localStorage.getItem("ai:sessions")
-    if (!raw) return []
-    const records = JSON.parse(raw) as StoredRecord[]
-    return records.map((r) => ({
-      ...r,
-      connectionStatus: "disconnected" as ConnectionStatus,
-      isRunning: false,
-      pendingPermission: null,
-      connectError: null,
-      connecting: false,
-    }))
+    const rawSessions = localStorage.getItem("ai:sessions")
+    const rawWorkspaces = localStorage.getItem("ai:workspaces")
+
+    const workspaces = ensureDefaultWorkspace(
+      rawWorkspaces ? (JSON.parse(rawWorkspaces) as Workspace[]) : [],
+    )
+
+    const slots: SessionSlot[] = rawSessions
+      ? (JSON.parse(rawSessions) as StoredRecord[]).map((r) => ({
+          ...r,
+          workspaceId: r.workspaceId ?? DEFAULT_WORKSPACE_ID,
+          connectionStatus: "disconnected" as ConnectionStatus,
+          isRunning: false,
+          pendingPermission: null,
+          connectError: null,
+          connecting: false,
+        }))
+      : []
+
+    return { slots, workspaces }
   } catch {
-    return []
+    return { slots: [], workspaces: [DEFAULT_WORKSPACE] }
   }
 }
 
-function saveToStorage(slots: SessionSlot[]) {
+function saveToStorage(state: SessionsState) {
   try {
-    const records: StoredRecord[] = slots.map((s) => ({
+    const records: StoredRecord[] = state.slots.map((s) => ({
       id: s.id,
       agentName: s.agentName,
       agentCommand: s.agentCommand,
       cwd: s.cwd,
       status: s.status,
       createdAt: s.createdAt,
+      workspaceId: s.workspaceId,
       messages: s.messages.slice(-200),
     }))
     localStorage.setItem("ai:sessions", JSON.stringify(records))
+    localStorage.setItem("ai:workspaces", JSON.stringify(state.workspaces))
   } catch {
     // quota exceeded — silently skip
   }
@@ -156,31 +228,30 @@ function saveToStorage(slots: SessionSlot[]) {
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
 export function useSessions() {
-  const [state, dispatch] = useReducer(reducer, { slots: [] })
+  const [state, dispatch] = useReducer(reducer, {
+    slots: [],
+    workspaces: [DEFAULT_WORKSPACE],
+    initialized: false,
+  })
 
   // Mount: load from localStorage then reconcile with server
   useEffect(() => {
-    const slots = loadFromStorage()
-    dispatch({ type: "INIT", slots })
+    const { slots, workspaces } = loadFromStorage()
+    dispatch({ type: "INIT", slots, workspaces })
 
     fetch("/ai/api/sessions")
       .then((r) => r.json())
       .then((data: { sessions: SessionInfo[] }) => {
         const localIds = new Set(slots.map((s) => s.id))
-
         for (const s of data.sessions) {
           if (localIds.has(s.id)) {
-            dispatch({
-              type: "UPDATE_SLOT",
-              id: s.id,
-              patch: { connectionStatus: "live", status: s.status },
-            })
+            dispatch({ type: "UPDATE_SLOT", id: s.id, patch: { connectionStatus: "live", status: s.status } })
           } else {
-            // On server but not locally (other tab created it)
             dispatch({
               type: "ADD_SLOT",
               slot: {
                 ...s,
+                workspaceId: DEFAULT_WORKSPACE_ID,
                 connectionStatus: "live",
                 messages: [],
                 isRunning: false,
@@ -192,47 +263,49 @@ export function useSessions() {
           }
         }
       })
-      .catch(() => {
-        // Server unreachable — all slots stay disconnected
-      })
+      .catch(() => {})
+      .finally(() => dispatch({ type: "SET_INITIALIZED" }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Persist on every state change
   useEffect(() => {
-    saveToStorage(state.slots)
-  }, [state.slots])
+    if (state.initialized) saveToStorage(state)
+  }, [state])
 
-  // ─── Actions ────────────────────────────────────────────────────────────────
+  // ─── Session actions ─────────────────────────────────────────────────────────
 
-  const createSession = useCallback(async (cwd: string, agentName = "opencode"): Promise<string | null> => {
-    try {
-      const res = await fetch("/ai/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentName, cwd }),
-      })
-      const data = (await res.json()) as { session?: SessionInfo; error?: string }
-      if (!res.ok) throw new Error(data.error ?? "Failed to start session")
-
-      const s = data.session!
-      dispatch({
-        type: "ADD_SLOT",
-        slot: {
-          ...s,
-          connectionStatus: "live",
-          messages: [],
-          isRunning: false,
-          pendingPermission: null,
-          connectError: null,
-          connecting: false,
-        },
-      })
-      return s.id
-    } catch {
-      return null
-    }
-  }, [])
+  const createSession = useCallback(
+    async (cwd: string, agentName = "opencode", workspaceId = DEFAULT_WORKSPACE_ID): Promise<string | null> => {
+      try {
+        const res = await fetch("/ai/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentName, cwd }),
+        })
+        const data = (await res.json()) as { session?: SessionInfo; error?: string }
+        if (!res.ok) throw new Error(data.error ?? "Failed to start session")
+        const s = data.session!
+        dispatch({
+          type: "ADD_SLOT",
+          slot: {
+            ...s,
+            workspaceId,
+            connectionStatus: "live",
+            messages: [],
+            isRunning: false,
+            pendingPermission: null,
+            connectError: null,
+            connecting: false,
+          },
+        })
+        return s.id
+      } catch {
+        return null
+      }
+    },
+    [],
+  )
 
   const removeSession = useCallback(
     async (id: string) => {
@@ -293,77 +366,42 @@ export function useSessions() {
             const json = line.slice(6).trim()
             if (!json) continue
             let ev: BridgeEvent | null = null
-            try {
-              ev = JSON.parse(json) as BridgeEvent
-            } catch {
-              continue
-            }
+            try { ev = JSON.parse(json) as BridgeEvent } catch { continue }
             if (!ev) continue
 
             switch (ev.type) {
               case "agent_message_chunk":
-                upd((m) => ({ ...m, text: m.text + ev.text }))
-                break
+                upd((m) => ({ ...m, text: m.text + ev.text })); break
               case "agent_thought_chunk":
-                upd((m) => ({ ...m, thinking: m.thinking + ev.text }))
-                break
+                upd((m) => ({ ...m, thinking: m.thinking + ev.text })); break
               case "tool_call": {
                 const tc: ToolCallState = {
-                  toolCallId: ev.toolCallId,
-                  title: ev.title,
-                  status: ev.status,
-                  kind: ev.kind,
-                  rawInput: ev.rawInput,
+                  toolCallId: ev.toolCallId, title: ev.title,
+                  status: ev.status, kind: ev.kind, rawInput: ev.rawInput,
                 }
                 upd((m) => {
                   const idx = m.toolCalls.findIndex((t) => t.toolCallId === ev.toolCallId)
-                  if (idx >= 0) {
-                    const tcs = [...m.toolCalls]
-                    tcs[idx] = { ...tcs[idx], ...tc }
-                    return { ...m, toolCalls: tcs }
-                  }
+                  if (idx >= 0) { const tcs = [...m.toolCalls]; tcs[idx] = { ...tcs[idx], ...tc }; return { ...m, toolCalls: tcs } }
                   return { ...m, toolCalls: [...m.toolCalls, tc] }
-                })
-                break
+                }); break
               }
               case "tool_call_update":
                 upd((m) => {
                   const idx = m.toolCalls.findIndex((t) => t.toolCallId === ev.toolCallId)
                   if (idx < 0) return m
                   const tcs = [...m.toolCalls]
-                  tcs[idx] = {
-                    ...tcs[idx],
-                    ...(ev.title !== undefined && { title: ev.title }),
-                    status: ev.status,
-                    rawOutput: ev.rawOutput,
-                    content: ev.content,
-                  }
+                  tcs[idx] = { ...tcs[idx], ...(ev.title !== undefined && { title: ev.title }), status: ev.status, rawOutput: ev.rawOutput, content: ev.content }
                   return { ...m, toolCalls: tcs }
-                })
-                break
+                }); break
               case "plan":
-                upd((m) => ({ ...m, plan: ev.entries }))
-                break
+                upd((m) => ({ ...m, plan: ev.entries })); break
               case "permission_request":
-                dispatch({
-                  type: "UPDATE_SLOT",
-                  id,
-                  patch: {
-                    pendingPermission: {
-                      requestId: ev.requestId,
-                      toolCall: ev.toolCall,
-                      options: ev.options,
-                    },
-                  },
-                })
-                break
+                dispatch({ type: "UPDATE_SLOT", id, patch: { pendingPermission: { requestId: ev.requestId, toolCall: ev.toolCall, options: ev.options } } }); break
               case "done":
                 upd((m) => ({ ...m, stopReason: ev.stopReason }))
-                dispatch({ type: "UPDATE_SLOT", id, patch: { pendingPermission: null } })
-                break
+                dispatch({ type: "UPDATE_SLOT", id, patch: { pendingPermission: null } }); break
               case "error":
-                upd((m) => ({ ...m, error: ev.message }))
-                break
+                upd((m) => ({ ...m, error: ev.message })); break
             }
           }
         }
@@ -395,12 +433,45 @@ export function useSessions() {
     [state.slots],
   )
 
+  // ─── Workspace actions ───────────────────────────────────────────────────────
+
+  const createWorkspace = useCallback((name: string): string => {
+    const workspace: Workspace = {
+      id: crypto.randomUUID(),
+      name,
+      createdAt: new Date().toISOString(),
+      collapsed: false,
+    }
+    dispatch({ type: "ADD_WORKSPACE", workspace })
+    return workspace.id
+  }, [])
+
+  const removeWorkspace = useCallback((id: string) => {
+    if (id === DEFAULT_WORKSPACE_ID) return
+    dispatch({ type: "REMOVE_WORKSPACE", id })
+  }, [])
+
+  const toggleWorkspace = useCallback((id: string) => {
+    const w = state.workspaces.find((w) => w.id === id)
+    if (w) dispatch({ type: "UPDATE_WORKSPACE", id, patch: { collapsed: !w.collapsed } })
+  }, [state.workspaces])
+
+  const renameWorkspace = useCallback((id: string, name: string) => {
+    dispatch({ type: "UPDATE_WORKSPACE", id, patch: { name } })
+  }, [])
+
   return {
     slots: state.slots,
+    workspaces: state.workspaces,
+    initialized: state.initialized,
     createSession,
     removeSession,
     sendPrompt,
     cancelPrompt,
     resolvePermission,
+    createWorkspace,
+    removeWorkspace,
+    toggleWorkspace,
+    renameWorkspace,
   }
 }

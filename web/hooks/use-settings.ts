@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 
 export type AppSettings = {
   defaultCwd: string
+  autoConnect: boolean
   agentProfiles: {
     main: string
   }
@@ -11,6 +12,7 @@ export type AppSettings = {
 
 const DEFAULT_SETTINGS: AppSettings = {
   defaultCwd: "/home/parth/code/sandbox/belz-ai",
+  autoConnect: true,
   agentProfiles: {
     main: "opencode",
   },
@@ -20,6 +22,7 @@ const STORAGE_KEY = "ai:settings"
 
 export function useSettings() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS)
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     try {
@@ -30,6 +33,8 @@ export function useSettings() {
       }
     } catch {
       // malformed — use defaults
+    } finally {
+      setLoaded(true)
     }
   }, [])
 
@@ -45,5 +50,5 @@ export function useSettings() {
     })
   }, [])
 
-  return { settings, update }
+  return { settings, update, loaded }
 }
