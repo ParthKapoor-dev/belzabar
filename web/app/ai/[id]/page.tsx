@@ -4,6 +4,7 @@ import { use, useRef, useEffect, useState, type KeyboardEvent } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { CornersOut, CornersIn } from "@phosphor-icons/react"
 import { useSessionsContext } from "@/lib/sessions-context"
 import type { AssistantMessage, Message, PendingPermission, ToolCallState } from "@/hooks/use-sessions"
 
@@ -220,7 +221,10 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
   const slot = slots.find((s) => s.id === id) ?? null
 
   const [input, setInput] = useState("")
+  const [inputFocused, setInputFocused] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const messages = slot?.messages ?? []
   const isRunning = slot?.isRunning ?? false
@@ -317,41 +321,65 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
       )}
 
       {/* input */}
-      <div className="shrink-0 border-t border-border p-3">
-        <div className="relative max-w-3xl mx-auto rounded-md border border-border bg-background focus-within:border-ring focus-within:ring-1 focus-within:ring-ring/50">
+      <div className="shrink-0 border-t border-border p-4">
+        <div className="relative max-w-3xl mx-auto rounded-lg border border-border bg-background transition-shadow focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/20">
           <textarea
+            ref={textareaRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             disabled={isRunning || isDisconnected}
             placeholder={
               isDisconnected
                 ? "session disconnected"
                 : isRunning
                   ? "agent is running…"
-                  : "send a prompt…"
+                  : "message opencode…"
             }
-            rows={1}
-            className="w-full resize-none bg-transparent px-3 pt-3 pb-9 text-sm placeholder:text-muted-foreground outline-none disabled:opacity-40 disabled:cursor-not-allowed min-h-[72px] max-h-[240px]"
+            autoFocus={!isDisconnected}
+            className={cn(
+              "w-full resize-none bg-transparent px-4 pt-4 pb-11 text-sm leading-relaxed placeholder:text-muted-foreground/70 outline-none disabled:opacity-40 disabled:cursor-not-allowed",
+              expanded ? "min-h-[320px] max-h-[320px]" : "min-h-[80px] max-h-[260px]",
+            )}
             style={{ fieldSizing: "content" } as React.CSSProperties}
           />
-          <div className="absolute bottom-2 right-2 flex items-center gap-1.5">
-            <span className="text-xs text-muted-foreground/60 select-none mr-1">
-              ↵ send · ⇧↵ newline
-            </span>
-            {isRunning ? (
-              <Button variant="destructive" size="xs" onClick={() => cancelPrompt(id)}>
-                cancel
-              </Button>
-            ) : (
+          <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
+            <div className="pointer-events-auto flex items-center gap-2">
               <Button
-                size="xs"
-                onClick={handleSend}
-                disabled={!input.trim() || isDisconnected}
+                variant="ghost"
+                size="icon-xs"
+                onClick={() => setExpanded((x) => !x)}
+                title={expanded ? "collapse" : "expand"}
+                className="text-muted-foreground/50 hover:text-muted-foreground"
               >
-                send
+                {expanded ? <CornersIn size={12} /> : <CornersOut size={12} />}
               </Button>
-            )}
+              <span
+                className={cn(
+                  "text-xs text-muted-foreground/50 select-none transition-opacity duration-150",
+                  inputFocused ? "opacity-100" : "opacity-0",
+                )}
+              >
+                ↵ send · ⇧↵ newline
+              </span>
+            </div>
+            <div className="pointer-events-auto flex items-center gap-1.5">
+              {isRunning ? (
+                <Button variant="destructive" size="xs" onClick={() => cancelPrompt(id)}>
+                  cancel
+                </Button>
+              ) : (
+                <Button
+                  size="xs"
+                  onClick={handleSend}
+                  disabled={!input.trim() || isDisconnected}
+                >
+                  send
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>
