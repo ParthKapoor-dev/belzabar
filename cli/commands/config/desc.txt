@@ -1,0 +1,5 @@
+belz config get  :->  Show URL, user, password status, and cached token for the active environment
+belz config get --env nsm-qa  :->  Show config for a specific environment
+belz config token  :->  Print the raw Bearer token to stdout (for scripting or clipboard copy)
+belz config token --env nsm-qa  :->  Print the token for a specific environment
+belz config edit  :->  Interactively add, edit, or remove credentials in ~/.belz/config.json

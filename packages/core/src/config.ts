@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { join } from "path";
 import { homedir } from "os";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import type { Environment } from "./types";
 
 export const BELZ_CONFIG_DIR = join(homedir(), ".belz");
 
-// Best-effort load of ~/.belz/config.json
-interface BelzConfigFile {
+export interface BelzConfigFile {
   environments?: Record<string, {
     url?: string;
     user?: string;
@@ -17,15 +17,20 @@ interface BelzConfigFile {
 function loadConfigFile(): BelzConfigFile {
   try {
     const configPath = join(BELZ_CONFIG_DIR, "config.json");
-    // Synchronous read via Bun
-    const file = Bun.file(configPath);
-    // existsSync isn't available here in a sync context cleanly; use try/catch on readFileSync
-    const { readFileSync } = require("fs");
     const raw = readFileSync(configPath, "utf-8");
     return JSON.parse(raw) as BelzConfigFile;
   } catch {
     return {};
   }
+}
+
+export function loadConfigFileRaw(): BelzConfigFile {
+  return loadConfigFile();
+}
+
+export function writeConfigFile(config: BelzConfigFile): void {
+  mkdirSync(BELZ_CONFIG_DIR, { recursive: true });
+  writeFileSync(join(BELZ_CONFIG_DIR, "config.json"), JSON.stringify(config, null, 2));
 }
 
 const configFile = loadConfigFile();

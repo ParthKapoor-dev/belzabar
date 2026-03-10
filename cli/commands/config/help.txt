@@ -1,0 +1,23 @@
+Usage: belz config <subcommand> [flags]
+
+Manage belz credentials and environment configuration.
+
+Subcommands:
+  get             Show URL, user, password status, and cached token for the active env.
+  token           Print the raw Bearer token to stdout (for scripting/clipboard).
+  edit            Interactively add, edit, or remove credentials in ~/.belz/config.json.
+
+Flags:
+  --help, -h      Show this help message.
+
+Global Flags:
+  --env <name>    Set active environment. (default: nsm-dev)
+                  Available: nsm-dev | nsm-qa | nsm-uat
+  --llm           Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz config get
+  belz config get --env nsm-qa
+  belz config token
+  belz config token --env nsm-qa --llm
+  belz config edit

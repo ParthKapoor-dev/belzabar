@@ -9,7 +9,7 @@ if (process.argv.slice(2).includes("--help-full")) {
   process.exit(0);
 }
 
-const { migrate, ...topLevelCommands } = TopLevelCommandRegistry;
+const { migrate, config, ...topLevelCommands } = TopLevelCommandRegistry;
 const topHelpResolver = makeHelpResolver(TopHelpMap);
 
 // Prod Mode: Use generated registries + embedded help text (bundled at compile time)
@@ -34,6 +34,12 @@ await runNamespacedCli(process.argv, {
       name: "Migrations",
       description: "Run NSM database migrations.",
       command: migrate,
+      helpResolver: topHelpResolver,
+    },
+    config: {
+      name: "Config",
+      description: "Manage belz credentials and environments.",
+      command: config,
       helpResolver: topHelpResolver,
     },
   },
