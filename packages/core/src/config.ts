@@ -73,6 +73,8 @@ const getCreds = (
   };
 };
 
+const BUILTIN_ENVS = new Set(["nsm-dev", "nsm-qa", "nsm-uat"]);
+
 const environments: Record<string, Environment> = {
   "nsm-dev": {
     name: "nsm-dev",
@@ -108,6 +110,20 @@ const environments: Record<string, Environment> = {
     ),
   },
 };
+
+// Load any custom environments from the config file that aren't built-in
+for (const [name, entry] of Object.entries(fileEnvs)) {
+  if (BUILTIN_ENVS.has(name)) continue;
+  environments[name] = {
+    name,
+    project: name.toUpperCase().replace(/-/g, "_"),
+    baseUrl: (entry.url ?? "").replace(/\/$/, ""),
+    credentials: {
+      loginId: entry.user ?? "",
+      passwordEncoded: entry.password ?? "",
+    },
+  };
+}
 
 let activeEnvName = "nsm-dev";
 
