@@ -1,2038 +1,687 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Belzabar — Internal Developer Toolset</title>
-<style>
-  :root {
-    --bg: #0d1117;
-    --bg2: #161b22;
-    --bg3: #21262d;
-    --border: #30363d;
-    --text: #e6edf3;
-    --muted: #8b949e;
-    --core: #388bfd;
-    --cli: #3fb950;
-    --ad: #d29922;
-    --pd: #bc8cff;
-    --mig: #f85149;
-    --ext: #56d364;
-    --gen: #6e7681;
-    --redundant: #ff7b72;
-    --tag-bg: #1f2428;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Belz AI — Internal Developer Toolset</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --bg: #09090b;
+            --card: #0c0c0e;
+            --card-hover: #121215;
+            --border: #1e1e21;
+            --primary: #14b8a6;
+            --primary-glow: rgba(20, 184, 166, 0.15);
+            --text: #fafafa;
+            --muted: #71717a;
+            --accent: #27272a;
+            
+            /* Legend Colors */
+            --core: #3b82f6;
+            --cli: #14b8a6;
+            --ad: #f59e0b;
+            --pd: #ec4899;
+            --mig: #ef4444;
+            --ext: #8b5cf6;
+            --gen: #71717a;
+        }
 
-  /* ── Layout ── */
-  .header { padding: 24px 32px 0; border-bottom: 1px solid var(--border); }
-  .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
-  .header p { color: var(--muted); margin-bottom: 16px; }
-  .tabs { display: flex; gap: 0; }
-  .tab { padding: 8px 18px; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); font-size: 13px; transition: .15s; }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--text); border-bottom-color: var(--cli); }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
 
-  .content { padding: 28px 32px; max-width: 1400px; }
-  .section { display: none; }
-  .section.active { display: block; }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.6;
+            font-size: 14px;
+        }
 
-  /* ── Legend ── */
-  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
-  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-  .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
 
-  /* ── Cards / boxes ── */
-  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-  .card h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
-  .card-grid { display: grid; gap: 16px; }
-  .card-grid.cols2 { grid-template-columns: 1fr 1fr; }
-  .card-grid.cols3 { grid-template-columns: 1fr 1fr 1fr; }
-  .card-grid.cols4 { grid-template-columns: repeat(4, 1fr); }
+        /* --- Decorations --- */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, var(--border) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+            background-size: 40px 40px;
+            mask-image: radial-gradient(ellipse 60% 50% at 50% 0%, #000 70%, transparent 100%);
+            z-index: -1;
+            opacity: 0.3;
+        }
 
-  /* ── Architecture diagram ── */
-  .arch-row { display: flex; gap: 16px; margin-bottom: 16px; align-items: stretch; }
-  .arch-box {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
-    flex: 1;
-    position: relative;
-  }
-  .arch-box.core  { border-color: var(--core); }
-  .arch-box.cli   { border-color: var(--cli); }
-  .arch-box.ad    { border-color: var(--ad); }
-  .arch-box.pd    { border-color: var(--pd); }
-  .arch-box.mig   { border-color: var(--mig); }
-  .arch-box.ext   { border-color: var(--ext); }
-  .arch-box h4 {
-    font-size: 12px; font-weight: 700; letter-spacing: .5px;
-    text-transform: uppercase; margin-bottom: 10px;
-  }
-  .arch-box.core h4 { color: var(--core); }
-  .arch-box.cli  h4 { color: var(--cli); }
-  .arch-box.ad   h4 { color: var(--ad); }
-  .arch-box.pd   h4 { color: var(--pd); }
-  .arch-box.mig  h4 { color: var(--mig); }
-  .arch-box.ext  h4 { color: var(--ext); }
-  .arch-box .badge { font-size: 11px; font-family: monospace; color: var(--muted); display: block; margin-top: 2px; }
-  .arch-box ul { list-style: none; }
-  .arch-box ul li { font-size: 12px; padding: 3px 0; color: var(--muted); border-bottom: 1px solid var(--bg3); display: flex; align-items: center; gap: 6px; }
-  .arch-box ul li:last-child { border-bottom: none; }
-  .arch-box ul li .fn { font-family: monospace; color: var(--text); font-size: 11px; }
-  .arch-box ul li .gen-tag { font-size: 10px; background: var(--bg3); color: var(--gen); border-radius: 3px; padding: 1px 5px; }
-  .arch-box ul li .dep-tag { font-size: 10px; background: var(--bg3); color: var(--redundant); border-radius: 3px; padding: 1px 5px; }
-  .arch-box .note { font-size: 11px; color: var(--muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bg3); }
+        .glow {
+            position: fixed;
+            top: -10%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 50%;
+            background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+            z-index: -2;
+            filter: blur(100px);
+        }
 
-  /* ── Arrow connectors ── */
-  .arrow-down { text-align: center; color: var(--muted); font-size: 18px; margin: 4px 0; line-height: 1; }
-  .arrow-row { display: flex; justify-content: space-around; color: var(--muted); font-size: 16px; margin: 4px 0; }
+        /* --- Nav --- */
+        nav {
+            height: 64px;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(9, 9, 11, 0.9);
+        }
 
-  /* ── Module tree ── */
-  .module-tree { display: flex; flex-direction: column; gap: 12px; }
-  .module-root {
-    background: var(--bg2); border: 2px solid var(--cli);
-    border-radius: 8px; padding: 12px 16px;
-    font-weight: 700; font-size: 15px; font-family: monospace;
-    color: var(--cli); text-align: center; align-self: flex-start;
-  }
-  .module-children { display: flex; gap: 12px; flex-wrap: wrap; margin-left: 24px; }
-  .module-node { background: var(--bg2); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; min-width: 180px; }
-  .module-node .node-header { padding: 8px 12px; font-weight: 600; font-size: 12px; font-family: monospace; }
-  .module-node.ad .node-header { background: rgba(210,153,34,.12); color: var(--ad); border-bottom: 1px solid rgba(210,153,34,.3); }
-  .module-node.pd .node-header { background: rgba(188,140,255,.12); color: var(--pd); border-bottom: 1px solid rgba(188,140,255,.3); }
-  .module-node.mig .node-header { background: rgba(248,81,73,.12); color: var(--mig); border-bottom: 1px solid rgba(248,81,73,.3); }
-  .module-node.top .node-header { background: rgba(63,185,80,.12); color: var(--cli); border-bottom: 1px solid rgba(63,185,80,.3); }
-  .module-node .cmd-list { padding: 8px 12px; }
-  .module-node .cmd-item { font-size: 12px; font-family: monospace; color: var(--muted); padding: 3px 0; display: flex; align-items: center; gap: 6px; }
-  .module-node .cmd-item::before { content: '→'; color: var(--border); }
-  .module-node .src-path { font-size: 10px; color: var(--gen); padding: 6px 12px; border-top: 1px solid var(--border); }
+        nav .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
 
-  /* ── Data flow ── */
-  .flow { display: flex; flex-direction: column; gap: 0; }
-  .flow-step {
-    display: flex; align-items: flex-start; gap: 16px;
-    padding: 14px 16px;
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 0;
-    position: relative;
-  }
-  .flow-step:first-child { border-radius: 8px 8px 0 0; }
-  .flow-step:last-child  { border-radius: 0 0 8px 8px; }
-  .flow-step + .flow-step { border-top: none; }
-  .flow-step:not(:last-child)::after {
-    content: '▼'; position: absolute; bottom: -14px; left: 50%;
-    transform: translateX(-50%); color: var(--muted); font-size: 12px; z-index: 1;
-    background: var(--bg); padding: 0 4px;
-  }
-  .flow-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
-  .flow-body h5 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-  .flow-body p  { font-size: 12px; color: var(--muted); }
-  .flow-body .file-tag { display: inline-block; font-family: monospace; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; margin: 2px 2px 0 0; color: var(--text); }
-  .flow-step.s1 .flow-num { background: rgba(56,139,253,.2); color: var(--core); }
-  .flow-step.s2 .flow-num { background: rgba(63,185,80,.2); color: var(--cli); }
-  .flow-step.s3 .flow-num { background: rgba(210,153,34,.2); color: var(--ad); }
-  .flow-step.s4 .flow-num { background: rgba(210,153,34,.2); color: var(--ad); }
-  .flow-step.s5 .flow-num { background: rgba(210,153,34,.2); color: var(--ad); }
-  .flow-step.s6 .flow-num { background: rgba(56,139,253,.2); color: var(--core); }
-  .flow-step.s7 .flow-num { background: rgba(56,139,253,.2); color: var(--core); }
+        .logo {
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: -0.02em;
+        }
 
-  /* ── File table ── */
-  .file-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .file-table th { text-align: left; padding: 8px 12px; background: var(--bg3); color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--border); }
-  .file-table td { padding: 7px 12px; border-bottom: 1px solid var(--bg3); vertical-align: top; }
-  .file-table tr:hover td { background: var(--bg2); }
-  .file-table .path { font-family: monospace; color: var(--text); font-size: 11px; }
-  .file-table .desc { color: var(--muted); }
-  .file-table .role { font-size: 11px; border-radius: 4px; padding: 2px 7px; font-weight: 500; white-space: nowrap; }
-  .role-entry { background: rgba(56,139,253,.15); color: var(--core); }
-  .role-lib   { background: rgba(63,185,80,.15); color: var(--cli); }
-  .role-cmd   { background: rgba(210,153,34,.15); color: var(--ad); }
-  .role-gen   { background: rgba(110,118,129,.15); color: var(--gen); }
-  .role-dep   { background: rgba(248,81,73,.15); color: var(--redundant); }
-  .role-cfg   { background: rgba(188,140,255,.15); color: var(--pd); }
-  .section-header { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .5px; text-transform: uppercase; padding: 10px 12px 4px; background: var(--bg); border-bottom: 1px solid var(--border); }
+        .logo span { color: var(--primary); }
 
-  /* ── Redundancy cards ── */
-  .red-card { background: var(--bg2); border: 1px solid rgba(248,81,73,.3); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
-  .red-card h4 { font-size: 13px; font-weight: 600; color: var(--redundant); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-  .red-card p  { font-size: 12px; color: var(--muted); }
-  .red-card .path { font-family: monospace; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; color: var(--text); }
-  .ok-card  { background: var(--bg2); border: 1px solid rgba(63,185,80,.3); border-radius: 8px; padding: 14px 16px; margin-bottom: 12px; }
-  .ok-card h4 { font-size: 13px; font-weight: 600; color: var(--cli); margin-bottom: 6px; }
-  .ok-card p  { font-size: 12px; color: var(--muted); }
+        .nav-links { display: flex; gap: 24px; }
+        .nav-links a {
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--text); }
 
-  /* ── Runtime diagram ── */
-  .runtime-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .runtime-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
-  .runtime-box h4 { font-family: monospace; font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 400; }
-  .runtime-box h4 span { color: var(--text); font-weight: 600; }
-  .runtime-item { font-size: 12px; font-family: monospace; padding: 4px 0; border-bottom: 1px solid var(--bg3); display: flex; justify-content: space-between; align-items: center; }
-  .runtime-item:last-child { border-bottom: none; }
-  .runtime-item .name { color: var(--text); }
-  .runtime-item .desc { color: var(--muted); font-size: 11px; font-family: sans-serif; }
+        /* --- Hero --- */
+        .hero {
+            padding: 100px 0 60px;
+            text-align: center;
+        }
 
-  /* ── Utilities ── */
-  .h2 { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-  .h3 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--muted); }
-  .mb16 { margin-bottom: 16px; }
-  .mb24 { margin-bottom: 24px; }
-  .flex { display: flex; gap: 16px; }
-  .flex-col { display: flex; flex-direction: column; gap: 16px; }
-  .spacer { height: 16px; }
-  code { font-family: monospace; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; color: var(--text); }
-  .tag { font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 600; }
-  .tag-core { background: rgba(56,139,253,.2); color: var(--core); }
-  .tag-cli  { background: rgba(63,185,80,.2); color: var(--cli); }
-  .tag-ad   { background: rgba(210,153,34,.2); color: var(--ad); }
-  .tag-pd   { background: rgba(188,140,255,.2); color: var(--pd); }
-  .tag-mig  { background: rgba(248,81,73,.2); color: var(--mig); }
-  .tag-gen  { background: rgba(110,118,129,.2); color: var(--gen); }
-  .tag-dep  { background: rgba(248,81,73,.2); color: var(--redundant); }
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
 
-  /* ── Mobile responsive ── */
-  @media (max-width: 768px) {
-    body { font-size: 13px; }
+        .hero h1 span {
+            background: linear-gradient(to bottom right, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-    /* Header */
-    .header { padding: 14px 16px 0; }
-    .header h1 { font-size: 17px; }
-    .header p { font-size: 12px; margin-bottom: 12px; }
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--muted);
+            max-width: 640px;
+            margin: 0 auto 40px;
+        }
 
-    /* Tabs — horizontal scroll */
-    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 1px; }
-    .tab { padding: 8px 12px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
 
-    /* Content */
-    .content { padding: 14px 16px; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
 
-    /* Card grids → single column */
-    .card-grid.cols2,
-    .card-grid.cols3,
-    .card-grid.cols4 { grid-template-columns: 1fr; }
+        .btn-primary { background: var(--primary); color: #000; }
+        .btn-secondary { background: var(--card); border: 1px solid var(--border); color: #fff; }
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
 
-    /* Arch rows → wrap */
-    .arch-row { flex-wrap: wrap; }
-    .arch-row .arch-box { min-width: 0; }
+        /* --- Terminal --- */
+        .terminal {
+            max-width: 800px;
+            margin: 60px auto;
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            text-align: left;
+            box-shadow: 0 30px 60px -12px rgba(0,0,0,0.5);
+        }
 
-    /* Runtime grid → single column */
-    .runtime-grid { grid-template-columns: 1fr; }
+        .terminal-header {
+            background: #18181b;
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 1px solid var(--border);
+        }
 
-    /* Flex utility → wrap */
-    .flex { flex-wrap: wrap; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
 
-    /* File table → horizontal scroll */
-    .file-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+        .terminal-body {
+            padding: 20px;
+            color: #d4d4d8;
+            font-size: 0.85rem;
+        }
 
-    /* Module tree */
-    .module-children { margin-left: 12px; }
-    .module-node { min-width: 0; width: 100%; }
+        .line { display: flex; gap: 12px; margin-bottom: 4px; }
+        .cmd { color: #fff; }
+        .prompt { color: var(--primary); }
 
-    /* Flow steps */
-    .flow-step { flex-direction: column; gap: 8px; }
+        /* --- Bento --- */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 80px 0;
+        }
 
-    /* Web section */
-    .web-cols,
-    .web-cols.cols3 { grid-template-columns: 1fr !important; }
-    .web-h2 { font-size: 14px; }
-    .web-h3 { font-size: 11px; }
+        .bento-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
 
-    /* Sequence diagram → horizontal scroll */
-    .seq { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .bento-card:hover { border-color: var(--primary); background: var(--card-hover); }
+        .bento-card.large { grid-column: span 2; }
+        .bento-card h3 { margin-bottom: 12px; font-size: 1.1rem; display: flex; align-items: center; gap: 12px; }
+        .bento-card p { color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
 
-    /* Web table → horizontal scroll */
-    .web-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+        .icon-box {
+            width: 44px; height: 44px; background: var(--accent);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            color: var(--primary); margin-bottom: 20px;
+        }
 
-    /* Steps */
-    .steps li { gap: 8px; font-size: 12px; }
+        /* --- Docs Layout --- */
+        .docs-section {
+            padding: 80px 0;
+            border-top: 1px solid var(--border);
+            background: rgba(12, 12, 14, 0.4);
+        }
 
-    /* Info boxes */
-    .info-box { font-size: 12px; }
+        .docs-container {
+            display: flex;
+            gap: 40px;
+        }
 
-    /* Code block — already has overflow-x: auto but ensure it on mobile */
-    .code-block { font-size: 11px; padding: 10px 12px; }
-    .file-tree  { font-size: 11px; padding: 12px; }
-  }
+        .sidebar {
+            width: 260px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+        }
 
-  @media (max-width: 480px) {
-    .header h1 { font-size: 15px; }
-    .content { padding: 12px; }
-    .tab { padding: 7px 10px; font-size: 11px; }
-    .card { padding: 12px; }
-    .arch-box { padding: 10px 12px; }
-    .code-block { font-size: 10.5px; padding: 8px 10px; }
-    .flow-diagram { padding: 12px; }
-  }
+        .tab-btn {
+            display: flex;
+            width: 100%;
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            text-align: left;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
 
-  /* ── Landing page ── */
-  .hero {
-    padding: 48px 0 40px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 40px;
-  }
-  .hero-badge {
-    display: inline-block;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: .6px;
-    text-transform: uppercase;
-    background: rgba(63,185,80,.15);
-    color: var(--cli);
-    border: 1px solid rgba(63,185,80,.3);
-    border-radius: 20px;
-    padding: 3px 12px;
-    margin-bottom: 18px;
-  }
-  .hero h2 {
-    font-size: 34px;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 14px;
-    letter-spacing: -.3px;
-  }
-  .hero h2 span { color: var(--cli); }
-  .hero p {
-    font-size: 16px;
-    color: var(--muted);
-    max-width: 560px;
-    line-height: 1.7;
-    margin-bottom: 28px;
-  }
-  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 7px;
-    padding: 9px 20px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: opacity .15s;
-    text-decoration: none;
-  }
-  .btn:hover { opacity: .85; }
-  .btn-primary { background: var(--cli); color: #000; }
-  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
-  .hero-stats { display: flex; gap: 32px; flex-wrap: wrap; margin-top: 36px; padding-top: 36px; border-top: 1px solid var(--border); }
-  .stat-item { display: flex; flex-direction: column; gap: 4px; }
-  .stat-num { font-size: 22px; font-weight: 700; color: var(--text); }
-  .stat-label { font-size: 12px; color: var(--muted); }
+        .tab-btn:hover { background: var(--accent); color: #fff; }
+        .tab-btn.active { background: var(--primary-glow); color: var(--primary); font-weight: 600; }
 
-  .lp-section-title {
-    font-size: 11px; font-weight: 700; letter-spacing: .8px;
-    text-transform: uppercase; color: var(--muted);
-    margin-bottom: 6px;
-  }
-  .lp-heading {
-    font-size: 22px; font-weight: 700; margin-bottom: 8px;
-  }
-  .lp-sub {
-    font-size: 14px; color: var(--muted); margin-bottom: 28px; max-width: 540px; line-height: 1.6;
-  }
+        .content { flex: 1; min-width: 0; display: none; }
+        .content.active { display: block; animation: slideUp 0.3s ease-out; }
 
-  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 48px; }
-  .product-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-  .product-card::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  }
-  .product-card.cli::before { background: var(--cli); }
-  .product-card.ext::before { background: var(--ext); }
-  .product-icon {
-    width: 42px; height: 42px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; margin-bottom: 14px;
-  }
-  .product-icon.cli { background: rgba(63,185,80,.15); }
-  .product-icon.ext { background: rgba(86,211,100,.15); }
-  .product-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
-  .product-card > p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
-  .product-tag { display: inline-block; font-family: monospace; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; color: var(--text); margin-bottom: 16px; }
-  .feature-pill-list { display: flex; flex-wrap: wrap; gap: 6px; }
-  .feature-pill {
-    font-size: 11px; font-weight: 500;
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 20px; padding: 3px 10px; color: var(--muted);
-  }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-  .cmd-section { margin-bottom: 44px; }
-  .cmd-section-header {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 16px; padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .cmd-section-icon {
-    width: 32px; height: 32px; border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; flex-shrink: 0;
-  }
-  .cmd-section-icon.ad  { background: rgba(210,153,34,.15); }
-  .cmd-section-icon.pd  { background: rgba(188,140,255,.15); }
-  .cmd-section-icon.mig { background: rgba(248,81,73,.15); }
-  .cmd-section-icon.env { background: rgba(56,139,253,.15); }
-  .cmd-section-header h3 { font-size: 15px; font-weight: 700; }
-  .cmd-section-header .ns { font-family: monospace; font-size: 12px; color: var(--muted); }
-  .cmd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
-  .cmd-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 14px 16px;
-  }
-  .cmd-card .cmd-name { font-family: monospace; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 5px; }
-  .cmd-card .cmd-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
-  .cmd-card .cmd-flags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
-  .cmd-flag { font-family: monospace; font-size: 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; color: var(--muted); }
+        /* --- Technical Elements --- */
+        h2 { font-size: 1.8rem; margin-bottom: 20px; letter-spacing: -0.03em; }
+        h3 { font-size: 1.1rem; margin: 30px 0 16px; color: var(--primary); }
 
-  .ext-features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 44px; }
-  .ext-feature {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px;
-    display: flex; gap: 12px; align-items: flex-start;
-  }
-  .ext-feature-icon {
-    width: 34px; height: 34px; border-radius: 8px;
-    background: rgba(86,211,100,.12);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0;
-  }
-  .ext-feature h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-  .ext-feature p  { font-size: 12px; color: var(--muted); line-height: 1.5; }
-  .ext-feature .shortcut { font-family: monospace; font-size: 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; color: var(--text); margin-top: 6px; display: inline-block; }
+        .data-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
 
-  .install-box {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 24px; margin-bottom: 44px;
-  }
-  .install-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
-  .install-steps { display: flex; flex-direction: column; gap: 0; }
-  .install-step {
-    display: flex; gap: 16px; align-items: flex-start;
-    padding: 14px 0; border-bottom: 1px solid var(--bg3);
-  }
-  .install-step:last-child { border-bottom: none; }
-  .step-num {
-    width: 26px; height: 26px; border-radius: 50%;
-    background: rgba(63,185,80,.15); color: var(--cli);
-    font-size: 12px; font-weight: 700; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .step-body h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-  .step-body p { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-  .code-snippet {
-    font-family: monospace; font-size: 12px;
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 6px; padding: 8px 12px;
-    color: var(--text); white-space: pre;
-    overflow-x: auto; display: block; margin-top: 6px;
-  }
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 20px 0;
+        }
 
-  .docs-cta {
-    display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
-    background: linear-gradient(135deg, rgba(63,185,80,.08) 0%, rgba(56,139,253,.08) 100%);
-    border: 1px solid var(--border); border-radius: 12px;
-    padding: 28px; margin-bottom: 40px;
-  }
-  .docs-cta-text h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
-  .docs-cta-text p { font-size: 13px; color: var(--muted); max-width: 480px; }
-  .docs-cta-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; align-items: center; }
-  .docs-nav-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 8px 16px; border-radius: 6px;
-    font-size: 12px; font-weight: 600; cursor: pointer;
-    border: 1px solid var(--border);
-    background: var(--bg2); color: var(--text);
-    transition: border-color .15s, background .15s;
-  }
-  .docs-nav-btn:hover { border-color: var(--cli); background: rgba(63,185,80,.08); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th { text-align: left; padding: 12px 16px; background: #18181b; color: var(--muted); border-bottom: 1px solid var(--border); }
+        td { padding: 12px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        tr:last-child td { border-bottom: none; }
 
-  .global-flags-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 18px; margin-bottom: 44px;
-  }
-  .global-flags-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
-  .flag-row {
-    display: flex; gap: 16px; align-items: flex-start;
-    padding: 10px 0; border-bottom: 1px solid var(--bg3); font-size: 12px;
-  }
-  .flag-row:last-child { border-bottom: none; }
-  .flag-name { font-family: monospace; color: var(--core); min-width: 160px; font-weight: 600; flex-shrink: 0; }
-  .flag-desc { color: var(--muted); line-height: 1.5; }
+        code { background: var(--accent); padding: 2px 6px; border-radius: 4px; color: #e4e4e7; font-size: 0.85em; }
+        
+        .code-block {
+            background: #000;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            margin: 20px 0;
+            position: relative;
+            overflow-x: auto;
+        }
 
-  @media (max-width: 768px) {
-    .hero h2 { font-size: 24px; }
-    .hero p { font-size: 14px; }
-    .product-grid { grid-template-columns: 1fr; }
-    .docs-cta { flex-direction: column; }
-    .docs-cta-actions { margin-left: 0; }
-    .hero-stats { gap: 20px; }
-  }
-</style>
+        .copy {
+            position: absolute; top: 12px; right: 12px;
+            background: var(--accent); border: 1px solid var(--border);
+            color: var(--muted); padding: 5px; border-radius: 4px; cursor: pointer;
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .code-block:hover .copy { opacity: 1; }
+
+        .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 30px; }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--muted); }
+        .dot-s { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* --- Diagram --- */
+        .arch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .arch-box {
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 8px;
+            background: #0c0c0e;
+        }
+        .arch-box h4 { margin-bottom: 12px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; }
+        .arch-box ul { list-style: none; color: var(--muted); font-size: 0.75rem; }
+        .arch-box li { margin-bottom: 6px; display: flex; justify-content: space-between; }
+        .arch-box li span:first-child { color: #fff; }
+
+        /* --- Mobile --- */
+        @media (max-width: 1024px) {
+            .hero h1 { font-size: 2.8rem; }
+            .bento-grid { grid-template-columns: repeat(2, 1fr); }
+            .bento-card.large { grid-column: span 2; }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .docs-container { flex-direction: column; }
+            .sidebar {
+                width: 100%;
+                position: static;
+                display: flex;
+                overflow-x: auto;
+                padding-bottom: 12px;
+                border-bottom: 1px solid var(--border);
+                margin-bottom: 20px;
+            }
+            .tab-btn { width: auto; white-space: nowrap; margin-bottom: 0; margin-right: 8px; }
+            .bento-grid { grid-template-columns: 1fr; }
+            .bento-card.large { grid-column: span 1; }
+            .arch-grid { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>Belzabar</h1>
-  <p>Internal developer toolset for working with the NSM platform — <code>belz</code> CLI and browser extension.</p>
-  <div class="tabs">
-    <div class="tab active" onclick="show('home')">Home</div>
-    <div class="tab" onclick="show('overview')">Architecture</div>
-    <div class="tab" onclick="show('modules')">Modules</div>
-    <div class="tab" onclick="show('flow')">Data Flow</div>
-    <div class="tab" onclick="show('files')">File Reference</div>
-    <div class="tab" onclick="show('runtime')">Runtime Data</div>
-    <div class="tab" onclick="show('redundancy')">Redundancies</div>
-    <div class="tab" onclick="show('web')">Web App</div>
-  </div>
-</div>
+    <div class="grid-bg"></div>
+    <div class="glow"></div>
 
-<div class="content">
-
-<!-- ══════════════════════════════════════════════════════ HOME ══ -->
-<div id="home" class="section active">
-
-  <!-- Hero -->
-  <div class="hero">
-    <div class="hero-badge">Internal Developer Toolset</div>
-    <h2>Build faster on <span>NSM</span>.</h2>
-    <p>Belzabar ships two tools that reduce friction when diagnosing, testing, and migrating Automation Designer and Page Designer work — a unified CLI and a browser extension.</p>
-    <div class="hero-actions">
-      <button class="btn btn-primary" onclick="show('home'); document.getElementById('install-section').scrollIntoView({behavior:'smooth'})">
-        &#x2193; Quick Install
-      </button>
-      <button class="btn btn-secondary" onclick="show('overview')">
-        View Architecture &rarr;
-      </button>
-    </div>
-    <div class="hero-stats">
-      <div class="stat-item">
-        <span class="stat-num">12</span>
-        <span class="stat-label">CLI commands</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-num">6</span>
-        <span class="stat-label">Extension features</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-num">3</span>
-        <span class="stat-label">Environments</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-num">40+</span>
-        <span class="stat-label">Unit tests</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Products -->
-  <div class="lp-section-title">What's included</div>
-  <div class="lp-heading">Two tools, one repo</div>
-  <div class="lp-sub">Both products target the NSM web platform and are built with Bun + TypeScript. They can be used independently.</div>
-  <div class="product-grid mb24">
-    <div class="product-card cli">
-      <div class="product-icon cli">&#x26A1;</div>
-      <div class="product-tag">belz</div>
-      <h3>belz CLI</h3>
-      <p>A unified command-line tool for inspecting, testing, and running Automation Designer methods, analyzing Page Designer pages, and triggering database migrations.</p>
-      <div class="feature-pill-list">
-        <span class="feature-pill">belz ad</span>
-        <span class="feature-pill">belz pd</span>
-        <span class="feature-pill">belz migrate</span>
-        <span class="feature-pill">belz envs</span>
-        <span class="feature-pill">--llm output</span>
-        <span class="feature-pill">multi-env</span>
-      </div>
-    </div>
-    <div class="product-card ext">
-      <div class="product-icon ext">&#x1F9E9;</div>
-      <div class="product-tag">MV3 extension</div>
-      <h3>Browser Extension</h3>
-      <p>A Manifest V3 content script that enhances the AD and PD web UIs with a JSON bulk-editor, CodeMirror textarea modal, keyboard shortcuts, and more.</p>
-      <div class="feature-pill-list">
-        <span class="feature-pill">JSON editor</span>
-        <span class="feature-pill">CodeMirror modal</span>
-        <span class="feature-pill">Ctrl+Shift+Enter</span>
-        <span class="feature-pill">Output copy</span>
-        <span class="feature-pill">Title updater</span>
-        <span class="feature-pill">Settings</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- CLI Commands -->
-  <div class="lp-section-title">CLI Reference</div>
-  <div class="lp-heading">belz command reference</div>
-  <div class="lp-sub">All commands support <code>--env &lt;name&gt;</code> to target nsm-dev, nsm-qa, or nsm-uat, and <code>--llm</code> for structured JSON output.</div>
-
-  <!-- Global flags -->
-  <div class="global-flags-card">
-    <h3>Global flags — available on every command</h3>
-    <div class="flag-row">
-      <span class="flag-name">--env &lt;name&gt;</span>
-      <span class="flag-desc">Set the active environment. Default: <code>nsm-dev</code>. Options: <code>nsm-dev</code>, <code>nsm-qa</code>, <code>nsm-uat</code>.</span>
-    </div>
-    <div class="flag-row">
-      <span class="flag-name">--llm</span>
-      <span class="flag-desc">Output a structured JSON envelope instead of formatted text — useful for scripting or AI-assisted workflows.</span>
-    </div>
-    <div class="flag-row">
-      <span class="flag-name">--help, -h</span>
-      <span class="flag-desc">Show usage, arguments, flags, and examples for any command.</span>
-    </div>
-  </div>
-
-  <!-- belz ad -->
-  <div class="cmd-section">
-    <div class="cmd-section-header">
-      <div class="cmd-section-icon ad">&#x2699;</div>
-      <div>
-        <h3>Automation Designer</h3>
-        <span class="ns">belz ad &lt;command&gt;</span>
-      </div>
-    </div>
-    <div class="cmd-grid">
-      <div class="cmd-card">
-        <div class="cmd-name">belz ad get &lt;UUID&gt;</div>
-        <div class="cmd-desc">Fetch a method by UUID or referenceId. Returns metadata and input definitions.</div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz ad show &lt;UUID&gt;</div>
-        <div class="cmd-desc">Deep inspection — all inputs, service steps with mappings, and outputs.</div>
-        <div class="cmd-flags">
-          <span class="cmd-flag">--inputs</span>
-          <span class="cmd-flag">--services</span>
-          <span class="cmd-flag">--full</span>
-          <span class="cmd-flag">--raw</span>
+    <nav>
+        <div class="container">
+            <div class="logo">
+                <i data-lucide="command"></i>
+                BELZ<span>AI</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#docs">Docs</a>
+                <a href="https://github.com/parthkapoor-dev/belzabar" target="_blank">GitHub</a>
+            </div>
         </div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz ad test &lt;UUID&gt;</div>
-        <div class="cmd-desc">Run a test payload against the draft method. Shows per-step execution trace.</div>
-        <div class="cmd-flags">
-          <span class="cmd-flag">--input file.json</span>
+    </nav>
+
+    <header class="hero container">
+        <div style="display:inline-block; padding: 6px 12px; background: var(--primary-glow); border: 1px solid rgba(20,184,166,0.2); border-radius: 4px; font-size: 0.7rem; color: var(--primary); margin-bottom: 24px; font-weight: 700;">
+            INTERNAL TOOLSET v1.0
         </div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz ad run &lt;UUID&gt;</div>
-        <div class="cmd-desc">Execute the published method in live mode with a provided payload.</div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz ad save-suite &lt;UUID&gt;</div>
-        <div class="cmd-desc">Save the current test inputs as a named spec to <code>suites/*.spec.json</code>.</div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz ad run-suites</div>
-        <div class="cmd-desc">Run all saved test suite specs and report pass/fail results.</div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz ad sql</div>
-        <div class="cmd-desc">SQL interface for AD databases.</div>
-        <div class="cmd-flags">
-          <span class="cmd-flag">dbs</span>
-          <span class="cmd-flag">run &lt;db&gt; &lt;query&gt;</span>
-          <span class="cmd-flag">tui</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- belz pd -->
-  <div class="cmd-section">
-    <div class="cmd-section-header">
-      <div class="cmd-section-icon pd">&#x1F4C4;</div>
-      <div>
-        <h3>Page Designer</h3>
-        <span class="ns">belz pd &lt;command&gt;</span>
-      </div>
-    </div>
-    <div class="cmd-grid">
-      <div class="cmd-card">
-        <div class="cmd-name">belz pd show-page &lt;DRAFT_ID&gt;</div>
-        <div class="cmd-desc">Fetch and display page config, layout structure, and referenced AD method IDs.</div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz pd show-component &lt;NAME&gt;</div>
-        <div class="cmd-desc">Search for and display a component's config and AD refs by component name.</div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz pd find-ad-methods &lt;ID&gt;</div>
-        <div class="cmd-desc">Extract all AD method IDs referenced in a page or component.</div>
-        <div class="cmd-flags">
-          <span class="cmd-flag">--recursive</span>
-        </div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz pd inspect-url &lt;PD_URL&gt;</div>
-        <div class="cmd-desc">Parse a full PD URL and return metadata, children, and AD refs.</div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz pd analyze [PAGE_ID]</div>
-        <div class="cmd-desc">Recursive dependency and compliance analysis from root pages. Compares discovered AD IDs against <code>master_ids.txt</code>.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- belz migrate -->
-  <div class="cmd-section">
-    <div class="cmd-section-header">
-      <div class="cmd-section-icon mig">&#x1F504;</div>
-      <div>
-        <h3>Migrations</h3>
-        <span class="ns">belz migrate &lt;command&gt;</span>
-      </div>
-    </div>
-    <div class="cmd-grid">
-      <div class="cmd-card">
-        <div class="cmd-name">belz migrate profiles</div>
-        <div class="cmd-desc">List available migration profiles (source → target environment pairs).</div>
-        <div class="cmd-flags">
-          <span class="cmd-flag">--refresh</span>
-        </div>
-      </div>
-      <div class="cmd-card">
-        <div class="cmd-name">belz migrate run</div>
-        <div class="cmd-desc">Trigger a migration run. Streams live log output via WebSocket. Only <strong>Published</strong> IDs can be migrated.</div>
-        <div class="cmd-flags">
-          <span class="cmd-flag">--module AD|PD</span>
-          <span class="cmd-flag">--ids "id1,id2"</span>
-          <span class="cmd-flag">--source-env</span>
-          <span class="cmd-flag">--target-env</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- belz envs -->
-  <div class="cmd-section">
-    <div class="cmd-section-header">
-      <div class="cmd-section-icon env">&#x1F310;</div>
-      <div>
-        <h3>Environments</h3>
-        <span class="ns">belz envs</span>
-      </div>
-    </div>
-    <div class="cmd-grid">
-      <div class="cmd-card">
-        <div class="cmd-name">belz envs</div>
-        <div class="cmd-desc">Lists all configured environments — <code>nsm-dev</code>, <code>nsm-qa</code>, <code>nsm-uat</code> — with the active environment flagged.</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Extension Features -->
-  <div class="lp-section-title">Browser Extension</div>
-  <div class="lp-heading">Enhance the AD &amp; PD web UIs</div>
-  <div class="lp-sub">Load the extension in Chrome or Edge to get powerful editing and shortcut features directly inside the NSM web interface.</div>
-  <div class="ext-features-grid">
-    <div class="ext-feature">
-      <div class="ext-feature-icon">&#x1F4DD;</div>
-      <div>
-        <h4>JSON Editor</h4>
-        <p>Bulk-edit all AD test inputs via a CodeMirror modal. Changes sync back to DOM controls instantly.</p>
-      </div>
-    </div>
-    <div class="ext-feature">
-      <div class="ext-feature-icon">&#x270F;</div>
-      <div>
-        <h4>Textarea Editor</h4>
-        <p>Open any native <code>&lt;textarea&gt;</code> in a full CodeMirror modal with syntax highlighting, line numbers, and wrap toggle.</p>
-      </div>
-    </div>
-    <div class="ext-feature">
-      <div class="ext-feature-icon">&#x1F4CB;</div>
-      <div>
-        <h4>Output Copy</h4>
-        <p>Hover-revealed copy button on each output container — no more manual selection.</p>
-      </div>
-    </div>
-    <div class="ext-feature">
-      <div class="ext-feature-icon">&#x26A1;</div>
-      <div>
-        <h4>Run Test Shortcut</h4>
-        <p>Trigger the Run Test button from anywhere on the page.</p>
-        <span class="shortcut">Ctrl+Shift+Enter</span>
-      </div>
-    </div>
-    <div class="ext-feature">
-      <div class="ext-feature-icon">&#x2699;</div>
-      <div>
-        <h4>Extension Settings</h4>
-        <p>Toggle any feature and store textarea editor defaults per-session.</p>
-        <span class="shortcut">Ctrl+,</span>
-      </div>
-    </div>
-    <div class="ext-feature">
-      <div class="ext-feature-icon">&#x1F3F7;</div>
-      <div>
-        <h4>Title Updater</h4>
-        <p>Appends the method name from AD to the browser page title — useful when you have multiple tabs open.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Install -->
-  <div id="install-section">
-    <div class="lp-section-title">Getting started</div>
-    <div class="lp-heading">Install the CLI</div>
-    <div class="lp-sub">Requires <a href="https://bun.sh" style="color:var(--cli)">Bun</a> ≥ 1.x. The install script handles dependencies, builds the binary, and walks through credential setup.</div>
-    <div class="install-box">
-      <h3>Quick install</h3>
-      <div class="install-steps">
-        <div class="install-step">
-          <div class="step-num">1</div>
-          <div class="step-body">
-            <h4>Install Bun (if needed)</h4>
-            <code class="code-snippet">curl -fsSL https://bun.sh/install | bash</code>
-          </div>
-        </div>
-        <div class="install-step">
-          <div class="step-num">2</div>
-          <div class="step-body">
-            <h4>Clone and install</h4>
-            <p>The install script builds the binary and prompts for credentials.</p>
-            <code class="code-snippet">git clone &lt;repo-url&gt; belzabar &amp;&amp; cd belzabar
-bun run install</code>
-          </div>
-        </div>
-        <div class="install-step">
-          <div class="step-num">3</div>
-          <div class="step-body">
-            <h4>Add to PATH</h4>
-            <code class="code-snippet">export PATH="$PATH:$HOME/.local/bin"</code>
-          </div>
-        </div>
-        <div class="install-step">
-          <div class="step-num">4</div>
-          <div class="step-body">
-            <h4>Verify install</h4>
-            <code class="code-snippet">belz --help</code>
-          </div>
-        </div>
-        <div class="install-step">
-          <div class="step-num">5</div>
-          <div class="step-body">
-            <h4>Load the browser extension (optional)</h4>
-            <p>Open <code>chrome://extensions</code>, enable Developer Mode, click <strong>Load unpacked</strong>, and select the <code>extension/</code> directory.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Docs CTA -->
-  <div class="docs-cta">
-    <div class="docs-cta-text">
-      <h3>Explore the codebase docs</h3>
-      <p>Architecture diagrams, module trees, data flow, file reference, runtime data, and more are available in the documentation tabs above.</p>
-    </div>
-    <div class="docs-cta-actions">
-      <button class="docs-nav-btn" onclick="show('overview')">Architecture</button>
-      <button class="docs-nav-btn" onclick="show('modules')">Modules</button>
-      <button class="docs-nav-btn" onclick="show('flow')">Data Flow</button>
-      <button class="docs-nav-btn" onclick="show('files')">File Reference</button>
-      <button class="docs-nav-btn" onclick="show('runtime')">Runtime Data</button>
-      <button class="docs-nav-btn" onclick="show('web')">Web App</button>
-    </div>
-  </div>
-
-</div>
-<!-- ═══════════════════════════════════════════════════════════════ -->
-
-<!-- ═══════════════════════════════════════════════════ OVERVIEW ══ -->
-<div id="overview" class="section">
-  <div class="legend mb16">
-    <span class="legend-item"><span class="dot" style="background:var(--core)"></span> packages/core</span>
-    <span class="legend-item"><span class="dot" style="background:var(--cli)"></span> cli/</span>
-    <span class="legend-item"><span class="dot" style="background:var(--ad)"></span> automation-designer/</span>
-    <span class="legend-item"><span class="dot" style="background:var(--pd)"></span> page-designer/</span>
-    <span class="legend-item"><span class="dot" style="background:var(--mig)"></span> migrations/</span>
-    <span class="legend-item"><span class="dot" style="background:var(--ext)"></span> extension/</span>
-    <span class="legend-item"><span class="dot" style="background:var(--gen)"></span> auto-generated</span>
-  </div>
-
-  <!-- Row 1: core -->
-  <div class="arch-row">
-    <div class="arch-box core" style="max-width:400px">
-      <h4>packages/core &nbsp;<span style="font-weight:400;color:var(--muted)">@belzabar/core</span></h4>
-      <ul>
-        <li><span class="fn">config.ts</span><span style="margin-left:auto;font-size:11px">Env config, ~/.belz/config.json</span></li>
-        <li><span class="fn">auth.ts</span><span style="margin-left:auto;font-size:11px">Login, session persistence</span></li>
-        <li><span class="fn">api.ts</span><span style="margin-left:auto;font-size:11px">Fetch wrapper, auto-auth, 401 refresh</span></li>
-        <li><span class="fn">runner.ts</span><span style="margin-left:auto;font-size:11px">runCli / runNamespacedCli</span></li>
-        <li><span class="fn">command.ts</span><span style="margin-left:auto;font-size:11px">CommandModule, ok(), fail(), CliError</span></li>
-        <li><span class="fn">output.ts</span><span style="margin-left:auto;font-size:11px">renderHuman / renderLLM</span></li>
-        <li><span class="fn">types.ts</span><span style="margin-left:auto;font-size:11px">Environment, AuthSession, ApiOptions</span></li>
-        <li><span class="fn">display.ts</span><span style="margin-left:auto;font-size:11px"><span class="dep-tag">likely unused</span> DisplayManager static class</span></li>
-      </ul>
-      <p class="note">Shared by all workspaces. Install once via bun workspace.</p>
-    </div>
-    <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:60px">
-      <span style="color:var(--muted);font-size:22px">⟶</span>
-      <span style="font-size:10px;color:var(--gen);margin-top:4px">used by all</span>
-    </div>
-    <div class="arch-box ext" style="max-width:240px">
-      <h4>extension/</h4>
-      <ul>
-        <li><span class="fn">manifest.json</span></li>
-        <li><span class="fn">src/</span><span style="margin-left:auto;font-size:11px">background, content, popup</span></li>
-        <li><span class="fn">scripts/</span><span style="margin-left:auto;font-size:11px">build tooling</span></li>
-        <li><span class="fn">dist/</span><span style="margin-left:auto;font-size:11px">compiled extension</span></li>
-      </ul>
-      <p class="note">Completely independent from CLI. Own build pipeline.</p>
-    </div>
-  </div>
-
-  <div class="arrow-down">↓</div>
-
-  <!-- Row 2: source modules -->
-  <div class="arch-row">
-    <div class="arch-box ad">
-      <h4>automation-designer/</h4>
-      <ul>
-        <li><span class="fn">commands/{get,run,show,test,sql,save-suite,run-suites}</span></li>
-        <li><span class="fn">lib/{api,cache,hydrator,parser,payload-builder,input-collector,error-parser}</span></li>
-        <li><span class="fn">lib/sql/{api,executor,selector,payload,result}</span></li>
-        <li><span class="fn">lib/sql/tui/{session,commands,renderer,history}</span></li>
-        <li><span class="fn">integrations/gemini-mcp/server.ts</span></li>
-        <li><span class="fn">tests/unit/ (26 tests)</span></li>
-      </ul>
-      <p class="note">Source only — no package.json, no own binary. Commands consumed by cli/.</p>
-    </div>
-    <div class="arch-box pd">
-      <h4>page-designer/</h4>
-      <ul>
-        <li><span class="fn">commands/{show-page,show-component,analyze,find-ad-methods,inspect-url}</span></li>
-        <li><span class="fn">lib/{api,analyzer,parser,comparator,reporter,url-parser,types}</span></li>
-        <li><span class="fn">components.json</span><span style="margin-left:auto;font-size:11px">component whitelist</span></li>
-        <li><span class="fn">master_ids.txt</span><span style="margin-left:auto;font-size:11px">compliance AD IDs</span></li>
-      </ul>
-      <p class="note">Source only — no package.json, no own binary. Commands consumed by cli/.</p>
-    </div>
-    <div class="arch-box mig">
-      <h4>migrations/</h4>
-      <ul>
-        <li><span class="fn">lib/index.ts</span><span style="margin-left:auto;font-size:11px">re-export barrel</span></li>
-        <li><span class="fn">lib/args.ts</span><span style="margin-left:auto;font-size:11px">parseMigrateArgs()</span></li>
-        <li><span class="fn">lib/client.ts</span><span style="margin-left:auto;font-size:11px">HTTP API calls</span></li>
-        <li><span class="fn">lib/profiles.ts</span><span style="margin-left:auto;font-size:11px">NSM profile discovery</span></li>
-        <li><span class="fn">lib/ws.ts</span><span style="margin-left:auto;font-size:11px">WebSocket stream</span></li>
-        <li><span class="fn">lib/log-parser.ts</span><span style="margin-left:auto;font-size:11px">parseMigrationOutput()</span></li>
-        <li><span class="fn">lib/artifacts.ts</span><span style="margin-left:auto;font-size:11px">write run artifacts</span></li>
-        <li><span class="fn">tests/unit/ (14 tests)</span></li>
-      </ul>
-      <p class="note">Source only — no package.json. Consumed exclusively by cli/commands/migrate/.</p>
-    </div>
-  </div>
-
-  <div class="arrow-down">↓ imported by</div>
-
-  <!-- Row 3: cli -->
-  <div class="arch-row">
-    <div class="arch-box cli" style="width:100%">
-      <h4>cli/ &nbsp;— Unified Binary Builder</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:4px">
-        <div>
-          <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Entry Points</p>
-          <ul>
-            <li><span class="fn">bin/cli.ts</span><span style="margin-left:auto;font-size:11px">dev mode (dynamic)</span></li>
-            <li><span class="fn">bin/cli-build.ts</span><span style="margin-left:auto;font-size:11px">prod mode (static)</span></li>
-          </ul>
-        </div>
-        <div>
-          <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Top-level Commands</p>
-          <ul>
-            <li><span class="fn">commands/envs/</span><span style="margin-left:auto;font-size:11px">list environments</span></li>
-            <li><span class="fn">commands/migrate/</span><span style="margin-left:auto;font-size:11px">imports migrations/lib</span></li>
-          </ul>
-        </div>
-        <div>
-          <p style="font-size:11px;color:var(--muted);margin-bottom:6px">Auto-Generated Registries</p>
-          <ul>
-            <li><span class="fn">registry-ad.ts</span><span style="margin-left:auto"><span class="gen-tag">generated</span></span></li>
-            <li><span class="fn">registry-pd.ts</span><span style="margin-left:auto"><span class="gen-tag">generated</span></span></li>
-            <li><span class="fn">registry-top.ts</span><span style="margin-left:auto"><span class="gen-tag">generated</span></span></li>
-            <li><span class="fn">registry-help.ts</span><span style="margin-left:auto"><span class="gen-tag">generated</span></span></li>
-          </ul>
-        </div>
-      </div>
-      <p class="note">Run <code>bun run generate</code> then <code>bun run build</code> to produce the <code>belz</code> binary.</p>
-    </div>
-  </div>
-
-  <div class="arrow-down">↓ compiles to</div>
-
-  <!-- Row 4: binary -->
-  <div class="arch-row" style="justify-content:center">
-    <div class="arch-box cli" style="max-width:420px;text-align:center">
-      <h4 style="text-align:center">belz &nbsp;(compiled binary)</h4>
-      <p style="font-size:12px;color:var(--muted)">Installed to <code>~/.local/bin/belz</code> via <code>bash cli/scripts/install.sh</code></p>
-      <div style="display:flex;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-        <span class="tag tag-ad">belz ad</span>
-        <span class="tag tag-pd">belz pd</span>
-        <span class="tag tag-mig">belz migrate</span>
-        <span class="tag tag-cli">belz envs</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════ MODULES ══ -->
-<div id="modules" class="section">
-  <p class="h3">How <code>belz</code> routes commands at runtime</p>
-
-  <div style="display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap" class="mb24">
-    <div>
-      <div class="module-root">$ belz</div>
-      <div style="text-align:center;color:var(--muted);margin:6px 0">↓ routes to</div>
-      <div class="module-children">
-
-        <div class="module-node ad">
-          <div class="node-header">belz ad &lt;cmd&gt;</div>
-          <div class="cmd-list">
-            <div class="cmd-item">get &lt;UUID&gt;</div>
-            <div class="cmd-item">run &lt;UUID&gt; [payload]</div>
-            <div class="cmd-item">show &lt;UUID&gt;</div>
-            <div class="cmd-item">test &lt;UUID&gt;</div>
-            <div class="cmd-item">sql [dbs|run|tui]</div>
-            <div class="cmd-item">save-suite &lt;UUID&gt;</div>
-            <div class="cmd-item">run-suites</div>
-          </div>
-          <div class="src-path">↳ automation-designer/commands/</div>
+        <h1>Build faster with <span>Belz AI</span>.</h1>
+        <p>A high-performance developer toolset for NSM Automation Designer & Page Designer workflows. Fast CLI, smart extension, and unified AI bridge.</p>
+        
+        <div class="hero-actions">
+            <a href="#install" class="btn btn-primary">Get Started <i data-lucide="arrow-right"></i></a>
+            <a href="#docs" class="btn btn-secondary">Read Docs</a>
         </div>
 
-        <div class="module-node pd">
-          <div class="node-header">belz pd &lt;cmd&gt;</div>
-          <div class="cmd-list">
-            <div class="cmd-item">show-page &lt;UUID&gt;</div>
-            <div class="cmd-item">show-component &lt;NAME&gt;</div>
-            <div class="cmd-item">analyze [PAGE_ID]</div>
-            <div class="cmd-item">find-ad-methods &lt;ID&gt;</div>
-            <div class="cmd-item">inspect-url &lt;URL&gt;</div>
-          </div>
-          <div class="src-path">↳ page-designer/commands/</div>
+        <div class="terminal">
+            <div class="terminal-header">
+                <div class="dot" style="background: #ff5f56;"></div>
+                <div class="dot" style="background: #ffbd2e;"></div>
+                <div class="dot" style="background: #27c93f;"></div>
+                <span style="margin-left: 10px; font-size: 0.7rem; color: var(--muted);">belz — nsm-dev</span>
+            </div>
+            <div class="terminal-body">
+                <div class="line"><span class="prompt">$</span> <span class="cmd">belz ad test b7f43a-829d...</span></div>
+                <div class="line"><span>[1/4] Loading method... Done.</span></div>
+                <div class="line"><span>[2/4] Collecting inputs... (using suites/default.json)</span></div>
+                <div class="line"><span>[3/4] Executing trace...</span></div>
+                <div class="line" style="color: #10b981;"><span>✓ ServiceStep: ValidateUser (240ms)</span></div>
+                <div class="line" style="color: #10b981;"><span>✓ ServiceStep: FetchAccount (120ms)</span></div>
+                <div class="line"><span class="prompt">$</span> <span class="cmd">belz --llm | jq .data.status</span></div>
+                <div class="line"><span>"SUCCESS"</span></div>
+            </div>
         </div>
+    </header>
 
-        <div class="module-node mig">
-          <div class="node-header">belz migrate &lt;sub&gt;</div>
-          <div class="cmd-list">
-            <div class="cmd-item">profiles [--refresh]</div>
-            <div class="cmd-item">run --module --ids</div>
-          </div>
-          <div class="src-path">↳ cli/commands/migrate/ + migrations/lib/</div>
+    <section id="features" class="container">
+        <div class="bento-grid">
+            <div class="bento-card large">
+                <div class="icon-box"><i data-lucide="terminal"></i></div>
+                <h3>Unified CLI</h3>
+                <p>Native binary built with Bun. Inspect methods, run tests with trace logs, and trigger migrations. Supports `ad`, `pd`, and `migrate` namespaces out of the box.</p>
+            </div>
+            <div class="bento-card">
+                <div class="icon-box"><i data-lucide="puzzle"></i></div>
+                <h3>Smart Extension</h3>
+                <p>Manifest V3 extension for Chrome. JSON bulk editors, CodeMirror modals, and keyboard shortcuts for the NSM web platform.</p>
+            </div>
+            <div class="bento-card">
+                <div class="icon-box"><i data-lucide="zap"></i></div>
+                <h3>Zero Auth Latency</h3>
+                <p>Automatic session persistence and 401 refresh logic. Login once, work across all NSM environments without manual token management.</p>
+            </div>
+            <div class="bento-card large">
+                <div class="icon-box"><i data-lucide="bot"></i></div>
+                <h3>AI Ready (ACP)</h3>
+                <p>Full support for the Agent Client Protocol. Use Belz AI as a bridge for coding agents like Claude or Gemini to interact with your local environment.</p>
+            </div>
         </div>
-
-        <div class="module-node top">
-          <div class="node-header">belz envs</div>
-          <div class="cmd-list">
-            <div class="cmd-item">(lists all environments)</div>
-          </div>
-          <div class="src-path">↳ cli/commands/envs/</div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <div class="h2">How Commands Are Loaded</div>
-  <div class="card-grid cols2 mb24">
-    <div class="card">
-      <h3>Dev Mode &nbsp;<code>bun run cli/bin/cli.ts</code></h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Dynamically discovers commands at runtime using <code>fs.readdirSync</code> + <code>require()</code>.</p>
-      <div style="font-size:12px;font-family:monospace;line-height:2;color:var(--muted)">
-        adCommandsDir = <span style="color:var(--ad)">../../automation-designer/commands</span><br>
-        pdCommandsDir = <span style="color:var(--pd)">../../page-designer/commands</span><br>
-        topCommandsDir = <span style="color:var(--cli)">../commands &nbsp;(cli/commands/)</span>
-      </div>
-      <p style="font-size:11px;color:var(--gen);margin-top:8px">No registries needed. Best for development.</p>
-    </div>
-    <div class="card">
-      <h3>Prod Mode &nbsp;<code>belz</code> binary</h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Uses pre-generated registries and embedded help text. No filesystem access needed.</p>
-      <div style="font-size:12px;font-family:monospace;line-height:2;color:var(--muted)">
-        ADCommandRegistry &nbsp;← <span style="color:var(--gen)">registry-ad.ts</span><br>
-        PDCommandRegistry &nbsp;← <span style="color:var(--gen)">registry-pd.ts</span><br>
-        TopLevelRegistry &nbsp;&nbsp;← <span style="color:var(--gen)">registry-top.ts</span><br>
-        ADHelpMap / PDHelpMap ← <span style="color:var(--gen)">registry-help.ts</span>
-      </div>
-      <p style="font-size:11px;color:var(--gen);margin-top:8px">Compiled with <code>bun build --compile</code>. Help text is embedded as strings.</p>
-    </div>
-  </div>
-
-  <div class="h2">Module Dispatch Type: Regular vs Passthrough</div>
-  <div class="card-grid cols2">
-    <div class="card">
-      <h3>Regular Module &nbsp;<span class="tag tag-ad">ad</span> <span class="tag tag-pd">pd</span></h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Has a <code>commands</code> map. The runner handles routing to sub-commands.</p>
-      <div style="font-family:monospace;font-size:11px;color:var(--muted);line-height:2">
-        belz ad get → runner strips "ad" →<br>
-        dispatches "get" in ADCommandRegistry →<br>
-        calls get/index.ts
-      </div>
-    </div>
-    <div class="card">
-      <h3>Passthrough Module &nbsp;<span class="tag tag-mig">migrate</span></h3>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">Has a single <code>command</code> module. Passes full args through — the command handles its own sub-routing.</p>
-      <div style="font-family:monospace;font-size:11px;color:var(--muted);line-height:2">
-        belz migrate profiles → runner keeps "migrate" →<br>
-        dispatches to MigrateModule with full args →<br>
-        migrate/index.ts routes to "profiles" internally
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════ FLOW ══ -->
-<div id="flow" class="section">
-  <p class="h3 mb16">Tracing <code>belz ad get &lt;UUID&gt;</code> end-to-end</p>
-
-  <div class="flow">
-    <div class="flow-step s1">
-      <div class="flow-num">1</div>
-      <div class="flow-body">
-        <h5>Entry Point — binary invoked</h5>
-        <p>The compiled <code>belz</code> binary starts. <code>cli-build.ts</code> calls <code>runNamespacedCli(process.argv, options)</code>.</p>
-        <div style="margin-top:6px">
-          <span class="file-tag">cli/bin/cli-build.ts</span>
-          <span class="file-tag">packages/core/src/runner.ts</span>
-        </div>
-      </div>
-    </div>
-    <div class="flow-step s2">
-      <div class="flow-num">2</div>
-      <div class="flow-body">
-        <h5>Global Flags Stripped</h5>
-        <p><code>stripGlobalFlags()</code> pulls out <code>--env</code> (sets active environment on Config singleton) and <code>--llm</code> (sets outputMode). Remaining args: <code>['ad', 'get', '&lt;UUID&gt;']</code>.</p>
-        <div style="margin-top:6px">
-          <span class="file-tag">core/runner.ts → stripGlobalFlags()</span>
-          <span class="file-tag">core/config.ts → Config.setActiveEnv()</span>
-        </div>
-      </div>
-    </div>
-    <div class="flow-step s2">
-      <div class="flow-num">3</div>
-      <div class="flow-body">
-        <h5>Module Dispatch — "ad" namespace found</h5>
-        <p>Token <code>ad</code> matched in <code>options.namespaces</code>. Module type is "regular" (has <code>commands</code>). Remaining args <code>['get', '&lt;UUID&gt;']</code> passed to <code>dispatchCommand()</code>.</p>
-        <div style="margin-top:6px">
-          <span class="file-tag">core/runner.ts → namespace dispatch</span>
-          <span class="file-tag">cli/commands/registry-ad.ts (ADCommandRegistry)</span>
-        </div>
-      </div>
-    </div>
-    <div class="flow-step s3">
-      <div class="flow-num">4</div>
-      <div class="flow-body">
-        <h5>Command Module Located — get/index.ts</h5>
-        <p><code>dispatchCommand</code> finds <code>'get'</code> in <code>ADCommandRegistry</code>, resolves the CommandModule. Checks <code>args[1]</code> — not <code>--help</code>, so continues to execution.</p>
-        <div style="margin-top:6px">
-          <span class="file-tag">automation-designer/commands/get/index.ts</span>
-        </div>
-      </div>
-    </div>
-    <div class="flow-step s4">
-      <div class="flow-num">5</div>
-      <div class="flow-body">
-        <h5>parseArgs() — validates inputs</h5>
-        <p>Extracts UUID and <code>--raw</code> flag from remaining args. Returns typed <code>GetArgs</code> object.</p>
-        <div style="margin-top:6px">
-          <span class="file-tag">get/index.ts → parseArgs()</span>
-        </div>
-      </div>
-    </div>
-    <div class="flow-step s4">
-      <div class="flow-num">6</div>
-      <div class="flow-body">
-        <h5>execute() — business logic</h5>
-        <p>1. Calls <code>apiFetch()</code> → core handles auth (loads/refreshes session from <code>~/.belz/sessions/nsm-dev.json</code>), makes HTTP request to <code>GET /rest/api/automation/chain/&lt;UUID&gt;</code>.<br>
-        2. <code>parseMethodResponse()</code> extracts <code>jsonDefinition</code> → <code>HydratedMethod</code>.<br>
-        3. <code>CacheManager</code> saves result to <code>~/.belz/cache/methods/&lt;UUID&gt;.json</code>.<br>
-        4. <code>ServiceHydrator</code> fetches & caches automation definitions for each service ID.</p>
-        <div style="margin-top:6px">
-          <span class="file-tag">core/api.ts → apiFetch()</span>
-          <span class="file-tag">core/auth.ts → loadSession() / login()</span>
-          <span class="file-tag">ad/lib/parser.ts → parseMethodResponse()</span>
-          <span class="file-tag">ad/lib/cache.ts → CacheManager</span>
-          <span class="file-tag">ad/lib/hydrator.ts → ServiceHydrator</span>
-        </div>
-      </div>
-    </div>
-    <div class="flow-step s6">
-      <div class="flow-num">7</div>
-      <div class="flow-body">
-        <h5>Result Wrapped &amp; Output Rendered</h5>
-        <p>execute() returns <code>ok({ method, hydratedServiceIds })</code>. Runner wraps in <code>CommandEnvelope</code>, calls <code>renderHuman()</code> (table output) or <code>renderLLM()</code> (JSON envelope if <code>--llm</code>).</p>
-        <div style="margin-top:6px">
-          <span class="file-tag">core/command.ts → ok()</span>
-          <span class="file-tag">core/runner.ts → toEnvelope()</span>
-          <span class="file-tag">core/output.ts → renderHuman() / renderLLM()</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="spacer"></div>
-
-  <div class="h2">Authentication Flow (first call / session expired)</div>
-  <div class="flow">
-    <div class="flow-step s6">
-      <div class="flow-num">A</div>
-      <div class="flow-body">
-        <h5>apiFetch() called</h5>
-        <p><code>loadSession(env)</code> checks <code>~/.belz/sessions/&lt;env&gt;.json</code>. If missing → calls <code>login()</code>.</p>
-        <span class="file-tag">core/auth.ts → loadSession()</span>
-      </div>
-    </div>
-    <div class="flow-step s6">
-      <div class="flow-num">B</div>
-      <div class="flow-body">
-        <h5>Credentials resolved</h5>
-        <p>Reads from <code>~/.belz/config.json</code> (file wins). Falls back to env vars <code>NSM_DEV_USER</code> / <code>NSM_DEV_PASSWORD</code>. Password is base64-decoded via <code>atob()</code>.</p>
-        <span class="file-tag">core/config.ts → Config.password</span>
-      </div>
-    </div>
-    <div class="flow-step s6">
-      <div class="flow-num">C</div>
-      <div class="flow-body">
-        <h5>Login POST &amp; session saved</h5>
-        <p>POSTs to <code>/do/login</code>, extracts token, saves session to <code>~/.belz/sessions/nsm-dev.json</code>.</p>
-        <span class="file-tag">core/auth.ts → login() → saveSession()</span>
-      </div>
-    </div>
-    <div class="flow-step s6">
-      <div class="flow-num">D</div>
-      <div class="flow-body">
-        <h5>Retries on 401</h5>
-        <p>If API returns 401, clears session, re-runs login, retries original request once.</p>
-        <span class="file-tag">core/api.ts → 401 refresh logic</span>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════ FILES ══ -->
-<div id="files" class="section">
-  <p class="h3 mb16">Complete file reference. Hover rows for highlight.</p>
-  <table class="file-table">
-    <thead>
-      <tr><th>Path</th><th>Role</th><th>Description</th></tr>
-    </thead>
-    <tbody>
-      <tr><td colspan="3" class="section-header">ROOT</td></tr>
-      <tr><td class="path">package.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Monorepo root. Workspaces: cli, extension, packages/*. Scripts: install (→ cli/scripts/install.sh), reinstall, belz:build, build.</td></tr>
-      <tr><td class="path">turbo.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Turborepo pipeline. build depends on ^build (topological). dev is persistent, no cache.</td></tr>
-      <tr><td class="path">tsconfig.json</td><td><span class="role role-cfg">config</span></td><td class="desc">Shared base TypeScript config. ESNext, bundler module resolution, strict mode. Extended by all workspaces.</td></tr>
-
-      <tr><td colspan="3" class="section-header">packages/core/src/  (@belzabar/core)</td></tr>
-      <tr><td class="path">index.ts</td><td><span class="role role-lib">barrel</span></td><td class="desc">Re-exports everything from core. The public API for @belzabar/core.</td></tr>
-      <tr><td class="path">config.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">BELZ_CONFIG_DIR (~/.belz/). Config singleton. Loads config.json. Manages active environment. Password base64-decoded via atob().</td></tr>
-      <tr><td class="path">auth.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">login(), loadSession(), saveSession(). Sessions persisted at ~/.belz/sessions/&lt;env&gt;.json.</td></tr>
-      <tr><td class="path">api.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">apiFetch() — main HTTP wrapper. Adds Bearer auth header, handles 401 refresh, supports Bearer/Raw/None auth modes.</td></tr>
-      <tr><td class="path">runner.ts</td><td><span class="role role-entry">runner</span></td><td class="desc">runCli() for single-namespace CLIs. runNamespacedCli() for multi-module CLIs (belz). NamespaceDefinition supports both commands map and passthrough command.</td></tr>
-      <tr><td class="path">command.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">CommandModule&lt;TArgs, TData&gt; interface. ok() / fail() result builders. CliError class. CommandEnvelope type.</td></tr>
-      <tr><td class="path">output.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">renderHuman() — colored table output. renderLLM() — JSON envelope to stdout.</td></tr>
-      <tr><td class="path">types.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">Shared types: Environment, AuthSession, ApiOptions, OutputMode.</td></tr>
-      <tr><td class="path">display.ts</td><td><span class="role role-dep">⚠ unused</span></td><td class="desc">Static DisplayManager class for human/LLM mode switching. Likely superseded by output.ts and renderHuman/renderLLM.</td></tr>
-
-      <tr><td colspan="3" class="section-header">agents/main-orchestrator/</td></tr>
-      <tr><td class="path">INIT.md</td><td><span class="role role-lib">context</span></td><td class="desc">Onboarding file for the Main Orchestrator runtime agent. Covers role, platform context, belz CLI structure, AD/PD/migrate command tables, investigation workflow, NSM domain notes.</td></tr>
-      <tr><td class="path">BELZABAR.md</td><td><span class="role role-lib">context</span></td><td class="desc">Copy of specs/core/BELZABAR.md co-located for agent access. Full Belzabar platform context: company, NSM project, environments, AD/PD/Report Designer details, migration workflow.</td></tr>
-
-      <tr><td colspan="3" class="section-header">cli/</td></tr>
-      <tr><td class="path">scripts/install.sh</td><td><span class="role role-entry">script</span></td><td class="desc">Smart install: updates binary if belz exists, full first-time setup if not. Prompts for .env path or manual credentials. REPO_ROOT resolved two levels up from cli/scripts/.</td></tr>
-      <tr><td class="path">scripts/reinstall.sh</td><td><span class="role role-entry">script</span></td><td class="desc">Wipes ~/.belz/ and existing binary with confirmation, then delegates to cli/scripts/install.sh.</td></tr>
-      <tr><td class="path">bin/cli.ts</td><td><span class="role role-entry">entry</span></td><td class="desc">Dev mode entrypoint. Dynamically discovers commands from 3 source dirs using readdirSync + require(). Calls runNamespacedCli() directly.</td></tr>
-      <tr><td class="path">bin/cli-build.ts</td><td><span class="role role-entry">entry</span></td><td class="desc">Prod mode entrypoint. Imports pre-generated registries and embedded help maps. Target of bun build --compile.</td></tr>
-      <tr><td class="path">utils/generate-registry.ts</td><td><span class="role role-entry">generator</span></td><td class="desc">Discovers commands from automation-designer/commands, page-designer/commands, cli/commands. Reads help.txt files. Generates 4 registry files. Run: bun run generate (from cli/).</td></tr>
-      <tr><td class="path">commands/envs/index.ts</td><td><span class="role role-cmd">command</span></td><td class="desc">belz envs — lists all configured environments (nsm-dev, nsm-qa, nsm-uat) with active flag. Imports Config from @belzabar/core.</td></tr>
-      <tr><td class="path">commands/migrate/index.ts</td><td><span class="role role-cmd">command</span></td><td class="desc">belz migrate — passthrough module. Routes to profiles or run sub-commands. Imports from migrations/lib/.</td></tr>
-      <tr><td class="path">commands/registry-ad.ts</td><td><span class="role role-gen">generated</span></td><td class="desc">AUTO-GENERATED. Imports all AD commands from automation-designer/commands/. Exports ADCommandRegistry.</td></tr>
-      <tr><td class="path">commands/registry-pd.ts</td><td><span class="role role-gen">generated</span></td><td class="desc">AUTO-GENERATED. Imports all PD commands from page-designer/commands/. Exports PDCommandRegistry.</td></tr>
-      <tr><td class="path">commands/registry-top.ts</td><td><span class="role role-gen">generated</span></td><td class="desc">AUTO-GENERATED. Imports envs and migrate from cli/commands/. Exports TopLevelCommandRegistry.</td></tr>
-      <tr><td class="path">commands/registry-help.ts</td><td><span class="role role-gen">generated</span></td><td class="desc">AUTO-GENERATED. Embeds all help.txt contents as strings. Exports ADHelpMap, PDHelpMap, TopHelpMap, makeHelpResolver(). Used by compiled binary.</td></tr>
-
-      <tr><td colspan="3" class="section-header">automation-designer/commands/</td></tr>
-      <tr><td class="path">get/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Fetch method by UUID. Parses response, caches result, hydrates service definitions.</td></tr>
-      <tr><td class="path">run/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Execute published method. Accepts UUID and optional JSON payload string.</td></tr>
-      <tr><td class="path">show/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Display method structure. Flags: --inputs, --services, --service-detail &lt;n&gt;, --full, --raw.</td></tr>
-      <tr><td class="path">test/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Test draft method with inputs. Shows per-service trace status, highlights failed steps.</td></tr>
-      <tr><td class="path">sql/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">SQL interface. Sub-commands: dbs (list databases), run &lt;db&gt; &lt;query&gt;, tui (interactive session).</td></tr>
-      <tr><td class="path">save-suite/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Save test inputs for a method as a named suite to suites/*.spec.json.</td></tr>
-      <tr><td class="path">run-suites/index.ts</td><td><span class="role role-cmd">ad cmd</span></td><td class="desc">Run all saved test suites and report results.</td></tr>
-
-      <tr><td colspan="3" class="section-header">automation-designer/lib/</td></tr>
-      <tr><td class="path">api.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">Re-exports core apiFetch. Adds fetchMethodDefinition(), fetchAutomationDefinition(), testMethod() for AD endpoints.</td></tr>
-      <tr><td class="path">parser.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">parseMethodResponse() — transforms raw API payload into HydratedMethod with extracted jsonDefinition.</td></tr>
-      <tr><td class="path">cache.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">CacheManager — read/write method cache at ~/.belz/cache/methods/&lt;uuid&gt;.json with 5-minute TTL.</td></tr>
-      <tr><td class="path">hydrator.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">ServiceHydrator — fetches automation definitions per serviceId, caches at ~/.belz/cache/definitions/. Provides label lookup for inputs.</td></tr>
-      <tr><td class="path">payload-builder.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">PayloadBuilder — injects collected input key/value pairs into method's jsonDefinition for test execution.</td></tr>
-      <tr><td class="path">input-collector.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">InputCollector — collects input values from a JSON file or interactive prompts. Handles BOOLEAN and nested JSON types.</td></tr>
-      <tr><td class="path">error-parser.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">ErrorParser — extracts human-readable error details from failed step execution responses.</td></tr>
-      <tr><td class="path">types.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">RawMethodResponse, HydratedMethod, InputField, ServiceStep, AutomationDefinition — domain types from AD API.</td></tr>
-      <tr><td class="path">integrations/gemini-mcp/server.ts</td><td><span class="role role-entry">mcp</span></td><td class="desc">JSON-RPC MCP server. Wraps belz CLI via shell with --llm flag. Exposes ad.show_method and ad.test_method as MCP tools for Claude.</td></tr>
-
-      <tr><td colspan="3" class="section-header">page-designer/</td></tr>
-      <tr><td class="path">commands/show-page/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Fetch and display page config by draft UUID.</td></tr>
-      <tr><td class="path">commands/show-component/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Search for and display component config by name.</td></tr>
-      <tr><td class="path">commands/analyze/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Recursive traversal from root page(s). Builds dependency tree, collects all AD method IDs, optional compliance check.</td></tr>
-      <tr><td class="path">commands/find-ad-methods/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Extract AD method IDs referenced in a page or component (shallow or recursive).</td></tr>
-      <tr><td class="path">commands/inspect-url/</td><td><span class="role role-cmd">pd cmd</span></td><td class="desc">Parse a PD URL (/ui-designer/page/... or /ui-designer/symbol/...), return metadata, children, AD refs.</td></tr>
-      <tr><td class="path">lib/analyzer.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">analyzeItem() — recursive page/component traversal with visited-set for cycle detection.</td></tr>
-      <tr><td class="path">lib/parser.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">Extracts AD IDs via regex on execute URLs. Extracts component refs from layout nodes.</td></tr>
-      <tr><td class="path">components.json</td><td><span class="role role-cfg">data</span></td><td class="desc">Whitelist of known component names/IDs used during recursive analysis to filter relevant nodes.</td></tr>
-      <tr><td class="path">master_ids.txt</td><td><span class="role role-cfg">data</span></td><td class="desc">Approved AD method ID list for compliance diff (rogue / missing / common categories).</td></tr>
-
-      <tr><td colspan="3" class="section-header">migrations/lib/</td></tr>
-      <tr><td class="path">index.ts</td><td><span class="role role-lib">barrel</span></td><td class="desc">Re-exports all migration functions for use by cli/commands/migrate/.</td></tr>
-      <tr><td class="path">args.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">parseMigrateArgs() — parses raw CLI args into typed MigrateArgs. Handles --module, --ids, --source-env/--target-env, --ids-file, etc.</td></tr>
-      <tr><td class="path">client.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">startMigrationExecution(), cleanupMigrationExecution() — HTTP calls to the DB migration tool API.</td></tr>
-      <tr><td class="path">profiles.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">discoverNsmProfiles() — fetches and caches available NSM migration profiles at ~/.belz/migrations/nsm-profiles.json.</td></tr>
-      <tr><td class="path">ws.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">streamMigrationExecution() — WebSocket streaming of live migration events.</td></tr>
-      <tr><td class="path">log-parser.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">parseMigrationOutput() — parses stream events into success/failure counts and summary report.</td></tr>
-      <tr><td class="path">artifacts.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">writeMigrationArtifacts() — saves execution results to a JSON file at --out path.</td></tr>
-      <tr><td class="path">constants.ts</td><td><span class="role role-lib">lib</span></td><td class="desc">NSM_ENV_TO_PROFILE_SEGMENT mappings. NSM_SCRIPT_NAME. DB_MIGRATION_TOOL_BASE_URL.</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<!-- ═══════════════════════════════════════════════════ RUNTIME ══ -->
-<div id="runtime" class="section">
-  <p class="h3 mb16">Everything written to disk at runtime lives under <code>~/.belz/</code></p>
-
-  <div class="runtime-grid mb24">
-    <div class="runtime-box">
-      <h4><span>~/.belz/config.json</span> &nbsp;— Credentials</h4>
-      <div class="runtime-item"><span class="name">environments.nsm-dev.url</span><span class="desc">base URL</span></div>
-      <div class="runtime-item"><span class="name">environments.nsm-dev.user</span><span class="desc">login username</span></div>
-      <div class="runtime-item"><span class="name">environments.nsm-dev.password</span><span class="desc">base64-encoded password</span></div>
-      <div class="runtime-item"><span class="name">environments.nsm-qa.*</span><span class="desc">same structure</span></div>
-      <div class="runtime-item"><span class="name">environments.nsm-uat.*</span><span class="desc">same structure</span></div>
-      <p style="font-size:11px;color:var(--gen);margin-top:8px">chmod 600. Written by cli/scripts/install.sh. Config file wins over env vars.</p>
-    </div>
-
-    <div class="runtime-box">
-      <h4><span>~/.belz/sessions/</span> &nbsp;— Auth Sessions</h4>
-      <div class="runtime-item"><span class="name">nsm-dev.json</span><span class="desc">token for dev</span></div>
-      <div class="runtime-item"><span class="name">nsm-qa.json</span><span class="desc">token for qa</span></div>
-      <div class="runtime-item"><span class="name">nsm-uat.json</span><span class="desc">token for uat</span></div>
-      <p style="font-size:11px;color:var(--gen);margin-top:8px">Created on first API call. Refreshed automatically on 401. Written by core/auth.ts.</p>
-    </div>
-
-    <div class="runtime-box">
-      <h4><span>~/.belz/cache/</span> &nbsp;— Method Cache (5-min TTL)</h4>
-      <div class="runtime-item"><span class="name">methods/&lt;uuid&gt;.json</span><span class="desc">raw + parsed method</span></div>
-      <div class="runtime-item"><span class="name">definitions/&lt;id&gt;.json</span><span class="desc">automation definition (no TTL)</span></div>
-      <p style="font-size:11px;color:var(--gen);margin-top:8px">Written by CacheManager. Methods expire in 5 min. Definitions persist until manually cleared.</p>
-    </div>
-
-    <div class="runtime-box">
-      <h4><span>~/.belz/migrations/</span> &nbsp;— Migration State</h4>
-      <div class="runtime-item"><span class="name">nsm-profiles.json</span><span class="desc">discovered NSM profiles + timestamp</span></div>
-      <p style="font-size:11px;color:var(--gen);margin-top:8px">Written by migrations/lib/profiles.ts. Bypassed with --refresh flag.</p>
-    </div>
-  </div>
-
-  <div class="h2">Local Project Files</div>
-  <div class="runtime-box" style="max-width:500px">
-    <h4><span>./suites/</span> &nbsp;— Test Suites (project-local)</h4>
-    <div class="runtime-item"><span class="name">*.spec.json</span><span class="desc">saved input sets for regression testing</span></div>
-    <p style="font-size:11px;color:var(--gen);margin-top:8px">Written by <code>belz ad save-suite</code>. Read by <code>belz ad run-suites</code>. Stored in current working directory.</p>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════ REDUNDANCY ══ -->
-<div id="redundancy" class="section">
-  <p class="h3 mb16">Previously identified redundancies — all resolved. One candidate remains.</p>
-
-  <div class="ok-card">
-    <h4>✓ Resolved — cli/lib/runner.ts</h4>
-    <p>Was: <code>runBelzCli()</code> and legacy <code>runCli()</code> wrappers with zero importers. Both entry points already called <code>runNamespacedCli()</code> from <code>@belzabar/core</code> directly.</p>
-    <p style="margin-top:6px">Deleted. <code>cli/lib/</code> directory removed.</p>
-  </div>
-
-  <div class="ok-card">
-    <h4>✓ Resolved — cli/commands/registry.ts</h4>
-    <p>Was: auto-generated legacy flat <code>CommandRegistry</code> for the old single-namespace CLI. No active importers. Only referenced by the deleted <code>page-designer/bin/pd-build.ts</code>.</p>
-    <p style="margin-top:6px">Deleted. Generator no longer produces it.</p>
-  </div>
-
-  <div class="ok-card">
-    <h4>✓ Resolved — automation-designer/lib/{config,auth,display}.ts</h4>
-    <p>Were: single-line re-exports of <code>Config</code>, <code>login/loadSession/saveSession</code>, and <code>DisplayManager</code> from <code>@belzabar/core</code>. Commands now import directly from <code>@belzabar/core</code>.</p>
-    <p style="margin-top:6px">Deleted. <code>show/index.ts</code> updated to use direct core import.</p>
-  </div>
-
-  <div class="ok-card">
-    <h4>✓ Resolved — page-designer standalone binary</h4>
-    <p>Was: <code>bin/pd.ts</code>, <code>bin/pd-build.ts</code>, <code>utils/generate-registry.ts</code>, <code>commands/registry.ts</code>, <code>package.json</code>, <code>bun.lock</code>, <code>tsconfig.json</code>. All CLI orchestration for PD is now handled by <code>cli/</code> via <code>belz pd</code>.</p>
-    <p style="margin-top:6px">All deleted. <code>page-designer</code> removed from root workspaces. Now source-only like <code>automation-designer</code>.</p>
-  </div>
-
-  <div class="ok-card">
-    <h4>✓ Resolved — migrations/lib/migration/ nesting</h4>
-    <p>Was: extra nesting level (<code>lib/migration/*.ts</code>) inconsistent with other source modules. No reason for the subdirectory since nothing else lives under <code>lib/</code>.</p>
-    <p style="margin-top:6px">Flattened to <code>migrations/lib/*.ts</code>. Imports in <code>cli/commands/migrate/</code> and all test files updated.</p>
-  </div>
-
-  <div style="height:16px"></div>
-
-  <div class="red-card">
-    <h4>⚠ Remaining — packages/core/src/display.ts</h4>
-    <p>A static <code>DisplayManager</code> class for human/LLM mode switching. Predates <code>output.ts</code>'s <code>renderHuman()</code>/<code>renderLLM()</code> pattern. Still exported from <code>@belzabar/core</code> index — but no current code appears to use it.</p>
-    <p style="margin-top:6px;color:var(--cli)">→ Audit imports across all workspaces. If unused, remove from index.ts and delete.</p>
-  </div>
-</div>
-
-
-<!-- ═══════════════════════════════════════════════════ WEB APP ══ -->
-<div id="web" class="section">
-
-<style>
-  /* ── Web-section extras ── */
-  .web-h2 { font-size: 16px; font-weight: 700; margin: 32px 0 12px; color: var(--text); display: flex; align-items: center; gap: 8px; }
-  .web-h2::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-  .web-h3 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin: 20px 0 8px; }
-
-  /* flow diagram */
-  .flow-diagram { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 24px; overflow-x: auto; }
-  .flow-row { display: flex; align-items: center; gap: 0; flex-wrap: nowrap; margin-bottom: 0; }
-  .flow-box { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 8px 14px; font-size: 12px; white-space: nowrap; text-align: center; min-width: 130px; }
-  .flow-box.blue   { border-color: var(--core); color: var(--core); }
-  .flow-box.green  { border-color: var(--cli);  color: var(--cli); }
-  .flow-box.yellow { border-color: var(--ad);   color: var(--ad); }
-  .flow-box.purple { border-color: var(--pd);   color: var(--pd); }
-  .flow-box.red    { border-color: var(--mig);  color: var(--mig); }
-  .flow-box.gray   { border-color: var(--gen);  color: var(--muted); }
-  .flow-box small  { display: block; font-size: 10px; color: var(--muted); margin-top: 2px; font-weight: 400; }
-  .flow-arrow { font-size: 16px; color: var(--muted); padding: 0 6px; flex-shrink: 0; }
-  .flow-arrow.down { display: block; text-align: center; margin: 6px 0; font-size: 14px; }
-  .flow-label { font-size: 10px; color: var(--muted); text-align: center; margin-top: 3px; }
-
-  /* two-col layout */
-  .web-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  .web-cols.cols3 { grid-template-columns: 1fr 1fr 1fr; }
-  @media (max-width: 900px) { .web-cols, .web-cols.cols3 { grid-template-columns: 1fr; } }
-
-  /* code block */
-  .code-block { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; font-family: 'JetBrains Mono', 'Cascadia Code', monospace; font-size: 12px; line-height: 1.7; overflow-x: auto; white-space: pre; }
-  .code-block .k { color: #ff7b72; }   /* keyword */
-  .code-block .t { color: #79c0ff; }   /* type */
-  .code-block .s { color: #a5d6ff; }   /* string */
-  .code-block .c { color: #8b949e; }   /* comment */
-  .code-block .fn { color: #d2a8ff; }  /* function */
-  .code-block .v { color: #ffa657; }   /* value/const */
-
-  /* file tree */
-  .file-tree { font-family: monospace; font-size: 12px; line-height: 1.9; background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 16px; white-space: pre; overflow-x: auto; }
-  .file-tree .dir  { color: var(--core); }
-  .file-tree .file { color: var(--text); }
-  .file-tree .note { color: var(--muted); font-size: 11px; }
-
-  /* step list */
-  .steps { counter-reset: step; list-style: none; }
-  .steps li { counter-increment: step; display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--bg3); font-size: 13px; }
-  .steps li:last-child { border-bottom: none; }
-  .steps li::before { content: counter(step); min-width: 22px; height: 22px; background: var(--core); color: #fff; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-  .steps li span { color: var(--muted); }
-
-  /* table */
-  .web-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  .web-table th { text-align: left; padding: 8px 12px; background: var(--bg3); color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .4px; border-bottom: 1px solid var(--border); }
-  .web-table td { padding: 8px 12px; border-bottom: 1px solid var(--bg3); vertical-align: top; }
-  .web-table td:first-child { font-family: monospace; font-size: 11px; color: var(--cli); white-space: nowrap; }
-  .web-table td code { background: var(--bg3); padding: 1px 5px; border-radius: 3px; font-size: 11px; font-family: monospace; color: var(--ad); }
-  .web-table tr:last-child td { border-bottom: none; }
-
-  /* badge tags */
-  .tag { display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 3px; font-weight: 600; margin-right: 4px; }
-  .tag.server { background: #1a2744; color: var(--core); }
-  .tag.client { background: #1a3320; color: var(--cli); }
-  .tag.shared { background: #2d2012; color: var(--ad); }
-
-  /* highlight box */
-  .info-box { background: #131d2e; border-left: 3px solid var(--core); border-radius: 0 6px 6px 0; padding: 12px 16px; font-size: 13px; margin: 12px 0; }
-  .info-box.yellow { background: #1e1a0e; border-left-color: var(--ad); }
-  .info-box.green  { background: #0d1f14; border-left-color: var(--cli); }
-  .info-box strong { color: var(--text); }
-
-  /* SSE / sequence diagram */
-  .seq { display: grid; grid-template-columns: 120px 1fr 120px; gap: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .seq-head { background: var(--bg3); padding: 8px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; text-align: center; }
-  .seq-head.blue   { color: var(--core); }
-  .seq-head.green  { color: var(--cli); }
-  .seq-head.yellow { color: var(--ad); }
-  .seq-msg { grid-column: 1 / -1; display: grid; grid-template-columns: 120px 1fr 120px; align-items: center; padding: 6px 12px; border-top: 1px solid var(--bg3); font-size: 12px; }
-  .seq-msg .arrow { text-align: center; color: var(--muted); font-size: 18px; }
-  .seq-msg .label { color: var(--text); }
-  .seq-msg .sub   { font-size: 10px; color: var(--muted); }
-  .seq-msg.dim    { opacity: .5; }
-</style>
-
-<!-- ──────────────────────── INTRO ──────────────────────── -->
-<div class="web-h2">What is <code>web/</code>?</div>
-
-<div class="web-cols">
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Purpose</h3>
-    <p style="font-size:13px;color:var(--muted);line-height:1.7">A Next.js 16 web application that provides a browser UI for connecting to local coding agents via the <strong style="color:var(--text)">Agent Client Protocol (ACP)</strong>. Users can open multiple chat sessions against different working directories, each backed by a live agent subprocess.</p>
-    <div class="info-box" style="margin-top:12px">
-      <strong>Key constraint:</strong> Browsers cannot spawn processes or use stdio directly. The web app solves this with a server-side <em>bridge</em> that lives in Next.js API routes (Node.js runtime) and proxies browser requests ↔ agent stdio.
-    </div>
-  </div>
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Stack</h3>
-    <table class="web-table">
-      <tr><td>Next.js 16</td><td>App Router, server + client components, API routes</td></tr>
-      <tr><td>React 19</td><td>useReducer, useContext, hooks</td></tr>
-      <tr><td>TypeScript</td><td>strict mode throughout</td></tr>
-      <tr><td>Tailwind CSS v4</td><td>utility-first styling</td></tr>
-      <tr><td>shadcn / Radix UI</td><td>accessible primitives</td></tr>
-      <tr><td>@phosphor-icons</td><td>icon set</td></tr>
-      <tr><td>@agentclientprotocol/sdk</td><td>ACP client library</td></tr>
-    </table>
-  </div>
-</div>
-
-<!-- ──────────────────────── FILE STRUCTURE ──────────────────────── -->
-<div class="web-h2">File Structure</div>
-<div class="web-cols">
-  <div>
-    <div class="file-tree">
-<span class="dir">web/</span>
-├── <span class="dir">app/</span>
-│   ├── <span class="file">layout.tsx</span>          <span class="note">← root layout (ThemeProvider)</span>
-│   ├── <span class="file">page.tsx</span>             <span class="note">← redirects to /ai</span>
-│   └── <span class="dir">ai/</span>
-│       ├── <span class="file">layout.tsx</span>       <span class="note">← renders &lt;AiShell&gt;</span>
-│       ├── <span class="file">page.tsx</span>          <span class="note">← new session form</span>
-│       ├── <span class="dir">[id]/</span>
-│       │   └── <span class="file">page.tsx</span>      <span class="note">← chat view for session</span>
-│       ├── <span class="dir">settings/</span>
-│       │   └── <span class="file">page.tsx</span>      <span class="note">← settings page</span>
-│       └── <span class="dir">api/sessions/</span>     <span class="note">← REST API (Node.js)</span>
-│           ├── <span class="file">route.ts</span>      <span class="note">← GET list, POST create</span>
-│           └── <span class="dir">[id]/</span>
-│               ├── <span class="file">route.ts</span>   <span class="note">← GET info, DELETE close</span>
-│               ├── <span class="dir">prompt/route.ts</span>    <span class="note">← POST → SSE stream</span>
-│               ├── <span class="dir">cancel/route.ts</span>    <span class="note">← POST cancel</span>
-│               └── <span class="dir">permission/route.ts</span> <span class="note">← POST resolve permission</span>
-├── <span class="dir">components/</span>
-│   ├── <span class="file">ai-shell.tsx</span>         <span class="note">← shell: context, shortcuts, auto-connect</span>
-│   ├── <span class="file">session-sidebar.tsx</span>  <span class="note">← workspace + session tree</span>
-│   └── <span class="file">search-modal.tsx</span>     <span class="note">← ⌘K search overlay</span>
-├── <span class="dir">hooks/</span>
-│   ├── <span class="file">use-sessions.ts</span>      <span class="note">← multi-session reducer + localStorage</span>
-│   └── <span class="file">use-settings.ts</span>      <span class="note">← app settings + localStorage</span>
-└── <span class="dir">lib/</span>
-    ├── <span class="file">acp-bridge.ts</span>        <span class="note">← server-side ACP bridge singleton</span>
-    ├── <span class="file">acp-types.ts</span>         <span class="note">← shared types (BridgeEvent, SessionInfo…)</span>
-    └── <span class="file">sessions-context.ts</span>  <span class="note">← React context + useSessionsContext()</span>
-    </div>
-  </div>
-  <div>
-    <div class="web-h3">Runtime boundaries</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="arch-box core" style="padding:12px 14px">
-        <h4>Browser (client)</h4>
-        <ul>
-          <li><span class="fn">app/ai/[id]/page.tsx</span> <span>Chat UI</span></li>
-          <li><span class="fn">components/ai-shell.tsx</span> <span>Shell + context</span></li>
-          <li><span class="fn">components/session-sidebar.tsx</span></li>
-          <li><span class="fn">components/search-modal.tsx</span></li>
-          <li><span class="fn">hooks/use-sessions.ts</span> <span>State + localStorage</span></li>
-          <li><span class="fn">hooks/use-settings.ts</span></li>
-        </ul>
-      </div>
-      <div class="arch-box cli" style="padding:12px 14px">
-        <h4>Next.js Server (Node.js)</h4>
-        <ul>
-          <li><span class="fn">app/ai/api/sessions/**</span> <span>REST routes</span></li>
-          <li><span class="fn">lib/acp-bridge.ts</span> <span>Bridge singleton</span></li>
-        </ul>
-        <div class="note">These files use Node.js built-ins (child_process, fs, crypto). Must declare <code>export const runtime = "nodejs"</code>.</div>
-      </div>
-      <div class="arch-box ad" style="padding:12px 14px">
-        <h4>Shared (isomorphic)</h4>
-        <ul>
-          <li><span class="fn">lib/acp-types.ts</span> <span>BridgeEvent, SessionInfo</span></li>
-          <li><span class="fn">lib/sessions-context.ts</span> <span>React context type</span></li>
-        </ul>
-        <div class="note">No Node.js imports — safe to bundle on both sides.</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ──────────────────────── ACP PROTOCOL ──────────────────────── -->
-<div class="web-h2">ACP — Agent Client Protocol</div>
-
-<div class="info-box">
-  <strong>ACP</strong> is a JSON-RPC 2.0 protocol that defines how a <em>client</em> (this web app) communicates with an <em>agent</em> (e.g. opencode). The agent runs as a child process; communication happens over <strong>stdin/stdout as newline-delimited JSON (NDJSON)</strong>, or over HTTP if the agent starts an HTTP server and announces its port.
-</div>
-
-<div class="web-h3">Protocol Handshake</div>
-<div class="flow-diagram">
-  <div style="display:grid;grid-template-columns:140px 60px 160px 60px 160px 60px 140px;align-items:center;gap:4px;margin-bottom:16px">
-    <div class="flow-box blue">Client<small>(Node.js bridge)</small></div>
-    <div class="flow-arrow" style="text-align:center">→</div>
-    <div class="flow-box green">initialize<small>protocolVersion, capabilities, clientInfo</small></div>
-    <div class="flow-arrow">→</div>
-    <div class="flow-box yellow">newSession<small>{ cwd, mcpServers: [] }</small></div>
-    <div class="flow-arrow">←</div>
-    <div class="flow-box green">{ sessionId }<small>opaque ID from agent</small></div>
-  </div>
-  <div style="font-size:11px;color:var(--muted);margin-top:4px">
-    After handshake the session is ready. <code>sessionId</code> must be included in every subsequent <code>prompt</code> call.
-  </div>
-</div>
-
-<div class="web-h3">Prompt / Response cycle</div>
-<div class="seq">
-  <div class="seq-head blue">Browser</div>
-  <div class="seq-head" style="background:var(--bg3);color:var(--muted)">Next.js API Route</div>
-  <div class="seq-head yellow">Agent Process</div>
-
-  <div class="seq-msg">
-    <div style="text-align:right;color:var(--muted);font-size:11px">POST /ai/api/sessions/{id}/prompt</div>
-    <div class="arrow">→</div>
-    <div></div>
-  </div>
-  <div class="seq-msg">
-    <div></div>
-    <div class="arrow">→</div>
-    <div style="color:var(--muted);font-size:11px">connection.prompt({ sessionId, prompt })</div>
-  </div>
-  <div class="seq-msg dim">
-    <div></div>
-    <div class="arrow">←</div>
-    <div style="color:var(--muted);font-size:11px">session/update: agent_thought_chunk</div>
-  </div>
-  <div class="seq-msg dim">
-    <div></div>
-    <div class="arrow">←</div>
-    <div style="color:var(--muted);font-size:11px">session/update: tool_call</div>
-  </div>
-  <div class="seq-msg dim">
-    <div></div>
-    <div class="arrow">←</div>
-    <div style="color:var(--muted);font-size:11px">session/update: agent_message_chunk</div>
-  </div>
-  <div class="seq-msg dim">
-    <div></div>
-    <div class="arrow">←</div>
-    <div style="color:var(--muted);font-size:11px">session/update: session_info_update (title)</div>
-  </div>
-  <div class="seq-msg">
-    <div style="text-align:right;font-size:11px;color:var(--cli)">data: {type:"agent_thought_chunk"…}</div>
-    <div class="arrow" style="color:var(--cli)">←</div>
-    <div style="color:var(--cli);font-size:11px">emit SSE events per notification</div>
-  </div>
-  <div class="seq-msg">
-    <div style="text-align:right;font-size:11px;color:var(--cli)">data: {type:"done",stopReason}</div>
-    <div class="arrow" style="color:var(--cli)">←</div>
-    <div style="color:var(--muted);font-size:11px">prompt() promise resolves → { stopReason }</div>
-  </div>
-</div>
-
-<div class="web-h3">Agent callback types (agent → client requests)</div>
-<table class="web-table" style="margin-top:4px">
-  <tr><th>Callback</th><th>What the agent asks for</th><th>Bridge response</th></tr>
-  <tr><td>requestPermission</td><td>Ask user to approve/reject a tool action</td><td>Emits SSE <code>permission_request</code>, stores <code>resolve</code> fn, waits for POST /permission</td></tr>
-  <tr><td>readTextFile</td><td>Read a file within cwd</td><td>fs.readFile — sandboxed to cwd via path.relative check</td></tr>
-  <tr><td>writeTextFile</td><td>Write a file within cwd</td><td>fs.writeFile — sandboxed to cwd</td></tr>
-  <tr><td>createTerminal</td><td>Spawn a shell command</td><td>child_process.spawn, returns terminalId</td></tr>
-  <tr><td>terminalOutput</td><td>Read terminal stdout/stderr</td><td>Returns rolling 64KB buffer</td></tr>
-  <tr><td>waitForTerminalExit</td><td>Block until terminal exits</td><td>Awaits exitPromise</td></tr>
-  <tr><td>killTerminal</td><td>Terminate a terminal</td><td>SIGTERM → wait 1.5s → SIGKILL</td></tr>
-  <tr><td>releaseTerminal</td><td>Clean up terminal resources</td><td>SIGTERM + clear output buffer + delete from map</td></tr>
-  <tr><td>sessionUpdate</td><td>Push session updates (streaming)</td><td>Routes each update type to emitToSubs()</td></tr>
-</table>
-
-<div class="web-h3">Session update types (streaming)</div>
-<table class="web-table">
-  <tr><th>sessionUpdate value</th><th>Content</th><th>Client effect</th></tr>
-  <tr><td>agent_message_chunk</td><td>{ content: { type:"text", text } }</td><td>Appends to <code>AssistantMessage.text</code></td></tr>
-  <tr><td>agent_thought_chunk</td><td>{ content: { type:"text", text } }</td><td>Appends to <code>AssistantMessage.thinking</code></td></tr>
-  <tr><td>tool_call</td><td>{ toolCallId, title, status, kind, rawInput }</td><td>Adds/updates <code>ToolCallState[]</code></td></tr>
-  <tr><td>tool_call_update</td><td>{ toolCallId, status, rawOutput, content }</td><td>Updates matching tool call by id</td></tr>
-  <tr><td>plan</td><td>{ entries: [{status, content}] }</td><td>Sets <code>AssistantMessage.plan</code></td></tr>
-  <tr><td>session_info_update</td><td>{ title, updatedAt }</td><td>Sets <code>SessionSlot.name</code>, shown in header + sidebar</td></tr>
-</table>
-
-<!-- ──────────────────────── BRIDGE ──────────────────────── -->
-<div class="web-h2">The ACP Bridge</div>
-
-<div class="web-cols">
-  <div>
-    <div class="web-h3">Why it exists</div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px">Browsers cannot use Node.js <code>child_process</code> or pipe stdio. The bridge is a <strong style="color:var(--text)">singleton class</strong> that lives on the Next.js server, owns all agent subprocesses, and exposes them through HTTP.</p>
-    <div class="web-h3">Singleton pattern</div>
-    <div class="code-block"><span class="c">// lib/acp-bridge.ts — bottom of file</span>
-<span class="k">const</span> g = <span class="t">global</span> <span class="k">as typeof</span> global & { _acpBridge?: <span class="t">AcpBridge</span> };
-<span class="k">export const</span> <span class="v">bridge</span> = g._acpBridge ?? <span class="k">new</span> <span class="fn">AcpBridge</span>();
-<span class="k">if</span> (process.env.NODE_ENV !== <span class="s">"production"</span>) {
-  g._acpBridge = bridge;  <span class="c">// survive hot-reload in dev</span>
-}</div>
-    <div class="info-box yellow" style="margin-top:12px;font-size:12px">
-      <strong>Hot-reload safety:</strong> In development, Next.js re-evaluates modules on change. Storing the instance on <code>global</code> ensures the same bridge (and all its running agent processes) survive a hot-reload without orphaning subprocesses.
-    </div>
-  </div>
-  <div>
-    <div class="web-h3">Internal state per session</div>
-    <div class="code-block"><span class="k">type</span> <span class="t">SessionEntry</span> = {
-  id: <span class="t">string</span>;               <span class="c">// our UUID</span>
-  agentName: <span class="t">string</span>;        <span class="c">// e.g. "opencode"</span>
-  agentCommand: <span class="t">string</span>;     <span class="c">// e.g. "opencode acp"</span>
-  cwd: <span class="t">string</span>;
-  name: <span class="t">string</span> | <span class="t">undefined</span>;  <span class="c">// from session_info_update</span>
-  connection: <span class="t">ClientSideConnection</span>;
-  child: <span class="t">ChildProcess</span>;
-  acpSessionId: <span class="t">string</span>;     <span class="c">// agent's session UUID</span>
-  status: <span class="s">"idle"</span>|<span class="s">"running"</span>|<span class="s">"closed"</span>;
-  createdAt: <span class="t">string</span>;
-  subscribers: <span class="t">Set</span>&lt;(e: <span class="t">BridgeEvent</span>) =&gt; <span class="t">void</span>&gt;;
-  pendingPermission: <span class="t">PendingPermission</span> | <span class="t">undefined</span>;
-  terminals: <span class="t">Map</span>&lt;<span class="t">string</span>, <span class="t">ManagedTerminal</span>&gt;;
-};</div>
-    <div class="info-box green" style="margin-top:12px;font-size:12px">
-      <strong>Definite-assignment trick:</strong> <code>let entry!: SessionEntry</code> is used so the ACP connection callbacks can close over <code>entry</code> before it's assigned — safe because callbacks only fire during <code>prompt()</code>, which happens <em>after</em> <code>entry</code> is set.
-    </div>
-  </div>
-</div>
-
-<div class="web-h3">Permission flow (async bridge pattern)</div>
-<div class="flow-diagram">
-  <div style="display:flex;align-items:flex-start;gap:0;overflow-x:auto">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:130px">
-      <div class="flow-box yellow" style="width:100%">Agent<small>calls requestPermission</small></div>
-      <div class="flow-arrow down">↓</div>
-      <div class="flow-box gray" style="width:100%">Bridge<small>creates Promise, stores resolve fn, emits SSE permission_request</small></div>
-      <div class="flow-arrow down">↓</div>
-      <div class="flow-box gray" style="width:100%;opacity:.5">Bridge<small>…awaits…</small></div>
-    </div>
-    <div class="flow-arrow" style="align-self:flex-start;margin-top:20px;font-size:22px">→→→</div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:130px">
-      <div class="flow-box blue" style="width:100%">Browser<small>receives SSE event</small></div>
-      <div class="flow-arrow down">↓</div>
-      <div class="flow-box blue" style="width:100%">Shows<small>PermissionCard UI</small></div>
-      <div class="flow-arrow down">↓</div>
-      <div class="flow-box blue" style="width:100%">User clicks<small>allow / reject</small></div>
-      <div class="flow-arrow down">↓</div>
-      <div class="flow-box blue" style="width:100%">POST /permission<small>{ requestId, optionId }</small></div>
-    </div>
-    <div class="flow-arrow" style="align-self:flex-end;margin-bottom:12px;font-size:22px">→→→</div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:130px">
-      <div style="height:130px"></div>
-      <div class="flow-box green" style="width:100%">Bridge<small>resolves Promise with outcome</small></div>
-      <div class="flow-arrow down">↓</div>
-      <div class="flow-box yellow" style="width:100%">Agent<small>receives response, continues</small></div>
-    </div>
-  </div>
-</div>
-
-<!-- ──────────────────────── STATE MANAGEMENT ──────────────────────── -->
-<div class="web-h2">Client State Management</div>
-
-<div class="web-cols">
-  <div>
-    <div class="web-h3">useReducer architecture (use-sessions.ts)</div>
-    <p style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:10px">All session + workspace state lives in a single <code>useReducer</code>. <strong style="color:var(--text)">dispatch is stable</strong> across renders, making it safe to capture in async SSE loops without stale closure issues.</p>
-    <div class="code-block"><span class="k">type</span> <span class="t">SessionsState</span> = {
-  slots: <span class="t">SessionSlot</span>[];
-  workspaces: <span class="t">Workspace</span>[];
-  initialized: <span class="t">boolean</span>;  <span class="c">// true after server reconcile</span>
-}
-
-<span class="c">// Actions</span>
-<span class="s">"INIT"</span>              <span class="c">// load from localStorage</span>
-<span class="s">"SET_INITIALIZED"</span>   <span class="c">// server reconcile done</span>
-<span class="s">"ADD_SLOT"</span>          <span class="c">// new session created</span>
-<span class="s">"UPDATE_SLOT"</span>       <span class="c">// patch any field by id</span>
-<span class="s">"UPDATE_LAST_ASSISTANT"</span> <span class="c">// stream chunk into message</span>
-<span class="s">"APPEND_MESSAGES"</span>   <span class="c">// push user+assistant msgs</span>
-<span class="s">"REMOVE_SLOT"</span>       <span class="c">// close session</span>
-<span class="s">"ADD_WORKSPACE"</span>
-<span class="s">"UPDATE_WORKSPACE"</span>  <span class="c">// collapse/rename</span>
-<span class="s">"REMOVE_WORKSPACE"</span>  <span class="c">// orphans → default</span></div>
-  </div>
-  <div>
-    <div class="web-h3">SessionSlot shape</div>
-    <div class="code-block"><span class="k">type</span> <span class="t">SessionSlot</span> = {
-  <span class="c">// — from server SessionInfo —</span>
-  id: <span class="t">string</span>;
-  agentName: <span class="t">string</span>;
-  agentCommand: <span class="t">string</span>;
-  cwd: <span class="t">string</span>;
-  name?: <span class="t">string</span>;           <span class="c">// from ACP session_info_update</span>
-  status: <span class="s">"idle"</span>|<span class="s">"running"</span>|<span class="s">"closed"</span>;
-  createdAt: <span class="t">string</span>;       <span class="c">// ISO 8601</span>
-  workspaceId: <span class="t">string</span>;
-
-  <span class="c">// — client-only —</span>
-  connectionStatus: <span class="s">"live"</span> | <span class="s">"disconnected"</span>;
-  messages: <span class="t">Message</span>[];
-  isRunning: <span class="t">boolean</span>;
-  pendingPermission: <span class="t">PendingPermission</span> | <span class="t">null</span>;
-  connectError: <span class="t">string</span> | <span class="t">null</span>;
-  connecting: <span class="t">boolean</span>;
-};</div>
-    <div class="info-box" style="margin-top:10px;font-size:12px">
-      <strong>connectionStatus:</strong> <code>"live"</code> = server session exists (can send prompts). <code>"disconnected"</code> = only in localStorage (server restarted) — UI shows history but disables input.
-    </div>
-  </div>
-</div>
-
-<div class="web-h3">Initialization sequence (on page load)</div>
-<ol class="steps">
-  <li>Browser renders <code>AiShell</code>. <code>useSessions()</code> + <code>useSettings()</code> mount. Initial state: empty slots, default settings.</li>
-  <li><span>useEffect fires:</span> Read <code>ai:sessions</code> + <code>ai:workspaces</code> from localStorage → dispatch <code>INIT</code>. All slots start as <code>connectionStatus: "disconnected"</code>.</li>
-  <li><span>Simultaneously:</span> <code>GET /ai/api/sessions</code> hits the bridge. For each server session, dispatch <code>UPDATE_SLOT({ connectionStatus: "live" })</code>. Sessions only on server (other tab) get <code>ADD_SLOT</code>.</li>
-  <li><span>After fetch resolves:</span> dispatch <code>SET_INITIALIZED</code> → <code>state.initialized = true</code>. Loading screen disappears.</li>
-  <li><span>useSettings loads:</span> Reads <code>ai:settings</code> from localStorage → <code>settingsLoaded = true</code>.</li>
-  <li><span>Auto-connect:</span> If both initialized + settingsLoaded, and <code>settings.autoConnect = true</code>, and no live sessions exist → call <code>createSession(defaultCwd, mainAgent)</code> → navigate to <code>/ai/{id}</code>.</li>
-</ol>
-
-<!-- ──────────────────────── LOCALSTORAGE ──────────────────────── -->
-<div class="web-h2">localStorage Schema</div>
-<table class="web-table">
-  <tr><th>Key</th><th>Shape</th><th>Notes</th></tr>
-  <tr>
-    <td>ai:sessions</td>
-    <td><code>StoredRecord[]</code><br><small style="color:var(--muted)">{ id, agentName, agentCommand, cwd, name?, status, createdAt, workspaceId, messages[] }</small></td>
-    <td>Messages capped at last 200 per session on write. Written after every reducer state change (only when initialized). try/catch guards against quota errors.</td>
-  </tr>
-  <tr>
-    <td>ai:workspaces</td>
-    <td><code>Workspace[]</code><br><small style="color:var(--muted)">{ id, name, createdAt, collapsed }</small></td>
-    <td>Default "main" workspace (id=<code>"default"</code>) is always ensured on load. Orphaned sessions (from removed workspaces) fall back to default.</td>
-  </tr>
-  <tr>
-    <td>ai:settings</td>
-    <td><code>AppSettings</code><br><small style="color:var(--muted)">{ defaultCwd, autoConnect, agentProfiles: { main } }</small></td>
-    <td>Written synchronously inside the <code>update()</code> callback. Loaded once on mount via useEffect.</td>
-  </tr>
-</table>
-
-<!-- ──────────────────────── ROUTING ──────────────────────── -->
-<div class="web-h2">Routing &amp; Layout</div>
-
-<div class="web-cols">
-  <div>
-    <div class="web-h3">URL structure</div>
-    <table class="web-table">
-      <tr><th>URL</th><th>What renders</th></tr>
-      <tr><td>/</td><td>Redirects to <code>/ai</code></td></tr>
-      <tr><td>/ai</td><td>New session form (pre-filled with defaultCwd)</td></tr>
-      <tr><td>/ai/{id}</td><td>Chat view for that session — reads slot from context by URL param</td></tr>
-      <tr><td>/ai/settings</td><td>Settings page (static route — takes priority over <code>[id]</code>)</td></tr>
-    </table>
-    <div class="info-box" style="margin-top:10px;font-size:12px">
-      <strong>Active session = URL.</strong> There is no <code>activeId</code> in state. The sidebar reads <code>usePathname()</code> to highlight the active session. Switching sessions = <code>router.push("/ai/{id}")</code>.
-    </div>
-  </div>
-  <div>
-    <div class="web-h3">Layout nesting</div>
-    <div class="flow-diagram" style="padding:16px">
-      <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
-        <div class="flow-box gray" style="width:100%;text-align:left;padding:8px 12px"><strong>app/layout.tsx</strong> (server)<small>ThemeProvider, global fonts</small></div>
-        <div class="flow-arrow down">↓ wraps</div>
-        <div class="flow-box blue" style="width:100%;text-align:left;padding:8px 12px"><strong>app/ai/layout.tsx</strong> (server)<small>renders &lt;AiShell&gt;{children}</small></div>
-        <div class="flow-arrow down">↓ wraps</div>
-        <div class="flow-box green" style="width:100%;text-align:left;padding:8px 12px"><strong>AiShell</strong> ("use client")<small>useSessions + useSettings → SessionsContext → sidebar + {children}</small></div>
-        <div class="flow-arrow down">↓ children slot</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%">
-          <div class="flow-box yellow" style="text-align:left;padding:8px 10px"><strong>app/ai/page.tsx</strong><small>New session form</small></div>
-          <div class="flow-box yellow" style="text-align:left;padding:8px 10px"><strong>app/ai/[id]/page.tsx</strong><small>Chat UI</small></div>
-        </div>
-      </div>
-    </div>
-    <div class="info-box" style="margin-top:10px;font-size:12px">
-      <strong>Why server layout?</strong> <code>app/ai/layout.tsx</code> is a server component that simply renders <code>&lt;AiShell&gt;</code>. AiShell is the real client boundary — it owns all hooks and provides context to every page under <code>/ai/*</code>.
-    </div>
-  </div>
-</div>
-
-<!-- ──────────────────────── SSE ──────────────────────── -->
-<div class="web-h2">SSE Streaming Implementation</div>
-
-<div class="web-cols">
-  <div>
-    <div class="web-h3">Server side (prompt/route.ts)</div>
-    <div class="code-block"><span class="c">// TransformStream bridges the async prompt() call</span>
-<span class="c">// to a streaming HTTP response</span>
-<span class="k">const</span> { readable, writable } = <span class="k">new</span> <span class="t">TransformStream</span>&lt;<span class="t">Uint8Array</span>&gt;();
-<span class="k">const</span> writer = writable.<span class="fn">getWriter</span>();
-<span class="k">const</span> encoder = <span class="k">new</span> <span class="t">TextEncoder</span>();
-
-<span class="k">const</span> <span class="fn">emit</span> = (event: <span class="t">BridgeEvent</span>): <span class="t">void</span> => {
-  writer.<span class="fn">write</span>(
-    encoder.<span class="fn">encode</span>(<span class="s">`data: ${</span><span class="t">JSON</span>.<span class="fn">stringify</span>(event)<span class="s">}\n\n`</span>)
-  ).<span class="fn">catch</span>(() => {});
-};
-
-<span class="c">// Run prompt async, close stream when done</span>
-bridge.<span class="fn">sendPrompt</span>(id, message, emit)
-  .<span class="fn">finally</span>(() => writer.<span class="fn">close</span>().<span class="fn">catch</span>(() => {}));
-
-<span class="k">return new</span> <span class="t">Response</span>(readable, {
-  headers: { <span class="s">"Content-Type"</span>: <span class="s">"text/event-stream"</span>, ... }
-});</div>
-  </div>
-  <div>
-    <div class="web-h3">Client side (use-sessions.ts)</div>
-    <div class="code-block"><span class="c">// Fetch returns a streaming ReadableStream</span>
-<span class="k">const</span> reader = res.body.<span class="fn">getReader</span>();
-<span class="k">const</span> decoder = <span class="k">new</span> <span class="t">TextDecoder</span>();
-<span class="k">let</span> buf = <span class="s">""</span>;
-
-<span class="k">while</span> (<span class="t">true</span>) {
-  <span class="k">const</span> { done, value } = <span class="k">await</span> reader.<span class="fn">read</span>();
-  <span class="k">if</span> (done) <span class="k">break</span>;
-  buf += decoder.<span class="fn">decode</span>(value, { stream: <span class="t">true</span> });
-  <span class="k">const</span> lines = buf.<span class="fn">split</span>(<span class="s">"\n"</span>);
-  buf = lines.<span class="fn">pop</span>() ?? <span class="s">""</span>;
-
-  <span class="k">for</span> (<span class="k">const</span> line <span class="k">of</span> lines) {
-    <span class="k">if</span> (!line.<span class="fn">startsWith</span>(<span class="s">"data: "</span>)) <span class="k">continue</span>;
-    <span class="k">const</span> ev = <span class="t">JSON</span>.<span class="fn">parse</span>(line.<span class="fn">slice</span>(<span class="v">6</span>)) <span class="k">as</span> <span class="t">BridgeEvent</span>;
-    <span class="c">// dispatch uses stable ref — safe in async loop</span>
-    <span class="fn">dispatch</span>({ type: <span class="s">"UPDATE_LAST_ASSISTANT"</span>, id, fn });
+    </section>
+
+    <section id="docs" class="docs-section">
+        <div class="container">
+            <div class="docs-container">
+                <div class="sidebar">
+                    <button class="tab-btn active" onclick="showTab('arch')"><i data-lucide="layers"></i> Architecture</button>
+                    <button class="tab-btn" onclick="showTab('commands')"><i data-lucide="command"></i> Commands</button>
+                    <button class="tab-btn" onclick="showTab('flow')"><i data-lucide="git-merge"></i> Data Flow</button>
+                    <button class="tab-btn" onclick="showTab('files')"><i data-lucide="file-code"></i> File Reference</button>
+                    <button class="tab-btn" onclick="showTab('runtime')"><i data-lucide="hard-drive"></i> Runtime</button>
+                    <button class="tab-btn" onclick="showTab('web')"><i data-lucide="layout"></i> Web App</button>
+                </div>
+
+                <div id="arch" class="content active">
+                    <h2>System Architecture</h2>
+                    <p class="muted">Belz AI is a monorepo consisting of shared core packages and specialized tool modules.</p>
+                    
+                    <div class="legend" style="margin-top: 24px;">
+                        <span class="legend-item"><div class="dot-s" style="background:var(--core);"></div> core</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--cli);"></div> cli</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--ad);"></div> ad</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--pd);"></div> pd</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--mig);"></div> migrate</span>
+                    </div>
+
+                    <div class="arch-grid">
+                        <div class="arch-box" style="border-color: var(--core);">
+                            <h4 style="color: var(--core);">@belz/core</h4>
+                            <ul>
+                                <li><span>config.ts</span> <span>~/.belz/config.json</span></li>
+                                <li><span>auth.ts</span> <span>Session Persistence</span></li>
+                                <li><span>api.ts</span> <span>Fetch/401 Refresh</span></li>
+                                <li><span>runner.ts</span> <span>CLI Dispatcher</span></li>
+                            </ul>
+                        </div>
+                        <div class="arch-box" style="border-color: var(--cli);">
+                            <h4 style="color: var(--cli);">belz cli</h4>
+                            <ul>
+                                <li><span>bin/cli.ts</span> <span>Dev Entry</span></li>
+                                <li><span>bin/cli-build.ts</span> <span>Prod Entry</span></li>
+                                <li><span>registry-*.ts</span> <span>Command Maps</span></li>
+                            </ul>
+                        </div>
+                        <div class="arch-box" style="border-color: var(--ad);">
+                            <h4 style="color: var(--ad);">Automation Designer</h4>
+                            <ul>
+                                <li><span>commands/</span> <span>get, run, show, test</span></li>
+                                <li><span>lib/hydrator.ts</span> <span>Service Resolver</span></li>
+                                <li><span>lib/sql/</span> <span>SQL TUI Engine</span></li>
+                            </ul>
+                        </div>
+                        <div class="arch-box" style="border-color: var(--pd);">
+                            <h4 style="color: var(--pd);">Page Designer</h4>
+                            <ul>
+                                <li><span>commands/analyze</span> <span>Recursive Dep Search</span></li>
+                                <li><span>lib/parser.ts</span> <span>Layout Regex Parser</span></li>
+                                <li><span>master_ids.txt</span> <span>Compliance Map</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="commands" class="content">
+                    <h2>CLI Reference</h2>
+                    
+                    <h3>Global Flags</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>--env &lt;name&gt;</code></td><td>Targets nsm-dev, nsm-qa, or nsm-uat. Default: nsm-dev.</td></tr>
+                                <tr><td><code>--llm</code></td><td>Outputs structured JSON for machine consumption.</td></tr>
+                                <tr><td><code>--help, -h</code></td><td>Shows context-aware usage and examples.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style="color: var(--ad);">Namespace: ad</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>get &lt;UUID&gt;</code></td><td>Fetch method metadata and input definitions.</td></tr>
+                                <tr><td><code>show &lt;UUID&gt;</code></td><td>Deep-inspect service steps, mappings, and outputs.</td></tr>
+                                <tr><td><code>test &lt;UUID&gt;</code></td><td>Run draft method with per-step trace logging.</td></tr>
+                                <tr><td><code>sql tui</code></td><td>Launch interactive SQL session for AD databases.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 style="color: var(--pd);">Namespace: pd</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>analyze [ID]</code></td><td>Recursive dependency and compliance analysis.</td></tr>
+                                <tr><td><code>find-ad-refs</code></td><td>Extract all AD method IDs from a page or component.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="flow" class="content">
+                    <h2>Data Flow</h2>
+                    <p class="muted">Tracing a standard authenticated request from CLI to NSM.</p>
+                    
+                    <div style="margin-top: 30px;">
+                        <div class="data-card">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">1. CLI Dispatch</h4>
+                            <p>Runner identifies the namespace (e.g., <code>ad</code>) and locates the command in the generated registry.</p>
+                        </div>
+                        <div class="data-card">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">2. Auth Reconcile</h4>
+                            <p>Core <code>auth.ts</code> checks local session. If missing or expired, it re-logs in using credentials from <code>config.json</code>.</p>
+                        </div>
+                        <div class="data-card">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">3. API Invocation</h4>
+                            <p>Request is sent via <code>apiFetch</code>. If a 401 occurs, the session is cleared and the request is retried once after re-auth.</p>
+                        </div>
+                        <div class="data-card">
+                            <h4 style="color: var(--primary); margin-bottom: 10px;">4. Hydration & Display</h4>
+                            <p>Raw JSON is parsed into domain types. <code>renderHuman</code> (tables) or <code>renderLLM</code> (JSON) prints to stdout.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="files" class="content">
+                    <h2>File Reference</h2>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Path</th><th>Role</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>packages/core/</code></td><td>Shared</td><td>The backbone of the project. Auth, API, Config.</td></tr>
+                                <tr><td><code>cli/bin/</code></td><td>Entry</td><td>CLI entry points for dev and prod.</td></tr>
+                                <tr><td><code>automation-designer/</code></td><td>Source</td><td>AD commands and domain logic.</td></tr>
+                                <tr><td><code>page-designer/</code></td><td>Source</td><td>PD recursive analysis and regex parsers.</td></tr>
+                                <tr><td><code>migrations/</code></td><td>Source</td><td>Migration profiles and WS log streaming.</td></tr>
+                                <tr><td><code>web/</code></td><td>UI</td><td>Next.js 16 ACP interface and session manager.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="runtime" class="content">
+                    <h2>Runtime Storage</h2>
+                    <p class="muted">All persistence happens under <code>~/.belz/</code>.</p>
+                    
+                    <div class="arch-grid" style="margin-top: 24px;">
+                        <div class="data-card">
+                            <h4>Config & Auth</h4>
+                            <ul style="list-style: none; font-size: 0.75rem; color: var(--muted);">
+                                <li><code>config.json</code>: User credentials</li>
+                                <li><code>sessions/*.json</code>: Active Bearer tokens</li>
+                            </ul>
+                        </div>
+                        <div class="data-card">
+                            <h4>Cache & Artifacts</h4>
+                            <ul style="list-style: none; font-size: 0.75rem; color: var(--muted);">
+                                <li><code>cache/methods/</code>: AD definitions</li>
+                                <li><code>migrations/profiles.json</code>: NSM metadata</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="web" class="content">
+                    <h2>Belz AI Web App</h2>
+                    <p class="muted">The modern UI for connecting local coding agents to your browser.</p>
+                    
+                    <h3>The ACP Bridge</h3>
+                    <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px;">
+                        Browsers cannot spawn processes. Belz AI uses a Node.js singleton bridge that proxies ACP JSON-RPC requests to agent subprocesses via stdio.
+                    </p>
+
+                    <div class="code-block">
+                        <code>// lib/acp-bridge.ts
+class AcpBridge {
+  private sessions = new Map<string, SessionEntry>();
+  
+  async sendPrompt(id: string, prompt: string, emit: Emitter) {
+    const entry = this.sessions.get(id);
+    return entry.connection.prompt({ sessionId: entry.acpId, prompt });
   }
-}</div>
-    <div class="info-box" style="margin-top:10px;font-size:12px">
-      <strong>Stale closure safety:</strong> <code>dispatch</code> from <code>useReducer</code> is guaranteed stable by React. The SSE loop closes over <code>dispatch</code> and the session's <code>id</code> (captured at sendPrompt call time) — never over mutable state.
-    </div>
-  </div>
-</div>
+}</code>
+                    </div>
 
-<!-- ──────────────────────── WORKSPACES ──────────────────────── -->
-<div class="web-h2">Workspaces &amp; Sessions Hierarchy</div>
+                    <h3>State Management</h3>
+                    <p style="font-size: 0.85rem; color: var(--muted);">
+                        Uses a centralized <code>useReducer</code> hook to manage multi-session state, ensuring SSE stream updates don't cause race conditions or stale closures.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
 
-<div class="web-cols cols3">
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Workspace</h3>
-    <div class="code-block" style="font-size:11px"><span class="k">type</span> <span class="t">Workspace</span> = {
-  id: <span class="t">string</span>;
-  name: <span class="t">string</span>;
-  createdAt: <span class="t">string</span>;
-  collapsed: <span class="t">boolean</span>;
-}</div>
-    <p style="font-size:12px;color:var(--muted);margin-top:8px">Always has a <code>"default"</code> workspace named <em>"main"</em>. Cannot be deleted. Orphaned sessions on workspace delete fall back to it.</p>
-  </div>
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Sidebar structure</h3>
-    <div class="code-block" style="font-size:11px;line-height:1.6"><span class="c">sessions  [🔍] [⊞ new workspace]</span>
-──────────────────────
-<span class="v">▼ main</span>                 [+]
-  <span class="c">── today ──────────────</span>
-  <span class="cli">● belz-ai      2:30pm</span>
-  <span class="c">── yesterday ──────────</span>
-  ○ sandbox      Mar 6
-──────────────────────
-<span class="v">▶ work</span>                     <span class="c">(collapsed)</span>
-──────────────────────
-<span class="gen">⚙ settings   (⌘,)</span></div>
-  </div>
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Date grouping</h3>
-    <p style="font-size:12px;color:var(--muted);line-height:1.7">Within each workspace, sessions are sorted by <code>createdAt</code> descending and grouped into date buckets:</p>
-    <ul style="list-style:none;margin-top:8px">
-      <li style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--bg3)"><code>"today"</code> — same calendar day</li>
-      <li style="font-size:12px;padding:3px 0;border-bottom:1px solid var(--bg3)"><code>"yesterday"</code> — prior calendar day</li>
-      <li style="font-size:12px;padding:3px 0"><code>"Mon Mar 3"</code> — formatted for older dates</li>
-    </ul>
-    <p style="font-size:12px;color:var(--muted);margin-top:8px">Separators only shown when sessions span multiple days.</p>
-  </div>
-</div>
+    <section id="install" class="container" style="padding: 100px 0; text-align: center; border-top: 1px solid var(--border);">
+        <h2 style="font-size: 2.4rem;">Get Started.</h2>
+        <p class="muted" style="margin-bottom: 40px;">Requires Bun 1.0+ and a valid NSM account.</p>
+        
+        <div style="max-width: 600px; margin: 0 auto; text-align: left;">
+            <div class="code-block">
+                <button class="copy" onclick="copyCode(this)"><i data-lucide="copy"></i></button>
+                <code>git clone https://github.com/parthkapoor-dev/belzabar.git
+cd belzabar
+bun run install
 
-<!-- ──────────────────────── SHORTCUTS ──────────────────────── -->
-<div class="web-h2">Keyboard Shortcuts &amp; Settings</div>
+# Setup credentials
+belz envs --setup</code>
+            </div>
+        </div>
+    </section>
 
-<div class="web-cols">
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px">Global shortcuts (AiShell)</h3>
-    <table class="web-table">
-      <tr><th>Shortcut</th><th>Action</th></tr>
-      <tr><td>⌘N</td><td>Navigate to <code>/ai</code> (new session form)</td></tr>
-      <tr><td>⌘K</td><td>Open search modal</td></tr>
-      <tr><td>⌘,</td><td>Navigate to <code>/ai/settings</code></td></tr>
-    </table>
-    <div class="info-box" style="margin-top:10px;font-size:12px">Implemented via <code>window.addEventListener("keydown", handler)</code> in a <code>useEffect</code> inside AiShell. Works everywhere in the app.</div>
-  </div>
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:10px">AppSettings (use-settings.ts)</h3>
-    <table class="web-table">
-      <tr><th>Field</th><th>Default</th><th>Purpose</th></tr>
-      <tr><td>defaultCwd</td><td><code>/home/parth/code/sandbox/belz-ai</code></td><td>Pre-fills new session form</td></tr>
-      <tr><td>autoConnect</td><td><code>true</code></td><td>Auto-start session on load</td></tr>
-      <tr><td>agentProfiles.main</td><td><code>"opencode"</code></td><td>Agent used for auto-connect + new sessions</td></tr>
-    </table>
-  </div>
-</div>
+    <footer style="padding: 60px 0; border-top: 1px solid var(--border); text-align: center; color: var(--muted); font-size: 0.75rem;">
+        <div class="logo" style="justify-content: center; margin-bottom: 12px;">
+            <i data-lucide="zap"></i> BELZ<span>AI</span>
+        </div>
+        <p>&copy; 2026 Belzabar Internal. For authorized NSM developers only.</p>
+    </footer>
 
-<!-- ──────────────────────── AGENT REGISTRY ──────────────────────── -->
-<div class="web-h2">AGENT_REGISTRY</div>
-<p style="font-size:13px;color:var(--muted);margin-bottom:10px">Defined in <code>lib/acp-types.ts</code>. Maps agent name → shell command to spawn. Add new agents here.</p>
-<table class="web-table">
-  <tr><th>Name</th><th>Command</th><th>Notes</th></tr>
-  <tr><td>opencode</td><td><code>opencode acp</code></td><td>Starts HTTP-based ACP server; SDK handles transport automatically</td></tr>
-  <tr><td>claude</td><td><code>npx -y @zed-industries/claude-agent-acp</code></td><td>Zed's Claude adapter</td></tr>
-  <tr><td>codex</td><td><code>npx @zed-industries/codex-acp</code></td><td>Zed's Codex adapter</td></tr>
-  <tr><td>gemini</td><td><code>gemini</code></td><td>Requires <code>--experimental-acp</code> flag in newer versions</td></tr>
-  <tr><td>pi</td><td><code>npx pi-acp</code></td><td>Pi agent adapter</td></tr>
-</table>
+    <script>
+        lucide.createIcons();
 
-<!-- ──────────────────────── ADDING FEATURES ──────────────────────── -->
-<div class="web-h2">How To…</div>
+        function showTab(id) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+            
+            document.querySelector(`[onclick="showTab('${id}')"]`).classList.add('active');
+            document.getElementById(id).classList.add('active');
+            
+            if (window.innerWidth <= 768) {
+                document.getElementById('docs').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
 
-<div class="web-cols">
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Add a new agent</h3>
-    <ol class="steps" style="font-size:12px">
-      <li>Add entry to <code>AGENT_REGISTRY</code> in <code>lib/acp-types.ts</code></li>
-      <li>It automatically appears in Settings → Agent Profiles dropdown</li>
-    </ol>
-  </div>
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Add a new BridgeEvent type</h3>
-    <ol class="steps" style="font-size:12px">
-      <li>Add variant to <code>BridgeEvent</code> union in <code>lib/acp-types.ts</code></li>
-      <li>Emit it in the relevant ACP callback in <code>lib/acp-bridge.ts</code></li>
-      <li>Handle it in the SSE loop in <code>hooks/use-sessions.ts</code> → dispatch reducer action</li>
-    </ol>
-  </div>
-  <div class="card">
-    <h3 style="font-size:13px;font-weight:600;margin-bottom:8px">Add a new setting</h3>
-    <ol class="steps" style="font-size:12px">
-      <li>Add field to <code>AppSettings</code> type + <code>DEFAULT_SETTINGS</code> in <code>hooks/use-settings.ts</code></li>
-      <li>Add UI for it in <code>app/ai/settings/page.tsx</code></li>
-      <li>Read from <code>useSessionsContext().settings</code> wherever needed</li>
-    </ol>
-  </div>
-</div>
-
-</div>
-<!-- ═══════════════════════════════════════════════════════════════ -->
-
-</div><!-- /content -->
-
-<script>
-function show(id) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  // Highlight the matching tab (works whether called from tab click or button)
-  var matchingTab = document.querySelector('.tab[onclick="show(\'' + id + '\')"]');
-  if (matchingTab) matchingTab.classList.add('active');
-  window.scrollTo(0, 0);
-}
-</script>
+        function copyCode(btn) {
+            const code = btn.nextElementSibling.innerText;
+            navigator.clipboard.writeText(code);
+            btn.innerHTML = '<i data-lucide="check"></i>';
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = '<i data-lucide="copy"></i>';
+                lucide.createIcons();
+            }, 2000);
+        }
+    </script>
 </body>
 </html>
