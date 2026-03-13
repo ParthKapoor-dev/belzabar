@@ -11,7 +11,10 @@ Flags (profiles):
   --raw               Include discovery diagnostics in output.
 
 Flags (run):
-  --module <PD|AD>    Module to migrate. (required)
+  --module <MODULE>   Module to migrate. (required)
+                      Known: AD_Method | PD | RD | CUSTOM_PD | AD_COMPARISON_REPORT |
+                             PD_COMPARISON_REPORT | PD_MIGRATION_STATUS | AD_MIGRATION_STATUS
+                      Use --module-custom for any other value.
   --ids <CSV>         Comma- or space-separated UUID list. (required)
   --profile <VALUE>   Explicit NSM profile (e.g. devncdns_qancdns).
 
@@ -23,6 +26,10 @@ Flags (run):
   --crud <Y|N>        Use CRUD API. (default: Y)
   --async <Y|N>       Async migration. (default: Y)
   --migrate-dependents <Y|N>  Migrate dependents. (default: N)
+
+  Note: Always use --crud Y, --async Y, --migrate-dependents N (the defaults) unless
+  explicitly instructed otherwise.
+
   --script-name <TEXT>  Override script name.
   --migration-id <UUID>  Optional migration ID field value.
   --cleanup <auto|never>  Cleanup after stream closes. (default: auto)
@@ -41,5 +48,5 @@ Examples:
   belz migrate profiles
   belz migrate profiles --refresh --raw
   belz migrate run --module PD --ids 4a5384efb22322c1af9bbbe62b2b8be4 --profile devncdns_qancdns
-  belz migrate run --module AD --ids-file ./ids.txt --source-env nsm-dev --target-env nsm-qa
-  belz migrate run --module AD --ids-file ./ids.txt --source-env nsm-dev --target-env nsm-qa --out ./runs --llm
+  belz migrate run --module AD_Method --ids-file ./ids.txt --source-env nsm-dev --target-env nsm-qa
+  belz migrate run --module AD_Method --ids-file ./ids.txt --source-env nsm-dev --target-env nsm-qa --out ./runs --llm

@@ -69,6 +69,17 @@ When adding new functionality:
 
 ---
 
+## Migration Defaults
+
+Always run migrations with the following flags (these are the defaults and should not be changed
+unless explicitly instructed):
+
+- `--crud Y` — API CRUD: true
+- `--async Y` — Is Async Migration: true
+- `--migrate-dependents N` — Migrate dependent methods: false
+
+---
+
 ## Maintainer Agent Instructions
 
 You are the Maintainer Agent. When you make a meaningful change to this module — new lib files,

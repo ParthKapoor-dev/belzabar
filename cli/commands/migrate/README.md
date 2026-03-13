@@ -23,10 +23,12 @@ bun run bin/cli.ts migrate run --module PD --ids <uuid1,uuid2> --profile devncdn
 
 ## Defaults
 
-- `--crud Y`
-- `--async Y`
-- `--migrate-dependents N`
+- `--crud Y` — API CRUD: true
+- `--async Y` — Is Async Migration: true
+- `--migrate-dependents N` — Migrate dependent methods: false
 - `--cleanup auto`
+
+Always use these defaults unless explicitly instructed otherwise.
 
 ## Output
 
