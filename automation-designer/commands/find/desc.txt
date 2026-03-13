@@ -1,0 +1,9 @@
+belz ad find  :->  List all service categories with method counts from the local method index
+belz ad find list  :->  Explicitly list all service categories with method counts
+belz ad find pick  :->  Open an interactive fzf picker to quickly select a method
+belz ad find pick <query>  :->  Open fzf picker with an initial query prefilled
+belz ad find pick <query> --open  :->  Open the selected method URL in browser after picker selection
+belz ad find <query>  :->  Search methods and categories by name, alias, UUID, and reference ID
+belz ad find <query> --limit <N>  :->  Return only the top N ranked matches
+belz ad find <query> --refresh  :->  Rebuild the index from AD APIs before searching
+belz ad find <query> --raw  :->  Include raw cached index payload in the command output

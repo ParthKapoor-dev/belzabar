@@ -12,7 +12,7 @@ The unified `belz` binary is built from `cli/` (repo root). This directory is a 
 ## Command Routing
 
 ```
-belz ad <cmd>      → fetch, show, test, run, save-suite, run-suites, sql
+belz ad <cmd>      → find, fetch, show, test, run, save-suite, run-suites, sql
 ```
 
 ## Tech
@@ -33,12 +33,13 @@ belz ad <cmd>      → fetch, show, test, run, save-suite, run-suites, sql
 ### AD Commands (`belz ad <cmd>`)
 
 1. `fetch`
-2. `show`
-3. `test`
-4. `run`
-5. `save-suite`
-6. `run-suites`
-7. `sql`
+2. `find`
+3. `show`
+4. `test`
+5. `run`
+6. `save-suite`
+7. `run-suites`
+8. `sql`
 
 ## Core Behavior Contract
 
@@ -47,6 +48,7 @@ belz ad <cmd>      → fetch, show, test, run, save-suite, run-suites, sql
 3. `execute` contains business logic and returns `ok(...)`/`fail(...)` or throws `CliError`.
 4. `presentHuman` is optional and only for human-friendly rendering.
 5. Command modules must not call `process.exit` or print ad-hoc output for machine mode.
+6. `find` supports `list` (category counts), query search, and `pick` (interactive `fzf` method picker in human mode only), plus `--open` to open the selected method URL after pick.
 
 ## Output Contract
 
@@ -67,9 +69,10 @@ All runtime state lives under `~/.belz/`:
 
 1. Auth sessions: `~/.belz/sessions/<env>.json`
 2. Method cache: `~/.belz/cache/methods/<uuid>.json` (TTL 5 minutes)
-3. Service definition cache: `~/.belz/cache/definitions/<automationId>.json`
-4. Migration profile cache: `~/.belz/migrations/nsm-profiles.json`
-5. Local test suites: `./suites/*.spec.json`
+3. Method finder index cache: `~/.belz/cache/method-finder/index-v1-<env>.json` (TTL 7 days)
+4. Service definition cache: `~/.belz/cache/definitions/<automationId>.json`
+5. Migration profile cache: `~/.belz/migrations/nsm-profiles.json`
+6. Local test suites: `./suites/*.spec.json`
 
 ## `~/.belz/config.json`
 
@@ -100,16 +103,18 @@ Run `bun run generate` from `cli/` to regenerate all registries (not from this d
 ## Important Files for Agents
 
 1. API wrappers: `lib/api.ts`
-2. Method parser: `lib/parser.ts`
-3. Show command deep inspection: `commands/show/index.ts`
-4. Test payload injection: `lib/payload-builder.ts`
-5. Trace error interpretation: `lib/error-parser.ts`
-6. MCP adapter: `integrations/gemini-mcp/server.ts`
-7. SQL command entrypoint: `commands/sql/index.ts`
-8. SQL helper modules: `lib/sql/`
-9. SQL TUI session: `lib/sql/tui/session.ts`
-10. Migration command entrypoint: `cli/commands/migrate/index.ts`
-11. Migration helper modules: `migrations/lib/`
+2. Method finder index/search logic: `lib/method-finder.ts`
+3. Method parser: `lib/parser.ts`
+4. Find command entrypoint: `commands/find/index.ts`
+5. Show command deep inspection: `commands/show/index.ts`
+6. Test payload injection: `lib/payload-builder.ts`
+7. Trace error interpretation: `lib/error-parser.ts`
+8. MCP adapter: `integrations/gemini-mcp/server.ts`
+9. SQL command entrypoint: `commands/sql/index.ts`
+10. SQL helper modules: `lib/sql/`
+11. SQL TUI session: `lib/sql/tui/session.ts`
+12. Migration command entrypoint: `cli/commands/migrate/index.ts`
+13. Migration helper modules: `migrations/lib/`
 
 ## Known Current Gaps
 

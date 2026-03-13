@@ -1,0 +1,27 @@
+Usage: belz ad find [LIST|PICK|QUERY] [flags]
+
+Find Automation Designer methods and categories from a cached local index.
+With no query (or `LIST`), lists all categories with method counts.
+
+Arguments:
+  [LIST|PICK|QUERY]   LIST shows category counts.
+                      PICK opens an interactive fzf picker.
+                      QUERY runs ranked search over methods and categories.
+
+Flags:
+  --refresh           Rebuild method index from API before searching.
+  --limit <N>         Maximum number of matches to return. (default: 20)
+  --open              Open selected method URL in browser. (pick mode only)
+  --raw               Include raw cached index data in output.
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz ad find list
+  belz ad find pick _lookupDCIN --open
+  belz ad find "documents helper" --limit 30
+  belz ad find _lookupDCIN --refresh --llm

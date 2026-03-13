@@ -5,6 +5,7 @@ import * as test from "../../automation-designer/commands/test/index";
 import * as run_suites from "../../automation-designer/commands/run-suites/index";
 import * as save_suite from "../../automation-designer/commands/save-suite/index";
 import * as fetch from "../../automation-designer/commands/fetch/index";
+import * as find from "../../automation-designer/commands/find/index";
 import * as sql from "../../automation-designer/commands/sql/index";
 import * as show from "../../automation-designer/commands/show/index";
 
@@ -14,6 +15,7 @@ export const ADCommandRegistry: Record<string, any> = {
   "run-suites": run_suites,
   "save-suite": save_suite,
   "fetch": fetch,
+  "find": find,
   "sql": sql,
   "show": show,
 };
