@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Belzabar Codebase Map</title>
+<title>Belzabar — Internal Developer Toolset</title>
 <style>
   :root {
     --bg: #0d1117;
@@ -266,15 +266,225 @@
     .code-block { font-size: 10.5px; padding: 8px 10px; }
     .flow-diagram { padding: 12px; }
   }
+
+  /* ── Landing page ── */
+  .hero {
+    padding: 48px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .hero-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .6px;
+    text-transform: uppercase;
+    background: rgba(63,185,80,.15);
+    color: var(--cli);
+    border: 1px solid rgba(63,185,80,.3);
+    border-radius: 20px;
+    padding: 3px 12px;
+    margin-bottom: 18px;
+  }
+  .hero h2 {
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 14px;
+    letter-spacing: -.3px;
+  }
+  .hero h2 span { color: var(--cli); }
+  .hero p {
+    font-size: 16px;
+    color: var(--muted);
+    max-width: 560px;
+    line-height: 1.7;
+    margin-bottom: 28px;
+  }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity .15s;
+    text-decoration: none;
+  }
+  .btn:hover { opacity: .85; }
+  .btn-primary { background: var(--cli); color: #000; }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .hero-stats { display: flex; gap: 32px; flex-wrap: wrap; margin-top: 36px; padding-top: 36px; border-top: 1px solid var(--border); }
+  .stat-item { display: flex; flex-direction: column; gap: 4px; }
+  .stat-num { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-label { font-size: 12px; color: var(--muted); }
+
+  .lp-section-title {
+    font-size: 11px; font-weight: 700; letter-spacing: .8px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .lp-heading {
+    font-size: 22px; font-weight: 700; margin-bottom: 8px;
+  }
+  .lp-sub {
+    font-size: 14px; color: var(--muted); margin-bottom: 28px; max-width: 540px; line-height: 1.6;
+  }
+
+  .product-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 48px; }
+  .product-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .product-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .product-card.cli::before { background: var(--cli); }
+  .product-card.ext::before { background: var(--ext); }
+  .product-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; margin-bottom: 14px;
+  }
+  .product-icon.cli { background: rgba(63,185,80,.15); }
+  .product-icon.ext { background: rgba(86,211,100,.15); }
+  .product-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .product-card > p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+  .product-tag { display: inline-block; font-family: monospace; font-size: 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px; color: var(--text); margin-bottom: 16px; }
+  .feature-pill-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .feature-pill {
+    font-size: 11px; font-weight: 500;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 20px; padding: 3px 10px; color: var(--muted);
+  }
+
+  .cmd-section { margin-bottom: 44px; }
+  .cmd-section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-section-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; flex-shrink: 0;
+  }
+  .cmd-section-icon.ad  { background: rgba(210,153,34,.15); }
+  .cmd-section-icon.pd  { background: rgba(188,140,255,.15); }
+  .cmd-section-icon.mig { background: rgba(248,81,73,.15); }
+  .cmd-section-icon.env { background: rgba(56,139,253,.15); }
+  .cmd-section-header h3 { font-size: 15px; font-weight: 700; }
+  .cmd-section-header .ns { font-family: monospace; font-size: 12px; color: var(--muted); }
+  .cmd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .cmd-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 14px 16px;
+  }
+  .cmd-card .cmd-name { font-family: monospace; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 5px; }
+  .cmd-card .cmd-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .cmd-card .cmd-flags { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .cmd-flag { font-family: monospace; font-size: 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; color: var(--muted); }
+
+  .ext-features-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-bottom: 44px; }
+  .ext-feature {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .ext-feature-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: rgba(86,211,100,.12);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .ext-feature h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .ext-feature p  { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .ext-feature .shortcut { font-family: monospace; font-size: 10px; background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; color: var(--text); margin-top: 6px; display: inline-block; }
+
+  .install-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 24px; margin-bottom: 44px;
+  }
+  .install-box h3 { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  .install-steps { display: flex; flex-direction: column; gap: 0; }
+  .install-step {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 14px 0; border-bottom: 1px solid var(--bg3);
+  }
+  .install-step:last-child { border-bottom: none; }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(63,185,80,.15); color: var(--cli);
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step-body h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .step-body p { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .code-snippet {
+    font-family: monospace; font-size: 12px;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 6px; padding: 8px 12px;
+    color: var(--text); white-space: pre;
+    overflow-x: auto; display: block; margin-top: 6px;
+  }
+
+  .docs-cta {
+    display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+    background: linear-gradient(135deg, rgba(63,185,80,.08) 0%, rgba(56,139,253,.08) 100%);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px; margin-bottom: 40px;
+  }
+  .docs-cta-text h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+  .docs-cta-text p { font-size: 13px; color: var(--muted); max-width: 480px; }
+  .docs-cta-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+  .docs-nav-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 6px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--bg2); color: var(--text);
+    transition: border-color .15s, background .15s;
+  }
+  .docs-nav-btn:hover { border-color: var(--cli); background: rgba(63,185,80,.08); }
+
+  .global-flags-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 18px; margin-bottom: 44px;
+  }
+  .global-flags-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; }
+  .flag-row {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 10px 0; border-bottom: 1px solid var(--bg3); font-size: 12px;
+  }
+  .flag-row:last-child { border-bottom: none; }
+  .flag-name { font-family: monospace; color: var(--core); min-width: 160px; font-weight: 600; flex-shrink: 0; }
+  .flag-desc { color: var(--muted); line-height: 1.5; }
+
+  @media (max-width: 768px) {
+    .hero h2 { font-size: 24px; }
+    .hero p { font-size: 14px; }
+    .product-grid { grid-template-columns: 1fr; }
+    .docs-cta { flex-direction: column; }
+    .docs-cta-actions { margin-left: 0; }
+    .hero-stats { gap: 20px; }
+  }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>Belzabar Codebase Map</h1>
-  <p>Architecture, modules, data flow, and file reference for the unified <code>belz</code> CLI monorepo.</p>
+  <h1>Belzabar</h1>
+  <p>Internal developer toolset for working with the NSM platform — <code>belz</code> CLI and browser extension.</p>
   <div class="tabs">
-    <div class="tab active" onclick="show('overview')">Overview</div>
+    <div class="tab active" onclick="show('home')">Home</div>
+    <div class="tab" onclick="show('overview')">Architecture</div>
     <div class="tab" onclick="show('modules')">Modules</div>
     <div class="tab" onclick="show('flow')">Data Flow</div>
     <div class="tab" onclick="show('files')">File Reference</div>
@@ -286,8 +496,358 @@
 
 <div class="content">
 
+<!-- ══════════════════════════════════════════════════════ HOME ══ -->
+<div id="home" class="section active">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Internal Developer Toolset</div>
+    <h2>Build faster on <span>NSM</span>.</h2>
+    <p>Belzabar ships two tools that reduce friction when diagnosing, testing, and migrating Automation Designer and Page Designer work — a unified CLI and a browser extension.</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary" onclick="show('home'); document.getElementById('install-section').scrollIntoView({behavior:'smooth'})">
+        &#x2193; Quick Install
+      </button>
+      <button class="btn btn-secondary" onclick="show('overview')">
+        View Architecture &rarr;
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <span class="stat-num">12</span>
+        <span class="stat-label">CLI commands</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">6</span>
+        <span class="stat-label">Extension features</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">3</span>
+        <span class="stat-label">Environments</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num">40+</span>
+        <span class="stat-label">Unit tests</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Products -->
+  <div class="lp-section-title">What's included</div>
+  <div class="lp-heading">Two tools, one repo</div>
+  <div class="lp-sub">Both products target the NSM web platform and are built with Bun + TypeScript. They can be used independently.</div>
+  <div class="product-grid mb24">
+    <div class="product-card cli">
+      <div class="product-icon cli">&#x26A1;</div>
+      <div class="product-tag">belz</div>
+      <h3>belz CLI</h3>
+      <p>A unified command-line tool for inspecting, testing, and running Automation Designer methods, analyzing Page Designer pages, and triggering database migrations.</p>
+      <div class="feature-pill-list">
+        <span class="feature-pill">belz ad</span>
+        <span class="feature-pill">belz pd</span>
+        <span class="feature-pill">belz migrate</span>
+        <span class="feature-pill">belz envs</span>
+        <span class="feature-pill">--llm output</span>
+        <span class="feature-pill">multi-env</span>
+      </div>
+    </div>
+    <div class="product-card ext">
+      <div class="product-icon ext">&#x1F9E9;</div>
+      <div class="product-tag">MV3 extension</div>
+      <h3>Browser Extension</h3>
+      <p>A Manifest V3 content script that enhances the AD and PD web UIs with a JSON bulk-editor, CodeMirror textarea modal, keyboard shortcuts, and more.</p>
+      <div class="feature-pill-list">
+        <span class="feature-pill">JSON editor</span>
+        <span class="feature-pill">CodeMirror modal</span>
+        <span class="feature-pill">Ctrl+Shift+Enter</span>
+        <span class="feature-pill">Output copy</span>
+        <span class="feature-pill">Title updater</span>
+        <span class="feature-pill">Settings</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLI Commands -->
+  <div class="lp-section-title">CLI Reference</div>
+  <div class="lp-heading">belz command reference</div>
+  <div class="lp-sub">All commands support <code>--env &lt;name&gt;</code> to target nsm-dev, nsm-qa, or nsm-uat, and <code>--llm</code> for structured JSON output.</div>
+
+  <!-- Global flags -->
+  <div class="global-flags-card">
+    <h3>Global flags — available on every command</h3>
+    <div class="flag-row">
+      <span class="flag-name">--env &lt;name&gt;</span>
+      <span class="flag-desc">Set the active environment. Default: <code>nsm-dev</code>. Options: <code>nsm-dev</code>, <code>nsm-qa</code>, <code>nsm-uat</code>.</span>
+    </div>
+    <div class="flag-row">
+      <span class="flag-name">--llm</span>
+      <span class="flag-desc">Output a structured JSON envelope instead of formatted text — useful for scripting or AI-assisted workflows.</span>
+    </div>
+    <div class="flag-row">
+      <span class="flag-name">--help, -h</span>
+      <span class="flag-desc">Show usage, arguments, flags, and examples for any command.</span>
+    </div>
+  </div>
+
+  <!-- belz ad -->
+  <div class="cmd-section">
+    <div class="cmd-section-header">
+      <div class="cmd-section-icon ad">&#x2699;</div>
+      <div>
+        <h3>Automation Designer</h3>
+        <span class="ns">belz ad &lt;command&gt;</span>
+      </div>
+    </div>
+    <div class="cmd-grid">
+      <div class="cmd-card">
+        <div class="cmd-name">belz ad get &lt;UUID&gt;</div>
+        <div class="cmd-desc">Fetch a method by UUID or referenceId. Returns metadata and input definitions.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz ad show &lt;UUID&gt;</div>
+        <div class="cmd-desc">Deep inspection — all inputs, service steps with mappings, and outputs.</div>
+        <div class="cmd-flags">
+          <span class="cmd-flag">--inputs</span>
+          <span class="cmd-flag">--services</span>
+          <span class="cmd-flag">--full</span>
+          <span class="cmd-flag">--raw</span>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz ad test &lt;UUID&gt;</div>
+        <div class="cmd-desc">Run a test payload against the draft method. Shows per-step execution trace.</div>
+        <div class="cmd-flags">
+          <span class="cmd-flag">--input file.json</span>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz ad run &lt;UUID&gt;</div>
+        <div class="cmd-desc">Execute the published method in live mode with a provided payload.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz ad save-suite &lt;UUID&gt;</div>
+        <div class="cmd-desc">Save the current test inputs as a named spec to <code>suites/*.spec.json</code>.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz ad run-suites</div>
+        <div class="cmd-desc">Run all saved test suite specs and report pass/fail results.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz ad sql</div>
+        <div class="cmd-desc">SQL interface for AD databases.</div>
+        <div class="cmd-flags">
+          <span class="cmd-flag">dbs</span>
+          <span class="cmd-flag">run &lt;db&gt; &lt;query&gt;</span>
+          <span class="cmd-flag">tui</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- belz pd -->
+  <div class="cmd-section">
+    <div class="cmd-section-header">
+      <div class="cmd-section-icon pd">&#x1F4C4;</div>
+      <div>
+        <h3>Page Designer</h3>
+        <span class="ns">belz pd &lt;command&gt;</span>
+      </div>
+    </div>
+    <div class="cmd-grid">
+      <div class="cmd-card">
+        <div class="cmd-name">belz pd show-page &lt;DRAFT_ID&gt;</div>
+        <div class="cmd-desc">Fetch and display page config, layout structure, and referenced AD method IDs.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz pd show-component &lt;NAME&gt;</div>
+        <div class="cmd-desc">Search for and display a component's config and AD refs by component name.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz pd find-ad-methods &lt;ID&gt;</div>
+        <div class="cmd-desc">Extract all AD method IDs referenced in a page or component.</div>
+        <div class="cmd-flags">
+          <span class="cmd-flag">--recursive</span>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz pd inspect-url &lt;PD_URL&gt;</div>
+        <div class="cmd-desc">Parse a full PD URL and return metadata, children, and AD refs.</div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz pd analyze [PAGE_ID]</div>
+        <div class="cmd-desc">Recursive dependency and compliance analysis from root pages. Compares discovered AD IDs against <code>master_ids.txt</code>.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- belz migrate -->
+  <div class="cmd-section">
+    <div class="cmd-section-header">
+      <div class="cmd-section-icon mig">&#x1F504;</div>
+      <div>
+        <h3>Migrations</h3>
+        <span class="ns">belz migrate &lt;command&gt;</span>
+      </div>
+    </div>
+    <div class="cmd-grid">
+      <div class="cmd-card">
+        <div class="cmd-name">belz migrate profiles</div>
+        <div class="cmd-desc">List available migration profiles (source → target environment pairs).</div>
+        <div class="cmd-flags">
+          <span class="cmd-flag">--refresh</span>
+        </div>
+      </div>
+      <div class="cmd-card">
+        <div class="cmd-name">belz migrate run</div>
+        <div class="cmd-desc">Trigger a migration run. Streams live log output via WebSocket. Only <strong>Published</strong> IDs can be migrated.</div>
+        <div class="cmd-flags">
+          <span class="cmd-flag">--module AD|PD</span>
+          <span class="cmd-flag">--ids "id1,id2"</span>
+          <span class="cmd-flag">--source-env</span>
+          <span class="cmd-flag">--target-env</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- belz envs -->
+  <div class="cmd-section">
+    <div class="cmd-section-header">
+      <div class="cmd-section-icon env">&#x1F310;</div>
+      <div>
+        <h3>Environments</h3>
+        <span class="ns">belz envs</span>
+      </div>
+    </div>
+    <div class="cmd-grid">
+      <div class="cmd-card">
+        <div class="cmd-name">belz envs</div>
+        <div class="cmd-desc">Lists all configured environments — <code>nsm-dev</code>, <code>nsm-qa</code>, <code>nsm-uat</code> — with the active environment flagged.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extension Features -->
+  <div class="lp-section-title">Browser Extension</div>
+  <div class="lp-heading">Enhance the AD &amp; PD web UIs</div>
+  <div class="lp-sub">Load the extension in Chrome or Edge to get powerful editing and shortcut features directly inside the NSM web interface.</div>
+  <div class="ext-features-grid">
+    <div class="ext-feature">
+      <div class="ext-feature-icon">&#x1F4DD;</div>
+      <div>
+        <h4>JSON Editor</h4>
+        <p>Bulk-edit all AD test inputs via a CodeMirror modal. Changes sync back to DOM controls instantly.</p>
+      </div>
+    </div>
+    <div class="ext-feature">
+      <div class="ext-feature-icon">&#x270F;</div>
+      <div>
+        <h4>Textarea Editor</h4>
+        <p>Open any native <code>&lt;textarea&gt;</code> in a full CodeMirror modal with syntax highlighting, line numbers, and wrap toggle.</p>
+      </div>
+    </div>
+    <div class="ext-feature">
+      <div class="ext-feature-icon">&#x1F4CB;</div>
+      <div>
+        <h4>Output Copy</h4>
+        <p>Hover-revealed copy button on each output container — no more manual selection.</p>
+      </div>
+    </div>
+    <div class="ext-feature">
+      <div class="ext-feature-icon">&#x26A1;</div>
+      <div>
+        <h4>Run Test Shortcut</h4>
+        <p>Trigger the Run Test button from anywhere on the page.</p>
+        <span class="shortcut">Ctrl+Shift+Enter</span>
+      </div>
+    </div>
+    <div class="ext-feature">
+      <div class="ext-feature-icon">&#x2699;</div>
+      <div>
+        <h4>Extension Settings</h4>
+        <p>Toggle any feature and store textarea editor defaults per-session.</p>
+        <span class="shortcut">Ctrl+,</span>
+      </div>
+    </div>
+    <div class="ext-feature">
+      <div class="ext-feature-icon">&#x1F3F7;</div>
+      <div>
+        <h4>Title Updater</h4>
+        <p>Appends the method name from AD to the browser page title — useful when you have multiple tabs open.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Install -->
+  <div id="install-section">
+    <div class="lp-section-title">Getting started</div>
+    <div class="lp-heading">Install the CLI</div>
+    <div class="lp-sub">Requires <a href="https://bun.sh" style="color:var(--cli)">Bun</a> ≥ 1.x. The install script handles dependencies, builds the binary, and walks through credential setup.</div>
+    <div class="install-box">
+      <h3>Quick install</h3>
+      <div class="install-steps">
+        <div class="install-step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>Install Bun (if needed)</h4>
+            <code class="code-snippet">curl -fsSL https://bun.sh/install | bash</code>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>Clone and install</h4>
+            <p>The install script builds the binary and prompts for credentials.</p>
+            <code class="code-snippet">git clone &lt;repo-url&gt; belzabar &amp;&amp; cd belzabar
+bun run install</code>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>Add to PATH</h4>
+            <code class="code-snippet">export PATH="$PATH:$HOME/.local/bin"</code>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>Verify install</h4>
+            <code class="code-snippet">belz --help</code>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h4>Load the browser extension (optional)</h4>
+            <p>Open <code>chrome://extensions</code>, enable Developer Mode, click <strong>Load unpacked</strong>, and select the <code>extension/</code> directory.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Docs CTA -->
+  <div class="docs-cta">
+    <div class="docs-cta-text">
+      <h3>Explore the codebase docs</h3>
+      <p>Architecture diagrams, module trees, data flow, file reference, runtime data, and more are available in the documentation tabs above.</p>
+    </div>
+    <div class="docs-cta-actions">
+      <button class="docs-nav-btn" onclick="show('overview')">Architecture</button>
+      <button class="docs-nav-btn" onclick="show('modules')">Modules</button>
+      <button class="docs-nav-btn" onclick="show('flow')">Data Flow</button>
+      <button class="docs-nav-btn" onclick="show('files')">File Reference</button>
+      <button class="docs-nav-btn" onclick="show('runtime')">Runtime Data</button>
+      <button class="docs-nav-btn" onclick="show('web')">Web App</button>
+    </div>
+  </div>
+
+</div>
+<!-- ═══════════════════════════════════════════════════════════════ -->
+
 <!-- ═══════════════════════════════════════════════════ OVERVIEW ══ -->
-<div id="overview" class="section active">
+<div id="overview" class="section">
   <div class="legend mb16">
     <span class="legend-item"><span class="dot" style="background:var(--core)"></span> packages/core</span>
     <span class="legend-item"><span class="dot" style="background:var(--cli)"></span> cli/</span>
@@ -1468,7 +2028,10 @@ function show(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  event.target.classList.add('active');
+  // Highlight the matching tab (works whether called from tab click or button)
+  var matchingTab = document.querySelector('.tab[onclick="show(\'' + id + '\')"]');
+  if (matchingTab) matchingTab.classList.add('active');
+  window.scrollTo(0, 0);
 }
 </script>
 </body>
