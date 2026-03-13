@@ -281,7 +281,6 @@ export function useSessions() {
       })
       .catch(() => {})
       .finally(() => dispatch({ type: "SET_INITIALIZED" }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Persist on every state change
@@ -325,13 +324,10 @@ export function useSessions() {
 
   const removeSession = useCallback(
     async (id: string) => {
-      const slot = state.slots.find((s) => s.id === id)
-      if (slot?.connectionStatus === "live") {
-        fetch(`/ai/api/sessions/${id}`, { method: "DELETE" }).catch(() => {})
-      }
+      fetch(`/ai/api/sessions/${id}`, { method: "DELETE" }).catch(() => {})
       dispatch({ type: "REMOVE_SLOT", id })
     },
-    [state.slots],
+    [],
   )
 
   const sendPrompt = useCallback(

@@ -13,14 +13,12 @@ export type SessionsContextValue = {
   cancelPrompt: (id: string) => Promise<void>
   resolvePermission: (id: string, optionId: string | null) => Promise<void>
 
-  // Workspaces
+  // Workspaces (kept for internal use, not surfaced in UI)
   workspaces: Workspace[]
   createWorkspace: (name: string) => string
   removeWorkspace: (id: string) => void
   toggleWorkspace: (id: string) => void
   renameWorkspace: (id: string, name: string) => void
-  pendingWorkspaceId: string
-  setPendingWorkspaceId: (id: string) => void
 
   // Settings
   settings: AppSettings

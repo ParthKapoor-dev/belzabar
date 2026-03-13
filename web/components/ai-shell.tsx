@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation"
 import { SessionSidebar } from "@/components/session-sidebar"
 import { SearchModal } from "@/components/search-modal"
 import { SessionsContext } from "@/lib/sessions-context"
-import { useSessions, DEFAULT_WORKSPACE_ID } from "@/hooks/use-sessions"
+import { useSessions } from "@/hooks/use-sessions"
 import { useSettings } from "@/hooks/use-settings"
 
 export function AiShell({ children }: { children: React.ReactNode }) {
@@ -13,15 +13,23 @@ export function AiShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
   const {
-    slots, workspaces, initialized,
-    createSession, removeSession, sendPrompt, cancelPrompt, resolvePermission,
-    createWorkspace, removeWorkspace, toggleWorkspace, renameWorkspace,
+    slots,
+    initialized,
+    createSession,
+    removeSession,
+    sendPrompt,
+    cancelPrompt,
+    resolvePermission,
+    createWorkspace,
+    removeWorkspace,
+    toggleWorkspace,
+    renameWorkspace,
   } = useSessions()
   const { settings, update: updateSettings, loaded: settingsLoaded } = useSettings()
 
   const [searchOpen, setSearchOpen] = useState(false)
-  const [pendingWorkspaceId, setPendingWorkspaceId] = useState(DEFAULT_WORKSPACE_ID)
-  const autoConnectFired = useRef(false)
+  const [namespaces, setNamespaces] = useState<string[]>([])
+  const reconnectFired = useRef(false)
 
   // Derive active session id from URL: /ai/<id>
   const segments = pathname.split("/")
@@ -30,24 +38,39 @@ export function AiShell({ children }: { children: React.ReactNode }) {
       ? segments[2]
       : null
 
-  // ─── Auto-connect ───────────────────────────────────────────────────────────
+  // Fetch namespaces once
   useEffect(() => {
-    if (!initialized || !settingsLoaded || autoConnectFired.current) return
-    if (!settings.autoConnect || !settings.defaultCwd) return
-    const hasLive = slots.some((s) => s.connectionStatus === "live")
-    if (hasLive) return
-    autoConnectFired.current = true
-    createSession(settings.defaultCwd, settings.agentProfiles.main, DEFAULT_WORKSPACE_ID)
-      .then((id) => { if (id) router.push(`/ai/${id}`) })
-  }, [initialized, settingsLoaded, slots, settings, createSession, router])
+    fetch("/ai/api/namespaces")
+      .then((r) => r.json())
+      .then((data: { namespaces: string[] }) => setNamespaces(data.namespaces))
+      .catch(() => {})
+  }, [])
+
+  // Task 9: After reconciliation, if on /ai and live sessions exist, navigate to the first live one
+  useEffect(() => {
+    if (!initialized || reconnectFired.current) return
+    reconnectFired.current = true
+    if (pathname !== "/ai") return
+    const firstLive = slots.find((s) => s.connectionStatus === "live")
+    if (firstLive) router.push(`/ai/${firstLive.id}`)
+  }, [initialized]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey
-      if (mod && e.key === ",") { e.preventDefault(); router.push("/ai/settings") }
-      if (mod && e.key === "n") { e.preventDefault(); router.push("/ai") }
-      if (mod && e.key === "k") { e.preventDefault(); setSearchOpen(true) }
+      if (mod && e.key === ",") {
+        e.preventDefault()
+        router.push("/ai/settings")
+      }
+      if (mod && e.key === "n") {
+        e.preventDefault()
+        router.push("/ai")
+      }
+      if (mod && e.key === "k") {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
     }
     window.addEventListener("keydown", handler)
     return () => window.removeEventListener("keydown", handler)
@@ -62,25 +85,15 @@ export function AiShell({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const handleNewInWorkspace = (workspaceId: string) => {
-    setPendingWorkspaceId(workspaceId)
-    router.push("/ai")
-  }
-
   const isLoading = !initialized || !settingsLoaded
 
   if (isLoading) {
     return (
       <div className="flex h-svh items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-3 text-center px-8">
-          <div className="flex gap-1">
-            <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.3s]" />
-            <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.15s]" />
-            <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce" />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            creating a connection to the default workspace. please wait…
-          </p>
+        <div className="flex gap-1">
+          <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.3s]" />
+          <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce [animation-delay:-0.15s]" />
+          <span className="size-1.5 rounded-full bg-muted-foreground/40 animate-bounce" />
         </div>
       </div>
     )
@@ -89,23 +102,32 @@ export function AiShell({ children }: { children: React.ReactNode }) {
   return (
     <SessionsContext.Provider
       value={{
-        slots, createSession, removeSession, sendPrompt, cancelPrompt, resolvePermission,
-        workspaces, createWorkspace, removeWorkspace, toggleWorkspace, renameWorkspace,
-        pendingWorkspaceId, setPendingWorkspaceId,
-        settings, updateSettings,
-        searchOpen, openSearch: () => setSearchOpen(true), closeSearch: () => setSearchOpen(false),
+        slots,
+        createSession,
+        removeSession,
+        sendPrompt,
+        cancelPrompt,
+        resolvePermission,
+        workspaces: [],
+        createWorkspace,
+        removeWorkspace,
+        toggleWorkspace,
+        renameWorkspace,
+        settings,
+        updateSettings,
+        searchOpen,
+        openSearch: () => setSearchOpen(true),
+        closeSearch: () => setSearchOpen(false),
       }}
     >
       <div className="flex h-svh">
         <SessionSidebar
           slots={slots}
-          workspaces={workspaces}
+          namespaces={namespaces}
           activeId={activeId}
           onSelect={(id) => router.push(`/ai/${id}`)}
-          onNewInWorkspace={handleNewInWorkspace}
+          onNew={() => router.push("/ai")}
           onRemove={handleRemove}
-          onToggleWorkspace={toggleWorkspace}
-          onCreateWorkspace={createWorkspace}
           onSettings={() => router.push("/ai/settings")}
           onSearch={() => setSearchOpen(true)}
         />

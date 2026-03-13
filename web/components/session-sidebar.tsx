@@ -3,8 +3,10 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Plus, X, Gear, MagnifyingGlass, CaretDown, CaretRight, FolderPlus } from "@phosphor-icons/react"
-import type { SessionSlot, Workspace } from "@/hooks/use-sessions"
+import { Plus, X, Gear, MagnifyingGlass, CaretDown, CaretRight, Robot } from "@phosphor-icons/react"
+import type { SessionSlot } from "@/hooks/use-sessions"
+import { useAcpRegistry } from "@/lib/acp-registry"
+import { ConfirmDeleteModal } from "@/components/confirm-delete-modal"
 
 // ─── Time/date helpers ─────────────────────────────────────────────────────────
 
@@ -67,13 +69,17 @@ function SessionItem({
   slot,
   isActive,
   onSelect,
-  onRemove,
+  onRequestRemove,
+  getIcon,
 }: {
   slot: SessionSlot
   isActive: boolean
   onSelect: () => void
-  onRemove: () => void
+  onRequestRemove: () => void
+  getIcon: (agentName: string) => string | undefined
 }) {
+  const iconUrl = getIcon(slot.agentName)
+
   return (
     <div
       role="button"
@@ -81,11 +87,24 @@ function SessionItem({
       onClick={onSelect}
       onKeyDown={(e) => e.key === "Enter" && onSelect()}
       className={cn(
-        "group relative flex items-center gap-2 pl-6 pr-2 py-1.5 cursor-pointer select-none",
+        "group relative flex items-center gap-2 pl-4 pr-2 py-1.5 cursor-pointer select-none",
         "hover:bg-muted/40 transition-colors",
         isActive && "bg-muted/50",
       )}
     >
+      {iconUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={iconUrl}
+          alt={slot.agentName}
+          className="size-3 shrink-0 object-contain"
+          onError={(e) => {
+            e.currentTarget.style.display = "none"
+          }}
+        />
+      ) : (
+        <Robot size={12} className="size-3 shrink-0 text-muted-foreground/30" />
+      )}
       <StatusDot slot={slot} />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1">
@@ -96,6 +115,14 @@ function SessionItem({
             {formatTime(slot.createdAt)}
           </span>
         </div>
+        <div className="flex items-center gap-1.5">
+          {slot.agentName && (
+            <span className="text-[10px] text-muted-foreground/40 truncate">{slot.agentName}</span>
+          )}
+          {slot.connectionStatus === "disconnected" && (
+            <span className="text-[10px] text-muted-foreground/30">(history)</span>
+          )}
+        </div>
         {slot.connectError && (
           <p className="text-[10px] text-destructive truncate">{slot.connectError}</p>
         )}
@@ -104,7 +131,10 @@ function SessionItem({
         <Button
           variant="ghost"
           size="icon-xs"
-          onClick={(e) => { e.stopPropagation(); onRemove() }}
+          onClick={(e) => {
+            e.stopPropagation()
+            onRequestRemove()
+          }}
           disabled={slot.isRunning}
           className="shrink-0 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           title="remove session"
@@ -116,62 +146,49 @@ function SessionItem({
   )
 }
 
-// ─── WorkspaceSection ─────────────────────────────────────────────────────────
+// ─── NamespaceSection ─────────────────────────────────────────────────────────
 
-function WorkspaceSection({
-  workspace,
+function NamespaceSection({
+  name,
   slots,
   activeId,
   onSelect,
-  onRemove,
-  onNewSession,
-  onToggle,
+  onRequestRemove,
+  getIcon,
 }: {
-  workspace: Workspace
+  name: string
   slots: SessionSlot[]
   activeId: string | null
   onSelect: (id: string) => void
-  onRemove: (id: string) => void
-  onNewSession: () => void
-  onToggle: () => void
+  onRequestRemove: (id: string) => void
+  getIcon: (agentName: string) => string | undefined
 }) {
+  const [collapsed, setCollapsed] = useState(false)
   const dateGroups = groupByDate(slots)
   const showDateLabels = dateGroups.length > 1
 
   return (
     <div>
-      {/* Workspace header */}
       <div className="group flex items-center gap-1 px-2 py-1.5 hover:bg-muted/20 transition-colors">
         <button
-          onClick={onToggle}
+          onClick={() => setCollapsed((c) => !c)}
           className="flex items-center gap-1.5 flex-1 min-w-0 text-left"
         >
-          {workspace.collapsed
-            ? <CaretRight size={10} className="text-muted-foreground/60 shrink-0" />
-            : <CaretDown size={10} className="text-muted-foreground/60 shrink-0" />
-          }
-          <span className="text-xs font-medium text-muted-foreground truncate">
-            {workspace.name}
+          {collapsed ? (
+            <CaretRight size={10} className="text-muted-foreground/60 shrink-0" />
+          ) : (
+            <CaretDown size={10} className="text-muted-foreground/60 shrink-0" />
+          )}
+          <span className="text-xs font-medium text-muted-foreground truncate uppercase tracking-wide">
+            {name}
           </span>
           {slots.length > 0 && (
-            <span className="text-[10px] text-muted-foreground/40 shrink-0">
-              {slots.length}
-            </span>
+            <span className="text-[10px] text-muted-foreground/40 shrink-0">{slots.length}</span>
           )}
         </button>
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={onNewSession}
-          title={`new session in ${workspace.name}`}
-          className="text-muted-foreground/50 hover:text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <Plus size={10} />
-        </Button>
       </div>
 
-      {/* Sessions grouped by date */}
-      {!workspace.collapsed && (
+      {!collapsed && (
         <>
           {slots.length === 0 && (
             <p className="pl-6 pr-3 py-1.5 text-[11px] text-muted-foreground/50">no sessions</p>
@@ -192,7 +209,8 @@ function WorkspaceSection({
                   slot={slot}
                   isActive={slot.id === activeId}
                   onSelect={() => onSelect(slot.id)}
-                  onRemove={() => onRemove(slot.id)}
+                  onRequestRemove={() => onRequestRemove(slot.id)}
+                  getIcon={getIcon}
                 />
               ))}
             </div>
@@ -203,61 +221,51 @@ function WorkspaceSection({
   )
 }
 
-// ─── NewWorkspaceInput ────────────────────────────────────────────────────────
-
-function NewWorkspaceInput({ onCreate, onCancel }: { onCreate: (name: string) => void; onCancel: () => void }) {
-  const [name, setName] = useState("")
-  return (
-    <div className="px-3 py-2 flex items-center gap-1.5">
-      <input
-        autoFocus
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && name.trim()) onCreate(name.trim())
-          if (e.key === "Escape") onCancel()
-        }}
-        placeholder="workspace name"
-        className="flex-1 min-w-0 text-xs bg-transparent border border-border px-1.5 py-0.5 outline-none focus:border-ring"
-      />
-      <Button
-        variant="ghost"
-        size="icon-xs"
-        onClick={onCancel}
-        className="text-muted-foreground shrink-0"
-      >
-        <X size={10} />
-      </Button>
-    </div>
-  )
-}
-
 // ─── SessionSidebar ───────────────────────────────────────────────────────────
 
 export function SessionSidebar({
   slots,
-  workspaces,
+  namespaces,
   activeId,
   onSelect,
-  onNewInWorkspace,
+  onNew,
   onRemove,
-  onToggleWorkspace,
-  onCreateWorkspace,
   onSettings,
   onSearch,
 }: {
   slots: SessionSlot[]
-  workspaces: Workspace[]
+  namespaces: string[]
   activeId: string | null
   onSelect: (id: string) => void
-  onNewInWorkspace: (workspaceId: string) => void
+  onNew: () => void
   onRemove: (id: string) => void
-  onToggleWorkspace: (id: string) => void
-  onCreateWorkspace: (name: string) => string
   onSettings: () => void
   onSearch: () => void
 }) {
-  const [creatingWorkspace, setCreatingWorkspace] = useState(false)
+  const registry = useAcpRegistry()
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null)
+
+  const getIcon = (agentName: string) => registry.get(agentName.toLowerCase())?.icon
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return
+    onRemove(pendingDelete.id)
+    setPendingDelete(null)
+  }
+
+  // Group sessions by namespace; no namespace → "general"
+  const nsGroups = new Map<string, SessionSlot[]>()
+  for (const slot of slots) {
+    const ns = slot.namespace ?? "general"
+    if (!nsGroups.has(ns)) nsGroups.set(ns, [])
+    nsGroups.get(ns)!.push(slot)
+  }
+
+  // Build ordered list: API namespaces first, "general" last, any extras appended
+  const ordered: string[] = [...namespaces.filter((ns) => ns !== "general"), "general"]
+  for (const ns of nsGroups.keys()) {
+    if (!ordered.includes(ns)) ordered.push(ns)
+  }
 
   return (
     <aside className="w-52 shrink-0 border-r border-border flex flex-col h-full">
@@ -277,40 +285,35 @@ export function SessionSidebar({
           <Button
             variant="ghost"
             size="icon-xs"
-            onClick={() => setCreatingWorkspace(true)}
-            title="new workspace"
+            onClick={onNew}
+            title="new session (⌘N)"
             className="text-muted-foreground hover:text-foreground"
           >
-            <FolderPlus size={12} />
+            <Plus size={12} />
           </Button>
         </div>
       </div>
 
-      {/* Workspace list */}
+      {/* Namespace sections */}
       <div className="flex-1 overflow-y-auto">
-        {workspaces.map((ws) => (
-          <WorkspaceSection
-            key={ws.id}
-            workspace={ws}
-            slots={slots.filter((s) => s.workspaceId === ws.id)}
+        {ordered.map((ns) => (
+          <NamespaceSection
+            key={ns}
+            name={ns}
+            slots={nsGroups.get(ns) ?? []}
             activeId={activeId}
             onSelect={onSelect}
-            onRemove={onRemove}
-            onNewSession={() => onNewInWorkspace(ws.id)}
-            onToggle={() => onToggleWorkspace(ws.id)}
+            onRequestRemove={(id) => {
+              const slot = slots.find((s) => s.id === id)
+              if (slot) setPendingDelete({ id, name: slot.name ?? basename(slot.cwd) })
+            }}
+            getIcon={getIcon}
           />
         ))}
-
-        {creatingWorkspace && (
-          <NewWorkspaceInput
-            onCreate={(name) => { onCreateWorkspace(name); setCreatingWorkspace(false) }}
-            onCancel={() => setCreatingWorkspace(false)}
-          />
-        )}
       </div>
 
       {/* Footer */}
-      <div className="border-t border-border px-2 py-1.5 flex items-center justify-between">
+      <div className="border-t border-border px-2 py-1.5">
         <Button
           variant="ghost"
           size="icon-xs"
@@ -321,6 +324,13 @@ export function SessionSidebar({
           <Gear size={14} />
         </Button>
       </div>
+
+      <ConfirmDeleteModal
+        open={pendingDelete !== null}
+        sessionName={pendingDelete?.name ?? ""}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </aside>
   )
 }

@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { CornersOut, CornersIn } from "@phosphor-icons/react"
 import { useSessionsContext } from "@/lib/sessions-context"
+import { MarkdownContent } from "@/components/markdown-content"
+import { ConfirmDeleteModal } from "@/components/confirm-delete-modal"
 import type { AssistantMessage, Message, PendingPermission, ToolCallState } from "@/hooks/use-sessions"
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -158,9 +160,7 @@ function MessageItem({ message }: { message: Message }) {
         <ToolCallCard key={tc.toolCallId} tc={tc} />
       ))}
 
-      {m.text && (
-        <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.text}</p>
-      )}
+      {m.text && <MarkdownContent text={m.text} />}
 
       {m.stopReason && (
         <p className="text-xs text-muted-foreground select-none">[done] {m.stopReason}</p>
@@ -223,6 +223,7 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
   const [input, setInput] = useState("")
   const [inputFocused, setInputFocused] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -250,7 +251,8 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
     setInput("")
   }
 
-  const handleRemove = async () => {
+  const handleConfirmRemove = async () => {
+    setDeleteModalOpen(false)
     await removeSession(id)
     const remaining = slots.filter((s) => s.id !== id)
     router.push(remaining.length > 0 ? `/ai/${remaining[0].id}` : "/ai")
@@ -287,10 +289,13 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
                 : "bg-green-500 dark:bg-green-400",
           )}
         />
+        {slot.agentName && (
+          <span className="text-muted-foreground text-xs shrink-0">{slot.agentName}</span>
+        )}
         <Button
           variant="ghost"
           size="icon-xs"
-          onClick={handleRemove}
+          onClick={() => setDeleteModalOpen(true)}
           className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
           title="close session"
         >
@@ -386,6 +391,13 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
           </div>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        open={deleteModalOpen}
+        sessionName={slot.name ?? slot.cwd}
+        onConfirm={handleConfirmRemove}
+        onCancel={() => setDeleteModalOpen(false)}
+      />
     </div>
   )
 }
