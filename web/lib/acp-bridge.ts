@@ -62,6 +62,8 @@ type SessionEntry = {
   agentCommand: string;
   cwd: string;
   name: string | undefined;
+  namespace: string | undefined;
+  promptCount: number;
   connection: ClientSideConnection;
   child: ChildProcess;
   acpSessionId: string;
@@ -132,10 +134,44 @@ function splitCommand(cmd: string): { command: string; args: string[] } {
 // AcpBridge
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// System prompt helpers
+// ---------------------------------------------------------------------------
+
+const SPECS_BASE = path.join(process.cwd(), "..", "specs", "main-orchestrator");
+
+async function readSpecFile(...parts: string[]): Promise<string | null> {
+  try {
+    return await fs.readFile(path.join(SPECS_BASE, ...parts), "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+type TextBlock = { type: "text"; text: string };
+
+async function buildSystemBlocks(entry: SessionEntry): Promise<TextBlock[]> {
+  const [init, belzabar, ns] = await Promise.all([
+    readSpecFile("INIT.md"),
+    readSpecFile("BELZABAR.md"),
+    entry.namespace ? readSpecFile("namespaces", `${entry.namespace}.md`) : Promise.resolve(null),
+  ]);
+
+  const blocks: TextBlock[] = [];
+  if (init) blocks.push({ type: "text", text: `<system>\n${init}\n</system>` });
+  if (belzabar) blocks.push({ type: "text", text: `<context>\n${belzabar}\n</context>` });
+  if (ns) blocks.push({ type: "text", text: `<namespace name="${entry.namespace}">\n${ns}\n</namespace>` });
+  return blocks;
+}
+
+// ---------------------------------------------------------------------------
+// AcpBridge
+// ---------------------------------------------------------------------------
+
 class AcpBridge {
   private readonly sessions = new Map<string, SessionEntry>();
 
-  async createSession(agentName: string, cwd: string): Promise<SessionInfo> {
+  async createSession(agentName: string, cwd: string, namespace?: string): Promise<SessionInfo> {
     const agentCommand = AGENT_REGISTRY[agentName] ?? agentName;
     const { command, args } = splitCommand(agentCommand);
     const sessionId = randomUUID();
@@ -450,6 +486,8 @@ class AcpBridge {
       agentCommand,
       cwd,
       name: undefined,
+      namespace,
+      promptCount: 0,
       connection,
       child,
       acpSessionId: sessionResult.sessionId,
@@ -506,9 +544,12 @@ class AcpBridge {
     entry.subscribers.add(emit);
 
     try {
+      const systemBlocks = entry.promptCount === 0 ? await buildSystemBlocks(entry) : [];
+      entry.promptCount++;
+
       const result = await entry.connection.prompt({
         sessionId: entry.acpSessionId,
-        prompt: [{ type: "text", text: message }],
+        prompt: [...systemBlocks, { type: "text", text: message }],
       });
       emit({ type: "done", stopReason: result.stopReason });
     } catch (error) {
@@ -555,6 +596,7 @@ class AcpBridge {
       agentCommand: entry.agentCommand,
       cwd: entry.cwd,
       name: entry.name,
+      namespace: entry.namespace,
       status: entry.status,
       createdAt: entry.createdAt,
       pendingPermission: entry.pendingPermission

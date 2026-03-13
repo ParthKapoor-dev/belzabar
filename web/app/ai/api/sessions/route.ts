@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { agentName, cwd } = body as { agentName?: string; cwd?: string };
+  const { agentName, cwd, namespace } = body as { agentName?: string; cwd?: string; namespace?: string };
   if (!agentName || typeof agentName !== "string") {
     return Response.json({ error: "agentName is required" }, { status: 400 });
   }
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const session = await bridge.createSession(agentName, cwd);
+    const session = await bridge.createSession(agentName, cwd, namespace || undefined);
     return Response.json({ session }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

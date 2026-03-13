@@ -55,6 +55,7 @@ export type SessionSlot = {
   agentCommand: string
   cwd: string
   name?: string
+  namespace?: string
   status: "idle" | "running" | "closed"
   createdAt: string
   workspaceId: string
@@ -162,6 +163,7 @@ type StoredRecord = {
   agentCommand: string
   cwd: string
   name?: string
+  namespace?: string
   status: "idle" | "running" | "closed"
   createdAt: string
   workspaceId: string
@@ -216,6 +218,7 @@ function saveToStorage(state: SessionsState) {
       agentCommand: s.agentCommand,
       cwd: s.cwd,
       name: s.name,
+      namespace: s.namespace,
       status: s.status,
       createdAt: s.createdAt,
       workspaceId: s.workspaceId,
@@ -226,6 +229,16 @@ function saveToStorage(state: SessionsState) {
   } catch {
     // quota exceeded — silently skip
   }
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function makeSessionName(text: string): string {
+  const trimmed = text.trim().replace(/\s+/g, " ")
+  if (trimmed.length <= 52) return trimmed
+  const cut = trimmed.slice(0, 52)
+  const lastSpace = cut.lastIndexOf(" ")
+  return (lastSpace > 20 ? cut.slice(0, lastSpace) : cut) + "…"
 }
 
 // ─── Hook ──────────────────────────────────────────────────────────────────────
@@ -279,12 +292,12 @@ export function useSessions() {
   // ─── Session actions ─────────────────────────────────────────────────────────
 
   const createSession = useCallback(
-    async (cwd: string, agentName = "opencode", workspaceId = DEFAULT_WORKSPACE_ID): Promise<string | null> => {
+    async (cwd: string, agentName = "opencode", workspaceId = DEFAULT_WORKSPACE_ID, namespace?: string): Promise<string | null> => {
       try {
         const res = await fetch("/ai/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentName, cwd }),
+          body: JSON.stringify({ agentName, cwd, namespace }),
         })
         const data = (await res.json()) as { session?: SessionInfo; error?: string }
         if (!res.ok) throw new Error(data.error ?? "Failed to start session")
@@ -326,7 +339,11 @@ export function useSessions() {
       const slot = state.slots.find((s) => s.id === id)
       if (!slot || slot.isRunning || slot.connectionStatus !== "live" || !text.trim()) return
 
-      dispatch({ type: "UPDATE_SLOT", id, patch: { isRunning: true } })
+      dispatch({ type: "UPDATE_SLOT", id, patch: {
+        isRunning: true,
+        // Auto-name from first message if no name yet
+        ...(!slot.name && slot.messages.length === 0 && { name: makeSessionName(text) }),
+      } })
       dispatch({
         type: "APPEND_MESSAGES",
         id,

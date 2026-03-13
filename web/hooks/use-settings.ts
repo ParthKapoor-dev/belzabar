@@ -14,7 +14,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultCwd: "/home/parth/code/sandbox/belz-ai",
   autoConnect: true,
   agentProfiles: {
-    main: "opencode",
+    main: "codex",
   },
 }
 

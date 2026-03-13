@@ -24,6 +24,7 @@ export type SessionInfo = {
   agentCommand: string;
   cwd: string;
   name?: string;
+  namespace?: string;
   status: "idle" | "running" | "closed";
   createdAt: string;
   pendingPermission?: PendingPermissionInfo;
