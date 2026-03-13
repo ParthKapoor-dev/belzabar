@@ -9,7 +9,8 @@
   "host_permissions": [
     "https://nsm-dev.nc.verifi.dev/*",
     "https://nsm-uat.nc.verifi.dev/*",
-    "https://nsm-qa.nc.verifi.dev/*"
+    "https://nsm-qa.nc.verifi.dev/*",
+    "https://staff-nss-stage.verifi-nc.com/*"
   ],
    "content_scripts": [
       {
@@ -19,7 +20,9 @@
           "https://nsm-uat.nc.verifi.dev/automation-designer/*",
           "https://nsm-uat.nc.verifi.dev/ui-designer/*",
           "https://nsm-qa.nc.verifi.dev/automation-designer/*",
-          "https://nsm-qa.nc.verifi.dev/ui-designer/*"
+          "https://nsm-qa.nc.verifi.dev/ui-designer/*",
+          "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
+          "https://staff-nss-stage.verifi-nc.com/ui-designer/*"
         ],
         "js": ["dist/content-script.js"],
         "run_at": "document_idle"

@@ -1,6 +1,7 @@
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, indentWithTab } from '@codemirror/commands';
+import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
 import { sql } from '@codemirror/lang-sql';
 import { javascript } from '@codemirror/lang-javascript';
 import { json } from '@codemirror/lang-json';
@@ -85,6 +86,79 @@ const editorTheme = EditorView.theme(
     },
     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(96, 165, 250, 0.35)'
+    },
+    '.cm-panels': {
+      backgroundColor: 'rgba(15, 23, 42, 0.96)',
+      borderTop: '1px solid rgba(148, 163, 184, 0.2)',
+      color: '#e2e8f0'
+    },
+    '.cm-search': {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      flexWrap: 'wrap',
+      padding: '6px 10px'
+    },
+    '.cm-search input': {
+      fontFamily: EDITOR_FONT_FAMILY,
+      fontSize: '12px',
+      background: 'rgba(30, 41, 59, 0.9)',
+      color: '#e2e8f0',
+      border: '1px solid rgba(148, 163, 184, 0.35)',
+      borderRadius: '5px',
+      padding: '4px 8px',
+      outline: 'none'
+    },
+    '.cm-search input:focus': {
+      borderColor: 'rgba(96, 165, 250, 0.6)',
+      boxShadow: '0 0 0 2px rgba(96, 165, 250, 0.15)'
+    },
+    '.cm-search button': {
+      fontFamily: EDITOR_FONT_FAMILY,
+      fontSize: '12px',
+      background: 'rgba(37, 99, 235, 0.2)',
+      color: '#93c5fd',
+      border: '1px solid rgba(59, 130, 246, 0.35)',
+      borderRadius: '5px',
+      padding: '4px 10px',
+      cursor: 'pointer'
+    },
+    '.cm-search button:hover': {
+      background: 'rgba(37, 99, 235, 0.35)',
+      borderColor: 'rgba(96, 165, 250, 0.55)'
+    },
+    '.cm-search button[name=close]': {
+      background: 'rgba(248, 113, 113, 0.12)',
+      color: '#fca5a5',
+      border: '1px solid rgba(248, 113, 113, 0.35)',
+      borderRadius: '5px',
+      padding: '4px 8px',
+      fontSize: '14px',
+      lineHeight: '1'
+    },
+    '.cm-search button[name=close]:hover': {
+      background: 'rgba(248, 113, 113, 0.25)',
+      borderColor: 'rgba(248, 113, 113, 0.55)'
+    },
+    '.cm-search label': {
+      fontSize: '12px',
+      color: '#94a3b8',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+      cursor: 'pointer',
+      userSelect: 'none'
+    },
+    '.cm-search .cm-textfield': {
+      minWidth: '180px'
+    },
+    '.cm-searchMatch': {
+      backgroundColor: 'rgba(250, 204, 21, 0.25)',
+      outline: '1px solid rgba(250, 204, 21, 0.5)'
+    },
+    '.cm-searchMatch.cm-searchMatch-selected': {
+      backgroundColor: 'rgba(250, 204, 21, 0.5)',
+      outline: '1px solid rgba(250, 204, 21, 0.8)'
     }
   },
   { dark: true }
@@ -267,7 +341,8 @@ function createEditorForSource(sourceEl) {
 
   const extensions = [
     lineNumbers(),
-    keymap.of([indentWithTab, ...defaultKeymap]),
+    search({ top: false }),
+    keymap.of([...searchKeymap, indentWithTab, ...defaultKeymap]),
     EditorState.tabSize.of(4),
     EditorState.readOnly.of(readOnly),
     editorTheme,
@@ -459,6 +534,16 @@ function attachGlobalShortcuts() {
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
       event.preventDefault();
       handleSave();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+      event.preventDefault();
+      event.stopPropagation();
+      if (editorView) {
+        openSearchPanel(editorView);
+        editorView.focus();
+      }
     }
   }, true);
 }
