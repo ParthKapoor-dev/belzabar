@@ -56,6 +56,7 @@ export type SessionSlot = {
   cwd: string
   name?: string
   namespace?: string
+  model?: string
   status: "idle" | "running" | "closed"
   createdAt: string
   workspaceId: string
@@ -164,6 +165,7 @@ type StoredRecord = {
   cwd: string
   name?: string
   namespace?: string
+  model?: string
   status: "idle" | "running" | "closed"
   createdAt: string
   workspaceId: string
@@ -219,6 +221,7 @@ function saveToStorage(state: SessionsState) {
       cwd: s.cwd,
       name: s.name,
       namespace: s.namespace,
+      model: s.model,
       status: s.status,
       createdAt: s.createdAt,
       workspaceId: s.workspaceId,
@@ -291,12 +294,12 @@ export function useSessions() {
   // ─── Session actions ─────────────────────────────────────────────────────────
 
   const createSession = useCallback(
-    async (cwd: string, agentName = "opencode", workspaceId = DEFAULT_WORKSPACE_ID, namespace?: string): Promise<string | null> => {
+    async (cwd: string, agentName = "opencode", workspaceId = DEFAULT_WORKSPACE_ID, namespace?: string, model?: string): Promise<string | null> => {
       try {
         const res = await fetch("/ai/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentName, cwd, namespace }),
+          body: JSON.stringify({ agentName, cwd, namespace, model }),
         })
         const data = (await res.json()) as { session?: SessionInfo; error?: string }
         if (!res.ok) throw new Error(data.error ?? "Failed to start session")

@@ -7,7 +7,7 @@ import type { AppSettings } from "@/hooks/use-settings"
 export type SessionsContextValue = {
   // Sessions
   slots: SessionSlot[]
-  createSession: (cwd: string, agentName?: string, workspaceId?: string, namespace?: string) => Promise<string | null>
+  createSession: (cwd: string, agentName?: string, workspaceId?: string, namespace?: string, model?: string) => Promise<string | null>
   removeSession: (id: string) => Promise<void>
   sendPrompt: (id: string, text: string) => Promise<void>
   cancelPrompt: (id: string) => Promise<void>

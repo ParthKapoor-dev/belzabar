@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Plus, X, Gear, MagnifyingGlass, CaretDown, CaretRight, Robot } from "@phosphor-icons/react"
 import type { SessionSlot } from "@/hooks/use-sessions"
+import { AGENT_EMOJI } from "@/lib/acp-types"
 import { useAcpRegistry } from "@/lib/acp-registry"
 import { ConfirmDeleteModal } from "@/components/confirm-delete-modal"
 
@@ -102,6 +103,10 @@ function SessionItem({
             e.currentTarget.style.display = "none"
           }}
         />
+      ) : AGENT_EMOJI[slot.agentName] ? (
+        <span className="size-3 shrink-0 text-[9px] flex items-center justify-center text-muted-foreground/50 leading-none">
+          {AGENT_EMOJI[slot.agentName]}
+        </span>
       ) : (
         <Robot size={12} className="size-3 shrink-0 text-muted-foreground/30" />
       )}
@@ -117,7 +122,9 @@ function SessionItem({
         </div>
         <div className="flex items-center gap-1.5">
           {slot.agentName && (
-            <span className="text-[10px] text-muted-foreground/40 truncate">{slot.agentName}</span>
+            <span className="text-[10px] text-muted-foreground/40 truncate">
+              {slot.agentName}{slot.model ? ` · ${slot.model}` : ""}
+            </span>
           )}
           {slot.connectionStatus === "disconnected" && (
             <span className="text-[10px] text-muted-foreground/30">(history)</span>

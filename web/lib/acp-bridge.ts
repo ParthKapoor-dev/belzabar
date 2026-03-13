@@ -29,6 +29,7 @@ import type {
 } from "@agentclientprotocol/sdk";
 import {
   AGENT_REGISTRY,
+  AGENT_MODEL_FLAG,
   type BridgeEvent,
   type PermissionOption,
   type SessionInfo,
@@ -63,6 +64,7 @@ type SessionEntry = {
   cwd: string;
   name: string | undefined;
   namespace: string | undefined;
+  model: string | undefined;
   promptCount: number;
   connection: ClientSideConnection;
   child: ChildProcess;
@@ -171,9 +173,12 @@ async function buildSystemBlocks(entry: SessionEntry): Promise<TextBlock[]> {
 class AcpBridge {
   private readonly sessions = new Map<string, SessionEntry>();
 
-  async createSession(agentName: string, cwd: string, namespace?: string): Promise<SessionInfo> {
+  async createSession(agentName: string, cwd: string, namespace?: string, model?: string): Promise<SessionInfo> {
     const agentCommand = AGENT_REGISTRY[agentName] ?? agentName;
-    const { command, args } = splitCommand(agentCommand);
+    const { command, args: baseArgs } = splitCommand(agentCommand);
+    // Append --model <model> for agents that support it
+    const modelFlag = model ? AGENT_MODEL_FLAG[agentName] : undefined;
+    const args = modelFlag ? [...baseArgs, modelFlag, model!] : baseArgs;
     const sessionId = randomUUID();
 
     const child = spawn(command, args, {
@@ -487,6 +492,7 @@ class AcpBridge {
       cwd,
       name: undefined,
       namespace,
+      model,
       promptCount: 0,
       connection,
       child,
@@ -589,6 +595,36 @@ class AcpBridge {
     resolve({ outcome: { outcome: "cancelled" } });
   }
 
+  // Run an agent headlessly: create a temp session, send one prompt, collect
+  // all assistant text until "done", close the session, return the raw text.
+  async runWorker(
+    agentName: string,
+    cwd: string,
+    prompt: string,
+    timeoutMs = 120_000,
+  ): Promise<{ text: string; durationMs: number }> {
+    const startedAt = Date.now()
+    const session = await this.createSession(agentName, cwd)
+    let text = ""
+
+    try {
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Worker timed out")), timeoutMs),
+      )
+
+      await Promise.race([
+        this.sendPrompt(session.id, prompt, (event) => {
+          if (event.type === "agent_message_chunk") text += event.text
+        }),
+        timeoutPromise,
+      ])
+    } finally {
+      await this.closeSession(session.id).catch(() => {})
+    }
+
+    return { text, durationMs: Date.now() - startedAt }
+  }
+
   private toInfo(entry: SessionEntry): SessionInfo {
     return {
       id: entry.id,
@@ -597,6 +633,7 @@ class AcpBridge {
       cwd: entry.cwd,
       name: entry.name,
       namespace: entry.namespace,
+      model: entry.model,
       status: entry.status,
       createdAt: entry.createdAt,
       pendingPermission: entry.pendingPermission

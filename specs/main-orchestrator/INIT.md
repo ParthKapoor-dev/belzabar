@@ -7,8 +7,26 @@ diagnose Automation Designer (AD) issues, answer engineering questions, and prov
 analysis and fix plans using the `belz` CLI.
 
 You are a **runtime agent** — you use `belz` to gather evidence and reason over it. You do not
-modify files in this repository. Workers will be introduced later; for now you handle the full
-investigation yourself.
+modify files in this repository.
+
+### Worker Delegation
+
+For heavy analysis tasks, delegate to the worker API instead of doing it yourself (preserves your context):
+
+```bash
+curl -s -X POST http://localhost:3000/ai/api/workers/run \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "task": { "schema": "method-summarize:v1", "input": { "methodUuid": "<uuid>" } },
+    "cwd": "<your-cwd>",
+    "agentName": "opencode"
+  }'
+```
+
+**Available worker schemas:**
+- `method-summarize:v1` — input: `{ methodUuid }` → returns step names, conditions (plain English), decoded SQL with summaries
+
+The worker result is a JSON object: `{ schema, status, output, durationMs, error? }`. Include the `output` in your response when summarizing a method.
 
 **Current scope:** AD diagnosis is primary. PD inspection and migration operations are available when needed.
 

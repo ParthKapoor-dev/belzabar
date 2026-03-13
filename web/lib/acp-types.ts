@@ -6,6 +6,30 @@ export const AGENT_REGISTRY: Record<string, string> = {
   pi: "npx pi-acp",
 };
 
+// Simple emoji/symbol per agent for UI display (no external image dependency)
+export const AGENT_EMOJI: Record<string, string> = {
+  codex: "◆",
+  claude: "✦",
+  gemini: "✺",
+  opencode: "▶",
+  pi: "π",
+};
+
+// Known models per agent. Empty array = user provides free text.
+export const AGENT_MODELS: Record<string, string[]> = {
+  codex: ["gpt-4o", "gpt-4o-mini", "o3", "o4-mini"],
+  claude: ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"],
+  gemini: ["gemini-2.0-flash", "gemini-2.5-pro"],
+  opencode: ["claude-sonnet-4-6", "gpt-4o", "o3", "gpt-4o-mini"],
+  pi: [],
+};
+
+// Agents that accept --model <model> as a CLI flag
+export const AGENT_MODEL_FLAG: Record<string, string> = {
+  opencode: "--model",
+  codex: "--model",
+};
+
 export type PermissionOption = {
   optionId: string;
   name: string;
@@ -25,6 +49,7 @@ export type SessionInfo = {
   cwd: string;
   name?: string;
   namespace?: string;
+  model?: string;
   status: "idle" | "running" | "closed";
   createdAt: string;
   pendingPermission?: PendingPermissionInfo;

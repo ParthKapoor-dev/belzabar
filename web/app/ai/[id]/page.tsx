@@ -290,7 +290,9 @@ export default function SessionPage({ params }: { params: Promise<{ id: string }
           )}
         />
         {slot.agentName && (
-          <span className="text-muted-foreground text-xs shrink-0">{slot.agentName}</span>
+          <span className="text-muted-foreground text-xs shrink-0">
+            {slot.agentName}{slot.model ? ` · ${slot.model}` : ""}
+          </span>
         )}
         <Button
           variant="ghost"
