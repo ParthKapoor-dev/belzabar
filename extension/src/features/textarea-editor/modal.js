@@ -1,6 +1,6 @@
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
-import { defaultKeymap, indentWithTab } from '@codemirror/commands';
+import { defaultKeymap, indentWithTab, history } from '@codemirror/commands';
 import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
 import { sql } from '@codemirror/lang-sql';
 import { javascript } from '@codemirror/lang-javascript';
@@ -45,6 +45,7 @@ const editorTheme = EditorView.theme(
     },
     '&': {
       height: '100%',
+      width: '100%',
       fontFamily: EDITOR_FONT_FAMILY,
       backgroundColor: 'rgba(15, 23, 42, 0.52)',
       color: '#e2e8f0'
@@ -341,6 +342,7 @@ function createEditorForSource(sourceEl) {
 
   const extensions = [
     lineNumbers(),
+    history(),
     search({ top: false }),
     keymap.of([...searchKeymap, indentWithTab, ...defaultKeymap]),
     EditorState.tabSize.of(4),
@@ -542,7 +544,10 @@ function attachGlobalShortcuts() {
       event.stopPropagation();
       if (editorView) {
         openSearchPanel(editorView);
-        editorView.focus();
+        requestAnimationFrame(() => {
+          const searchInput = editorView.dom.querySelector('.cm-search input');
+          if (searchInput) searchInput.focus();
+        });
       }
     }
   }, true);
