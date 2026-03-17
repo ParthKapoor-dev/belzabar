@@ -15,6 +15,7 @@ import {
   startTextareaEditorFeature
 } from './features/textarea-editor/index.js';
 import { startSettingsFeature } from './features/settings/index.js';
+import { startCurlAutofillFeature } from './features/curl-autofill/index.js';
 import {
   loadSettings,
   setSetting,
@@ -82,6 +83,8 @@ import {
       getSettings: loadSettings,
       setSetting
     });
+
+    startCurlAutofillFeature();
 
     console.log('Extension initialized successfully');
   }
