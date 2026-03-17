@@ -29,9 +29,27 @@ const MODULES = [
   },
 ]
 
+const ENVS = ["nsm-dev", "nsm-qa", "nsm-uat"] as const
+type Env = (typeof ENVS)[number]
+
+type VinResult = {
+  ids: string[]
+  rowCount: number
+  env: string
+  durationMs?: number
+}
+
 export default function Home() {
   const [toast, setToast] = useState<Toast | null>(null)
   const [toastTimer, setToastTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+
+  // VIN lookup state
+  const [vin, setVin] = useState("")
+  const [vinEnv, setVinEnv] = useState<Env>("nsm-dev")
+  const [vinLoading, setVinLoading] = useState(false)
+  const [vinResult, setVinResult] = useState<VinResult | null>(null)
+  const [vinError, setVinError] = useState<string | null>(null)
+  const [copied, setCopied] = useState<string | null>(null)
 
   const showToast = useCallback((text: string, ok: boolean) => {
     if (toastTimer) clearTimeout(toastTimer)
@@ -79,6 +97,37 @@ export default function Home() {
     return () => document.removeEventListener("paste", handlePaste)
   }, [showToast])
 
+  const handleVinLookup = async () => {
+    const trimmed = vin.trim()
+    if (!trimmed) return
+    setVinLoading(true)
+    setVinResult(null)
+    setVinError(null)
+    try {
+      const res = await fetch("/api/vin", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ vin: trimmed, env: vinEnv }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setVinError(data.error ?? "Lookup failed")
+      } else {
+        setVinResult(data as VinResult)
+      }
+    } catch {
+      setVinError("Request failed")
+    } finally {
+      setVinLoading(false)
+    }
+  }
+
+  const copyId = (id: string) => {
+    navigator.clipboard.writeText(id)
+    setCopied(id)
+    setTimeout(() => setCopied(null), 1500)
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground font-mono flex flex-col select-none">
       {/* Header */}
@@ -93,7 +142,7 @@ export default function Home() {
       </header>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col items-center justify-center px-6 gap-10">
+      <main className="flex-1 flex flex-col items-center justify-center px-6 gap-10 py-12">
         {/* Wordmark */}
         <div className="text-center space-y-1.5">
           <h1 className="text-3xl font-bold tracking-tighter">belzabar</h1>
@@ -120,6 +169,87 @@ export default function Home() {
               </div>
             </Link>
           ))}
+        </div>
+
+        {/* VIN Lookup */}
+        <div className="w-full max-w-md border border-border p-5 space-y-4">
+          {/* Header row */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">VIN lookup</span>
+            {vinResult && (
+              <span className="text-[10px] text-muted-foreground/50">
+                {vinResult.rowCount} result{vinResult.rowCount !== 1 ? "s" : ""} · {vinResult.durationMs}ms
+              </span>
+            )}
+          </div>
+
+          {/* VIN input */}
+          <input
+            type="text"
+            value={vin}
+            onChange={(e) => { setVin(e.target.value.toUpperCase()); setVinResult(null); setVinError(null) }}
+            onKeyDown={(e) => e.key === "Enter" && handleVinLookup()}
+            placeholder="1GKLRKEDXAJ275790"
+            maxLength={17}
+            spellCheck={false}
+            className="w-full border border-border bg-transparent px-2.5 py-1.5 text-xs placeholder:text-muted-foreground/40 outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 transition-colors uppercase tracking-wider"
+          />
+
+          {/* Env selector */}
+          <div className="flex gap-1.5">
+            {ENVS.map((e) => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => setVinEnv(e)}
+                className={`px-2.5 py-1 text-[11px] border transition-colors uppercase tracking-wide ${
+                  vinEnv === e
+                    ? "border-primary/60 bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-muted-foreground"
+                }`}
+              >
+                {e.replace("nsm-", "")}
+              </button>
+            ))}
+          </div>
+
+          {/* Lookup button */}
+          <button
+            onClick={handleVinLookup}
+            disabled={!vin.trim() || vinLoading}
+            className="w-full border border-border text-xs py-1.5 text-muted-foreground hover:border-primary/60 hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {vinLoading ? "looking up…" : "lookup"}
+          </button>
+
+          {/* Error */}
+          {vinError && (
+            <div className="flex items-start gap-2 border border-destructive/40 bg-destructive/5 px-3 py-2">
+              <span className="text-destructive text-xs shrink-0">✕</span>
+              <span className="text-xs text-destructive">{vinError}</span>
+            </div>
+          )}
+
+          {/* Results */}
+          {vinResult && vinResult.ids.length === 0 && (
+            <p className="text-xs text-muted-foreground/50 text-center py-1">no application found</p>
+          )}
+          {vinResult && vinResult.ids.length > 0 && (
+            <div className="space-y-1.5">
+              {vinResult.ids.map((id) => (
+                <button
+                  key={id}
+                  onClick={() => copyId(id)}
+                  className="w-full flex items-center justify-between px-3 py-2 border border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                >
+                  <span className="text-xs font-mono text-foreground tracking-wide">{id}</span>
+                  <span className="text-[10px] text-muted-foreground/40 group-hover:text-primary transition-colors shrink-0 ml-3">
+                    {copied === id ? "✓ copied" : "copy"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Paste hint */}
