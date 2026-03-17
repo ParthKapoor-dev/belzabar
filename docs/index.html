@@ -19,7 +19,7 @@
             --text: #fafafa;
             --muted: #71717a;
             --accent: #27272a;
-            
+
             /* Legend Colors */
             --core: #3b82f6;
             --cli: #14b8a6;
@@ -58,7 +58,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: 
+            background-image:
                 linear-gradient(to right, var(--border) 1px, transparent 1px),
                 linear-gradient(to bottom, var(--border) 1px, transparent 1px);
             background-size: 40px 40px;
@@ -301,7 +301,7 @@
         tr:last-child td { border-bottom: none; }
 
         code { background: var(--accent); padding: 2px 6px; border-radius: 4px; color: #e4e4e7; font-size: 0.85em; }
-        
+
         .code-block {
             background: #000;
             padding: 20px;
@@ -377,7 +377,7 @@
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#docs">Docs</a>
-                <a href="https://github.com/parthkapoor-dev/belzabar" target="_blank">GitHub</a>
+                <a href="https://github.com/ParthKapoor-dev/belzabar" target="_blank">GitHub</a>
             </div>
         </div>
     </nav>
@@ -387,8 +387,8 @@
             INTERNAL TOOLSET v1.0
         </div>
         <h1>Build faster with <span>Belz AI</span>.</h1>
-        <p>A high-performance developer toolset for NSM Automation Designer & Page Designer workflows. Fast CLI, smart extension, and unified AI bridge.</p>
-        
+        <p>A high-performance developer toolset for NSM Automation Designer &amp; Page Designer workflows. Fast CLI, smart extension, and unified AI bridge.</p>
+
         <div class="hero-actions">
             <a href="#install" class="btn btn-primary">Get Started <i data-lucide="arrow-right"></i></a>
             <a href="#docs" class="btn btn-secondary">Read Docs</a>
@@ -408,8 +408,8 @@
                 <div class="line"><span>[3/4] Executing trace...</span></div>
                 <div class="line" style="color: #10b981;"><span>✓ ServiceStep: ValidateUser (240ms)</span></div>
                 <div class="line" style="color: #10b981;"><span>✓ ServiceStep: FetchAccount (120ms)</span></div>
-                <div class="line"><span class="prompt">$</span> <span class="cmd">belz --llm | jq .data.status</span></div>
-                <div class="line"><span>"SUCCESS"</span></div>
+                <div class="line"><span class="prompt">$</span> <span class="cmd">belz ad show LT-260.get --llm | jq .data.inputs</span></div>
+                <div class="line"><span style="color: var(--primary);">[{ "fieldCode": "userId", "type": "STRING", "required": true }]</span></div>
             </div>
         </div>
     </header>
@@ -419,22 +419,22 @@
             <div class="bento-card large">
                 <div class="icon-box"><i data-lucide="terminal"></i></div>
                 <h3>Unified CLI</h3>
-                <p>Native binary built with Bun. Inspect methods, run tests with trace logs, and trigger migrations. Supports `ad`, `pd`, and `migrate` namespaces out of the box.</p>
+                <p>Native binary built with Bun. Inspect methods, run tests with per-step trace logs, execute SQL queries, and trigger cross-environment migrations. Namespaced under <code>belz ad</code>, <code>belz pd</code>, and <code>belz migrate</code>.</p>
             </div>
             <div class="bento-card">
                 <div class="icon-box"><i data-lucide="puzzle"></i></div>
                 <h3>Smart Extension</h3>
-                <p>Manifest V3 extension for Chrome. JSON bulk editors, CodeMirror modals, and keyboard shortcuts for the NSM web platform.</p>
+                <p>Manifest V3 extension for Chrome/Edge. JSON bulk editors, CodeMirror textarea modals, one-click output copy, and keyboard shortcuts wired directly into the NSM web platform.</p>
             </div>
             <div class="bento-card">
                 <div class="icon-box"><i data-lucide="zap"></i></div>
                 <h3>Zero Auth Latency</h3>
-                <p>Automatic session persistence and 401 refresh logic. Login once, work across all NSM environments without manual token management.</p>
+                <p>Session files persist Bearer tokens per environment. On 401, the auth module re-logs in automatically and retries the failed request — no manual token management ever.</p>
             </div>
             <div class="bento-card large">
                 <div class="icon-box"><i data-lucide="bot"></i></div>
                 <h3>AI Ready (ACP)</h3>
-                <p>Full support for the Agent Client Protocol. Use Belz AI as a bridge for coding agents like Claude or Gemini to interact with your local environment.</p>
+                <p>A Next.js web app bridges the Agent Client Protocol over stdio to coding agents (Claude Code, Gemini, Codex, OpenCode). Supports streaming text, tool calls, permission gates, managed terminals, and constrained filesystem access — all in a single singleton Node.js process.</p>
             </div>
         </div>
     </section>
@@ -444,191 +444,726 @@
             <div class="docs-container">
                 <div class="sidebar">
                     <button class="tab-btn active" onclick="showTab('arch')"><i data-lucide="layers"></i> Architecture</button>
-                    <button class="tab-btn" onclick="showTab('commands')"><i data-lucide="command"></i> Commands</button>
-                    <button class="tab-btn" onclick="showTab('flow')"><i data-lucide="git-merge"></i> Data Flow</button>
-                    <button class="tab-btn" onclick="showTab('files')"><i data-lucide="file-code"></i> File Reference</button>
-                    <button class="tab-btn" onclick="showTab('runtime')"><i data-lucide="hard-drive"></i> Runtime</button>
-                    <button class="tab-btn" onclick="showTab('web')"><i data-lucide="layout"></i> Web App</button>
+                    <button class="tab-btn" onclick="showTab('core')"><i data-lucide="package"></i> @belz/core</button>
+                    <button class="tab-btn" onclick="showTab('ad')"><i data-lucide="cpu"></i> Automation Designer</button>
+                    <button class="tab-btn" onclick="showTab('pd')"><i data-lucide="layout-template"></i> Page Designer</button>
+                    <button class="tab-btn" onclick="showTab('migrations')"><i data-lucide="git-merge"></i> Migrations</button>
+                    <button class="tab-btn" onclick="showTab('extension')"><i data-lucide="puzzle"></i> Extension</button>
+                    <button class="tab-btn" onclick="showTab('web')"><i data-lucide="monitor"></i> Web / ACP</button>
+                    <button class="tab-btn" onclick="showTab('cli')"><i data-lucide="terminal"></i> CLI Binary</button>
                 </div>
 
+                <!-- ═══════════════ ARCHITECTURE ═══════════════ -->
                 <div id="arch" class="content active">
                     <h2>System Architecture</h2>
-                    <p class="muted">Belz AI is a monorepo consisting of shared core packages and specialized tool modules.</p>
-                    
+                    <p style="color: var(--muted); font-size: 0.85rem;">Flat monorepo. Three source modules (no <code>package.json</code>) consumed by one Bun workspace binary. A separate Next.js app handles the AI bridge.</p>
+
                     <div class="legend" style="margin-top: 24px;">
-                        <span class="legend-item"><div class="dot-s" style="background:var(--core);"></div> core</span>
-                        <span class="legend-item"><div class="dot-s" style="background:var(--cli);"></div> cli</span>
-                        <span class="legend-item"><div class="dot-s" style="background:var(--ad);"></div> ad</span>
-                        <span class="legend-item"><div class="dot-s" style="background:var(--pd);"></div> pd</span>
-                        <span class="legend-item"><div class="dot-s" style="background:var(--mig);"></div> migrate</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--core);"></div> @belzabar/core</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--cli);"></div> cli binary</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--ad);"></div> automation-designer</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--pd);"></div> page-designer</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--mig);"></div> migrations</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--ext);"></div> extension</span>
                     </div>
 
                     <div class="arch-grid">
                         <div class="arch-box" style="border-color: var(--core);">
-                            <h4 style="color: var(--core);">@belz/core</h4>
+                            <h4 style="color: var(--core);">packages/core — @belzabar/core</h4>
                             <ul>
-                                <li><span>config.ts</span> <span>~/.belz/config.json</span></li>
-                                <li><span>auth.ts</span> <span>Session Persistence</span></li>
-                                <li><span>api.ts</span> <span>Fetch/401 Refresh</span></li>
-                                <li><span>runner.ts</span> <span>CLI Dispatcher</span></li>
+                                <li><span>config.ts</span><span>env + credentials</span></li>
+                                <li><span>auth.ts</span><span>login + session cache</span></li>
+                                <li><span>api.ts</span><span>fetch + 401 retry</span></li>
+                                <li><span>runner.ts</span><span>namespace CLI dispatcher</span></li>
+                                <li><span>command.ts</span><span>CommandModule interface</span></li>
+                                <li><span>output.ts</span><span>human + LLM rendering</span></li>
                             </ul>
                         </div>
                         <div class="arch-box" style="border-color: var(--cli);">
-                            <h4 style="color: var(--cli);">belz cli</h4>
+                            <h4 style="color: var(--cli);">cli/ — belz binary</h4>
                             <ul>
-                                <li><span>bin/cli.ts</span> <span>Dev Entry</span></li>
-                                <li><span>bin/cli-build.ts</span> <span>Prod Entry</span></li>
-                                <li><span>registry-*.ts</span> <span>Command Maps</span></li>
+                                <li><span>bin/cli.ts</span><span>dev (dynamic discovery)</span></li>
+                                <li><span>bin/cli-build.ts</span><span>prod (static registries)</span></li>
+                                <li><span>commands/registry-*.ts</span><span>generated command maps</span></li>
+                                <li><span>scripts/install.sh</span><span>build + install binary</span></li>
+                                <li><span>utils/generate-registry.ts</span><span>registry codegen</span></li>
                             </ul>
                         </div>
                         <div class="arch-box" style="border-color: var(--ad);">
-                            <h4 style="color: var(--ad);">Automation Designer</h4>
+                            <h4 style="color: var(--ad);">automation-designer/ — source module</h4>
                             <ul>
-                                <li><span>commands/</span> <span>get, run, show, test</span></li>
-                                <li><span>lib/hydrator.ts</span> <span>Service Resolver</span></li>
-                                <li><span>lib/sql/</span> <span>SQL TUI Engine</span></li>
+                                <li><span>commands/{get,show,test,run,...}</span><span>7 commands</span></li>
+                                <li><span>lib/api.ts</span><span>AD REST endpoints</span></li>
+                                <li><span>lib/hydrator.ts</span><span>service definition resolver</span></li>
+                                <li><span>lib/method-finder.ts</span><span>index + fuzzy search</span></li>
+                                <li><span>lib/sql/</span><span>SQL executor + TUI REPL</span></li>
                             </ul>
                         </div>
                         <div class="arch-box" style="border-color: var(--pd);">
-                            <h4 style="color: var(--pd);">Page Designer</h4>
+                            <h4 style="color: var(--pd);">page-designer/ — source module</h4>
                             <ul>
-                                <li><span>commands/analyze</span> <span>Recursive Dep Search</span></li>
-                                <li><span>lib/parser.ts</span> <span>Layout Regex Parser</span></li>
-                                <li><span>master_ids.txt</span> <span>Compliance Map</span></li>
+                                <li><span>commands/{show-page,analyze,...}</span><span>5 commands</span></li>
+                                <li><span>lib/parser.ts</span><span>AD ID extractor from layout JSON</span></li>
+                                <li><span>lib/analyzer.ts</span><span>recursive tree walker</span></li>
+                                <li><span>lib/comparator.ts</span><span>compliance checker</span></li>
+                            </ul>
+                        </div>
+                        <div class="arch-box" style="border-color: var(--mig);">
+                            <h4 style="color: var(--mig);">migrations/ — source module</h4>
+                            <ul>
+                                <li><span>lib/client.ts</span><span>FormData POST to migration tool</span></li>
+                                <li><span>lib/ws.ts</span><span>WebSocket log streamer</span></li>
+                                <li><span>lib/profiles.ts</span><span>profile scraper + cache</span></li>
+                                <li><span>lib/log-parser.ts</span><span>ANSI-stripped output parser</span></li>
+                            </ul>
+                        </div>
+                        <div class="arch-box" style="border-color: var(--ext);">
+                            <h4 style="color: var(--ext);">extension/ + web/ — separate workspaces</h4>
+                            <ul>
+                                <li><span>extension/src/features/</span><span>MV3 content scripts</span></li>
+                                <li><span>web/lib/acp-bridge.ts</span><span>ACP process manager</span></li>
+                                <li><span>web/app/ai/</span><span>session UI + SSE streaming</span></li>
+                                <li><span>web/app/curl-to-ad/</span><span>curl → AD autofill tool</span></li>
                             </ul>
                         </div>
                     </div>
-                </div>
 
-                <div id="commands" class="content">
-                    <h2>CLI Reference</h2>
-                    
-                    <h3>Global Flags</h3>
-                    <div class="table-wrap">
-                        <table>
-                            <thead><tr><th>Flag</th><th>Description</th></tr></thead>
-                            <tbody>
-                                <tr><td><code>--env &lt;name&gt;</code></td><td>Targets nsm-dev, nsm-qa, or nsm-uat. Default: nsm-dev.</td></tr>
-                                <tr><td><code>--llm</code></td><td>Outputs structured JSON for machine consumption.</td></tr>
-                                <tr><td><code>--help, -h</code></td><td>Shows context-aware usage and examples.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <h3 style="color: var(--ad);">Namespace: ad</h3>
-                    <div class="table-wrap">
-                        <table>
-                            <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
-                            <tbody>
-                                <tr><td><code>get &lt;UUID&gt;</code></td><td>Fetch method metadata and input definitions.</td></tr>
-                                <tr><td><code>show &lt;UUID&gt;</code></td><td>Deep-inspect service steps, mappings, and outputs.</td></tr>
-                                <tr><td><code>test &lt;UUID&gt;</code></td><td>Run draft method with per-step trace logging.</td></tr>
-                                <tr><td><code>sql tui</code></td><td>Launch interactive SQL session for AD databases.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <h3 style="color: var(--pd);">Namespace: pd</h3>
-                    <div class="table-wrap">
-                        <table>
-                            <thead><tr><th>Command</th><th>Purpose</th></tr></thead>
-                            <tbody>
-                                <tr><td><code>analyze [ID]</code></td><td>Recursive dependency and compliance analysis.</td></tr>
-                                <tr><td><code>find-ad-refs</code></td><td>Extract all AD method IDs from a page or component.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div id="flow" class="content">
-                    <h2>Data Flow</h2>
-                    <p class="muted">Tracing a standard authenticated request from CLI to NSM.</p>
-                    
-                    <div style="margin-top: 30px;">
-                        <div class="data-card">
-                            <h4 style="color: var(--primary); margin-bottom: 10px;">1. CLI Dispatch</h4>
-                            <p>Runner identifies the namespace (e.g., <code>ad</code>) and locates the command in the generated registry.</p>
-                        </div>
-                        <div class="data-card">
-                            <h4 style="color: var(--primary); margin-bottom: 10px;">2. Auth Reconcile</h4>
-                            <p>Core <code>auth.ts</code> checks local session. If missing or expired, it re-logs in using credentials from <code>config.json</code>.</p>
-                        </div>
-                        <div class="data-card">
-                            <h4 style="color: var(--primary); margin-bottom: 10px;">3. API Invocation</h4>
-                            <p>Request is sent via <code>apiFetch</code>. If a 401 occurs, the session is cleared and the request is retried once after re-auth.</p>
-                        </div>
-                        <div class="data-card">
-                            <h4 style="color: var(--primary); margin-bottom: 10px;">4. Hydration & Display</h4>
-                            <p>Raw JSON is parsed into domain types. <code>renderHuman</code> (tables) or <code>renderLLM</code> (JSON) prints to stdout.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="files" class="content">
-                    <h2>File Reference</h2>
-                    <div class="table-wrap">
-                        <table>
-                            <thead><tr><th>Path</th><th>Role</th><th>Description</th></tr></thead>
-                            <tbody>
-                                <tr><td><code>packages/core/</code></td><td>Shared</td><td>The backbone of the project. Auth, API, Config.</td></tr>
-                                <tr><td><code>cli/bin/</code></td><td>Entry</td><td>CLI entry points for dev and prod.</td></tr>
-                                <tr><td><code>automation-designer/</code></td><td>Source</td><td>AD commands and domain logic.</td></tr>
-                                <tr><td><code>page-designer/</code></td><td>Source</td><td>PD recursive analysis and regex parsers.</td></tr>
-                                <tr><td><code>migrations/</code></td><td>Source</td><td>Migration profiles and WS log streaming.</td></tr>
-                                <tr><td><code>web/</code></td><td>UI</td><td>Next.js 16 ACP interface and session manager.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div id="runtime" class="content">
-                    <h2>Runtime Storage</h2>
-                    <p class="muted">All persistence happens under <code>~/.belz/</code>.</p>
-                    
-                    <div class="arch-grid" style="margin-top: 24px;">
-                        <div class="data-card">
-                            <h4>Config & Auth</h4>
-                            <ul style="list-style: none; font-size: 0.75rem; color: var(--muted);">
-                                <li><code>config.json</code>: User credentials</li>
-                                <li><code>sessions/*.json</code>: Active Bearer tokens</li>
-                            </ul>
-                        </div>
-                        <div class="data-card">
-                            <h4>Cache & Artifacts</h4>
-                            <ul style="list-style: none; font-size: 0.75rem; color: var(--muted);">
-                                <li><code>cache/methods/</code>: AD definitions</li>
-                                <li><code>migrations/profiles.json</code>: NSM metadata</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="web" class="content">
-                    <h2>Belz AI Web App</h2>
-                    <p class="muted">The modern UI for connecting local coding agents to your browser.</p>
-                    
-                    <h3>The ACP Bridge</h3>
-                    <p style="font-size: 0.85rem; color: var(--muted); margin-bottom: 20px;">
-                        Browsers cannot spawn processes. Belz AI uses a Node.js singleton bridge that proxies ACP JSON-RPC requests to agent subprocesses via stdio.
-                    </p>
-
+                    <h3>Inter-Module Dependency Graph</h3>
                     <div class="code-block">
-                        <code>// lib/acp-bridge.ts
-class AcpBridge {
-  private sessions = new Map<string, SessionEntry>();
-  
-  async sendPrompt(id: string, prompt: string, emit: Emitter) {
-    const entry = this.sessions.get(id);
-    return entry.connection.prompt({ sessionId: entry.acpId, prompt });
-  }
-}</code>
+<code>belz (cli binary)
+  ├── @belzabar/core          ← all modules import this
+  ├── automation-designer/    ← commands + lib, imports core
+  ├── page-designer/          ← commands + lib, imports core
+  └── migrations/             ← lib only, imports core
+
+web/ (Next.js, standalone)
+  └── lib/acp-bridge.ts       ← spawns agent processes via stdio
+
+extension/ (Bun build → dist/content-script.js)
+  └── src/features/           ← injected into NSM web UI</code>
                     </div>
 
-                    <h3>State Management</h3>
-                    <p style="font-size: 0.85rem; color: var(--muted);">
-                        Uses a centralized <code>useReducer</code> hook to manage multi-session state, ensuring SSE stream updates don't cause race conditions or stale closures.
-                    </p>
+                    <h3>Request Lifecycle</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">
+                            <strong style="color:#fff;">1. Entry</strong> — <code>cli.ts</code> or <code>cli-build.ts</code> receives <code>process.argv</code>.<br>
+                            <strong style="color:#fff;">2. Routing</strong> — <code>runNamespacedCli()</code> splits on the first arg (<code>ad</code> / <code>pd</code> / <code>migrate</code>) and looks up the command in the registry map.<br>
+                            <strong style="color:#fff;">3. Auth</strong> — <code>apiFetch()</code> loads a Bearer token from <code>~/.belz/sessions/&lt;env&gt;.json</code>; if absent, calls <code>login()</code> first.<br>
+                            <strong style="color:#fff;">4. API</strong> — HTTP request to the active NSM environment URL. On 401, session is cleared and retried once.<br>
+                            <strong style="color:#fff;">5. Parse</strong> — Raw response is cast into domain types by module-level parsers (e.g., <code>parseMethodResponse()</code>).<br>
+                            <strong style="color:#fff;">6. Render</strong> — <code>renderHuman()</code> outputs colored tables; <code>renderLLM()</code> outputs the full <code>CommandEnvelope</code> as JSON.
+                        </p>
+                    </div>
                 </div>
+
+                <!-- ═══════════════ @BELZ/CORE ═══════════════ -->
+                <div id="core" class="content">
+                    <h2>@belzabar/core</h2>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Shared framework package at <code>packages/core/src/</code>. Every CLI module imports exclusively from here — no cross-module imports between AD/PD/migrations.</p>
+
+                    <h3>config.ts — Environment &amp; Credential Management</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">Singleton <code>Config</code> class. Credential resolution priority: <code>~/.belz/config.json</code> → env vars (<code>NSM_DEV_URL</code>, <code>NSM_DEV_USER</code>, <code>NSM_DEV_PASSWORD</code>) → hardcoded defaults.</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Export</th><th>Type</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>BELZ_CONFIG_DIR</code></td><td>string</td><td>Resolves to <code>~/.belz</code></td></tr>
+                                    <tr><td><code>Config.setActiveEnv(name)</code></td><td>method</td><td>Switches the active environment for the current process</td></tr>
+                                    <tr><td><code>Config.activeEnv</code></td><td>getter</td><td>Returns current <code>Environment</code> object with URL + credentials</td></tr>
+                                    <tr><td><code>Config.getAllEnvs()</code></td><td>method</td><td>All configured environments (built-in + custom from config file)</td></tr>
+                                    <tr><td><code>Config.baseUrl</code></td><td>getter</td><td>Active environment base URL (with trailing slash)</td></tr>
+                                    <tr><td><code>Config.loginId</code></td><td>getter</td><td>Username for active environment</td></tr>
+                                    <tr><td><code>Config.password</code></td><td>getter</td><td>Decoded password (base64 stored in config)</td></tr>
+                                    <tr><td><code>writeConfigFile(config)</code></td><td>fn</td><td>Atomically writes credentials to <code>config.json</code> (mode 600)</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3>auth.ts — Session Persistence</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">Sessions stored at <code>~/.belz/sessions/&lt;env&gt;.json</code>. The <code>login()</code> function POSTs to <code>/do/login</code>, then extracts the Bearer token from the response JSON body or the <code>Authorization</code> header. On success, token is persisted and returned.</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Function</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>login()</code></td><td>Authenticates with current env credentials, extracts + caches token</td></tr>
+                                    <tr><td><code>loadSession()</code></td><td>Returns <code>AuthSession { token, refreshToken }</code> from disk or null</td></tr>
+                                    <tr><td><code>saveSession(session)</code></td><td>Writes session JSON to disk for the active environment</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3>api.ts — HTTP Client</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;"><code>apiFetch(path, options)</code> is the single HTTP entry point for all modules. Attaches <code>Authorization: Bearer &lt;token&gt;</code>, supports three auth modes (<code>Bearer</code>, <code>Raw</code>, <code>None</code>), and automatically re-authenticates + retries on 401.</p>
+                        <div class="code-block" style="margin: 0;">
+<code>// Auth flow inside apiFetch:
+1. loadSession() → attach Authorization header
+2. fetch(url, { headers })
+3. if (response.status === 401):
+     clearSession(); await login(); retry once</code>
+                        </div>
+                    </div>
+
+                    <h3>cache.ts — Generic TTL Cache</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">File-based cache with per-key TTL. Stores entries as <code>{ savedAt: ISO-string, data: T }</code>. Used by all modules with different TTL policies.</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Cache Site</th><th>Key</th><th>TTL</th></tr></thead>
+                                <tbody>
+                                    <tr><td>AD methods</td><td>method UUID</td><td>5 minutes</td></tr>
+                                    <tr><td>Service definitions (core IDs)</td><td>automationId</td><td>permanent</td></tr>
+                                    <tr><td>Service definitions (others)</td><td>automationId</td><td>1 hour</td></tr>
+                                    <tr><td>PD page configs</td><td>pageId</td><td>5 minutes</td></tr>
+                                    <tr><td>Method finder index</td><td>env name</td><td>7 days</td></tr>
+                                    <tr><td>Migration profiles</td><td>fixed key</td><td>permanent</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3>runner.ts — CLI Dispatcher</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">Two functions handle all routing. <code>runNamespacedCli()</code> dispatches to AD/PD/migrate/config based on the first positional arg. <code>runCli()</code> handles single-namespace lookup for passthrough modules like <code>migrate</code>. Both parse global flags (<code>--env</code>, <code>--llm</code>) before calling the command module.</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Function</th><th>Usage</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>runCli(argv, commandMap, opts)</code></td><td>Single-namespace flat command lookup (used internally by migrate, config)</td></tr>
+                                    <tr><td><code>runNamespacedCli(argv, opts)</code></td><td>Top-level dispatcher; resolves <code>ad</code> → ADCommandRegistry, <code>pd</code> → PDCommandRegistry, etc.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3>command.ts — Module Interface &amp; Result Types</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">Every command implements <code>CommandModule&lt;TArgs, TData&gt;</code>. Results are wrapped in a <code>CommandEnvelope</code> that includes timing, environment name, schema version, and a success/error discriminator.</p>
+                        <div class="code-block" style="margin: 0;">
+<code>interface CommandModule&lt;TArgs, TData&gt; {
+  schema?: string;          // e.g. "ad.show"
+  version?: string;         // default "2.0"
+  parseArgs?(rawArgs, ctx): TArgs;
+  execute(args, ctx): Promise&lt;CommandResult&lt;TData&gt;&gt;;
+  presentHuman?(envelope, ui): void; // optional custom renderer
+}
+
+// Helper factories:
+ok(data, meta?)   → { ok: true, data, meta }
+fail(code, msg)   → { ok: false, error: { code, message } }</code>
+                        </div>
+                    </div>
+
+                    <h3>output.ts — Rendering</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">
+                            <strong style="color:#fff;">renderHuman(envelope, presenter?)</strong> — If the command exports a custom <code>presentHuman</code>, it is called with the full envelope and a <code>HumanUi</code> helper (sections, tables, key-value pairs, color codes). Otherwise the generic renderer auto-detects: arrays of objects become tables; plain objects become key-value tables; scalars print as text.<br><br>
+                            <strong style="color:#fff;">renderLLM(envelope)</strong> — JSON-stringifies the entire <code>CommandEnvelope</code> to stdout. Agents consume this directly.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- ═══════════════ AUTOMATION DESIGNER ═══════════════ -->
+                <div id="ad" class="content">
+                    <h2>Automation Designer</h2>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Source module at <code>automation-designer/</code>. Provides <code>belz ad</code> commands for inspecting, testing, executing, and querying NSM automation chains.</p>
+
+                    <h3>Core Types (<code>lib/types.ts</code>)</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Type</th><th>Key Fields</th><th>Source</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>RawMethodResponse</code></td><td><code>uuid</code>, <code>referenceId</code>, <code>aliasName</code>, <code>jsonDefinition</code> (stringified), <code>automationState</code></td><td>API response from <code>/rest/api/automation/chain/{uuid}</code></td></tr>
+                                <tr><td><code>HydratedMethod</code></td><td><code>uuid</code>, <code>referenceId</code>, <code>methodName</code>, <code>inputs[]</code>, <code>services[]</code>, <code>state</code>, timestamps</td><td>Parsed by <code>parser.ts</code> from <code>RawMethodResponse</code></td></tr>
+                                <tr><td><code>InputField</code></td><td><code>fieldCode</code>, <code>type</code> (STRING/JSON/BOOLEAN), <code>required</code>, <code>description</code></td><td>Nested in method's <code>jsonDefinition</code></td></tr>
+                                <tr><td><code>ServiceStep</code></td><td><code>automationId</code>, <code>orderIndex</code>, <code>type</code>, <code>conditionExpression</code>, <code>loopConfiguration</code>, mappings</td><td>Nested in method's <code>jsonDefinition</code></td></tr>
+                                <tr><td><code>AutomationDefinition</code></td><td><code>automationAPI</code> with input/output schemas, <code>automationAuth</code></td><td>Fetched per-service by <code>hydrator.ts</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>API Layer (<code>lib/api.ts</code>)</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Function</th><th>Endpoint</th><th>Notes</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>fetchMethodDefinition(uuid)</code></td><td><code>GET /rest/api/automation/chain/{uuid}</code></td><td>Returns <code>RawMethodResponse</code></td></tr>
+                                <tr><td><code>fetchAutomationDefinition(id)</code></td><td><code>GET /rest/api/automations/{id}?basicinfo=false</code></td><td>Returns <code>AutomationDefinition</code></td></tr>
+                                <tr><td><code>testMethod(formData)</code></td><td><code>POST /rest/api/automation/chain/test</code></td><td>Sends FormData with JSON body. Sets <code>internal-ad-execution-mode: debug</code> and <code>Expertly-Auth-Token: true</code> headers. Returns full execution trace.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Parser (<code>lib/parser.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);"><code>parseMethodResponse(raw)</code> takes a <code>RawMethodResponse</code> and returns a <code>HydratedMethod</code>. The core challenge is that <code>jsonDefinition</code> is a doubly-serialized JSON string — the parser unwraps it, extracts the inner object, and maps fields to the typed domain model. It also normalises the method name (inner name takes precedence over <code>aliasName</code>) and computes <code>fetchedAt</code>.</p>
+                    </div>
+
+                    <h3>Hydrator (<code>lib/hydrator.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;"><code>ServiceHydrator</code> fetches and caches <code>AutomationDefinition</code> objects for each service in a method chain. Core service IDs (hyphenated, e.g., <code>core-send-email</code>) are cached permanently; all others expire in 1 hour.</p>
+                        <p style="font-size: 0.82rem; color: var(--muted);">Two helper methods extract typed input metadata: <code>findInputLabel(def, inputId)</code> does a recursive search through nested input groups; <code>flattenInputs(def)</code> returns a flat list with depth and ordering for table display.</p>
+                    </div>
+
+                    <h3>Method Finder (<code>lib/method-finder.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;">Builds a full searchable index of all methods and categories by paging through:</p>
+                        <p style="font-size: 0.82rem; color: var(--muted);">
+                            <code>GET /rest/api/automation/services?limit=2000&amp;offset=X</code> → categories<br>
+                            <code>GET /rest/api/automation/methods?categoryUuid=X&amp;limit=100&amp;offset=Y</code> → methods per category
+                        </p>
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-top: 10px;">Index cached for 7 days. <code>searchMethodIndex(index, query, limit)</code> uses a weighted multi-signal scorer: exact match (1000) → starts-with (900) → word-boundary (850) → contains (760) → subsequence fuzzy (640). Field weights: <code>methodName</code> 1.0, <code>aliasName</code> 0.95, <code>categoryName</code> 0.85.</p>
+                    </div>
+
+                    <h3>SQL Engine (<code>lib/sql/</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">Executes SQL against NSM databases by injecting queries into special method templates. Five operation types are supported:</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Function</th><th>SQL Type</th><th>Return</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>executeSqlReadQuery()</code></td><td>SELECT</td><td>Typed row array</td></tr>
+                                    <tr><td><code>executeSqlUpdate()</code></td><td>UPDATE</td><td>Rows affected</td></tr>
+                                    <tr><td><code>executeSqlInsert()</code></td><td>INSERT</td><td>Rows affected + generated values</td></tr>
+                                    <tr><td><code>executeSqlModify()</code></td><td>DDL</td><td>Status</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-top: 12px;">The TUI REPL (<code>lib/sql/tui/</code>) provides an interactive session with database/table selector, query history persistence, and formatted result tables.</p>
+                    </div>
+
+                    <h3>Commands</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Command</th><th>Key Logic</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>belz ad get &lt;UUID&gt;</code></td><td>Fetch + cache method. Returns metadata, reference ID, alias, state, version, timestamps, and input summary.</td></tr>
+                                <tr><td><code>belz ad show &lt;UUID&gt;</code></td><td>Loads method + optionally hydrates all service definitions. Flags: <code>--inputs</code>, <code>--services</code>, <code>--full</code>, <code>--raw</code>, <code>--service-detail &lt;n&gt;</code>. Produces nested service maps with input labels resolved via the hydrator.</td></tr>
+                                <tr><td><code>belz ad test &lt;UUID&gt;</code></td><td>Collects inputs (file or interactive prompts), injects <code>testValue</code> fields and <code>automationApiId</code> into the method payload, POSTs as FormData to the test endpoint, parses the per-step execution trace. Detects Java compilation errors (HTTP 200 with <code>stackTrace</code> array).</td></tr>
+                                <tr><td><code>belz ad run &lt;ID&gt;</code></td><td>Executes the <em>published</em> method live via <code>POST /rest/api/automation/chain/execute/{publishedId}</code>. Auth mode is <code>Raw</code> (bare token, not Bearer). Accepts payload from file or JSON string.</td></tr>
+                                <tr><td><code>belz ad save-suite &lt;UUID&gt;</code></td><td>Saves current test inputs as a named spec to <code>suites/*.spec.json</code>.</td></tr>
+                                <tr><td><code>belz ad run-suites</code></td><td>Runs all spec files in <code>suites/</code> and reports pass/fail per spec.</td></tr>
+                                <tr><td><code>belz ad sql</code></td><td>Sub-commands: <code>dbs</code> (list databases), <code>run &lt;db&gt; &lt;query&gt;</code> (execute query), <code>tui</code> (interactive REPL session).</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Test vs. Live Execution</h3>
+                    <div class="arch-grid">
+                        <div class="arch-box" style="border-color: var(--ad);">
+                            <h4 style="color: var(--ad);">Test (ad test)</h4>
+                            <ul>
+                                <li><span>Endpoint</span><span>/chain/test</span></li>
+                                <li><span>Auth mode</span><span>Bearer</span></li>
+                                <li><span>Payload type</span><span>FormData</span></li>
+                                <li><span>Headers</span><span>internal-ad-execution-mode: debug</span></li>
+                                <li><span>Returns</span><span>full trace + per-step output</span></li>
+                                <li><span>Data mutation</span><span>none</span></li>
+                            </ul>
+                        </div>
+                        <div class="arch-box" style="border-color: var(--mig);">
+                            <h4 style="color: var(--mig);">Live (ad run)</h4>
+                            <ul>
+                                <li><span>Endpoint</span><span>/chain/execute/{publishedId}</span></li>
+                                <li><span>Auth mode</span><span>Raw (bare token)</span></li>
+                                <li><span>Payload type</span><span>JSON body</span></li>
+                                <li><span>Headers</span><span>standard</span></li>
+                                <li><span>Returns</span><span>method result only</span></li>
+                                <li><span>Data mutation</span><span>yes</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ═══════════════ PAGE DESIGNER ═══════════════ -->
+                <div id="pd" class="content">
+                    <h2>Page Designer</h2>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Source module at <code>page-designer/</code>. Provides <code>belz pd</code> commands for inspecting PD pages, tracing component trees, extracting AD method references, and running compliance analysis.</p>
+
+                    <h3>Core Types (<code>lib/types.ts</code>)</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>PageConfigResponse</code></td><td>Raw API response: <code>name</code> + <code>configuration</code> (stringified JSON of the full page/component definition)</td></tr>
+                                <tr><td><code>InternalConfig</code></td><td>Parsed configuration: <code>httpRequests.userDefined[]</code> (each contains an AD method URL), <code>layout</code> (root <code>LayoutNode</code>)</td></tr>
+                                <tr><td><code>LayoutNode</code></td><td>Recursive tree node: <code>name?</code>, <code>children?: LayoutNode[]</code>. Represents the page's visual component hierarchy.</td></tr>
+                                <tr><td><code>ReportNode</code></td><td>Analysis output: <code>type</code> (PAGE/COMPONENT), <code>name</code>, <code>id</code>, <code>adIds[]</code>, <code>children: ReportNode[]</code></td></tr>
+                                <tr><td><code>ComplianceResult</code></td><td><code>isCompliant</code>, <code>rogueIds</code>, <code>missingIds</code>, <code>commonIds</code> — compared against <code>master_ids.txt</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Parser (<code>lib/parser.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">
+                            <strong style="color:#fff;">cleanAdId(url)</strong> — Regex extracts the method UUID from a full AD execute URL: <code>/rest/api/automation/chain/execute/([^/]+)</code>.<br><br>
+                            <strong style="color:#fff;">extractReferences(configStr, whitelist)</strong> — Parses the stringified configuration JSON. Walks <code>httpRequests.userDefined[]</code> to collect AD IDs; walks the <code>layout</code> tree to collect child component names (filtered against a whitelist to avoid system components).<br><br>
+                            <strong style="color:#fff;">extractDirectChildComponentNames(configStr)</strong> — Returns only the top-level layout children (non-recursive). Used for shallow dependency maps.
+                        </p>
+                    </div>
+
+                    <h3>Analyzer (<code>lib/analyzer.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;"><code>analyzeItem(id, type, name, visited, whitelist)</code> is the recursive tree walker. It:</p>
+                        <p style="font-size: 0.82rem; color: var(--muted);">
+                            1. Checks the <code>visited</code> Set for cycle detection.<br>
+                            2. Fetches the config for the page/component (from cache).<br>
+                            3. Calls <code>extractReferences()</code> to get AD IDs and child component names.<br>
+                            4. Recursively calls <code>analyzeItem()</code> on each child (in parallel via <code>Promise.all</code>).<br>
+                            5. Aggregates all AD IDs from the subtree into a <code>ReportNode</code>.
+                        </p>
+                    </div>
+
+                    <h3>API Layer (<code>lib/api.ts</code>)</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Function</th><th>Endpoint / Logic</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>fetchPageConfig(pageId)</code></td><td><code>GET /rest/api/pagedesigner/pages/{pageId}</code></td></tr>
+                                <tr><td><code>fetchComponentConfig(componentId)</code></td><td>Same endpoint — pages and components share the same API</td></tr>
+                                <tr><td><code>searchPagesByName(name, status)</code></td><td><code>GET /rest/api/pagedesigner/pages?name=X&amp;status=DRAFT|PUBLISHED</code></td></tr>
+                                <tr><td><code>fetchComponentIdByName(name)</code></td><td>Searches for component, resolves to draft ID</td></tr>
+                                <tr><td><code>fetchDeployablePageByAppUrl(domain, path)</code></td><td>Finds a deployed page by matching its application domain + URL path</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Commands</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Command</th><th>Key Logic</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>belz pd show-page &lt;DRAFT_ID&gt;</code></td><td>Fetches page config, displays name, layout structure depth, referenced AD method IDs, and metadata.</td></tr>
+                                <tr><td><code>belz pd show-component &lt;NAME&gt;</code></td><td>Searches for component by name, fetches config, displays same structure as <code>show-page</code>.</td></tr>
+                                <tr><td><code>belz pd find-ad-methods &lt;ID&gt;</code></td><td>Extracts all AD method IDs referenced in a page's HTTP requests. With <code>--recursive</code>, walks the full component tree via the analyzer.</td></tr>
+                                <tr><td><code>belz pd inspect-url &lt;PD_URL&gt;</code></td><td>Parses a full PD URL (detects <code>/ui-designer/page/</code> vs <code>/ui-designer/symbol/</code>), fetches config, returns metadata + children + AD refs.</td></tr>
+                                <tr><td><code>belz pd analyze [PAGE_ID]</code></td><td>Recursive dependency + compliance analysis. Walks the full page/component tree, collects all AD IDs, then compares against <code>master_ids.txt</code> to find rogue (uncatalogued) and missing IDs. Reports entity counts, mismatch summary, and compliance status.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ═══════════════ MIGRATIONS ═══════════════ -->
+                <div id="migrations" class="content">
+                    <h2>Migrations</h2>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Source module at <code>migrations/lib/</code>. Orchestrates NSM cross-environment migrations (AD methods, PD pages) by driving an external migration tool via FormData HTTP + WebSocket log streaming.</p>
+
+                    <h3>External Tool Integration</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">The migration tool is a separate web service at <code>https://db-migration-tool.services.stage.expertly.cloud/</code>. Belz does not have API keys — it acts as an authenticated browser session, bootstrapping cookies via <code>GET /index.html</code> before submitting FormData.</p>
+                    </div>
+
+                    <h3>client.ts — Execution Bootstrap</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;"><code>startMigrationExecution(input)</code> submits a FormData payload to <code>POST /executions/start</code>. The form fields map directly to the migration tool's UI inputs:</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Form Field</th><th>Value</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>__script_name</code></td><td>Migration script identifier</td></tr>
+                                    <tr><td><code>Choose a profile</code></td><td>NSM profile string (e.g., <code>nsmdevncdns_nsmqancdns</code>)</td></tr>
+                                    <tr><td><code>Module Name</code></td><td><code>AD</code> or <code>PD</code></td></tr>
+                                    <tr><td><code>List of UUIDs</code></td><td>Comma-separated method/page IDs</td></tr>
+                                    <tr><td><code>Use CRUD API?</code></td><td>Boolean toggle</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-top: 12px;"><code>cleanupMigrationExecution(executionId)</code> calls <code>POST /executions/cleanup/{executionId}</code> after streaming completes.</p>
+                    </div>
+
+                    <h3>ws.ts — WebSocket Log Streaming</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);"><code>streamMigrationExecution(executionId, options)</code> connects to <code>ws://.../executions/io/{executionId}</code>. On connect, it immediately sends <code>"yes"</code> to confirm the execution. It then collects all incoming text events and typed events until the socket closes (or a 10-minute timeout fires). Returns <code>StreamExecutionResult { executionId, events[], outputText, closeCode, closeReason }</code>.</p>
+                    </div>
+
+                    <h3>profiles.ts — Profile Discovery</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;"><code>discoverNsmProfiles()</code> discovers available source→target environment pairs by scraping the migration tool's HTML and bundled JS assets. It searches for strings matching the pattern <code>[a-z0-9]+ncdns_[a-z0-9]+ncdns</code> (e.g., <code>nsmdevncdns_nsmqancdns</code>).</p>
+                        <p style="font-size: 0.82rem; color: var(--muted);">Resolution order: <strong style="color:#fff;">live scrape</strong> → <strong style="color:#fff;">cached profiles</strong> → <strong style="color:#fff;">hardcoded fallback</strong>. Results are cached permanently to <code>~/.belz/migrations/nsm-profiles.json</code>.</p>
+                    </div>
+
+                    <h3>log-parser.ts — Output Parsing</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);"><code>parseMigrationOutput(rawOutput)</code> strips ANSI escape codes, then scans the text for:</p>
+                        <ul style="list-style: none; font-size: 0.82rem; color: var(--muted); margin-top: 8px;">
+                            <li>• Success/failure keywords to set <code>successDetected</code> / <code>failureDetected</code></li>
+                            <li>• URLs for status and details pages</li>
+                            <li>• Run ID and migration ID</li>
+                            <li>• A JSON block after a known marker line → parsed into <code>reportSummary</code> (entity counts, mismatch counts)</li>
+                        </ul>
+                    </div>
+
+                    <h3>Commands</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Command</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>belz migrate profiles</code></td><td>Discovers and lists available NSM migration profiles. Use <code>--refresh</code> to bypass the permanent cache and re-scrape.</td></tr>
+                                <tr><td><code>belz migrate run</code></td><td>Full migration run: discovers profile, submits FormData, opens WebSocket, streams live log output to terminal, parses result, prints summary + links. Requires <code>--module</code> and <code>--ids</code>. Optional: <code>--source-env</code>, <code>--target-env</code>.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ═══════════════ EXTENSION ═══════════════ -->
+                <div id="extension" class="content">
+                    <h2>Browser Extension</h2>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Manifest V3 Chrome/Edge extension at <code>extension/</code>. A single content script bundle (<code>dist/content-script.js</code>) is injected into NSM AD and PD pages. Built with Bun.</p>
+
+                    <h3>Architecture</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">All features are implemented as independent modules under <code>src/features/</code>. Each feature exports an <code>init()</code> function called by the top-level entry point. Features communicate via DOM events and direct DOM manipulation — no background service worker or message passing is used.</p>
+                    </div>
+
+                    <h3>Features</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Feature</th><th>Trigger</th><th>What it does</th></tr></thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>json-editor</strong></td>
+                                    <td>Auto-inject + keyboard shortcut</td>
+                                    <td>Renders a modal with a JSON textarea pre-populated from all AD test input fields. On save, parses the JSON and syncs each key back to the corresponding DOM input control (handles text inputs, dropdowns, checkboxes). Useful for bulk-editing 10+ inputs at once.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>textarea-editor</strong></td>
+                                    <td>Button injected next to each <code>&lt;textarea&gt;</code></td>
+                                    <td>Opens any native <code>&lt;textarea&gt;</code> in a full-screen CodeMirror modal with syntax highlighting, line numbers, and a line-wrap toggle. On close, syncs content back to the original element and fires <code>input</code>/<code>change</code> events so the host app's listeners detect the update.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>output-copy</strong></td>
+                                    <td>Hover on output containers</td>
+                                    <td>Injects a copy-to-clipboard button that appears on hover over each AD method output section. Extracts the output text and writes it to the clipboard via <code>navigator.clipboard.writeText()</code>.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>run-test</strong></td>
+                                    <td><code>Ctrl+Shift+Enter</code></td>
+                                    <td>Global keyboard shortcut that finds and clicks the "Run Test" button on the current AD page. Allows triggering test execution without reaching for the mouse.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>settings</strong></td>
+                                    <td><code>Ctrl+,</code> or ⚙ button</td>
+                                    <td>Opens a settings modal injected into the page. Allows toggling individual features on/off and configuring textarea editor defaults (theme, wrap mode). Settings are persisted to <code>localStorage</code>.</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>autofill</strong></td>
+                                    <td>URL param <code>_belz_autofill=&lt;base64&gt;</code></td>
+                                    <td>On AD page load, reads the <code>_belz_autofill</code> URL query parameter, base64-decodes it as JSON, and pre-fills the AD test input fields. Used by the <code>curl → AD</code> web tool to open a page with a request body already loaded.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Build</h3>
+                    <div class="code-block">
+<code>cd extension
+bun run build
+# → dist/content-script.js (single bundle)</code>
+                    </div>
+                    <p style="font-size: 0.82rem; color: var(--muted);">Load the <code>extension/</code> directory as an unpacked extension in Chrome (<code>chrome://extensions</code> → Developer Mode → Load unpacked).</p>
+                </div>
+
+                <!-- ═══════════════ WEB / ACP ═══════════════ -->
+                <div id="web" class="content">
+                    <h2>Web App &amp; ACP Bridge</h2>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Next.js 16 / React 19 app at <code>web/</code>. Provides a multi-session AI chat UI and a <code>curl → AD</code> autofill tool. The ACP Bridge manages spawned agent processes in a Node.js singleton.</p>
+
+                    <h3>ACP Bridge (<code>lib/acp-bridge.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">The bridge is a singleton <code>AcpBridge</code> class (hot-reload safe via <code>global._acpBridge</code>). It maintains a <code>Map&lt;string, SessionEntry&gt;</code> of live agent sessions.</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Method</th><th>Description</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>createSession(agent, cwd, namespace?, model?)</code></td><td>Spawns the agent process via <code>spawn(command, args, { cwd })</code>, wraps stdio in an ACP <code>ClientSideConnection</code>, calls <code>connection.initialize()</code>, then <code>connection.newSession()</code>. Returns <code>SessionInfo</code>.</td></tr>
+                                    <tr><td><code>sendPrompt(id, message, emit)</code></td><td>On first message, reads system blocks (INIT.md, BELZABAR.md, namespace .md) from <code>specs/main-orchestrator/</code> and prepends them. Calls <code>connection.prompt()</code>; emits streaming events via the <code>emit</code> callback until <code>done</code>.</td></tr>
+                                    <tr><td><code>resolvePermission(id, requestId, optionId)</code></td><td>Fulfills a pending <code>requestPermission</code> ACP call with the user's choice.</td></tr>
+                                    <tr><td><code>runWorker(agent, cwd, prompt, timeoutMs)</code></td><td>Headless session: create → send one prompt → collect all text → close. Used for background agent tasks.</td></tr>
+                                    <tr><td><code>closeSession(id)</code></td><td>Cancels pending permissions, removes from map, and terminates the child process (SIGTERM → wait 1.5s → SIGKILL).</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3>ACP Protocol Handlers</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;">The bridge registers handlers for all server-to-client ACP calls from the agent process:</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>ACP Call</th><th>Bridge Action</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>sessionUpdate</code></td><td>Routes by <code>sessionUpdate</code> field: <code>agent_message_chunk</code>, <code>agent_thought_chunk</code>, <code>tool_call</code>, <code>tool_call_update</code>, <code>plan</code>, <code>session_info_update</code> (sets session name) — all emitted to SSE subscribers.</td></tr>
+                                    <tr><td><code>requestPermission</code></td><td>Creates a pending promise, emits <code>permission_request</code> to the UI. Resolved later by <code>resolvePermission()</code>.</td></tr>
+                                    <tr><td><code>readTextFile</code></td><td>Reads a file from disk — constrained to session CWD via <code>isWithinRoot()</code> path check. Supports line offset + limit.</td></tr>
+                                    <tr><td><code>writeTextFile</code></td><td>Writes a file — constrained to session CWD. Creates parent dirs automatically.</td></tr>
+                                    <tr><td><code>createTerminal</code></td><td>Spawns a subprocess with <code>stdio: pipe</code>, buffers stdout/stderr (64KB cap with truncation flag), resolves exit via a Promise.</td></tr>
+                                    <tr><td><code>terminalOutput</code> / <code>waitForTerminalExit</code></td><td>Returns buffered output and exit status; blocks until process exits.</td></tr>
+                                    <tr><td><code>killTerminal</code> / <code>releaseTerminal</code></td><td>SIGTERM → wait → SIGKILL; releases output buffer.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3>Agent Registry (<code>lib/acp-types.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;">Four exported records define available agents:</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Agent Key</th><th>Command Spawned</th><th>Model Flag</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>claude</code></td><td><code>npx -y @zed-industries/claude-agent-acp</code></td><td>—</td></tr>
+                                    <tr><td><code>claude-code</code></td><td><code>npx -y @zed-industries/claude-agent-acp</code> (→ <code>claude --acp</code> when CLI ships)</td><td>—</td></tr>
+                                    <tr><td><code>gemini</code></td><td><code>gemini</code></td><td>—</td></tr>
+                                    <tr><td><code>opencode</code></td><td><code>opencode acp</code></td><td><code>--model</code></td></tr>
+                                    <tr><td><code>codex</code></td><td><code>npx @zed-industries/codex-acp</code></td><td><code>--model</code></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <h3>Session State (<code>hooks/use-sessions.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">Client-side session state is managed by a <code>useReducer</code> hook. State (slots + workspaces) is persisted to <code>localStorage</code> and reconciled with live server sessions on mount. SSE streaming from <code>/ai/api/sessions/{id}/prompt</code> is parsed line-by-line (<code>data: {...}</code>) and dispatched as reducer actions to update individual message chunks without triggering full re-renders.</p>
+                    </div>
+
+                    <h3>API Routes</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Route</th><th>Method</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>/ai/api/sessions</code></td><td>GET / POST</td><td>List sessions or create a new one (spawns agent process via bridge)</td></tr>
+                                <tr><td><code>/ai/api/sessions/{id}</code></td><td>GET / DELETE</td><td>Get session info or close + terminate the agent process</td></tr>
+                                <tr><td><code>/ai/api/sessions/{id}/prompt</code></td><td>POST (SSE)</td><td>Send a message; response is a <code>text/event-stream</code> that emits bridge events in real-time</td></tr>
+                                <tr><td><code>/ai/api/sessions/{id}/cancel</code></td><td>POST</td><td>Cancel the running prompt</td></tr>
+                                <tr><td><code>/ai/api/sessions/{id}/permission</code></td><td>POST</td><td>Resolve a pending tool-use permission request</td></tr>
+                                <tr><td><code>/ai/api/namespaces</code></td><td>GET</td><td>List available namespace context files from <code>specs/main-orchestrator/namespaces/</code></td></tr>
+                                <tr><td><code>/ai/api/acp-registry</code></td><td>GET</td><td>Return agent registry with emoji icons</td></tr>
+                                <tr><td><code>/ai/api/workers/run</code></td><td>POST</td><td>Run a headless worker agent on a single prompt</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>curl → AD Tool (<code>app/curl-to-ad/</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">Standalone page (no AI shell). Accepts a raw curl command as text input and uses <code>lib/parse-curl.ts</code> to extract: the host, the execution UUID from <code>/execute/{uuid}</code>, and the JSON body from <code>--data-raw</code> / <code>-d</code>. Constructs a target AD URL with <code>?_belz_autofill=&lt;base64-json&gt;</code> and opens it in a new tab. The landing page (<code>/</code>) also listens for global <code>paste</code> events and auto-opens valid curl commands without navigating away.</p>
+                    </div>
+                </div>
+
+                <!-- ═══════════════ CLI BINARY ═══════════════ -->
+                <div id="cli" class="content">
+                    <h2>CLI Binary</h2>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Bun workspace at <code>cli/</code>. Compiles to a single native binary (<code>cli/belz</code>) and installs it to <code>~/.local/bin/belz</code>.</p>
+
+                    <h3>Dev vs. Prod Entry Points</h3>
+                    <div class="arch-grid">
+                        <div class="arch-box" style="border-color: var(--cli);">
+                            <h4 style="color: var(--cli);">bin/cli.ts — Dev mode</h4>
+                            <ul>
+                                <li><span>AD commands</span><span>dynamic glob from filesystem</span></li>
+                                <li><span>PD commands</span><span>dynamic glob from filesystem</span></li>
+                                <li><span>Help text</span><span>resolved from help.txt files</span></li>
+                                <li><span>Run via</span><span><code>bun run bin/cli.ts</code></span></li>
+                                <li><span>No build step</span><span>TypeScript executed directly</span></li>
+                            </ul>
+                        </div>
+                        <div class="arch-box" style="border-color: var(--gen);">
+                            <h4 style="color: var(--gen);">bin/cli-build.ts — Prod mode</h4>
+                            <ul>
+                                <li><span>AD commands</span><span>static <code>registry-ad.ts</code></span></li>
+                                <li><span>PD commands</span><span>static <code>registry-pd.ts</code></span></li>
+                                <li><span>Help text</span><span>embedded strings in <code>registry-help.ts</code></span></li>
+                                <li><span>Compiled to</span><span>single native binary</span></li>
+                                <li><span>No runtime FS</span><span>all paths resolved at build time</span></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <h3>Registry Generation (<code>utils/generate-registry.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;"><code>bun run generate</code> (from <code>cli/</code>) scans command directories and emits four TypeScript registry files:</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Output File</th><th>Contents</th></tr></thead>
+                                <tbody>
+                                    <tr><td><code>commands/registry-ad.ts</code></td><td>Exports <code>ADCommandRegistry</code> — a <code>Record&lt;name, () =&gt; Promise&lt;CommandModule&gt;&gt;</code> import map for all AD commands</td></tr>
+                                    <tr><td><code>commands/registry-pd.ts</code></td><td>Same for PD commands</td></tr>
+                                    <tr><td><code>commands/registry-top.ts</code></td><td>Same for top-level commands (<code>envs</code>, <code>migrate</code>)</td></tr>
+                                    <tr><td><code>commands/registry-help.ts</code></td><td>Exports <code>ADHelpMap</code>, <code>PDHelpMap</code>, <code>TopHelpMap</code> with embedded <code>help.txt</code> and <code>desc.txt</code> file contents as string literals. Also exports <code>HELP_FULL_TEXT</code> for top-level <code>--help</code>.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-top: 12px;">Must be re-run after adding or removing any command. The generator itself is the only file in the repo that reads the command directory structure at runtime.</p>
+                    </div>
+
+                    <h3>Build &amp; Install</h3>
+                    <div class="code-block">
+<code># Regenerate registries (required after adding commands)
+cd cli && bun run generate
+
+# Build native binary
+cd cli && bun run build
+# → cli/belz
+
+# Full install (prompts for credentials, installs binary)
+bash cli/scripts/install.sh
+# or from repo root:
+bun run install
+
+# Clean wipe + fresh install
+bash cli/scripts/reinstall.sh   # adds confirmation prompt
+bun run reinstall</code>
+                    </div>
+
+                    <h3>Install Script Details (<code>scripts/install.sh</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">
+                            1. Installs npm dependencies (<code>bun install</code>).<br>
+                            2. Runs <code>generate</code> to rebuild registries.<br>
+                            3. Compiles the binary via <code>bun build --compile</code>.<br>
+                            4. Copies binary to <code>~/.local/bin/belz</code>.<br>
+                            5. If no <code>~/.belz/config.json</code> exists: prompts for credentials (or reads from <code>--env-file</code>) and writes the config.<br><br>
+                            Accepts flags: <code>--env-file &lt;path&gt;</code> (skip interactive prompts), <code>--install-dir &lt;dir&gt;</code> (override binary destination), <code>--yes</code> (reinstall only — skip confirmation).
+                        </p>
+                    </div>
+
+                    <h3>Runtime Storage Layout</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Path</th><th>Content</th><th>Managed by</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>~/.belz/config.json</code></td><td>Credentials for all environments (mode 600)</td><td>install.sh / user</td></tr>
+                                <tr><td><code>~/.belz/sessions/&lt;env&gt;.json</code></td><td>Bearer token + refresh token per environment</td><td>auth.ts auto-managed</td></tr>
+                                <tr><td><code>~/.belz/cache/methods/&lt;uuid&gt;.json</code></td><td>Cached <code>HydratedMethod</code> (5 min TTL)</td><td>AD method cache</td></tr>
+                                <tr><td><code>~/.belz/cache/definitions/&lt;id&gt;.json</code></td><td>Cached <code>AutomationDefinition</code> (1h or permanent)</td><td>AD hydrator</td></tr>
+                                <tr><td><code>~/.belz/cache/method-finder/&lt;env&gt;.json</code></td><td>Full method index (7-day TTL)</td><td>AD method-finder</td></tr>
+                                <tr><td><code>~/.belz/migrations/nsm-profiles.json</code></td><td>Discovered migration profiles (permanent)</td><td>migrations/profiles.ts</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Adding a New Command</h3>
+                    <div class="code-block">
+<code># 1. Create the command directory and files:
+automation-designer/commands/&lt;name&gt;/
+  ├── index.ts      # implements CommandModule
+  └── help.txt      # follows help text standard in AGENTS.md
+
+# 2. Regenerate registries:
+cd cli && bun run generate
+
+# 3. Rebuild binary:
+cd cli && bun run build
+
+# Same pattern for page-designer/commands/ (pd commands)
+# and cli/commands/ (top-level commands)</code>
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
@@ -636,16 +1171,16 @@ class AcpBridge {
     <section id="install" class="container" style="padding: 100px 0; text-align: center; border-top: 1px solid var(--border);">
         <h2 style="font-size: 2.4rem;">Get Started.</h2>
         <p class="muted" style="margin-bottom: 40px;">Requires Bun 1.0+ and a valid NSM account.</p>
-        
+
         <div style="max-width: 600px; margin: 0 auto; text-align: left;">
             <div class="code-block">
                 <button class="copy" onclick="copyCode(this)"><i data-lucide="copy"></i></button>
-                <code>git clone https://github.com/parthkapoor-dev/belzabar.git
+                <code>git clone https://github.com/ParthKapoor-dev/belzabar.git
 cd belzabar
 bun run install
 
-# Setup credentials
-belz envs --setup</code>
+# Verify
+belz envs</code>
             </div>
         </div>
     </section>
@@ -663,10 +1198,10 @@ belz envs --setup</code>
         function showTab(id) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-            
+
             document.querySelector(`[onclick="showTab('${id}')"]`).classList.add('active');
             document.getElementById(id).classList.add('active');
-            
+
             if (window.innerWidth <= 768) {
                 document.getElementById('docs').scrollIntoView({ behavior: 'smooth' });
             }

@@ -18,7 +18,7 @@ const MODULES = [
     hint: "ctrl+a",
   },
   {
-    href: "/curl-to-ad",
+    href: "/curl",
     icon: "⌘",
     iconColor: "text-blue-400",
     hoverBorder: "hover:border-blue-500/50",
