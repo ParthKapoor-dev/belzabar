@@ -1,4 +1,5 @@
 export interface RawMethodResponse {
+  id?: number;
   uuid: string;
   referenceId: string;
   aliasName: string;
@@ -102,6 +103,7 @@ export interface AutomationDefinition {
   id: number;
   uuid: string;
   automationAPI: {
+    id: number;
     label: string;
     serviceChainUID?: string;
     automationSystem: {
