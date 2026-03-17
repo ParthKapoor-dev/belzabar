@@ -1,5 +1,6 @@
 // All constants and selectors
 export const METHOD_INPUT_SELECTOR = 'input#SD1_MethodName';
+export const SERVICE_CATEGORY_SELECTOR = 'div.block_sub_head';
 
 export const RUN_TEST_EXP_BUTTON_SELECTORS = [
   'exp-button#runTest',
