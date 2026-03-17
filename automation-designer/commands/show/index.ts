@@ -47,16 +47,6 @@ interface ServiceDetailData {
   rawMappings?: unknown;
 }
 
-interface FullServiceRow {
-  step: number;
-  automationId: string;
-  description: string;
-  type: string;
-  logicType: "Custom Code" | "SQL Query" | "Standard Service";
-  logic: string | null;
-  outputs: string[];
-}
-
 interface ShowMethodData {
   request: {
     uuid: string;
@@ -92,7 +82,7 @@ interface ShowMethodData {
     publishedId: string | null;
   }>;
   serviceDetail?: ServiceDetailData | null;
-  fullServices?: FullServiceRow[];
+  allServiceDetails?: ServiceDetailData[];
   raw?: {
     method: HydratedMethod;
     serviceMappings?: unknown;
@@ -158,35 +148,6 @@ function decodeBase64(value: string): string {
   } catch {
     return `${value} (DECODE FAILED)`;
   }
-}
-
-function buildFullServiceRows(method: HydratedMethod): FullServiceRow[] {
-  return method.services.map((svc) => {
-    let logicType: FullServiceRow["logicType"] = "Standard Service";
-    let logic: string | null = null;
-
-    if ((svc as any).code && typeof (svc as any).code === "string") {
-      logicType = "Custom Code";
-      logic = decodeBase64((svc as any).code);
-    } else if (svc.mappings && Array.isArray(svc.mappings)) {
-      const sqlMapping = svc.mappings.find((m: any) => m?.mappings?.some((sub: any) => sub?.encodingType === "BASE_64"));
-      const encoded = sqlMapping?.mappings?.find((sub: any) => sub?.encodingType === "BASE_64")?.value;
-      if (typeof encoded === "string") {
-        logicType = "SQL Query";
-        logic = decodeBase64(encoded);
-      }
-    }
-
-    return {
-      step: svc.orderIndex,
-      automationId: svc.automationId,
-      description: svc.description || "Service",
-      type: svc.type,
-      logicType,
-      logic,
-      outputs: Array.isArray(svc.outputs) ? svc.outputs.map((out: any) => out.code || out.displayName || "") : [],
-    };
-  });
 }
 
 async function buildServiceDetailData(method: HydratedMethod, index: number, includeRaw: boolean): Promise<ServiceDetailData> {
@@ -418,7 +379,17 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
     }
 
     if (flags.full) {
-      data.fullServices = buildFullServiceRows(method);
+      const allDetails: ServiceDetailData[] = [];
+      for (const svc of method.services) {
+        if (context.outputMode === "human") {
+          process.stderr.write(`\rFetching full service details... ${allDetails.length + 1}/${method.services.length}`);
+        }
+        allDetails.push(await buildServiceDetailData(method, svc.orderIndex, flags.raw));
+      }
+      if (context.outputMode === "human") {
+        process.stderr.write(`\r${" ".repeat(60)}\r`);
+      }
+      data.allServiceDetails = allDetails;
     }
 
     if (flags.raw) {
@@ -457,7 +428,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       if (data.inputs.length === 0) ui.text("No inputs defined.");
       else ui.table(
         ["Field Code", "Type", "Required", "Description"],
-        data.inputs.map(input => [input.fieldCode, input.type, input.required ? "Yes" : "No", input.description])
+        data.inputs.map(input => [input.fieldCode, input.type || "", input.required ? "Yes" : "No", input.description])
       );
     }
 
@@ -469,7 +440,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
         data.services.map(service => [
           service.orderIndex,
           service.automationId,
-          service.type,
+          service.type || "",
           service.methodName ?? "",
           service.category ?? "",
           service.publishedId ?? "",
@@ -477,19 +448,35 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       );
     }
 
-    if (data.fullServices) {
-      ui.section(`Expanded Services (${data.fullServices.length})`);
-      data.fullServices.forEach((service) => {
-        ui.text(`[Step ${service.step}] ${service.description} (ID: ${service.automationId})`);
-        ui.text(`Type: ${service.type} | Logic: ${service.logicType}`);
-        if (service.logic) {
-          ui.text(service.logic);
+    if (data.allServiceDetails) {
+      for (const detail of data.allServiceDetails) {
+        ui.section(`Service ${detail.index}: ${detail.description || detail.automationId}`);
+        if (detail.definition) {
+          ui.table(
+            ["Property", "Value"],
+            [
+              ["Category", detail.definition.category],
+              ["Method Name", detail.definition.methodName],
+              ["Automation ID", detail.definition.automationId],
+              ["Published ID", detail.definition.publishedId || ""],
+              ["Account", detail.definition.accountNickname || ""],
+            ]
+          );
+        } else {
+          ui.warn("Definition not available.");
         }
-        if (service.outputs.length > 0) {
-          ui.text(`Outputs: ${service.outputs.join(", ")}`);
-        }
-        ui.text("");
-      });
+
+        ui.section("Configuration");
+        ui.table(["Property", "Value"], detail.config.map(item => [item.key, item.value]));
+
+        ui.section("Inputs");
+        if (detail.inputs.length === 0) ui.text("(None)");
+        else ui.table(["Label", "Required", "Value"], detail.inputs.map(i => [i.label, i.required ? "Yes" : "No", JSON.stringify(i.value)]));
+
+        ui.section("Outputs");
+        if (detail.outputs.length === 0) ui.text("(None)");
+        else ui.table(["Label", "Value"], detail.outputs.map(o => [o.label, JSON.stringify(o.value)]));
+      }
     }
 
     if (data.serviceDetail) {
