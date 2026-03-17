@@ -1,6 +1,6 @@
 import { triggerRunTest } from '../run-test/index.js';
 import { isModalInteractionLocked } from '../../ui/modal-lock.js';
-import { extractMethodName, extractServiceCategory, extractAdUuid } from '../../utils/dom.js';
+import { extractMethodName, extractServiceCategory } from '../../utils/dom.js';
 import { showToast } from '../../ui/toast.js';
 
 let shortcutListenerAttached = false;
@@ -28,13 +28,12 @@ export function handleKeydown(event) {
 async function copyAdRichLink() {
   const category = extractServiceCategory();
   const name = extractMethodName();
-  const uuid = extractAdUuid();
   const url = window.location.href;
 
-  const label = [category, name].filter(Boolean).join('->') + (uuid ? `: ${uuid}` : '');
+  const label = [category, name].filter(Boolean).join('::');
 
   const html = `<a href="${url}">${label}</a>`;
-  const plain = url;
+  const plain = `[${label}](${url})`;
 
   try {
     await navigator.clipboard.write([
