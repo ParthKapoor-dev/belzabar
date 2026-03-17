@@ -1,6 +1,8 @@
 export const AGENT_REGISTRY: Record<string, string> = {
   codex: "npx @zed-industries/codex-acp",
   claude: "npx -y @zed-industries/claude-agent-acp",
+  // TODO(claude-acp): replace with "claude --acp" once that flag ships in the CLI
+  "claude-code": "npx -y @zed-industries/claude-agent-acp",
   gemini: "gemini",
   opencode: "opencode acp",
   pi: "npx pi-acp",
@@ -10,6 +12,7 @@ export const AGENT_REGISTRY: Record<string, string> = {
 export const AGENT_EMOJI: Record<string, string> = {
   codex: "◆",
   claude: "✦",
+  "claude-code": "◈",
   gemini: "✺",
   opencode: "▶",
   pi: "π",
@@ -19,6 +22,7 @@ export const AGENT_EMOJI: Record<string, string> = {
 export const AGENT_MODELS: Record<string, string[]> = {
   codex: ["gpt-4o", "gpt-4o-mini", "o3", "o4-mini"],
   claude: ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"],
+  "claude-code": ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5"],
   gemini: ["gemini-2.0-flash", "gemini-2.5-pro"],
   opencode: ["claude-sonnet-4-6", "gpt-4o", "o3", "gpt-4o-mini"],
   pi: [],
