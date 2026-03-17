@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { useSessionsContext } from "@/lib/sessions-context"
-import { AGENT_REGISTRY, AGENT_EMOJI, AGENT_MODELS } from "@/lib/acp-types"
+import { AGENT_REGISTRY, AGENT_EMOJI } from "@/lib/acp-types"
 
 const AGENT_OPTIONS = Object.keys(AGENT_REGISTRY)
 const DEFAULT_WORKSPACE_ID = "default"
@@ -18,13 +18,13 @@ export default function AiPage() {
   const [namespacesLoaded, setNamespacesLoaded] = useState(false)
   const initialAgent = settings.agentProfiles.main || ""
   const [agent, setAgent] = useState(initialAgent)
-  const [model, setModel] = useState((AGENT_MODELS[initialAgent] ?? [])[0] ?? "")
+  const [model, setModel] = useState("")
   const [connecting, setConnecting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleSetAgent = (a: string) => {
     setAgent(a)
-    setModel((AGENT_MODELS[a] ?? [])[0] ?? "")
+    setModel("")
   }
 
   // Fetch namespaces and auto-select "nsm" (or first available)
@@ -55,8 +55,6 @@ export default function AiPage() {
       setConnecting(false)
     }
   }
-
-  const modelPresets = AGENT_MODELS[agent] ?? []
 
   return (
     <div className="flex flex-1 items-center justify-center p-8 h-full">
@@ -94,41 +92,13 @@ export default function AiPage() {
           {/* Model selector */}
           <div className="space-y-1.5">
             <label className="text-xs text-muted-foreground">model</label>
-            {modelPresets.length > 0 ? (
-              <div className="space-y-1.5">
-                <div className="flex flex-wrap gap-1.5">
-                  {modelPresets.map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setModel(m)}
-                      className={`px-2.5 py-1 text-xs border transition-colors ${
-                        model === m
-                          ? "border-ring bg-ring/10 text-foreground"
-                          : "border-border text-muted-foreground hover:border-muted-foreground"
-                      }`}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  placeholder="or type a model name…"
-                  className="w-full border border-border bg-transparent px-2.5 py-1.5 text-xs placeholder:text-muted-foreground outline-none focus:border-ring focus:ring-1 focus:ring-ring/50"
-                />
-              </div>
-            ) : (
-              <input
-                type="text"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="optional model name"
-                className="w-full border border-border bg-transparent px-2.5 py-1.5 text-xs placeholder:text-muted-foreground outline-none focus:border-ring focus:ring-1 focus:ring-ring/50"
-              />
-            )}
+            <input
+              type="text"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              placeholder="optional"
+              className="w-full border border-border bg-transparent px-2.5 py-1.5 text-xs placeholder:text-muted-foreground outline-none focus:border-ring focus:ring-1 focus:ring-ring/50"
+            />
           </div>
 
           {/* Working directory */}
