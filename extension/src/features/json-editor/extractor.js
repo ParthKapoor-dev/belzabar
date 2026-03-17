@@ -41,6 +41,26 @@ export function findAllInputKeys() {
       collectKeys(document.querySelectorAll('[id^="INPUT_LIST"]'));
     }
 
+    // Published page fallback: no INPUT_LIST ids — keys live in .fieldCode spans
+    if (keys.length === 0) {
+      const fieldCodeDivs = document.querySelectorAll('.fieldCode');
+      for (const div of fieldCodeDivs) {
+        const spans = Array.from(div.querySelectorAll('span'));
+        let key = null;
+        let foundHash = false;
+        for (const span of spans) {
+          const text = span.textContent?.trim();
+          if (!text) continue;
+          if (text === '#{') { foundHash = true; continue; }
+          if (foundHash && text !== '}') { key = text; break; }
+        }
+        if (!key || seenKeys.has(key)) continue;
+        seenKeys.add(key);
+        keys.push({ key, element: div });
+        log('Found input key (published page):', key);
+      }
+    }
+
     log(`Total input keys found: ${keys.length}`);
     return keys;
   } catch (error) {
