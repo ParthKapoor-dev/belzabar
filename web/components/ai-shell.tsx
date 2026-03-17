@@ -67,6 +67,10 @@ export function AiShell({ children }: { children: React.ReactNode }) {
         e.preventDefault()
         router.push("/ai")
       }
+      if (mod && e.key === "a") {
+        e.preventDefault()
+        router.push("/ai")
+      }
       if (mod && e.key === "k") {
         e.preventDefault()
         setSearchOpen(true)
