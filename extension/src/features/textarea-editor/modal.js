@@ -1,5 +1,5 @@
 import { Compartment, EditorState } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, indentWithTab, history } from '@codemirror/commands';
 import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
 import { sql } from '@codemirror/lang-sql';
@@ -87,6 +87,9 @@ const editorTheme = EditorView.theme(
     },
     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(96, 165, 250, 0.35)'
+    },
+    '.cm-activeLine': {
+      backgroundColor: 'rgba(148, 163, 184, 0.13)'
     },
     '.cm-panels': {
       backgroundColor: 'rgba(15, 23, 42, 0.96)',
@@ -343,6 +346,7 @@ function createEditorForSource(sourceEl) {
   const extensions = [
     lineNumbers(),
     history(),
+    highlightActiveLine(),
     search({ top: false }),
     keymap.of([...searchKeymap, indentWithTab, ...defaultKeymap]),
     EditorState.tabSize.of(4),
