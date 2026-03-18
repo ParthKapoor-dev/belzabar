@@ -9,7 +9,7 @@ if (process.argv.slice(2).includes("--help-full")) {
   process.exit(0);
 }
 
-const { migrate, config, ...topLevelCommands } = TopLevelCommandRegistry;
+const { migrate, config, web, ...topLevelCommands } = TopLevelCommandRegistry;
 const topHelpResolver = makeHelpResolver(TopHelpMap);
 
 // Prod Mode: Use generated registries + embedded help text (bundled at compile time)
@@ -40,6 +40,12 @@ await runNamespacedCli(process.argv, {
       name: "Config",
       description: "Manage belz credentials and environments.",
       command: config,
+      helpResolver: topHelpResolver,
+    },
+    web: {
+      name: "Web",
+      description: "Manage the Belzabar web app.",
+      command: web,
       helpResolver: topHelpResolver,
     },
   },

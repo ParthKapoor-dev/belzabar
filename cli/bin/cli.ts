@@ -91,7 +91,7 @@ if (process.argv.slice(2).includes("--help-full")) {
 const adCommands = loadCommandsFromDir(adCommandsDir);
 const pdCommands = loadCommandsFromDir(pdCommandsDir);
 const allTopCommands = loadCommandsFromDir(topCommandsDir);
-const { migrate, config, ...topLevelCommands } = allTopCommands;
+const { migrate, config, web, ...topLevelCommands } = allTopCommands;
 
 await runNamespacedCli(process.argv, {
   name: "Belzabar CLI",
@@ -120,6 +120,12 @@ await runNamespacedCli(process.argv, {
       name: "Config",
       description: "Manage belz credentials and environments.",
       command: config,
+      helpResolver: makeHelpDirResolver(topCommandsDir),
+    },
+    web: {
+      name: "Web",
+      description: "Manage the Belzabar web app.",
+      command: web,
       helpResolver: makeHelpDirResolver(topCommandsDir),
     },
   },
