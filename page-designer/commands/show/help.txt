@@ -1,0 +1,43 @@
+Usage: belz pd show <INPUT> [flags]
+
+Display the structure and metadata of a Page Designer page or component.
+The config is fetched and cached automatically (5-minute TTL).
+
+Arguments:
+  <INPUT>             One of:
+                      • App page URL:  https://<domain>/pages/<path>
+                      • PD page URL:   https://.../ui-designer/page/<id>
+                      • PD symbol URL: https://.../ui-designer/symbol/<name>
+                      • Bare hex ID:   48b75e11e166e6b19e5796d59a936228
+                        (auto-detects page vs. component)
+                      • Component name: n_s_staff_email_correspondence
+
+Flags:
+  --vars              Show all variables (user-defined + derived).
+  --http              Show all HTTP service calls.
+  --components        Show the layout/component tree.
+  --var-detail <name> Show full config for a specific variable or derived.
+  --http-detail <N>   Show full config for the Nth HTTP call (1-indexed).
+  --full              Include all sections + all details.
+  --recursive, -r     Include recursive dependency tree and all AD method IDs.
+                      Requires components.json in the current directory.
+  --force             Bypass cache and fetch fresh config.
+  --raw               Include raw configuration string and source API fields.
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz pd show 48b75e11e166e6b19e5796d59a936228
+  belz pd show https://nsm-dev.nc.verifi.dev/ui-designer/page/48b75e11e166e6b19e5796d59a936228
+  belz pd show n_s_staff_email_correspondence
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --vars
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --http
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --components
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --var-detail showLoader
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --http-detail 1
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --full
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --force --llm

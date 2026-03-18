@@ -1,3 +1,0 @@
-belz pd show-component <name>  :->  Fetch and display a component's config and its AD method references
-belz pd show-component <name> --full  :->  Include the full configuration payload
-belz pd show-component <name> --raw  :->  Include raw configuration string in output
