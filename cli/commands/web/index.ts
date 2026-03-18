@@ -7,10 +7,6 @@ import { CliError, ok, type CommandModule } from "@belzabar/core";
 // ── Paths ─────────────────────────────────────────────────────────────────────
 
 const BELZ_DIR = join(homedir(), ".belz");
-// In the installed layout the standalone tree is at ~/.belz/web/ and the
-// actual Next.js app (server.js) lives one level deeper at ~/.belz/web/web/
-// so that shared monorepo node_modules at ~/.belz/web/node_modules/ remain
-// one directory above server.js (required by the standalone server).
 const WEB_DIR = join(BELZ_DIR, "web", "web");
 const SERVER_JS = join(WEB_DIR, "server.js");
 const PID_DIR = join(BELZ_DIR, "pids");
