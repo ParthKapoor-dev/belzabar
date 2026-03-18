@@ -101,3 +101,63 @@ export async function fetchDeployablePageByAppUrl(domain: string, path: string):
 export async function fetchComponentConfig(componentId: string): Promise<PageConfigResponse | null> {
   return fetchPageConfig(componentId);
 }
+
+const PAGE_LIST_LIMIT = 2000;
+
+export interface RawPageListItem {
+  id?: unknown;
+  name?: unknown;
+  relativeRoute?: unknown;
+  referenceId?: unknown;
+  status?: unknown;
+  updatedAt?: unknown;
+}
+
+export async function fetchAllPages(): Promise<RawPageListItem[]> {
+  const results: RawPageListItem[] = [];
+  let offset = 0;
+  while (true) {
+    const params = new URLSearchParams({
+      status: "DRAFT",
+      pageType: "PAGE",
+      limit: String(PAGE_LIST_LIMIT),
+      offset: String(offset),
+    });
+    const response = await apiFetch(`${PD_BASE}/pages?${params}`, {
+      method: "GET",
+      authMode: "Bearer",
+    });
+    if (!response.ok) throw new Error(`fetchAllPages failed: ${response.status}`);
+    const data = (await response.json()) as unknown[];
+    const items = Array.isArray(data) ? data : [];
+    results.push(...(items as RawPageListItem[]));
+    if (items.length < PAGE_LIST_LIMIT) break;
+    offset += PAGE_LIST_LIMIT;
+  }
+  return results;
+}
+
+export async function fetchAllComponents(): Promise<RawPageListItem[]> {
+  const results: RawPageListItem[] = [];
+  let offset = 0;
+  while (true) {
+    const params = new URLSearchParams({
+      apiInfoLevel: "MEDIUM",
+      pageType: "COMPONENT",
+      notStatus: "DELETED",
+      limit: String(PAGE_LIST_LIMIT),
+      offset: String(offset),
+    });
+    const response = await apiFetch(`${PD_BASE}/pages?${params}`, {
+      method: "GET",
+      authMode: "Bearer",
+    });
+    if (!response.ok) throw new Error(`fetchAllComponents failed: ${response.status}`);
+    const data = (await response.json()) as unknown[];
+    const items = Array.isArray(data) ? data : [];
+    results.push(...(items as RawPageListItem[]));
+    if (items.length < PAGE_LIST_LIMIT) break;
+    offset += PAGE_LIST_LIMIT;
+  }
+  return results;
+}

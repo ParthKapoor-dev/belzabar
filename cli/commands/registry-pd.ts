@@ -5,6 +5,7 @@ import * as show_page from "../../page-designer/commands/show-page/index";
 import * as inspect from "../../page-designer/commands/inspect/index";
 import * as show_component from "../../page-designer/commands/show-component/index";
 import * as find_ad_methods from "../../page-designer/commands/find-ad-methods/index";
+import * as find from "../../page-designer/commands/find/index";
 
 export const PDCommandRegistry: Record<string, any> = {
   "analyze": analyze,
@@ -12,4 +13,5 @@ export const PDCommandRegistry: Record<string, any> = {
   "inspect": inspect,
   "show-component": show_component,
   "find-ad-methods": find_ad_methods,
+  "find": find,
 };

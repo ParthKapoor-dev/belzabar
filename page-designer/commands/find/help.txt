@@ -1,0 +1,33 @@
+Usage: belz pd find [query] [flags]
+       belz pd find list [--components]
+       belz pd find pick [query] [flags]
+
+Search for pages and components in the Page Designer.
+The index is cached locally for 7 days; use --refresh to rebuild.
+
+Arguments:
+  [query]             Search term (name, route, or ID). Omit to browse.
+
+Subcommands:
+  list                List all pages (add --components for components).
+  pick                Interactive fuzzy picker (requires fzf).
+
+Flags:
+  --type page|component  Restrict results to one entity type.
+  --refresh           Rebuild the index from the API.
+  --limit <N>         Max results to show (default: 20, max: 200).
+  --open              Open selected item in browser (pick mode only).
+  --llm               Output structured JSON envelope.
+
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+
+Examples:
+  belz pd find notice
+  belz pd find notice --type page
+  belz pd find list
+  belz pd find list --components
+  belz pd find pick
+  belz pd find pick LT-260 --open
+  belz pd find --refresh
