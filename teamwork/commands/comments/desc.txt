@@ -1,0 +1,2 @@
+belz tw comments <taskId|url>        :->  Fetch all comments for a Teamwork task
+belz tw comments <taskId|url> --llm  :->  Output as structured JSON envelope

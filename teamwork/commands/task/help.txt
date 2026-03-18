@@ -1,0 +1,18 @@
+Usage: belz tw task <TASK_ID|URL> [flags]
+
+Fetch a Teamwork task by ID or URL, including assignees, tags, status,
+workflow stage, description, and comment stats.
+
+Arguments:
+  <TASK_ID|URL>         Numeric task ID or full Teamwork task URL.
+
+Flags:
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz tw task 26917411
+  belz tw task https://projects.webintensive.com/app/tasks/26917411
+  belz tw task 26917411 --llm
