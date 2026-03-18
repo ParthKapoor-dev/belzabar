@@ -1,0 +1,2 @@
+belz tw task <taskId|url>        :->  Fetch a Teamwork task with assignees, tags, status, and description
+belz tw task <taskId|url> --llm  :->  Output as structured JSON envelope

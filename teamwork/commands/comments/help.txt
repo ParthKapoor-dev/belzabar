@@ -1,0 +1,17 @@
+Usage: belz tw comments <TASK_ID|URL> [flags]
+
+Fetch all comments for a Teamwork task, ordered chronologically.
+
+Arguments:
+  <TASK_ID|URL>         Numeric task ID or full Teamwork task URL.
+
+Flags:
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz tw comments 26917411
+  belz tw comments https://projects.webintensive.com/app/tasks/26917411
+  belz tw comments 26917411 --llm

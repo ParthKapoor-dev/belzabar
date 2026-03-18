@@ -1,7 +1,8 @@
 import { ADCommandRegistry } from "../commands/registry-ad";
 import { PDCommandRegistry } from "../commands/registry-pd";
+import { TWCommandRegistry } from "../commands/registry-tw";
 import { TopLevelCommandRegistry } from "../commands/registry-top";
-import { ADHelpMap, PDHelpMap, TopHelpMap, makeHelpResolver, HELP_FULL_TEXT } from "../commands/registry-help";
+import { ADHelpMap, PDHelpMap, TWHelpMap, TopHelpMap, makeHelpResolver, HELP_FULL_TEXT } from "../commands/registry-help";
 import { runNamespacedCli } from "@belzabar/core";
 
 if (process.argv.slice(2).includes("--help-full")) {
@@ -29,6 +30,12 @@ await runNamespacedCli(process.argv, {
       description: "Analyze Page Designer configuration.",
       commands: PDCommandRegistry,
       helpResolver: makeHelpResolver(PDHelpMap),
+    },
+    tw: {
+      name: "Teamwork",
+      description: "Interact with the Teamwork project management API.",
+      commands: TWCommandRegistry,
+      helpResolver: makeHelpResolver(TWHelpMap),
     },
     migrate: {
       name: "Migrations",

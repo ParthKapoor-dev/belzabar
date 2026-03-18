@@ -6,6 +6,7 @@ import { runNamespacedCli } from "@belzabar/core";
 // Dev Mode: Discover commands dynamically
 const adCommandsDir = join(import.meta.dir, "../../automation-designer/commands");
 const pdCommandsDir = join(import.meta.dir, "../../page-designer/commands");
+const twCommandsDir = join(import.meta.dir, "../../teamwork/commands");
 const topCommandsDir = join(import.meta.dir, "../commands"); // cli/commands/ (envs, migrate)
 
 function loadCommandsFromDir(dir: string): Record<string, any> {
@@ -61,6 +62,7 @@ async function buildHelpFullDynamic(): Promise<string> {
   const sections = [
     { header: "belz ad <cmd>  —  Automation Designer", dir: adCommandsDir },
     { header: "belz pd <cmd>  —  Page Designer",       dir: pdCommandsDir },
+    { header: "belz tw <cmd>  —  Teamwork",            dir: twCommandsDir },
     { header: "belz <cmd>  —  Top-level",              dir: topCommandsDir },
   ];
 
@@ -90,6 +92,7 @@ if (process.argv.slice(2).includes("--help-full")) {
 
 const adCommands = loadCommandsFromDir(adCommandsDir);
 const pdCommands = loadCommandsFromDir(pdCommandsDir);
+const twCommands = loadCommandsFromDir(twCommandsDir);
 const allTopCommands = loadCommandsFromDir(topCommandsDir);
 const { migrate, config, web, ...topLevelCommands } = allTopCommands;
 
@@ -109,6 +112,12 @@ await runNamespacedCli(process.argv, {
       description: "Analyze Page Designer configuration.",
       commands: pdCommands,
       helpDir: pdCommandsDir,
+    },
+    tw: {
+      name: "Teamwork",
+      description: "Interact with the Teamwork project management API.",
+      commands: twCommands,
+      helpDir: twCommandsDir,
     },
     migrate: {
       name: "Migrations",
