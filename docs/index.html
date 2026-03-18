@@ -25,6 +25,7 @@
             --cli: #14b8a6;
             --ad: #f59e0b;
             --pd: #ec4899;
+            --tw: #06b6d4;
             --mig: #ef4444;
             --ext: #8b5cf6;
             --gen: #71717a;
@@ -384,7 +385,7 @@
 
     <header class="hero container">
         <div style="display:inline-block; padding: 6px 12px; background: var(--primary-glow); border: 1px solid rgba(20,184,166,0.2); border-radius: 4px; font-size: 0.7rem; color: var(--primary); margin-bottom: 24px; font-weight: 700;">
-            INTERNAL TOOLSET v1.0
+            INTERNAL TOOLSET v2.0
         </div>
         <h1>Build faster with <span>Belz AI</span>.</h1>
         <p>A high-performance developer toolset for NSM Automation Designer &amp; Page Designer workflows. Fast CLI, smart extension, and unified AI bridge.</p>
@@ -419,7 +420,7 @@
             <div class="bento-card large">
                 <div class="icon-box"><i data-lucide="terminal"></i></div>
                 <h3>Unified CLI</h3>
-                <p>Native binary built with Bun. Inspect methods, run tests with per-step trace logs, execute SQL queries, and trigger cross-environment migrations. Namespaced under <code>belz ad</code>, <code>belz pd</code>, and <code>belz migrate</code>.</p>
+                <p>Native binary built with Bun. Inspect methods, run tests with per-step trace logs, execute SQL queries, and trigger cross-environment migrations. Namespaced under <code>belz ad</code>, <code>belz pd</code>, <code>belz tw</code>, and <code>belz migrate</code>.</p>
             </div>
             <div class="bento-card">
                 <div class="icon-box"><i data-lucide="puzzle"></i></div>
@@ -436,6 +437,11 @@
                 <h3>AI Ready (ACP)</h3>
                 <p>A Next.js web app bridges the Agent Client Protocol over stdio to coding agents (Claude Code, Gemini, Codex, OpenCode). Supports streaming text, tool calls, permission gates, managed terminals, and constrained filesystem access — all in a single singleton Node.js process.</p>
             </div>
+            <div class="bento-card">
+                <div class="icon-box"><i data-lucide="users"></i></div>
+                <h3>Teamwork Integration</h3>
+                <p>Fetch task details, comments, and status from Teamwork project management. Query by task ID or URL with <code>belz tw task</code> and <code>belz tw comments</code>.</p>
+            </div>
         </div>
     </section>
 
@@ -447,6 +453,7 @@
                     <button class="tab-btn" onclick="showTab('core')"><i data-lucide="package"></i> @belz/core</button>
                     <button class="tab-btn" onclick="showTab('ad')"><i data-lucide="cpu"></i> Automation Designer</button>
                     <button class="tab-btn" onclick="showTab('pd')"><i data-lucide="layout-template"></i> Page Designer</button>
+                    <button class="tab-btn" onclick="showTab('tw')"><i data-lucide="users"></i> Teamwork</button>
                     <button class="tab-btn" onclick="showTab('migrations')"><i data-lucide="git-merge"></i> Migrations</button>
                     <button class="tab-btn" onclick="showTab('extension')"><i data-lucide="puzzle"></i> Extension</button>
                     <button class="tab-btn" onclick="showTab('web')"><i data-lucide="monitor"></i> Web / ACP</button>
@@ -456,13 +463,14 @@
                 <!-- ═══════════════ ARCHITECTURE ═══════════════ -->
                 <div id="arch" class="content active">
                     <h2>System Architecture</h2>
-                    <p style="color: var(--muted); font-size: 0.85rem;">Flat monorepo. Three source modules (no <code>package.json</code>) consumed by one Bun workspace binary. A separate Next.js app handles the AI bridge.</p>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Flat monorepo. Four source modules (no <code>package.json</code>) consumed by one Bun workspace binary. A separate Next.js app handles the AI bridge.</p>
 
                     <div class="legend" style="margin-top: 24px;">
                         <span class="legend-item"><div class="dot-s" style="background:var(--core);"></div> @belzabar/core</span>
                         <span class="legend-item"><div class="dot-s" style="background:var(--cli);"></div> cli binary</span>
                         <span class="legend-item"><div class="dot-s" style="background:var(--ad);"></div> automation-designer</span>
                         <span class="legend-item"><div class="dot-s" style="background:var(--pd);"></div> page-designer</span>
+                        <span class="legend-item"><div class="dot-s" style="background:var(--tw);"></div> teamwork</span>
                         <span class="legend-item"><div class="dot-s" style="background:var(--mig);"></div> migrations</span>
                         <span class="legend-item"><div class="dot-s" style="background:var(--ext);"></div> extension</span>
                     </div>
@@ -492,7 +500,7 @@
                         <div class="arch-box" style="border-color: var(--ad);">
                             <h4 style="color: var(--ad);">automation-designer/ — source module</h4>
                             <ul>
-                                <li><span>commands/{get,show,test,run,...}</span><span>7 commands</span></li>
+                                <li><span>commands/{fetch,show,test,run,...}</span><span>8 commands</span></li>
                                 <li><span>lib/api.ts</span><span>AD REST endpoints</span></li>
                                 <li><span>lib/hydrator.ts</span><span>service definition resolver</span></li>
                                 <li><span>lib/method-finder.ts</span><span>index + fuzzy search</span></li>
@@ -502,10 +510,20 @@
                         <div class="arch-box" style="border-color: var(--pd);">
                             <h4 style="color: var(--pd);">page-designer/ — source module</h4>
                             <ul>
-                                <li><span>commands/{show-page,analyze,...}</span><span>5 commands</span></li>
-                                <li><span>lib/parser.ts</span><span>AD ID extractor from layout JSON</span></li>
+                                <li><span>commands/{show,validate,find,...}</span><span>5 commands</span></li>
+                                <li><span>lib/parser.ts</span><span>dual-format config parser</span></li>
+                                <li><span>lib/resolver.ts</span><span>universal input resolver</span></li>
                                 <li><span>lib/analyzer.ts</span><span>recursive tree walker</span></li>
-                                <li><span>lib/comparator.ts</span><span>compliance checker</span></li>
+                                <li><span>lib/page-finder.ts</span><span>index + fuzzy search</span></li>
+                            </ul>
+                        </div>
+                        <div class="arch-box" style="border-color: var(--tw);">
+                            <h4 style="color: var(--tw);">teamwork/ — source module</h4>
+                            <ul>
+                                <li><span>commands/{task,comments}</span><span>2 commands</span></li>
+                                <li><span>lib/api.ts</span><span>Teamwork REST endpoints</span></li>
+                                <li><span>lib/auth.ts</span><span>API key authentication</span></li>
+                                <li><span>lib/types.ts</span><span>task + comment types</span></li>
                             </ul>
                         </div>
                         <div class="arch-box" style="border-color: var(--mig);">
@@ -534,6 +552,7 @@
   ├── @belzabar/core          ← all modules import this
   ├── automation-designer/    ← commands + lib, imports core
   ├── page-designer/          ← commands + lib, imports core
+  ├── teamwork/               ← commands + lib, imports core
   └── migrations/             ← lib only, imports core
 
 web/ (Next.js, standalone)
@@ -547,7 +566,7 @@ extension/ (Bun build → dist/content-script.js)
                     <div class="data-card">
                         <p style="font-size: 0.82rem; color: var(--muted);">
                             <strong style="color:#fff;">1. Entry</strong> — <code>cli.ts</code> or <code>cli-build.ts</code> receives <code>process.argv</code>.<br>
-                            <strong style="color:#fff;">2. Routing</strong> — <code>runNamespacedCli()</code> splits on the first arg (<code>ad</code> / <code>pd</code> / <code>migrate</code>) and looks up the command in the registry map.<br>
+                            <strong style="color:#fff;">2. Routing</strong> — <code>runNamespacedCli()</code> splits on the first arg (<code>ad</code> / <code>pd</code> / <code>tw</code> / <code>migrate</code>) and looks up the command in the registry map.<br>
                             <strong style="color:#fff;">3. Auth</strong> — <code>apiFetch()</code> loads a Bearer token from <code>~/.belz/sessions/&lt;env&gt;.json</code>; if absent, calls <code>login()</code> first.<br>
                             <strong style="color:#fff;">4. API</strong> — HTTP request to the active NSM environment URL. On 401, session is cleared and retried once.<br>
                             <strong style="color:#fff;">5. Parse</strong> — Raw response is cast into domain types by module-level parsers (e.g., <code>parseMethodResponse()</code>).<br>
@@ -620,6 +639,7 @@ extension/ (Bun build → dist/content-script.js)
                                     <tr><td>Service definitions (others)</td><td>automationId</td><td>1 hour</td></tr>
                                     <tr><td>PD page configs</td><td>pageId</td><td>5 minutes</td></tr>
                                     <tr><td>Method finder index</td><td>env name</td><td>7 days</td></tr>
+                                    <tr><td>PD page finder index</td><td>env name</td><td>7 days</td></tr>
                                     <tr><td>Migration profiles</td><td>fixed key</td><td>permanent</td></tr>
                                 </tbody>
                             </table>
@@ -628,7 +648,7 @@ extension/ (Bun build → dist/content-script.js)
 
                     <h3>runner.ts — CLI Dispatcher</h3>
                     <div class="data-card">
-                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">Two functions handle all routing. <code>runNamespacedCli()</code> dispatches to AD/PD/migrate/config based on the first positional arg. <code>runCli()</code> handles single-namespace lookup for passthrough modules like <code>migrate</code>. Both parse global flags (<code>--env</code>, <code>--llm</code>) before calling the command module.</p>
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">Two functions handle all routing. <code>runNamespacedCli()</code> dispatches to ad/pd/tw/migrate/config based on the first positional arg. <code>runCli()</code> handles single-namespace lookup for passthrough modules like <code>migrate</code>. Both parse global flags (<code>--env</code>, <code>--llm</code>) before calling the command module.</p>
                         <div class="table-wrap" style="margin: 0;">
                             <table>
                                 <thead><tr><th>Function</th><th>Usage</th></tr></thead>
@@ -741,7 +761,7 @@ fail(code, msg)   → { ok: false, error: { code, message } }</code>
                         <table>
                             <thead><tr><th>Command</th><th>Key Logic</th></tr></thead>
                             <tbody>
-                                <tr><td><code>belz ad get &lt;UUID&gt;</code></td><td>Fetch + cache method. Returns metadata, reference ID, alias, state, version, timestamps, and input summary.</td></tr>
+                                <tr><td><code>belz ad fetch &lt;UUID&gt;</code></td><td>Fetch + cache method. Returns metadata, reference ID, alias, state, version, timestamps, and input summary.</td></tr>
                                 <tr><td><code>belz ad show &lt;UUID&gt;</code></td><td>Loads method + optionally hydrates all service definitions. Flags: <code>--inputs</code>, <code>--services</code>, <code>--full</code>, <code>--raw</code>, <code>--service-detail &lt;n&gt;</code>. Produces nested service maps with input labels resolved via the hydrator.</td></tr>
                                 <tr><td><code>belz ad test &lt;UUID&gt;</code></td><td>Collects inputs (file or interactive prompts), injects <code>testValue</code> fields and <code>automationApiId</code> into the method payload, POSTs as FormData to the test endpoint, parses the per-step execution trace. Detects Java compilation errors (HTTP 200 with <code>stackTrace</code> array).</td></tr>
                                 <tr><td><code>belz ad run &lt;ID&gt;</code></td><td>Executes the <em>published</em> method live via <code>POST /rest/api/automation/chain/execute/{publishedId}</code>. Auth mode is <code>Raw</code> (bare token, not Bearer). Accepts payload from file or JSON string.</td></tr>
@@ -782,18 +802,21 @@ fail(code, msg)   → { ok: false, error: { code, message } }</code>
                 <!-- ═══════════════ PAGE DESIGNER ═══════════════ -->
                 <div id="pd" class="content">
                     <h2>Page Designer</h2>
-                    <p style="color: var(--muted); font-size: 0.85rem;">Source module at <code>page-designer/</code>. Provides <code>belz pd</code> commands for inspecting PD pages, tracing component trees, extracting AD method references, and running compliance analysis.</p>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Source module at <code>page-designer/</code>. Provides <code>belz pd</code> commands for deep inspection of PD pages — variables, HTTP service calls, component trees, validation, and AD method tracing.</p>
 
                     <h3>Core Types (<code>lib/types.ts</code>)</h3>
                     <div class="table-wrap">
                         <table>
                             <thead><tr><th>Type</th><th>Description</th></tr></thead>
                             <tbody>
-                                <tr><td><code>PageConfigResponse</code></td><td>Raw API response: <code>name</code> + <code>configuration</code> (stringified JSON of the full page/component definition)</td></tr>
-                                <tr><td><code>InternalConfig</code></td><td>Parsed configuration: <code>httpRequests.userDefined[]</code> (each contains an AD method URL), <code>layout</code> (root <code>LayoutNode</code>)</td></tr>
-                                <tr><td><code>LayoutNode</code></td><td>Recursive tree node: <code>name?</code>, <code>children?: LayoutNode[]</code>. Represents the page's visual component hierarchy.</td></tr>
-                                <tr><td><code>ReportNode</code></td><td>Analysis output: <code>type</code> (PAGE/COMPONENT), <code>name</code>, <code>id</code>, <code>adIds[]</code>, <code>children: ReportNode[]</code></td></tr>
-                                <tr><td><code>ComplianceResult</code></td><td><code>isCompliant</code>, <code>rogueIds</code>, <code>missingIds</code>, <code>commonIds</code> — compared against <code>master_ids.txt</code></td></tr>
+                                <tr><td><code>PageConfigResponse</code></td><td>Raw API response: <code>name</code> + <code>configuration</code> (stringified JSON of full page/component definition)</td></tr>
+                                <tr><td><code>InternalConfig</code></td><td>Parsed config supporting both formats: <code>variables.userDefined</code> (objects) + <code>httpRequests.userDefined</code> OR <code>context.properties</code> (tuples) + <code>http</code> (flat array)</td></tr>
+                                <tr><td><code>LayoutNode</code></td><td>Recursive tree: <code>id</code>, <code>name</code>, <code>isSymbol</code>, <code>props</code>, <code>field</code>, <code>events</code>, <code>children</code> (array or object)</td></tr>
+                                <tr><td><code>NormalizedVariable</code></td><td>Unified variable from both formats: <code>name</code>, <code>type</code>, <code>initialValue</code></td></tr>
+                                <tr><td><code>NormalizedDerived</code></td><td>Derived variable: <code>name</code>, <code>from[]</code>, <code>spec</code>, <code>filterFn</code>, <code>sideEffect</code></td></tr>
+                                <tr><td><code>HttpCallSummary</code></td><td>HTTP call: <code>index</code>, <code>label</code>, <code>adId</code>, <code>serviceUuid</code>, <code>triggers[]</code>, <code>method</code>, <code>outputBindings[]</code></td></tr>
+                                <tr><td><code>ComponentTreeNode</code></td><td>Layout tree for display: <code>name</code>, <code>id</code>, <code>isSymbol</code>, <code>hasEvents</code>, <code>children[]</code></td></tr>
+                                <tr><td><code>ValidationIssue</code></td><td>Validation result: <code>code</code>, <code>severity</code> (error/warn), <code>message</code></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -801,10 +824,32 @@ fail(code, msg)   → { ok: false, error: { code, message } }</code>
                     <h3>Parser (<code>lib/parser.ts</code>)</h3>
                     <div class="data-card">
                         <p style="font-size: 0.82rem; color: var(--muted);">
-                            <strong style="color:#fff;">cleanAdId(url)</strong> — Regex extracts the method UUID from a full AD execute URL: <code>/rest/api/automation/chain/execute/([^/]+)</code>.<br><br>
-                            <strong style="color:#fff;">extractReferences(configStr, whitelist)</strong> — Parses the stringified configuration JSON. Walks <code>httpRequests.userDefined[]</code> to collect AD IDs; walks the <code>layout</code> tree to collect child component names (filtered against a whitelist to avoid system components).<br><br>
-                            <strong style="color:#fff;">extractDirectChildComponentNames(configStr)</strong> — Returns only the top-level layout children (non-recursive). Used for shallow dependency maps.
+                            <strong style="color:#fff;">cleanAdId(url)</strong> — Regex extracts method UUID from AD execute URL.<br><br>
+                            <strong style="color:#fff;">extractReferences(configStr, whitelist)</strong> — Reads BOTH <code>http</code> and <code>httpRequests.userDefined</code> for AD IDs; walks layout tree for component names.<br><br>
+                            <strong style="color:#fff;">extractVariables(configStr)</strong> — Dual-format: reads <code>variables.userDefined</code> (objects) OR <code>context.properties</code> (tuples). Returns <code>{ userDefined: NormalizedVariable[], derived: NormalizedDerived[] }</code>.<br><br>
+                            <strong style="color:#fff;">extractHttpSummary(configStr)</strong> — Unifies both HTTP formats into <code>HttpCallSummary[]</code> with labels, AD IDs, triggers, outputs.<br><br>
+                            <strong style="color:#fff;">extractHttpDetail(configStr, index)</strong> — Full detail for one HTTP call: input bindings, success mappings, trigger filter, response transform code.<br><br>
+                            <strong style="color:#fff;">extractVarDetail(configStr, name)</strong> — Full detail for one variable: type, initialValue, or for derived: from, spec code, filterFn.<br><br>
+                            <strong style="color:#fff;">extractComponentTree(configStr)</strong> — Builds <code>ComponentTreeNode</code> tree from layout.<br><br>
+                            <strong style="color:#fff;">extractBindingReferences(configStr)</strong> — Regex scan for <code>{%var%}</code> references.<br><br>
+                            <strong style="color:#fff;">validateConfig(configStr)</strong> — 10 validation checks, returns <code>ValidationIssue[]</code>.
                         </p>
+                    </div>
+
+                    <h3>Resolver (<code>lib/resolver.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 12px;">Shared input resolution. <code>detectInputKind()</code> auto-detects input type. <code>resolveInput(input, force?)</code> resolves any input to a <code>PageConfigResponse</code> with 5-min cache (<code>--force</code> bypass).</p>
+                        <div class="table-wrap" style="margin: 0;">
+                            <table>
+                                <thead><tr><th>Input Type</th><th>Detection</th><th>Resolution</th></tr></thead>
+                                <tbody>
+                                    <tr><td>App URL</td><td><code>https://</code> with <code>/pages/</code> path</td><td><code>fetchDeployablePageByAppUrl</code></td></tr>
+                                    <tr><td>PD URL</td><td><code>/ui-designer/page/</code> or <code>/symbol/</code></td><td>Direct ID or name lookup</td></tr>
+                                    <tr><td>Hex ID</td><td>32-char hex string</td><td>Try page, fall back to component</td></tr>
+                                    <tr><td>Name</td><td>Anything else</td><td><code>fetchComponentIdByName</code></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <h3>Analyzer (<code>lib/analyzer.ts</code>)</h3>
@@ -829,6 +874,8 @@ fail(code, msg)   → { ok: false, error: { code, message } }</code>
                                 <tr><td><code>searchPagesByName(name, status)</code></td><td><code>GET /rest/api/pagedesigner/pages?name=X&amp;status=DRAFT|PUBLISHED</code></td></tr>
                                 <tr><td><code>fetchComponentIdByName(name)</code></td><td>Searches for component, resolves to draft ID</td></tr>
                                 <tr><td><code>fetchDeployablePageByAppUrl(domain, path)</code></td><td>Finds a deployed page by matching its application domain + URL path</td></tr>
+                                <tr><td><code>fetchAllPages()</code></td><td>Paginated bulk fetch, 2000 per page (for finder index)</td></tr>
+                                <tr><td><code>fetchAllComponents()</code></td><td>Paginated bulk fetch of all components</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -838,11 +885,44 @@ fail(code, msg)   → { ok: false, error: { code, message } }</code>
                         <table>
                             <thead><tr><th>Command</th><th>Key Logic</th></tr></thead>
                             <tbody>
-                                <tr><td><code>belz pd show-page &lt;DRAFT_ID&gt;</code></td><td>Fetches page config, displays name, layout structure depth, referenced AD method IDs, and metadata.</td></tr>
-                                <tr><td><code>belz pd show-component &lt;NAME&gt;</code></td><td>Searches for component by name, fetches config, displays same structure as <code>show-page</code>.</td></tr>
-                                <tr><td><code>belz pd find-ad-methods &lt;ID&gt;</code></td><td>Extracts all AD method IDs referenced in a page's HTTP requests. With <code>--recursive</code>, walks the full component tree via the analyzer.</td></tr>
-                                <tr><td><code>belz pd inspect-url &lt;PD_URL&gt;</code></td><td>Parses a full PD URL (detects <code>/ui-designer/page/</code> vs <code>/ui-designer/symbol/</code>), fetches config, returns metadata + children + AD refs.</td></tr>
-                                <tr><td><code>belz pd analyze [PAGE_ID]</code></td><td>Recursive dependency + compliance analysis. Walks the full page/component tree, collects all AD IDs, then compares against <code>master_ids.txt</code> to find rogue (uncatalogued) and missing IDs. Reports entity counts, mismatch summary, and compliance status.</td></tr>
+                                <tr><td><code>belz pd show &lt;input&gt;</code></td><td>Unified inspection. Auto-detects input (URL, ID, name). Flags: <code>--vars</code> (variables with types), <code>--http</code> (service calls), <code>--components</code> (layout tree), <code>--var-detail &lt;name&gt;</code> (full config), <code>--http-detail &lt;N&gt;</code> (full HTTP config), <code>--full</code>, <code>--force</code>, <code>--raw</code>, <code>--recursive</code>.</td></tr>
+                                <tr><td><code>belz pd validate &lt;input&gt;</code></td><td>10 checks from PD spec: <code>ORPHAN_BINDING</code>, <code>UNUSED_VARIABLE</code>, <code>FORM_FIELD_PROPS</code> (silent crash), <code>CHILDREN_NOT_ARRAY</code>, <code>TABLE_NO_DATASOURCE</code>, <code>INVALID_SLIDE_TOGGLE</code>, <code>INVALID_EXPANSION_HEADER</code>, <code>MISSING_ONINIT_VAR</code>, <code>EMPTY_EVENT_META</code>, <code>DYNAMIC_COLS_INITIAL</code>.</td></tr>
+                                <tr><td><code>belz pd find [query]</code></td><td>Search pages/components from 7-day cached index. Modes: list, pick (fzf), search. Flags: <code>--type</code>, <code>--refresh</code>, <code>--open</code>.</td></tr>
+                                <tr><td><code>belz pd find-ad-methods &lt;ID&gt;</code></td><td>Extract AD method IDs. With <code>--recursive</code>, walks full component tree.</td></tr>
+                                <tr><td><code>belz pd analyze [PAGE_ID]</code></td><td>Recursive dependency + compliance analysis against <code>master_ids.txt</code>.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ═══════════════ TEAMWORK ═══════════════ -->
+                <div id="tw" class="content">
+                    <h2>Teamwork</h2>
+                    <p style="color: var(--muted); font-size: 0.85rem;">Source module at <code>teamwork/</code>. Provides <code>belz tw</code> commands for querying Teamwork project management tasks and comments.</p>
+
+                    <h3>Authentication (<code>lib/auth.ts</code>)</h3>
+                    <div class="data-card">
+                        <p style="font-size: 0.82rem; color: var(--muted);">API key auth stored in <code>~/.belz/config.json</code>. All requests use <code>Authorization: Bearer</code> header.</p>
+                    </div>
+
+                    <h3>API Layer (<code>lib/api.ts</code>)</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Function</th><th>Endpoint</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>fetchTask(taskId)</code></td><td><code>GET /projects/api/v3/tasks/{taskId}.json</code></td></tr>
+                                <tr><td><code>fetchComments(taskId)</code></td><td><code>GET /projects/api/v3/tasks/{taskId}/comments.json</code></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3>Commands</h3>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Command</th><th>Key Logic</th></tr></thead>
+                            <tbody>
+                                <tr><td><code>belz tw task &lt;ID|URL&gt;</code></td><td>Fetch a Teamwork task with assignees, tags, workflow stage, status, description, and comment count. Accepts numeric ID or full URL.</td></tr>
+                                <tr><td><code>belz tw comments &lt;ID|URL&gt;</code></td><td>Fetch all comments for a task, ordered chronologically. Shows author, date, and HTML-stripped body text.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -1066,6 +1146,7 @@ bun run build
                             <ul>
                                 <li><span>AD commands</span><span>dynamic glob from filesystem</span></li>
                                 <li><span>PD commands</span><span>dynamic glob from filesystem</span></li>
+                                <li><span>TW commands</span><span>dynamic glob from filesystem</span></li>
                                 <li><span>Help text</span><span>resolved from help.txt files</span></li>
                                 <li><span>Run via</span><span><code>bun run bin/cli.ts</code></span></li>
                                 <li><span>No build step</span><span>TypeScript executed directly</span></li>
@@ -1076,6 +1157,7 @@ bun run build
                             <ul>
                                 <li><span>AD commands</span><span>static <code>registry-ad.ts</code></span></li>
                                 <li><span>PD commands</span><span>static <code>registry-pd.ts</code></span></li>
+                                <li><span>TW commands</span><span>static <code>registry-tw.ts</code></span></li>
                                 <li><span>Help text</span><span>embedded strings in <code>registry-help.ts</code></span></li>
                                 <li><span>Compiled to</span><span>single native binary</span></li>
                                 <li><span>No runtime FS</span><span>all paths resolved at build time</span></li>
@@ -1085,13 +1167,14 @@ bun run build
 
                     <h3>Registry Generation (<code>utils/generate-registry.ts</code>)</h3>
                     <div class="data-card">
-                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;"><code>bun run generate</code> (from <code>cli/</code>) scans command directories and emits four TypeScript registry files:</p>
+                        <p style="font-size: 0.82rem; color: var(--muted); margin-bottom: 10px;"><code>bun run generate</code> (from <code>cli/</code>) scans command directories and emits registry TypeScript files:</p>
                         <div class="table-wrap" style="margin: 0;">
                             <table>
                                 <thead><tr><th>Output File</th><th>Contents</th></tr></thead>
                                 <tbody>
                                     <tr><td><code>commands/registry-ad.ts</code></td><td>Exports <code>ADCommandRegistry</code> — a <code>Record&lt;name, () =&gt; Promise&lt;CommandModule&gt;&gt;</code> import map for all AD commands</td></tr>
                                     <tr><td><code>commands/registry-pd.ts</code></td><td>Same for PD commands</td></tr>
+                                    <tr><td><code>commands/registry-tw.ts</code></td><td>Exports <code>TWCommandRegistry</code></td></tr>
                                     <tr><td><code>commands/registry-top.ts</code></td><td>Same for top-level commands (<code>envs</code>, <code>migrate</code>)</td></tr>
                                     <tr><td><code>commands/registry-help.ts</code></td><td>Exports <code>ADHelpMap</code>, <code>PDHelpMap</code>, <code>TopHelpMap</code> with embedded <code>help.txt</code> and <code>desc.txt</code> file contents as string literals. Also exports <code>HELP_FULL_TEXT</code> for top-level <code>--help</code>.</td></tr>
                                 </tbody>
@@ -1141,6 +1224,8 @@ bun run reinstall</code>
                                 <tr><td><code>~/.belz/cache/methods/&lt;uuid&gt;.json</code></td><td>Cached <code>HydratedMethod</code> (5 min TTL)</td><td>AD method cache</td></tr>
                                 <tr><td><code>~/.belz/cache/definitions/&lt;id&gt;.json</code></td><td>Cached <code>AutomationDefinition</code> (1h or permanent)</td><td>AD hydrator</td></tr>
                                 <tr><td><code>~/.belz/cache/method-finder/&lt;env&gt;.json</code></td><td>Full method index (7-day TTL)</td><td>AD method-finder</td></tr>
+                                <tr><td><code>~/.belz/cache/pages/&lt;id&gt;.json</code></td><td>Cached PD <code>PageConfigResponse</code> (5 min TTL)</td><td>PD page cache</td></tr>
+                                <tr><td><code>~/.belz/cache/page-finder/&lt;env&gt;.json</code></td><td>PD page/component search index (7-day TTL)</td><td>PD page-finder</td></tr>
                                 <tr><td><code>~/.belz/migrations/nsm-profiles.json</code></td><td>Discovered migration profiles (permanent)</td><td>migrations/profiles.ts</td></tr>
                             </tbody>
                         </table>
@@ -1160,6 +1245,7 @@ cd cli && bun run generate
 cd cli && bun run build
 
 # Same pattern for page-designer/commands/ (pd commands)
+# and teamwork/commands/ (tw commands)
 # and cli/commands/ (top-level commands)</code>
                     </div>
                 </div>
