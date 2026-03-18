@@ -12,6 +12,10 @@ export interface BelzConfigFile {
     user?: string;
     password?: string;
   }>;
+  teamwork?: {
+    email?: string;
+    password?: string; // base64-encoded
+  };
 }
 
 function loadConfigFile(): BelzConfigFile {
