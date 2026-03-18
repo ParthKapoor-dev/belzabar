@@ -22,6 +22,7 @@ export interface ComponentSearchItem {
 
 export interface LayoutNode {
   name?: string;
+  isSymbol?: boolean;
   children?: LayoutNode[];
 }
 

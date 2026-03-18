@@ -49,18 +49,22 @@ export function extractReferences(configStr: string, whitelist: Set<string>) {
 export function extractDirectChildComponentNames(configStr: string): string[] {
   try {
     const config: InternalConfig = JSON.parse(configStr);
-    const children = config.layout?.children;
-    if (!Array.isArray(children)) return [];
-
     const names: string[] = [];
     const seen = new Set<string>();
-    for (const child of children) {
-      const name = child?.name?.trim();
-      if (!name || seen.has(name)) continue;
-      seen.add(name);
-      names.push(name);
-    }
 
+    const walk = (node: LayoutNode | undefined) => {
+      if (!node) return;
+      if (node.isSymbol) {
+        const name = node.name?.trim();
+        if (name && !seen.has(name)) {
+          seen.add(name);
+          names.push(name);
+        }
+      }
+      node.children?.forEach(walk);
+    };
+
+    walk(config.layout);
     return names;
   } catch {
     return [];
