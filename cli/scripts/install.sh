@@ -176,17 +176,25 @@ bun install --ignore-scripts
 bun run build
 
 echo "📦 Installing web app to $WEB_DEST..."
-mkdir -p "$WEB_DEST/.next"
+rm -rf "$WEB_DEST"
 
-# Copy Next.js standalone server (includes bundled dependencies)
+# In a Bun monorepo Next.js standalone output nests the app one level deep:
+#   .next/standalone/
+#     node_modules/          ← shared monorepo deps (must stay one level above server.js)
+#     web/
+#       server.js            ← the actual Next.js server
+#       node_modules/        ← app-level deps
+#       .next/               ← server-side build
+# We copy the whole standalone tree so relative paths between root and web/ are preserved.
 cp -r "$WEB_SRC/.next/standalone/." "$WEB_DEST/"
 
-# Copy static assets required by the standalone server
-cp -r "$WEB_SRC/.next/static" "$WEB_DEST/.next/static"
+# Static assets must live next to server.js in the web/ subdirectory
+mkdir -p "$WEB_DEST/web/.next"
+cp -r "$WEB_SRC/.next/static" "$WEB_DEST/web/.next/static"
 
-# Copy public directory if it exists
+# Public directory likewise
 if [[ -d "$WEB_SRC/public" ]]; then
-  cp -r "$WEB_SRC/public" "$WEB_DEST/public"
+  cp -r "$WEB_SRC/public" "$WEB_DEST/web/public"
 fi
 
 echo "✅ Web app installed to $WEB_DEST"
