@@ -33,7 +33,7 @@ interface InspectData {
     draftId: string | null;
     publishedId: string | null;
     versionId: string | number | null;
-    directChildComponents: string[];
+    directChildComponents: Array<{ name: string; publishedId: string | null }>;
     adMethodIds: string[];
     configParsed: boolean;
     configSizeBytes: number;
@@ -251,7 +251,14 @@ const command: CommandModule<InspectArgs, InspectData> = {
     }
 
     const refs = extractReferences(response.configuration, new Set<string>());
-    const directChildComponents = extractDirectChildComponentNames(response.configuration);
+    const childNames = extractDirectChildComponentNames(response.configuration);
+    const childLookups = await Promise.all(
+      childNames.map(async (name) => {
+        const ids = await fetchEntityIdsByName(name, "COMPONENT");
+        return { name, publishedId: ids.publishedId };
+      })
+    );
+    const directChildComponents = childLookups;
     const sourceFields = toRecord(response);
     const rawMetadata = extractMetadata(sourceFields, resolvedId!);
     const enrichedIds = await fetchEntityIdsByName(resolvedName, entityType);
@@ -337,8 +344,8 @@ const command: CommandModule<InspectArgs, InspectData> = {
     if (r.directChildComponents.length > 0) {
       ui.section("Direct Child Components");
       ui.table(
-        ["#", "Component Name"],
-        r.directChildComponents.map((name, idx) => [idx + 1, name])
+        ["#", "Component Name", "Published ID"],
+        r.directChildComponents.map((c, idx) => [idx + 1, c.name, c.publishedId ?? "N/A"])
       );
     }
 
