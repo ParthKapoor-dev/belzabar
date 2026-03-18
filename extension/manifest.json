@@ -10,7 +10,8 @@
     "https://nsm-dev.nc.verifi.dev/*",
     "https://nsm-uat.nc.verifi.dev/*",
     "https://nsm-qa.nc.verifi.dev/*",
-    "https://staff-nss-stage.verifi-nc.com/*"
+    "https://staff-nss-stage.verifi-nc.com/*",
+    "https://yieldsec.qa.expertly.cloud/*"
   ],
    "content_scripts": [
       {
@@ -22,7 +23,9 @@
           "https://nsm-qa.nc.verifi.dev/automation-designer/*",
           "https://nsm-qa.nc.verifi.dev/ui-designer/*",
           "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
-          "https://staff-nss-stage.verifi-nc.com/ui-designer/*"
+          "https://staff-nss-stage.verifi-nc.com/ui-designer/*",
+          "https://yieldsec.qa.expertly.cloud/automation-designer/*",
+          "https://yieldsec.qa.expertly.cloud/ui-designer/*"
         ],
         "js": ["dist/content-script.js"],
         "run_at": "document_idle"
