@@ -1,0 +1,6 @@
+belz web               — Manage the Belzabar web app (Next.js, port 65535)
+  belz web [start]     — Start the web app in the background
+  belz web -v          — Start and stream logs to the terminal (foreground)
+  belz web stop        — Stop the running web app
+  belz web restart     — Restart the web app
+  belz web status      — Check if the web app is running

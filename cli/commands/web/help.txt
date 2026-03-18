@@ -1,0 +1,28 @@
+belz web [subcommand] [flags]
+
+Manage the Belzabar web app (Next.js, port 65535).
+
+Subcommands:
+  start     Start the web app in the background (default)
+  stop      Stop the running web app
+  restart   Restart the web app
+  status    Show whether the web app is running and its PID
+
+Flags:
+  -v, --verbose   Stream logs to the terminal instead of running in background.
+                  Only applies to 'start'. Process runs in foreground (blocking).
+
+Examples:
+  belz web                  Start the web app in the background
+  belz web -v               Start and stream logs to the terminal (foreground)
+  belz web start            Explicit start (same as 'belz web')
+  belz web stop             Stop the running web app
+  belz web restart          Restart the web app
+  belz web status           Check if the web app is running
+
+The web app must be built and installed first by running the install script:
+  ./cli/scripts/install.sh
+
+Log file: ~/.belz/logs/web.log
+PID file: ~/.belz/pids/web.pid
+URL:      http://localhost:65535

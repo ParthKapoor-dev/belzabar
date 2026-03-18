@@ -165,6 +165,32 @@ echo "📦 Installing dependencies..."
 cd "$REPO_ROOT"
 bun install --ignore-scripts
 
+# ── 4b. Build and install the web app ─────────────────────────────────────────
+echo ""
+echo "🌐 Building web app..."
+WEB_SRC="$REPO_ROOT/web"
+WEB_DEST="$BELZ_CONFIG_DIR/web"
+
+cd "$WEB_SRC"
+bun install --ignore-scripts
+bun run build
+
+echo "📦 Installing web app to $WEB_DEST..."
+mkdir -p "$WEB_DEST/.next"
+
+# Copy Next.js standalone server (includes bundled dependencies)
+cp -r "$WEB_SRC/.next/standalone/." "$WEB_DEST/"
+
+# Copy static assets required by the standalone server
+cp -r "$WEB_SRC/.next/static" "$WEB_DEST/.next/static"
+
+# Copy public directory if it exists
+if [[ -d "$WEB_SRC/public" ]]; then
+  cp -r "$WEB_SRC/public" "$WEB_DEST/public"
+fi
+
+echo "✅ Web app installed to $WEB_DEST"
+
 # ── 5. Build the binary ───────────────────────────────────────────────────────
 echo ""
 echo "🔨 Building belz binary..."
