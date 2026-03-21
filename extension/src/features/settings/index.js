@@ -1,13 +1,14 @@
 import {
   EXTENSION_OWNED_ATTR,
   HEADER_BANNER_SELECTOR,
-  OBSERVER_OPTIONS,
   SETTINGS_BUTTON_ID
 } from '../../config/constants.js';
 import { log } from '../../core/logger.js';
 import { hideSettingsModal, openSettingsModal } from './modal.js';
+import { subscribeObserver } from '../../core/observer.js';
+import { PRIMARY_BUTTON_STYLE } from '../../ui/styles.js';
 
-let settingsObserver = null;
+let unsubscribe = null;
 let settingsInjectionTimer = null;
 let settingsInitialTimer = null;
 let settingsShortcutHandler = null;
@@ -21,19 +22,11 @@ function createSettingsButton(onClick) {
   button.setAttribute('aria-label', 'Open extension settings');
   button.setAttribute(EXTENSION_OWNED_ATTR, 'true');
 
-  Object.assign(button.style, {
+  Object.assign(button.style, PRIMARY_BUTTON_STYLE, {
     width: '30px',
     height: '30px',
     marginLeft: '8px',
-    padding: '0',
-    borderRadius: '999px',
-    border: '1px solid rgba(59, 130, 246, 0.45)',
-    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-    color: '#ffffff',
     fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)',
     lineHeight: '1'
   });
 
@@ -95,11 +88,10 @@ export function startSettingsFeature({
     injectSettingsButton(openSettings);
   }, 400);
 
-  if (!settingsObserver) {
-    settingsObserver = new MutationObserver(() => {
+  if (!unsubscribe) {
+    unsubscribe = subscribeObserver(() => {
       debouncedInjectSettingsButton(openSettings);
     });
-    settingsObserver.observe(document.body, OBSERVER_OPTIONS);
   }
 
   settingsShortcutHandler = (event) => {
@@ -121,9 +113,9 @@ export function startSettingsFeature({
 }
 
 export function stopSettingsFeature() {
-  if (settingsObserver) {
-    settingsObserver.disconnect();
-    settingsObserver = null;
+  if (unsubscribe) {
+    unsubscribe();
+    unsubscribe = null;
   }
 
   if (settingsInjectionTimer) {

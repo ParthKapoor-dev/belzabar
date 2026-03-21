@@ -1,14 +1,20 @@
 import { state } from '../../core/state.js';
 import { log } from '../../core/logger.js';
 import { showToast } from '../../ui/toast.js';
+import { copyText } from '../../utils/clipboard.js';
 import {
-  OBSERVER_OPTIONS,
   TEXTAREA_SELECTOR,
   TEXTAREA_EDITOR_BOUND_ATTR,
   TEXTAREA_EDITOR_LAUNCHER_CLASS,
   EXTENSION_OWNED_ATTR
 } from '../../config/constants.js';
 import { closeTextareaEditor, openTextareaEditor } from './modal.js';
+import { subscribeObserver } from '../../core/observer.js';
+import {
+  ICON_BUTTON_STYLE, ICON_BUTTON_HOVER, ICON_BUTTON_UNHOVER,
+  PRIMARY_BUTTON_STYLE, PRIMARY_BUTTON_HOVER, PRIMARY_BUTTON_UNHOVER,
+  applyHoverEffect
+} from '../../ui/styles.js';
 
 const TEXTAREA_EDITOR_ID_ATTR = 'data-sd-textarea-editor-id';
 const TEXTAREA_EDITOR_FOR_ATTR = 'data-sd-textarea-editor-for';
@@ -24,7 +30,7 @@ const textareaLayoutBindings = new Map();
 let layoutRefreshTimer = null;
 let viewportLayoutListenerAttached = false;
 let textareaEditorIdCounter = 0;
-let textareaObserver = null;
+let unsubscribe = null;
 let initialTextareaInjectionTimer = null;
 
 function getTextareaEditorId(textarea) {
@@ -122,42 +128,6 @@ function ensureOverlayStyles() {
   document.head.appendChild(styleEl);
 }
 
-async function copyText(text) {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch (error) {
-      log('Navigator clipboard copy failed, using fallback:', error);
-    }
-  }
-
-  const tempTextarea = document.createElement('textarea');
-  tempTextarea.value = text;
-  tempTextarea.setAttribute('readonly', '');
-  tempTextarea.setAttribute(EXTENSION_OWNED_ATTR, 'true');
-  Object.assign(tempTextarea.style, {
-    position: 'fixed',
-    top: '-1000px',
-    left: '-1000px',
-    opacity: '0'
-  });
-
-  document.body.appendChild(tempTextarea);
-  tempTextarea.select();
-  tempTextarea.setSelectionRange(0, tempTextarea.value.length);
-
-  let copied = false;
-  try {
-    copied = document.execCommand('copy');
-  } catch (error) {
-    console.error('Clipboard fallback copy failed:', error);
-  }
-
-  tempTextarea.remove();
-  return copied;
-}
-
 function isEligibleTextarea(textarea) {
   if (!textarea || textarea.tagName.toLowerCase() !== 'textarea') return false;
 
@@ -246,34 +216,12 @@ function createLauncher(textarea) {
   openButton.setAttribute(EXTENSION_OWNED_ATTR, 'true');
   openButton.setAttribute(TEXTAREA_EDITOR_FOR_ATTR, textareaId);
 
-  Object.assign(openButton.style, {
+  Object.assign(openButton.style, PRIMARY_BUTTON_STYLE, {
     width: '28px',
     height: '28px',
-    border: '1px solid rgba(59, 130, 246, 0.45)',
-    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-    color: '#ffffff',
-    borderRadius: '999px',
-    padding: '0',
-    fontSize: '14px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    boxShadow: '0 4px 10px rgba(37, 99, 235, 0.28)',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'transform 140ms ease, filter 140ms ease, box-shadow 140ms ease'
+    fontSize: '14px'
   });
-
-  openButton.addEventListener('mouseenter', () => {
-    openButton.style.transform = 'translateY(-1px)';
-    openButton.style.filter = 'brightness(1.05)';
-    openButton.style.boxShadow = '0 6px 14px rgba(37, 99, 235, 0.34)';
-  });
-  openButton.addEventListener('mouseleave', () => {
-    openButton.style.transform = 'translateY(0)';
-    openButton.style.filter = 'none';
-    openButton.style.boxShadow = '0 4px 10px rgba(37, 99, 235, 0.28)';
-  });
+  applyHoverEffect(openButton, PRIMARY_BUTTON_HOVER, PRIMARY_BUTTON_UNHOVER);
 
   openButton.onclick = (event) => {
     event.preventDefault();
@@ -290,34 +238,8 @@ function createLauncher(textarea) {
   copyButton.setAttribute(EXTENSION_OWNED_ATTR, 'true');
   copyButton.setAttribute(TEXTAREA_COPY_FOR_ATTR, textareaId);
 
-  Object.assign(copyButton.style, {
-    width: '28px',
-    height: '28px',
-    border: '1px solid rgba(59, 130, 246, 0.45)',
-    background: 'rgba(15, 23, 42, 0.88)',
-    color: '#e2e8f0',
-    borderRadius: '8px',
-    padding: '0',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    boxShadow: '0 4px 10px rgba(15, 23, 42, 0.35)',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'transform 140ms ease, filter 140ms ease, box-shadow 140ms ease'
-  });
-
-  copyButton.addEventListener('mouseenter', () => {
-    copyButton.style.transform = 'translateY(-1px)';
-    copyButton.style.filter = 'brightness(1.06)';
-    copyButton.style.boxShadow = '0 6px 14px rgba(15, 23, 42, 0.42)';
-  });
-  copyButton.addEventListener('mouseleave', () => {
-    copyButton.style.transform = 'translateY(0)';
-    copyButton.style.filter = 'none';
-    copyButton.style.boxShadow = '0 4px 10px rgba(15, 23, 42, 0.35)';
-  });
+  Object.assign(copyButton.style, ICON_BUTTON_STYLE);
+  applyHoverEffect(copyButton, ICON_BUTTON_HOVER, ICON_BUTTON_UNHOVER);
 
   copyButton.onclick = async (event) => {
     event.preventDefault();
@@ -450,22 +372,20 @@ export function startTextareaEditorFeature() {
     injectTextareaLaunchers();
   }, 700);
 
-  if (!textareaObserver) {
-    textareaObserver = new MutationObserver(() => {
+  if (!unsubscribe) {
+    unsubscribe = subscribeObserver(() => {
       debouncedInjectTextareaLaunchers();
       debouncedRefreshAllLayouts();
     });
-
-    textareaObserver.observe(document.body, OBSERVER_OPTIONS);
   }
 
   return stopTextareaEditorFeature;
 }
 
 export function stopTextareaEditorFeature() {
-  if (textareaObserver) {
-    textareaObserver.disconnect();
-    textareaObserver = null;
+  if (unsubscribe) {
+    unsubscribe();
+    unsubscribe = null;
   }
 
   if (initialTextareaInjectionTimer) {

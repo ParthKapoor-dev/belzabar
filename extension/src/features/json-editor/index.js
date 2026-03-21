@@ -1,9 +1,9 @@
-import { OBSERVER_OPTIONS } from '../../config/constants.js';
+import { subscribeObserver } from '../../core/observer.js';
 import { debouncedInjectJSONButton } from './injector.js';
 import { closeModal } from './modal.js';
 import { state } from '../../core/state.js';
 
-let jsonObserver = null;
+let unsubscribe = null;
 let initialInjectionTimer = null;
 
 // Main JSON feature coordinator
@@ -14,11 +14,10 @@ export function startJSONFeature() {
     debouncedInjectJSONButton();
   }, 1000);
 
-  if (!jsonObserver) {
-    jsonObserver = new MutationObserver(() => {
+  if (!unsubscribe) {
+    unsubscribe = subscribeObserver(() => {
       debouncedInjectJSONButton();
     });
-    jsonObserver.observe(document.body, OBSERVER_OPTIONS);
   }
 
   console.log('JSON feature initialized');
@@ -26,9 +25,9 @@ export function startJSONFeature() {
 }
 
 export function stopJSONFeature() {
-  if (jsonObserver) {
-    jsonObserver.disconnect();
-    jsonObserver = null;
+  if (unsubscribe) {
+    unsubscribe();
+    unsubscribe = null;
   }
 
   if (initialInjectionTimer) {

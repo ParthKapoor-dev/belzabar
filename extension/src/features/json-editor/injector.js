@@ -5,12 +5,22 @@ import { showModal } from './modal.js';
 // Button injection
 export function findInputsSection() {
   try {
-    // Strategy 1: Look for text containing "Inputs" or "Input"
-    const allElements = document.querySelectorAll('*');
-    for (const el of allElements) {
-      const text = el.textContent?.trim() || '';
-      // Match "2Inputs", "2 Inputs", "Inputs", etc.
-      if (/^\d*\s*Inputs?$/i.test(text) && el.children.length === 0) {
+    // Strategy 1: Walk text nodes to find "Inputs" / "2 Inputs" etc.
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode(node) {
+          const text = node.textContent?.trim() || '';
+          return /^\d*\s*Inputs?$/i.test(text) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        }
+      }
+    );
+
+    const textNode = walker.nextNode();
+    if (textNode) {
+      const el = textNode.parentElement;
+      if (el && el.children.length === 0) {
         log('Found inputs section via text match');
         return el.parentElement;
       }

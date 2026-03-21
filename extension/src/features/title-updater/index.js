@@ -1,8 +1,8 @@
 import { state } from '../../core/state.js';
 import { extractMethodName, extractPageName } from '../../utils/dom.js';
-import { OBSERVER_OPTIONS } from '../../config/constants.js';
+import { subscribeObserver } from '../../core/observer.js';
 
-let titleObserver = null;
+let unsubscribe = null;
 
 // Title update logic
 export function updateTitle() {
@@ -27,17 +27,16 @@ export function updateTitle() {
 export function startTitleUpdaterFeature() {
   updateTitle();
 
-  if (!titleObserver) {
-    titleObserver = new MutationObserver(updateTitle);
-    titleObserver.observe(document.body, OBSERVER_OPTIONS);
+  if (!unsubscribe) {
+    unsubscribe = subscribeObserver(updateTitle);
   }
 
   return stopTitleUpdaterFeature;
 }
 
 export function stopTitleUpdaterFeature() {
-  if (titleObserver) {
-    titleObserver.disconnect();
-    titleObserver = null;
+  if (unsubscribe) {
+    unsubscribe();
+    unsubscribe = null;
   }
 }

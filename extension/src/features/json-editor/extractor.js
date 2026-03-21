@@ -138,16 +138,6 @@ export function extractDataType(container) {
       }
     }
 
-    // Strategy 4: Look in select elements
-    const select = typeCell.querySelector('.ui-select-match-text');
-    if (select) {
-      const text = select.textContent?.trim();
-      if (text) {
-        log('Found type from select:', text);
-        return normalizeDataType(text);
-      }
-    }
-
     log('Type not found, defaulting to Text');
     return 'Text';
   } catch (error) {
