@@ -2,10 +2,11 @@ import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, indentWithTab, history } from '@codemirror/commands';
 import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
-import { sql } from '@codemirror/lang-sql';
-import { javascript } from '@codemirror/lang-javascript';
+import { sql, keywordCompletionSource, StandardSQL } from '@codemirror/lang-sql';
+import { javascript, scopeCompletionSource, localCompletionSource } from '@codemirror/lang-javascript';
 import { json } from '@codemirror/lang-json';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { autocompletion, closeBrackets, completionKeymap } from '@codemirror/autocomplete';
 import {
   loadSettings,
   setSetting,
@@ -36,7 +37,74 @@ let editorView = null;
 let resolvedEditorLanguage = 'plain';
 const languageCompartment = new Compartment();
 const wrapCompartment = new Compartment();
+const autocompleteCompartment = new Compartment();
 let unsubscribeEditorSettings = null;
+
+// SpEL completion source
+const SPEL_KEYWORDS = [
+  'and', 'or', 'not', 'eq', 'ne', 'lt', 'gt', 'le', 'ge',
+  'div', 'mod', 'instanceof', 'matches', 'between',
+  'true', 'false', 'null',
+  'new', 'T', 'this', 'root',
+];
+
+const SPEL_BUILTINS = [
+  // Common SpEL functions and properties
+  'size()', 'length', 'isEmpty()', 'contains()',
+  'substring()', 'toUpperCase()', 'toLowerCase()', 'trim()',
+  'replace()', 'startsWith()', 'endsWith()', 'indexOf()',
+  'charAt()', 'concat()', 'split()',
+  'parseInt()', 'parseFloat()', 'toString()',
+  'now()', 'date()', 'format()',
+  // Collection methods
+  'add()', 'remove()', 'get()', 'put()', 'keySet()', 'values()', 'entrySet()',
+  'stream()', 'filter()', 'map()', 'collect()', 'toList()',
+  // Math
+  'abs()', 'ceil()', 'floor()', 'round()', 'max()', 'min()', 'random()',
+];
+
+function spelCompletionSource(context) {
+  const word = context.matchBefore(/[\w.]+/);
+  if (!word || (word.from === word.to && !context.explicit)) return null;
+
+  const options = [
+    ...SPEL_KEYWORDS.map(k => ({ label: k, type: 'keyword' })),
+    ...SPEL_BUILTINS.map(b => ({ label: b, type: 'function' })),
+    { label: '#{}', type: 'keyword', detail: 'SpEL expression', apply: '#{${}' },
+    { label: 'T()', type: 'keyword', detail: 'Type reference', apply: 'T(${}' },
+  ];
+
+  return { from: word.from, options };
+}
+
+function getAutocompleteExtensionsForMode(mode) {
+  if (mode === 'sql') {
+    return [
+      autocompletion({
+        override: [keywordCompletionSource(StandardSQL, true)]
+      }),
+      closeBrackets(),
+    ];
+  }
+  if (mode === 'javascript') {
+    return [
+      autocompletion({
+        override: [localCompletionSource, scopeCompletionSource(globalThis)]
+      }),
+      closeBrackets(),
+    ];
+  }
+  if (mode === 'spel') {
+    return [
+      autocompletion({ override: [spelCompletionSource] }),
+      closeBrackets(),
+    ];
+  }
+  if (mode === 'json') {
+    return [closeBrackets()];
+  }
+  return [];
+}
 
 const editorTheme = EditorView.theme(
   {
@@ -163,6 +231,43 @@ const editorTheme = EditorView.theme(
     '.cm-searchMatch.cm-searchMatch-selected': {
       backgroundColor: 'rgba(250, 204, 21, 0.5)',
       outline: '1px solid rgba(250, 204, 21, 0.8)'
+    },
+    '.cm-tooltip.cm-tooltip-autocomplete': {
+      fontFamily: EDITOR_FONT_FAMILY,
+      background: 'rgba(15, 23, 42, 0.96)',
+      border: '1px solid rgba(148, 163, 184, 0.3)',
+      borderRadius: '8px',
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+      overflow: 'hidden'
+    },
+    '.cm-tooltip-autocomplete ul': {
+      fontFamily: EDITOR_FONT_FAMILY,
+      maxHeight: '200px'
+    },
+    '.cm-tooltip-autocomplete ul li': {
+      fontFamily: EDITOR_FONT_FAMILY,
+      padding: '4px 10px',
+      color: '#e2e8f0',
+      fontSize: '13px',
+      lineHeight: '1.5'
+    },
+    '.cm-tooltip-autocomplete ul li[aria-selected]': {
+      background: 'rgba(37, 99, 235, 0.35)',
+      color: '#f8fafc'
+    },
+    '.cm-completionLabel': {
+      fontFamily: EDITOR_FONT_FAMILY
+    },
+    '.cm-completionDetail': {
+      fontFamily: EDITOR_FONT_FAMILY,
+      color: '#64748b',
+      fontStyle: 'italic',
+      marginLeft: '8px'
+    },
+    '.cm-completionMatchedText': {
+      color: '#60a5fa',
+      textDecoration: 'none',
+      fontWeight: '600'
     }
   },
   { dark: true }
@@ -290,7 +395,10 @@ function reconfigureEditorLanguage(mode) {
   if (!editorView) return;
   resolvedEditorLanguage = mode;
   editorView.dispatch({
-    effects: languageCompartment.reconfigure(getLanguageExtensionForMode(mode))
+    effects: [
+      languageCompartment.reconfigure(getLanguageExtensionForMode(mode)),
+      autocompleteCompartment.reconfigure(getAutocompleteExtensionsForMode(mode))
+    ]
   });
 }
 
@@ -348,12 +456,13 @@ function createEditorForSource(sourceEl) {
     history(),
     highlightActiveLine(),
     search({ top: false }),
-    keymap.of([...searchKeymap, indentWithTab, ...defaultKeymap]),
+    keymap.of([...completionKeymap, ...searchKeymap, indentWithTab, ...defaultKeymap]),
     EditorState.tabSize.of(4),
     EditorState.readOnly.of(readOnly),
     editorTheme,
     oneDark,
     languageCompartment.of(getLanguageExtensionForMode(initialLanguageMode)),
+    autocompleteCompartment.of(getAutocompleteExtensionsForMode(initialLanguageMode)),
     wrapCompartment.of(getWrapExtensionForMode(selectedWrapMode)),
     EditorView.updateListener.of((update) => {
       if (!update.docChanged || !editorView) return;
