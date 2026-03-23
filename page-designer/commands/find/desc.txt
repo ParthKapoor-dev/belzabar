@@ -1,0 +1,6 @@
+belz pd find <query>  :->  Search pages and components by name, route, or ID
+belz pd find list  :->  List all pages (add --components for components)
+belz pd find pick  :->  Open interactive fzf picker to select a page or component
+belz pd find pick <query> --open  :->  Open selected item's PD designer URL in browser
+belz pd find <query> --type page|component  :->  Restrict results to one entity type
+belz pd find --refresh  :->  Rebuild the 7-day search index from API

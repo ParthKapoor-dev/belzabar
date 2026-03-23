@@ -1,0 +1,2 @@
+belz pd validate <input>  :->  Validate a page/component config against 10 common PD error patterns
+belz pd validate <input> --llm  :->  Output validation issues as structured JSON envelope

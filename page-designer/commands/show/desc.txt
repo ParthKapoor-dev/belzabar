@@ -1,0 +1,10 @@
+belz pd show <input>  :->  Display overview of a page or component (name, IDs, variable/HTTP/component counts)
+belz pd show <input> --vars  :->  List all user-defined and derived variables with types
+belz pd show <input> --http  :->  List all HTTP service calls with AD IDs and triggers
+belz pd show <input> --components  :->  Show the full layout/component tree
+belz pd show <input> --var-detail <name>  :->  Show full config for a specific variable or derived (spec code, dependencies)
+belz pd show <input> --http-detail <N>  :->  Show full config for the Nth HTTP call (input bindings, handlers, transform code)
+belz pd show <input> --full  :->  Show all sections and all details
+belz pd show <input> --force  :->  Bypass 5-min cache and fetch fresh config
+belz pd show <input> --raw  :->  Include raw configuration JSON and source API fields
+belz pd show <input> --recursive  :->  Include recursive component dependency tree and all AD method IDs
