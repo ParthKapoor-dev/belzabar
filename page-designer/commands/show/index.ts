@@ -63,8 +63,8 @@ interface ShowData {
     userDefinedVarCount: number;
     derivedVarCount: number;
     httpCallCount: number;
-    childComponentCount: number;
-    adMethodCount: number;
+    directChildComponents: Array<{ name: string; publishedId: string | null }>;
+    adMethodIds: string[];
   };
   vars?: {
     userDefined: NormalizedVariable[];
@@ -212,6 +212,13 @@ const command: CommandModule<ShowArgs, ShowData> = {
     const rawMetadata = extractMetadata(sourceFields, resolvedId);
     const enrichedIds = await fetchEntityIdsByName(resolvedName, entityType);
 
+    const directChildComponents = await Promise.all(
+      childNames.map(async (name) => {
+        const ids = await fetchEntityIdsByName(name, "COMPONENT");
+        return { name, publishedId: ids.publishedId };
+      })
+    );
+
     const includeVars = flags.vars || flags.full;
     const includeHttp = flags.http || flags.full;
     const includeComponents = flags.components || flags.full;
@@ -234,8 +241,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
         userDefinedVarCount: vars.userDefined.length,
         derivedVarCount: vars.derived.length,
         httpCallCount: httpCalls.length,
-        childComponentCount: childNames.length,
-        adMethodCount: refs.adIds.length,
+        directChildComponents,
+        adMethodIds: refs.adIds,
       },
     };
 
@@ -315,11 +322,27 @@ const command: CommandModule<ShowArgs, ShowData> = {
         ["Config Size", `${s.configSizeBytes} bytes`],
         ["Variables", `${s.userDefinedVarCount} user-defined, ${s.derivedVarCount} derived`],
         ["HTTP Calls", s.httpCallCount],
-        ["Child Components", s.childComponentCount],
-        ["AD Methods", s.adMethodCount],
+        ["Child Components", s.directChildComponents.length],
+        ["AD Methods", s.adMethodIds.length],
         ["Source", data.source],
       ]
     );
+
+    if (s.directChildComponents.length > 0) {
+      ui.section("Direct Child Components");
+      ui.table(
+        ["#", "Component Name", "Published ID"],
+        s.directChildComponents.map((c, idx) => [idx + 1, c.name, c.publishedId ?? "N/A"])
+      );
+    }
+
+    if (s.adMethodIds.length > 0) {
+      ui.section("Direct AD Method IDs");
+      ui.table(
+        ["#", "Method ID"],
+        s.adMethodIds.map((id, idx) => [idx + 1, id])
+      );
+    }
 
     // --vars
     if (data.vars) {
