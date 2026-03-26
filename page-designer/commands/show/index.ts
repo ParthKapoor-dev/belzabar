@@ -1,7 +1,6 @@
 import { file } from "bun";
 import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { analyzeItem } from "../../lib/analyzer";
-import { fetchEntityIdsByName } from "../../lib/api";
 import {
   extractDirectChildComponentNames,
   extractReferences,
@@ -63,7 +62,7 @@ interface ShowData {
     userDefinedVarCount: number;
     derivedVarCount: number;
     httpCallCount: number;
-    directChildComponents: Array<{ name: string; publishedId: string | null }>;
+    directChildComponents: Array<{ name: string }>;
     adMethodIds: string[];
   };
   vars?: {
@@ -210,14 +209,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
 
     const sourceFields = toRecord(response);
     const rawMetadata = extractMetadata(sourceFields, resolvedId);
-    const enrichedIds = await fetchEntityIdsByName(resolvedName, entityType);
 
-    const directChildComponents = await Promise.all(
-      childNames.map(async (name) => {
-        const ids = await fetchEntityIdsByName(name, "COMPONENT");
-        return { name, publishedId: ids.publishedId };
-      })
-    );
+    const directChildComponents = childNames.map(name => ({ name }));
 
     const includeVars = flags.vars || flags.full;
     const includeHttp = flags.http || flags.full;
@@ -230,8 +223,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
         name: resolvedName,
         entityType,
         resolvedId,
-        draftId: (enrichedIds.draftId ?? rawMetadata.draftId) as string | null,
-        publishedId: (enrichedIds.publishedId ?? rawMetadata.publishedId) as string | null,
+        draftId: rawMetadata.draftId as string | null,
+        publishedId: rawMetadata.publishedId as string | null,
         versionId: rawMetadata.versionId,
         configSizeBytes: Buffer.byteLength(configStr, "utf-8"),
         topLevelKeys:
@@ -331,8 +324,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
     if (s.directChildComponents.length > 0) {
       ui.section("Direct Child Components");
       ui.table(
-        ["#", "Component Name", "Published ID"],
-        s.directChildComponents.map((c, idx) => [idx + 1, c.name, c.publishedId ?? "N/A"])
+        ["#", "Component Name"],
+        s.directChildComponents.map((c, idx) => [idx + 1, c.name])
       );
     }
 
