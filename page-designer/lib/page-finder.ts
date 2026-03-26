@@ -100,21 +100,22 @@ function normalizePage(raw: RawPageListItem): PageFinderPage | null {
     relativeRoute: getString(raw.relativeRoute) ?? "",
     status: getString(raw.status) ?? "DRAFT",
     updatedAt: getNumber(raw.updatedAt) ?? 0,
-    url: `${Config.cleanBaseUrl}/ui-designer/${id}`,
+    url: `${Config.cleanBaseUrl}/ui-designer/page/${id}`,
   };
 }
 
 function normalizeComponent(raw: RawPageListItem): PageFinderComponent | null {
   const id = getString(raw.id);
   const name = getString(raw.name);
+  const referenceId = getString(raw.referenceId) ?? "";
   if (!id || !name) return null;
   return {
     id,
-    referenceId: getString(raw.referenceId) ?? "",
+    referenceId,
     name,
     status: getString(raw.status) ?? "DRAFT",
     updatedAt: getNumber(raw.updatedAt) ?? 0,
-    url: `${Config.cleanBaseUrl}/ui-designer/components/${id}`,
+    url: `${Config.cleanBaseUrl}/ui-designer/symbol/${referenceId || id}`,
   };
 }
 
