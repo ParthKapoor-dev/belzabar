@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { parseCurl } from "@/lib/parse-curl"
+import { UnifiedSearchModal } from "@/components/unified-search-modal"
 
 type Toast = { text: string; ok: boolean; key: number }
 
@@ -27,7 +28,17 @@ const MODULES = [
     description: "Open AD method from curl command",
     hint: "ctrl+v",
   },
-]
+] as const
+
+const SEARCH_CARD = {
+  icon: "⌕",
+  iconColor: "text-amber-400",
+  hoverBorder: "hover:border-amber-500/50",
+  hoverBg: "hover:bg-amber-500/5",
+  label: "Search",
+  description: "Find AD methods, PD pages & components",
+  hint: "ctrl+k",
+}
 
 const ENVS = ["nsm-dev", "nsm-qa", "nsm-uat"] as const
 type Env = (typeof ENVS)[number]
@@ -50,6 +61,7 @@ export default function Home() {
   const [vinResult, setVinResult] = useState<VinResult | null>(null)
   const [vinError, setVinError] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
 
   const showToast = useCallback((text: string, ok: boolean) => {
     if (toastTimer) clearTimeout(toastTimer)
@@ -61,6 +73,11 @@ export default function Home() {
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey
+      if (mod && e.key === "k") {
+        e.preventDefault()
+        setSearchOpen(true)
+        return
+      }
       if (mod && e.key === "a") {
         const target = e.target as HTMLElement
         if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return
@@ -150,7 +167,7 @@ export default function Home() {
         </div>
 
         {/* Module cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-md">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full max-w-xl">
           {MODULES.map((mod) => (
             <Link
               key={mod.href}
@@ -169,10 +186,26 @@ export default function Home() {
               </div>
             </Link>
           ))}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className={`group border border-border ${SEARCH_CARD.hoverBorder} ${SEARCH_CARD.hoverBg} transition-all duration-100 p-5 flex flex-col gap-4 text-left`}
+          >
+            <div className="flex items-start justify-between">
+              <span className={`text-xl leading-none ${SEARCH_CARD.iconColor}`}>{SEARCH_CARD.icon}</span>
+              <span className="text-[10px] text-muted-foreground/40 group-hover:text-muted-foreground/70 transition-colors font-mono">
+                {SEARCH_CARD.hint}
+              </span>
+            </div>
+            <div className="space-y-0.5">
+              <div className="text-sm font-semibold tracking-tight">{SEARCH_CARD.label}</div>
+              <div className="text-[11px] text-muted-foreground leading-relaxed">{SEARCH_CARD.description}</div>
+            </div>
+          </button>
         </div>
 
         {/* VIN Lookup */}
-        <div className="w-full max-w-md border border-border p-5 space-y-4">
+        <div className="w-full max-w-xl border border-border p-5 space-y-4">
           {/* Header row */}
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">VIN lookup</span>
@@ -252,14 +285,25 @@ export default function Home() {
           )}
         </div>
 
-        {/* Paste hint */}
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40">
-          <Kbd>ctrl</Kbd>
-          <span>+</span>
-          <Kbd>v</Kbd>
-          <span className="ml-0.5">anywhere opens AD method from curl</span>
+        {/* Hints */}
+        <div className="flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40">
+            <Kbd>ctrl</Kbd>
+            <span>+</span>
+            <Kbd>k</Kbd>
+            <span className="ml-0.5">search methods & pages</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/40">
+            <Kbd>ctrl</Kbd>
+            <span>+</span>
+            <Kbd>v</Kbd>
+            <span className="ml-0.5">anywhere opens AD method from curl</span>
+          </div>
         </div>
       </main>
+
+      {/* Search modal */}
+      <UnifiedSearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Toast */}
       {toast && (
