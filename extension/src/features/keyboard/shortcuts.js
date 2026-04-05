@@ -19,6 +19,10 @@ export function handleKeydown(event) {
   if (event.shiftKey && !event.ctrlKey && !event.metaKey && event.key === 'L') {
     if (!window.location.pathname.startsWith('/automation-designer/')) return;
 
+    const tag = document.activeElement?.tagName;
+    const editable = document.activeElement?.isContentEditable;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || editable) return;
+
     event.preventDefault();
     event.stopPropagation();
     copyAdRichLink();
