@@ -1,5 +1,6 @@
 import { mkdir } from "fs/promises";
 import { join } from "path";
+import { vlog } from "./verbose";
 
 export interface CacheOptions<T> {
   dir: string;
@@ -28,17 +29,26 @@ export class Cache<T> {
     await mkdir(this.options.dir, { recursive: true });
     const entry: CacheEntry<T> = { savedAt: Date.now(), data };
     await Bun.write(this.filePath(key), JSON.stringify(entry, null, 2));
+    vlog(`CACHE WRITE ${key}`);
   }
 
   async load(key: string): Promise<T | null> {
     const file = Bun.file(this.filePath(key));
-    if (!(await file.exists())) return null;
+    if (!(await file.exists())) {
+      vlog(`CACHE MISS ${key}`);
+      return null;
+    }
     try {
       const entry = (await file.json()) as CacheEntry<T>;
       const ttl = this.resolveTtl(key);
-      if (ttl !== null && Date.now() - entry.savedAt > ttl) return null;
+      if (ttl !== null && Date.now() - entry.savedAt > ttl) {
+        vlog(`CACHE EXPIRED ${key}`);
+        return null;
+      }
+      vlog(`CACHE HIT ${key}`);
       return entry.data;
-    } catch {
+    } catch (e) {
+      vlog(`CACHE ERROR ${key}`, { error: String(e) });
       return null;
     }
   }

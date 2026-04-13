@@ -2,6 +2,7 @@ import { join } from "path";
 import { mkdirSync } from "fs";
 import { Config, BELZ_CONFIG_DIR } from "./config";
 import type { AuthSession } from "./types";
+import { vlog, vtime } from "./verbose";
 
 const SESSION_DIR = join(BELZ_CONFIG_DIR, "sessions");
 
@@ -24,13 +25,18 @@ export async function saveSession(session: AuthSession) {
 }
 
 export async function loadSession(): Promise<AuthSession | null> {
+  const envName = Config.activeEnv.name;
+  const path = getSessionFilePath(envName);
   try {
-    const file = Bun.file(getSessionFilePath(Config.activeEnv.name));
+    const file = Bun.file(path);
     if (await file.exists()) {
-      return await file.json();
+      const session = await file.json();
+      vlog(`SESSION HIT ${envName}`, { path });
+      return session;
     }
+    vlog(`SESSION MISS ${envName}`, { path });
   } catch (e) {
-    // Ignore errors
+    vlog(`SESSION ERROR ${envName}`, { path, error: String(e) });
   }
   return null;
 }
@@ -45,18 +51,28 @@ export async function login(): Promise<AuthSession> {
 
   process.stderr.write(`[Auth] 🔄 Authenticating to ${envName} (${url})...\n`);
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json, text/plain, */*",
-      "User-Agent": "Bun/1.0 (Belzabar CLI)",
-    },
-    body: JSON.stringify({
-      loginId: Config.loginId,
-      password: Config.password,
-    }),
-  });
+  const stop = vtime(`auth login POST ${url}`);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json, text/plain, */*",
+        "User-Agent": "Bun/1.0 (Belzabar CLI)",
+      },
+      body: JSON.stringify({
+        loginId: Config.loginId,
+        password: Config.password,
+      }),
+    });
+  } catch (err) {
+    stop();
+    vlog(`auth login FAILED`, { error: String(err) });
+    throw err;
+  }
+  stop();
+  vlog(`auth login → ${response.status}`);
 
   const bodyText = await response.text();
 

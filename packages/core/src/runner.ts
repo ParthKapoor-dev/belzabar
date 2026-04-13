@@ -9,6 +9,7 @@ import {
   type HumanPresenterHelpers,
 } from "./command";
 import { renderHuman, renderLLM } from "./output";
+import { vlog } from "./verbose";
 
 export interface CliOptions {
   name: string;
@@ -49,6 +50,12 @@ function stripGlobalFlags(argv: string[]): {
   let outputMode: "human" | "llm" = "human";
   let envName: string | null = null;
   let envError: string | null = null;
+
+  const vIdx = args.findIndex(a => a === "-v" || a === "--verbose");
+  if (vIdx !== -1) {
+    process.env.BELZ_VERBOSE = "1";
+    args.splice(vIdx, 1);
+  }
 
   const llmIndex = args.indexOf("--llm");
   if (llmIndex !== -1) {
@@ -250,7 +257,13 @@ export async function runNamespacedCli(
   argv: string[],
   options: NamespacedCliOptions
 ): Promise<void> {
-  const { args, outputMode, envError } = stripGlobalFlags(argv.slice(2));
+  const { args, outputMode, envError, envName } = stripGlobalFlags(argv.slice(2));
+
+  vlog("belz start", {
+    argv: args,
+    env: envName ?? Config.activeEnv.name,
+    mode: outputMode,
+  });
 
   if (envError) {
     return exitWithEnvelope(
@@ -283,6 +296,10 @@ export async function runNamespacedCli(
       console.log("\nCommands:");
       Object.keys(options.topLevel).forEach(cmd => console.log(`  - ${cmd}`));
     }
+    console.log("\nGlobal flags:");
+    console.log("  -v, --verbose   Stream timestamped debug logs to stderr");
+    console.log("  --llm           Structured machine-readable output");
+    console.log("  -e, --env <n>   Run against a specific environment");
     console.log(`\nRun '${options.binaryName} <module> --help' for module commands.`);
   };
 

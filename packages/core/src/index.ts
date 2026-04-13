@@ -7,3 +7,4 @@ export * from "./display";
 export * from "./command";
 export * from "./output";
 export * from "./runner";
+export * from "./verbose";

@@ -1,10 +1,12 @@
 import { Config } from "./config";
 import { login, loadSession } from "./auth";
 import type { ApiOptions } from "./types";
+import { vlog, vtime } from "./verbose";
 
 export async function apiFetch(path: string, options: ApiOptions = {}) {
   const url = path.startsWith("http") ? path : `${Config.cleanBaseUrl}${path}`;
-  
+  const method = (options.method ?? "GET").toUpperCase();
+
   const attachAuth = async (headers: Headers, forceRefresh = false) => {
     if (options.authMode === "None") return;
 
@@ -35,12 +37,32 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
 
   await attachAuth(headers);
 
-  let response = await fetch(url, { ...options, headers });
+  const stop = vtime(`HTTP ${method} ${url}`);
+  let response: Response;
+  try {
+    response = await fetch(url, { ...options, headers });
+  } catch (err) {
+    stop();
+    vlog(`HTTP ${method} ${url} FAILED`, { error: String(err) });
+    throw err;
+  }
+  stop();
+  vlog(`HTTP ${method} ${url} → ${response.status}`);
 
   if (response.status === 401 && options.authMode !== "None") {
     process.stderr.write("⚠️  401 Unauthorized. Refreshing session...\n");
+    vlog("auth refresh triggered by 401");
     await attachAuth(headers, true);
-    response = await fetch(url, { ...options, headers });
+    const stop2 = vtime(`HTTP ${method} ${url} (retry)`);
+    try {
+      response = await fetch(url, { ...options, headers });
+    } catch (err) {
+      stop2();
+      vlog(`HTTP ${method} ${url} (retry) FAILED`, { error: String(err) });
+      throw err;
+    }
+    stop2();
+    vlog(`HTTP ${method} ${url} (retry) → ${response.status}`);
   }
 
   return response;
