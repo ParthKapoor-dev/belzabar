@@ -3,6 +3,7 @@ import { mkdirSync } from "fs";
 import { Config, BELZ_CONFIG_DIR } from "./config";
 import type { AuthSession } from "./types";
 import { vlog, vtime } from "./verbose";
+import { prepareIpv4Fetch } from "./dns";
 
 const SESSION_DIR = join(BELZ_CONFIG_DIR, "sessions");
 
@@ -51,21 +52,23 @@ export async function login(): Promise<AuthSession> {
 
   process.stderr.write(`[Auth] 🔄 Authenticating to ${envName} (${url})...\n`);
 
+  const prepared = await prepareIpv4Fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json, text/plain, */*",
+      "User-Agent": "Bun/1.0 (Belzabar CLI)",
+    },
+    body: JSON.stringify({
+      loginId: Config.loginId,
+      password: Config.password,
+    }),
+  });
+
   const stop = vtime(`auth login POST ${url}`);
   let response: Response;
   try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json, text/plain, */*",
-        "User-Agent": "Bun/1.0 (Belzabar CLI)",
-      },
-      body: JSON.stringify({
-        loginId: Config.loginId,
-        password: Config.password,
-      }),
-    });
+    response = await fetch(prepared.url, prepared.init);
   } catch (err) {
     stop();
     vlog(`auth login FAILED`, { error: String(err) });

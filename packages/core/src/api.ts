@@ -2,6 +2,7 @@ import { Config } from "./config";
 import { login, loadSession } from "./auth";
 import type { ApiOptions } from "./types";
 import { vlog, vtime } from "./verbose";
+import { prepareIpv4Fetch } from "./dns";
 
 export async function apiFetch(path: string, options: ApiOptions = {}) {
   const url = path.startsWith("http") ? path : `${Config.cleanBaseUrl}${path}`;
@@ -37,10 +38,12 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
 
   await attachAuth(headers);
 
+  const prepared = await prepareIpv4Fetch(url, { ...options, headers });
+
   const stop = vtime(`HTTP ${method} ${url}`);
   let response: Response;
   try {
-    response = await fetch(url, { ...options, headers });
+    response = await fetch(prepared.url, prepared.init);
   } catch (err) {
     stop();
     vlog(`HTTP ${method} ${url} FAILED`, { error: String(err) });
@@ -53,9 +56,10 @@ export async function apiFetch(path: string, options: ApiOptions = {}) {
     process.stderr.write("⚠️  401 Unauthorized. Refreshing session...\n");
     vlog("auth refresh triggered by 401");
     await attachAuth(headers, true);
+    const preparedRetry = await prepareIpv4Fetch(url, { ...options, headers });
     const stop2 = vtime(`HTTP ${method} ${url} (retry)`);
     try {
-      response = await fetch(url, { ...options, headers });
+      response = await fetch(preparedRetry.url, preparedRetry.init);
     } catch (err) {
       stop2();
       vlog(`HTTP ${method} ${url} (retry) FAILED`, { error: String(err) });

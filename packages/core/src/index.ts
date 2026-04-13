@@ -8,3 +8,4 @@ export * from "./command";
 export * from "./output";
 export * from "./runner";
 export * from "./verbose";
+export * from "./dns";
