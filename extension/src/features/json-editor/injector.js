@@ -156,18 +156,5 @@ export function injectJSONButton() {
 }
 
 export function debouncedInjectJSONButton() {
-  // Clear existing timer
-  if (state.injectionDebounceTimer) {
-    clearTimeout(state.injectionDebounceTimer);
-  }
-
-  // Set new timer
-  state.injectionDebounceTimer = setTimeout(() => {
-    if (state.injectionAttempts < 10) { // Limit attempts
-      state.injectionAttempts++;
-      if (!injectJSONButton()) {
-        log(`Button injection attempt ${state.injectionAttempts} failed`);
-      }
-    }
-  }, 500);
+  injectJSONButton();
 }
