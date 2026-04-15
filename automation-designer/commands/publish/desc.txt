@@ -1,0 +1,1 @@
+  publish <uuid>        Promote a draft to its published version (draft-guarded).

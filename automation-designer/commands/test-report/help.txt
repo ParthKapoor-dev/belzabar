@@ -1,0 +1,7 @@
+belz ad test-report [flags]
+
+Print the latest test-suite execution report from
+/rest/api/automation/chain/testsuite/report.
+
+Flags:
+  --llm    Emit a JSON envelope

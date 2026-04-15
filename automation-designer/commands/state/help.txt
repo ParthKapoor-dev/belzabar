@@ -1,0 +1,16 @@
+belz ad state <uuid> [flags]
+
+Print draft/published linkage, versions, and publish-staleness for a method.
+
+Flags:
+  --v2     Parse the method via the V2 API (falls back to V1 if unsupported)
+  --llm    Emit a JSON envelope with {draftUuid, publishedUuid, state, versions}
+
+Notes:
+  - Wraps lib/draft-guard.ts:resolveDraftTarget() and is the safe read-only
+    way to inspect draft/published state before calling any write command.
+  - Exit code is 0 even when the method is PUBLISHED without a linked draft;
+    the envelope `ok` field surfaces the distinction.
+
+Example:
+  belz ad state 4a1b2c3d... --llm | jq '.data'

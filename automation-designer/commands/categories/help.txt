@@ -1,0 +1,12 @@
+belz ad categories [flags]
+
+List all AD categories (services) — both user-generated and system-generated.
+
+Flags:
+  --user     Only show USER_GENERATED categories
+  --system   Only show SYSTEM_GENERATED categories
+  --llm      Emit a JSON envelope with {total, filter, categories[]}
+
+Example:
+  belz ad categories --user
+  belz ad categories --llm | jq '.data.categories[] | select(.type == "SYSTEM_GENERATED")'

@@ -1,0 +1,13 @@
+belz ad child-info <category> <method-name> [flags]
+
+Fetch metadata for a method referenced by name from another method's step
+(e.g. when a step calls "Helpers.Legacy.echo" you can look up the child's
+inputs/outputs without already knowing its UUID).
+
+Backs GET /rest/api/automation-systems/{category}/automation-apis/{method-name}.
+
+Flags:
+  --llm    Emit a JSON envelope
+
+Example:
+  belz ad child-info Helpers.Legacy echo

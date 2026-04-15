@@ -78,8 +78,22 @@ const topLevelCommands = discoverCommands(topCommandsDir);
 const pdCommands = discoverCommands(pdCommandsDir);
 const twCommands = discoverCommands(twCommandsDir);
 
+// JS reserved words and globals that would collide with an `import * as X`
+// alias. Prefix such identifiers with `cmd_` so the generated source is valid.
+const RESERVED = new Set([
+  "break", "case", "catch", "class", "const", "continue", "debugger",
+  "default", "delete", "do", "else", "enum", "export", "extends", "false",
+  "finally", "for", "function", "if", "implements", "import", "in",
+  "instanceof", "interface", "let", "new", "null", "package", "private",
+  "protected", "public", "return", "super", "switch", "static", "this",
+  "throw", "true", "try", "typeof", "var", "void", "while", "with", "yield",
+  "await", "async", "categories",
+]);
+
 function toIdentifier(cmd: string) {
-  return cmd.replace(/-/g, "_");
+  const raw = cmd.replace(/-/g, "_");
+  if (RESERVED.has(raw) || /^\d/.test(raw)) return `cmd_${raw}`;
+  return raw;
 }
 
 // ── registry-ad.ts ───────────────────────────────────────────────────────────

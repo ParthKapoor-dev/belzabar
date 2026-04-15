@@ -1,0 +1,1 @@
+  services              List platform services (filter with --internal, --search).

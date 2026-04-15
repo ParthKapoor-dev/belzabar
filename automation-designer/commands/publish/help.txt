@@ -1,0 +1,15 @@
+belz ad publish <uuid> [flags]
+
+Publish a draft — promotes the current draft contents to the published
+version of the same method. Returns the published UUID and a version-sync
+summary.
+
+Flags:
+  --yes    Skip the interactive confirmation prompt
+  --llm    Emit a JSON envelope; --yes is required in this mode
+
+Safety:
+  - Always routes through resolveDraftTarget: if you pass a PUBLISHED UUID
+    belz automatically switches to the linked draft before publishing.
+  - Re-fetches both draft and published after the publish call and reports
+    whether they are in sync.

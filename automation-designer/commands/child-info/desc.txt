@@ -1,0 +1,1 @@
+  child-info <cat> <method>  Resolve a child method's inputs/outputs by name.

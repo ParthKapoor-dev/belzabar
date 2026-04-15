@@ -1,0 +1,1 @@
+  state <uuid>          Draft/published linkage, version, and staleness check.

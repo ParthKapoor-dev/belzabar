@@ -12,8 +12,18 @@ The unified `belz` binary is built from `cli/` (repo root). This directory is a 
 ## Command Routing
 
 ```
-belz ad <cmd>      → find, fetch, show, test, run, save-suite, run-suites, sql
+belz ad <cmd>   → find, fetch, show, show-code, outputs, state, categories,
+                  services, export, export-category, test-cases, test-report,
+                  child-info, test, run, save-suite, run-suites, sql,
+                  save, publish, import, category, test-case
 ```
+
+All commands accept `--v2` (universal flag, handled by
+`lib/args/common.ts:parseAdCommonArgs`). When the selected operation does not
+implement V2, the command prints a one-line fallback warning and runs V1.
+The per-operation version defaults live in `lib/api-version.ts:DEFAULT_VERSION`
+— to flip a default, edit one cell. See `docs/api-notes.md` for the long-form
+rationale.
 
 ## Tech
 
@@ -23,23 +33,77 @@ belz ad <cmd>      → find, fetch, show, test, run, save-suite, run-suites, sql
 
 ## Directory Map
 
-1. `commands/` - one folder per AD command (`index.ts`, `help.txt`, optional `README.md`)
-2. `lib/` - app-level logic (api/hydration/parsing/input/payload/error parsing)
-3. `integrations/gemini-mcp/` - MCP server shim that shells out to CLI
-4. `tests/` - unit tests for parser/payload utilities
+1. `commands/` — one folder per AD command (`index.ts`, `help.txt`, `desc.txt`)
+2. `lib/api-version.ts` — version enum, defaults, resolver
+3. `lib/args/common.ts` — shared `--v2` flag parser + fallback warning
+4. `lib/args/confirm.ts` — interactive confirmation helper for write commands
+5. `lib/types/common.ts` — unified in-memory types (`HydratedMethod`,
+   `ParsedStep`, `MethodField`, …). **Commands import only from this file.**
+6. `lib/types/v1-wire.ts`, `lib/types/v2-wire.ts` — raw wire types, parser/
+   serializer/api-client only
+7. `lib/parser/{index,v1,v2}.ts` + `lib/parser/steps/{shared,v1,v2}.ts` —
+   discriminated step parsing (custom code, SpEL, SQL, Redis, existing)
+8. `lib/api/{index,v1,v2}.ts` — unified `adApi` façade; V1 full, V2 fetch+test
+9. `lib/serialize/v1.ts` — HydratedMethod → V1 save payload (enforces the
+   custom-code multi-output invariant)
+10. `lib/draft-guard.ts` — `resolveDraftTarget` — the **only** way to locate a
+    safe save target
+11. `lib/base64.ts`, `lib/xml.ts` — helpers used by the parsers and V2 test
+12. `lib/hydrator.ts`, `lib/cache.ts`, `lib/method-finder.ts`,
+    `lib/payload-builder.ts`, `lib/input-collector.ts`, `lib/error-parser.ts`
+13. `lib/sql/*` — SQL TUI (unchanged surface; internals migrated)
+14. `integrations/gemini-mcp/` — MCP server shim that shells out to CLI
+15. `tests/unit/` — parser, serializer, version resolver, draft guard, xml,
+    base64, error detection, sql tests
+16. `tests/fixtures/v1/`, `tests/fixtures/v2/` — step + method fixtures
+17. `docs/api-notes.md` — belz-owned cheatsheet (read this before touching
+    lib/api/*, lib/parser/*, or lib/draft-guard.ts)
+
+### Adding new commands
+
+After creating a `commands/<name>/index.ts` with `help.txt` and `desc.txt`,
+regenerate the registries from the repo root:
+
+```
+cd cli && bun run generate
+```
 
 ## Commands
 
-### AD Commands (`belz ad <cmd>`)
+### Read (`belz ad <cmd>`)
 
-1. `fetch`
-2. `find`
-3. `show`
-4. `test`
-5. `run`
-6. `save-suite`
-7. `run-suites`
-8. `sql`
+1. `fetch` — raw V1 or V2 fetch + cache
+2. `find` — search and pick methods (cached index)
+3. `show` — rich display with `[CODE]` / `[SPEL]` / `[SQL]` / `[REDIS-*]`
+   badges, `--code`, `--sql`, `--outputs`, `--variables`, `--step <N>` flags
+4. `show-code` — dump decoded custom-code source for all / a single step
+5. `outputs` — inputs/variables/outputs contract only (agent-friendly)
+6. `state` — draft/published linkage, version, staleness (wraps draft-guard)
+7. `categories` — list AD categories; filter by `--user` / `--system`
+8. `services` — list platform services (`--internal`, `--search <q>`)
+9. `export` — export a single method as JSON
+10. `export-category` — export every method in a category
+11. `test-cases` — list persistent test cases on a method
+12. `test-report` — latest test-suite execution report
+13. `child-info` — resolve a child method's inputs/outputs by name
+14. `test` — V1 test-before-save with rich per-step trace
+15. `run` — live-execute a published method
+16. `save-suite`, `run-suites` — local `.spec.json` suites (V1)
+17. `sql` — interactive SQL TUI against the AD SQL service
+
+### Write (`belz ad <cmd>`) — all draft-guarded
+
+1. `save <file> --uuid <draftUuid>` — save a JSON overlay onto a draft
+2. `publish <uuid>` — promote a draft to its published version
+3. `import <file>` — POST `/chain/import`
+4. `category create <name>` — create a new AD category/service
+5. `test-case <action>` — `list | create | update | delete | bulk |
+   run-suite | delete-suite` (V1 supports test-case UPDATE)
+
+**Every write command MUST route through `lib/draft-guard.ts:resolveDraftTarget`
+before saving.** Never POST a save payload whose UUID resolves to PUBLISHED —
+the server will silently overwrite production. Interactive confirm is required
+unless `--yes` is passed; in `--llm` mode, `--yes` is mandatory.
 
 ## Core Behavior Contract
 

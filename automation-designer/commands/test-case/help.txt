@@ -1,0 +1,35 @@
+belz ad test-case <action> [args]
+
+Manage persistent test cases attached to an AD method's test suite.
+
+Actions:
+  list <uuid>                             List test cases (alias of belz ad test-cases)
+  create <uuid> --file <tc.json> [--yes]  Create one test case from a file
+  update <uuid> <testCaseId> --file <f>   Update a test case (V1 supports this)
+  delete <testCaseId> [--yes]             Delete a test case
+  bulk <uuid> --file <cases.json> [--yes] Bulk create an array of test cases
+  run-suite <uuid> [--yes]                Execute the method's test suite (async)
+  delete-suite <testSuiteId> [--yes]      Delete a test suite
+
+Common flags:
+  --yes    Skip the interactive confirmation prompt
+  --llm    Emit a JSON envelope; --yes is required in this mode
+
+Test case schema (see ad-rest-api-crud-and-testing.md §"Test Case Payload
+Structure" for the authoritative form):
+  {
+    "name": "test.operation.description",
+    "description": "...",
+    "active": true,
+    "inputs": [
+      {
+        "fieldCode": "userId",
+        "value": "{\"value\": \"42\", \"properties\": [{\"value\": []}]}"
+      }
+    ],
+    "assertions": []
+  }
+
+Gotcha: /testsuite/execute does NOT evaluate assertions. executionStatus=PASS
+means the method ran without errors, not that assertions passed. Use
+`belz ad test-report` for full evaluation results.

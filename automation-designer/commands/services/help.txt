@@ -1,0 +1,14 @@
+belz ad services [flags]
+
+List all services from /rest/api/automation/services (the core service catalog
+used to build step identifiers). Both internal and external services are
+included by default.
+
+Flags:
+  --internal          Only show services with internalService=true
+  --search <q>        Case-insensitive substring match on name / label / alias
+  --llm               Emit a JSON envelope with {total, services[]}
+
+Example:
+  belz ad services --search redis
+  belz ad services --internal --llm

@@ -1,0 +1,10 @@
+belz ad outputs <uuid> [flags]
+
+Print a method's input/variable/output contract without any step internals.
+
+Flags:
+  --v2     Parse the method via the V2 API (falls back to V1 if unsupported)
+  --llm    Emit a JSON envelope with {inputs[], variables[], outputs[]}
+
+Example:
+  belz ad outputs 4a1b2c3d... --llm | jq '.data.inputs'

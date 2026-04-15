@@ -1,0 +1,15 @@
+belz ad import <file> [flags]
+
+Import one or more method definitions via
+/rest/api/automation/chain/import. The file contents are posted verbatim;
+belz only extracts method names for the confirmation prompt.
+
+Prerequisites (from the AD API docs):
+  1. Dependent methods must already exist in the target environment.
+  2. Category / service names must match.
+  3. Database account names must match.
+  4. Helper method configurations must exist.
+
+Flags:
+  --yes    Skip the interactive confirmation prompt
+  --llm    Emit a JSON envelope; --yes is required in this mode

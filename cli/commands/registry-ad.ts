@@ -3,19 +3,49 @@
 import * as run from "../../automation-designer/commands/run/index";
 import * as test from "../../automation-designer/commands/test/index";
 import * as run_suites from "../../automation-designer/commands/run-suites/index";
+import * as category from "../../automation-designer/commands/category/index";
+import * as export_category from "../../automation-designer/commands/export-category/index";
 import * as save_suite from "../../automation-designer/commands/save-suite/index";
 import * as fetch from "../../automation-designer/commands/fetch/index";
+import * as publish from "../../automation-designer/commands/publish/index";
+import * as cmd_import from "../../automation-designer/commands/import/index";
+import * as services from "../../automation-designer/commands/services/index";
 import * as find from "../../automation-designer/commands/find/index";
+import * as save from "../../automation-designer/commands/save/index";
 import * as sql from "../../automation-designer/commands/sql/index";
+import * as outputs from "../../automation-designer/commands/outputs/index";
+import * as test_cases from "../../automation-designer/commands/test-cases/index";
+import * as cmd_categories from "../../automation-designer/commands/categories/index";
+import * as cmd_export from "../../automation-designer/commands/export/index";
+import * as child_info from "../../automation-designer/commands/child-info/index";
 import * as show from "../../automation-designer/commands/show/index";
+import * as test_case from "../../automation-designer/commands/test-case/index";
+import * as test_report from "../../automation-designer/commands/test-report/index";
+import * as show_code from "../../automation-designer/commands/show-code/index";
+import * as state from "../../automation-designer/commands/state/index";
 
 export const ADCommandRegistry: Record<string, any> = {
   "run": run,
   "test": test,
   "run-suites": run_suites,
+  "category": category,
+  "export-category": export_category,
   "save-suite": save_suite,
   "fetch": fetch,
+  "publish": publish,
+  "import": cmd_import,
+  "services": services,
   "find": find,
+  "save": save,
   "sql": sql,
+  "outputs": outputs,
+  "test-cases": test_cases,
+  "categories": cmd_categories,
+  "export": cmd_export,
+  "child-info": child_info,
   "show": show,
+  "test-case": test_case,
+  "test-report": test_report,
+  "show-code": show_code,
+  "state": state,
 };

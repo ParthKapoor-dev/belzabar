@@ -1,0 +1,1 @@
+  outputs <uuid>        Print inputs / variables / outputs contract only.

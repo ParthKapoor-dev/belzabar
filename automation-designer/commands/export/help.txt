@@ -1,0 +1,10 @@
+belz ad export <method-id-or-uuid> [flags]
+
+Export a single method via /rest/api/automation/chain/export/{id}.
+
+Flags:
+  --out <file>    Write the exported JSON to a file instead of stdout
+  --llm           Emit a JSON envelope with {id, writtenTo, bytes, preview}
+
+Example:
+  belz ad export 98765 --out /tmp/method.json

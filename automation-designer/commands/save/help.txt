@@ -1,0 +1,25 @@
+belz ad save <file> --uuid <draftUuid> [--yes]
+
+Save an edited method definition to an existing draft. Goes through
+resolveDraftTarget — if you pass a PUBLISHED UUID, belz automatically switches
+to the linked draft and tells you it did so.
+
+The <file> is a JSON overlay with any of these optional keys:
+  name, summary, description, buttonLabel, internalMethod
+  inputs[]  — objects with {code, testValue} update testValue on matching inputs
+  parsedSteps[] — objects with {orderIndex, source?, description?} patch the
+                  matching step (source only applies to CUSTOM_CODE steps)
+
+Flags:
+  --uuid <id>      Target DRAFT UUID (or PUBLISHED; we switch to its draft)
+  --category <n>   (future) Category name for --new
+  --new            Create a new method in the given --category (not yet wired)
+  --yes            Skip the interactive confirmation prompt
+  --llm            Emit a JSON envelope; --yes is required in this mode
+
+Safety:
+  - Never saves to a PUBLISHED method. Writes always target the linked draft.
+  - Re-fetches the saved method after the write so automationId-dependent
+    tests work immediately.
+  - Refuses to emit a payload where a CUSTOM_CODE step with >1 outputs is
+    missing `elementToRetrieve` on any output.

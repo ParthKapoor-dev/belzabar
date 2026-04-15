@@ -1,0 +1,13 @@
+belz ad category create <name> [flags]
+
+Create a new AD category (service). Only the create sub-action is supported
+today.
+
+Flags:
+  --description <d>   Human-readable description
+  --private           Use accessMode=PRIVATE (default is PUBLIC)
+  --yes               Skip the interactive confirmation prompt
+  --llm               Emit a JSON envelope; --yes is required in this mode
+
+Default permissions are ALLOW_ALL_INTERNAL_USERS; edit in the UI afterwards
+if a stricter ACL is needed.

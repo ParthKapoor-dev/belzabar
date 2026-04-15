@@ -1,0 +1,15 @@
+belz ad show-code <uuid> [flags]
+
+Dump decoded custom-code step source from an AD method.
+
+Flags:
+  --step <N>     Only dump the step at orderIndex N (default: all CUSTOM_CODE steps)
+  --out <file>   Write the source to a file instead of stdout
+  --v2           Parse the method via the V2 API (falls back to V1 if unsupported)
+  --llm          Emit a JSON envelope with {uuid, snippets[], sourceVersion}
+
+Examples:
+  belz ad show-code 4a1b2c3d...
+  belz ad show-code 4a1b2c3d... --step 2
+  belz ad show-code 4a1b2c3d... --out /tmp/code.js
+  belz ad show-code 4a1b2c3d... --llm | jq '.data.snippets[0].source'
