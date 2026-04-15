@@ -1,0 +1,21 @@
+{
+  "orderIndex": 7,
+  "description": "Evict cached user",
+  "automationId": "redis-remove",
+  "activeTab": { "id": "existingService" },
+  "automationApiId": 22928,
+  "forceExitFromFailure": false,
+  "mappings": [
+    {
+      "value": "",
+      "uiRepresentation": "OBJECT",
+      "automationUserInputId": 41954,
+      "mappings": [
+        { "value": "user:#{userId}", "uiRepresentation": "CUSTOM", "automationUserInputId": 41955 }
+      ]
+    }
+  ],
+  "outputs": [
+    { "code": "removed", "displayName": "Removed", "automationAPIOutputId": 20592 }
+  ]
+}

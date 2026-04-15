@@ -1,0 +1,19 @@
+{
+  "orderIndex": 3,
+  "description": "Echo concatenation via SpEL",
+  "automationId": "echo-step",
+  "activeTab": { "id": "existingService" },
+  "automationApiId": 21927,
+  "mappings": [
+    {
+      "value": "#{firstName + ' ' + lastName}",
+      "uiRepresentation": "CUSTOM",
+      "automationUserInputId": 37611,
+      "automationUserInputUuid": "45923bdd929ddf720078b727b03066a9"
+    }
+  ],
+  "outputs": [
+    { "code": "fullName", "displayName": "Full Name", "type": "TEXT", "automationAPIOutputId": 19226 }
+  ],
+  "forceExitFromFailure": true
+}

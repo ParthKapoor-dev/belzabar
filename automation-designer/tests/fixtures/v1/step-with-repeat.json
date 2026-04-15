@@ -1,0 +1,16 @@
+{
+  "orderIndex": 10,
+  "description": "Echo every element",
+  "automationId": "loop-echo",
+  "activeTab": { "id": "existingService" },
+  "automationApiId": 21927,
+  "repeatStepExecution": true,
+  "loopExecutionSource": "#{userList}",
+  "loopConfiguration": { "type": "LOOP_EXECUTION_ON_INPUT_OUTPUT", "executeParallel": false },
+  "mappings": [
+    { "value": "#{userList.element.id}", "uiRepresentation": "CUSTOM", "automationUserInputId": 37611 }
+  ],
+  "outputs": [
+    { "code": "eachId", "displayName": "Each ID", "automationAPIOutputId": 19226 }
+  ]
+}

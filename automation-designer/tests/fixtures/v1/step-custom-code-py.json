@@ -1,0 +1,13 @@
+{
+  "orderIndex": 2,
+  "description": "Sum in Python",
+  "automationId": "cc-step-py",
+  "activeTab": { "id": "customCode" },
+  "language": "PYTHON",
+  "customCodeEnv": "CODE_LAMBDA",
+  "code": "aW1wb3J0IGpzb24KYSA9IGZsb2F0KCIiIiN7Zmlyc3ROdW1iZXJ9IiIiKQpiID0gZmxvYXQoIiIiI3tzZWNvbmROdW1iZXJ9IiIiKQpwcmludChqc29uLmR1bXBzKHsic3VtIjogYSArIGJ9KSk=",
+  "outputs": [
+    { "code": "sum", "displayName": "Sum", "type": "NUMBER", "elementToRetrieve": "sum" }
+  ],
+  "mappings": []
+}

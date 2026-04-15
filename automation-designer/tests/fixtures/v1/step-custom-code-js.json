@@ -1,0 +1,17 @@
+{
+  "orderIndex": 1,
+  "description": "Compute sum and product",
+  "automationId": "cc-step-1",
+  "activeTab": { "id": "customCode" },
+  "language": "JAVASCRIPT",
+  "customCodeEnv": "CODE_LAMBDA",
+  "code": "dmFyIHggPSAxOwp2YXIgeSA9IDI7CnZhciBvdXRwdXQgPSB7IHN1bTogeCArIHksIHByb2R1Y3Q6IHggKiB5IH07CmNvbnNvbGUubG9nKEpTT04uc3RyaW5naWZ5KG91dHB1dCkpOw==",
+  "outputs": [
+    { "code": "sum", "displayName": "Sum", "type": "NUMBER", "elementToRetrieve": "sum" },
+    { "code": "product", "displayName": "Product", "type": "NUMBER", "elementToRetrieve": "product" }
+  ],
+  "mappings": [],
+  "runAsync": false,
+  "repeatStepExecution": false,
+  "forceExitFromFailure": true
+}

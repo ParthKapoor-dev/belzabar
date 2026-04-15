@@ -1,0 +1,25 @@
+{
+  "orderIndex": 6,
+  "description": "Write cached user",
+  "automationId": "redis-set",
+  "activeTab": { "id": "existingService" },
+  "automationApiId": 22930,
+  "forceExitFromFailure": true,
+  "mappings": [
+    {
+      "value": "",
+      "uiRepresentation": "OBJECT",
+      "automationUserInputId": 41957,
+      "mappings": [
+        { "value": "user:#{userId}", "uiRepresentation": "CUSTOM", "automationUserInputId": 41958 },
+        { "value": "#{userPayload}", "uiRepresentation": "CUSTOM", "automationUserInputId": 41959 },
+        { "value": "PERSISTENT", "uiRepresentation": "DROPDOWN", "automationUserInputId": 41960 },
+        { "value": "300", "uiRepresentation": "CUSTOM", "automationUserInputId": 41961 },
+        { "value": "true", "uiRepresentation": "CUSTOM", "automationUserInputId": 41962 }
+      ]
+    }
+  ],
+  "outputs": [
+    { "code": "cacheSetResult", "displayName": "Cache Set Result", "automationAPIOutputId": 20594 }
+  ]
+}

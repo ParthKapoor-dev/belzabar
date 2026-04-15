@@ -1,0 +1,14 @@
+{
+  "orderIndex": 8,
+  "description": "Transform JSON via Helpers.JSON",
+  "automationId": "helpers-json-transform",
+  "activeTab": { "id": "existingService" },
+  "automationApiId": 18721,
+  "mappings": [
+    { "value": "#{inputJson}", "uiRepresentation": "CUSTOM", "automationUserInputId": 99999 }
+  ],
+  "outputs": [
+    { "code": "transformed", "displayName": "Transformed", "automationAPIOutputId": 55555 }
+  ],
+  "forceExitFromFailure": true
+}

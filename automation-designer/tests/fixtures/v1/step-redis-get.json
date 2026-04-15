@@ -1,0 +1,22 @@
+{
+  "orderIndex": 5,
+  "description": "Read cached user",
+  "automationId": "redis-get",
+  "activeTab": { "id": "existingService" },
+  "automationApiId": 22929,
+  "forceExitFromFailure": false,
+  "mappings": [
+    {
+      "value": "",
+      "uiRepresentation": "OBJECT",
+      "automationUserInputId": 41954,
+      "mappings": [
+        { "value": "user:#{userId}", "uiRepresentation": "CUSTOM", "automationUserInputId": 41955 },
+        { "value": "PERSISTENT", "uiRepresentation": "DROPDOWN", "automationUserInputId": 41956 }
+      ]
+    }
+  ],
+  "outputs": [
+    { "code": "cacheResult", "displayName": "Cache Result", "automationAPIOutputId": 20593 }
+  ]
+}

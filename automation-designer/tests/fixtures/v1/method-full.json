@@ -1,0 +1,13 @@
+{
+  "id": 98765,
+  "uuid": "draft-full-uuid-00000000000000000000000000000001",
+  "referenceId": "published-ref-00000000000000000000000000000002",
+  "aliasName": "UserService.lookupV2",
+  "version": 3,
+  "automationState": "DRAFT",
+  "createdOn": 1712000000000,
+  "lastUpdatedOn": 1712999999000,
+  "lastUpdatedBy": "alice",
+  "category": { "id": 12, "name": "UserService" },
+  "jsonDefinition": "{\"name\":\"UserService.lookupV2\",\"summary\":\"Resolve a user, cache-first\",\"description\":\"Reads from Redis, falls back to DB, re-caches.\",\"buttonLabel\":\"Lookup User\",\"internalMethod\":false,\"inputs\":[{\"fieldCode\":\"userId\",\"label\":\"User ID\",\"type\":\"TEXT\",\"required\":true,\"testValue\":\"42\"}],\"variables\":[{\"fieldCode\":\"resolvedUser\",\"label\":\"Resolved User\",\"type\":\"JSON\",\"hideInput\":true,\"orderIndex\":-1}],\"outputs\":[{\"code\":\"resolvedUser\",\"displayName\":\"User\",\"type\":\"JSON\"}],\"assertions\":[],\"securityFields\":[],\"services\":[{\"orderIndex\":1,\"description\":\"Cache read\",\"automationId\":\"svc-a\",\"activeTab\":{\"id\":\"existingService\"},\"automationApiId\":22929,\"mappings\":[{\"value\":\"\",\"uiRepresentation\":\"OBJECT\",\"automationUserInputId\":41954,\"mappings\":[{\"value\":\"user:#{userId}\",\"uiRepresentation\":\"CUSTOM\",\"automationUserInputId\":41955},{\"value\":\"PERSISTENT\",\"uiRepresentation\":\"DROPDOWN\",\"automationUserInputId\":41956}]}],\"outputs\":[{\"code\":\"cacheResult\",\"automationAPIOutputId\":20593}],\"forceExitFromFailure\":false}]}"
+}

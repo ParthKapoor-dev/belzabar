@@ -1,0 +1,15 @@
+{
+  "orderIndex": 9,
+  "description": "Echo with condition",
+  "automationId": "conditional-echo",
+  "activeTab": { "id": "existingService" },
+  "automationApiId": 21927,
+  "conditionMode": "advance",
+  "conditionExpression": "#{cacheResult.found} eq false",
+  "mappings": [
+    { "value": "#{'fallback for ' + userId}", "uiRepresentation": "CUSTOM", "automationUserInputId": 37611 }
+  ],
+  "outputs": [
+    { "code": "fallback", "displayName": "Fallback", "automationAPIOutputId": 19226 }
+  ]
+}

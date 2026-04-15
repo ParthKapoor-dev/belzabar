@@ -1,0 +1,36 @@
+{
+  "orderIndex": 4,
+  "description": "Fetch users for an organisation",
+  "automationId": "sql-step",
+  "activeTab": { "id": "existingService" },
+  "automationApiId": 48,
+  "automationAuthId": 274,
+  "testAccountId": 274,
+  "mappings": [
+    {
+      "value": "",
+      "uiRepresentation": "OBJECT",
+      "requiresProcessing": true,
+      "skipFileProcessing": true,
+      "automationUserInputId": 427,
+      "mappings": [
+        {
+          "value": "U0VMRUNUIGlkLCB1c2VybmFtZSwgZW1haWwgRlJPTSB1c2VycyBXSEVSRSBvcmdfaWQgPSAje29yZ0lkfQ==",
+          "encodingType": "BASE_64",
+          "uiRepresentation": "CUSTOM",
+          "automationUserInputId": 428,
+          "automationUserInputUuid": "529f4d30-4692-46b3-b1fb-0fea77c68683"
+        },
+        {
+          "value": "OBJECT",
+          "uiRepresentation": "DROPDOWN",
+          "automationUserInputId": 25514
+        }
+      ]
+    }
+  ],
+  "outputs": [
+    { "code": "responseJson", "displayName": "Response", "type": "ARRAY", "automationAPIOutputId": 639 }
+  ],
+  "forceExitFromFailure": true
+}

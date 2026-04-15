@@ -1,0 +1,55 @@
+{
+  "name": "Calculator.sum",
+  "summary": "Adds two numbers",
+  "description": "Returns the sum of firstNumber + secondNumber.",
+  "metadata": {
+    "id": 7777,
+    "uuid": "v2-draft-uuid-00000000000000000000000000000001",
+    "referenceId": null,
+    "state": "DRAFT",
+    "version": { "name": "1" },
+    "service": { "id": 999, "uuid": "svc-uuid-abcdef", "name": "Calculator" }
+  },
+  "inputs": [
+    { "key": "firstNumber", "name": "First Number", "type": "NUMBER", "required": true },
+    { "key": "secondNumber", "name": "Second Number", "type": "NUMBER", "required": true }
+  ],
+  "variables": [],
+  "outputs": [
+    { "key": "sum", "name": "Sum", "type": "NUMBER" }
+  ],
+  "steps": [
+    {
+      "automationAPIId": "uuid-echo-001",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "echo",
+      "description": "Add via SpEL",
+      "properties": { "type": "EXISTING_SERVICE", "runAsync": false },
+      "inputs": [
+        { "key": "expression", "value": "#{firstNumber + secondNumber}" }
+      ],
+      "outputs": [
+        { "key": "sum", "name": "Sum", "type": "NUMBER" }
+      ]
+    },
+    {
+      "automationAPIId": "uuid-cc-001",
+      "serviceName": "CustomCode",
+      "methodName": "runInline",
+      "description": "Double-check in JS",
+      "properties": {
+        "type": "CUSTOM_CODE",
+        "runAsync": false,
+        "customCode": {
+          "inlineCode": "var r = #{firstNumber} + #{secondNumber}; console.log(JSON.stringify({doubled: r * 2}));",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA"
+        }
+      },
+      "inputs": [],
+      "outputs": [
+        { "key": "doubled", "name": "Doubled", "type": "NUMBER" }
+      ]
+    }
+  ]
+}
