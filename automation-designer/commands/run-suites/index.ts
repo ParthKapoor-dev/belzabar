@@ -1,9 +1,8 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { CliError, fail, ok, type CommandModule } from "@belzabar/core";
-import { fetchMethodDefinition, testMethod } from "../../lib/api";
+import { fetchRawMethod, testMethodMultipart } from "../../lib/api/v1";
 import { PayloadBuilder } from "../../lib/payload-builder";
-import type { RawMethodResponse } from "../../lib/types";
 
 interface SuiteResult {
   name: string;
@@ -19,6 +18,13 @@ interface RunSuitesData {
   suites: SuiteResult[];
 }
 
+interface TestExecutionResponse {
+  executionStatus?: {
+    failed?: boolean;
+    error?: unknown;
+  };
+}
+
 const command: CommandModule<undefined, RunSuitesData> = {
   schema: "ad.run-suites",
   parseArgs: () => undefined,
@@ -30,12 +36,7 @@ const command: CommandModule<undefined, RunSuitesData> = {
 
     const files = readdirSync(suitesDir).filter(f => f.endsWith(".spec.json"));
     if (files.length === 0) {
-      return ok({
-        total: 0,
-        passed: 0,
-        failed: 0,
-        suites: [],
-      });
+      return ok({ total: 0, passed: 0, failed: 0, suites: [] });
     }
 
     const suites: SuiteResult[] = [];
@@ -44,15 +45,19 @@ const command: CommandModule<undefined, RunSuitesData> = {
 
     for (const file of files) {
       const suitePath = join(suitesDir, file);
-      const suite = await Bun.file(suitePath).json();
+      const suite = (await Bun.file(suitePath).json()) as {
+        name: string;
+        uuid: string;
+        inputs?: Record<string, unknown>;
+      };
 
       try {
-        const rawMethod = (await fetchMethodDefinition(suite.uuid)) as RawMethodResponse;
+        const rawMethod = await fetchRawMethod(suite.uuid);
         const payload = PayloadBuilder.injectInputs(rawMethod, suite.inputs || {});
         const formData = new FormData();
         formData.append("body", JSON.stringify(payload));
 
-        const resultRes = await testMethod(formData);
+        const resultRes = await testMethodMultipart(formData);
         if (!resultRes.ok) {
           suites.push({
             name: suite.name,
@@ -64,13 +69,13 @@ const command: CommandModule<undefined, RunSuitesData> = {
           continue;
         }
 
-        const result = await resultRes.json();
+        const result = (await resultRes.json()) as TestExecutionResponse;
         if (result.executionStatus?.failed) {
           suites.push({
             name: suite.name,
             uuid: suite.uuid,
             status: "failed",
-            reason: JSON.stringify(result.executionStatus.error || "Unknown"),
+            reason: JSON.stringify(result.executionStatus.error ?? "Unknown"),
           });
           failed++;
         } else {
@@ -92,17 +97,11 @@ const command: CommandModule<undefined, RunSuitesData> = {
       }
     }
 
-    const summary = {
-      total: files.length,
-      passed,
-      failed,
-      suites,
-    };
+    const summary: RunSuitesData = { total: files.length, passed, failed, suites };
 
     if (failed > 0) {
       return fail("SUITES_FAILED", "One or more suites failed.", { data: summary });
     }
-
     return ok(summary);
   },
   presentHuman(envelope, ui) {

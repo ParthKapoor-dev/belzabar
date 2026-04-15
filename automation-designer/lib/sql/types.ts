@@ -1,4 +1,4 @@
-import type { RawMethodResponse } from "../types";
+import type { V1RawMethodResponse as RawMethodResponse } from "../types/v1-wire";
 
 export interface SqlDatabaseField {
   id?: number;

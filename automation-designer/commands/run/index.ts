@@ -1,5 +1,5 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { apiFetch } from "../../lib/api";
+import { CliError, ok, apiFetch, type CommandModule } from "@belzabar/core";
+import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
 
 interface RunMethodArgs {
   publishedId: string;
@@ -40,8 +40,10 @@ async function resolvePayload(payloadArg?: string): Promise<unknown> {
 const command: CommandModule<RunMethodArgs, RunMethodData> = {
   schema: "ad.run",
   parseArgs(args) {
-    const raw = args.includes("--raw");
-    const positional = args.filter(arg => arg !== "--raw");
+    const { common, rest } = parseAdCommonArgs(args, "run", "run");
+    emitFallbackWarning(common, "run");
+    const raw = rest.includes("--raw");
+    const positional = rest.filter(arg => arg !== "--raw");
     const publishedId = positional[0];
     if (!publishedId || publishedId.startsWith("-")) {
       throw new CliError("Missing Published ID.", { code: "MISSING_PUBLISHED_ID" });

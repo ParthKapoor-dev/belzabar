@@ -1,26 +1,28 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { apiFetch } from "../../lib/api";
-import { parseMethodResponse } from "../../lib/parser";
+import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
-import type { RawMethodResponse, HydratedMethod } from "../../lib/types";
+import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import type { HydratedMethod } from "../../lib/types/common";
 
 interface FetchMethodArgs {
   uuid: string;
   raw: boolean;
+  apiVersion: "v1" | "v2";
 }
 
 interface FetchMethodData {
   method: {
     uuid: string;
-    referenceId: string;
-    aliasName: string;
+    referenceId: string | null;
+    aliasName?: string;
     methodName: string;
     category: string;
     state: string;
     version: number;
     inputCount: number;
     serviceCount: number;
+    sourceVersion: "v1" | "v2";
   };
   hydratedServiceIds: string[];
   raw?: {
@@ -46,39 +48,30 @@ function resolveUuid(input: string): string {
 const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
   schema: "ad.fetch",
   parseArgs(args) {
-    const raw = args[0];
-    if (!raw || raw.startsWith("-")) {
+    const { common, rest } = parseAdCommonArgs(args, "fetch", "fetch");
+    emitFallbackWarning(common, "fetch");
+    const first = rest[0];
+    if (!first || first.startsWith("-")) {
       throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
     }
-    const uuid = resolveUuid(raw);
+    const uuid = resolveUuid(first);
     return {
       uuid,
-      raw: args.includes("--raw"),
+      raw: rest.includes("--raw"),
+      apiVersion: common.apiVersion.version,
     };
   },
-  async execute({ uuid, raw }, context) {
-    const path = `/rest/api/automation/chain/${uuid}`;
-    const response = await apiFetch(path, {
-      method: "GET",
-      authMode: "Bearer",
-    });
-
-    if (response.status === 404) {
-      throw new CliError("404 Chain Not Found", { code: "METHOD_NOT_FOUND" });
-    }
-    if (!response.ok) {
-      throw new CliError(`Request failed ${response.status} ${response.statusText}`, {
-        code: "FETCH_FAILED",
-      });
-    }
-
-    const rawData = (await response.json()) as RawMethodResponse;
-    const method = parseMethodResponse(rawData);
+  async execute({ uuid, raw, apiVersion }, context) {
+    const method = await adApi.fetchMethod(uuid, apiVersion);
     await CacheManager.save(uuid, method);
 
     const hydratedServiceIds: string[] = [];
-    if (method.services.length > 0) {
-      const uniqueIds = new Set(method.services.map(s => s.automationId));
+    // V1-only hydration: the service catalog lookups are keyed on numeric IDs.
+    if (method.sourceVersion === "v1" && method.parsedSteps.length > 0) {
+      const uniqueIds = new Set<string>();
+      for (const step of method.parsedSteps) {
+        if (step.automationId) uniqueIds.add(step.automationId);
+      }
       for (const serviceId of uniqueIds) {
         await ServiceHydrator.ensureCached(serviceId);
         hydratedServiceIds.push(serviceId);
@@ -94,12 +87,13 @@ const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
         uuid: method.uuid,
         referenceId: method.referenceId,
         aliasName: method.aliasName,
-        methodName: method.methodName,
-        category: method.category,
+        methodName: method.name,
+        category: method.category?.name ?? "Uncategorized",
         state: method.state,
         version: method.version,
         inputCount: method.inputs.length,
-        serviceCount: method.services.length,
+        serviceCount: method.parsedSteps.length,
+        sourceVersion: method.sourceVersion,
       },
       hydratedServiceIds,
     };
@@ -113,17 +107,18 @@ const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
     const data = envelope.data as FetchMethodData;
-    ui.success(`Fetched and cached method: ${data.method.aliasName}`);
+    ui.success(`Fetched and cached method: ${data.method.methodName}`);
     ui.table(
       ["Property", "Value"],
       [
         ["Method Name", data.method.methodName],
-        ["Alias", data.method.aliasName],
+        ["Alias", data.method.aliasName ?? ""],
         ["UUID", data.method.uuid],
         ["State", data.method.state],
         ["Version", data.method.version],
+        ["Source", data.method.sourceVersion.toUpperCase()],
         ["Inputs", data.method.inputCount],
-        ["Services", data.method.serviceCount],
+        ["Steps", data.method.serviceCount],
         ["Hydrated Service Definitions", data.hydratedServiceIds.length],
       ]
     );

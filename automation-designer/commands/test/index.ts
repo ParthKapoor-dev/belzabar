@@ -1,10 +1,11 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
-import { testMethod, fetchMethodDefinition } from "../../lib/api";
-import { parseMethodResponse } from "../../lib/parser";
-import { ErrorParser, type ParsedError } from "../../lib/error-parser";
+import { adApi } from "../../lib/api/index";
+import { testMethodMultipart } from "../../lib/api/v1";
+import { ErrorParser, detectJavaException, type ParsedError } from "../../lib/error-parser";
 import { ServiceHydrator } from "../../lib/hydrator";
-import type { RawMethodResponse } from "../../lib/types";
+import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
 
 interface TestMethodArgs {
   uuid: string;
@@ -69,59 +70,70 @@ function parseOutput(testResult: unknown): unknown {
   return testResult;
 }
 
+type InnerService = Record<string, unknown>;
+
 const command: CommandModule<TestMethodArgs, TestMethodData> = {
   schema: "ad.test",
   parseArgs(args) {
-    const uuid = args[0];
+    const { common, rest } = parseAdCommonArgs(args, "test", "test");
+    emitFallbackWarning(common, "test");
+
+    const uuid = rest[0];
     if (!uuid || uuid.startsWith("-")) {
       throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
     }
+    const inputsIdx = rest.indexOf("--inputs");
     return {
       uuid,
-      inputsFile: args.indexOf("--inputs") !== -1 ? args[args.indexOf("--inputs") + 1] : undefined,
-      verbose: args.includes("--verbose"),
-      force: args.includes("--force"),
-      raw: args.includes("--raw"),
+      inputsFile: inputsIdx !== -1 ? rest[inputsIdx + 1] : undefined,
+      verbose: rest.includes("--verbose"),
+      force: rest.includes("--force"),
+      raw: rest.includes("--raw"),
     };
   },
   async execute({ uuid, inputsFile, verbose, raw }) {
-    const rawMethod = (await fetchMethodDefinition(uuid)) as RawMethodResponse;
-    const hydrated = parseMethodResponse(rawMethod);
+    // Fetch V1 so we can mutate `jsonDefinition` in the test payload (test-
+    // before-save). The V1 raw response is what testMethodMultipart expects.
+    const hydrated = await adApi.fetchMethod(uuid, "v1");
+    const rawMethod = hydrated.raw as V1RawMethodResponse;
+
     const values = await InputCollector.collect(hydrated.inputs, inputsFile);
 
     // Parse inner definition
-    let innerDef: any = {};
+    let innerDef: Record<string, unknown> = {};
     try {
       innerDef = JSON.parse(rawMethod.jsonDefinition);
     } catch {
       throw new CliError("Failed to parse method jsonDefinition.", { code: "INVALID_DEFINITION" });
     }
 
-    // Inject testValues into inputs
+    // Inject testValues
     if (Array.isArray(innerDef.inputs)) {
-      innerDef.inputs = innerDef.inputs.map((inp: any) => {
-        if (Object.prototype.hasOwnProperty.call(values, inp.fieldCode)) {
-          return { ...inp, testValue: values[inp.fieldCode] };
+      innerDef.inputs = (innerDef.inputs as Array<Record<string, unknown>>).map(inp => {
+        const fieldCode = typeof inp.fieldCode === "string" ? inp.fieldCode : null;
+        if (fieldCode && Object.prototype.hasOwnProperty.call(values, fieldCode)) {
+          return { ...inp, testValue: values[fieldCode] };
         }
         return inp;
       });
     }
 
-    // Inject automationApiId into each service (required by Java compiler)
+    // Inject automationApiId into each service (required by Java compiler).
     if (Array.isArray(innerDef.services)) {
       innerDef.services = await Promise.all(
-        innerDef.services.map(async (svc: any) => {
-          if (svc.automationApiId) return svc;
-          const def = await ServiceHydrator.getDefinition(String(svc.automationId)).catch(() => null);
-          if (def?.automationAPI?.id) {
+        (innerDef.services as InnerService[]).map(async svc => {
+          if (svc.automationApiId != null) return svc;
+          const aid = typeof svc.automationId === "string" ? svc.automationId : null;
+          if (!aid) return svc;
+          const def = await ServiceHydrator.getDefinition(aid).catch(() => null);
+          if (def?.automationAPI?.id != null) {
             return { ...svc, automationApiId: def.automationAPI.id };
           }
           return svc;
-        })
+        }),
       );
     }
 
-    // Build minimal payload matching web UI format
     const payload = {
       category: rawMethod.category,
       jsonDefinition: JSON.stringify(innerDef),
@@ -133,7 +145,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
     const formData = new FormData();
     formData.append("body", JSON.stringify(payload));
 
-    const resultRes = await testMethod(formData);
+    const resultRes = await testMethodMultipart(formData);
     if (!resultRes.ok) {
       throw new CliError(`Execution failed: ${resultRes.status} ${resultRes.statusText}`, {
         code: "TEST_EXECUTION_FAILED",
@@ -141,37 +153,38 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       });
     }
 
-    const result = await resultRes.json();
+    const result = (await resultRes.json()) as Record<string, unknown>;
 
-    // Detect Java exception body — backend returns HTTP 200 with a thrown exception object
-    // when the chain fails to compile (e.g. a service references a remote automation system
-    // that the test runtime cannot resolve).
-    if (result.message && Array.isArray(result.stackTrace) && !result.services && !result.executionStatus) {
-      const causeMsg = result.cause?.message ?? result.cause?.localizedMessage;
-
-      // Try to enrich the error: identify which service is at fault and whether it's remote.
-      const idMatch = causeMsg?.match(/Invalid Automation API Id - (\d+)/);
-      if (idMatch) {
-        const badId = idMatch[1];
-        const badSvc = hydrated.services.find(s => String(s.automationId) === badId);
+    // Java exception body — backend returns HTTP 200 with a thrown exception
+    // object when a chain fails to compile.
+    const javaExc = detectJavaException(result);
+    if (javaExc) {
+      if (javaExc.badAutomationApiId) {
+        const badId = javaExc.badAutomationApiId;
+        const badStep = hydrated.parsedSteps.find(s => String(s.automationId) === badId);
         const def = await ServiceHydrator.getDefinition(badId).catch(() => null);
         const systemLabel = def?.automationAPI?.automationSystem?.label;
         const isRemote = def?.automationAPI?.automationSystem?.remote;
 
         let hint = "";
-        if (badSvc) hint += ` — service [step ${badSvc.orderIndex}]: "${badSvc.description || badSvc.automationId}"`;
-        if (isRemote && systemLabel) hint += ` uses remote system "${systemLabel}" which cannot be compiled in test mode`;
-        else if (systemLabel) hint += ` (${systemLabel})`;
-
-        throw new CliError(`${result.message}${hint}`, { code: "BACKEND_COMPILATION_ERROR" });
+        if (badStep) {
+          hint += ` — step [${badStep.orderIndex}]: "${badStep.description ?? badStep.automationId}"`;
+        }
+        if (isRemote && systemLabel) {
+          hint += ` uses remote system "${systemLabel}" which cannot be compiled in test mode`;
+        } else if (systemLabel) {
+          hint += ` (${systemLabel})`;
+        }
+        throw new CliError(`${javaExc.message}${hint}`, { code: "BACKEND_COMPILATION_ERROR" });
       }
 
-      const detail = causeMsg ? `${result.message}: ${causeMsg}` : result.message;
+      const detail = javaExc.causeMessage ? `${javaExc.message}: ${javaExc.causeMessage}` : javaExc.message;
       throw new CliError(detail, { code: "BACKEND_COMPILATION_ERROR" });
     }
 
-    const failedSvcIndex = result.services?.findIndex((s: any) => s.executionStatus?.failed) ?? -1;
-    const failedSvc = failedSvcIndex >= 0 ? result.services[failedSvcIndex] : null;
+    const services = Array.isArray(result.services) ? (result.services as any[]) : [];
+    const failedSvcIndex = services.findIndex(s => s.executionStatus?.failed);
+    const failedSvc = failedSvcIndex >= 0 ? services[failedSvcIndex] : null;
 
     const failedStep = failedSvc
       ? {
@@ -182,7 +195,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
         }
       : null;
 
-    const trace: ServiceTraceRow[] = (result.services || []).map((svc: any, idx: number) => {
+    const trace: ServiceTraceRow[] = services.map((svc: any, idx: number) => {
       let status: ServiceTraceRow["status"] = "success";
       if (svc.executionStatus?.failed) status = "failed";
       else if (!svc.executionStatus || svc.executionStatus.executed === false) status = "skipped";
@@ -203,11 +216,13 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       };
     });
 
-    const output = result.outputs?.[0]?.testResult ?? null;
+    const outputsArr = Array.isArray(result.outputs) ? (result.outputs as any[]) : [];
+    const output = outputsArr[0]?.testResult ?? null;
     const parsedOutput = parseOutput(output);
-    const success = !result.executionStatus?.failed;
+    const execStatus = result.executionStatus as Record<string, unknown> | undefined;
+    const success = !execStatus?.failed;
 
-    const serviceResults: ServiceResult[] = (result.services || []).map((svc: any, idx: number) => {
+    const serviceResults: ServiceResult[] = services.map((svc: any, idx: number) => {
       let status: ServiceResult["status"] = "success";
       if (svc.executionStatus?.failed) status = "failed";
       else if (!svc.executionStatus || svc.executionStatus.executed === false) status = "skipped";

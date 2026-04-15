@@ -1,6 +1,5 @@
 import { join } from "path";
-import { BELZ_CONFIG_DIR, Cache, Config } from "@belzabar/core";
-import { apiFetch } from "./api";
+import { BELZ_CONFIG_DIR, Cache, Config, apiFetch } from "@belzabar/core";
 
 const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;

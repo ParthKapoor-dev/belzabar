@@ -1,5 +1,5 @@
 import { CliError } from "@belzabar/core";
-import type { RawMethodResponse } from "../types";
+import type { V1RawMethodResponse } from "../types/v1-wire";
 import type { BuildSqlPayloadOptions, SqlOperationInput } from "./types";
 
 function flattenInputs(inputs: SqlOperationInput[] | undefined): SqlOperationInput[] {
@@ -250,7 +250,7 @@ function buildFallbackInnerDefinition(operation: any, dbAuthId: number, query: s
   };
 }
 
-export function buildSqlReadPayload(options: BuildSqlPayloadOptions): RawMethodResponse {
+export function buildSqlReadPayload(options: BuildSqlPayloadOptions): V1RawMethodResponse {
   const { template, operation, dbAuthId, query } = options;
 
   const findNestedJsonDefinition = (value: unknown, depth = 0): unknown => {

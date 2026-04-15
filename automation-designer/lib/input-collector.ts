@@ -1,10 +1,18 @@
 import { readFile } from "fs/promises";
 import inquirer from "inquirer";
-import type { InputField } from "./types";
+import type { MethodField } from "./types/common";
 
+/**
+ * Collect test-input values for a method. Works off the unified MethodField
+ * shape (both V1 and V2 parsers produce this). `field.code` is the identifier;
+ * `field.type` drives the prompt widget.
+ */
 export class InputCollector {
-  static async collect(inputs: InputField[], filePath?: string): Promise<Record<string, any>> {
-    const collected: Record<string, any> = {};
+  static async collect(
+    inputs: MethodField[],
+    filePath?: string,
+  ): Promise<Record<string, unknown>> {
+    const collected: Record<string, unknown> = {};
 
     // 1. File Mode
     if (filePath) {
@@ -13,10 +21,10 @@ export class InputCollector {
         const fileData = JSON.parse(content);
 
         for (const input of inputs) {
-          if (fileData[input.fieldCode] !== undefined) {
-            collected[input.fieldCode] = fileData[input.fieldCode];
+          if (fileData[input.code] !== undefined) {
+            collected[input.code] = fileData[input.code];
           } else if (input.required) {
-            throw new Error(`Missing required input '${input.fieldCode}' in input file.`);
+            throw new Error(`Missing required input '${input.code}' in input file.`);
           }
         }
         return collected;
@@ -29,27 +37,29 @@ export class InputCollector {
     console.log("Please provide values for the method inputs:");
 
     for (const input of inputs) {
-      const message = `${input.fieldCode} (${input.type})${input.required ? " [Required]" : " [Optional]"}:`;
+      const label = input.displayName && input.displayName !== input.code
+        ? `${input.displayName} (${input.code})`
+        : input.code;
+      const message = `${label} [${input.type}]${input.required ? " *" : ""}:`;
 
       if (input.type === "BOOLEAN") {
         const { value } = await inquirer.prompt([
           {
             type: "confirm",
             name: "value",
-            message: message,
+            message,
             default: false,
           },
         ]);
-        collected[input.fieldCode] = value;
+        collected[input.code] = value;
       } else {
         const { value } = await inquirer.prompt([
           {
             type: "input",
             name: "value",
-            message: message,
-            validate: (val) => {
+            message,
+            validate: (val: string) => {
               if (input.required && !val) return "This field is required.";
-              
               if (input.type === "JSON" && val) {
                 try {
                   JSON.parse(val);
@@ -63,15 +73,9 @@ export class InputCollector {
         ]);
 
         if (value) {
-            if (input.type === "JSON") {
-                collected[input.fieldCode] = JSON.parse(value);
-            } else {
-                collected[input.fieldCode] = value;
-            }
+          collected[input.code] = input.type === "JSON" ? JSON.parse(value) : value;
         } else {
-            // Explicitly set null for optional skipped fields if needed, or undefined?
-            // User prompt says "testValue" property. Usually null is better for API.
-            collected[input.fieldCode] = null; 
+          collected[input.code] = null;
         }
       }
     }

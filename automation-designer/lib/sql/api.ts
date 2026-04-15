@@ -1,5 +1,4 @@
-import { CliError } from "@belzabar/core";
-import { apiFetch } from "../api";
+import { CliError, apiFetch } from "@belzabar/core";
 import type { SqlDatabaseAuth, SqlSelectOperation, SqlUpdateOperation, SqlInsertOperation, SqlModifyOperation } from "./types";
 
 export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {

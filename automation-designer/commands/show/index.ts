@@ -1,97 +1,102 @@
 import { CliError, ok, Config, type CommandModule } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
-import { apiFetch } from "../../lib/api";
-import { parseMethodResponse } from "../../lib/parser";
-import type { RawMethodResponse, HydratedMethod } from "../../lib/types";
+import { adApi } from "../../lib/api/index";
+import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import type {
+  HydratedMethod,
+  ParsedStep,
+  CustomCodeStep,
+  SpelEchoStep,
+  SqlStep,
+  RedisStep,
+  ExistingServiceStep,
+  UnknownStep,
+  MethodField,
+  MethodOutput,
+} from "../../lib/types/common";
+
+interface ShowMethodFlags {
+  code: boolean;
+  sql: boolean;
+  outputs: boolean;
+  variables: boolean;
+  inputs: boolean;
+  services: boolean;
+  full: boolean;
+  force: boolean;
+  raw: boolean;
+  step: number | null;
+}
 
 interface ShowMethodArgs {
   uuid: string;
-  flags: {
-    inputs: boolean;
-    services: boolean;
-    full: boolean;
-    force: boolean;
-    raw: boolean;
-    serviceDetail: number;
-  };
+  flags: ShowMethodFlags;
+  apiVersion: "v1" | "v2";
 }
 
-interface ServiceInputRow {
-  label: string;
-  required: boolean;
-  value: unknown;
-}
-
-interface ServiceOutputRow {
-  label: string;
-  value: unknown;
-}
-
-interface ServiceDetailData {
-  index: number;
-  type: string;
-  automationId: string;
-  description?: string;
-  definition: null | {
-    category: string;
-    methodName: string;
-    automationId: number;
-    publishedId?: string;
-    url?: string;
-    accountNickname?: string;
-  };
-  config: Array<{ key: string; value: string }>;
-  inputs: ServiceInputRow[];
-  outputs: ServiceOutputRow[];
-  rawMappings?: unknown;
+interface StepSummaryRow {
+  orderIndex: number;
+  kind: ParsedStep["kind"];
+  badge: string;
+  description: string;
+  identity: string;
 }
 
 interface ShowMethodData {
-  request: {
-    uuid: string;
-    flags: ShowMethodArgs["flags"];
-  };
+  request: { uuid: string; flags: ShowMethodFlags };
   source: "cache" | "fresh";
+  sourceVersion: "v1" | "v2";
   summary: {
-    methodName: string;
-    alias: string;
+    name: string;
+    alias?: string;
     category: string;
     state: string;
-    version: number;
+    version: number | string;
     uuid: string;
-    referenceId: string;
+    referenceId: string | null;
     updated: string;
     summary: string;
     inputCount: number;
-    serviceCount: number;
+    variableCount: number;
+    outputCount: number;
+    stepCount: number;
+    parseWarnings: string[];
   };
-  inputs?: Array<{
-    fieldCode: string;
-    type: string;
-    required: boolean;
-    description: string;
-  }>;
-  services?: Array<{
-    orderIndex: number;
-    automationId: string;
-    type: string;
-    description: string;
-    methodName: string | null;
-    category: string | null;
-    publishedId: string | null;
-  }>;
-  serviceDetail?: ServiceDetailData | null;
-  allServiceDetails?: ServiceDetailData[];
-  raw?: {
-    method: HydratedMethod;
-    serviceMappings?: unknown;
-  };
+  steps: StepSummaryRow[];
+  inputs?: Array<{ code: string; type: string; required: boolean; description: string }>;
+  variables?: Array<{ code: string; type: string; description: string }>;
+  outputs?: Array<{ code: string; type: string; displayName: string; description: string }>;
+  stepDetail?: StepDetailView | null;
+  allStepDetails?: StepDetailView[];
+  raw?: { method: HydratedMethod };
 }
 
-function formatDate(ts: number): string {
-  if (!ts) return "N/A";
-  return new Date(ts).toLocaleString();
+interface StepDetailView {
+  orderIndex: number;
+  kind: ParsedStep["kind"];
+  badge: string;
+  description: string;
+  identity: string;
+  language?: string;
+  source?: string | null;
+  expression?: string | null;
+  sql?: string | null;
+  sqlOperation?: string;
+  resultShape?: string;
+  automationAuthId?: number;
+  redis?: {
+    key?: string;
+    value?: string;
+    ttlSeconds?: string;
+    store?: string;
+    overwrite?: string;
+  };
+  config: Array<{ key: string; value: string }>;
+  outputs: Array<{ code: string; type: string; displayName: string; link?: string }>;
+  condition?: { mode?: string; expression?: string };
+  loop?: { source?: string; parallel?: boolean };
+  reason?: string;
 }
 
 function resolveUuid(input: string): string {
@@ -109,206 +114,235 @@ function resolveUuid(input: string): string {
   return input;
 }
 
-async function fetchAndCache(uuid: string): Promise<HydratedMethod> {
-  const path = `/rest/api/automation/chain/${uuid}`;
-  const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-
-  if (response.status === 404) {
-    throw new CliError("404 Chain Not Found", { code: "METHOD_NOT_FOUND" });
-  }
-  if (!response.ok) {
-    throw new CliError(`Request failed ${response.status} ${response.statusText}`, {
-      code: "FETCH_FAILED",
-    });
-  }
-
-  const rawData = (await response.json()) as RawMethodResponse;
-  const hydrated = parseMethodResponse(rawData);
-  await CacheManager.save(uuid, hydrated);
-  return hydrated;
+function formatDate(ts: number | undefined): string {
+  if (!ts) return "N/A";
+  return new Date(ts).toLocaleString();
 }
 
-function truncateDeep(obj: any, maxLength = 100): any {
-  if (typeof obj === "string") {
-    if (obj.length > maxLength) return `${obj.substring(0, maxLength)}... (truncated)`;
-    return obj;
-  }
-  if (Array.isArray(obj)) return obj.map(item => truncateDeep(item, maxLength));
-  if (obj && typeof obj === "object") {
-    const next: any = {};
-    for (const key in obj) next[key] = truncateDeep(obj[key], maxLength);
-    return next;
-  }
-  return obj;
-}
-
-function decodeBase64(value: string): string {
-  try {
-    return Buffer.from(value, "base64").toString("utf-8");
-  } catch {
-    return `${value} (DECODE FAILED)`;
+function badgeForKind(kind: ParsedStep["kind"]): string {
+  switch (kind) {
+    case "CUSTOM_CODE":
+      return "CODE";
+    case "SPEL_ECHO":
+      return "SPEL";
+    case "SQL":
+      return "SQL";
+    case "REDIS_GET":
+      return "REDIS-GET";
+    case "REDIS_SET":
+      return "REDIS-SET";
+    case "REDIS_REMOVE":
+      return "REDIS-REMOVE";
+    case "EXISTING_SERVICE":
+      return "EXISTING";
+    case "UNKNOWN":
+      return "UNKNOWN";
   }
 }
 
-async function buildServiceDetailData(method: HydratedMethod, index: number, includeRaw: boolean): Promise<ServiceDetailData> {
-  const service = method.services.find(svc => svc.orderIndex === index);
-  if (!service) {
-    throw new CliError(`Service with index ${index} not found.`, {
-      code: "SERVICE_NOT_FOUND",
-    });
+function identityForStep(step: ParsedStep): string {
+  if (step.serviceName && step.methodName) {
+    return `${step.serviceName}.${step.methodName}`;
   }
+  if (step.automationApiId != null) return `apiId:${step.automationApiId}`;
+  if (step.automationId) return step.automationId;
+  return "";
+}
 
-  const definition = await ServiceHydrator.getDefinition(service.automationId);
-  const config = [
-    { key: "Async Execution", value: service.runAsync ? "Yes" : "No" },
-    { key: "Stream Capable", value: service.streamCapable ? "Yes" : "No" },
-    {
+function summariseSteps(method: HydratedMethod): StepSummaryRow[] {
+  return method.parsedSteps.map(s => ({
+    orderIndex: s.orderIndex,
+    kind: s.kind,
+    badge: badgeForKind(s.kind),
+    description: s.description ?? "",
+    identity: identityForStep(s),
+  }));
+}
+
+function indentSource(source: string, indent = "  "): string {
+  return source
+    .split("\n")
+    .map(line => indent + line)
+    .join("\n");
+}
+
+async function buildStepDetailView(
+  method: HydratedMethod,
+  step: ParsedStep,
+): Promise<StepDetailView> {
+  const config: StepDetailView["config"] = [];
+  if (step.runAsync) config.push({ key: "Async", value: "Yes" });
+  if (step.streamCapable) config.push({ key: "Stream Capable", value: "Yes" });
+  if (step.repeatStepExecution) {
+    config.push({
       key: "Loop",
-      value: service.repeatStepExecution
-        ? `Yes (${service.loopConfiguration?.executeParallel ? "Parallel" : "Sequential"})`
-        : "No",
-    },
-    { key: "Abort on Failure", value: service.forceExitFromFailure ? "Yes" : "No" },
-  ];
-  if (service.conditionExpression) {
-    config.push({ key: "Condition", value: service.conditionExpression });
+      value: step.loopConfiguration?.executeParallel ? "Parallel" : "Sequential",
+    });
+  }
+  config.push({
+    key: "Abort on Failure",
+    value: step.forceExitFromFailure ? "Yes" : "No",
+  });
+
+  // Hydrator enrichment for EXISTING_SERVICE steps (V1 only — V2 steps carry
+  // serviceName/methodName directly and do not need the catalog).
+  let displayIdentity = identityForStep(step);
+  let automationId = step.automationId;
+  if (method.sourceVersion === "v1" && step.automationId) {
+    const def = await ServiceHydrator.getDefinition(step.automationId).catch(() => null);
+    if (def?.automationAPI) {
+      const cat = def.automationAPI.automationSystem?.label;
+      const label = def.automationAPI.label;
+      if (cat && label) displayIdentity = `${cat}.${label}`;
+      automationId = String(def.automationAPI.id);
+    }
   }
 
-  const inputs: ServiceInputRow[] = [];
-  const outputs: ServiceOutputRow[] = [];
-  const rawMappings = includeRaw ? service.mappings : (service.mappings ? truncateDeep(service.mappings) : undefined);
+  const outputs: StepDetailView["outputs"] = (step.outputs ?? []).map(o => ({
+    code: o.code,
+    type: (o.type as string) ?? "",
+    displayName: o.displayName ?? o.code,
+    link: o.internalVarRef ?? o.inputReference,
+  }));
 
-  if (!definition) {
-    return {
-      index: service.orderIndex,
-      type: service.type,
-      automationId: service.automationId,
-      description: service.description,
-      definition: null,
-      config,
-      inputs,
-      outputs,
-      rawMappings,
+  const base: StepDetailView = {
+    orderIndex: step.orderIndex,
+    kind: step.kind,
+    badge: badgeForKind(step.kind),
+    description: step.description ?? "",
+    identity: displayIdentity,
+    config,
+    outputs,
+  };
+
+  if (step.conditionExpression) {
+    base.condition = {
+      mode: step.conditionMode,
+      expression: step.conditionExpression,
+    };
+  }
+  if (step.repeatStepExecution) {
+    base.loop = {
+      source: step.loopExecutionSource,
+      parallel: step.loopConfiguration?.executeParallel,
     };
   }
 
-  const definitionMeta = {
-    category: definition.automationAPI.automationSystem.label,
-    methodName: definition.automationAPI.label,
-    automationId: definition.id,
-    publishedId: definition.automationAPI.serviceChainUID,
-    url: definition.automationAPI.serviceChainUID
-      ? `${Config.cleanBaseUrl}/automation-designer/${encodeURIComponent(
-          definition.automationAPI.automationSystem.label
-        )}/${definition.automationAPI.serviceChainUID}`
-      : undefined,
-    accountNickname: definition.automationAuth?.nickname,
-  };
-
-  const instanceValues = new Map<string, any>();
-  const mapInstanceValues = (items: any[]) => {
-    if (!Array.isArray(items)) return;
-    for (const item of items) {
-      if (item.automationUserInputId) instanceValues.set(String(item.automationUserInputId), item);
-      if (item.mappings) mapInstanceValues(item.mappings);
+  switch (step.kind) {
+    case "CUSTOM_CODE": {
+      const s = step as CustomCodeStep;
+      base.language = s.language ?? "";
+      base.source = s.source;
+      return base;
     }
-  };
-
-  if (service.mappings) {
-    const items = Array.isArray(service.mappings) ? service.mappings : Object.values(service.mappings);
-    mapInstanceValues(items);
-  }
-
-  if (definition.automationAuth?.nickname) {
-    inputs.push({
-      label: "Account",
-      required: true,
-      value: definition.automationAuth.nickname,
-    });
-  }
-
-  const rootInputs = ServiceHydrator.flattenInputs(definition).filter(input => input.depth === 0 && !input.hidden);
-  for (const inputDef of rootInputs) {
-    if (!inputDef.label) continue;
-    const instanceItem = instanceValues.get(String(inputDef.id));
-    let value: unknown = null;
-    if (instanceItem && instanceItem.value !== undefined) {
-      value = instanceItem.value;
-      const isBase64 = instanceItem.encodingType === "BASE_64" || inputDef.encoding === "BASE_64";
-      if (isBase64 && typeof value === "string") {
-        value = decodeBase64(value);
-      }
+    case "SPEL_ECHO": {
+      const s = step as SpelEchoStep;
+      base.expression = s.expression;
+      return base;
     }
-    inputs.push({
-      label: inputDef.label,
-      required: !!inputDef.required,
-      value,
-    });
-  }
-
-  if (service.outputs && definition.automationAPI.automationAPIOutputs) {
-    const outputsArr = Array.isArray(service.outputs) ? service.outputs : Object.values(service.outputs);
-    const visibleOutputs = definition.automationAPI.automationAPIOutputs.filter(o => o.showOnUi !== false);
-    for (const outDef of visibleOutputs) {
-      const instanceOut = outputsArr.find((o: any) => String(o.automationAPIOutputId) === String(outDef.id));
-      outputs.push({
-        label: outDef.displayName,
-        value: instanceOut ? instanceOut.code : null,
-      });
+    case "SQL": {
+      const s = step as SqlStep;
+      base.sql = s.sql;
+      base.sqlOperation = s.operation;
+      base.resultShape = s.resultShape;
+      base.automationAuthId = s.automationAuthId;
+      return base;
     }
-  } else if (service.outputs) {
-    outputs.push({ label: "Raw Outputs", value: service.outputs });
+    case "REDIS_GET":
+    case "REDIS_SET":
+    case "REDIS_REMOVE": {
+      const s = step as RedisStep;
+      base.redis = {
+        key: s.key,
+        value: s.value,
+        ttlSeconds: s.ttlSeconds,
+        store: s.store,
+        overwrite: s.overwrite,
+      };
+      return base;
+    }
+    case "EXISTING_SERVICE": {
+      // Identity + outputs already populated above.
+      return base;
+    }
+    case "UNKNOWN": {
+      const s = step as UnknownStep;
+      base.reason = s.reason;
+      return base;
+    }
   }
+}
 
-  return {
-    index: service.orderIndex,
-    type: service.type,
-    automationId: service.automationId,
-    description: service.description,
-    definition: definitionMeta,
-    config,
-    inputs,
-    outputs,
-    rawMappings: includeRaw ? rawMappings : undefined,
-  };
+function mapInputFields(fields: MethodField[]): NonNullable<ShowMethodData["inputs"]> {
+  return fields.map(f => ({
+    code: f.code,
+    type: String(f.type ?? ""),
+    required: !!f.required,
+    description: f.description ?? "",
+  }));
+}
+
+function mapVariableFields(fields: MethodField[]): NonNullable<ShowMethodData["variables"]> {
+  return fields.map(f => ({
+    code: f.code,
+    type: String(f.type ?? ""),
+    description: f.description ?? "",
+  }));
+}
+
+function mapOutputFields(outputs: MethodOutput[]): NonNullable<ShowMethodData["outputs"]> {
+  return outputs.map(o => ({
+    code: o.code,
+    type: String(o.type ?? ""),
+    displayName: o.displayName ?? o.code,
+    description: o.description ?? "",
+  }));
 }
 
 const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
   schema: "ad.show",
   parseArgs(args) {
-    const raw = args[0];
-    if (!raw || raw.startsWith("-")) {
+    const { common, rest } = parseAdCommonArgs(args, "fetch", "show");
+    emitFallbackWarning(common, "show");
+
+    const first = rest[0];
+    if (!first || first.startsWith("-")) {
       throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
     }
-    const uuid = resolveUuid(raw);
+    const uuid = resolveUuid(first);
 
-    const flags = {
-      inputs: args.includes("--inputs"),
-      services: args.includes("--services"),
-      full: args.includes("--full"),
-      force: args.includes("--force"),
-      raw: args.includes("--raw"),
-      serviceDetail: -1,
+    const flags: ShowMethodFlags = {
+      code: rest.includes("--code"),
+      sql: rest.includes("--sql"),
+      outputs: rest.includes("--outputs"),
+      variables: rest.includes("--variables"),
+      inputs: rest.includes("--inputs"),
+      services: rest.includes("--services"),
+      full: rest.includes("--full"),
+      force: rest.includes("--force"),
+      raw: rest.includes("--raw"),
+      step: null,
     };
-    const detailIndex = args.indexOf("--service-detail");
-    if (detailIndex !== -1 && args[detailIndex + 1]) {
-      flags.serviceDetail = parseInt(args[detailIndex + 1], 10);
-      if (Number.isNaN(flags.serviceDetail)) {
-        throw new CliError("--service-detail requires a valid numeric index.", {
-          code: "INVALID_SERVICE_DETAIL",
-        });
+    const stepIdx = rest.indexOf("--step");
+    if (stepIdx !== -1 && rest[stepIdx + 1]) {
+      const n = parseInt(rest[stepIdx + 1]!, 10);
+      if (Number.isNaN(n)) {
+        throw new CliError("--step requires a valid numeric index.", { code: "INVALID_STEP_INDEX" });
       }
+      flags.step = n;
     }
 
-    return { uuid, flags };
+    return { uuid, flags, apiVersion: common.apiVersion.version };
   },
-  async execute({ uuid, flags }, context) {
+  async execute({ uuid, flags, apiVersion }, context) {
     let method = await CacheManager.load(uuid);
     let source: "cache" | "fresh" = "cache";
 
-    if (!method || flags.force) {
+    // Cache is V1-shaped; if --v2 or force is set, refetch.
+    if (!method || flags.force || apiVersion === "v2" || method.sourceVersion !== apiVersion) {
       source = "fresh";
-      method = await fetchAndCache(uuid);
+      method = await adApi.fetchMethod(uuid, apiVersion);
+      if (apiVersion === "v1") await CacheManager.save(uuid, method);
     }
 
     if (source === "cache") {
@@ -317,206 +351,207 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
 
     const includeInputs = flags.inputs || flags.full;
     const includeServices = flags.services || flags.full;
+    const includeVariables = flags.variables || flags.full;
+    const includeOutputs = flags.outputs || flags.full;
 
-    const serviceDetail = flags.serviceDetail >= 0
-      ? await buildServiceDetailData(method, flags.serviceDetail, flags.raw)
-      : null;
+    let stepDetail: StepDetailView | null = null;
+    if (flags.step !== null) {
+      const match = method.parsedSteps.find(s => s.orderIndex === flags.step);
+      if (!match) {
+        throw new CliError(`Step with index ${flags.step} not found.`, { code: "STEP_NOT_FOUND" });
+      }
+      stepDetail = await buildStepDetailView(method, match);
+    }
 
     const data: ShowMethodData = {
-      request: {
-        uuid,
-        flags,
-      },
+      request: { uuid, flags },
       source,
+      sourceVersion: method.sourceVersion,
       summary: {
-        methodName: method.methodName,
+        name: method.name,
         alias: method.aliasName,
-        category: method.category,
+        category: method.category?.name ?? "Uncategorized",
         state: method.state,
         version: method.version,
         uuid: method.uuid,
         referenceId: method.referenceId,
-        updated: `${formatDate(method.updatedOn)} by ${method.updatedBy || "unknown"}`,
-        summary: method.summary || "",
+        updated: `${formatDate(method.updatedOn)} by ${method.updatedBy ?? "unknown"}`,
+        summary: method.summary ?? "",
         inputCount: method.inputs.length,
-        serviceCount: method.services.length,
+        variableCount: method.variables.length,
+        outputCount: method.outputs.length,
+        stepCount: method.parsedSteps.length,
+        parseWarnings: method.parseWarnings,
       },
-      serviceDetail,
+      steps: summariseSteps(method),
+      stepDetail,
     };
 
-    if (includeInputs) {
-      data.inputs = method.inputs.map(input => ({
-        fieldCode: input.fieldCode,
-        type: input.type,
-        required: !!input.required,
-        description: input.description || "",
-      }));
+    if (includeInputs) data.inputs = mapInputFields(method.inputs);
+    if (includeVariables) data.variables = mapVariableFields(method.variables);
+    if (includeOutputs) data.outputs = mapOutputFields(method.outputs);
+
+    if (includeServices || flags.full || flags.code || flags.sql) {
+      const details: StepDetailView[] = [];
+      for (const step of method.parsedSteps) {
+        details.push(await buildStepDetailView(method, step));
+      }
+      data.allStepDetails = details;
     }
 
-    if (includeServices) {
-      const total = method.services.length;
-      const enrichedServices = [];
-      for (let i = 0; i < total; i++) {
-        const service = method.services[i];
-        if (context.outputMode === "human") {
-          process.stderr.write(`\rFetching service definitions... ${i + 1}/${total}`);
-        }
-        const def = await ServiceHydrator.getDefinition(service.automationId);
-        enrichedServices.push({
-          orderIndex: service.orderIndex,
-          automationId: service.automationId,
-          type: service.type,
-          description: service.description || "",
-          methodName: def?.automationAPI.label ?? null,
-          category: def?.automationAPI.automationSystem.label ?? null,
-          publishedId: def?.automationAPI.serviceChainUID ?? null,
-        });
-      }
-      if (context.outputMode === "human") {
-        process.stderr.write(`\r${" ".repeat(50)}\r`);
-      }
-      data.services = enrichedServices;
-    }
+    if (flags.raw) data.raw = { method };
 
-    if (flags.full) {
-      const allDetails: ServiceDetailData[] = [];
-      for (const svc of method.services) {
-        if (context.outputMode === "human") {
-          process.stderr.write(`\rFetching full service details... ${allDetails.length + 1}/${method.services.length}`);
-        }
-        allDetails.push(await buildServiceDetailData(method, svc.orderIndex, flags.raw));
-      }
-      if (context.outputMode === "human") {
-        process.stderr.write(`\r${" ".repeat(60)}\r`);
-      }
-      data.allServiceDetails = allDetails;
-    }
-
-    if (flags.raw) {
-      data.raw = {
-        method,
-        serviceMappings: serviceDetail?.rawMappings,
-      };
-    }
-
-    return ok(data);
+    return ok(data, { sourceVersion: method.sourceVersion });
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
     const data = envelope.data as ShowMethodData;
+    const flags = data.request.flags;
 
     ui.table(
       ["Property", "Value"],
       [
-        ["Method Name", data.summary.methodName],
-        ["Alias", data.summary.alias],
+        ["Method Name", data.summary.name],
+        ["Alias", data.summary.alias ?? ""],
         ["Category", data.summary.category],
         ["State", data.summary.state],
         ["Version", data.summary.version],
         [data.summary.state === "PUBLISHED" ? "Published ID" : "Draft ID", data.summary.uuid],
-        [data.summary.state === "PUBLISHED" ? "Draft ID" : "Published ID", data.summary.referenceId],
+        [data.summary.state === "PUBLISHED" ? "Draft ID" : "Published ID", data.summary.referenceId ?? ""],
         ["Updated", data.summary.updated],
         ["Summary", data.summary.summary],
         ["Inputs", data.summary.inputCount],
-        ["Services", data.summary.serviceCount],
-        ["Source", data.source],
-      ]
+        ["Variables", data.summary.variableCount],
+        ["Outputs", data.summary.outputCount],
+        ["Steps", data.summary.stepCount],
+        ["API Source", data.sourceVersion.toUpperCase()],
+        ["Cache", data.source],
+      ],
     );
 
+    if (data.summary.parseWarnings.length > 0) {
+      ui.section("Parse Warnings");
+      for (const w of data.summary.parseWarnings) ui.warn(w);
+    }
+
+    // Compact step listing with kind badges.
+    ui.section("Service Chain");
+    if (data.steps.length === 0) {
+      ui.text("No steps defined.");
+    } else {
+      ui.table(
+        ["#", "Kind", "Description", "Identity"],
+        data.steps.map(s => [s.orderIndex, `[${s.badge}]`, s.description, s.identity]),
+      );
+    }
+
     if (data.inputs) {
-      ui.section("Args (Inputs)");
-      if (data.inputs.length === 0) ui.text("No inputs defined.");
+      ui.section("Inputs");
+      if (data.inputs.length === 0) ui.text("(none)");
       else ui.table(
-        ["Field Code", "Type", "Required", "Description"],
-        data.inputs.map(input => [input.fieldCode, input.type || "", input.required ? "Yes" : "No", input.description])
+        ["Field", "Type", "Required", "Description"],
+        data.inputs.map(i => [i.code, i.type, i.required ? "Yes" : "No", i.description]),
       );
     }
 
-    if (data.services) {
-      ui.section("Service Chain");
-      if (data.services.length === 0) ui.text("No services defined.");
+    if (data.variables) {
+      ui.section("Variables");
+      if (data.variables.length === 0) ui.text("(none)");
       else ui.table(
-        ["#", "ID", "Type", "Name", "Category", "Published ID"],
-        data.services.map(service => [
-          service.orderIndex,
-          service.automationId,
-          service.type || "",
-          service.methodName ?? "",
-          service.category ?? "",
-          service.publishedId ?? "",
-        ])
+        ["Field", "Type", "Description"],
+        data.variables.map(v => [v.code, v.type, v.description]),
       );
     }
 
-    if (data.allServiceDetails) {
-      for (const detail of data.allServiceDetails) {
-        ui.section(`Service ${detail.index}: ${detail.description || detail.automationId}`);
-        if (detail.definition) {
-          ui.table(
-            ["Property", "Value"],
-            [
-              ["Category", detail.definition.category],
-              ["Method Name", detail.definition.methodName],
-              ["Automation ID", detail.definition.automationId],
-              ["Published ID", detail.definition.publishedId || ""],
-              ["Account", detail.definition.accountNickname || ""],
-            ]
-          );
-        } else {
-          ui.warn("Definition not available.");
+    if (data.outputs) {
+      ui.section("Outputs");
+      if (data.outputs.length === 0) ui.text("(none)");
+      else ui.table(
+        ["Code", "Display Name", "Type", "Description"],
+        data.outputs.map(o => [o.code, o.displayName, o.type, o.description]),
+      );
+    }
+
+    if (data.allStepDetails) {
+      for (const detail of data.allStepDetails) {
+        ui.section(`Step ${detail.orderIndex}: [${detail.badge}] ${detail.description || detail.identity}`);
+        if (detail.identity) ui.kv("Identity", detail.identity);
+        if (detail.reason) ui.warn(detail.reason);
+
+        if (detail.config.length > 0) {
+          ui.table(["Property", "Value"], detail.config.map(c => [c.key, c.value]));
+        }
+        if (detail.condition) {
+          ui.kv("Condition", `${detail.condition.mode ?? "advance"}: ${detail.condition.expression}`);
+        }
+        if (detail.loop) {
+          ui.kv("Loop Source", detail.loop.source ?? "(none)");
+          ui.kv("Parallel", detail.loop.parallel ? "Yes" : "No");
         }
 
-        ui.section("Configuration");
-        ui.table(["Property", "Value"], detail.config.map(item => [item.key, item.value]));
+        if (detail.kind === "CUSTOM_CODE" && (flags.code || flags.full)) {
+          ui.kv("Language", detail.language ?? "");
+          ui.section("Source");
+          ui.text(indentSource(detail.source ?? ""));
+        } else if (detail.kind === "CUSTOM_CODE") {
+          ui.kv("Language", detail.language ?? "");
+          ui.text("(source hidden — use --code or --full)");
+        }
 
-        ui.section("Inputs");
-        if (detail.inputs.length === 0) ui.text("(None)");
-        else ui.table(["Label", "Required", "Value"], detail.inputs.map(i => [i.label, i.required ? "Yes" : "No", JSON.stringify(i.value)]));
+        if (detail.kind === "SPEL_ECHO") {
+          ui.kv("Expression", detail.expression ?? "");
+        }
 
-        ui.section("Outputs");
-        if (detail.outputs.length === 0) ui.text("(None)");
-        else ui.table(["Label", "Value"], detail.outputs.map(o => [o.label, JSON.stringify(o.value)]));
+        if (detail.kind === "SQL") {
+          ui.kv("Operation", detail.sqlOperation ?? "");
+          ui.kv("Result Shape", detail.resultShape ?? "");
+          if (detail.automationAuthId != null) ui.kv("DB Auth ID", String(detail.automationAuthId));
+          if (flags.sql || flags.full) {
+            ui.section("SQL");
+            ui.text(indentSource(detail.sql ?? ""));
+          } else {
+            ui.text("(SQL hidden — use --sql or --full)");
+          }
+        }
+
+        if (detail.redis) {
+          if (detail.redis.key != null) ui.kv("Key", detail.redis.key);
+          if (detail.redis.value != null) ui.kv("Value", detail.redis.value);
+          if (detail.redis.ttlSeconds != null) ui.kv("TTL", detail.redis.ttlSeconds);
+          if (detail.redis.store != null) ui.kv("Store", detail.redis.store);
+          if (detail.redis.overwrite != null) ui.kv("Overwrite", detail.redis.overwrite);
+        }
+
+        if (detail.outputs.length > 0) {
+          ui.table(
+            ["Output", "Type", "Display", "Link"],
+            detail.outputs.map(o => [o.code, o.type, o.displayName, o.link ?? ""]),
+          );
+        }
       }
     }
 
-    if (data.serviceDetail) {
-      const detail = data.serviceDetail;
-      ui.section(`Service Detail [Index ${detail.index}]`);
-      if (detail.definition) {
-        ui.table(
-          ["Property", "Value"],
-          [
-            ["Service Category", detail.definition.category],
-            ["Method Name", detail.definition.methodName],
-            ["Automation ID", detail.definition.automationId],
-            ["Published ID", detail.definition.publishedId || ""],
-            ["URL", detail.definition.url || ""],
-            ["Account", detail.definition.accountNickname || ""],
-          ]
-        );
-      } else {
-        ui.warn("Definition not available for deep inspection.");
+    if (data.stepDetail) {
+      const d = data.stepDetail;
+      ui.section(`Step Detail [Index ${d.orderIndex}] [${d.badge}]`);
+      ui.kv("Description", d.description);
+      ui.kv("Identity", d.identity);
+      if (d.kind === "CUSTOM_CODE") {
+        ui.kv("Language", d.language ?? "");
+        if (flags.code || flags.full) ui.text(indentSource(d.source ?? ""));
       }
-
-      ui.section("Configuration");
-      ui.table(
-        ["Property", "Value"],
-        detail.config.map(item => [item.key, item.value])
-      );
-
-      ui.section("Inputs");
-      if (detail.inputs.length === 0) ui.text("(None)");
-      else ui.table(["Label", "Required", "Value"], detail.inputs.map(input => [input.label, input.required ? "Yes" : "No", JSON.stringify(input.value)]));
-
-      ui.section("Outputs");
-      if (detail.outputs.length === 0) ui.text("(None)");
-      else ui.table(["Label", "Value"], detail.outputs.map(output => [output.label, JSON.stringify(output.value)]));
+      if (d.kind === "SQL" && (flags.sql || flags.full)) {
+        ui.text(indentSource(d.sql ?? ""));
+      }
     }
 
     if (data.raw) {
       ui.section("Raw Data");
       ui.object(data.raw);
     }
+
+    // Suppress lint on unused Config — kept for future URL renderings.
+    void Config;
   },
 };
 

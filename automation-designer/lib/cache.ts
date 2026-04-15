@@ -1,6 +1,6 @@
 import { join } from "path";
 import { Cache, BELZ_CONFIG_DIR } from "@belzabar/core";
-import type { HydratedMethod } from "./types";
+import type { HydratedMethod } from "./types/common";
 
 const methodCache = new Cache<HydratedMethod>({
   dir: join(BELZ_CONFIG_DIR, "cache", "methods"),

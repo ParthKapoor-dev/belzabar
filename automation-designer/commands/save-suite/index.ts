@@ -1,8 +1,8 @@
 import { join } from "path";
 import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
-import { fetchMethodDefinition } from "../../lib/api";
-import { parseMethodResponse } from "../../lib/parser";
+import { adApi } from "../../lib/api/index";
+import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
 
 interface SaveSuiteArgs {
   uuid: string;
@@ -21,34 +21,33 @@ interface SaveSuiteData {
 const command: CommandModule<SaveSuiteArgs, SaveSuiteData> = {
   schema: "ad.save-suite",
   parseArgs(args) {
-    const uuid = args[0];
+    const { common, rest } = parseAdCommonArgs(args, "test", "save-suite");
+    emitFallbackWarning(common, "save-suite");
+
+    const uuid = rest[0];
     if (!uuid || uuid.startsWith("-")) {
       throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
     }
 
-    const nameIdx = args.indexOf("--name");
-    if (nameIdx === -1 || !args[nameIdx + 1]) {
+    const nameIdx = rest.indexOf("--name");
+    const name = nameIdx !== -1 ? rest[nameIdx + 1] : undefined;
+    if (!name) {
       throw new CliError("--name argument is required.", { code: "MISSING_SUITE_NAME" });
     }
 
-    const inputsFileIdx = args.indexOf("--inputs");
-    const inputsFile = inputsFileIdx !== -1 ? args[inputsFileIdx + 1] : undefined;
+    const inputsFileIdx = rest.indexOf("--inputs");
+    const inputsFile = inputsFileIdx !== -1 ? rest[inputsFileIdx + 1] : undefined;
 
-    return {
-      uuid,
-      suiteName: args[nameIdx + 1],
-      inputsFile,
-    };
+    return { uuid, suiteName: name, inputsFile };
   },
   async execute({ uuid, suiteName, inputsFile }) {
-    const rawMethod = await fetchMethodDefinition(uuid);
-    const hydrated = parseMethodResponse(rawMethod);
-    const values = await InputCollector.collect(hydrated.inputs, inputsFile);
+    const method = await adApi.fetchMethod(uuid, "v1");
+    const values = await InputCollector.collect(method.inputs, inputsFile);
 
     const suite = {
       name: suiteName,
       uuid,
-      description: `Test suite for ${hydrated.methodName}`,
+      description: `Test suite for ${method.name}`,
       inputs: values,
     };
 
@@ -59,7 +58,7 @@ const command: CommandModule<SaveSuiteArgs, SaveSuiteData> = {
       suitePath,
       suiteName,
       uuid,
-      methodName: hydrated.methodName,
+      methodName: method.name,
       inputCount: Object.keys(values ?? {}).length,
     });
   },

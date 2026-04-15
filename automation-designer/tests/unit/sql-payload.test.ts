@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { buildSqlReadPayload } from "../../lib/sql/payload";
-import type { RawMethodResponse } from "../../lib/types";
+import type { V1RawMethodResponse as RawMethodResponse } from "../../lib/types/v1-wire";
 
 function decodeBase64(value: string): string {
   return Buffer.from(value, "base64").toString("utf8");

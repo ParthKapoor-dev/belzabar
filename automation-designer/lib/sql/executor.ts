@@ -1,7 +1,7 @@
 import { CliError } from "@belzabar/core";
 import { ErrorParser } from "../error-parser";
-import { fetchMethodDefinition, testMethod } from "../api";
-import type { RawMethodResponse } from "../types";
+import { fetchRawMethod, testMethodMultipart } from "../api/v1";
+import type { V1RawMethodResponse } from "../types/v1-wire";
 import { fetchSqlDatabases, fetchSqlSelectOperation, fetchSqlUpdateOperation, fetchSqlInsertOperation, fetchSqlModifyOperation } from "./api";
 import { buildSqlReadPayload } from "./payload";
 import { parseSqlRunResult, parseSqlUpdateResult, parseSqlInsertResult, parseSqlModifyResult } from "./result";
@@ -21,7 +21,7 @@ export interface SqlDbContext {
 
 export interface SqlExecutionContext {
   operation: SqlSelectOperation;
-  template: RawMethodResponse;
+  template: V1RawMethodResponse;
 }
 
 export interface ExecuteSqlReadOptions {
@@ -76,7 +76,7 @@ export async function loadSqlExecutionContext(): Promise<SqlExecutionContext> {
     });
   }
 
-  const template = (await fetchMethodDefinition(operation.methodUUID)) as RawMethodResponse;
+  const template = (await fetchRawMethod(operation.methodUUID)) as V1RawMethodResponse;
   return {
     operation,
     template,
@@ -108,7 +108,7 @@ export async function loadSqlUpdateContext(): Promise<SqlExecutionContext> {
     });
   }
 
-  const template = (await fetchMethodDefinition(operation.methodUUID)) as RawMethodResponse;
+  const template = (await fetchRawMethod(operation.methodUUID)) as V1RawMethodResponse;
   return { operation, template };
 }
 
@@ -123,7 +123,7 @@ export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<
   const formData = new FormData();
   formData.append("body", JSON.stringify(payload));
 
-  const response = await testMethod(formData);
+  const response = await testMethodMultipart(formData);
   if (!response.ok) {
     throw new CliError(`SQL update execution request failed (${response.status}).`, {
       code: "SQL_UPDATE_EXECUTION_FAILED",
@@ -131,7 +131,7 @@ export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<
     });
   }
 
-  const executionResult = await response.json();
+  const executionResult = (await response.json()) as any;
   const parsed = parseSqlUpdateResult(executionResult);
 
   if (!parsed.success) {
@@ -197,7 +197,7 @@ export async function loadSqlInsertContext(): Promise<SqlExecutionContext> {
     });
   }
 
-  const template = (await fetchMethodDefinition(operation.methodUUID)) as RawMethodResponse;
+  const template = (await fetchRawMethod(operation.methodUUID)) as V1RawMethodResponse;
   return { operation, template };
 }
 
@@ -212,7 +212,7 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
   const formData = new FormData();
   formData.append("body", JSON.stringify(payload));
 
-  const response = await testMethod(formData);
+  const response = await testMethodMultipart(formData);
   if (!response.ok) {
     throw new CliError(`SQL insert execution request failed (${response.status}).`, {
       code: "SQL_INSERT_EXECUTION_FAILED",
@@ -220,7 +220,7 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
     });
   }
 
-  const executionResult = await response.json();
+  const executionResult = (await response.json()) as any;
   const parsed = parseSqlInsertResult(executionResult);
 
   if (!parsed.success) {
@@ -281,7 +281,7 @@ export async function loadSqlModifyContext(): Promise<SqlExecutionContext> {
     });
   }
 
-  const template = (await fetchMethodDefinition(operation.methodUUID)) as RawMethodResponse;
+  const template = (await fetchRawMethod(operation.methodUUID)) as V1RawMethodResponse;
   return { operation, template };
 }
 
@@ -296,7 +296,7 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
   const formData = new FormData();
   formData.append("body", JSON.stringify(payload));
 
-  const response = await testMethod(formData);
+  const response = await testMethodMultipart(formData);
   if (!response.ok) {
     throw new CliError(`SQL modify execution request failed (${response.status}).`, {
       code: "SQL_MODIFY_EXECUTION_FAILED",
@@ -304,7 +304,7 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
     });
   }
 
-  const executionResult = await response.json();
+  const executionResult = (await response.json()) as any;
   const parsed = parseSqlModifyResult(executionResult);
 
   if (!parsed.success) {
@@ -350,7 +350,7 @@ export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promi
   const formData = new FormData();
   formData.append("body", JSON.stringify(payload));
 
-  const response = await testMethod(formData);
+  const response = await testMethodMultipart(formData);
   if (!response.ok) {
     throw new CliError(`SQL execution request failed (${response.status}).`, {
       code: "SQL_EXECUTION_FAILED",
@@ -358,7 +358,7 @@ export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promi
     });
   }
 
-  const executionResult = await response.json();
+  const executionResult = (await response.json()) as any;
   const parsed = parseSqlRunResult(executionResult);
 
   if (!parsed.success) {
