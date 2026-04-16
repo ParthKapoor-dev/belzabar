@@ -7,8 +7,14 @@ to the linked draft and tells you it did so.
 The <file> is a JSON overlay with any of these optional keys:
   name, summary, description, buttonLabel, internalMethod
   inputs[]  — objects with {code, testValue} update testValue on matching inputs
-  parsedSteps[] — objects with {orderIndex, source?, description?} patch the
-                  matching step (source only applies to CUSTOM_CODE steps)
+  parsedSteps[] — objects with {orderIndex} plus any of:
+    source      — CUSTOM_CODE step: full decoded JS/Python source (plain text)
+    sql         — SQL step: full decoded SQL body (plain text, NOT base64)
+    expression  — SPEL_ECHO step: the SpEL expression string
+    description — any step: updated description
+
+  Agents should always pass plain text — the serializer handles base64
+  re-encoding automatically.
 
 Flags:
   --uuid <id>      Target DRAFT UUID (or PUBLISHED; we switch to its draft)

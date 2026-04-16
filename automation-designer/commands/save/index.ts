@@ -5,7 +5,7 @@ import { resolveDraftTarget } from "../../lib/draft-guard";
 import { serializeToV1SavePayload } from "../../lib/serialize/v1";
 import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
-import type { HydratedMethod, CustomCodeStep } from "../../lib/types/common";
+import type { HydratedMethod, CustomCodeStep, SqlStep, SpelEchoStep } from "../../lib/types/common";
 import type { V1InnerDefinition, V1SavePayload } from "../../lib/types/v1-wire";
 
 interface SaveArgs {
@@ -142,12 +142,16 @@ const command: CommandModule<SaveArgs, SaveData> = {
  * keys (all optional):
  *   - name, summary, description, buttonLabel, internalMethod
  *   - inputs[].testValue (mapped onto existing inputs by code)
- *   - parsedSteps[] — if present, must be an array of {orderIndex, source?}
- *     entries; we patch CUSTOM_CODE source on the matching steps.
+ *   - parsedSteps[] — if present, must be an array of objects with
+ *     `orderIndex` identifying the step, plus any of:
+ *       - `source` — CUSTOM_CODE step source (the full decoded JS/Python)
+ *       - `sql` — SQL step body (plain SQL text, NOT base64)
+ *       - `expression` — SPEL_ECHO expression string
+ *       - `description` — step description
  *
- * Anything else is ignored with a warning. This keeps the save path small
- * and predictable while still supporting the most common agent use case:
- * "I edited the JS in step 2; save it."
+ * The serializer (lib/serialize/v1.ts) handles base64 re-encoding for
+ * custom code and SQL. Agents should always pass plain text — never pre-
+ * encode to base64.
  */
 function applyOverlay(method: HydratedMethod, overlay: Record<string, unknown>): void {
   if (typeof overlay.name === "string") method.name = overlay.name;
@@ -174,16 +178,29 @@ function applyOverlay(method: HydratedMethod, overlay: Record<string, unknown>):
     const byIndex = new Map(method.parsedSteps.map(s => [s.orderIndex, s]));
     for (const o of overlay.parsedSteps) {
       if (!o || typeof o !== "object") continue;
-      const idx = (o as Record<string, unknown>).orderIndex;
+      const entry = o as Record<string, unknown>;
+      const idx = entry.orderIndex;
       if (typeof idx !== "number") continue;
       const target = byIndex.get(idx);
       if (!target) continue;
-      const src = (o as Record<string, unknown>).source;
-      if (typeof src === "string" && target.kind === "CUSTOM_CODE") {
-        (target as CustomCodeStep).source = src;
+
+      // Description (all step kinds)
+      if (typeof entry.description === "string") target.description = entry.description;
+
+      // CUSTOM_CODE — patch source
+      if (typeof entry.source === "string" && target.kind === "CUSTOM_CODE") {
+        (target as CustomCodeStep).source = entry.source;
       }
-      const desc = (o as Record<string, unknown>).description;
-      if (typeof desc === "string") target.description = desc;
+
+      // SQL — patch sql body
+      if (typeof entry.sql === "string" && target.kind === "SQL") {
+        (target as SqlStep).sql = entry.sql;
+      }
+
+      // SPEL_ECHO — patch expression
+      if (typeof entry.expression === "string" && target.kind === "SPEL_ECHO") {
+        (target as SpelEchoStep).expression = entry.expression;
+      }
     }
   }
 }

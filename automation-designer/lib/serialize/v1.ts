@@ -20,10 +20,11 @@
 // double-serialization. Callers never JSON.stringify the inner definition by
 // hand.
 
-import type { HydratedMethod, CustomCodeStep } from "../types/common";
+import type { HydratedMethod, CustomCodeStep, SqlStep, SpelEchoStep } from "../types/common";
 import type {
   V1InnerDefinition,
   V1InputField,
+  V1Mapping,
   V1RawMethodResponse,
   V1SavePayload,
   V1ServiceStep,
@@ -88,38 +89,54 @@ export function serializeToV1SavePayload(
     }
   }
 
-  // Validate + optionally rewrite custom-code steps. The parser keeps a
-  // reference to each raw service step in `step.raw`, so we can mutate the
-  // matching entry in inner.services[] by identity.
+  // Validate + optionally rewrite step bodies. We locate each parsed step's
+  // corresponding slot in inner.services[] by orderIndex and patch the
+  // wire-level fields. We cannot match by object identity because we
+  // re-parsed `inner` from the raw JSON string.
   if (Array.isArray(inner.services)) {
     for (const step of method.parsedSteps) {
-      if (step.kind !== "CUSTOM_CODE") continue;
-      enforceCustomCodeMultiOutputInvariant(step);
-
-      // Locate the matching service slot by orderIndex (primary) or by
-      // automationId as a fallback. We cannot match by object identity
-      // because we re-parsed `inner` from the raw JSON string, so `step.raw`
-      // points at a different JS object even though it came from the same
-      // source.
       const target =
         inner.services.find(s => s.orderIndex === step.orderIndex) ??
         inner.services.find(s => step.automationId != null && s.automationId === step.automationId);
-      if (!target) {
-        // Parser round-tripped something we cannot find. Skip the rewrite;
-        // the raw path in inner.services[i] already has the original code.
-        continue;
+      if (!target) continue;
+
+      // CUSTOM_CODE — re-encode source to base64
+      if (step.kind === "CUSTOM_CODE") {
+        enforceCustomCodeMultiOutputInvariant(step);
+        const encoded = encodeBase64(step.source);
+        if (target.code !== encoded) {
+          target.code = encoded;
+        }
+        if (step.language) target.language = step.language;
+        if (step.customCodeEnv) target.customCodeEnv = step.customCodeEnv;
       }
 
-      // Re-encode source if it has been edited. We detect edits by comparing
-      // the re-encoded source against the original `target.code`; when they
-      // match, we skip the update (avoiding needless re-encoding round-trips
-      // that could normalise whitespace).
-      const encoded = encodeBase64(step.source);
-      if (target.code !== encoded) {
-        target.code = encoded;
+      // SQL — re-encode sql body to base64 inside the nested mappings tree.
+      // The SQL value lives in the first mapping in the tree whose
+      // encodingType === "BASE_64". This mirrors the decode path in
+      // lib/parser/steps/v1.ts:buildSql.
+      if (step.kind === "SQL") {
+        const sqlStep = step as SqlStep;
+        const newB64 = encodeBase64(sqlStep.sql);
+        const replaced = rewriteBase64MappingValue(target.mappings, newB64);
+        if (!replaced && sqlStep.sql.length > 0) {
+          // Fallback: if there's no base64 mapping (unusual), try to write
+          // the SQL as-is into the first mapping's value. This handles the
+          // edge case of a method imported with inline (non-base64) SQL.
+          if (Array.isArray(target.mappings)) {
+            const first = findFirstLeafMapping(target.mappings);
+            if (first) first.value = newB64;
+          }
+        }
       }
-      if (step.language) target.language = step.language;
-      if (step.customCodeEnv) target.customCodeEnv = step.customCodeEnv;
+
+      // SPEL_ECHO — patch the expression into the first mapping's value.
+      if (step.kind === "SPEL_ECHO") {
+        const echoStep = step as SpelEchoStep;
+        if (echoStep.expression != null && Array.isArray(target.mappings) && target.mappings[0]) {
+          target.mappings[0].value = echoStep.expression;
+        }
+      }
     }
   }
 
@@ -140,6 +157,42 @@ export function serializeToV1SavePayload(
   }
 
   return payload;
+}
+
+/**
+ * Walk a V1 mapping tree (which nests OBJECT → CUSTOM / DROPDOWN) and
+ * replace the `value` of the first mapping whose `encodingType === "BASE_64"`
+ * with the given `newValue`. Returns true if a replacement was made.
+ */
+function rewriteBase64MappingValue(mappings: V1Mapping[] | undefined, newValue: string): boolean {
+  if (!Array.isArray(mappings)) return false;
+  for (const m of mappings) {
+    if (m.encodingType === "BASE_64" && typeof m.value === "string") {
+      m.value = newValue;
+      return true;
+    }
+    if (Array.isArray(m.mappings) && rewriteBase64MappingValue(m.mappings, newValue)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Find the first leaf mapping in the tree (the deepest mapping with no
+ * children that has a `value`). Used as a last-resort target for inline
+ * SQL writes.
+ */
+function findFirstLeafMapping(mappings: V1Mapping[]): V1Mapping | null {
+  for (const m of mappings) {
+    if (Array.isArray(m.mappings) && m.mappings.length > 0) {
+      const leaf = findFirstLeafMapping(m.mappings);
+      if (leaf) return leaf;
+    } else if (typeof m.value === "string") {
+      return m;
+    }
+  }
+  return null;
 }
 
 /**
