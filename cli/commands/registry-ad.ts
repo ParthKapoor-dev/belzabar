@@ -20,6 +20,7 @@ import * as cmd_export from "../../automation-designer/commands/export/index";
 import * as child_info from "../../automation-designer/commands/child-info/index";
 import * as show from "../../automation-designer/commands/show/index";
 import * as test_case from "../../automation-designer/commands/test-case/index";
+import * as history from "../../automation-designer/commands/history/index";
 import * as test_report from "../../automation-designer/commands/test-report/index";
 import * as show_code from "../../automation-designer/commands/show-code/index";
 import * as state from "../../automation-designer/commands/state/index";
@@ -45,6 +46,7 @@ export const ADCommandRegistry: Record<string, any> = {
   "child-info": child_info,
   "show": show,
   "test-case": test_case,
+  "history": history,
   "test-report": test_report,
   "show-code": show_code,
   "state": state,

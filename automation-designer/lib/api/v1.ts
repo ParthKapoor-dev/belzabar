@@ -366,6 +366,199 @@ export async function testExecuteV1(method: HydratedMethod): Promise<V1TestExecu
   };
 }
 
+// ─── METHOD HISTORY (via published internal services) ────────────────────
+
+// Published UUIDs of the Expertly.Automation.Method.History service methods.
+// These are stable across environments (the internal services are core
+// platform, not user-generated).
+const HISTORY_SERVICE = {
+  listAll: "6b6ed77c-ecb3-4ae1-a43c-1c12ea3261d4",
+  get: "4b0b2407-951e-48f0-9796-ef0a361b803e",
+  restore: "4c834d4037cf50b8c986b44feab121c7",
+};
+
+export interface MethodVersionSummary {
+  methodVersionID: string;
+  methodVersion: number;
+  methodID: string;
+  isPublished: boolean;
+  isDeactivated: boolean;
+  addedBy: number;
+  addedWhen: string;
+}
+
+export interface MethodVersionFull extends MethodVersionSummary {
+  jsonDefinition: unknown;
+}
+
+/**
+ * List all saved versions of a method. Calls the published
+ * Expertly.Automation.Method.History.listAll service.
+ */
+export async function historyListAll(
+  methodUUID: string,
+  opts?: { includeDraft?: boolean },
+): Promise<MethodVersionSummary[]> {
+  const payload: Record<string, unknown> = { methodUUID };
+  if (opts?.includeDraft) payload.includeDraft = "true";
+
+  const path = `/rest/api/automation/chain/execute/${HISTORY_SERVICE.listAll}?encrypted=true`;
+  const response = await apiFetch(path, {
+    method: "POST",
+    authMode: "Raw",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new CliError(`History listAll failed: ${response.status}`, {
+      code: "HISTORY_LIST_FAILED",
+      details: await response.text(),
+    });
+  }
+
+  const body = (await response.json()) as Record<string, unknown>;
+  const items = extractHistoryResponse(body);
+  if (!Array.isArray(items)) return [];
+
+  return items.map(normalizeVersionSummary);
+}
+
+/**
+ * Fetch a specific version's full body (including jsonDefinition). Calls the
+ * published Expertly.Automation.Method.History.get service.
+ *
+ * The get endpoint requires `serviceName` + `methodName` + `version` (passing
+ * only `methodUUID` + `version` via the execute endpoint results in a 500).
+ * Callers should pass `category` (the service/category name) and `methodName`.
+ */
+export async function historyGet(opts: {
+  category: string;
+  methodName: string;
+  version: number;
+  includeDraft?: boolean;
+}): Promise<MethodVersionFull> {
+  const payload: Record<string, unknown> = {
+    serviceName: opts.category,
+    methodName: opts.methodName,
+    version: String(opts.version),
+  };
+  if (opts.includeDraft) payload.includeDraft = "true";
+
+  const path = `/rest/api/automation/chain/execute/${HISTORY_SERVICE.get}?encrypted=true`;
+  const response = await apiFetch(path, {
+    method: "POST",
+    authMode: "Raw",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new CliError(`History get failed: ${response.status}`, {
+      code: "HISTORY_GET_FAILED",
+      details: await response.text(),
+    });
+  }
+
+  const body = (await response.json()) as Record<string, unknown>;
+  const inner = extractHistoryResponseSingle(body);
+
+  return {
+    ...normalizeVersionSummary(inner),
+    jsonDefinition: inner.jsonDefinition,
+  };
+}
+
+/**
+ * Restore a method to a previous version. Calls the published
+ * Expertly.Automation.Method.History.restore service.
+ */
+export async function historyRestore(opts: {
+  category: string;
+  methodName: string;
+  version: number;
+  includeDraft?: boolean;
+}): Promise<boolean> {
+  const payload: Record<string, unknown> = {
+    serviceName: opts.category,
+    methodName: opts.methodName,
+    version: String(opts.version),
+  };
+  if (opts.includeDraft) payload.includeDraft = "true";
+
+  const path = `/rest/api/automation/chain/execute/${HISTORY_SERVICE.restore}?encrypted=true`;
+  const response = await apiFetch(path, {
+    method: "POST",
+    authMode: "Raw",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new CliError(`History restore failed: ${response.status}`, {
+      code: "HISTORY_RESTORE_FAILED",
+      details: await response.text(),
+    });
+  }
+
+  const body = (await response.json()) as Record<string, unknown>;
+  const inner = body.response;
+  if (typeof inner === "boolean") return inner;
+  if (typeof inner === "object" && inner != null) {
+    const r = (inner as Record<string, unknown>).response;
+    return r === true || r === "true";
+  }
+  return true;
+}
+
+// Unwrap the standard execute response wrapper
+function extractHistoryResponse(body: Record<string, unknown>): unknown[] {
+  // The execute endpoint wraps: { response: [...], executionStatus: {...} }
+  const resp = body.response;
+  if (Array.isArray(resp)) return resp;
+  if (resp && typeof resp === "object") {
+    const inner = (resp as Record<string, unknown>).response;
+    if (Array.isArray(inner)) return inner;
+  }
+  return [];
+}
+
+function extractHistoryResponseSingle(body: Record<string, unknown>): Record<string, unknown> {
+  // The execute endpoint wraps the result: the outermost object has
+  // `executionStatus` + the actual version fields at the same level. If
+  // there's a `response` wrapper we unwrap one level; otherwise the body
+  // itself IS the version object (it will have `methodVersionID`, etc.).
+  if (body.methodVersionID || body.methodVersion != null) {
+    return body;
+  }
+  const resp = body.response;
+  if (resp && typeof resp === "object" && !Array.isArray(resp)) {
+    const r = resp as Record<string, unknown>;
+    if (r.methodVersionID || r.methodVersion != null) {
+      return r;
+    }
+    const inner = r.response;
+    if (inner && typeof inner === "object" && !Array.isArray(inner)) {
+      return inner as Record<string, unknown>;
+    }
+    return r;
+  }
+  throw new CliError("Unexpected history get response shape", {
+    code: "HISTORY_GET_INVALID_RESPONSE",
+    details: body,
+  });
+}
+
+function normalizeVersionSummary(raw: unknown): MethodVersionSummary {
+  const r = (raw ?? {}) as Record<string, unknown>;
+  return {
+    methodVersionID: typeof r.methodVersionID === "string" ? r.methodVersionID : "",
+    methodVersion: typeof r.methodVersion === "number" ? r.methodVersion : 0,
+    methodID: typeof r.methodID === "string" ? r.methodID : "",
+    isPublished: r.isPublished === true,
+    isDeactivated: r.isDeactivated === true,
+    addedBy: typeof r.addedBy === "number" ? r.addedBy : 0,
+    addedWhen: typeof r.addedWhen === "string" ? r.addedWhen : "",
+  };
+}
+
 // Legacy helper kept for the `test` command's error-enrichment path where it
 // walks parsedSteps by automationId. Not exported from adApi.
 export function findStepByAutomationId(steps: ParsedStep[], id: string) {

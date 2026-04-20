@@ -1,0 +1,37 @@
+belz ad history <action> <uuid> [flags]
+
+Browse and restore previous versions of an AD method. Calls the published
+Expertly.Automation.Method.History service methods via the execute endpoint.
+
+Actions:
+  list <uuid>                         List all saved versions
+  show <uuid> --version N             Fetch + parse a specific version (shows
+                                      step kinds, inputs, full structure)
+  diff <uuid> --from N --to M           Compare two versions side by side (step
+                                      count, kind changes, input changes)
+  restore <uuid> --version N [--yes]  Revert the method to a previous version
+
+Flags:
+  --version <N>    Version number (for show/restore)
+  --from <N>       First version (for diff)
+  --to <M>         Second version (for diff)
+  --yes            Skip interactive confirmation (required for --llm mode)
+  --llm            Emit a JSON envelope
+
+Notes:
+  - 'list' returns metadata only (no full body). Use 'show' to fetch the
+    full jsonDefinition at a specific version.
+  - 'diff' fetches both versions in parallel and compares step structure,
+    step bodies, and inputs. It does NOT compute a textual diff of the
+    jsonDefinition — it compares parsed step representations.
+  - 'restore' is a write operation and goes through the confirmation gate.
+    It calls the Expertly.Automation.Method.History.restore internal service.
+  - Version numbers are integers starting at 1. Use 'list' to see which
+    versions exist.
+
+Examples:
+  belz ad history list 4e3f3f8d5f8a8160e879ae012989f6f9
+  belz ad history show 4e3f3f8d... --version 3
+  belz ad history diff 4e3f3f8d... --from 1 --to 5
+  belz ad history show 4e3f3f8d... --version 1 --llm | jq '.data.method.parsedSteps'
+  belz ad history restore 4e3f3f8d... --version 3 --yes

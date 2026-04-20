@@ -15,6 +15,8 @@ import * as v2 from "./v2";
 export type {
   SaveMethodResult as V1SaveMethodResult,
   V1TestExecuteResult,
+  MethodVersionSummary,
+  MethodVersionFull,
 } from "./v1";
 export type { V2TestExecuteResult } from "./v2";
 
@@ -123,5 +125,32 @@ export const adApi = {
     inputs: Record<string, string>,
   ): Promise<v2.V2TestExecuteResult> {
     return v2.testExecute(chainUuid, inputs);
+  },
+
+  // ─── Method History ──────────────────────────────────────────────────
+
+  async historyListAll(
+    methodUUID: string,
+    opts?: { includeDraft?: boolean },
+  ): Promise<v1.MethodVersionSummary[]> {
+    return v1.historyListAll(methodUUID, opts);
+  },
+
+  async historyGet(opts: {
+    category: string;
+    methodName: string;
+    version: number;
+    includeDraft?: boolean;
+  }): Promise<v1.MethodVersionFull> {
+    return v1.historyGet(opts);
+  },
+
+  async historyRestore(opts: {
+    category: string;
+    methodName: string;
+    version: number;
+    includeDraft?: boolean;
+  }): Promise<boolean> {
+    return v1.historyRestore(opts);
   },
 };
