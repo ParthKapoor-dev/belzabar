@@ -368,14 +368,30 @@ export async function testExecuteV1(method: HydratedMethod): Promise<V1TestExecu
 
 // ─── METHOD HISTORY (via published internal services) ────────────────────
 
-// Published UUIDs of the Expertly.Automation.Method.History service methods.
-// These are stable across environments (the internal services are core
-// platform, not user-generated).
-const HISTORY_SERVICE = {
-  listAll: "6b6ed77c-ecb3-4ae1-a43c-1c12ea3261d4",
-  get: "4b0b2407-951e-48f0-9796-ef0a361b803e",
-  restore: "4c834d4037cf50b8c986b44feab121c7",
-};
+// The published UUIDs of the Expertly.Automation.Method.History service
+// methods are environment-specific. We discover them at runtime via the
+// child-info endpoint and cache them for the lifetime of the process.
+const HISTORY_SERVICE_CATEGORY = "Expertly.Automation.Method.History";
+
+const _historyUuidCache: Record<string, string> = {};
+
+async function resolveHistoryMethodUuid(methodName: string): Promise<string> {
+  if (_historyUuidCache[methodName]) return _historyUuidCache[methodName]!;
+
+  const info = await fetchChildMethodInfo(HISTORY_SERVICE_CATEGORY, methodName);
+  const body = info as Record<string, unknown>;
+  const uid =
+    (typeof body.serviceChainUID === "string" && body.serviceChainUID) ||
+    (typeof body.methodUUID === "string" && body.methodUUID);
+  if (!uid) {
+    throw new CliError(
+      `Could not resolve published UUID for ${HISTORY_SERVICE_CATEGORY}.${methodName} in this environment.`,
+      { code: "HISTORY_SERVICE_NOT_FOUND", details: { methodName, body } },
+    );
+  }
+  _historyUuidCache[methodName] = uid;
+  return uid;
+}
 
 export interface MethodVersionSummary {
   methodVersionID: string;
@@ -402,7 +418,8 @@ export async function historyListAll(
   const payload: Record<string, unknown> = { methodUUID };
   if (opts?.includeDraft) payload.includeDraft = "true";
 
-  const path = `/rest/api/automation/chain/execute/${HISTORY_SERVICE.listAll}?encrypted=true`;
+  const publishedUuid = await resolveHistoryMethodUuid("listAll");
+  const path = `/rest/api/automation/chain/execute/${publishedUuid}?encrypted=true`;
   const response = await apiFetch(path, {
     method: "POST",
     authMode: "Raw",
@@ -444,7 +461,8 @@ export async function historyGet(opts: {
   };
   if (opts.includeDraft) payload.includeDraft = "true";
 
-  const path = `/rest/api/automation/chain/execute/${HISTORY_SERVICE.get}?encrypted=true`;
+  const publishedUuid = await resolveHistoryMethodUuid("get");
+  const path = `/rest/api/automation/chain/execute/${publishedUuid}?encrypted=true`;
   const response = await apiFetch(path, {
     method: "POST",
     authMode: "Raw",
@@ -484,7 +502,8 @@ export async function historyRestore(opts: {
   };
   if (opts.includeDraft) payload.includeDraft = "true";
 
-  const path = `/rest/api/automation/chain/execute/${HISTORY_SERVICE.restore}?encrypted=true`;
+  const publishedUuid = await resolveHistoryMethodUuid("restore");
+  const path = `/rest/api/automation/chain/execute/${publishedUuid}?encrypted=true`;
   const response = await apiFetch(path, {
     method: "POST",
     authMode: "Raw",
