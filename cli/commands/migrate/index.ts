@@ -1,4 +1,4 @@
-import { CliError, ok, type CommandModule, type OutputMode } from "@belzabar/core";
+import { CliError, ok, lifecycle, type CommandModule, type OutputMode } from "@belzabar/core";
 import {
   cleanupMigrationExecution,
   DB_MIGRATION_TOOL_BASE_URL,
@@ -77,18 +77,18 @@ function isRunSuccessful(parsed: ParsedMigrationOutput): boolean {
 }
 
 async function executeRun(args: MigrateRunArgs, deps: MigrateCommandDeps, outputMode: OutputMode): Promise<MigrateRunData> {
-  const progress = (message: string) => {
-    if (outputMode !== "human" || args.quiet) return;
-    process.stderr.write(`[migrate] ${message}\n`);
-  };
+  const showSpinner = outputMode === "human" && !args.quiet;
+  const spin = showSpinner
+    ? lifecycle.spinner("Migrating")
+    : null;
+  spin?.start("Resolving NSM migration profiles…");
 
-  progress("Resolving NSM migration profiles...");
   const profileResolution = await deps.discoverProfiles();
   const profile = args.profile as string;
   assertProfileAvailable(profile, profileResolution);
-  progress(`Using profile '${profile}' (source: ${profileResolution.source}).`);
+  spin?.message(`Using profile '${profile}' (source: ${profileResolution.source})`);
 
-  progress(`Starting migration execution for module ${args.moduleName} (${args.ids.length} id(s))...`);
+  spin?.message(`Starting execution for ${args.moduleName} (${args.ids.length} id(s))`);
   const startResult = await deps.startExecution({
     scriptName: args.scriptName,
     profile,
@@ -99,8 +99,7 @@ async function executeRun(args: MigrateRunArgs, deps: MigrateCommandDeps, output
     migrateDependents: args.migrateDependents,
     migrationId: args.migrationId,
   });
-  progress(`Execution started: ${startResult.executionId}`);
-  progress("Connecting to migration websocket stream and sending confirmation...");
+  spin?.message(`Execution started: ${startResult.executionId}`);
 
   const streamResult = await deps.streamExecution(startResult.executionId, {
     headers: {
@@ -113,12 +112,13 @@ async function executeRun(args: MigrateRunArgs, deps: MigrateCommandDeps, output
       if (!trimmed) return;
       const lines = trimmed.split(/\r?\n/g).filter(Boolean);
       for (const line of lines) {
-        if (outputMode !== "human" || args.quiet) continue;
-        process.stderr.write(`[migrate:stream] ${line}\n`);
+        if (!showSpinner) continue;
+        // Stream chunks are verbose; show only the latest in the spinner line.
+        spin?.message(line.length > 100 ? `${line.slice(0, 100)}…` : line);
       }
     },
   });
-  progress(
+  spin?.stop(
     `Websocket closed${streamResult.closeCode ? ` (code ${streamResult.closeCode}${streamResult.closeReason ? `, ${streamResult.closeReason}` : ""})` : ""}.`
   );
 
@@ -136,7 +136,7 @@ async function executeRun(args: MigrateRunArgs, deps: MigrateCommandDeps, output
     });
   }
 
-  progress("Migration stream parsed. Finalizing cleanup...");
+  spin?.message("Migration stream parsed. Finalizing cleanup…");
   const cleanupResult =
     args.cleanup === "auto"
       ? await deps.cleanupExecution(startResult.executionId, {
@@ -144,7 +144,7 @@ async function executeRun(args: MigrateRunArgs, deps: MigrateCommandDeps, output
         })
       : { ok: true, error: undefined };
   if (!cleanupResult.ok) {
-    progress(`Cleanup request failed (${cleanupResult.error || cleanupResult.status || "unknown"}). Continuing.`);
+    spin?.message(`Cleanup request failed (${cleanupResult.error || cleanupResult.status || "unknown"}). Continuing.`);
   }
 
   const success = isRunSuccessful(parsed);
@@ -186,7 +186,7 @@ async function executeRun(args: MigrateRunArgs, deps: MigrateCommandDeps, output
   }
 
   if (args.outPath) {
-    progress(`Writing artifacts to '${args.outPath}'...`);
+    spin?.message(`Writing artifacts to '${args.outPath}'…`);
     data.artifacts = await deps.writeArtifacts(args.outPath, {
       summary: data,
       outputText: parsed.cleanedOutput,

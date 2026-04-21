@@ -4,6 +4,7 @@ import { Config, BELZ_CONFIG_DIR } from "./config";
 import type { AuthSession } from "./types";
 import { vlog, vtime } from "./verbose";
 import { prepareIpv4Fetch } from "./dns";
+import { lifecycle } from "./ui";
 
 const SESSION_DIR = join(BELZ_CONFIG_DIR, "sessions");
 
@@ -50,7 +51,8 @@ export async function login(): Promise<AuthSession> {
      throw new Error(`Missing credentials for environment '${envName}'. Check your .env file.`);
   }
 
-  process.stderr.write(`[Auth] 🔄 Authenticating to ${envName} (${url})...\n`);
+  const spin = lifecycle.spinner(`Authenticating to ${envName}`);
+  spin.start(`Authenticating to ${envName}`);
 
   const prepared = await prepareIpv4Fetch(url, {
     method: "POST",
@@ -71,6 +73,7 @@ export async function login(): Promise<AuthSession> {
     response = await fetch(prepared.url, prepared.init);
   } catch (err) {
     stop();
+    spin.error(`Authentication failed for ${envName}`);
     vlog(`auth login FAILED`, { error: String(err) });
     throw err;
   }
@@ -80,6 +83,7 @@ export async function login(): Promise<AuthSession> {
   const bodyText = await response.text();
 
   if (!response.ok) {
+    spin.error(`Login failed for ${envName} (${response.status})`);
     throw new Error(`Login failed for ${envName} (${response.status}): ${bodyText}`);
   }
 
@@ -109,10 +113,12 @@ export async function login(): Promise<AuthSession> {
   }
 
   if (!token) {
+    spin.error("Authentication succeeded but no token was returned");
     throw new Error("Failed to find token in response body or headers");
   }
 
   const session: AuthSession = { token, refreshToken };
   await saveSession(session);
+  spin.stop(`Authenticated to ${envName}`);
   return session;
 }
