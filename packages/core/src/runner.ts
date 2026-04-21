@@ -8,7 +8,7 @@ import {
   type CommandResult,
   type HumanPresenterHelpers,
 } from "./command";
-import { renderHuman, renderLLM } from "./output";
+import { renderHuman, renderLLM, setOutputMode } from "./ui";
 import { vlog } from "./verbose";
 
 export interface CliOptions {
@@ -62,6 +62,8 @@ function stripGlobalFlags(argv: string[]): {
     outputMode = "llm";
     args.splice(llmIndex, 1);
   }
+
+  setOutputMode(outputMode);
 
   const envIndex = args.findIndex(a => a === "--env" || a === "-e");
   if (envIndex !== -1) {

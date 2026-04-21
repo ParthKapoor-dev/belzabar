@@ -42,6 +42,8 @@ export interface HumanPresenterHelpers {
   info(message: string): void;
   warn(message: string): void;
   error(message: string): void;
+  step(message: string): void;
+  note(title: string, body: string): void;
   kv(key: string, value: unknown): void;
   table(headers: string[], rows: unknown[][]): void;
   object(value: unknown): void;
