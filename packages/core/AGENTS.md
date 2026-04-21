@@ -11,7 +11,9 @@ It provides:
 - HTTP client (`apiFetch`)
 - CLI runners (flat and namespaced)
 - Command module interface and result types
-- Output rendering (display tables, sections, objects)
+- **Unified UI layer** (`src/ui.ts`): clack-backed prompts, lifecycle helpers, spinners,
+  and the `HumanUi` implementation that every command's `presentHuman()` consumes. Tables
+  are still rendered by `cli-table3`; everything else is `@clack/prompts` + `picocolors`.
 
 ---
 
@@ -54,10 +56,16 @@ Everything is exported from `src/index.ts`. Grouped by concern:
 | `fail(message, details?)` | Returns a failed command result |
 | `CliError` | Error class for user-facing failures (caught by runner, rendered cleanly) |
 
-### Display
+### UI (`src/ui.ts`)
 | Export | Description |
 |--------|-------------|
-| `DisplayManager` | Renders tables, section headers, and objects in human mode |
+| `renderHuman(envelope, presenter?)` | Render a command envelope to humans; uses the presenter if given, else a default table/object auto-renderer |
+| `renderLLM(envelope)` | Emits a single-line JSON envelope to stdout — byte-stable for agents |
+| `HumanPresenterHelpers` | Interface passed to `presentHuman()`: `section/text/success/info/warn/error/step/note/kv/table/object` |
+| `lifecycle` | `{ intro, outro, cancel, note, step, spinner }` — scaffolding that no-ops in `--llm` mode |
+| `prompts` | `{ confirm, text, password, select, multiselect }` — throws `INTERACTIVE_NOT_SUPPORTED` in `--llm` mode and `NO_TTY` when stdin isn't a TTY |
+| `setOutputMode(mode)` / `getOutputMode()` | Module-level mode used by helpers that don't hold a `CommandContext` |
+| `colors` | Re-export of `picocolors` for commands that want custom inline styling |
 
 ---
 
@@ -69,11 +77,10 @@ Everything is exported from `src/index.ts`. Grouped by concern:
 | `src/config.ts` | `Config` class, `BELZ_CONFIG_DIR`, env var fallback logic |
 | `src/auth.ts` | `login`, `loadSession`, `saveSession`, `AuthSession` |
 | `src/api.ts` | `apiFetch` — authenticated HTTP with session injection |
-| `src/runner.ts` | `runCli`, `runNamespacedCli`, routing, envelope wrapping, help dispatch |
-| `src/command.ts` | `CommandModule` interface |
-| `src/output.ts` | `ok`, `fail`, `CliError`, `CommandResult`, `CommandEnvelope` |
-| `src/display.ts` | `DisplayManager` — table/section/object rendering |
-| `src/types.ts` | Shared types (`OutputMode`, `CommandError`, `CommandMeta`, etc.) |
+| `src/runner.ts` | `runCli`, `runNamespacedCli`, routing, envelope wrapping, help dispatch; also calls `setOutputMode()` after stripping `--llm` |
+| `src/command.ts` | `CommandModule`, `CommandContext`, `HumanPresenterHelpers`, `ok`, `fail`, `CliError`, `CommandResult`, `CommandEnvelope` |
+| `src/ui.ts` | Unified UI layer: `renderHuman`, `renderLLM`, `HumanUi`, `lifecycle`, `prompts`, `setOutputMode`, `colors` |
+| `src/types.ts` | Shared domain types (`Environment`, `AuthSession`, etc.) |
 
 ---
 

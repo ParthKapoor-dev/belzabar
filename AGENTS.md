@@ -68,8 +68,12 @@ imports at build time. This keeps the dependency graph simple and the binary sel
 ```
 belz ad <cmd>      → automation-designer/commands/<cmd>/
 belz pd <cmd>      → page-designer/commands/<cmd>/
+belz tw <cmd>      → teamwork/commands/<cmd>/
 belz migrate       → cli/commands/migrate/ + migrations/lib/
+belz config        → cli/commands/config/
+belz web           → cli/commands/web/
 belz envs          → cli/commands/envs/
+belz setup         → cli/commands/setup/   (interactive first-time credentials)
 ```
 
 The routing is implemented in `packages/core/src/runner.ts` (`runNamespacedCli`). The `cli/`
@@ -118,6 +122,7 @@ See `cli/AGENTS.md` for full build and development details.
 - All commands implement `CommandModule` from `@belzabar/core` (`parseArgs` + `execute` + optional `presentHuman`)
 - `ok(data)` / `fail(message)` / `throw new CliError(message)` for results
 - `--llm` flag outputs a structured JSON envelope; `--env` sets the active environment
+- **All user-facing UI goes through `@belzabar/core`'s unified `ui` module** — prompts, spinners, tables, log.* helpers. Never use `inquirer`, `chalk`, or hand-rolled readline selectors. See `packages/core/AGENTS.md` for the surface. Prompts automatically refuse in `--llm` mode.
 - `help.txt` files live alongside each command's `index.ts` and follow a strict template
   (defined in `automation-designer/AGENTS.md`)
 - `desc.txt` files live alongside each `help.txt`; one line per invocation variant in format
