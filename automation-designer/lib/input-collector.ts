@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import inquirer from "inquirer";
+import { prompts, getOutputMode, CliError } from "@belzabar/core";
 import type { MethodField } from "./types/common";
 
 /**
@@ -14,7 +14,6 @@ export class InputCollector {
   ): Promise<Record<string, unknown>> {
     const collected: Record<string, unknown> = {};
 
-    // 1. File Mode
     if (filePath) {
       try {
         const content = await readFile(filePath, "utf-8");
@@ -33,50 +32,46 @@ export class InputCollector {
       }
     }
 
-    // 2. Interactive Mode
-    console.log("Please provide values for the method inputs:");
+    if (getOutputMode() === "llm") {
+      throw new CliError(
+        "Interactive input collection is not supported with --llm. Provide --input-file instead.",
+        { code: "INTERACTIVE_NOT_SUPPORTED" },
+      );
+    }
 
     for (const input of inputs) {
       const label = input.displayName && input.displayName !== input.code
         ? `${input.displayName} (${input.code})`
         : input.code;
-      const message = `${label} [${input.type}]${input.required ? " *" : ""}:`;
+      const message = `${label} [${input.type}]${input.required ? " *" : ""}`;
 
       if (input.type === "BOOLEAN") {
-        const { value } = await inquirer.prompt([
-          {
-            type: "confirm",
-            name: "value",
-            message,
-            default: false,
-          },
-        ]);
-        collected[input.code] = value;
-      } else {
-        const { value } = await inquirer.prompt([
-          {
-            type: "input",
-            name: "value",
-            message,
-            validate: (val: string) => {
-              if (input.required && !val) return "This field is required.";
-              if (input.type === "JSON" && val) {
-                try {
-                  JSON.parse(val);
-                } catch {
-                  return "Invalid JSON string.";
-                }
-              }
-              return true;
-            },
-          },
-        ]);
+        collected[input.code] = await prompts.confirm({
+          message,
+          initialValue: false,
+        });
+        continue;
+      }
 
-        if (value) {
-          collected[input.code] = input.type === "JSON" ? JSON.parse(value) : value;
-        } else {
-          collected[input.code] = null;
-        }
+      const raw = await prompts.text({
+        message,
+        validate: (val: string) => {
+          if (input.required && !val) return "This field is required.";
+          if (input.type === "JSON" && val) {
+            try {
+              JSON.parse(val);
+            } catch {
+              return "Invalid JSON string.";
+            }
+          }
+          return undefined;
+        },
+      });
+
+      if (raw) {
+        collected[input.code] = input.type === "JSON" ? JSON.parse(raw) : raw;
+      } else {
+        collected[input.code] = null;
       }
     }
 

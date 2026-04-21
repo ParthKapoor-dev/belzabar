@@ -1,4 +1,4 @@
-import { CliError } from "@belzabar/core";
+import { CliError, prompts } from "@belzabar/core";
 import readline from "node:readline";
 import {
   executeSqlReadQuery,
@@ -17,7 +17,6 @@ import { normalizeSqlDatabases, resolveSqlDatabase } from "../selector";
 import { getSqlTuiHelpText, parseSqlTuiMetaCommand, SQL_TUI_META_COMMANDS } from "./commands";
 import { loadSqlHistory, persistSqlHistory } from "./history";
 import { renderRowsWithPagination } from "./renderer";
-import { selectFromList } from "./selector";
 import type { SqlTuiArgs, SqlTuiSessionState, SqlTuiFormat, SqlTuiMode } from "./types";
 
 interface SqlTuiSessionSummary {
@@ -258,15 +257,17 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
     });
     selectedDb = resolution.selected;
   } else {
-    const defaultIdx = Math.max(
-      0,
-      databases.findIndex((db) => db.nickname === (envDefault || DEFAULT_SQL_DB_FALLBACK))
-    );
-    const dbOptions = databases.map((db) => ({
-      label: `${db.nickname} (${db.id})${db.host ? `  ${db.host}` : ""}`,
-      value: db,
-    }));
-    selectedDb = await selectFromList("Database:", dbOptions, defaultIdx);
+    const fallback = envDefault || DEFAULT_SQL_DB_FALLBACK;
+    const initialDb = databases.find((db) => db.nickname === fallback) ?? databases[0];
+    selectedDb = await prompts.select({
+      message: "Database:",
+      options: databases.map((db) => ({
+        label: db.nickname,
+        value: db,
+        hint: db.host ? `id ${db.id} · ${db.host}` : `id ${db.id}`,
+      })),
+      initialValue: initialDb,
+    });
   }
 
   // --- Mode selection ---
@@ -274,16 +275,16 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
   if (args.mode) {
     selectedMode = args.mode;
   } else {
-    selectedMode = await selectFromList(
-      "Mode:",
-      [
-        { label: "read   (SELECT queries)",               value: "read" as const },
-        { label: "insert (INSERT rows)",                  value: "insert" as const },
-        { label: "update (UPDATE / DELETE rows)",         value: "update" as const },
-        { label: "modify (DDL — ALTER / CREATE / DROP)",  value: "modify" as const },
+    selectedMode = await prompts.select<SqlTuiMode>({
+      message: "Mode:",
+      options: [
+        { label: "read",   value: "read",   hint: "SELECT queries" },
+        { label: "insert", value: "insert", hint: "INSERT rows" },
+        { label: "update", value: "update", hint: "UPDATE / DELETE rows" },
+        { label: "modify", value: "modify", hint: "DDL — ALTER / CREATE / DROP" },
       ],
-      0
-    );
+      initialValue: "read",
+    });
   }
 
   // Load execution context and history in parallel.

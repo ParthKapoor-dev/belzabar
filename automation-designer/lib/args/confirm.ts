@@ -1,14 +1,4 @@
-// Interactive confirmation helper used by every AD write command.
-//
-// Rules:
-//   - Human mode: prompt via inquirer unless --yes was passed.
-//   - LLM mode: --yes is mandatory; otherwise throw AD_CONFIRMATION_REQUIRED
-//     so tool-callers cannot accidentally mutate state from a script.
-//   - Always log the intended call to stderr (the caller decides what to
-//     include in the log line).
-
-import { CliError } from "@belzabar/core";
-import inquirer from "inquirer";
+import { CliError, lifecycle, prompts } from "@belzabar/core";
 
 export interface ConfirmOpts {
   yes: boolean;
@@ -27,20 +17,14 @@ export async function requireConfirmation(opts: ConfirmOpts): Promise<void> {
     );
   }
 
-  console.log(`\nAbout to ${opts.action}:`);
-  const pad = Math.max(...opts.details.map(([k]) => k.length));
-  for (const [k, v] of opts.details) {
-    console.log(`  ${k.padEnd(pad)}  ${v}`);
-  }
+  const pad = opts.details.length ? Math.max(...opts.details.map(([k]) => k.length)) : 0;
+  const body = opts.details.map(([k, v]) => `${k.padEnd(pad)}  ${v}`).join("\n") || "(no details)";
+  lifecycle.note(`About to ${opts.action}`, body);
 
-  const { confirmed } = await inquirer.prompt([
-    {
-      type: "confirm",
-      name: "confirmed",
-      message: "Proceed?",
-      default: false,
-    },
-  ]);
+  const confirmed = await prompts.confirm({
+    message: "Proceed?",
+    initialValue: false,
+  });
 
   if (!confirmed) {
     throw new CliError("Aborted by user.", { code: "AD_USER_ABORT" });
