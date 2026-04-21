@@ -1,0 +1,23 @@
+Usage: belz setup [flags]
+
+Interactive first-time setup. Walks you through credential entry for each
+built-in environment (nsm-dev, nsm-qa, nsm-uat) and optional Teamwork creds,
+then writes ~/.belz/config.json.
+
+Passwords are base64-encoded before being stored. The config file is the
+source of truth: it overrides any matching environment variables.
+
+Flags:
+  --env-file <path>  Load credentials from a .env file instead of prompting.
+                     The file should define NSM_DEV_USER, NSM_DEV_PASSWORD,
+                     NSM_QA_USER, NSM_QA_PASSWORD, NSM_UAT_USER, NSM_UAT_PASSWORD,
+                     TEAMWORK_EMAIL, TEAMWORK_PASSWORD as needed.
+  --force            Overwrite an existing config without asking.
+
+Note: 'belz setup' refuses to run with --llm or on a non-TTY. Use --env-file
+to populate config non-interactively.
+
+Examples:
+  belz setup
+  belz setup --env-file ./secrets.env
+  belz setup --env-file ./secrets.env --force

@@ -2,10 +2,11 @@
 # install.sh — Install or update the belz CLI
 #
 # Behaviour:
-#   • If belz is already installed: rebuilds the binary only.
-#     Your credentials, sessions, and cache in ~/.belz/ are untouched.
-#   • If belz is not yet installed: runs first-time setup — prompts for
-#     credentials and writes ~/.belz/config.json before building.
+#   • Always rebuilds the binary and installs it to $INSTALL_DIR.
+#   • If ~/.belz/config.json does not yet exist, runs `belz setup` at the end
+#     to walk through interactive credential entry (or consumes --env-file).
+#   • Existing credentials, sessions, and cache in ~/.belz/ are never touched
+#     by this script.
 #
 # Usage: ./install.sh [--env-file <path>] [--install-dir <dir>]
 #
@@ -47,116 +48,20 @@ fi
 echo "✅ bun found: $(bun --version)"
 
 # ── 2. Detect existing installation ──────────────────────────────────────────
-IS_UPDATE=false
 if [[ -f "$INSTALL_DIR/belz" ]]; then
-  IS_UPDATE=true
   echo ""
   echo "📦 Existing installation detected at $INSTALL_DIR/belz"
   echo "   Updating binary — your credentials and sessions in ~/.belz/ are untouched."
 fi
 
-# ── 3. First-time setup: load / prompt credentials ───────────────────────────
-if [[ "$IS_UPDATE" == false ]]; then
-  echo ""
-  echo "🆕 No existing installation found. Running first-time setup..."
-
-  declare -A ENV_URLS=(
-    [nsm-dev]="https://nsm-dev.nc.verifi.dev"
-    [nsm-qa]="https://nsm-qa.nc.verifi.dev"
-    [nsm-uat]="https://nsm-uat.nc.verifi.dev"
-  )
-
-  declare -A ENV_USERS
-  declare -A ENV_PASS_B64
-
-  # Prompt for .env file path if not already provided via --env-file
-  if [[ -z "$ENV_FILE" ]]; then
-    echo ""
-    read -rp "📂 Path to .env credentials file (leave blank to enter manually): " _env_file_input
-    if [[ -n "$_env_file_input" ]]; then
-      ENV_FILE="$_env_file_input"
-    fi
-  fi
-
-  _maybe_encode() {
-    local val="$1"
-    if [[ -z "$val" ]]; then echo ""; return; fi
-    if echo "$val" | base64 -d &>/dev/null 2>&1; then
-      echo "$val"
-    else
-      echo -n "$val" | base64
-    fi
-  }
-
-  if [[ -n "$ENV_FILE" ]]; then
-    echo "📂 Loading credentials from: $ENV_FILE"
-    set -a
-    # shellcheck disable=SC1090
-    source "$ENV_FILE"
-    set +a
-
-    ENV_USERS[nsm-dev]="${NSM_DEV_USER:-}"
-    ENV_USERS[nsm-qa]="${NSM_QA_USER:-}"
-    ENV_USERS[nsm-uat]="${NSM_UAT_USER:-}"
-
-    ENV_PASS_B64[nsm-dev]="$(_maybe_encode "${NSM_DEV_PASSWORD:-}")"
-    ENV_PASS_B64[nsm-qa]="$(_maybe_encode "${NSM_QA_PASSWORD:-}")"
-    ENV_PASS_B64[nsm-uat]="$(_maybe_encode "${NSM_UAT_PASSWORD:-}")"
-  else
-    echo "🔑 Enter credentials for each environment (leave blank to skip)."
-    for env in nsm-dev nsm-qa nsm-uat; do
-      echo ""
-      echo "  Environment: $env (${ENV_URLS[$env]})"
-      read -rp "    Username: " ENV_USERS[$env]
-      read -rsp "    Password: " _plain_pass
-      echo ""
-      if [[ -n "$_plain_pass" ]]; then
-        ENV_PASS_B64[$env]="$(echo -n "$_plain_pass" | base64)"
-      else
-        ENV_PASS_B64[$env]=""
-      fi
-    done
-  fi
-
-  # Write ~/.belz/config.json
-  mkdir -p "$BELZ_CONFIG_DIR"
-
-  _env_entry() {
-    local env="$1"
-    local url="${ENV_URLS[$env]}"
-    local user="${ENV_USERS[$env]:-}"
-    local pass="${ENV_PASS_B64[$env]:-}"
-    echo "    \"$env\": {"
-    echo "      \"url\": \"$url\""
-    [[ -n "$user" ]] && echo "      ,\"user\": \"$user\""
-    [[ -n "$pass" ]] && echo "      ,\"password\": \"$pass\""
-    echo "    }"
-  }
-
-  CONFIG_JSON="$(cat <<EOF
-{
-  "environments": {
-$(_env_entry nsm-dev),
-$(_env_entry nsm-qa),
-$(_env_entry nsm-uat)
-  }
-}
-EOF
-)"
-
-  echo "$CONFIG_JSON" > "$BELZ_CONFIG_DIR/config.json"
-  chmod 600 "$BELZ_CONFIG_DIR/config.json"
-  echo "✅ Config written to $BELZ_CONFIG_DIR/config.json"
-
-  # Migrate old sessions (copy only, never delete)
-  OLD_SESSIONS="${HOME}/.belzabar-cli/sessions"
-  NEW_SESSIONS="${BELZ_CONFIG_DIR}/sessions"
-  if [[ -d "$OLD_SESSIONS" ]]; then
-    echo "📦 Migrating sessions from $OLD_SESSIONS → $NEW_SESSIONS"
-    mkdir -p "$NEW_SESSIONS"
-    cp -n "$OLD_SESSIONS"/*.json "$NEW_SESSIONS/" 2>/dev/null || true
-    echo "   (old directory preserved at $OLD_SESSIONS)"
-  fi
+# ── 3. Migrate legacy sessions (non-destructive copy only) ───────────────────
+OLD_SESSIONS="${HOME}/.belzabar-cli/sessions"
+NEW_SESSIONS="${BELZ_CONFIG_DIR}/sessions"
+if [[ -d "$OLD_SESSIONS" && ! -d "$NEW_SESSIONS" ]]; then
+  echo "📦 Migrating sessions from $OLD_SESSIONS → $NEW_SESSIONS"
+  mkdir -p "$NEW_SESSIONS"
+  cp -n "$OLD_SESSIONS"/*.json "$NEW_SESSIONS/" 2>/dev/null || true
+  echo "   (old directory preserved at $OLD_SESSIONS)"
 fi
 
 # ── 4. Install dependencies ───────────────────────────────────────────────────
@@ -220,9 +125,17 @@ if ! echo ":${PATH}:" | grep -q ":${INSTALL_DIR}:"; then
   echo "   export PATH=\"\$PATH:$INSTALL_DIR\""
 fi
 
-echo ""
-if [[ "$IS_UPDATE" == true ]]; then
-  echo "🎉 Done! belz has been updated. Try: belz --help"
-else
-  echo "🎉 Done! belz is installed. Try: belz --help"
+# ── 8. First-time setup via `belz setup` ─────────────────────────────────────
+if [[ ! -f "$BELZ_CONFIG_DIR/config.json" ]]; then
+  echo ""
+  echo "🆕 No config found at $BELZ_CONFIG_DIR/config.json — running 'belz setup'…"
+  SETUP_ARGS=()
+  [[ -n "$ENV_FILE" ]] && SETUP_ARGS+=("--env-file" "$ENV_FILE")
+  if ! "$INSTALL_DIR/belz" setup "${SETUP_ARGS[@]}"; then
+    echo "❌ Setup aborted. Re-run 'belz setup' any time to finish configuration." >&2
+    exit 1
+  fi
 fi
+
+echo ""
+echo "🎉 Done! Try: belz --help"

@@ -3,11 +3,13 @@
 import * as envs from "./envs/index";
 import * as config from "./config/index";
 import * as web from "./web/index";
+import * as setup from "./setup/index";
 import * as migrate from "./migrate/index";
 
 export const TopLevelCommandRegistry: Record<string, any> = {
   "envs": envs,
   "config": config,
   "web": web,
+  "setup": setup,
   "migrate": migrate,
 };
