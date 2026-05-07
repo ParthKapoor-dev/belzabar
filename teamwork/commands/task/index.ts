@@ -102,6 +102,28 @@ export function presentHuman(envelope: CommandEnvelope<GetTaskData>, ui: HumanPr
     );
   }
 
+  // ── Subtasks Table ──
+  if (task.subtasks.length > 0) {
+    ui.section("Subtasks");
+    const SUBTASK_CAP = 50;
+    const visible = task.subtasks.slice(0, SUBTASK_CAP);
+    ui.table(
+      ["#", "ID", "Name", "Status", "Progress", "Due Date", "Assignees"],
+      visible.map((s, i) => [
+        i + 1,
+        s.id,
+        s.name.length > 50 ? s.name.slice(0, 47) + "..." : s.name,
+        s.status,
+        `${s.progress}%`,
+        formatDate(s.dueDate),
+        s.assigneeCount || "",
+      ]),
+    );
+    if (task.subtasks.length > SUBTASK_CAP) {
+      ui.text(`... and ${task.subtasks.length - SUBTASK_CAP} more`);
+    }
+  }
+
   // ── Description ──
   if (task.description) {
     ui.section("Description");

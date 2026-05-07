@@ -1,7 +1,7 @@
 Usage: belz tw task <TASK_ID|URL> [flags]
 
 Fetch a Teamwork task by ID or URL, including assignees, tags, status,
-workflow stage, description, and comment stats.
+workflow stage, description, comment stats, and subtasks.
 
 Arguments:
   <TASK_ID|URL>         Numeric task ID or full Teamwork task URL.

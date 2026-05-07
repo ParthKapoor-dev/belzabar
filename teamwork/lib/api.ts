@@ -1,5 +1,5 @@
 import { ensureTeamworkAuth, teamworkLogin } from "./auth";
-import type { TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkComment } from "./types";
+import type { TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkSubtask, TeamworkComment } from "./types";
 
 const TEAMWORK_BASE = "https://projects.webintensive.com";
 
@@ -81,6 +81,14 @@ export async function fetchTask(taskId: number): Promise<TeamworkTask> {
     parentTaskName = included.tasks?.[task.parentTaskId]?.name ?? null;
   }
 
+  // Resolve subtasks. The /tasks/{id}.json endpoint does NOT include subtask details inline
+  // (only `subTaskIds`), so we make a follow-up call to /tasks.json?parentTaskId=… and preserve
+  // the parent's `subTaskIds` ordering.
+  const subTaskIds: number[] = task.subTaskIds ?? task.subtaskIds ?? [];
+  const subtasks: TeamworkSubtask[] = subTaskIds.length > 0
+    ? await fetchSubtasks(task.id, subTaskIds)
+    : [];
+
   // Resolve tasklist and project names
   const tasklistName = included.tasklists?.[task.tasklistId]?.name ?? null;
   const projectName = included.tasklists?.[task.tasklistId]?.projectId
@@ -121,7 +129,40 @@ export async function fetchTask(taskId: number): Promise<TeamworkTask> {
     workflowStage,
     commentStats,
     loggedMinutes,
+    subtasks,
   };
+}
+
+// ── Subtasks ────────────────────────────────────────────────────────────────
+
+async function fetchSubtasks(parentTaskId: number, orderHint: number[]): Promise<TeamworkSubtask[]> {
+  const params = new URLSearchParams({
+    parentTaskId: String(parentTaskId),
+    includeCompletedTasks: "true",
+    pageSize: "250",
+  });
+  const response = await teamworkFetch(`/projects/api/v3/tasks.json?${params}`);
+  if (!response.ok) return orderHint.map((id) => ({
+    id, name: "Unknown", status: "", priority: null, progress: 0, dueDate: null, assigneeCount: 0,
+  }));
+
+  const json = await response.json() as any;
+  const byId = new Map<number, any>();
+  for (const t of (json.tasks ?? [])) byId.set(t.id, t);
+
+  const ordered = orderHint.length > 0
+    ? orderHint.map((id) => byId.get(id) ?? { id })
+    : Array.from(byId.values());
+
+  return ordered.map((t: any) => ({
+    id: t.id,
+    name: t.name ?? "Unknown",
+    status: t.status ?? "",
+    priority: t.priority ?? null,
+    progress: t.progress ?? 0,
+    dueDate: t.dueDate ?? null,
+    assigneeCount: (t.assigneeUserIds ?? []).length,
+  }));
 }
 
 // ── Comments ────────────────────────────────────────────────────────────────

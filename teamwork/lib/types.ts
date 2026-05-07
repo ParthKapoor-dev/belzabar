@@ -15,6 +15,16 @@ export interface TeamworkTag {
   color: string;
 }
 
+export interface TeamworkSubtask {
+  id: number;
+  name: string;
+  status: string;
+  priority: string | null;
+  progress: number;
+  dueDate: string | null;
+  assigneeCount: number;
+}
+
 export interface TeamworkTask {
   id: number;
   name: string;
@@ -36,6 +46,7 @@ export interface TeamworkTask {
   workflowStage: string | null;
   commentStats: { total: number; read: number } | null;
   loggedMinutes: number;
+  subtasks: TeamworkSubtask[];
 }
 
 export interface TeamworkComment {
