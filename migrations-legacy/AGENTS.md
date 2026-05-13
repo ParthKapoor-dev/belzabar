@@ -1,13 +1,21 @@
-# AGENTS.md — Migrations
+# AGENTS.md — Migrations (Legacy)
 
 ## Purpose
 
-The `migrations/` directory is a **source-only library** for the `belz migrate` command. It has
-no standalone binary and no `package.json` — it is imported directly by `cli/commands/migrate/`
+> **DEPRECATED — kept for fallback only.** The legacy `db-migration-tool` service
+> at `db-migration-tool.services.stage.expertly.cloud` has been replaced by a
+> Jenkins-backed flow in `migrations/`. This directory is wired to
+> `belz migrate-legacy ...` and should not receive new features. New work goes
+> through `belz migrate ...` (see `migrations/AGENTS.md`).
+
+The `migrations-legacy/` directory is a **source-only library** for the
+`belz migrate-legacy` command. It has no standalone binary and no
+`package.json` — it is imported directly by `cli/commands/migrate-legacy/`
 via a relative path.
 
-All migration logic (argument parsing, API client, WebSocket log streaming, profile discovery,
-reporting) lives here. The actual CLI wiring lives in `cli/commands/migrate/index.ts`.
+All legacy migration logic (argument parsing, REST client, WebSocket log
+streaming, profile discovery, reporting) lives here. The CLI wiring lives
+in `cli/commands/migrate-legacy/index.ts`.
 
 ---
 
