@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
-  title: "Belz AI",
+  title: "Belzabar",
 }
 
 const fontSans = Geist({

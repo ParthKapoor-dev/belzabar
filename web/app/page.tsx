@@ -9,16 +9,6 @@ type Toast = { text: string; ok: boolean; key: number }
 
 const MODULES = [
   {
-    href: "/ai",
-    icon: "✦",
-    iconColor: "text-primary",
-    hoverBorder: "hover:border-primary/50",
-    hoverBg: "hover:bg-primary/5",
-    label: "AI Sessions",
-    description: "Connect to coding agents via ACP",
-    hint: "ctrl+a",
-  },
-  {
     href: "/curl",
     icon: "⌘",
     iconColor: "text-blue-400",
@@ -76,13 +66,6 @@ export default function Home() {
       if (mod && e.key === "k") {
         e.preventDefault()
         setSearchOpen(true)
-        return
-      }
-      if (mod && e.key === "a") {
-        const target = e.target as HTMLElement
-        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) return
-        e.preventDefault()
-        window.location.href = "/ai"
       }
     }
     window.addEventListener("keydown", handleKey)
