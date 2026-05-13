@@ -1,0 +1,63 @@
+Usage: belz pd save <pageId> (--overlay <file> | --config <file>) [flags]
+
+Safe-edit entry point. Applies a validated edit to a PD page.
+
+Exactly one of --overlay / --config must be provided.
+
+  --overlay <file>    Targeted JSON overlay (see shape below). Preferred.
+  --config <file>     Raw full inner-configuration JSON (escape hatch).
+
+Flow:
+  1. Resolve draft target (refuses PUBLISHED unless --force).
+  2. Fetch + parse current page → HydratedPage "before".
+  3. Apply edit → HydratedPage "after".
+  4. Validator gate: errors abort unless --force; warnings print + proceed.
+  5. Acquire lock, PUT (partial or full), release lock.
+  6. Re-fetch, report old/new versionId.
+
+Flags:
+  --overlay <file>    See OVERLAY SHAPE below.
+  --config <file>     File is a parsed inner-configuration object. belz
+                      stringifies it and sends with partialUpdate=false.
+  --dry-run           Run the full flow but skip the network PUT.
+  --force             Bypass validator ERRORS (warnings still print).
+                      Also overrides draft-guard PUBLISHED refusal.
+  --yes, -y           Required to perform any real write.
+  --help, -h          Show this help message.
+
+OVERLAY SHAPE:
+  {
+    "variables": {
+      "add":    [{"name":"x","type":"String","initialValue":""}],
+      "update": [{"name":"x","initialValue":"changed"}],
+      "remove": ["old"]
+    },
+    "derived": {
+      "add":    [{"name":"d","from":["x"],"spec":"(function(p){return p.x})"}],
+      "update": [{"name":"d","spec":"..."}],
+      "remove": ["dead"]
+    },
+    "httpRequests": {
+      "update": [{"callId":"sc-001","request":{"body":"{}"}}],
+      "remove": ["sc-dead"]
+    },
+    "elements": {
+      "operations": [
+        {"key":"layout.children[0].props.innerHTML","value":"New",
+         "operation":"UPDATE","dataType":"STRING"}
+      ]
+    },
+    "styles": {"replace":".latest-version .x { color: red }"}
+  }
+
+STRATEGY:
+  Partial save is used when the overlay only has:
+    variables.update, httpRequests.update, elements.operations, styles.replace
+  Full save is used when the overlay touches:
+    variables.add/remove, derived.*, httpRequests.add/remove
+
+Examples:
+  belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./ed.json --dry-run
+  belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./ed.json --yes
+  belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --config ./full.json --yes
+  belz pd save <id> --overlay ./ed.json --force --yes --llm | jq '.data.validation.issues'

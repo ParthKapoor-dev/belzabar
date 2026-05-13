@@ -1,0 +1,1 @@
+  publish <pageId>  Publish a PD draft to its deployable sibling.

@@ -1,0 +1,37 @@
+Usage: belz pd history <action> <pageId> [flags]
+
+Browse and restore previous versions of a PD page. Backed by the server-
+side history service at /rest/api/pagedesigner/pages/history.
+
+Actions:
+  list <pageId>                        List every saved version of the page.
+  show <pageId> --version <vid>        Parse + validate one historical version.
+  diff <pageId> --from A --to B        Structural diff between two versions
+                                       (variables, derived, http, node adds/
+                                       removes/kind-changes, styles flag).
+  restore <pageId> --version <vid>     Revert the page to that version. Wraps
+                                       the PUT in an acquire/release lock.
+                                       Requires --yes.
+
+Flags:
+  --version <vid>    Version id (for show / restore).
+  --from <A>         First version id (for diff).
+  --to <B>           Second version id (for diff).
+  --limit <N>        Cap "list" rows (default 50).
+  --yes              Skip interactive confirmation (required for restore).
+  --force            (reserved for future --force variants)
+  --help, -h         Show this help message.
+
+Notes:
+  • list returns metadata only — use show for full config.
+  • diff compares structure, not line-by-line JSON.
+  • A brand-new page shows an empty list until its first save.
+  • Draft and published variants of the same page have SEPARATE histories
+    (each is a distinct pageId on the server).
+
+Examples:
+  belz pd history list 4f126300499e4d83cd07a35b4d9af9e7
+  belz pd history show 4f126300499e4d83cd07a35b4d9af9e7 --version 406403
+  belz pd history diff 4f126300499e4d83cd07a35b4d9af9e7 --from 406403 --to 406410
+  belz pd history restore 4f126300499e4d83cd07a35b4d9af9e7 --version 406403 --yes
+  belz pd history list 4f126300499e4d83cd07a35b4d9af9e7 --limit 10 --llm | jq '.data.versions'

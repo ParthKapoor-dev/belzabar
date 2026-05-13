@@ -1,0 +1,23 @@
+Usage: belz pd lock <action> [pageId]
+
+Manage PD edit locks. Writes always go through an acquire/release cycle via
+`belz pd save` automatically — this command exists for cases where you need
+to hold the lock across multiple manual operations.
+
+Actions:
+  acquire <pageId>    PUT /pages/lock/<pageId> with body {pageLockAction:"ACQUIRED"}.
+                      Returns 409 if another editor holds the lock.
+  release <pageId>    PUT /pages/lock/<pageId>?pageLockAction=RELEASED.
+                      Idempotent — safe to call even if no lock is held.
+  status              List locks currently held by belz in this env. (Local
+                      record, kept at ~/.belz/pd-locks/<env>.json.)
+
+Examples:
+  belz pd lock acquire 4f126300499e4d83cd07a35b4d9af9e7
+  belz pd lock release 4f126300499e4d83cd07a35b4d9af9e7
+  belz pd lock status
+
+Notes:
+  • Body-on-acquire vs query-on-release is a server quirk — do not normalize.
+  • The PD editor auto-acquires on page open. If acquire returns 409, close
+    the editor or have the current holder release first.

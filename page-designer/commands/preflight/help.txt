@@ -1,0 +1,22 @@
+Usage: belz pd preflight <pageId> [--overlay <file>]
+
+Read-only dry-run. Fetches the current page, optionally applies an overlay,
+runs the validator, and reports what would change. Makes NO network writes.
+
+Arguments:
+  <pageId>            PD page or component id (hex UUID).
+
+Flags:
+  --overlay <file>    Apply a JSON overlay before validation. See `belz pd
+                      save` help for the overlay shape.
+  --help, -h          Show this help message.
+
+Exit code:
+  0 if the post-overlay page validates cleanly.
+  1 if any validator ERROR fires.
+
+Examples:
+  belz pd preflight 4f126300499e4d83cd07a35b4d9af9e7
+  belz pd preflight 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./edits.json
+  belz pd preflight 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./edits.json --llm \
+    | jq '.data.validation.issues'

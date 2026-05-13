@@ -1,0 +1,1 @@
+  history <action> <pageId>  Browse and restore previous versions of a page.
