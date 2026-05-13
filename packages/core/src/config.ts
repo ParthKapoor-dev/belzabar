@@ -16,6 +16,19 @@ export interface BelzConfigFile {
     email?: string;
     password?: string; // base64-encoded
   };
+  jenkins?: {
+    baseUrl?: string;
+    user?: string;
+    password?: string; // base64-encoded (raw password or API token)
+    migrationJob?: string;
+  };
+}
+
+export interface JenkinsConfig {
+  baseUrl: string;
+  user: string;
+  password: string;
+  migrationJob: string;
 }
 
 function loadConfigFile(): BelzConfigFile {
@@ -60,6 +73,12 @@ const envSchema = z.object({
   BASE_URL: z.string().optional(),
   API_USER: z.string().optional(),
   API_PASSWORD: z.string().optional(),
+
+  // Jenkins (for migrations)
+  BELZ_JENKINS_URL: z.string().optional(),
+  BELZ_JENKINS_USER: z.string().optional(),
+  BELZ_JENKINS_PASSWORD: z.string().optional(),
+  BELZ_JENKINS_JOB: z.string().optional(),
 });
 
 const processEnv = envSchema.parse(process.env);
@@ -152,4 +171,20 @@ export const Config = {
     const pwd = this.activeEnv.credentials.passwordEncoded;
     return pwd ? atob(pwd) : "";
   },
+
+  getJenkins(): JenkinsConfig {
+    const file = configFile.jenkins ?? {};
+    const encoded = file.password ?? "";
+    const filePassword = encoded ? safeAtob(encoded) : "";
+    return {
+      baseUrl: (file.baseUrl ?? processEnv.BELZ_JENKINS_URL ?? "").replace(/\/$/, ""),
+      user: file.user ?? processEnv.BELZ_JENKINS_USER ?? "",
+      password: filePassword || processEnv.BELZ_JENKINS_PASSWORD || "",
+      migrationJob: file.migrationJob ?? processEnv.BELZ_JENKINS_JOB ?? "expertly.db-migration",
+    };
+  },
 };
+
+function safeAtob(value: string): string {
+  try { return atob(value); } catch { return value; }
+}
