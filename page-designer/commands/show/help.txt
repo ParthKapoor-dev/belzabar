@@ -30,6 +30,9 @@ Flags:
                       Requires components.json in the current directory.
   --force             Bypass cache and fetch fresh config.
   --raw               Include raw configuration string and source API fields.
+  --open, -o          Open the editable draft URL in your default browser
+                      (uses the draft id for pages, the component name for
+                      symbols).
   --help, -h          Show this help message.
 
 Global Flags:
@@ -51,3 +54,5 @@ Examples:
   belz pd show 48b75e11e166e6b19e5796d59a936228 --tree
   belz pd show 48b75e11e166e6b19e5796d59a936228 --node __node_id_submit_btn
   belz pd show 48b75e11e166e6b19e5796d59a936228 --var-graph
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --open
+  belz pd show AHS_DMV_Profile_Detail -o

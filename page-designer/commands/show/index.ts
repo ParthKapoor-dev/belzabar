@@ -1,5 +1,5 @@
 import { file } from "bun";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, Config, ok, openUrlInBrowser, type CommandModule } from "@belzabar/core";
 import { analyzeItem } from "../../lib/analyzer";
 import {
   extractDirectChildComponentNames,
@@ -46,6 +46,7 @@ interface ShowArgs {
     tree: boolean;               // kind-badge full layout tree
     node: string | null;         // --node <id> detailed node dump
     varGraph: boolean;           // --var-graph variable write/read/derive/trigger map
+    open: boolean;               // --open / -o open the editable draft URL in the browser
   };
 }
 
@@ -235,6 +236,7 @@ interface ShowData {
     draftId: string | null;
     publishedId: string | null;
     versionId: string | number | null;
+    editUrl: string | null;
     configSizeBytes: number;
     topLevelKeys: string[];
     userDefinedVarCount: number;
@@ -372,6 +374,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
       tree: args.includes("--tree"),
       node: null as string | null,
       varGraph: args.includes("--var-graph"),
+      open: args.includes("--open") || args.includes("-o"),
     };
 
     const varIdx = args.indexOf("--var-detail");
@@ -424,6 +427,16 @@ const command: CommandModule<ShowArgs, ShowData> = {
 
     const sourceFields = toRecord(response);
     const rawMetadata = extractMetadata(sourceFields, resolvedId);
+    // Build the editable-draft URL. PD pages route by draft id; symbols/
+    // components route by name (the UI resolves the name to the draft).
+    const editUrl = (() => {
+      const base = Config.cleanBaseUrl;
+      if (entityType === "COMPONENT") {
+        return `${base}/ui-designer/symbol/${encodeURIComponent(resolvedName)}`;
+      }
+      const draftId = (rawMetadata.draftId as string | null) ?? resolvedId;
+      return `${base}/ui-designer/page/${draftId}`;
+    })();
 
     const directChildComponents = childNames.map(name => ({ name }));
 
@@ -442,6 +455,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
         draftId: rawMetadata.draftId as string | null,
         publishedId: rawMetadata.publishedId as string | null,
         versionId: rawMetadata.versionId,
+        editUrl,
         configSizeBytes: Buffer.byteLength(configStr, "utf-8"),
         topLevelKeys:
           configurationParsed && typeof configurationParsed === "object" && !Array.isArray(configurationParsed)
@@ -575,6 +589,16 @@ const command: CommandModule<ShowArgs, ShowData> = {
       }
     }
 
+    if (flags.open) {
+      try {
+        await openUrlInBrowser(editUrl);
+      } catch (err) {
+        // Don't fail the command if launching the browser fails — surface
+        // the URL via the table/JSON output instead.
+        context.warn(`--open failed: ${(err as Error).message}. URL: ${editUrl}`);
+      }
+    }
+
     return ok(data);
   },
 
@@ -594,6 +618,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
         ["Draft ID", s.draftId ?? "N/A"],
         ["Published ID", s.publishedId ?? "N/A"],
         ["Version ID", s.versionId ?? "N/A"],
+        ["Edit URL", s.editUrl ?? "N/A"],
         ["Config Size", `${s.configSizeBytes} bytes`],
         ["Variables", `${s.userDefinedVarCount} user-defined, ${s.derivedVarCount} derived`],
         ["HTTP Calls", s.httpCallCount],

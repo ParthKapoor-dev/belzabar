@@ -1,4 +1,4 @@
-import { CliError, ok, Config, type CommandModule } from "@belzabar/core";
+import { CliError, ok, Config, openUrlInBrowser, type CommandModule } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
@@ -27,6 +27,7 @@ interface ShowMethodFlags {
   force: boolean;
   raw: boolean;
   step: number | null;
+  open: boolean;
 }
 
 interface ShowMethodArgs {
@@ -62,6 +63,7 @@ interface ShowMethodData {
     outputCount: number;
     stepCount: number;
     parseWarnings: string[];
+    editUrl: string;
   };
   steps: StepSummaryRow[];
   inputs?: Array<{ code: string; type: string; required: boolean; description: string }>;
@@ -322,6 +324,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       force: rest.includes("--force"),
       raw: rest.includes("--raw"),
       step: null,
+      open: rest.includes("--open") || rest.includes("-o"),
     };
     const stepIdx = rest.indexOf("--step");
     if (stepIdx !== -1 && rest[stepIdx + 1]) {
@@ -363,6 +366,13 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       stepDetail = await buildStepDetailView(method, match);
     }
 
+    // The AD UI expects a DRAFT uuid in the URL; a published row's
+    // referenceId points at its linked draft, if any.
+    const categoryName = method.category?.name ?? "Uncategorized";
+    const draftUuid =
+      method.state === "PUBLISHED" && method.referenceId ? method.referenceId : method.uuid;
+    const editUrl = `${Config.cleanBaseUrl}/automation-designer/${encodeURIComponent(categoryName)}/${draftUuid}`;
+
     const data: ShowMethodData = {
       request: { uuid, flags },
       source,
@@ -370,7 +380,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       summary: {
         name: method.name,
         alias: method.aliasName,
-        category: method.category?.name ?? "Uncategorized",
+        category: categoryName,
         state: method.state,
         version: method.version,
         uuid: method.uuid,
@@ -382,6 +392,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
         outputCount: method.outputs.length,
         stepCount: method.parsedSteps.length,
         parseWarnings: method.parseWarnings,
+        editUrl,
       },
       steps: summariseSteps(method),
       stepDetail,
@@ -400,6 +411,14 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
     }
 
     if (flags.raw) data.raw = { method };
+
+    if (flags.open) {
+      try {
+        await openUrlInBrowser(editUrl);
+      } catch (err) {
+        context.warn(`--open failed: ${(err as Error).message}. URL: ${editUrl}`);
+      }
+    }
 
     return ok(data, { sourceVersion: method.sourceVersion });
   },
@@ -426,6 +445,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
         ["Steps", data.summary.stepCount],
         ["API Source", data.sourceVersion.toUpperCase()],
         ["Cache", data.source],
+        ["Edit URL", data.summary.editUrl],
       ],
     );
 
