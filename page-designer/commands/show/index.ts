@@ -54,6 +54,7 @@ interface ShowData {
     name: string;
     entityType: "PAGE" | "COMPONENT";
     resolvedId: string;
+    status: string | null;
     draftId: string | null;
     publishedId: string | null;
     versionId: string | number | null;
@@ -110,14 +111,25 @@ function pickFirstDeep(input: unknown, keys: string[], maxDepth = 5): string | n
 }
 
 function extractMetadata(source: Record<string, unknown>, fallbackId: string) {
+  // The PD API returns ONE entity (draft OR published) plus a `referenceId`
+  // pointing at the other version. Use `status` to disambiguate — otherwise a
+  // queried PUBLISHED entity's own id gets mislabeled as the Draft ID because
+  // `id` falls through both lookups.
+  const status =
+    typeof source.status === "string" ? source.status.toUpperCase() : null;
+  const ownId =
+    (pickFirstDeep(source, ["id", "uuid"]) as string | null) ?? fallbackId;
+  const refId = pickFirstDeep(source, [
+    "referenceId", "referenceID", "reference_id",
+    "publishedId", "publishedID", "published_id",
+    "publishId", "serviceChainUID",
+  ]) as string | null;
+
+  const isPublished = status === "PUBLISHED";
   return {
-    draftId:
-      (pickFirstDeep(source, ["draftId", "draftID", "draft_id", "id", "uuid"]) as string | null) ??
-      fallbackId,
-    publishedId: pickFirstDeep(source, [
-      "publishedId", "publishedID", "published_id", "serviceChainUID",
-      "publishId", "referenceId", "referenceID", "reference_id",
-    ]) as string | null,
+    status,
+    draftId: isPublished ? refId : ownId,
+    publishedId: isPublished ? ownId : refId,
     versionId: pickFirstDeep(source, ["versionId", "versionID", "version_id", "version"]),
   };
 }
@@ -223,6 +235,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
         name: resolvedName,
         entityType,
         resolvedId,
+        status: rawMetadata.status,
         draftId: rawMetadata.draftId as string | null,
         publishedId: rawMetadata.publishedId as string | null,
         versionId: rawMetadata.versionId,
@@ -308,6 +321,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
       [
         ["Name", s.name],
         ["Entity Type", s.entityType],
+        ["Status", s.status ?? "UNKNOWN"],
         ["Resolved ID", s.resolvedId],
         ["Draft ID", s.draftId ?? "N/A"],
         ["Published ID", s.publishedId ?? "N/A"],
