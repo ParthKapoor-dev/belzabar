@@ -63,10 +63,14 @@ import {
 
   function applyFeatureSettings(settings) {
     for (const key of Object.keys(featureStarters)) {
-      if (settings[key]) {
-        startFeature(key);
-      } else {
-        stopFeature(key);
+      try {
+        if (settings[key]) {
+          startFeature(key);
+        } else {
+          stopFeature(key);
+        }
+      } catch (error) {
+        console.error(`Failed applying feature "${key}":`, error);
       }
     }
   }
