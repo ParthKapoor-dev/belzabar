@@ -4,10 +4,10 @@ import { join } from "path";
 import { runNamespacedCli } from "@belzabar/core";
 
 // Dev Mode: Discover commands dynamically
-const adCommandsDir = join(import.meta.dir, "../../automation-designer/commands");
-const pdCommandsDir = join(import.meta.dir, "../../page-designer/commands");
-const twCommandsDir = join(import.meta.dir, "../../teamwork/commands");
-const migrationsCommandsDir = join(import.meta.dir, "../../migrations/commands");
+const adCommandsDir = join(import.meta.dir, "../../integrations/automation-designer/commands");
+const pdCommandsDir = join(import.meta.dir, "../../integrations/page-designer/commands");
+const twCommandsDir = join(import.meta.dir, "../../integrations/teamwork/commands");
+const migrationsCommandsDir = join(import.meta.dir, "../../integrations/migrations/commands");
 const topCommandsDir = join(import.meta.dir, "../commands"); // cli/commands/ (envs, migrate-legacy)
 
 function loadCommandsFromDir(dir: string): Record<string, any> {

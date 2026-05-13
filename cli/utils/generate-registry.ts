@@ -1,11 +1,11 @@
 import { readdirSync, statSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
 
-const adCommandsDir = join(process.cwd(), "../automation-designer/commands");
+const adCommandsDir = join(process.cwd(), "../integrations/automation-designer/commands");
 const topCommandsDir = join(process.cwd(), "commands"); // cli/commands/ (envs, migrate-legacy)
-const pdCommandsDir = join(process.cwd(), "../page-designer/commands");
-const twCommandsDir = join(process.cwd(), "../teamwork/commands");
-const migrationsCommandsDir = join(process.cwd(), "../migrations/commands");
+const pdCommandsDir = join(process.cwd(), "../integrations/page-designer/commands");
+const twCommandsDir = join(process.cwd(), "../integrations/teamwork/commands");
+const migrationsCommandsDir = join(process.cwd(), "../integrations/migrations/commands");
 
 console.log("Generating command registries...");
 
@@ -100,7 +100,7 @@ function toIdentifier(cmd: string) {
 
 // ── registry-ad.ts ───────────────────────────────────────────────────────────
 const adImports = adCommands
-  .map(cmd => `import * as ${toIdentifier(cmd)} from "../../automation-designer/commands/${cmd}/index";`)
+  .map(cmd => `import * as ${toIdentifier(cmd)} from "../../integrations/automation-designer/commands/${cmd}/index";`)
   .join("\n");
 const adRegistry =
   `export const ADCommandRegistry: Record<string, any> = {\n` +
@@ -115,7 +115,7 @@ ${adRegistry}`;
 
 // ── registry-pd.ts ───────────────────────────────────────────────────────────
 const pdImports = pdCommands
-  .map(cmd => `import * as ${toIdentifier(cmd)} from "../../page-designer/commands/${cmd}/index";`)
+  .map(cmd => `import * as ${toIdentifier(cmd)} from "../../integrations/page-designer/commands/${cmd}/index";`)
   .join("\n");
 const pdRegistry =
   `export const PDCommandRegistry: Record<string, any> = {\n` +
@@ -130,7 +130,7 @@ ${pdRegistry}`;
 
 // ── registry-tw.ts ───────────────────────────────────────────────────────────
 const twImports = twCommands
-  .map(cmd => `import * as ${toIdentifier(cmd)} from "../../teamwork/commands/${cmd}/index";`)
+  .map(cmd => `import * as ${toIdentifier(cmd)} from "../../integrations/teamwork/commands/${cmd}/index";`)
   .join("\n");
 const twRegistry =
   `export const TWCommandRegistry: Record<string, any> = {\n` +
@@ -145,7 +145,7 @@ ${twRegistry}`;
 
 // ── registry-migrate.ts ──────────────────────────────────────────────────────
 const migrateImports = migrateCommands
-  .map(cmd => `import * as ${toIdentifier(cmd)} from "../../migrations/commands/${cmd}/index";`)
+  .map(cmd => `import * as ${toIdentifier(cmd)} from "../../integrations/migrations/commands/${cmd}/index";`)
   .join("\n");
 const migrateRegistry =
   `export const MigrateCommandRegistry: Record<string, any> = {\n` +

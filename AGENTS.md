@@ -34,13 +34,14 @@ It ships two products:
 | Directory | Role | AGENTS.md |
 |-----------|------|-----------|
 | `cli/` | Builds the `belz` binary; owns entry points, registries, install scripts | `cli/AGENTS.md` |
-| `automation-designer/` | AD command implementations and supporting lib (source module) | `automation-designer/AGENTS.md` |
-| `page-designer/` | PD command implementations and supporting lib (source module) | `page-designer/AGENTS.md` |
-| `migrations/` | Migration library consumed by `belz migrate` (source module) | `migrations/AGENTS.md` |
+| `cli/packages/core/` | `@belzabar/core` — shared CLI framework (workspace package) | `cli/packages/core/AGENTS.md` |
+| `integrations/automation-designer/` | AD command implementations and supporting lib (source module) | `integrations/automation-designer/AGENTS.md` |
+| `integrations/page-designer/` | PD command implementations and supporting lib (source module) | `integrations/page-designer/AGENTS.md` |
+| `integrations/teamwork/` | Teamwork command implementations and supporting lib (source module) | `integrations/teamwork/AGENTS.md` |
+| `integrations/migrations/` | Jenkins migration library + commands consumed by `belz migrate` (source module) | `integrations/migrations/AGENTS.md` |
+| `integrations/migrations/legacy/` | Legacy NSM db-migration-tool client (retained for fallback) | `integrations/migrations/legacy/AGENTS.md` |
 | `extension/` | Browser extension (MV3, JavaScript) | `extension/AGENTS.md` |
-| `packages/core/` | `@belzabar/core` — shared CLI framework (workspace package) | `packages/core/AGENTS.md` |
-| `docs/` | Generated/maintained documentation (codebase-map.html) | — |
-| `specs/` | Specification and agent reference documents (INIT.md, BELZABAR.md) | — |
+| `web/` | Next.js web dashboard served by `belz web` | — |
 
 ---
 
@@ -50,13 +51,16 @@ This is a **Bun workspaces** monorepo managed with Turborepo.
 
 **Workspaces** (have `package.json`, hoisted dependencies):
 - `cli` — the CLI build workspace
+- `cli/packages/*` — shared packages (`@belzabar/core`)
 - `extension` — the browser extension workspace
-- `packages/*` — shared packages (`@belzabar/core`)
+- `apps/*` — application workspaces
 
 **Source modules** (no `package.json` — imported directly by `cli/` via relative paths):
-- `automation-designer/`
-- `page-designer/`
-- `migrations/`
+- `integrations/automation-designer/`
+- `integrations/page-designer/`
+- `integrations/teamwork/`
+- `integrations/migrations/` (the Jenkins flow)
+- `integrations/migrations/legacy/` (legacy db-migration-tool fallback)
 
 Source modules are intentionally not workspaces. They contain pure TypeScript source that `cli/`
 imports at build time. This keeps the dependency graph simple and the binary self-contained.
@@ -66,11 +70,13 @@ imports at build time. This keeps the dependency graph simple and the binary sel
 ## How `belz` Routes Commands
 
 ```
-belz ad <cmd>      → automation-designer/commands/<cmd>/
-belz pd <cmd>      → page-designer/commands/<cmd>/
-belz tw <cmd>      → teamwork/commands/<cmd>/
-belz migrate       → cli/commands/migrate/ + migrations/lib/
+belz ad <cmd>      → integrations/automation-designer/commands/<cmd>/
+belz pd <cmd>      → integrations/page-designer/commands/<cmd>/
+belz tw <cmd>      → integrations/teamwork/commands/<cmd>/
+belz migrate <cmd> → integrations/migrations/commands/<cmd>/
+belz migrate-legacy → cli/commands/migrate-legacy/ + integrations/migrations/legacy/lib/
 belz config        → cli/commands/config/
+belz cache         → cli/commands/cache/
 belz web           → cli/commands/web/
 belz envs          → cli/commands/envs/
 belz setup         → cli/commands/setup/   (interactive first-time credentials)
