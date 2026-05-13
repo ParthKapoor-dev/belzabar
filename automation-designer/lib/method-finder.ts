@@ -171,19 +171,23 @@ export function normalizeMethodRecord(
   if (!uuid) return null;
 
   const fallbackName = raw.aliasName || raw.name || raw.referenceId || uuid;
+  const state = (raw.automationState || raw.state || "UNKNOWN").toUpperCase();
+  // AD URLs need the DRAFT uuid so the path opens an editable method; a
+  // published row's `referenceId` points at the linked draft, if any.
+  const draftUuid = state === "PUBLISHED" && raw.referenceId ? raw.referenceId : uuid;
 
   return {
     uuid,
     referenceId: raw.referenceId,
     aliasName: raw.aliasName,
     methodName: extractMethodName(raw.jsonDefinition, fallbackName),
-    state: (raw.automationState || raw.state || "UNKNOWN").toUpperCase(),
+    state,
     version: raw.version,
     categoryUuid: category.uuid,
     categoryName: category.name,
     createdOn: raw.createdOn,
     updatedOn: raw.lastUpdatedOn || raw.updatedOn,
-    url: buildMethodUrl(category.name, uuid),
+    url: buildMethodUrl(category.name, draftUuid),
   };
 }
 

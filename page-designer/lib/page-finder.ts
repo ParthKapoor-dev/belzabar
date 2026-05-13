@@ -93,14 +93,19 @@ function normalizePage(raw: RawPageListItem): PageFinderPage | null {
   const id = getString(raw.id);
   const name = getString(raw.name);
   if (!id || !name) return null;
+  const referenceId = getString(raw.referenceId) ?? "";
+  const status = getString(raw.status) ?? "DRAFT";
+  // PD page URLs need the DRAFT id so /ui-designer/page/<id> opens an
+  // editable draft, not the published row (which the UI renders read-only).
+  const draftId = status.toUpperCase() === "PUBLISHED" && referenceId ? referenceId : id;
   return {
     id,
-    referenceId: getString(raw.referenceId) ?? "",
+    referenceId,
     name,
     relativeRoute: getString(raw.relativeRoute) ?? "",
-    status: getString(raw.status) ?? "DRAFT",
+    status,
     updatedAt: getNumber(raw.updatedAt) ?? 0,
-    url: `${Config.cleanBaseUrl}/ui-designer/page/${id}`,
+    url: `${Config.cleanBaseUrl}/ui-designer/page/${draftId}`,
   };
 }
 
@@ -115,7 +120,9 @@ function normalizeComponent(raw: RawPageListItem): PageFinderComponent | null {
     name,
     status: getString(raw.status) ?? "DRAFT",
     updatedAt: getNumber(raw.updatedAt) ?? 0,
-    url: `${Config.cleanBaseUrl}/ui-designer/symbol/${referenceId || id}`,
+    // PD component URLs use the component NAME — the UI's /ui-designer/symbol/
+    // route resolves by name and lands on the editable draft directly.
+    url: `${Config.cleanBaseUrl}/ui-designer/symbol/${encodeURIComponent(name)}`,
   };
 }
 
