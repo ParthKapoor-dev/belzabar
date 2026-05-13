@@ -1,28 +1,31 @@
-import type {
-  InternalConfig,
-  LayoutNode,
-  HttpRequestItem,
-  HttpCallSummary,
-  NormalizedVariable,
-  NormalizedDerived,
-  EventHandlerInfo,
-  ComponentTreeNode,
-  ValidationIssue,
-} from "./types";
+// Legacy string-based extractors. The existing read commands (show, find,
+// find-ad-methods, analyze) call these directly; the new validate command in
+// Phase 6 switches to validateHydrated, but the others stay on these for now
+// so we don't have to rewrite every presenter in one go.
+//
+// The shapes they return live in ../types/legacy.ts. The new validator
+// produces richer output; prefer validateHydrated() for new callers.
 
-/**
- * PARSER SERVICE
- */
+import type {
+  ComponentTreeNode,
+  EventHandlerInfo,
+  HttpCallSummary,
+  NormalizedDerived,
+  NormalizedVariable,
+} from "../types/legacy";
+import type {
+  RawConfiguration,
+  RawHttpRequestItem,
+  RawLayoutNode,
+} from "../types/wire";
 
 export function cleanAdId(url: string): string | null {
   const pattern = /\/rest\/api\/automation\/chain\/execute\/([a-zA-Z0-9]+)/;
   const match = url.match(pattern);
-  return match ? match[1] : null;
+  return match?.[1] ?? null;
 }
 
-// --- Internal helpers ---
-
-function parseConfig(configStr: string): InternalConfig | null {
+function parseConfig(configStr: string): RawConfiguration | null {
   try {
     return JSON.parse(configStr);
   } catch {
@@ -30,29 +33,26 @@ function parseConfig(configStr: string): InternalConfig | null {
   }
 }
 
-function getHttpItems(config: InternalConfig): HttpRequestItem[] {
+function getHttpItems(config: RawConfiguration): RawHttpRequestItem[] {
   return [
     ...(config.httpRequests?.userDefined ?? []),
     ...(config.http ?? []),
   ];
 }
 
-function getLayoutChildren(node: LayoutNode): LayoutNode[] {
+function getLayoutChildren(node: RawLayoutNode): RawLayoutNode[] {
   if (!node.children) return [];
   if (Array.isArray(node.children)) return node.children;
   return Object.values(node.children);
 }
 
-// --- Core extraction (existing, fixed for dual format) ---
-
 export function extractReferences(configStr: string, whitelist: Set<string>) {
   const adIds = new Set<string>();
   const componentNames = new Set<string>();
-
   const config = parseConfig(configStr);
   if (!config) return { adIds: [], componentNames: [] };
 
-  getHttpItems(config).forEach(item => {
+  getHttpItems(config).forEach((item) => {
     const url = item.request?.url;
     if (url) {
       const id = cleanAdId(url);
@@ -60,29 +60,22 @@ export function extractReferences(configStr: string, whitelist: Set<string>) {
     }
   });
 
-  const traverse = (node?: LayoutNode) => {
+  const traverse = (node?: RawLayoutNode) => {
     if (!node) return;
-    if (node.name && whitelist.has(node.name)) {
-      componentNames.add(node.name);
-    }
+    if (node.name && whitelist.has(node.name)) componentNames.add(node.name);
     getLayoutChildren(node).forEach(traverse);
   };
   traverse(config.layout);
 
-  return {
-    adIds: Array.from(adIds),
-    componentNames: Array.from(componentNames),
-  };
+  return { adIds: Array.from(adIds), componentNames: Array.from(componentNames) };
 }
 
 export function extractDirectChildComponentNames(configStr: string): string[] {
   const config = parseConfig(configStr);
   if (!config) return [];
-
   const names: string[] = [];
   const seen = new Set<string>();
-
-  const walk = (node: LayoutNode | undefined) => {
+  const walk = (node: RawLayoutNode | undefined) => {
     if (!node) return;
     if (node.isSymbol) {
       const name = node.name?.trim();
@@ -97,8 +90,6 @@ export function extractDirectChildComponentNames(configStr: string): string[] {
   return names;
 }
 
-// --- Variable extraction (dual-format aware) ---
-
 export function extractVariables(configStr: string): {
   userDefined: NormalizedVariable[];
   derived: NormalizedDerived[];
@@ -107,8 +98,6 @@ export function extractVariables(configStr: string): {
   if (!config) return { userDefined: [], derived: [] };
 
   const userDefined: NormalizedVariable[] = [];
-
-  // New format: variables.userDefined = [{name, type, initialValue, ...}]
   if (config.variables?.userDefined) {
     for (const item of config.variables.userDefined) {
       if (item && typeof item === "object" && "name" in item) {
@@ -119,9 +108,7 @@ export function extractVariables(configStr: string): {
         });
       }
     }
-  }
-  // Old format: context.properties = [[name, value], ...]
-  else if (config.context?.properties) {
+  } else if (config.context?.properties) {
     for (const item of config.context.properties) {
       if (Array.isArray(item) && item.length >= 2) {
         userDefined.push({
@@ -134,7 +121,7 @@ export function extractVariables(configStr: string): {
   }
 
   const rawDerived = config.variables?.derived ?? config.context?.derived ?? [];
-  const derived: NormalizedDerived[] = rawDerived.map(d => ({
+  const derived: NormalizedDerived[] = rawDerived.map((d) => ({
     name: d.name,
     from: d.from ?? [],
     spec: d.spec ?? null,
@@ -145,12 +132,9 @@ export function extractVariables(configStr: string): {
   return { userDefined, derived };
 }
 
-// --- HTTP extraction ---
-
 export function extractHttpSummary(configStr: string): HttpCallSummary[] {
   const config = parseConfig(configStr);
   if (!config) return [];
-
   const items = getHttpItems(config);
   return items.map((item, idx) => {
     const sc = item.meta?.serviceCall;
@@ -161,12 +145,12 @@ export function extractHttpSummary(configStr: string): HttpCallSummary[] {
       for (const entry of item.handler.success) {
         if (Array.isArray(entry) && typeof entry[0] === "string") {
           const varMatch = entry[0].match(/\{%([^%]+)%\}/);
-          if (varMatch) outputBindings.push(varMatch[1]);
+          if (varMatch?.[1]) outputBindings.push(varMatch[1]);
         }
       }
     }
 
-    const triggers = (item.trigger ?? []).map(t => t.replace(/^this\./, ""));
+    const triggers = (item.trigger ?? []).map((t) => t.replace(/^this\./, ""));
     const eventMeta = sc?.eventMeta;
 
     return {
@@ -176,7 +160,7 @@ export function extractHttpSummary(configStr: string): HttpCallSummary[] {
       serviceUuid: sc?.serviceUuid ?? null,
       triggers,
       hasEventMeta: eventMeta !== undefined,
-      eventMetaEmpty: eventMeta !== undefined && Object.keys(eventMeta!).length === 0,
+      eventMetaEmpty: eventMeta !== undefined && Object.keys(eventMeta).length === 0,
       outputBindings,
       inProgressVar: item.handler?.inProgress?.match(/\{%([^%]+)%\}/)?.[1] ?? null,
       method: item.request?.method ?? null,
@@ -184,26 +168,21 @@ export function extractHttpSummary(configStr: string): HttpCallSummary[] {
   });
 }
 
-// --- Binding references (regex scan) ---
-
 export function extractBindingReferences(configStr: string): string[] {
   const seen = new Set<string>();
   const regex = /\{%([^%]+)%\}/g;
   let match: RegExpExecArray | null;
   while ((match = regex.exec(configStr)) !== null) {
-    seen.add(match[1]);
+    if (match[1]) seen.add(match[1]);
   }
   return Array.from(seen);
 }
 
-// --- Event handlers ---
-
 export function extractEventHandlers(configStr: string): EventHandlerInfo[] {
   const config = parseConfig(configStr);
   if (!config) return [];
-
   const results: EventHandlerInfo[] = [];
-  const walk = (node: LayoutNode | undefined) => {
+  const walk = (node: RawLayoutNode | undefined) => {
     if (!node) return;
     if (node.events && typeof node.events === "object") {
       const eventTypes = Object.keys(node.events);
@@ -221,13 +200,10 @@ export function extractEventHandlers(configStr: string): EventHandlerInfo[] {
   return results;
 }
 
-// --- Component tree ---
-
 export function extractComponentTree(configStr: string): ComponentTreeNode | null {
   const config = parseConfig(configStr);
   if (!config?.layout) return null;
-
-  const buildNode = (node: LayoutNode): ComponentTreeNode => {
+  const buildNode = (node: RawLayoutNode): ComponentTreeNode => {
     const children = getLayoutChildren(node);
     return {
       name: node.name ?? "unnamed",
@@ -238,11 +214,8 @@ export function extractComponentTree(configStr: string): ComponentTreeNode | nul
       children: children.map(buildNode),
     };
   };
-
   return buildNode(config.layout);
 }
-
-// --- Full HTTP detail for --http-detail ---
 
 export interface HttpCallDetail {
   index: number;
@@ -266,11 +239,9 @@ export interface HttpCallDetail {
 export function extractHttpDetail(configStr: string, index: number): HttpCallDetail | null {
   const config = parseConfig(configStr);
   if (!config) return null;
-
   const items = getHttpItems(config);
-  const item = items[index - 1]; // 1-indexed
+  const item = items[index - 1];
   if (!item) return null;
-
   const sc = item.meta?.serviceCall;
 
   const inputBindings: Array<{ fieldCode: string; bindingVariable: string }> = [];
@@ -291,7 +262,7 @@ export function extractHttpDetail(configStr: string, index: number): HttpCallDet
       if (Array.isArray(entry) && entry.length >= 2) {
         const varMatch = (entry[0] as string).match(/\{%([^%]+)%\}/);
         successMappings.push({
-          variable: varMatch ? varMatch[1] : entry[0] as string,
+          variable: varMatch?.[1] ?? (entry[0] as string),
           expression: entry[1] as string,
         });
       }
@@ -307,7 +278,7 @@ export function extractHttpDetail(configStr: string, index: number): HttpCallDet
     serviceUuid: sc?.serviceUuid ?? null,
     method: item.request?.method ?? null,
     url: item.request?.url ?? null,
-    triggers: (item.trigger ?? []).map(t => t.replace(/^this\./, "")),
+    triggers: (item.trigger ?? []).map((t) => t.replace(/^this\./, "")),
     triggerFilter: item.triggerFilter ?? null,
     inputBindings,
     successMappings,
@@ -320,26 +291,39 @@ export function extractHttpDetail(configStr: string, index: number): HttpCallDet
   };
 }
 
-// --- Variable detail for --var-detail ---
-
 export interface VarDetail {
   kind: "user-defined" | "derived";
   name: string;
   type: string | null;
   initialValue: unknown;
-  // derived-specific
   from: string[] | null;
   spec: string | null;
   filterFn: string | null;
   sideEffect: boolean | null;
-  // usage
-  bindingReferences: string[]; // locations where {%name%} appears
+  bindingReferences: string[];
+}
+
+function findBindingLocations(configStr: string, varName: string): string[] {
+  const locations: string[] = [];
+  const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (configStr.includes(`"this.${varName}"`)) locations.push("http-trigger");
+  if (new RegExp(`\\{%${escaped}%\\}`).test(configStr)) locations.push("binding");
+  if (configStr.includes(`"{%${varName}%}"`)) locations.push("http-handler");
+  const config = parseConfig(configStr);
+  if (config) {
+    for (const item of getHttpItems(config)) {
+      if (item.handler?.inProgress?.includes(`{%${varName}%}`)) {
+        locations.push("http-inProgress");
+        break;
+      }
+    }
+  }
+  return locations;
 }
 
 export function extractVarDetail(configStr: string, varName: string): VarDetail | null {
   const vars = extractVariables(configStr);
-
-  const ud = vars.userDefined.find(v => v.name === varName);
+  const ud = vars.userDefined.find((v) => v.name === varName);
   if (ud) {
     return {
       kind: "user-defined",
@@ -353,8 +337,7 @@ export function extractVarDetail(configStr: string, varName: string): VarDetail 
       bindingReferences: findBindingLocations(configStr, varName),
     };
   }
-
-  const d = vars.derived.find(v => v.name === varName);
+  const d = vars.derived.find((v) => v.name === varName);
   if (d) {
     return {
       kind: "derived",
@@ -368,57 +351,29 @@ export function extractVarDetail(configStr: string, varName: string): VarDetail 
       bindingReferences: findBindingLocations(configStr, varName),
     };
   }
-
   return null;
 }
 
-function findBindingLocations(configStr: string, varName: string): string[] {
-  const locations: string[] = [];
-  const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// validateConfig retained for the existing `validate` command — will be
+// replaced by a delegating shim to validateHydrated() in the same phase.
+import type { ValidationIssue as LegacyValidationIssue } from "../types/legacy";
 
-  // Check in HTTP triggers
-  if (configStr.includes(`"this.${varName}"`)) locations.push("http-trigger");
-
-  // Check in binding references
-  if (new RegExp(`\\{%${escaped}%\\}`).test(configStr)) locations.push("binding");
-
-  // Check in handler success/error
-  if (configStr.includes(`"{%${varName}%}"`)) locations.push("http-handler");
-
-  // Check in handler.inProgress
-  const config = parseConfig(configStr);
-  if (config) {
-    for (const item of getHttpItems(config)) {
-      if (item.handler?.inProgress?.includes(`{%${varName}%}`)) {
-        locations.push("http-inProgress");
-        break;
-      }
-    }
-  }
-
-  return locations;
-}
-
-// --- Validation ---
-
-export function validateConfig(configStr: string): ValidationIssue[] {
-  const issues: ValidationIssue[] = [];
-
+export function validateConfig(configStr: string): LegacyValidationIssue[] {
+  const issues: LegacyValidationIssue[] = [];
   const config = parseConfig(configStr);
   if (!config) {
     return [{ code: "INVALID_JSON", severity: "error", message: "Configuration is not valid JSON" }];
   }
 
   const vars = extractVariables(configStr);
-  const allDefinedVarNames = new Set([
-    ...vars.userDefined.map(v => v.name),
-    ...vars.derived.map(d => d.name),
+  const allDefinedVarNames = new Set<string>([
+    ...vars.userDefined.map((v) => v.name),
+    ...vars.derived.map((d) => d.name),
   ]);
 
   const bindingRefs = extractBindingReferences(configStr);
   const httpSummary = extractHttpSummary(configStr);
 
-  // 1. ORPHAN_BINDING
   for (const ref of bindingRefs) {
     if (!allDefinedVarNames.has(ref) && ref !== "null" && !ref.startsWith("$item")) {
       issues.push({
@@ -429,7 +384,6 @@ export function validateConfig(configStr: string): ValidationIssue[] {
     }
   }
 
-  // 2. UNUSED_VARIABLE
   const bindingRefSet = new Set(bindingRefs);
   for (const name of allDefinedVarNames) {
     if (name.startsWith("__") || name.startsWith("$$")) continue;
@@ -442,98 +396,44 @@ export function validateConfig(configStr: string): ValidationIssue[] {
     }
   }
 
-  // Layout tree checks
-  const walkForValidation = (node: LayoutNode | undefined) => {
+  const walkForValidation = (node: RawLayoutNode | undefined) => {
     if (!node) return;
     const nodeName = node.name ?? "unnamed";
     const nodeId = node.id ?? node._elementId ?? "unknown";
 
-    // 3. FORM_FIELD_PROPS
     if (nodeName === "exp-form-field" && node.props && !node.field) {
-      issues.push({
-        code: "FORM_FIELD_PROPS",
-        severity: "error",
-        message: `"${nodeName}" at ${nodeId} uses "props" instead of "field" — causes silent page crash`,
-        nodeId, nodeName,
-      });
+      issues.push({ code: "FORM_FIELD_PROPS", severity: "error", message: `"${nodeName}" at ${nodeId} uses "props" instead of "field" — causes silent page crash`, nodeId, nodeName });
     }
-
-    // 4. CHILDREN_NOT_ARRAY
     if (node.children && !Array.isArray(node.children) && typeof node.children === "object") {
-      issues.push({
-        code: "CHILDREN_NOT_ARRAY",
-        severity: "error",
-        message: `Node "${nodeName}" at ${nodeId} has children as object instead of array — renders empty`,
-        nodeId, nodeName,
-      });
+      issues.push({ code: "CHILDREN_NOT_ARRAY", severity: "error", message: `Node "${nodeName}" at ${nodeId} has children as object instead of array — renders empty`, nodeId, nodeName });
     }
-
-    // 5. TABLE_NO_DATASOURCE
     if (nodeName === "exp-data-table") {
       const hasDatasource = node.props?.["datasourceState"] || node.props?.["[datasourceState]"];
       if (!hasDatasource) {
-        issues.push({
-          code: "TABLE_NO_DATASOURCE",
-          severity: "warn",
-          message: `"${nodeName}" at ${nodeId} is missing datasourceState binding`,
-          nodeId, nodeName,
-        });
+        issues.push({ code: "TABLE_NO_DATASOURCE", severity: "warn", message: `"${nodeName}" at ${nodeId} is missing datasourceState binding`, nodeId, nodeName });
       }
-
-      // 10. DYNAMIC_COLS_INITIAL
       if (node.props?.["[columns]"] && node.props?.["initialValue"]) {
-        issues.push({
-          code: "DYNAMIC_COLS_INITIAL",
-          severity: "warn",
-          message: `"${nodeName}" at ${nodeId} has dynamic [columns] with initialValue — may crash`,
-          nodeId, nodeName,
-        });
+        issues.push({ code: "DYNAMIC_COLS_INITIAL", severity: "warn", message: `"${nodeName}" at ${nodeId} has dynamic [columns] with initialValue — may crash`, nodeId, nodeName });
       }
     }
-
-    // 6. INVALID_SLIDE_TOGGLE
     if (nodeName === "mat-slide-toggle") {
-      issues.push({
-        code: "INVALID_SLIDE_TOGGLE",
-        severity: "error",
-        message: `"${nodeName}" at ${nodeId} has no runtime declaration — use exp-slide-toggle`,
-        nodeId, nodeName,
-      });
+      issues.push({ code: "INVALID_SLIDE_TOGGLE", severity: "error", message: `"${nodeName}" at ${nodeId} has no runtime declaration — use exp-slide-toggle`, nodeId, nodeName });
     }
-
-    // 7. INVALID_EXPANSION_HEADER
     if (nodeName === "mat-expansion-panel-header") {
-      issues.push({
-        code: "INVALID_EXPANSION_HEADER",
-        severity: "error",
-        message: `"${nodeName}" at ${nodeId} is not a valid PD component`,
-        nodeId, nodeName,
-      });
+      issues.push({ code: "INVALID_EXPANSION_HEADER", severity: "error", message: `"${nodeName}" at ${nodeId} is not a valid PD component`, nodeId, nodeName });
     }
-
     getLayoutChildren(node).forEach(walkForValidation);
   };
   walkForValidation(config.layout);
 
-  // 8. MISSING_ONINIT_VAR
   for (const call of httpSummary) {
     for (const trigger of call.triggers) {
       if (trigger === "onInit" && !allDefinedVarNames.has("onInit")) {
-        issues.push({
-          code: "MISSING_ONINIT_VAR",
-          severity: "warn",
-          message: `HTTP call "${call.label}" triggers on "onInit" but no onInit variable is defined`,
-        });
+        issues.push({ code: "MISSING_ONINIT_VAR", severity: "warn", message: `HTTP call "${call.label}" triggers on "onInit" but no onInit variable is defined` });
       }
     }
-
-    // 9. EMPTY_EVENT_META
     if (call.eventMetaEmpty) {
-      issues.push({
-        code: "EMPTY_EVENT_META",
-        severity: "warn",
-        message: `HTTP call "${call.label}" has empty eventMeta — may show "undefined - undefined" in UI`,
-      });
+      issues.push({ code: "EMPTY_EVENT_META", severity: "warn", message: `HTTP call "${call.label}" has empty eventMeta — may show "undefined - undefined" in UI` });
     }
   }
 

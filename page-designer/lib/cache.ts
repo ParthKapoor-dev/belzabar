@@ -1,7 +1,10 @@
 import { join } from "path";
 import { Cache, BELZ_CONFIG_DIR } from "@belzabar/core";
-import { fetchPageConfig, fetchComponentConfig } from "./api";
-import type { PageConfigResponse } from "./types";
+import { fetchPageConfig, fetchComponentConfig } from "./api/index";
+import type { RawPageResponse } from "./types/wire";
+
+// Legacy name kept so existing imports resolve; aliased to RawPageResponse.
+type PageConfigResponse = RawPageResponse;
 
 const pdCache = new Cache<PageConfigResponse>({
   dir: join(BELZ_CONFIG_DIR, "cache", "pages"),

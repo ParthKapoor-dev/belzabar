@@ -1,4 +1,4 @@
-import type { ReportNode } from "./types";
+import type { ReportNode } from "./types/legacy";
 
 /**
  * REPORTER SERVICE

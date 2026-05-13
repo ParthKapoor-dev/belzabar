@@ -1,4 +1,4 @@
-import type { ReportNode, ComplianceResult, RogueIdInfo } from "./types";
+import type { ReportNode, ComplianceResult, RogueIdInfo } from "./types/legacy";
 
 /**
  * COMPARATOR SERVICE

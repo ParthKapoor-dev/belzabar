@@ -2,10 +2,10 @@ import { CliError } from "@belzabar/core";
 import {
   fetchComponentIdByName,
   fetchDeployablePageByAppUrl,
-} from "./api";
+} from "./api/index";
 import { cachedFetchPageConfig, cachedFetchComponentConfig } from "./cache";
 import { parsePdUrl } from "./url-parser";
-import type { PageConfigResponse } from "./types";
+import type { RawPageResponse as PageConfigResponse } from "./types/wire";
 
 export type InputKind = "app-url" | "pd-url" | "id" | "name";
 

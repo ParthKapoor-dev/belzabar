@@ -1,6 +1,6 @@
 import { join } from "path";
 import { BELZ_CONFIG_DIR, Cache, Config } from "@belzabar/core";
-import { fetchAllPages, fetchAllComponents, type RawPageListItem } from "./api";
+import { fetchAllPages, fetchAllComponents, type RawPageListItem } from "./api/index";
 
 export const PAGE_FINDER_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 

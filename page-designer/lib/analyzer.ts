@@ -1,7 +1,7 @@
-import { fetchComponentIdByName } from "./api";
+import { fetchComponentIdByName } from "./api/index";
 import { cachedFetchPageConfig as fetchPageConfig, cachedFetchComponentConfig as fetchComponentConfig } from "./cache";
-import { extractReferences } from "./parser";
-import type { ReportNode } from "./types";
+import { extractReferences } from "./parser/index";
+import type { ReportNode } from "./types/legacy";
 
 /**
  * ANALYZER SERVICE
