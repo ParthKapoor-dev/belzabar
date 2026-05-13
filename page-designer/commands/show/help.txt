@@ -15,7 +15,14 @@ Arguments:
 Flags:
   --vars              Show all variables (user-defined + derived).
   --http              Show all HTTP service calls.
-  --components        Show the layout/component tree.
+  --components        Show the legacy (flat-name) layout tree.
+  --tree              Show the full layout tree with node-kind badges
+                      ([FORM] [TABLE] [BTN] [SYM] [LAYOUT] [-]). Highlights
+                      known pitfalls inline (USES-PROPS!, DYN-CLASS!, NO-DS).
+  --node <id>         Dump kind-specific detail for a single node by id
+                      (field vs props, bindings, validations, event wires).
+  --var-graph         Show the per-variable write/read/derive/trigger map.
+                      Flags "dead" variables (no writers AND no readers).
   --var-detail <name> Show full config for a specific variable or derived.
   --http-detail <N>   Show full config for the Nth HTTP call (1-indexed).
   --full              Include all sections + all details.
@@ -41,3 +48,6 @@ Examples:
   belz pd show 48b75e11e166e6b19e5796d59a936228 --http-detail 1
   belz pd show 48b75e11e166e6b19e5796d59a936228 --full
   belz pd show 48b75e11e166e6b19e5796d59a936228 --force --llm
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --tree
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --node __node_id_submit_btn
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --var-graph

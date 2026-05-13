@@ -10,9 +10,12 @@ import {
   extractComponentTree,
   extractHttpDetail,
   extractVarDetail,
+  parsePage,
+  findNode,
+  walkParsed,
   type HttpCallDetail,
   type VarDetail,
-} from "../../lib/parser";
+} from "../../lib/parser/index";
 import { resolveInput, type InputKind } from "../../lib/resolver";
 import { collectAllAdIds, formatTreeLines } from "../../lib/reporter";
 import type {
@@ -21,7 +24,9 @@ import type {
   NormalizedDerived,
   HttpCallSummary,
   ComponentTreeNode,
-} from "../../lib/types";
+} from "../../lib/types/legacy";
+import type { HydratedPage, ParsedNode, NodeKind } from "../../lib/types/common";
+import type { RawPageResponse } from "../../lib/types/wire";
 
 // --- Args ---
 
@@ -37,7 +42,179 @@ interface ShowArgs {
     recursive: boolean;
     varDetail: string | null;
     httpDetail: number;
+    // Phase-7 additions
+    tree: boolean;               // kind-badge full layout tree
+    node: string | null;         // --node <id> detailed node dump
+    varGraph: boolean;           // --var-graph variable write/read/derive/trigger map
   };
+}
+
+// --- Kind badges for --tree / --llm parsedNodes ---
+
+function kindBadge(kind: NodeKind): string {
+  switch (kind) {
+    case "FORM_FIELD": return "[FORM]";
+    case "DATA_TABLE": return "[TABLE]";
+    case "BUTTON": return "[BTN]";
+    case "SYMBOL": return "[SYM]";
+    case "LAYOUT_CONTAINER": return "[LAYOUT]";
+    case "GENERIC": return "[-]";
+  }
+}
+
+interface TreeLineEntry {
+  depth: number;
+  nodeId: string;
+  kind: NodeKind;
+  tagName: string;
+  badge: string;
+  hasEvents: boolean;
+  loop: string | null;
+  summary: string;
+}
+
+function kindSummary(node: ParsedNode): string {
+  switch (node.kind) {
+    case "FORM_FIELD":
+      return `field.type=${node.fieldType ?? "?"}${node.usesPropsInsteadOfField ? " USES-PROPS!" : ""}${node.valueBinding ? ` ↔${node.valueBinding}` : ""}`;
+    case "DATA_TABLE": {
+      const cols = node.hasDynamicColumns ? "dyn-cols" : "static-cols";
+      const ds = node.datasourceState ?? "NO-DS";
+      return `${cols} ds=${ds}${node.rowDataBinding ? ` ←${node.rowDataBinding}` : ""}`;
+    }
+    case "BUTTON":
+      return `"${(node.innerHTML ?? "").slice(0, 30)}"${node.hasDynamicClassName ? " DYN-CLASS!" : ""}`;
+    case "SYMBOL":
+      return `${node.symbolName} in=${node.inputBindings.length} events=${node.eventWires.length}`;
+    case "LAYOUT_CONTAINER":
+      return node.layoutProps ? JSON.stringify(node.layoutProps) : "";
+    case "GENERIC":
+      return node.tagName || "(unknown)";
+  }
+}
+
+function buildTreeLines(root: ParsedNode): TreeLineEntry[] {
+  const out: TreeLineEntry[] = [];
+  const walk = (node: ParsedNode, depth: number): void => {
+    out.push({
+      depth,
+      nodeId: node.nodeId,
+      kind: node.kind,
+      tagName: node.tagName,
+      badge: kindBadge(node.kind),
+      hasEvents: !!(node.events && Object.keys(node.events).length > 0),
+      loop: node.loop,
+      summary: kindSummary(node),
+    });
+    for (const child of node.children) walk(child, depth + 1);
+  };
+  walk(root, 0);
+  return out;
+}
+
+// --- Variable dependency graph ---
+
+interface VarGraphEntry {
+  name: string;
+  kind: "user-defined" | "derived";
+  type: string | null;
+  // Who writes this variable
+  writtenByHttp: Array<{ callLabel: string; callIndex: number }>;
+  writtenByEvents: Array<{ nodeId: string; event: string }>;
+  // Who reads this variable
+  readByBindings: Array<{ nodeId: string; tagName: string; prop: string }>;
+  readByHttpTriggers: Array<{ callLabel: string; callIndex: number }>;
+  // Who derives from this (if user-defined) or what this derives from (if derived)
+  derivedDependents: string[];        // for user-defined: downstream derived names
+  derivedFrom: string[];              // for derived: upstream dependencies
+}
+
+function buildVarGraph(page: HydratedPage): VarGraphEntry[] {
+  const varByName = new Map<string, VarGraphEntry>();
+
+  for (const v of page.variables) {
+    varByName.set(v.name, {
+      name: v.name,
+      kind: "user-defined",
+      type: v.type,
+      writtenByHttp: [],
+      writtenByEvents: [],
+      readByBindings: [],
+      readByHttpTriggers: [],
+      derivedDependents: [],
+      derivedFrom: [],
+    });
+  }
+  for (const d of page.derived) {
+    varByName.set(d.name, {
+      name: d.name,
+      kind: "derived",
+      type: null,
+      writtenByHttp: [],
+      writtenByEvents: [],
+      readByBindings: [],
+      readByHttpTriggers: [],
+      derivedDependents: [],
+      derivedFrom: d.from,
+    });
+    for (const upstream of d.from) {
+      const up = varByName.get(upstream);
+      if (up) up.derivedDependents.push(d.name);
+    }
+  }
+
+  // HTTP writes (success mappings) + reads (triggers)
+  for (const call of page.httpRequests) {
+    for (const m of call.successMappings) {
+      const entry = varByName.get(m.variable);
+      if (entry) entry.writtenByHttp.push({ callLabel: call.label, callIndex: call.index });
+    }
+    if (call.inProgressVar) {
+      const entry = varByName.get(call.inProgressVar);
+      if (entry) entry.writtenByHttp.push({ callLabel: call.label, callIndex: call.index });
+    }
+    for (const trig of call.triggers) {
+      const entry = varByName.get(trig);
+      if (entry) entry.readByHttpTriggers.push({ callLabel: call.label, callIndex: call.index });
+    }
+  }
+
+  // Bindings + events across layout tree
+  walkParsed(page.layout, (node) => {
+    // prop bindings like [rowData]: "{%data%}" or innerHTML: "{%x%}"
+    for (const [prop, raw] of Object.entries(node.props)) {
+      if (typeof raw !== "string") continue;
+      const regex = /\{%([^%]+)%\}/g;
+      let m: RegExpExecArray | null;
+      while ((m = regex.exec(raw)) !== null) {
+        const ref = m[1];
+        if (!ref) continue;
+        const entry = varByName.get(ref);
+        if (entry) entry.readByBindings.push({ nodeId: node.nodeId, tagName: node.tagName, prop });
+      }
+    }
+    // events: handler entries are arrays that contain variable writes.
+    if (node.events && typeof node.events === "object") {
+      for (const [eventName, handlers] of Object.entries(node.events)) {
+        if (!Array.isArray(handlers)) continue;
+        for (const h of handlers) {
+          if (Array.isArray(h) && typeof h[0] === "string") {
+            // handler target like "this.varName" or "{%varName%}"
+            const target = h[0] as string;
+            const thisMatch = target.match(/^this\.(.+)$/);
+            const tplMatch = target.match(/\{%([^%]+)%\}/);
+            const name = thisMatch?.[1] ?? tplMatch?.[1];
+            if (name) {
+              const entry = varByName.get(name);
+              if (entry) entry.writtenByEvents.push({ nodeId: node.nodeId, event: eventName });
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return Array.from(varByName.values());
 }
 
 // --- Data ---
@@ -82,6 +259,21 @@ interface ShowData {
     configurationRaw: string;
     sourceFields: Record<string, unknown>;
   };
+  // Phase-7 additions
+  tree?: TreeLineEntry[];
+  nodeDetail?: {
+    nodeId: string;
+    kind: NodeKind;
+    tagName: string;
+    summary: string;
+    props: Record<string, unknown>;
+    events: Record<string, unknown> | null;
+    loop: string | null;
+    childCount: number;
+    specific?: Record<string, unknown>; // kind-specific detail
+  };
+  varGraph?: VarGraphEntry[];
+  parseWarnings?: string[];
 }
 
 // --- Helpers ---
@@ -177,21 +369,32 @@ const command: CommandModule<ShowArgs, ShowData> = {
       recursive: args.includes("--recursive") || args.includes("-r"),
       varDetail: null as string | null,
       httpDetail: -1,
+      tree: args.includes("--tree"),
+      node: null as string | null,
+      varGraph: args.includes("--var-graph"),
     };
 
     const varIdx = args.indexOf("--var-detail");
-    if (varIdx !== -1 && args[varIdx + 1]) {
-      flags.varDetail = args[varIdx + 1];
+    const varDetailArg = varIdx !== -1 ? args[varIdx + 1] : undefined;
+    if (varDetailArg) {
+      flags.varDetail = varDetailArg;
     }
 
     const httpIdx = args.indexOf("--http-detail");
-    if (httpIdx !== -1 && args[httpIdx + 1]) {
-      flags.httpDetail = parseInt(args[httpIdx + 1], 10);
+    const httpDetailArg = httpIdx !== -1 ? args[httpIdx + 1] : undefined;
+    if (httpDetailArg) {
+      flags.httpDetail = parseInt(httpDetailArg, 10);
       if (Number.isNaN(flags.httpDetail)) {
         throw new CliError("--http-detail requires a valid numeric index.", {
           code: "INVALID_HTTP_DETAIL",
         });
       }
+    }
+
+    const nodeIdx = args.indexOf("--node");
+    const nodeArg = nodeIdx !== -1 ? args[nodeIdx + 1] : undefined;
+    if (nodeArg) {
+      flags.node = nodeArg;
     }
 
     return { input, flags };
@@ -305,6 +508,71 @@ const command: CommandModule<ShowArgs, ShowData> = {
         configurationRaw: configStr,
         sourceFields: safeSourceFields,
       };
+    }
+
+    // ----- Phase-7 additions: tree / node / var-graph / parseWarnings --------
+    const needHydrated = flags.tree || !!flags.node || flags.varGraph || flags.full;
+    if (needHydrated) {
+      const page: HydratedPage = parsePage(response as unknown as RawPageResponse);
+      if (page.parseWarnings.length > 0) data.parseWarnings = page.parseWarnings;
+
+      if (flags.tree || flags.full) {
+        data.tree = buildTreeLines(page.layout);
+      }
+
+      if (flags.node) {
+        const match = findNode(page.layout, flags.node);
+        if (!match) {
+          throw new CliError(`Node "${flags.node}" not found in layout tree.`, {
+            code: "NODE_NOT_FOUND",
+          });
+        }
+        const specific: Record<string, unknown> = {};
+        switch (match.kind) {
+          case "FORM_FIELD":
+            specific.field = match.field;
+            specific.fieldType = match.fieldType;
+            specific.valueBinding = match.valueBinding;
+            specific.validations = match.validations;
+            specific.usesPropsInsteadOfField = match.usesPropsInsteadOfField;
+            break;
+          case "DATA_TABLE":
+            specific.datasourceState = match.datasourceState;
+            specific.hasDynamicColumns = match.hasDynamicColumns;
+            specific.hasInitialValueOnColumnsVar = match.hasInitialValueOnColumnsVar;
+            specific.rowDataBinding = match.rowDataBinding;
+            specific.columnsRaw = match.columnsRaw;
+            break;
+          case "BUTTON":
+            specific.innerHTML = match.innerHTML;
+            specific.hasDynamicClassName = match.hasDynamicClassName;
+            break;
+          case "SYMBOL":
+            specific.symbolName = match.symbolName;
+            specific.inputBindings = match.inputBindings;
+            specific.eventWires = match.eventWires;
+            break;
+          case "LAYOUT_CONTAINER":
+            specific.layoutProps = match.layoutProps;
+            specific.isRoot = match.isRoot;
+            break;
+        }
+        data.nodeDetail = {
+          nodeId: match.nodeId,
+          kind: match.kind,
+          tagName: match.tagName,
+          summary: kindSummary(match),
+          props: match.props,
+          events: match.events,
+          loop: match.loop,
+          childCount: match.children.length,
+          specific,
+        };
+      }
+
+      if (flags.varGraph || flags.full) {
+        data.varGraph = buildVarGraph(page);
+      }
     }
 
     return ok(data);
@@ -505,9 +773,88 @@ const command: CommandModule<ShowArgs, ShowData> = {
       ui.object(data.raw);
     }
 
+    // --tree (kind-badge layout tree)
+    if (data.tree) {
+      ui.section("Layout Tree");
+      for (const entry of data.tree) {
+        const indent = "  ".repeat(entry.depth);
+        const badges =
+          entry.badge +
+          (entry.loop ? " [loop]" : "") +
+          (entry.hasEvents ? " [events]" : "");
+        ui.text(`${indent}${badges} ${entry.tagName}#${entry.nodeId} — ${entry.summary}`);
+      }
+    }
+
+    // --node <id>
+    if (data.nodeDetail) {
+      const n = data.nodeDetail;
+      ui.section(`Node Detail: ${n.nodeId} ${kindBadge(n.kind)} ${n.tagName}`);
+      ui.kv("Kind", n.kind);
+      ui.kv("Summary", n.summary);
+      ui.kv("Children", n.childCount);
+      if (n.loop) ui.kv("Loop", n.loop);
+      if (n.events) {
+        ui.section("Events");
+        ui.object(n.events);
+      }
+      if (n.specific && Object.keys(n.specific).length > 0) {
+        ui.section("Kind-specific");
+        ui.object(n.specific);
+      }
+      ui.section("Props");
+      ui.object(n.props);
+    }
+
+    // --var-graph
+    if (data.varGraph) {
+      ui.section("Variable Graph");
+      if (data.varGraph.length === 0) {
+        ui.text("No variables defined.");
+      } else {
+        for (const v of data.varGraph) {
+          const parts: string[] = [`[${v.kind}]`];
+          parts.push(v.name);
+          if (v.type) parts.push(`(${v.type})`);
+          ui.text(parts.join(" "));
+          if (v.writtenByHttp.length > 0) {
+            ui.text(`  ← written by HTTP: ${v.writtenByHttp.map((w) => `#${w.callIndex} ${w.callLabel}`).join(", ")}`);
+          }
+          if (v.writtenByEvents.length > 0) {
+            ui.text(`  ← written by events: ${v.writtenByEvents.map((w) => `${w.nodeId}.${w.event}`).join(", ")}`);
+          }
+          if (v.readByBindings.length > 0) {
+            ui.text(`  → read by ${v.readByBindings.length} binding(s): ${v.readByBindings.slice(0, 3).map((r) => `${r.tagName}#${r.nodeId}.${r.prop}`).join(", ")}${v.readByBindings.length > 3 ? "…" : ""}`);
+          }
+          if (v.readByHttpTriggers.length > 0) {
+            ui.text(`  → triggers HTTP: ${v.readByHttpTriggers.map((t) => `#${t.callIndex} ${t.callLabel}`).join(", ")}`);
+          }
+          if (v.derivedDependents.length > 0) {
+            ui.text(`  → derives: ${v.derivedDependents.join(", ")}`);
+          }
+          if (v.derivedFrom.length > 0) {
+            ui.text(`  ← derived from: ${v.derivedFrom.join(", ")}`);
+          }
+          const isDead =
+            v.writtenByHttp.length + v.writtenByEvents.length === 0 &&
+            v.readByBindings.length + v.readByHttpTriggers.length + v.derivedDependents.length === 0;
+          if (isDead) ui.text(`  ⚠ dead — no writers AND no readers`);
+        }
+      }
+    }
+
+    // Parse warnings (always surface when present)
+    if (data.parseWarnings && data.parseWarnings.length > 0) {
+      ui.section("Parse Warnings");
+      for (const w of data.parseWarnings) ui.text(`⚠ ${w}`);
+    }
+
     // Hints for available flags
-    if (!data.vars && !data.http && !data.components && !data.varDetail && !data.httpDetail) {
-      ui.info("Use --vars, --http, --components, or --full for more detail.");
+    if (
+      !data.vars && !data.http && !data.components && !data.varDetail &&
+      !data.httpDetail && !data.tree && !data.nodeDetail && !data.varGraph
+    ) {
+      ui.info("Use --vars, --http, --components, --tree, --var-graph, --node <id>, or --full for more detail.");
     }
   },
 };
