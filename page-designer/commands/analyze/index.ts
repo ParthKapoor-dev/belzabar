@@ -14,7 +14,7 @@ const TARGET_PAGE_IDS = [
 ];
 import { collectAllAdIds, formatTreeLines } from "../../lib/reporter";
 import { verifyCompliance } from "../../lib/comparator";
-import type { ComplianceResult, ReportNode } from "../../lib/types";
+import type { ComplianceResult, ReportNode } from "../../lib/types/legacy";
 
 interface AnalyzeArgs {
   pageIdArg?: string;

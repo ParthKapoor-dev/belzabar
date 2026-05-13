@@ -1,8 +1,8 @@
 import { file } from "bun";
 import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { fetchComponentIdByName } from "../../lib/api";
+import { fetchComponentIdByName } from "../../lib/api/index";
 import { cachedFetchPageConfig as fetchPageConfig, cachedFetchComponentConfig as fetchComponentConfig } from "../../lib/cache";
-import { extractReferences } from "../../lib/parser";
+import { extractReferences } from "../../lib/parser/index";
 import { analyzeItem } from "../../lib/analyzer";
 import { collectAllAdIds } from "../../lib/reporter";
 

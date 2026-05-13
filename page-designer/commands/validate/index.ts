@@ -1,7 +1,9 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { validateConfig } from "../../lib/parser";
+import { parsePage } from "../../lib/parser/index";
 import { resolveInput } from "../../lib/resolver";
-import type { ValidationIssue } from "../../lib/types";
+import { validateHydrated } from "../../lib/validator/index";
+import type { ValidationIssue, HydratedPage } from "../../lib/types/common";
+import type { RawPageResponse } from "../../lib/types/wire";
 
 interface ValidateArgs {
   input: string;
@@ -29,14 +31,15 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
   },
   async execute({ input }) {
     const resolved = await resolveInput(input);
-    const issues = validateConfig(resolved.response.configuration);
+    const page: HydratedPage = parsePage(resolved.response as unknown as RawPageResponse);
+    const issues = validateHydrated(page);
 
-    const errorCount = issues.filter(i => i.severity === "error").length;
-    const warnCount = issues.filter(i => i.severity === "warn").length;
+    const errorCount = issues.filter((i) => i.severity === "error").length;
+    const warnCount = issues.filter((i) => i.severity === "warn").length;
 
     return ok({
-      name: resolved.response.name || resolved.resolvedId,
-      entityType: resolved.entityType,
+      name: page.name || resolved.resolvedId,
+      entityType: page.entityType,
       issues,
       errorCount,
       warnCount,
