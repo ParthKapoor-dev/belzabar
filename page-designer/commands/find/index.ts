@@ -1,4 +1,4 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, ok, openUrlInBrowser, type CommandModule } from "@belzabar/core";
 import { spawn } from "node:child_process";
 import {
   PAGE_FINDER_CACHE_TTL_MS,
@@ -459,43 +459,3 @@ function runFzfPicker(
   });
 }
 
-async function openUrlInBrowser(url: string): Promise<void> {
-  const candidate = getUrlOpenCommand(url);
-  const result = await runCommand(candidate.command, candidate.args);
-  if (result.code !== 0) {
-    throw new CliError(
-      `Failed to open browser URL: ${result.stderr || `exit code ${String(result.code)}`}`,
-      { code: "OPEN_FAILED" }
-    );
-  }
-}
-
-function getUrlOpenCommand(url: string): { command: string; args: string[] } {
-  if (process.platform === "darwin") return { command: "open", args: [url] };
-  if (process.platform === "win32") return { command: "cmd", args: ["/c", "start", "", url] };
-  return { command: "xdg-open", args: [url] };
-}
-
-function runCommand(command: string, args: string[]): Promise<{ code: number | null; stderr: string }> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: ["ignore", "ignore", "pipe"] });
-
-    let stderr = "";
-
-    child.on("error", (error: NodeJS.ErrnoException) => {
-      if (error.code === "ENOENT") {
-        reject(
-          new CliError(
-            `Cannot open URL automatically because '${command}' is not installed.`,
-            { code: "OPEN_COMMAND_NOT_FOUND" }
-          )
-        );
-        return;
-      }
-      reject(error);
-    });
-
-    child.stderr.on("data", (chunk: Buffer) => { stderr += chunk.toString("utf8"); });
-    child.on("close", (code) => { resolve({ code, stderr: stderr.trim() }); });
-  });
-}
