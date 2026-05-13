@@ -20,30 +20,58 @@ This is a **source-only module** — no standalone binary or package.json. All c
 
 ## Command Routing
 
+**Reads:**
 ```
-belz pd show <INPUT>             # unified page/component inspection
-belz pd validate <INPUT>         # config validation (10 checks)
+belz pd show <INPUT>             # unified page/component inspection; --tree / --node / --var-graph
+belz pd validate <INPUT>         # validator gate (18+ rules)
 belz pd find [query]             # search pages/components
 belz pd find-ad-methods <ID>     # extract AD method IDs
 belz pd analyze [PAGE_ID]        # recursive dependency + compliance
+belz pd history <action>         # server-backed version history (list/show/diff/restore)
+belz pd preflight <pageId>       # dry-run: parse + validate + (optional) overlay, no save
+```
+
+**Writes:**
+```
+belz pd save <pageId> --overlay <file>   # validated overlay save (partial or full)
+belz pd save <pageId> --config <file>    # raw full-config save (escape hatch)
+belz pd publish <pageId>                 # POST /publish
+belz pd lock <acquire|release|status>    # manual lock control
 ```
 
 When adding or removing PD commands, run `bun run generate` from `cli/` — this updates `cli/commands/registry-pd.ts`.
 
 ## Directory Map
 
-1. `commands/` - command modules (`index.ts`, `help.txt`)
-2. `lib/` - API, parsing, analysis, resolver, cache, reporting services
-3. `components.json` - component whitelist used during recursive analysis
-4. `master_ids.txt` - approved AD ID list for compliance checks
+1. `commands/` - command modules (`index.ts`, `help.txt`, `desc.txt`)
+2. `lib/api/` - pdApi façade + raw HTTP client
+3. `lib/types/` - `common.ts` (HydratedPage, ParsedNode, Overlay), `wire.ts` (raw API shapes), `legacy.ts` (pre-rewrite types still used by analyze/reporter)
+4. `lib/parser/` - parser tree: `index.ts` façade, `nodes.ts` discriminator, `variables.ts`, `http.ts`, `refs.ts`, `legacy.ts` (pre-rewrite extractors)
+5. `lib/validator/` - `index.ts` + `rules/existing.ts` (ported) + `rules/invariants.ts` (new)
+6. `lib/serialize/` - `full.ts`, `operations.ts`, `apply.ts`, `index.ts` (strategy picker)
+7. `lib/draft-guard.ts` - resolveDraftTarget (refuses PUBLISHED without --force)
+8. `lib/lock.ts` - withLock wraps every write
+9. `lib/args/common.ts` - parsePdCommonArgs (--force, --yes, --dry-run)
+10. `lib/{analyzer,reporter,comparator,cache,resolver,page-finder,url-parser}.ts` - legacy analyze stack (unchanged)
+11. `components.json` - component whitelist used during recursive analysis
+12. `master_ids.txt` - approved AD ID list for compliance checks
+13. `docs/api-notes.md` - **read this first** — verified endpoints, partial-update shape, failure-mode catalog
 
 ## Commands Implemented
 
-1. `show` — unified inspection with progressive flags (--vars, --http, --components, --var-detail, --http-detail, --full)
-2. `validate` — 10 config validation checks from the PD spec
-3. `find` — search/browse pages and components with fuzzy search
-4. `find-ad-methods` — shallow or recursive AD ID extraction
-5. `analyze` — recursive dependency tree + compliance analysis
+**Reads:**
+1. `show` — inspection with kind-badge tree (`--tree`), single-node detail (`--node <id>`), variable write/read/derive/trigger map (`--var-graph`), plus existing `--vars/--http/--components/--var-detail/--http-detail/--full/--recursive/--raw`.
+2. `validate` — validator gate (10 existing + 8 new invariant rules — see `docs/api-notes.md`).
+3. `find` — fuzzy page/component search with a 7-day index.
+4. `find-ad-methods` — shallow or recursive AD ID extraction.
+5. `analyze` — recursive dependency tree + compliance analysis.
+6. `history <action>` — server-backed version history: list, show, diff, restore.
+7. `preflight <pageId> [--overlay <file>]` — dry-run validator. Exit code = validator verdict.
+
+**Writes:**
+8. `save <pageId>` — overlay (`--overlay`) or full-config (`--config`) safe-edit. Draft-guard + validator gate + lock + re-fetch envelope.
+9. `publish <pageId>` — POST /publish wrapped in lock.
+10. `lock <acquire|release|status>` — manual lock control (stored at `~/.belz/pd-locks/<env>.json`).
 
 ## Core Behavior Contract
 
@@ -76,23 +104,33 @@ All extraction functions normalize both into common types (`NormalizedVariable`,
 
 ## Important Files for Agents
 
-1. API adapters: `lib/api.ts`
-2. Reference/variable/HTTP extraction: `lib/parser.ts`
-3. Input resolution: `lib/resolver.ts`
-4. Page/component caching (5 min TTL): `lib/cache.ts`
-5. Page/component search index: `lib/page-finder.ts`
-6. Recursive traversal: `lib/analyzer.ts`
-7. Tree/id reporting: `lib/reporter.ts`
-8. Compliance logic: `lib/comparator.ts`
-9. PD URL parsing: `lib/url-parser.ts`
-10. Types: `lib/types.ts`
+1. **`docs/api-notes.md`** — start here. Verified endpoints, partial-update shape, lock lifecycle, failure-mode catalog.
+2. API façade: `lib/api/index.ts` (pdApi.*). Raw client: `lib/api/client.ts`.
+3. Unified types: `lib/types/common.ts` (HydratedPage, ParsedNode, Overlay). Never import `wire.ts` from commands.
+4. Parser: `lib/parser/index.ts` (parsePage façade); `nodes.ts` is the discriminator.
+5. Validator: `lib/validator/index.ts` (validateHydrated). Rules in `rules/{existing,invariants}.ts`.
+6. Serializer: `lib/serialize/index.ts` (strategy picker), `apply.ts` (pure overlay → HydratedPage), `operations.ts` (→ partial ops), `full.ts` (→ configuration string).
+7. Draft-guard: `lib/draft-guard.ts`. Lock: `lib/lock.ts`.
+8. Input resolution: `lib/resolver.ts`. Cache: `lib/cache.ts`. Search index: `lib/page-finder.ts`.
+9. Recursive traversal (legacy analyze): `lib/analyzer.ts`, `lib/reporter.ts`, `lib/comparator.ts`.
+10. Legacy types + extractors (analyze/find-ad-methods still use these): `lib/types/legacy.ts`, `lib/parser/legacy.ts`.
+
+## Safe-Edit Invariants (DO NOT BYPASS)
+
+1. **Every PUT goes through `withLock(pageId, fn)`**. The lock manager acquires, runs, releases in finally.
+2. **Every write runs `validateHydrated(patched)` before going out.** `--force` is the only bypass; errors then land in `meta.bypassedErrors`.
+3. **`resolveDraftTarget(pageId)` is the only path to a writable id.** PUBLISHED pages are refused unless `--force`.
+4. **`raw` is preserved** on every ParsedNode, PageVariable, PageHttpRequest, and on HydratedPage — unknown shapes round-trip verbatim.
+5. **Overlay is declarative.** The serializer is pure: `(HydratedPage, Overlay) → operations[] | fullBody`.
+6. **Partial-update operations use `key` (NOT `path`) with stringified values.** See `docs/api-notes.md`.
 
 ## Known Current Gaps
 
-1. Extraction regex assumes alphanumeric AD IDs in execute URLs.
-2. `show` metadata fields (`draftId`, `publishedId`, `versionId`) are best-effort and may be `null` when backend responses omit them.
-3. `show` app-URL resolution uses `GET /rest/api/public/pagedesigner/deployable/pages?domain=<host>&path=<path>` — the domain must match a registered deployment domain.
-4. Validation checks are static pattern-based; they cannot detect runtime-only issues.
+1. AD-ID extractor regex assumes alphanumeric execute-URL ids.
+2. `show` metadata `draftId/publishedId/versionId` are best-effort; may be null.
+3. App-URL resolution requires a registered deployment domain.
+4. Validator is static — runtime-only issues (e.g. missing `.latest-version` CSS scoping) are noted in `docs/api-notes.md` but not gate-checked.
+5. `save --config <file>` stringifies whatever JSON you hand it — no round-trip parse/re-parse symmetry check. Use `--overlay` when possible.
 
 ## Help Text Standard
 
