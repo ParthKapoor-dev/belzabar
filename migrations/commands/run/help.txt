@@ -1,0 +1,63 @@
+belz migrate run  —  Trigger a migration build on Jenkins
+
+USAGE
+  belz migrate run --profile <profile> --module <type> --ids "<csv>" [options]
+  belz migrate run --source-env nsm-qa --target-env nsm-stage --module AD_Method --ids "<csv>"
+
+REQUIRED
+  --module <type>              One of: AD_Method, PD, AD_COMPARISON_REPORT,
+                               PD_COMPARISON_REPORT, AD_MIGRATION_STATUS,
+                               PD_MIGRATION_STATUS, AD_Service.
+                               Use --module-custom for arbitrary values.
+
+  --profile <name>             A profile name (e.g. devncdns_qancdns).
+  OR
+  --source-env / --target-env  NCDNS-only: derives the profile (e.g. nsm-qa →
+                               qancdns, nsm-stage → stgncdns).
+
+  --ids "<csv>"                Comma-separated UUIDs.
+  OR
+  --ids-file <path>            File containing IDs (comma/space/newline-separated).
+
+OPTIONS
+  --client <name>              Override the client (auto-detected from profile by
+                               default). Names: SEMS, "Exp AI", "YS (YieldSec)",
+                               "TH (TownHouse)", "NCDNS (NSS)", DNREC,
+                               "AHS (NC AHS)", "Core/Other".
+  --migration-id <uuid>        Required for COMPARISON_REPORT / MIGRATION_STATUS.
+  --async Y|N                  Run asynchronously. Default: N.
+  --migrate-dependents Y|N     Migrate dependent methods/pages. Default: N.
+  --devops-tag <ref>           Branch/tag of infra.expertly. Default: develop.
+  --dry-run                    Validate parameters without running migration.
+  --no-auto-approve            Require manual approval in Jenkins (default
+                               sends AUTO_APPROVE=true so we don't get stuck).
+  --no-follow                  Trigger build and return without streaming logs.
+  --out <path>                 Write summary.json + summary.console.log to dir.
+  --quiet                      Suppress progress output.
+  --raw                        Include raw report data in JSON output.
+  --llm                        Emit structured JSON for agent consumption.
+
+CONFIG
+  Reads Jenkins credentials from ~/.belz/config.json:
+    {
+      "jenkins": {
+        "baseUrl": "https://jenkins-asg.stg.expertly.cloud",
+        "user": "<your jenkins user>",
+        "password": "<base64-encoded password or API token>",
+        "migrationJob": "expertly.db-migration"
+      }
+    }
+  Or env vars: BELZ_JENKINS_URL, BELZ_JENKINS_USER, BELZ_JENKINS_PASSWORD.
+
+EXAMPLES
+  # Dry run, NCDNS qa → stage
+  belz migrate run --source-env nsm-qa --target-env nsm-stage \\
+    --module AD_Method --ids "4e74cf38523553112e879308c4a03aef" --dry-run
+
+  # Real run, explicit profile
+  belz migrate run --profile devncdns_qancdns --module AD_Method \\
+    --ids-file ./ids.txt --async Y --out /tmp/m1
+
+  # SEMS qa → stage
+  belz migrate run --profile qasems_stagesems --module AD_Method \\
+    --ids "<uuid>" --client SEMS

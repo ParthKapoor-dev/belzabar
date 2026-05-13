@@ -1,0 +1,1 @@
+belz migrate run                 Trigger a Jenkins migration build, follow its console, and parse the report.

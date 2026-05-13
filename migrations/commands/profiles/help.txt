@@ -1,0 +1,21 @@
+belz migrate profiles  —  List available Jenkins migration profiles
+
+USAGE
+  belz migrate profiles [--refresh] [--raw] [--llm]
+
+DESCRIPTION
+  Fetches the PROFILE_NAME parameter choices from the Jenkins
+  `expertly.db-migration` job, groups them by client, and prints them.
+
+  The first invocation hits Jenkins live; subsequent calls read a local cache
+  at ~/.belz/migrations/jenkins-profiles.json. Pass --refresh to force-fetch.
+
+FLAGS
+  --refresh           Bypass the local cache and re-fetch from Jenkins.
+  --raw               Include extra metadata in --llm output.
+  --llm               Emit structured JSON for agent consumption.
+
+EXAMPLES
+  belz migrate profiles
+  belz migrate profiles --refresh
+  belz migrate profiles --llm

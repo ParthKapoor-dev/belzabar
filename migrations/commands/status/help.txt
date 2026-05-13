@@ -1,0 +1,8 @@
+belz migrate status  —  Check a Jenkins migration build's status
+
+USAGE
+  belz migrate status <buildNumber> [--llm]
+
+EXAMPLES
+  belz migrate status 743
+  belz migrate status 743 --llm
