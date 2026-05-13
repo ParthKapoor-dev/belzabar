@@ -1,0 +1,38 @@
+Usage: belz cache [flags] [uuid...]
+
+Invalidate server-side cache entries for the active environment via
+POST /rest/api/cache/invalidate.
+
+Pass one or more UUIDs to invalidate specific entries, or omit UUIDs to
+invalidate the entire cache for the given --type. Wiping the entire cache
+requires --yes (or interactive confirmation).
+
+Args:
+  [uuid...]           One or more cache entry UUIDs. Omit to clear all.
+
+Flags:
+  --type <TYPE>       Cache type to invalidate. (default: AUTOMATION)
+  --yes, -y           Skip confirmation when clearing the entire cache.
+  --help, -h          Show this help message.
+
+Global Flags:
+  --env <name>        Environment to operate on. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+  -v, --verbose       Verbose request logging.
+
+Examples:
+  # Invalidate three automation cache entries on the active env
+  belz cache 44014c3707d6b6d8ae848839a1c8d1e7 47425344e088690ff89aa8f1e092c867 4a1d686b87f93b1519f2b61393d4ed7a
+
+  # Same, against nsm-qa
+  belz cache --env nsm-qa <uuid> <uuid>
+
+  # Wipe the entire AUTOMATION cache on nsm-uat (requires confirmation)
+  belz cache --env nsm-uat
+
+  # Wipe everything non-interactively (e.g. from a script or LLM)
+  belz cache --yes --llm
+
+  # Invalidate by a non-default type
+  belz cache --type PAGE <uuid>

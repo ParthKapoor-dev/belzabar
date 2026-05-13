@@ -1,0 +1,3 @@
+belz cache <uuid>...  :->  Invalidate specific cache entries on the active environment
+belz cache --env nsm-qa  :->  Wipe the entire AUTOMATION cache on a target env (with confirmation)
+belz cache --type PAGE <uuid>  :->  Invalidate non-AUTOMATION cache entries by UUID
