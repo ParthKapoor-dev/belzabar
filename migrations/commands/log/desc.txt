@@ -1,0 +1,1 @@
+belz migrate logs <n>            Print the (ANSI-stripped) console output of a Jenkins migration build.
