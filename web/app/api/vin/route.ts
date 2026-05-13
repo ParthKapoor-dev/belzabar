@@ -3,7 +3,7 @@ export const runtime = "nodejs";
 import { spawn } from "node:child_process";
 import { homedir } from "node:os";
 
-const VALID_ENVS = ["nsm-dev", "nsm-qa", "nsm-uat"] as const;
+const VALID_ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"] as const;
 type Env = (typeof VALID_ENVS)[number];
 
 function runBelz(args: string[]): Promise<string> {

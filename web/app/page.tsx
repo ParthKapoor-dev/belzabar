@@ -30,7 +30,7 @@ const SEARCH_CARD = {
   hint: "ctrl+k",
 }
 
-const ENVS = ["nsm-dev", "nsm-qa", "nsm-uat"] as const
+const ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"] as const
 type Env = (typeof ENVS)[number]
 
 type VinResult = {

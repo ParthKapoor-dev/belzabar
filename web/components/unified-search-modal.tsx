@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
 
-const ENVS = ["nsm-dev", "nsm-qa", "nsm-uat"] as const
+const ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"] as const
 type Env = (typeof ENVS)[number]
 
 interface AdMatch {
