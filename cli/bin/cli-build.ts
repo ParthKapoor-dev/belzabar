@@ -2,7 +2,8 @@ import { ADCommandRegistry } from "../commands/registry-ad";
 import { PDCommandRegistry } from "../commands/registry-pd";
 import { TWCommandRegistry } from "../commands/registry-tw";
 import { TopLevelCommandRegistry } from "../commands/registry-top";
-import { ADHelpMap, PDHelpMap, TWHelpMap, TopHelpMap, makeHelpResolver, HELP_FULL_TEXT } from "../commands/registry-help";
+import { MigrateCommandRegistry } from "../commands/registry-migrate";
+import { ADHelpMap, PDHelpMap, TWHelpMap, TopHelpMap, MigrateHelpMap, makeHelpResolver, HELP_FULL_TEXT } from "../commands/registry-help";
 import { runNamespacedCli } from "@belzabar/core";
 
 if (process.argv.slice(2).includes("--help-full")) {
@@ -10,7 +11,7 @@ if (process.argv.slice(2).includes("--help-full")) {
   process.exit(0);
 }
 
-const { migrate, config, web, ...topLevelCommands } = TopLevelCommandRegistry;
+const { "migrate-legacy": migrateLegacy, config, web, ...topLevelCommands } = TopLevelCommandRegistry;
 const topHelpResolver = makeHelpResolver(TopHelpMap);
 
 // Prod Mode: Use generated registries + embedded help text (bundled at compile time)
@@ -38,9 +39,15 @@ await runNamespacedCli(process.argv, {
       helpResolver: makeHelpResolver(TWHelpMap),
     },
     migrate: {
-      name: "Migrations",
-      description: "Run NSM database migrations.",
-      command: migrate,
+      name: "Migrations (Jenkins)",
+      description: "Trigger Jenkins-backed migration builds.",
+      commands: MigrateCommandRegistry,
+      helpResolver: makeHelpResolver(MigrateHelpMap),
+    },
+    "migrate-legacy": {
+      name: "Migrations (Legacy)",
+      description: "Legacy NSM db-migration-tool client. Retained until Jenkins migration is fully verified.",
+      command: migrateLegacy,
       helpResolver: topHelpResolver,
     },
     config: {

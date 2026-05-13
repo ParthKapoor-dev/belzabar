@@ -7,7 +7,8 @@ import { runNamespacedCli } from "@belzabar/core";
 const adCommandsDir = join(import.meta.dir, "../../automation-designer/commands");
 const pdCommandsDir = join(import.meta.dir, "../../page-designer/commands");
 const twCommandsDir = join(import.meta.dir, "../../teamwork/commands");
-const topCommandsDir = join(import.meta.dir, "../commands"); // cli/commands/ (envs, migrate)
+const migrationsCommandsDir = join(import.meta.dir, "../../migrations/commands");
+const topCommandsDir = join(import.meta.dir, "../commands"); // cli/commands/ (envs, migrate-legacy)
 
 function loadCommandsFromDir(dir: string): Record<string, any> {
   const map: Record<string, any> = {};
@@ -63,6 +64,7 @@ async function buildHelpFullDynamic(): Promise<string> {
     { header: "belz ad <cmd>  —  Automation Designer", dir: adCommandsDir },
     { header: "belz pd <cmd>  —  Page Designer",       dir: pdCommandsDir },
     { header: "belz tw <cmd>  —  Teamwork",            dir: twCommandsDir },
+    { header: "belz migrate <cmd>  —  Migrations (Jenkins)", dir: migrationsCommandsDir },
     { header: "belz <cmd>  —  Top-level",              dir: topCommandsDir },
   ];
 
@@ -93,8 +95,9 @@ if (process.argv.slice(2).includes("--help-full")) {
 const adCommands = loadCommandsFromDir(adCommandsDir);
 const pdCommands = loadCommandsFromDir(pdCommandsDir);
 const twCommands = loadCommandsFromDir(twCommandsDir);
+const migrateCommands = loadCommandsFromDir(migrationsCommandsDir);
 const allTopCommands = loadCommandsFromDir(topCommandsDir);
-const { migrate, config, web, ...topLevelCommands } = allTopCommands;
+const { "migrate-legacy": migrateLegacy, config, web, ...topLevelCommands } = allTopCommands;
 
 await runNamespacedCli(process.argv, {
   name: "Belzabar CLI",
@@ -120,9 +123,15 @@ await runNamespacedCli(process.argv, {
       helpDir: twCommandsDir,
     },
     migrate: {
-      name: "Migrations",
-      description: "Run NSM database migrations.",
-      command: migrate,
+      name: "Migrations (Jenkins)",
+      description: "Trigger Jenkins-backed migration builds.",
+      commands: migrateCommands,
+      helpDir: migrationsCommandsDir,
+    },
+    "migrate-legacy": {
+      name: "Migrations (Legacy)",
+      description: "Legacy NSM db-migration-tool client. Retained until Jenkins migration is fully verified.",
+      command: migrateLegacy,
       helpResolver: makeHelpDirResolver(topCommandsDir),
     },
     config: {
