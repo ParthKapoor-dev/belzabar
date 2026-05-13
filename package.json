@@ -3,9 +3,9 @@
   "private": true,
   "workspaces": [
     "cli",
+    "cli/packages/*",
     "extension",
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
     "install": "bash ./cli/scripts/install.sh",
