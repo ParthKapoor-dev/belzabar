@@ -1,0 +1,13 @@
+{
+  "id": "__node_id_name_field",
+  "name": "exp-form-field",
+  "field": {
+    "name": "__field_name",
+    "type": "text",
+    "label": "Name",
+    "[(value)]": "{%userName%}",
+    "validation": [{"rule": "required", "message": "Required"}],
+    "_elementId": "__element_id_name_field"
+  },
+  "_elementId": "__element_id_name_field"
+}

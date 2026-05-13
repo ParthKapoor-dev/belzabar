@@ -1,0 +1,12 @@
+{
+  "id": "__node_id_sym_ref",
+  "name": "reply-mailbox-listing",
+  "isSymbol": true,
+  "props": {
+    "[refreshList]": "{%triggerRefresh%}"
+  },
+  "events": {
+    "selectedItem": [["{%selectedId%}", "(function(data){return data.$event.data;})"]]
+  },
+  "_elementId": "__element_id_sym_ref"
+}

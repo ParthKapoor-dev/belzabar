@@ -1,0 +1,6 @@
+{
+  "id": "__node_id_bad_parent",
+  "name": "div",
+  "props": {"layout": {"type": "flex"}},
+  "children": {"0": {"id": "__node_a", "name": "span"}, "1": {"id": "__node_b", "name": "span"}}
+}

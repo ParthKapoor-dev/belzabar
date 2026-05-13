@@ -1,0 +1,9 @@
+{
+  "id": "__node_id_submit",
+  "name": "button",
+  "props": {
+    "[className]": "{%btnClass%}",
+    "innerHTML": "Submit"
+  },
+  "_elementId": "__element_id_submit"
+}

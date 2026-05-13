@@ -1,0 +1,11 @@
+{
+  "id": "__node_id_my_table",
+  "name": "exp-data-table",
+  "props": {
+    "[columns]": "{%dynColumns%}",
+    "[rowData]": "{%tableData%}",
+    "datasourceState": "initial",
+    "initialValue": "[]"
+  },
+  "_elementId": "__element_id_my_table"
+}

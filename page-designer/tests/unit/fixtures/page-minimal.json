@@ -1,0 +1,9 @@
+{
+  "id": "minimal001",
+  "name": "minimal-page",
+  "status": "DRAFT",
+  "versionId": 1,
+  "createdAt": 1000,
+  "updatedAt": 2000,
+  "configuration": "{\"__version\":5,\"layout\":{\"id\":\"__node_id_root\",\"name\":\"div\",\"props\":{\"layout\":{\"gap\":\"16px\",\"type\":\"flex\",\"direction\":\"column\"}},\"children\":[],\"_elementId\":\"__element_id_root\",\"unSelectable\":true,\"__LAYOUT_CONFIG_METADATA\":{}},\"styles\":\"\",\"variables\":{\"generated\":[],\"userDefined\":[{\"name\":\"myVar\",\"type\":\"String\",\"initialValue\":\"hello\",\"translateInitialValue\":false,\"__LAYOUT_CONFIG_METADATA\":{}}],\"derived\":[]},\"httpRequests\":{\"generated\":[],\"userDefined\":[]}}"
+}

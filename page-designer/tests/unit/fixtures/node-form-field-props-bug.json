@@ -1,0 +1,11 @@
+{
+  "id": "__node_id_bad_field",
+  "name": "exp-form-field",
+  "props": {
+    "name": "__field_bad",
+    "type": "text",
+    "label": "Bad",
+    "[(value)]": "{%x%}"
+  },
+  "_elementId": "__element_id_bad_field"
+}
