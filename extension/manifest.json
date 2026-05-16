@@ -41,6 +41,18 @@
       ],
       "js": ["dist/pd-content.js"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://nsm-dev.nc.verifi.dev/pages/*",
+        "https://nsm-qa.nc.verifi.dev/pages/*",
+        "https://nsm-uat.nc.verifi.dev/pages/*",
+        "https://staff-nss-stage.verifi-nc.com/pages/*",
+        "https://staff-nss.verifi-nc.com/pages/*",
+        "https://yieldsec.qa.expertly.cloud/pages/*"
+      ],
+      "js": ["dist/pd-inspector.js"],
+      "run_at": "document_idle"
     }
   ]
 }

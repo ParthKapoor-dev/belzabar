@@ -15,6 +15,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const entries = [
   { src: 'src/ad-content.js', out: 'ad-content.js' },
   { src: 'src/pd-content.js', out: 'pd-content.js' },
+  { src: 'src/pd-inspector.js', out: 'pd-inspector.js' },
   { src: 'src/devtools/devtools-page.js', out: 'devtools-page.js' },
   { src: 'src/devtools/panel.js', out: 'panel.js' }
 ];
