@@ -1,10 +1,11 @@
-// Shared helpers for the Chain Inspector.
+// Shared helpers for the AD Network DevTools panel.
 //
 // The Automation Designer "chain" API is hit two ways:
 //   - definition fetch  GET /rest/api/automation/chain[/v2]/<uuid>
 //   - execution         POST /rest/api/automation/chain/[test/]execute/<uuid>
 // A definition fetch returns the full method definition, so the human-readable
-// method name can be read straight out of that response body.
+// method name can be read straight out of that response body. An `execute`
+// response carries no name — those uuids are resolved out-of-band via belz web.
 
 const CHAIN_PATH_RE = /\/rest\/api\/automation\/chain\//i;
 const EXECUTE_RE = /\/chain\/(?:test\/)?execute\//i;

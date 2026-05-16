@@ -1,40 +1,22 @@
-// Main entry point
-import {
-  startTitleUpdaterFeature
-} from './features/title-updater/index.js';
-import {
-  startRunTestShortcutFeature
-} from './features/keyboard/shortcuts.js';
-import {
-  startJSONFeature
-} from './features/json-editor/index.js';
-import {
-  startOutputCopyFeature
-} from './features/output-copy/index.js';
-import {
-  startTextareaEditorFeature
-} from './features/textarea-editor/index.js';
-import { startSettingsFeature } from './features/settings/index.js';
-import { startCurlAutofillFeature } from './features/curl-autofill/index.js';
-import {
-  loadSettings,
-  setSetting,
-  subscribeSettings
-} from './core/settings.js';
+// Shared content-script bootstrap.
+//
+// Both designer bundles (ad-content.js, pd-content.js) call this with their own
+// feature-starter map. Splitting the entry points means a Page Designer tab
+// never even loads the AD-only feature code, and no designer code ships to
+// general/published pages at all.
 
-(() => {
-  'use strict';
+import { startSettingsFeature } from '../features/settings/index.js';
+import { startCurlAutofillFeature } from '../features/curl-autofill/index.js';
+import { loadSettings, setSetting, subscribeSettings } from './settings.js';
 
-  const featureStarters = {
-    titleUpdater: startTitleUpdaterFeature,
-    runTestShortcut: startRunTestShortcutFeature,
-    jsonEditor: startJSONFeature,
-    outputCopy: startOutputCopyFeature,
-    textareaEditor: startTextareaEditorFeature
-    // chainInspector ships as its own content-script bundle (chain-hud.js) so
-    // it can run on published / public app pages, not just the designer.
-  };
-
+/**
+ * Wire up a designer content script.
+ *
+ * @param {Record<string, () => (void | (() => void))>} featureStarters
+ * @param {{ curlAutofill?: boolean }} [options]
+ */
+export function bootstrap(featureStarters, options) {
+  const opts = options || {};
   const activeFeatureStops = new Map();
 
   function startFeature(key) {
@@ -90,7 +72,9 @@ import {
       setSetting
     });
 
-    startCurlAutofillFeature();
+    if (opts.curlAutofill) {
+      startCurlAutofillFeature();
+    }
 
     console.log('Extension initialized successfully');
   }
@@ -100,4 +84,4 @@ import {
   } else {
     init();
   }
-})();
+}

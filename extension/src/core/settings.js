@@ -17,7 +17,6 @@ export const DEFAULT_SETTINGS = {
   jsonEditor: true,
   outputCopy: true,
   textareaEditor: true,
-  chainInspector: true,
   textareaEditorLanguage: 'auto',
   textareaEditorWrap: 'nowrap',
   textareaEditorFontSize: 13
@@ -48,11 +47,6 @@ export const FEATURE_SETTING_DEFINITIONS = [
     key: 'textareaEditor',
     label: 'Textarea Editor',
     description: 'Show Open button for native textareas'
-  },
-  {
-    key: 'chainInspector',
-    label: 'Chain Inspector',
-    description: 'Floating panel listing AD chain requests (designer + published pages)'
   }
 ];
 
@@ -107,8 +101,7 @@ function sanitizeSettingValue(key, value) {
     || key === 'runTestShortcut'
     || key === 'jsonEditor'
     || key === 'outputCopy'
-    || key === 'textareaEditor'
-    || key === 'chainInspector') {
+    || key === 'textareaEditor') {
     return Boolean(value);
   }
 
@@ -182,15 +175,6 @@ function notifySettingsChange() {
     } catch (error) {
       console.error('Settings listener failed:', error);
     }
-  }
-  // The chain HUD ships as a separate content-script bundle; notify it (and any
-  // other extension bundle in this frame's isolated world) via a window event.
-  try {
-    window.dispatchEvent(
-      new CustomEvent('sd-extension-settings-changed', { detail: snapshot })
-    );
-  } catch (error) {
-    console.error('Settings event dispatch failed:', error);
   }
 }
 
