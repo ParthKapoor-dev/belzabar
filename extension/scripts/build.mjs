@@ -1,15 +1,16 @@
-// Bundles every extension entry point, escapes non-ASCII in the output, and
-// copies the static DevTools HTML shells into dist/.
+// Bundles every extension entry point and escapes non-ASCII in the output.
 //
 // Each entry is built in its own `bun build` invocation so the output lands
 // flat in dist/ (a single shared build would mirror the src/ subdirectories).
+//
+// The DevTools HTML shells (devtools.html, panel.html) stay at the extension
+// root and are NOT copied into dist/ — keeping them at the root makes the
+// panel page path resolve the same way in Chromium and Firefox.
 import { execSync } from 'node:child_process';
-import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const dist = path.join(root, 'dist');
 
 const entries = [
   { src: 'src/ad-content.js', out: 'ad-content.js' },
@@ -27,12 +28,6 @@ for (const { src, out } of entries) {
     cwd: root,
     stdio: 'inherit'
   });
-}
-
-fs.mkdirSync(dist, { recursive: true });
-for (const html of ['devtools.html', 'panel.html']) {
-  fs.copyFileSync(path.join(root, html), path.join(dist, html));
-  console.log(`copied ${html} -> dist/`);
 }
 
 console.log('extension build complete');

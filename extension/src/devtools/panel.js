@@ -18,6 +18,7 @@ import {
 const MAX_ROWS = 300;
 const BELZ_WEB = 'http://localhost:65535';
 const BELZ_DEBOUNCE_MS = 250;
+const BELZ_RETRY_MS = 4000;
 
 // ---- DOM ------------------------------------------------------------------
 const recordBtn = document.getElementById('record');
@@ -47,6 +48,7 @@ let currentEnv = 'nsm-dev';
 
 const pendingUuids = new Set();
 let belzTimer = null;
+let belzRetryTimer = null;
 
 // ---- env detection --------------------------------------------------------
 function envFromHost(host) {
@@ -173,6 +175,17 @@ async function flushBelzFetch() {
     }
   } catch {
     setOffline(true);
+    // belz web is commonly started after the panel is already open — keep the
+    // uuids queued and retry on a timer so names fill in once it is up.
+    for (const uuid of uuids) {
+      if (!uuidToName.has(uuid)) pendingUuids.add(uuid);
+    }
+    if (pendingUuids.size > 0 && !belzRetryTimer) {
+      belzRetryTimer = setTimeout(() => {
+        belzRetryTimer = null;
+        flushBelzFetch();
+      }, BELZ_RETRY_MS);
+    }
   }
 }
 

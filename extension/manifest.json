@@ -16,7 +16,7 @@
     "http://localhost:65535/*",
     "http://127.0.0.1:65535/*"
   ],
-  "devtools_page": "dist/devtools.html",
+  "devtools_page": "devtools.html",
   "content_scripts": [
     {
       "matches": [

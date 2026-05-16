@@ -4,7 +4,10 @@
     <meta charset="utf-8" />
   </head>
   <body>
-    <!-- Background page for the DevTools extension; registers the panel. -->
-    <script src="devtools-page.js"></script>
+    <!-- Background page for the DevTools extension; registers the panel.
+         This file lives at the extension root so the panel page path passed
+         to chrome.devtools.panels.create resolves identically in Chromium
+         (relative to the root) and Firefox (relative to the devtools page). -->
+    <script src="dist/devtools-page.js"></script>
   </body>
 </html>
