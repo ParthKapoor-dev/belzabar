@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import Link from "next/link"
 import { parseCurl } from "@/lib/parse-curl"
 import { UnifiedSearchModal } from "@/components/unified-search-modal"
@@ -15,7 +15,7 @@ const MODULES = [
     hoverBorder: "hover:border-blue-500/50",
     hoverBg: "hover:bg-blue-500/5",
     label: "curl → AD",
-    description: "Open AD method from curl command",
+    description: "Paste a curl, URL, id or name to open AD/PD",
     hint: "ctrl+v",
   },
 ] as const
@@ -68,6 +68,9 @@ export default function Home() {
   const [copied, setCopied] = useState<string | null>(null)
   const [searchOpen, setSearchOpen] = useState(false)
 
+  // Guards the paste handler against re-entry while a resolve request is in flight.
+  const resolvingRef = useRef(false)
+
   const lookupDirection = detectDirection(lookupInput)
 
   const showToast = useCallback((text: string, ok: boolean) => {
@@ -90,7 +93,7 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    const handlePaste = (e: ClipboardEvent) => {
+    const handlePaste = async (e: ClipboardEvent) => {
       const target = e.target as HTMLElement
       if (
         target.tagName === "INPUT" ||
@@ -101,18 +104,52 @@ export default function Home() {
       const text = e.clipboardData?.getData("text") ?? ""
       if (!text.trim()) return
 
-      const { result, error } = parseCurl(text)
+      // Fast path: an AD curl carries the form-autofill body — open directly.
+      const { result } = parseCurl(text)
       if (result) {
         window.open(result.targetUrl, "_blank")
         showToast(`opened · ${result.uuid.slice(0, 8)}…`, true)
-      } else if (error && (text.includes("curl") || text.includes("/execute/"))) {
-        showToast(error, false)
+        return
+      }
+
+      // Fallback: resolve anything `belz ad show` / `belz pd show` accepts.
+      if (resolvingRef.current) return
+      const trimmed = text.trim()
+      // Only attempt a resolve for things that plausibly identify an item —
+      // a URL, a hex id, or a short name — to avoid firing on every stray paste.
+      const looksResolvable =
+        /^https?:\/\//i.test(trimmed) ||
+        /^[0-9a-f]{8,}$/i.test(trimmed) ||
+        /^[\w .:/-]{2,80}$/.test(trimmed)
+      if (!looksResolvable) return
+
+      resolvingRef.current = true
+      showToast("resolving…", true)
+      try {
+        const res = await fetch("/api/resolve", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ text: trimmed, env: lookupEnv }),
+        })
+        const data = await res.json()
+        if (res.ok && data.resolved) {
+          window.open(data.editUrl, "_blank")
+          showToast(`opened · ${data.label}`, true)
+        } else if (!res.ok) {
+          showToast(data.error ?? "Resolve failed", false)
+        } else {
+          showToast(data.reason ?? "No match found", false)
+        }
+      } catch {
+        showToast("Resolve request failed", false)
+      } finally {
+        resolvingRef.current = false
       }
     }
 
     document.addEventListener("paste", handlePaste)
     return () => document.removeEventListener("paste", handlePaste)
-  }, [showToast])
+  }, [showToast, lookupEnv])
 
   const handleLookup = async () => {
     const trimmed = lookupInput.trim()
@@ -323,7 +360,7 @@ export default function Home() {
             <Kbd>ctrl</Kbd>
             <span>+</span>
             <Kbd>v</Kbd>
-            <span className="ml-0.5">anywhere opens AD method from curl</span>
+            <span className="ml-0.5">anywhere opens an AD/PD item from a paste</span>
           </div>
         </div>
       </main>
