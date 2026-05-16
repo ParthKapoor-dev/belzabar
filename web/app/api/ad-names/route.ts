@@ -22,16 +22,22 @@ export function OPTIONS() {
 
 interface ShowEnvelope {
   ok: boolean
-  data?: { summary?: { name?: string } }
+  data?: { summary?: { name?: string; category?: string } }
+}
+
+interface MethodMeta {
+  name: string | null
+  category: string | null
 }
 
 /**
- * Resolve one method uuid to its name via `belz ad show`. This is cache-backed
- * (stale-while-revalidate): a cached method answers instantly, a miss fetches
- * once and populates ~/.belz/cache/methods/. Returns null on any miss/failure;
- * rethrows {@link BelzSpawnError} so a missing binary surfaces as a 500.
+ * Resolve one method uuid to its name + service category via `belz ad show`.
+ * This is cache-backed (stale-while-revalidate): a cached method answers
+ * instantly, a miss fetches once and populates ~/.belz/cache/methods/. Returns
+ * null on any miss/failure; rethrows {@link BelzSpawnError} so a missing binary
+ * surfaces as a 500.
  */
-async function resolveName(uuid: string, env: Env): Promise<string | null> {
+async function resolveMeta(uuid: string, env: Env): Promise<MethodMeta | null> {
   let raw: string
   try {
     raw = await runBelz(["ad", "show", uuid, "--llm", "--env", env])
@@ -41,8 +47,10 @@ async function resolveName(uuid: string, env: Env): Promise<string | null> {
   }
   try {
     const parsed = JSON.parse(raw) as ShowEnvelope
-    const name = parsed.ok ? parsed.data?.summary?.name?.trim() : ""
-    return name || null
+    if (!parsed.ok) return null
+    const name = parsed.data?.summary?.name?.trim() || null
+    const category = parsed.data?.summary?.category?.trim() || null
+    return name || category ? { name, category } : null
   } catch {
     return null
   }
@@ -52,19 +60,19 @@ async function resolveName(uuid: string, env: Env): Promise<string | null> {
 async function resolveAll(
   uuids: string[],
   env: Env,
-): Promise<Record<string, string | null>> {
-  const names: Record<string, string | null> = {}
+): Promise<Record<string, MethodMeta | null>> {
+  const items: Record<string, MethodMeta | null> = {}
   let cursor = 0
   async function worker() {
     while (cursor < uuids.length) {
       const uuid = uuids[cursor++]
-      names[uuid] = await resolveName(uuid, env)
+      items[uuid] = await resolveMeta(uuid, env)
     }
   }
   await Promise.all(
     Array.from({ length: Math.min(CONCURRENCY, uuids.length) }, worker),
   )
-  return names
+  return items
 }
 
 export async function POST(request: Request) {
@@ -99,12 +107,12 @@ export async function POST(request: Request) {
   const safeEnv: Env = VALID_ENVS.includes(env as Env) ? (env as Env) : "nsm-dev"
 
   if (safeUuids.length === 0) {
-    return Response.json({ names: {} }, { headers: CORS_HEADERS })
+    return Response.json({ items: {} }, { headers: CORS_HEADERS })
   }
 
   try {
-    const names = await resolveAll(safeUuids, safeEnv)
-    return Response.json({ names }, { headers: CORS_HEADERS })
+    const items = await resolveAll(safeUuids, safeEnv)
+    return Response.json({ items }, { headers: CORS_HEADERS })
   } catch (err) {
     if (err instanceof BelzSpawnError) {
       return Response.json(

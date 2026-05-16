@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google"
+import { Geist } from "next/font/google"
+import localFont from "next/font/local"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -11,10 +12,22 @@ export const metadata: Metadata = {
 
 const fontSans = Geist({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-geist",
 })
 
-const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'})
+// IoskeleyMono — an OFL-licensed, Berkeley-Mono-style monospace (see app/fonts/).
+// The theme stack in globals.css prefers a real "Berkeley Mono" if installed and
+// falls back to this bundled face otherwise.
+const fontMono = localFont({
+  variable: "--font-iosk",
+  display: "swap",
+  src: [
+    { path: "./fonts/IoskeleyMono-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/IoskeleyMono-Italic.woff2", weight: "400", style: "italic" },
+    { path: "./fonts/IoskeleyMono-Bold.woff2", weight: "700", style: "normal" },
+    { path: "./fonts/IoskeleyMono-BoldItalic.woff2", weight: "700", style: "italic" },
+  ],
+})
 
 export default function RootLayout({
   children,
@@ -25,7 +38,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontSans.variable, "font-mono", jetbrainsMono.variable)}
+      className={cn("antialiased", fontSans.variable, "font-mono", fontMono.variable)}
     >
       <body>
         <ThemeProvider>{children}</ThemeProvider>

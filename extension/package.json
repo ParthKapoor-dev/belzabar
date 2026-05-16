@@ -1,7 +1,7 @@
 {
   "name": "belzabar-extension",
   "version": "1.0.1",
-  "description": "Browser extension that appends the automation designer method name to the page title",
+  "description": "Belzabar DevTools browser extension — AD Network panel and designer helpers",
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.0",

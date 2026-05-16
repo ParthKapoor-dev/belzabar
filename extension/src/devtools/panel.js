@@ -2,13 +2,12 @@
 //
 // A custom Network-tab-style panel scoped to Automation Designer "chain"
 // requests. It reads the network traffic DevTools already records (no page
-// overhead, no fetch/XHR patching) and adds the one column the real Network
-// tab cannot: the human-readable AD method name.
+// overhead, no fetch/XHR patching) and adds what the real Network tab cannot:
+// the human-readable AD method name and its service category.
 //
-// Names come from two sources:
+// Name + category come from two sources:
 //   - definition fetches  -> the name is in the recorded response body
-//   - execute calls       -> resolved via the local `belz web` server, which
-//                            looks them up through the cache-backed `belz ad show`
+//   - belz web            -> `belz ad show` (cache-backed) gives name + category
 
 import {
   classifyChainUrl,
@@ -27,6 +26,7 @@ const preserveBox = document.getElementById('preserve');
 const filterInput = document.getElementById('filter');
 const countEl = document.getElementById('count');
 const offlineEl = document.getElementById('offline');
+const listPane = document.querySelector('.list-pane');
 const rowsEl = document.getElementById('rows');
 const emptyEl = document.getElementById('empty');
 const detailEl = document.getElementById('detail');
@@ -34,11 +34,12 @@ const detailBody = document.getElementById('detail-body');
 const detailClose = document.getElementById('detail-close');
 const detailCopy = document.getElementById('detail-copy');
 const detailTabs = Array.from(document.querySelectorAll('.detail-tabs button'));
+const toastEl = document.getElementById('toast');
 
 // ---- state ----------------------------------------------------------------
-const entries = []; // newest-first; { id, uuid, kind, version, httpMethod, url,
-                     //   status, type, size, time, har, rowEl, nameCell }
+const entries = []; // chronological (oldest-first), mirrors DOM order
 const uuidToName = new Map();
+const uuidToCategory = new Map();
 let nextId = 1;
 let recording = true;
 let preserveLog = false;
@@ -46,10 +47,15 @@ let filterText = '';
 let selectedId = null;
 let activeTab = 'headers';
 let currentEnv = 'nsm-dev';
+let currentCopyText = '';
 
 const pendingUuids = new Set();
 let belzTimer = null;
 let belzRetryTimer = null;
+
+// "Open in draft" queue — processed one at a time.
+const openQueue = [];
+let openProcessing = false;
 
 // ---- env detection --------------------------------------------------------
 function envFromHost(host) {
@@ -95,6 +101,16 @@ function transferSize(har) {
   return -1;
 }
 
+// Group an HTTP status into a colour bucket (#9).
+function statusGroup(status) {
+  if (!status) return 'pending';
+  if (status >= 500) return 'srverr';
+  if (status >= 400) return 'clienterr';
+  if (status >= 300) return 'redir';
+  if (status >= 200) return 'ok';
+  return 'pending';
+}
+
 function el(tag, props, ...kids) {
   const node = document.createElement(tag);
   if (props) Object.assign(node, props);
@@ -103,6 +119,14 @@ function el(tag, props, ...kids) {
     node.append(k.nodeType ? k : document.createTextNode(String(k)));
   }
   return node;
+}
+
+let toastTimer = null;
+function showToast(text) {
+  toastEl.textContent = text;
+  toastEl.classList.remove('hidden');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.add('hidden'), 3000);
 }
 
 // ---- row action buttons ---------------------------------------------------
@@ -152,58 +176,135 @@ function buildCurl(har) {
   return parts.join(' \\\n  ');
 }
 
-// Hand a captured execute request to belz web, which resolves the method's
-// draft designer URL, opens it with inputs autofilled, and shows a queue.
-function openInDraft(entry) {
-  const req = entry.har && entry.har.request;
-  const body = (req && req.postData && req.postData.text) || '';
-  // Surface the queue tab synchronously so it counts as a user gesture.
+// ---- "open in draft" queue (#3, #11) --------------------------------------
+// Opens the method's draft designer page, with inputs autofilled, in a
+// BACKGROUND tab — the user stays on the page they are already on.
+function openTab(url) {
   try {
-    window.open(BELZ_WEB + '/queue', 'belzQueue');
+    if (chrome.tabs && chrome.tabs.create) {
+      chrome.tabs.create({ url, active: false });
+      return;
+    }
+  } catch {
+    /* fall through to window.open */
+  }
+  try {
+    window.open(url, '_blank');
   } catch {
     /* ignore */
   }
-  fetch(BELZ_WEB + '/api/open-queue', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ uuid: entry.uuid, body, env: currentEnv })
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      setOffline(false);
-    })
-    .catch(() => setOffline(true));
 }
 
-// ---- name resolution ------------------------------------------------------
+function enqueueOpen(entry) {
+  openQueue.push(entry);
+  showToast(
+    'queued ' +
+      (uuidToName.get(entry.uuid) || entry.uuid.slice(0, 8) + '…') +
+      ' · ' +
+      openQueue.length +
+      ' in queue'
+  );
+  processOpenQueue();
+}
+
+async function processOpenQueue() {
+  if (openProcessing) return;
+  const entry = openQueue.shift();
+  if (!entry) return;
+  openProcessing = true;
+  try {
+    const res = await fetch(BELZ_WEB + '/api/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: entry.uuid, env: currentEnv })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.resolved || typeof data.editUrl !== 'string') {
+      throw new Error((data && (data.reason || data.error)) || 'resolve failed');
+    }
+    setOffline(false);
+    const req = entry.har && entry.har.request;
+    const body = (req && req.postData && req.postData.text) || '';
+    let url = data.editUrl;
+    if (body) {
+      try {
+        url +=
+          (url.includes('?') ? '&' : '?') +
+          '_belz_autofill=' +
+          encodeURIComponent(btoa(body));
+      } catch {
+        /* body not Latin1 — open without autofill */
+      }
+    }
+    openTab(url);
+    const remaining = openQueue.length;
+    showToast(
+      'opening ' +
+        (data.name || entry.uuid.slice(0, 8) + '…') +
+        ' in draft mode' +
+        (remaining ? ' · ' + remaining + ' queued' : '')
+    );
+  } catch (err) {
+    setOffline(true);
+    showToast(
+      'could not open ' +
+        entry.uuid.slice(0, 8) +
+        '… — ' +
+        (err && err.message ? err.message : 'belz web error')
+    );
+  } finally {
+    openProcessing = false;
+    if (openQueue.length) setTimeout(processOpenQueue, 150);
+  }
+}
+
+// ---- name / category resolution -------------------------------------------
 function learnName(uuid, name) {
-  if (!uuid || !name) return;
-  if (uuidToName.get(uuid) === name) return;
+  if (!uuid || !name || uuidToName.get(uuid) === name) return;
   uuidToName.set(uuid, name);
   for (const entry of entries) {
     if (entry.uuid === uuid) paintName(entry);
   }
-  if (selectedId != null) {
-    const sel = entries.find((e) => e.id === selectedId);
-    if (sel && sel.uuid === uuid && activeTab === 'headers') renderDetail();
+  reRenderDetailIf(uuid);
+}
+
+function learnCategory(uuid, category) {
+  if (!uuid || !category || uuidToCategory.get(uuid) === category) return;
+  uuidToCategory.set(uuid, category);
+  for (const entry of entries) {
+    if (entry.uuid === uuid) paintCategory(entry);
   }
+  reRenderDetailIf(uuid);
+}
+
+function reRenderDetailIf(uuid) {
+  if (selectedId == null || activeTab !== 'headers') return;
+  const sel = entries.find((e) => e.id === selectedId);
+  if (sel && sel.uuid === uuid) renderDetail();
 }
 
 function paintName(entry) {
   const name = uuidToName.get(entry.uuid);
-  if (name) {
-    entry.nameCell.textContent = name;
-    entry.nameCell.className = 'name';
-    entry.nameCell.title = name + '  ·  ' + entry.uuid;
-  } else {
-    entry.nameCell.textContent = entry.uuid.slice(0, 12) + '…';
-    entry.nameCell.className = 'name pending';
-    entry.nameCell.title = entry.uuid + '  (resolving…)';
-  }
+  entry.nameCell.className = 'name s-' + entry.statusGroup + (name ? '' : ' pending');
+  entry.nameCell.textContent = name || entry.uuid.slice(0, 12) + '…';
+  entry.nameCell.title = name
+    ? name + '  ·  click to open in draft'
+    : entry.uuid + '  (resolving…)';
+}
+
+function paintCategory(entry) {
+  const cat = uuidToCategory.get(entry.uuid);
+  entry.categoryCell.className = cat ? 'category' : 'category pending';
+  entry.categoryCell.textContent = cat || '…';
+  entry.categoryCell.title = cat ? cat + '  ·  click to open in draft' : '';
 }
 
 function setOffline(off) {
   offlineEl.classList.toggle('hidden', !off);
+}
+
+function needsBelz(uuid) {
+  return !uuidToName.has(uuid) || !uuidToCategory.has(uuid);
 }
 
 function scheduleBelzFetch() {
@@ -217,7 +318,7 @@ function scheduleBelzFetch() {
 async function flushBelzFetch() {
   const uuids = [];
   for (const uuid of pendingUuids) {
-    if (!uuidToName.has(uuid)) uuids.push(uuid);
+    if (needsBelz(uuid)) uuids.push(uuid);
   }
   pendingUuids.clear();
   if (uuids.length === 0) return;
@@ -231,16 +332,19 @@ async function flushBelzFetch() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     setOffline(false);
-    const names = (data && data.names) || {};
-    for (const uuid of Object.keys(names)) {
-      if (names[uuid]) learnName(uuid, names[uuid]);
+    const items = (data && data.items) || {};
+    for (const uuid of Object.keys(items)) {
+      const meta = items[uuid];
+      if (!meta) continue;
+      if (meta.name) learnName(uuid, meta.name);
+      if (meta.category) learnCategory(uuid, meta.category);
     }
   } catch {
     setOffline(true);
     // belz web is commonly started after the panel is already open — keep the
-    // uuids queued and retry on a timer so names fill in once it is up.
+    // uuids queued and retry on a timer so they fill in once it is up.
     for (const uuid of uuids) {
-      if (!uuidToName.has(uuid)) pendingUuids.add(uuid);
+      if (needsBelz(uuid)) pendingUuids.add(uuid);
     }
     if (pendingUuids.size > 0 && !belzRetryTimer) {
       belzRetryTimer = setTimeout(() => {
@@ -267,30 +371,41 @@ function onRequest(har) {
     httpMethod: req.method || '—',
     url: req.url,
     status,
+    statusGroup: statusGroup(status),
     type: typeOf(har),
     size: transferSize(har),
     time: typeof har.time === 'number' ? har.time : -1,
     har,
     rowEl: null,
-    nameCell: null
+    nameCell: null,
+    categoryCell: null
   };
-  entries.unshift(entry);
+
+  // Follow the tail like the real Network tab if already scrolled to bottom.
+  const atBottom =
+    listPane.scrollTop + listPane.clientHeight >= listPane.scrollHeight - 4;
+
+  entries.push(entry);
   renderRow(entry);
 
-  // Resolve the method name.
+  if (atBottom) listPane.scrollTop = listPane.scrollHeight;
+
+  // Name: definition fetches carry it in their body — read it instantly.
   if (info.kind === 'fetch') {
     har.getContent((body) => {
       const name = extractMethodNameFromChainResponse(body || '');
       if (name) learnName(info.uuid, name);
     });
-  } else if (!uuidToName.has(info.uuid)) {
+  }
+  // Name (for execute) + category for every row come from belz web.
+  if (needsBelz(info.uuid)) {
     pendingUuids.add(info.uuid);
     scheduleBelzFetch();
   }
 
-  // Cap the table.
+  // Cap the table — drop the oldest rows.
   while (entries.length > MAX_ROWS) {
-    const old = entries.pop();
+    const old = entries.shift();
     if (old && old.rowEl && old.rowEl.parentNode) old.rowEl.remove();
     if (old && old.id === selectedId) closeDetail();
   }
@@ -301,7 +416,18 @@ function renderRow(entry) {
   emptyEl.classList.add('hidden');
 
   const srCell = el('td', { className: 'sr' }, String(entry.id));
-  const nameCell = el('td', { className: 'name pending' });
+
+  const nameCell = el('td', null);
+  const categoryCell = el('td', null);
+  entry.nameCell = nameCell;
+  entry.categoryCell = categoryCell;
+  // Clicking the name or category opens the method in draft (#6).
+  const openFromCell = (e) => {
+    e.stopPropagation();
+    enqueueOpen(entry);
+  };
+  nameCell.addEventListener('click', openFromCell);
+  categoryCell.addEventListener('click', openFromCell);
 
   const copyCurlBtn = iconButton(ICON_COPY, 'Copy as cURL', (btn) => {
     try {
@@ -313,17 +439,20 @@ function renderRow(entry) {
   });
   const openBtn = iconButton(
     ICON_OPEN,
-    'Open in draft mode (via belz web)',
+    'Open in draft mode (background tab)',
     (btn) => {
-      openInDraft(entry);
+      enqueueOpen(entry);
       flashOk(btn);
     }
   );
   const actionsCell = el('td', { className: 'actions' }, copyCurlBtn, openBtn);
 
-  const statusCell = el('td', null, entry.status ? String(entry.status) : '—');
-  statusCell.className =
-    entry.status >= 200 && entry.status < 400 ? 'status-ok' : 'status-err';
+  const statusBadge = el(
+    'span',
+    { className: 'sbadge ' + entry.statusGroup },
+    entry.status ? String(entry.status) : '—'
+  );
+  const statusCell = el('td', null, statusBadge);
 
   const httpCell = el('td', { className: 'dim' }, entry.httpMethod);
 
@@ -366,6 +495,7 @@ function renderRow(entry) {
     null,
     srCell,
     nameCell,
+    categoryCell,
     actionsCell,
     statusCell,
     httpCell,
@@ -378,19 +508,21 @@ function renderRow(entry) {
   row.addEventListener('click', () => selectEntry(entry));
 
   entry.rowEl = row;
-  entry.nameCell = nameCell;
   paintName(entry);
+  paintCategory(entry);
   applyRowFilter(entry);
 
-  rowsEl.insertBefore(row, rowsEl.firstChild);
+  rowsEl.appendChild(row);
 }
 
 // ---- filter ---------------------------------------------------------------
 function rowMatches(entry) {
   if (!filterText) return true;
-  const name = uuidToName.get(entry.uuid) || '';
+  const name = (uuidToName.get(entry.uuid) || '').toLowerCase();
+  const cat = (uuidToCategory.get(entry.uuid) || '').toLowerCase();
   return (
-    name.toLowerCase().includes(filterText) ||
+    name.includes(filterText) ||
+    cat.includes(filterText) ||
     entry.uuid.includes(filterText) ||
     entry.url.toLowerCase().includes(filterText)
   );
@@ -434,9 +566,15 @@ function kvGrid(pairs) {
 }
 
 function headerRows(headers) {
-  return Array.isArray(headers)
-    ? headers.map((h) => [h.name, h.value])
-    : [];
+  return Array.isArray(headers) ? headers.map((h) => [h.name, h.value]) : [];
+}
+
+function headersToObj(headers) {
+  const o = {};
+  for (const h of headers || []) {
+    if (h && h.name) o[h.name] = h.value;
+  }
+  return o;
 }
 
 function prettyMaybeJson(text) {
@@ -452,14 +590,17 @@ function renderDetail() {
   const entry = entries.find((e) => e.id === selectedId);
   if (!entry) return;
   detailBody.replaceChildren();
+  currentCopyText = '';
   const har = entry.har;
 
   if (activeTab === 'headers') {
     const name = uuidToName.get(entry.uuid);
+    const category = uuidToCategory.get(entry.uuid);
     detailBody.append(
       el('h4', null, 'General'),
       kvGrid([
         ['Method name', name || '(resolving…)'],
+        ['Category', category || '(resolving…)'],
         ['UUID', entry.uuid],
         ['Chain kind', entry.kind + ' (' + entry.version + ')'],
         ['Request URL', entry.url],
@@ -472,20 +613,45 @@ function renderDetail() {
       el('h4', null, 'Response headers'),
       kvGrid(headerRows(har.response && har.response.headers))
     );
+    currentCopyText = JSON.stringify(
+      {
+        general: {
+          methodName: name || null,
+          category: category || null,
+          uuid: entry.uuid,
+          chainKind: entry.kind + ' ' + entry.version,
+          requestUrl: entry.url,
+          httpMethod: entry.httpMethod,
+          status: entry.status || null,
+          env: currentEnv
+        },
+        requestHeaders: headersToObj(har.request && har.request.headers),
+        responseHeaders: headersToObj(har.response && har.response.headers)
+      },
+      null,
+      2
+    );
   } else if (activeTab === 'payload') {
     const post = har.request && har.request.postData;
     const query = har.request && har.request.queryString;
     if (post && typeof post.text === 'string' && post.text) {
+      const pretty = prettyMaybeJson(post.text);
       detailBody.append(
         el('h4', null, 'Request payload'),
-        el('pre', null, prettyMaybeJson(post.text))
+        el('pre', null, pretty)
       );
+      currentCopyText = pretty;
     }
     if (Array.isArray(query) && query.length) {
       detailBody.append(
         el('h4', null, 'Query string'),
         kvGrid(query.map((q) => [q.name, q.value]))
       );
+      if (!currentCopyText) {
+        const o = {};
+        for (const q of query) o[q.name] = q.value;
+        currentCopyText = JSON.stringify(o, null, 2);
+      }
     }
     if (!detailBody.childNodes.length) {
       detailBody.append(el('pre', null, 'No request payload.'));
@@ -495,20 +661,25 @@ function renderDetail() {
     const token = entry.id;
     har.getContent((body) => {
       if (selectedId !== token || activeTab !== 'response') return;
+      const pretty = body ? prettyMaybeJson(body) : '(empty)';
+      currentCopyText = body ? pretty : '';
       detailBody.replaceChildren(
         el('h4', null, 'Response body'),
-        el('pre', null, body ? prettyMaybeJson(body) : '(empty)')
+        el('pre', null, pretty)
       );
     });
   } else if (activeTab === 'timing') {
-    const rows = [['Total', Math.round(har.time || 0) + ' ms']];
     const t = har.timings || {};
+    const rows = [['Total', Math.round(har.time || 0) + ' ms']];
+    const obj = { total: Math.round(har.time || 0) };
     for (const key of ['blocked', 'dns', 'connect', 'ssl', 'send', 'wait', 'receive']) {
       if (typeof t[key] === 'number' && t[key] >= 0) {
         rows.push([key, Math.round(t[key]) + ' ms']);
+        obj[key] = Math.round(t[key]);
       }
     }
     detailBody.append(el('h4', null, 'Timing'), kvGrid(rows));
+    currentCopyText = JSON.stringify(obj, null, 2);
   }
 }
 
@@ -543,11 +714,10 @@ filterInput.addEventListener('input', () => {
 
 detailClose.addEventListener('click', closeDetail);
 
-// Copy the currently shown detail tab — innerText captures exactly what is
-// rendered, so one button works for Headers / Payload / Response / Timing.
+// Copy just the active tab's content — the JSON/body, no section headings (#2).
 detailCopy.addEventListener('click', () => {
   try {
-    navigator.clipboard.writeText(detailBody.innerText || '');
+    navigator.clipboard.writeText(currentCopyText || '');
     detailCopy.classList.add('ok');
     detailCopy.textContent = 'Copied';
     setTimeout(() => {

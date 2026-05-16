@@ -7,6 +7,17 @@ type Env = (typeof VALID_ENVS)[number]
 
 type Kind = "ad" | "pd"
 
+// The AD Network DevTools panel calls this route cross-origin.
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+}
+
+export function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS })
+}
+
 interface ShowEnvelope {
   ok: boolean
   data?: {
@@ -77,17 +88,26 @@ export async function POST(request: Request) {
   try {
     body = await request.json()
   } catch {
-    return Response.json({ error: "Invalid JSON body" }, { status: 400 })
+    return Response.json(
+      { error: "Invalid JSON body" },
+      { status: 400, headers: CORS_HEADERS },
+    )
   }
 
   const { text, env } = body as Record<string, unknown>
 
   if (typeof text !== "string" || !text.trim()) {
-    return Response.json({ error: "text is required" }, { status: 400 })
+    return Response.json(
+      { error: "text is required" },
+      { status: 400, headers: CORS_HEADERS },
+    )
   }
   const safeText = text.trim().slice(0, 2000)
   if (hasControlChars(safeText)) {
-    return Response.json({ resolved: false, reason: "Input contains control characters" })
+    return Response.json(
+      { resolved: false, reason: "Input contains control characters" },
+      { headers: CORS_HEADERS },
+    )
   }
   const safeEnv: Env = VALID_ENVS.includes(env as Env) ? (env as Env) : "nsm-dev"
 
@@ -107,16 +127,19 @@ export async function POST(request: Request) {
   }
 
   if (hit) {
-    return Response.json({ resolved: true, ...hit })
+    return Response.json({ resolved: true, ...hit }, { headers: CORS_HEADERS })
   }
   if (spawnFailed) {
     return Response.json(
       { error: "Could not run the belz CLI — is it installed?" },
-      { status: 500 },
+      { status: 500, headers: CORS_HEADERS },
     )
   }
-  return Response.json({
-    resolved: false,
-    reason: `No AD or PD item matched on ${safeEnv}`,
-  })
+  return Response.json(
+    {
+      resolved: false,
+      reason: `No AD or PD item matched on ${safeEnv}`,
+    },
+    { headers: CORS_HEADERS },
+  )
 }

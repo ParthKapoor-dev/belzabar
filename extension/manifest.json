@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Belzabar: Method Title Updater",
+  "name": "Belzabar: DevTools",
   "version": "1.0.1",
-  "description": "Appends the method name from the automation designer to the page title",
+  "description": "AD Network DevTools panel plus Automation/Page Designer helpers",
   "permissions": [
     "activeTab"
   ],
