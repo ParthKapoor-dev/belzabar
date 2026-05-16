@@ -1,7 +1,6 @@
 export const runtime = "nodejs";
 
-import { spawn } from "node:child_process";
-import { homedir } from "node:os";
+import { runBelz } from "@/lib/run-belz";
 
 const VALID_ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"] as const;
 type Env = (typeof VALID_ENVS)[number];
@@ -10,27 +9,6 @@ type Env = (typeof VALID_ENVS)[number];
 const VIN_PATTERN = /^[A-HJ-NPR-Z0-9]{17}$/;
 // Application IDs in NSM are 32 hex (no dashes).
 const APP_ID_PATTERN = /^[a-f0-9]{32}$/i;
-
-function runBelz(args: string[]): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const proc = spawn("belz", args, {
-      env: {
-        ...process.env,
-        PATH: `${homedir()}/.local/bin:${process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin"}`,
-      },
-    });
-
-    let stdout = "";
-    let stderr = "";
-    proc.stdout.on("data", (d: Buffer) => { stdout += d.toString(); });
-    proc.stderr.on("data", (d: Buffer) => { stderr += d.toString(); });
-    proc.on("close", (code) => {
-      if (code !== 0) reject(new Error(stderr.trim() || `belz exited with code ${code}`));
-      else resolve(stdout.trim());
-    });
-    proc.on("error", (err) => reject(err));
-  });
-}
 
 type Direction = "vin" | "appId";
 

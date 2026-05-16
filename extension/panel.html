@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* IoskeleyMono — OFL-licensed Berkeley-Mono-style monospace (fonts/). */
+      @font-face {
+        font-family: "Ioskeley Mono";
+        src: url("fonts/IoskeleyMono-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Ioskeley Mono";
+        src: url("fonts/IoskeleyMono-Italic.woff2") format("woff2");
+        font-weight: 400;
+        font-style: italic;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Ioskeley Mono";
+        src: url("fonts/IoskeleyMono-Bold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Ioskeley Mono";
+        src: url("fonts/IoskeleyMono-BoldItalic.woff2") format("woff2");
+        font-weight: 700;
+        font-style: italic;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: light dark;
+        --mono: "Berkeley Mono", "Ioskeley Mono", ui-monospace,
+          SFMono-Regular, Menlo, monospace;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        font: 12px/1.5 var(--mono);
+        background: #1e1e1e;
+        color: #d4d4d4;
+      }
+      /* A bounded, viewport-based height (not a `height: 100%` chain, which
+         collapses in Firefox's panel iframe) so the list and detail panes
+         each get their own scrollbar. */
+      body {
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .list-pane,
+      .detail-body {
+        scrollbar-width: thin;
+        scrollbar-color: #3a3a3a #1e1e1e;
+      }
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1e1e1e;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #3a3a3a;
+        border-radius: 5px;
+        border: 2px solid #1e1e1e;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #4a4a4a;
+      }
+
+      /* ---- toolbar ---------------------------------------------------- */
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 8px;
+        background: #252526;
+        border-bottom: 1px solid #333;
+        flex: 0 0 auto;
+      }
+      .toolbar button {
+        font: inherit;
+        background: #333;
+        color: #d4d4d4;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 2px 8px;
+        cursor: pointer;
+      }
+      .toolbar button:hover {
+        background: #3d3d3d;
+      }
+      #record.on .dot {
+        color: #f44;
+      }
+      #record .dot {
+        color: #888;
+        font-size: 13px;
+      }
+      .toolbar label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        user-select: none;
+      }
+      #filter {
+        font: inherit;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 2px 6px;
+        width: 180px;
+      }
+      .spacer {
+        flex: 1;
+      }
+      .count {
+        color: #888;
+        font-variant-numeric: tabular-nums;
+      }
+      .offline {
+        color: #d0903a;
+        font-size: 11px;
+      }
+      .hidden {
+        display: none !important;
+      }
+
+      /* ---- split: list + detail -------------------------------------- */
+      .split {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+      .list-pane {
+        flex: 1;
+        overflow: auto;
+        min-width: 0;
+      }
+      .detail-pane {
+        flex: 0 0 46%;
+        border-left: 1px solid #333;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      /* ---- request table --------------------------------------------- */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead th {
+        position: sticky;
+        top: 0;
+        background: #252526;
+        text-align: left;
+        padding: 4px 8px;
+        font-weight: 500;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #888;
+        border-bottom: 1px solid #333;
+        z-index: 1;
+      }
+      tbody td {
+        padding: 3px 8px;
+        border-bottom: 1px solid #2a2a2a;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 320px;
+      }
+      tbody tr {
+        cursor: pointer;
+      }
+      tbody tr:hover {
+        background: #2a2d2e;
+      }
+      tbody tr.selected {
+        background: #094771;
+      }
+      /* Method name — colour tracks the status group (#9). */
+      td.name {
+        font-weight: 600;
+        color: #9cdcfe;
+      }
+      td.name.s-clienterr {
+        color: #dcb67a;
+      }
+      td.name.s-srverr {
+        color: #f48771;
+      }
+      td.name.pending {
+        font-weight: 400;
+        font-style: italic;
+        color: #888;
+      }
+      td.name:hover,
+      td.category:hover {
+        text-decoration: underline;
+      }
+      td.category {
+        color: #c8a8d8;
+      }
+      td.category.pending {
+        color: #777;
+        font-style: italic;
+      }
+      .badge {
+        display: inline-block;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        padding: 1px 4px;
+        border-radius: 3px;
+        color: #1e1e1e;
+      }
+      .badge.run {
+        background: #dcb67a;
+      }
+      .badge.get {
+        background: #6a9bd1;
+      }
+      /* Status pill — coloured by group so codes are scannable (#9). */
+      .sbadge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-variant-numeric: tabular-nums;
+        color: #1e1e1e;
+      }
+      .sbadge.ok {
+        background: #6a9955;
+      }
+      .sbadge.redir {
+        background: #569cd6;
+      }
+      .sbadge.clienterr {
+        background: #dcb67a;
+      }
+      .sbadge.srverr {
+        background: #f48771;
+      }
+      .sbadge.pending {
+        background: #555;
+        color: #ccc;
+      }
+      td.mono {
+        font-family: var(--mono);
+        color: #ce9178;
+      }
+      td.dim {
+        color: #888;
+      }
+      th.col-sr,
+      td.sr {
+        width: 30px;
+        text-align: right;
+        color: #666;
+        font-variant-numeric: tabular-nums;
+        padding-right: 6px;
+      }
+      th.col-act,
+      td.actions {
+        width: 1%;
+        white-space: nowrap;
+      }
+      button.act {
+        background: transparent;
+        border: 1px solid #3a3a3a;
+        border-radius: 3px;
+        color: #999;
+        cursor: pointer;
+        padding: 2px 4px 0;
+        margin-right: 3px;
+        vertical-align: middle;
+      }
+      button.act:hover {
+        background: #3a3a3a;
+        color: #d4d4d4;
+      }
+      button.act.ok {
+        color: #6a9955;
+        border-color: #6a9955;
+      }
+      .empty {
+        padding: 24px;
+        text-align: center;
+        color: #777;
+      }
+
+      /* ---- detail pane ----------------------------------------------- */
+      .detail-head {
+        display: flex;
+        align-items: center;
+        background: #252526;
+        border-bottom: 1px solid #333;
+        flex: 0 0 auto;
+      }
+      .detail-tabs {
+        display: flex;
+      }
+      .detail-tabs button {
+        font: inherit;
+        background: transparent;
+        color: #aaa;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      .detail-tabs button.active {
+        color: #fff;
+        border-bottom-color: #4ec9b0;
+      }
+      .detail-act {
+        margin-left: auto;
+        font: inherit;
+        background: transparent;
+        color: #aaa;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 2px 8px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        cursor: pointer;
+      }
+      .detail-act:hover {
+        color: #fff;
+        background: #333;
+      }
+      .detail-act.ok {
+        color: #6a9955;
+        border-color: #6a9955;
+      }
+      .detail-close {
+        font: inherit;
+        background: transparent;
+        color: #aaa;
+        border: none;
+        padding: 6px 10px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .detail-close:hover {
+        color: #fff;
+      }
+      .detail-body {
+        flex: 1;
+        overflow: auto;
+        padding: 8px 10px;
+      }
+      .detail-body h4 {
+        margin: 10px 0 4px;
+        color: #4ec9b0;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .detail-body h4:first-child {
+        margin-top: 0;
+      }
+      .kv {
+        display: grid;
+        grid-template-columns: minmax(120px, max-content) 1fr;
+        gap: 1px 12px;
+      }
+      .kv .k {
+        color: #9cdcfe;
+        white-space: nowrap;
+      }
+      .kv .v {
+        color: #d4d4d4;
+        word-break: break-all;
+      }
+      pre {
+        margin: 4px 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: var(--mono);
+        font-size: 11px;
+        color: #d4d4d4;
+      }
+
+      /* ---- toast ------------------------------------------------------ */
+      .toast {
+        position: fixed;
+        bottom: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #252526;
+        border: 1px solid #4ec9b0;
+        color: #d4d4d4;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        z-index: 10;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <button id="record" class="on" type="button" title="Toggle recording">
+        <span class="dot">&#9679;</span> Recording
+      </button>
+      <button id="clear" type="button" title="Clear requests">Clear</button>
+      <label title="Keep requests across page navigations">
+        <input id="preserve" type="checkbox" /> Preserve log
+      </label>
+      <input id="filter" type="text" placeholder="Filter (name, uuid, url)" />
+      <span class="spacer"></span>
+      <span id="offline" class="offline hidden">belz web offline &mdash; names unavailable</span>
+      <span id="count" class="count">0</span>
+    </div>
+
+    <div class="split">
+      <div class="list-pane">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-sr">#</th>
+              <th>Method Name</th>
+              <th>Category</th>
+              <th class="col-act">Actions</th>
+              <th>Status</th>
+              <th>HTTP</th>
+              <th>Kind</th>
+              <th>Published ID</th>
+              <th>Type</th>
+              <th>Size</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+        <div id="empty" class="empty">
+          Recording AD chain requests &mdash; navigate or run an AD method and
+          they appear here with their method names.
+        </div>
+      </div>
+
+      <div id="detail" class="detail-pane hidden">
+        <div class="detail-head">
+          <div class="detail-tabs">
+            <button data-tab="headers" class="active" type="button">Headers</button>
+            <button data-tab="payload" type="button">Payload</button>
+            <button data-tab="response" type="button">Response</button>
+            <button data-tab="timing" type="button">Timing</button>
+          </div>
+          <button id="detail-copy" class="detail-act" type="button" title="Copy this tab">Copy</button>
+          <button id="detail-close" class="detail-close" type="button">&times;</button>
+        </div>
+        <div id="detail-body" class="detail-body"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="dist/panel.js"></script>
+  </body>
+</html>

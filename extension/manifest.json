@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Belzabar: Method Title Updater",
+  "name": "Belzabar: DevTools",
   "version": "1.0.1",
-  "description": "Appends the method name from the automation designer to the page title",
+  "description": "AD Network DevTools panel plus Automation/Page Designer helpers",
   "permissions": [
     "activeTab"
   ],
@@ -12,26 +12,47 @@
     "https://nsm-uat.nc.verifi.dev/*",
     "https://staff-nss-stage.verifi-nc.com/*",
     "https://staff-nss.verifi-nc.com/*",
-    "https://yieldsec.qa.expertly.cloud/*"
+    "https://yieldsec.qa.expertly.cloud/*",
+    "http://localhost:65535/*",
+    "http://127.0.0.1:65535/*"
   ],
-   "content_scripts": [
-      {
-        "matches": [
-          "https://nsm-dev.nc.verifi.dev/automation-designer/*",
-          "https://nsm-dev.nc.verifi.dev/ui-designer/*",
-          "https://nsm-qa.nc.verifi.dev/automation-designer/*",
-          "https://nsm-qa.nc.verifi.dev/ui-designer/*",
-          "https://nsm-uat.nc.verifi.dev/automation-designer/*",
-          "https://nsm-uat.nc.verifi.dev/ui-designer/*",
-          "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
-          "https://staff-nss-stage.verifi-nc.com/ui-designer/*",
-          "https://staff-nss.verifi-nc.com/automation-designer/*",
-          "https://staff-nss.verifi-nc.com/ui-designer/*",
-          "https://yieldsec.qa.expertly.cloud/automation-designer/*",
-          "https://yieldsec.qa.expertly.cloud/ui-designer/*"
-        ],
-        "js": ["dist/content-script.js"],
-        "run_at": "document_idle"
-      }
-    ]
+  "devtools_page": "devtools.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://nsm-dev.nc.verifi.dev/automation-designer/*",
+        "https://nsm-qa.nc.verifi.dev/automation-designer/*",
+        "https://nsm-uat.nc.verifi.dev/automation-designer/*",
+        "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
+        "https://staff-nss.verifi-nc.com/automation-designer/*",
+        "https://yieldsec.qa.expertly.cloud/automation-designer/*"
+      ],
+      "js": ["dist/ad-content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://nsm-dev.nc.verifi.dev/ui-designer/*",
+        "https://nsm-qa.nc.verifi.dev/ui-designer/*",
+        "https://nsm-uat.nc.verifi.dev/ui-designer/*",
+        "https://staff-nss-stage.verifi-nc.com/ui-designer/*",
+        "https://staff-nss.verifi-nc.com/ui-designer/*",
+        "https://yieldsec.qa.expertly.cloud/ui-designer/*"
+      ],
+      "js": ["dist/pd-content.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://nsm-dev.nc.verifi.dev/pages/*",
+        "https://nsm-qa.nc.verifi.dev/pages/*",
+        "https://nsm-uat.nc.verifi.dev/pages/*",
+        "https://staff-nss-stage.verifi-nc.com/pages/*",
+        "https://staff-nss.verifi-nc.com/pages/*",
+        "https://yieldsec.qa.expertly.cloud/pages/*"
+      ],
+      "js": ["dist/pd-inspector.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }

@@ -2,9 +2,14 @@ import { mkdir } from "fs/promises";
 import { join } from "path";
 import { vlog } from "./verbose";
 
+type TtlSpec = number | null | ((key: string) => number | null);
+
 export interface CacheOptions<T> {
   dir: string;
-  ttlMs: number | null | ((key: string) => number | null);
+  /** Hard TTL — past this an entry is expired and discarded. */
+  ttlMs: TtlSpec;
+  /** Soft TTL — past this an entry is stale-but-usable (stale-while-revalidate). */
+  staleMs?: TtlSpec;
 }
 
 interface CacheEntry<T> {
@@ -12,13 +17,24 @@ interface CacheEntry<T> {
   data: T;
 }
 
+/** Stale-while-revalidate load result. `stale` means the data is past the soft TTL. */
+export interface CacheResult<T> {
+  data: T;
+  stale: boolean;
+  savedAt: number;
+}
+
 export class Cache<T> {
   constructor(private options: CacheOptions<T>) {}
 
-  private resolveTtl(key: string): number | null {
-    const { ttlMs } = this.options;
-    if (typeof ttlMs === "function") return ttlMs(key);
-    return ttlMs;
+  /** Directory backing this cache (useful for sidecar files like refresh locks). */
+  get dir(): string {
+    return this.options.dir;
+  }
+
+  private resolveSpec(spec: TtlSpec, key: string): number | null {
+    if (typeof spec === "function") return spec(key);
+    return spec;
   }
 
   private filePath(key: string): string {
@@ -40,13 +56,46 @@ export class Cache<T> {
     }
     try {
       const entry = (await file.json()) as CacheEntry<T>;
-      const ttl = this.resolveTtl(key);
+      const ttl = this.resolveSpec(this.options.ttlMs, key);
       if (ttl !== null && Date.now() - entry.savedAt > ttl) {
         vlog(`CACHE EXPIRED ${key}`);
         return null;
       }
       vlog(`CACHE HIT ${key}`);
       return entry.data;
+    } catch (e) {
+      vlog(`CACHE ERROR ${key}`, { error: String(e) });
+      return null;
+    }
+  }
+
+  /**
+   * Stale-while-revalidate load. Returns the entry whenever it is within the hard
+   * TTL, flagging `stale: true` once it is past the soft TTL. Returns null on miss,
+   * hard expiry, or read error. When no `staleMs` is configured this behaves like
+   * `load()` (entries are never reported stale).
+   */
+  async loadSwr(key: string): Promise<CacheResult<T> | null> {
+    const file = Bun.file(this.filePath(key));
+    if (!(await file.exists())) {
+      vlog(`CACHE MISS ${key}`);
+      return null;
+    }
+    try {
+      const entry = (await file.json()) as CacheEntry<T>;
+      const age = Date.now() - entry.savedAt;
+      const ttl = this.resolveSpec(this.options.ttlMs, key);
+      if (ttl !== null && age > ttl) {
+        vlog(`CACHE EXPIRED ${key}`);
+        return null;
+      }
+      const staleTtl =
+        this.options.staleMs === undefined
+          ? null
+          : this.resolveSpec(this.options.staleMs, key);
+      const stale = staleTtl !== null && age > staleTtl;
+      vlog(`${stale ? "CACHE STALE" : "CACHE HIT"} ${key}`);
+      return { data: entry.data, stale, savedAt: entry.savedAt };
     } catch (e) {
       vlog(`CACHE ERROR ${key}`, { error: String(e) });
       return null;

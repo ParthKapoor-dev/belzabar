@@ -7,5 +7,6 @@ export * from "./command";
 export * from "./ui";
 export * from "./runner";
 export * from "./verbose";
+export * from "./swr";
 export * from "./dns";
 export * from "./open";
