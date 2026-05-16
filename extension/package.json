@@ -14,7 +14,7 @@
     "@codemirror/view": "^6.38.6"
   },
   "scripts": {
-    "build": "bun build src/content-script.js --outdir dist --minify && node scripts/escape-non-ascii.mjs dist/content-script.js",
+    "build": "node scripts/build.mjs",
     "dev": "bun build src/content-script.js --outdir dist --watch"
   }
 }

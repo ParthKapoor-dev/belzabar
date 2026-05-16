@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS = {
   jsonEditor: true,
   outputCopy: true,
   textareaEditor: true,
+  chainInspector: true,
   textareaEditorLanguage: 'auto',
   textareaEditorWrap: 'nowrap',
   textareaEditorFontSize: 13
@@ -47,6 +48,11 @@ export const FEATURE_SETTING_DEFINITIONS = [
     key: 'textareaEditor',
     label: 'Textarea Editor',
     description: 'Show Open button for native textareas'
+  },
+  {
+    key: 'chainInspector',
+    label: 'Chain Inspector',
+    description: 'List AD chain requests with method names in the DevTools panel'
   }
 ];
 
@@ -101,7 +107,8 @@ function sanitizeSettingValue(key, value) {
     || key === 'runTestShortcut'
     || key === 'jsonEditor'
     || key === 'outputCopy'
-    || key === 'textareaEditor') {
+    || key === 'textareaEditor'
+    || key === 'chainInspector') {
     return Boolean(value);
   }
 
