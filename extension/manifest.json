@@ -14,25 +14,37 @@
     "https://staff-nss.verifi-nc.com/*",
     "https://yieldsec.qa.expertly.cloud/*"
   ],
-   "content_scripts": [
-      {
-        "matches": [
-          "https://nsm-dev.nc.verifi.dev/automation-designer/*",
-          "https://nsm-dev.nc.verifi.dev/ui-designer/*",
-          "https://nsm-qa.nc.verifi.dev/automation-designer/*",
-          "https://nsm-qa.nc.verifi.dev/ui-designer/*",
-          "https://nsm-uat.nc.verifi.dev/automation-designer/*",
-          "https://nsm-uat.nc.verifi.dev/ui-designer/*",
-          "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
-          "https://staff-nss-stage.verifi-nc.com/ui-designer/*",
-          "https://staff-nss.verifi-nc.com/automation-designer/*",
-          "https://staff-nss.verifi-nc.com/ui-designer/*",
-          "https://yieldsec.qa.expertly.cloud/automation-designer/*",
-          "https://yieldsec.qa.expertly.cloud/ui-designer/*"
-        ],
-        "js": ["dist/content-script.js"],
-        "run_at": "document_idle"
-      }
-    ],
-  "devtools_page": "dist/devtools.html"
+  "content_scripts": [
+    {
+      "matches": [
+        "https://nsm-dev.nc.verifi.dev/automation-designer/*",
+        "https://nsm-qa.nc.verifi.dev/automation-designer/*",
+        "https://nsm-uat.nc.verifi.dev/automation-designer/*",
+        "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
+        "https://staff-nss.verifi-nc.com/automation-designer/*",
+        "https://yieldsec.qa.expertly.cloud/automation-designer/*"
+      ],
+      "js": ["dist/interceptor.js"],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://nsm-dev.nc.verifi.dev/automation-designer/*",
+        "https://nsm-dev.nc.verifi.dev/ui-designer/*",
+        "https://nsm-qa.nc.verifi.dev/automation-designer/*",
+        "https://nsm-qa.nc.verifi.dev/ui-designer/*",
+        "https://nsm-uat.nc.verifi.dev/automation-designer/*",
+        "https://nsm-uat.nc.verifi.dev/ui-designer/*",
+        "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
+        "https://staff-nss-stage.verifi-nc.com/ui-designer/*",
+        "https://staff-nss.verifi-nc.com/automation-designer/*",
+        "https://staff-nss.verifi-nc.com/ui-designer/*",
+        "https://yieldsec.qa.expertly.cloud/automation-designer/*",
+        "https://yieldsec.qa.expertly.cloud/ui-designer/*"
+      ],
+      "js": ["dist/content-script.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }

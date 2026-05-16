@@ -52,7 +52,7 @@ export const FEATURE_SETTING_DEFINITIONS = [
   {
     key: 'chainInspector',
     label: 'Chain Inspector',
-    description: 'List AD chain requests with method names in the DevTools panel'
+    description: 'Floating panel listing AD chain requests with method names'
   }
 ];
 

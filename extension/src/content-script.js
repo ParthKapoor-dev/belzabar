@@ -16,6 +16,7 @@ import {
 } from './features/textarea-editor/index.js';
 import { startSettingsFeature } from './features/settings/index.js';
 import { startCurlAutofillFeature } from './features/curl-autofill/index.js';
+import { startChainInspectorFeature } from './features/chain-inspector/hud.js';
 import {
   loadSettings,
   setSetting,
@@ -30,7 +31,8 @@ import {
     runTestShortcut: startRunTestShortcutFeature,
     jsonEditor: startJSONFeature,
     outputCopy: startOutputCopyFeature,
-    textareaEditor: startTextareaEditorFeature
+    textareaEditor: startTextareaEditorFeature,
+    chainInspector: startChainInspectorFeature
   };
 
   const activeFeatureStops = new Map();
