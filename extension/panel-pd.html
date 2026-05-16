@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      /* IoskeleyMono — OFL-licensed Berkeley-Mono-style monospace (fonts/). */
+      @font-face {
+        font-family: "Ioskeley Mono";
+        src: url("fonts/IoskeleyMono-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: "Ioskeley Mono";
+        src: url("fonts/IoskeleyMono-Bold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      :root {
+        color-scheme: light dark;
+        --mono: "Berkeley Mono", "Ioskeley Mono", ui-monospace,
+          SFMono-Regular, Menlo, monospace;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0; height: 100%;
+        background: #1e1e22; color: #d4d4d8;
+        font-family: var(--mono); font-size: 12px;
+      }
+      body { display: flex; flex-direction: column; }
+
+      .toolbar {
+        display: flex; align-items: center; gap: 8px;
+        padding: 7px 10px; border-bottom: 1px solid #3a3a42;
+        background: #26262b; flex: none;
+      }
+      .toolbar .title { font-weight: 700; color: #7dd3fc; }
+      .toolbar .spacer { flex: 1; }
+      .btn {
+        padding: 5px 10px; border-radius: 5px; cursor: pointer;
+        background: #2e2e34; color: #d4d4d8; border: 1px solid #3a3a42;
+        font: inherit; font-size: 11px;
+      }
+      .btn:hover { background: #3a3a42; }
+      .btn.on { background: #fbbf24; color: #1e1e22; border-color: #fbbf24; font-weight: 700; }
+      .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+      .notice { padding: 18px; color: #9ca3af; }
+
+      .info { padding: 8px 10px; border-bottom: 1px solid #2e2e34; flex: none; }
+      .info .row { display: flex; gap: 8px; margin: 2px 0; }
+      .info .k { color: #6b7280; min-width: 92px; flex: none; }
+      .info .v { color: #d4d4d8; word-break: break-all; }
+      .info .v.link { color: #7dd3fc; cursor: pointer; }
+      .info .v.link:hover { text-decoration: underline; }
+      .warn { color: #fbbf24; }
+      .ok { color: #6ee7b7; }
+
+      .split { display: flex; flex: 1; min-height: 0; }
+      .pane-tree {
+        width: 46%; min-width: 220px; overflow: auto;
+        border-right: 1px solid #3a3a42; padding: 5px 0;
+      }
+      .pane-detail { flex: 1; overflow: auto; padding: 6px 0; }
+      .detail-empty { padding: 14px 12px; color: #6b7280; }
+      .detail-head {
+        padding: 7px 11px; border-bottom: 1px solid #2e2e34;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .detail-head .nm { color: #7dd3fc; font-weight: 700; word-break: break-all; }
+
+      .comp {
+        display: flex; align-items: center; gap: 5px;
+        padding: 3px 8px; cursor: pointer; white-space: nowrap;
+      }
+      .comp:hover { background: #2e2e34; }
+      .comp.sel { background: #33414a; }
+      .comp.picked { outline: 1px solid #fbbf24; outline-offset: -1px; }
+      .badge {
+        flex: none; font-size: 9px; font-weight: 700;
+        padding: 1px 4px; border-radius: 3px;
+      }
+      .badge.page { background: #1e3a5f; color: #7dd3fc; }
+      .badge.comp { background: #5f3a1e; color: #fdba74; }
+      .cname { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+      .openpd {
+        flex: none; color: #7dd3fc; cursor: pointer; font-size: 10px;
+        padding: 0 3px;
+      }
+      .openpd:hover { color: #fff; }
+      .csum { flex: none; color: #6b7280; font-size: 10px; }
+
+      .node {
+        display: flex; align-items: center; gap: 5px;
+        padding: 2px 10px; white-space: nowrap;
+      }
+      .node .caret { width: 10px; color: #6b7280; font-size: 9px; cursor: pointer; flex: none; }
+      .node .caret.leaf { visibility: hidden; }
+      .nbadge {
+        flex: none; font-size: 9px; font-weight: 700; padding: 1px 4px;
+        border-radius: 3px; background: #3a3a42; color: #9ca3af;
+      }
+      .nbadge.k-FORM_FIELD { background: #1e3a5f; color: #7dd3fc; }
+      .nbadge.k-DATA_TABLE { background: #3a2a5f; color: #c4b5fd; }
+      .nbadge.k-BUTTON { background: #1e4a3a; color: #6ee7b7; }
+      .nbadge.k-SYMBOL { background: #5f3a1e; color: #fdba74; }
+      .nlabel { overflow: hidden; text-overflow: ellipsis; flex: 1; }
+      .vis { flex: none; font-size: 9px; padding: 1px 4px; border-radius: 3px; }
+      .vis.bound { background: #4a3a10; color: #fbbf24; }
+      .vis.hidden { background: #4a1e1e; color: #f87171; }
+      .expr {
+        margin: 1px 10px 5px 32px; color: #fbbf24; background: #26262b;
+        padding: 4px 6px; border-radius: 4px; word-break: break-all;
+        white-space: normal;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <span class="title">PD Inspector</span>
+      <span class="spacer"></span>
+      <button id="inspect" class="btn" type="button" disabled>Inspect</button>
+      <button id="refresh" class="btn" type="button">Refresh</button>
+    </div>
+    <div id="body"></div>
+    <script src="dist/panel-pd.js"></script>
+  </body>
+</html>

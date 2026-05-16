@@ -1,10 +1,9 @@
-// PD Inspector content script — loaded only on published app pages (/pages/*).
+// PD Inspector content-script engine — loaded only on published /pages/* pages.
 //
-// Surfaces Page Designer structure on a published page: page identity, a deep
-// link into the PD designer, the full config tree (including conditionally
-// hidden nodes and their visibility expressions), and a point-and-identify
-// inspect mode. Standalone — it shares no code with the designer bundles.
+// The UI is the DevTools "PD Inspector" panel; this script is the page-side
+// engine it talks to (config fetch, component-nesting tree, DOM correlation,
+// and on-page inspect highlighting).
 
-import { startPdInspector } from './features/pd-inspector/index.js';
+import { startEngine } from './features/pd-inspector/engine.js';
 
-startPdInspector();
+startEngine();

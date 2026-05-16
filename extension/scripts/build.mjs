@@ -17,7 +17,8 @@ const entries = [
   { src: 'src/pd-content.js', out: 'pd-content.js' },
   { src: 'src/pd-inspector.js', out: 'pd-inspector.js' },
   { src: 'src/devtools/devtools-page.js', out: 'devtools-page.js' },
-  { src: 'src/devtools/panel.js', out: 'panel.js' }
+  { src: 'src/devtools/panel.js', out: 'panel.js' },
+  { src: 'src/devtools/panel-pd.js', out: 'panel-pd.js' }
 ];
 
 for (const { src, out } of entries) {

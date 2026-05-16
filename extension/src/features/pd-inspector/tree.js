@@ -32,7 +32,9 @@ function detectKind(raw) {
   }
   if (name.includes('data-table')) return KIND.DATA_TABLE;
   if (name === 'button' || name === 'exp-button') return KIND.BUTTON;
-  if (raw.isSymbol) return KIND.SYMBOL;
+  // A symbol *reference* (childless `isSymbol` leaf) is an embedded component;
+  // a definition root also carries `isSymbol` but has children — that is layout.
+  if (raw.isSymbol && !(raw.children && raw.children.length)) return KIND.SYMBOL;
   if (Array.isArray(raw.children) && raw.children.length) return KIND.LAYOUT;
   return KIND.GENERIC;
 }
