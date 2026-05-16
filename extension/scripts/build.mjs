@@ -10,7 +10,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 const entries = [
   { src: 'src/content-script.js', out: 'content-script.js' },
-  { src: 'src/features/chain-inspector/interceptor.js', out: 'interceptor.js' }
+  { src: 'src/features/chain-inspector/interceptor.js', out: 'interceptor.js' },
+  { src: 'src/features/chain-inspector/chain-hud.js', out: 'chain-hud.js' }
 ];
 
 for (const { src, out } of entries) {

@@ -8,8 +8,11 @@
   ],
   "host_permissions": [
     "https://nsm-dev.nc.verifi.dev/*",
+    "https://nsm-dev-public.nc.verifi.dev/*",
     "https://nsm-qa.nc.verifi.dev/*",
+    "https://nsm-qa-public.nc.verifi.dev/*",
     "https://nsm-uat.nc.verifi.dev/*",
+    "https://nsm-uat-public.nc.verifi.dev/*",
     "https://staff-nss-stage.verifi-nc.com/*",
     "https://staff-nss.verifi-nc.com/*",
     "https://yieldsec.qa.expertly.cloud/*"
@@ -17,16 +20,34 @@
   "content_scripts": [
     {
       "matches": [
-        "https://nsm-dev.nc.verifi.dev/automation-designer/*",
-        "https://nsm-qa.nc.verifi.dev/automation-designer/*",
-        "https://nsm-uat.nc.verifi.dev/automation-designer/*",
-        "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
-        "https://staff-nss.verifi-nc.com/automation-designer/*",
-        "https://yieldsec.qa.expertly.cloud/automation-designer/*"
+        "https://nsm-dev.nc.verifi.dev/*",
+        "https://nsm-dev-public.nc.verifi.dev/*",
+        "https://nsm-qa.nc.verifi.dev/*",
+        "https://nsm-qa-public.nc.verifi.dev/*",
+        "https://nsm-uat.nc.verifi.dev/*",
+        "https://nsm-uat-public.nc.verifi.dev/*",
+        "https://staff-nss-stage.verifi-nc.com/*",
+        "https://staff-nss.verifi-nc.com/*",
+        "https://yieldsec.qa.expertly.cloud/*"
       ],
       "js": ["dist/interceptor.js"],
       "run_at": "document_start",
       "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://nsm-dev.nc.verifi.dev/*",
+        "https://nsm-dev-public.nc.verifi.dev/*",
+        "https://nsm-qa.nc.verifi.dev/*",
+        "https://nsm-qa-public.nc.verifi.dev/*",
+        "https://nsm-uat.nc.verifi.dev/*",
+        "https://nsm-uat-public.nc.verifi.dev/*",
+        "https://staff-nss-stage.verifi-nc.com/*",
+        "https://staff-nss.verifi-nc.com/*",
+        "https://yieldsec.qa.expertly.cloud/*"
+      ],
+      "js": ["dist/chain-hud.js"],
+      "run_at": "document_idle"
     },
     {
       "matches": [

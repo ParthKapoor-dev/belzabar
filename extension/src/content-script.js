@@ -16,7 +16,6 @@ import {
 } from './features/textarea-editor/index.js';
 import { startSettingsFeature } from './features/settings/index.js';
 import { startCurlAutofillFeature } from './features/curl-autofill/index.js';
-import { startChainInspectorFeature } from './features/chain-inspector/hud.js';
 import {
   loadSettings,
   setSetting,
@@ -31,8 +30,9 @@ import {
     runTestShortcut: startRunTestShortcutFeature,
     jsonEditor: startJSONFeature,
     outputCopy: startOutputCopyFeature,
-    textareaEditor: startTextareaEditorFeature,
-    chainInspector: startChainInspectorFeature
+    textareaEditor: startTextareaEditorFeature
+    // chainInspector ships as its own content-script bundle (chain-hud.js) so
+    // it can run on published / public app pages, not just the designer.
   };
 
   const activeFeatureStops = new Map();

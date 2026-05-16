@@ -2,9 +2,15 @@
 //
 // Runs as a `world: "MAIN"` content script at document_start so it can wrap the
 // page's own `fetch` / `XMLHttpRequest` (a content script in the isolated world
-// cannot). It watches every AD "chain" request and forwards a compact record to
-// the isolated-world HUD via `window.postMessage`. It never alters requests or
-// responses — response bodies are only ever read from a clone.
+// cannot). It watches every AD "chain" request — in the designer *and* on
+// published / public app pages — and forwards a compact record to the
+// isolated-world HUD via `window.postMessage`. It never alters requests or
+// responses; response bodies are only ever read from a clone.
+//
+// Because this runs at document_start but the HUD content script only attaches
+// its listener at document_idle, every record is also kept in a small ring
+// buffer and replayed when a HUD announces itself ("hello" handshake). That is
+// what makes load-time chain requests visible instead of being silently lost.
 
 import {
   classifyChainUrl,
@@ -13,25 +19,45 @@ import {
 
 (() => {
   const MESSAGE_SOURCE = 'belz-chain-inspector';
+  const HELLO_SOURCE = 'belz-chain-inspector-hello';
+  const BUFFER_MAX = 250;
 
-  function post(info, status, name) {
+  const buffer = [];
+  let seq = 0;
+
+  function emit(record) {
     try {
-      window.postMessage(
-        {
-          source: MESSAGE_SOURCE,
-          uuid: info.uuid,
-          kind: info.kind,
-          version: info.version,
-          status: typeof status === 'number' ? status : 0,
-          name: name || null,
-          at: Date.now()
-        },
-        '*'
-      );
+      window.postMessage(record, '*');
     } catch {
       /* ignore */
     }
   }
+
+  function post(info, status, name) {
+    const record = {
+      source: MESSAGE_SOURCE,
+      seq: ++seq,
+      uuid: info.uuid,
+      kind: info.kind,
+      version: info.version,
+      status: typeof status === 'number' ? status : 0,
+      name: name || null,
+      at: Date.now()
+    };
+    buffer.push(record);
+    if (buffer.length > BUFFER_MAX) buffer.shift();
+    emit(record);
+  }
+
+  // A HUD attaches its listener long after document_start, so it misses every
+  // record fired during page load. When it announces itself, replay the whole
+  // buffer; the HUD de-duplicates by `seq`.
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    const d = event.data;
+    if (!d || d.source !== HELLO_SOURCE) return;
+    for (const record of buffer) emit(record);
+  });
 
   // Pull a method name out of whatever an XHR exposes (responseText may throw
   // when responseType is "json"; fall back to the parsed `response`).

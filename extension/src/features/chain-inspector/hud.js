@@ -2,15 +2,21 @@
 //
 // Listens for the records posted by the MAIN-world interceptor and renders a
 // small floating panel listing every AD chain request with its method name.
+// It runs everywhere the interceptor does: the Automation Designer *and*
+// published / public app pages (where chains show up as `execute` calls).
+//
 // Method names come from two sources:
 //   1. definition-fetch responses (the interceptor reads the name out of them)
-//   2. the AD page itself — the open method's name + uuid, so that `execute`
-//      calls (whose responses carry no name) are still labelled.
+//   2. the AD designer page itself — the open method's name + uuid, so that
+//      `execute` calls (whose responses carry no name) are still labelled.
+// On published pages there is no designer DOM, so `execute` rows stay uuid-only
+// (still useful — click to copy the uuid into `belz web`).
 
 import { EXTENSION_OWNED_ATTR } from '../../config/constants.js';
 import { extractMethodName } from '../../utils/dom.js';
 
 const MESSAGE_SOURCE = 'belz-chain-inspector';
+const HELLO_SOURCE = 'belz-chain-inspector-hello';
 const MAX_ROWS = 120;
 const COLLAPSE_KEY = 'sdChainInspectorCollapsed';
 const UUID_RE = /[0-9a-f]{32}/i;
@@ -21,14 +27,13 @@ function currentPageUuid() {
 }
 
 export function startChainInspectorFeature() {
-  // Chain requests only happen inside Automation Designer.
-  if (!window.location.pathname.includes('/automation-designer/')) {
-    return () => {};
-  }
+  const isDesigner = window.location.pathname.includes('/automation-designer/');
 
   const uuidToName = new Map();
+  const seenSeq = new Set();
   const rows = []; // { uuid, kind, status, nameEl, row }
   let rowCount = 0;
+  let mounted = false;
   let collapsed = false;
   try {
     collapsed = localStorage.getItem(COLLAPSE_KEY) === '1';
@@ -105,7 +110,7 @@ export function startChainInspectorFeature() {
   Object.assign(list.style, { overflowY: 'auto', flex: '1' });
 
   const empty = document.createElement('div');
-  empty.textContent = 'Waiting for chain requests — open or run an AD method.';
+  empty.textContent = 'Waiting for chain requests…';
   Object.assign(empty.style, {
     padding: '14px 12px',
     color: '#777',
@@ -121,6 +126,15 @@ export function startChainInspectorFeature() {
   }
   applyCollapsed();
 
+  // The panel stays invisible until the first chain request arrives, so it adds
+  // no clutter on app pages that never touch the AD chain API.
+  function mount() {
+    if (mounted) return;
+    if (!document.body) return;
+    document.body.appendChild(host);
+    mounted = true;
+  }
+
   // ---- name resolution ------------------------------------------------------
   function displayName(uuid) {
     return uuidToName.get(uuid) || null;
@@ -128,13 +142,12 @@ export function startChainInspectorFeature() {
 
   function refreshRowsFor(uuid) {
     const name = displayName(uuid);
+    if (!name) return;
     for (const r of rows) {
       if (r.uuid !== uuid) continue;
-      if (name) {
-        r.nameEl.textContent = name;
-        r.nameEl.style.color = '#9cdcfe';
-        r.nameEl.style.fontStyle = 'normal';
-      }
+      r.nameEl.textContent = name;
+      r.nameEl.style.color = '#9cdcfe';
+      r.nameEl.style.fontStyle = 'normal';
     }
   }
 
@@ -147,6 +160,7 @@ export function startChainInspectorFeature() {
 
   // ---- rows -----------------------------------------------------------------
   function addRow(rec) {
+    mount();
     if (empty.parentNode) empty.remove();
 
     const row = document.createElement('div');
@@ -229,11 +243,17 @@ export function startChainInspectorFeature() {
     if (event.source !== window) return;
     const d = event.data;
     if (!d || d.source !== MESSAGE_SOURCE || typeof d.uuid !== 'string') return;
+    // The interceptor replays its buffer on every "hello"; ignore dupes.
+    if (typeof d.seq === 'number') {
+      if (seenSeq.has(d.seq)) return;
+      seenSeq.add(d.seq);
+    }
     if (d.name) learnName(d.uuid, d.name);
     addRow(d);
   }
 
-  // Keep the open method's name → uuid mapping current so `execute` rows resolve.
+  // Keep the open method's name -> uuid mapping current so `execute` rows
+  // resolve. Only meaningful inside the designer.
   function syncPageMethod() {
     const uuid = currentPageUuid();
     if (!uuid) return;
@@ -271,9 +291,17 @@ export function startChainInspectorFeature() {
   });
 
   window.addEventListener('message', onMessage);
-  pageObserver.observe(document.documentElement, { childList: true, subtree: true });
-  document.body.appendChild(host);
-  syncPageMethod();
+  // Ask the interceptor to replay anything it captured before this listener
+  // existed (page-load chain requests fire long before document_idle).
+  window.postMessage({ source: HELLO_SOURCE }, '*');
+
+  if (isDesigner) {
+    pageObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+    syncPageMethod();
+  }
 
   // ---- cleanup --------------------------------------------------------------
   return () => {

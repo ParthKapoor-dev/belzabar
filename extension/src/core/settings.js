@@ -52,7 +52,7 @@ export const FEATURE_SETTING_DEFINITIONS = [
   {
     key: 'chainInspector',
     label: 'Chain Inspector',
-    description: 'Floating panel listing AD chain requests with method names'
+    description: 'Floating panel listing AD chain requests (designer + published pages)'
   }
 ];
 
@@ -182,6 +182,15 @@ function notifySettingsChange() {
     } catch (error) {
       console.error('Settings listener failed:', error);
     }
+  }
+  // The chain HUD ships as a separate content-script bundle; notify it (and any
+  // other extension bundle in this frame's isolated world) via a window event.
+  try {
+    window.dispatchEvent(
+      new CustomEvent('sd-extension-settings-changed', { detail: snapshot })
+    );
+  } catch (error) {
+    console.error('Settings event dispatch failed:', error);
   }
 }
 
