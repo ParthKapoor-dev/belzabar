@@ -1,0 +1,38 @@
+Usage: belz tw items <TASK_ID|URL> [flags]
+
+Scan a Teamwork ticket — its description, all comments, and every subtask's
+comments — for the AD chains, PD pages/symbols, and SQL changes it delivers.
+This is the "linker" stage of a release audit: it turns free-text dev notes
+into a structured item set.
+
+It recognizes the three conventions documented in the release-prep skill:
+  A. URLs        — automation-designer/<cat>/<id>, ui-designer/page/<id>,
+                   ui-designer/symbol/<name>
+  B. Labeled CSV — "PD Pages Published : <hex>,<hex>"
+  C. Labeled CSV — "AD (Published Id): <hex>,<hex>"
+
+SQL is split into DB (DDL: ALTER/CREATE/DROP TABLE/INDEX) and Corrective fixes
+(DML: INSERT/UPDATE/DELETE).
+
+The "recommended" set is drawn from the LATEST dev-note block — long tickets
+often contain superseded ID lists from rewritten approaches. Every reference
+is also listed with full provenance so the recommendation can be audited.
+
+Arguments:
+  <TASK_ID|URL>         Numeric task ID or full Teamwork task URL.
+
+Flags:
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz tw items 26917411
+  belz tw items https://projects.webintensive.com/app/tasks/26917411
+  belz tw items 26917411 --llm
+
+Notes:
+  - PD page URLs yield DRAFT ids; resolve to published deployables with
+    'belz pd show' before adding to release-items.txt.
+  - SQL extraction is heuristic — always verify the captured statements.

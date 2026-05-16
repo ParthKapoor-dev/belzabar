@@ -1,0 +1,2 @@
+belz ad trace <uuid>              :->  Locate an AD method across every environment on the dev spine
+belz ad trace <uuid> --llm        :->  Output as structured JSON envelope

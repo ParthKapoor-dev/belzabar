@@ -1,0 +1,23 @@
+Usage: belz release freeze <RELEASE_NAME> [flags]
+
+Record a production snapshot for a release.
+
+Production cannot be queried directly, so its state is captured indirectly:
+each item's current STAGE position is frozen into the ledger as the prod
+pointer. Run this right after the release is pushed to production.
+
+Requires that `belz release matrix` has already been run for this release
+(it writes the release record this command reads).
+
+Arguments:
+  <RELEASE_NAME>        Name of a release previously audited with
+                        `belz release matrix` (the `name` field of its spec).
+
+Flags:
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz release freeze may-12-release

@@ -2,8 +2,10 @@
 // Do not edit manually.
 import * as comments from "../../integrations/teamwork/commands/comments/index";
 import * as task from "../../integrations/teamwork/commands/task/index";
+import * as items from "../../integrations/teamwork/commands/items/index";
 
 export const TWCommandRegistry: Record<string, any> = {
   "comments": comments,
   "task": task,
+  "items": items,
 };

@@ -8,6 +8,7 @@ const adCommandsDir = join(import.meta.dir, "../../integrations/automation-desig
 const pdCommandsDir = join(import.meta.dir, "../../integrations/page-designer/commands");
 const twCommandsDir = join(import.meta.dir, "../../integrations/teamwork/commands");
 const migrationsCommandsDir = join(import.meta.dir, "../../integrations/migrations/commands");
+const releaseCommandsDir = join(import.meta.dir, "../../integrations/release/commands");
 const topCommandsDir = join(import.meta.dir, "../commands"); // cli/commands/ (envs, migrate-legacy)
 
 function loadCommandsFromDir(dir: string): Record<string, any> {
@@ -65,6 +66,7 @@ async function buildHelpFullDynamic(): Promise<string> {
     { header: "belz pd <cmd>  —  Page Designer",       dir: pdCommandsDir },
     { header: "belz tw <cmd>  —  Teamwork",            dir: twCommandsDir },
     { header: "belz migrate <cmd>  —  Migrations (Jenkins)", dir: migrationsCommandsDir },
+    { header: "belz release <cmd>  —  Release promotion tracking", dir: releaseCommandsDir },
     { header: "belz <cmd>  —  Top-level",              dir: topCommandsDir },
   ];
 
@@ -96,6 +98,7 @@ const adCommands = loadCommandsFromDir(adCommandsDir);
 const pdCommands = loadCommandsFromDir(pdCommandsDir);
 const twCommands = loadCommandsFromDir(twCommandsDir);
 const migrateCommands = loadCommandsFromDir(migrationsCommandsDir);
+const releaseCommands = loadCommandsFromDir(releaseCommandsDir);
 const allTopCommands = loadCommandsFromDir(topCommandsDir);
 const { "migrate-legacy": migrateLegacy, config, web, ...topLevelCommands } = allTopCommands;
 
@@ -127,6 +130,12 @@ await runNamespacedCli(process.argv, {
       description: "Trigger Jenkins-backed migration builds.",
       commands: migrateCommands,
       helpDir: migrationsCommandsDir,
+    },
+    release: {
+      name: "Release promotion tracking",
+      description: "Audit releases: link tickets, trace items, detect collisions.",
+      commands: releaseCommands,
+      helpDir: releaseCommandsDir,
     },
     "migrate-legacy": {
       name: "Migrations (Legacy)",

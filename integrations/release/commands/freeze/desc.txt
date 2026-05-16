@@ -1,0 +1,2 @@
+belz release freeze <name>        :->  Record a prod snapshot from a release's stage state
+belz release freeze <name> --llm  :->  Output as structured JSON envelope

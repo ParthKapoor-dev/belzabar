@@ -7,8 +7,9 @@ The `teamwork/` module provides CLI commands for interacting with the Teamwork p
 ## Command Routing
 
 ```
-belz tw get-task <taskId|url>       → teamwork/commands/get-task/
-belz tw get-comments <taskId|url>   → teamwork/commands/get-comments/
+belz tw task <taskId|url>      → teamwork/commands/task/
+belz tw comments <taskId|url>  → teamwork/commands/comments/
+belz tw items <taskId|url>     → teamwork/commands/items/   (release-prep linker)
 ```
 
 ## Directory Map
@@ -16,18 +17,18 @@ belz tw get-comments <taskId|url>   → teamwork/commands/get-comments/
 ```
 teamwork/
 ├── commands/
-│   ├── get-task/
-│   │   ├── index.ts      CommandModule implementation
-│   │   ├── help.txt      Full help text
-│   │   └── desc.txt      One-line descriptions for --help-full
-│   └── get-comments/
-│       ├── index.ts
-│       ├── help.txt
-│       └── desc.txt
+│   ├── task/             belz tw task — task metadata
+│   ├── comments/         belz tw comments — all comments
+│   └── items/            belz tw items — extract AD/PD/SQL release items
+│       ├── index.ts      CommandModule implementation
+│       ├── help.txt      Full help text
+│       └── desc.txt      One-line descriptions for --help-full
 ├── lib/
 │   ├── api.ts            Teamwork HTTP client + domain API functions
 │   ├── auth.ts           Cookie-based authentication (tw-auth)
+│   ├── extract.ts        Pure AD/PD/SQL extraction (release-prep Stage 2 patterns)
 │   └── types.ts          Shared TypeScript types
+├── tests/unit/           bun test — extract.test.ts
 └── AGENTS.md             This file
 ```
 

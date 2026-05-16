@@ -1,0 +1,36 @@
+Usage: belz ad trace <UUID> [flags]
+
+Locate an AD method on every environment relative to its dev version history.
+
+The dev (spine) environment's version history is treated as a totally-ordered
+"spine" of content states. Every environment is then placed as a pointer into
+that spine: its latest-published version is fingerprinted and matched to a
+spine entry. This shows which change of a method has reached which env — the
+input to release collision and leak detection.
+
+Fingerprints are structural and parser-agnostic: they hash the method's
+(orderIndex, kind, description) step tuples plus the input contract, so a V1
+live response and a V2 history response of the same logic match.
+
+AD chain UUIDs are stable across environments, so one UUID resolves everywhere.
+
+Arguments:
+  <UUID>                AD chain UUID.
+
+Flags:
+  --spine <env>         Environment whose history is the spine. Default: nsm-dev.
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz ad trace 4bbac4b95962448669dcaf518567e752
+  belz ad trace 4bbac4b95962448669dcaf518567e752 --spine nsm-dev --llm
+
+Status values per environment:
+  latest               env content matches the newest spine entry
+  behind               env content matches an older spine entry
+  ahead-or-diverged    env content matches no spine entry
+  missing              method has no published version on that env
+  error                env could not be queried (auth/network)

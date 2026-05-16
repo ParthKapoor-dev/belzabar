@@ -1,0 +1,2 @@
+belz release matrix <release.json>        :->  Audit a release: link tickets, trace AD items, detect collisions/leaks
+belz release matrix <release.json> --llm  :->  Output as structured JSON envelope

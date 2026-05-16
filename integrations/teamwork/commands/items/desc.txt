@@ -1,0 +1,2 @@
+belz tw items <taskId|url>        :->  Extract AD/PD/SQL release items from a ticket's comments
+belz tw items <taskId|url> --llm  :->  Output as structured JSON envelope

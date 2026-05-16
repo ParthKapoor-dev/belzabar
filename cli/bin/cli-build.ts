@@ -3,7 +3,8 @@ import { PDCommandRegistry } from "../commands/registry-pd";
 import { TWCommandRegistry } from "../commands/registry-tw";
 import { TopLevelCommandRegistry } from "../commands/registry-top";
 import { MigrateCommandRegistry } from "../commands/registry-migrate";
-import { ADHelpMap, PDHelpMap, TWHelpMap, TopHelpMap, MigrateHelpMap, makeHelpResolver, HELP_FULL_TEXT } from "../commands/registry-help";
+import { ReleaseCommandRegistry } from "../commands/registry-release";
+import { ADHelpMap, PDHelpMap, TWHelpMap, TopHelpMap, MigrateHelpMap, ReleaseHelpMap, makeHelpResolver, HELP_FULL_TEXT } from "../commands/registry-help";
 import { runNamespacedCli } from "@belzabar/core";
 
 if (process.argv.slice(2).includes("--help-full")) {
@@ -43,6 +44,12 @@ await runNamespacedCli(process.argv, {
       description: "Trigger Jenkins-backed migration builds.",
       commands: MigrateCommandRegistry,
       helpResolver: makeHelpResolver(MigrateHelpMap),
+    },
+    release: {
+      name: "Release promotion tracking",
+      description: "Audit releases: link tickets, trace items, detect collisions.",
+      commands: ReleaseCommandRegistry,
+      helpResolver: makeHelpResolver(ReleaseHelpMap),
     },
     "migrate-legacy": {
       name: "Migrations (Legacy)",

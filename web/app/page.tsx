@@ -18,6 +18,16 @@ const MODULES = [
     description: "Open AD method from curl command",
     hint: "ctrl+v",
   },
+  {
+    href: "/releases",
+    icon: "⎈",
+    iconColor: "text-emerald-400",
+    hoverBorder: "hover:border-emerald-500/50",
+    hoverBg: "hover:bg-emerald-500/5",
+    label: "Releases",
+    description: "Release audits — collisions & promotion tracking",
+    hint: "",
+  },
 ] as const
 
 const SEARCH_CARD = {

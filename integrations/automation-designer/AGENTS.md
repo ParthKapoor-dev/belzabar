@@ -15,8 +15,13 @@ The unified `belz` binary is built from `cli/` (repo root). This directory is a 
 belz ad <cmd>   → find, fetch, show, show-code, outputs, state, categories,
                   services, export, export-category, test-cases, test-report,
                   child-info, test, run, save-suite, run-suites, sql,
-                  save, publish, import, category, test-case
+                  save, publish, import, category, test-case, history, trace
 ```
+
+`history` lists/shows/diffs/restores a method's saved versions. `trace`
+locates a method on every environment relative to its dev version-history
+"spine" (release promotion tracking) — see `lib/fingerprint.ts` for the
+parser-agnostic structural fingerprint both share.
 
 All commands accept `--v2` (universal flag, handled by
 `lib/args/common.ts:parseAdCommonArgs`). When the selected operation does not

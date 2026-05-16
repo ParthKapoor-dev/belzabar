@@ -1,0 +1,35 @@
+Usage: belz release matrix <release.json> [flags]
+
+Audit a production release. Given a spec of included and excluded tickets, it
+links each ticket to its AD/PD items (via `tw items`), traces every AD item
+across all environments (via `ad trace`), and reports collisions and leaks.
+
+A COLLISION is an AD method touched by BOTH an included and an excluded
+ticket — shipping the included ticket would drag the excluded ticket's edits
+along. For each collision it reports a LEAK status: whether the excluded
+change has already reached the stage environment.
+
+The result is saved to the promotion ledger (~/.belz/promotion/releases/).
+
+release.json format:
+  {
+    "name": "may-12-release",
+    "included": [26917411, "https://.../tasks/26920000"],
+    "excluded": [26918000],
+    "spineEnv": "nsm-dev",     (optional, default nsm-dev)
+    "stageEnv": "nsm-stage"    (optional, default nsm-stage)
+  }
+
+Arguments:
+  <release.json>        Path to the release spec JSON file.
+
+Flags:
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Notes:
+  - AD-only: PD items are listed per ticket but not yet traced across envs.
+  - Traces run sequentially (the tracer mutates the active env), so a large
+    release can take a few minutes.

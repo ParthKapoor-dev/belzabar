@@ -1,11 +1,9 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { adApi, type MethodVersionSummary, type MethodVersionFull } from "../../lib/api/index";
-import { parseV1Method, parseV2Method } from "../../lib/parser/index";
 import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
+import { parseVersionBody } from "../../lib/fingerprint";
 import type { HydratedMethod } from "../../lib/types/common";
-import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
-import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
 type Action = "list" | "show" | "diff" | "restore";
 
@@ -431,53 +429,6 @@ async function executeRestore(
     version: args.version,
     success,
   });
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────
-
-/**
- * Parse a version's jsonDefinition into a HydratedMethod.
- *
- * The history.get response carries jsonDefinition as either:
- *   - A V1-style stringified JSON (older versions)
- *   - A V2-style flat JSON object with `metadata`, `steps`, `inputs` at
- *     top level (current versions — the history service returns V2 shape)
- *
- * We detect the shape and dispatch to the appropriate parser.
- */
-function parseVersionBody(full: MethodVersionFull): HydratedMethod {
-  const jd = full.jsonDefinition;
-
-  // V2 shape: jsonDefinition is an object with `metadata` or `steps`.
-  if (jd && typeof jd === "object" && !Array.isArray(jd)) {
-    const obj = jd as Record<string, unknown>;
-    if (obj.metadata || obj.steps || obj.inputs) {
-      return parseV2Method(obj as V2MethodResponse);
-    }
-    // Might be a V1 inner definition (name, services, inputs) — wrap as V1.
-    const innerStr = JSON.stringify(obj);
-    const fakeRaw: V1RawMethodResponse = {
-      uuid: full.methodID || "",
-      referenceId: "",
-      aliasName: "",
-      automationState: full.isPublished ? "PUBLISHED" : "DRAFT",
-      jsonDefinition: innerStr,
-      version: full.methodVersion,
-    };
-    return parseV1Method(fakeRaw);
-  }
-
-  // V1 shape: jsonDefinition is a string.
-  const jdString = typeof jd === "string" ? jd : "{}";
-  const fakeRaw: V1RawMethodResponse = {
-    uuid: full.methodID || "",
-    referenceId: "",
-    aliasName: "",
-    automationState: full.isPublished ? "PUBLISHED" : "DRAFT",
-    jsonDefinition: jdString,
-    version: full.methodVersion,
-  };
-  return parseV1Method(fakeRaw);
 }
 
 export default command;

@@ -6,6 +6,7 @@ import * as run_suites from "../../integrations/automation-designer/commands/run
 import * as category from "../../integrations/automation-designer/commands/category/index";
 import * as export_category from "../../integrations/automation-designer/commands/export-category/index";
 import * as save_suite from "../../integrations/automation-designer/commands/save-suite/index";
+import * as trace from "../../integrations/automation-designer/commands/trace/index";
 import * as fetch from "../../integrations/automation-designer/commands/fetch/index";
 import * as publish from "../../integrations/automation-designer/commands/publish/index";
 import * as cmd_import from "../../integrations/automation-designer/commands/import/index";
@@ -32,6 +33,7 @@ export const ADCommandRegistry: Record<string, any> = {
   "category": category,
   "export-category": export_category,
   "save-suite": save_suite,
+  "trace": trace,
   "fetch": fetch,
   "publish": publish,
   "import": cmd_import,
