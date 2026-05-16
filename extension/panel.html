@@ -178,6 +178,37 @@
       td.dim {
         color: #888;
       }
+      th.col-sr,
+      td.sr {
+        width: 30px;
+        text-align: right;
+        color: #666;
+        font-variant-numeric: tabular-nums;
+        padding-right: 6px;
+      }
+      th.col-act,
+      td.actions {
+        width: 1%;
+        white-space: nowrap;
+      }
+      button.act {
+        background: transparent;
+        border: 1px solid #3a3a3a;
+        border-radius: 3px;
+        color: #999;
+        cursor: pointer;
+        padding: 2px 4px 0;
+        margin-right: 3px;
+        vertical-align: middle;
+      }
+      button.act:hover {
+        background: #3a3a3a;
+        color: #d4d4d4;
+      }
+      button.act.ok {
+        color: #6a9955;
+        border-color: #6a9955;
+      }
       .empty {
         padding: 24px;
         text-align: center;
@@ -208,8 +239,27 @@
         color: #fff;
         border-bottom-color: #4ec9b0;
       }
-      .detail-close {
+      .detail-act {
         margin-left: auto;
+        font: inherit;
+        background: transparent;
+        color: #aaa;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 2px 8px;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        cursor: pointer;
+      }
+      .detail-act:hover {
+        color: #fff;
+        background: #333;
+      }
+      .detail-act.ok {
+        color: #6a9955;
+        border-color: #6a9955;
+      }
+      .detail-close {
         font: inherit;
         background: transparent;
         color: #aaa;
@@ -279,11 +329,13 @@
         <table>
           <thead>
             <tr>
+              <th class="col-sr">#</th>
               <th>Method Name</th>
+              <th class="col-act">Actions</th>
               <th>Status</th>
               <th>HTTP</th>
               <th>Kind</th>
-              <th>URL</th>
+              <th>Published ID</th>
               <th>Type</th>
               <th>Size</th>
               <th>Time</th>
@@ -305,6 +357,7 @@
             <button data-tab="response" type="button">Response</button>
             <button data-tab="timing" type="button">Timing</button>
           </div>
+          <button id="detail-copy" class="detail-act" type="button" title="Copy this tab">Copy</button>
           <button id="detail-close" class="detail-close" type="button">&times;</button>
         </div>
         <div id="detail-body" class="detail-body"></div>

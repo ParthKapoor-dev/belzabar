@@ -23,6 +23,7 @@ interface Resolved {
   kind: Kind
   editUrl: string
   label: string
+  name: string
 }
 
 /**
@@ -49,7 +50,7 @@ async function tryShow(kind: Kind, text: string, env: string): Promise<Resolved 
   if (typeof editUrl !== "string" || !editUrl) return null
   const name = parsed.data?.summary?.name?.trim() || text
   const label = kind === "ad" ? `AD · ${name}` : `PD · ${name}`
-  return { kind, editUrl, label }
+  return { kind, editUrl, label, name }
 }
 
 /** Decide which show command(s) could resolve this input. */

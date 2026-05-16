@@ -32,6 +32,7 @@ const emptyEl = document.getElementById('empty');
 const detailEl = document.getElementById('detail');
 const detailBody = document.getElementById('detail-body');
 const detailClose = document.getElementById('detail-close');
+const detailCopy = document.getElementById('detail-copy');
 const detailTabs = Array.from(document.querySelectorAll('.detail-tabs button'));
 
 // ---- state ----------------------------------------------------------------
@@ -75,15 +76,6 @@ function formatBytes(n) {
   return (n / 1024 / 1024).toFixed(2) + ' MB';
 }
 
-function shortUrl(url) {
-  try {
-    const u = new URL(url);
-    return u.pathname + u.search;
-  } catch {
-    return url || '';
-  }
-}
-
 function typeOf(har) {
   if (har._resourceType) return har._resourceType;
   const mime =
@@ -111,6 +103,76 @@ function el(tag, props, ...kids) {
     node.append(k.nodeType ? k : document.createTextNode(String(k)));
   }
   return node;
+}
+
+// ---- row action buttons ---------------------------------------------------
+const ICON_COPY =
+  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+  'stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/>' +
+  '<path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+const ICON_OPEN =
+  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+  'stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M11 13 20 4"/>' +
+  '<path d="M19 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>';
+
+function iconButton(svg, title, handler) {
+  const b = document.createElement('button');
+  b.className = 'act';
+  b.type = 'button';
+  b.title = title;
+  b.innerHTML = svg;
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handler(b);
+  });
+  return b;
+}
+
+function flashOk(btn) {
+  btn.classList.add('ok');
+  setTimeout(() => btn.classList.remove('ok'), 700);
+}
+
+// Build a copy-pasteable cURL command from a captured request.
+function buildCurl(har) {
+  const req = (har && har.request) || {};
+  const q = (s) => "'" + String(s).replace(/'/g, "'\\''") + "'";
+  const parts = ['curl ' + q(req.url || '')];
+  if (req.method && req.method.toUpperCase() !== 'GET') {
+    parts.push('-X ' + req.method.toUpperCase());
+  }
+  for (const h of req.headers || []) {
+    if (!h || !h.name || h.name.charAt(0) === ':') continue;
+    parts.push('-H ' + q(h.name + ': ' + (h.value || '')));
+  }
+  const bodyText = req.postData && req.postData.text;
+  if (bodyText) parts.push('--data-raw ' + q(bodyText));
+  return parts.join(' \\\n  ');
+}
+
+// Hand a captured execute request to belz web, which resolves the method's
+// draft designer URL, opens it with inputs autofilled, and shows a queue.
+function openInDraft(entry) {
+  const req = entry.har && entry.har.request;
+  const body = (req && req.postData && req.postData.text) || '';
+  // Surface the queue tab synchronously so it counts as a user gesture.
+  try {
+    window.open(BELZ_WEB + '/queue', 'belzQueue');
+  } catch {
+    /* ignore */
+  }
+  fetch(BELZ_WEB + '/api/open-queue', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ uuid: entry.uuid, body, env: currentEnv })
+  })
+    .then((res) => {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      setOffline(false);
+    })
+    .catch(() => setOffline(true));
 }
 
 // ---- name resolution ------------------------------------------------------
@@ -238,7 +300,26 @@ function onRequest(har) {
 function renderRow(entry) {
   emptyEl.classList.add('hidden');
 
+  const srCell = el('td', { className: 'sr' }, String(entry.id));
   const nameCell = el('td', { className: 'name pending' });
+
+  const copyCurlBtn = iconButton(ICON_COPY, 'Copy as cURL', (btn) => {
+    try {
+      navigator.clipboard.writeText(buildCurl(entry.har));
+      flashOk(btn);
+    } catch {
+      /* ignore */
+    }
+  });
+  const openBtn = iconButton(
+    ICON_OPEN,
+    'Open in draft mode (via belz web)',
+    (btn) => {
+      openInDraft(entry);
+      flashOk(btn);
+    }
+  );
+  const actionsCell = el('td', { className: 'actions' }, copyCurlBtn, openBtn);
 
   const statusCell = el('td', null, entry.status ? String(entry.status) : '—');
   statusCell.className =
@@ -253,7 +334,25 @@ function renderRow(entry) {
   );
   const kindCell = el('td', { className: 'dim' }, badge, ' ' + entry.version);
 
-  const urlCell = el('td', { className: 'mono', title: entry.url }, shortUrl(entry.url));
+  const idCell = el(
+    'td',
+    { className: 'mono', title: entry.uuid + '  ·  click to copy' },
+    entry.uuid
+  );
+  idCell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    try {
+      navigator.clipboard.writeText(entry.uuid);
+    } catch {
+      /* ignore */
+    }
+    const prev = idCell.textContent;
+    idCell.textContent = 'copied';
+    setTimeout(() => {
+      idCell.textContent = prev;
+    }, 700);
+  });
+
   const typeCell = el('td', { className: 'dim' }, entry.type);
   const sizeCell = el('td', { className: 'dim' }, formatBytes(entry.size));
   const timeCell = el(
@@ -265,11 +364,13 @@ function renderRow(entry) {
   const row = el(
     'tr',
     null,
+    srCell,
     nameCell,
+    actionsCell,
     statusCell,
     httpCell,
     kindCell,
-    urlCell,
+    idCell,
     typeCell,
     sizeCell,
     timeCell
@@ -441,6 +542,45 @@ filterInput.addEventListener('input', () => {
 });
 
 detailClose.addEventListener('click', closeDetail);
+
+// Copy the currently shown detail tab — innerText captures exactly what is
+// rendered, so one button works for Headers / Payload / Response / Timing.
+detailCopy.addEventListener('click', () => {
+  try {
+    navigator.clipboard.writeText(detailBody.innerText || '');
+    detailCopy.classList.add('ok');
+    detailCopy.textContent = 'Copied';
+    setTimeout(() => {
+      detailCopy.classList.remove('ok');
+      detailCopy.textContent = 'Copy';
+    }, 900);
+  } catch {
+    /* ignore */
+  }
+});
+
+// Arrow-key navigation across visible rows.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+  const visible = entries.filter(
+    (en) => en.rowEl && !en.rowEl.classList.contains('hidden')
+  );
+  if (visible.length === 0) return;
+  e.preventDefault();
+  let idx = visible.findIndex((en) => en.id === selectedId);
+  if (e.key === 'ArrowDown') {
+    idx = idx < 0 ? 0 : Math.min(idx + 1, visible.length - 1);
+  } else {
+    idx = idx < 0 ? 0 : Math.max(idx - 1, 0);
+  }
+  const target = visible[idx];
+  if (target) {
+    selectEntry(target);
+    if (target.rowEl) target.rowEl.scrollIntoView({ block: 'nearest' });
+  }
+});
 
 for (const tab of detailTabs) {
   tab.addEventListener('click', () => {
