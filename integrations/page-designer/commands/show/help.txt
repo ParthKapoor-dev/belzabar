@@ -1,7 +1,9 @@
 Usage: belz pd show <INPUT> [flags]
 
 Display the structure and metadata of a Page Designer page or component.
-The config is fetched and cached automatically (5-minute TTL).
+The config is fetched and cached automatically. Cached data older than 5
+minutes is served instantly while a background process refreshes it
+(stale-while-revalidate); use --force to fetch fresh synchronously.
 
 Arguments:
   <INPUT>             One of:

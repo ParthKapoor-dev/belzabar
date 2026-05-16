@@ -3,7 +3,12 @@ import {
   fetchComponentIdByName,
   fetchDeployablePageByAppUrl,
 } from "./api/index";
-import { cachedFetchPageConfig, cachedFetchComponentConfig } from "./cache";
+import {
+  cachedFetchPageConfigSwr,
+  cachedFetchComponentConfigSwr,
+  type ConfigSource,
+  type SwrConfigResult,
+} from "./cache";
 import { parsePdUrl } from "./url-parser";
 import type { RawPageResponse as PageConfigResponse } from "./types/wire";
 
@@ -14,7 +19,7 @@ export interface ResolvedEntity {
   resolvedId: string;
   response: PageConfigResponse;
   inputKind: InputKind;
-  source: "cache" | "fresh";
+  source: ConfigSource;
 }
 
 export function detectInputKind(input: string): {
@@ -72,11 +77,10 @@ export async function resolveInput(input: string, force = false): Promise<Resolv
   const detected = detectInputKind(input);
   let entityType: "PAGE" | "COMPONENT" = detected.entityType;
   let resolvedId: string;
-  let response: PageConfigResponse | null;
+  let result: SwrConfigResult;
 
-  // Try cached first to determine source
-  const fetchPage = (id: string) => cachedFetchPageConfig(id, force);
-  const fetchComponent = (id: string) => cachedFetchComponentConfig(id, force);
+  const fetchPage = (id: string) => cachedFetchPageConfigSwr(id, force);
+  const fetchComponent = (id: string) => cachedFetchComponentConfigSwr(id, force);
 
   switch (detected.kind) {
     case "app-url": {
@@ -88,14 +92,14 @@ export async function resolveInput(input: string, force = false): Promise<Resolv
         );
       }
       resolvedId = refId;
-      response = await fetchPage(resolvedId);
+      result = await fetchPage(resolvedId);
       break;
     }
 
     case "pd-url": {
       if (detected.entityType === "PAGE") {
         resolvedId = detected.pdToken!;
-        response = await fetchPage(resolvedId);
+        result = await fetchPage(resolvedId);
       } else {
         const componentId = await fetchComponentIdByName(detected.pdToken!);
         if (!componentId) {
@@ -104,19 +108,19 @@ export async function resolveInput(input: string, force = false): Promise<Resolv
           });
         }
         resolvedId = componentId;
-        response = await fetchComponent(resolvedId);
+        result = await fetchComponent(resolvedId);
       }
       break;
     }
 
     case "id": {
-      response = await fetchPage(input);
-      if (response) {
+      result = await fetchPage(input);
+      if (result.data) {
         resolvedId = input;
         entityType = "PAGE";
       } else {
-        response = await fetchComponent(input);
-        if (!response) {
+        result = await fetchComponent(input);
+        if (!result.data) {
           throw new CliError(`No page or component found for ID: ${input}`, {
             code: "NOT_FOUND",
           });
@@ -135,12 +139,12 @@ export async function resolveInput(input: string, force = false): Promise<Resolv
         });
       }
       resolvedId = componentId;
-      response = await fetchComponent(resolvedId);
+      result = await fetchComponent(resolvedId);
       break;
     }
   }
 
-  if (!response) {
+  if (!result!.data) {
     throw new CliError("Failed to fetch Page Designer configuration.", {
       code: "PD_FETCH_FAILED",
     });
@@ -149,8 +153,8 @@ export async function resolveInput(input: string, force = false): Promise<Resolv
   return {
     entityType,
     resolvedId: resolvedId!,
-    response,
+    response: result!.data,
     inputKind: detected.kind,
-    source: force ? "fresh" : "cache",
+    source: result!.source,
   };
 }

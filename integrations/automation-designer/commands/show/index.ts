@@ -1,4 +1,4 @@
-import { CliError, ok, Config, openUrlInBrowser, type CommandModule } from "@belzabar/core";
+import { CliError, ok, Config, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
@@ -46,7 +46,7 @@ interface StepSummaryRow {
 
 interface ShowMethodData {
   request: { uuid: string; flags: ShowMethodFlags };
-  source: "cache" | "fresh";
+  source: "cache" | "stale" | "fresh";
   sourceVersion: "v1" | "v2";
   summary: {
     name: string;
@@ -338,8 +338,9 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
     return { uuid, flags, apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, flags, apiVersion }, context) {
-    let method = await CacheManager.load(uuid);
-    let source: "cache" | "fresh" = "cache";
+    const cached = await CacheManager.loadSwr(uuid);
+    let method = cached?.data ?? null;
+    let source: "cache" | "stale" | "fresh" = cached?.stale ? "stale" : "cache";
 
     // Cache is V1-shaped; if --v2 or force is set, refetch.
     if (!method || flags.force || apiVersion === "v2" || method.sourceVersion !== apiVersion) {
@@ -348,7 +349,11 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       if (apiVersion === "v1") await CacheManager.save(uuid, method);
     }
 
-    if (source === "cache") {
+    if (source === "stale") {
+      // Serve stale data now; refresh the cache in a detached background process.
+      context.warn("Using stale cached definition — refreshing in background.");
+      triggerDetachedRefresh(CacheManager.dir, uuid);
+    } else if (source === "cache") {
       context.warn("Using cached method definition. Use --force for refresh.");
     }
 
@@ -444,7 +449,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
         ["Outputs", data.summary.outputCount],
         ["Steps", data.summary.stepCount],
         ["API Source", data.sourceVersion.toUpperCase()],
-        ["Cache", data.source],
+        ["Cache", data.source === "stale" ? "stale (refreshing…)" : data.source],
         ["Edit URL", data.summary.editUrl],
       ],
     );

@@ -1,5 +1,5 @@
 import { file } from "bun";
-import { CliError, Config, ok, openUrlInBrowser, type CommandModule } from "@belzabar/core";
+import { CliError, Config, ok, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
 import { analyzeItem } from "../../lib/analyzer";
 import {
   extractDirectChildComponentNames,
@@ -17,6 +17,7 @@ import {
   type VarDetail,
 } from "../../lib/parser/index";
 import { resolveInput, type InputKind } from "../../lib/resolver";
+import { PD_CACHE_DIR } from "../../lib/cache";
 import { collectAllAdIds, formatTreeLines } from "../../lib/reporter";
 import type {
   PageConfigResponse,
@@ -227,7 +228,7 @@ interface ShowData {
     entityType: "PAGE" | "COMPONENT";
     flags: ShowArgs["flags"];
   };
-  source: "cache" | "fresh";
+  source: "cache" | "stale" | "fresh";
   summary: {
     name: string;
     entityType: "PAGE" | "COMPONENT";
@@ -408,7 +409,11 @@ const command: CommandModule<ShowArgs, ShowData> = {
     const { entityType, resolvedId, response, inputKind, source } = resolved;
     const configStr = response.configuration;
 
-    if (source === "cache") {
+    if (source === "stale") {
+      // Serve stale data now; refresh the cache in a detached background process.
+      context.warn("Using stale cached config — refreshing in background.");
+      triggerDetachedRefresh(PD_CACHE_DIR, resolvedId);
+    } else if (source === "cache") {
       context.warn("Using cached config. Use --force for refresh.");
     }
 
@@ -624,7 +629,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
         ["HTTP Calls", s.httpCallCount],
         ["Child Components", s.directChildComponents.length],
         ["AD Methods", s.adMethodIds.length],
-        ["Source", data.source],
+        ["Source", data.source === "stale" ? "stale (refreshing…)" : data.source],
       ]
     );
 
