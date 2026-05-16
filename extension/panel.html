@@ -12,15 +12,18 @@
       html,
       body {
         margin: 0;
-        height: 100%;
         font: 12px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         background: #1e1e1e;
         color: #d4d4d4;
       }
+      /* Height is viewport-based, not a `height: 100%` chain: Firefox's
+         DevTools panel iframe does not give the document a resolvable
+         percentage height, so `height: 100%` would collapse the body to
+         zero and `overflow: hidden` would then clip everything to black. */
       body {
+        min-height: 100vh;
         display: flex;
         flex-direction: column;
-        overflow: hidden;
       }
 
       /* ---- toolbar ---------------------------------------------------- */
