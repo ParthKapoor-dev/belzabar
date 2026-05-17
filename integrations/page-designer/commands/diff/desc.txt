@@ -1,0 +1,1 @@
+  diff <input> --from <envA> --to <envB>   Compare a page/component across two environments (structural diff).

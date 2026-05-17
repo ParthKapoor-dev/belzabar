@@ -28,6 +28,7 @@ belz pd find [query]             # search pages/components
 belz pd find-ad-methods <ID>     # extract AD method IDs
 belz pd analyze [PAGE_ID]        # recursive dependency + compliance
 belz pd history <action>         # server-backed version history (list/show/diff/restore)
+belz pd diff <INPUT> --from <envA> --to <envB>   # cross-environment structural diff
 belz pd preflight <pageId>       # dry-run: parse + validate + (optional) overlay, no save
 ```
 
@@ -53,6 +54,7 @@ When adding or removing PD commands, run `bun run generate` from `cli/` — this
 8. `lib/lock.ts` - withLock wraps every write
 9. `lib/args/common.ts` - parsePdCommonArgs (--force, --yes, --dry-run)
 10. `lib/{analyzer,reporter,comparator,cache,resolver,page-finder,url-parser}.ts` - legacy analyze stack (unchanged)
+11. `lib/page-diff.ts` - shared structural diff (`diffPages`); used by both `history diff` and `diff`
 11. `components.json` - component whitelist used during recursive analysis
 12. `master_ids.txt` - approved AD ID list for compliance checks
 13. `docs/api-notes.md` - **read this first** — verified endpoints, partial-update shape, failure-mode catalog
@@ -66,6 +68,9 @@ When adding or removing PD commands, run `bun run generate` from `cli/` — this
 4. `find-ad-methods` — shallow or recursive AD ID extraction.
 5. `analyze` — recursive dependency tree + compliance analysis.
 6. `history <action>` — server-backed version history: list, show, diff, restore.
+7. `diff <input> --from <envA> --to <envB>` — resolves the page/component in each
+   environment and structurally diffs them via `lib/page-diff.ts`. Flips
+   `Config.activeEnv` per side and restores the original env before returning.
 7. `preflight <pageId> [--overlay <file>]` — dry-run validator. Exit code = validator verdict.
 
 **Writes:**

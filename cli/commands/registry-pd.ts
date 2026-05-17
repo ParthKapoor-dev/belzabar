@@ -2,6 +2,7 @@
 // Do not edit manually.
 import * as analyze from "../../integrations/page-designer/commands/analyze/index";
 import * as validate from "../../integrations/page-designer/commands/validate/index";
+import * as diff from "../../integrations/page-designer/commands/diff/index";
 import * as lock from "../../integrations/page-designer/commands/lock/index";
 import * as publish from "../../integrations/page-designer/commands/publish/index";
 import * as find_ad_methods from "../../integrations/page-designer/commands/find-ad-methods/index";
@@ -14,6 +15,7 @@ import * as preflight from "../../integrations/page-designer/commands/preflight/
 export const PDCommandRegistry: Record<string, any> = {
   "analyze": analyze,
   "validate": validate,
+  "diff": diff,
   "lock": lock,
   "publish": publish,
   "find-ad-methods": find_ad_methods,

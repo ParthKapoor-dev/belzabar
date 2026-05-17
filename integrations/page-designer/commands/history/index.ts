@@ -12,10 +12,11 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { parsePdCommonArgs } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
-import { parsePage, walkParsed } from "../../lib/parser/index";
+import { parsePage } from "../../lib/parser/index";
 import { partitionBySeverity, validateHydrated } from "../../lib/validator/index";
 import { withLock } from "../../lib/lock";
-import type { HydratedPage, ValidationIssue } from "../../lib/types/common";
+import { countNodes, diffPages } from "../../lib/page-diff";
+import type { ValidationIssue } from "../../lib/types/common";
 import type { RawHistoryEntry } from "../../lib/types/wire";
 
 type Action = "list" | "show" | "diff" | "restore";
@@ -115,28 +116,6 @@ function toRow(e: RawHistoryEntry): VersionRow {
   };
 }
 
-function countNodes(page: HydratedPage): number {
-  let n = 0;
-  walkParsed(page.layout, () => { n++; });
-  return n;
-}
-
-function collectNodeIds(page: HydratedPage): Map<string, string> {
-  const m = new Map<string, string>();
-  walkParsed(page.layout, (node) => { m.set(node.nodeId, node.kind); });
-  return m;
-}
-
-function diffStringSets(beforeArr: string[], afterArr: string[]): { added: string[]; removed: string[]; changed: string[] } {
-  const before = new Set(beforeArr);
-  const after = new Set(afterArr);
-  const added: string[] = [];
-  const removed: string[] = [];
-  for (const x of after) if (!before.has(x)) added.push(x);
-  for (const x of before) if (!after.has(x)) removed.push(x);
-  return { added, removed, changed: [] };
-}
-
 // -------- command --------------------------------------------------------
 
 const command: CommandModule<HistoryArgs, HistoryData> = {
@@ -234,53 +213,22 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       if (!rawB) throw new CliError(`Version ${args.to} not found.`, { code: "PD_VERSION_NOT_FOUND" });
       const a = parsePage(rawA);
       const b = parsePage(rawB);
-
-      const aVars = a.variables.map((v) => v.name);
-      const bVars = b.variables.map((v) => v.name);
-      const variables = diffStringSets(aVars, bVars);
-      const varMapA = new Map(a.variables.map((v) => [v.name, JSON.stringify(v.initialValue)] as const));
-      for (const v of b.variables) {
-        const prior = varMapA.get(v.name);
-        if (prior !== undefined && prior !== JSON.stringify(v.initialValue)) variables.changed.push(v.name);
-      }
-
-      const derived = diffStringSets(a.derived.map((d) => d.name), b.derived.map((d) => d.name));
-      const derMapA = new Map(a.derived.map((d) => [d.name, d.spec ?? ""] as const));
-      for (const d of b.derived) {
-        const prior = derMapA.get(d.name);
-        if (prior !== undefined && prior !== (d.spec ?? "")) derived.changed.push(d.name);
-      }
-
-      const httpA = a.httpRequests.map((h) => h.callId ?? `idx:${h.index}`);
-      const httpB = b.httpRequests.map((h) => h.callId ?? `idx:${h.index}`);
-      const httpDiff = diffStringSets(httpA, httpB);
-
-      const nodesA = collectNodeIds(a);
-      const nodesB = collectNodeIds(b);
-      const nodesAdded: string[] = [];
-      const nodesRemoved: string[] = [];
-      const nodesKindChanged: Array<{ nodeId: string; before: string; after: string }> = [];
-      for (const [id, kind] of nodesB) {
-        const prior = nodesA.get(id);
-        if (prior === undefined) nodesAdded.push(id);
-        else if (prior !== kind) nodesKindChanged.push({ nodeId: id, before: prior, after: kind });
-      }
-      for (const [id] of nodesA) if (!nodesB.has(id)) nodesRemoved.push(id);
+      const diff = diffPages(a, b);
 
       return ok<HistoryDiffData>({
         action: "diff",
         pageId: args.pageId,
         from: args.from!,
         to: args.to!,
-        variables,
-        derived,
-        httpRequests: { added: httpDiff.added, removed: httpDiff.removed },
-        nodeCountBefore: countNodes(a),
-        nodeCountAfter: countNodes(b),
-        nodesAdded,
-        nodesRemoved,
-        nodesKindChanged,
-        stylesChanged: a.styles !== b.styles,
+        variables: diff.variables,
+        derived: diff.derived,
+        httpRequests: diff.httpRequests,
+        nodeCountBefore: diff.nodeCountBefore,
+        nodeCountAfter: diff.nodeCountAfter,
+        nodesAdded: diff.nodesAdded,
+        nodesRemoved: diff.nodesRemoved,
+        nodesKindChanged: diff.nodesKindChanged,
+        stylesChanged: diff.styles.changed,
       });
     }
 

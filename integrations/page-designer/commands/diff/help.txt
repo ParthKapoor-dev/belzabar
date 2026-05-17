@@ -1,0 +1,23 @@
+belz pd diff <input> --from <envA> --to <envB> [flags]
+
+Compare the same page or component across two environments and report the
+structural differences — variables, derived fields, HTTP calls, layout nodes,
+and styles.
+
+<input> may be a page/component id, a name, an app URL, or a PD URL. It is
+resolved INDEPENDENTLY in each environment, because entity ids are env-local.
+
+Flags:
+  --from <env>   Environment to treat as the baseline (e.g. nsm-dev)
+  --to <env>     Environment to compare against (e.g. nsm-stage)
+  --llm          Emit a JSON envelope
+
+Examples:
+  belz pd diff "Vehicle Search" --from nsm-dev --to nsm-stage
+  belz pd diff 49fa2576239ec5791c6ead4cf9408ce2 --from nsm-stage --to nsm-uat --llm
+
+Notes:
+  - Both environments must have valid credentials configured in
+    ~/.belz/config.json; a login failure on either side aborts the diff.
+  - The diff engine is shared with `belz pd history diff`, so the structural
+    comparison is identical — only the two sides differ (envs vs versions).

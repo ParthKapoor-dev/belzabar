@@ -8,6 +8,11 @@ Arguments:
 
 Flags:
   --raw               Include raw payload in output.
+  --stream            Opt into a streaming method: sends
+                      Accept: application/stream+json. If the method streams,
+                      progressive chunks are shown and the final JSON envelope
+                      is parsed out separately (responseFormat="stream").
+                      Non-streaming methods are unaffected.
   --help, -h          Show this help message.
 
 Global Flags:
@@ -19,3 +24,4 @@ Examples:
   belz ad run 40ba5566efa95b033ef7af8f7f30ee09
   belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}'
   belz ad run 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --raw --llm
+  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"q":"hello"}' --stream
