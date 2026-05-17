@@ -17,6 +17,7 @@ import { showToast } from '../../ui/toast.js';
 import { EXTENSION_OWNED_ATTR } from '../../config/constants.js';
 import { lockModalInteraction, unlockModalInteraction } from '../../ui/modal-lock.js';
 import { openSettingsModal } from '../settings/modal.js';
+import { T, FONT_MONO, RADIUS, SHADOW, SCRIM } from '../../ui/theme.js';
 
 const OVERLAY_ID = 'sdTextareaEditorOverlay';
 const TITLE_ID = 'sdTextareaEditorTitle';
@@ -116,7 +117,7 @@ const editorTheme = EditorView.theme(
       width: '100%',
       fontFamily: EDITOR_FONT_FAMILY,
       backgroundColor: 'rgba(15, 23, 42, 0.52)',
-      color: '#e2e8f0'
+      color: T.fg
     },
     '.cm-scroller': {
       fontFamily: EDITOR_FONT_FAMILY,
@@ -126,7 +127,7 @@ const editorTheme = EditorView.theme(
     },
     '.cm-content': {
       fontFamily: EDITOR_FONT_FAMILY,
-      caretColor: '#e2e8f0',
+      caretColor: T.fg,
       padding: `${EDITOR_VERTICAL_PADDING_PX}px ${EDITOR_HORIZONTAL_PADDING_PX}px`,
       minHeight: '100%',
       letterSpacing: 'normal',
@@ -138,7 +139,7 @@ const editorTheme = EditorView.theme(
     '.cm-gutters': {
       fontFamily: EDITOR_FONT_FAMILY,
       backgroundColor: 'rgba(15, 23, 42, 0.7)',
-      color: '#64748b',
+      color: T.fgFaint,
       borderRight: '1px solid rgba(148, 163, 184, 0.2)'
     },
     '.cm-lineNumbers .cm-gutterElement': {
@@ -151,7 +152,7 @@ const editorTheme = EditorView.theme(
       outline: 'none'
     },
     '&.cm-focused .cm-cursor': {
-      borderLeftColor: '#e2e8f0'
+      borderLeftColor: T.fg
     },
     '&.cm-focused .cm-selectionBackground, .cm-selectionBackground, ::selection': {
       backgroundColor: 'rgba(96, 165, 250, 0.35)'
@@ -162,7 +163,7 @@ const editorTheme = EditorView.theme(
     '.cm-panels': {
       backgroundColor: 'rgba(15, 23, 42, 0.96)',
       borderTop: '1px solid rgba(148, 163, 184, 0.2)',
-      color: '#e2e8f0'
+      color: T.fg
     },
     '.cm-search': {
       display: 'flex',
@@ -175,9 +176,9 @@ const editorTheme = EditorView.theme(
       fontFamily: EDITOR_FONT_FAMILY,
       fontSize: '12px',
       background: 'rgba(30, 41, 59, 0.9)',
-      color: '#e2e8f0',
+      color: T.fg,
       border: '1px solid rgba(148, 163, 184, 0.35)',
-      borderRadius: '5px',
+      borderRadius: RADIUS,
       padding: '4px 8px',
       outline: 'none'
     },
@@ -189,9 +190,9 @@ const editorTheme = EditorView.theme(
       fontFamily: EDITOR_FONT_FAMILY,
       fontSize: '12px',
       background: 'rgba(37, 99, 235, 0.2)',
-      color: '#93c5fd',
+      color: T.accent,
       border: '1px solid rgba(59, 130, 246, 0.35)',
-      borderRadius: '5px',
+      borderRadius: RADIUS,
       padding: '4px 10px',
       cursor: 'pointer'
     },
@@ -201,9 +202,9 @@ const editorTheme = EditorView.theme(
     },
     '.cm-search button[name=close]': {
       background: 'rgba(248, 113, 113, 0.12)',
-      color: '#fca5a5',
+      color: T.danger,
       border: '1px solid rgba(248, 113, 113, 0.35)',
-      borderRadius: '5px',
+      borderRadius: RADIUS,
       padding: '4px 8px',
       fontSize: '14px',
       lineHeight: '1'
@@ -214,7 +215,7 @@ const editorTheme = EditorView.theme(
     },
     '.cm-search label': {
       fontSize: '12px',
-      color: '#94a3b8',
+      color: T.fgMuted,
       display: 'flex',
       alignItems: 'center',
       gap: '4px',
@@ -236,7 +237,7 @@ const editorTheme = EditorView.theme(
       fontFamily: EDITOR_FONT_FAMILY,
       background: 'rgba(15, 23, 42, 0.96)',
       border: '1px solid rgba(148, 163, 184, 0.3)',
-      borderRadius: '8px',
+      borderRadius: RADIUS,
       boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
       overflow: 'hidden'
     },
@@ -247,25 +248,25 @@ const editorTheme = EditorView.theme(
     '.cm-tooltip-autocomplete ul li': {
       fontFamily: EDITOR_FONT_FAMILY,
       padding: '4px 10px',
-      color: '#e2e8f0',
+      color: T.fg,
       fontSize: '13px',
       lineHeight: '1.5'
     },
     '.cm-tooltip-autocomplete ul li[aria-selected]': {
       background: 'rgba(37, 99, 235, 0.35)',
-      color: '#f8fafc'
+      color: T.fg
     },
     '.cm-completionLabel': {
       fontFamily: EDITOR_FONT_FAMILY
     },
     '.cm-completionDetail': {
       fontFamily: EDITOR_FONT_FAMILY,
-      color: '#64748b',
+      color: T.fgFaint,
       fontStyle: 'italic',
       marginLeft: '8px'
     },
     '.cm-completionMatchedText': {
-      color: '#60a5fa',
+      color: T.accent,
       textDecoration: 'none',
       fontWeight: '600'
     }
@@ -690,12 +691,12 @@ export function createTextareaEditorModal() {
     height: 'calc(100vh - 24px)',
     maxWidth: 'none',
     maxHeight: 'none',
-    borderRadius: '14px',
+    borderRadius: RADIUS,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
     border: '1px solid rgba(148, 163, 184, 0.3)',
-    background: 'linear-gradient(180deg, #0f172a 0%, #111827 100%)',
+    background: T.surface,
     boxShadow: '0 30px 80px rgba(0, 0, 0, 0.45)'
   });
 
@@ -716,7 +717,7 @@ export function createTextareaEditorModal() {
   Object.assign(title.style, {
     margin: '0',
     fontSize: '16px',
-    color: '#f8fafc'
+    color: T.fg
   });
 
   const subtitle = document.createElement('div');
@@ -725,7 +726,7 @@ export function createTextareaEditorModal() {
   Object.assign(subtitle.style, {
     marginTop: '4px',
     fontSize: '12px',
-    color: '#94a3b8'
+    color: T.fgMuted
   });
 
   titleWrap.appendChild(title);
@@ -742,9 +743,9 @@ export function createTextareaEditorModal() {
   fontSizeSelect.id = FONT_SIZE_SELECT_ID;
   Object.assign(fontSizeSelect.style, {
     background: 'rgba(15, 23, 42, 0.75)',
-    color: '#cbd5e1',
+    color: T.fgMuted,
     border: '1px solid rgba(148, 163, 184, 0.4)',
-    borderRadius: '6px',
+    borderRadius: RADIUS,
     padding: '4px 8px',
     fontSize: '12px',
     outline: 'none',
@@ -763,9 +764,9 @@ export function createTextareaEditorModal() {
   wrapSelect.id = WRAP_SELECT_ID;
   Object.assign(wrapSelect.style, {
     background: 'rgba(15, 23, 42, 0.75)',
-    color: '#cbd5e1',
+    color: T.fgMuted,
     border: '1px solid rgba(148, 163, 184, 0.4)',
-    borderRadius: '6px',
+    borderRadius: RADIUS,
     padding: '4px 8px',
     fontSize: '12px',
     outline: 'none',
@@ -787,9 +788,9 @@ export function createTextareaEditorModal() {
   languageSelect.id = LANG_SELECT_ID;
   Object.assign(languageSelect.style, {
     background: 'rgba(15, 23, 42, 0.75)',
-    color: '#cbd5e1',
+    color: T.fgMuted,
     border: '1px solid rgba(148, 163, 184, 0.4)',
-    borderRadius: '6px',
+    borderRadius: RADIUS,
     padding: '4px 8px',
     fontSize: '12px',
     outline: 'none',
@@ -821,10 +822,10 @@ export function createTextareaEditorModal() {
     width: '30px',
     height: '30px',
     padding: '0',
-    borderRadius: '999px',
+    borderRadius: RADIUS,
     border: '1px solid rgba(59, 130, 246, 0.45)',
-    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-    color: '#ffffff',
+    background: T.accent,
+    color: T.fg,
     fontSize: '16px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -844,8 +845,8 @@ export function createTextareaEditorModal() {
   Object.assign(copyBtn.style, {
     border: '1px solid rgba(148, 163, 184, 0.45)',
     background: 'rgba(15, 23, 42, 0.75)',
-    color: '#cbd5e1',
-    borderRadius: '6px',
+    color: T.fgMuted,
+    borderRadius: RADIUS,
     padding: '4px 10px',
     fontSize: '12px',
     cursor: 'pointer'
@@ -861,10 +862,10 @@ export function createTextareaEditorModal() {
   Object.assign(closeBtn.style, {
     width: '30px',
     height: '30px',
-    borderRadius: '6px',
+    borderRadius: RADIUS,
     border: '1px solid rgba(248, 113, 113, 0.45)',
     background: 'rgba(248, 113, 113, 0.15)',
-    color: '#fca5a5',
+    color: T.danger,
     fontSize: '20px',
     cursor: 'pointer',
     lineHeight: '1'
@@ -912,7 +913,7 @@ export function createTextareaEditorModal() {
   const helper = document.createElement('div');
   helper.textContent = 'CodeMirror editor with syntax highlighting and optional line wrapping.';
   Object.assign(helper.style, {
-    color: '#94a3b8',
+    color: T.fgMuted,
     fontSize: '12px'
   });
 
@@ -928,8 +929,8 @@ export function createTextareaEditorModal() {
   Object.assign(cancelBtn.style, {
     border: '1px solid rgba(148, 163, 184, 0.45)',
     background: 'rgba(15, 23, 42, 0.6)',
-    color: '#e2e8f0',
-    borderRadius: '8px',
+    color: T.fg,
+    borderRadius: RADIUS,
     padding: '8px 14px',
     cursor: 'pointer'
   });
@@ -941,9 +942,9 @@ export function createTextareaEditorModal() {
   saveBtn.textContent = 'Save';
   Object.assign(saveBtn.style, {
     border: '1px solid rgba(96, 165, 250, 0.45)',
-    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-    color: '#ffffff',
-    borderRadius: '8px',
+    background: T.accent,
+    color: T.fg,
+    borderRadius: RADIUS,
     padding: '8px 14px',
     cursor: 'pointer',
     boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)'

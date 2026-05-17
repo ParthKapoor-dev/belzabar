@@ -5,6 +5,7 @@ import { syncJSONToInputs } from './sync.js';
 import { showToast } from '../../ui/toast.js';
 import { EXTENSION_OWNED_ATTR } from '../../config/constants.js';
 import { lockModalInteraction, unlockModalInteraction } from '../../ui/modal-lock.js';
+import { T, FONT_MONO, RADIUS, SHADOW, SCRIM } from '../../ui/theme.js';
 
 // Modal UI component
 export function createModal() {
@@ -30,8 +31,8 @@ export function createModal() {
   // Modal container
   const container = document.createElement('div');
   Object.assign(container.style, {
-    background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-    borderRadius: '16px',
+    background: T.surface,
+    borderRadius: RADIUS,
     boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
     width: '90%',
     maxWidth: '700px',
@@ -67,7 +68,7 @@ export function createModal() {
     margin: '0',
     fontSize: '18px',
     fontWeight: '600',
-    color: '#ffffff',
+    color: T.fg,
     textShadow: '0 2px 10px rgba(59, 130, 246, 0.3)'
   });
 
@@ -78,12 +79,12 @@ export function createModal() {
   Object.assign(refreshBtn.style, {
     background: 'rgba(59, 130, 246, 0.15)',
     border: '1px solid rgba(59, 130, 246, 0.3)',
-    borderRadius: '6px',
+    borderRadius: RADIUS,
     padding: '4px 8px',
     fontSize: '16px',
     cursor: 'pointer',
     transition: 'all 200ms ease',
-    color: '#60a5fa'
+    color: T.accent
   });
   refreshBtn.onmouseenter = () => {
     refreshBtn.style.background = 'rgba(59, 130, 246, 0.25)';
@@ -100,10 +101,10 @@ export function createModal() {
   Object.assign(closeBtn.style, {
     background: 'rgba(239, 68, 68, 0.15)',
     border: '1px solid rgba(239, 68, 68, 0.3)',
-    borderRadius: '6px',
+    borderRadius: RADIUS,
     fontSize: '24px',
     cursor: 'pointer',
-    color: '#f87171',
+    color: T.danger,
     padding: '0',
     width: '32px',
     height: '32px',
@@ -143,7 +144,7 @@ export function createModal() {
     left: '50%',
     transform: 'translate(-50%, -50%)',
     textAlign: 'center',
-    color: '#9ca3af',
+    color: T.fgMuted,
     fontSize: '14px',
     display: 'none'
   });
@@ -153,7 +154,7 @@ export function createModal() {
   const textareaContainer = document.createElement('div');
   Object.assign(textareaContainer.style, {
     position: 'relative',
-    borderRadius: '8px',
+    borderRadius: RADIUS,
     overflow: 'hidden'
   });
 
@@ -181,18 +182,18 @@ export function createModal() {
     fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
     fontSize: '13px',
     border: '1px solid rgba(59, 130, 246, 0.3)',
-    borderRadius: '8px',
+    borderRadius: RADIUS,
     resize: 'vertical',
     outline: 'none',
     background: 'rgba(0, 0, 0, 0.3)',
-    color: '#e5e7eb',
+    color: T.fg,
     position: 'relative',
     zIndex: '2',
     transition: 'all 200ms ease',
     boxShadow: 'inset 0 2px 10px rgba(0, 0, 0, 0.3)'
   });
   textarea.addEventListener('focus', () => {
-    textarea.style.borderColor = '#3b82f6';
+    textarea.style.borderColor = T.accent;
     textarea.style.boxShadow = 'inset 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(59, 130, 246, 0.2)';
   });
   textarea.addEventListener('blur', () => {
@@ -211,8 +212,8 @@ export function createModal() {
     padding: '12px 16px',
     background: 'rgba(59, 130, 246, 0.15)',
     border: '1px solid rgba(59, 130, 246, 0.3)',
-    borderRadius: '8px',
-    color: '#93c5fd',
+    borderRadius: RADIUS,
+    color: T.accent,
     fontSize: '12px',
     display: 'none',
     backdropFilter: 'blur(10px)'
@@ -226,8 +227,8 @@ export function createModal() {
     padding: '12px 16px',
     background: 'rgba(239, 68, 68, 0.15)',
     border: '1px solid rgba(239, 68, 68, 0.3)',
-    borderRadius: '8px',
-    color: '#fca5a5',
+    borderRadius: RADIUS,
+    color: T.danger,
     fontSize: '13px',
     display: 'none',
     backdropFilter: 'blur(10px)'
@@ -252,7 +253,7 @@ export function createModal() {
   const helpText = document.createElement('div');
   Object.assign(helpText.style, {
     fontSize: '12px',
-    color: '#9ca3af'
+    color: T.fgMuted
   });
   helpText.innerHTML = '<span style="font-weight: 500; color: #60a5fa;">💡 Tip:</span> Keys marked with * are mandatory';
 
@@ -267,9 +268,9 @@ export function createModal() {
   Object.assign(cancelBtn.style, {
     padding: '8px 16px',
     border: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: '8px',
+    borderRadius: RADIUS,
     background: 'rgba(255, 255, 255, 0.05)',
-    color: '#d1d5db',
+    color: T.fgMuted,
     fontSize: '14px',
     fontWeight: '500',
     cursor: 'pointer',
@@ -291,9 +292,9 @@ export function createModal() {
   Object.assign(syncBtn.style, {
     padding: '8px 16px',
     border: 'none',
-    borderRadius: '8px',
-    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-    color: '#ffffff',
+    borderRadius: RADIUS,
+    background: T.accent,
+    color: T.fg,
     fontSize: '14px',
     fontWeight: '500',
     cursor: 'pointer',
@@ -301,12 +302,12 @@ export function createModal() {
     boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
   });
   syncBtn.onmouseenter = () => {
-    syncBtn.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
+    syncBtn.style.background = T.accent;
     syncBtn.style.transform = 'translateY(-2px)';
     syncBtn.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.4)';
   };
   syncBtn.onmouseleave = () => {
-    syncBtn.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+    syncBtn.style.background = T.accent;
     syncBtn.style.transform = 'translateY(0)';
     syncBtn.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
   };
@@ -356,7 +357,7 @@ export function loadInputsIntoModal(forceRefresh = false) {
   infoDiv.style.display = 'none';
   infoDiv.style.background = 'rgba(59, 130, 246, 0.15)';
   infoDiv.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-  infoDiv.style.color = '#93c5fd';
+  infoDiv.style.color = T.accent;
 
   // Small delay to show loading state
   setTimeout(() => {
@@ -453,7 +454,7 @@ export function handleSyncClick() {
   infoDiv.style.display = 'none';
   infoDiv.style.background = 'rgba(59, 130, 246, 0.15)';
   infoDiv.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-  infoDiv.style.color = '#93c5fd';
+  infoDiv.style.color = T.accent;
 
   // Small delay to show loading state
   setTimeout(async () => {
@@ -469,7 +470,7 @@ export function handleSyncClick() {
             result.warnings.map((warning) => `• ${warning}`).join('<br>');
           infoDiv.style.background = 'rgba(245, 158, 11, 0.15)';
           infoDiv.style.borderColor = 'rgba(245, 158, 11, 0.3)';
-          infoDiv.style.color = '#fbbf24';
+          infoDiv.style.color = T.warning;
           infoDiv.style.display = 'block';
 
           // Don't close modal on partial success

@@ -6,6 +6,7 @@
   "description": "belz unified design system — single source of truth for tokens across web, extension and CLI.",
   "exports": {
     ".": "./src/index.ts",
+    "./tokens": "./src/tokens.ts",
     "./terminal": "./src/terminal.ts",
     "./theme.css": "./dist/theme.css"
   },

@@ -33,7 +33,7 @@
         font-display: swap;
       }
       :root {
-        color-scheme: light dark;
+        color-scheme: dark;
         --mono: "Berkeley Mono", "Ioskeley Mono", ui-monospace,
           SFMono-Regular, Menlo, monospace;
       }
@@ -44,8 +44,8 @@
       body {
         margin: 0;
         font: 12px/1.5 var(--mono);
-        background: #1e1e1e;
-        color: #d4d4d4;
+        background: #0c0d0f;
+        color: #e6e7e8;
       }
       /* A bounded, viewport-based height (not a `height: 100%` chain, which
          collapses in Firefox's panel iframe) so the list and detail panes
@@ -59,22 +59,22 @@
       .list-pane,
       .detail-body {
         scrollbar-width: thin;
-        scrollbar-color: #3a3a3a #1e1e1e;
+        scrollbar-color: #2a2d30 #0c0d0f;
       }
       ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
       }
       ::-webkit-scrollbar-track {
-        background: #1e1e1e;
+        background: #0c0d0f;
       }
       ::-webkit-scrollbar-thumb {
-        background: #3a3a3a;
-        border-radius: 5px;
-        border: 2px solid #1e1e1e;
+        background: #2a2d30;
+        border-radius: 0;
+        border: 2px solid #0c0d0f;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #4a4a4a;
+        background: #3a3d42;
       }
 
       /* ---- toolbar ---------------------------------------------------- */
@@ -83,27 +83,27 @@
         align-items: center;
         gap: 8px;
         padding: 5px 8px;
-        background: #252526;
-        border-bottom: 1px solid #333;
+        background: #101113;
+        border-bottom: 1px solid #1f2123;
         flex: 0 0 auto;
       }
       .toolbar button {
         font: inherit;
-        background: #333;
-        color: #d4d4d4;
-        border: 1px solid #444;
-        border-radius: 3px;
+        background: #1f2123;
+        color: #e6e7e8;
+        border: 1px solid #2a2d30;
+        border-radius: 0;
         padding: 2px 8px;
         cursor: pointer;
       }
       .toolbar button:hover {
-        background: #3d3d3d;
+        background: #16181b;
       }
       #record.on .dot {
-        color: #f44;
+        color: #f85149;
       }
       #record .dot {
-        color: #888;
+        color: #9ba1a6;
         font-size: 13px;
       }
       .toolbar label {
@@ -114,10 +114,10 @@
       }
       #filter {
         font: inherit;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        border: 1px solid #444;
-        border-radius: 3px;
+        background: #0c0d0f;
+        color: #e6e7e8;
+        border: 1px solid #2a2d30;
+        border-radius: 0;
         padding: 2px 6px;
         width: 180px;
       }
@@ -125,11 +125,11 @@
         flex: 1;
       }
       .count {
-        color: #888;
+        color: #9ba1a6;
         font-variant-numeric: tabular-nums;
       }
       .offline {
-        color: #d0903a;
+        color: #d29922;
         font-size: 11px;
       }
       .hidden {
@@ -149,7 +149,7 @@
       }
       .detail-pane {
         flex: 0 0 46%;
-        border-left: 1px solid #333;
+        border-left: 1px solid #1f2123;
         display: flex;
         flex-direction: column;
         min-width: 0;
@@ -163,20 +163,20 @@
       thead th {
         position: sticky;
         top: 0;
-        background: #252526;
+        background: #101113;
         text-align: left;
         padding: 4px 8px;
         font-weight: 500;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
-        color: #888;
-        border-bottom: 1px solid #333;
+        color: #9ba1a6;
+        border-bottom: 1px solid #1f2123;
         z-index: 1;
       }
       tbody td {
         padding: 3px 8px;
-        border-bottom: 1px solid #2a2a2a;
+        border-bottom: 1px solid #16181b;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -186,36 +186,36 @@
         cursor: pointer;
       }
       tbody tr:hover {
-        background: #2a2d2e;
+        background: #16181b;
       }
       tbody tr.selected {
-        background: #094771;
+        background: #1d3a66;
       }
       /* Method name — colour tracks the status group (#9). */
       td.name {
         font-weight: 600;
-        color: #9cdcfe;
+        color: #3b82f6;
       }
       td.name.s-clienterr {
-        color: #dcb67a;
+        color: #d29922;
       }
       td.name.s-srverr {
-        color: #f48771;
+        color: #f85149;
       }
       td.name.pending {
         font-weight: 400;
         font-style: italic;
-        color: #888;
+        color: #9ba1a6;
       }
       td.name:hover,
       td.category:hover {
         text-decoration: underline;
       }
       td.category {
-        color: #c8a8d8;
+        color: #9ba1a6;
       }
       td.category.pending {
-        color: #777;
+        color: #9ba1a6;
         font-style: italic;
       }
       .badge {
@@ -224,14 +224,14 @@
         font-weight: 700;
         letter-spacing: 0.05em;
         padding: 1px 4px;
-        border-radius: 3px;
-        color: #1e1e1e;
+        border-radius: 0;
+        color: #0c0d0f;
       }
       .badge.run {
-        background: #dcb67a;
+        background: #d29922;
       }
       .badge.get {
-        background: #6a9bd1;
+        background: #3b82f6;
       }
       /* Status pill — coloured by group so codes are scannable (#9). */
       .sbadge {
@@ -239,38 +239,38 @@
         font-size: 10px;
         font-weight: 700;
         padding: 1px 5px;
-        border-radius: 3px;
+        border-radius: 0;
         font-variant-numeric: tabular-nums;
-        color: #1e1e1e;
+        color: #0c0d0f;
       }
       .sbadge.ok {
-        background: #6a9955;
+        background: #3fb950;
       }
       .sbadge.redir {
-        background: #569cd6;
+        background: #3b82f6;
       }
       .sbadge.clienterr {
-        background: #dcb67a;
+        background: #d29922;
       }
       .sbadge.srverr {
-        background: #f48771;
+        background: #f85149;
       }
       .sbadge.pending {
-        background: #555;
-        color: #ccc;
+        background: #2a2d30;
+        color: #9ba1a6;
       }
       td.mono {
         font-family: var(--mono);
-        color: #ce9178;
+        color: #3fb950;
       }
       td.dim {
-        color: #888;
+        color: #9ba1a6;
       }
       th.col-sr,
       td.sr {
         width: 30px;
         text-align: right;
-        color: #666;
+        color: #5c6166;
         font-variant-numeric: tabular-nums;
         padding-right: 6px;
       }
@@ -281,34 +281,34 @@
       }
       button.act {
         background: transparent;
-        border: 1px solid #3a3a3a;
-        border-radius: 3px;
-        color: #999;
+        border: 1px solid #2a2d30;
+        border-radius: 0;
+        color: #9ba1a6;
         cursor: pointer;
         padding: 2px 4px 0;
         margin-right: 3px;
         vertical-align: middle;
       }
       button.act:hover {
-        background: #3a3a3a;
-        color: #d4d4d4;
+        background: #2a2d30;
+        color: #e6e7e8;
       }
       button.act.ok {
-        color: #6a9955;
-        border-color: #6a9955;
+        color: #3fb950;
+        border-color: #3fb950;
       }
       .empty {
         padding: 24px;
         text-align: center;
-        color: #777;
+        color: #9ba1a6;
       }
 
       /* ---- detail pane ----------------------------------------------- */
       .detail-head {
         display: flex;
         align-items: center;
-        background: #252526;
-        border-bottom: 1px solid #333;
+        background: #101113;
+        border-bottom: 1px solid #1f2123;
         flex: 0 0 auto;
       }
       .detail-tabs {
@@ -317,47 +317,47 @@
       .detail-tabs button {
         font: inherit;
         background: transparent;
-        color: #aaa;
+        color: #9ba1a6;
         border: none;
         border-bottom: 2px solid transparent;
         padding: 6px 12px;
         cursor: pointer;
       }
       .detail-tabs button.active {
-        color: #fff;
-        border-bottom-color: #4ec9b0;
+        color: #e6e7e8;
+        border-bottom-color: #3b82f6;
       }
       .detail-act {
         margin-left: auto;
         font: inherit;
         background: transparent;
-        color: #aaa;
-        border: 1px solid #444;
-        border-radius: 3px;
+        color: #9ba1a6;
+        border: 1px solid #2a2d30;
+        border-radius: 0;
         padding: 2px 8px;
         margin-top: 4px;
         margin-bottom: 4px;
         cursor: pointer;
       }
       .detail-act:hover {
-        color: #fff;
-        background: #333;
+        color: #e6e7e8;
+        background: #1f2123;
       }
       .detail-act.ok {
-        color: #6a9955;
-        border-color: #6a9955;
+        color: #3fb950;
+        border-color: #3fb950;
       }
       .detail-close {
         font: inherit;
         background: transparent;
-        color: #aaa;
+        color: #9ba1a6;
         border: none;
         padding: 6px 10px;
         cursor: pointer;
         font-size: 14px;
       }
       .detail-close:hover {
-        color: #fff;
+        color: #e6e7e8;
       }
       .detail-body {
         flex: 1;
@@ -366,7 +366,7 @@
       }
       .detail-body h4 {
         margin: 10px 0 4px;
-        color: #4ec9b0;
+        color: #3b82f6;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
@@ -380,11 +380,11 @@
         gap: 1px 12px;
       }
       .kv .k {
-        color: #9cdcfe;
+        color: #3b82f6;
         white-space: nowrap;
       }
       .kv .v {
-        color: #d4d4d4;
+        color: #e6e7e8;
         word-break: break-all;
       }
       pre {
@@ -393,7 +393,7 @@
         word-break: break-word;
         font-family: var(--mono);
         font-size: 11px;
-        color: #d4d4d4;
+        color: #e6e7e8;
       }
 
       /* ---- JSON tree viewer ------------------------------------------ */
@@ -410,25 +410,25 @@
       .jt-filter {
         font: inherit;
         font-size: 11px;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        border: 1px solid #444;
-        border-radius: 3px;
+        background: #0c0d0f;
+        color: #e6e7e8;
+        border: 1px solid #2a2d30;
+        border-radius: 0;
         padding: 2px 6px;
         width: 150px;
       }
       .jt-btn {
         font: inherit;
         font-size: 11px;
-        background: #333;
-        color: #d4d4d4;
-        border: 1px solid #444;
-        border-radius: 3px;
+        background: #1f2123;
+        color: #e6e7e8;
+        border: 1px solid #2a2d30;
+        border-radius: 0;
         padding: 1px 7px;
         cursor: pointer;
       }
       .jt-btn:hover {
-        background: #3d3d3d;
+        background: #16181b;
       }
       .jt-spacer {
         flex: 1;
@@ -437,7 +437,7 @@
         display: flex;
         align-items: center;
         gap: 3px;
-        color: #aaa;
+        color: #9ba1a6;
         user-select: none;
         cursor: pointer;
       }
@@ -448,21 +448,21 @@
       .jt-row {
         white-space: pre-wrap;
         word-break: break-word;
-        border-radius: 2px;
+        border-radius: 0;
       }
       .jt-node > .jt-row:hover {
-        background: #2a2d2e;
+        background: #16181b;
       }
       .jt-hidden {
         display: none !important;
       }
       .jt-row.jt-match {
-        background: #094771;
+        background: #1d3a66;
       }
       .jt-caret {
         display: inline-block;
         width: 11px;
-        color: #888;
+        color: #9ba1a6;
         text-align: center;
         user-select: none;
       }
@@ -480,27 +480,27 @@
         display: none;
       }
       .jt-key {
-        color: #9cdcfe;
+        color: #3b82f6;
       }
       .jt-count {
-        color: #888;
+        color: #9ba1a6;
         margin-right: 4px;
       }
       .jt-preview {
-        color: #6b6b6b;
+        color: #5c6166;
         cursor: pointer;
       }
       .jt-str {
-        color: #ce9178;
+        color: #3fb950;
       }
       .jt-num {
-        color: #b5cea8;
+        color: #d29922;
       }
       .jt-bool {
-        color: #569cd6;
+        color: #3b82f6;
       }
       .jt-null {
-        color: #808080;
+        color: #9ba1a6;
       }
 
       /* ---- toast ------------------------------------------------------ */
@@ -509,11 +509,11 @@
         bottom: 14px;
         left: 50%;
         transform: translateX(-50%);
-        background: #252526;
-        border: 1px solid #4ec9b0;
-        color: #d4d4d4;
+        background: #101113;
+        border: 1px solid #3b82f6;
+        color: #e6e7e8;
         padding: 6px 12px;
-        border-radius: 4px;
+        border-radius: 0;
         font-size: 12px;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
         z-index: 10;

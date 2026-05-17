@@ -8,6 +8,7 @@ import {
   SETTINGS_MODAL_ID
 } from '../../config/constants.js';
 import { lockModalInteraction, unlockModalInteraction } from '../../ui/modal-lock.js';
+import { T, FONT_MONO, RADIUS, SHADOW, SCRIM } from '../../ui/theme.js';
 
 const CONTENT_ID = 'sdExtensionSettingsContent';
 const CHECKBOX_ATTR = 'data-sd-setting-key';
@@ -25,7 +26,7 @@ function syncSwitchVisual(settingKey, isEnabled) {
   if (!track || !thumb) return;
 
   track.style.background = isEnabled
-    ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)'
+    ? T.accent
     : 'rgba(100, 116, 139, 0.5)';
   track.style.borderColor = isEnabled
     ? 'rgba(59, 130, 246, 0.65)'
@@ -43,7 +44,7 @@ function createSettingRow(definition) {
     gap: '10px',
     padding: '10px 12px',
     border: '1px solid rgba(148, 163, 184, 0.22)',
-    borderRadius: '8px',
+    borderRadius: RADIUS,
     background: 'rgba(15, 23, 42, 0.46)',
     cursor: 'pointer'
   });
@@ -53,7 +54,7 @@ function createSettingRow(definition) {
   const title = document.createElement('div');
   title.textContent = definition.label;
   Object.assign(title.style, {
-    color: '#e2e8f0',
+    color: T.fg,
     fontSize: '13px',
     fontWeight: '600'
   });
@@ -61,7 +62,7 @@ function createSettingRow(definition) {
   const description = document.createElement('div');
   description.textContent = definition.description;
   Object.assign(description.style, {
-    color: '#94a3b8',
+    color: T.fgMuted,
     fontSize: '12px',
     marginTop: '2px'
   });
@@ -85,7 +86,7 @@ function createSettingRow(definition) {
   Object.assign(switchTrack.style, {
     width: '42px',
     height: '24px',
-    borderRadius: '999px',
+    borderRadius: RADIUS,
     border: '1px solid rgba(148, 163, 184, 0.5)',
     background: 'rgba(100, 116, 139, 0.5)',
     position: 'relative',
@@ -100,8 +101,8 @@ function createSettingRow(definition) {
     left: '2px',
     width: '18px',
     height: '18px',
-    borderRadius: '999px',
-    background: '#ffffff',
+    borderRadius: RADIUS,
+    background: T.fg,
     boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
     transition: 'transform 150ms ease'
   });
@@ -130,7 +131,7 @@ function createEditorSettingRow(definition) {
     alignItems: 'center',
     padding: '10px 12px',
     border: '1px solid rgba(148, 163, 184, 0.22)',
-    borderRadius: '8px',
+    borderRadius: RADIUS,
     background: 'rgba(15, 23, 42, 0.46)'
   });
 
@@ -139,7 +140,7 @@ function createEditorSettingRow(definition) {
   const title = document.createElement('div');
   title.textContent = definition.label;
   Object.assign(title.style, {
-    color: '#e2e8f0',
+    color: T.fg,
     fontSize: '13px',
     fontWeight: '600'
   });
@@ -147,7 +148,7 @@ function createEditorSettingRow(definition) {
   const description = document.createElement('div');
   description.textContent = definition.description;
   Object.assign(description.style, {
-    color: '#94a3b8',
+    color: T.fgMuted,
     fontSize: '12px',
     marginTop: '2px'
   });
@@ -160,9 +161,9 @@ function createEditorSettingRow(definition) {
   Object.assign(select.style, {
     minWidth: '120px',
     background: 'rgba(15, 23, 42, 0.75)',
-    color: '#cbd5e1',
+    color: T.fgMuted,
     border: '1px solid rgba(148, 163, 184, 0.4)',
-    borderRadius: '6px',
+    borderRadius: RADIUS,
     padding: '6px 8px',
     fontSize: '12px',
     outline: 'none',
@@ -245,9 +246,9 @@ function createSettingsModal() {
     maxWidth: 'calc(100vw - 30px)',
     maxHeight: 'calc(100vh - 40px)',
     overflow: 'hidden',
-    borderRadius: '12px',
+    borderRadius: RADIUS,
     border: '1px solid rgba(148, 163, 184, 0.3)',
-    background: 'linear-gradient(180deg, #0f172a 0%, #111827 100%)',
+    background: T.surface,
     boxShadow: '0 30px 70px rgba(0,0,0,0.45)',
     display: 'flex',
     flexDirection: 'column'
@@ -266,7 +267,7 @@ function createSettingsModal() {
   title.textContent = 'Extension Settings';
   Object.assign(title.style, {
     margin: '0',
-    color: '#f8fafc',
+    color: T.fg,
     fontSize: '16px'
   });
 
@@ -277,10 +278,10 @@ function createSettingsModal() {
   Object.assign(closeBtn.style, {
     width: '30px',
     height: '30px',
-    borderRadius: '6px',
+    borderRadius: RADIUS,
     border: '1px solid rgba(248, 113, 113, 0.45)',
     background: 'rgba(248, 113, 113, 0.14)',
-    color: '#fca5a5',
+    color: T.danger,
     fontSize: '20px',
     cursor: 'pointer',
     lineHeight: '1'
@@ -307,7 +308,7 @@ function createSettingsModal() {
   const editorSectionTitle = document.createElement('div');
   editorSectionTitle.textContent = 'Textarea Editor Defaults';
   Object.assign(editorSectionTitle.style, {
-    color: '#93c5fd',
+    color: T.accent,
     fontSize: '12px',
     fontWeight: '600',
     letterSpacing: '0.4px',
@@ -334,7 +335,7 @@ function createSettingsModal() {
   hint.textContent = 'Settings apply immediately and are persisted in this browser.';
   Object.assign(hint.style, {
     fontSize: '12px',
-    color: '#94a3b8'
+    color: T.fgMuted
   });
 
   const doneBtn = document.createElement('button');
@@ -342,9 +343,9 @@ function createSettingsModal() {
   doneBtn.textContent = 'Done';
   Object.assign(doneBtn.style, {
     border: '1px solid rgba(96, 165, 250, 0.45)',
-    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-    color: '#ffffff',
-    borderRadius: '8px',
+    background: T.accent,
+    color: T.fg,
+    borderRadius: RADIUS,
     padding: '8px 14px',
     cursor: 'pointer'
   });

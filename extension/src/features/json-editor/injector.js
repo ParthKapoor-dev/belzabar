@@ -1,6 +1,7 @@
 import { log } from '../../core/logger.js';
 import { state } from '../../core/state.js';
 import { showModal } from './modal.js';
+import { T, FONT_MONO, RADIUS } from '../../ui/theme.js';
 
 // Button injection
 export function findInputsSection() {
@@ -60,33 +61,25 @@ export function createJSONButton() {
   button.id = 'sdExtensionJSONButton';
   
   Object.assign(button.style, {
-    padding: '8px 16px',
-    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-    color: '#ffffff',
-    border: '1px solid rgba(59, 130, 246, 0.5)',
-    borderRadius: '8px',
+    padding: '6px 14px',
+    background: T.accent,
+    color: T.accentFg,
+    border: `1px solid ${T.accent}`,
+    borderRadius: RADIUS,
+    fontFamily: FONT_MONO,
     fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
     marginLeft: '12px',
-    transition: 'all 200ms ease',
-    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-    letterSpacing: '0.3px',
-    textShadow: '0 1px 2px rgba(0, 0, 0, 0.3)',
-    position: 'relative',
-    overflow: 'hidden'
+    transition: 'background 140ms ease'
   });
-  
+
   button.addEventListener('mouseenter', () => {
-    button.style.background = 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)';
-    button.style.transform = 'translateY(-2px)';
-    button.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)';
+    button.style.background = T.accentHover;
   });
-  
+
   button.addEventListener('mouseleave', () => {
-    button.style.background = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
-    button.style.transform = 'translateY(0)';
-    button.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)';
+    button.style.background = T.accent;
   });
   
   button.onclick = (e) => {
