@@ -20,6 +20,8 @@ export function normalizeDataType(typeString) {
     'array': 'Array',
     'date': 'Date',
     'datetime': 'DateTime',
+    'date time': 'DateTime',
+    'file': 'File',
     'map': 'Map',
     'url': 'Url',
     'structured data': 'StructuredData'
@@ -64,6 +66,7 @@ export function generateInputJSON(inputs) {
         case 'DateTime':
         case 'Url':
         case 'Text':
+        case 'File':
         default:
           // Keep as string
           break;

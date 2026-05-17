@@ -1,11 +1,22 @@
 import { log } from '../../core/logger.js';
 import { extractAllInputs } from './extractor.js';
 
-// JSON sync operations
+// JSON -> AD test-input synchronisation.
+//
+// Every type is driven through the real AD UI (native value setter + events
+// for plain fields, simulated clicks for the `exp-*` custom widgets), then the
+// written value is read back and verified. `window.ng` is not exposed on the
+// production build and `__ngContext__` is an opaque numeric index, so driving
+// Angular component instances directly is not an option here.
 
 const STRUCTURED_TYPES = new Set(['Json', 'Array', 'Map', 'StructuredData']);
 const DATE_TYPES = new Set(['Date', 'DateTime']);
+const MONTHS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december'
+];
 
+// ---- value normalisation --------------------------------------------------
 function padTwo(value) {
   return String(value).padStart(2, '0');
 }
@@ -14,49 +25,24 @@ function formatDateAsYMD(date) {
   return `${date.getFullYear()}-${padTwo(date.getMonth() + 1)}-${padTwo(date.getDate())}`;
 }
 
-function formatDateAsMDY(isoDate) {
-  const [year, month, day] = isoDate.split('-');
-  return `${month}/${day}/${year}`;
-}
-
-function formatDateLong(isoDate) {
-  const [year, month, day] = isoDate.split('-').map((part) => Number(part));
-  const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-  return `${months[Math.max(0, month - 1)]} ${day}, ${year}`;
-}
-
 function normalizeBooleanValue(value) {
   if (value === null || value === undefined || value === '') {
     return { valid: true, stringValue: '' };
   }
-
   if (typeof value === 'boolean') {
     return { valid: true, stringValue: value ? 'Yes' : 'No' };
   }
-
   if (typeof value === 'number') {
     if (value === 1) return { valid: true, stringValue: 'Yes' };
     if (value === 0) return { valid: true, stringValue: 'No' };
     return { valid: false, error: `Unsupported boolean number: ${value}` };
   }
-
   if (typeof value === 'string') {
     const normalized = value.trim().toLowerCase();
-
-    if (['yes', 'true', '1'].includes(normalized)) {
-      return { valid: true, stringValue: 'Yes' };
-    }
-
-    if (['no', 'false', '0'].includes(normalized)) {
-      return { valid: true, stringValue: 'No' };
-    }
-
+    if (['yes', 'true', '1'].includes(normalized)) return { valid: true, stringValue: 'Yes' };
+    if (['no', 'false', '0'].includes(normalized)) return { valid: true, stringValue: 'No' };
     return { valid: false, error: `Unsupported boolean string: "${value}"` };
   }
-
   return { valid: false, error: `Unsupported boolean value type: ${typeof value}` };
 }
 
@@ -64,1002 +50,444 @@ function normalizeNumberValue(value, type) {
   if (value === null || value === undefined || value === '') {
     return { valid: true, stringValue: '' };
   }
-
   const normalized = typeof value === 'number' ? value : Number(String(value).trim());
   if (Number.isNaN(normalized)) {
     return { valid: false, error: `Invalid ${type.toLowerCase()} value: ${value}` };
   }
-
   if (type === 'Integer' && !Number.isInteger(normalized)) {
     return { valid: false, error: `Expected integer, got: ${value}` };
   }
-
   return { valid: true, stringValue: String(normalized) };
 }
 
-function normalizeDateValue(value) {
+// Parses a date (and optional time) into a normalised ISO date plus clock
+// fields. Accepts ISO, `YYYY/M/D`, `M/D/YYYY`, `D/M/YYYY` and loose strings.
+function parseDateValue(value) {
   if (value === null || value === undefined || value === '') {
-    return { valid: true, stringValue: '' };
+    return { valid: true, date: '', hasTime: false, hour: 0, minute: 0 };
   }
+
+  let hour = 0;
+  let minute = 0;
+  let hasTime = false;
 
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return { valid: true, stringValue: formatDateAsYMD(value) };
+    return {
+      valid: true,
+      date: formatDateAsYMD(value),
+      hasTime: true,
+      hour: value.getHours(),
+      minute: value.getMinutes()
+    };
   }
 
-  if (typeof value === 'string') {
-    const input = value.trim();
+  if (typeof value !== 'string') {
+    return { valid: false, error: `Invalid date value: ${String(value)}` };
+  }
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
-      return { valid: true, stringValue: input };
-    }
+  const input = value.trim();
 
-    const ymdWithSlash = input.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
-    if (ymdWithSlash) {
-      const [, year, month, day] = ymdWithSlash;
-      return { valid: true, stringValue: `${year}-${padTwo(month)}-${padTwo(day)}` };
-    }
+  // Pull a HH:MM time out of an ISO/loose datetime string.
+  const timeMatch = input.match(/[T\s](\d{1,2}):(\d{2})/);
+  if (timeMatch) {
+    hour = Number(timeMatch[1]);
+    minute = Number(timeMatch[2]);
+    hasTime = hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59;
+  }
 
-    const slashDate = input.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (slashDate) {
-      const first = Number(slashDate[1]);
-      const second = Number(slashDate[2]);
-      const year = slashDate[3];
+  const datePart = input.split(/[T\s]/)[0];
 
-      // Handle both MM/DD/YYYY and DD/MM/YYYY safely.
+  let isoDate = null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    isoDate = datePart;
+  } else {
+    const ymdSlash = datePart.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+    const mdySlash = datePart.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (ymdSlash) {
+      isoDate = `${ymdSlash[1]}-${padTwo(ymdSlash[2])}-${padTwo(ymdSlash[3])}`;
+    } else if (mdySlash) {
+      const first = Number(mdySlash[1]);
+      const second = Number(mdySlash[2]);
+      // Disambiguate MM/DD vs DD/MM when the first part can't be a month.
       if (first > 12 && second >= 1 && second <= 12) {
-        return { valid: true, stringValue: `${year}-${padTwo(second)}-${padTwo(first)}` };
+        isoDate = `${mdySlash[3]}-${padTwo(second)}-${padTwo(first)}`;
+      } else {
+        isoDate = `${mdySlash[3]}-${padTwo(first)}-${padTwo(second)}`;
       }
-
-      return { valid: true, stringValue: `${year}-${padTwo(first)}-${padTwo(second)}` };
-    }
-
-    const isoLike = input.match(/^(\d{4}-\d{2}-\d{2})T/);
-    if (isoLike) {
-      return { valid: true, stringValue: isoLike[1] };
-    }
-
-    const parsed = new Date(input);
-    if (!Number.isNaN(parsed.getTime())) {
-      return { valid: true, stringValue: formatDateAsYMD(parsed) };
+    } else {
+      const parsed = new Date(input);
+      if (!Number.isNaN(parsed.getTime())) {
+        isoDate = formatDateAsYMD(parsed);
+        if (!hasTime && /\d{1,2}:\d{2}/.test(input)) {
+          hour = parsed.getHours();
+          minute = parsed.getMinutes();
+          hasTime = true;
+        }
+      }
     }
   }
 
-  return { valid: false, error: `Invalid date value: ${String(value)}` };
+  if (!isoDate) {
+    return { valid: false, error: `Invalid date value: ${String(value)}` };
+  }
+  return { valid: true, date: isoDate, hasTime, hour, minute };
 }
 
 function normalizeValueForType(value, type) {
-  if (type === 'Boolean') {
-    return normalizeBooleanValue(value);
-  }
-
-  if (type === 'Integer' || type === 'Number') {
-    return normalizeNumberValue(value, type);
-  }
+  if (type === 'Boolean') return normalizeBooleanValue(value);
+  if (type === 'Integer' || type === 'Number') return normalizeNumberValue(value, type);
 
   if (DATE_TYPES.has(type)) {
-    return normalizeDateValue(value);
+    const parsed = parseDateValue(value);
+    return parsed.valid
+      ? { valid: true, stringValue: parsed.date, dateInfo: parsed }
+      : { valid: false, error: parsed.error };
   }
 
   if (STRUCTURED_TYPES.has(type) && value !== null && value !== undefined) {
-    if (typeof value === 'string') {
-      return { valid: true, stringValue: value };
-    }
-
+    if (typeof value === 'string') return { valid: true, stringValue: value };
     if (typeof value === 'object') {
       return { valid: true, stringValue: JSON.stringify(value, null, 2) };
     }
-
     return { valid: true, stringValue: String(value) };
   }
 
-  // Defensive fallback: avoid "[object Object]" for any unexpected object payload.
   if (typeof value === 'object' && value !== null) {
     return { valid: true, stringValue: JSON.stringify(value, null, 2) };
   }
-
   if (value === null || value === undefined) {
     return { valid: true, stringValue: '' };
   }
-
   return { valid: true, stringValue: String(value) };
 }
 
-function dispatchInputEvents(element) {
-  element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-
-  if (typeof InputEvent !== 'undefined') {
-    element.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
-  }
-
-  element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-  element.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
-}
-
+// ---- low-level DOM helpers ------------------------------------------------
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function asSafeString(value) {
-  if (typeof value === 'string') return value;
-  if (value === null || value === undefined) return '';
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-
-  // SVG elements can expose className as SVGAnimatedString.
-  if (typeof value === 'object' && typeof value.baseVal === 'string') {
-    return value.baseVal;
+// Polls `fn` until it returns a truthy value or the attempts run out.
+async function waitFor(fn, { tries = 24, interval = 30 } = {}) {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const result = fn();
+      if (result) return result;
+    } catch {
+      // keep polling
+    }
+    await sleep(interval);
   }
+  return null;
+}
 
-  try {
-    const stringified = String(value);
-    return stringified === '[object Object]' ? '' : stringified;
-  } catch {
-    return '';
+// Writes through the prototype's `value` setter so Angular/React value
+// tracking sees the change.
+function nativeSetValue(element, value) {
+  const proto = Object.getPrototypeOf(element);
+  const descriptor = proto && Object.getOwnPropertyDescriptor(proto, 'value');
+  if (descriptor && typeof descriptor.set === 'function') {
+    descriptor.set.call(element, value);
+  } else {
+    element.value = value;
   }
 }
 
-function dispatchMouseClick(element) {
+function fireInputEvents(element) {
+  element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+  if (typeof InputEvent !== 'undefined') {
+    element.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
+  }
+  element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
+}
+
+// AD's date/time widgets open, page and commit on a single native click.
+// `.click()` dispatches exactly one click event — important, because those
+// widgets toggle, so a second click would immediately close them again. A full
+// synthetic PointerEvent sequence was also observed to lock up the date
+// picker, so deliberately keep this to the element's own click.
+function mouseClick(element) {
   if (!element) return;
-
-  if (typeof element.focus === 'function') {
-    try {
-      element.focus();
-    } catch {
-      // Ignore focus errors for detached/readonly nodes.
-    }
-  }
-
-  if (typeof PointerEvent !== 'undefined') {
-    element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
-  }
-  element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-  if (typeof PointerEvent !== 'undefined') {
-    element.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true }));
-  }
-  element.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
-  element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-
-  if (typeof element.click === 'function') {
-    try {
-      element.click();
-    } catch {
-      // Ignore click errors.
-    }
-  }
-}
-
-function collectAngularNodes(node, seen = new Set(), nodes = []) {
-  if (!node || seen.has(node)) {
-    return nodes;
-  }
-  seen.add(node);
-
-  if (typeof node === 'object' || typeof node === 'function') {
-    nodes.push(node);
-  }
-
-  if (Array.isArray(node)) {
-    for (const item of node) {
-      collectAngularNodes(item, seen, nodes);
-    }
-    return nodes;
-  }
-
-  if (typeof node === 'object') {
-    for (const value of Object.values(node)) {
-      if (typeof value === 'object' || typeof value === 'function') {
-        collectAngularNodes(value, seen, nodes);
-      }
-    }
-  }
-
-  return nodes;
-}
-
-function syncAngularDateModel(inputElement, datePickerRoot, displayValue, isoValue, dateValue) {
   try {
-    const candidates = [displayValue, isoValue, dateValue];
-    const nodes = [];
-    collectAngularNodes(inputElement?.__ngContext__, new Set(), nodes);
-    collectAngularNodes(datePickerRoot?.__ngContext__, new Set(), nodes);
-
-    let applied = false;
-    for (const node of nodes) {
-      if (!node) continue;
-
-      // Reactive form controls.
-      if (typeof node.setValue === 'function' && typeof node.updateValueAndValidity === 'function') {
-        for (const candidate of candidates) {
-          try {
-            node.setValue(candidate, { emitEvent: true });
-            if (typeof node.markAsDirty === 'function') node.markAsDirty();
-            if (typeof node.markAsTouched === 'function') node.markAsTouched();
-            node.updateValueAndValidity({ emitEvent: true });
-            applied = true;
-          } catch {
-            // Try next candidate.
-          }
-        }
-      }
-
-      // ControlValueAccessor-style hooks.
-      if (typeof node.writeValue === 'function') {
-        for (const candidate of candidates) {
-          try {
-            node.writeValue(candidate);
-            applied = true;
-          } catch {
-            // Try next candidate.
-          }
-        }
-      }
-
-      if (typeof node._onChange === 'function') {
-        for (const candidate of candidates) {
-          try {
-            node._onChange(candidate);
-            applied = true;
-          } catch {
-            // Try next candidate.
-          }
-        }
-      }
-
-      if (typeof node.onChange === 'function') {
-        for (const candidate of candidates) {
-          try {
-            node.onChange(candidate);
-            applied = true;
-          } catch {
-            // Try next candidate.
-          }
-        }
-      }
-    }
-
-    return applied;
+    element.scrollIntoView({ block: 'center', inline: 'center' });
   } catch {
-    return false;
+    // detached node — ignore
+  }
+  try {
+    element.click();
+  } catch {
+    // ignore
   }
 }
 
-function isElementActuallyVisible(element) {
-  if (!element) return false;
-  if (element.closest('.display-none,[hidden],.ng-hide')) return false;
-  if (element.getAttribute('aria-hidden') === 'true') return false;
-
-  const rect = element.getBoundingClientRect();
-  return rect.width > 0 && rect.height > 0;
+// ---- per-type setters -----------------------------------------------------
+// Plain <textarea>/<input>: native write + events, verified by read-back.
+function setTextValue(element, stringValue) {
+  try {
+    element.focus();
+  } catch {
+    // ignore
+  }
+  if (element.hasAttribute('readonly')) {
+    element.removeAttribute('readonly');
+  }
+  nativeSetValue(element, stringValue);
+  fireInputEvents(element);
+  try {
+    element.blur();
+  } catch {
+    // ignore
+  }
+  element.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
+  return (element.value ?? '') === stringValue;
 }
 
-function isLikelyDateElementVisible(element) {
-  if (!element) return false;
-  if (element.closest('.display-none')) return false;
-  if (element.getAttribute('aria-hidden') === 'true') return false;
-  return true;
-}
+// Boolean <exp-select>: open the dropdown, click the matching option.
+async function setBooleanValue(expSelect, stringValue) {
+  const currentText = () =>
+    expSelect.querySelector('.ui-select-match-text')?.textContent?.trim() || '';
 
-function findVisibleDayElements() {
-  const selectors = [
-    '.mat-calendar-body-cell-content',
-    '.mat-calendar-body-cell',
-    '.ngb-dp-day',
-    '.owl-dt-calendar-cell-content',
-    '.react-datepicker__day',
-    '.flatpickr-day',
-    '[data-date]',
-    '[aria-label]'
-  ];
+  if (stringValue === '') {
+    // No reliable "clear" affordance — treat an already-empty select as done.
+    return currentText() === '';
+  }
+  if (currentText().toLowerCase() === stringValue.toLowerCase()) return true;
 
-  const all = document.querySelectorAll(selectors.join(','));
-  return Array.from(all).filter((el) => isElementActuallyVisible(el));
-}
+  const trigger =
+    expSelect.querySelector('[data-testid="select-option-wrapper-container"]') ||
+    expSelect.querySelector('.ui-select-container') ||
+    expSelect.querySelector('.select-box-text') ||
+    expSelect;
+  mouseClick(trigger);
 
-function isDisabledDayCell(element) {
-  if (!element) return true;
-  const classes = asSafeString(element.className);
-  const disabledPatterns = [
-    'disabled',
-    'mat-calendar-body-disabled',
-    'ngb-dp-disabled',
-    'flatpickr-disabled',
-    'react-datepicker__day--disabled',
-    'owl-dt-calendar-cell-disabled'
-  ];
-  return disabledPatterns.some((pattern) => classes.includes(pattern)) || element.hasAttribute('disabled');
-}
-
-function findDayCellByDate(isoDate) {
-  const day = String(Number(isoDate.split('-')[2]));
-  const mdy = formatDateAsMDY(isoDate).toLowerCase();
-  const long = formatDateLong(isoDate).toLowerCase();
-  const isoLower = isoDate.toLowerCase();
-
-  const dayElements = findVisibleDayElements().filter((el) => !isDisabledDayCell(el));
-  const exactMatches = [];
-  const dayOnlyMatches = [];
-
-  for (const el of dayElements) {
-    const label = asSafeString(
-      el.getAttribute('aria-label') ||
-      el.getAttribute('data-date') ||
-      el.getAttribute('title') ||
-      el.textContent
-    ).trim().toLowerCase();
-
-    if (!label) continue;
-
-    if (label.includes(isoLower) || label.includes(mdy) || label.includes(long)) {
-      exactMatches.push(el);
-      continue;
+  const wanted = stringValue.toLowerCase();
+  const option = await waitFor(() => {
+    const scopes = [expSelect, document];
+    for (const scope of scopes) {
+      for (const opt of scope.querySelectorAll('.select-option-text')) {
+        if (
+          opt.offsetParent !== null &&
+          opt.textContent?.trim().toLowerCase() === wanted
+        ) {
+          return opt.closest('a') || opt;
+        }
+      }
     }
-
-    if ((el.textContent || '').trim() === day) {
-      dayOnlyMatches.push(el);
-    }
-  }
-
-  if (exactMatches.length > 0) {
-    return exactMatches[0];
-  }
-
-  if (dayOnlyMatches.length === 1) {
-    return dayOnlyMatches[0];
-  }
-
-  return null;
-}
-
-function findNavigationButtons() {
-  const previousSelectors = [
-    '.mat-calendar-previous-button',
-    '.react-datepicker__navigation--previous',
-    '.flatpickr-prev-month',
-    '.owl-dt-control-button-content'
-  ];
-  const nextSelectors = [
-    '.mat-calendar-next-button',
-    '.react-datepicker__navigation--next',
-    '.flatpickr-next-month',
-    '.owl-dt-control-button-content'
-  ];
-
-  const prev = previousSelectors
-    .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
-    .find((el) => isElementActuallyVisible(el));
-  const next = nextSelectors
-    .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
-    .find((el) => isElementActuallyVisible(el));
-
-  return { prev, next };
-}
-
-function parseVisibleMonthYear() {
-  const monthNames = [
-    'january', 'february', 'march', 'april', 'may', 'june',
-    'july', 'august', 'september', 'october', 'november', 'december'
-  ];
-  const candidates = [
-    '.mat-calendar-period-button',
-    '.react-datepicker__current-month',
-    '.flatpickr-current-month',
-    '.owl-dt-calendar-control-content',
-    '[class*="month"]',
-    '[class*="calendar"]'
-  ];
-
-  const texts = candidates
-    .flatMap((selector) => Array.from(document.querySelectorAll(selector)))
-    .filter((el) => isElementActuallyVisible(el))
-    .map((el) => asSafeString(el.textContent).trim().toLowerCase())
-    .filter(Boolean);
-
-  for (const text of texts) {
-    const yearMatch = text.match(/\b(19|20)\d{2}\b/);
-    if (!yearMatch) continue;
-    const monthIndex = monthNames.findIndex((month) => text.includes(month));
-    if (monthIndex === -1) continue;
-    return { year: Number(yearMatch[0]), month: monthIndex + 1 };
-  }
-
-  return null;
-}
-
-async function navigateCalendarToDate(isoDate) {
-  const [targetYear, targetMonth] = isoDate.split('-').map((value, index) => (index < 2 ? Number(value) : value));
-
-  for (let i = 0; i < 18; i++) {
-    const current = parseVisibleMonthYear();
-    if (!current) {
-      break;
-    }
-
-    const currentIndex = current.year * 12 + current.month;
-    const targetIndex = targetYear * 12 + targetMonth;
-    if (currentIndex === targetIndex) {
-      return true;
-    }
-
-    const { prev, next } = findNavigationButtons();
-    if (targetIndex > currentIndex && next) {
-      dispatchMouseClick(next);
-    } else if (targetIndex < currentIndex && prev) {
-      dispatchMouseClick(prev);
-    } else {
-      break;
-    }
-
-    await sleep(60);
-  }
-
-  return false;
-}
-
-function findConfirmButton() {
-  const buttons = Array.from(document.querySelectorAll('button, [role="button"], a'));
-  return buttons.find((button) => {
-    if (!isElementActuallyVisible(button)) return false;
-    const text = asSafeString(button.textContent).trim().toLowerCase();
-    return ['apply', 'ok', 'done', 'set'].some((word) => text === word || text.includes(`${word} `));
+    return null;
   });
+  if (!option) return false;
+
+  mouseClick(option);
+  await sleep(60);
+  return currentText().toLowerCase() === wanted;
 }
 
-async function selectDateByCalendar(inputElement, datePickerRoot, isoDate) {
+function parseMonthLabel(text) {
+  const lower = (text || '').toLowerCase();
+  const yearMatch = lower.match(/\b(19|20)\d{2}\b/);
+  const monthIndex = MONTHS.findIndex((m) => lower.includes(m));
+  if (!yearMatch || monthIndex < 0) return null;
+  return { year: Number(yearMatch[0]), month: monthIndex + 1 };
+}
+
+// Opens AD's custom calendar for an <exp-date-picker> and returns its root.
+async function openAdCalendar(datePickerRoot) {
+  const findCalendar = () =>
+    datePickerRoot.querySelector('.calendar') || document.querySelector('.calendar');
+
+  const existing = findCalendar();
+  if (existing) return existing;
+
   const triggers = [
-    inputElement,
-    datePickerRoot?.querySelector('.datepicker_input-wrapper'),
-    datePickerRoot?.querySelector('.datepicker_input-icon'),
-    datePickerRoot?.querySelector('exp-svg-icon')
+    datePickerRoot.querySelector('.datepicker_input-icon exp-svg-icon'),
+    datePickerRoot.querySelector('exp-svg-icon'),
+    datePickerRoot.querySelector('.datepicker_input-icon'),
+    datePickerRoot.querySelector('input.datepicker_input-form'),
+    datePickerRoot.querySelector('.datepicker_input-wrapper'),
+    datePickerRoot
   ].filter(Boolean);
 
   for (const trigger of triggers) {
-    dispatchMouseClick(trigger);
-    await sleep(80);
-
-    // Wait for calendar panel rendering.
-    for (let waitAttempt = 0; waitAttempt < 6 && findVisibleDayElements().length === 0; waitAttempt++) {
-      await sleep(40);
-    }
-
-    let dayCell = findDayCellByDate(isoDate);
-    if (!dayCell) {
-      await navigateCalendarToDate(isoDate);
-      dayCell = findDayCellByDate(isoDate);
-    }
-
-    if (!dayCell) {
-      continue;
-    }
-
-    dispatchMouseClick(dayCell);
-    await sleep(70);
-
-    const confirmButton = findConfirmButton();
-    if (confirmButton) {
-      dispatchMouseClick(confirmButton);
-      await sleep(50);
-    }
-
-    // Commit-like interaction after choosing date.
-    dispatchMouseClick(document.body);
-    inputElement.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
-    inputElement.dispatchEvent(new Event('focusout', { bubbles: true, cancelable: true }));
-    await sleep(30);
-
-    for (let commitAttempt = 0; commitAttempt < 10; commitAttempt++) {
-      const currentValue = (
-        inputElement.value ||
-        inputElement.getAttribute('value') ||
-        datePickerRoot?.getAttribute('value') ||
-        ''
-      ).trim();
-
-      if (currentValue.length > 0) {
-        return true;
-      }
-
-      await sleep(40);
-    }
+    mouseClick(trigger);
+    const calendar = await waitFor(findCalendar, { tries: 10, interval: 35 });
+    if (calendar) return calendar;
   }
-
-  return false;
-}
-
-function findCalendarDateElement(isoDate) {
-  const mdy = formatDateAsMDY(isoDate);
-  const longLabel = formatDateLong(isoDate).toLowerCase();
-  const dayText = String(Number(isoDate.split('-')[2]));
-
-  const selectorPool = [
-    '.mat-calendar-body-cell',
-    '.ngb-dp-day',
-    '.owl-dt-calendar-cell-content',
-    '.react-datepicker__day',
-    '.flatpickr-day',
-    '.day',
-    '[aria-label]',
-    '[data-date]',
-    '[title]'
-  ];
-
-  const all = document.querySelectorAll(selectorPool.join(','));
-  for (const el of all) {
-    if (!isLikelyDateElementVisible(el)) continue;
-
-    const label = asSafeString(
-      el.getAttribute('aria-label') ||
-      el.getAttribute('data-date') ||
-      el.getAttribute('title') ||
-      el.textContent
-    ).trim().toLowerCase();
-
-    if (!label) continue;
-
-    if (
-      label.includes(isoDate.toLowerCase()) ||
-      label.includes(mdy.toLowerCase()) ||
-      label.includes(longLabel)
-    ) {
-      return el;
-    }
-  }
-
-  // Fallback: pick a visible day cell with the same day number.
-  const dayCandidates = Array.from(all).filter((el) => {
-    if (!isLikelyDateElementVisible(el)) return false;
-    const text = (el.textContent || '').trim();
-    return text === dayText;
-  });
-
-  return dayCandidates.length > 0 ? dayCandidates[0] : null;
-}
-
-async function tryConfirmDateViaCalendar(inputElement, isoDate) {
-  try {
-    dispatchMouseClick(inputElement);
-    await sleep(40);
-
-    const dayElement = findCalendarDateElement(isoDate);
-    if (dayElement) {
-      dispatchMouseClick(dayElement);
-      await sleep(30);
-      return true;
-    }
-  } catch {
-    // Ignore; fallback paths still run.
-  }
-
-  return false;
-}
-
-function setFormControlValue(element, stringValue) {
-  try {
-    if (typeof element.focus === 'function') {
-      element.focus();
-    }
-
-    const prototype = Object.getPrototypeOf(element);
-    const valueDescriptor = prototype ? Object.getOwnPropertyDescriptor(prototype, 'value') : null;
-    if (valueDescriptor && typeof valueDescriptor.set === 'function') {
-      valueDescriptor.set.call(element, stringValue);
-    } else {
-      element.value = stringValue;
-    }
-
-    dispatchInputEvents(element);
-
-    if (typeof element.blur === 'function') {
-      element.blur();
-    }
-
-    return true;
-  } catch (error) {
-    console.error('Error setting form control value:', error);
-    return false;
-  }
-}
-
-function setInputValueProgrammatically(input, value, options = {}) {
-  const { overrideReadonly = false } = options;
-  const hadReadonly = overrideReadonly && input.hasAttribute('readonly');
-  if (hadReadonly) {
-    input.removeAttribute('readonly');
-  }
-
-  const success = setFormControlValue(input, value);
-  if (success) {
-    input.setAttribute('value', value);
-  }
-
-  if (hadReadonly) {
-    input.setAttribute('readonly', '');
-  }
-
-  return success;
-}
-
-function ensureBooleanMatchText(element, stringValue) {
-  const selectBoxText = element.querySelector('.select-box-text');
-  if (!selectBoxText) {
-    return false;
-  }
-
-  const placeholder = selectBoxText.querySelector('.ui-select-placeholder');
-  if (placeholder) {
-    placeholder.remove();
-  }
-
-  let wrapper = selectBoxText.querySelector('span.flex.items-center');
-  if (!wrapper) {
-    wrapper = document.createElement('span');
-    wrapper.className = 'flex items-center ng-star-inserted';
-    selectBoxText.appendChild(wrapper);
-  }
-
-  let matchText = wrapper.querySelector('.ui-select-match-text');
-  if (!matchText) {
-    matchText = document.createElement('span');
-    matchText.className = 'ui-select-match-text single-dropdown-wrap text_grey_darkest ng-star-inserted';
-    matchText.setAttribute('showplaceholdericon', '');
-    wrapper.appendChild(matchText);
-  }
-
-  matchText.textContent = stringValue;
-  return true;
-}
-
-function findBooleanOptionElement(root, stringValue) {
-  const expected = stringValue.trim().toLowerCase();
-  const options = root.querySelectorAll('.select-option-text');
-
-  for (const option of options) {
-    if (option.textContent?.trim().toLowerCase() === expected) {
-      return option.closest('a') || option;
-    }
-  }
-
   return null;
 }
 
-async function setBooleanSelectValue(element, stringValue) {
-  try {
-    const trigger =
-      element.querySelector('[data-testid="select-option-wrapper-container"]') ||
-      element.querySelector('.ui-select-container') ||
-      element;
+// Date <exp-date-picker>: open the calendar, page to the target month, click
+// the day cell. AD ships its own calendar markup (`.calendar_*`).
+async function setDateValue(datePickerRoot, isoDate) {
+  const input =
+    datePickerRoot.querySelector('input.datepicker_input-form') ||
+    datePickerRoot.querySelector('input');
 
-    // Open the select first so option nodes are rendered.
-    dispatchMouseClick(trigger);
-
-    let optionToClick = null;
-    for (let attempt = 0; attempt < 12; attempt++) {
-      optionToClick = findBooleanOptionElement(element, stringValue);
-      if (optionToClick) break;
-      await sleep(25);
+  if (!isoDate) {
+    if (input) {
+      input.removeAttribute('readonly');
+      nativeSetValue(input, '');
+      fireInputEvents(input);
     }
-
-    if (optionToClick) {
-      dispatchMouseClick(optionToClick);
-      await sleep(10);
-    }
-
-    ensureBooleanMatchText(element, stringValue);
-
-    const booleanValue = stringValue === 'Yes';
-    const payloads = [
-      stringValue,
-      booleanValue,
-      { value: stringValue, name: stringValue },
-      { value: booleanValue, name: stringValue },
-      { label: stringValue, value: booleanValue }
-    ];
-    const eventNames = ['valueChange', 'selectionChange', 'modelChange', 'ngModelChange'];
-
-    for (const eventName of eventNames) {
-      for (const payload of payloads) {
-        element.dispatchEvent(new CustomEvent(eventName, {
-          detail: payload,
-          bubbles: true,
-          cancelable: true
-        }));
-
-        trigger.dispatchEvent(new CustomEvent(eventName, {
-          detail: payload,
-          bubbles: true,
-          cancelable: true
-        }));
-      }
-    }
-
-    element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-    element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-    trigger.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-    trigger.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-
-    const selectedText = element.querySelector('.ui-select-match-text')?.textContent?.trim();
-    return selectedText === stringValue;
-  } catch (error) {
-    console.error('Error setting boolean select value:', error);
-    return false;
+    return !input || (input.value ?? '') === '';
   }
+
+  if (input && input.value === isoDate) return true;
+
+  const [year, month, day] = isoDate.split('-').map(Number);
+  const calendar = await openAdCalendar(datePickerRoot);
+  if (!calendar) return false;
+
+  // Page month-by-month to the target.
+  for (let i = 0; i < 60; i++) {
+    const label = calendar.querySelector('.calendar_header_month_label_text');
+    const current = label && parseMonthLabel(label.textContent || '');
+    if (!current) break;
+
+    const currentIndex = current.year * 12 + current.month;
+    const targetIndex = year * 12 + month;
+    if (currentIndex === targetIndex) break;
+
+    const navButton = calendar.querySelector(
+      currentIndex < targetIndex
+        ? '.calendar_header_month_navigate_next'
+        : '.calendar_header_month_navigate_prev'
+    );
+    if (!navButton) break;
+    // The arrow's click handler lives on an inner <button>.
+    mouseClick(navButton.querySelector('button') || navButton);
+    await sleep(120);
+  }
+
+  // Click the matching current-month day cell.
+  const dayCell = await waitFor(() => {
+    for (const cell of calendar.querySelectorAll('.calendar_body_row_date.curr_month')) {
+      if (/disable/.test(cell.className)) continue;
+      const valueEl = cell.querySelector('.calendar_body_row_date_val') || cell;
+      if ((valueEl.textContent || '').trim() === String(day)) return cell;
+    }
+    return null;
+  });
+  if (!dayCell) return false;
+
+  mouseClick(dayCell);
+  await sleep(80);
+
+  const finalValue = (input?.value || '').trim();
+  return finalValue === isoDate || finalValue.includes(isoDate);
 }
 
-async function setDatePickerValue(element, isoDate) {
-  try {
-    const datePickerRoot = element.closest('exp-date-picker');
-    const wrapper = element.closest('.datepicker_input-wrapper');
+// DateTime <exp-timepicker>: hour/minute are editable inputs; AM-PM is a
+// spinner toggled with its chevron.
+async function setTimeValue(expDateTime, hour24, minute) {
+  const timepicker = expDateTime.querySelector('exp-timepicker');
+  if (!timepicker) return false;
 
-    if (!isoDate) {
-      const cleared = setInputValueProgrammatically(element, '', { overrideReadonly: true });
-      if (cleared && datePickerRoot) {
-        datePickerRoot.value = '';
-        datePickerRoot.setAttribute('value', '');
-        datePickerRoot.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-        datePickerRoot.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-      }
-      return cleared;
-    }
+  const triggers = [
+    timepicker.querySelector('.timepicker-placeholder'),
+    timepicker.querySelector('.timepicker'),
+    timepicker.querySelector('.timepicker-icon'),
+    timepicker
+  ].filter(Boolean);
 
-    const displayCandidates = [formatDateAsMDY(isoDate), isoDate, isoDate.replace(/-/g, '/')];
-    const uniqueCandidates = [...new Set(displayCandidates)];
-    const [year, month, day] = isoDate.split('-').map((segment) => Number(segment));
-    const parsedDate = new Date(year, month - 1, day);
-
-    // Primary strategy: real calendar interaction (closest to manual behavior).
-    const manualSelection = await selectDateByCalendar(element, datePickerRoot, isoDate);
-    if (manualSelection) {
-      await sleep(40);
-      const postManualValue = (
-        element.value ||
-        element.getAttribute('value') ||
-        datePickerRoot?.getAttribute('value') ||
-        ''
-      ).trim();
-
-      // Do not run programmatic fallback after manual select; it can desync AD internals.
-      if (postManualValue.length > 0) {
-        log(`Date set via manual calendar emulation: ${postManualValue}`);
-        element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-        element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-        element.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
-        if (datePickerRoot) {
-          datePickerRoot.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-          datePickerRoot.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-        }
-        if (wrapper) {
-          wrapper.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-          wrapper.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-        }
-        return true;
-      }
-
-      log('Manual calendar selection succeeded but value was still empty; using fallback write path');
-    }
-
-    log('Manual calendar emulation did not resolve date; using fallback write path');
-    let writeSuccess = false;
-    for (const candidate of uniqueCandidates) {
-      const didSet = setInputValueProgrammatically(element, candidate, { overrideReadonly: true });
-      if (!didSet) {
-        continue;
-      }
-
-      // Keep host attribute in sync for AD internals/inspection.
-      if (datePickerRoot) {
-        datePickerRoot.setAttribute('value', candidate);
-      }
-
-      syncAngularDateModel(element, datePickerRoot, candidate, isoDate, parsedDate);
-
-      // Native events only: custom events can be interpreted as value payloads by AD.
-      element.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-      element.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-      element.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
-      if (datePickerRoot) {
-        datePickerRoot.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-        datePickerRoot.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-      }
-      if (wrapper) {
-        wrapper.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-        wrapper.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-      }
-
-      await tryConfirmDateViaCalendar(element, isoDate);
-
-      // Commit-like interaction: click out after setting date.
-      dispatchMouseClick(document.body);
-      element.dispatchEvent(new Event('focusout', { bubbles: true, cancelable: true }));
-
-      await sleep(10);
-      const currentValue = element.value?.trim();
-      if (/^\[object\s.+\]$/.test(currentValue || '')) {
-        // Defensive: never leave event-object string in date field.
-        setInputValueProgrammatically(element, candidate, { overrideReadonly: true });
-      }
-      if (currentValue === candidate) {
-        writeSuccess = true;
-        break;
-      }
-    }
-
-    return writeSuccess;
-  } catch (error) {
-    console.error('Error setting date picker value:', error);
-    return false;
+  let inputs = null;
+  for (const trigger of triggers) {
+    mouseClick(trigger);
+    inputs = await waitFor(() => {
+      const visible = Array.from(
+        document.querySelectorAll('input.time_select-input')
+      ).filter((el) => el.offsetParent !== null);
+      return visible.length >= 2 ? visible : null;
+    }, { tries: 10, interval: 35 });
+    if (inputs) break;
   }
+  if (!inputs) return false;
+
+  const ampmInput = inputs[2] || null; // present only in 12-hour mode
+  let hour = hour24;
+  let ampm = null;
+  if (ampmInput) {
+    ampm = hour24 >= 12 ? 'PM' : 'AM';
+    hour = hour24 % 12;
+    if (hour === 0) hour = 12;
+  }
+
+  setTextValue(inputs[0], String(hour));
+  setTextValue(inputs[1], padTwo(minute));
+
+  if (ampmInput && ampmInput.value.trim().toUpperCase() !== ampm) {
+    const column = ampmInput.parentElement;
+    const chevron = column && column.querySelector('exp-svg-icon.chevron, .chevron');
+    if (chevron) {
+      mouseClick(chevron.querySelector('button') || chevron);
+      await sleep(80);
+    }
+  }
+
+  // Commit by clicking away from the popup.
+  mouseClick(document.body);
+  await sleep(40);
+
+  const hourOk = String(inputs[0].value).trim() === String(hour);
+  const minuteOk = Number(inputs[1].value) === Number(minute);
+  const ampmOk = !ampmInput || ampmInput.value.trim().toUpperCase() === ampm;
+  return hourOk && minuteOk && ampmOk;
 }
 
-function resolveWritableElements(element, type, container) {
+// DateTime <exp-date-time>: a calendar plus a timepicker.
+async function setDateTimeValue(expDateTime, dateInfo) {
+  const datePicker = expDateTime.querySelector('exp-date-picker') || expDateTime;
+  let ok = await setDateValue(datePicker, dateInfo.date);
+  if (dateInfo.date && dateInfo.hasTime) {
+    ok = (await setTimeValue(expDateTime, dateInfo.hour, dateInfo.minute)) && ok;
+  }
+  return ok;
+}
+
+// ===== Public: populate one input =========================================
+export async function populateTestValue(element, value, type) {
+  if (type === 'File') {
+    return {
+      success: false,
+      skipped: true,
+      error: 'File inputs cannot be auto-filled by the extension'
+    };
+  }
   if (!element) {
-    return [];
+    return { success: false, error: 'No input element found on the page' };
   }
 
-  const resolved = [];
-  const seen = new Set();
+  const normalized = normalizeValueForType(value, type);
+  if (!normalized.valid) {
+    return { success: false, error: normalized.error };
+  }
 
-  const add = (target) => {
-    if (!target || seen.has(target)) {
-      return;
+  let ok = false;
+  try {
+    if (type === 'Boolean') {
+      ok = await setBooleanValue(element, normalized.stringValue);
+    } else if (type === 'Date') {
+      ok = await setDateValue(element, normalized.stringValue);
+    } else if (type === 'DateTime') {
+      ok = await setDateTimeValue(element, normalized.dateInfo);
+    } else {
+      ok = setTextValue(element, normalized.stringValue);
     }
-    seen.add(target);
-    resolved.push(target);
-  };
-
-  if (type === 'StructuredData' && container) {
-    const testCaseRow = container.querySelector('.service-designer__grid-row._test-case-row');
-    const defaultTextarea = testCaseRow?.querySelector('.wrapper-content.textarea_outer.default_value textarea');
-    const firstTextarea = testCaseRow?.querySelector('textarea');
-
-    add(defaultTextarea);
-    add(firstTextarea);
+  } catch (error) {
+    return { success: false, error: `Error writing ${type}: ${error.message}` };
   }
 
-  add(element);
-  return resolved;
-}
-
-// ===== Step 6: Enhanced Value Synchronization =====
-export async function populateTestValue(element, value, type, container) {
-  if (!element) {
-    return { success: false, error: 'No element provided for population' };
+  if (!ok) {
+    return { success: false, error: `Could not confirm ${type} value on the page` };
   }
-
-  const normalizedValue = normalizeValueForType(value, type);
-  if (!normalizedValue.valid) {
-    return { success: false, error: normalizedValue.error };
-  }
-
-  const elementsToPopulate = resolveWritableElements(element, type, container);
-  if (elementsToPopulate.length === 0) {
-    return { success: false, error: 'No writable element found' };
-  }
-
-  let writeCount = 0;
-  for (const target of elementsToPopulate) {
-    const isBooleanSelect = type === 'Boolean' && target.tagName?.toLowerCase() === 'exp-select';
-    const isDatePickerInput =
-      (type === 'Date' || type === 'DateTime') &&
-      target.tagName?.toLowerCase() === 'input' &&
-      target.classList?.contains('datepicker_input-form');
-
-    const writeSuccess = isBooleanSelect
-      ? await setBooleanSelectValue(target, normalizedValue.stringValue)
-      : isDatePickerInput
-        ? await setDatePickerValue(target, normalizedValue.stringValue)
-        : setFormControlValue(target, normalizedValue.stringValue);
-
-    if (writeSuccess) {
-      writeCount++;
-    }
-  }
-
-  if (writeCount === 0) {
-    return { success: false, error: 'Failed to write value to target element(s)' };
-  }
-
-  log(`Populated ${writeCount} element(s) for type ${type}`);
+  log(`Populated ${type} input`);
   return { success: true };
 }
 
+// ===== Public: sync a JSON object to the page =============================
 export async function syncJSONToInputs(jsonString) {
+  let data;
   try {
-    const data = JSON.parse(jsonString);
-    if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-      return {
-        success: false,
-        errors: ['JSON must be an object with key-value pairs'],
-        filledCount: 0,
-        skippedMissingKeys: [],
-        failedKeys: []
-      };
-    }
-
-    const inputs = extractAllInputs(true);
-    if (inputs.length === 0) {
-      return {
-        success: false,
-        errors: ['No inputs found on page. Make sure you are on the correct step.'],
-        filledCount: 0,
-        skippedMissingKeys: [],
-        failedKeys: []
-      };
-    }
-
-    const inputMap = new Map(inputs.map((input) => [input.key, input]));
-    const skippedMissingKeys = [];
-    const failedKeys = [];
-    const warnings = [];
-    let filledCount = 0;
-
-    const entries = Object.entries(data);
-    entries.sort(([keyA], [keyB]) => {
-      const inputA = inputMap.get(keyA);
-      const inputB = inputMap.get(keyB);
-      const aIsDate = inputA?.type === 'Date' || inputA?.type === 'DateTime';
-      const bIsDate = inputB?.type === 'Date' || inputB?.type === 'DateTime';
-      if (aIsDate === bIsDate) return 0;
-      return aIsDate ? 1 : -1; // Process date fields last.
-    });
-
-    for (const [key, value] of entries) {
-      const input = inputMap.get(key);
-      if (!input) {
-        skippedMissingKeys.push(key);
-        continue;
-      }
-
-      const populateResult = await populateTestValue(
-        input.testValueElement,
-        value,
-        input.type,
-        input.container
-      );
-      if (populateResult.success) {
-        filledCount++;
-      } else {
-        failedKeys.push(key);
-        log(`Failed to populate ${key}: ${populateResult.error}`);
-      }
-    }
-
-    if (skippedMissingKeys.length > 0) {
-      warnings.push(
-        `Skipped key(s) not found on page (${skippedMissingKeys.length}): ${skippedMissingKeys.join(', ')}`
-      );
-    }
-
-    if (failedKeys.length > 0) {
-      warnings.push(`Failed to populate key(s) (${failedKeys.length}): ${failedKeys.join(', ')}`);
-    }
-
-    const totalKeys = Object.keys(data).length;
-    const message = `Successfully populated ${filledCount} of ${totalKeys} input(s)`;
-
-    if (filledCount === 0) {
-      const errors = warnings.length > 0
-        ? warnings
-        : ['No matching inputs were populated.'];
-
-      return {
-        success: false,
-        message,
-        errors,
-        warnings: warnings.length > 0 ? warnings : undefined,
-        filledCount,
-        skippedMissingKeys,
-        failedKeys
-      };
-    }
-
-    return {
-      success: true,
-      message,
-      warnings: warnings.length > 0 ? warnings : undefined,
-      filledCount,
-      skippedMissingKeys,
-      failedKeys
-    };
+    data = JSON.parse(jsonString);
   } catch (error) {
-    console.error('Error syncing JSON:', error);
     return {
       success: false,
       errors: [`Invalid JSON: ${error.message}`],
@@ -1068,4 +496,98 @@ export async function syncJSONToInputs(jsonString) {
       failedKeys: []
     };
   }
+
+  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
+    return {
+      success: false,
+      errors: ['JSON must be an object with key-value pairs'],
+      filledCount: 0,
+      skippedMissingKeys: [],
+      failedKeys: []
+    };
+  }
+
+  const inputs = extractAllInputs(true);
+  if (inputs.length === 0) {
+    return {
+      success: false,
+      errors: ['No inputs found on page. Make sure Test Mode is on and you are on the Inputs step.'],
+      filledCount: 0,
+      skippedMissingKeys: [],
+      failedKeys: []
+    };
+  }
+
+  const inputMap = new Map(inputs.map((input) => [input.key, input]));
+  const skippedMissingKeys = [];
+  const failedKeys = [];
+  const fileSkippedKeys = [];
+  const warnings = [];
+  let filledCount = 0;
+
+  // Date/DateTime fields are processed last — opening their calendar/timepicker
+  // overlays can otherwise interfere with sibling fields still being written.
+  const entries = Object.entries(data).sort(([keyA], [keyB]) => {
+    const aIsDate = DATE_TYPES.has(inputMap.get(keyA)?.type);
+    const bIsDate = DATE_TYPES.has(inputMap.get(keyB)?.type);
+    if (aIsDate === bIsDate) return 0;
+    return aIsDate ? 1 : -1;
+  });
+
+  for (const [key, value] of entries) {
+    const input = inputMap.get(key);
+    if (!input) {
+      skippedMissingKeys.push(key);
+      continue;
+    }
+
+    const result = await populateTestValue(input.testValueElement, value, input.type);
+    if (result.success) {
+      filledCount++;
+    } else if (result.skipped) {
+      fileSkippedKeys.push(key);
+      log(`Skipped ${key}: ${result.error}`);
+    } else {
+      failedKeys.push(key);
+      log(`Failed to populate ${key}: ${result.error}`);
+    }
+  }
+
+  if (skippedMissingKeys.length > 0) {
+    warnings.push(
+      `Not found on page (${skippedMissingKeys.length}): ${skippedMissingKeys.join(', ')}`
+    );
+  }
+  if (fileSkippedKeys.length > 0) {
+    warnings.push(
+      `File input(s) skipped — pick the file manually (${fileSkippedKeys.length}): ${fileSkippedKeys.join(', ')}`
+    );
+  }
+  if (failedKeys.length > 0) {
+    warnings.push(`Failed to populate (${failedKeys.length}): ${failedKeys.join(', ')}`);
+  }
+
+  const totalKeys = Object.keys(data).length;
+  const message = `Populated ${filledCount} of ${totalKeys} input(s)`;
+
+  if (filledCount === 0) {
+    return {
+      success: false,
+      message,
+      errors: warnings.length > 0 ? warnings : ['No matching inputs were populated.'],
+      warnings: warnings.length > 0 ? warnings : undefined,
+      filledCount,
+      skippedMissingKeys,
+      failedKeys
+    };
+  }
+
+  return {
+    success: true,
+    message,
+    warnings: warnings.length > 0 ? warnings : undefined,
+    filledCount,
+    skippedMissingKeys,
+    failedKeys
+  };
 }

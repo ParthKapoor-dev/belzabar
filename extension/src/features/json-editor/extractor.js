@@ -96,49 +96,37 @@ export function findInputContainer(element) {
 // ===== Step 3: Data Type Extraction =====
 export function extractDataType(container) {
   try {
-    const cells = container.querySelectorAll('.service-designer__grid-cell');
+    // The type lives in the row's dedicated `_type` cell. Query it directly so
+    // the cells of a nested `_test-case-row` can never shadow the real one
+    // (querying `.service-designer__grid-cell` unscoped picked those up too).
+    const typeCell =
+      container.querySelector(':scope > .service-designer__grid-cell._type') ||
+      container.querySelector('.service-designer__grid-cell._type');
 
-    if (cells.length < 2) {
-      log('Not enough grid cells found');
+    if (!typeCell) {
+      log('Type cell not found, defaulting to Text');
       return 'Text';
     }
 
-    const typeCell = cells[1]; // 2nd cell (index 1)
-
-    // Strategy 1: Look for div.type_name elements (common in newer UI)
-    const typeNameDiv = typeCell.querySelector('.type_name');
-    if (typeNameDiv) {
-      const text = typeNameDiv.textContent?.trim();
-      if (text && text.length > 0 && text.length < 30) {
-        log('Found type from div.type_name:', text);
-        return normalizeDataType(text);
-      }
-    }
-
-    // Strategy 2: Read select match text (most reliable in current AD DOM)
+    // Draft mode: type is an editable select.
     const selectMatchText = typeCell.querySelector('.ui-select-match-text');
-    if (selectMatchText) {
-      const text = selectMatchText.textContent?.trim();
-      if (text) {
-        log('Found type from ui-select-match-text:', text);
-        return normalizeDataType(text);
-      }
+    if (selectMatchText && selectMatchText.textContent?.trim()) {
+      return normalizeDataType(selectMatchText.textContent.trim());
     }
 
-    // Strategy 3: Look for span with type text
-    const spans = typeCell.querySelectorAll('span');
-    for (const span of spans) {
-      const text = span.textContent?.trim();
-      if (text && text.length > 0 && text.length < 30) {
-        // Check if it looks like a type (not too long, no special chars)
-        if (!/[{}[\]()#@]/.test(text)) {
-          log('Found type from span:', text);
-          return normalizeDataType(text);
-        }
-      }
+    // Newer UI: a `.type_name` div.
+    const typeNameDiv = typeCell.querySelector('.type_name');
+    if (typeNameDiv && typeNameDiv.textContent?.trim()) {
+      return normalizeDataType(typeNameDiv.textContent.trim());
     }
 
-    log('Type not found, defaulting to Text');
+    // Published mode: the cell is plain text (e.g. "Date", "Structured Data").
+    const text = typeCell.textContent?.trim();
+    if (text && text.length < 40) {
+      return normalizeDataType(text);
+    }
+
+    log('Type text empty, defaulting to Text');
     return 'Text';
   } catch (error) {
     console.error('Error extracting data type:', error);
@@ -147,67 +135,65 @@ export function extractDataType(container) {
 }
 
 // ===== Step 4: Test Value Element Detection =====
+//
+// Returns the semantic element for each type: the `exp-*` host for custom
+// widgets (so the sync layer can drive the real UI) and the plain field for
+// text-like types. The File input is returned even though it is hidden, so the
+// sync layer can report it as "skipped" rather than silently dropping the key.
 export function findTestValueElement(container, type) {
   try {
-    // Look for the test case row
     const testCaseRow = container.querySelector('.service-designer__grid-row._test-case-row');
-
     if (!testCaseRow) {
-      log('Test case row not found');
+      log('Test case row not found (is Test Mode on?)');
       return null;
     }
 
-    const isStructuredData = container && container.querySelector('.service-designer__grid-row._structured') !== null;
+    let element = null;
 
-    let element;
-
-    if (isStructuredData) {
-      element =
-        testCaseRow.querySelector('.wrapper-content.textarea_outer.default_value textarea') ||
-        testCaseRow.querySelector('textarea');
-      log(`Found structured data element: ${!!element}`);
-    } else if (type === 'Boolean') {
-      element =
-        testCaseRow.querySelector('.boolean_response exp-select') ||
-        testCaseRow.querySelector('exp-select');
-      if (element) {
-        log('Found boolean select element');
-      } else {
-        log('Boolean select element not found');
-      }
-    } else if (type === 'Date' || type === 'DateTime') {
-      element =
-        testCaseRow.querySelector('input.datepicker_input-form') ||
-        testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
-        testCaseRow.querySelector('input[type="date"]') ||
-        testCaseRow.querySelector('input');
-    } else if (type === 'Number' || type === 'Integer') {
-      element =
-        testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
-        testCaseRow.querySelector('input[type="number"]') ||
-        testCaseRow.querySelector('input');
-    } else {
-      element = testCaseRow.querySelector('textarea');
-      if (!element) {
+    switch (type) {
+      case 'Boolean':
         element =
+          testCaseRow.querySelector('.boolean_response exp-select') ||
+          testCaseRow.querySelector('exp-select');
+        break;
+
+      case 'Date':
+        element = testCaseRow.querySelector('exp-date-picker');
+        break;
+
+      case 'DateTime':
+        element =
+          testCaseRow.querySelector('exp-date-time') ||
+          testCaseRow.querySelector('exp-date-picker');
+        break;
+
+      case 'File':
+        element = testCaseRow.querySelector('input[type="file"]');
+        break;
+
+      case 'Integer':
+      case 'Number':
+        element =
+          testCaseRow.querySelector('input[type="number"]') ||
           testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
-          testCaseRow.querySelector('input[type="text"]') ||
-          testCaseRow.querySelector('input');
-      }
+          testCaseRow.querySelector('input.input_default') ||
+          testCaseRow.querySelector('input:not([type="file"]):not([type="checkbox"])');
+        break;
+
+      default:
+        // Text, Url, Json, Array, Map, StructuredData — plain textareas.
+        element =
+          testCaseRow.querySelector('textarea') ||
+          testCaseRow.querySelector('input[placeholder="Enter Here"]') ||
+          testCaseRow.querySelector('input:not([type="file"]):not([type="checkbox"])');
     }
 
     if (!element) {
-      log('Neither textarea nor input element found in test case row');
+      log(`Test value element not found for type: ${type}`);
       return null;
     }
 
-    // Verify it's visible
-    if (element.offsetParent === null) {
-      log('Test value element is hidden');
-      return null;
-    }
-
-    log(`Found test value element: ${element.tagName.toLowerCase()} with placeholder "${element.placeholder || 'none'}" (structured: ${isStructuredData})`);
+    log(`Found test value <${element.tagName.toLowerCase()}> for type ${type}`);
     return element;
   } catch (error) {
     console.error('Error finding test value element:', error);
