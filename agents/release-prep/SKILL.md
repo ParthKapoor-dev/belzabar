@@ -210,13 +210,22 @@ Report each collision with full context: which included ticket pulls it in, whic
 
 ## Stage 6 — Has the collision LEAKED onto stage?
 
-A collision is only a problem if the excluded ticket's changes have actually reached stage already. The check: pull the colliding item from BOTH `nsm-stage` and `nsm-dev`, then compare structurally.
+A collision is only a problem if the excluded ticket's changes have actually reached stage already. The check: compare the colliding item between `nsm-dev` and `nsm-stage`.
+
+**For PD pages/components**, use `belz pd diff` — it resolves the item independently in each environment and reports a structural diff. Env-local fields (versionId, identity numbers) are ignored automatically, so there's no need to hash sections by hand:
 
 ```bash
 for id in <colliding-pd-ids>; do
-  belz pd show $id --full --env nsm-stage --force --llm > stage-vs-dev/pd-$id-stage.json &
-  belz pd show $id --full --env nsm-dev   --force --llm > stage-vs-dev/pd-$id-dev.json   &
+  belz pd diff $id --from nsm-dev --to nsm-stage --llm > stage-vs-dev/pd-$id-diff.json &
 done
+wait
+```
+
+Read `.data.identical` from each result: `true` → stage already matches dev for this item; `false` → inspect `.data.diff` (variables / derived / httpRequests / nodes / styles) for exactly which section diverges.
+
+**For AD methods**, `pd diff` does not apply — pull both envs and hash the step tuples. Don't hash raw response bytes; env-local fields like `identity` always differ.
+
+```bash
 for id in <colliding-ad-ids>; do
   belz ad show $id --full --env nsm-stage --force --llm > stage-vs-dev/ad-$id-stage.json &
   belz ad show $id --full --env nsm-dev   --force --llm > stage-vs-dev/ad-$id-dev.json   &
@@ -224,20 +233,7 @@ done
 wait
 ```
 
-Don't hash raw response bytes — env-local fields like versionId, editUrl, internal identity numbers will always differ. Hash structured sections instead.
-
-**For PD pages**, hash each of these sections separately:
-
-```bash
-for sec in vars http components tree varGraph; do
-  shash=$(jq -c ".data.$sec" stage-vs-dev/pd-$id-stage.json | sha256sum | cut -c1-12)
-  dhash=$(jq -c ".data.$sec" stage-vs-dev/pd-$id-dev.json   | sha256sum | cut -c1-12)
-  eq=$([ "$shash" = "$dhash" ] && echo "==" || echo "!=")
-  echo "$sec: $shash $eq $dhash"
-done
-```
-
-**For AD methods**, hash the array of `(orderIndex, kind, description)` tuples — skip the `identity` field, which is env-local:
+Hash the array of `(orderIndex, kind, description)` tuples — skip the `identity` field, which is env-local:
 
 ```bash
 jq -r '.data.steps[] | "\(.orderIndex) \(.kind) \(.description // "—")"' ad-$id-stage.json | sha256sum

@@ -7,6 +7,12 @@ description: Generate standardized Teamwork Dev Notes (NDN) from raw engineering
 
 Convert raw engineering change descriptions into **clean, standardized, production-ready Dev Notes** for Teamwork task comments.
 
+> **Not the same as an AD changelog note.** A Teamwork Dev Note (this skill) is the
+> human-facing handoff posted as a task comment. The AD *changelog* note — recorded
+> by `belz ad publish --note "..."` / `belz ad changelog` — is the per-method audit
+> entry on the chain itself. Both should be written when publishing AD changes; they
+> are separate artifacts and neither replaces the other.
+
 ## Gathering Context
 
 Before generating the Dev Note, gather the necessary information. The user may provide some or all of the following — infer what you can, ask only if critical info is missing:

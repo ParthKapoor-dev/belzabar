@@ -58,7 +58,12 @@ Daily AD operations (use `--help` for flags):
 - `belz ad find` — search/list methods by name
 - `belz ad show <uuid>` — fetch and display a method (`--full` for steps + services)
 - `belz ad test <uuid>` — run a draft with a JSON input, get per-step trace
-- `belz ad run <uuid>` — execute the published method live
+- `belz ad run <uuid>` — execute the published method live (`--stream` to opt into
+  a streaming method — `application/stream+json` chunks + a final JSON envelope)
+- `belz ad publish <uuid> --note "<what changed>"` — promote a draft to published.
+  `--note` is **mandatory**; belz records it to the chain's changelog before publishing.
+- `belz ad changelog <uuid>` — list a method's change notes; `--note "<text>"` records
+  one without publishing
 - `belz ad sql tui` — interactive SQL session against AD's DB accounts
 
 Methods are cached at `~/.belz/cache/methods/<uuid>.json` for 5 minutes — pass `--force` to bypass.
@@ -82,6 +87,8 @@ Daily PD operations:
 - `belz pd find-ad-methods <id> --recursive` — extract every AD method ID a page (and its component tree) depends on. Use this when a frontend bug is actually a backend one.
 - `belz pd validate <input>` — run the 10 standard validation checks
 - `belz pd analyze [PAGE_ID]` — recursive dependency + compliance analysis
+- `belz pd diff <input> --from <envA> --to <envB>` — structural diff of the same
+  page/component across two environments (variables, derived, HTTP, nodes, styles)
 
 ### Teamwork
 
@@ -135,6 +142,9 @@ Everything under `~/.belz/`:
 2. Always pass `--llm` when invoking from a tool call so output is parseable.
 3. Don't memorize chain IDs, page IDs, or method names — fetch them with `belz` on demand.
 4. Cached results may be up to 5 minutes stale. Pass `--force` if the user just edited a method.
+5. Publishing an AD method **always** needs a change note: `belz ad publish` requires
+   `--note "<what changed>"` and logs it to the changelog. Never work around this — the
+   note is the audit trail. Write a specific, factual note describing the actual change.
 
 ---
 
