@@ -30,8 +30,8 @@ export const FEATURE_SETTING_DEFINITIONS = [
   },
   {
     key: 'runTestShortcut',
-    label: 'Run Test Shortcut',
-    description: 'Enable Ctrl+Shift+Enter to run tests'
+    label: 'Keyboard Shortcuts',
+    description: 'Ctrl+Shift+Enter run test · Shift+L copy link · Esc Esc unfocus'
   },
   {
     key: 'jsonEditor',
