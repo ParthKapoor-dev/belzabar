@@ -54,6 +54,97 @@ export function collectSymbolNames(layoutRoot) {
   return names;
 }
 
+/** fetch + parse JSON, with retries — rapid sequential fetches drop transiently. */
+async function fetchJson(url) {
+  let lastErr = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('fetch failed');
+}
+
+/**
+ * Fetch one deployable entry by exact path. The endpoint answers 200 with
+ * `deployedPages: [null]` (not 404) when nothing is deployed at that path —
+ * treated here as "not found".
+ */
+async function fetchDeployable(ctx, pageType, path) {
+  const url =
+    `${DEPLOYABLE}?pageType=${pageType}` +
+    `&domain=${encodeURIComponent(ctx.host)}` +
+    `&path=${encodeURIComponent(path)}`;
+  const json = await fetchJson(url);
+  const deployed = json && json.deployedPages && json.deployedPages[0];
+  return deployed || null;
+}
+
+/**
+ * Match an app path against a route template. `:param` template segments
+ * match any single path segment. Returns the param count (lower is more
+ * specific) when it matches, or -1 when it does not.
+ */
+function matchRoute(appPath, template) {
+  const a = appPath.split('/').filter(Boolean);
+  const t = template.split('/').filter(Boolean);
+  if (a.length !== t.length) return -1;
+  let params = 0;
+  for (let i = 0; i < t.length; i++) {
+    if (t[i].charAt(0) === ':') {
+      params++;
+      continue;
+    }
+    if (t[i] !== a[i]) return -1;
+  }
+  return params;
+}
+
+/**
+ * Resolve the raw app path to the canonical deployed-page path.
+ *
+ * App URLs can embed dynamic route parameters as path segments — e.g. a
+ * record id in `.../LT-261/<uuid>/details`. The deployed page is registered
+ * under the route *template* (`.../LT-261/:id/details`), so the literal URL
+ * path matches nothing. The deployable endpoint exposes the domain's route
+ * table via its `dynamicRoute` field; this matches the URL against those
+ * templates. Falls back to the literal path for static (non-parameterised)
+ * pages and whenever the route table is unavailable.
+ */
+async function resolveDeployedPath(ctx) {
+  const firstSeg = ctx.path.split('/').filter(Boolean)[0] || ctx.path;
+  let routes = [];
+  try {
+    const json = await fetchJson(
+      `${DEPLOYABLE}?pageType=PAGE` +
+        `&domain=${encodeURIComponent(ctx.host)}` +
+        `&path=${encodeURIComponent(firstSeg)}` +
+        `&deployableInfo=true`
+    );
+    let raw = json && json.dynamicRoute;
+    if (typeof raw === 'string') raw = JSON.parse(raw);
+    if (Array.isArray(raw)) routes = raw;
+  } catch {
+    return ctx.path; // route table unavailable — fall back to the literal path
+  }
+
+  let best = null;
+  let bestParams = Infinity;
+  for (const r of routes) {
+    if (!r || typeof r.path !== 'string') continue;
+    const params = matchRoute(ctx.path, r.path);
+    if (params >= 0 && params < bestParams) {
+      best = r.path;
+      bestParams = params;
+    }
+  }
+  return best || ctx.path;
+}
+
 /**
  * Compiled config for one published page.
  * @typedef {{
@@ -66,15 +157,17 @@ export function collectSymbolNames(layoutRoot) {
 
 /** Fetch + parse the compiled config for the current published page. */
 export async function fetchPageConfig(ctx) {
-  const url =
-    `${DEPLOYABLE}?pageType=ALL` +
-    `&domain=${encodeURIComponent(ctx.host)}` +
-    `&path=${encodeURIComponent(ctx.path)}`;
-  const res = await fetch(url, { credentials: 'include' });
-  if (!res.ok) throw new Error(`page config fetch failed (${res.status})`);
+  // The literal URL path is correct for static pages and the cheapest probe.
+  let deployed = await fetchDeployable(ctx, 'ALL', ctx.path);
 
-  const json = await res.json();
-  const deployed = json && json.deployedPages && json.deployedPages[0];
+  // No deployed page at the literal path — the URL probably embeds route
+  // params (record ids etc.); resolve it against the route table.
+  if (!deployed) {
+    const resolved = await resolveDeployedPath(ctx);
+    if (resolved !== ctx.path) {
+      deployed = await fetchDeployable(ctx, 'ALL', resolved);
+    }
+  }
   if (!deployed) throw new Error('no deployed page for this path');
 
   const compiled = JSON.parse(deployed.compiledConfig);
@@ -98,15 +191,7 @@ export async function fetchPageConfig(ctx) {
 
 /** Fetch + parse one PD component's compiled config by name. */
 export async function fetchComponentConfig(ctx, name) {
-  const url =
-    `${DEPLOYABLE}?pageType=COMPONENT` +
-    `&domain=${encodeURIComponent(ctx.host)}` +
-    `&path=${encodeURIComponent(name)}`;
-  const res = await fetch(url, { credentials: 'include' });
-  if (!res.ok) throw new Error(`component fetch failed (${res.status})`);
-
-  const json = await res.json();
-  const deployed = json && json.deployedPages && json.deployedPages[0];
+  const deployed = await fetchDeployable(ctx, 'COMPONENT', name);
   if (!deployed) throw new Error(`component not found: ${name}`);
 
   const compiled = JSON.parse(deployed.compiledConfig);
@@ -133,27 +218,19 @@ export async function fetchComponentGraph(ctx, pageLayout) {
   while (queue.length) {
     const name = queue.shift();
     if (map.has(name)) continue;
-    let cfg = null;
-    let lastErr = null;
-    // One retry — rapid sequential fetches occasionally drop transiently.
-    for (let attempt = 0; attempt < 2 && !cfg; attempt++) {
-      try {
-        cfg = await fetchComponentConfig(ctx, name);
-      } catch (err) {
-        lastErr = err;
-      }
-    }
-    if (cfg) {
+    try {
+      const cfg = await fetchComponentConfig(ctx, name);
       map.set(name, cfg);
       for (const child of collectSymbolNames(cfg.layout)) {
         if (!map.has(child)) queue.push(child);
       }
-    } else {
+    } catch (err) {
+      // One bad component cannot break the whole graph — record a stub.
       map.set(name, {
         name,
         referencePageId: '',
         layout: null,
-        error: String((lastErr && lastErr.message) || lastErr)
+        error: String((err && err.message) || err)
       });
     }
   }
