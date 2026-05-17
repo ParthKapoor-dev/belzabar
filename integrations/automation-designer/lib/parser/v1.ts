@@ -37,6 +37,7 @@ export function parseV1Method(raw: V1RawMethodResponse): HydratedMethod {
   return {
     sourceVersion: "v1",
     uuid: raw.uuid,
+    numericId: typeof raw.id === "number" ? raw.id : undefined,
     referenceId: normaliseReferenceId(raw.referenceId),
     state: raw.automationState ?? "DRAFT",
     aliasName: raw.aliasName,

@@ -1,12 +1,13 @@
 import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { parseAdCommonArgs, emitFallbackWarning, extractNoteFlag } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 
 interface PublishArgs {
   uuid: string;
   yes: boolean;
+  note: string;
 }
 
 interface PublishData {
@@ -16,6 +17,8 @@ interface PublishData {
   publishedVersion: number | string | null;
   inSync: boolean;
   switchedFromPublished: boolean;
+  changeNote: string;
+  changelogId: string;
 }
 
 const command: CommandModule<PublishArgs, PublishData> = {
@@ -23,13 +26,20 @@ const command: CommandModule<PublishArgs, PublishData> = {
   parseArgs(args) {
     const { common, rest } = parseAdCommonArgs(args, "publish", "publish");
     emitFallbackWarning(common, "publish");
-    const uuid = rest[0];
+    const { note, rest: positional } = extractNoteFlag(rest);
+    const uuid = positional[0];
     if (!uuid || uuid.startsWith("-")) {
       throw new CliError("Missing <uuid> argument.", { code: "MISSING_UUID" });
     }
-    return { uuid, yes: rest.includes("--yes") };
+    if (!note) {
+      throw new CliError(
+        "A change note is required before publishing. Pass --note \"<what changed>\".",
+        { code: "MISSING_CHANGE_NOTE" },
+      );
+    }
+    return { uuid, yes: positional.includes("--yes"), note };
   },
-  async execute({ uuid, yes }, context) {
+  async execute({ uuid, yes, note }, context) {
     const guard = await resolveDraftTarget(uuid, "v1");
     if (!guard.ok) {
       throw new CliError(guard.message, {
@@ -38,6 +48,13 @@ const command: CommandModule<PublishArgs, PublishData> = {
       });
     }
     const draft = guard.draft;
+
+    if (typeof draft.numericId !== "number") {
+      throw new CliError(
+        `Could not resolve the numeric chain id for ${draft.uuid} — cannot record the change note.`,
+        { code: "AD_CHAIN_ID_UNAVAILABLE", details: { uuid: draft.uuid } },
+      );
+    }
 
     await requireConfirmation({
       yes,
@@ -48,11 +65,17 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Draft UUID", draft.uuid],
         ["Current published UUID", guard.publishedUuid ?? "(none — first publish)"],
         ["Draft version", String(draft.version)],
+        ["Change note", note],
       ],
     });
 
-    logIntent("POST", `/rest/api/automation/chain/${draft.uuid}/publish`, { draftUuid: draft.uuid });
+    // Record the change note BEFORE publishing — every publish must be logged.
+    logIntent("POST", `/rest/api/automation/chain/changelog/${draft.numericId}`, {
+      chainId: draft.numericId,
+    });
+    const changelogId = await adApi.addChangelog(draft.numericId, note);
 
+    logIntent("POST", `/rest/api/automation/chain/${draft.uuid}/publish`, { draftUuid: draft.uuid });
     const { publishedUuid } = await adApi.publishDraft(draft.uuid);
 
     // Re-fetch both sides to compute sync state.
@@ -77,6 +100,8 @@ const command: CommandModule<PublishArgs, PublishData> = {
       publishedVersion,
       inSync,
       switchedFromPublished: guard.switchedFromPublished,
+      changeNote: note,
+      changelogId,
     });
   },
   presentHuman(envelope, ui) {
@@ -91,6 +116,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Draft version", String(data.draftVersion)],
         ["Published version", String(data.publishedVersion ?? "(unknown)")],
         ["In sync", data.inSync ? "Yes" : "No"],
+        ["Change note", data.changeNote],
       ],
     );
   },

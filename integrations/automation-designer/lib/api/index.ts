@@ -11,6 +11,7 @@ import type { V1AutomationDefinition, V1RawMethodResponse, V1SavePayload } from 
 import type { V2MethodResponse } from "../types/v2-wire";
 import * as v1 from "./v1";
 import * as v2 from "./v2";
+import * as changelog from "./changelog";
 
 export type {
   SaveMethodResult as V1SaveMethodResult,
@@ -19,6 +20,7 @@ export type {
   MethodVersionFull,
 } from "./v1";
 export type { V2TestExecuteResult } from "./v2";
+export type { ChangelogEntry } from "./changelog";
 
 export const adApi = {
   // ─── Reads ───────────────────────────────────────────────────────────
@@ -80,6 +82,16 @@ export const adApi = {
 
   async publishDraft(draftUuid: string): Promise<{ publishedUuid: string }> {
     return v1.publishDraft(draftUuid);
+  },
+
+  // ─── Changelog ───────────────────────────────────────────────────────
+
+  async listChangelog(chainId: number): Promise<changelog.ChangelogEntry[]> {
+    return changelog.listChangelog(chainId);
+  },
+
+  async addChangelog(chainId: number, comment: string): Promise<string> {
+    return changelog.addChangelog(chainId, comment);
   },
 
   async createCategory(body: Record<string, unknown>): Promise<unknown> {

@@ -1,0 +1,1 @@
+  changelog <uuid> [--note "<text>"]   List change notes for a method, or record one with --note.

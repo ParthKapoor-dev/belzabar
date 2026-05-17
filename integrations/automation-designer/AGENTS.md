@@ -15,7 +15,8 @@ The unified `belz` binary is built from `cli/` (repo root). This directory is a 
 belz ad <cmd>   → find, fetch, show, show-code, outputs, state, categories,
                   services, export, export-category, test-cases, test-report,
                   child-info, test, run, save-suite, run-suites, sql,
-                  save, publish, import, category, test-case, history, trace
+                  save, publish, changelog, import, category, test-case,
+                  history, trace
 ```
 
 `history` lists/shows/diffs/restores a method's saved versions. `trace`
@@ -48,7 +49,11 @@ rationale.
    serializer/api-client only
 7. `lib/parser/{index,v1,v2}.ts` + `lib/parser/steps/{shared,v1,v2}.ts` —
    discriminated step parsing (custom code, SpEL, SQL, Redis, existing)
-8. `lib/api/{index,v1,v2}.ts` — unified `adApi` façade; V1 full, V2 fetch+test
+8. `lib/api/{index,v1,v2}.ts` — unified `adApi` façade; V1 full, V2 fetch+test.
+   `lib/api/changelog.ts` — change-note client (`/chain/changelog/{id}`,
+   `/users/me`); surfaced via `adApi.addChangelog` / `adApi.listChangelog`
+8a. `lib/stream-parser.ts` — parses `application/stream+json` execute responses
+    (progressive chunks + final JSON envelope); used by `commands/run` `--stream`
 9. `lib/serialize/v1.ts` — HydratedMethod → V1 save payload (enforces the
    custom-code multi-output invariant)
 10. `lib/draft-guard.ts` — `resolveDraftTarget` — the **only** way to locate a
@@ -57,11 +62,10 @@ rationale.
 12. `lib/hydrator.ts`, `lib/cache.ts`, `lib/method-finder.ts`,
     `lib/payload-builder.ts`, `lib/input-collector.ts`, `lib/error-parser.ts`
 13. `lib/sql/*` — SQL TUI (unchanged surface; internals migrated)
-14. `integrations/gemini-mcp/` — MCP server shim that shells out to CLI
-15. `tests/unit/` — parser, serializer, version resolver, draft guard, xml,
-    base64, error detection, sql tests
-16. `tests/fixtures/v1/`, `tests/fixtures/v2/` — step + method fixtures
-17. `docs/api-notes.md` — belz-owned cheatsheet (read this before touching
+14. `tests/unit/` — parser, serializer, version resolver, draft guard, xml,
+    base64, error detection, sql, note-flag, stream-parser tests
+15. `tests/fixtures/v1/`, `tests/fixtures/v2/` — step + method fixtures
+16. `docs/api-notes.md` — belz-owned cheatsheet (read this before touching
     lib/api/*, lib/parser/*, or lib/draft-guard.ts)
 
 ### Adding new commands
@@ -92,14 +96,17 @@ cd cli && bun run generate
 12. `test-report` — latest test-suite execution report
 13. `child-info` — resolve a child method's inputs/outputs by name
 14. `test` — V1 test-before-save with rich per-step trace
-15. `run` — live-execute a published method
+15. `run` — live-execute a published method (`--stream` opts into a streaming
+    method: `application/stream+json` chunks + final JSON envelope)
 16. `save-suite`, `run-suites` — local `.spec.json` suites (V1)
 17. `sql` — interactive SQL TUI against the AD SQL service
+18. `changelog <uuid>` — list change notes; `--note "<text>"` records one
 
 ### Write (`belz ad <cmd>`) — all draft-guarded
 
 1. `save <file> --uuid <draftUuid>` — save a JSON overlay onto a draft
-2. `publish <uuid>` — promote a draft to its published version
+2. `publish <uuid> --note "<text>"` — promote a draft to its published version.
+   `--note` is mandatory: belz POSTs it to the chain's changelog before publishing.
 3. `import <file>` — POST `/chain/import`
 4. `category create <name>` — create a new AD category/service
 5. `test-case <action>` — `list | create | update | delete | bulk |
@@ -178,7 +185,7 @@ Run `bun run generate` from `cli/` to regenerate all registries (not from this d
 5. Show command deep inspection: `commands/show/index.ts`
 6. Test payload injection: `lib/payload-builder.ts`
 7. Trace error interpretation: `lib/error-parser.ts`
-8. MCP adapter: `integrations/gemini-mcp/server.ts`
+8. Changelog client: `lib/api/changelog.ts`
 9. SQL command entrypoint: `commands/sql/index.ts`
 10. SQL helper modules: `lib/sql/`
 11. SQL TUI session: `lib/sql/tui/session.ts`

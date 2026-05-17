@@ -1,0 +1,19 @@
+belz ad changelog <uuid> [--note "<text>"] [flags]
+
+Record or list change notes against an Automation Designer method.
+
+Change notes are keyed by the chain's numeric definition id (resolved from
+the uuid you pass) and are the audit trail for a method.
+
+Modes:
+  belz ad changelog <uuid>                  List existing change notes.
+  belz ad changelog <uuid> --note "<text>"  Record a new change note, then
+                                            list the updated history.
+
+Flags:
+  --note "<text>"  Record this change note. Omit to list only.
+  --llm            Emit a JSON envelope.
+
+Note: `belz ad publish` records a change note automatically (its --note flag
+is mandatory). Use this command to log a note without publishing, or to
+review a method's change history.

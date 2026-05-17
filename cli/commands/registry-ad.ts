@@ -2,6 +2,7 @@
 // Do not edit manually.
 import * as run from "../../integrations/automation-designer/commands/run/index";
 import * as test from "../../integrations/automation-designer/commands/test/index";
+import * as changelog from "../../integrations/automation-designer/commands/changelog/index";
 import * as run_suites from "../../integrations/automation-designer/commands/run-suites/index";
 import * as category from "../../integrations/automation-designer/commands/category/index";
 import * as export_category from "../../integrations/automation-designer/commands/export-category/index";
@@ -29,6 +30,7 @@ import * as state from "../../integrations/automation-designer/commands/state/in
 export const ADCommandRegistry: Record<string, any> = {
   "run": run,
   "test": test,
+  "changelog": changelog,
   "run-suites": run_suites,
   "category": category,
   "export-category": export_category,

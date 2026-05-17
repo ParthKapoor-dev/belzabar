@@ -11,6 +11,7 @@
 // command (via emitFallbackWarning) prints a one-line notice before running
 // V1. Commands never read DEFAULT_VERSION directly.
 
+import { CliError } from "@belzabar/core";
 import { resolveApiVersion, type AdOperation, type ResolvedVersion } from "../api-version";
 
 export interface AdCommonArgs {
@@ -68,4 +69,38 @@ export function emitFallbackWarning(common: AdCommonArgs, cmdName: string): void
 // Exposed for tests. Production code should never call this.
 export function __resetWarnOnceForTests(): void {
   warnedKeys.clear();
+}
+
+/**
+ * Extract a `--note <text>` (or `--note=<text>`) flag from a `rest` array.
+ * Used by commands that record an AD change note (publish, changelog). The
+ * returned `rest` has the flag and its value removed.
+ */
+export function extractNoteFlag(rest: string[]): { note?: string; rest: string[] } {
+  const out: string[] = [];
+  let note: string | undefined;
+  for (let i = 0; i < rest.length; i++) {
+    const arg = rest[i];
+    if (arg === undefined) continue;
+    if (arg === "--note") {
+      const value = rest[i + 1];
+      if (value === undefined || value.startsWith("-")) {
+        throw new CliError("`--note` requires a change-note message.", {
+          code: "AD_NOTE_VALUE_MISSING",
+        });
+      }
+      note = value;
+      i++;
+      continue;
+    }
+    if (arg.startsWith("--note=")) {
+      note = arg.slice("--note=".length);
+      continue;
+    }
+    out.push(arg);
+  }
+  if (note !== undefined && note.trim().length === 0) {
+    throw new CliError("Change note cannot be empty.", { code: "AD_NOTE_EMPTY" });
+  }
+  return { note: note?.trim(), rest: out };
 }

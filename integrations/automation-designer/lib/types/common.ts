@@ -206,6 +206,8 @@ export interface HydratedMethod {
 
   // Identity
   uuid: string;
+  /** V1 numeric chain-definition id. Keys the changelog endpoint. */
+  numericId?: number;
   referenceId: string | null;
   state: MethodState;
   /** V1 only — short display alias. */
