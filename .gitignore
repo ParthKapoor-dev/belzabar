@@ -5,6 +5,10 @@ node_modules
 out
 dist
 *.tgz
+# ...except the design system's generated theme CSS, which web + extension
+# consume at build time and is intentionally committed.
+!packages/design/dist/
+!packages/design/dist/**
 
 # code coverage
 coverage
