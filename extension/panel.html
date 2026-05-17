@@ -396,6 +396,113 @@
         color: #d4d4d4;
       }
 
+      /* ---- JSON tree viewer ------------------------------------------ */
+      .jsonview {
+        margin: 4px 0;
+        font-size: 11px;
+      }
+      .jt-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .jt-filter {
+        font: inherit;
+        font-size: 11px;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 2px 6px;
+        width: 150px;
+      }
+      .jt-btn {
+        font: inherit;
+        font-size: 11px;
+        background: #333;
+        color: #d4d4d4;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 1px 7px;
+        cursor: pointer;
+      }
+      .jt-btn:hover {
+        background: #3d3d3d;
+      }
+      .jt-spacer {
+        flex: 1;
+      }
+      .jt-raw-toggle {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        color: #aaa;
+        user-select: none;
+        cursor: pointer;
+      }
+      .jt-body {
+        font-family: var(--mono);
+        line-height: 1.6;
+      }
+      .jt-row {
+        white-space: pre-wrap;
+        word-break: break-word;
+        border-radius: 2px;
+      }
+      .jt-node > .jt-row:hover {
+        background: #2a2d2e;
+      }
+      .jt-hidden {
+        display: none !important;
+      }
+      .jt-row.jt-match {
+        background: #094771;
+      }
+      .jt-caret {
+        display: inline-block;
+        width: 11px;
+        color: #888;
+        text-align: center;
+        user-select: none;
+      }
+      .jt-caret-toggle {
+        cursor: pointer;
+      }
+      .jt-caret-toggle::before {
+        content: "\25B6";
+        font-size: 8px;
+      }
+      .jt-row.jt-open > .jt-caret-toggle::before {
+        content: "\25BC";
+      }
+      .jt-row.jt-open > .jt-preview {
+        display: none;
+      }
+      .jt-key {
+        color: #9cdcfe;
+      }
+      .jt-count {
+        color: #888;
+        margin-right: 4px;
+      }
+      .jt-preview {
+        color: #6b6b6b;
+        cursor: pointer;
+      }
+      .jt-str {
+        color: #ce9178;
+      }
+      .jt-num {
+        color: #b5cea8;
+      }
+      .jt-bool {
+        color: #569cd6;
+      }
+      .jt-null {
+        color: #808080;
+      }
+
       /* ---- toast ------------------------------------------------------ */
       .toast {
         position: fixed;
