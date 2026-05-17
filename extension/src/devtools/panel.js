@@ -13,6 +13,7 @@ import {
   classifyChainUrl,
   extractMethodNameFromChainResponse
 } from './extract.js';
+import { createJsonView } from './json-tree.js';
 
 const MAX_ROWS = 300;
 const BELZ_WEB = 'http://localhost:65535';
@@ -635,12 +636,11 @@ function renderDetail() {
     const post = har.request && har.request.postData;
     const query = har.request && har.request.queryString;
     if (post && typeof post.text === 'string' && post.text) {
-      const pretty = prettyMaybeJson(post.text);
       detailBody.append(
         el('h4', null, 'Request payload'),
-        el('pre', null, pretty)
+        createJsonView(post.text).element
       );
-      currentCopyText = pretty;
+      currentCopyText = prettyMaybeJson(post.text);
     }
     if (Array.isArray(query) && query.length) {
       detailBody.append(
@@ -661,11 +661,10 @@ function renderDetail() {
     const token = entry.id;
     har.getContent((body) => {
       if (selectedId !== token || activeTab !== 'response') return;
-      const pretty = body ? prettyMaybeJson(body) : '(empty)';
-      currentCopyText = body ? pretty : '';
+      currentCopyText = body ? prettyMaybeJson(body) : '';
       detailBody.replaceChildren(
         el('h4', null, 'Response body'),
-        el('pre', null, pretty)
+        body ? createJsonView(body).element : el('pre', null, '(empty)')
       );
     });
   } else if (activeTab === 'timing') {
