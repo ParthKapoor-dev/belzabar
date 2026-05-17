@@ -81,8 +81,8 @@ export default function ReleasesPage() {
                 <span
                   className={`border px-2 py-0.5 text-[10px] uppercase tracking-wide ${
                     r.collisionCount > 0
-                      ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
-                      : "border-emerald-500/40 bg-emerald-500/5 text-emerald-400"
+                      ? "border-warning/50 bg-warning/10 text-warning"
+                      : "border-success/40 bg-success/5 text-success"
                   }`}
                 >
                   {r.collisionCount} collision{r.collisionCount !== 1 ? "s" : ""}

@@ -47,11 +47,13 @@ interface SearchResults {
   }
 }
 
+// Result-type badges: the accent marks AD methods; everything else is neutral
+// and distinguished by its label text, not by hue (one accent, axiom-style).
 const TYPE_STYLES: Record<string, string> = {
   method: "text-primary border-primary/30 bg-primary/5",
-  category: "text-blue-400 border-blue-400/30 bg-blue-400/5",
-  page: "text-amber-400 border-amber-400/30 bg-amber-400/5",
-  component: "text-purple-400 border-purple-400/30 bg-purple-400/5",
+  category: "text-muted-foreground border-border bg-muted",
+  page: "text-muted-foreground border-border bg-muted",
+  component: "text-muted-foreground border-border bg-muted",
 }
 
 function getMatchName(item: SearchMatch): string {

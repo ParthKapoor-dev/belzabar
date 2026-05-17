@@ -9,8 +9,8 @@ import type { MatrixData, ItemRow, Collision, Leak } from "@/lib/release-types"
 
 function statusClass(status: string): string {
   switch (status) {
-    case "latest": return "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
-    case "behind": return "border-amber-500/40 bg-amber-500/10 text-amber-400"
+    case "latest": return "border-success/40 bg-success/10 text-success"
+    case "behind": return "border-warning/40 bg-warning/10 text-warning"
     case "ahead-or-diverged": return "border-destructive/50 bg-destructive/10 text-destructive"
     case "missing": return "border-border bg-transparent text-muted-foreground/60"
     default: return "border-destructive/30 bg-transparent text-destructive/70" // error
@@ -19,7 +19,7 @@ function statusClass(status: string): string {
 
 function leakClass(leak: Leak): string {
   if (leak === "leaked") return "border-destructive/50 bg-destructive/10 text-destructive"
-  if (leak === "clean") return "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+  if (leak === "clean") return "border-success/40 bg-success/10 text-success"
   return "border-border bg-transparent text-muted-foreground"
 }
 
@@ -98,7 +98,7 @@ function CollisionCard({ c }: { c: Collision }) {
         <div>
           <span className="text-muted-foreground/50">included </span>
           {c.includedTickets.map((t) => (
-            <span key={t} className="ml-1 text-emerald-400">#{t}</span>
+            <span key={t} className="ml-1 text-success">#{t}</span>
           ))}
         </div>
         <div>
@@ -173,9 +173,9 @@ export default function ReleaseDetailPage() {
             </div>
 
             {data.warnings.length > 0 && (
-              <div className="mb-8 space-y-1 border border-amber-500/30 bg-amber-500/5 p-3">
+              <div className="mb-8 space-y-1 border border-warning/30 bg-warning/5 p-3">
                 {data.warnings.map((w, i) => (
-                  <div key={i} className="text-[11px] text-amber-400">⚠ {w}</div>
+                  <div key={i} className="text-[11px] text-warning">⚠ {w}</div>
                 ))}
               </div>
             )}
@@ -186,7 +186,7 @@ export default function ReleaseDetailPage() {
                 Collisions ({data.collisions.length}) — AD items shared by an included & excluded ticket
               </h2>
               {data.collisions.length === 0 ? (
-                <div className="border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-400">
+                <div className="border border-success/30 bg-success/5 px-3 py-2 text-xs text-success">
                   No collisions — no AD item is shared between an included and an excluded ticket.
                 </div>
               ) : (
@@ -228,7 +228,7 @@ export default function ReleaseDetailPage() {
                         <span
                           className={`border px-1.5 py-0.5 text-[9px] uppercase tracking-wide ${
                             item.kind === "both"
-                              ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
+                              ? "border-warning/50 bg-warning/10 text-warning"
                               : "border-border text-muted-foreground"
                           }`}
                         >
@@ -287,7 +287,7 @@ export default function ReleaseDetailPage() {
                     <span
                       className={`border px-1.5 py-0.5 text-[9px] uppercase tracking-wide ${
                         t.kind === "included"
-                          ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400"
+                          ? "border-success/40 bg-success/10 text-success"
                           : "border-destructive/40 bg-destructive/10 text-destructive"
                       }`}
                     >

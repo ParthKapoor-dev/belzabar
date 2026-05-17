@@ -3,7 +3,6 @@ import { Geist } from "next/font/google"
 import localFont from "next/font/local"
 
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -37,12 +36,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      suppressHydrationWarning
-      className={cn("antialiased", fontSans.variable, "font-mono", fontMono.variable)}
+      className={cn("dark antialiased", fontSans.variable, "font-mono", fontMono.variable)}
     >
-      <body>
-        <ThemeProvider>{children}</ThemeProvider>
-      </body>
+      <body>{children}</body>
     </html>
   )
 }

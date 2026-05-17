@@ -12,8 +12,8 @@ function sortedEntries(obj: Record<string, unknown>): [string, unknown][] {
 function ValuePill({ value }: { value: unknown }) {
   if (value === null) return <span className="text-muted-foreground italic">null</span>
   if (typeof value === "boolean") return <span className="text-primary">{String(value)}</span>
-  if (typeof value === "number") return <span className="text-yellow-500 dark:text-yellow-400">{String(value)}</span>
-  if (typeof value === "string") return <span className="text-green-600 dark:text-green-400">&quot;{value}&quot;</span>
+  if (typeof value === "number") return <span className="text-warning">{String(value)}</span>
+  if (typeof value === "string") return <span className="text-success">&quot;{value}&quot;</span>
   return <span className="text-foreground">{JSON.stringify(value)}</span>
 }
 

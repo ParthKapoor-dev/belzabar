@@ -11,9 +11,9 @@ const MODULES = [
   {
     href: "/curl",
     icon: "⌘",
-    iconColor: "text-blue-400",
-    hoverBorder: "hover:border-blue-500/50",
-    hoverBg: "hover:bg-blue-500/5",
+    iconColor: "text-primary",
+    hoverBorder: "hover:border-primary/50",
+    hoverBg: "hover:bg-primary/5",
     label: "curl → AD",
     description: "Paste a curl, URL, id or name to open AD/PD",
     hint: "ctrl+v",
@@ -21,9 +21,9 @@ const MODULES = [
   {
     href: "/releases",
     icon: "⎈",
-    iconColor: "text-emerald-400",
-    hoverBorder: "hover:border-emerald-500/50",
-    hoverBg: "hover:bg-emerald-500/5",
+    iconColor: "text-primary",
+    hoverBorder: "hover:border-primary/50",
+    hoverBg: "hover:bg-primary/5",
     label: "Releases",
     description: "Release audits — collisions & promotion tracking",
     hint: "",
@@ -32,9 +32,9 @@ const MODULES = [
 
 const SEARCH_CARD = {
   icon: "⌕",
-  iconColor: "text-amber-400",
-  hoverBorder: "hover:border-amber-500/50",
-  hoverBg: "hover:bg-amber-500/5",
+  iconColor: "text-primary",
+  hoverBorder: "hover:border-primary/50",
+  hoverBg: "hover:bg-primary/5",
   label: "Search",
   description: "Find AD methods, PD pages & components",
   hint: "ctrl+k",
