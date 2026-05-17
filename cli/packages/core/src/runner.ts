@@ -9,6 +9,7 @@ import {
   type HumanPresenterHelpers,
 } from "./command";
 import { renderHuman, renderLLM, setOutputMode } from "./ui";
+import { ui as theme, symbols, wordmark } from "./theme";
 import { vlog } from "./verbose";
 
 export interface CliOptions {
@@ -96,10 +97,13 @@ async function dispatchCommand(
   const commandName = args[0];
 
   const listCommandsHuman = () => {
-    console.log(`Usage: ${binaryName} <command> [args]\n`);
-    console.log("Available Commands:");
-    Object.keys(commandMap).forEach(cmd => console.log(`  - ${cmd}`));
-    console.log(`\nRun '${binaryName} <command> --help' for details.`);
+    console.log();
+    console.log(`${theme.heading("usage")}  ${theme.accent(binaryName)} <command> [args]`);
+    console.log();
+    console.log(theme.heading("commands"));
+    Object.keys(commandMap).forEach(cmd => console.log(`  ${theme.accent(cmd)}`));
+    console.log();
+    console.log(theme.faint(`${symbols.arrow} ${binaryName} <command> --help  for details`));
   };
 
   if (!commandName || commandName === "--help" || commandName === "-h") {
@@ -141,7 +145,7 @@ async function dispatchCommand(
         1
       );
     }
-    console.error(`❌ Unknown command: ${commandName}`);
+    console.error(theme.err(`Unknown command: ${theme.bold(commandName)}`));
     listCommandsHuman();
     process.exit(1);
   }
@@ -246,8 +250,8 @@ export async function runCli(
         0
       );
     }
-    console.log(options.name);
-    console.log(options.description);
+    console.log();
+    console.log(wordmark);
     await dispatchCommand([], commandMap, outputMode, options.binaryName, helpResolver);
     return;
   }
@@ -287,22 +291,27 @@ export async function runNamespacedCli(
   }
 
   const printHelp = () => {
-    console.log(options.name);
-    console.log(options.description);
-    console.log(`\nUsage: ${options.binaryName} <module|command> [args]\n`);
-    console.log("Modules:");
+    console.log();
+    console.log(wordmark);
+    console.log();
+    console.log(`${theme.heading("usage")}  ${theme.accent(options.binaryName)} <module|command> [args]`);
+    console.log();
+    console.log(theme.heading("modules"));
     for (const [mod, def] of Object.entries(options.namespaces)) {
-      console.log(`  ${mod.padEnd(8)}  ${def.description}`);
+      console.log(`  ${theme.accent(mod.padEnd(9))} ${theme.faint(def.description)}`);
     }
     if (Object.keys(options.topLevel).length > 0) {
-      console.log("\nCommands:");
-      Object.keys(options.topLevel).forEach(cmd => console.log(`  - ${cmd}`));
+      console.log();
+      console.log(theme.heading("commands"));
+      Object.keys(options.topLevel).forEach(cmd => console.log(`  ${theme.accent(cmd)}`));
     }
-    console.log("\nGlobal flags:");
-    console.log("  -v, --verbose   Stream timestamped debug logs to stderr");
-    console.log("  --llm           Structured machine-readable output");
-    console.log("  -e, --env <n>   Run against a specific environment");
-    console.log(`\nRun '${options.binaryName} <module> --help' for module commands.`);
+    console.log();
+    console.log(theme.heading("flags"));
+    console.log(`  ${theme.accent("-v, --verbose")}   ${theme.faint("stream timestamped debug logs to stderr")}`);
+    console.log(`  ${theme.accent("--llm")}           ${theme.faint("structured machine-readable output")}`);
+    console.log(`  ${theme.accent("-e, --env <n>")}   ${theme.faint("run against a specific environment")}`);
+    console.log();
+    console.log(theme.faint(`${symbols.arrow} ${options.binaryName} <module> --help  for module commands`));
   };
 
   const token = args[0];
@@ -385,11 +394,15 @@ export async function runNamespacedCli(
           0
         );
       }
-      console.log(`${ns.name} — ${ns.description}`);
-      console.log(`\nUsage: ${modBinaryName} <command> [args]\n`);
-      console.log("Commands:");
-      Object.keys(ns.commands!).forEach(cmd => console.log(`  - ${cmd}`));
-      console.log(`\nRun '${modBinaryName} <command> --help' for details.`);
+      console.log();
+      console.log(`${theme.heading(ns.name)}  ${theme.faint(symbols.dot)}  ${theme.faint(ns.description)}`);
+      console.log();
+      console.log(`${theme.heading("usage")}  ${theme.accent(modBinaryName)} <command> [args]`);
+      console.log();
+      console.log(theme.heading("commands"));
+      Object.keys(ns.commands!).forEach(cmd => console.log(`  ${theme.accent(cmd)}`));
+      console.log();
+      console.log(theme.faint(`${symbols.arrow} ${modBinaryName} <command> --help  for details`));
       process.exit(0);
     }
 
@@ -429,7 +442,7 @@ export async function runNamespacedCli(
       1
     );
   }
-  console.error(`❌ Unknown module or command: ${token}`);
+  console.error(theme.err(`Unknown module or command: ${theme.bold(token)}`));
   printHelp();
   process.exit(1);
 }

@@ -8,10 +8,19 @@ import {
   loadConfigFileRaw,
   lifecycle,
   prompts,
-  colors as pc,
+  term,
   type BelzConfigFile,
   type CommandModule,
 } from "@belzabar/core";
+
+// Picocolors-shaped alias over the unified belz theme.
+const pc = {
+  dim: term.dim,
+  bold: term.bold,
+  green: term.success,
+  red: term.danger,
+  cyan: term.accent,
+};
 
 interface SetupArgs {
   envFile?: string;

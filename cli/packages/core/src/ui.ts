@@ -1,5 +1,4 @@
 import Table from "cli-table3";
-import pc from "picocolors";
 import {
   log,
   note as clackNote,
@@ -20,6 +19,7 @@ import {
   type HumanPresenterHelpers,
   type OutputMode,
 } from "./command";
+import { ui as theme, term, symbols, wordmark } from "./theme";
 
 let currentOutputMode: OutputMode = "human";
 
@@ -31,34 +31,42 @@ export function getOutputMode(): OutputMode {
   return currentOutputMode;
 }
 
+/** Borderless cli-table3 chars — clean data grid, 2-space column gaps. */
+const BORDERLESS = {
+  top: "", "top-mid": "", "top-left": "", "top-right": "",
+  bottom: "", "bottom-mid": "", "bottom-left": "", "bottom-right": "",
+  left: "", "left-mid": "", mid: "", "mid-mid": "", right: "", "right-mid": "",
+  middle: "  ",
+} as const;
+
 class HumanUi implements HumanPresenterHelpers {
   section(title: string): void {
     console.log();
-    console.log(pc.bold(pc.underline(title)));
+    console.log(theme.heading(title));
   }
 
   text(message: string): void {
-    log.message(message);
+    console.log(message);
   }
 
   success(message: string): void {
-    log.success(message);
+    console.log(theme.ok(message));
   }
 
   info(message: string): void {
-    log.info(message);
+    console.log(theme.info(message));
   }
 
   warn(message: string): void {
-    log.warn(message);
+    console.log(theme.warn(message));
   }
 
   error(message: string): void {
-    log.error(message);
+    console.log(theme.err(message));
   }
 
   step(message: string): void {
-    log.step(message);
+    console.log(theme.step(message));
   }
 
   note(title: string, body: string): void {
@@ -66,13 +74,14 @@ class HumanUi implements HumanPresenterHelpers {
   }
 
   kv(key: string, value: unknown): void {
-    log.message(`${pc.bold(key)}: ${stringifyScalar(value)}`);
+    console.log(`${theme.key(key)}  ${stringifyScalar(value)}`);
   }
 
   table(headers: string[], rows: unknown[][]): void {
     const t = new Table({
-      head: headers.map((h) => pc.cyan(pc.bold(h))),
-      style: { head: [], border: [] },
+      head: headers.map((h) => theme.heading(h)),
+      chars: BORDERLESS,
+      style: { head: [], border: [], "padding-left": 0, "padding-right": 2 },
       wordWrap: true,
     });
     t.push(...(rows as any[]));
@@ -85,7 +94,7 @@ class HumanUi implements HumanPresenterHelpers {
 }
 
 function stringifyScalar(value: unknown): string {
-  if (value === null || value === undefined) return "null";
+  if (value === null || value === undefined) return term.faint("null");
   if (typeof value === "string") return value;
   if (typeof value === "number" || typeof value === "boolean") return String(value);
   try {
@@ -174,7 +183,10 @@ export function renderLLM(envelope: CommandEnvelope<unknown>): void {
 export const lifecycle = {
   intro(title: string): void {
     if (currentOutputMode === "llm") return;
-    clackIntro(pc.bold(pc.cyan(title)));
+    console.log();
+    console.log(wordmark);
+    console.log();
+    clackIntro(theme.bold(title));
   },
   outro(message: string): void {
     if (currentOutputMode === "llm") return;
@@ -280,4 +292,4 @@ export const prompts = {
   },
 };
 
-export { pc as colors };
+export { theme, term, symbols };

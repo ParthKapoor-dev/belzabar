@@ -6,12 +6,21 @@ import {
   writeConfigFile,
   loadSession,
   login,
-  colors as pc,
+  term,
   lifecycle,
   prompts,
   type BelzConfigFile,
   type CommandModule,
 } from "@belzabar/core";
+
+// Picocolors-shaped alias over the unified belz theme.
+const pc = {
+  dim: term.dim,
+  bold: term.bold,
+  green: term.success,
+  red: term.danger,
+  cyan: term.accent,
+};
 
 interface ConfigGetArgs   { action: "get" }
 interface ConfigTokenArgs { action: "token" }
