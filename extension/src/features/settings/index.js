@@ -27,7 +27,8 @@ function createSettingsButton(onClick) {
     height: '30px',
     marginLeft: '8px',
     fontSize: '16px',
-    lineHeight: '1'
+    lineHeight: '1',
+    borderRadius: '50%'
   });
 
   button.onclick = (event) => {

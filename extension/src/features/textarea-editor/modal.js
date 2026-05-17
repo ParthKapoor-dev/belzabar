@@ -18,6 +18,14 @@ import { EXTENSION_OWNED_ATTR } from '../../config/constants.js';
 import { lockModalInteraction, unlockModalInteraction } from '../../ui/modal-lock.js';
 import { openSettingsModal } from '../settings/modal.js';
 import { T, FONT_MONO, RADIUS, SHADOW, SCRIM } from '../../ui/theme.js';
+import {
+  MODAL_OVERLAY, MODAL_DIALOG, MODAL_HEADER, MODAL_FOOTER
+} from '../../ui/modal.js';
+import {
+  ICON_BUTTON_STYLE, ICON_BUTTON_HOVER, ICON_BUTTON_UNHOVER,
+  PRIMARY_BUTTON_STYLE, PRIMARY_BUTTON_HOVER, PRIMARY_BUTTON_UNHOVER,
+  applyHoverEffect
+} from '../../ui/styles.js';
 
 const OVERLAY_ID = 'sdTextareaEditorOverlay';
 const TITLE_ID = 'sdTextareaEditorTitle';
@@ -32,7 +40,7 @@ const EDITOR_SETTINGS_BUTTON_ID = 'sdTextareaEditorSettingsButton';
 
 const EDITOR_VERTICAL_PADDING_PX = 14;
 const EDITOR_HORIZONTAL_PADDING_PX = 16;
-const EDITOR_FONT_FAMILY = '"JetBrains Mono", "Jet Brains Mono", "Geist Mono", Menlo, "Courier New", monospace';
+const EDITOR_FONT_FAMILY = FONT_MONO;
 
 let editorView = null;
 let resolvedEditorLanguage = 'plain';
@@ -673,42 +681,21 @@ export function createTextareaEditorModal() {
   const overlay = document.createElement('div');
   overlay.id = OVERLAY_ID;
   overlay.setAttribute(EXTENSION_OWNED_ATTR, 'true');
-  Object.assign(overlay.style, {
-    position: 'fixed',
-    inset: '0',
+  Object.assign(overlay.style, MODAL_OVERLAY, {
     zIndex: '999997',
-    background: 'rgba(2, 6, 23, 0.76)',
-    backdropFilter: 'blur(6px)',
-    display: 'none',
-    alignItems: 'center',
-    justifyContent: 'center',
     padding: '12px'
   });
 
   const dialog = document.createElement('div');
-  Object.assign(dialog.style, {
+  Object.assign(dialog.style, MODAL_DIALOG, {
     width: 'calc(100vw - 24px)',
     height: 'calc(100vh - 24px)',
     maxWidth: 'none',
-    maxHeight: 'none',
-    borderRadius: RADIUS,
-    overflow: 'hidden',
-    display: 'flex',
-    flexDirection: 'column',
-    border: '1px solid rgba(148, 163, 184, 0.3)',
-    background: T.surface,
-    boxShadow: '0 30px 80px rgba(0, 0, 0, 0.45)'
+    maxHeight: 'none'
   });
 
   const header = document.createElement('div');
-  Object.assign(header.style, {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '12px 16px',
-    borderBottom: '1px solid rgba(148, 163, 184, 0.25)',
-    background: 'rgba(148, 163, 184, 0.08)'
-  });
+  Object.assign(header.style, MODAL_HEADER);
 
   const titleWrap = document.createElement('div');
   const title = document.createElement('h2');
@@ -900,55 +887,36 @@ export function createTextareaEditorModal() {
   body.appendChild(editorHost);
 
   const footer = document.createElement('div');
-  Object.assign(footer.style, {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '10px',
-    padding: '12px 16px',
-    borderTop: '1px solid rgba(148, 163, 184, 0.25)',
-    background: 'rgba(148, 163, 184, 0.06)'
-  });
+  Object.assign(footer.style, MODAL_FOOTER);
 
   const helper = document.createElement('div');
-  helper.textContent = 'CodeMirror editor with syntax highlighting and optional line wrapping.';
+  helper.textContent = 'Syntax highlighting and optional line wrapping.';
   Object.assign(helper.style, {
-    color: T.fgMuted,
+    color: T.fgFaint,
     fontSize: '12px'
   });
 
   const buttonGroup = document.createElement('div');
   Object.assign(buttonGroup.style, {
     display: 'flex',
-    gap: '10px'
+    gap: '8px'
   });
+
+  const TEXT_BTN = { width: 'auto', height: 'auto', padding: '7px 16px', fontSize: '13px' };
 
   const cancelBtn = document.createElement('button');
   cancelBtn.type = 'button';
   cancelBtn.textContent = 'Cancel';
-  Object.assign(cancelBtn.style, {
-    border: '1px solid rgba(148, 163, 184, 0.45)',
-    background: 'rgba(15, 23, 42, 0.6)',
-    color: T.fg,
-    borderRadius: RADIUS,
-    padding: '8px 14px',
-    cursor: 'pointer'
-  });
+  Object.assign(cancelBtn.style, ICON_BUTTON_STYLE, TEXT_BTN);
+  applyHoverEffect(cancelBtn, ICON_BUTTON_HOVER, ICON_BUTTON_UNHOVER);
   cancelBtn.onclick = closeTextareaEditor;
 
   const saveBtn = document.createElement('button');
   saveBtn.id = SAVE_BTN_ID;
   saveBtn.type = 'button';
   saveBtn.textContent = 'Save';
-  Object.assign(saveBtn.style, {
-    border: '1px solid rgba(96, 165, 250, 0.45)',
-    background: T.accent,
-    color: T.fg,
-    borderRadius: RADIUS,
-    padding: '8px 14px',
-    cursor: 'pointer',
-    boxShadow: '0 4px 10px rgba(37, 99, 235, 0.3)'
-  });
+  Object.assign(saveBtn.style, PRIMARY_BUTTON_STYLE, TEXT_BTN);
+  applyHoverEffect(saveBtn, PRIMARY_BUTTON_HOVER, PRIMARY_BUTTON_UNHOVER);
   saveBtn.onclick = handleSave;
 
   buttonGroup.appendChild(cancelBtn);

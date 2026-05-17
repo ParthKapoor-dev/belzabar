@@ -6,6 +6,15 @@ import { showToast } from '../../ui/toast.js';
 import { EXTENSION_OWNED_ATTR } from '../../config/constants.js';
 import { lockModalInteraction, unlockModalInteraction } from '../../ui/modal-lock.js';
 import { T, FONT_MONO, RADIUS, SHADOW, SCRIM } from '../../ui/theme.js';
+import {
+  MODAL_OVERLAY, MODAL_DIALOG, MODAL_HEADER, MODAL_FOOTER,
+  MODAL_TITLE, MODAL_ICON_BTN
+} from '../../ui/modal.js';
+import {
+  ICON_BUTTON_STYLE, ICON_BUTTON_HOVER, ICON_BUTTON_UNHOVER,
+  PRIMARY_BUTTON_STYLE, PRIMARY_BUTTON_HOVER, PRIMARY_BUTTON_UNHOVER,
+  applyHoverEffect
+} from '../../ui/styles.js';
 
 // Modal UI component
 export function createModal() {
@@ -14,45 +23,19 @@ export function createModal() {
   // Modal overlay
   const overlay = document.createElement('div');
   overlay.setAttribute(EXTENSION_OWNED_ATTR, 'true');
-  Object.assign(overlay.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    right: '0',
-    bottom: '0',
-    background: 'rgba(0, 0, 0, 0.75)',
-    backdropFilter: 'blur(8px)',
-    zIndex: '999998',
-    display: 'none',
-    alignItems: 'center',
-    justifyContent: 'center'
-  });
+  Object.assign(overlay.style, MODAL_OVERLAY, { zIndex: '999998' });
 
   // Modal container
   const container = document.createElement('div');
-  Object.assign(container.style, {
-    background: T.surface,
-    borderRadius: RADIUS,
-    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+  Object.assign(container.style, MODAL_DIALOG, {
     width: '90%',
     maxWidth: '700px',
-    maxHeight: '80vh',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    border: '1px solid rgba(255, 255, 255, 0.1)'
+    maxHeight: '80vh'
   });
 
   // Header
   const header = document.createElement('div');
-  Object.assign(header.style, {
-    padding: '20px 24px',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    background: 'rgba(255, 255, 255, 0.03)'
-  });
+  Object.assign(header.style, MODAL_HEADER);
 
   const titleContainer = document.createElement('div');
   Object.assign(titleContainer.style, {
@@ -64,60 +47,33 @@ export function createModal() {
   const title = document.createElement('h2');
   title.id = 'jsonModalTitle';
   title.textContent = 'Edit Input JSON';
-  Object.assign(title.style, {
-    margin: '0',
-    fontSize: '18px',
-    fontWeight: '600',
-    color: T.fg,
-    textShadow: '0 2px 10px rgba(59, 130, 246, 0.3)'
-  });
+  Object.assign(title.style, MODAL_TITLE);
 
   const refreshBtn = document.createElement('button');
-  refreshBtn.textContent = '🔄';
+  refreshBtn.textContent = '⟳';
   refreshBtn.setAttribute('title', 'Refresh inputs from page');
   refreshBtn.id = 'jsonRefreshButton';
-  Object.assign(refreshBtn.style, {
-    background: 'rgba(59, 130, 246, 0.15)',
-    border: '1px solid rgba(59, 130, 246, 0.3)',
-    borderRadius: RADIUS,
-    padding: '4px 8px',
-    fontSize: '16px',
-    cursor: 'pointer',
-    transition: 'all 200ms ease',
-    color: T.accent
-  });
+  Object.assign(refreshBtn.style, MODAL_ICON_BTN);
   refreshBtn.onmouseenter = () => {
-    refreshBtn.style.background = 'rgba(59, 130, 246, 0.25)';
-    refreshBtn.style.transform = 'scale(1.05)';
+    refreshBtn.style.background = T.surface2;
+    refreshBtn.style.color = T.fg;
   };
   refreshBtn.onmouseleave = () => {
-    refreshBtn.style.background = 'rgba(59, 130, 246, 0.15)';
-    refreshBtn.style.transform = 'scale(1)';
+    refreshBtn.style.background = 'transparent';
+    refreshBtn.style.color = T.fgMuted;
   };
 
   const closeBtn = document.createElement('button');
   closeBtn.textContent = '×';
   closeBtn.setAttribute('aria-label', 'Close');
-  Object.assign(closeBtn.style, {
-    background: 'rgba(239, 68, 68, 0.15)',
-    border: '1px solid rgba(239, 68, 68, 0.3)',
-    borderRadius: RADIUS,
-    fontSize: '24px',
-    cursor: 'pointer',
-    color: T.danger,
-    padding: '0',
-    width: '32px',
-    height: '32px',
-    lineHeight: '1',
-    transition: 'all 200ms ease'
-  });
+  Object.assign(closeBtn.style, MODAL_ICON_BTN, { fontSize: '18px' });
   closeBtn.onmouseenter = () => {
-    closeBtn.style.background = 'rgba(239, 68, 68, 0.25)';
-    closeBtn.style.transform = 'rotate(90deg)';
+    closeBtn.style.background = T.surface2;
+    closeBtn.style.color = T.fg;
   };
   closeBtn.onmouseleave = () => {
-    closeBtn.style.background = 'rgba(239, 68, 68, 0.15)';
-    closeBtn.style.transform = 'rotate(0deg)';
+    closeBtn.style.background = 'transparent';
+    closeBtn.style.color = T.fgMuted;
   };
   closeBtn.onclick = closeModal;
 
@@ -150,26 +106,10 @@ export function createModal() {
   });
   loadingDiv.innerHTML = '<div style="font-size: 24px; margin-bottom: 8px;">⏳</div>Loading inputs...';
 
-  // Textarea container with grid background
+  // Textarea container
   const textareaContainer = document.createElement('div');
   Object.assign(textareaContainer.style, {
-    position: 'relative',
-    borderRadius: RADIUS,
-    overflow: 'hidden'
-  });
-
-  // Grid dots background
-  const gridBackground = document.createElement('div');
-  Object.assign(gridBackground.style, {
-    position: 'absolute',
-    top: '0',
-    left: '0',
-    right: '0',
-    bottom: '0',
-    backgroundImage: 'radial-gradient(circle, rgba(59, 130, 246, 0.15) 1px, transparent 1px)',
-    backgroundSize: '20px 20px',
-    pointerEvents: 'none',
-    zIndex: '1'
+    position: 'relative'
   });
 
   // Textarea
@@ -179,29 +119,23 @@ export function createModal() {
     width: '100%',
     minHeight: '300px',
     padding: '12px',
-    fontFamily: '"JetBrains Mono", "Geist Mono", Menlo, "Courier New", monospace',
+    fontFamily: FONT_MONO,
     fontSize: '13px',
-    border: '1px solid rgba(59, 130, 246, 0.3)',
+    border: `1px solid ${T.line2}`,
     borderRadius: RADIUS,
     resize: 'vertical',
     outline: 'none',
-    background: 'rgba(0, 0, 0, 0.3)',
+    background: T.ink,
     color: T.fg,
-    position: 'relative',
-    zIndex: '2',
-    transition: 'all 200ms ease',
-    boxShadow: 'inset 0 2px 10px rgba(0, 0, 0, 0.3)'
+    transition: 'border-color 140ms ease'
   });
   textarea.addEventListener('focus', () => {
     textarea.style.borderColor = T.accent;
-    textarea.style.boxShadow = 'inset 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(59, 130, 246, 0.2)';
   });
   textarea.addEventListener('blur', () => {
-    textarea.style.borderColor = 'rgba(59, 130, 246, 0.3)';
-    textarea.style.boxShadow = 'inset 0 2px 10px rgba(0, 0, 0, 0.3)';
+    textarea.style.borderColor = T.line2;
   });
 
-  textareaContainer.appendChild(gridBackground);
   textareaContainer.appendChild(textarea);
 
   // Info display
@@ -241,76 +175,34 @@ export function createModal() {
 
   // Footer
   const footer = document.createElement('div');
-  Object.assign(footer.style, {
-    padding: '16px 24px',
-    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    background: 'rgba(255, 255, 255, 0.03)'
-  });
+  Object.assign(footer.style, MODAL_FOOTER);
 
   const helpText = document.createElement('div');
   Object.assign(helpText.style, {
     fontSize: '12px',
-    color: T.fgMuted
+    color: T.fgFaint
   });
-  helpText.innerHTML = '<span style="font-weight: 500; color: #60a5fa;">💡 Tip:</span> Keys marked with * are mandatory';
+  helpText.textContent = 'Keys marked with * are mandatory';
 
   const buttonGroup = document.createElement('div');
   Object.assign(buttonGroup.style, {
     display: 'flex',
-    gap: '12px'
+    gap: '8px'
   });
+
+  const TEXT_BTN = { width: 'auto', height: 'auto', padding: '7px 16px', fontSize: '13px' };
 
   const cancelBtn = document.createElement('button');
   cancelBtn.textContent = 'Cancel';
-  Object.assign(cancelBtn.style, {
-    padding: '8px 16px',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    borderRadius: RADIUS,
-    background: 'rgba(255, 255, 255, 0.05)',
-    color: T.fgMuted,
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'all 200ms ease'
-  });
-  cancelBtn.onmouseenter = () => {
-    cancelBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-    cancelBtn.style.transform = 'translateY(-1px)';
-  };
-  cancelBtn.onmouseleave = () => {
-    cancelBtn.style.background = 'rgba(255, 255, 255, 0.05)';
-    cancelBtn.style.transform = 'translateY(0)';
-  };
+  Object.assign(cancelBtn.style, ICON_BUTTON_STYLE, TEXT_BTN);
+  applyHoverEffect(cancelBtn, ICON_BUTTON_HOVER, ICON_BUTTON_UNHOVER);
   cancelBtn.onclick = closeModal;
 
   const syncBtn = document.createElement('button');
   syncBtn.textContent = 'Sync';
   syncBtn.id = 'jsonSyncButton';
-  Object.assign(syncBtn.style, {
-    padding: '8px 16px',
-    border: 'none',
-    borderRadius: RADIUS,
-    background: T.accent,
-    color: T.fg,
-    fontSize: '14px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'all 200ms ease',
-    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-  });
-  syncBtn.onmouseenter = () => {
-    syncBtn.style.background = T.accent;
-    syncBtn.style.transform = 'translateY(-2px)';
-    syncBtn.style.boxShadow = '0 6px 16px rgba(59, 130, 246, 0.4)';
-  };
-  syncBtn.onmouseleave = () => {
-    syncBtn.style.background = T.accent;
-    syncBtn.style.transform = 'translateY(0)';
-    syncBtn.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.3)';
-  };
+  Object.assign(syncBtn.style, PRIMARY_BUTTON_STYLE, TEXT_BTN);
+  applyHoverEffect(syncBtn, PRIMARY_BUTTON_HOVER, PRIMARY_BUTTON_UNHOVER);
   syncBtn.onclick = handleSyncClick;
 
   buttonGroup.appendChild(cancelBtn);

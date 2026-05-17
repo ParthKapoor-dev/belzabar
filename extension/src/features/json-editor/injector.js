@@ -56,30 +56,41 @@ export function findInputsSection() {
 export function createJSONButton() {
   if (state.jsonButtonEl) return state.jsonButtonEl;
   const button = document.createElement('button');
-  button.textContent = '📋 JSON';
+  button.innerHTML =
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
+    'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+    'stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"/>' +
+    '<path d="M16 3h1a2 2 0 0 1 2 2v5a2 2 0 0 0 2 2 2 2 0 0 0-2 2v5a2 2 0 0 1-2 2h-1"/>' +
+    '</svg><span>JSON</span>';
   button.setAttribute('title', 'Edit inputs as JSON');
   button.id = 'sdExtensionJSONButton';
-  
+
   Object.assign(button.style, {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
     padding: '6px 14px',
-    background: T.accent,
-    color: T.accentFg,
-    border: `1px solid ${T.accent}`,
+    background: T.ink,
+    color: T.fg,
+    border: `1px solid ${T.line2}`,
     borderRadius: RADIUS,
     fontFamily: FONT_MONO,
     fontSize: '13px',
     fontWeight: '600',
     cursor: 'pointer',
     marginLeft: '12px',
-    transition: 'background 140ms ease'
+    transition: 'background 140ms ease, border-color 140ms ease'
   });
 
   button.addEventListener('mouseenter', () => {
-    button.style.background = T.accentHover;
+    button.style.background = T.surface2;
+    button.style.borderColor = T.accent;
   });
 
   button.addEventListener('mouseleave', () => {
-    button.style.background = T.accent;
+    button.style.background = T.ink;
+    button.style.borderColor = T.line2;
   });
   
   button.onclick = (e) => {

@@ -33,6 +33,23 @@ let textareaEditorIdCounter = 0;
 let unsubscribe = null;
 let initialTextareaInjectionTimer = null;
 
+// Query `selector` across the light DOM AND every open shadow root. PD
+// designer textareas live inside web-component shadow trees, which a plain
+// `document.querySelectorAll` cannot reach.
+function queryAllDeep(selector, root = document) {
+  const results = [];
+  const stack = [root];
+  while (stack.length) {
+    const node = stack.pop();
+    if (!node.querySelectorAll) continue;
+    for (const el of node.querySelectorAll(selector)) results.push(el);
+    for (const el of node.querySelectorAll('*')) {
+      if (el.shadowRoot) stack.push(el.shadowRoot);
+    }
+  }
+  return results;
+}
+
 function getTextareaEditorId(textarea) {
   let id = textarea.getAttribute(TEXTAREA_EDITOR_ID_ATTR);
   if (!id) {
@@ -56,7 +73,7 @@ function getOverlayWrapperForTextarea(textarea) {
 }
 
 function removeStaleControlsForTextarea(textareaId, validWrapper) {
-  const staleControls = document.querySelectorAll(
+  const staleControls = queryAllDeep(
     `.${TEXTAREA_EDITOR_CONTROLS_CLASS}[${TEXTAREA_EDITOR_FOR_ATTR}="${textareaId}"]`
   );
   for (const control of staleControls) {
@@ -89,8 +106,14 @@ function hasAttachedLauncher(textarea) {
   return true;
 }
 
-function ensureOverlayStyles() {
-  if (document.getElementById(TEXTAREA_OVERLAY_STYLES_ID)) return;
+// Inject the overlay stylesheet into `root` — the document, or a shadow root
+// when the textarea lives inside a web component (shadow DOM is style-isolated,
+// so a document-level <style> would not reach a wrapper inside it).
+function ensureOverlayStyles(root = document) {
+  const scope = root || document;
+  const host = scope === document ? document.head : scope;
+  if (!host) return;
+  if (scope.querySelector(`#${TEXTAREA_OVERLAY_STYLES_ID}`)) return;
 
   const styleEl = document.createElement('style');
   styleEl.id = TEXTAREA_OVERLAY_STYLES_ID;
@@ -125,7 +148,7 @@ function ensureOverlayStyles() {
 }
 `;
 
-  document.head.appendChild(styleEl);
+  host.appendChild(styleEl);
 }
 
 function isEligibleTextarea(textarea) {
@@ -278,13 +301,18 @@ function createLauncher(textarea) {
 }
 
 function refreshAllTextareaControlLayouts() {
-  const controlsList = document.querySelectorAll(`.${TEXTAREA_EDITOR_CONTROLS_CLASS}`);
+  const controlsList = queryAllDeep(`.${TEXTAREA_EDITOR_CONTROLS_CLASS}`);
   for (const controls of controlsList) {
     const textareaId = controls.getAttribute(TEXTAREA_EDITOR_FOR_ATTR);
     if (!textareaId) continue;
-    const textarea = document.querySelector(
-      `${TEXTAREA_SELECTOR}[${TEXTAREA_EDITOR_ID_ATTR}="${textareaId}"]`
-    );
+    // The textarea is a sibling inside the same wrapper — scope the lookup
+    // there so it resolves regardless of which (shadow) root it lives in.
+    const wrapper = controls.parentElement;
+    const textarea =
+      wrapper &&
+      wrapper.querySelector(
+        `${TEXTAREA_SELECTOR}[${TEXTAREA_EDITOR_ID_ATTR}="${textareaId}"]`
+      );
     if (!textarea) continue;
     syncControlSizing(textarea, controls);
   }
@@ -314,15 +342,18 @@ function detachViewportLayoutListener() {
 }
 
 function injectTextareaLaunchers() {
-  ensureOverlayStyles();
   attachViewportLayoutListener();
 
-  const textareas = document.querySelectorAll(TEXTAREA_SELECTOR);
+  const textareas = queryAllDeep(TEXTAREA_SELECTOR);
   if (textareas.length === 0) return;
 
   for (const textarea of textareas) {
     if (!isEligibleTextarea(textarea)) continue;
     if (!textarea.parentElement) continue;
+
+    // Overlay styles must live in the textarea's own root (document or the
+    // enclosing shadow root) for the wrapper/controls CSS to apply.
+    ensureOverlayStyles(textarea.getRootNode());
 
     const wrapper = wrapTextarea(textarea);
     if (!wrapper) continue;
@@ -414,24 +445,24 @@ export function stopTextareaEditorFeature() {
   }
   textareaLayoutBindings.clear();
 
-  const controls = document.querySelectorAll(`.${TEXTAREA_EDITOR_CONTROLS_CLASS}`);
+  const controls = queryAllDeep(`.${TEXTAREA_EDITOR_CONTROLS_CLASS}`);
   for (const control of controls) {
     control.remove();
   }
 
-  const wrappers = document.querySelectorAll(
+  const wrappers = queryAllDeep(
     `.${TEXTAREA_OVERLAY_WRAPPER_CLASS}[${EXTENSION_OWNED_ATTR}="true"]`
   );
   for (const wrapper of wrappers) {
     unwrapTextarea(wrapper);
   }
 
-  const styleEl = document.getElementById(TEXTAREA_OVERLAY_STYLES_ID);
-  if (styleEl) {
+  // Remove the overlay <style> from the document and every shadow root.
+  for (const styleEl of queryAllDeep(`#${TEXTAREA_OVERLAY_STYLES_ID}`)) {
     styleEl.remove();
   }
 
-  const textareas = document.querySelectorAll(TEXTAREA_SELECTOR);
+  const textareas = queryAllDeep(TEXTAREA_SELECTOR);
   for (const textarea of textareas) {
     textarea.removeAttribute(TEXTAREA_EDITOR_BOUND_ATTR);
     textarea.removeAttribute(TEXTAREA_WRAPPED_ATTR);

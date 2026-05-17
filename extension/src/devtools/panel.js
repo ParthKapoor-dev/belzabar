@@ -141,6 +141,12 @@ const ICON_OPEN =
   'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
   'stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M11 13 20 4"/>' +
   '<path d="M19 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>';
+const ICON_LINK =
+  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
+  'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+  'stroke-linejoin="round">' +
+  '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>' +
+  '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
 
 function iconButton(svg, title, handler) {
   const b = document.createElement('button');
@@ -175,6 +181,49 @@ function buildCurl(har) {
   const bodyText = req.postData && req.postData.text;
   if (bodyText) parts.push('--data-raw ' + q(bodyText));
   return parts.join(' \\\n  ');
+}
+
+// Copy a Slack-pasteable rich link to the method's designer page — mirrors the
+// Shift+L "copy AD rich link" feature on AD pages. The designer URL is resolved
+// via belz web (same /api/resolve the "open in draft" action uses).
+async function copySlackLink(entry, btn) {
+  try {
+    const res = await fetch(BELZ_WEB + '/api/resolve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: entry.uuid, env: currentEnv })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.resolved || typeof data.editUrl !== 'string') {
+      throw new Error((data && (data.reason || data.error)) || 'resolve failed');
+    }
+    setOffline(false);
+    const url = data.editUrl;
+    const name =
+      data.name || uuidToName.get(entry.uuid) || entry.uuid.slice(0, 8) + '…';
+    const category = data.category || uuidToCategory.get(entry.uuid) || '';
+    const label = [category, name].filter(Boolean).join('::');
+    const html = '<a href="' + url + '">' + label + '</a>';
+    const plain = '[' + label + '](' + url + ')';
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([plain], { type: 'text/plain' })
+        })
+      ]);
+    } catch {
+      await navigator.clipboard.writeText(plain);
+    }
+    flashOk(btn);
+    showToast('copied link · ' + label);
+  } catch (err) {
+    setOffline(true);
+    showToast(
+      'could not copy link — ' +
+        (err && err.message ? err.message : 'belz web error')
+    );
+  }
 }
 
 // ---- "open in draft" queue (#3, #11) --------------------------------------
@@ -438,6 +487,9 @@ function renderRow(entry) {
       /* ignore */
     }
   });
+  const copyLinkBtn = iconButton(ICON_LINK, 'Copy Slack link', (btn) => {
+    copySlackLink(entry, btn);
+  });
   const openBtn = iconButton(
     ICON_OPEN,
     'Open in draft mode (background tab)',
@@ -446,7 +498,13 @@ function renderRow(entry) {
       flashOk(btn);
     }
   );
-  const actionsCell = el('td', { className: 'actions' }, copyCurlBtn, openBtn);
+  const actionsCell = el(
+    'td',
+    { className: 'actions' },
+    copyCurlBtn,
+    copyLinkBtn,
+    openBtn
+  );
 
   const statusBadge = el(
     'span',

@@ -3,6 +3,11 @@
 // The DevTools panel is the UI, but highlighting has to happen on the page
 // itself — so the content-script engine owns this small shadow-DOM overlay:
 // outline boxes plus a floating label. No panel chrome lives here.
+//
+// The boxes are `position: fixed` and derived from `getBoundingClientRect()`
+// (viewport coords). To stay pinned to the DOM element as the page scrolls,
+// the overlay remembers its current target and re-derives those coords on
+// every scroll / resize (rAF-throttled).
 
 const CSS = `
 :host { all: initial; }
@@ -44,6 +49,9 @@ export function createHighlighter() {
   /** @type {HTMLElement[]} reused box elements */
   const boxes = [];
   let mounted = false;
+  /** @type {{ els: Element[] } | null} the element(s) currently highlighted */
+  let current = null;
+  let rafPending = false;
 
   function ensureMounted() {
     if (!mounted) {
@@ -62,19 +70,12 @@ export function createHighlighter() {
     return boxes[i];
   }
 
-  /**
-   * Outline one or more elements and show a label.
-   * @param {Element[]} elements
-   * @param {string} title      bright label line
-   * @param {string} [subtitle] dim secondary line
-   */
-  function show(elements, title, subtitle) {
-    ensureMounted();
-    const els = (elements || []).filter(Boolean);
-    if (!els.length) {
-      hide();
-      return;
-    }
+  // Position the boxes + label over `current.els`. `position: fixed` means we
+  // re-derive viewport coords here — calling this on scroll keeps the overlay
+  // pinned to the DOM element rather than the viewport.
+  function position() {
+    if (!current) return;
+    const els = current.els;
     els.forEach((el, i) => {
       const r = el.getBoundingClientRect();
       const b = boxAt(i);
@@ -88,10 +89,6 @@ export function createHighlighter() {
       boxes[i].style.display = 'none';
     }
 
-    label.innerHTML =
-      `<div class="t">${esc(title)}</div>` +
-      (subtitle ? `<div class="s">${esc(subtitle)}</div>` : '');
-    label.style.display = 'block';
     const first = els[0].getBoundingClientRect();
     const lw = label.offsetWidth;
     const lh = label.offsetHeight;
@@ -103,7 +100,39 @@ export function createHighlighter() {
     label.style.top = `${Math.max(4, ly)}px`;
   }
 
+  // rAF-throttled reposition for scroll / resize.
+  function onViewportChange() {
+    if (rafPending || !current) return;
+    rafPending = true;
+    requestAnimationFrame(() => {
+      rafPending = false;
+      position();
+    });
+  }
+
+  /**
+   * Outline one or more elements and show a label.
+   * @param {Element[]} elements
+   * @param {string} title      bright label line
+   * @param {string} [subtitle] dim secondary line
+   */
+  function show(elements, title, subtitle) {
+    ensureMounted();
+    const els = (elements || []).filter(Boolean);
+    if (!els.length) {
+      hide();
+      return;
+    }
+    current = { els };
+    label.innerHTML =
+      `<div class="t">${esc(title)}</div>` +
+      (subtitle ? `<div class="s">${esc(subtitle)}</div>` : '');
+    label.style.display = 'block';
+    position();
+  }
+
   function hide() {
+    current = null;
     boxes.forEach((b) => {
       b.style.display = 'none';
     });
@@ -111,9 +140,17 @@ export function createHighlighter() {
   }
 
   function destroy() {
+    window.removeEventListener('scroll', onViewportChange, true);
+    window.removeEventListener('resize', onViewportChange);
     if (mounted) host.remove();
     mounted = false;
+    current = null;
   }
+
+  // Capture-phase scroll catches scrolling inside any nested scroll container,
+  // not just the document.
+  window.addEventListener('scroll', onViewportChange, true);
+  window.addEventListener('resize', onViewportChange);
 
   return { show, hide, destroy };
 }
