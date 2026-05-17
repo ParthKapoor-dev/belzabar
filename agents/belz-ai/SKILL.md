@@ -285,3 +285,63 @@ When the task is done, the user will hand `TASK.md` to the `tw-dev-note` skill (
 7. In ad-hoc mode, you **must** pick the directory name yourself — do not ask the user to name it.
 8. **Never** rename or restructure `TASK.md` away from one of the two templates.
 9. The Log is a **changelog**, not a journal. If you can't summarize the change in one line, the change isn't done yet.
+
+---
+
+## Part 3 — Planning AD/PD work
+
+When you plan a task in this directory (plan mode, or any time you lay out an
+approach before changing a method or page), write the plan so a developer who
+thinks in **AD/PD terms** can follow it.
+
+This is **guidance, not a template.** It exists so the plan is legible — it does
+**not** restrict how you plan. Adapt it, reorder it, or depart from it whenever the
+task calls for something else. The goal is communication.
+
+### Speak in AD/PD terms
+
+In a code repo, you and the developer share the repo's vocabulary. Here you reason
+through the `belz` CLI — so a plan written in generic software terms ("refactor the
+module", "update the handler") is hard for the developer to map back onto the
+system. Describe the work in the terms the developer actually sees: **methods,
+steps, service categories, statuses, page routes, components, workflows** — not
+files, modules, or functions.
+
+### Recommended shape of a fix plan
+
+**1. Root cause — in domain terms.** Lead with *why* the bug happens, named
+concretely. For example:
+
+> Because **STEP 3.2** of `NSM.Staff :: LT263.cancel` (runs on the
+> `/lt-263/paper-form-details` workflow) updates `application.status` only when it
+> is currently `PENDING`, an application in `CANCELLED` is left in a bad state.
+
+**2. Fix — for each change:**
+
+- The **method name + service category**, and the **step number**.
+- An **inline before→after diff** as a fenced ```` ```diff ```` block. Fetch the
+  current step content with `belz ad show <uuid> --full --llm` (for PD, `belz pd
+  show <input> --full --llm`), build the proposed version, and render the unified
+  diff so the developer sees exactly what changes. Keep the block scoped to the
+  changed expression / SQL / config — not the whole step.
+- A **one-line summary** of what the change does.
+
+```diff
+- #{application.status == 'PENDING'}
++ #{application.status == 'PENDING'
++   || application.status == 'CANCELLED'}
+```
+
+**3. Testing — the real AD/PD verification path.** Don't write "run unit tests."
+Describe how the change is actually verified: create a dummy application in the
+relevant status → `belz ad test` the draft → save the draft → write the changelog
+note → publish → `belz ad run` with dummy data. Include the PD page / workflow
+check when a frontend route is involved.
+
+### Why this matters
+
+The developer reviews the plan to decide whether your understanding of the *system*
+is correct — not your understanding of code. A plan that names the method, the
+step, the status, and shows the exact diff lets them confirm or correct that
+understanding fast. A plan written in generic terms forces them to reverse-engineer
+what you actually mean.
