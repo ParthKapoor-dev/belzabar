@@ -284,7 +284,10 @@ async function setBooleanValue(expSelect, stringValue) {
 function parseMonthLabel(text) {
   const lower = (text || '').toLowerCase();
   const yearMatch = lower.match(/\b(19|20)\d{2}\b/);
-  const monthIndex = MONTHS.findIndex((m) => lower.includes(m));
+  // AD's calendar header abbreviates month names ("Jun 2026"), so match on the
+  // first three letters — which are unique across all twelve months — rather
+  // than the full name.
+  const monthIndex = MONTHS.findIndex((m) => lower.includes(m.slice(0, 3)));
   if (!yearMatch || monthIndex < 0) return null;
   return { year: Number(yearMatch[0]), month: monthIndex + 1 };
 }
