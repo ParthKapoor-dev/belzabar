@@ -16,6 +16,7 @@ const entries = [
   { src: 'src/ad-content.js', out: 'ad-content.js' },
   { src: 'src/pd-content.js', out: 'pd-content.js' },
   { src: 'src/pd-inspector.js', out: 'pd-inspector.js' },
+  { src: 'src/background.js', out: 'background.js' },
   { src: 'src/devtools/devtools-page.js', out: 'devtools-page.js' },
   { src: 'src/devtools/panel.js', out: 'panel.js' },
   { src: 'src/devtools/panel-pd.js', out: 'panel-pd.js' }

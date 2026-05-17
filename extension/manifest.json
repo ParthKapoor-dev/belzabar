@@ -17,6 +17,10 @@
     "http://127.0.0.1:65535/*"
   ],
   "devtools_page": "devtools.html",
+  "background": {
+    "service_worker": "dist/background.js",
+    "scripts": ["dist/background.js"]
+  },
   "content_scripts": [
     {
       "matches": [

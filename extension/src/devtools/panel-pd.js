@@ -4,6 +4,11 @@
 // pd-inspector.js content script) over chrome messaging: it pulls the
 // component-nesting tree to display, drives inspect mode, and highlights a
 // component on the page when one is selected here.
+//
+// Firefox does not give DevTools panel scripts access to `chrome.tabs`, so
+// the panel cannot message the page or open tabs directly. Both go through
+// the background relay (src/background.js) via `chrome.runtime` messaging,
+// which works in both Chromium and Firefox.
 
 const tabId = chrome.devtools.inspectedWindow.tabId;
 const bodyEl = document.getElementById('body');
@@ -29,13 +34,16 @@ const compRows = new Map();
 /** Send a command to the page-side engine; resolves null if it is not there. */
 function callEngine(cmd, extra) {
   return new Promise((resolve) => {
-    chrome.tabs.sendMessage(tabId, { ns: 'pd', cmd, ...extra }, (resp) => {
-      if (chrome.runtime.lastError) {
-        resolve(null);
-        return;
-      }
-      resolve(resp);
-    });
+    try {
+      chrome.runtime.sendMessage(
+        { __pdRelay: 'cmd', tabId, payload: { ns: 'pd', cmd, ...extra } },
+        (resp) => {
+          resolve(chrome.runtime.lastError ? null : resp);
+        }
+      );
+    } catch {
+      resolve(null);
+    }
   });
 }
 
@@ -55,7 +63,11 @@ function openInPd(kind, idOrName) {
     kind === 'page'
       ? `${base}/page/${idOrName}`
       : `${base}/symbol/${encodeURIComponent(idOrName)}`;
-  chrome.tabs.create({ url });
+  try {
+    chrome.runtime.sendMessage({ __pdRelay: 'open', url });
+  } catch {
+    /* ignore */
+  }
 }
 
 // ---- top-level render ------------------------------------------------------
