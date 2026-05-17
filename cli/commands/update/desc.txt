@@ -1,0 +1,3 @@
+belz update            — Update belz: pull source, rebuild, reinstall
+  belz update --check  — Check whether an update is available
+  belz update --force  — Force rebuild / discard local source changes

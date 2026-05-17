@@ -117,6 +117,12 @@ mv belz "$INSTALL_DIR/belz"
 echo ""
 echo "✅ belz installed to $INSTALL_DIR/belz"
 
+# ── 6b. Record install metadata (source path, etc.) for `belz update` ─────────
+REPO_URL="$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null || echo "")"
+REPO_VERSION="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo "")"
+bun "$REPO_ROOT/cli/scripts/record-install.mjs" \
+  "$REPO_ROOT" "$INSTALL_DIR" "$REPO_URL" "$REPO_VERSION" || true
+
 # ── 7. PATH check ─────────────────────────────────────────────────────────────
 if ! echo ":${PATH}:" | grep -q ":${INSTALL_DIR}:"; then
   echo ""
@@ -125,15 +131,23 @@ if ! echo ":${PATH}:" | grep -q ":${INSTALL_DIR}:"; then
   echo "   export PATH=\"\$PATH:$INSTALL_DIR\""
 fi
 
-# ── 8. First-time setup via `belz setup` ─────────────────────────────────────
+# ── 8. First-time setup ──────────────────────────────────────────────────────
+# With --env-file, run `belz setup` non-interactively. Otherwise run the guided
+# `belz onboard` flow (credentials + extension + web autostart).
 if [[ ! -f "$BELZ_CONFIG_DIR/config.json" ]]; then
   echo ""
-  echo "🆕 No config found at $BELZ_CONFIG_DIR/config.json — running 'belz setup'…"
-  SETUP_ARGS=()
-  [[ -n "$ENV_FILE" ]] && SETUP_ARGS+=("--env-file" "$ENV_FILE")
-  if ! "$INSTALL_DIR/belz" setup "${SETUP_ARGS[@]}"; then
-    echo "❌ Setup aborted. Re-run 'belz setup' any time to finish configuration." >&2
-    exit 1
+  if [[ -n "$ENV_FILE" ]]; then
+    echo "🆕 No config found — running 'belz setup --env-file'…"
+    if ! "$INSTALL_DIR/belz" setup --env-file "$ENV_FILE"; then
+      echo "❌ Setup aborted. Re-run 'belz setup' any time to finish configuration." >&2
+      exit 1
+    fi
+  else
+    echo "🆕 No config found — running 'belz onboard'…"
+    if ! "$INSTALL_DIR/belz" onboard; then
+      echo "❌ Onboarding aborted. Re-run 'belz onboard' any time to finish setup." >&2
+      exit 1
+    fi
   fi
 fi
 

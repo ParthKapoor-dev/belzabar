@@ -100,7 +100,7 @@ const twCommands = loadCommandsFromDir(twCommandsDir);
 const migrateCommands = loadCommandsFromDir(migrationsCommandsDir);
 const releaseCommands = loadCommandsFromDir(releaseCommandsDir);
 const allTopCommands = loadCommandsFromDir(topCommandsDir);
-const { "migrate-legacy": migrateLegacy, config, web, ...topLevelCommands } = allTopCommands;
+const { "migrate-legacy": migrateLegacy, config, web, extension, ...topLevelCommands } = allTopCommands;
 
 await runNamespacedCli(process.argv, {
   name: "Belzabar CLI",
@@ -153,6 +153,12 @@ await runNamespacedCli(process.argv, {
       name: "Web",
       description: "Manage the Belzabar web app.",
       command: web,
+      helpResolver: makeHelpDirResolver(topCommandsDir),
+    },
+    extension: {
+      name: "Extension",
+      description: "Install and manage the Belzabar browser extension.",
+      command: extension,
       helpResolver: makeHelpDirResolver(topCommandsDir),
     },
   },

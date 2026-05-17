@@ -12,7 +12,7 @@ if (process.argv.slice(2).includes("--help-full")) {
   process.exit(0);
 }
 
-const { "migrate-legacy": migrateLegacy, config, web, ...topLevelCommands } = TopLevelCommandRegistry;
+const { "migrate-legacy": migrateLegacy, config, web, extension, ...topLevelCommands } = TopLevelCommandRegistry;
 const topHelpResolver = makeHelpResolver(TopHelpMap);
 
 // Prod Mode: Use generated registries + embedded help text (bundled at compile time)
@@ -67,6 +67,12 @@ await runNamespacedCli(process.argv, {
       name: "Web",
       description: "Manage the Belzabar web app.",
       command: web,
+      helpResolver: topHelpResolver,
+    },
+    extension: {
+      name: "Extension",
+      description: "Install and manage the Belzabar browser extension.",
+      command: extension,
       helpResolver: topHelpResolver,
     },
   },

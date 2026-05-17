@@ -1,0 +1,8 @@
+{
+  "_comment": "Single source of truth for the extension's published identity. Consumed by extension/scripts/pack.mjs and the belz CLI `extension` command. The GitHub Actions workflow publishes the packages + update manifests to the URLs below.",
+  "firefoxId": "belzabar-devtools@belzabar",
+  "chromeId": "REPLACE_WITH_CRX_KEY_DERIVED_ID",
+  "pagesBaseUrl": "https://parthkapoor-dev.github.io/belzabar/extension",
+  "chromeUpdateXmlUrl": "https://parthkapoor-dev.github.io/belzabar/extension/updates.xml",
+  "firefoxUpdatesJsonUrl": "https://parthkapoor-dev.github.io/belzabar/extension/updates.json"
+}

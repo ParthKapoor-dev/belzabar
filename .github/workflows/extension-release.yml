@@ -1,0 +1,151 @@
+# Builds, signs, and publishes the Belzabar browser extension.
+#
+# Trigger: push a tag like `ext-v1.2.3`.
+#
+# What it does:
+#   1. Builds per-browser extension trees (extension/scripts/pack.mjs).
+#   2. Packs a signed Chromium CRX (key from the CHROME_CRX_KEY secret).
+#   3. Signs a Firefox XPI via the Mozilla AMO API (unlisted channel).
+#   4. Generates the update manifests (updates.xml / updates.json).
+#   5. Attaches the CRX + XPI to the GitHub Release and publishes the update
+#      manifests to GitHub Pages at a stable URL.
+#
+# Browsers force-installed via `belz extension load` then auto-update from the
+# Pages-hosted manifests whenever a new `ext-v*` tag is pushed.
+#
+# Required repository secrets:
+#   CHROME_CRX_KEY    PEM private key for CRX signing. Generate ONCE and never
+#                     rotate — the key determines the stable Chrome extension
+#                     ID. Create: `openssl genrsa 2048 > key.pem`.
+#   AMO_JWT_ISSUER    Mozilla add-ons API key      (addons.mozilla.org → Manage API Keys)
+#   AMO_JWT_SECRET    Mozilla add-ons API secret
+#
+# One-time setup: enable GitHub Pages (Settings → Pages → source: GitHub Actions)
+# and, after the first run, copy the printed Chrome extension ID into
+# extension/release.config.json (`chromeId`).
+
+name: extension-release
+
+on:
+  push:
+    tags:
+      - "ext-v*"
+
+permissions:
+  contents: write   # create/update the GitHub Release
+  pages: write      # publish update manifests
+  id-token: write
+
+concurrency:
+  group: extension-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Resolve version from tag
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#ext-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build per-browser extension trees
+        run: node extension/scripts/pack.mjs --version "${{ steps.ver.outputs.version }}"
+
+      - name: Pack signed Chromium CRX
+        id: crx
+        env:
+          CHROME_CRX_KEY: ${{ secrets.CHROME_CRX_KEY }}
+        run: |
+          printf '%s' "$CHROME_CRX_KEY" > key.pem
+          npx --yes crx3 -k key.pem \
+            -o "extension/dist-pack/belzabar-${{ steps.ver.outputs.version }}.crx" \
+            extension/build/chrome
+          # Derive the deterministic Chrome extension ID from the public key.
+          ID=$(node -e '
+            const {execSync}=require("child_process");const crypto=require("crypto");
+            const der=execSync("openssl rsa -in key.pem -pubout -outform DER 2>/dev/null");
+            const h=crypto.createHash("sha256").update(der).digest();
+            process.stdout.write([...h.subarray(0,16)].map(b=>
+              ("0123456789abcdef"[b>>4])+("0123456789abcdef"[b&15])).join("")
+              .replace(/[0-9a-f]/g,c=>"abcdefghijklmnop"[parseInt(c,16)]));
+          ')
+          echo "id=$ID" >> "$GITHUB_OUTPUT"
+          echo "Chrome extension ID: $ID"
+          rm -f key.pem
+
+      - name: Sign Firefox XPI via AMO
+        id: xpi
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: |
+          npx --yes web-ext@latest sign \
+            --source-dir=extension/build/firefox \
+            --channel=unlisted \
+            --api-key="$AMO_JWT_ISSUER" \
+            --api-secret="$AMO_JWT_SECRET" \
+            --artifacts-dir=extension/dist-pack || true
+          XPI=$(ls extension/dist-pack/*.xpi 2>/dev/null | head -1 || true)
+          echo "xpi=$XPI" >> "$GITHUB_OUTPUT"
+
+      - name: Generate update manifests
+        run: |
+          V="${{ steps.ver.outputs.version }}"
+          BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+          FF_ID=$(node -e 'console.log(require("./extension/release.config.json").firefoxId)')
+          mkdir -p pages/extension
+          cp extension/dist-pack/*.crx pages/extension/ 2>/dev/null || true
+          cp extension/dist-pack/*.xpi pages/extension/ 2>/dev/null || true
+          # Stable "latest" copies — Firefox force-install points install_url here.
+          cp extension/dist-pack/*.crx pages/extension/belzabar-latest.crx 2>/dev/null || true
+          cp extension/dist-pack/*.xpi pages/extension/belzabar-latest.xpi 2>/dev/null || true
+          cat > pages/extension/updates.xml <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
+            <app appid="${{ steps.crx.outputs.id }}">
+              <updatecheck codebase="$BASE/belzabar-$V.crx" version="$V"/>
+            </app>
+          </gupdate>
+          EOF
+          XPI_NAME=$(basename "${{ steps.xpi.outputs.xpi }}" 2>/dev/null || echo "")
+          cat > pages/extension/updates.json <<EOF
+          { "addons": { "$FF_ID": { "updates": [
+            { "version": "$V", "update_link": "$BASE/$XPI_NAME" } ] } } }
+          EOF
+
+      - name: Publish packages to the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" --title "Extension ${{ github.ref_name }}" --notes "Automated extension release." || true
+          gh release upload "${{ github.ref_name }}" extension/dist-pack/*.crx --clobber || true
+          gh release upload "${{ github.ref_name }}" extension/dist-pack/*.xpi --clobber || true
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: pages
+
+  deploy-pages:
+    needs: release
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,26 @@
+belz update [flags]
+
+Update belz to the latest version: pull the source checkout, rebuild the web
+app, recompile the binary, and install it.
+
+belz is a compiled binary built from a git checkout. `belz update` fetches
+that checkout's tracking branch, fast-forwards it, and re-runs the install
+script. The location of the checkout is read from "belz.sourceDir" in
+~/.belz/config.json (recorded by the installer; defaults to ~/.belz/src).
+
+Flags:
+  --check       Report whether an update is available, without changing anything.
+  -f, --force   Update even with no new commits, and discard uncommitted changes
+                in the source checkout (hard reset to the remote branch).
+
+Examples:
+  belz update --check     See if a newer version exists
+  belz update             Pull, rebuild, and install the latest version
+  belz update --force     Force a rebuild / discard local source changes
+
+Notes:
+  - A broken build never replaces your working binary — the install script
+    builds before it installs and aborts on failure.
+  - Your ~/.belz/ config, credentials, and sessions are never touched.
+  - On Linux/macOS the new binary swaps in place; on Windows it is staged and
+    swapped after the current process exits.

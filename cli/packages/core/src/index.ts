@@ -10,3 +10,6 @@ export * from "./verbose";
 export * from "./swr";
 export * from "./dns";
 export * from "./open";
+export * from "./belz-meta";
+export * from "./service";
+export * from "./browsers";

@@ -2,23 +2,35 @@ belz web [subcommand] [flags]
 
 Manage the Belzabar web app (Next.js, port 65535).
 
+Bare `belz web` shows status + usage — it does NOT start the server.
+Use `belz web start` to start it.
+
 Subcommands:
-  start     Start the web app in the background (default)
+  start     Start the web app in the background
   stop      Stop the running web app
   restart   Restart the web app
-  status    Show whether the web app is running and its PID
+  status    Show whether the web app is running + the autostart state
+  enable    Start the web app automatically at login (no admin/sudo needed)
+  disable   Remove the login autostart
 
 Flags:
   -v, --verbose   Stream logs to the terminal instead of running in background.
                   Only applies to 'start'. Process runs in foreground (blocking).
 
 Examples:
-  belz web                  Start the web app in the background
-  belz web -v               Start and stream logs to the terminal (foreground)
-  belz web start            Explicit start (same as 'belz web')
+  belz web                  Show status and available subcommands
+  belz web start            Start the web app in the background
+  belz web start -v         Start and stream logs to the terminal (foreground)
   belz web stop             Stop the running web app
   belz web restart          Restart the web app
-  belz web status           Check if the web app is running
+  belz web status           Check running + autostart state
+  belz web enable           Auto-start the web app whenever you log in
+  belz web disable          Stop auto-starting it at login
+
+Autostart is installed as a per-user login service — no admin/sudo required:
+  Linux    systemd --user unit (falls back to an XDG autostart entry)
+  macOS    launchd LaunchAgent
+  Windows  a per-user logon Scheduled Task
 
 The web app must be built and installed first by running the install script:
   ./cli/scripts/install.sh

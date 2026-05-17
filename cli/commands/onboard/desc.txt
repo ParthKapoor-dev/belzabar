@@ -1,0 +1,1 @@
+belz onboard           — Guided first-run setup (credentials, extension, web app)

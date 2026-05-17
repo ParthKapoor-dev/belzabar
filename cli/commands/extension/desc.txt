@@ -1,0 +1,4 @@
+belz extension        — Install/manage the Belzabar browser extension
+  belz extension list       — Show detected browsers + load state
+  belz extension load [...] — Force-install the extension into browsers
+  belz extension remove [...] — Remove the force-install policy

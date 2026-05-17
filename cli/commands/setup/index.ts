@@ -215,7 +215,9 @@ const command: CommandModule<SetupArgs, SetupData> = {
       }
     }
 
-    const newConfig: BelzConfigFile = { environments: envs };
+    // Preserve non-credential sections (jenkins, belz install metadata,
+    // web/extension state) — setup only owns environments + teamwork.
+    const newConfig: BelzConfigFile = { ...existing, environments: envs };
     if (tw) (newConfig as any).teamwork = tw;
     writeConfigFile(newConfig);
 

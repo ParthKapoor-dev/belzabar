@@ -22,6 +22,22 @@ export interface BelzConfigFile {
     password?: string; // base64-encoded (raw password or API token)
     migrationJob?: string;
   };
+  /** Install metadata — written by the installer / `belz update`. */
+  belz?: {
+    sourceDir?: string;   // absolute path to the git checkout belz was built from
+    installDir?: string;  // absolute directory containing the belz binary
+    repoUrl?: string;     // git remote the source was cloned from
+    installedAt?: string; // ISO timestamp of the last install/update
+    version?: string;     // git short SHA at install/update time
+  };
+  /** Web app lifecycle state. */
+  web?: {
+    autostartEnabled?: boolean; // advisory mirror of the OS autostart service state
+  };
+  /** Browser extension lifecycle state. */
+  extension?: {
+    loadedBrowsers?: string[]; // browser keys that have a force-install policy entry
+  };
 }
 
 export interface JenkinsConfig {

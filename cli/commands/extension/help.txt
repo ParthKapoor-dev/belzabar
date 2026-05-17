@@ -1,0 +1,34 @@
+belz extension <subcommand> [browsers…|--all]
+
+Install the Belzabar browser extension into your browsers and keep it there.
+
+The extension is force-installed via each browser's enterprise-policy
+mechanism, pointed at the signed packages published by the extension-release
+GitHub Actions workflow. Once loaded, the browser auto-updates the extension
+whenever a new version is released — you never load it again.
+
+Subcommands:
+  list             Show detected browsers and whether the extension is loaded
+  status           Alias of `list`
+  load   [...]     Force-install the extension into the given browsers
+  remove [...]     Remove the force-install policy from the given browsers
+
+Browser selection:
+  Pass browser keys (chrome, chromium, edge, brave, vivaldi, firefox, zen,
+  librewolf), or --all, or nothing for an interactive picker.
+
+Examples:
+  belz extension list
+  belz extension load                 Pick browsers interactively
+  belz extension load chrome zen
+  belz extension load --all
+  belz extension remove firefox
+
+Elevation:
+  - Windows Chromium browsers: written to HKCU — no admin needed.
+  - Linux/macOS Chromium and all Firefox-family browsers: the policy file
+    lives in a system/app location. belz stages the file and prints the exact
+    `sudo` command for you to run; restart the browser afterwards.
+
+Note: Chromium force-install requires the published extension's signed ID to
+be recorded in extension/release.config.json (`chromeId`).
