@@ -1,0 +1,15 @@
+{
+  "name": "@belzabar/design",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "belz unified design system — single source of truth for tokens across web, extension and CLI.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./terminal": "./src/terminal.ts",
+    "./theme.css": "./dist/theme.css"
+  },
+  "scripts": {
+    "build": "bun run scripts/build-css.ts"
+  }
+}

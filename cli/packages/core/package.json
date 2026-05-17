@@ -6,6 +6,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@belzabar/design": "workspace:*",
     "@clack/prompts": "^1.2.0",
     "cli-table3": "^0.6.3",
     "picocolors": "^1.1.1",

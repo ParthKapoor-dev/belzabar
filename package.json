@@ -4,7 +4,9 @@
   "workspaces": [
     "cli",
     "cli/packages/*",
+    "packages/*",
     "extension",
+    "web",
     "apps/*"
   ],
   "scripts": {

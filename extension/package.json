@@ -3,6 +3,7 @@
   "version": "1.0.1",
   "description": "Belzabar DevTools browser extension — AD Network panel and designer helpers",
   "dependencies": {
+    "@belzabar/design": "workspace:*",
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.0",
     "@codemirror/lang-javascript": "^6.2.4",
