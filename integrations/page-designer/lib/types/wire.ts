@@ -34,6 +34,20 @@ export interface RawPageResponse {
   [key: string]: unknown;
 }
 
+// -------- GET /pages/page-dependencies ----------------------------------
+//
+// Returns the dependency graph for one published page/component. The shape of
+// interest is `dependencyJSON`, an object whose keys include one
+// `<pubId>__translated_phrases` array per entity in the graph (the queried
+// entity plus each dependency). Each phrase entry carries a `.key` like
+// `page.<draftId>` or `symbol.<draftId>`. Style/asset components legitimately
+// have a `dependencyJSON` with NO `__translated_phrases` arrays at all.
+
+export interface RawPageDependencies {
+  dependencyJSON?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 // -------- GET /pages (list) ---------------------------------------------
 
 export interface RawPageListItem {

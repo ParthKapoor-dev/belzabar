@@ -10,6 +10,7 @@
 import { apiFetch, CliError } from "@belzabar/core";
 import type {
   RawPageResponse,
+  RawPageDependencies,
   RawPartialUpdateOperation,
   RawHistoryEntry,
   RawPageListItem,
@@ -150,6 +151,19 @@ export async function fetchAllComponents(): Promise<RawPageListItem[]> {
     offset += PAGE_LIST_LIMIT;
   }
   return results;
+}
+
+export async function fetchPageDependencies(
+  publishedId: string,
+  status: PdStatus = "PUBLISHED",
+): Promise<RawPageDependencies> {
+  const params = new URLSearchParams({ id: publishedId, status });
+  const response = await apiFetch(
+    `${PD_BASE}/pages/page-dependencies?${params}`,
+    { method: "GET", authMode: "Bearer" },
+  );
+  await ensureOk(response, { method: "GET", path: "/pages/page-dependencies" });
+  return (await response.json()) as RawPageDependencies;
 }
 
 // -------- history --------------------------------------------------------

@@ -1,0 +1,1 @@
+  page-deps <input>          Raw page-dependencies API output for a page/component.
