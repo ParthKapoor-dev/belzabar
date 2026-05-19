@@ -1,13 +1,21 @@
 import { summarizeReport } from "./report";
 import type { ParsedMigrationOutput, RawReport } from "./types";
 
-const ANSI_PATTERN = /\[[0-9;]*m/g;
-// Jenkins Pipeline step markers: `ha:////<base64>==` inserted inline by the
-// workflow plugin. Strip them so downstream parsing + artifacts are readable.
-const PIPELINE_STEP_MARKER = /ha:\/\/\/\/\S+?={1,2}/g;
+// Jenkins Pipeline step markers: the workflow plugin emits `ha:////<base64>`
+// blobs wrapped in a "conceal" SGR span (ESC[8m … ESC[0m). The base64 payload
+// has no reliable self-delimiter, so the ESC[0m terminator is the only safe
+// boundary — strip the whole concealed span FIRST, before generic ANSI codes
+// are removed (otherwise the terminator is destroyed and the payload orphaned).
+const CONCEALED_STEP_MARKER = /\x1b\[8m[\s\S]*?\x1b\[0m/g;
+const ANSI_PATTERN = /\x1b?\[[0-9;]*m/g;
+// Fallback for any `ha:////` blob that arrived without its conceal wrapper.
+const PIPELINE_STEP_MARKER = /ha:\/\/\/\/[A-Za-z0-9+/]+={0,2}/g;
 
 export function stripAnsi(text: string): string {
-  return text.replace(ANSI_PATTERN, "").replace(PIPELINE_STEP_MARKER, "");
+  return text
+    .replace(CONCEALED_STEP_MARKER, "")
+    .replace(ANSI_PATTERN, "")
+    .replace(PIPELINE_STEP_MARKER, "");
 }
 
 function extract(text: string, regex: RegExp): string | undefined {
