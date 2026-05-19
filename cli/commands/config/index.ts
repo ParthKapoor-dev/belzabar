@@ -51,7 +51,7 @@ interface ConfigEditData {
 
 type ConfigData = ConfigGetData | ConfigTokenData | ConfigEditData;
 
-type EditChoice = "edit" | "add" | "remove" | "teamwork" | "exit";
+type EditChoice = "edit" | "add" | "remove" | "teamwork" | "jenkins" | "exit";
 
 function buildSummaryBody(cfg: BelzConfigFile): string {
   const envs = cfg.environments ?? {};
@@ -81,6 +81,18 @@ function buildSummaryBody(cfg: BelzConfigFile): string {
     lines.push(`  ${pc.dim("Not configured.")}`);
   }
 
+  lines.push("");
+  lines.push(pc.bold("Jenkins"));
+  const jk = cfg.jenkins;
+  if (jk?.baseUrl || jk?.user) {
+    lines.push(`  URL:      ${jk.baseUrl ?? pc.dim("(not set)")}`);
+    lines.push(`  User:     ${jk.user ?? pc.dim("(not set)")}`);
+    lines.push(`  Password: ${jk.password ? pc.green("set") : pc.red("unset")}`);
+    lines.push(`  Job:      ${jk.migrationJob ?? pc.dim("expertly.db-migration (default)")}`);
+  } else {
+    lines.push(`  ${pc.dim("Not configured.")}`);
+  }
+
   return lines.join("\n");
 }
 
@@ -96,6 +108,7 @@ async function runEditTui(): Promise<ConfigEditData> {
       { label: "Add new environment",        value: "add" },
       { label: "Remove an environment",      value: "remove" },
       { label: "Edit Teamwork credentials",  value: "teamwork" },
+      { label: "Edit Jenkins credentials",   value: "jenkins" },
       { label: "Exit",                        value: "exit" },
     ],
   });
@@ -187,23 +200,55 @@ async function runEditTui(): Promise<ConfigEditData> {
     return { action: "edit", saved: true, env: envName };
   }
 
-  // teamwork
-  const tw = (cfg as any).teamwork ?? {};
-  const email = await prompts.text({
-    message: `Email${tw.email ? ` (current: ${tw.email})` : ""}`,
-    defaultValue: tw.email ?? "",
+  if (choice === "teamwork") {
+    const tw = cfg.teamwork ?? {};
+    const email = await prompts.text({
+      message: `Email${tw.email ? ` (current: ${tw.email})` : ""}`,
+      defaultValue: tw.email ?? "",
+    });
+    const passRaw = await prompts.password({
+      message: tw.password ? "Password (leave blank to keep current)" : "Password",
+    });
+
+    const teamwork: Record<string, string> = {};
+    if (email) teamwork.email = email;
+    if (passRaw) teamwork.password = btoa(passRaw);
+    else if (tw.password) teamwork.password = tw.password;
+
+    writeConfigFile({ ...cfg, teamwork } as BelzConfigFile);
+    lifecycle.outro("Saved Teamwork credentials.");
+    return { action: "edit", saved: true };
+  }
+
+  // jenkins
+  const jk = cfg.jenkins ?? {};
+  const baseUrl = await prompts.text({
+    message: `Base URL${jk.baseUrl ? ` (current: ${jk.baseUrl})` : ""}`,
+    placeholder: jk.baseUrl ?? "https://jenkins-asg.stg.expertly.cloud",
+    defaultValue: jk.baseUrl ?? "",
   });
-  const passRaw = await prompts.password({
-    message: tw.password ? "Password (leave blank to keep current)" : "Password",
+  const jkUser = await prompts.text({
+    message: `Username${jk.user ? ` (current: ${jk.user})` : ""}`,
+    defaultValue: jk.user ?? "",
+  });
+  const jkPassRaw = await prompts.password({
+    message: jk.password ? "Password / API token (leave blank to keep current)" : "Password / API token",
+  });
+  const job = await prompts.text({
+    message: `Migration job${jk.migrationJob ? ` (current: ${jk.migrationJob})` : ""}`,
+    placeholder: "expertly.db-migration",
+    defaultValue: jk.migrationJob ?? "expertly.db-migration",
   });
 
-  const teamwork: Record<string, string> = {};
-  if (email) teamwork.email = email;
-  if (passRaw) teamwork.password = btoa(passRaw);
-  else if (tw.password) teamwork.password = tw.password;
+  const jenkins: Record<string, string> = {};
+  if (baseUrl) jenkins.baseUrl = baseUrl;
+  if (jkUser) jenkins.user = jkUser;
+  if (jkPassRaw) jenkins.password = btoa(jkPassRaw);
+  else if (jk.password) jenkins.password = jk.password;
+  if (job) jenkins.migrationJob = job;
 
-  writeConfigFile({ ...cfg, teamwork } as BelzConfigFile);
-  lifecycle.outro("Saved Teamwork credentials.");
+  writeConfigFile({ ...cfg, jenkins } as BelzConfigFile);
+  lifecycle.outro("Saved Jenkins credentials.");
   return { action: "edit", saved: true };
 }
 
