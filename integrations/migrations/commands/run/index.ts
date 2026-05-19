@@ -8,6 +8,7 @@ import {
   jobUrl,
   parseJenkinsConsole,
   parseMigrateRunArgs,
+  resolveMigrationTargets,
   resolveQueueItem,
   streamConsole,
   triggerBuild,
@@ -44,11 +45,30 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       }
     }
 
+    // Pre-flight: resolve every id against the SOURCE environment before the
+    // build is triggered. A PD draft id is not migratable (the migration
+    // service 500s on draft ids) — resolve it to its published sibling here,
+    // and surface the human-readable name of every entity being migrated.
+    if (showProgress) logProgress(args.quiet, "Resolving ids on the source environment…");
+    const preflight = await resolveMigrationTargets({
+      sourceEnv: args.sourceEnv,
+      profile,
+      migrateType: String(args.migrateType),
+      ids: args.ids,
+    });
+    const effectiveIds = preflight ? preflight.resolvedIds : args.ids;
+    if (preflight && showProgress) {
+      for (const t of preflight.targets) {
+        const swap = t.swapped ? `  ⤷ draft ${t.inputId} → published` : "";
+        logProgress(args.quiet, `  • ${t.name} [${t.kind}] ${t.resolvedId}${swap}`);
+      }
+    }
+
     const input: TriggerBuildInput = {
       client,
       profile,
       migrateType: args.migrateType,
-      ids: args.ids,
+      ids: effectiveIds,
       migrationId: args.migrationId,
       asyncMigration: args.asyncMigration,
       migrateDependent: args.migrateDependent,
@@ -111,6 +131,8 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       input,
       parsed,
       report: parsed.reportSummary,
+      resolvedTargets: preflight?.targets,
+      resolvedSourceEnv: preflight?.sourceEnv,
     };
 
     if (args.outPath) {
@@ -158,6 +180,19 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         ["Target Host", data.parsed.targetHost ?? ""],
       ]
     );
+
+    if (data.resolvedTargets && data.resolvedTargets.length > 0) {
+      ui.section(`Targets — resolved on ${data.resolvedSourceEnv ?? "source env"}`);
+      ui.table(
+        ["Name", "Kind", "Migrated id", "Note"],
+        data.resolvedTargets.map((t) => [
+          t.name,
+          t.kind,
+          t.resolvedId,
+          t.swapped ? `draft ${t.inputId} → published` : t.status ?? "",
+        ]),
+      );
+    }
 
     if (data.report) {
       ui.section("Report Summary");

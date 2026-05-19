@@ -5,4 +5,5 @@ export * from "./jenkins";
 export * from "./parser";
 export * from "./profiles";
 export * from "./report";
+export * from "./resolve-targets";
 export * from "./types";

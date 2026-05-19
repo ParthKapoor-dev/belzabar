@@ -102,8 +102,17 @@ Auth is cookie-based, separate from the NSM Bearer-token flow. Sessions live at 
 ### Migrations and environments
 
 - `belz migrate profiles` — list available migration profiles
-- `belz migrate run --module AD --ids "id1,id2" --profile <name>` — promote chains/pages between environments
+- `belz migrate run --module PD --ids "<id>" --source-env nsm-dev --target-env nsm-qa` — promote a chain / page / component between environments
+- `belz migrate status <build#>` / `belz migrate logs <build#>` — inspect a build
 - `belz envs` — list environments (`nsm-dev`, `nsm-qa`, `nsm-uat`)
+
+**Always migrate the PUBLISHED id, never a DRAFT id.** PD entity ids are
+environment-local, and the migration service fails with HTTP 500 on a draft id
+— Jenkins still prints "SUCCESS" even though the migration genuinely failed.
+`belz migrate run` resolves every id against the source environment first and
+auto-swaps a PD draft id for its published sibling (showing the entity name),
+but always pass the published id to begin with — get it from `belz pd show
+<id>` → `publishedId`.
 
 Default environment is `nsm-dev`. Override per-command with `--env nsm-qa` (etc.).
 

@@ -168,6 +168,21 @@ export interface MigrateProfilesData {
   flat: string[];
 }
 
+/**
+ * One migration id resolved against the source environment before the build is
+ * triggered — see resolve-targets.ts. `resolvedId` is what actually gets sent
+ * to Jenkins; it differs from `inputId` when a PD draft id was swapped for its
+ * published sibling.
+ */
+export interface ResolvedTarget {
+  inputId: string;
+  resolvedId: string;
+  name: string;
+  kind: "PD" | "AD";
+  status?: string;
+  swapped: boolean;
+}
+
 export interface MigrateRunData {
   action: "run";
   jobName: string;
@@ -180,6 +195,9 @@ export interface MigrateRunData {
   parsed: ParsedMigrationOutput;
   report?: ReportSummary;
   artifacts?: ArtifactWriteResult;
+  /** Source-env id resolution performed before triggering the build. */
+  resolvedTargets?: ResolvedTarget[];
+  resolvedSourceEnv?: string;
 }
 
 export interface MigrateStatusData {

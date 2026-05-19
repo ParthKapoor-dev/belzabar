@@ -19,6 +19,18 @@ REQUIRED
   OR
   --ids-file <path>            File containing IDs (comma/space/newline-separated).
 
+MIGRATION IDS
+  Always pass the PUBLISHED id of a PD page/component. A DRAFT id is NOT
+  migratable — the migration service fails fast with HTTP 500 while Jenkins
+  still prints "SUCCESS".
+
+  Before triggering the build, belz resolves every id against the SOURCE
+  environment: a PD draft id is automatically swapped for its published
+  sibling, and the name of each entity being migrated is shown. Resolution
+  needs --source-env (or an NCDNS profile it can derive the source env from)
+  plus configured credentials for that env. If an id is a draft with no
+  published version, belz aborts before the build so nothing is wasted.
+
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by
                                default). Names: SEMS, "Exp AI", "YS (YieldSec)",
