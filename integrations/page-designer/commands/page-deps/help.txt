@@ -1,0 +1,27 @@
+belz pd page-deps <input> [flags]
+
+Fetch the raw page-dependencies graph for a published page or component and
+print its `dependencyJSON`. This is the unvalidated wrapper around
+GET /rest/api/pagedesigner/pages/page-dependencies — use `belz pd translations`
+for the release-check verdict.
+
+<input> is resolved in the active environment to the entity's PUBLISHED id,
+then queried. It accepts:
+  • a page/component id      40d89f5f4b65e79c0856953d668ce67a
+  • a component name         n_s_public_portal_login
+  • a PD designer URL        https://.../ui-designer/page/<id>
+  • an app page URL          https://.../pages/<path>
+
+Entity ids are environment-local. Pass an id that exists in --env, or pass a
+name and let belz resolve it there.
+
+Flags:
+  --status <PUBLISHED|DRAFT>  Dependency status to query (default: PUBLISHED).
+  --force                     Bypass the config cache when resolving <input>.
+  --llm                       Emit the JSON envelope.
+  --env <name>                Environment to resolve + query (default: nsm-dev).
+  --help, -h                  Show this help message.
+
+Examples:
+  belz pd page-deps 40d89f5f4b65e79c0856953d668ce67a --env nsm-prod
+  belz pd page-deps n_s_public_portal_login --env nsm-prod --llm

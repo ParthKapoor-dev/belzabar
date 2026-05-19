@@ -1,0 +1,1 @@
+  translations <input>       Validate a published page/component's translation phrases.

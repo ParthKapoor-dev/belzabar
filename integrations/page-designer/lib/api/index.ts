@@ -8,6 +8,7 @@
 import * as client from "./client";
 import type {
   RawPageResponse,
+  RawPageDependencies,
   RawPageListItem,
   RawHistoryEntry,
   RawPartialUpdateOperation,
@@ -49,6 +50,13 @@ export const pdApi = {
 
   fetchAllComponents(): Promise<RawPageListItem[]> {
     return client.fetchAllComponents();
+  },
+
+  fetchPageDependencies(
+    publishedId: string,
+    status: PdStatus = "PUBLISHED",
+  ): Promise<RawPageDependencies> {
+    return client.fetchPageDependencies(publishedId, status);
   },
 
   // -------- history -------------------------------------------------------

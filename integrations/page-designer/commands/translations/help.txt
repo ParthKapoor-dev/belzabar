@@ -1,0 +1,39 @@
+belz pd translations <input> [flags]
+
+Validate the translation phrases of a published page or component, using the
+page-dependencies API. Built for post-release deployment validation.
+
+<input> is resolved in the active environment to the entity's draft AND
+published ids. The published id is queried against
+GET /rest/api/pagedesigner/pages/page-dependencies; the draft id is the id the
+main entity's phrase keys are expected to embed.
+
+Checks performed:
+  1. Every *__translated_phrases entry has a `.key` of the form
+     `page.<id>` or `symbol.<id>` with a non-empty id.
+  2. The queried (main) entity's phrase keys embed its own draft id.
+
+Verdict (in --llm mode: data.check.verdict):
+  PASS  all phrase keys well-formed and the main draft id matches.
+  FAIL  malformed keys, a missing/empty main array, or a draft-id mismatch.
+  N/A   the entity has no __translated_phrases arrays at all — a style / font /
+        image component with no translatable text. This is expected, not a
+        failure.
+
+<input> accepts a page/component id, a component name, a PD designer URL, or an
+app page URL. Entity ids are environment-local — pass an id valid in --env, or
+a name to resolve there.
+
+Flags:
+  --expect-draft <id>         Override the expected main draft id (default: the
+                              draft id resolved from <input>).
+  --status <PUBLISHED|DRAFT>  Dependency status to query (default: PUBLISHED).
+  --force                     Bypass the config cache when resolving <input>.
+  --llm                       Emit the JSON envelope.
+  --env <name>                Environment to resolve + query (default: nsm-dev).
+  --help, -h                  Show this help message.
+
+Examples:
+  belz pd translations 40d89f5f4b65e79c0856953d668ce67a --env nsm-prod
+  belz pd translations n_s_public_portal_login --env nsm-prod --llm
+  belz pd translations "LT 262 Details" --env nsm-prod --expect-draft 49b18fee5127213b8a60bf8c2ca93cc5
