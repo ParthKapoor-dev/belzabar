@@ -18,6 +18,8 @@ coverage
 logs
 _.log
 report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+# ...but `belz migrate logs` is a real source command directory, not log output.
+!integrations/migrations/commands/logs/
 
 # dotenv environment variable files
 .env
