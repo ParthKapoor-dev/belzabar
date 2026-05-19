@@ -260,15 +260,20 @@ export async function publishPage(
   pageId: string,
   opts: { landingPage?: boolean; hostIds?: string[] } = {},
 ): Promise<unknown> {
-  const body: Record<string, unknown> = { landingPage: opts.landingPage === true };
+  // The server reads publish parameters from the QUERY STRING, not the body.
+  // Sending hostIds in a JSON body (as belz used to) means the server sees no
+  // host: it updates the PUBLISHED sibling record but never DEPLOYS the page
+  // to a host, so the live app keeps serving the previously-deployed config.
+  // The PD designer's "Publish and Deploy" sends ?landingPage=&hostIds= as
+  // query params — match that. hostIds is a comma-separated list.
+  const params = new URLSearchParams();
+  params.set("landingPage", String(opts.landingPage === true));
   if (opts.hostIds && opts.hostIds.length > 0) {
-    body.hostIds = opts.hostIds.join(",");
+    params.set("hostIds", opts.hostIds.join(","));
   }
-  const response = await apiFetch(`${PD_BASE}/pages/${pageId}/publish`, {
+  const response = await apiFetch(`${PD_BASE}/pages/${pageId}/publish?${params}`, {
     method: "POST",
     authMode: "Bearer",
-    body: JSON.stringify(body),
-    headers: { "Content-Type": "application/json" },
   });
   await ensureOk(response, { method: "POST", path: `/pages/${pageId}/publish` });
   return response.json().catch(() => ({}));

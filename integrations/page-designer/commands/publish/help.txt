@@ -1,7 +1,14 @@
 Usage: belz pd publish <pageId> [--landing] [--host <id> ...] [--yes]
 
 Publish a PD draft page to its deployable sibling. Wraps POST
-/pages/<draftId>/publish in an acquire/release lock cycle.
+/pages/<draftId>/publish?landingPage=&hostIds= in an acquire/release lock
+cycle.
+
+IMPORTANT: passing --host is what makes the page go LIVE. Without --host the
+draft is published to its PUBLISHED sibling record, but the page is NOT
+deployed to any host — the live app keeps serving the previously-deployed
+config. Pass --host to publish AND deploy (mirrors the designer's
+"Publish and Deploy").
 
 Arguments:
   <pageId>            PD draft page id. If a PUBLISHED id is given, belz
@@ -9,10 +16,10 @@ Arguments:
                       warning). --force overrides the guard.
 
 Flags:
-  --landing           Mark this as the site's landing page (maps to
-                      body.landingPage:true).
-  --host <id>         Publish to a specific deployment host. Repeatable —
-                      `--host a --host b` sends body.hostIds:"a,b".
+  --landing           Mark this as the site's landing page (?landingPage=true).
+  --host <id>         Publish AND deploy to a specific host. Repeatable —
+                      `--host a --host b` sends ?hostIds=a,b. Omit to publish
+                      without deploying.
   --yes, -y           Required to perform the publish.
   --force             Bypass the PUBLISHED-input draft-guard refusal.
   --help, -h          Show this help message.

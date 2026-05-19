@@ -72,29 +72,34 @@ const command: CommandModule<PublishArgs, PublishData> = {
       );
     }
 
-    await withLock(targetId, async () => {
-      await pdApi.publishPage(targetId, { landingPage: args.landing, hostIds: args.hostIds });
-    });
+    // The POST /pages/<draftId>/publish response body IS the freshly-published
+    // page — it carries the authoritative post-publish versionId.
+    const publishResponse = await withLock(targetId, () =>
+      pdApi.publishPage(targetId, { landingPage: args.landing, hostIds: args.hostIds }),
+    );
 
-    // Re-fetch draft to see its (maybe bumped) versionId and find the published sibling.
-    const draftAfter = await pdApi.fetchPage(targetId);
-    const publishedAfter = guard.ok && guard.publishedId
-      ? await pdApi.fetchPage(guard.publishedId)
-      : null;
+    // Verify from that response — NOT by re-reading GET /pages/<publishedId>.
+    // The single-page GET is served from a stale server-side cache that keeps
+    // returning the PRE-publish version for some time after a publish; trusting
+    // it makes every successful publish look like a silent no-op (and fooled
+    // every prior "PD publish doesn't work" investigation).
+    const published = (publishResponse ?? {}) as {
+      id?: unknown;
+      versionId?: unknown;
+      status?: unknown;
+    };
+    const postPublishVersionId =
+      typeof published.versionId === "number" ? published.versionId : null;
 
     return ok<PublishData>({
       pageId: args.pageId,
       draftId: targetId,
-      publishedId: guard.ok ? guard.publishedId : guard.publishedId,
+      publishedId: typeof published.id === "string" ? published.id : guard.publishedId,
       switchedFromPublished: guard.ok ? guard.switchedFromPublished : false,
       landing: args.landing,
       hostIds: args.hostIds,
       preVersionId: before.versionId,
-      postPublishVersionId:
-        (publishedAfter && typeof publishedAfter.versionId === "number"
-          ? publishedAfter.versionId
-          : null) ??
-        (draftAfter && typeof draftAfter.versionId === "number" ? draftAfter.versionId : null),
+      postPublishVersionId,
     });
   },
 
@@ -109,9 +114,13 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Published", data.publishedId ?? "N/A"],
         ["Landing page", data.landing ? "yes" : "no"],
         ["Host IDs", data.hostIds.length > 0 ? data.hostIds.join(", ") : "none"],
-        ["Pre-version", data.preVersionId ?? "N/A"],
-        ["Post-publish version", data.postPublishVersionId ?? "N/A"],
+        ["Draft version (before)", data.preVersionId ?? "N/A"],
+        ["Published version (after)", data.postPublishVersionId ?? "N/A"],
       ],
+    );
+    ui.info(
+      "Published version is read from the publish response. Note: `belz pd show " +
+        "<publishedId>` may lag — GET /pages/<id> is server-side cached.",
     );
   },
 };
