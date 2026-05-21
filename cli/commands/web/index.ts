@@ -1,7 +1,7 @@
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from "fs";
 import { homedir } from "os";
-import { join } from "path";
+import { dirname, join } from "path";
 import {
   CliError,
   ok,
@@ -26,15 +26,40 @@ const PID_FILE = join(PID_DIR, "web.pid");
 const LOG_FILE = join(LOG_DIR, "web.log");
 const WEB_URL = "http://localhost:65535";
 
-// The login-start service runs the belz binary itself — `belz web start -v`
-// (foreground) under a supervisor, `belz web start` (detached) otherwise — so
-// there is a single source of truth for how the server is launched.
-const WEB_SERVICE_SPEC: ServiceSpec = {
-  id: "belz-web",
-  displayName: "Belzabar Web",
-  superviseExec: { command: process.execPath, args: ["web", "start", "-v"] },
-  detachExec: { command: process.execPath, args: ["web", "start"] },
-};
+// Resolve the directory holding `node`, so the login service can find it even
+// when node is installed via nvm/fnm/volta (NOT on the minimal PATH a systemd
+// --user unit or login agent gets). We bake this onto the service's PATH.
+function nodeBinDir(): string | null {
+  try {
+    const r = spawnSync(process.platform === "win32" ? "where" : "which", ["node"], { encoding: "utf8" });
+    const first = (r.stdout ?? "").split(/\r?\n/)[0]?.trim();
+    return first ? dirname(first) : null;
+  } catch {
+    return null;
+  }
+}
+
+function servicePath(): string {
+  const base = process.env.PATH ?? "/usr/local/bin:/usr/bin:/bin";
+  const dir = nodeBinDir();
+  return dir && !base.split(":").includes(dir) ? `${dir}:${base}` : base;
+}
+
+// The login-start service runs the belz binary itself: `belz web start
+// --foreground` (blocks, so a supervisor like systemd/launchd owns it) for
+// supervised backends, `belz web start` (self-detaching) for unsupervised ones.
+// `--foreground` (NOT `-v`, which the runner strips as a global verbose flag)
+// is what keeps the process in the foreground under the supervisor. We also
+// pin PATH so the spawned `node` is found at login.
+function webServiceSpec(): ServiceSpec {
+  return {
+    id: "belz-web",
+    displayName: "Belzabar Web",
+    superviseExec: { command: process.execPath, args: ["web", "start", "--foreground"] },
+    detachExec: { command: process.execPath, args: ["web", "start"] },
+    env: { PATH: servicePath() },
+  };
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -43,6 +68,8 @@ type WebAction = "info" | "start" | "stop" | "restart" | "status" | "enable" | "
 interface WebArgs {
   action: WebAction;
   verbose: boolean;
+  /** Run the server in the foreground (blocking) — used by the supervised service. */
+  foreground: boolean;
 }
 
 interface WebData {
@@ -143,10 +170,11 @@ const command: CommandModule<WebArgs, WebData> = {
     const isFlag = (a: string) => a.startsWith("-");
     const sub = args[0];
     const verbose = args.includes("-v") || args.includes("--verbose");
+    const foreground = args.includes("--foreground") || args.includes("--fg");
 
     // Bare `belz web` no longer starts the server — it shows status + usage.
     if (!sub || isFlag(sub)) {
-      return { action: "info", verbose };
+      return { action: "info", verbose, foreground };
     }
 
     const validActions: WebAction[] = [
@@ -158,7 +186,7 @@ const command: CommandModule<WebArgs, WebData> = {
       "disable",
     ];
     if (validActions.includes(sub as WebAction)) {
-      return { action: sub as WebAction, verbose };
+      return { action: sub as WebAction, verbose, foreground };
     }
 
     throw new CliError(
@@ -176,7 +204,7 @@ const command: CommandModule<WebArgs, WebData> = {
         status: pid ? "running" : "not-running",
         pid: pid ?? undefined,
         url: pid ? WEB_URL : undefined,
-        autostart: serviceStatus(WEB_SERVICE_SPEC),
+        autostart: serviceStatus(webServiceSpec()),
       });
     }
 
@@ -188,14 +216,14 @@ const command: CommandModule<WebArgs, WebData> = {
         status: pid ? "running" : "not-running",
         pid: pid ?? undefined,
         url: pid ? WEB_URL : undefined,
-        autostart: serviceStatus(WEB_SERVICE_SPEC),
+        autostart: serviceStatus(webServiceSpec()),
       });
     }
 
     // ── enable (login autostart) ───────────────────────────────────────────────
     if (args.action === "enable") {
       assertWebInstalled();
-      const autostart = enableService(WEB_SERVICE_SPEC);
+      const autostart = enableService(webServiceSpec());
       recordAutostart(true);
       // Unsupervised backends only fire at the next login — start it now so
       // `enable` behaves consistently across platforms.
@@ -206,12 +234,12 @@ const command: CommandModule<WebArgs, WebData> = {
 
     // ── disable (remove login autostart) ───────────────────────────────────────
     if (args.action === "disable") {
-      disableService(WEB_SERVICE_SPEC);
+      disableService(webServiceSpec());
       recordAutostart(false);
       return ok<WebData>({
         action: "disable",
         status: "disabled",
-        autostart: serviceStatus(WEB_SERVICE_SPEC),
+        autostart: serviceStatus(webServiceSpec()),
       });
     }
 
@@ -235,10 +263,11 @@ const command: CommandModule<WebArgs, WebData> = {
         });
       }
 
-      if (args.verbose) {
-        // Foreground — stream logs to terminal (blocking). Used by the
-        // supervised login-start service, so it writes the PID file too,
-        // keeping `belz web status` / `stop` accurate under supervision.
+      if (args.foreground) {
+        // Foreground (blocking) — used by the supervised login-start service so
+        // the supervisor (systemd/launchd) owns the process. Writes the PID
+        // file too, keeping `belz web status` / `stop` accurate under
+        // supervision, and exits with node's code so Restart=on-failure works.
         assertWebInstalled();
         mkdirSync(PID_DIR, { recursive: true });
         await new Promise<void>((resolve, reject) => {
@@ -257,8 +286,9 @@ const command: CommandModule<WebArgs, WebData> = {
               }
             }
           };
-          proc.on("close", () => {
+          proc.on("close", (code) => {
             clearPid();
+            if (typeof code === "number" && code !== 0) process.exitCode = code;
             resolve();
           });
           proc.on("error", (err) => {
