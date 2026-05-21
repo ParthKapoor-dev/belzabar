@@ -35,6 +35,8 @@ bun run generate
 bun build --compile --minify --target=bun-linux-x64 ./bin/cli-build.ts --outfile "$WORK/$ASSET"
 
 # ── 2. Refresh belz-sandbox tracked content (skills + rules + setup script) ──
+# Make plain `git push` use gh's token (CI sets GH_TOKEN; locally uses your auth).
+gh auth setup-git
 echo "📥 cloning $SANDBOX_REPO…"
 gh repo clone "$SANDBOX_REPO" "$WORK/sandbox" -- --depth=1
 SB="$WORK/sandbox"
