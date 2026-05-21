@@ -1,0 +1,55 @@
+# Builds the belz Linux binary and publishes the "cloud bundle" to the
+# belz-sandbox repo, so Claude Code cloud sessions always get the latest belz +
+# skills WITHOUT ever attaching the private belzabar repo.
+#
+# What it does (see cli/scripts/cloud-publish.sh):
+#   • compiles belz-linux-x64 and uploads it to a rolling Release on belz-sandbox
+#   • syncs agents/*/ → belz-sandbox/.claude/skills/ and the cloud rules + setup
+#
+# Required configuration:
+#   secret  BELZ_SANDBOX_TOKEN  — fine-grained PAT with Contents: read & write
+#                                 on the belz-sandbox repo ONLY (NOT belzabar).
+#   variable BELZ_SANDBOX_REPO  — e.g. "your-org/belz-sandbox".
+#
+# Why a separate repo + scoped token: GitHub has no "releases-only" scope, so a
+# token that could read a release on belzabar could also clone belzabar's
+# source. Publishing to belz-sandbox keeps the cloud token unable to reach
+# belzabar at all.
+
+name: belz-cloud-release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cli/**"
+      - "integrations/**"
+      - "packages/**"
+      - "agents/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: belz-cloud-release
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    # No-op until you opt in by setting the BELZ_SANDBOX_REPO repo variable, so
+    # this never fails CI on belzabar for an unconfigured optional feature.
+    if: vars.BELZ_SANDBOX_REPO != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Publish cloud bundle to belz-sandbox
+        env:
+          GH_TOKEN: ${{ secrets.BELZ_SANDBOX_TOKEN }}
+          SANDBOX_REPO: ${{ vars.BELZ_SANDBOX_REPO }}
+        run: bash cli/scripts/cloud-publish.sh

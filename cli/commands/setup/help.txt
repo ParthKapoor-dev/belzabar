@@ -1,7 +1,7 @@
 Usage: belz setup [flags]
 
-Interactive first-time setup. Walks you through credential entry for each
-built-in environment (nsm-dev, nsm-qa, nsm-uat) and optional Teamwork creds,
+Interactive first-time setup. Walks you through credential entry for the
+built-in environments (nsm-dev, nsm-qa, nsm-uat) and optional Teamwork creds,
 then writes ~/.belz/config.json.
 
 Passwords are base64-encoded before being stored. The config file is the
@@ -9,15 +9,26 @@ source of truth: it overrides any matching environment variables.
 
 Flags:
   --env-file <path>  Load credentials from a .env file instead of prompting.
-                     The file should define NSM_DEV_USER, NSM_DEV_PASSWORD,
-                     NSM_QA_USER, NSM_QA_PASSWORD, NSM_UAT_USER, NSM_UAT_PASSWORD,
-                     TEAMWORK_EMAIL, TEAMWORK_PASSWORD as needed.
+  --from-env         Load credentials from the current process environment
+                     (no prompts, no file) — e.g. inside a CI or cloud session.
   --force            Overwrite an existing config without asking.
 
-Note: 'belz setup' refuses to run with --llm or on a non-TTY. Use --env-file
-to populate config non-interactively.
+NON-INTERACTIVE KEYS (--env-file / --from-env)
+  Built-in NSM envs:  NSM_DEV_USER, NSM_DEV_PASSWORD, NSM_QA_USER,
+                      NSM_QA_PASSWORD, NSM_UAT_USER, NSM_UAT_PASSWORD
+  Any project's env:  BELZ_ENV_<NAME>_URL, BELZ_ENV_<NAME>_USER,
+                      BELZ_ENV_<NAME>_PASSWORD, BELZ_ENV_<NAME>_PROJECT
+                      where <NAME> lowercases with `_`→`-`
+                      (BELZ_ENV_YS_QA_URL → env "ys-qa"). URL is required for
+                      a new env; for built-in names it is filled in for you.
+  Jenkins:            BELZ_JENKINS_URL, BELZ_JENKINS_USER,
+                      BELZ_JENKINS_PASSWORD, BELZ_JENKINS_JOB
+  Teamwork:           TEAMWORK_EMAIL, TEAMWORK_PASSWORD
+
+Note: 'belz setup' refuses to run interactively with --llm or on a non-TTY.
+Use --env-file or --from-env to populate config non-interactively.
 
 Examples:
   belz setup
-  belz setup --env-file ./secrets.env
   belz setup --env-file ./secrets.env --force
+  belz setup --from-env --force          # CI / cloud session

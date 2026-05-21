@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# cloud-publish.sh — build the belz Linux binary and publish the cloud bundle
+# to the belz-sandbox repo (the repo Claude Code cloud sessions connect to).
+#
+# belzabar stays private and is NEVER attached to a cloud session. Instead this
+# script pushes everything a cloud session needs OUT to belz-sandbox:
+#   • belz-linux-x64   → a rolling GitHub Release (tag: latest) on belz-sandbox
+#   • .claude/skills/  ← agents/*/  (committed, so the cloud session loads them)
+#   • CLAUDE.md        ← cloud/sandbox-CLAUDE.md (the "use belz, don't commit" rules)
+#   • cloud-setup.sh   ← the session bootstrap script (committed for reference)
+#
+# Run locally (with your own gh auth) or from CI (.github/workflows/belz-cloud-release.yml).
+#
+# Requires: bun, git, and gh authenticated with contents:write on $SANDBOX_REPO
+#           (in CI, set GH_TOKEN to a fine-grained PAT scoped to belz-sandbox only).
+# Usage:    SANDBOX_REPO=owner/belz-sandbox bash cli/scripts/cloud-publish.sh
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+SANDBOX_REPO="${SANDBOX_REPO:?set SANDBOX_REPO=owner/belz-sandbox}"
+RELEASE_TAG="${RELEASE_TAG:-latest}"
+ASSET="belz-linux-x64"
+WORK="$(mktemp -d)"
+trap 'rm -rf "$WORK"' EXIT
+
+# ── 1. Build the Linux binary ────────────────────────────────────────────────
+echo "🔨 building $ASSET…"
+cd "$REPO_ROOT"
+bun install --frozen-lockfile 2>/dev/null || bun install
+cd "$REPO_ROOT/cli"
+bun run generate
+bun build --compile --minify --target=bun-linux-x64 ./bin/cli-build.ts --outfile "$WORK/$ASSET"
+
+# ── 2. Refresh belz-sandbox tracked content (skills + rules + setup script) ──
+echo "📥 cloning $SANDBOX_REPO…"
+gh repo clone "$SANDBOX_REPO" "$WORK/sandbox" -- --depth=1
+SB="$WORK/sandbox"
+
+rm -rf "$SB/.claude/skills"
+mkdir -p "$SB/.claude/skills"
+for d in "$REPO_ROOT"/agents/*/; do
+  [ -f "$d/SKILL.md" ] || continue
+  name="$(basename "$d")"
+  mkdir -p "$SB/.claude/skills/$name"
+  cp -R "$d." "$SB/.claude/skills/$name/"
+done
+cp "$SCRIPT_DIR/cloud/sandbox-CLAUDE.md" "$SB/CLAUDE.md"
+cp "$SCRIPT_DIR/cloud-setup.sh" "$SB/cloud-setup.sh"
+
+# ── 3. Commit + push the content (only if it changed) ────────────────────────
+cd "$SB"
+git add -A
+if git diff --cached --quiet; then
+  echo "↔︎  skills/rules unchanged — no commit."
+else
+  SRC_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  git -c user.name="belz-cloud-bot" -c user.email="belz-cloud-bot@users.noreply.github.com" \
+    commit -m "chore(cloud): sync belz skills + rules (belzabar@${SRC_SHA})"
+  git push
+  echo "⬆️  pushed skills/rules to $SANDBOX_REPO"
+fi
+
+# ── 4. Publish the binary as the rolling release ─────────────────────────────
+gh release create "$RELEASE_TAG" --repo "$SANDBOX_REPO" \
+  --title "belz (rolling)" --notes "Latest belz build, published by belzabar CI." 2>/dev/null || true
+gh release upload "$RELEASE_TAG" "$WORK/$ASSET" --repo "$SANDBOX_REPO" --clobber
+echo "✅ published $ASSET to $SANDBOX_REPO @ $RELEASE_TAG"
