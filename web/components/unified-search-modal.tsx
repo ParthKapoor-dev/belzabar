@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
 
-const ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"] as const
-type Env = (typeof ENVS)[number]
+// Used until /api/envs loads the user's actual configured envs (any project).
+const FALLBACK_ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"]
 
 interface AdMatch {
   type: "method" | "category"
@@ -99,7 +99,8 @@ export function UnifiedSearchModal({
 }) {
   const [query, setQuery] = useState("")
   const [debouncedQuery, setDebouncedQuery] = useState("")
-  const [env, setEnv] = useState<Env>("nsm-dev")
+  const [envs, setEnvs] = useState<string[]>(FALLBACK_ENVS)
+  const [env, setEnv] = useState<string>(FALLBACK_ENVS[0])
   const [results, setResults] = useState<SearchResults | null>(null)
   const [loading, setLoading] = useState(false)
   const [selectedIdx, setSelectedIdx] = useState(0)
@@ -116,6 +117,25 @@ export function UnifiedSearchModal({
       setSelectedIdx(0)
       setLoading(false)
       requestAnimationFrame(() => inputRef.current?.focus())
+    }
+  }, [open])
+
+  // Load the user's configured envs (any project) the first time we open.
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    fetch("/api/envs")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data || !Array.isArray(data.envs)) return
+        const names = data.envs.map((e: { name: string }) => e.name).filter(Boolean)
+        if (names.length > 0) setEnvs(names)
+      })
+      .catch(() => {
+        /* belz web/CLI unavailable — keep FALLBACK_ENVS */
+      })
+    return () => {
+      cancelled = true
     }
   }, [open])
 
@@ -185,10 +205,10 @@ export function UnifiedSearchModal({
 
   const cycleEnv = useCallback(() => {
     setEnv((current) => {
-      const idx = ENVS.indexOf(current)
-      return ENVS[(idx + 1) % ENVS.length]
+      const idx = envs.indexOf(current)
+      return envs[(idx + 1) % envs.length]
     })
-  }, [])
+  }, [envs])
 
   const openSelected = useCallback(() => {
     const item = flatResults[selectedIdx]
@@ -276,7 +296,7 @@ export function UnifiedSearchModal({
             className="flex-1 py-3 text-sm bg-transparent outline-none placeholder:text-muted-foreground/50"
           />
           <div className="flex items-center gap-1.5 shrink-0">
-            {ENVS.map((e) => (
+            {envs.map((e) => (
               <button
                 key={e}
                 type="button"
@@ -288,7 +308,7 @@ export function UnifiedSearchModal({
                     : "border-border text-muted-foreground/40 hover:text-muted-foreground hover:border-muted-foreground/50",
                 )}
               >
-                {e.replace("nsm-", "")}
+                {e}
               </button>
             ))}
           </div>

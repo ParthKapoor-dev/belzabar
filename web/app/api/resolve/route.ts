@@ -1,9 +1,7 @@
 export const runtime = "nodejs"
 
 import { runBelz, BelzSpawnError } from "@/lib/run-belz"
-
-const VALID_ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"] as const
-type Env = (typeof VALID_ENVS)[number]
+import { resolveEnv } from "@/lib/envs"
 
 type Kind = "ad" | "pd"
 
@@ -109,7 +107,7 @@ export async function POST(request: Request) {
       { headers: CORS_HEADERS },
     )
   }
-  const safeEnv: Env = VALID_ENVS.includes(env as Env) ? (env as Env) : "nsm-dev"
+  const safeEnv = resolveEnv(env)
 
   const kinds = candidateKinds(safeText)
   const settled = await Promise.allSettled(kinds.map((k) => tryShow(k, safeText, safeEnv)))

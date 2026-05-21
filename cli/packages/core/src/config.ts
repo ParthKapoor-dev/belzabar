@@ -11,6 +11,8 @@ export interface BelzConfigFile {
     url?: string;
     user?: string;
     password?: string;
+    /** Project this env belongs to (e.g. "NSM", "YieldSec"). Defaults to the env-name prefix. */
+    project?: string;
   }>;
   teamwork?: {
     email?: string;
@@ -114,6 +116,17 @@ const getCreds = (
 
 const BUILTIN_ENVS = new Set(["nsm-dev", "nsm-qa", "nsm-uat"]);
 
+/**
+ * Derive a project label from an env name when one isn't given explicitly.
+ * The prefix before the first `-`/`_` is the project (e.g. `ys-qa` → "YS",
+ * `nsm-dev` → "NSM"). Keeps `belz envs` and the env registry project-aware
+ * without hardcoding each project.
+ */
+function deriveProject(name: string): string {
+  const prefix = name.split(/[-_]/)[0] ?? name;
+  return prefix.toUpperCase();
+}
+
 const environments: Record<string, Environment> = {
   "nsm-dev": {
     name: "nsm-dev",
@@ -155,7 +168,7 @@ for (const [name, entry] of Object.entries(fileEnvs)) {
   if (BUILTIN_ENVS.has(name)) continue;
   environments[name] = {
     name,
-    project: name.toUpperCase().replace(/-/g, "_"),
+    project: entry.project ?? deriveProject(name),
     baseUrl: (entry.url ?? "").replace(/\/$/, ""),
     credentials: {
       loginId: entry.user ?? "",

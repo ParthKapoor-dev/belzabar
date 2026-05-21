@@ -12,7 +12,13 @@
     "https://nsm-uat.nc.verifi.dev/*",
     "https://staff-nss-stage.verifi-nc.com/*",
     "https://staff-nss.verifi-nc.com/*",
+    "https://yieldsec.expertly.cloud/*",
     "https://yieldsec.qa.expertly.cloud/*",
+    "https://yieldsec.stage.expertly.cloud/*",
+    "https://yieldsec.expertly.com/*",
+    "https://public-yieldsec.demo.expertly.cloud/*",
+    "https://public-yieldsec.stage.expertly.cloud/*",
+    "https://ysmetrics.com/*",
     "http://localhost:65535/*",
     "http://127.0.0.1:65535/*"
   ],
@@ -29,7 +35,10 @@
         "https://nsm-uat.nc.verifi.dev/automation-designer/*",
         "https://staff-nss-stage.verifi-nc.com/automation-designer/*",
         "https://staff-nss.verifi-nc.com/automation-designer/*",
-        "https://yieldsec.qa.expertly.cloud/automation-designer/*"
+        "https://yieldsec.expertly.cloud/automation-designer/*",
+        "https://yieldsec.qa.expertly.cloud/automation-designer/*",
+        "https://yieldsec.stage.expertly.cloud/automation-designer/*",
+        "https://yieldsec.expertly.com/automation-designer/*"
       ],
       "js": ["dist/ad-content.js"],
       "run_at": "document_idle"
@@ -41,7 +50,10 @@
         "https://nsm-uat.nc.verifi.dev/ui-designer/*",
         "https://staff-nss-stage.verifi-nc.com/ui-designer/*",
         "https://staff-nss.verifi-nc.com/ui-designer/*",
-        "https://yieldsec.qa.expertly.cloud/ui-designer/*"
+        "https://yieldsec.expertly.cloud/ui-designer/*",
+        "https://yieldsec.qa.expertly.cloud/ui-designer/*",
+        "https://yieldsec.stage.expertly.cloud/ui-designer/*",
+        "https://yieldsec.expertly.com/ui-designer/*"
       ],
       "js": ["dist/pd-content.js"],
       "run_at": "document_idle"
@@ -53,7 +65,13 @@
         "https://nsm-uat.nc.verifi.dev/pages/*",
         "https://staff-nss-stage.verifi-nc.com/pages/*",
         "https://staff-nss.verifi-nc.com/pages/*",
-        "https://yieldsec.qa.expertly.cloud/pages/*"
+        "https://yieldsec.expertly.cloud/pages/*",
+        "https://yieldsec.qa.expertly.cloud/pages/*",
+        "https://yieldsec.stage.expertly.cloud/pages/*",
+        "https://yieldsec.expertly.com/pages/*",
+        "https://public-yieldsec.demo.expertly.cloud/pages/*",
+        "https://public-yieldsec.stage.expertly.cloud/pages/*",
+        "https://ysmetrics.com/pages/*"
       ],
       "js": ["dist/pd-inspector.js"],
       "run_at": "document_idle"

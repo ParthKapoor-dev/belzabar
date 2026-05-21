@@ -1,9 +1,7 @@
 export const runtime = "nodejs"
 
 import { runBelz, BelzSpawnError } from "@/lib/run-belz"
-
-const VALID_ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"] as const
-type Env = (typeof VALID_ENVS)[number]
+import { resolveEnv } from "@/lib/envs"
 
 const UUID_RE = /^[0-9a-f]{32}$/i
 const MAX_UUIDS = 30
@@ -37,7 +35,7 @@ interface MethodMeta {
  * null on any miss/failure; rethrows {@link BelzSpawnError} so a missing binary
  * surfaces as a 500.
  */
-async function resolveMeta(uuid: string, env: Env): Promise<MethodMeta | null> {
+async function resolveMeta(uuid: string, env: string): Promise<MethodMeta | null> {
   let raw: string
   try {
     raw = await runBelz(["ad", "show", uuid, "--llm", "--env", env])
@@ -59,7 +57,7 @@ async function resolveMeta(uuid: string, env: Env): Promise<MethodMeta | null> {
 /** Resolve uuids with a bounded worker pool so we never spawn 30 `belz` at once. */
 async function resolveAll(
   uuids: string[],
-  env: Env,
+  env: string,
 ): Promise<Record<string, MethodMeta | null>> {
   const items: Record<string, MethodMeta | null> = {}
   let cursor = 0
@@ -104,7 +102,7 @@ export async function POST(request: Request) {
     ),
   ).slice(0, MAX_UUIDS)
 
-  const safeEnv: Env = VALID_ENVS.includes(env as Env) ? (env as Env) : "nsm-dev"
+  const safeEnv = resolveEnv(env)
 
   if (safeUuids.length === 0) {
     return Response.json({ items: {} }, { headers: CORS_HEADERS })

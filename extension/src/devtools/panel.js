@@ -59,10 +59,68 @@ const openQueue = [];
 let openProcessing = false;
 
 // ---- env detection --------------------------------------------------------
+// The belz CLI config is the source of truth for which envs exist and which
+// host each one lives on, so we fetch that map from belz web (`/api/envs`).
+// This is what makes the panel work for ANY project the user has configured
+// (NSM, YieldSec, …) instead of only NSM. `envByHost` is the loaded registry;
+// the regex fallbacks below cover the moment before it loads / when belz web
+// is unreachable.
+const envByHost = new Map(); // lowercase hostname -> belz env name
+
+function loadEnvRegistry() {
+  fetch(BELZ_WEB + '/api/envs')
+    .then((r) => (r.ok ? r.json() : null))
+    .then((data) => {
+      if (!data || !Array.isArray(data.envs)) return;
+      envByHost.clear();
+      for (const e of data.envs) {
+        if (e && typeof e.host === 'string' && e.host && typeof e.name === 'string') {
+          envByHost.set(e.host.toLowerCase(), e.name);
+        }
+      }
+      setOffline(false);
+      detectEnv(); // re-resolve now that the real host→env mapping is known
+    })
+    .catch(() => {
+      /* belz web down — keep the built-in host rules below */
+    });
+}
+
+// Maps the inspected window's hostname to a belz env name. Public-portal hosts
+// collapse to the same env as their staff portal — the AD method behind them is
+// the same entity, and the designer only lives on the staff portal.
 function envFromHost(host) {
-  if (typeof host !== 'string') return 'nsm-dev';
-  const m = host.match(/^(nsm-(?:dev|qa|uat))(?:-public)?\./i);
-  return m ? m[1].toLowerCase() : 'nsm-dev';
+  if (typeof host !== 'string') return currentEnv || 'nsm-dev';
+  const h = host.toLowerCase();
+
+  // 1. Exact match against the configured envs (project-agnostic).
+  const fromRegistry = envByHost.get(h);
+  if (fromRegistry) return fromRegistry;
+
+  // 2. Built-in fallbacks for before the registry loads / belz web is down.
+  const nsm = h.match(/^(nsm-(?:dev|qa|uat))(?:-public)?\./);
+  if (nsm) return nsm[1];
+  if (h === 'staff-nss-stage.verifi-nc.com') return 'nsm-stage';
+  if (h === 'staff-nss.verifi-nc.com') return 'nsm-prod';
+  if (h === 'yieldsec.expertly.cloud') return 'ys-demo';
+  if (h === 'yieldsec.qa.expertly.cloud') return 'ys-qa';
+  if (h === 'yieldsec.stage.expertly.cloud') return 'ys-stage';
+  if (h === 'yieldsec.expertly.com') return 'ys-prod';
+  return currentEnv || 'nsm-dev';
+}
+
+// AD/PD designer routes live ONLY on staff portals — the public portal serves
+// the operator app, not the designer. For NSM the public host is the staff host
+// with a `-public` modifier, so strip it; for other projects belz web already
+// returns the configured staff URL, so this is a no-op there.
+function toStaffPortalUrl(url) {
+  try {
+    const u = new URL(url);
+    u.hostname = u.hostname.replace(/^(nsm-(?:dev|qa|uat))-public\./i, '$1.');
+    return u.toString();
+  } catch {
+    return url;
+  }
 }
 
 function detectEnv() {
@@ -198,7 +256,7 @@ async function copySlackLink(entry, btn) {
       throw new Error((data && (data.reason || data.error)) || 'resolve failed');
     }
     setOffline(false);
-    const url = data.editUrl;
+    const url = toStaffPortalUrl(data.editUrl);
     const name =
       data.name || uuidToName.get(entry.uuid) || entry.uuid.slice(0, 8) + '…';
     const category = data.category || uuidToCategory.get(entry.uuid) || '';
@@ -275,7 +333,7 @@ async function processOpenQueue() {
     setOffline(false);
     const req = entry.har && entry.har.request;
     const body = (req && req.postData && req.postData.text) || '';
-    let url = data.editUrl;
+    let url = toStaffPortalUrl(data.editUrl);
     if (body) {
       try {
         url +=
@@ -824,3 +882,4 @@ chrome.devtools.network.onNavigated.addListener(() => {
 });
 
 detectEnv();
+loadEnvRegistry();
