@@ -64,21 +64,29 @@ SANDBOX_REPO=your-org/belz-sandbox bash cli/scripts/cloud-publish.sh
   If a deeper host (e.g. `jenkins-asg.stg.expertly.cloud`,
   `migration.services.qa.expertly.cloud`) isn't reached by the wildcard, add it
   explicitly — or use **Full** if the allowlist gets unwieldy.
-- **Setup script:** paste the contents of `cli/scripts/cloud-setup.sh`
-  (also committed into belz-sandbox for reference).
+- **Setup script:** **leave empty.** Cloud env vars are NOT exported to the
+  Setup-script phase — only to the running session. belz is instead installed +
+  configured by a **SessionStart hook** (`.claude/settings.json`, committed into
+  belz-sandbox) that runs `cloud-setup.sh` in-session, where the env vars exist.
 - **Environment variables:** see below.
 
 ### 4. Environment variables (the only place creds can go)
 There is **no secrets store** in cloud — env vars are visible to anyone who can
 edit the environment. So configure **non-prod only** unless you accept the
 exposure. Use the project-agnostic `BELZ_ENV_<NAME>_*` keys
-(`<NAME>` lowercases with `_`→`-`, e.g. `BELZ_ENV_YS_QA_URL` → env `ys-qa`):
+(`<NAME>` lowercases with `_`→`-`, e.g. `BELZ_ENV_YS_QA_URL` → env `ys-qa`).
+
+> **Do NOT quote values.** The cloud .env field stores quotes literally
+> (`KEY='v$$'` → the value becomes `'v$$'`, quotes and all). Write bare values:
+> `BELZ_ENV_NSM_DEV_PASSWORD=preeti@Ver1f1$$`.
 
 ```dotenv
-# which repo holds the belz release
+# which repo holds the belz release (also derivable from the clone's origin)
 BELZ_SANDBOX_REPO=your-org/belz-sandbox
+# set this so the SessionStart hook can download the (private) release binary
+BELZ_SANDBOX_TOKEN=<read-only PAT on belz-sandbox>
 
-# NSM (built-in names — URL is filled in automatically, but harmless to set)
+# NSM (built-in names — URL is filled in automatically)
 BELZ_ENV_NSM_DEV_USER=...
 BELZ_ENV_NSM_DEV_PASSWORD=...
 BELZ_ENV_NSM_QA_USER=...
@@ -102,15 +110,13 @@ TEAMWORK_PASSWORD=...
 > creds here unless you really want a phone-driven session to be able to touch
 > production. The blast radius of plaintext env vars is the whole point of the
 > warning.
->
-> If `gh` isn't pre-authenticated in the setup phase, also set
-> `BELZ_SANDBOX_TOKEN` (read-only on belz-sandbox) so the binary download works.
 
 ## What a session can do
-Once launched, the session has `belz` on PATH and the skills loaded — identical
-to local. It works through the **belz CLI** only; it has no belzabar source and
-the `CLAUDE.md` rules tell it never to commit to the sandbox repo. Verify with
-`belz envs` and `belz --help`.
+On session start, the hook installs belz + writes the config, so the session has
+`belz` on PATH and the skills loaded — identical to local. It works through the
+**belz CLI** only; it has no belzabar source and the `CLAUDE.md` rules tell it
+never to commit to the sandbox repo. Verify with `belz envs` and `belz --help`.
+(If the hook didn't run, `bash cloud-setup.sh` bootstraps it — it's idempotent.)
 
 ## Updating belz
 Push to belzabar `main` → CI rebuilds and republishes to belz-sandbox →

@@ -51,6 +51,9 @@ for d in "$REPO_ROOT"/agents/*/; do
 done
 cp "$SCRIPT_DIR/cloud/sandbox-CLAUDE.md" "$SB/CLAUDE.md"
 cp "$SCRIPT_DIR/cloud-setup.sh" "$SB/cloud-setup.sh"
+# SessionStart hook that runs cloud-setup.sh in-session (where env vars exist).
+mkdir -p "$SB/.claude"
+cp "$SCRIPT_DIR/cloud/sandbox-settings.json" "$SB/.claude/settings.json"
 
 # ── 3. Commit + push the content (only if it changed) ────────────────────────
 cd "$SB"

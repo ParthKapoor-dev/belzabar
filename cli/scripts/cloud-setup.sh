@@ -1,54 +1,69 @@
 #!/usr/bin/env bash
-# cloud-setup.sh — Claude Code *cloud* session bootstrap for the belz CLI.
+# cloud-setup.sh — bootstrap belz inside a Claude Code *cloud* session.
 #
-# Paste this into a cloud environment's "Setup script" field (or call it from
-# the belz-sandbox clone — it is committed there by cli/scripts/cloud-publish.sh).
-# It runs once, before Claude Code launches, and:
-#   1. downloads the latest prebuilt belz Linux binary from the belz-sandbox
-#      GitHub Release (so the cloud never needs the private belzabar repo), and
-#   2. writes ~/.belz/config.json from the environment variables you configured
-#      on the cloud environment (`belz setup --from-env`).
+# IMPORTANT: cloud "Environment variables" are NOT exported to the pre-launch
+# "Setup script" field — only to the running session. So this script must run
+# IN-SESSION, not in the Setup script field. belz-sandbox wires it up two ways:
+#   • a SessionStart hook (.claude/settings.json) runs it automatically, and
+#   • CLAUDE.md tells the agent to run it first as a fallback.
+# Both run where BELZ_ENV_* / BELZ_SANDBOX_TOKEN are available.
 #
-# The belz SKILLS are not installed here — they ride along in the belz-sandbox
-# repo's .claude/skills/ (cloud loads skills from the cloned repo).
+# It (1) installs the prebuilt belz Linux binary from the belz-sandbox release
+# (private repo → no belzabar access), and (2) writes ~/.belz/config.json via
+# `belz setup --from-env`. It is idempotent — safe to re-run on every SessionStart.
 #
-# Required environment variables (set on the cloud environment):
-#   BELZ_SANDBOX_REPO   owner/belz-sandbox — the repo holding the belz release.
-#   BELZ_ENV_<NAME>_URL / _USER / _PASSWORD [/ _PROJECT]  — one set per env, e.g.
-#       BELZ_ENV_NSM_DEV_USER, BELZ_ENV_NSM_DEV_PASSWORD   (URL auto-filled)
-#       BELZ_ENV_YS_QA_URL, BELZ_ENV_YS_QA_USER, BELZ_ENV_YS_QA_PASSWORD
-#   Optional: BELZ_JENKINS_URL/_USER/_PASSWORD/_JOB, TEAMWORK_EMAIL/_PASSWORD
-# Optional:
-#   BELZ_RELEASE_TAG    release tag to pull (default: latest)
-#   BELZ_SANDBOX_TOKEN  a read-only token for the release if `gh` isn't already
-#                       authenticated (exported to gh as GH_TOKEN).
-set -euo pipefail
+# Env it reads (set on the cloud environment's Environment variables field):
+#   BELZ_ENV_<NAME>_URL/_USER/_PASSWORD[/_PROJECT]  — one set per env
+#   Optional: BELZ_JENKINS_*, TEAMWORK_*
+#   BELZ_SANDBOX_REPO   owner/belz-sandbox (else derived from this repo's origin)
+#   BELZ_SANDBOX_TOKEN  token to download the release if gh isn't authenticated
+#   BELZ_RELEASE_TAG    release tag (default: latest)
+set -uo pipefail
 
-REPO="${BELZ_SANDBOX_REPO:?set BELZ_SANDBOX_REPO=owner/belz-sandbox on the cloud environment}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Repo: prefer the env var; otherwise derive from this clone's git origin.
+REPO="${BELZ_SANDBOX_REPO:-}"
+if [ -z "$REPO" ]; then
+  origin="$(git -C "$HERE" remote get-url origin 2>/dev/null || true)"
+  REPO="$(printf '%s' "$origin" | sed -E 's#^(https?://[^/]+/|git@[^:]+:)##; s#\.git$##')"
+fi
+[ -n "$REPO" ] || { echo "cloud-setup: cannot determine belz-sandbox repo (set BELZ_SANDBOX_REPO)"; exit 0; }
+
 TAG="${BELZ_RELEASE_TAG:-latest}"
 ASSET="belz-linux-x64"
 BIN="$HOME/.local/bin/belz"
+TOKEN="${BELZ_SANDBOX_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
 mkdir -p "$HOME/.local/bin"
 
-echo "→ installing belz from ${REPO}@${TAG}…"
-if command -v gh >/dev/null 2>&1; then
-  [ -n "${BELZ_SANDBOX_TOKEN:-}" ] && export GH_TOKEN="$BELZ_SANDBOX_TOKEN"
-  gh release download "$TAG" --repo "$REPO" --pattern "$ASSET" --output "$BIN" --clobber
-elif [ -f "./$ASSET" ]; then
-  # Fallback: a binary committed alongside this script in the clone.
-  install -m 0755 "./$ASSET" "$BIN"
-else
-  echo "ERROR: need the GitHub CLI (gh) with access to $REPO, or a ./$ASSET in the clone." >&2
-  exit 1
+# 1. Install belz (skip the download if it's already here — SessionStart re-fires).
+if [ ! -x "$BIN" ]; then
+  echo "→ installing belz from ${REPO}@${TAG}…"
+  if [ -f "$HERE/$ASSET" ]; then
+    install -m 0755 "$HERE/$ASSET" "$BIN"
+  elif command -v gh >/dev/null 2>&1; then
+    [ -n "$TOKEN" ] && export GH_TOKEN="$TOKEN"
+    gh release download "$TAG" --repo "$REPO" --pattern "$ASSET" --output "$BIN" --clobber
+  elif [ -n "$TOKEN" ]; then
+    api="https://api.github.com/repos/${REPO}/releases/tags/${TAG}"
+    asset_url="$(curl -fsSL -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" "$api" \
+      | grep -o '"url": *"[^"]*releases/assets/[0-9]*"' | sed -E 's/.*"(https[^"]+)"/\1/' | head -1)"
+    [ -n "$asset_url" ] && curl -fSL -H "Authorization: Bearer $TOKEN" -H "Accept: application/octet-stream" "$asset_url" -o "$BIN"
+  fi
+  [ -x "$BIN" ] || chmod +x "$BIN" 2>/dev/null || true
 fi
-chmod +x "$BIN"
+if [ ! -x "$BIN" ]; then
+  echo "cloud-setup: could not install belz — set BELZ_SANDBOX_TOKEN (read-only on $REPO)." >&2
+  exit 0
+fi
 
-# Make belz reachable from the session shell (cloud setup runs as root).
 ln -sf "$BIN" /usr/local/bin/belz 2>/dev/null || true
 export PATH="$HOME/.local/bin:$PATH"
 
-echo "→ writing ~/.belz/config.json from environment variables…"
-belz setup --from-env --force --llm >/dev/null
-
-echo "✓ belz ready — $("$BIN" --version 2>/dev/null || echo installed). Configured envs:"
-belz envs 2>/dev/null || true
+# 2. Write ~/.belz/config.json from the session's environment variables.
+echo "→ writing ~/.belz/config.json from environment…"
+if "$BIN" setup --from-env --force --llm >/dev/null 2>&1; then
+  echo "✓ belz ready. Configured envs:"; "$BIN" envs 2>/dev/null || true
+else
+  echo "⚠ 'belz setup --from-env' wrote no envs — check the BELZ_ENV_* variables." >&2
+fi
