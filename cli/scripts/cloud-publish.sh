@@ -27,7 +27,9 @@ trap 'rm -rf "$WORK"' EXIT
 # ── 1. Build the Linux binary ────────────────────────────────────────────────
 echo "🔨 building $ASSET…"
 cd "$REPO_ROOT"
-bun install --frozen-lockfile 2>/dev/null || bun install
+# --ignore-scripts: the root package.json `install` lifecycle runs the full
+# install.sh (web build etc.) — we only need workspace deps for the compile.
+bun install --frozen-lockfile --ignore-scripts 2>/dev/null || bun install --ignore-scripts
 cd "$REPO_ROOT/cli"
 bun run generate
 bun build --compile --minify --target=bun-linux-x64 ./bin/cli-build.ts --outfile "$WORK/$ASSET"
