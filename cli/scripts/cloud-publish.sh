@@ -57,7 +57,8 @@ else
   SRC_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
   git -c user.name="belz-cloud-bot" -c user.email="belz-cloud-bot@users.noreply.github.com" \
     commit -m "chore(cloud): sync belz skills + rules (belzabar@${SRC_SHA})"
-  git push
+  # `-u origin HEAD` handles the first push into a brand-new empty repo.
+  git push -u origin HEAD
   echo "⬆️  pushed skills/rules to $SANDBOX_REPO"
 fi
 
