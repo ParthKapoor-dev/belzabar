@@ -2,7 +2,7 @@
 # belz-sandbox repo, so Claude Code cloud sessions always get the latest belz +
 # skills WITHOUT ever attaching the private belzabar repo.
 #
-# What it does (see cli/scripts/cloud-publish.sh):
+# What it does (see cloud/publish.sh):
 #   • compiles belz-linux-x64 and uploads it to a rolling Release on belz-sandbox
 #   • syncs agents/*/ → belz-sandbox/.claude/skills/ and the cloud rules + setup
 #
@@ -26,6 +26,7 @@ on:
       - "integrations/**"
       - "packages/**"
       - "agents/**"
+      - "cloud/**"
   workflow_dispatch:
 
 permissions:
@@ -52,4 +53,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BELZ_SANDBOX_TOKEN }}
           SANDBOX_REPO: ${{ vars.BELZ_SANDBOX_REPO }}
-        run: bash cli/scripts/cloud-publish.sh
+        run: bash cloud/publish.sh

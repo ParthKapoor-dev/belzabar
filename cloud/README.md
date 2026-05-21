@@ -13,7 +13,7 @@ account can see — it does not have to be belzabar. So we use a tiny throwaway
 ```
   belzabar (private)                belz-sandbox (private)            cloud session
   ─────────────────                 ──────────────────────            ─────────────
-  CI: cloud-publish.sh  ──pushes──▶  • belz-linux-x64 (Release)  ◀──clones──  setup
+  CI: cloud/publish.sh  ──pushes──▶  • belz-linux-x64 (Release)  ◀──clones──  setup
   on every push to main             • .claude/skills/             script installs
                                     • CLAUDE.md (rules)           belz + writes
                                     • cloud-setup.sh              ~/.belz/config.json
@@ -46,7 +46,7 @@ In **belzabar**'s GitHub settings:
 `.github/workflows/belz-cloud-release.yml` then runs on every push to `main`
 (or `workflow_dispatch`) and publishes the bundle. To publish once by hand:
 ```bash
-SANDBOX_REPO=your-org/belz-sandbox bash cli/scripts/cloud-publish.sh
+SANDBOX_REPO=your-org/belz-sandbox bash cloud/publish.sh
 ```
 
 ### 3. Create the cloud environment (claude.ai/code → New cloud environment)

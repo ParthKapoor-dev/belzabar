@@ -127,6 +127,30 @@ Features include VIN lookup (forward + reverse), an environment-scoped search bo
 
 ---
 
+## Claude Code cloud sessions
+
+Run belz from a Claude Code **cloud** session (claude.ai/code) — from your phone,
+laptop off — without ever attaching this private repo. The session connects to a
+throwaway **`belz-sandbox`** repo; belzabar's CI publishes the belz binary +
+skills *out* to it, so the cloud never sees belzabar's source.
+
+1. Create a private **`belz-sandbox`** repo (empty).
+2. In belzabar's GitHub settings add variable `BELZ_SANDBOX_REPO=<you>/belz-sandbox`
+   and secret `BELZ_SANDBOX_TOKEN` (fine-grained PAT, Contents: read & write on
+   belz-sandbox only — never belzabar). The `belz-cloud-release` workflow then
+   publishes the bundle on every push to `main`, or run it by hand:
+   ```bash
+   SANDBOX_REPO=<you>/belz-sandbox bash cloud/publish.sh
+   ```
+3. New cloud environment → repository `belz-sandbox`, Network **Custom** + your
+   API domains, **leave the Setup script empty** (a SessionStart hook bootstraps
+   belz in-session), and add per-env creds as `BELZ_ENV_<NAME>_*` variables —
+   **unquoted** (the cloud stores quotes literally).
+
+Full walkthrough, env-var keys, and the network allowlist: [`cloud/README.md`](./cloud/README.md).
+
+---
+
 ## Repo layout
 
 ```
@@ -146,6 +170,7 @@ belzabar/
 │       └── legacy/             belz migrate-legacy …  (db-migration-tool)
 ├── extension/                  browser extension (MV3, JavaScript)
 ├── web/                        Next.js dashboard served by `belz web`
+├── cloud/                      Claude Code cloud-session bootstrap (setup/publish + sandbox files)
 └── install.sh                  the public one-line installer
 ```
 

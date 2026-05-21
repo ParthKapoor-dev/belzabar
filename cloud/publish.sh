@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cloud-publish.sh — build the belz Linux binary and publish the cloud bundle
+# cloud/publish.sh — build the belz Linux binary and publish the cloud bundle
 # to the belz-sandbox repo (the repo Claude Code cloud sessions connect to).
 #
 # belzabar stays private and is NEVER attached to a cloud session. Instead this
@@ -13,11 +13,11 @@
 #
 # Requires: bun, git, and gh authenticated with contents:write on $SANDBOX_REPO
 #           (in CI, set GH_TOKEN to a fine-grained PAT scoped to belz-sandbox only).
-# Usage:    SANDBOX_REPO=owner/belz-sandbox bash cli/scripts/cloud-publish.sh
+# Usage:    SANDBOX_REPO=owner/belz-sandbox bash cloud/publish.sh
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SANDBOX_REPO="${SANDBOX_REPO:?set SANDBOX_REPO=owner/belz-sandbox}"
 RELEASE_TAG="${RELEASE_TAG:-latest}"
 ASSET="belz-linux-x64"
@@ -49,11 +49,11 @@ for d in "$REPO_ROOT"/agents/*/; do
   mkdir -p "$SB/.claude/skills/$name"
   cp -R "$d." "$SB/.claude/skills/$name/"
 done
-cp "$SCRIPT_DIR/cloud/sandbox-CLAUDE.md" "$SB/CLAUDE.md"
-cp "$SCRIPT_DIR/cloud-setup.sh" "$SB/cloud-setup.sh"
+cp "$SCRIPT_DIR/sandbox-CLAUDE.md" "$SB/CLAUDE.md"
+cp "$SCRIPT_DIR/setup.sh" "$SB/cloud-setup.sh"
 # SessionStart hook that runs cloud-setup.sh in-session (where env vars exist).
 mkdir -p "$SB/.claude"
-cp "$SCRIPT_DIR/cloud/sandbox-settings.json" "$SB/.claude/settings.json"
+cp "$SCRIPT_DIR/sandbox-settings.json" "$SB/.claude/settings.json"
 
 # ── 3. Commit + push the content (only if it changed) ────────────────────────
 cd "$SB"

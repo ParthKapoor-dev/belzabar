@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# cloud-setup.sh — bootstrap belz inside a Claude Code *cloud* session.
+# cloud/setup.sh — bootstrap belz inside a Claude Code *cloud* session.
+# (published into belz-sandbox as cloud-setup.sh by cloud/publish.sh)
 #
 # IMPORTANT: cloud "Environment variables" are NOT exported to the pre-launch
 # "Setup script" field — only to the running session. So this script must run
