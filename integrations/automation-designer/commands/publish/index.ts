@@ -7,7 +7,7 @@ import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 interface PublishArgs {
   uuid: string;
   yes: boolean;
-  note: string;
+  note?: string;
 }
 
 interface PublishData {
@@ -31,12 +31,6 @@ const command: CommandModule<PublishArgs, PublishData> = {
     if (!uuid || uuid.startsWith("-")) {
       throw new CliError("Missing <uuid> argument.", { code: "MISSING_UUID" });
     }
-    if (!note) {
-      throw new CliError(
-        "A change note is required before publishing. Pass --note \"<what changed>\".",
-        { code: "MISSING_CHANGE_NOTE" },
-      );
-    }
     return { uuid, yes: positional.includes("--yes"), note };
   },
   async execute({ uuid, yes, note }, context) {
@@ -49,11 +43,26 @@ const command: CommandModule<PublishArgs, PublishData> = {
     }
     const draft = guard.draft;
 
-    if (typeof draft.numericId !== "number") {
+    // A note is mandatory only on a method's FIRST publish — that guarantees the
+    // changelog always has an opening entry. On a republish you may omit --note to
+    // avoid adding a duplicate entry for a change that's already logged.
+    const isFirstPublish = !guard.publishedUuid;
+    if (!note && isFirstPublish) {
       throw new CliError(
-        `Could not resolve the numeric chain id for ${draft.uuid} — cannot record the change note.`,
-        { code: "AD_CHAIN_ID_UNAVAILABLE", details: { uuid: draft.uuid } },
+        "A change note is required for a method's first publish. Pass --note \"<what changed>\". On a later republish you may omit --note to skip adding a duplicate changelog entry.",
+        { code: "MISSING_CHANGE_NOTE" },
       );
+    }
+
+    let chainId: number | undefined;
+    if (note) {
+      if (typeof draft.numericId !== "number") {
+        throw new CliError(
+          `Could not resolve the numeric chain id for ${draft.uuid} — cannot record the change note.`,
+          { code: "AD_CHAIN_ID_UNAVAILABLE", details: { uuid: draft.uuid } },
+        );
+      }
+      chainId = draft.numericId;
     }
 
     await requireConfirmation({
@@ -65,15 +74,16 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Draft UUID", draft.uuid],
         ["Current published UUID", guard.publishedUuid ?? "(none — first publish)"],
         ["Draft version", String(draft.version)],
-        ["Change note", note],
+        ["Change note", note ?? "(none — republish, no changelog entry)"],
       ],
     });
 
-    // Record the change note BEFORE publishing — every publish must be logged.
-    logIntent("POST", `/rest/api/automation/chain/changelog/${draft.numericId}`, {
-      chainId: draft.numericId,
-    });
-    const changelogId = await adApi.addChangelog(draft.numericId, note);
+    // Record the change note BEFORE publishing when one is provided.
+    let changelogId = "";
+    if (note && chainId !== undefined) {
+      logIntent("POST", `/rest/api/automation/chain/changelog/${chainId}`, { chainId });
+      changelogId = await adApi.addChangelog(chainId, note);
+    }
 
     logIntent("POST", `/rest/api/automation/chain/${draft.uuid}/publish`, { draftUuid: draft.uuid });
     const { publishedUuid } = await adApi.publishDraft(draft.uuid);
@@ -100,7 +110,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
       publishedVersion,
       inSync,
       switchedFromPublished: guard.switchedFromPublished,
-      changeNote: note,
+      changeNote: note ?? "",
       changelogId,
     });
   },
@@ -116,7 +126,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Draft version", String(data.draftVersion)],
         ["Published version", String(data.publishedVersion ?? "(unknown)")],
         ["In sync", data.inSync ? "Yes" : "No"],
-        ["Change note", data.changeNote],
+        ["Change note", data.changeNote || "(skipped — republish, no changelog entry)"],
       ],
     );
   },

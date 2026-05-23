@@ -1,20 +1,26 @@
-belz ad publish <uuid> --note "<what changed>" [flags]
+belz ad publish <uuid> [--note "<what changed>"] [flags]
 
 Publish a draft — promotes the current draft contents to the published
 version of the same method. Returns the published UUID and a version-sync
 summary.
 
-A change note is MANDATORY: belz records it against the chain's changelog
-before the publish call, so every published change is logged.
+A change note is required on a method's FIRST publish — belz records it against
+the chain's changelog before the publish call, so the changelog always has an
+opening entry. On a republish --note is OPTIONAL: omit it to publish without
+adding a duplicate changelog entry for a change that's already logged.
 
 Flags:
-  --note "<text>"  Required. The change note recorded against the chain.
+  --note "<text>"  The change note recorded against the chain. Required on the
+                   first publish; optional on a republish (omit to skip adding a
+                   duplicate changelog entry).
   --yes            Skip the interactive confirmation prompt
   --llm            Emit a JSON envelope; --yes is required in this mode
 
 Safety:
-  - A missing --note aborts before any server call (MISSING_CHANGE_NOTE).
-  - The change note is POSTed to the changelog BEFORE the publish call.
+  - On a first publish a missing --note aborts before any server call
+    (MISSING_CHANGE_NOTE).
+  - When provided, the change note is POSTed to the changelog BEFORE the publish
+    call. When omitted on a republish, no changelog entry is added.
   - Always routes through resolveDraftTarget: if you pass a PUBLISHED UUID
     belz automatically switches to the linked draft before publishing.
   - Re-fetches both draft and published after the publish call and reports

@@ -1,0 +1,4 @@
+belz tw search <query>                    :->  Search Teamwork tasks by term (id, name, project, status, assignees)
+belz tw search <query> --project <id>     :->  Restrict the search to a project
+belz tw search <query> --status <status>  :->  Filter matched tasks by status (client-side)
+belz tw search <query> --llm              :->  Output as structured JSON envelope

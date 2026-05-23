@@ -1,0 +1,22 @@
+Usage: belz tw comment <TASK_ID|URL> (--body "<text>" | --body-file <path>) [flags]
+
+Post a comment on a Teamwork task. This is a WRITE command and posts
+IMMEDIATELY — there is no confirmation prompt. The caller is responsible for
+validating the exact comment text with the user before running it.
+
+Arguments:
+  <TASK_ID|URL>         Numeric task ID or full Teamwork task URL.
+
+Flags:
+  --body "<text>"       The comment text. Mutually exclusive with --body-file.
+  --body-file <path>    Read the comment text from a file. Preferred for
+                        multi-line Dev Notes. Mutually exclusive with --body.
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz tw comment 26917411 --body "Deployed to QA, ready for review."
+  belz tw comment 26917411 --body-file NCNSS-488/ndn.txt
+  belz tw comment https://projects.webintensive.com/app/tasks/26917411 --body-file ndn.txt --llm

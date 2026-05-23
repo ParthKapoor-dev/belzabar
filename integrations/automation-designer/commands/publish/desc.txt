@@ -1,1 +1,1 @@
-  publish <uuid> --note "<text>"   Promote a draft to its published version (draft-guarded). --note is required and logged to the changelog.
+  publish <uuid> [--note "<text>"]   Promote a draft to its published version (draft-guarded). --note is required on the first publish and logged to the changelog; optional on a republish.

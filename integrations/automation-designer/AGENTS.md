@@ -105,8 +105,9 @@ cd cli && bun run generate
 ### Write (`belz ad <cmd>`) — all draft-guarded
 
 1. `save <file> --uuid <draftUuid>` — save a JSON overlay onto a draft
-2. `publish <uuid> --note "<text>"` — promote a draft to its published version.
-   `--note` is mandatory: belz POSTs it to the chain's changelog before publishing.
+2. `publish <uuid> [--note "<text>"]` — promote a draft to its published version.
+   `--note` is required on the first publish (belz POSTs it to the chain's changelog
+   before publishing); optional on a republish — omit it to skip a duplicate entry.
 3. `import <file>` — POST `/chain/import`
 4. `category create <name>` — create a new AD category/service
 5. `test-case <action>` — `list | create | update | delete | bulk |

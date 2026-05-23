@@ -1,5 +1,5 @@
 import { ensureTeamworkAuth, teamworkLogin } from "./auth";
-import type { TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkSubtask, TeamworkComment } from "./types";
+import type { TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkSubtask, TeamworkComment, TeamworkTaskSummary } from "./types";
 
 const TEAMWORK_BASE = "https://projects.webintensive.com";
 
@@ -201,4 +201,102 @@ export async function fetchComments(taskId: number): Promise<TeamworkComment[]> 
       fileCount: c.fileCount ?? 0,
     };
   });
+}
+
+// ── Search ───────────────────────────────────────────────────────────────────
+
+const SEARCH_INCLUDES = ["projects", "tags", "users", "tasklists"].join(",");
+
+export interface SearchTasksOptions {
+  projectId?: number;
+  status?: string;
+}
+
+export async function searchTasks(
+  query: string,
+  opts: SearchTasksOptions = {},
+): Promise<TeamworkTaskSummary[]> {
+  const params = new URLSearchParams({
+    searchTerm: query,
+    include: SEARCH_INCLUDES,
+    pageSize: "100",
+    includeCompletedTasks: "true",
+  });
+  if (opts.projectId !== undefined) params.set("projectIds", String(opts.projectId));
+
+  const path = `/projects/api/v3/tasks.json?${params}`;
+  const response = await teamworkFetch(path);
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Failed to search tasks for '${query}' (${response.status}): ${body}`);
+  }
+
+  const json = await response.json() as any;
+  const tasks = json.tasks ?? [];
+  const included = json.included ?? {};
+
+  let summaries: TeamworkTaskSummary[] = tasks.map((t: any) => {
+    const projectId = t.projectId ?? included.tasklists?.[t.tasklistId]?.projectId ?? null;
+    const projectName = projectId ? included.projects?.[projectId]?.name ?? null : null;
+
+    const tags: TeamworkTag[] = (t.tagIds ?? []).map((tid: number) => {
+      const tag = included.tags?.[tid];
+      return tag ? { id: tag.id, name: tag.name, color: tag.color } : { id: tid, name: "Unknown", color: "" };
+    });
+
+    const assignees: TeamworkTaskAssignee[] = (t.assigneeUserIds ?? []).map((uid: number) => {
+      const u = included.users?.[uid];
+      return u
+        ? { id: u.id, firstName: u.firstName, lastName: u.lastName, email: u.email }
+        : { id: uid, firstName: "Unknown", lastName: "", email: "" };
+    });
+
+    return {
+      id: t.id,
+      name: t.name ?? "Unknown",
+      projectName,
+      status: t.status ?? "",
+      tags,
+      assignees,
+      url: `${TEAMWORK_BASE}/app/tasks/${t.id}`,
+    };
+  });
+
+  // The Teamwork search endpoint has no reliable status filter param, so filter
+  // by the task's status field client-side.
+  if (opts.status) {
+    const want = opts.status.toLowerCase();
+    summaries = summaries.filter((s) => s.status.toLowerCase() === want);
+  }
+
+  return summaries;
+}
+
+// ── Write: add a comment ─────────────────────────────────────────────────────
+
+export interface AddCommentOptions {
+  contentType?: "TEXT" | "HTML";
+}
+
+export async function addComment(
+  taskId: number,
+  body: string,
+  opts: AddCommentOptions = {},
+): Promise<number> {
+  const contentType = opts.contentType ?? "TEXT";
+  const path = `/projects/api/v3/tasks/${taskId}/comments.json`;
+  const response = await teamworkFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ comment: { body, contentType } }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to post comment on task ${taskId} (${response.status}): ${text}`);
+  }
+
+  const json = (await response.json().catch(() => ({}))) as any;
+  return json.comment?.id ?? json.id ?? 0;
 }

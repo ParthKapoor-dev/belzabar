@@ -10,6 +10,8 @@ The `teamwork/` module provides CLI commands for interacting with the Teamwork p
 belz tw task <taskId|url>      → teamwork/commands/task/
 belz tw comments <taskId|url>  → teamwork/commands/comments/
 belz tw items <taskId|url>     → teamwork/commands/items/   (release-prep linker)
+belz tw search <query>         → teamwork/commands/search/
+belz tw comment <taskId|url>   → teamwork/commands/comment/  (write — posts immediately)
 ```
 
 ## Directory Map
@@ -19,7 +21,9 @@ teamwork/
 ├── commands/
 │   ├── task/             belz tw task — task metadata
 │   ├── comments/         belz tw comments — all comments
-│   └── items/            belz tw items — extract AD/PD/SQL release items
+│   ├── items/            belz tw items — extract AD/PD/SQL release items
+│   ├── search/           belz tw search — search tasks by term
+│   └── comment/          belz tw comment — post a comment (write)
 │       ├── index.ts      CommandModule implementation
 │       ├── help.txt      Full help text
 │       └── desc.txt      One-line descriptions for --help-full
@@ -45,6 +49,14 @@ Teamwork uses cookie-based auth, separate from the NSM Bearer token flow:
 2. Commands **never** call `process.exit()` or print ad-hoc output.
 3. All data flows through `ok(data)` / `CliError` — the runner handles envelopes.
 4. `--llm` mode returns raw JSON envelopes; human mode uses `presentHuman()`.
+
+## Write Safety (`belz tw comment`)
+
+`comment` is the only write command. By design it has **no CLI confirmation
+prompt** — it posts the moment it runs. The safeguard lives in the agent skills
+(`belz-ai`, `tw-dev-note`): the exact comment text must be shown to the user and
+explicitly validated **every time**, before the command is invoked. Do not add a
+confirmation gate here without revisiting that decision.
 
 ## Adding a New Command
 

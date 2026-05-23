@@ -1,0 +1,23 @@
+Usage: belz tw search <QUERY> [flags]
+
+Search Teamwork tasks by term. Returns matching tasks with id, name, project,
+status, tags, and assignees.
+
+Arguments:
+  <QUERY>               Search term (matched against task name/content). Quote
+                        multi-word queries, or pass them as trailing words.
+
+Flags:
+  --project <id>        Restrict results to a numeric Teamwork project id.
+  --status <status>     Keep only tasks whose status equals this value
+                        (case-insensitive, e.g. new, completed). Filtered
+                        client-side over the matched results.
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz tw search "LT-260 submission"
+  belz tw search payit --project 123456
+  belz tw search archive --status new --llm

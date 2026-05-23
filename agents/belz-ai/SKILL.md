@@ -60,8 +60,9 @@ Daily AD operations (use `--help` for flags):
 - `belz ad test <uuid>` — run a draft with a JSON input, get per-step trace
 - `belz ad run <uuid>` — execute the published method live (`--stream` to opt into
   a streaming method — `application/stream+json` chunks + a final JSON envelope)
-- `belz ad publish <uuid> --note "<what changed>"` — promote a draft to published.
-  `--note` is **mandatory**; belz records it to the chain's changelog before publishing.
+- `belz ad publish <uuid> [--note "<what changed>"]` — promote a draft to published.
+  `--note` is **required on the first publish** (belz records it to the chain's changelog
+  before publishing); on a republish it's **optional** — omit it to avoid a duplicate entry.
 - `belz ad changelog <uuid>` — list a method's change notes; `--note "<text>"` records
   one without publishing
 - `belz ad sql tui` — interactive SQL session against AD's DB accounts
@@ -96,8 +97,18 @@ The team tracks work in Teamwork at `projects.webintensive.com`. The CLI:
 
 - `belz tw task <id|url>` — fetch title, tags, status, workflow stage, description, comment count
 - `belz tw comments <id|url>` — fetch comments
+- `belz tw search <query>` — search tasks by term (`--project <id>` / `--status <status>` to narrow)
+- `belz tw comment <id|url> --body "<text>"` — post a comment (or `--body-file <path>` for a
+  multi-line Dev Note). **Write command — see the hard rule below.**
 
 Auth is cookie-based, separate from the NSM Bearer-token flow. Sessions live at `~/.belz/sessions/teamwork.json`.
+
+> **Posting a Teamwork comment requires explicit, in-the-moment validation.**
+> `belz tw comment` posts immediately — there is no confirmation prompt. Before you run
+> it, show the user the **exact** final comment text, verbatim, and get their explicit
+> approval of *that* text in the current turn. A "go ahead" given earlier does **not**
+> count. If the text changes at all, show the new version and ask again. Never post a
+> comment you haven't just shown and had approved.
 
 ### Migrations and environments
 
@@ -151,9 +162,21 @@ Everything under `~/.belz/`:
 2. Always pass `--llm` when invoking from a tool call so output is parseable.
 3. Don't memorize chain IDs, page IDs, or method names — fetch them with `belz` on demand.
 4. Cached results may be up to 5 minutes stale. Pass `--force` if the user just edited a method.
-5. Publishing an AD method **always** needs a change note: `belz ad publish` requires
-   `--note "<what changed>"` and logs it to the changelog. Never work around this — the
-   note is the audit trail. Write a specific, factual note describing the actual change.
+5. Changelog notes — keep them **short and step-focused**:
+   - **Format**: one short line. Name the step(s) and the verb — **created / updated /
+     deleted** — and what changed. e.g. `Step 3.2 updated: status condition now also
+     matches CANCELLED`. No prose, no restating the whole method.
+   - **Required on first publish**: `belz ad publish` needs `--note` the first time a
+     method is published — that opening entry is the audit trail. On a republish, omit
+     `--note` to publish without adding a duplicate entry.
+   - **One entry per real change, don't double-log**: the `--note` you pass to
+     `belz ad publish` **is** the changelog entry — don't also run `belz ad changelog
+     --note` for the same change, and don't add a fresh note for a trivial republish
+     (typo / formatting) of a change that's already logged.
+6. **Never post a Teamwork comment without fresh validation.** `belz tw comment` posts
+   immediately — there is no confirmation prompt. Always show the user the exact comment
+   text and get explicit approval of *that* text in the current turn before running it,
+   even if they already said "go ahead." Re-show and re-confirm on any edit.
 
 ---
 
@@ -343,8 +366,9 @@ concretely. For example:
 
 **3. Testing — the real AD/PD verification path.** Don't write "run unit tests."
 Describe how the change is actually verified: create a dummy application in the
-relevant status → `belz ad test` the draft → save the draft → write the changelog
-note → publish → `belz ad run` with dummy data. Include the PD page / workflow
+relevant status → `belz ad test` the draft → save the draft → publish with a short,
+step-focused changelog `--note` (first publish; omit it on a trivial republish) →
+`belz ad run` with dummy data. Include the PD page / workflow
 check when a frontend route is involved.
 
 ### Why this matters

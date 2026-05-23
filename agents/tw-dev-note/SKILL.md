@@ -191,3 +191,20 @@ Mention any changes in database schema:
 ALTER TABLE application ADD COLUMN is_archived BOOLEAN DEFAULT false;
 ```
 ```
+
+## Posting to Teamwork
+
+Generating the Dev Note does **not** post it. A Dev Note can be posted as a task
+comment with `belz tw comment <taskId> --body-file <path>` (write the NDN to a file
+under the task dir first, since it is multi-line), but that command posts
+**immediately — there is no confirmation prompt.**
+
+So before posting, **always**:
+
+1. Show the user the exact, final Dev Note text, verbatim.
+2. Get their explicit approval of *that* text in the current turn. A "go ahead" given
+   earlier does **not** count.
+3. Only then run `belz tw comment`. If the text changes at all, show the new version and
+   ask again before posting.
+
+Never post a Dev Note you haven't just shown and had approved.

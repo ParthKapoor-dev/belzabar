@@ -1,0 +1,3 @@
+belz tw comment <taskId|url> --body "<text>"      :->  Post a comment on a Teamwork task (posts immediately — validate text first)
+belz tw comment <taskId|url> --body-file <path>   :->  Post a comment read from a file (preferred for multi-line Dev Notes)
+belz tw comment <taskId|url> --body "<text>" --llm :->  Output as structured JSON envelope
