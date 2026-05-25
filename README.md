@@ -75,6 +75,8 @@ belz migrate-legacy run --profile devncdns_qancdns --module AD_Method --ids "<uu
 # Teamwork
 belz tw task <id>                       # show a Teamwork task
 belz tw comments <id>                   # task comments
+belz tw search <query>                  # search tasks by keyword
+belz tw add-comment <id> --body "..."   # post a comment (confirmation-gated write)
 
 # Cache + Config + Envs
 belz cache <uuid>                       # invalidate a server-side cache entry

@@ -1,0 +1,29 @@
+Usage: belz tw add-comment <TASK_ID|URL> --body "<text>" [flags]
+
+Post a comment to a Teamwork task.
+
+⚠️  This is a WRITE. The comment is gated behind a confirmation:
+      • Human mode shows the exact comment text and asks before posting.
+      • --llm mode REFUSES unless --yes is also passed.
+    An agent must only pass --yes after showing the user the exact comment
+    text and getting their validation in chat — every time, even if posting
+    was approved earlier. A prior go-ahead does not carry over.
+
+Arguments:
+  <TASK_ID|URL>         Numeric task ID or full Teamwork task URL.
+
+Flags:
+  --body "<text>"       The comment text (plain text / markdown).
+  --body-file <path>    Read the comment text from a file instead of --body.
+  --html                Send the body as HTML instead of plain text.
+  --yes, -y             Skip the confirmation prompt (required in --llm mode).
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz tw add-comment 26917411 --body "Deployed to QA, ready for verification."
+  belz tw add-comment https://projects.webintensive.com/app/tasks/26917411 \
+    --body-file ./NCNSS-488/dev-note.md
+  belz tw add-comment 26917411 --body "Done." --llm --yes

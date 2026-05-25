@@ -66,6 +66,20 @@ Daily AD operations (use `--help` for flags):
   one without publishing
 - `belz ad sql tui` — interactive SQL session against AD's DB accounts
 
+**Writing changelog notes.** Keep every note short and literal — one line that
+says which **step(s)** changed and **how**, using plain verbs: *created / added
+/ updated / removed / deleted*. Name the step. No narration, no padding.
+
+- `Step 3.2: condition now also allows CANCELLED`
+- `Added step 4 (SQL update on application); removed old step 6`
+- `Updated LT260.submit output mapping for case_number`
+
+One note per logical change. Run `belz ad changelog <uuid>` first and don't
+restate something already recorded. `belz ad publish` always requires a
+`--note`, so a minor follow-up re-publish of a change you just logged (a typo or
+small tweak) doesn't deserve a fresh full entry — keep that note terse and
+pointing at the original instead of duplicating it.
+
 Methods are cached at `~/.belz/cache/methods/<uuid>.json` for 5 minutes — pass `--force` to bypass.
 
 ### Page Designer (PD)
@@ -96,8 +110,18 @@ The team tracks work in Teamwork at `projects.webintensive.com`. The CLI:
 
 - `belz tw task <id|url>` — fetch title, tags, status, workflow stage, description, comment count
 - `belz tw comments <id|url>` — fetch comments
+- `belz tw search <query>` — search tasks by keyword (read-only)
+- `belz tw add-comment <id|url> --body "<text>"` — post a comment (WRITE — gated, see below)
 
 Auth is cookie-based, separate from the NSM Bearer-token flow. Sessions live at `~/.belz/sessions/teamwork.json`.
+
+**Posting comments — strict rule.** `belz tw add-comment` writes to Teamwork.
+Never post a comment without first showing the user the **exact** comment text
+and getting their explicit validation **in the chat** — every single time, even
+if the user told you to "go ahead" earlier. A prior go-ahead never carries over
+to a new comment or a reworded one. Re-show the exact text and re-confirm before
+each post; only then run the command with `--yes`. The command refuses in
+`--llm` mode without `--yes` precisely so this can't happen by accident.
 
 ### Migrations and environments
 
@@ -153,7 +177,11 @@ Everything under `~/.belz/`:
 4. Cached results may be up to 5 minutes stale. Pass `--force` if the user just edited a method.
 5. Publishing an AD method **always** needs a change note: `belz ad publish` requires
    `--note "<what changed>"` and logs it to the changelog. Never work around this — the
-   note is the audit trail. Write a specific, factual note describing the actual change.
+   note is the audit trail. Keep the note short and literal (which step changed + how)
+   and don't duplicate a note already in the changelog — see "Writing changelog notes".
+6. **Never post a Teamwork comment** (`belz tw add-comment`) without first showing the
+   user the exact comment text and getting their explicit validation in chat — every
+   time, even if they approved posting earlier. A prior go-ahead never carries over.
 
 ---
 

@@ -1,5 +1,8 @@
 import { ensureTeamworkAuth, teamworkLogin } from "./auth";
-import type { TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkSubtask, TeamworkComment } from "./types";
+import type {
+  TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkSubtask, TeamworkComment,
+  TeamworkTaskSearchResult, AddCommentResult,
+} from "./types";
 
 const TEAMWORK_BASE = "https://projects.webintensive.com";
 
@@ -201,4 +204,83 @@ export async function fetchComments(taskId: number): Promise<TeamworkComment[]> 
       fileCount: c.fileCount ?? 0,
     };
   });
+}
+
+// ── Search ───────────────────────────────────────────────────────────────────
+
+export interface TaskSearchOptions {
+  projectId?: number;
+  limit?: number;
+  includeCompleted?: boolean;
+}
+
+export async function searchTasks(query: string, opts: TaskSearchOptions = {}): Promise<TeamworkTaskSearchResult[]> {
+  const params = new URLSearchParams({
+    searchTerm: query,
+    include: "tasklists,projects",
+    pageSize: String(opts.limit ?? 25),
+  });
+  if (opts.projectId) params.set("projectIds", String(opts.projectId));
+  if (opts.includeCompleted) params.set("includeCompletedTasks", "true");
+
+  const path = `/projects/api/v3/tasks.json?${params}`;
+  const response = await teamworkFetch(path);
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Teamwork search failed (${response.status}): ${body}`);
+  }
+
+  const json = await response.json() as any;
+  const tasks = json.tasks ?? [];
+  const included = json.included ?? {};
+
+  return tasks.map((t: any): TeamworkTaskSearchResult => {
+    const tasklist = included.tasklists?.[t.tasklistId];
+    const projectName = tasklist?.projectId
+      ? included.projects?.[tasklist.projectId]?.name ?? null
+      : null;
+    return {
+      id: t.id,
+      name: t.name ?? "Unknown",
+      status: t.status ?? "",
+      progress: t.progress ?? 0,
+      projectName,
+      tasklistName: tasklist?.name ?? null,
+      url: `${TEAMWORK_BASE}/app/tasks/${t.id}`,
+    };
+  });
+}
+
+// ── Posting a comment (WRITE) ─────────────────────────────────────────────────
+// Callers MUST confirm the exact body with the user before invoking this — see
+// commands/add-comment and the belz-ai skill's hard rule on Teamwork comments.
+
+export interface AddCommentOptions {
+  contentType?: "TEXT" | "HTML";
+}
+
+export async function addComment(taskId: number, body: string, opts: AddCommentOptions = {}): Promise<AddCommentResult> {
+  const path = `/projects/api/v3/tasks/${taskId}/comments.json`;
+  const payload = {
+    comment: {
+      body,
+      contentType: opts.contentType ?? "TEXT",
+    },
+  };
+
+  const response = await teamworkFetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Failed to post comment to task ${taskId} (${response.status}): ${text}`);
+  }
+
+  const json = await response.json() as any;
+  const comment = json.comment ?? {};
+  return { id: comment.id ?? 0, taskId };
 }

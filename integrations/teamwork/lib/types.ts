@@ -58,3 +58,18 @@ export interface TeamworkComment {
   postedDateTime: string;
   fileCount: number;
 }
+
+export interface TeamworkTaskSearchResult {
+  id: number;
+  name: string;
+  status: string;
+  progress: number;
+  projectName: string | null;
+  tasklistName: string | null;
+  url: string;
+}
+
+export interface AddCommentResult {
+  id: number;
+  taskId: number;
+}

@@ -1,0 +1,22 @@
+Usage: belz tw search <QUERY> [flags]
+
+Search Teamwork tasks by keyword. Read-only. Matches across the tasks you can
+see; returns id, name, status, project, and tasklist for each hit.
+
+Arguments:
+  <QUERY>               One or more words to search for. Quote multi-word
+                        queries, or pass them as separate args.
+
+Flags:
+  --project <id>        Restrict to a single project (numeric project id).
+  --limit <n>           Max results to return (default: 25).
+  --all                 Include completed tasks (default: open tasks only).
+  --help, -h            Show this help message.
+
+Global Flags:
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz tw search "LT-260 vehicle sold"
+  belz tw search aging --project 123456 --limit 10
+  belz tw search "title transfer" --all --llm

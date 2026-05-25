@@ -1,0 +1,2 @@
+belz tw search <query>        :->  Search Teamwork tasks by keyword
+belz tw search <query> --llm  :->  Output as structured JSON envelope

@@ -3,9 +3,13 @@
 import * as comments from "../../integrations/teamwork/commands/comments/index";
 import * as task from "../../integrations/teamwork/commands/task/index";
 import * as items from "../../integrations/teamwork/commands/items/index";
+import * as search from "../../integrations/teamwork/commands/search/index";
+import * as add_comment from "../../integrations/teamwork/commands/add-comment/index";
 
 export const TWCommandRegistry: Record<string, any> = {
   "comments": comments,
   "task": task,
   "items": items,
+  "search": search,
+  "add-comment": add_comment,
 };

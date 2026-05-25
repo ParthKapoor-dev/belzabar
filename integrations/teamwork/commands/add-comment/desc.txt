@@ -1,0 +1,2 @@
+belz tw add-comment <taskId|url> --body "<text>"  :->  Post a comment to a Teamwork task (confirmation-gated)
+belz tw add-comment <taskId|url> --body-file <path>  :->  Post a comment read from a file

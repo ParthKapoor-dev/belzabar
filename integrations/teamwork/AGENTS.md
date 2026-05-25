@@ -7,9 +7,11 @@ The `teamwork/` module provides CLI commands for interacting with the Teamwork p
 ## Command Routing
 
 ```
-belz tw task <taskId|url>      → teamwork/commands/task/
-belz tw comments <taskId|url>  → teamwork/commands/comments/
-belz tw items <taskId|url>     → teamwork/commands/items/   (release-prep linker)
+belz tw task <taskId|url>             → teamwork/commands/task/
+belz tw comments <taskId|url>         → teamwork/commands/comments/
+belz tw items <taskId|url>            → teamwork/commands/items/         (release-prep linker)
+belz tw search <query>                → teamwork/commands/search/        (read-only task search)
+belz tw add-comment <taskId|url> ...  → teamwork/commands/add-comment/   (WRITE — confirmation-gated)
 ```
 
 ## Directory Map
@@ -18,19 +20,31 @@ belz tw items <taskId|url>     → teamwork/commands/items/   (release-prep link
 teamwork/
 ├── commands/
 │   ├── task/             belz tw task — task metadata
-│   ├── comments/         belz tw comments — all comments
-│   └── items/            belz tw items — extract AD/PD/SQL release items
+│   ├── comments/         belz tw comments — all comments (read)
+│   ├── items/            belz tw items — extract AD/PD/SQL release items
+│   ├── search/           belz tw search — keyword task search (read)
+│   └── add-comment/      belz tw add-comment — post a comment (WRITE, gated)
 │       ├── index.ts      CommandModule implementation
 │       ├── help.txt      Full help text
 │       └── desc.txt      One-line descriptions for --help-full
 ├── lib/
 │   ├── api.ts            Teamwork HTTP client + domain API functions
 │   ├── auth.ts           Cookie-based authentication (tw-auth)
+│   ├── confirm.ts        Confirmation gate + write-intent logging (for add-comment)
 │   ├── extract.ts        Pure AD/PD/SQL extraction (release-prep Stage 2 patterns)
 │   └── types.ts          Shared TypeScript types
 ├── tests/unit/           bun test — extract.test.ts
 └── AGENTS.md             This file
 ```
+
+## Write Safety
+
+`add-comment` is the only command that writes to Teamwork. It routes through
+`lib/confirm.ts` → `requireConfirmation`, which prints the exact comment body
+and prompts in human mode, and **refuses in `--llm` mode unless `--yes` is
+passed**. The intent is that an agent only ever passes `--yes` after showing the
+user the exact comment text and getting validation in chat — re-confirmed for
+every post. A write is logged to stderr via `logIntent` before the POST.
 
 ## Authentication
 
