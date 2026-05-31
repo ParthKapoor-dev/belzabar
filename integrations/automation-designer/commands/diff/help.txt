@@ -1,0 +1,70 @@
+Usage: belz ad diff [<uuid>] [flags]
+
+Open two versions of an AD method side-by-side in an editor for visual diffing.
+Defaults to Zed (`zed --diff a b`). Two modes:
+
+  History mode  (default)
+    Compares two versions of the same method on the current env. Uses
+    Expertly.Automation.Method.History.get to fetch each version, parses
+    them into a HydratedMethod, writes both to temp JSON files, then
+    hands them to the editor.
+
+  Cross-env mode  (--cross-env, or just by passing --from-env/--to-env)
+    Compares the current state of the same UUID across two envs. Shells
+    out to `belz ad show --env X --llm` per side so each env's auth
+    session is reused cleanly.
+
+Arguments:
+  <uuid>                  Method UUID. Optional — omit to pick via fzf
+                          (uses the cached method finder index).
+
+History-mode flags:
+  --from <N>              First version. Optional — picker shows versions if omitted.
+  --to <M>                Second version. Optional — picker shows versions if omitted.
+
+Cross-env-mode flags:
+  --cross-env             Switch to cross-env mode (implied if --from-env or
+                          --to-env is passed).
+  --from-env <env>        Env for the left side. Optional — fzf picker if omitted.
+  --to-env <env>          Env for the right side. Optional — fzf picker if omitted.
+
+Shared flags:
+  --clean                 Strip noisy fields (fetchedAt, savedAt, parseWarnings,
+                          createdOn, modifiedOn, raw) before diffing. (default: on)
+  --raw                   Keep all fields. Overrides --clean.
+  --editor <cmd>          Editor binary. Default: zed. The command is invoked as
+                          `<editor> --diff <left> <right>`.
+  --help, -h              Show this help message.
+
+Global Flags:
+  --env <name>            Set active env (history mode only).
+                          Available: nsm-dev | nsm-qa | nsm-uat
+  --llm                   JSON envelope output. Interactive escalation is
+                          disabled — UUID and from/to (or from-env/to-env)
+                          must all be supplied.
+
+Notes:
+  - Interactive escalation needs fzf on PATH.
+  - The editor is launched detached, so this command exits immediately
+    after the editor opens. The window appears in your existing Zed
+    instance (zed reattaches by default).
+  - --from == --to (or --from-env == --to-env) emits a warning and produces
+    an empty diff.
+
+Examples:
+  belz ad diff
+    # full interactive: pick method → pick FROM v → pick TO v → opens Zed
+
+  belz ad diff 4e55820ce5357ce4c1a4aa378f241f36 --from 3 --to 5
+    # history diff, no pickers
+
+  belz ad diff 4e55820ce5357ce4c1a4aa378f241f36 --cross-env \
+      --from-env nsm-dev --to-env nsm-uat
+    # cross-env diff
+
+  belz ad diff 4e55820… --from 4 --to 5 --raw
+    # keep all server metadata in the diff
+
+  belz ad diff 4e55820… --from 4 --to 5 --editor code
+    # use VS Code instead (note: VS Code uses `-d a b`, not `--diff` — this
+    # is a future enhancement; for now stick with zed)

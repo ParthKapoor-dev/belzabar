@@ -6,6 +6,7 @@ import * as changelog from "../../integrations/automation-designer/commands/chan
 import * as run_suites from "../../integrations/automation-designer/commands/run-suites/index";
 import * as category from "../../integrations/automation-designer/commands/category/index";
 import * as export_category from "../../integrations/automation-designer/commands/export-category/index";
+import * as diff from "../../integrations/automation-designer/commands/diff/index";
 import * as save_suite from "../../integrations/automation-designer/commands/save-suite/index";
 import * as trace from "../../integrations/automation-designer/commands/trace/index";
 import * as fetch from "../../integrations/automation-designer/commands/fetch/index";
@@ -34,6 +35,7 @@ export const ADCommandRegistry: Record<string, any> = {
   "run-suites": run_suites,
   "category": category,
   "export-category": export_category,
+  "diff": diff,
   "save-suite": save_suite,
   "trace": trace,
   "fetch": fetch,

@@ -1,0 +1,4 @@
+  diff <uuid> [--from N --to M | --cross-env --from-env X --to-env Y]
+    Open two versions of an AD method side-by-side in Zed (or any editor with
+    `--diff a b`). Default mode compares two history versions on the current
+    env; --cross-env compares the same UUID across two envs.
