@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { cn } from "@/lib/utils"
+import { makeCacheKey, setSwrCacheEntry } from "@/lib/swr-cache"
 
 // Used until /api/envs loads the user's actual configured envs (any project).
 const FALLBACK_ENVS = ["nsm-dev", "nsm-qa", "nsm-uat", "nsm-stage"]
@@ -103,12 +104,15 @@ export function UnifiedSearchModal({
   const [env, setEnv] = useState<string>(FALLBACK_ENVS[0])
   const [results, setResults] = useState<SearchResults | null>(null)
   const [loading, setLoading] = useState(false)
+  const [revalidating, setRevalidating] = useState(false)
   const [selectedIdx, setSelectedIdx] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const swrCacheRef = useRef<Map<string, SearchResults>>(new Map())
 
-  // Reset on open
+  // Reset on open — clear input + selection, but keep the SWR cache so
+  // a previously-typed query renders instantly when the modal re-opens.
   useEffect(() => {
     if (open) {
       setQuery("")
@@ -116,6 +120,7 @@ export function UnifiedSearchModal({
       setResults(null)
       setSelectedIdx(0)
       setLoading(false)
+      setRevalidating(false)
       requestAnimationFrame(() => inputRef.current?.focus())
     }
   }, [open])
@@ -149,11 +154,17 @@ export function UnifiedSearchModal({
     return () => clearTimeout(timer)
   }, [query])
 
-  // Fetch results
+  // Fetch results (stale-while-revalidate). If we have a cached payload for
+  // this exact (env, query) key, render it immediately and fire the network
+  // request in the background — the result either confirms the cache or
+  // silently replaces it. Cold-cache fetches still show the "searching..."
+  // status; warm-cache revalidations show a subtler indicator alongside the
+  // cache summary so the previously-rendered list doesn't flash.
   useEffect(() => {
     if (!debouncedQuery) {
       setResults(null)
       setLoading(false)
+      setRevalidating(false)
       return
     }
 
@@ -161,7 +172,19 @@ export function UnifiedSearchModal({
     const controller = new AbortController()
     abortRef.current = controller
 
-    setLoading(true)
+    const key = makeCacheKey(env, debouncedQuery)
+    const cached = swrCacheRef.current.get(key)
+    const hadCache = cached !== undefined
+
+    if (hadCache) {
+      setResults(cached)
+      setLoading(false)
+      setRevalidating(true)
+      setSelectedIdx(0)
+    } else {
+      setLoading(true)
+      setRevalidating(false)
+    }
 
     fetch("/api/search", {
       method: "POST",
@@ -171,15 +194,19 @@ export function UnifiedSearchModal({
     })
       .then((r) => r.json())
       .then((data: SearchResults) => {
-        if (!controller.signal.aborted) {
-          setResults(data)
-          setLoading(false)
-          setSelectedIdx(0)
-        }
+        if (controller.signal.aborted) return
+        setSwrCacheEntry(swrCacheRef.current, key, data)
+        setResults(data)
+        setLoading(false)
+        setRevalidating(false)
+        if (!hadCache) setSelectedIdx(0)
       })
       .catch((err) => {
         if (err instanceof DOMException && err.name === "AbortError") return
-        if (!controller.signal.aborted) setLoading(false)
+        if (!controller.signal.aborted) {
+          setLoading(false)
+          setRevalidating(false)
+        }
       })
 
     return () => controller.abort()
@@ -318,7 +345,7 @@ export function UnifiedSearchModal({
         </div>
 
         {/* Status bar */}
-        <div className="px-4 py-1.5 border-b border-border/50 flex items-center min-h-[24px]">
+        <div className="px-4 py-1.5 border-b border-border/50 flex items-center gap-2 min-h-[24px]">
           {loading ? (
             <span className="text-[10px] text-muted-foreground/50 flex items-center gap-1.5">
               <span className="inline-flex gap-0.5">
@@ -329,7 +356,22 @@ export function UnifiedSearchModal({
               searching...
             </span>
           ) : cacheStatus ? (
-            <span className="text-[10px] text-muted-foreground/40 truncate">{cacheStatus}</span>
+            <>
+              <span className="text-[10px] text-muted-foreground/40 truncate flex-1">{cacheStatus}</span>
+              {revalidating && (
+                <span
+                  className="text-[10px] text-muted-foreground/40 flex items-center gap-1 shrink-0"
+                  title="Revalidating cached results"
+                >
+                  <span className="inline-flex gap-0.5">
+                    <span className="size-1 rounded-full bg-muted-foreground/30 animate-bounce [animation-delay:-0.3s]" />
+                    <span className="size-1 rounded-full bg-muted-foreground/30 animate-bounce [animation-delay:-0.15s]" />
+                    <span className="size-1 rounded-full bg-muted-foreground/30 animate-bounce" />
+                  </span>
+                  revalidating
+                </span>
+              )}
+            </>
           ) : (
             <span className="text-[10px] text-muted-foreground/30">type to search</span>
           )}
