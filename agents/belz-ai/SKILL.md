@@ -138,6 +138,18 @@ against the source environment first and auto-swaps a PD draft for its published
 sibling (showing the entity name). PD ids are environment-local, so this
 resolution also catches an id that doesn't exist on the source.
 
+**Always pass the *source* environment's id — never the destination env's.** PD
+items (pages and components) get re-imported on each environment, so the same
+logical page has a **different** `(draftId, publishedId)` pair on dev, qa, uat,
+stage, and prod. The migration service expects the id as it exists on
+`--source-env`; it takes the bytes from there and writes a new
+(potentially-different) id on `--target-env`. If you accidentally pass the
+target env's id, the source lookup either 404s or — worse — silently resolves
+to a different page that happens to share that hex on the source, and you ship
+the wrong content. AD chain UUIDs *are* stable across envs, so this caveat is a
+PD problem specifically — but the rule "pass the id as it exists on
+`--source-env`" applies uniformly to both modules.
+
 Default environment is `nsm-dev`. Override per-command with `--env nsm-qa` (etc.).
 
 ### The `--llm` flag
