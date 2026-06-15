@@ -73,11 +73,24 @@ export interface SqlRunParseResult {
   success: boolean;
 }
 
+export interface ExecutableCategoryRef {
+  id: number;
+  name: string;
+}
+
 export interface BuildSqlPayloadOptions {
   template: RawMethodResponse;
   operation: SqlSelectOperation;
   dbAuthId: number;
   query: string;
+  /**
+   * Category to stamp on the synthetic test chain when the fetched template has
+   * none. The connected env's server authorizes execution by looking this
+   * category up by id, so it MUST exist on that env — otherwise it throws a
+   * NullPointerException in AuthorizeExecution.canExecuteCategory. Resolved per
+   * env via fetchExecutableCategory(); falls back to the legacy NSM constant.
+   */
+  fallbackCategory?: ExecutableCategoryRef | null;
 }
 
 export type SqlUpdateOperation = SqlSelectOperation;

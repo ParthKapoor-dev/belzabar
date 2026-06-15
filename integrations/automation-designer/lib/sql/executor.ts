@@ -2,7 +2,7 @@ import { CliError } from "@belzabar/core";
 import { ErrorParser } from "../error-parser";
 import { fetchRawMethod, testMethodMultipart } from "../api/v1";
 import type { V1RawMethodResponse } from "../types/v1-wire";
-import { fetchSqlDatabases, fetchSqlSelectOperation, fetchSqlUpdateOperation, fetchSqlInsertOperation, fetchSqlModifyOperation } from "./api";
+import { fetchSqlDatabases, fetchSqlSelectOperation, fetchSqlUpdateOperation, fetchSqlInsertOperation, fetchSqlModifyOperation, fetchExecutableCategory } from "./api";
 import { buildSqlReadPayload } from "./payload";
 import { parseSqlRunResult, parseSqlUpdateResult, parseSqlInsertResult, parseSqlModifyResult } from "./result";
 import { normalizeSqlDatabases, resolveSqlDatabase } from "./selector";
@@ -113,11 +113,13 @@ export async function loadSqlUpdateContext(): Promise<SqlExecutionContext> {
 }
 
 export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<ExecuteSqlUpdateResult> {
+  const fallbackCategory = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
+    fallbackCategory,
   });
 
   const formData = new FormData();
@@ -202,11 +204,13 @@ export async function loadSqlInsertContext(): Promise<SqlExecutionContext> {
 }
 
 export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<ExecuteSqlInsertResult> {
+  const fallbackCategory = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
+    fallbackCategory,
   });
 
   const formData = new FormData();
@@ -286,11 +290,13 @@ export async function loadSqlModifyContext(): Promise<SqlExecutionContext> {
 }
 
 export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<ExecuteSqlModifyResult> {
+  const fallbackCategory = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
+    fallbackCategory,
   });
 
   const formData = new FormData();
@@ -340,11 +346,13 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
 }
 
 export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promise<ExecuteSqlReadResult> {
+  const fallbackCategory = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
+    fallbackCategory,
   });
 
   const formData = new FormData();

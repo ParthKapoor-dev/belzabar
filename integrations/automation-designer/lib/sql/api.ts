@@ -1,5 +1,5 @@
 import { CliError, apiFetch } from "@belzabar/core";
-import type { SqlDatabaseAuth, SqlSelectOperation, SqlUpdateOperation, SqlInsertOperation, SqlModifyOperation } from "./types";
+import type { ExecutableCategoryRef, SqlDatabaseAuth, SqlSelectOperation, SqlUpdateOperation, SqlInsertOperation, SqlModifyOperation } from "./types";
 
 export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
   const response = await apiFetch("/rest/api/automation-systems/db_service/auth", {
@@ -79,4 +79,53 @@ export async function fetchSqlModifyOperation(): Promise<SqlModifyOperation> {
   }
 
   return (await response.json()) as SqlModifyOperation;
+}
+
+let executableCategoryCache: Promise<ExecutableCategoryRef | null> | null = null;
+
+/** Test-only: clears the per-process executable-category cache. */
+export function resetExecutableCategoryCache(): void {
+  executableCategoryCache = null;
+}
+
+/**
+ * Resolve a category that exists on the connected env and that the current user
+ * is allowed to execute, so the synthetic SQL test chain passes the server's
+ * AuthorizeExecution check. The server only needs a real category *id* (the name
+ * is cosmetic); any PUBLIC category works. Prefer a "Helpers"-style one for
+ * stability, else the lowest-id PUBLIC category. Cached per process; returns
+ * null if the lookup fails (caller then falls back to the legacy NSM constant).
+ */
+export async function fetchExecutableCategory(): Promise<ExecutableCategoryRef | null> {
+  if (executableCategoryCache) return executableCategoryCache;
+
+  executableCategoryCache = (async () => {
+    // fetchSystemServices=false returns AutomationChainCategory rows whose `id`
+    // is the chain-category id the server resolves in AuthorizeExecution. The
+    // =true variant returns automation *systems* (a different id space), whose
+    // ids may not resolve to a category — that's what caused the original NPE.
+    const response = await apiFetch("/rest/api/automation/chain/category?fetchSystemServices=false", {
+      method: "GET",
+      authMode: "Bearer",
+    });
+
+    if (!response.ok) return null;
+
+    const body = (await response.json()) as unknown;
+    const list: any[] = Array.isArray(body)
+      ? body
+      : ((body as any)?.content ?? (body as any)?.data ?? []);
+
+    const publics = list.filter(
+      (c) => typeof c?.id === "number" && String(c?.accessMode).toUpperCase() === "PUBLIC"
+    );
+    if (publics.length === 0) return null;
+
+    const helper = publics.find((c) => String(c?.name ?? "").toLowerCase().includes("helper"));
+    const chosen = helper ?? [...publics].sort((a, b) => a.id - b.id)[0];
+
+    return { id: chosen.id as number, name: String(chosen.name ?? "") };
+  })();
+
+  return executableCategoryCache;
 }

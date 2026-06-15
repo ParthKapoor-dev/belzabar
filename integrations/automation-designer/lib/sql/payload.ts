@@ -251,7 +251,7 @@ function buildFallbackInnerDefinition(operation: any, dbAuthId: number, query: s
 }
 
 export function buildSqlReadPayload(options: BuildSqlPayloadOptions): V1RawMethodResponse {
-  const { template, operation, dbAuthId, query } = options;
+  const { template, operation, dbAuthId, query, fallbackCategory } = options;
 
   const findNestedJsonDefinition = (value: unknown, depth = 0): unknown => {
     if (!value || depth > 3 || typeof value !== "object") {
@@ -313,7 +313,7 @@ export function buildSqlReadPayload(options: BuildSqlPayloadOptions): V1RawMetho
 
   return {
     ...template,
-    category: (template as any).category ?? { id: 37, name: "NSM.Helpers" },
+    category: (template as any).category ?? fallbackCategory ?? { id: 37, name: "NSM.Helpers" },
     version: (template as any).version ?? 1,
     jsonDefinition: JSON.stringify(innerDefinition),
   };

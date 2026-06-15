@@ -78,4 +78,66 @@ describe("SQL payload builder", () => {
     expect(queryMapping.encodingType).toBe("BASE_64");
     expect(decodeBase64(queryMapping.value)).toBe("select * from users limit 1");
   });
+
+  function makeTemplate(category?: unknown): RawMethodResponse {
+    return {
+      uuid: "method-uuid",
+      referenceId: "ref-id",
+      aliasName: "Read Data",
+      automationState: "PUBLISHED",
+      createdOn: 0,
+      lastUpdatedOn: 0,
+      lastUpdatedBy: "tester",
+      ...(category !== undefined ? { category } : {}),
+      jsonDefinition: JSON.stringify({
+        name: "Read Data",
+        inputs: [],
+        services: [{ automationApiId: 25, mappings: [], outputs: [] }],
+      }),
+    } as RawMethodResponse;
+  }
+
+  const operation = {
+    id: 25,
+    methodUUID: "method-uuid",
+    automationUserInputs: [
+      {
+        id: 182,
+        produces: "body",
+        automationUserInputs: [{ id: 183, label: "SQLQuery", produces: "queryString", encodingType: "BASE_64" }],
+      },
+    ],
+  };
+
+  test("falls back to the legacy NSM category when no fallbackCategory is given", () => {
+    const payload = buildSqlReadPayload({
+      template: makeTemplate(),
+      operation,
+      dbAuthId: 55,
+      query: "select 1",
+    });
+    expect((payload as any).category).toEqual({ id: 37, name: "NSM.Helpers" });
+  });
+
+  test("stamps the env-resolved fallbackCategory when the template has none", () => {
+    const payload = buildSqlReadPayload({
+      template: makeTemplate(),
+      operation,
+      dbAuthId: 55,
+      query: "select 1",
+      fallbackCategory: { id: 1200, name: "Helpers.CSV" },
+    });
+    expect((payload as any).category).toEqual({ id: 1200, name: "Helpers.CSV" });
+  });
+
+  test("prefers the template's own category over the fallback", () => {
+    const payload = buildSqlReadPayload({
+      template: makeTemplate({ id: 999, name: "Real.Category" }),
+      operation,
+      dbAuthId: 55,
+      query: "select 1",
+      fallbackCategory: { id: 1200, name: "Helpers.CSV" },
+    });
+    expect((payload as any).category).toEqual({ id: 999, name: "Real.Category" });
+  });
 });
