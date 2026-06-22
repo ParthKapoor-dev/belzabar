@@ -88,7 +88,7 @@ function buildSummaryBody(cfg: BelzConfigFile): string {
     lines.push(`  URL:      ${jk.baseUrl ?? pc.dim("(not set)")}`);
     lines.push(`  User:     ${jk.user ?? pc.dim("(not set)")}`);
     lines.push(`  Password: ${jk.password ? pc.green("set") : pc.red("unset")}`);
-    lines.push(`  Job:      ${jk.migrationJob ?? pc.dim("expertly.db-migration (default)")}`);
+    lines.push(`  Job:      ${jk.migrationJob ?? pc.dim("Deployments/Expertly/Database/expertly.db-migration (default)")}`);
   } else {
     lines.push(`  ${pc.dim("Not configured.")}`);
   }
@@ -236,8 +236,8 @@ async function runEditTui(): Promise<ConfigEditData> {
   });
   const job = await prompts.text({
     message: `Migration job${jk.migrationJob ? ` (current: ${jk.migrationJob})` : ""}`,
-    placeholder: "expertly.db-migration",
-    defaultValue: jk.migrationJob ?? "expertly.db-migration",
+    placeholder: "Deployments/Expertly/Database/expertly.db-migration",
+    defaultValue: jk.migrationJob ?? "Deployments/Expertly/Database/expertly.db-migration",
   });
 
   const jenkins: Record<string, string> = {};

@@ -49,7 +49,7 @@ Reads `Config.getJenkins()` from `@belzabar/core`. Configure via
     "baseUrl": "https://jenkins-asg.stg.expertly.cloud",
     "user": "<your jenkins user>",
     "password": "<base64-encoded password or API token>",
-    "migrationJob": "expertly.db-migration"
+    "migrationJob": "Deployments/Expertly/Database/expertly.db-migration"
   }
 }
 ```

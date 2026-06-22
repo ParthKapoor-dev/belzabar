@@ -11,7 +11,8 @@ import type {
 import { QUEUE_POLL_INTERVAL_MS } from "../constants";
 
 function jobBase(auth: JenkinsAuth): string {
-  return `${auth.baseUrl}/job/${encodeURIComponent(auth.job)}`;
+  const segments = auth.job.split("/").filter(Boolean).map(encodeURIComponent);
+  return `${auth.baseUrl}/${segments.map((s) => `job/${s}`).join("/")}`;
 }
 
 export async function getJobParameters(auth: JenkinsAuth): Promise<JenkinsParameterDefinition[]> {
