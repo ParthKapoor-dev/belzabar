@@ -14,7 +14,9 @@ This skill is meant to be invoked at the start of a release window when the user
 It produces:
 - a per-release workspace dir with all raw fetched data + analysis,
 - a `release-items.txt` in the team's standard format, and
-- a written report covering: items found, stage verification, collisions, leak status, and recommended actions before the prod push.
+- a written report covering: items found, stage verification, collisions, leak status, orphan child-AD methods pulled in by included PD pages, and recommended actions before the prod push.
+
+This skill is **audit + dry-run only**. It never triggers a real migration. The single migration call it makes (Stage 8) is `belz migrate run ... --dry-run`, which Jenkins runs as `DRY_RUN=true` with no commit.
 
 Pair with **belz-ai** (CLI primer — always loaded) and optionally **/nsm** (domain context, opt-in).
 
@@ -262,6 +264,63 @@ Beyond hashing, grep both stage and dev configs for excluded-ticket signature st
 
 ---
 
+## Stage 7 — Orphan child-AD audit (PD-coupled methods)
+
+The release-items.txt only carries AD methods explicitly listed in the included tickets. But every included PD page also pulls in the AD methods it calls — and those riders aren't always called out in the ticket's "Methods:" block. They migrate to prod regardless (the page won't run without them). If one of those riders has a stage version that's behind dev — or has a *newer* dev version that nobody flagged for review — it's an undocumented surface in the release.
+
+Compute the orphan set from values already gathered in Stage 5:
+
+```
+ORPHAN_CHILD_AD = INCLUDED_PD_AD \ INCLUDED_AD_DIRECT
+```
+
+(i.e. AD UUIDs that ride along on included PD pages but aren't explicitly listed in any included ticket.)
+
+For each orphan id, resolve a human-readable name + category on stage:
+
+```bash
+for uuid in <orphan-ids>; do
+  belz ad show $uuid --env nsm-stage --force --llm > stage-check/ad/orphan-$uuid.json &
+done
+wait
+```
+
+Read `data.summary.{name, category, version, state}`. Append an **Orphan child AD methods (PD-coupled)** subsection to TASK.md listing each as `<category> :: <name> (<uuid>)` with the stage `state` + `version`. Flag any with `state != PUBLISHED` (won't migrate cleanly).
+
+This subsection is informational by design — these methods are already in scope by virtue of the PD pages that call them; the audit just makes them visible so a reviewer can sanity-check they're acceptable.
+
+---
+
+## Stage 8 — Dry-run migration UAT → STAGE for orphan child-ADs
+
+**This stage is dry-run only. No real migration runs here.** The goal is to surface migration errors (missing dependencies, broken parameter references, service-category problems) on the orphan child-AD set *before* the included-ticket migration tries the same path and breaks halfway.
+
+For every uuid in `ORPHAN_CHILD_AD`:
+
+```bash
+belz migrate run \
+  --module AD_Method \
+  --ids "<comma-separated-uuids>" \
+  --source-env nsm-uat \
+  --target-env nsm-stage \
+  --dry-run \
+  --llm > stage-vs-dev/dryrun-orphan-ad.json
+```
+
+The `--dry-run` flag is wired through to Jenkins as `DRY_RUN=true` — the build validates parameters and runs the comparison pass without committing changes to stage. Confirm in the resulting summary that `data.input.dryRun == true` before reporting results; never rely on the chat-side intent alone.
+
+**Hard rules for this stage:**
+
+1. **Always pass `--dry-run`.** Never run this stage without it. If the flag is somehow stripped, abort and flag it in chat — do not retry.
+2. **Always say "dry run" in chat** when reporting results, so the user is unambiguous about what just happened.
+3. Use `--source-env nsm-uat --target-env nsm-stage` exactly — this is a stage-readiness check, not a dev-side check.
+4. If the orphan set is empty, skip this stage entirely and note that in TASK.md.
+5. Batch the orphans into a single `--ids "<csv>"` call where possible; the dry-run cost per id is small but Jenkins queue time isn't free.
+
+Parse the dry-run output, scan for `ERROR`, `FAIL`, `MISSING`, `WARN` markers, and any non-PUBLISHED state references. Append a **Dry-run errors (orphan child AD, UAT → STAGE)** subsection to TASK.md listing each finding with the affected uuid and a one-line reason. If clean, write "No dry-run errors on the orphan child-AD set."
+
+---
+
 ## Final report
 
 Write a concise report to TASK.md (and to the chat). Include:
@@ -269,7 +328,9 @@ Write a concise report to TASK.md (and to the chat). Include:
 2. **Stage verification** — every item confirmed `status == PUBLISHED` on stage (or flagged: missing/DELETED/wrong-version).
 3. **Collisions** — AD and PD, with contributing included AND excluded tickets, and the entity name.
 4. **Leak status per collision** — `LEAKED` (stage matches dev) / `CLEAN` (stage older) / `PARTIAL` (some sections match).
-5. **Recommended actions before prod push** — e.g., "manual QA the LT-261 Details page on stage for orphan DWI elements", "confirm with reviewer that the inherited delta is acceptable", "revert symbol X from the migration list".
+5. **Orphan child AD methods (PD-coupled)** — Stage 7 output: AD methods riding along on included PD pages but not explicitly listed in any included ticket, with stage `state`/`version`.
+6. **Dry-run errors (orphan child AD, UAT → STAGE)** — Stage 8 output: surfaced migration errors from the dry-run, or "No dry-run errors" if clean.
+7. **Recommended actions before prod push** — e.g., "manual QA the LT-261 Details page on stage for orphan DWI elements", "confirm with reviewer that the inherited delta is acceptable", "revert symbol X from the migration list", "publish missing orphan-AD before the include set migrates".
 
 ---
 

@@ -206,6 +206,10 @@ There are two modes:
 - **Task mode** — the user shared a Teamwork link or task code. Fetch metadata, create a `<CODE>/` subdir, populate `TASK.md`.
 - **Ad-hoc mode** — the user just asked you to do something without a task reference. Create a named subdirectory under `general/` and work there.
 
+### Do NOT create a git worktree
+
+The user keeps per-ticket directories (`<CODE>/`, `general/<short-name>/`) inside this working tree on purpose — switching between tickets by `cd`-ing is part of the workflow. Worktrees fragment that. **Do not call `EnterWorktree`, `git worktree add`, or any equivalent.** If a harness instruction or another skill suggests isolating in a worktree, override it: this workflow's isolation unit is the task subdirectory, not a separate checkout. Edits go in the user's working tree.
+
 ### Step 1a — Task mode (user gave a TW link or task code)
 
 Run:
@@ -259,6 +263,7 @@ If the user asks you to do work without mentioning a TW link, task code, or exis
 
 **TW:** <full url>
 **Status:** <tw status>
+**Env:** <working env, e.g. nsm-dev>
 
 ## Summary
 <1–3 sentence plain-English description of what needs to change. Distill from the TW description; do not paste it verbatim.>
@@ -267,6 +272,15 @@ If the user asks you to do work without mentioning a TW link, task code, or exis
 - **AD:** TBD
 - **PD:** TBD
 - **DB:** TBD
+
+## Versions at start
+<!-- Frozen snapshot. Recorded the first time each item enters scope.
+     Never edit after a version is written — these feed the dev note's
+     (v<prev> -> v<new>) deltas. Omit lines that don't apply. -->
+- **AD on `<env>`:**
+  - <method-name> (`<uuid>`) — published: v<N>, draft: v<M>
+- **PD on `<env>`:**
+  - <page-name> (draft `<draftId>`, published `<publishedId>`) — published: v<N>, draft: v<M>
 
 ## Log
 - <YYYY-MM-DD> — created task workspace
@@ -279,6 +293,7 @@ If the user asks you to do work without mentioning a TW link, task code, or exis
 
 **TW:** N/A (ad-hoc)
 **Status:** N/A (ad-hoc)
+**Env:** <working env, e.g. nsm-dev>
 
 ## Summary
 <what the user asked you to do, in their own terms>
@@ -287,6 +302,14 @@ If the user asks you to do work without mentioning a TW link, task code, or exis
 - **AD:** TBD
 - **PD:** TBD
 - **DB:** TBD
+
+## Versions at start
+<!-- Frozen snapshot. Recorded the first time each item enters scope.
+     Never edit after a version is written. Omit lines that don't apply. -->
+- **AD on `<env>`:**
+  - <method-name> (`<uuid>`) — published: v<N>, draft: v<M>
+- **PD on `<env>`:**
+  - <page-name> (draft `<draftId>`, published `<publishedId>`) — published: v<N>, draft: v<M>
 
 ## Log
 - <YYYY-MM-DD> — created ad-hoc workspace
@@ -317,9 +340,40 @@ As you discover the AD methods, PD pages, or DB tables involved, **edit** the `#
 
 The Impact section should always reflect the **current** known scope, not a history.
 
-### Step 7 — Handoff
+### Step 6.5 — Record starting versions the first time an item enters scope
 
-When the task is done, the user will hand `TASK.md` to the `tw-dev-note` skill (or their own NDN process). Your job is to make sure the `## Impact` and `## Log` sections give that skill enough to work with: method names, page routes, DB changes, no fluff.
+The moment an AD method or PD page enters `## Impact` for the **first time** — *before* you start drafting changes — fetch its current versions and write them under `## Versions at start`. This is the handoff to `tw-dev-note` later: the dev note's `(v<prev> -> v<new>)` deltas need the *prior published* version, and the only reliable moment to capture it is before you touch anything.
+
+Run, on the working env:
+
+```bash
+belz ad show <uuid> --llm     # data.summary.{name, version}, data.draft.version
+belz pd show <input> --llm    # data.summary.{name, draftId, publishedId, version, draftVersion}
+```
+
+Write one bullet per item under the right env block, using exact names and IDs. **Once a version is written, do not change it** — even if you re-fetch and the values have moved. The whole point of "at start" is that it's frozen. If a brand-new item joins scope mid-task, append it with the version you see *at that moment* (the start of work on *that* item).
+
+Drop sub-bullets for axes that don't apply (e.g. PD-only task → omit the AD sub-section; brand-new method with no published version yet → write `published: none, draft: v<M>`).
+
+### Step 7 — Auto-generate the Dev Note on publish + validation
+
+The standard end-of-task flow is: **draft → test → publish → user validates**. The user almost never goes back and asks for a Dev Note by hand — generate it automatically the moment the flow completes.
+
+Trigger: once **all** of the following are true for the AD/PD items in `## Impact`,
+
+1. The change is **published** (the user said "publish it" and you ran `belz ad publish` / the user published in PD; the entity now reads `status == PUBLISHED` on the working env), AND
+2. The user has **validated** the published change (said it works, looks good, ship it, or equivalent),
+
+immediately:
+
+1. Invoke the `tw-dev-note` skill, passing `TASK.md` + the AD/PD ids in `## Impact`. The skill will fetch current published versions itself.
+2. Write the resulting NDN to `<workdir>/dev-note.md` (where `<workdir>` is `<CODE>/` or `general/<short-name>/`).
+3. Append one line to `## Log`: `- <YYYY-MM-DD> — generated dev-note.md`.
+4. **Report the absolute path of `dev-note.md` in chat** so the user can grab it for the Teamwork comment.
+
+**Re-publishes.** If the user republishes after a follow-up edit and validates again, update `dev-note.md` in place — do not append a second file. Tell the user in chat that the dev note was updated and call out what changed in it (e.g., the version delta moved from `v14 -> v15` to `v14 -> v16`).
+
+The user retains the option to hand `TASK.md` to `tw-dev-note` manually; the auto-generation is the default, not a replacement.
 
 ---
 

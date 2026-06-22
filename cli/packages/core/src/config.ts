@@ -209,7 +209,7 @@ export const Config = {
       baseUrl: (file.baseUrl ?? processEnv.BELZ_JENKINS_URL ?? "").replace(/\/$/, ""),
       user: file.user ?? processEnv.BELZ_JENKINS_USER ?? "",
       password: filePassword || processEnv.BELZ_JENKINS_PASSWORD || "",
-      migrationJob: file.migrationJob ?? processEnv.BELZ_JENKINS_JOB ?? "expertly.db-migration",
+      migrationJob: file.migrationJob ?? processEnv.BELZ_JENKINS_JOB ?? "Deployments/Expertly/Database/expertly.db-migration",
     };
   },
 };

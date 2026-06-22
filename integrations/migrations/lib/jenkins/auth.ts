@@ -31,6 +31,6 @@ export function assertJenkinsAuth(auth: { baseUrl?: string; user?: string; passw
     baseUrl: (auth.baseUrl as string).replace(/\/$/, ""),
     user: auth.user as string,
     password: auth.password as string,
-    job: auth.migrationJob || "expertly.db-migration",
+    job: auth.migrationJob || "Deployments/Expertly/Database/expertly.db-migration",
   };
 }
