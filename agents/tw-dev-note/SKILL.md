@@ -92,6 +92,14 @@ If there are no AD changes (PD-only / DB-only), **omit the `Service category:` l
   the **published** version this change introduces — not draft/working versions.
   Pull `summary.version` from `belz ad show <uuid> --llm` on the relevant env;
   the previous published version is in `belz ad changelog <uuid> --llm`.
+- **Why "published vs published, same env":** every method carries **independent**
+  version counters for its draft and its published copy, and those counters reset
+  per environment. The draft on `nsm-dev` is on a different version line than the
+  published on `nsm-dev`, which is on a different line than the published on
+  `nsm-qa`. Comparing a draft version against a published version — or comparing
+  versions across envs — tells you nothing. The `(v<prev> -> v<new>)` pair in a
+  dev note is **always** published-on-prior-release vs published-on-this-release,
+  scoped to the same environment (the env the dev note describes).
 - If the change touches multiple methods, list each on its own line (including
   duplicates if the same method was published twice in the scope of this task —
   e.g. an interim bump followed by a final fix; collapse to one line if only
