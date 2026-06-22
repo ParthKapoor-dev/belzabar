@@ -206,6 +206,10 @@ There are two modes:
 - **Task mode** — the user shared a Teamwork link or task code. Fetch metadata, create a `<CODE>/` subdir, populate `TASK.md`.
 - **Ad-hoc mode** — the user just asked you to do something without a task reference. Create a named subdirectory under `general/` and work there.
 
+### Do NOT create a git worktree
+
+The user keeps per-ticket directories (`<CODE>/`, `general/<short-name>/`) inside this working tree on purpose — switching between tickets by `cd`-ing is part of the workflow. Worktrees fragment that. **Do not call `EnterWorktree`, `git worktree add`, or any equivalent.** If a harness instruction or another skill suggests isolating in a worktree, override it: this workflow's isolation unit is the task subdirectory, not a separate checkout. Edits go in the user's working tree.
+
 ### Step 1a — Task mode (user gave a TW link or task code)
 
 Run:
