@@ -321,9 +321,25 @@ As you discover the AD methods, PD pages, or DB tables involved, **edit** the `#
 
 The Impact section should always reflect the **current** known scope, not a history.
 
-### Step 7 — Handoff
+### Step 7 — Auto-generate the Dev Note on publish + validation
 
-When the task is done, the user will hand `TASK.md` to the `tw-dev-note` skill (or their own NDN process). Your job is to make sure the `## Impact` and `## Log` sections give that skill enough to work with: method names, page routes, DB changes, no fluff.
+The standard end-of-task flow is: **draft → test → publish → user validates**. The user almost never goes back and asks for a Dev Note by hand — generate it automatically the moment the flow completes.
+
+Trigger: once **all** of the following are true for the AD/PD items in `## Impact`,
+
+1. The change is **published** (the user said "publish it" and you ran `belz ad publish` / the user published in PD; the entity now reads `status == PUBLISHED` on the working env), AND
+2. The user has **validated** the published change (said it works, looks good, ship it, or equivalent),
+
+immediately:
+
+1. Invoke the `tw-dev-note` skill, passing `TASK.md` + the AD/PD ids in `## Impact`. The skill will fetch current published versions itself.
+2. Write the resulting NDN to `<workdir>/dev-note.md` (where `<workdir>` is `<CODE>/` or `general/<short-name>/`).
+3. Append one line to `## Log`: `- <YYYY-MM-DD> — generated dev-note.md`.
+4. **Report the absolute path of `dev-note.md` in chat** so the user can grab it for the Teamwork comment.
+
+**Re-publishes.** If the user republishes after a follow-up edit and validates again, update `dev-note.md` in place — do not append a second file. Tell the user in chat that the dev note was updated and call out what changed in it (e.g., the version delta moved from `v14 -> v15` to `v14 -> v16`).
+
+The user retains the option to hand `TASK.md` to `tw-dev-note` manually; the auto-generation is the default, not a replacement.
 
 ---
 
