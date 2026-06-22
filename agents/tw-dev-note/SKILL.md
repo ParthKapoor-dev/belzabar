@@ -17,18 +17,18 @@ Convert raw engineering change descriptions into **clean, standardized, producti
 
 Before generating the Dev Note, gather the necessary information. The user may provide some or all of the following — infer what you can, ask only if critical info is missing:
 
-1. **What changed?** — The raw description of changes made
-2. **AD method links/URLs** — Extract category, method name, and published IDs from URLs like `https://nsm-dev.nc.verifi.dev/automation-designer/<Category>/<ID>`
-3. **Published version change per AD method** — the version the method was on
-   *before* this task vs. the version this task ships. Required for every AD
-   method in the dev note. If not supplied: `belz ad show <uuid> --llm` gives
-   the current published `summary.version`; `belz ad changelog <uuid> --llm`
-   gives the previous one (the entry immediately before the latest publish).
-4. **PD page/component links** — Extract published IDs
-5. **SQL changes** — Any DDL/DML changes to database schema
-6. **Impacted frontend routes/components** — If PD changes were made
+1. **TASK.md in the current workdir** — **check this first.** If the user is in a belz-ai task workspace (a `<CODE>/` or `general/<short-name>/` dir with a `TASK.md`), it almost certainly has the answers to items 2–6 already:
+   - `## Impact` → AD methods, PD routes, DB tables in scope
+   - `## Versions at start` → the **prior published version** per AD method on the working env. This is the `v<prev>` half of the `(v<prev> -> v<new>)` pair, captured at task kickoff. **Use this as authoritative** over any other source — it was frozen before any edits.
+   - `**Env:**` header → which env the task was worked on (so dev-note version deltas are scoped correctly)
+2. **What changed?** — The raw description of changes made
+3. **AD method links/URLs** — Extract category, method name, and published IDs from URLs like `https://nsm-dev.nc.verifi.dev/automation-designer/<Category>/<ID>`
+4. **Published version change per AD method** — `v<new>` is the **current** published version on the working env: `belz ad show <uuid> --llm` → `data.summary.version`. `v<prev>` comes from `TASK.md`'s `## Versions at start` (preferred) or, if missing, the entry immediately before the latest publish in `belz ad changelog <uuid> --llm`.
+5. **PD page/component links** — Extract draft + published IDs (URL hex is the draft; `belz pd show` resolves to both)
+6. **SQL changes** — Any DDL/DML changes to database schema
+7. **Impacted frontend routes/components** — If PD changes were made
 
-If the user provides AD URLs, use `belz ad show <uuid> --llm` to fetch method names, categories, and the current published version; use `belz ad changelog <uuid> --llm` to read the prior published version. If the user provides PD URLs, use `belz pd show <input> --llm` to fetch page/component details.
+If the user provides AD URLs, use `belz ad show <uuid> --llm` to fetch method names, categories, and the current published version. If the user provides PD URLs, use `belz pd show <input> --llm` to fetch page/component details.
 
 ## STRICT OUTPUT FORMAT
 
@@ -165,12 +165,13 @@ A cell of "Omit" means the line is left out of the dev note entirely (no `N/A` p
 
 ## Process
 
+0. **Read `TASK.md`** if one exists in the workdir. Pull `## Impact` (scope), `## Versions at start` (prior published versions), and the `**Env:**` header (working env). This is the primary source for the AD version pair.
 1. Identify change type (AD / PD / DB / combo)
 2. If AD URLs given, fetch method details with `belz ad show <uuid> --llm`
-3. **For every AD method, also resolve its published version pair** —
-   `summary.version` from `belz ad show` is the *new* version; the previous
-   one is the latest entry before that in `belz ad changelog <uuid> --llm`.
-   If the user supplied the pair explicitly, trust them.
+3. **For every AD method, resolve its published version pair:**
+   - `v<new>` = `data.summary.version` from `belz ad show <uuid> --env <env> --llm`.
+   - `v<prev>` = the value recorded under `## Versions at start` in TASK.md for that uuid+env. If TASK.md doesn't exist or doesn't list the method, fall back to `belz ad changelog <uuid> --llm` (the entry immediately before the latest publish).
+   - If the user supplied the pair explicitly in chat, trust them over both.
 4. If PD URLs given, fetch page/component details with `belz pd show <input> --llm`. Capture `summary.name`, `summary.draftId`, and `summary.publishedId` for every entity.
 5. Extract and deduplicate IDs. For PD: keep the **draft id** for the URL in the "PD pages & components" block; keep the **published id** for the "PD (Published Id)" line.
 6. Convert links to inline markdown (AD method names → `automation-designer/<cat>/<uuid>` URL; PD names → `ui-designer/page/<draftId>` or `ui-designer/symbol/<name>` URL).
