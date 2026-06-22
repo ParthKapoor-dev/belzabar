@@ -263,6 +263,7 @@ If the user asks you to do work without mentioning a TW link, task code, or exis
 
 **TW:** <full url>
 **Status:** <tw status>
+**Env:** <working env, e.g. nsm-dev>
 
 ## Summary
 <1–3 sentence plain-English description of what needs to change. Distill from the TW description; do not paste it verbatim.>
@@ -271,6 +272,15 @@ If the user asks you to do work without mentioning a TW link, task code, or exis
 - **AD:** TBD
 - **PD:** TBD
 - **DB:** TBD
+
+## Versions at start
+<!-- Frozen snapshot. Recorded the first time each item enters scope.
+     Never edit after a version is written — these feed the dev note's
+     (v<prev> -> v<new>) deltas. Omit lines that don't apply. -->
+- **AD on `<env>`:**
+  - <method-name> (`<uuid>`) — published: v<N>, draft: v<M>
+- **PD on `<env>`:**
+  - <page-name> (draft `<draftId>`, published `<publishedId>`) — published: v<N>, draft: v<M>
 
 ## Log
 - <YYYY-MM-DD> — created task workspace
@@ -283,6 +293,7 @@ If the user asks you to do work without mentioning a TW link, task code, or exis
 
 **TW:** N/A (ad-hoc)
 **Status:** N/A (ad-hoc)
+**Env:** <working env, e.g. nsm-dev>
 
 ## Summary
 <what the user asked you to do, in their own terms>
@@ -291,6 +302,14 @@ If the user asks you to do work without mentioning a TW link, task code, or exis
 - **AD:** TBD
 - **PD:** TBD
 - **DB:** TBD
+
+## Versions at start
+<!-- Frozen snapshot. Recorded the first time each item enters scope.
+     Never edit after a version is written. Omit lines that don't apply. -->
+- **AD on `<env>`:**
+  - <method-name> (`<uuid>`) — published: v<N>, draft: v<M>
+- **PD on `<env>`:**
+  - <page-name> (draft `<draftId>`, published `<publishedId>`) — published: v<N>, draft: v<M>
 
 ## Log
 - <YYYY-MM-DD> — created ad-hoc workspace
@@ -320,6 +339,21 @@ As you discover the AD methods, PD pages, or DB tables involved, **edit** the `#
 - `- **DB:** application (added column is_archived)`
 
 The Impact section should always reflect the **current** known scope, not a history.
+
+### Step 6.5 — Record starting versions the first time an item enters scope
+
+The moment an AD method or PD page enters `## Impact` for the **first time** — *before* you start drafting changes — fetch its current versions and write them under `## Versions at start`. This is the handoff to `tw-dev-note` later: the dev note's `(v<prev> -> v<new>)` deltas need the *prior published* version, and the only reliable moment to capture it is before you touch anything.
+
+Run, on the working env:
+
+```bash
+belz ad show <uuid> --llm     # data.summary.{name, version}, data.draft.version
+belz pd show <input> --llm    # data.summary.{name, draftId, publishedId, version, draftVersion}
+```
+
+Write one bullet per item under the right env block, using exact names and IDs. **Once a version is written, do not change it** — even if you re-fetch and the values have moved. The whole point of "at start" is that it's frozen. If a brand-new item joins scope mid-task, append it with the version you see *at that moment* (the start of work on *that* item).
+
+Drop sub-bullets for axes that don't apply (e.g. PD-only task → omit the AD sub-section; brand-new method with no published version yet → write `published: none, draft: v<M>`).
 
 ### Step 7 — Auto-generate the Dev Note on publish + validation
 
