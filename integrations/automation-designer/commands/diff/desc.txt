@@ -1,4 +1,5 @@
-  diff <uuid> [--from N --to M | --cross-env --from-env X --to-env Y]
+  diff <uuid> [--from N --to M | --cross-env --from-env X --to-env Y] [--no-editor]
     Open two versions of an AD method side-by-side in Zed (or any editor with
     `--diff a b`). Default mode compares two history versions on the current
-    env; --cross-env compares the same UUID across two envs.
+    env; --cross-env compares the same UUID across two envs. --no-editor skips
+    the editor and just returns both temp file paths (for headless/scripted use).

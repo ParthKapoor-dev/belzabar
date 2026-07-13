@@ -1,4 +1,4 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, ok, type CommandModule, type CommandResult } from "@belzabar/core";
 import { spawn as nodeSpawn } from "node:child_process";
 import { writeFile, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -25,6 +25,7 @@ interface DiffArgs {
   toEnv?: string;
   clean: boolean;
   editor: string;
+  noEditor: boolean;
 }
 
 interface DiffSide {
@@ -37,7 +38,8 @@ interface DiffData {
   uuid: string;
   left: DiffSide;
   right: DiffSide;
-  editor: string;
+  /** null when --no-editor was passed; both sides are still written to disk. */
+  editor: string | null;
   cleaned: boolean;
 }
 
@@ -66,6 +68,7 @@ const command: CommandModule<DiffArgs, DiffData> = {
     let toEnv: string | undefined;
     let clean = true;
     let editor = "zed";
+    let noEditor = false;
 
     for (let i = 0; i < rest.length; i += 1) {
       const t = rest[i] ?? "";
@@ -108,6 +111,10 @@ const command: CommandModule<DiffArgs, DiffData> = {
         clean = false;
         continue;
       }
+      if (t === "--no-editor") {
+        noEditor = true;
+        continue;
+      }
       if (t === "--editor") {
         const next = rest[i + 1];
         if (!next) {
@@ -128,7 +135,7 @@ const command: CommandModule<DiffArgs, DiffData> = {
 
     if (fromEnv || toEnv) mode = "cross-env";
 
-    return { mode, uuid, from, to, fromEnv, toEnv, clean, editor };
+    return { mode, uuid, from, to, fromEnv, toEnv, clean, editor, noEditor };
   },
 
   async execute(args, context) {
@@ -164,7 +171,11 @@ const command: CommandModule<DiffArgs, DiffData> = {
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
     const data = envelope.data as DiffData;
-    ui.success(`Opened ${data.editor} --diff for ${data.uuid.slice(0, 8)}…`);
+    ui.success(
+      data.editor
+        ? `Opened ${data.editor} --diff for ${data.uuid.slice(0, 8)}…`
+        : `Wrote both sides for ${data.uuid.slice(0, 8)}… (no editor opened)`,
+    );
     ui.table(
       ["Side", "Label", "File"],
       [
@@ -185,7 +196,7 @@ const command: CommandModule<DiffArgs, DiffData> = {
 async function executeHistoryDiff(
   args: DiffArgs & { uuid: string },
   context: { outputMode: "human" | "llm"; warn(msg: string): void },
-): Promise<{ ok: true; data: DiffData; meta?: Record<string, unknown> }> {
+): Promise<CommandResult<DiffData>> {
   const current = await adApi.fetchMethod(args.uuid, "v1");
   const category = current.category?.name ?? "";
   const methodName = current.name;
@@ -233,14 +244,14 @@ async function executeHistoryDiff(
     writeFile(rightPath, serialize(rightParsed, args.clean)),
   ]);
 
-  spawnEditor(args.editor, leftPath, rightPath);
+  if (!args.noEditor) spawnEditor(args.editor, leftPath, rightPath);
 
   return ok<DiffData>({
     mode: "history",
     uuid: args.uuid,
     left: { label: `v${from}`, path: leftPath },
     right: { label: `v${to}`, path: rightPath },
-    editor: args.editor,
+    editor: args.noEditor ? null : args.editor,
     cleaned: args.clean,
   });
 }
@@ -253,7 +264,7 @@ async function executeHistoryDiff(
 async function executeCrossEnvDiff(
   args: DiffArgs & { uuid: string },
   context: { outputMode: "human" | "llm"; warn(msg: string): void },
-): Promise<{ ok: true; data: DiffData; meta?: Record<string, unknown> }> {
+): Promise<CommandResult<DiffData>> {
   let { fromEnv, toEnv } = args;
 
   if (!fromEnv || !toEnv) {
@@ -288,14 +299,14 @@ async function executeCrossEnvDiff(
     writeFile(rightPath, serialize(rightJson, args.clean)),
   ]);
 
-  spawnEditor(args.editor, leftPath, rightPath);
+  if (!args.noEditor) spawnEditor(args.editor, leftPath, rightPath);
 
   return ok<DiffData>({
     mode: "cross-env",
     uuid: args.uuid,
     left: { label: fromEnv, path: leftPath },
     right: { label: toEnv, path: rightPath },
-    editor: args.editor,
+    editor: args.noEditor ? null : args.editor,
     cleaned: args.clean,
   });
 }
