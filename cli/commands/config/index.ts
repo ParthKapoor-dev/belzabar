@@ -269,9 +269,13 @@ const command: CommandModule<ConfigArgs, ConfigData> = {
     if (sub === "token") return { action: "token" };
     if (sub === "edit")  return { action: "edit" };
 
-    throw new CliError(`Unknown config subcommand: '${sub}'. Available: get, token, edit`, {
-      code: "UNKNOWN_SUBCOMMAND",
-    });
+    const hint = sub === "envs" || sub === "env"
+      ? " To list environments, run 'belz envs'."
+      : "";
+    throw new CliError(
+      `Unknown config subcommand: '${sub}'. Available: get, token, edit.${hint}`,
+      { code: "UNKNOWN_SUBCOMMAND" }
+    );
   },
 
   async execute(args) {

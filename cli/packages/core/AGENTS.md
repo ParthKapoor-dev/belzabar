@@ -39,6 +39,22 @@ Everything is exported from `src/index.ts`. Grouped by concern:
 | Export | Description |
 |--------|-------------|
 | `apiFetch(url, options, session)` | Authenticated fetch wrapper; handles `Bearer` and `Raw` auth modes |
+| `prepareIpv4Fetch(url, init)` | Pins a request to the host's IPv4 address (preserving `Host` + TLS SNI) |
+
+**Why `prepareIpv4Fetch` exists.** Bun's `fetch` has no happy-eyeballs, so a host that
+advertises AAAA over a black-holed v6 path hangs on a SYN that never completes. We resolve
+IPv4 ourselves and rewrite the URL to the IP.
+
+That makes the A-record query load-bearing — and an A-only query is exactly what a flaky
+upstream resolver tends to `REFUSE`/`ETIMEOUT` while still answering AAAA. So `dns.ts`
+resolves via **both** `resolve4()` (c-ares) and `lookup()` (getaddrinfo), retries with
+backoff, and caches to `~/.belz/cache/dns.json` — a disk cache, not just an in-memory one,
+because the CLI is a short-lived process and an in-memory map would never survive to the
+next invocation.
+
+If resolution fails outright, `prepareIpv4Fetch` **returns the original hostname URL rather
+than throwing**. Callers have no fallback of their own, and a request that might hang beats a
+command that cannot run at all. Do not "simplify" this back into a throw.
 
 ### CLI Runners
 | Export | Description |
