@@ -1,6 +1,6 @@
 ---
 name: belz-ai
-description: Belzabar tooling primer + per-task workflow. ALWAYS load this skill at the start of any session in this directory — it explains what belz / AD / PD / Teamwork are and enforces the per-task subdirectory + TASK.md workflow. Also triggers on Teamwork URLs (projects.webintensive.com/app/tasks/...), task codes like NCNSS-XXX, "start task" / "new task", or any question about belz, AD chains, PD pages, NSM environments, or fetching task metadata.
+description: Belzabar tooling primer + per-task workflow + task lifecycle and testing protocol. ALWAYS load this skill at the start of any session in this directory — it explains what belz / AD / PD / Teamwork are, enforces the per-task subdirectory + TASK.md workflow, requires reading the project's FINDINGS.md, and defines how AD/PD changes are tested (draft-vs-published comparison, EXPLAIN ANALYZE on SQL, post-publish sanity). Also triggers on Teamwork URLs (projects.webintensive.com/app/tasks/...), task codes like NCNSS-XXX, "start task" / "new task", or any question about belz, AD chains, PD pages, NSM environments, testing an AD change, or fetching task metadata.
 ---
 
 # Belzabar Workflow Skill
@@ -18,7 +18,9 @@ If the user's task involves NSM domain concepts (LT-260, LT-262, "Vehicle Sold",
 
 ## Step 0 — Mandatory session bootstrap
 
-Before doing anything else in a new session, run:
+Two things, before anything else in a new session.
+
+**0a. Load the command reference.**
 
 ```bash
 belz --help-full
@@ -27,6 +29,16 @@ belz --help-full
 This dumps the **complete, current** command reference (union of every `desc.txt` in the repo). It is the source of truth for what `belz` can do. Read it before suggesting any command. If `belz --help-full` fails (binary not installed, PATH issue), stop and tell the user — do not try to work around it.
 
 Run this once per session, early. You don't need to re-run it unless the user says they just rebuilt `belz`.
+
+**0b. Read the project's `FINDINGS.md`.**
+
+```bash
+cat <PROJECT>-FINDINGS.md      # e.g. NSM-FINDINGS.md
+```
+
+One findings file **per project**, at the work root (next to the task dirs — *not* inside them). The project is the prefix of the working env: `nsm-*` → `NSM-FINDINGS.md`, `ys-*` → `YS-FINDINGS.md`, `edi-*` → `EDI-FINDINGS.md`.
+
+This file is the accumulated, hard-won knowledge of the project — the traps that cost someone hours. **Always read it at session start**, before planning anything. If it doesn't exist yet, that's fine; create it the first time you have something worth recording. See [FINDINGS.md](#findingsmd--per-project-accumulated-knowledge).
 
 ---
 
@@ -366,10 +378,12 @@ Trigger: once **all** of the following are true for the AD/PD items in `## Impac
 
 immediately:
 
-1. Invoke the `tw-dev-note` skill, passing `TASK.md` + the AD/PD ids in `## Impact`. The skill will fetch current published versions itself.
+1. Invoke the `tw-dev-note` skill, passing `TASK.md` + the AD/PD ids in `## Impact` + `test-cases.json`. The skill will fetch current published versions itself.
 2. Write the resulting NDN to `<workdir>/dev-note.md` (where `<workdir>` is `<CODE>/` or `general/<short-name>/`).
 3. Append one line to `## Log`: `- <YYYY-MM-DD> — generated dev-note.md`.
 4. **Report the absolute path of `dev-note.md` in chat** so the user can grab it for the Teamwork comment.
+
+Include the **test cases and their results** (both rounds) in the dev note — the reviewer's main question is "how do you know this works", and the case list is the answer.
 
 **Re-publishes.** If the user republishes after a follow-up edit and validates again, update `dev-note.md` in place — do not append a second file. Tell the user in chat that the dev note was updated and call out what changed in it (e.g., the version delta moved from `v14 -> v15` to `v14 -> v16`).
 
@@ -379,8 +393,8 @@ The user retains the option to hand `TASK.md` to `tw-dev-note` manually; the aut
 
 ## Hard rules for the workflow
 
-1. **Always** run `belz --help-full` once at the start of a session before suggesting any command.
-2. **Never** create scratch files outside the active workspace dir (`<CODE>/` or `general/<short-name>/`).
+1. **Always** run `belz --help-full` once at the start of a session before suggesting any command, and **always** read `<PROJECT>-FINDINGS.md`.
+2. **Never** create scratch files outside the active workspace dir (`<CODE>/` or `general/<short-name>/`) — except `<PROJECT>-FINDINGS.md`, which lives at the work root by design.
 3. **Never** write scratch files directly into `general/` itself — always under a named sub-folder.
 4. **Never** dump the full TW description, comments, or AD method bodies into `TASK.md`. Fetch them on demand with `belz`.
 5. **Never** write paragraphs in the Log. One line per real change.
@@ -388,10 +402,145 @@ The user retains the option to hand `TASK.md` to `tw-dev-note` manually; the aut
 7. In ad-hoc mode, you **must** pick the directory name yourself — do not ask the user to name it.
 8. **Never** rename or restructure `TASK.md` away from one of the two templates.
 9. The Log is a **changelog**, not a journal. If you can't summarize the change in one line, the change isn't done yet.
+10. **Never** run ahead of the user through the lifecycle in Part 3. Finish the stage you were asked for, report it, name what's next, and wait. Drafting is not permission to publish; publishing is not permission to comment on Teamwork.
+11. **Never** report a test as passed without having run it. Show the actual result — and if it failed or you skipped it, say so.
 
 ---
 
-## Part 3 — Planning AD/PD work
+## FINDINGS.md — per-project accumulated knowledge
+
+`<PROJECT>-FINDINGS.md` lives at the **work root**, one per project (`NSM-FINDINGS.md`, `YS-FINDINGS.md`, …). It outlives any single task. `TASK.md` is the log of *this* task; `FINDINGS.md` is what the *next* task needs to know.
+
+**Read it at session start (Step 0b). Append to it whenever you learn something that would have saved you time had you known it up front.**
+
+### What goes in
+
+Non-obvious, durable facts about how this project actually behaves:
+
+- a trap that cost real time (`LT262.archive silently no-ops when status is already CANCELLED`)
+- a surprising coupling (`lt-260-submission page also drives the LT-263 print flow`)
+- an environment quirk (`nsm-uat has no PayIt entity — dropdown tests fail there, not a bug`)
+- a data precondition needed to test something (`aging report needs an app older than 30d in SUBMITTED`)
+
+### What does NOT go in
+
+- anything already in `TASK.md`, the ticket, or the AD/PD config itself
+- task-specific state ("fixed step 3.2") — that's a Log line
+- anything you can re-derive in one `belz` call — fetch it instead
+
+### Format — keep it brutally short
+
+**One line per finding.** No sections, no prose, no dates unless the fact is time-bound. If it needs a paragraph, it isn't a finding yet — compress it or leave it out.
+
+```markdown
+# NSM — Findings
+
+- `LT262.archive` no-ops when status is already CANCELLED — check status before calling.
+- PD ids differ per env; AD chain UUIDs are stable. Resolve PD by name across envs.
+- `nsm-uat` has no PayIt entity — LT-260 dropdown tests fail there by design.
+- Aging report needs an app >30d old in SUBMITTED, else the grid renders empty.
+```
+
+Before appending, **check the file for an existing line covering it** — update that line rather than adding a near-duplicate. Delete lines that turn out to be wrong.
+
+---
+
+## Part 3 — Task lifecycle (SDLC / STLC)
+
+This is the shape a full task usually takes, end to end. It exists so you know **what the user will most likely want next** — so you can prepare for it and offer it, not so you can march through it unprompted.
+
+> **The user steers.** This is an expectation, not an algorithm. The user will skip stages, reorder them, jump straight to the middle, or stop early — all of that is normal and correct. Never run ahead into a stage the user hasn't asked for, and **never** treat a later stage as authorization for an earlier stage's side effects (drafting is not publishing; publishing is not commenting on Teamwork). When a stage completes, say what's done and what would come next — then wait.
+
+**0. Prerequisites.** Task id → fetch the TW description + comments. Create the task directory and work **only** inside it (diffs, test cases, notes, screenshots). Create `TASK.md` as a one-line-per-event log. Read `<PROJECT>-FINDINGS.md`.
+
+**1. Reproduce (prod issues only).** If the report is against prod, **replicate it on dev first.** Don't design a fix for a bug you haven't seen happen. If it won't reproduce on dev, that difference *is* the finding — record it.
+
+**2. Impact analysis.** Find every affected area — AD methods, PD pages/components, DB tables, and the callers of each. This is broad, parallel, read-heavy work: **ask the user whether to fan it out to subagents on a cheaper model (e.g. Sonnet) to save tokens.** Write the result into `## Impact`, and record `## Versions at start` for each item as it enters scope (Step 6.5).
+
+**3. Propose.** Produce **exact diffs** of the intended change (see Part 5 for the plan shape) plus the test cases that will prove it — saved to `test-cases.json` in the task dir. Both before touching anything.
+
+**4. Draft + round 1 testing.** Save to draft, then run the **draft-vs-published comparison** (Part 4). SQL changes additionally get an `EXPLAIN ANALYZE` check.
+
+**5. Publish + round 2 testing.** Publish with a changelog note, then re-run the suite against the live published method, plus a Chrome sanity pass on the UI. Generate `dev-note.md` including the test cases.
+
+**6. Review.** A **fresh session** running `/code-review`, given only the task id and `dev-note.md` — a clean-context reviewer with no memory of your reasoning catches what you rationalized away.
+
+**7. Capture findings.** Anything new and durable → a one-liner in `<PROJECT>-FINDINGS.md`.
+
+---
+
+## Part 4 — Testing protocol
+
+Testing here is not "run the unit tests" — there is no test runner. Verification means **executing the actual method/page and comparing observed behavior**, which makes the discipline below the only safety net.
+
+### `test-cases.json`
+
+Test cases live in `<workdir>/test-cases.json`. Write them **before** making the change, from the requirement — not afterwards from the implementation (cases written after the fact just re-assert whatever the code happens to do).
+
+Cover, at minimum:
+
+- the **happy path** the ticket describes
+- every **branch/condition** the change touches (each status, each flag value)
+- the **regression surface** — inputs that must behave *exactly as before*; this is what round 1 actually checks
+- **edge cases**: empty/null inputs, missing optional fields, boundary values
+
+Keep each case self-describing — inputs, what you expect, and why. Record actual results alongside expected as you run them, so the file becomes the evidence trail that feeds the dev note.
+
+### Round 1 — draft mode: the draft-vs-published comparison
+
+**This is the core regression check, and it is the reason to test in draft at all.**
+
+Once the change is saved as a draft:
+
+1. Run the **entire** `test-cases.json` suite against the **draft**.
+2. Run the **same** suite against the **currently published** version.
+3. **Diff the two result sets.**
+
+Then interpret the diff — and this is the whole point:
+
+- Cases that **changed** must be *exactly* the cases the ticket intends to change. A changed result you can't tie to a requirement is a **regression** — stop and investigate.
+- Cases that **stayed the same** are your proof the change is contained. Unchanged regression-surface cases are the evidence that nothing else got messed up.
+- A case that changed in the *right direction* but by the *wrong amount* (right status, wrong field value) is still a failure.
+
+Published is the **control**; draft is the **experiment**. Without the control run you only know the new behavior is plausible — not that the old behavior survived. Never skip the published run because "nothing else should be affected"; that assumption is precisely what the comparison exists to falsify.
+
+Report the comparison as: cases run, cases changed (with the intended reason for each), cases unchanged, and anything unexplained.
+
+### SQL changes — always `EXPLAIN ANALYZE`
+
+**Any step whose SQL changes gets an `EXPLAIN ANALYZE` on both the old and the new query**, before publish. Correct results are not sufficient — a query that returns the right rows via a sequential scan over a large table is still a production incident.
+
+Compare, old vs new:
+
+- **total execution time**
+- **scan types** — a switch from Index Scan to Seq Scan on a large table is a red flag
+- **rows estimated vs actual** — a large divergence means the planner is guessing badly
+- **new joins or sorts**, and whether a sort spills to disk
+
+Run it against data of realistic size — a plan on an empty dev table proves nothing. Save the plans into the task dir and note the verdict in `TASK.md`. If the new plan is materially worse, **say so and propose an index or a rewrite** rather than shipping it quietly.
+
+### Round 2 — after publish
+
+Publishing can behave differently from draft (different cached definitions, real callers, real data). After publishing:
+
+1. **Re-run the suite** against the live published method.
+2. **Execute the methods** directly with realistic inputs.
+3. **Chrome sanity pass** — drive the actual UI for the affected route(s): the flow the ticket describes, plus a quick look at anything adjacent that shares the page. Config that validates cleanly can still render a broken screen.
+
+Record round-2 results in `test-cases.json` alongside round 1, and fold them into the dev note.
+
+### Testing hard rules
+
+1. **Write test cases before the change**, from the requirement.
+2. **Round 1 always runs both draft and published**, and you compare. A draft-only run is not round 1.
+3. **Every changed result must map to an intended requirement.** Unexplained diffs block publish.
+4. **Every SQL change gets `EXPLAIN ANALYZE`, old vs new.** No exceptions.
+5. **Never claim a test passed without running it.** Report actual output; if something failed or was skipped, say so plainly.
+6. **Chrome sanity is not optional when a PD route is touched.**
+
+---
+
+## Part 5 — Planning AD/PD work
 
 When you plan a task in this directory (plan mode, or any time you lay out an
 approach before changing a method or page), write the plan so a developer who
@@ -436,10 +585,11 @@ concretely. For example:
 ```
 
 **3. Testing — the real AD/PD verification path.** Don't write "run unit tests."
-Describe how the change is actually verified: create a dummy application in the
-relevant status → `belz ad test` the draft → save the draft → write the changelog
-note → publish → `belz ad run` with dummy data. Include the PD page / workflow
-check when a frontend route is involved.
+Name the actual cases and the path: the data preconditions (e.g. a dummy
+application in the relevant status), the round-1 **draft-vs-published
+comparison**, `EXPLAIN ANALYZE` if any SQL changed, then publish → re-run →
+Chrome sanity on the affected route. See Part 4 for the protocol; the plan should
+state *which cases* prove *which requirement*, not just that testing will happen.
 
 ### Why this matters
 
