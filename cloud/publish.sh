@@ -30,8 +30,7 @@ cd "$REPO_ROOT"
 # --ignore-scripts: we only need workspace deps for the compile.
 bun install --frozen-lockfile --ignore-scripts 2>/dev/null || bun install --ignore-scripts
 cd "$REPO_ROOT/cli"
-bun run generate
-bun build --compile --minify --target=bun-linux-x64 ./bin/cli-build.ts --outfile "$WORK/$ASSET"
+bun build --compile --minify --target=bun-linux-x64 ./bin/cli.ts --outfile "$WORK/$ASSET"
 
 # ── 2. Refresh belz-sandbox tracked content (skills + rules + setup script) ──
 # Make plain `git push` use gh's token (CI sets GH_TOKEN; locally uses your auth).

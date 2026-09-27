@@ -35,8 +35,7 @@ Pop-Location
 # ── 4. Build the binary ───────────────────────────────────────────────────────
 Write-Host "Building belz binary..."
 Push-Location (Join-Path $RepoRoot "cli")
-bun run generate
-bun build --compile --minify --sourcemap .\bin\cli-build.ts --outfile belz.exe
+bun build --compile --minify --sourcemap .\bin\cli.ts --outfile belz.exe
 Pop-Location
 $BuiltExe = Join-Path $RepoRoot "cli\belz.exe"
 

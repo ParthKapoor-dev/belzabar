@@ -74,8 +74,7 @@ bun install --ignore-scripts
 echo ""
 echo "🔨 Building belz binary..."
 cd "$REPO_ROOT/cli"
-bun run generate
-bun build --compile --minify --sourcemap ./bin/cli-build.ts --outfile belz
+bun build --compile --minify --sourcemap ./bin/cli.ts --outfile belz
 
 # ── 6. Install the binary ─────────────────────────────────────────────────────
 mkdir -p "$INSTALL_DIR"

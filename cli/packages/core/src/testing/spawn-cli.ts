@@ -41,15 +41,15 @@ export function cliEntry(): string {
   return join(cliDir(), "bin", "cli.ts");
 }
 
-/** Entry compiled into the release binary (static registries). */
+/** Entry compiled into the release binary (the same file as the dev entry). */
 export function cliBuildEntry(): string {
-  return join(cliDir(), "bin", "cli-build.ts");
+  return cliEntry();
 }
 
-/** The namespace/command maps the dev entry builds (every registered command). */
+/** The namespace/command maps the entry builds from the static registries (every registered command). */
 export async function loadDevCliOptions(): Promise<NamespacedCliOptions> {
-  const mod = await import(join(cliDir(), "bin", "dev-commands.ts"));
-  return mod.buildDevCliOptions() as NamespacedCliOptions;
+  const mod = await import(join(cliDir(), "bin", "options.ts"));
+  return mod.buildCliOptions() as NamespacedCliOptions;
 }
 
 let scratchHome: string | null = null;
