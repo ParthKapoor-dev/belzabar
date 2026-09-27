@@ -30,7 +30,9 @@ MIGRATION IDS
   does that translation for you. Resolution needs --source-env (or an NCDNS /
   SEMS / YS profile it can derive the source env from) plus configured
   credentials for that env. If an id is a draft with no published version, belz
-  aborts before the build so nothing is wasted.
+  aborts before the build so nothing is wasted. When resolution can't run (the
+  profile's source env, e.g. sems-dev, isn't in your config, or the profile's
+  envs can't be derived), belz WARNS (meta.warnings) and sends the ids as given.
 
 SAFETY
   - --ids and --ids-file cannot be combined (MIGRATE_IDS_CONFLICT).
@@ -50,9 +52,10 @@ OPTIONS
   --async Y|N                  Run asynchronously. Default: N.
   --migrate-dependents Y|N     Migrate dependent methods/pages. Default: N.
   --devops-tag <ref>           Branch/tag of infra.expertly. Default: develop.
-  --dry-run                    Send DRY_RUN=true to the Jenkins job. NOTE: a real
-                               Jenkins build is still triggered; the job itself
-                               decides what a dry run skips.
+  --dry-run                    NOT a local validation: a real Jenkins build is
+                               still triggered, with DRY_RUN=true; the job itself
+                               decides what a dry run skips. Argument and id
+                               checks happen on every run, dry or not.
   --no-auto-approve            Require manual approval in Jenkins (default
                                sends AUTO_APPROVE=true so we don't get stuck).
   --no-follow                  Trigger build and return without streaming logs.
@@ -66,14 +69,15 @@ CONFIG
       "jenkins": {
         "baseUrl": "https://jenkins-asg.stg.expertly.cloud",
         "user": "<your jenkins user>",
-        "password": "<base64-encoded password or API token>",
+        "password": "<password or API token>",
+        "passwordEncoding": "plain",
         "migrationJob": "Deployments/Expertly/Database/expertly.db-migration"
       }
     }
   Or env vars: BELZ_JENKINS_URL, BELZ_JENKINS_USER, BELZ_JENKINS_PASSWORD.
 
 EXAMPLES
-  # Dry run, NCDNS qa → stage
+  # Dry run, NCDNS qa → stage (still triggers a Jenkins build, DRY_RUN=true)
   belz migrate run --source-env nsm-qa --target-env nsm-stage \\
     --module AD_Method --ids "4e74cf38523553112e879308c4a03aef" --dry-run
 

@@ -18,7 +18,10 @@ migrations/
     ├── args.ts              # `migrate run` spec (RUN_ARGS, core defineArgs; unknown flags →
     │                        #   MIGRATE_UNKNOWN_FLAG) + value checks; checks --source/--target-env
     │                        #   against the profile (PROFILE_SEGMENT_TO_ENV / envPairFromProfile)
-    ├── resolve-targets.ts   # Pre-flight id resolution on the profile's source env
+    ├── resolve-targets.ts   # Pre-flight id resolution on the profile's source env (PD draft →
+    │                        #   published swap, AD existence); a skip (source env not configured,
+    │                        #   or underivable profile) is a `warn` → meta.warnings, never silent;
+    │                        #   non-MIGRATE_* failures (login) get a "fix creds" hint, code kept
     ├── constants.ts         # Default job, client list, env→profile map
     ├── parser.ts            # Strip ANSI, regex-extract migration ids, find REPORT JSON
     ├── profiles.ts          # Discover + cache PROFILE_NAME choices (24 h TTL);
@@ -27,7 +30,8 @@ migrations/
     ├── artifacts.ts         # Write summary.json + summary.console.log
     ├── types.ts             # All public types
     └── index.ts             # Barrel (also re-exports @belzabar/jenkins)
-tests/unit/                  # bun test integrations/migrations/tests
+tests/unit/                  # bun test integrations/migrations/tests (args, profile cache,
+                             #   real Jenkins captures, pre-flight + faked end-to-end `run`)
 ```
 
 ## Tests and Fixtures
@@ -36,6 +40,15 @@ tests/unit/                  # bun test integrations/migrations/tests
 `jenkins.example.com`): job parameters (profiles), build 1904 status, its console
 chunk; `manifest.json`. Refresh (read-only) with `bun scripts/fixtures/capture.ts jenkins`.
 `tests/unit/real-jenkins.test.ts` replays them through the client via `fakeFetch`.
+
+## `migrate run` contract
+
+- Every run triggers a real Jenkins build. `--dry-run` only sends `DRY_RUN=true`
+  to the job; it is not a local validation (help/desc say so).
+- `writes: true`, but the namespace is not env-aware: the target comes from the
+  profile, guarded by MG-1 (unknown flags) and MG-2 (profile ↔ env checks).
+- The pre-flight saves and restores the caller's active env (explicit by name,
+  default via `Config.resetActiveEnv()`).
 
 ## Conventions
 

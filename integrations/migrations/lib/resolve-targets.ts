@@ -74,14 +74,17 @@ async function resolveAd(id: string, env: string): Promise<ResolvedTarget> {
 
 /**
  * Resolve every id against the source environment. Returns null when there is
- * nothing to resolve (a COMPARISON_REPORT / MIGRATION_STATUS / custom module,
- * or the source env cannot be determined from a non-NCDNS profile).
+ * nothing to resolve (a COMPARISON_REPORT / MIGRATION_STATUS / custom module),
+ * or when the source env can't be used — the profile's source env isn't
+ * configured locally, or a non-NCDNS/SEMS/YS profile gives no env. Those skips
+ * are reported through `warn` (ids then go to Jenkins unresolved), never silent.
  */
 export async function resolveMigrationTargets(opts: {
   sourceEnv?: string;
   profile: string;
   migrateType: string;
   ids: string[];
+  warn?: (message: string) => void;
 }): Promise<ResolveTargetsResult | null> {
   const isPd = PD_MODULE.test(opts.migrateType);
   const isAd = AD_MODULE.test(opts.migrateType);
@@ -96,10 +99,26 @@ export async function resolveMigrationTargets(opts: {
     );
   }
   const envs = Config.getAllEnvs();
-  // A derived env that isn't configured locally → skip pre-flight (ids go
-  // through as given), matching the old behaviour for unmapped profiles.
-  const sourceEnv = opts.sourceEnv ?? (derived && envs[derived] ? derived : undefined);
-  if (!sourceEnv) return null; // unknown profile family and no --source-env: can't pick an env
+  const unresolved = isPd
+    ? "Ids go to Jenkins unresolved: a PD draft id will fail the migration (use the published id)."
+    : "Ids go to Jenkins unresolved (existence and names not checked).";
+  if (!opts.sourceEnv) {
+    if (!derived) {
+      opts.warn?.(
+        `Pre-flight id resolution skipped: can't derive the source env from profile '${opts.profile}'. ${unresolved} ` +
+          `Pass --source-env and --target-env to enable it.`,
+      );
+      return null;
+    }
+    if (!envs[derived]) {
+      opts.warn?.(
+        `Pre-flight id resolution skipped: profile '${opts.profile}' migrates from '${derived}', which is not configured ` +
+          `in ~/.belz/config.json. ${unresolved} Add '${derived}' with 'belz config edit' to enable it.`,
+      );
+      return null;
+    }
+  }
+  const sourceEnv = opts.sourceEnv ?? derived!;
 
   if (!envs[sourceEnv]) {
     throw new CliError(
@@ -109,7 +128,10 @@ export async function resolveMigrationTargets(opts: {
     );
   }
 
+  // Restore the caller's env exactly: an explicit choice by name, a default by
+  // reset (setActiveEnv on an unconfigured default name would throw and mark it explicit).
   const original = Config.activeEnv.name;
+  const wasExplicit = Config.envWasExplicit;
   Config.setActiveEnv(sourceEnv);
   try {
     const targets: ResolvedTarget[] = [];
@@ -117,7 +139,27 @@ export async function resolveMigrationTargets(opts: {
       targets.push(isPd ? await resolvePd(id, sourceEnv) : await resolveAd(id, sourceEnv));
     }
     return { sourceEnv, targets, resolvedIds: targets.map((t) => t.resolvedId) };
+  } catch (e) {
+    // A MIGRATE_* error is already specific. Anything else (login failure,
+    // expired creds, network) gets told what to do: the build is not triggered.
+    if (e instanceof CliError && !String(e.code ?? "").startsWith("MIGRATE_")) {
+      throw new CliError(
+        `Pre-flight id resolution on '${sourceEnv}' failed, so no build was triggered: ${e.message} ` +
+          `Fix the '${sourceEnv}' credentials ('belz config edit') and retry.`,
+        {
+          code: e.code,
+          exitCode: e.exitCode,
+          details: { ...(isRecord(e.details) ? e.details : {}), preflightEnv: sourceEnv },
+        },
+      );
+    }
+    throw e;
   } finally {
-    Config.setActiveEnv(original);
+    if (wasExplicit) Config.setActiveEnv(original);
+    else Config.resetActiveEnv();
   }
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
 }

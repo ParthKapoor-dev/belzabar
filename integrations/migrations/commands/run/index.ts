@@ -59,6 +59,12 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       profile,
       migrateType: String(args.migrateType),
       ids: args.ids,
+      // A skipped pre-flight is surfaced (envelope meta.warnings), and shown
+      // immediately in human mode since the build follows right after.
+      warn: (message) => {
+        context.warn(message);
+        if (showProgress) logProgress(args.quiet, `WARNING: ${message}`);
+      },
     });
     const effectiveIds = preflight ? preflight.resolvedIds : args.ids;
     if (preflight && showProgress) {
