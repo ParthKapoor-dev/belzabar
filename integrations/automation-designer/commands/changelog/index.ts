@@ -1,6 +1,7 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi, type ChangelogEntry } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
+import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, AD_NOTE_FLAG, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import type { HydratedMethod } from "../../lib/types/common";
@@ -50,7 +51,8 @@ const command: CommandModule<ChangelogArgs, ChangelogData> = {
     }
     return { uuid: positionals.uuid, note, yes: flags.yes };
   },
-  async execute({ uuid, note, yes }, context) {
+  async execute({ uuid: uuidArg, note, yes }, context) {
+    const uuid = resolveMethodRef(uuidArg);
     if (note) {
       // AD-33: a note is recorded on the DRAFT chain (as `publish` does; the
       // server mirrors draft notes to the published chain on publish), so the

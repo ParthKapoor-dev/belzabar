@@ -3,6 +3,7 @@ import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { fingerprintMethod } from "../../lib/fingerprint";
+import { resolveMethodRef } from "../../lib/ids";
 import type { HydratedMethod } from "../../lib/types/common";
 
 interface StateArgs {
@@ -48,7 +49,8 @@ const command: CommandModule<StateArgs, StateData> = {
     const common = resolveAdCommon(flags, "fetch", "state");
     return { uuid: positionals.uuid, apiVersion: common.apiVersion.version };
   },
-  async execute({ uuid, apiVersion }) {
+  async execute({ uuid: uuidArg, apiVersion }) {
+    const uuid = resolveMethodRef(uuidArg);
     // One fetch per side (AD-39): the guard hands back the input method too.
     const guard = await resolveDraftTarget(uuid, apiVersion);
     const initial = guard.initial;
