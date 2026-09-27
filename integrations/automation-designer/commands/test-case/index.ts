@@ -3,6 +3,8 @@ import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/c
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
+import { resolveMethodRef } from "../../lib/ids";
+import { summarizeTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
 
 type Action =
   | "list"
@@ -22,10 +24,10 @@ interface TestCaseArgs {
   yes: boolean;
 }
 
-interface TestCaseData {
-  action: Action;
-  response: unknown;
-}
+/** `list` returns the same structured summary as `ad test-cases` (F24); writes return the server response. */
+type TestCaseData =
+  | ({ action: "list" } & TestSuiteSummary)
+  | { action: Exclude<Action, "list">; response: unknown };
 
 const UUID = { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid>." } as const;
 const TC_ID = { name: "test-case-id", required: true, missingCode: "MISSING_TC_ID", missingMessage: "Missing <testCaseId>." } as const;
@@ -79,12 +81,12 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         return { action: "delete-suite", testSuiteId: p.positionals.testSuiteId, yes: p.flags.yes };
     }
   },
-  async execute(args, context) {
+  async execute(rawArgs, context) {
+    const args = rawArgs.chainUuid ? { ...rawArgs, chainUuid: resolveMethodRef(rawArgs.chainUuid) } : rawArgs;
     switch (args.action) {
       case "list": {
         if (!args.chainUuid) throw new CliError("Missing <uuid>.", { code: "MISSING_UUID" });
-        const response = await adApi.listTestCases(args.chainUuid);
-        return ok<TestCaseData>({ action: "list", response });
+        return ok<TestCaseData>({ action: "list", ...summarizeTestSuite(args.chainUuid, await adApi.listTestCases(args.chainUuid)) });
       }
 
       case "create": {
@@ -196,6 +198,23 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           "means the method ran without errors, not that assertions passed. " +
           "Use `belz ad test-report` for full evaluation results.",
       );
+    }
+    if (data.action === "list") {
+      ui.table(
+        ["Property", "Value"],
+        [
+          ["Method UUID", data.uuid],
+          ["Suite ID", data.testSuiteId ?? "(none)"],
+          ["Test Cases", data.total],
+        ],
+      );
+      if (data.testCases.length > 0) {
+        ui.table(
+          ["ID", "Name", "Active", "Inputs", "Assertions"],
+          data.testCases.map((c) => [c.id, c.name, c.active ? "Yes" : "No", c.inputCount, c.assertionCount]),
+        );
+      }
+      return;
     }
     ui.section("Response");
     ui.object(data.response);

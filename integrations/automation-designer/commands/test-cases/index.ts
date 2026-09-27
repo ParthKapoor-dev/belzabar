@@ -1,27 +1,14 @@
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { resolveMethodRef } from "../../lib/ids";
+import { summarizeTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
 
 interface TestCasesArgs {
   uuid: string;
 }
 
-interface TestCaseRow {
-  id: string;
-  name: string;
-  active: boolean;
-  inputCount: number;
-  assertionCount: number;
-}
-
-interface TestCasesData {
-  uuid: string;
-  testSuiteId: string | null;
-  executionStatus: string | null;
-  active: boolean | null;
-  total: number;
-  testCases: TestCaseRow[];
-}
+type TestCasesData = TestSuiteSummary;
 
 export const args = defineArgs({
   command: "belz ad test-cases",
@@ -36,34 +23,9 @@ const command: CommandModule<TestCasesArgs, TestCasesData> = {
     resolveAdCommon(flags, "testCase", "test-cases");
     return { uuid: positionals.uuid };
   },
-  async execute({ uuid }) {
-    const body = (await adApi.listTestCases(uuid)) as any;
-
-    const suite =
-      body && typeof body === "object" && !Array.isArray(body)
-        ? body
-        : { testCases: Array.isArray(body) ? body : [] };
-
-    const cases: unknown[] = Array.isArray(suite.testCases) ? suite.testCases : [];
-
-    const testCases: TestCaseRow[] = cases
-      .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-      .map(c => ({
-        id: typeof c.id === "string" ? c.id : "",
-        name: typeof c.name === "string" ? c.name : "",
-        active: c.active !== false,
-        inputCount: Array.isArray(c.inputs) ? c.inputs.length : 0,
-        assertionCount: Array.isArray(c.assertions) ? c.assertions.length : 0,
-      }));
-
-    return ok<TestCasesData>({
-      uuid,
-      testSuiteId: typeof suite.id === "string" ? suite.id : null,
-      executionStatus: typeof suite.executionStatus === "string" ? suite.executionStatus : null,
-      active: typeof suite.active === "boolean" ? suite.active : null,
-      total: testCases.length,
-      testCases,
-    });
+  async execute({ uuid: uuidArg }) {
+    const uuid = resolveMethodRef(uuidArg);
+    return ok<TestCasesData>(summarizeTestSuite(uuid, await adApi.listTestCases(uuid)));
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;

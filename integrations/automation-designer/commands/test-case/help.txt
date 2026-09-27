@@ -3,7 +3,8 @@ Usage: belz ad test-case <action> [args] [flags]
 Manage persistent test cases attached to an AD method's test suite.
 
 Actions:
-  list <uuid>                             List test cases (alias of belz ad test-cases)
+  list <uuid>                             List test cases: the same structured result
+                                          as belz ad test-cases ({testSuiteId, testCases, total})
   create <uuid> --file <tc.json> [--yes]  Create one test case from a file
   update <uuid> <testCaseId> --file <f>   Update a test case (V1 supports this)
   delete <testCaseId> [--yes]             Delete a test case

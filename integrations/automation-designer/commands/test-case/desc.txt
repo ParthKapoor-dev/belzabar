@@ -1,7 +1,7 @@
-belz ad test-case list <uuid>  :->  List test cases on a method (same as `belz ad test-cases`)
-belz ad test-case create <uuid> --file <tc.json> [--yes]  :->  Create one test case from a JSON file
-belz ad test-case update <uuid> <testCaseId> --file <tc.json> [--yes]  :->  Update a test case
-belz ad test-case delete <testCaseId> [--yes]  :->  Delete a test case
-belz ad test-case bulk <uuid> --file <cases.json> [--yes]  :->  Bulk-create an array of test cases
-belz ad test-case run-suite <uuid> [--yes]  :->  Execute the method's test suite (async; does not evaluate assertions)
-belz ad test-case delete-suite <testSuiteId> [--yes]  :->  Delete a test suite
+belz ad test-case list <uuid>  :->  List test cases on a method (same structured result as `belz ad test-cases`)
+belz ad test-case create <uuid> --file <tc.json> --env <env> [--yes]  :->  Create one test case from a JSON file
+belz ad test-case update <uuid> <testCaseId> --file <tc.json> --env <env> [--yes]  :->  Update a test case
+belz ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case
+belz ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Bulk-create an array of test cases
+belz ad test-case run-suite <uuid> --env <env> [--yes]  :->  Execute the method's test suite (async; does not evaluate assertions)
+belz ad test-case delete-suite <testSuiteId> --env <env> [--yes]  :->  Delete a test suite
