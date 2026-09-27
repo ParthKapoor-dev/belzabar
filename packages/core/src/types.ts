@@ -20,6 +20,9 @@ export interface AuthSession {
 
 export interface ApiOptions extends RequestInit {
   authMode?: "Bearer" | "Raw" | "None";
-  /** Per-call timeout in ms (default 60 s; 0 disables). */
-  timeoutMs?: number;
+  /**
+   * Per-call timeout in ms (default 60 s for GET/HEAD, 300 s otherwise; `0` or
+   * `"none"` disables — use it for long server-side runs and streams).
+   */
+  timeoutMs?: number | "none";
 }

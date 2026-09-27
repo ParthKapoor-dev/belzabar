@@ -2,30 +2,66 @@
 // Teamwork, Jenkins):
 //   - IPv4 pinning (dns.ts) with pin eviction + one hostname retry when the
 //     pinned IP fails to connect (CORE-20);
-//   - a default timeout (60 s; per call `timeoutMs`, env BELZ_HTTP_TIMEOUT_MS)
-//     mapped to CliError HTTP_TIMEOUT instead of hanging forever (CORE-13);
+//   - a default timeout mapped to CliError HTTP_TIMEOUT instead of hanging
+//     forever (CORE-13): 60 s for GET/HEAD, 300 s for anything else (AD test,
+//     run, SQL, save/publish execute server-side and are legitimately slow).
+//     Per call `timeoutMs` (0 / "none" disables); env BELZ_HTTP_TIMEOUT_MS
+//     (both defaults) and BELZ_HTTP_WRITE_TIMEOUT_MS (non-GET only). A timed-out
+//     non-GET is never retried and says it may still complete server-side;
 //   - network failures mapped to CliError HTTP_NETWORK_ERROR (never an
 //     UNHANDLED_EXCEPTION);
 //   - verbose logging with secrets redacted.
 
 import { CliError } from "../command";
 import { vlog, vtime } from "../verbose";
+import { trustedBelzEnv } from "../config/env-vars";
 import { evictIpv4Cache, prepareIpv4Fetch } from "./dns";
 import { redactString } from "./redact";
 
+/** Default timeout for GET/HEAD (ms). */
 export const DEFAULT_HTTP_TIMEOUT_MS = 60_000;
+/** Default timeout for every other method (ms): the server executes work (tests, SQL, publish). */
+export const DEFAULT_HTTP_WRITE_TIMEOUT_MS = 300_000;
+
+/** Per-call timeout: ms to wait for response headers; `0` or `"none"` disables it (streaming, long ops). */
+export type TimeoutOption = number | "none";
 
 export interface HttpInit extends RequestInit {
-  /** Abort after this many ms waiting for response headers. 0 disables. Default 60 s (BELZ_HTTP_TIMEOUT_MS). */
-  timeoutMs?: number;
+  /**
+   * Abort after this many ms waiting for response headers. `0` / `"none"` disables.
+   * Default: 60 s for GET/HEAD, 300 s otherwise (see defaultTimeoutMs).
+   */
+  timeoutMs?: TimeoutOption;
   /** Pin the request to the host's IPv4 address (default true). */
   pinIpv4?: boolean;
 }
 
-export function defaultTimeoutMs(): number {
-  const raw = process.env.BELZ_HTTP_TIMEOUT_MS;
+function envMs(name: string): number | undefined {
+  const raw = trustedBelzEnv()[name];
   const n = raw ? Number(raw) : NaN;
-  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_HTTP_TIMEOUT_MS;
+  return Number.isFinite(n) && n >= 0 ? n : undefined;
+}
+
+/** True for methods that only read (the server has nothing to "complete" after a timeout). */
+export function isReadMethod(method: string | undefined): boolean {
+  const m = (method ?? "GET").toUpperCase();
+  return m === "GET" || m === "HEAD" || m === "OPTIONS";
+}
+
+/**
+ * The default timeout for `method`: BELZ_HTTP_WRITE_TIMEOUT_MS (non-GET only)
+ * > BELZ_HTTP_TIMEOUT_MS (all methods) > 60 s GET / 300 s otherwise.
+ */
+export function defaultTimeoutMs(method: string = "GET"): number {
+  if (isReadMethod(method)) return envMs("BELZ_HTTP_TIMEOUT_MS") ?? DEFAULT_HTTP_TIMEOUT_MS;
+  return envMs("BELZ_HTTP_WRITE_TIMEOUT_MS") ?? envMs("BELZ_HTTP_TIMEOUT_MS") ?? DEFAULT_HTTP_WRITE_TIMEOUT_MS;
+}
+
+/** Resolve a per-call option to ms (0 = no timeout). */
+export function resolveTimeoutMs(option: TimeoutOption | undefined, method: string = "GET"): number {
+  if (option === "none") return 0;
+  if (option === undefined) return defaultTimeoutMs(method);
+  return Number.isFinite(option) && option > 0 ? option : 0;
 }
 
 /** URL safe for logs/messages: query values that look secret are redacted. */
@@ -42,6 +78,7 @@ async function fetchOnce(
   init: RequestInit,
   timeoutMs: number,
   label: string,
+  method: string,
 ): Promise<Response> {
   const controller = new AbortController();
   const callerSignal = init.signal ?? undefined;
@@ -72,12 +109,7 @@ async function fetchOnce(
     return res;
   } catch (err) {
     stop();
-    if (timedOut) {
-      throw new CliError(`Request timed out after ${Math.round(timeoutMs / 1000)}s: ${label}`, {
-        code: "HTTP_TIMEOUT",
-        details: { timeoutMs },
-      });
-    }
+    if (timedOut) throw timeoutError(timeoutMs, label, method);
     throw err;
   } finally {
     if (timer) clearTimeout(timer);
@@ -92,16 +124,17 @@ async function fetchOnce(
  */
 export async function httpRequest(url: string, init: HttpInit = {}): Promise<Response> {
   const { timeoutMs: t, pinIpv4 = true, ...rest } = init;
-  const timeoutMs = t ?? defaultTimeoutMs();
   const method = (rest.method ?? "GET").toUpperCase();
+  const timeoutMs = resolveTimeoutMs(t, method);
   const label = `HTTP ${method} ${safeUrl(url)}`;
 
   const prepared = pinIpv4 ? await prepareIpv4Fetch(url, rest) : { url, init: rest as RequestInit, pinnedHost: undefined };
 
   let response: Response;
   try {
-    response = await fetchOnce(prepared.url, prepared.init, timeoutMs, label);
+    response = await fetchOnce(prepared.url, prepared.init, timeoutMs, label, method);
   } catch (err) {
+    // CliError here = HTTP_TIMEOUT: never retried (a non-GET may still be running server-side).
     if (err instanceof CliError) throw err;
     if (isAbortError(err)) {
       throw new CliError(`Request aborted: ${label}`, { code: "HTTP_ABORTED" });
@@ -111,7 +144,7 @@ export async function httpRequest(url: string, init: HttpInit = {}): Promise<Res
     vlog(`${label} FAILED on pinned IP — evicting and retrying by hostname`, { error: redactString(String(err)) });
     evictIpv4Cache(prepared.pinnedHost);
     try {
-      response = await fetchOnce(url, rest, timeoutMs, `${label} (hostname retry)`);
+      response = await fetchOnce(url, rest, timeoutMs, `${label} (hostname retry)`, method);
     } catch (err2) {
       if (err2 instanceof CliError) throw err2;
       if (isAbortError(err2)) throw new CliError(`Request aborted: ${label}`, { code: "HTTP_ABORTED" });
@@ -120,6 +153,24 @@ export async function httpRequest(url: string, init: HttpInit = {}): Promise<Res
   }
   vlog(`${label} → ${response.status}`);
   return response;
+}
+
+/**
+ * HTTP_TIMEOUT. For a non-GET the server received the request and may still
+ * finish it (commit a draft test's SQL, publish, save): say so, and flag it in
+ * details so nothing retries it blindly.
+ */
+function timeoutError(timeoutMs: number, label: string, method: string): CliError {
+  const secs = Math.round(timeoutMs / 1000);
+  const mayHaveCompleted = !isReadMethod(method);
+  const message = mayHaveCompleted
+    ? `Request timed out after ${secs}s: ${label}. The operation may still complete on the server — ` +
+      `check its result before retrying (raise the limit with BELZ_HTTP_WRITE_TIMEOUT_MS).`
+    : `Request timed out after ${secs}s: ${label} (raise the limit with BELZ_HTTP_TIMEOUT_MS).`;
+  return new CliError(message, {
+    code: "HTTP_TIMEOUT",
+    details: { timeoutMs, method, mayHaveCompleted, retryable: !mayHaveCompleted },
+  });
 }
 
 function networkError(err: unknown, label: string): CliError {

@@ -5,12 +5,15 @@
 //   - Bearer/Raw auth from the env's session, single-flight login;
 //   - 401 → one refresh (shared across concurrent callers) + one retry,
 //     including FormData bodies; non-replayable bodies (streams) are not retried;
+//     a second 401 after a successful re-login is AUTH_FAILED (never a loop);
 //   - no Content-Type on GET/HEAD or FormData (CORE-19).
 
 import { Config } from "../config";
 import { CliError } from "../command";
 import type { ApiOptions } from "../types";
-import { vlog } from "../verbose";
+import { lifecycle } from "../ui";
+import { readBodySummary } from "./errors";
+import { redactString } from "./redact";
 import { ensureSession, refreshSession } from "./auth";
 import { httpRequest, isReplayableBody } from "./transport";
 
@@ -47,17 +50,24 @@ export async function apiFetch(path: string, options: ApiOptions = {}): Promise<
 
   if (response.status === 401 && authMode !== "None") {
     if (!isReplayableBody(init.body)) {
-      throw new CliError(`401 Unauthorized on ${method} ${path} (request body cannot be replayed after re-login).`, {
+      throw new CliError(`401 Unauthorized on ${method} ${redactString(path)} (request body cannot be replayed after re-login).`, {
         code: "AUTH_EXPIRED",
       });
     }
-    process.stderr.write("⚠️  401 Unauthorized. Refreshing session...\n");
-    vlog("auth refresh triggered by 401");
+    lifecycle.notice("401 Unauthorized — refreshing session…");
     // Drain the rejected body so the connection can be reused.
     await response.arrayBuffer().catch(() => undefined);
     const fresh = await refreshSession(token);
     applyToken(fresh.token);
     response = await send();
+    if (response.status === 401) {
+      const body = await readBodySummary(response);
+      const where = `${method} ${redactString(path)}`;
+      throw new CliError(
+        `401 Unauthorized on ${where} even after re-login: the account may lack access to this resource.`,
+        { code: "AUTH_FAILED", details: { status: 401, path: redactString(path), body, reloggedIn: true } },
+      );
+    }
   }
 
   return response;

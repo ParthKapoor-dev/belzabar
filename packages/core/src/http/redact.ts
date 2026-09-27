@@ -69,6 +69,12 @@ const STRING_RULES: Array<[RegExp, string | ((...m: string[]) => string)]> = [
     /(["']?)(password|passwd|pwd|secret|token|accessToken|refreshToken|authToken|apiKey|crumb|twAuth)\1(\s*[:=]\s*)(["'])(?:\\.|(?!\4).)*\4/gi,
     (_m, q, key, sep, vq) => `${q}${key}${q}${sep}${vq}${REDACTED}${vq}`,
   ],
+  // Query-string / form-encoded pairs: ?token=…, &access_token=…, j_password=…,
+  // apiKey=…, api-key=…, client_secret=…, crumb=… (URLs in labels, vlog, error details).
+  [
+    /(^|[?&;#\s])((?:j_)?(?:password|passwd|pwd|pass|secret|client[_-]?secret|token|access[_-]?token|refresh[_-]?token|id[_-]?token|auth[_-]?token|session[_-]?token|api[_-]?key|x[_-]api[_-]key|signature|crumb|jenkins[_-]?crumb|tw[_-]?auth))=(?!\[REDACTED\])[^&#\s"'<>]+/gi,
+    (_m, pre, key) => `${pre}${key}=${REDACTED}`,
+  ],
   // Bare JWTs anywhere.
   [/\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]+/g, REDACTED],
 ];

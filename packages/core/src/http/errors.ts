@@ -94,7 +94,8 @@ export interface HttpErrorOptions {
 /** Build the CliError for a non-OK response (consumes the body). */
 export async function httpError(res: Response, opts: HttpErrorOptions = {}): Promise<CliError> {
   const body = await readBodySummary(res);
-  const where = opts.path ? ` on ${opts.method ? `${opts.method.toUpperCase()} ` : ""}${opts.path}` : "";
+  const path = opts.path === undefined ? undefined : redactString(opts.path);
+  const where = path ? ` on ${opts.method ? `${opts.method.toUpperCase()} ` : ""}${path}` : "";
   const statusText = res.statusText ? ` ${res.statusText}` : "";
   const details = redactSecrets({ ...(opts.details ?? {}), status: res.status, path: opts.path, body });
   if (res.status === 404) {
@@ -147,15 +148,15 @@ export async function readJsonOrNull<T>(res: Response, opts: HttpErrorOptions = 
     return JSON.parse(text) as T;
   } catch {
     throw new CliError(
-      `Expected JSON${opts.path ? ` from ${opts.path}` : ""} but got: ${summarizeBody(text, res.headers.get("content-type"), 200)}`,
-      { code: "HTTP_BAD_JSON", details: { status: res.status, path: opts.path } },
+      `Expected JSON${opts.path ? ` from ${redactString(opts.path)}` : ""} but got: ${summarizeBody(text, res.headers.get("content-type"), 200)}`,
+      { code: "HTTP_BAD_JSON", details: redactSecrets({ status: res.status, path: opts.path }) },
     );
   }
 }
 
 function notFoundError(opts: HttpErrorOptions): CliError {
   const code = opts.notFoundCode ?? (opts.codePrefix ? `${opts.codePrefix}_NOT_FOUND` : "NOT_FOUND");
-  const message = opts.notFoundMessage ?? `Not found${opts.path ? `: ${opts.path}` : ""} (empty response)`;
+  const message = opts.notFoundMessage ?? `Not found${opts.path ? `: ${redactString(opts.path)}` : ""} (empty response)`;
   return new CliError(message, { code, details: redactSecrets({ path: opts.path, ...(opts.details ?? {}) }) });
 }
 

@@ -20,6 +20,7 @@ import {
   type OutputMode,
 } from "./command";
 import { ui as theme, term, symbols, wordmark } from "./theme";
+import { vlog } from "./verbose";
 
 let currentOutputMode: OutputMode = "human";
 
@@ -242,6 +243,16 @@ export const lifecycle = {
   step(message: string): void {
     if (currentOutputMode === "llm") return;
     log.step(message);
+  },
+  /**
+   * A transient status line from library code that has no CommandContext
+   * (e.g. "401 — refreshing session"). Human mode: one faint stderr line.
+   * `--llm`: never printed (stdout/stderr stay clean) — only the verbose log.
+   */
+  notice(message: string): void {
+    vlog(message);
+    if (currentOutputMode === "llm") return;
+    printErr(theme.faint(message));
   },
   spinner(initialLabel: string) {
     if (currentOutputMode === "llm") {

@@ -4,7 +4,15 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync, statSync } from "fs";
 import { apiFetch } from "../src/http/api";
 import { login, isTokenExpired, jwtExpiry } from "../src/http/auth";
-import { httpRequest, singleFlight, createLimiter } from "../src/http/transport";
+import {
+  httpRequest,
+  singleFlight,
+  createLimiter,
+  defaultTimeoutMs,
+  resolveTimeoutMs,
+  DEFAULT_HTTP_TIMEOUT_MS,
+  DEFAULT_HTTP_WRITE_TIMEOUT_MS,
+} from "../src/http/transport";
 import { expectJson, expectOk, httpError, summarizeBody, expectFound } from "../src/http/errors";
 import { redactSecrets, redactString, REDACTED } from "../src/http/redact";
 import { CliError } from "../src/command";
@@ -54,6 +62,80 @@ describe("transport", () => {
     } finally {
       globalThis.fetch = original;
     }
+  });
+
+  test("default timeout: 60 s for GET/HEAD, 300 s for writes; env overrides; 0/none disable", () => {
+    const saved = { a: process.env.BELZ_HTTP_TIMEOUT_MS, b: process.env.BELZ_HTTP_WRITE_TIMEOUT_MS };
+    try {
+      delete process.env.BELZ_HTTP_TIMEOUT_MS;
+      delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
+      expect(defaultTimeoutMs("GET")).toBe(DEFAULT_HTTP_TIMEOUT_MS);
+      expect(defaultTimeoutMs("head")).toBe(60_000);
+      expect(defaultTimeoutMs("POST")).toBe(DEFAULT_HTTP_WRITE_TIMEOUT_MS);
+      expect(DEFAULT_HTTP_WRITE_TIMEOUT_MS).toBe(300_000);
+      process.env.BELZ_HTTP_TIMEOUT_MS = "1234";
+      expect(defaultTimeoutMs("GET")).toBe(1234);
+      expect(defaultTimeoutMs("PUT")).toBe(1234); // one knob for both when only it is set
+      process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = "0";
+      expect(defaultTimeoutMs("POST")).toBe(0);
+      expect(defaultTimeoutMs("GET")).toBe(1234);
+      expect(resolveTimeoutMs("none", "GET")).toBe(0);
+      expect(resolveTimeoutMs(0, "POST")).toBe(0);
+      expect(resolveTimeoutMs(50, "POST")).toBe(50);
+    } finally {
+      if (saved.a === undefined) delete process.env.BELZ_HTTP_TIMEOUT_MS;
+      else process.env.BELZ_HTTP_TIMEOUT_MS = saved.a;
+      if (saved.b === undefined) delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
+      else process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = saved.b;
+    }
+  });
+
+  test("GET timeout: mayHaveCompleted false", async () => {
+    ff = fakeFetch({ "GET https://slow.test/g": () => new Promise(() => {}) }).install();
+    const err = await caught(httpRequest("https://slow.test/g", { timeoutMs: 20 }));
+    expect(err.code).toBe("HTTP_TIMEOUT");
+    expect((err.details as any).mayHaveCompleted).toBe(false);
+    expect(err.message).not.toContain("may still complete");
+  });
+
+  test("non-GET timeout: never retried, says it may still complete server-side", async () => {
+    ff = fakeFetch({ "POST https://slow.test/run": () => new Promise(() => {}) }).install();
+    const err = await caught(httpRequest("https://slow.test/run", { method: "POST", body: "{}", timeoutMs: 20 }));
+    expect(err.code).toBe("HTTP_TIMEOUT");
+    expect(err.message).toContain("may still complete on the server");
+    expect(err.details).toMatchObject({ mayHaveCompleted: true, retryable: false, method: "POST", timeoutMs: 20 });
+    expect(ff.requests.length).toBe(1); // no hostname retry, no second attempt
+  });
+
+  test("apiFetch POST timeout is not retried (even with a 401-capable session)", async () => {
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", token: "tok" } }, activeEnv: "t-dev" });
+    ff = fakeFetch({ "POST /chain/test": () => new Promise(() => {}) }).install();
+    const err = await caught(apiFetch("/chain/test", { method: "POST", body: "{}", timeoutMs: 20 }));
+    expect(err.code).toBe("HTTP_TIMEOUT");
+    expect((err.details as any).mayHaveCompleted).toBe(true);
+    expect(ff.calls("POST", "/chain/test").length).toBe(1);
+  });
+
+  test('timeoutMs: "none" waits past the default', async () => {
+    const saved = process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
+    process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = "10";
+    try {
+      ff = fakeFetch({ "POST https://slow.test/long": async () => { await Bun.sleep(40); return { done: true }; } }).install();
+      const res = await httpRequest("https://slow.test/long", { method: "POST", body: "{}", timeoutMs: "none" });
+      expect(await res.json()).toEqual({ done: true });
+      const err = await caught(httpRequest("https://slow.test/long", { method: "POST", body: "{}" }));
+      expect(err.code).toBe("HTTP_TIMEOUT");
+    } finally {
+      if (saved === undefined) delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
+      else process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = saved;
+    }
+  });
+
+  test("secret query values are redacted in timeout messages", async () => {
+    ff = fakeFetch({ "GET https://slow.test/q": () => new Promise(() => {}) }).install();
+    const err = await caught(httpRequest("https://slow.test/q?access_token=SEKRET&page=2", { timeoutMs: 10 }));
+    expect(err.message).not.toContain("SEKRET");
+    expect(err.message).toContain("page=2");
   });
 
   test("connect failure on the pinned IP → evict + one retry by hostname", async () => {
@@ -166,6 +248,53 @@ describe("apiFetch", () => {
     expect(uploads[1]!.headers["authorization"]).toBe("Bearer fresh");
   });
 
+  test("a second 401 after a successful re-login fails AUTH_FAILED (no loop)", async () => {
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", token: "stale" } }, activeEnv: "t-dev" });
+    setOutputMode("llm");
+    ff = fakeFetch([
+      { method: "POST", url: "/do/login", response: { token: "fresh" } },
+      { method: "GET", url: "/forbidden", response: respond({ status: 401, text: "nope" }) },
+    ]).install();
+    const err = await caught(apiFetch("/forbidden?token=QS"));
+    expect(err.code).toBe("AUTH_FAILED");
+    expect(err.message).toContain("even after re-login");
+    expect(err.message).not.toContain("QS");
+    expect(ff.calls("POST", "/do/login").length).toBe(1);
+    expect(ff.calls("GET", "/forbidden").length).toBe(2);
+  });
+
+  test("401 refresh writes nothing to stdout/stderr in --llm mode", async () => {
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", token: "stale" } }, activeEnv: "t-dev" });
+    setOutputMode("llm");
+    ff = fakeFetch([
+      { method: "GET", url: "/x", response: respond({ status: 401 }), once: true },
+      { method: "POST", url: "/do/login", response: { token: "fresh" } },
+      { method: "GET", url: "/x", response: { ok: true } },
+    ]).install();
+    const written: string[] = [];
+    const origErrWrite = process.stderr.write.bind(process.stderr);
+    const origOutWrite = process.stdout.write.bind(process.stdout);
+    const origError = console.error;
+    const origLog = console.log;
+    const origVerbose = process.env.BELZ_VERBOSE;
+    delete process.env.BELZ_VERBOSE;
+    process.stderr.write = ((c: unknown) => { written.push(String(c)); return true; }) as typeof process.stderr.write;
+    process.stdout.write = ((c: unknown) => { written.push(String(c)); return true; }) as typeof process.stdout.write;
+    console.error = (...a: unknown[]) => { written.push(a.join(" ")); };
+    console.log = (...a: unknown[]) => { written.push(a.join(" ")); };
+    try {
+      const res = await apiFetch("/x");
+      expect(res.status).toBe(200);
+    } finally {
+      process.stderr.write = origErrWrite;
+      process.stdout.write = origOutWrite;
+      console.error = origError;
+      console.log = origLog;
+      if (origVerbose !== undefined) process.env.BELZ_VERBOSE = origVerbose;
+    }
+    expect(written).toEqual([]);
+  });
+
   test("login failure → AUTH_FAILED with the HTML body reduced to its title", async () => {
     cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", token: null } }, activeEnv: "t-dev" });
     setOutputMode("llm");
@@ -266,6 +395,27 @@ describe("redaction", () => {
     expect(s).not.toMatch(/dTpw|sekret|zzz|pw1/);
     expect(s).not.toContain(token);
     expect(s).toContain('"user":"u"');
+  });
+
+  test("query-string and form-encoded secrets", () => {
+    const s = redactString(
+      "GET https://h.test/a?token=T1&page=2 | /b?access_token=T2#x | j_username=bob&j_password=T3 | " +
+        "?apiKey=T4&api_key=T5&api-key=T6&keyword=hello | ?password=T7 | ?client_secret=T8&refresh_token=T9",
+    );
+    expect(s).not.toMatch(/T[1-9]/);
+    expect(s).toContain("page=2");
+    expect(s).toContain("j_username=bob");
+    expect(s).toContain("keyword=hello");
+    expect(redactSecrets({ url: "https://h.test/x?crumb=C1" }).url).not.toContain("C1");
+  });
+
+  test("httpError / not-found messages redact secret query values in the path", async () => {
+    const e1 = await httpError(new Response("boom", { status: 500 }), { path: "/x?token=SEK" });
+    expect(e1.message).not.toContain("SEK");
+    expect(JSON.stringify(e1.details)).not.toContain("SEK");
+    const e2 = await caught(expectJson(new Response("", { status: 200 }), { path: "/y?apiKey=SEK2" }));
+    expect(e2.message).not.toContain("SEK2");
+    expect(JSON.stringify(e2.details)).not.toContain("SEK2");
   });
 
   test("XML echo of the bearer token (V2 test response)", () => {
