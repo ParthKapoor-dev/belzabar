@@ -6,7 +6,7 @@
 //
 // No command imports this file directly — use lib/api/index.ts:adApi.
 
-import { apiFetch, CliError } from "@belzabar/core";
+import { apiFetch, CliError, readErrorBody } from "@belzabar/core";
 
 const ENTITY_TYPE = "AUTOMATION_CHAIN_DEFINITION";
 const CHANGELOG_TYPE = "USER_GENERATED";
@@ -21,17 +21,7 @@ export interface ChangelogEntry {
 
 async function checkResponse(response: Response, path: string): Promise<void> {
   if (response.ok) return;
-  let body: unknown;
-  try {
-    const text = await response.text();
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = text.slice(0, 1024);
-    }
-  } catch {
-    body = "(response body unreadable)";
-  }
+  const body = await readErrorBody(response);
   throw new CliError(`${response.status} ${response.statusText} on ${path}`, {
     code: "AD_CHANGELOG_ERROR",
     details: { path, status: response.status, body },

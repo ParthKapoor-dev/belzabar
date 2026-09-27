@@ -9,7 +9,7 @@
 // because SUPPORTED_VERSIONS[op] gates it. If a new V2 verb is added, wire it
 // here and update api-version.ts to advertise it.
 
-import { apiFetch, CliError } from "@belzabar/core";
+import { apiFetch, CliError, expectJson, readErrorBody, redactString } from "@belzabar/core";
 import { parseV2Method } from "../parser/v2";
 import { parseHashMapXml, type ParsedXmlNode } from "../xml";
 import type { HydratedMethod } from "../types/common";
@@ -17,42 +17,42 @@ import type { V2MethodResponse } from "../types/v2-wire";
 
 async function checkResponse(response: Response, path: string): Promise<void> {
   if (response.ok) return;
-  let details: unknown;
-  try {
-    const text = await response.text();
-    try {
-      details = JSON.parse(text);
-    } catch {
-      details = text.slice(0, 1024);
-    }
-  } catch {
-    details = "(response body unreadable)";
-  }
+  // Small JSON stays structured; anything else is summarised (HTML → title). Redacted.
+  const details = await readErrorBody(response);
   throw new CliError(`${response.status} ${response.statusText} on ${path}`, {
     code: "AD_API_ERROR",
     details: { path, status: response.status, body: details },
   });
 }
 
+/**
+ * Parse a chain GET. 404 — and 200 with an empty/`null` body, which is how
+ * the server answers an unknown uuid (AD-11 / F10) — are METHOD_NOT_FOUND.
+ */
+async function fetchChainJson<T>(response: Response, path: string, uuid: string): Promise<T> {
+  if (response.ok || response.status === 404) {
+    return expectJson<T>(response, {
+      path,
+      notFoundCode: "METHOD_NOT_FOUND",
+      notFoundMessage: `Method not found: ${uuid}`,
+      details: { uuid },
+    });
+  }
+  await checkResponse(response, path);
+  throw new Error("unreachable");
+}
+
 export async function fetchMethod(uuid: string): Promise<HydratedMethod> {
   const path = `/rest/api/automation/chain/v2/${uuid}?basicInfo=false`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  if (response.status === 404) {
-    throw new CliError("404 Chain Not Found", { code: "METHOD_NOT_FOUND", details: { path } });
-  }
-  await checkResponse(response, path);
-  const raw = (await response.json()) as V2MethodResponse;
+  const raw = await fetchChainJson<V2MethodResponse>(response, path, uuid);
   return parseV2Method(raw);
 }
 
 export async function fetchRawMethod(uuid: string): Promise<V2MethodResponse> {
   const path = `/rest/api/automation/chain/v2/${uuid}?basicInfo=false`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  if (response.status === 404) {
-    throw new CliError("404 Chain Not Found", { code: "METHOD_NOT_FOUND", details: { path } });
-  }
-  await checkResponse(response, path);
-  return (await response.json()) as V2MethodResponse;
+  return fetchChainJson<V2MethodResponse>(response, path, uuid);
 }
 
 export interface V2TestExecuteResult {
@@ -92,7 +92,8 @@ export async function testExecute(
   });
   await checkResponse(response, path);
 
-  const rawXml = await response.text();
+  // Debug mode echoes the request headers (bearer token) — scrub before parse/return.
+  const rawXml = redactString(await response.text());
   const parsed = parseHashMapXml(rawXml);
   const execStatus = parsed.executionStatus as Record<string, unknown> | undefined;
   const failed = execStatus?.failed === "true" || execStatus?.failed === true;

@@ -4,7 +4,7 @@
 // (for fetch) or typed wire responses (for list/publish/etc). No command
 // should import this file directly — use lib/api/index.ts:adApi.
 
-import { apiFetch, CliError, Config } from "@belzabar/core";
+import { apiFetch, CliError, Config, expectJson, readErrorBody, redactSecrets, redactString } from "@belzabar/core";
 import { parseV1Method } from "../parser/v1";
 import type { HydratedMethod } from "../types/common";
 import type {
@@ -18,17 +18,8 @@ import { detectJavaException } from "../error-parser";
 
 async function checkResponse(response: Response, path: string): Promise<void> {
   if (response.ok) return;
-  let details: unknown;
-  try {
-    const text = await response.text();
-    try {
-      details = JSON.parse(text);
-    } catch {
-      details = text.slice(0, 1024);
-    }
-  } catch {
-    details = "(response body unreadable)";
-  }
+  // Small JSON stays structured; anything else is summarised (HTML → title). Redacted.
+  const details = await readErrorBody(response);
   const code = response.status === 409 ? "AD_VERSION_CONFLICT" : "AD_API_ERROR";
   throw new CliError(`${response.status} ${response.statusText} on ${path}`, {
     code,
@@ -36,27 +27,36 @@ async function checkResponse(response: Response, path: string): Promise<void> {
   });
 }
 
+/**
+ * Parse a chain GET. 404 — and 200 with an empty/`null` body, which is how
+ * the server answers an unknown uuid (AD-11 / F10) — are METHOD_NOT_FOUND.
+ */
+async function fetchChainJson<T>(response: Response, path: string, uuid: string): Promise<T> {
+  if (response.ok || response.status === 404) {
+    return expectJson<T>(response, {
+      path,
+      notFoundCode: "METHOD_NOT_FOUND",
+      notFoundMessage: `Method not found: ${uuid}`,
+      details: { uuid },
+    });
+  }
+  await checkResponse(response, path);
+  throw new Error("unreachable");
+}
+
 // ─── READS ───────────────────────────────────────────────────────────────
 
 export async function fetchMethod(uuid: string): Promise<HydratedMethod> {
   const path = `/rest/api/automation/chain/${uuid}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  if (response.status === 404) {
-    throw new CliError("404 Chain Not Found", { code: "METHOD_NOT_FOUND", details: { path } });
-  }
-  await checkResponse(response, path);
-  const raw = (await response.json()) as V1RawMethodResponse;
+  const raw = await fetchChainJson<V1RawMethodResponse>(response, path, uuid);
   return parseV1Method(raw);
 }
 
 export async function fetchRawMethod(uuid: string): Promise<V1RawMethodResponse> {
   const path = `/rest/api/automation/chain/${uuid}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  if (response.status === 404) {
-    throw new CliError("404 Chain Not Found", { code: "METHOD_NOT_FOUND", details: { path } });
-  }
-  await checkResponse(response, path);
-  return (await response.json()) as V1RawMethodResponse;
+  return fetchChainJson<V1RawMethodResponse>(response, path, uuid);
 }
 
 export async function fetchAutomationDefinition(
@@ -265,7 +265,7 @@ export async function deleteTestSuite(testSuiteId: string): Promise<void> {
  */
 export async function testMethodMultipart(formData: FormData): Promise<Response> {
   const path = "/rest/api/automation/chain/test";
-  return apiFetch(path, {
+  const response = await apiFetch(path, {
     method: "POST",
     authMode: "Bearer",
     headers: {
@@ -274,6 +274,26 @@ export async function testMethodMultipart(formData: FormData): Promise<Response>
     },
     body: formData,
   });
+  return redactTestResponse(response);
+}
+
+/**
+ * Debug-mode test responses echo the request headers, including
+ * `Authorization: Bearer <jwt>` and `Expertly-Auth-Token` (ad-validation §1.7).
+ * Re-wrap the response with those scrubbed so no caller can print or cache them.
+ */
+async function redactTestResponse(response: Response): Promise<Response> {
+  const text = await response.text();
+  let body: string;
+  try {
+    body = JSON.stringify(redactSecrets(JSON.parse(text), { keys: "headers" }));
+  } catch {
+    body = redactString(text);
+  }
+  const headers = new Headers(response.headers);
+  headers.delete("content-length"); // body length changed
+  headers.delete("content-encoding"); // already decoded
+  return new Response(body, { status: response.status, statusText: response.statusText, headers });
 }
 
 // ─── TEST EXECUTE (V1 — test-before-save) ───────────────────────────────
@@ -334,11 +354,13 @@ export async function testExecuteV1(method: HydratedMethod): Promise<V1TestExecu
   if (!response.ok) {
     throw new CliError(`Execution failed: ${response.status} ${response.statusText}`, {
       code: "TEST_EXECUTION_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: await readErrorBody(response) },
     });
   }
 
-  const result = (await response.json()) as Record<string, unknown>;
+  // Debug mode echoes the request headers (Authorization: Bearer <jwt>,
+  // Expertly-Auth-Token) — scrub them before anything prints or caches this.
+  const result = redactSecrets((await response.json()) as Record<string, unknown>, { keys: "headers" });
 
   const javaExc = detectJavaException(result);
   if (javaExc) {

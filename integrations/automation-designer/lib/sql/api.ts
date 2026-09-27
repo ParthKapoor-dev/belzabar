@@ -1,4 +1,4 @@
-import { CliError, apiFetch } from "@belzabar/core";
+import { CliError, apiFetch, readErrorBody } from "@belzabar/core";
 import type { ExecutableCategoryRef, SqlDatabaseAuth, SqlSelectOperation, SqlUpdateOperation, SqlInsertOperation, SqlModifyOperation } from "./types";
 
 export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
@@ -10,7 +10,7 @@ export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
   if (!response.ok) {
     throw new CliError(`Failed to fetch SQL databases (${response.status})`, {
       code: "SQL_DATABASES_FETCH_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: await readErrorBody(response) },
     });
   }
 
@@ -26,7 +26,7 @@ export async function fetchSqlSelectOperation(): Promise<SqlSelectOperation> {
   if (!response.ok) {
     throw new CliError(`Failed to fetch SQL read operation metadata (${response.status})`, {
       code: "SQL_SELECT_METADATA_FETCH_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: await readErrorBody(response) },
     });
   }
 
@@ -42,7 +42,7 @@ export async function fetchSqlUpdateOperation(): Promise<SqlUpdateOperation> {
   if (!response.ok) {
     throw new CliError(`Failed to fetch SQL update operation metadata (${response.status})`, {
       code: "SQL_UPDATE_METADATA_FETCH_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: await readErrorBody(response) },
     });
   }
 
@@ -58,7 +58,7 @@ export async function fetchSqlInsertOperation(): Promise<SqlInsertOperation> {
   if (!response.ok) {
     throw new CliError(`Failed to fetch SQL insert operation metadata (${response.status})`, {
       code: "SQL_INSERT_METADATA_FETCH_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: await readErrorBody(response) },
     });
   }
 
@@ -74,7 +74,7 @@ export async function fetchSqlModifyOperation(): Promise<SqlModifyOperation> {
   if (!response.ok) {
     throw new CliError(`Failed to fetch SQL modify operation metadata (${response.status})`, {
       code: "SQL_MODIFY_METADATA_FETCH_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: await readErrorBody(response) },
     });
   }
 
