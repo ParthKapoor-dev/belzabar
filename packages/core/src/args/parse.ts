@@ -205,8 +205,9 @@ export function parseWithSpec<S extends ArgsSpec>(spec: S, argv: readonly string
       const rest = positionals.slice(p);
       p = positionals.length;
       if (pos.required && rest.length === 0) {
-        throw argError(spec, "MISSING_ARGUMENT", pos.missingMessage ?? `Missing <${pos.name}>${label(spec)}.`, {
-          argument: pos.name,
+        throw new CliError(pos.missingMessage ?? `Missing <${pos.name}>${label(spec)}.`, {
+          code: pos.missingCode ?? spec.codes?.MISSING_ARGUMENT ?? ARG_ERROR_CODES.MISSING_ARGUMENT,
+          details: { argument: pos.name },
         });
       }
       named[camelCase(pos.name)] = rest;

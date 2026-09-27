@@ -141,6 +141,8 @@ describe("defineArgs: errors", () => {
   test("variadic and extra positionals", () => {
     const d = defineArgs({ positionals: [{ name: "action", required: true }, { name: "query", variadic: true }] });
     expect(d.parse(["pick", "a", "b"]).positionals).toEqual({ action: "pick", query: ["a", "b"] });
+    const req = defineArgs({ positionals: [{ name: "q", variadic: true, required: true, missingCode: "MISSING_QUERY" }] });
+    expect(err(() => req.parse([])).code).toBe("MISSING_QUERY");
     const e = defineArgs({ positionals: [{ name: "x" }], allowExtraPositionals: true });
     expect(e.parse(["a", "b", "c"]).extra).toEqual(["b", "c"]);
   });
