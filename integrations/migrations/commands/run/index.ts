@@ -2,8 +2,7 @@ import { CliError, Config, ok, type CommandModule } from "@belzabar/core";
 import {
   assertJenkinsAuth,
   buildUrl,
-  discoverProfiles,
-  findClientForProfile,
+  resolveClientForProfile,
   getBuild,
   jobUrl,
   parseJenkinsConsole,
@@ -40,8 +39,8 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
     const profile = args.profile as string;
     let client = args.client;
     if (!client) {
-      const resolution = await discoverProfiles(auth);
-      client = findClientForProfile(resolution.groups, profile);
+      // A miss against the cached list re-fetches from Jenkins once (MG-4).
+      ({ client } = await resolveClientForProfile(auth, profile));
       if (!client) {
         throw new CliError(
           `Profile '${profile}' not found in any Jenkins client group. Pass --client explicitly or check 'belz migrate profiles'.`,
