@@ -12,12 +12,6 @@ import { renderHuman, renderLLM, setOutputMode } from "./ui";
 import { ui as theme, symbols, wordmark } from "./theme";
 import { vlog } from "./verbose";
 
-export interface CliOptions {
-  name: string;
-  description: string;
-  binaryName: string;
-}
-
 export interface NamespaceDefinition {
   name: string;
   description: string;
@@ -378,72 +372,6 @@ export async function dispatchCommand(
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
-
-export async function runCli(
-  argv: string[],
-  commandMap: Record<string, any>,
-  options: CliOptions,
-  helpResolver?: (cmd: string) => Promise<string | null>
-) {
-  installStdioGuard();
-  return finishOutcome(await dispatchFlat(argv.slice(2), commandMap, options, helpResolver));
-}
-
-async function dispatchFlat(
-  argv: string[],
-  commandMap: Record<string, any>,
-  options: CliOptions,
-  helpResolver?: (cmd: string) => Promise<string | null>
-): Promise<RunOutcome> {
-  const { args, outputMode, envError } = resolveGlobalFlags(argv);
-
-  if (envError) {
-    return envelopeOutcome(
-      outputMode,
-      {
-        schema: `${options.binaryName}.runner`,
-        version: "2.0",
-        ok: false,
-        command: "global",
-        data: null,
-        error: envError,
-        meta: {},
-      },
-      1
-    );
-  }
-
-  if (!args[0] || args[0] === "--help" || args[0] === "-h") {
-    if (outputMode === "llm") {
-      return envelopeOutcome(
-        outputMode,
-        {
-          schema: `${options.binaryName}.help`,
-          version: "2.0",
-          ok: true,
-          command: "help",
-          data: {
-            name: options.name,
-            description: options.description,
-            binaryName: options.binaryName,
-            commands: Object.keys(commandMap),
-          },
-          error: null,
-          meta: {},
-        },
-        0
-      );
-    }
-    const inner = await dispatchCommand([], commandMap, outputMode, options.binaryName, helpResolver);
-    return printOutcome(inner.exitCode, () => {
-      console.log();
-      console.log(wordmark);
-      renderOutcome(inner);
-    });
-  }
-
-  return dispatchCommand(args, commandMap, outputMode, options.binaryName, helpResolver);
-}
 
 export async function runNamespacedCli(
   argv: string[],

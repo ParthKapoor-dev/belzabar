@@ -86,11 +86,6 @@ const envSchema = z.object({
   NSM_UAT_USER: z.string().optional(),
   NSM_UAT_PASSWORD: z.string().optional(),
 
-  // Legacy Fallback
-  BASE_URL: z.string().optional(),
-  API_USER: z.string().optional(),
-  API_PASSWORD: z.string().optional(),
-
   // Jenkins (for migrations)
   BELZ_JENKINS_URL: z.string().optional(),
   BELZ_JENKINS_USER: z.string().optional(),
@@ -108,8 +103,8 @@ const getCreds = (
   specificPass?: string
 ) => {
   return {
-    loginId: fileUser ?? specificUser ?? processEnv.API_USER ?? "",
-    passwordEncoded: filePass ?? specificPass ?? processEnv.API_PASSWORD ?? "",
+    loginId: fileUser ?? specificUser ?? "",
+    passwordEncoded: filePass ?? specificPass ?? "",
   };
 };
 

@@ -10,8 +10,7 @@ changed behavior, new files, API changes, structural reorganization — you **mu
 `AGENTS.md` in that module. If the overall repository structure changes, update this root
 `AGENTS.md` as well. If you add, remove, or change flags on any command, update that command's
 `desc.txt` — this is what `belz --help-full` outputs and what runtime agents use as their
-command reference. The `INIT.md` files in `specs/` are now stable and do **not** need manual
-updates when commands change (they reference `belz --help-full` instead).
+command reference.
 
 ---
 

@@ -1,9 +1,6 @@
 import { join } from "path";
 import { BELZ_CONFIG_DIR } from "@belzabar/core";
 
-export const DEFAULT_JENKINS_BASE_URL = "https://jenkins-asg.stg.expertly.cloud";
-export const DEFAULT_JENKINS_JOB = "Deployments/Expertly/Database/expertly.db-migration";
-
 export const MIGRATION_PROFILES_CACHE_PATH = join(BELZ_CONFIG_DIR, "migrations", "jenkins-profiles.json");
 
 export const JENKINS_CLIENTS = [

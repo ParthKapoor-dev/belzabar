@@ -67,10 +67,6 @@ export const adApi = {
     return v1.listTestCases(chainUuid);
   },
 
-  async fetchTestSuite(testSuiteId: string): Promise<unknown> {
-    return v1.fetchTestSuite(testSuiteId);
-  },
-
   async getTestSuiteReport(): Promise<unknown> {
     return v1.getTestSuiteReport();
   },

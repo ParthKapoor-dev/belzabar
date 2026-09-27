@@ -574,9 +574,6 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       ui.section("Raw Data");
       ui.object(data.raw);
     }
-
-    // Suppress lint on unused Config — kept for future URL renderings.
-    void Config;
   },
 };
 

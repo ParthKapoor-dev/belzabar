@@ -7,11 +7,7 @@ import {
   type MigrateType,
 } from "./constants";
 import type {
-  MigrateArgs,
-  MigrateLogsArgs,
-  MigrateProfilesArgs,
   MigrateRunArgs,
-  MigrateStatusArgs,
   YesNo,
 } from "./types";
 
@@ -106,22 +102,6 @@ function deriveProfileFromEnvPair(sourceEnv: string, targetEnv: string): string 
     });
   }
   return `${s}_${t}`;
-}
-
-function parseBuildNumber(args: string[], action: string): number {
-  const positional = args.find((a) => !a.startsWith("-"));
-  if (!positional) {
-    throw new CliError(`belz migrate ${action} requires a build number.`, {
-      code: "MIGRATE_BUILD_NUMBER_REQUIRED",
-    });
-  }
-  const n = Number.parseInt(positional, 10);
-  if (!Number.isFinite(n) || n <= 0) {
-    throw new CliError(`Invalid build number '${positional}'.`, {
-      code: "MIGRATE_BUILD_NUMBER_INVALID",
-    });
-  }
-  return n;
 }
 
 // -------- run: flag whitelist (MG-1) ---------------------------------------
@@ -324,39 +304,3 @@ export async function parseMigrateRunArgs(rest: string[]): Promise<MigrateRunArg
   };
 }
 
-function parseProfilesArgs(rest: string[]): MigrateProfilesArgs {
-  return {
-    action: "profiles",
-    refresh: rest.includes("--refresh"),
-    client: normalizeClient(parseString(rest, "--client")),
-    raw: rest.includes("--raw"),
-  };
-}
-
-function parseStatusArgs(rest: string[]): MigrateStatusArgs {
-  return { action: "status", buildNumber: parseBuildNumber(rest, "status") };
-}
-
-function parseLogsArgs(rest: string[]): MigrateLogsArgs {
-  return { action: "logs", buildNumber: parseBuildNumber(rest, "logs") };
-}
-
-export async function parseMigrateArgs(args: string[]): Promise<MigrateArgs> {
-  const action = args[0];
-  if (!action) {
-    throw new CliError("Missing subcommand. Use one of: profiles, run, status, logs.", {
-      code: "MIGRATE_INVALID_SUBCOMMAND",
-    });
-  }
-  const rest = args.slice(1);
-  switch (action) {
-    case "profiles": return parseProfilesArgs(rest);
-    case "run": return await parseMigrateRunArgs(rest);
-    case "status": return parseStatusArgs(rest);
-    case "logs": return parseLogsArgs(rest);
-    default:
-      throw new CliError(`Unknown subcommand '${action}'. Use: profiles, run, status, logs.`, {
-        code: "MIGRATE_INVALID_SUBCOMMAND",
-      });
-  }
-}

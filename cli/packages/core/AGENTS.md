@@ -59,7 +59,6 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 ### CLI Runners
 | Export | Description |
 |--------|-------------|
-| `runCli(argv, commandMap, options, helpResolver?)` | Flat command runner (no namespaces) |
 | `runNamespacedCli(argv, options)` | Namespaced runner — powers the `belz` binary |
 | `NamespaceDefinition` | Type for a single namespace (name, description, commands or command, helpDir/helpResolver) |
 | `NamespacedCliOptions` | Full config type for `runNamespacedCli` |
@@ -105,7 +104,7 @@ against it. Change the schema and the runner together.
 | `src/config.ts` | `Config` class, `BELZ_CONFIG_DIR`, env var fallback logic |
 | `src/auth.ts` | `login`, `loadSession`, `saveSession`, `AuthSession` |
 | `src/api.ts` | `apiFetch` — authenticated HTTP with session injection |
-| `src/runner.ts` | `runCli`, `runNamespacedCli`, routing, envelope wrapping, help dispatch; also calls `setOutputMode()` after stripping `--llm` |
+| `src/runner.ts` | `runNamespacedCli`, routing, envelope wrapping, help dispatch; also calls `setOutputMode()` after stripping `--llm` |
 | `src/command.ts` | `CommandModule`, `CommandContext`, `HumanPresenterHelpers`, `ok`, `fail`, `CliError`, `CommandResult`, `CommandEnvelope` |
 | `src/ui.ts` | Unified UI layer: `renderHuman`, `renderLLM`, `HumanUi`, `lifecycle`, `prompts`, `setOutputMode`, `colors` |
 | `src/types.ts` | Shared domain types (`Environment`, `AuthSession`, etc.) |

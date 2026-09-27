@@ -46,7 +46,3 @@ export async function fetchCrumb(auth: JenkinsAuth): Promise<Crumb | null> {
   cachedCrumb = { auth: cacheKey, crumb };
   return crumb;
 }
-
-export function resetCrumbCache(): void {
-  cachedCrumb = null;
-}

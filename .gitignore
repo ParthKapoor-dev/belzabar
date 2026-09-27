@@ -38,8 +38,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .idea
 .superset
 
-# Finder (MacOS) folder config
+# Finder (MacOS) folder config + AppleDouble resource forks
 .DS_Store
+._*
 
 
 expertly.coding.agents/

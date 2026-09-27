@@ -6,7 +6,7 @@
 
 import { apiFetch, CliError, Config } from "@belzabar/core";
 import { parseV1Method } from "../parser/v1";
-import type { HydratedMethod, ParsedStep } from "../types/common";
+import type { HydratedMethod } from "../types/common";
 import type {
   V1AutomationDefinition,
   V1RawMethodResponse,
@@ -111,13 +111,6 @@ export async function exportCategory(categoryId: string | number): Promise<unkno
 
 export async function listTestCases(chainUuid: string): Promise<unknown> {
   const path = `/rest/api/automation/chain/testsuite/service-chain/${chainUuid}`;
-  const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  await checkResponse(response, path);
-  return await response.json();
-}
-
-export async function fetchTestSuite(testSuiteId: string): Promise<unknown> {
-  const path = `/rest/api/automation/chain/testsuite/${testSuiteId}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
   await checkResponse(response, path);
   return await response.json();
@@ -584,10 +577,4 @@ function normalizeVersionSummary(raw: unknown): MethodVersionSummary {
     addedBy: typeof r.addedBy === "number" ? r.addedBy : 0,
     addedWhen: typeof r.addedWhen === "string" ? r.addedWhen : "",
   };
-}
-
-// Legacy helper kept for the `test` command's error-enrichment path where it
-// walks parsedSteps by automationId. Not exported from adApi.
-export function findStepByAutomationId(steps: ParsedStep[], id: string) {
-  return steps.find(s => s.automationId === id);
 }
