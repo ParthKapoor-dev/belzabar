@@ -1,9 +1,16 @@
 Usage: belz pd validate <INPUT> [flags]
 
-Validate a Page Designer page or component against known failure patterns.
-Severities are calibrated against real editor output: pages as the editor
-saves them produce no errors. Exit 1 (ok:false, PD_VALIDATION_FAILED, report
-in `data`) when any ERROR fires.
+Validate a Page Designer page or component against known failure patterns:
+the platform crash/blank-page rules, the mechanical pd-review checks
+(structure, bindings, HTTP calls, accessibility) and the figma-to-pd rules
+that hold on real pages. Severities are calibrated against real editor
+output: pages as the editor saves them produce no errors. Exit 1 (ok:false,
+PD_VALIDATION_FAILED, report in `data`) when any ERROR fires.
+
+Output: errors are listed in full (data.issues); warnings are grouped by code
+with one short ref per occurrence — a variable name, a callId, a node id
+(data.warnings: {CODE: {count, refs}}); `belz pd show` locates a ref (its
+find option returns the node's key path). --full lists every issue instead.
 
 Arguments:
   <INPUT>             One of:
@@ -14,12 +21,18 @@ Arguments:
                       • Page or component name (exact)
 
 Flags:
+  --recursive, -r     Also validate every symbol the page uses (transitively,
+                      each once; the DRAFT component with the instance's name)
+                      and check page <-> symbol interfaces. Output is grouped
+                      per entity in data.recursive.entities (depth, uses).
+  --full              List every issue (warnings too) instead of grouping them.
   --force             Bypass the local config cache (fetch fresh).
 
 Errors (block `save` / `publish`):
   INVALID_JSON              configuration is not valid JSON
   ROOT_LAYOUT_MALFORMED     root is not a div; page root lacks unSelectable:true;
-                            component root lacks isSymbol:true
+                            component root lacks isSymbol:true (figma L1). A
+                            style-only symbol (layout {isSymbol:true}) is fine
   ORPHAN_BINDING            {%var%} (outside editor-generated form configs)
                             whose root variable is not defined
   FORM_FIELD_PROPS          exp-form-field with props instead of field
@@ -28,19 +41,61 @@ Errors (block `save` / `publish`):
   INVALID_EXPANSION_HEADER  mat-expansion-panel-header
   PHONE_FIELD_TYPE          exp-form-field type "phone" (0-height render)
   DUPLICATE_ELEMENT_IDS     two nodes share an id / _elementId
+  V1                        variables / variables.userDefined is not arrays
+  HTTP_NOT_ARRAY            httpRequests.userDefined is not an array
 
-Warnings (errors when a save/restore INTRODUCES them: ORPHAN_BINDING,
-DERIVED_IN_INNERHTML, ARRAY_INITIAL_VALUE, BUTTON_DYNAMIC_CLASSNAME):
+Warnings that become errors when a save/restore INTRODUCES them:
   ORPHAN_BINDING            undefined variable inside a generated form config
   DERIVED_IN_INNERHTML      derived var bound to innerHTML / textContent
-  ARRAY_INITIAL_VALUE       variable with an array initialValue
-  BUTTON_DYNAMIC_CLASSNAME  button with a [className] binding
-  UNUSED_VARIABLE           variable nothing reads or writes
+  ARRAY_INITIAL_VALUE       variable with an array initialValue (figma V3)
+  BUTTON_DYNAMIC_CLASSNAME  button with a [className] binding (figma R2)
+  MISSING_NODE_ID           node without an id
+  ORPHAN_HTTP_TRIGGER       HTTP call triggered by an undefined variable
+  ORPHAN_EVENT_TARGET       event handler writes this.x, x undefined
+  V4                        variable type outside the PD enum (String, Boolean,
+                            Number, Any, KeyValue… ARE valid on sems-dev)
+  T2                        table rowData variable not {rows:[…]}
+  T4                        {rows:[…]} table variable not typed Any
+  T5                        {%$src.$row.X%} in plain HTML of a dict cellLayout
+  R1                        static isVisible next to [isVisible]
+  DIALOG_VISIBILITY         exp-layout-dialog toggled without [show]
+  ITEM_DIRECT_ACCESS        {%$item.x%} instead of {%$item.value%}?.x
+  HTTP_HARDCODED_URL        HTTP call with an absolute URL
+
+Warnings:
+  UNUSED_VARIABLE           variable nothing reads or writes (not reported:
+                            side-effect derived vars, onInit, routeParams,
+                            names used via $api.get/setVariableValue('x'),
+                            data.x / params['x'], a component's inputs/events)
+  UNUSED_HTTP_REQUEST       HTTP call with no trigger
   TABLE_NO_DATASOURCE       exp-data-table without datasourceState
+  T1                        datasourceState is not "initial"
+  T3                        table row field over 400 chars
+  T6                        HTML inside table rowData
+  C5                        column key missing from some initial rows
   DYNAMIC_COLS_INITIAL      dynamic [columns] whose variable has an initialValue
   MISSING_ONINIT_VAR        HTTP trigger onInit without an onInit variable
   EMPTY_EVENT_META          serviceCall.eventMeta is {}
   CUSTOM_HTML_IN_COMPONENT  raw <input>/<select>/<textarea>/<table>
+  HTTP_NO_ERROR_HANDLER     HTTP call without handler.error
+  HTTP_MUTATION_ON_LOAD     write-looking call (PUT/PATCH/DELETE, or a
+                            save/update/delete… label) triggered on page load
+  HTTP_NOT_AUTHORIZED       /rest/ call without request.isAuthorized:true
+  IMG_NO_ALT                <img> without alt text
+  H1                        exp-html-template over 400 chars (not one SVG)
+  F1                        raw <input>/<select>/<textarea> in a template
+  CSS_NOT_SCOPED            style rules without .latest-version (one per page)
+  U1                        CSS url(...) containing a newline
+
+With --recursive (page <-> symbol, warnings):
+  SYMBOL_NOT_FOUND          a used symbol does not exist in this environment
+  SYMBOL_UNKNOWN_INPUT      instance binds [x] the symbol does not declare
+  SYMBOL_UNKNOWN_EVENT      instance handles an event the symbol does not emit
+  SYMBOL_NESTING_DEPTH      symbol chain deeper than 3 levels
+
+Codes V1, V3, V4, T1-T6, C5, R1, R2, H1, F1, U1 are the figma-to-pd
+validate-pd-config.py codes. Not ported: figma V4's "capitalized primitives
+are invalid" (the sems-dev editor writes them), V5, C6, B1, H2, S1.
 
 Global Flags:
   --env <name>        Set active environment.
@@ -49,6 +104,6 @@ Global Flags:
 
 Examples:
   belz pd validate 48b75e11e166e6b19e5796d59a936228
-  belz pd validate n_s_staff_email_correspondence
+  belz pd validate n_s_staff_email_correspondence --recursive
   belz pd validate https://nsm-dev.nc.verifi.dev/ui-designer/page/48b75e11e166e6b19e5796d59a936228
-  belz pd validate 48b75e11e166e6b19e5796d59a936228 --llm
+  belz pd validate 48b75e11e166e6b19e5796d59a936228 --llm | jq '.data.warnings'

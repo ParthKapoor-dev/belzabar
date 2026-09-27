@@ -13,12 +13,14 @@ import type { HydratedPage, ValidationIssue } from "../types/common";
 import { buildRuleContext } from "./context";
 import { EXISTING_RULES } from "./rules/existing";
 import { INVARIANT_RULES } from "./rules/invariants";
+import { LINT_RULES } from "./rules/lint";
 
 export function validateHydrated(page: HydratedPage): ValidationIssue[] {
   const ctx = buildRuleContext(page);
   const issues: ValidationIssue[] = [];
   for (const rule of EXISTING_RULES) issues.push(...rule(page, ctx));
   for (const rule of INVARIANT_RULES) issues.push(...rule(page, ctx));
+  for (const rule of LINT_RULES) issues.push(...rule(page, ctx));
   return issues;
 }
 
@@ -31,6 +33,18 @@ export const ESCALATE_WHEN_INTRODUCED = new Set([
   "DERIVED_IN_INNERHTML",
   "ARRAY_INITIAL_VALUE",
   "BUTTON_DYNAMIC_CLASSNAME",
+  // Stage 7 lint rules that break a page when newly added.
+  "MISSING_NODE_ID",
+  "ORPHAN_HTTP_TRIGGER",
+  "ORPHAN_EVENT_TARGET",
+  "V4",
+  "T2",
+  "T4",
+  "T5",
+  "R1",
+  "DIALOG_VISIBILITY",
+  "ITEM_DIRECT_ACCESS",
+  "HTTP_HARDCODED_URL",
 ]);
 
 function fingerprint(i: ValidationIssue): string {

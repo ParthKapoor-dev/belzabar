@@ -53,16 +53,28 @@ export function ruleOrphanBinding(
   return issues;
 }
 
-/** UNUSED_VARIABLE — a userDefined/derived variable nothing reads or writes. */
+/** Editor-created variables every page carries (lifecycle trigger, route params). */
+const EDITOR_BUILTIN_VARS = new Set(["onInit", "routeParams"]);
+
+/**
+ * UNUSED_VARIABLE — a userDefined/derived variable nothing reads or writes.
+ * Not reported (Stage 7 calibration, false positives on real pages):
+ *   - derived variables with `sideEffect: true` — they run for their effect
+ *     (watchers that call `$api.setVariableValue`), nobody has to read them;
+ *   - the editor built-ins `onInit` / `routeParams`;
+ *   - names custom code reaches by string (see context.ts `usedRoots`).
+ */
 export function ruleUnusedVariable(
   page: HydratedPage,
   ctx: RuleContext,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
-  const own = [...page.variables.map((v) => v.name), ...page.derived.map((d) => d.name)];
+  const own = [...page.variables.map((v) => v.name), ...page.derived.filter((d) => !d.sideEffect).map((d) => d.name)];
+  const sideEffects = new Set(page.derived.filter((d) => d.sideEffect).map((d) => d.name));
   for (const name of new Set(own)) {
     const bare = name.trim();
     if (bare.startsWith("__") || bare.startsWith("$$")) continue;
+    if (EDITOR_BUILTIN_VARS.has(bare) || sideEffects.has(name)) continue;
     if (ctx.usedRoots.has(bare)) continue;
     issues.push({
       code: "UNUSED_VARIABLE",

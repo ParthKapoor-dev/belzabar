@@ -36,13 +36,13 @@ interface WalkContext {
   usedSynthIds: number;
 }
 
-function childList(node: RawLayoutNode): RawLayoutNode[] {
+function childList(node: RawLayoutNode, path: string): Array<{ node: RawLayoutNode; path: string }> {
   const raw = node.children;
   if (!raw) return [];
-  if (Array.isArray(raw)) return raw;
+  if (Array.isArray(raw)) return raw.map((child, i) => ({ node: child, path: `${path}.children[${i}]` }));
   // Object-keyed children are the CHILDREN_NOT_ARRAY failure mode. Walk them
   // anyway (so the rest of the tree still parses) but emit a warning.
-  return Object.values(raw);
+  return Object.entries(raw).map(([k, child]) => ({ node: child as RawLayoutNode, path: `${path}.children.${k}` }));
 }
 
 function deriveNodeId(raw: RawLayoutNode, ctx: WalkContext): string {
@@ -64,6 +64,7 @@ function recordId(nodeId: string, ctx: WalkContext): void {
 function parseFormField(
   raw: RawLayoutNode,
   nodeId: string,
+  path: string,
   children: ParsedNode[],
 ): FormFieldNode {
   const field = typeof raw.field === "object" && raw.field !== null ? raw.field : null;
@@ -96,6 +97,7 @@ function parseFormField(
     kind: "FORM_FIELD",
     nodeId,
     elementId: typeof raw._elementId === "string" ? raw._elementId : null,
+    path,
     tagName: raw.name ?? "exp-form-field",
     props,
     events: (raw.events as Record<string, unknown>) ?? null,
@@ -113,6 +115,7 @@ function parseFormField(
 function parseDataTable(
   raw: RawLayoutNode,
   nodeId: string,
+  path: string,
   children: ParsedNode[],
   ctx: WalkContext,
 ): DataTableNode {
@@ -147,6 +150,7 @@ function parseDataTable(
     kind: "DATA_TABLE",
     nodeId,
     elementId: typeof raw._elementId === "string" ? raw._elementId : null,
+    path,
     tagName: raw.name ?? "exp-data-table",
     props,
     events: (raw.events as Record<string, unknown>) ?? null,
@@ -164,6 +168,7 @@ function parseDataTable(
 function parseButton(
   raw: RawLayoutNode,
   nodeId: string,
+  path: string,
   children: ParsedNode[],
 ): ButtonNode {
   const props = (raw.props as Record<string, unknown>) ?? {};
@@ -174,6 +179,7 @@ function parseButton(
     kind: "BUTTON",
     nodeId,
     elementId: typeof raw._elementId === "string" ? raw._elementId : null,
+    path,
     tagName: raw.name ?? "button",
     props,
     events: (raw.events as Record<string, unknown>) ?? null,
@@ -188,6 +194,7 @@ function parseButton(
 function parseSymbol(
   raw: RawLayoutNode,
   nodeId: string,
+  path: string,
   children: ParsedNode[],
 ): SymbolNode {
   const props = (raw.props as Record<string, unknown>) ?? {};
@@ -204,6 +211,7 @@ function parseSymbol(
     kind: "SYMBOL",
     nodeId,
     elementId: typeof raw._elementId === "string" ? raw._elementId : null,
+    path,
     tagName: raw.name ?? "",
     props,
     events,
@@ -219,6 +227,7 @@ function parseSymbol(
 function parseLayoutContainer(
   raw: RawLayoutNode,
   nodeId: string,
+  path: string,
   children: ParsedNode[],
   isRoot: boolean,
 ): LayoutContainerNode {
@@ -229,6 +238,7 @@ function parseLayoutContainer(
     kind: "LAYOUT_CONTAINER",
     nodeId,
     elementId: typeof raw._elementId === "string" ? raw._elementId : null,
+    path,
     tagName: raw.name ?? "div",
     props,
     events: (raw.events as Record<string, unknown>) ?? null,
@@ -243,12 +253,14 @@ function parseLayoutContainer(
 function parseGeneric(
   raw: RawLayoutNode,
   nodeId: string,
+  path: string,
   children: ParsedNode[],
 ): GenericNode {
   return {
     kind: "GENERIC",
     nodeId,
     elementId: typeof raw._elementId === "string" ? raw._elementId : null,
+    path,
     tagName: raw.name ?? "",
     props: (raw.props as Record<string, unknown>) ?? {},
     events: (raw.events as Record<string, unknown>) ?? null,
@@ -262,7 +274,7 @@ function parseGeneric(
 // Main walker
 // ---------------------------------------------------------------------------
 
-function walk(raw: RawLayoutNode, ctx: WalkContext, isRoot: boolean): ParsedNode {
+function walk(raw: RawLayoutNode, ctx: WalkContext, isRoot: boolean, path: string): ParsedNode {
   const nodeId = deriveNodeId(raw, ctx);
   recordId(nodeId, ctx);
 
@@ -271,24 +283,24 @@ function walk(raw: RawLayoutNode, ctx: WalkContext, isRoot: boolean): ParsedNode
     ctx.warnings.push(`node "${nodeId}" (${raw.name ?? "?"}) has object-keyed children`);
   }
 
-  const kids = childList(raw);
-  const children = kids.map((k) => walk(k, ctx, false));
+  const kids = childList(raw, path);
+  const children = kids.map((k) => walk(k.node, ctx, false, k.path));
 
-  if (raw.isSymbol === true) return parseSymbol(raw, nodeId, children);
-  if (raw.name === "exp-form-field") return parseFormField(raw, nodeId, children);
-  if (raw.name === "exp-data-table") return parseDataTable(raw, nodeId, children, ctx);
-  if (raw.name === "button") return parseButton(raw, nodeId, children);
+  if (raw.isSymbol === true) return parseSymbol(raw, nodeId, path, children);
+  if (raw.name === "exp-form-field") return parseFormField(raw, nodeId, path, children);
+  if (raw.name === "exp-data-table") return parseDataTable(raw, nodeId, path, children, ctx);
+  if (raw.name === "button") return parseButton(raw, nodeId, path, children);
 
   if (raw.name === "div") {
     const props = (raw.props as Record<string, unknown>) ?? {};
     const hasLayout = typeof props.layout === "object" && props.layout !== null;
     const hasContent = typeof props.innerHTML === "string" && (props.innerHTML as string).length > 0;
     if (isRoot || (hasLayout && !hasContent)) {
-      return parseLayoutContainer(raw, nodeId, children, isRoot);
+      return parseLayoutContainer(raw, nodeId, path, children, isRoot);
     }
   }
 
-  return parseGeneric(raw, nodeId, children);
+  return parseGeneric(raw, nodeId, path, children);
 }
 
 export interface ParsedLayoutResult {
@@ -316,6 +328,7 @@ export function parseLayout(
       kind: "GENERIC",
       nodeId: "__missing_root",
       elementId: null,
+      path: "layout",
       tagName: "",
       props: {},
       events: null,
@@ -326,7 +339,7 @@ export function parseLayout(
     return { root: empty, warnings: ctx.warnings, duplicateIds: [] };
   }
 
-  const root = walk(rawLayout, ctx, true);
+  const root = walk(rawLayout, ctx, true, "layout");
   const duplicateIds: string[] = [];
   for (const [id, count] of ctx.seenIds.entries()) {
     if (count > 1) duplicateIds.push(id);

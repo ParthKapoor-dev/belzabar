@@ -117,6 +117,21 @@ export function buildRuleContext(page: HydratedPage): RuleContext {
   while ((m = memberRe.exec(text)) !== null) if (m[1]) usedRoots.add(m[1]);
   const templateRe = /\$\{\s*!?\s*([A-Za-z_$][\w$-]*)/g;
   while ((m = templateRe.exec(text)) !== null) if (m[1]) usedRoots.add(m[1]);
+  // Custom code reads/writes variables by NAME (calibrated on "Student
+  // Application" / address-lookup, Stage 7): `$api.getVariableValue('x')`,
+  // `$api.setVariableValue('x', …)`, local `get('x')` helpers, and the scope
+  // object handed to specs / filterFns / handlers (`data.x`, `params['x']`).
+  // The text is the JSON-encoded config, so quotes may be escaped (`\"x\"`).
+  const byNameRe = /\b(?:getVariableValue|setVariableValue|get)\(\s*\\?["'`]([A-Za-z_$][\w$-]*)\\?["'`]/g;
+  while ((m = byNameRe.exec(text)) !== null) if (m[1]) usedRoots.add(m[1]);
+  const scopeRe = /\b(?:data|params)(?:\.([A-Za-z_$][\w$]*)|\[\s*\\?["']([A-Za-z_$][\w$-]*)\\?["']\s*\])/g;
+  while ((m = scopeRe.exec(text)) !== null) {
+    const name = m[1] ?? m[2];
+    if (name) usedRoots.add(name);
+  }
+  // A component's declared inputs/events ARE its interface: an event variable
+  // is emitted to the parent, an input is written by it.
+  for (const n of [...page.inputs, ...page.events]) if (typeof n === "string") usedRoots.add(n.trim());
 
   return { bindingRefs, generatedBindingRefs, definedVarNames, usedRoots };
 }

@@ -95,6 +95,21 @@ export function rulePhoneFieldType(page: HydratedPage): ValidationIssue[] {
 // about half the pages have no root `_elementId`. So: a page root must be a
 // div with unSelectable:true; a component root must be a div with
 // isSymbol:true. `_elementId` and "unSelectable on a symbol" are not checked.
+/**
+ * A style-only symbol (sems-dev `style_*` components): the editor saves its
+ * layout as just `{isSymbol: true}` — no name, no children — and the component
+ * only contributes `styles`. Found live in Stage 7 (style_parent_site_inner_pages).
+ */
+export function isStyleOnlySymbol(page: HydratedPage): boolean {
+  const l = page.layout.raw as Record<string, unknown> | null;
+  return (
+    page.entityType === "COMPONENT" &&
+    !!l && typeof l === "object" && !Array.isArray(l) &&
+    l.isSymbol === true && l.name === undefined &&
+    (l.children === undefined || (Array.isArray(l.children) && l.children.length === 0))
+  );
+}
+
 export function ruleRootLayoutMalformed(page: HydratedPage): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const layout = page.layout;
@@ -109,6 +124,7 @@ export function ruleRootLayoutMalformed(page: HydratedPage): ValidationIssue[] {
     issues.push(issue(`Root layout is not a proper layout node`));
     return issues;
   }
+  if (isStyleOnlySymbol(page)) return issues;
   if (rawLayout.name !== "div") {
     issues.push(issue(`Root layout must be name:"div", found "${String(rawLayout.name)}"`));
   }

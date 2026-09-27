@@ -100,6 +100,12 @@ export type NodeKind =
 export interface BaseNode {
   nodeId: string; // node.id ?? _elementId ?? synthetic
   elementId: string | null;
+  /**
+   * Key path of the node inside the inner configuration, in the save
+   * pipeline's key syntax (`layout`, `layout.children[2].children[0]`). For
+   * object-keyed children (CHILDREN_NOT_ARRAY) the segment is `.children.<key>`.
+   */
+  path: string;
   tagName: string; // original name from wire (exp-form-field, div, etc.)
   props: Record<string, unknown>;
   events: Record<string, unknown> | null;
