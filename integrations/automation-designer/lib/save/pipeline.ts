@@ -26,8 +26,16 @@ import { postChainV2 } from "./api";
 import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-cache";
 import { runValidationGate, type ValidationFlags, type ValidationSummary } from "./validation";
 
-/** Paths the server rewrites on every save. */
-export const SERVER_OWNED_ON_SAVE = ["metadata.version", "metadata.internal"];
+/**
+ * Server-owned bookkeeping: rewritten by every save (`metadata.version`,
+ * `metadata.internal`) or outside the method content (`changelogs`: each
+ * entry's `entityVersion` follows the draft version and its `user` block
+ * carries `lastLoginDate`, which moves whenever that user logs in — live
+ * sems-dev 2026-09-28). Ignored by the freshness check and the verify.
+ */
+export const SERVER_OWNED_ON_SAVE = ["metadata.version", "metadata.internal", "changelogs"];
+/** Freshness: any content change is a conflict; changelog bookkeeping is not. */
+const IGNORED_FOR_FRESHNESS = ["changelogs"];
 
 export interface SaveV2Input {
   uuid: string;
@@ -91,7 +99,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data> {
 
   // Freshness: nothing may have changed since the body the overlay was applied to.
   const fresh = await v2.fetchRawMethod(draftUuid);
-  const moved = diffPaths(live, fresh);
+  const moved = diffPaths(live, fresh).filter((p) => !IGNORED_FOR_FRESHNESS.some((s) => isUnder(p, s)));
   if (moved.length > 0) {
     throw new CliError(
       `Draft ${draftUuid} changed on the server since it was read (version ${previousVersion} → ${versionName(fresh)}). ` +

@@ -203,6 +203,18 @@ describe("ad save (V2 pipeline)", () => {
     expect(paths(ff!).filter((p) => p.endsWith("cache/invalidate"))).toHaveLength(2);
   });
 
+  test("changelog bookkeeping (entityVersion, user.lastLoginDate) is neither a conflict nor a verify failure", async () => {
+    const note = { id: "n1", comment: "c", changelogType: "USER_GENERATED", entityVersion: "1", user: { id: 2, lastLoginDate: 1 } };
+    wire({
+      onGet: (n, b) => {
+        b.changelogs = [{ ...note, entityVersion: String(n), user: { id: 2, lastLoginDate: n } }];
+        return b;
+      },
+    });
+    const r = await run({ summary: "x" });
+    expect(r.envelope?.ok).toBe(true);
+  });
+
   test("verify: an unrequested change on the server → AD_SAVE_VERIFY_FAILED (unexpected paths)", async () => {
     wire({
       onPost: (b) => {
@@ -221,6 +233,14 @@ describe("ad save (V2 pipeline)", () => {
     expect(r.envelope?.error?.code).toBe("AD_SAVE_REJECTED");
     expect(r.envelope?.error?.message).toContain("Invalid state");
     expect(paths(ff!).filter((p) => p.endsWith("cache/invalidate"))).toHaveLength(2);
+  });
+
+  test("a rejected save never echoes a bearer token (error body redacted)", async () => {
+    const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.c2lnbmF0dXJlLXZhbHVl";
+    wire({ onPost: () => respond({ status: 400, json: { errorMessage: "bad", headers: { Authorization: `Bearer ${jwt}` } } }) });
+    const r = await run({ summary: "x" });
+    expect(r.envelope?.error?.code).toBe("AD_SAVE_REJECTED");
+    expect(JSON.stringify(r.envelope) + r.stdout).not.toContain(jwt);
   });
 
   test("one cache route failing is tolerated (ok when any route answers 2xx)", async () => {

@@ -93,7 +93,9 @@ rationale.
    freshness re-GET (AD_VERSION_CONFLICT: the server ignores
    `metadata.version`, AD-08) → POST → `verifySaved` re-GET
    (AD_SAVE_VERIFY_FAILED; tolerates only `metadata.version` /
-   `metadata.internal`, which every save rewrites) → compiled cache + local
+   `metadata.internal`, which every save rewrites, and `changelogs`, whose
+   `entityVersion` follows the draft version and whose `user.lastLoginDate`
+   moves on every login — also ignored by the freshness check) → compiled cache + local
    cache evicted, even when the POST/verify failed). `api.ts` —
    `postChainV2` (AD_SAVE_REJECTED with the server message), `deleteChainV2`.
    `compiled-cache.ts` — `invalidateCompiledCache(uuids)` POSTs
