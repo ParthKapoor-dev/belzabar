@@ -39,6 +39,9 @@ import saveDesc from "./commands/save/desc.txt" with { type: "text" };
 import * as showCmd from "./commands/show/index";
 import showHelp from "./commands/show/help.txt" with { type: "text" };
 import showDesc from "./commands/show/desc.txt" with { type: "text" };
+import * as snapshotCmd from "./commands/snapshot/index";
+import snapshotHelp from "./commands/snapshot/help.txt" with { type: "text" };
+import snapshotDesc from "./commands/snapshot/desc.txt" with { type: "text" };
 import * as translationsCmd from "./commands/translations/index";
 import translationsHelp from "./commands/translations/help.txt" with { type: "text" };
 import translationsDesc from "./commands/translations/desc.txt" with { type: "text" };
@@ -58,6 +61,7 @@ export const registry = {
   publish: { module: publishCmd, help: publishHelp, desc: publishDesc },
   save: { module: saveCmd, help: saveHelp, desc: saveDesc },
   show: { module: showCmd, help: showHelp, desc: showDesc },
+  snapshot: { module: snapshotCmd, help: snapshotHelp, desc: snapshotDesc },
   translations: { module: translationsCmd, help: translationsHelp, desc: translationsDesc },
   validate: { module: validateCmd, help: validateHelp, desc: validateDesc },
 } satisfies CommandRegistry;

@@ -1,0 +1,48 @@
+Usage: belz pd snapshot <INPUT> [--out <file> | --compare <file>]
+
+A normalized, stable, diff-friendly JSON snapshot of a page or component, to
+keep in git as a test baseline — and a semantic comparison of a stored
+snapshot with the live page. The page is always read fresh.
+
+Intended use (e.g. a unit-test repo): commit `belz pd snapshot <page> --out
+snapshots/<page>.json` next to the tests, re-run it after a reviewed change
+(the git diff shows exactly what changed), and gate CI or a release with
+`belz pd snapshot <page> --compare snapshots/<page>.json --env <env>` — exit
+0 when the live page matches, exit 1 with the semantic diff when not.
+
+Normalization (same page → same bytes):
+  • kept: entity {name, entityType, relativeRoute, dynamicRoute (parsed),
+    aliasName} and the whole inner configuration;
+  • dropped: id, referenceId, versionId, status, timestamps, createdBy /
+    updatedBy, ownerId, hostIds, themes (they change on every save or differ
+    per env), every node's `_elementId` (a second generated id; node `id`s
+    stay), empty `__LAYOUT_CONFIG_METADATA` / `variableMetadata`;
+  • object keys sorted; arrays keep their order (render/evaluation order);
+  • multi-line strings (code, styles, templates) become {"$lines": [...]},
+    CRLF → LF, so a one-line code change is a one-line git diff.
+
+Arguments:
+  <INPUT>             Page/component id, exact name, PD designer URL or app
+                      page URL (ids are env-local: pass --env, or a name).
+
+Flags:
+  --out <file>        Write the snapshot to <file> (directories are created).
+                      data.written = {path, bytes, sha256}.
+  --compare <file>    Compare the stored snapshot (before) with the live page
+                      (after). data.compare = {identical, entityChanged,
+                      changes (variables/derived/http/nodes added/removed/
+                      changed, stylesChanged, otherChanged), nodesMoved,
+                      childrenReordered, unclassified}. Differences → ok:false
+                      PD_SNAPSHOT_DIFFERS, exit 1.
+  --help, -h          Show this help message.
+
+Without a flag the snapshot is returned in data.snapshot.
+
+Global Flags:
+  --env <name>        Set active environment.
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz pd snapshot "Student Application" --out snapshots/student-application.json --env sems-dev
+  belz pd snapshot 4cba8f39eb92d136694dadc4e7f2a811 --compare snapshots/student-application.json --env sems-dev
+  belz pd snapshot check_permission --compare snapshots/check_permission.json --env sems-qa --llm | jq '.data.compare.changes'

@@ -31,6 +31,7 @@ belz pd history <action>         # server-backed version history (list/show/diff
 belz pd diff <INPUT> --from <envA> --to <envB>   # cross-environment structural diff
 belz pd preflight <pageId>       # dry-run: parse + validate + (optional) overlay, no save
 belz pd page-deps <INPUT>        # page-dependencies summary (--full: raw graph)
+belz pd snapshot <INPUT>         # normalized page snapshot (--out <file>) / --compare <file>
 ```
 
 **Writes:**
@@ -60,6 +61,7 @@ When adding or removing PD commands, update `registry.ts` (keep it sorted).
 13. `lib/cache.ts` - env-scoped SWR page cache (pages and components share it); `invalidatePageCache(id | ids)`.
 14. `lib/analyzer.ts` - recursive analysis (`analyzeItem` with injectable deps, collected `errors`), tree formatting, compliance (`loadMasterIds`, `verifyCompliance`).
 15. `lib/page-diff.ts` - the ONE diff engine (`diffPages`, `isIdentical`, `editSummary`, `editSummaryLines`) used by `diff`, `history diff`, `save`, `preflight`.
+15b. `lib/snapshot.ts` - `snapshotOf`, `serializeSnapshot`, `compareSnapshots`, `pageFromSnapshot` (`pd snapshot`).
 16. `lib/page-finder.ts` - 7-day search index, fuzzy search (`searchPageIndex` → `{matches, total}`), `collapsePairs`.
 17. `docs/api-notes.md` - **read this first** — verified endpoints, partial-update shape, failure-mode catalog
 
@@ -79,6 +81,7 @@ compliance list is an explicit `--compliance <file>` (PD-13 / F21).
 8. `preflight <pageId> [--overlay <file>]` — dry-run; with an overlay validated exactly like `save`. ok:false `PD_PREFLIGHT_FAILED` (exit 1) on errors.
 8a. `page-deps <input> [--full]` — page-dependencies API. The raw `dependencyJSON` is every entity's full page row + phrase arrays (6 MB for Student Application), so the default is a summary (`counts`, `entities[]`: key, name, id, status, isComponent, referenceId, configBytes, phrase counts; queried entity first); `--full` adds `dependencyJSON`/`dependencyKeys`. Keys: the queried entity's published id, dependencies by component NAME.
 8b. `translations <input>` — release check of the phrase keys (lib/page-dependencies.ts).
+8c. `snapshot <input> [--out <file> | --compare <file>]` — lib/snapshot.ts: a normalized, deterministic JSON of the page (entity name/type/route + the inner config; ids/versions/status/timestamps/hostIds and every `_elementId` dropped, empty editor metadata dropped, keys sorted, multi-line strings as `{"$lines": […]}`) for a test baseline in git. `--compare` rebuilds a page from the snapshot and reports the edit summary (page-diff.ts) + `nodesMoved` / `childrenReordered` / `entityChanged`; any difference is ok:false `PD_SNAPSHOT_DIFFERS` (exit 1). Always reads fresh.
 
 **Writes (all: confirmation or `--yes`, `[belz pd write]` intent line, lock):**
 9. `save <pageId>` — see Safe-Edit Invariants. The overlay's `nodes.update/insert/remove` address layout nodes by id (lib/serialize/nodes.ts): update merges props/field/attrs/events (null deletes → full save; otherwise partial ops at the node path), insert generates missing ids deterministically (editor format), insert/remove are full saves; applied after `elements.operations`. Unknown overlay sections are PD_OVERLAY_INVALID. Data: `strategy`, `fullSaveReason`, `operationsPreview`, `diffSummary`, `validation`, `versionDrift`, `result`, `verify`, `bypassedErrors`.

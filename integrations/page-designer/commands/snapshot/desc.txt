@@ -1,0 +1,3 @@
+belz pd snapshot <input> --out <file>  :->  Write a normalized, stable, diff-friendly JSON snapshot of a page/component (test baseline)
+belz pd snapshot <input> --compare <file>  :->  Semantic diff of a stored snapshot vs the live page; exit 1 (PD_SNAPSHOT_DIFFERS) on any change
+belz pd snapshot <input>  :->  Return the normalized snapshot in data.snapshot
