@@ -51,6 +51,9 @@ function errOf(fn: () => unknown): CliError {
 
 /** Write a raw config.json inside a temp-config scope (so it gets restored). */
 function rawConfig(value: unknown) {
+  // A second call in the same test must not orphan the first temp config
+  // (its restore would never run and the config leaks into later files).
+  cfg?.restore();
   cfg = withTempEnvConfig({ envs: {} });
   writeFileSync(cfg.configPath, typeof value === "string" ? value : JSON.stringify(value));
   reloadConfig();
