@@ -3,6 +3,8 @@ import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { resolveMethodRef } from "../../lib/ids";
+import { decodeBase64Strict } from "../../lib/base64";
 import type {
   HydratedMethod,
   ParsedStep,
@@ -14,6 +16,8 @@ import type {
   UnknownStep,
   MethodField,
   MethodOutput,
+  StepInput,
+  ConditionRow,
 } from "../../lib/types/common";
 
 interface ShowMethodFlags {
@@ -96,24 +100,11 @@ interface StepDetailView {
   };
   config: Array<{ key: string; value: string }>;
   outputs: Array<{ code: string; type: string; displayName: string; link?: string }>;
-  condition?: { mode?: string; expression?: string };
+  condition?: { mode?: string; expression?: string; rows?: ConditionRow[] };
+  /** Step input values (AD-40). */
+  inputs?: Array<{ input: string; value: string }>;
   loop?: { source?: string; parallel?: boolean };
   reason?: string;
-}
-
-function resolveUuid(input: string): string {
-  if (input.startsWith("http://") || input.startsWith("https://")) {
-    const url = new URL(input);
-    const segments = url.pathname.split("/").filter(Boolean);
-    const last = segments[segments.length - 1];
-    if (!last || !/^[0-9a-f]{32}$/i.test(last)) {
-      throw new CliError("Could not extract a valid UUID from the given URL.", {
-        code: "INVALID_URL",
-      });
-    }
-    return last;
-  }
-  return input;
 }
 
 function formatDate(ts: number | undefined): string {
@@ -142,13 +133,43 @@ function badgeForKind(kind: ParsedStep["kind"]): string {
   }
 }
 
-function identityForStep(step: ParsedStep): string {
+/**
+ * Always a string (F37): `<service>.<method>` when the service is resolved,
+ * else `apiId:<id>` / `automationId:<id>`, else "".
+ */
+export function identityForStep(step: ParsedStep): string {
   if (step.serviceName && step.methodName) {
     return `${step.serviceName}.${step.methodName}`;
   }
-  if (step.automationApiId != null) return `apiId:${step.automationApiId}`;
-  if (step.automationId) return step.automationId;
+  if (step.automationApiId != null && String(step.automationApiId).trim()) return `apiId:${String(step.automationApiId).trim()}`;
+  if (step.automationId != null && String(step.automationId).trim()) return `automationId:${String(step.automationId).trim()}`;
   return "";
+}
+
+/**
+ * Step inputs as `path = value` rows (AD-40): nested mappings are flattened
+ * to dotted label paths, empty slots skipped, BASE_64-flagged values decoded.
+ * `labelFor` supplies V1 labels (from the service definition); V2 inputs
+ * carry their own key/name.
+ */
+export function flattenStepInputs(
+  inputs: StepInput[],
+  labelFor: (input: StepInput) => string | undefined = () => undefined,
+): Array<{ input: string; value: string }> {
+  const rows: Array<{ input: string; value: string }> = [];
+  const walk = (list: StepInput[] | undefined, prefix: string) => {
+    for (const i of list ?? []) {
+      const name = labelFor(i) ?? i.key ?? i.label ?? (i.automationUserInputId != null ? `#${i.automationUserInputId}` : "?");
+      const path = prefix ? `${prefix}.${name}` : name;
+      if (typeof i.value === "string" && i.value.length > 0) {
+        const decoded = i.encodingType === "BASE_64" ? decodeBase64Strict(i.value) : null;
+        rows.push({ input: path, value: decoded ?? i.value });
+      }
+      walk(i.mappings, path);
+    }
+  };
+  walk(inputs, "");
+  return rows;
 }
 
 function summariseSteps(method: HydratedMethod): StepSummaryRow[] {
@@ -186,17 +207,17 @@ async function buildStepDetailView(
     value: step.forceExitFromFailure ? "Yes" : "No",
   });
 
-  // Hydrator enrichment for EXISTING_SERVICE steps (V1 only — V2 steps carry
-  // serviceName/methodName directly and do not need the catalog).
-  let displayIdentity = identityForStep(step);
-  let automationId = step.automationId;
-  if (method.sourceVersion === "v1" && step.automationId) {
+  // The parser already resolved the service (AD-02). V1 input labels come
+  // from the (cached) service definition; V2 inputs carry their own names.
+  const displayIdentity = identityForStep(step);
+  let labelFor: (i: StepInput) => string | undefined = () => undefined;
+  if (method.sourceVersion === "v1" && step.automationId != null && step.inputs.length > 0) {
     const def = await ServiceHydrator.getDefinition(step.automationId).catch(() => null);
-    if (def?.automationAPI) {
-      const cat = def.automationAPI.automationSystem?.label;
-      const label = def.automationAPI.label;
-      if (cat && label) displayIdentity = `${cat}.${label}`;
-      automationId = String(def.automationAPI.id);
+    if (def) {
+      labelFor = (i) =>
+        i.automationUserInputId != null
+          ? ServiceHydrator.findInputLabel(def, i.automationUserInputId)?.label || undefined
+          : undefined;
     }
   }
 
@@ -217,11 +238,16 @@ async function buildStepDetailView(
     outputs,
   };
 
-  if (step.conditionExpression) {
+  if (step.conditionExpression || step.conditionRows) {
     base.condition = {
       mode: step.conditionMode,
       expression: step.conditionExpression,
+      ...(step.conditionRows ? { rows: step.conditionRows } : {}),
     };
+  }
+  if (step.kind === "EXISTING_SERVICE" || step.kind === "UNKNOWN") {
+    const inputs = flattenStepInputs(step.inputs, labelFor);
+    if (inputs.length > 0) base.inputs = inputs;
   }
   if (step.repeatStepExecution) {
     base.loop = {
@@ -328,7 +354,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
   parseArgs(argv) {
     const { positionals, flags: f } = args.parse(argv);
     const common = resolveAdCommon(f, "fetch", "show");
-    const uuid = resolveUuid(positionals.uuid);
+    const uuid = resolveMethodRef(positionals.uuid);
     const flags: ShowMethodFlags = {
       code: f.code,
       sql: f.sql,
@@ -514,7 +540,13 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
           ui.table(["Property", "Value"], detail.config.map(c => [c.key, c.value]));
         }
         if (detail.condition) {
-          ui.kv("Condition", `${detail.condition.mode ?? "advance"}: ${detail.condition.expression}`);
+          ui.kv("Condition", `${detail.condition.mode ?? "advance"}: ${detail.condition.expression ?? ""}`);
+          for (const r of detail.condition.rows ?? []) {
+            ui.text(`  ${r.groupOp ? `${r.groupOp} ` : ""}${r.field} ${r.operator} ${r.value ?? "null"}`);
+          }
+        }
+        if (detail.inputs) {
+          ui.table(["Input", "Value"], detail.inputs.map(i => [i.input, i.value]));
         }
         if (detail.loop) {
           ui.kv("Loop Source", detail.loop.source ?? "(none)");

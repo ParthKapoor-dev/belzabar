@@ -122,8 +122,8 @@ describe("other commands", () => {
     expect(parse(servicesCmd, ["--search", "redis", "--internal"])).toEqual({ internal: true, search: "redis" });
   });
   test("show-code --step validates; --service-detail alias", () => {
-    expect(code(() => parse(showCodeCmd, ["u", "--step", "x"]))).toBe("INVALID_VALUE");
-    expect(parse(showCodeCmd, ["u", "--service-detail", "3"]).step).toBe(3);
+    expect(code(() => parse(showCodeCmd, ["4bf56e008eabe4010508af439a15ecfb", "--step", "x"]))).toBe("INVALID_VALUE");
+    expect(parse(showCodeCmd, ["4bf56e008eabe4010508af439a15ecfb", "--service-detail", "3"]).step).toBe(3);
   });
   test("trace --spine default and value", () => {
     expect(parse(traceCmd, ["u"]).spineEnv).toBe("nsm-dev");

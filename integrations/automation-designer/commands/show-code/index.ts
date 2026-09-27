@@ -1,5 +1,6 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
+import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { CustomCodeStep } from "../../lib/types/common";
 
@@ -40,7 +41,7 @@ const command: CommandModule<ShowCodeArgs, ShowCodeData> = {
     const { positionals, flags } = args.parse(argv);
     const common = resolveAdCommon(flags, "fetch", "show-code");
     return {
-      uuid: positionals.uuid,
+      uuid: resolveMethodRef(positionals.uuid),
       step: flags.step ?? null,
       outPath: flags.out,
       apiVersion: common.apiVersion.version,

@@ -1,5 +1,6 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
+import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface OutputsArgs {
@@ -27,7 +28,7 @@ const command: CommandModule<OutputsArgs, OutputsData> = {
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     const common = resolveAdCommon(flags, "fetch", "outputs");
-    return { uuid: positionals.uuid, apiVersion: common.apiVersion.version };
+    return { uuid: resolveMethodRef(positionals.uuid), apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, apiVersion }) {
     const m = await adApi.fetchMethod(uuid, apiVersion);

@@ -1,7 +1,8 @@
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
+import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { HydratedMethod } from "../../lib/types/common";
 
@@ -30,21 +31,6 @@ interface FetchMethodData {
   };
 }
 
-function resolveUuid(input: string): string {
-  if (input.startsWith("http://") || input.startsWith("https://")) {
-    const url = new URL(input);
-    const segments = url.pathname.split("/").filter(Boolean);
-    const last = segments[segments.length - 1];
-    if (!last || !/^[0-9a-f]{32}$/i.test(last)) {
-      throw new CliError("Could not extract a valid UUID from the given URL.", {
-        code: "INVALID_URL",
-      });
-    }
-    return last;
-  }
-  return input;
-}
-
 export const args = defineArgs({
   command: "belz ad fetch",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
@@ -56,18 +42,19 @@ const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     const common = resolveAdCommon(flags, "fetch", "fetch");
-    return { uuid: resolveUuid(positionals.uuid), raw: flags.raw, apiVersion: common.apiVersion.version };
+    return { uuid: resolveMethodRef(positionals.uuid), raw: flags.raw, apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, raw, apiVersion }, context) {
     const method = await adApi.fetchMethod(uuid, apiVersion);
     await CacheManager.save(uuid, method);
 
     const hydratedServiceIds: string[] = [];
-    // V1-only hydration: the service catalog lookups are keyed on numeric IDs.
+    // V1-only: adApi.fetchMethod already looked every step up (AD-02); this
+    // just reports which definitions are now cached (no extra GETs).
     if (method.sourceVersion === "v1" && method.parsedSteps.length > 0) {
       const uniqueIds = new Set<string>();
       for (const step of method.parsedSteps) {
-        if (step.automationId) uniqueIds.add(step.automationId);
+        if (step.automationId != null) uniqueIds.add(String(step.automationId));
       }
       for (const serviceId of uniqueIds) {
         await ServiceHydrator.ensureCached(serviceId);

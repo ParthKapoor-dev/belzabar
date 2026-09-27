@@ -38,7 +38,7 @@ export class ServiceHydrator {
 
   static findInputLabel(
     def: V1AutomationDefinition,
-    inputId: string,
+    inputId: string | number,
   ): { label: string; encoding?: string } | null {
     if (!def.automationAPI.automationUserInputs) return null;
 
@@ -46,7 +46,7 @@ export class ServiceHydrator {
       inputs: V1AutomationUserInput[],
     ): { label: string; encoding?: string } | null => {
       for (const input of inputs) {
-        if (input.id === inputId) {
+        if (String(input.id) === String(inputId)) {
           return { label: input.label, encoding: input.encodingType };
         }
         if (input.automationUserInputs) {
