@@ -18,6 +18,7 @@ import {
 import publishCommand, { __setNoteRetryDelayForTests, NOTE_ATTEMPTS } from "../../commands/publish/index";
 import changelogCommand from "../../commands/changelog/index";
 import { findChangelogId } from "../../lib/api/changelog";
+import { __setValidatorsForTests } from "../../lib/save/validation";
 
 const FIX = join(import.meta.dir, "../fixtures/history");
 const DRAFT = "4bdea25c480a8e9dbc1cae830cb89b68";
@@ -25,12 +26,14 @@ const PUB = "0000000000000000000000000000beef";
 const DRAFT_ID = 20136;
 const PUB_ID = 20999;
 const draftBody = () => JSON.parse(readFileSync(join(FIX, "chain-v1-draft.json"), "utf8"));
+const draftV2 = () => JSON.parse(readFileSync(join(FIX, "chain-v2-draft.json"), "utf8"));
 
 let ff: FakeFetch | null = null;
 let cfg: TempEnvConfig | null = null;
 const spies: Array<{ mockRestore(): void }> = [];
 beforeAll(() => __setNoteRetryDelayForTests(0));
 afterEach(() => {
+  __setValidatorsForTests();
   ff?.restore();
   ff = null;
   cfg?.restore();
@@ -60,6 +63,13 @@ function wire(opts: Opts = {}) {
       url: `/rest/api/automation/chain/${PUB}`,
       response: () => ({ ...draftBody(), uuid: PUB, id: PUB_ID, automationState: "PUBLISHED", referenceId: DRAFT }),
     },
+    { method: "GET", url: `/rest/api/automation/chain/v2/${DRAFT}?basicInfo=false`, response: () => draftV2() },
+    {
+      method: "GET",
+      url: `/rest/api/automation/chain/v2/${PUB}?basicInfo=false`,
+      response: () => ({ ...draftV2(), uuid: PUB, metadata: { ...draftV2().metadata, state: "PUBLISHED", referenceId: DRAFT } }),
+    },
+    { method: "POST", url: /\/cache\/invalidate$/, response: "success" },
     { method: "GET", url: "/rest/api/users/me", response: { user: { id: 2, fullName: "Test User" } } },
     {
       method: "POST",
@@ -86,7 +96,10 @@ function wire(opts: Opts = {}) {
   return ff;
 }
 
-const posts = (f: FakeFetch) => f.requests.filter((r) => r.method === "POST").map((r) => r.url.replace("https://t-dev.test", ""));
+const posts = (f: FakeFetch) =>
+  f.requests
+    .filter((r) => r.method === "POST" && !r.url.endsWith("cache/invalidate"))
+    .map((r) => r.url.replace("https://t-dev.test", ""));
 
 describe("ad publish (AD-19)", () => {
   test("publishes first, then records the note; reports noteRecorded + the note id from the list", async () => {
@@ -173,5 +186,64 @@ describe("findChangelogId", () => {
     ];
     expect(findChangelogId(entries, "x", now)).toBe("new");
     expect(findChangelogId(entries, "z", now)).toBeNull();
+  });
+});
+
+describe("ad publish — validator gate + compiled cache (Stage 5)", () => {
+  const err = { rule: "AD-SCHEMA-001", severity: "error" as const, message: "bad", path: "outputs[0].key" };
+
+  test("validation errors on the draft block the publish (nothing POSTed)", async () => {
+    const f = wire();
+    __setValidatorsForTests({ offline: () => ({ errors: [err], warnings: [], layersRun: ["L1"] }) });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("AD_VALIDATION_FAILED");
+    expect(posts(f)).toEqual([]);
+  });
+
+  test("pre-existing errors (also in the published copy) block unless --allow-preexisting", async () => {
+    let before: unknown;
+    __setValidatorsForTests({
+      offline: (input) => {
+        before = input.before;
+        return { errors: [], warnings: [{ ...err, severity: "warn", preexisting: true }], layersRun: ["L1"] };
+      },
+    });
+    const f = wire({ published: true });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("AD_VALIDATION_FAILED");
+    expect((before as any)?.uuid).toBe(PUB); // diff-aware against the current published copy
+    expect(posts(f)).toEqual([]);
+    const ok = await runCommand(publishCommand, [DRAFT, "--note", "n2", "--yes", "--allow-preexisting"], { env: "t-dev" });
+    expect(ok.envelope?.ok).toBe(true);
+    expect((ok.envelope!.data as any).validation.warnings).toHaveLength(1);
+  });
+
+  test("a plain warning does not block; --no-validate skips the validator", async () => {
+    __setValidatorsForTests({ offline: () => ({ errors: [], warnings: [{ ...err, rule: "AD-SCHEMA-003", severity: "warn" }], layersRun: ["L1"] }) });
+    wire();
+    expect((await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" })).envelope?.ok).toBe(true);
+    let called = false;
+    __setValidatorsForTests({ offline: () => ((called = true), { errors: [err], warnings: [], layersRun: [] }) });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n3", "--yes", "--no-validate"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    expect(called).toBe(false);
+    expect((r.envelope!.data as any).validation.skipped).toBe(true);
+  });
+
+  test("after publishing, the compiled cache of draft + published is evicted on both routes", async () => {
+    __setValidatorsForTests({ offline: () => ({ errors: [], warnings: [], layersRun: ["L1"] }) });
+    const f = wire();
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const inv = f.requests.filter((q) => q.url.endsWith("cache/invalidate"));
+    expect(inv.map((q) => q.url.replace("https://t-dev.test", ""))).toEqual([
+      "/rest/api/cache/invalidate",
+      "/rest/api/automations/cache/invalidate",
+    ]);
+    expect(inv[0]!.json()).toEqual({ uuids: [DRAFT, PUB], type: "AUTOMATION" });
+    // publish happens before the invalidate
+    const order = f.requests.map((q) => q.url);
+    expect(order.findIndex((u) => u.endsWith("/publish"))).toBeLessThan(order.findIndex((u) => u.endsWith("cache/invalidate")));
+    expect((r.envelope!.data as any).compiledCache.ok).toBe(true);
   });
 });

@@ -5,11 +5,20 @@ import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { fingerprintMethod } from "../../lib/fingerprint";
+import * as v2 from "../../lib/api/v2";
+import { ruleInfo } from "../../lib/validate/index";
+import { VALIDATION_FLAGS } from "../../lib/save/flags";
+import { runValidationGate, type ValidationSummary } from "../../lib/save/validation";
+import { invalidateCompiledCache, type CompiledCacheResult } from "../../lib/save/compiled-cache";
 
 interface PublishArgs {
   uuid: string;
   yes: boolean;
   note: string;
+  noValidate: boolean;
+  strict: boolean;
+  dryRunCompile: boolean;
+  allowPreexisting: boolean;
 }
 
 interface PublishData {
@@ -28,6 +37,10 @@ interface PublishData {
   /** Chain the note was recorded on (the draft's numeric id; the server mirrors it to the published chain). */
   noteChainId: number;
   noteError?: string;
+  /** Validator result on the draft (pre-existing = also found in the current published copy). */
+  validation: ValidationSummary;
+  /** Compiled-chain cache eviction for the draft and published uuids (both routes). */
+  compiledCache: CompiledCacheResult;
 }
 
 export const args = defineArgs({
@@ -36,6 +49,8 @@ export const args = defineArgs({
   flags: {
     ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
+    ...VALIDATION_FLAGS,
+    "allow-preexisting": { type: "boolean", description: "Publish even if the published copy already has the same validator errors" },
     note: {
       type: "string",
       required: true,
@@ -51,9 +66,17 @@ const command: CommandModule<PublishArgs, PublishData> = {
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "publish", "publish");
-    return { uuid: positionals.uuid, yes: flags.yes, note: flags.note.trim() };
+    return {
+      uuid: positionals.uuid,
+      yes: flags.yes,
+      note: flags.note.trim(),
+      noValidate: flags.noValidate,
+      strict: flags.strict,
+      dryRunCompile: flags.dryRunCompile,
+      allowPreexisting: flags.allowPreexisting,
+    };
   },
-  async execute({ uuid, yes, note }, context) {
+  async execute({ uuid, yes, note, noValidate, strict, dryRunCompile, allowPreexisting }, context) {
     const guard = await resolveDraftTarget(resolveMethodRef(uuid), "v1");
     if (!guard.ok) {
       throw new CliError(guard.message, {
@@ -70,6 +93,25 @@ const command: CommandModule<PublishArgs, PublishData> = {
       );
     }
 
+    // Publish does no server-side validation (a broken draft publishes with
+    // 200 and fails every run): validate the draft body first. Findings also
+    // present in the current published copy are "pre-existing"; they block
+    // too unless --allow-preexisting.
+    const draftBody = await v2.fetchRawMethod(draft.uuid);
+    const publishedBody = guard.publishedUuid ? await v2.fetchRawMethod(guard.publishedUuid).catch(() => undefined) : undefined;
+    const validation = await runValidationGate(
+      { noValidate, strict, dryRunCompile },
+      {
+        after: draftBody,
+        before: publishedBody,
+        env: context.env.name,
+        action: "publish",
+        warn: (msg) => context.warn(msg),
+        extraBlocking: (r) =>
+          allowPreexisting ? [] : r.warnings.filter((w) => w.preexisting && ruleInfo(w.rule)?.severity === "error"),
+      },
+    );
+
     await requireConfirmation({
       yes,
       outputMode: context.outputMode,
@@ -80,6 +122,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Current published UUID", guard.publishedUuid ?? "(none — first publish)"],
         ["Draft version", String(draft.version)],
         ["Change note", note],
+        ["Validation", validation.skipped ? "SKIPPED (--no-validate)" : `${validation.warnings.length} warning(s)`],
       ],
     });
 
@@ -87,6 +130,13 @@ const command: CommandModule<PublishArgs, PublishData> = {
     // leave an orphan note claiming a change that never shipped.
     logIntent("POST", `/rest/api/automation/chain/${draft.uuid}/publish`, { draftUuid: draft.uuid });
     const { publishedUuid } = await adApi.publishDraft(draft.uuid);
+    const compiledCache = await invalidateCompiledCache([draft.uuid, publishedUuid]);
+    if (!compiledCache.ok) {
+      context.warn(
+        `Compiled-cache eviction failed on every route; the published method may run the previous body. ` +
+          `Retry with: belz cache ${publishedUuid} --env ${context.env.name} --yes`,
+      );
+    }
 
     logIntent("POST", `/rest/api/automation/chain/changelog/${draft.numericId}`, { chainId: draft.numericId });
     const noteResult = await recordNoteWithRetry(draft.numericId, note);
@@ -121,6 +171,8 @@ const command: CommandModule<PublishArgs, PublishData> = {
       changelogId: noteResult.id,
       noteChainId: draft.numericId,
       ...(noteResult.error ? { noteError: noteResult.error } : {}),
+      validation,
+      compiledCache,
     });
   },
   presentHuman(envelope, ui) {

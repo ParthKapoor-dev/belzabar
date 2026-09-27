@@ -1,2 +1,6 @@
-belz ad publish <uuid> --note "<text>" --env <env>  :->  Promote a draft to its published version (draft-guarded; the note is recorded in the changelog after the publish)
+belz ad publish <uuid> --note "<text>" --env <env>  :->  Validate the draft, promote it to its published version (draft-guarded), record the note after the publish, evict the compiled cache
 belz ad publish <uuid> --note "<text>" --env <env> --yes  :->  Publish without the confirmation prompt (required with --llm)
+belz ad publish <uuid> --note "<text>" --env <env> --allow-preexisting  :->  Publish even though the published copy already has the same validator errors
+belz ad publish <uuid> --note "<text>" --env <env> --strict  :->  New validator warnings block the publish too
+belz ad publish <uuid> --note "<text>" --env <env> --dry-run-compile  :->  Also run the online validator checks (server compile dry run)
+belz ad publish <uuid> --note "<text>" --env <env> --no-validate  :->  Skip the validator (logged loudly; not recommended)

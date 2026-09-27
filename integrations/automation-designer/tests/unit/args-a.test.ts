@@ -55,7 +55,10 @@ describe("--note", () => {
   test("publish requires --note", () => {
     expect(code(() => parse(publish, ["u"]))).toBe("MISSING_CHANGE_NOTE");
     expect(code(() => parse(publish, []))).toBe("MISSING_UUID");
-    expect(parse(publish, ["--note", "  fixed  ", "u", "-y"])).toEqual({ uuid: "u", note: "fixed", yes: true });
+    expect(parse(publish, ["--note", "  fixed  ", "u", "-y"])).toEqual({
+      uuid: "u", note: "fixed", yes: true, noValidate: false, strict: false, dryRunCompile: false, allowPreexisting: false,
+    });
+    expect(parse(publish, ["u", "--note", "n", "--allow-preexisting", "--no-validate"])).toMatchObject({ allowPreexisting: true, noValidate: true });
     expect(parse(publish, ["u", "--note=inline"]).note).toBe("inline");
   });
 

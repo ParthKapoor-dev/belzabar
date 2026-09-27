@@ -213,6 +213,11 @@ fails if a folder is missing from the registry.
    draft chain (3 attempts); a note that still fails keeps the publish and
    reports `noteRecorded:false` + a warning (AD-19). `changelogId` is looked
    up in the list (the POST answers `{"success":true}` without an id).
+   Before anything is written the draft's V2 body is validated
+   (lib/save/validation.ts; `--no-validate`, `--strict`, `--dry-run-compile`).
+   Findings also present in the current published copy are pre-existing and
+   still block unless `--allow-preexisting`. After the publish the compiled
+   cache of draft + published is evicted on both routes (`compiledCache`).
 3. `import <file>` — POST `/chain/import`
 4. `category create <name>` — create a new AD category/service
 5. `test-case <action>` — `list | create | update | delete | bulk |

@@ -1,31 +1,47 @@
-Usage: belz ad publish <uuid> --note "<what changed>" [flags]
+Usage: belz ad publish <UUID> --note "<what changed>" --env <env> [flags]
 
-Publish a draft — promotes the current draft contents to the published
-version of the same method. Returns the published UUID and a version-sync
-summary.
+Publish a draft: promotes the current draft contents to the published version
+of the same method. Returns the published UUID and a version-sync summary.
 
+The draft is validated first (the server publishes broken methods with 200).
 A change note is MANDATORY: belz records it against the draft chain's
 changelog right AFTER a successful publish (retried up to 3 times), so a
-failed publish never leaves an orphan note. Requires --env (write).
+failed publish never leaves an orphan note.
+
+Arguments:
+  <UUID>                Draft uuid, its PUBLISHED uuid (switched to the linked draft), or an AD URL.
 
 Flags:
-  --note "<text>"  Required. The change note recorded against the chain.
-  --yes, -y        Skip the interactive confirmation prompt
-  --v2             Accepted for consistency; always V1 (a notice is printed)
-  --llm            Emit a JSON envelope; --yes is required in this mode
+  --note "<text>"       The change note recorded against the chain. (required)
+  --yes, -y             Skip the confirmation prompt (required with --llm).
+  --no-validate         Skip the validator. Logged loudly; not recommended.
+  --strict              New validator warnings block the publish too.
+  --dry-run-compile     Also run the online checks (server compile dry run).
+  --allow-preexisting   Publish even if the current published copy already has
+                        the same validator errors (they block by default).
+  --v2                  Accepted for consistency (a notice is printed).
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Set active environment. Required: publish is a write.
+  --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Safety:
   - A missing --note aborts before any server call (MISSING_CHANGE_NOTE).
+  - Validator errors on the draft → AD_VALIDATION_FAILED (details {errors,
+    warnings, blocking, layersRun, preexistingCount}); nothing is published.
+    Findings also present in the published copy are marked preexisting.
   - The change note is POSTed AFTER the publish call. If it still fails after
     retries the publish stands: the envelope is ok with noteRecorded:false,
     noteError, and a warning with the `belz ad changelog` command to re-record.
-  - Always routes through resolveDraftTarget: if you pass a PUBLISHED UUID
-    belz automatically switches to the linked draft before publishing.
-  - Re-fetches both draft and published after the publish call and reports
-    inSync (logic fingerprints equal), noteRecorded and changelogId.
+  - After publishing, the compiled cache of the draft and published uuids is
+    evicted on both cache routes (data.compiledCache).
+  - Re-fetches both draft and published and reports inSync (logic
+    fingerprints equal), noteRecorded, changelogId and validation warnings.
 
 Examples:
   belz ad publish 4a1b2c3d... --note "Fix null check in step 3" --env <env>
   belz ad publish 4a1b2c3d... --note "Fix null check in step 3" --env <env> --yes --llm
+  belz ad publish 4a1b2c3d... --note "Hotfix" --env <env> --allow-preexisting
 
 See also: belz ad changelog — record/list change notes without publishing.
