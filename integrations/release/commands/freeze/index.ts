@@ -1,5 +1,5 @@
 import {
-  CliError, ok,
+  CliError, defineArgs, ok,
   type CommandModule, type CommandResult, type CommandContext,
   type CommandEnvelope, type HumanPresenterHelpers,
 } from "@belzabar/core";
@@ -27,12 +27,15 @@ interface SavedRelease {
   }[];
 }
 
-function parseArgs(args: string[]): FreezeArgs {
-  const name = args.find((a) => !a.startsWith("-"));
-  if (!name) {
-    throw new CliError("Usage: belz release freeze <release-name>", { code: "MISSING_NAME" });
-  }
-  return { name };
+export const args = defineArgs({
+  command: "belz release freeze",
+  positionals: [
+    { name: "name", required: true, missingCode: "MISSING_NAME", missingMessage: "Usage: belz release freeze <release-name>" },
+  ],
+});
+
+function parseArgs(argv: string[]): FreezeArgs {
+  return { name: args.parse(argv).positionals.name };
 }
 
 function execute(args: FreezeArgs, _context: CommandContext): CommandResult<ProdSnapshot> {
@@ -86,6 +89,8 @@ function presentHuman(envelope: CommandEnvelope<ProdSnapshot>, ui: HumanPresente
 const command: CommandModule<FreezeArgs, ProdSnapshot> = {
   schema: "release.freeze",
   version: "1.0",
+  /** Writes the local promotion ledger (prod snapshot) only; no remote state. */
+  writesLocal: true,
   parseArgs,
   execute,
   presentHuman,

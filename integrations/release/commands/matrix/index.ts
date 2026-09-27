@@ -1,11 +1,12 @@
 import {
-  CliError, ok,
+  CliError, defineArgs, ok,
   type CommandModule, type CommandResult, type CommandContext,
   type CommandEnvelope, type HumanPresenterHelpers,
 } from "@belzabar/core";
 import { readFileSync, existsSync } from "fs";
 import { traceMethod } from "@belzabar/ad/lib/trace";
 import { extractTicketItems } from "@belzabar/teamwork/lib/items";
+import { parseTaskId } from "@belzabar/teamwork/lib/task-id";
 import { saveRelease } from "../../lib/ledger";
 
 // `belz release matrix <release.json>` — the release collision/leak detector.
@@ -85,24 +86,49 @@ interface MatrixData {
   warnings: string[];
 }
 
-function parseTaskId(input: string): number {
-  const m = String(input).match(/\/tasks\/(\d+)/);
-  if (m) return parseInt(m[1]!, 10);
-  const n = parseInt(String(input), 10);
-  if (Number.isNaN(n)) throw new CliError(`Invalid ticket reference: '${input}'`, { code: "BAD_TICKET" });
-  return n;
+export const args = defineArgs({
+  command: "belz release matrix",
+  positionals: [
+    {
+      name: "spec",
+      required: true,
+      missingCode: "MISSING_SPEC",
+      missingMessage:
+        "Usage: belz release matrix <release.json>\n\n" +
+        'release.json: { "name": "...", "included": [ids], "excluded": [ids], "spineEnv"?, "stageEnv"? }',
+    },
+  ],
+});
+
+function parseArgs(argv: string[]): MatrixArgs {
+  return { specPath: args.parse(argv).positionals.spec };
 }
 
-function parseArgs(args: string[]): MatrixArgs {
-  const specPath = args.find((a) => !a.startsWith("-"));
-  if (!specPath) {
-    throw new CliError(
-      "Usage: belz release matrix <release.json>\n\n" +
-        'release.json: { "name": "...", "included": [ids], "excluded": [ids], "spineEnv"?, "stageEnv"? }',
-      { code: "MISSING_SPEC" },
-    );
+/** Ticket refs → ids, as BAD_SPEC (TW-6 validator); an id both included and excluded is BAD_SPEC (RL-5). */
+function ticketIds(spec: ReleaseSpec): { id: number; kind: TicketKind }[] {
+  const toId = (t: unknown, kind: TicketKind) => {
+    try {
+      return parseTaskId(String(t));
+    } catch (e) {
+      throw new CliError(`Release spec: invalid ${kind} ticket '${t}'. Use a numeric id or task URL.`, {
+        code: "BAD_SPEC",
+        details: { kind, ticket: t },
+      });
+    }
+  };
+  const included = spec.included.map((t) => toId(t, "included"));
+  const excluded = spec.excluded.map((t) => toId(t, "excluded"));
+  const both = [...new Set(included.filter((id) => excluded.includes(id)))];
+  if (both.length > 0) {
+    throw new CliError(`Release spec lists ticket(s) as both included and excluded: ${both.join(", ")}.`, {
+      code: "BAD_SPEC",
+      details: { overlap: both },
+    });
   }
-  return { specPath };
+  return [
+    ...included.map((id) => ({ id, kind: "included" as const })),
+    ...excluded.map((id) => ({ id, kind: "excluded" as const })),
+  ];
 }
 
 async function execute(args: MatrixArgs, _context: CommandContext): Promise<CommandResult<MatrixData>> {
@@ -126,10 +152,7 @@ async function execute(args: MatrixArgs, _context: CommandContext): Promise<Comm
   const warnings: string[] = [];
 
   // ── 1. Link every ticket → its items (parallel; teamwork auth, no Config). ──
-  const ticketSpecs: { id: number; kind: TicketKind }[] = [
-    ...spec.included.map((t) => ({ id: parseTaskId(t), kind: "included" as const })),
-    ...spec.excluded.map((t) => ({ id: parseTaskId(t), kind: "excluded" as const })),
-  ];
+  const ticketSpecs = ticketIds(spec);
 
   const tickets: TicketRow[] = await Promise.all(
     ticketSpecs.map(async ({ id, kind }): Promise<TicketRow> => {
@@ -305,6 +328,8 @@ function presentHuman(envelope: CommandEnvelope<MatrixData>, ui: HumanPresenterH
 const command: CommandModule<MatrixArgs, MatrixData> = {
   schema: "release.matrix",
   version: "1.0",
+  /** Writes the local promotion ledger (release record) only; no remote state. */
+  writesLocal: true,
   parseArgs,
   execute,
   presentHuman,

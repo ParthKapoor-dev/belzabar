@@ -23,10 +23,14 @@ belz release freeze <release-name>  → release/commands/freeze/
   It calls these lib functions, never another command's `execute()`.
   It detects COLLISIONS (an AD item shared by an included and an excluded
   ticket) and, per collision, a LEAK status (has the excluded change reached
-  stage). Result is persisted to the ledger.
+  stage). Result is persisted to the ledger. Ticket refs are validated up
+  front with teamwork's `parseTaskId`; a junk ref or a ticket listed as both
+  included and excluded is `BAD_SPEC` before any network call.
 - **freeze** reads a saved matrix result and snapshots each item's stage
   position as the prod pointer — prod is not queryable, so it is inferred from
   stage at release-push time.
+- Both commands export `args` (core `defineArgs`) and mark `writesLocal: true`
+  (they write only the local ledger, so no explicit `--env` is required).
 
 ## Directory Map
 
@@ -38,6 +42,7 @@ release/
 ├── lib/
 │   └── ledger.ts    JSON store under ~/.belz/promotion/
 ├── registry.ts      Static, sorted command registry (@belzabar/release/registry)
+├── tests/unit/      bun test — args.test.ts (parsing, BAD_SPEC checks)
 ├── package.json     @belzabar/release — depends on @belzabar/core, /ad, /teamwork
 └── AGENTS.md        This file
 ```
