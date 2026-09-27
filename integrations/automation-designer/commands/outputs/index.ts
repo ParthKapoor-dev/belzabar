@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface OutputsArgs {
   uuid: string;
@@ -16,16 +16,18 @@ interface OutputsData {
   outputs: Array<{ code: string; type: string; displayName: string; description: string }>;
 }
 
+export const args = defineArgs({
+  command: "belz ad outputs",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
+  flags: { ...AD_COMMON_FLAGS },
+});
+
 const command: CommandModule<OutputsArgs, OutputsData> = {
   schema: "ad.outputs",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "fetch", "outputs");
-    emitFallbackWarning(common, "outputs");
-    const uuid = rest[0];
-    if (!uuid || uuid.startsWith("-")) {
-      throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
-    }
-    return { uuid, apiVersion: common.apiVersion.version };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    const common = resolveAdCommon(flags, "fetch", "outputs");
+    return { uuid: positionals.uuid, apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, apiVersion }) {
     const m = await adApi.fetchMethod(uuid, apiVersion);

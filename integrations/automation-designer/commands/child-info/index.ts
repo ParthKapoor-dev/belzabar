@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface ChildInfoArgs {
   category: string;
@@ -13,20 +13,21 @@ interface ChildInfoData {
   body: unknown;
 }
 
+export const args = defineArgs({
+  command: "belz ad child-info",
+  positionals: [
+    { name: "category", required: true, missingCode: "MISSING_CATEGORY", missingMessage: "Missing <category> argument." },
+    { name: "method-name", required: true, missingCode: "MISSING_METHOD_NAME", missingMessage: "Missing <method-name> argument." },
+  ],
+  flags: { ...AD_COMMON_FLAGS },
+});
+
 const command: CommandModule<ChildInfoArgs, ChildInfoData> = {
   schema: "ad.child-info",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "childInfo", "child-info");
-    emitFallbackWarning(common, "child-info");
-    const category = rest[0];
-    const methodName = rest[1];
-    if (!category || category.startsWith("-")) {
-      throw new CliError("Missing <category> argument.", { code: "MISSING_CATEGORY" });
-    }
-    if (!methodName || methodName.startsWith("-")) {
-      throw new CliError("Missing <method-name> argument.", { code: "MISSING_METHOD_NAME" });
-    }
-    return { category, methodName };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "childInfo", "child-info");
+    return { category: positionals.category, methodName: positionals.methodName };
   },
   async execute({ category, methodName }) {
     const body = await adApi.fetchChildMethodInfo(category, methodName);

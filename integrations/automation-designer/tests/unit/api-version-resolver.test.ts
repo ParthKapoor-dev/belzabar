@@ -48,9 +48,9 @@ describe("resolveApiVersion", () => {
     }
   });
 
-  test("fetch and test currently support v2", () => {
+  test("fetch supports v2; test is V1-only (AD-15: `ad test` never ran the V2 path)", () => {
     expect(SUPPORTED_VERSIONS.fetch).toContain("v2");
-    expect(SUPPORTED_VERSIONS.test).toContain("v2");
+    expect(SUPPORTED_VERSIONS.test).not.toContain("v2");
   });
 
   test("DEFAULT_VERSION[op] is always in SUPPORTED_VERSIONS[op]", () => {

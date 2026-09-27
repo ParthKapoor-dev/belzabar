@@ -1,1 +1,2 @@
-  changelog <uuid> [--note "<text>"]   List change notes for a method, or record one with --note.
+belz ad changelog <uuid>  :->  List change notes recorded against a method
+belz ad changelog <uuid> --note "<text>"  :->  Record a change note (write), then list the updated history

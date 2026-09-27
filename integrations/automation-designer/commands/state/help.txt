@@ -1,4 +1,4 @@
-belz ad state <uuid> [flags]
+Usage: belz ad state <uuid> [flags]
 
 Print draft/published linkage, versions, and publish-staleness for a method.
 

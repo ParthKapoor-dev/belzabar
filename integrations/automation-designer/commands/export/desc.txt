@@ -1,1 +1,2 @@
-  export <id>           Export a single method as JSON (optionally to a file).
+belz ad export <method-id-or-uuid>  :->  Export a single method as JSON
+belz ad export <method-id-or-uuid> --out <file>  :->  Export a single method and write the JSON to a file

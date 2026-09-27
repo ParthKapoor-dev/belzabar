@@ -1,1 +1,2 @@
-belz ad save <file> --uuid <uuid> [--yes]  :->  Apply a JSON overlay (summary, description, inputs[].testValue, parsedSteps[].source|sql|expression|description) to the method's draft; refuses unknown/unwritable/no-op keys and any drift
+belz ad save <file> --uuid <uuid> --env <env> [--yes]  :->  Apply a JSON overlay (summary, description, inputs[].testValue, parsedSteps[].source|sql|expression|description) to the method's draft; refuses unknown/unwritable/no-op keys and any drift
+belz ad save <file> --uuid <uuid> --env <env> --yes --llm  :->  Non-interactive save (--yes is required in --llm mode)

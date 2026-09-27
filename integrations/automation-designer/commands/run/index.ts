@@ -1,5 +1,5 @@
-import { CliError, ok, apiFetch, type CommandModule } from "@belzabar/core";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { CliError, ok, apiFetch, defineArgs, type CommandModule } from "@belzabar/core";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { readStream } from "../../lib/stream-parser";
 
 interface RunMethodArgs {
@@ -43,23 +43,29 @@ async function resolvePayload(payloadArg?: string): Promise<unknown> {
   }
 }
 
+export const args = defineArgs({
+  command: "belz ad run",
+  positionals: [
+    { name: "published-id", required: true, missingCode: "MISSING_PUBLISHED_ID", missingMessage: "Missing Published ID." },
+    { name: "payload" },
+  ],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    raw: { type: "boolean" },
+    stream: { type: "boolean" },
+  },
+});
+
 const command: CommandModule<RunMethodArgs, RunMethodData> = {
   schema: "ad.run",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "run", "run");
-    emitFallbackWarning(common, "run");
-    const raw = rest.includes("--raw");
-    const stream = rest.includes("--stream");
-    const positional = rest.filter(arg => arg !== "--raw" && arg !== "--stream");
-    const publishedId = positional[0];
-    if (!publishedId || publishedId.startsWith("-")) {
-      throw new CliError("Missing Published ID.", { code: "MISSING_PUBLISHED_ID" });
-    }
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "run", "run");
     return {
-      publishedId,
-      payloadArg: positional[1],
-      raw,
-      stream,
+      publishedId: positionals.publishedId,
+      payloadArg: positionals.payload,
+      raw: flags.raw,
+      stream: flags.stream,
     };
   },
   async execute({ publishedId, payloadArg, raw, stream }, context) {

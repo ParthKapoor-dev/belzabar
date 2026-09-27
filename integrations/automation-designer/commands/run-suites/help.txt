@@ -4,6 +4,7 @@ Execute all saved regression test suites found in the 'suites/' directory.
 Each suite is verified for HTTP 200 and a non-failed execution result.
 
 Flags:
+  --v2                Accepted for consistency; suites run on V1 (with a notice).
   --help, -h          Show this help message.
 
 Global Flags:

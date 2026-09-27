@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface ExportCategoryArgs {
   id: string | number;
@@ -14,17 +14,18 @@ interface ExportCategoryData {
   preview: unknown;
 }
 
+export const args = defineArgs({
+  command: "belz ad export-category",
+  positionals: [{ name: "category-id", required: true, missingCode: "MISSING_CATEGORY_ID", missingMessage: "Missing category id argument." }],
+  flags: { ...AD_COMMON_FLAGS, out: { type: "string" } },
+});
+
 const command: CommandModule<ExportCategoryArgs, ExportCategoryData> = {
   schema: "ad.export-category",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "export", "export-category");
-    emitFallbackWarning(common, "export-category");
-    const first = rest[0];
-    if (!first || first.startsWith("-")) {
-      throw new CliError("Missing category id argument.", { code: "MISSING_CATEGORY_ID" });
-    }
-    const outIdx = rest.indexOf("--out");
-    return { id: first, outPath: outIdx !== -1 ? rest[outIdx + 1] : undefined };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "export", "export-category");
+    return { id: positionals.categoryId, outPath: flags.out };
   },
   async execute({ id, outPath }) {
     const body = await adApi.exportCategory(id);

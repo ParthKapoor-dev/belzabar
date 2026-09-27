@@ -1,6 +1,6 @@
-import { ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface CategoriesArgs {
   system: boolean;
@@ -20,15 +20,23 @@ interface CategoriesData {
   categories: CategoryRow[];
 }
 
+export const args = defineArgs({
+  command: "belz ad categories",
+  flags: {
+    ...AD_COMMON_FLAGS,
+    user: { type: "boolean" },
+    system: { type: "boolean" },
+  },
+  // F34: the two filters contradict each other.
+  exclusive: [["user", "system"]],
+});
+
 const command: CommandModule<CategoriesArgs, CategoriesData> = {
   schema: "ad.categories",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "category", "categories");
-    emitFallbackWarning(common, "categories");
-    return {
-      system: rest.includes("--system"),
-      user: rest.includes("--user"),
-    };
+  parseArgs(argv) {
+    const { flags } = args.parse(argv);
+    resolveAdCommon(flags, "category", "categories");
+    return { system: flags.system, user: flags.user };
   },
   async execute({ system, user }) {
     const raw = (await adApi.listCategories({ includeSystem: true })) as unknown;

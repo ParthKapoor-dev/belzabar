@@ -1,4 +1,4 @@
-belz ad services [flags]
+Usage: belz ad services [flags]
 
 List all services from /rest/api/automation/services (the core service catalog
 used to build step identifiers). Both internal and external services are
@@ -7,6 +7,7 @@ included by default.
 Flags:
   --internal          Only show services with internalService=true
   --search <q>        Case-insensitive substring match on name / label / alias
+  --v2                Accepted for consistency; this command is V1-only (notice printed).
   --llm               Emit a JSON envelope with {total, services[]}
 
 Example:

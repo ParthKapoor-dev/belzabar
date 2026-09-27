@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
 import { adApi, type MethodVersionSummary, type MethodVersionFull } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
 import { parseVersionBody } from "../../lib/fingerprint";
 import type { HydratedMethod } from "../../lib/types/common";
@@ -81,41 +81,61 @@ interface HistoryRestoreData {
 
 type HistoryData = HistoryListData | HistoryShowData | HistoryDiffData | HistoryRestoreData;
 
+const UUID_ARG = [
+  { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." },
+] as const;
+const VERSION_FLAG = {
+  type: "number",
+  integer: true,
+  min: 1,
+  required: true,
+  missingCode: "MISSING_VERSION",
+  missingMessage: "--version <N> is required.",
+} as const;
+
+export const args = defineSubcommands(
+  {
+    list: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS } },
+    show: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS, version: VERSION_FLAG } },
+    diff: {
+      positionals: UUID_ARG,
+      flags: {
+        ...AD_COMMON_FLAGS,
+        from: { ...VERSION_FLAG, missingMessage: "--from <N> and --to <M> are required for 'history diff'." },
+        to: { ...VERSION_FLAG, missingMessage: "--from <N> and --to <M> are required for 'history diff'." },
+      },
+    },
+    restore: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG, version: VERSION_FLAG } },
+  },
+  {
+    command: "belz ad history",
+    codes: { UNKNOWN_SUBCOMMAND: "INVALID_ACTION", MISSING_SUBCOMMAND: "INVALID_ACTION" },
+    missingMessage:
+      "Usage: belz ad history <list|show|diff|restore> <uuid> [flags]\n\n" +
+      "  list <uuid>                     List all saved versions\n" +
+      "  show <uuid> --version N         Fetch + parse a specific version\n" +
+      "  diff <uuid> --from N --to M     Compare two versions side by side\n" +
+      "  restore <uuid> --version N      Revert to a previous version",
+  },
+);
+
 const command: CommandModule<HistoryArgs, HistoryData> = {
   schema: "ad.history",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "fetch", "history");
-    emitFallbackWarning(common, "history");
-
-    const action = rest[0] as Action;
-    if (!action || !["list", "show", "diff", "restore"].includes(action)) {
-      throw new CliError(
-        "Usage: belz ad history <list|show|diff|restore> <uuid> [flags]\n\n" +
-          "  list <uuid>                     List all saved versions\n" +
-          "  show <uuid> --version N         Fetch + parse a specific version\n" +
-          "  diff <uuid> --from N --to M       Compare two versions side by side\n" +
-          "  restore <uuid> --version N      Revert to a previous version",
-        { code: "INVALID_ACTION" },
-      );
+  writes: (a) => a.action === "restore",
+  parseArgs(argv) {
+    const parsed = args.parse(argv);
+    resolveAdCommon(parsed.flags, "list", "history"); // history is V1-only: --v2 prints the fallback notice
+    const base = { action: parsed.subcommand, uuid: parsed.positionals.uuid };
+    switch (parsed.subcommand) {
+      case "list":
+        return { ...base, yes: false };
+      case "show":
+        return { ...base, version: parsed.flags.version, yes: false };
+      case "diff":
+        return { ...base, v1: parsed.flags.from, v2num: parsed.flags.to, yes: false };
+      case "restore":
+        return { ...base, version: parsed.flags.version, yes: parsed.flags.yes };
     }
-
-    const uuid = rest[1];
-    if (!uuid || uuid.startsWith("-")) {
-      throw new CliError("Missing <uuid> argument.", { code: "MISSING_UUID" });
-    }
-
-    const versionIdx = rest.indexOf("--version");
-    const fromIdx = rest.indexOf("--from");
-    const toIdx = rest.indexOf("--to");
-
-    return {
-      action,
-      uuid,
-      version: versionIdx !== -1 ? parseInt(rest[versionIdx + 1]!, 10) : undefined,
-      v1: fromIdx !== -1 ? parseInt(rest[fromIdx + 1]!, 10) : undefined,
-      v2num: toIdx !== -1 ? parseInt(rest[toIdx + 1]!, 10) : undefined,
-      yes: rest.includes("--yes"),
-    };
   },
 
   async execute(args, context) {

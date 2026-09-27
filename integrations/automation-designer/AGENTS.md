@@ -25,7 +25,7 @@ locates a method on every environment relative to its dev version-history
 parser-agnostic structural fingerprint both share.
 
 All commands accept `--v2` (universal flag, handled by
-`lib/args/common.ts:parseAdCommonArgs`). When the selected operation does not
+`lib/args/common.ts:resolveAdCommon`). When the selected operation does not
 implement V2, the command prints a one-line fallback warning and runs V1.
 The per-operation version defaults live in `lib/api-version.ts:DEFAULT_VERSION`
 — to flip a default, edit one cell. See `docs/api-notes.md` for the long-form
@@ -41,7 +41,7 @@ rationale.
 
 1. `commands/` — one folder per AD command (`index.ts`, `help.txt`, `desc.txt`)
 2. `lib/api-version.ts` — version enum, defaults, resolver
-3. `lib/args/common.ts` — shared `--v2` flag parser + fallback warning
+3. `lib/args/common.ts` — shared `defineArgs` flag fragments (`AD_COMMON_FLAGS` = `--v2`, `AD_YES_FLAG`, `AD_NOTE_FLAG`) + `resolveAdCommon` (V2→V1 fallback notice). Every command exports its spec as `args`; `apps/cli/tests/args-docs.test.ts` checks help.txt/desc.txt against it
 4. `lib/args/confirm.ts` — interactive confirmation helper for write commands
 5. `lib/types/common.ts` — unified in-memory types (`HydratedMethod`,
    `ParsedStep`, `MethodField`, …). **Commands import only from this file.**
@@ -108,7 +108,7 @@ fails if a folder is missing from the registry.
 1. `fetch` — raw V1 or V2 fetch + cache
 2. `find` — search and pick methods (cached index)
 3. `show` — rich display with `[CODE]` / `[SPEL]` / `[SQL]` / `[REDIS-*]`
-   badges, `--code`, `--sql`, `--outputs`, `--variables`, `--step <N>` flags
+   badges, `--code`, `--sql`, `--outputs`, `--variables`, `--service-detail <N>` (alias `--step <N>`, orderIndex) flags
 4. `show-code` — dump decoded custom-code source for all / a single step
 5. `outputs` — inputs/variables/outputs contract only (agent-friendly)
 6. `state` — draft/published linkage, version, staleness (wraps draft-guard)
@@ -215,9 +215,8 @@ so the compiled binary embeds them). `apps/cli/bin/options.ts` wires it into `be
 
 ## Known Current Gaps
 
-1. `test` parses `--force` and `--verbose`, but execution currently does not use `force`, and `verbose` does not expand trace detail.
-2. `show --service-detail` help text says 0-indexed, while lookup is by `orderIndex` value.
-3. `save-suite` writes to `suites/` path and assumes directory availability.
+1. `test` has only a V1 path (`--v2` falls back with a notice); `--force` was removed (AD-15).
+2. `save-suite` writes to `suites/` path and assumes directory availability.
 
 ## desc.txt Standard
 

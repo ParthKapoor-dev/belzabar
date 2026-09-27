@@ -1,6 +1,6 @@
-import { ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface TestReportArgs {}
 
@@ -8,11 +8,16 @@ interface TestReportData {
   report: unknown;
 }
 
+export const args = defineArgs({
+  command: "belz ad test-report",
+  flags: { ...AD_COMMON_FLAGS },
+});
+
 const command: CommandModule<TestReportArgs, TestReportData> = {
   schema: "ad.test-report",
-  parseArgs(args) {
-    const { common } = parseAdCommonArgs(args, "testCase", "test-report");
-    emitFallbackWarning(common, "test-report");
+  parseArgs(argv) {
+    const { flags } = args.parse(argv);
+    resolveAdCommon(flags, "testCase", "test-report");
     return {};
   },
   async execute() {

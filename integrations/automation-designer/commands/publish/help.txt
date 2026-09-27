@@ -1,4 +1,4 @@
-belz ad publish <uuid> --note "<what changed>" [flags]
+Usage: belz ad publish <uuid> --note "<what changed>" [flags]
 
 Publish a draft — promotes the current draft contents to the published
 version of the same method. Returns the published UUID and a version-sync
@@ -9,7 +9,8 @@ before the publish call, so every published change is logged.
 
 Flags:
   --note "<text>"  Required. The change note recorded against the chain.
-  --yes            Skip the interactive confirmation prompt
+  --yes, -y        Skip the interactive confirmation prompt
+  --v2             Accepted for consistency; always V1 (a notice is printed)
   --llm            Emit a JSON envelope; --yes is required in this mode
 
 Safety:

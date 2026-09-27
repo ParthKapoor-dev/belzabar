@@ -8,7 +8,9 @@ Arguments:
 
 Flags:
   --name <NAME>       Name for this test suite, e.g. 'smoke-test-login'. (required)
-  --inputs <FILE>     Path to a JSON file of input values. Prompts interactively if omitted.
+  --inputs <FILE>     Path to a JSON file of input values. Prompts interactively if omitted
+                      (required with --llm).
+  --v2                Accepted for consistency; suites are V1 (with a notice).
   --help, -h          Show this help message.
 
 Global Flags:

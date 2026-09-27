@@ -11,14 +11,20 @@ Arguments:
 
 Flags:
   --inputs                Show a table of input arguments.
+  --outputs               Show the method's outputs.
+  --variables             Show the method's variables.
   --services              Show a list of service steps.
-  --service-detail <N>    Show detailed info for the Nth service step.
+  --service-detail <N>    Show detailed info for the step with orderIndex N
+  --step <N>              (1-based, as listed by --services). Aliases.
+  --code                  Include decoded custom-code source in step detail.
+  --sql                   Include SQL text in step detail.
   --full                  Include expanded per-service logic details.
   --force                 Bypass cache and fetch a fresh method definition.
   --raw                   Include raw payloads in output.
   --open, -o              Open the editable draft URL in your default browser
                           (uses the draft uuid even when the input is the
                           published id).
+  --v2                    Fetch through the V2 API.
   --help, -h              Show this help message.
 
 Global Flags:

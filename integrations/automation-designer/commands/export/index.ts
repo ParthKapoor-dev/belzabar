@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface ExportArgs {
   id: string | number;
@@ -14,22 +14,18 @@ interface ExportData {
   preview: unknown;
 }
 
+export const args = defineArgs({
+  command: "belz ad export",
+  positionals: [{ name: "method-id", required: true, missingCode: "MISSING_METHOD_ID", missingMessage: "Missing method id (numeric) or UUID argument." }],
+  flags: { ...AD_COMMON_FLAGS, out: { type: "string" } },
+});
+
 const command: CommandModule<ExportArgs, ExportData> = {
   schema: "ad.export",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "export", "export");
-    emitFallbackWarning(common, "export");
-    const first = rest[0];
-    if (!first || first.startsWith("-")) {
-      throw new CliError("Missing method id (numeric) or UUID argument.", {
-        code: "MISSING_METHOD_ID",
-      });
-    }
-    const outIdx = rest.indexOf("--out");
-    return {
-      id: first,
-      outPath: outIdx !== -1 ? rest[outIdx + 1] : undefined,
-    };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "export", "export");
+    return { id: positionals.methodId, outPath: flags.out };
   },
   async execute({ id, outPath }) {
     const body = await adApi.exportMethod(id);

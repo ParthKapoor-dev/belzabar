@@ -1,5 +1,6 @@
-import { CliError, ok, type CommandModule, type CommandResult, type CommandEnvelope, type HumanPresenterHelpers } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule, type CommandResult, type CommandEnvelope, type HumanPresenterHelpers } from "@belzabar/core";
 import { traceMethod, type TraceData } from "../../lib/trace";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 export type { TraceData } from "../../lib/trace";
 
@@ -11,21 +12,21 @@ interface TraceArgs {
   spineEnv: string;
 }
 
-function parseArgs(args: string[]): TraceArgs {
-  const rest: string[] = [];
-  let spineEnv = "nsm-dev";
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === "--spine") {
-      spineEnv = args[++i] ?? spineEnv;
-    } else {
-      rest.push(args[i]!);
-    }
-  }
-  const uuid = rest[0];
-  if (!uuid || uuid.startsWith("-")) {
-    throw new CliError("Usage: belz ad trace <uuid> [--spine <env>]", { code: "MISSING_UUID" });
-  }
-  return { uuid, spineEnv };
+export const args = defineArgs({
+  command: "belz ad trace",
+  positionals: [
+    { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Usage: belz ad trace <uuid> [--spine <env>]" },
+  ],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    spine: { type: "string", default: "nsm-dev" },
+  },
+});
+
+function parseArgs(argv: string[]): TraceArgs {
+  const { positionals, flags } = args.parse(argv);
+  resolveAdCommon(flags, "fetch", "trace");
+  return { uuid: positionals.uuid, spineEnv: flags.spine };
 }
 
 async function execute(args: TraceArgs): Promise<CommandResult<TraceData>> {

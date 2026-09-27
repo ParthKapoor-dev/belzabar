@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { CustomCodeStep } from "../../lib/types/common";
 
 interface ShowCodeArgs {
@@ -24,31 +24,25 @@ interface ShowCodeData {
   writtenTo?: string;
 }
 
+export const args = defineArgs({
+  command: "belz ad show-code",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    step: { type: "number", integer: true, min: 1, alias: ["--service-detail"] },
+    out: { type: "string" },
+  },
+});
+
 const command: CommandModule<ShowCodeArgs, ShowCodeData> = {
   schema: "ad.show-code",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "fetch", "show-code");
-    emitFallbackWarning(common, "show-code");
-
-    const first = rest[0];
-    if (!first || first.startsWith("-")) {
-      throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
-    }
-
-    const stepIdx = rest.indexOf("--step");
-    const stepVal = stepIdx !== -1 ? rest[stepIdx + 1] : undefined;
-    const step = stepVal !== undefined ? parseInt(stepVal, 10) : null;
-    if (step !== null && Number.isNaN(step)) {
-      throw new CliError("--step requires a numeric index.", { code: "INVALID_STEP_INDEX" });
-    }
-
-    const outIdx = rest.indexOf("--out");
-    const outPath = outIdx !== -1 ? rest[outIdx + 1] : undefined;
-
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    const common = resolveAdCommon(flags, "fetch", "show-code");
     return {
-      uuid: first,
-      step,
-      outPath,
+      uuid: positionals.uuid,
+      step: flags.step ?? null,
+      outPath: flags.out,
       apiVersion: common.apiVersion.version,
     };
   },

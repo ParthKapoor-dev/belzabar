@@ -1,7 +1,7 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface StateArgs {
   uuid: string;
@@ -20,16 +20,18 @@ interface StateData {
   message?: string;
 }
 
+export const args = defineArgs({
+  command: "belz ad state",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
+  flags: { ...AD_COMMON_FLAGS },
+});
+
 const command: CommandModule<StateArgs, StateData> = {
   schema: "ad.state",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "fetch", "state");
-    emitFallbackWarning(common, "state");
-    const uuid = rest[0];
-    if (!uuid || uuid.startsWith("-")) {
-      throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
-    }
-    return { uuid, apiVersion: common.apiVersion.version };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    const common = resolveAdCommon(flags, "fetch", "state");
+    return { uuid: positionals.uuid, apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, apiVersion }) {
     // First fetch to see state immediately — needed for the UNRESOLVED case.

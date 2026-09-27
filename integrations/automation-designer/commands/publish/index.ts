@@ -1,7 +1,7 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
-import { parseAdCommonArgs, emitFallbackWarning, extractNoteFlag } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 
 interface PublishArgs {
@@ -21,23 +21,28 @@ interface PublishData {
   changelogId: string;
 }
 
+export const args = defineArgs({
+  command: "belz ad publish",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    ...AD_YES_FLAG,
+    note: {
+      type: "string",
+      required: true,
+      missingCode: "MISSING_CHANGE_NOTE",
+      missingMessage: 'A change note is required before publishing. Pass --note "<what changed>".',
+    },
+  },
+});
+
 const command: CommandModule<PublishArgs, PublishData> = {
   schema: "ad.publish",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "publish", "publish");
-    emitFallbackWarning(common, "publish");
-    const { note, rest: positional } = extractNoteFlag(rest);
-    const uuid = positional[0];
-    if (!uuid || uuid.startsWith("-")) {
-      throw new CliError("Missing <uuid> argument.", { code: "MISSING_UUID" });
-    }
-    if (!note) {
-      throw new CliError(
-        "A change note is required before publishing. Pass --note \"<what changed>\".",
-        { code: "MISSING_CHANGE_NOTE" },
-      );
-    }
-    return { uuid, yes: positional.includes("--yes"), note };
+  writes: true,
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "publish", "publish");
+    return { uuid: positionals.uuid, yes: flags.yes, note: flags.note.trim() };
   },
   async execute({ uuid, yes, note }, context) {
     const guard = await resolveDraftTarget(uuid, "v1");

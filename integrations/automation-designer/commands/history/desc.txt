@@ -1,1 +1,4 @@
-  history <action> <uuid>  Browse and restore previous versions of a method.
+belz ad history list <uuid>  :->  List all saved versions of a method
+belz ad history show <uuid> --version <N>  :->  Fetch and parse one saved version
+belz ad history diff <uuid> --from <N> --to <M>  :->  Compare two versions (steps, kinds, inputs)
+belz ad history restore <uuid> --version <N> [--yes]  :->  Revert the method to a previous version (write; confirms first)

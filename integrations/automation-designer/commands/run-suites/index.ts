@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { CliError, fail, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, fail, ok, type CommandModule } from "@belzabar/core";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { fetchRawMethod, testMethodMultipart } from "../../lib/api/v1";
 import { PayloadBuilder } from "../../lib/payload-builder";
 
@@ -25,9 +26,18 @@ interface TestExecutionResponse {
   };
 }
 
+export const args = defineArgs({
+  command: "belz ad run-suites",
+  flags: { ...AD_COMMON_FLAGS },
+});
+
 const command: CommandModule<undefined, RunSuitesData> = {
   schema: "ad.run-suites",
-  parseArgs: () => undefined,
+  parseArgs(argv) {
+    const { flags } = args.parse(argv);
+    resolveAdCommon(flags, "test", "run-suites");
+    return undefined;
+  },
   async execute() {
     const suitesDir = join(process.cwd(), "suites");
     if (!existsSync(suitesDir)) {

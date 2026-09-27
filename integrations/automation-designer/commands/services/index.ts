@@ -1,6 +1,6 @@
-import { ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface ServicesArgs {
   internal: boolean;
@@ -21,16 +21,21 @@ interface ServicesData {
   services: ServiceRow[];
 }
 
+export const args = defineArgs({
+  command: "belz ad services",
+  flags: {
+    ...AD_COMMON_FLAGS,
+    internal: { type: "boolean" },
+    search: { type: "string" },
+  },
+});
+
 const command: CommandModule<ServicesArgs, ServicesData> = {
   schema: "ad.services",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "list", "services");
-    emitFallbackWarning(common, "services");
-    const searchIdx = rest.indexOf("--search");
-    return {
-      internal: rest.includes("--internal"),
-      search: searchIdx !== -1 ? rest[searchIdx + 1] : undefined,
-    };
+  parseArgs(argv) {
+    const { flags } = args.parse(argv);
+    resolveAdCommon(flags, "list", "services");
+    return { internal: flags.internal, search: flags.search };
   },
   async execute({ internal, search }) {
     const raw = (await adApi.listServices({ limit: 2000, offset: 0 })) as unknown;

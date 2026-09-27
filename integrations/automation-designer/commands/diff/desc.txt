@@ -1,5 +1,6 @@
-  diff <uuid> [--from N --to M | --cross-env --from-env X --to-env Y] [--no-editor]
-    Open two versions of an AD method side-by-side in Zed (or any editor with
-    `--diff a b`). Default mode compares two history versions on the current
-    env; --cross-env compares the same UUID across two envs. --no-editor skips
-    the editor and just returns both temp file paths (for headless/scripted use).
+belz ad diff  :->  Fully interactive: pick a method, then two versions, and open them side-by-side in Zed
+belz ad diff <uuid> --from <N> --to <M>  :->  Diff two history versions of a method on the current env
+belz ad diff <uuid> --cross-env --from-env <X> --to-env <Y>  :->  Diff the same method across two envs
+belz ad diff <uuid> --from <N> --to <M> --no-editor  :->  Headless: write both sides to temp files and return their paths
+belz ad diff <uuid> --from <N> --to <M> --raw  :->  Keep all server metadata (disables the default --clean)
+belz ad diff <uuid> --from <N> --to <M> --editor <cmd>  :->  Use another editor binary (invoked with zed's two-file diff flag)

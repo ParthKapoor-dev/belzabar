@@ -1,4 +1,4 @@
-belz ad changelog <uuid> [--note "<text>"] [flags]
+Usage: belz ad changelog <uuid> [--note "<text>"] [flags]
 
 Record or list change notes against an Automation Designer method.
 
@@ -12,6 +12,7 @@ Modes:
 
 Flags:
   --note "<text>"  Record this change note. Omit to list only.
+  --v2             Accepted for consistency; always V1 (a notice is printed).
   --llm            Emit a JSON envelope.
 
 Note: `belz ad publish` records a change note automatically (its --note flag

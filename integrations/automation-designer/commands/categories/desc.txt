@@ -1,1 +1,3 @@
-  categories            List AD categories; filter with --user / --system.
+belz ad categories  :->  List all AD categories (user- and system-generated)
+belz ad categories --user  :->  Only USER_GENERATED categories
+belz ad categories --system  :->  Only SYSTEM_GENERATED categories (exclusive with --user)

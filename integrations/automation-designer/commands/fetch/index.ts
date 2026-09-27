@@ -1,8 +1,8 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { HydratedMethod } from "../../lib/types/common";
 
 interface FetchMethodArgs {
@@ -45,21 +45,18 @@ function resolveUuid(input: string): string {
   return input;
 }
 
+export const args = defineArgs({
+  command: "belz ad fetch",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
+  flags: { ...AD_COMMON_FLAGS, raw: { type: "boolean" } },
+});
+
 const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
   schema: "ad.fetch",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "fetch", "fetch");
-    emitFallbackWarning(common, "fetch");
-    const first = rest[0];
-    if (!first || first.startsWith("-")) {
-      throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
-    }
-    const uuid = resolveUuid(first);
-    return {
-      uuid,
-      raw: rest.includes("--raw"),
-      apiVersion: common.apiVersion.version,
-    };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    const common = resolveAdCommon(flags, "fetch", "fetch");
+    return { uuid: resolveUuid(positionals.uuid), raw: flags.raw, apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, raw, apiVersion }, context) {
     const method = await adApi.fetchMethod(uuid, apiVersion);

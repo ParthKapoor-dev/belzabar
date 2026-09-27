@@ -1,1 +1,2 @@
-  category create <name>  Create a new AD category (service).
+belz ad category create <name> [--yes]  :->  Create a new AD category (service), PUBLIC access
+belz ad category create <name> --description <d> --private  :->  Create a PRIVATE category with a description

@@ -1,8 +1,8 @@
-import { CliError, ok, Config, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
+import { CliError, ok, Config, defineArgs, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type {
   HydratedMethod,
   ParsedStep,
@@ -301,40 +301,47 @@ function mapOutputFields(outputs: MethodOutput[]): NonNullable<ShowMethodData["o
   }));
 }
 
+export const args = defineArgs({
+  command: "belz ad show",
+  positionals: [
+    { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." },
+  ],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    code: { type: "boolean" },
+    sql: { type: "boolean" },
+    outputs: { type: "boolean" },
+    variables: { type: "boolean" },
+    inputs: { type: "boolean" },
+    services: { type: "boolean" },
+    full: { type: "boolean" },
+    force: { type: "boolean" },
+    raw: { type: "boolean" },
+    // AD-14 / F6: `--service-detail N` is the documented spelling; `--step N` the original one.
+    step: { type: "number", integer: true, min: 1, alias: ["--service-detail"] },
+    open: { type: "boolean", alias: ["-o"] },
+  },
+});
+
 const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
   schema: "ad.show",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "fetch", "show");
-    emitFallbackWarning(common, "show");
-
-    const first = rest[0];
-    if (!first || first.startsWith("-")) {
-      throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
-    }
-    const uuid = resolveUuid(first);
-
+  parseArgs(argv) {
+    const { positionals, flags: f } = args.parse(argv);
+    const common = resolveAdCommon(f, "fetch", "show");
+    const uuid = resolveUuid(positionals.uuid);
     const flags: ShowMethodFlags = {
-      code: rest.includes("--code"),
-      sql: rest.includes("--sql"),
-      outputs: rest.includes("--outputs"),
-      variables: rest.includes("--variables"),
-      inputs: rest.includes("--inputs"),
-      services: rest.includes("--services"),
-      full: rest.includes("--full"),
-      force: rest.includes("--force"),
-      raw: rest.includes("--raw"),
-      step: null,
-      open: rest.includes("--open") || rest.includes("-o"),
+      code: f.code,
+      sql: f.sql,
+      outputs: f.outputs,
+      variables: f.variables,
+      inputs: f.inputs,
+      services: f.services,
+      full: f.full,
+      force: f.force,
+      raw: f.raw,
+      step: f.step ?? null,
+      open: f.open,
     };
-    const stepIdx = rest.indexOf("--step");
-    if (stepIdx !== -1 && rest[stepIdx + 1]) {
-      const n = parseInt(rest[stepIdx + 1]!, 10);
-      if (Number.isNaN(n)) {
-        throw new CliError("--step requires a valid numeric index.", { code: "INVALID_STEP_INDEX" });
-      }
-      flags.step = n;
-    }
-
     return { uuid, flags, apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, flags, apiVersion }, context) {

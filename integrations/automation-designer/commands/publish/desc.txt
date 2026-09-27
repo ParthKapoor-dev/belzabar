@@ -1,1 +1,2 @@
-  publish <uuid> --note "<text>"   Promote a draft to its published version (draft-guarded). --note is required and logged to the changelog.
+belz ad publish <uuid> --note "<text>"  :->  Promote a draft to its published version (draft-guarded; the note is recorded in the changelog)
+belz ad publish <uuid> --note "<text>" --yes  :->  Publish without the confirmation prompt (required with --llm)

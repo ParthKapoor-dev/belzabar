@@ -1,51 +1,43 @@
-// Shared argument parser for every AD command.
+// Flags shared by every AD command, as core `defineArgs` spec fragments.
 //
-// Strips belz's common AD flags out of argv and hands back the remainder for
-// the command's own parser to chew on. Today that means only --v2 (the API
-// version selector), but this is the file to add cross-command flags to.
+//   export const args = defineArgs({
+//     command: "belz ad show",
+//     positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID" }],
+//     flags: { ...AD_COMMON_FLAGS, full: { type: "boolean" } },
+//   });
+//   const { flags } = args.parse(argv);
+//   const common = resolveAdCommon(flags, "fetch", "show");   // → { apiVersion }
 //
-// Every AD command calls parseAdCommonArgs(argv, op, cmdName) at the top of
-// its parseArgs(). The returned `rest` is the argv with --v2 removed. The
-// returned `apiVersion` is a ResolvedVersion — if the user asked for --v2 on
-// an op that does not support V2 the resolver sets wasFallback=true and the
-// command (via emitFallbackWarning) prints a one-line notice before running
-// V1. Commands never read DEFAULT_VERSION directly.
+// Every AD command accepts `--v2` (AD-37). If the op has no V2 implementation the
+// resolver falls back to V1 and `resolveAdCommon` prints a one-line notice.
+// `--env`, `--llm` are handled by the runner.
 
-import { CliError } from "@belzabar/core";
+import type { FlagsSpec } from "@belzabar/core";
 import { resolveApiVersion, type AdOperation, type ResolvedVersion } from "../api-version";
+
+export const AD_COMMON_FLAGS = {
+  v2: { type: "boolean", description: "Use the V2 API (falls back to V1 with a notice where unsupported)" },
+} as const satisfies FlagsSpec;
+
+/** `--yes`: skip the confirmation prompt (required in --llm mode on writes). */
+export const AD_YES_FLAG = {
+  yes: { type: "boolean", alias: ["-y"] },
+} as const satisfies FlagsSpec;
+
+/** `--note "<text>"`: a change note recorded in the method's changelog. */
+export const AD_NOTE_FLAG = {
+  note: { type: "string" },
+} as const satisfies FlagsSpec;
 
 export interface AdCommonArgs {
   apiVersion: ResolvedVersion;
 }
 
-export interface ParsedAdArgs {
-  common: AdCommonArgs;
-  rest: string[];
-}
-
-/**
- * Strip AD common flags from argv. `--v2` is consumed here. `--env`, `--llm`,
- * `-v/--verbose` are handled upstream in packages/core/runner.ts so they are
- * NOT in argv by the time this runs.
- */
-export function parseAdCommonArgs(
-  argv: string[],
-  op: AdOperation,
-  _cmdName: string,
-): ParsedAdArgs {
-  const rest: string[] = [];
-  let wantsV2 = false;
-
-  for (const arg of argv) {
-    if (arg === "--v2") {
-      wantsV2 = true;
-      continue;
-    }
-    rest.push(arg);
-  }
-
-  const apiVersion = resolveApiVersion(op, wantsV2 ? "v2" : undefined);
-  return { common: { apiVersion }, rest };
+/** Resolve the API version from the parsed common flags; warns once on a V2→V1 fallback. */
+export function resolveAdCommon(flags: { v2: boolean }, op: AdOperation, cmdName: string): AdCommonArgs {
+  const common = { apiVersion: resolveApiVersion(op, flags.v2 ? "v2" : undefined) };
+  emitFallbackWarning(common, cmdName);
+  return common;
 }
 
 // Deduplication set for warn-once behaviour within a single CLI invocation.
@@ -61,46 +53,10 @@ export function emitFallbackWarning(common: AdCommonArgs, cmdName: string): void
   const key = `ad-v2-fallback:${cmdName}`;
   if (warnedKeys.has(key)) return;
   warnedKeys.add(key);
-  process.stderr.write(
-    `⚠️  V2 not supported for 'belz ad ${cmdName}' — using V1.\n`,
-  );
+  process.stderr.write(`⚠️  V2 not supported for 'belz ad ${cmdName}' — using V1.\n`);
 }
 
 // Exposed for tests. Production code should never call this.
 export function __resetWarnOnceForTests(): void {
   warnedKeys.clear();
-}
-
-/**
- * Extract a `--note <text>` (or `--note=<text>`) flag from a `rest` array.
- * Used by commands that record an AD change note (publish, changelog). The
- * returned `rest` has the flag and its value removed.
- */
-export function extractNoteFlag(rest: string[]): { note?: string; rest: string[] } {
-  const out: string[] = [];
-  let note: string | undefined;
-  for (let i = 0; i < rest.length; i++) {
-    const arg = rest[i];
-    if (arg === undefined) continue;
-    if (arg === "--note") {
-      const value = rest[i + 1];
-      if (value === undefined || value.startsWith("-")) {
-        throw new CliError("`--note` requires a change-note message.", {
-          code: "AD_NOTE_VALUE_MISSING",
-        });
-      }
-      note = value;
-      i++;
-      continue;
-    }
-    if (arg.startsWith("--note=")) {
-      note = arg.slice("--note=".length);
-      continue;
-    }
-    out.push(arg);
-  }
-  if (note !== undefined && note.trim().length === 0) {
-    throw new CliError("Change note cannot be empty.", { code: "AD_NOTE_EMPTY" });
-  }
-  return { note: note?.trim(), rest: out };
 }

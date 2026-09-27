@@ -1,4 +1,5 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
+import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { fetchSqlDatabases } from "../../lib/sql/api";
 import {
   executeSqlReadQuery,
@@ -149,78 +150,82 @@ async function confirmSqlWrite(
   logIntent("POST", "/rest/api/automation/chain/test", { sql: action, db: database.nickname });
 }
 
-function getOptionValue(args: string[], name: string): string | undefined {
-  const explicit = args.find((arg) => arg.startsWith(`${name}=`));
-  if (explicit) {
-    const value = explicit.split("=").slice(1).join("=").trim();
-    return value || undefined;
-  }
+const DB_FLAG = { db: { type: "string" } } as const;
+const RAW_FLAG = { raw: { type: "boolean" } } as const;
+const SQL_CODES = { UNKNOWN_SUBCOMMAND: "INVALID_SQL_SUBCOMMAND", MISSING_SUBCOMMAND: "INVALID_SQL_SUBCOMMAND" } as const;
 
-  const idx = args.indexOf(name);
-  if (idx === -1) return undefined;
-  const next = args[idx + 1];
-  if (!next || next.startsWith("-")) return undefined;
-  return next;
+function queryPositional(action: string, example: string) {
+  return [
+    {
+      name: "query",
+      required: true,
+      missingCode: "MISSING_SQL_QUERY",
+      missingMessage: `Missing SQL query argument. Usage: belz ad sql ${action} "${example}"`,
+    },
+  ] as const;
 }
 
-function parseDbArg(args: string[]): string | undefined {
-  const value = getOptionValue(args, "--db");
-  if (args.includes("--db") && !value) {
-    throw new CliError("--db requires a database nickname or id.", {
-      code: "SQL_DB_ARG_MISSING",
-    });
-  }
+export const args = defineSubcommands(
+  {
+    dbs: { flags: { ...AD_COMMON_FLAGS, ...RAW_FLAG } },
+    run: {
+      positionals: queryPositional("run", "select * from users limit 1"),
+      flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG },
+    },
+    update: {
+      positionals: queryPositional("update", "UPDATE table SET col = val WHERE ..."),
+      flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+    },
+    insert: {
+      positionals: queryPositional("insert", "INSERT INTO table (col) VALUES ('val')"),
+      flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+    },
+    modify: {
+      positionals: queryPositional("modify", "ALTER TABLE users ADD COLUMN age INT"),
+      flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+    },
+    tui: {
+      flags: {
+        ...AD_COMMON_FLAGS,
+        ...DB_FLAG,
+        mode: { type: "string" },
+        format: { type: "string", default: "table" },
+        timing: { type: "boolean" },
+        "page-size": { type: "string", default: "50" },
+        "no-history": { type: "boolean" },
+      },
+    },
+  },
+  {
+    command: "belz ad sql",
+    codes: SQL_CODES,
+    missingMessage: "Missing SQL subcommand. Use one of: run, dbs, tui, update, insert, modify.",
+  },
+);
 
-  if (args.some((arg) => arg.startsWith("--db=")) && !value) {
-    throw new CliError("--db requires a database nickname or id.", {
-      code: "SQL_DB_ARG_MISSING",
-    });
-  }
-
-  return value;
-}
-
-function parseRunQueryArgs(args: string[]): string[] {
-  const positional: string[] = [];
-
-  for (let i = 0; i < args.length; i++) {
-    const token = args[i] as string;
-    if (token === "--raw" || token === "--yes") continue;
-
-    if (token.startsWith("--db=")) {
-      continue;
-    }
-
-    if (token === "--db") {
-      i += 1;
-      continue;
-    }
-
-    positional.push(token);
-  }
-
-  return positional;
-}
-
-function parseTuiArgs(args: string[]): SqlTuiArgs {
-  const db = parseDbArg(args);
-
-  const formatValue = (getOptionValue(args, "--format") || "table").toLowerCase();
+function parseTuiOptions(flags: {
+  db?: string;
+  mode?: string;
+  format: string;
+  timing: boolean;
+  pageSize: string;
+  noHistory: boolean;
+}): SqlTuiArgs {
+  const formatValue = flags.format.toLowerCase();
   if (formatValue !== "table" && formatValue !== "json") {
     throw new CliError("--format must be one of: table, json", {
       code: "SQL_TUI_INVALID_FORMAT",
     });
   }
 
-  const pageSizeRaw = getOptionValue(args, "--page-size") || "50";
-  const pageSize = Number.parseInt(pageSizeRaw, 10);
-  if (!Number.isFinite(pageSize) || pageSize <= 0) {
+  const pageSize = Number(flags.pageSize);
+  if (!Number.isInteger(pageSize) || pageSize <= 0) {
     throw new CliError("--page-size must be a positive integer.", {
       code: "SQL_TUI_INVALID_PAGE_SIZE",
     });
   }
 
-  const modeRaw = getOptionValue(args, "--mode");
+  const modeRaw = flags.mode;
   if (modeRaw !== undefined && modeRaw !== "read" && modeRaw !== "insert" && modeRaw !== "update" && modeRaw !== "modify") {
     throw new CliError("--mode must be one of: read, insert, update, modify", {
       code: "SQL_TUI_INVALID_MODE",
@@ -228,128 +233,42 @@ function parseTuiArgs(args: string[]): SqlTuiArgs {
   }
 
   return {
-    db,
-    mode: modeRaw as "read" | "insert" | "update" | "modify" | undefined,
+    db: flags.db,
+    mode: modeRaw,
     format: formatValue,
-    timing: args.includes("--timing"),
-    history: !args.includes("--no-history"),
+    timing: flags.timing,
+    history: !flags.noHistory,
     pageSize,
   };
 }
 
 const command: CommandModule<SqlArgs, SqlData> = {
   schema: "ad.sql",
-  parseArgs(args) {
-    const action = args[0];
-    if (!action) {
-      throw new CliError("Missing SQL subcommand. Use one of: run, dbs, tui, update, insert, modify.", {
-        code: "INVALID_SQL_SUBCOMMAND",
-      });
+  writes: (a) => a.action === "update" || a.action === "insert" || a.action === "modify",
+  parseArgs(argv) {
+    const parsed = args.parse(argv);
+    resolveAdCommon(parsed.flags, "list", "sql");
+
+    switch (parsed.subcommand) {
+      case "dbs":
+        return { action: "dbs", raw: parsed.flags.raw };
+      case "run":
+        // F2: refuse anything but a single read statement before any network call.
+        assertReadOnlySql(parsed.positionals.query);
+        return { action: "run", query: parsed.positionals.query, db: parsed.flags.db, raw: parsed.flags.raw };
+      case "update":
+      case "insert":
+      case "modify":
+        return {
+          action: parsed.subcommand,
+          query: parsed.positionals.query,
+          db: parsed.flags.db,
+          raw: parsed.flags.raw,
+          yes: parsed.flags.yes,
+        };
+      case "tui":
+        return { action: "tui", raw: false, db: parsed.flags.db, tui: parseTuiOptions(parsed.flags) };
     }
-
-    if (action === "dbs") {
-      return {
-        action,
-        raw: args.includes("--raw"),
-      };
-    }
-
-    if (action === "run") {
-      const rest = args.slice(1);
-      const queryArgs = parseRunQueryArgs(rest);
-      const query = queryArgs[0];
-
-      if (!query) {
-        throw new CliError("Missing SQL query argument. Usage: belz ad sql run \"select * from users limit 1\"", {
-          code: "MISSING_SQL_QUERY",
-        });
-      }
-
-      // F2: refuse anything but a single read statement before any network call.
-      assertReadOnlySql(query);
-
-      return {
-        action,
-        query,
-        db: parseDbArg(rest),
-        raw: rest.includes("--raw"),
-        yes: rest.includes("--yes"),
-      };
-    }
-
-    if (action === "update") {
-      const rest = args.slice(1);
-      const queryArgs = parseRunQueryArgs(rest);
-      const query = queryArgs[0];
-
-      if (!query) {
-        throw new CliError("Missing SQL query argument. Usage: belz ad sql update \"UPDATE table SET col = val WHERE ...\"", {
-          code: "MISSING_SQL_QUERY",
-        });
-      }
-
-      return {
-        action,
-        query,
-        db: parseDbArg(rest),
-        raw: rest.includes("--raw"),
-        yes: rest.includes("--yes"),
-      };
-    }
-
-    if (action === "insert") {
-      const rest = args.slice(1);
-      const queryArgs = parseRunQueryArgs(rest);
-      const query = queryArgs[0];
-
-      if (!query) {
-        throw new CliError("Missing SQL query argument. Usage: belz ad sql insert \"INSERT INTO table (col) VALUES ('val')\"", {
-          code: "MISSING_SQL_QUERY",
-        });
-      }
-
-      return {
-        action,
-        query,
-        db: parseDbArg(rest),
-        raw: rest.includes("--raw"),
-        yes: rest.includes("--yes"),
-      };
-    }
-
-    if (action === "modify") {
-      const rest = args.slice(1);
-      const queryArgs = parseRunQueryArgs(rest);
-      const query = queryArgs[0];
-
-      if (!query) {
-        throw new CliError("Missing SQL query argument. Usage: belz ad sql modify \"ALTER TABLE users ADD COLUMN age INT\"", {
-          code: "MISSING_SQL_QUERY",
-        });
-      }
-
-      return {
-        action,
-        query,
-        db: parseDbArg(rest),
-        raw: rest.includes("--raw"),
-        yes: rest.includes("--yes"),
-      };
-    }
-
-    if (action === "tui") {
-      const rest = args.slice(1);
-      return {
-        action,
-        raw: false,
-        db: parseDbArg(rest),
-        tui: parseTuiArgs(rest),
-      };
-    }
-
-    throw new CliError(`Unknown SQL subcommand '${action}'. Use one of: run, dbs, tui, update, insert, modify.`, {
-      code: "INVALID_SQL_SUBCOMMAND",
-    });
   },
   async execute(args, context) {
     const envDefault = process.env.BELZ_SQL_DEFAULT_DB?.trim() || undefined;

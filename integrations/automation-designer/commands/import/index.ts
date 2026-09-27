@@ -1,7 +1,7 @@
 import { readFile } from "fs/promises";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 
 interface ImportArgs {
@@ -14,16 +14,19 @@ interface ImportData {
   response: unknown;
 }
 
+export const args = defineArgs({
+  command: "belz ad import",
+  positionals: [{ name: "file", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing <file> argument." }],
+  flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG },
+});
+
 const command: CommandModule<ImportArgs, ImportData> = {
   schema: "ad.import",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "import", "import");
-    emitFallbackWarning(common, "import");
-    const filePath = rest[0];
-    if (!filePath || filePath.startsWith("-")) {
-      throw new CliError("Missing <file> argument.", { code: "MISSING_FILE" });
-    }
-    return { filePath, yes: rest.includes("--yes") };
+  writes: true,
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "import", "import");
+    return { filePath: positionals.file, yes: flags.yes };
   },
   async execute({ filePath, yes }, context) {
     const text = await readFile(filePath, "utf-8");

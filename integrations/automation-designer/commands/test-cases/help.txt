@@ -1,8 +1,9 @@
-belz ad test-cases <uuid> [flags]
+Usage: belz ad test-cases <uuid> [flags]
 
 List the persistent test cases attached to a method's test suite.
 
 Flags:
+  --v2     Accepted for consistency; V1-only (notice printed).
   --llm    Emit a JSON envelope with {testSuiteId, testCases[], total}
 
 Example:

@@ -1,4 +1,4 @@
-belz ad outputs <uuid> [flags]
+Usage: belz ad outputs <uuid> [flags]
 
 Print a method's input/variable/output contract without any step internals.
 

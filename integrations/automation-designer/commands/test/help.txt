@@ -6,9 +6,11 @@ Arguments:
   <UUID>              The UUID of the draft method to test.
 
 Flags:
-  --inputs <FILE>     Path to a JSON file of input values. Prompts interactively if omitted.
-  --verbose           Show detailed execution trace for each step.
-  --force             Bypass cache and fetch a fresh method definition.
+  --inputs <FILE>     Path to a JSON file of input values. Prompts interactively if omitted
+                      (required with --llm).
+  --verbose, -v       Show detailed execution trace for each step. (A command
+                      flag here: it does not switch on runner debug logging.)
+  --v2                Accepted for consistency; test runs on V1 (notice printed).
   --raw               Include raw execution payload in output.
   --help, -h          Show this help message.
 

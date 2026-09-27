@@ -1,4 +1,4 @@
-belz ad save <file> --uuid <draftUuid> [--yes]
+Usage: belz ad save <file> --uuid <draftUuid> [--yes]
 
 Save an edited method definition to an existing draft. Goes through
 resolveDraftTarget — if you pass a PUBLISHED UUID, belz automatically switches
@@ -26,8 +26,10 @@ Flags:
   --uuid <id>      Target DRAFT UUID (or PUBLISHED; we switch to its draft)
   --category <n>   (future) Category name for --new
   --new            Create a new method in the given --category (not yet wired)
-  --yes            Skip the interactive confirmation prompt
+  --yes, -y        Skip the interactive confirmation prompt
+  --v2             Accepted for consistency; saves use V1 (with a notice)
   --llm            Emit a JSON envelope; --yes is required in this mode
+  --env <name>     Target environment. Required explicitly: save is a write.
 
 Safety:
   - Never saves to a PUBLISHED method. Writes always target the linked draft.

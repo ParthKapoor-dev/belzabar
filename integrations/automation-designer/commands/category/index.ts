@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { defineSubcommands, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 
 interface CategoryArgs {
@@ -17,28 +17,37 @@ interface CategoryData {
   response: unknown;
 }
 
+export const args = defineSubcommands(
+  {
+    create: {
+      positionals: [{ name: "name", required: true, missingCode: "MISSING_NAME", missingMessage: "Missing category <name>." }],
+      flags: {
+        ...AD_COMMON_FLAGS,
+        ...AD_YES_FLAG,
+        description: { type: "string" },
+        private: { type: "boolean" },
+      },
+    },
+  },
+  {
+    command: "belz ad category",
+    codes: { UNKNOWN_SUBCOMMAND: "INVALID_ACTION", MISSING_SUBCOMMAND: "INVALID_ACTION" },
+    missingMessage: "Usage: belz ad category create <name> [--description <d>] [--private] [--yes]",
+  },
+);
+
 const command: CommandModule<CategoryArgs, CategoryData> = {
   schema: "ad.category",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "category", "category");
-    emitFallbackWarning(common, "category");
-    const action = rest[0];
-    if (action !== "create") {
-      throw new CliError("Usage: belz ad category create <name> [--description <d>] [--private] [--yes]", {
-        code: "INVALID_ACTION",
-      });
-    }
-    const name = rest[1];
-    if (!name || name.startsWith("-")) {
-      throw new CliError("Missing category <name>.", { code: "MISSING_NAME" });
-    }
-    const descIdx = rest.indexOf("--description");
+  writes: true,
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "category", "category");
     return {
       action: "create",
-      name,
-      description: descIdx !== -1 ? rest[descIdx + 1] : undefined,
-      isPrivate: rest.includes("--private"),
-      yes: rest.includes("--yes"),
+      name: positionals.name,
+      description: flags.description,
+      isPrivate: flags.private,
+      yes: flags.yes,
     };
   },
   async execute({ name, description, isPrivate, yes }, context) {

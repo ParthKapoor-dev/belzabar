@@ -1,1 +1,2 @@
-  state <uuid>          Draft/published linkage, version, and staleness check.
+belz ad state <uuid>  :->  Draft/published linkage, versions, and staleness check (read-only)
+belz ad state <uuid> --v2  :->  Parse the method via the V2 API

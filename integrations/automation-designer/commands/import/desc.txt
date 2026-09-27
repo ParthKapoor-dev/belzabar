@@ -1,1 +1,2 @@
-  import <file>         Import method(s) from an exported JSON file.
+belz ad import <file>  :->  Import method(s) from an exported JSON file (write; confirms first)
+belz ad import <file> --yes  :->  Import without the confirmation prompt (required with --llm)

@@ -1,8 +1,8 @@
 import { join } from "path";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface SaveSuiteArgs {
   uuid: string;
@@ -18,27 +18,22 @@ interface SaveSuiteData {
   inputCount: number;
 }
 
+export const args = defineArgs({
+  command: "belz ad save-suite",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    name: { type: "string", required: true, missingCode: "MISSING_SUITE_NAME", missingMessage: "--name argument is required." },
+    inputs: { type: "string" },
+  },
+});
+
 const command: CommandModule<SaveSuiteArgs, SaveSuiteData> = {
   schema: "ad.save-suite",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "test", "save-suite");
-    emitFallbackWarning(common, "save-suite");
-
-    const uuid = rest[0];
-    if (!uuid || uuid.startsWith("-")) {
-      throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
-    }
-
-    const nameIdx = rest.indexOf("--name");
-    const name = nameIdx !== -1 ? rest[nameIdx + 1] : undefined;
-    if (!name) {
-      throw new CliError("--name argument is required.", { code: "MISSING_SUITE_NAME" });
-    }
-
-    const inputsFileIdx = rest.indexOf("--inputs");
-    const inputsFile = inputsFileIdx !== -1 ? rest[inputsFileIdx + 1] : undefined;
-
-    return { uuid, suiteName: name, inputsFile };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "test", "save-suite");
+    return { uuid: positionals.uuid, suiteName: flags.name, inputsFile: flags.inputs };
   },
   async execute({ uuid, suiteName, inputsFile }) {
     const method = await adApi.fetchMethod(uuid, "v1");

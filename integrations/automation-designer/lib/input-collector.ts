@@ -34,7 +34,7 @@ export class InputCollector {
 
     if (getOutputMode() === "llm") {
       throw new CliError(
-        "Interactive input collection is not supported with --llm. Provide --input-file instead.",
+        "Interactive input collection is not supported with --llm. Provide --inputs <file> instead.",
         { code: "INTERACTIVE_NOT_SUPPORTED" },
       );
     }

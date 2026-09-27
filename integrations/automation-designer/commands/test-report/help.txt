@@ -1,7 +1,8 @@
-belz ad test-report [flags]
+Usage: belz ad test-report [flags]
 
 Print the latest test-suite execution report from
 /rest/api/automation/chain/testsuite/report.
 
 Flags:
+  --v2     Accepted for consistency; V1-only (notice printed).
   --llm    Emit a JSON envelope

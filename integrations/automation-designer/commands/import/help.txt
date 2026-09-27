@@ -1,4 +1,4 @@
-belz ad import <file> [flags]
+Usage: belz ad import <file> [flags]
 
 Import one or more method definitions via
 /rest/api/automation/chain/import. The file contents are posted verbatim;
@@ -11,5 +11,6 @@ Prerequisites (from the AD API docs):
   4. Helper method configurations must exist.
 
 Flags:
-  --yes    Skip the interactive confirmation prompt
+  --yes, -y  Skip the interactive confirmation prompt
+  --v2     Accepted for consistency; always V1 (a notice is printed)
   --llm    Emit a JSON envelope; --yes is required in this mode

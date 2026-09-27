@@ -1,7 +1,7 @@
 import { readFile } from "fs/promises";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 
 type Action =
@@ -27,36 +27,56 @@ interface TestCaseData {
   response: unknown;
 }
 
+const UUID = { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid>." } as const;
+const TC_ID = { name: "test-case-id", required: true, missingCode: "MISSING_TC_ID", missingMessage: "Missing <testCaseId>." } as const;
+const FILE = { file: { type: "string", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing --file argument." } } as const;
+
+export const args = defineSubcommands(
+  {
+    list: { positionals: [UUID], flags: { ...AD_COMMON_FLAGS } },
+    create: { positionals: [UUID], flags: { ...AD_COMMON_FLAGS, ...FILE, ...AD_YES_FLAG } },
+    update: { positionals: [UUID, TC_ID], flags: { ...AD_COMMON_FLAGS, ...FILE, ...AD_YES_FLAG } },
+    delete: { positionals: [TC_ID], flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG } },
+    bulk: { positionals: [UUID], flags: { ...AD_COMMON_FLAGS, ...FILE, ...AD_YES_FLAG } },
+    "run-suite": { positionals: [UUID], flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG } },
+    "delete-suite": {
+      positionals: [{ name: "test-suite-id", required: true, missingCode: "MISSING_SUITE_ID", missingMessage: "Missing <testSuiteId>." }],
+      flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG },
+    },
+  },
+  {
+    command: "belz ad test-case",
+    codes: { MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "INVALID_ACTION" },
+    missingMessage: "Usage: belz ad test-case <list|create|update|delete|bulk|run-suite|delete-suite> ...",
+  },
+);
+
 const command: CommandModule<TestCaseArgs, TestCaseData> = {
   schema: "ad.test-case",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "testCase", "test-case");
-    emitFallbackWarning(common, "test-case");
-    const action = rest[0] as Action;
-    if (!action) {
-      throw new CliError("Usage: belz ad test-case <list|create|update|delete|bulk|run-suite|delete-suite> ...", {
-        code: "MISSING_ACTION",
-      });
-    }
-
-    const fileIdx = rest.indexOf("--file");
-    const filePath = fileIdx !== -1 ? rest[fileIdx + 1] : undefined;
-    const yes = rest.includes("--yes");
-
-    switch (action) {
+  writes: (a) => a.action !== "list",
+  parseArgs(argv) {
+    const p = args.parse(argv);
+    resolveAdCommon(p.flags, "testCase", "test-case");
+    switch (p.subcommand) {
       case "list":
+        return { action: "list", chainUuid: p.positionals.uuid, yes: false };
       case "create":
       case "bulk":
+        return { action: p.subcommand, chainUuid: p.positionals.uuid, filePath: p.flags.file, yes: p.flags.yes };
       case "run-suite":
-        return { action, chainUuid: rest[1], filePath, yes };
+        return { action: "run-suite", chainUuid: p.positionals.uuid, yes: p.flags.yes };
       case "update":
-        return { action, chainUuid: rest[1], testCaseId: rest[2], filePath, yes };
+        return {
+          action: "update",
+          chainUuid: p.positionals.uuid,
+          testCaseId: p.positionals.testCaseId,
+          filePath: p.flags.file,
+          yes: p.flags.yes,
+        };
       case "delete":
-        return { action, testCaseId: rest[1], yes };
+        return { action: "delete", testCaseId: p.positionals.testCaseId, yes: p.flags.yes };
       case "delete-suite":
-        return { action, testSuiteId: rest[1], yes };
-      default:
-        throw new CliError(`Unknown action: ${action}`, { code: "INVALID_ACTION" });
+        return { action: "delete-suite", testSuiteId: p.positionals.testSuiteId, yes: p.flags.yes };
     }
   },
   async execute(args, context) {

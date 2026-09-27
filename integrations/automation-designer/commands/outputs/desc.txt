@@ -1,1 +1,2 @@
-  outputs <uuid>        Print inputs / variables / outputs contract only.
+belz ad outputs <uuid>  :->  Print a method's inputs / variables / outputs contract only
+belz ad outputs <uuid> --v2  :->  Same, parsed through the V2 API

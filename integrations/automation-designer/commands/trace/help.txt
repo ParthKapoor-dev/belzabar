@@ -19,6 +19,7 @@ Arguments:
 
 Flags:
   --spine <env>         Environment whose history is the spine. Default: nsm-dev.
+  --v2                  Accepted for consistency; ignored by trace (notice if unsupported).
   --help, -h            Show this help message.
 
 Global Flags:

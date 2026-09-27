@@ -1,9 +1,9 @@
 import { readFile } from "fs/promises";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { buildGuardedV1SavePayload } from "../../lib/serialize/guard";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 
 interface SaveArgs {
@@ -24,25 +24,31 @@ interface SaveData {
   applied: string[];
 }
 
+export const args = defineArgs({
+  command: "belz ad save",
+  positionals: [{ name: "file", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing <file> argument." }],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    ...AD_YES_FLAG,
+    uuid: { type: "string" },
+    category: { type: "string" },
+    new: { type: "boolean" },
+  },
+  exclusive: [["uuid", "new"]],
+});
+
 const command: CommandModule<SaveArgs, SaveData> = {
   schema: "ad.save",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "save", "save");
-    emitFallbackWarning(common, "save");
-
-    const filePath = rest[0];
-    if (!filePath || filePath.startsWith("-")) {
-      throw new CliError("Missing <file> argument.", { code: "MISSING_FILE" });
-    }
-
-    const uuidIdx = rest.indexOf("--uuid");
-    const catIdx = rest.indexOf("--category");
+  writes: true,
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "save", "save");
     return {
-      filePath,
-      uuid: uuidIdx !== -1 ? rest[uuidIdx + 1] : undefined,
-      category: catIdx !== -1 ? rest[catIdx + 1] : undefined,
-      isNew: rest.includes("--new"),
-      yes: rest.includes("--yes"),
+      filePath: positionals.file,
+      uuid: flags.uuid,
+      category: flags.category,
+      isNew: flags.new,
+      yes: flags.yes,
     };
   },
   async execute({ filePath, uuid, category, isNew, yes }, context) {

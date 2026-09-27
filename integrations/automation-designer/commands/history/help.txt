@@ -1,4 +1,4 @@
-belz ad history <action> <uuid> [flags]
+Usage: belz ad history <action> <uuid> [flags]
 
 Browse and restore previous versions of an AD method. Calls the published
 Expertly.Automation.Method.History service methods via the execute endpoint.
@@ -15,7 +15,8 @@ Flags:
   --version <N>    Version number (for show/restore)
   --from <N>       First version (for diff)
   --to <M>         Second version (for diff)
-  --yes            Skip interactive confirmation (required for --llm mode)
+  --yes, -y        Skip interactive confirmation (restore; required for --llm mode)
+  --v2             Accepted for consistency; history is V1-only (a notice is printed)
   --llm            Emit a JSON envelope
 
 Notes:

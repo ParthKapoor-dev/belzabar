@@ -1,17 +1,16 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
 import { testMethodMultipart } from "../../lib/api/v1";
 import { ErrorParser, detectJavaException, type ParsedError } from "../../lib/error-parser";
 import { ServiceHydrator } from "../../lib/hydrator";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
 
 interface TestMethodArgs {
   uuid: string;
   inputsFile?: string;
   verbose: boolean;
-  force: boolean;
   raw: boolean;
 }
 
@@ -72,23 +71,29 @@ function parseOutput(testResult: unknown): unknown {
 
 type InnerService = Record<string, unknown>;
 
+export const args = defineArgs({
+  command: "belz ad test",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    inputs: { type: "string" },
+    // A command flag, not the runner's debug switch (CORE-7): declared here so
+    // the runner hands `--verbose`/`-v` to this command.
+    verbose: { type: "boolean", alias: ["-v"] },
+    raw: { type: "boolean" },
+  },
+});
+
 const command: CommandModule<TestMethodArgs, TestMethodData> = {
   schema: "ad.test",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "test", "test");
-    emitFallbackWarning(common, "test");
-
-    const uuid = rest[0];
-    if (!uuid || uuid.startsWith("-")) {
-      throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
-    }
-    const inputsIdx = rest.indexOf("--inputs");
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "test", "test");
     return {
-      uuid,
-      inputsFile: inputsIdx !== -1 ? rest[inputsIdx + 1] : undefined,
-      verbose: rest.includes("--verbose"),
-      force: rest.includes("--force"),
-      raw: rest.includes("--raw"),
+      uuid: positionals.uuid,
+      inputsFile: flags.inputs,
+      verbose: flags.verbose,
+      raw: flags.raw,
     };
   },
   async execute({ uuid, inputsFile, verbose, raw }) {

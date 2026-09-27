@@ -1,7 +1,7 @@
 Usage: belz ad diff [<uuid>] [flags]
 
 Open two versions of an AD method side-by-side in an editor for visual diffing.
-Defaults to Zed (`zed --diff a b`). Two modes:
+Defaults to Zed (run in its two-file diff mode). Two modes:
 
   History mode  (default)
     Compares two versions of the same method on the current env. Uses
@@ -33,11 +33,13 @@ Shared flags:
                           createdOn, modifiedOn, raw) before diffing. (default: on)
   --raw                   Keep all fields. Overrides --clean.
   --editor <cmd>          Editor binary. Default: zed. The command is invoked as
-                          `<editor> --diff <left> <right>`.
+                          `<editor> <diff-flag> <left> <right>` (zed's diff flag).
   --no-editor             Write both sides to temp files but do not launch an
                           editor. Use this in headless/scripted contexts — the
                           file paths are returned as data.left.path and
                           data.right.path, ready to diff programmatically.
+  --v2                    Accepted for consistency; diff is V1-only (a notice
+                          is printed).
   --help, -h              Show this help message.
 
 Global Flags:
@@ -75,5 +77,5 @@ Examples:
     # from the envelope and diff the two JSON files yourself
 
   belz ad diff 4e55820… --from 4 --to 5 --editor code
-    # use VS Code instead (note: VS Code uses `-d a b`, not `--diff` — this
+    # use VS Code instead (note: VS Code uses `-d a b`, not zed's diff flag — this
     # is a future enhancement; for now stick with zed)

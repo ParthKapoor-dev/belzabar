@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi, type ChangelogEntry } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning, extractNoteFlag } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, AD_NOTE_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent } from "../../lib/args/confirm";
 
 interface ChangelogArgs {
@@ -28,17 +28,19 @@ async function resolveChainId(uuid: string): Promise<number> {
   return method.numericId;
 }
 
+export const args = defineArgs({
+  command: "belz ad changelog",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
+  flags: { ...AD_COMMON_FLAGS, ...AD_NOTE_FLAG },
+});
+
 const command: CommandModule<ChangelogArgs, ChangelogData> = {
   schema: "ad.changelog",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "fetch", "changelog");
-    emitFallbackWarning(common, "changelog");
-    const { note, rest: positional } = extractNoteFlag(rest);
-    const uuid = positional[0];
-    if (!uuid || uuid.startsWith("-")) {
-      throw new CliError("Missing <uuid> argument.", { code: "MISSING_UUID" });
-    }
-    return { uuid, note };
+  writes: (a) => a.note !== undefined,
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "list", "changelog") // changelog is V1-only: --v2 prints the fallback notice;
+    return { uuid: positionals.uuid, note: flags.note?.trim() };
   },
   async execute({ uuid, note }, _context) {
     const chainId = await resolveChainId(uuid);

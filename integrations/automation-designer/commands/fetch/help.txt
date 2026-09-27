@@ -8,6 +8,7 @@ Arguments:
 
 Flags:
   --raw               Include raw method payload in output.
+  --v2                Fetch through the V2 API.
   --help, -h          Show this help message.
 
 Global Flags:

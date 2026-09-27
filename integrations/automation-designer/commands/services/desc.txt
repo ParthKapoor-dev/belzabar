@@ -1,1 +1,3 @@
-  services              List platform services (filter with --internal, --search).
+belz ad services  :->  List platform services (internal and external)
+belz ad services --internal  :->  Only services with internalService=true
+belz ad services --search <q>  :->  Case-insensitive substring match on name / label / alias

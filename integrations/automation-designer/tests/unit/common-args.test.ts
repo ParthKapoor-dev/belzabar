@@ -1,44 +1,45 @@
 import { describe, expect, test, beforeEach } from "bun:test";
+import { defineArgs } from "@belzabar/core";
 import {
+  AD_COMMON_FLAGS,
   __resetWarnOnceForTests,
   emitFallbackWarning,
-  parseAdCommonArgs,
+  resolveAdCommon,
 } from "../../lib/args/common";
+import { resolveApiVersion } from "../../lib/api-version";
 
-describe("parseAdCommonArgs", () => {
+describe("AD common flags", () => {
   beforeEach(() => {
     __resetWarnOnceForTests();
   });
 
+  const def = defineArgs({ positionals: [{ name: "uuid" }], flags: { ...AD_COMMON_FLAGS, code: { type: "boolean" } } });
+
   test("default — no --v2, no fallback", () => {
-    const parsed = parseAdCommonArgs(["abc-uuid", "--code"], "fetch", "show");
-    expect(parsed.rest).toEqual(["abc-uuid", "--code"]);
-    expect(parsed.common.apiVersion.version).toBe("v1");
-    expect(parsed.common.apiVersion.wasFallback).toBe(false);
+    const { flags } = def.parse(["abc-uuid", "--code"]);
+    const common = resolveAdCommon(flags, "fetch", "show");
+    expect(common.apiVersion.version).toBe("v1");
+    expect(common.apiVersion.wasFallback).toBe(false);
   });
 
-  test("strips --v2 from rest", () => {
-    const parsed = parseAdCommonArgs(["abc", "--v2", "--code"], "fetch", "show");
-    expect(parsed.rest).toEqual(["abc", "--code"]);
-    expect(parsed.common.apiVersion.version).toBe("v2");
-    expect(parsed.common.apiVersion.wasFallback).toBe(false);
-    expect(parsed.common.apiVersion.requested).toBe("v2");
+  test("--v2 selects v2 where supported", () => {
+    const { flags, positionals } = def.parse(["abc", "--v2", "--code"]);
+    expect(positionals.uuid).toBe("abc");
+    const common = resolveAdCommon(flags, "fetch", "show");
+    expect(common.apiVersion.version).toBe("v2");
+    expect(common.apiVersion.requested).toBe("v2");
   });
 
   test("--v2 on unsupported op falls back to v1 with wasFallback=true", () => {
-    const parsed = parseAdCommonArgs(["name", "--v2"], "category", "category");
-    expect(parsed.rest).toEqual(["name"]);
-    expect(parsed.common.apiVersion.version).toBe("v1");
-    expect(parsed.common.apiVersion.wasFallback).toBe(true);
-  });
-
-  test("preserves argv order and unrelated flags", () => {
-    const parsed = parseAdCommonArgs(
-      ["--inputs", "file.json", "--v2", "uuid", "--raw"],
-      "fetch",
-      "show",
-    );
-    expect(parsed.rest).toEqual(["--inputs", "file.json", "uuid", "--raw"]);
+    const original = process.stderr.write;
+    process.stderr.write = (() => true) as typeof process.stderr.write;
+    try {
+      const common = resolveAdCommon({ v2: true }, "category", "category");
+      expect(common.apiVersion.version).toBe("v1");
+      expect(common.apiVersion.wasFallback).toBe(true);
+    } finally {
+      process.stderr.write = original;
+    }
   });
 
   test("emitFallbackWarning writes to stderr exactly once per cmd", () => {
@@ -50,10 +51,10 @@ describe("parseAdCommonArgs", () => {
     }) as typeof process.stderr.write;
 
     try {
-      const parsed = parseAdCommonArgs(["--v2"], "category", "category");
-      emitFallbackWarning(parsed.common, "category");
-      emitFallbackWarning(parsed.common, "category");
-      emitFallbackWarning(parsed.common, "category");
+      const common = { apiVersion: resolveApiVersion("category", "v2") };
+      emitFallbackWarning(common, "category");
+      emitFallbackWarning(common, "category");
+      emitFallbackWarning(common, "category");
     } finally {
       process.stderr.write = original;
     }
@@ -72,8 +73,7 @@ describe("parseAdCommonArgs", () => {
     }) as typeof process.stderr.write;
 
     try {
-      const parsed = parseAdCommonArgs([], "fetch", "show");
-      emitFallbackWarning(parsed.common, "show");
+      emitFallbackWarning({ apiVersion: resolveApiVersion("fetch", undefined) }, "show");
     } finally {
       process.stderr.write = original;
     }

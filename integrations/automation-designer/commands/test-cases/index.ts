@@ -1,6 +1,6 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface TestCasesArgs {
   uuid: string;
@@ -23,16 +23,18 @@ interface TestCasesData {
   testCases: TestCaseRow[];
 }
 
+export const args = defineArgs({
+  command: "belz ad test-cases",
+  positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
+  flags: { ...AD_COMMON_FLAGS },
+});
+
 const command: CommandModule<TestCasesArgs, TestCasesData> = {
   schema: "ad.test-cases",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "testCase", "test-cases");
-    emitFallbackWarning(common, "test-cases");
-    const uuid = rest[0];
-    if (!uuid || uuid.startsWith("-")) {
-      throw new CliError("Missing UUID argument.", { code: "MISSING_UUID" });
-    }
-    return { uuid };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "testCase", "test-cases");
+    return { uuid: positionals.uuid };
   },
   async execute({ uuid }) {
     const body = (await adApi.listTestCases(uuid)) as any;

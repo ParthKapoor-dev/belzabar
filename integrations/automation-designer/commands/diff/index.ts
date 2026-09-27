@@ -1,4 +1,4 @@
-import { CliError, ok, type CommandModule, type CommandResult } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule, type CommandResult } from "@belzabar/core";
 import { spawn as nodeSpawn } from "node:child_process";
 import { writeFile, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -7,7 +7,7 @@ import {
   adApi,
   type MethodVersionSummary,
 } from "../../lib/api/index";
-import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { parseVersionBody } from "../../lib/fingerprint";
 import {
   loadOrBuildMethodFinderIndex,
@@ -54,88 +54,40 @@ const NOISE_KEYS = new Set([
   "raw",
 ]);
 
+export const args = defineArgs({
+  command: "belz ad diff",
+  positionals: [{ name: "uuid" }],
+  flags: {
+    ...AD_COMMON_FLAGS,
+    "cross-env": { type: "boolean" },
+    from: { type: "number", integer: true, min: 1 },
+    to: { type: "number", integer: true, min: 1 },
+    "from-env": { type: "string" },
+    "to-env": { type: "string" },
+    clean: { type: "boolean" },
+    raw: { type: "boolean" },
+    "no-editor": { type: "boolean" },
+    editor: { type: "string", default: "zed" },
+  },
+});
+
 const command: CommandModule<DiffArgs, DiffData> = {
   schema: "ad.diff",
-  parseArgs(args) {
-    const { common, rest } = parseAdCommonArgs(args, "fetch", "diff");
-    emitFallbackWarning(common, "diff");
-
-    let mode: Mode = "history";
-    let uuid: string | undefined;
-    let from: number | undefined;
-    let to: number | undefined;
-    let fromEnv: string | undefined;
-    let toEnv: string | undefined;
-    let clean = true;
-    let editor = "zed";
-    let noEditor = false;
-
-    for (let i = 0; i < rest.length; i += 1) {
-      const t = rest[i] ?? "";
-
-      if (t === "--cross-env") {
-        mode = "cross-env";
-        continue;
-      }
-      if (t === "--from") {
-        from = parseIntFlag(rest[i + 1], "--from");
-        i += 1;
-        continue;
-      }
-      if (t === "--to") {
-        to = parseIntFlag(rest[i + 1], "--to");
-        i += 1;
-        continue;
-      }
-      if (t === "--from-env") {
-        fromEnv = rest[i + 1];
-        if (!fromEnv) {
-          throw new CliError("--from-env requires a value.", { code: "MISSING_FROM_ENV" });
-        }
-        i += 1;
-        continue;
-      }
-      if (t === "--to-env") {
-        toEnv = rest[i + 1];
-        if (!toEnv) {
-          throw new CliError("--to-env requires a value.", { code: "MISSING_TO_ENV" });
-        }
-        i += 1;
-        continue;
-      }
-      if (t === "--clean") {
-        clean = true;
-        continue;
-      }
-      if (t === "--raw") {
-        clean = false;
-        continue;
-      }
-      if (t === "--no-editor") {
-        noEditor = true;
-        continue;
-      }
-      if (t === "--editor") {
-        const next = rest[i + 1];
-        if (!next) {
-          throw new CliError("--editor requires a value.", { code: "MISSING_EDITOR" });
-        }
-        editor = next;
-        i += 1;
-        continue;
-      }
-      if (t.startsWith("-")) {
-        throw new CliError(`Unknown flag: ${t}`, { code: "UNKNOWN_FLAG" });
-      }
-      if (uuid !== undefined) {
-        throw new CliError(`Unexpected positional argument: ${t}`, { code: "UNEXPECTED_ARG" });
-      }
-      uuid = t;
-    }
-
-    if (fromEnv || toEnv) mode = "cross-env";
-
-    return { mode, uuid, from, to, fromEnv, toEnv, clean, editor, noEditor };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    resolveAdCommon(flags, "list", "diff"); // diff is V1-only: --v2 prints the fallback notice
+    const mode: Mode = flags.crossEnv || flags.fromEnv || flags.toEnv ? "cross-env" : "history";
+    return {
+      mode,
+      uuid: positionals.uuid,
+      from: flags.from,
+      to: flags.to,
+      fromEnv: flags.fromEnv,
+      toEnv: flags.toEnv,
+      clean: !flags.raw, // --raw overrides --clean
+      editor: flags.editor,
+      noEditor: flags.noEditor,
+    };
   },
 
   async execute(args, context) {
@@ -527,17 +479,6 @@ function stripNoise(value: unknown): unknown {
 
 function shortUuid(uuid: string): string {
   return uuid.slice(0, 8);
-}
-
-function parseIntFlag(value: string | undefined, flag: string): number {
-  if (!value) {
-    throw new CliError(`${flag} requires a numeric value.`, { code: "MISSING_VALUE" });
-  }
-  const n = parseInt(value, 10);
-  if (!Number.isFinite(n) || Number.isNaN(n) || n <= 0) {
-    throw new CliError(`${flag} must be a positive integer.`, { code: "INVALID_VALUE" });
-  }
-  return n;
 }
 
 export default command;

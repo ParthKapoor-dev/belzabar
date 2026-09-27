@@ -24,17 +24,17 @@ Flags (run):
 Flags (update):
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
-  --yes               Skip the confirmation prompt (required with --llm).
+  --yes, -y           Skip the confirmation prompt (required with --llm).
 
 Flags (insert):
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
-  --yes               Skip the confirmation prompt (required with --llm).
+  --yes, -y           Skip the confirmation prompt (required with --llm).
 
 Flags (modify):
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
-  --yes               Skip the confirmation prompt (required with --llm).
+  --yes, -y           Skip the confirmation prompt (required with --llm).
 
 Flags (tui):
   --db <NAME|ID>      Pre-select database (skips interactive DB prompt).
@@ -44,6 +44,9 @@ Flags (tui):
   --page-size <N>     Rows per page for pagination. (default: 50)
   --no-history        Disable persisted query history for this session.
 
+Flags (all subcommands):
+  --v2                Accepted for consistency; SQL runs through V1 (notice printed).
+
 TUI meta commands:
   \q  \h  \status  \db  \use <db>  \mode [read|insert|update|modify]  \history  \clear  \timing  \format [table|json]  \last  \r
 
@@ -52,6 +55,7 @@ TUI meta commands:
 Global Flags:
   --env <name>        Set active environment. (default: nsm-dev)
                       use `belz envs` to list all available envs.
+                      update/insert/modify are writes: --env must be explicit.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:

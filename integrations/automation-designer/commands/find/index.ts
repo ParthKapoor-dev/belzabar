@@ -1,4 +1,5 @@
-import { CliError, ok, openUrlInBrowser, type CommandModule } from "@belzabar/core";
+import { CliError, defineSubcommands, ok, openUrlInBrowser, type CommandModule, type FlagsSpec } from "@belzabar/core";
+import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { spawn } from "node:child_process";
 import {
   METHOD_FINDER_CACHE_TTL_MS,
@@ -77,109 +78,33 @@ interface FindPickData {
 
 type FindData = FindBrowseData | FindSearchData | FindPickData;
 
-function parseLimit(value: string | undefined): number {
-  if (!value) {
-    throw new CliError("--limit requires a numeric value.", {
-      code: "MISSING_LIMIT",
-    });
-  }
+const FIND_FLAGS = {
+  ...AD_COMMON_FLAGS,
+  refresh: { type: "boolean" },
+  raw: { type: "boolean" },
+  open: { type: "boolean" },
+  limit: { type: "number", integer: true, min: 1, max: 200, default: 20 },
+} as const satisfies FlagsSpec;
 
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) {
-    throw new CliError("--limit must be a positive integer.", {
-      code: "INVALID_LIMIT",
-    });
-  }
-
-  if (parsed > 200) {
-    throw new CliError("--limit cannot be greater than 200.", {
-      code: "LIMIT_TOO_HIGH",
-    });
-  }
-
-  return parsed;
-}
+export const args = defineSubcommands(
+  {
+    list: { flags: FIND_FLAGS, codes: { UNEXPECTED_ARGUMENT: "LIST_DOES_NOT_ACCEPT_QUERY" } },
+    pick: { positionals: [{ name: "query", variadic: true }], flags: FIND_FLAGS },
+    search: { positionals: [{ name: "query", variadic: true }], flags: FIND_FLAGS },
+  },
+  { command: "belz ad find", default: "search" },
+);
 
 const command: CommandModule<FindArgs, FindData> = {
   schema: "ad.find",
-  parseArgs(args) {
-    let refresh = false;
-    let raw = false;
-    let open = false;
-    let limit = 20;
-    const positional: string[] = [];
-
-    for (let i = 0; i < args.length; i += 1) {
-      const token = args[i] ?? "";
-
-      if (token === "--refresh") {
-        refresh = true;
-        continue;
-      }
-
-      if (token === "--raw") {
-        raw = true;
-        continue;
-      }
-
-      if (token === "--open") {
-        open = true;
-        continue;
-      }
-
-      if (token === "--limit") {
-        limit = parseLimit(args[i + 1]);
-        i += 1;
-        continue;
-      }
-
-      if (token.startsWith("-")) {
-        throw new CliError(`Unknown flag: ${token}`, {
-          code: "UNKNOWN_FLAG",
-        });
-      }
-
-      positional.push(token);
-    }
-
-    if (positional[0] === "list") {
-      if (positional.length > 1) {
-        throw new CliError("`belz ad find list` does not take a query.", {
-          code: "LIST_DOES_NOT_ACCEPT_QUERY",
-        });
-      }
-      return {
-        mode: "browse",
-        query: undefined,
-        refresh,
-        limit,
-        open,
-        raw,
-      };
-    }
-
-    if (positional[0] === "pick") {
-      const query = positional.slice(1).join(" ").trim();
-      return {
-        mode: "pick",
-        query: query || undefined,
-        refresh,
-        limit,
-        open,
-        raw,
-      };
-    }
-
-    const query = positional.join(" ").trim();
-
-    return {
-      mode: query ? "search" : "browse",
-      query: query || undefined,
-      refresh,
-      limit,
-      open,
-      raw,
-    };
+  parseArgs(argv) {
+    const parsed = args.parse(argv);
+    const { refresh, raw, open, limit } = parsed.flags;
+    resolveAdCommon(parsed.flags, "list", "find");
+    const query = parsed.subcommand === "list" ? "" : parsed.positionals.query.join(" ").trim();
+    const mode: FindArgs["mode"] =
+      parsed.subcommand === "pick" ? "pick" : query ? "search" : "browse";
+    return { mode, query: query || undefined, refresh, limit, open, raw };
   },
   async execute({ mode, query, refresh, limit, open, raw }, context) {
     if (open && mode !== "pick") {
@@ -266,7 +191,8 @@ const command: CommandModule<FindArgs, FindData> = {
       return ok(data);
     }
 
-    const matches = searchMethodIndex(index, query, limit);
+    const searchQuery = query ?? "";
+    const matches = searchMethodIndex(index, searchQuery, limit);
     if (matches.length === 0) {
       context.warn("No method or category matches found.");
     }
@@ -274,7 +200,7 @@ const command: CommandModule<FindArgs, FindData> = {
     const data: FindSearchData = {
       mode: "search",
       request: {
-        query,
+        query: searchQuery,
         refresh,
         limit,
       },

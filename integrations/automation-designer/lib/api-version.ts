@@ -55,7 +55,7 @@ export const SUPPORTED_VERSIONS: Record<AdOperation, readonly ApiVersion[]> = {
   list:      ["v1"],
   save:      ["v1"],
   publish:   ["v1"],         // publish is a shared endpoint; nothing to split
-  test:      ["v1", "v2"],
+  test:      ["v1"],         // AD-15: `ad test` only has a V1 path; --v2 falls back with a notice
   run:       ["v1"],
   export:    ["v1"],
   import:    ["v1"],
