@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync, statSync } from "fs";
 import { join } from "path";
-import { BELZ_CONFIG_DIR, CliError } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, CliError, getOutputMode, setOutputMode } from "@belzabar/core";
 import { fakeFetch, respond, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
 import { fetchTask, searchTasks, setTeamworkBackoffForTesting, teamworkFetch, TEAMWORK_CONCURRENCY } from "../../lib/api";
 import { saveTeamworkSession } from "../../lib/auth";
@@ -14,10 +14,15 @@ const LOGIN = "https://projects.webintensive.com/launchpad/v1/login.json";
 let ff: FakeFetch | null = null;
 let cfg: TempEnvConfig | null = null;
 const origStderr = process.stderr.write.bind(process.stderr);
+const origConsoleError = console.error;
+const origMode = getOutputMode();
+let notices: string[] = [];
 
 beforeEach(() => {
   rmSync(SESSION, { force: true });
-  (process.stderr as any).write = () => true; // silence "[Teamwork] Authenticating…"
+  notices = [];
+  (process.stderr as any).write = () => true;
+  console.error = (...a: unknown[]) => { notices.push(a.map(String).join(" ")); }; // lifecycle.notice → printErr
 });
 afterEach(() => {
   ff?.restore();
@@ -27,6 +32,8 @@ afterEach(() => {
   rmSync(SESSION, { force: true });
   setTeamworkBackoffForTesting(null);
   (process.stderr as any).write = origStderr;
+  console.error = origConsoleError;
+  setOutputMode(origMode);
 });
 
 function loginOk(cookie = "fresh") {
@@ -142,5 +149,23 @@ describe("teamwork adapter", () => {
     const e = await caught(teamworkFetch("/x"));
     expect(e.code).toBe("TW_AUTH_FAILED");
     expect(JSON.stringify({ m: e.message, d: e.details })).not.toContain("s3cret");
+  });
+
+  test("auth notices go through lifecycle.notice: shown in human mode, silent with --llm", async () => {
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "p", passwordEncoding: "plain" } });
+    ff = fakeFetch([
+      { method: "POST", url: LOGIN, response: loginOk() },
+      { method: "GET", url: "/n", response: {} },
+    ]).install();
+    setOutputMode("human");
+    await teamworkFetch("/n");
+    expect(notices.some((n) => n.includes("[Teamwork] Authenticating as me@x.test"))).toBe(true);
+
+    rmSync(SESSION, { force: true });
+    notices = [];
+    setOutputMode("llm");
+    await teamworkFetch("/n");
+    expect(ff.calls("POST").length).toBe(2);
+    expect(notices).toEqual([]);
   });
 });

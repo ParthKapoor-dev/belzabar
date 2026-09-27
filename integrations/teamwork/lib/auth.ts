@@ -13,6 +13,7 @@ import {
   CliError,
   Config,
   httpRequest,
+  lifecycle,
   readBodySummary,
   singleFlight,
   writeSecureJson,
@@ -54,7 +55,7 @@ async function doLogin(): Promise<TeamworkSession> {
     );
   }
 
-  process.stderr.write(`[Teamwork] Authenticating as ${email}...\n`);
+  lifecycle.notice(`[Teamwork] Authenticating as ${email}…`);
   const response = await httpRequest(`${TEAMWORK_BASE}/launchpad/v1/login.json`, {
     method: "POST",
     headers: {
@@ -80,7 +81,7 @@ async function doLogin(): Promise<TeamworkSession> {
 
   const session: TeamworkSession = { twAuth };
   await saveTeamworkSession(session);
-  process.stderr.write(`[Teamwork] Authenticated.\n`);
+  lifecycle.notice("[Teamwork] Authenticated.");
   return session;
 }
 

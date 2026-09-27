@@ -1,4 +1,4 @@
-import { CliError, createLimiter, httpError, httpRequest, isReplayableBody, sleep } from "@belzabar/core";
+import { CliError, createLimiter, httpError, httpRequest, isReplayableBody, lifecycle, sleep } from "@belzabar/core";
 import { ensureTeamworkAuth, refreshTeamworkAuth, TEAMWORK_BASE } from "./auth";
 import type {
   TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkSubtask, TeamworkComment,
@@ -49,7 +49,7 @@ export async function teamworkFetch(path: string, options: RequestInit = {}): Pr
     for (let attempt = 0; ; attempt++) {
       if (response.status === 401 && !reauthed && isReplayableBody(options.body)) {
         reauthed = true;
-        process.stderr.write("[Teamwork] 401 Unauthorized. Re-authenticating...\n");
+        lifecycle.notice("[Teamwork] 401 Unauthorized — re-authenticating…");
         await response.arrayBuffer().catch(() => undefined);
         twAuth = await refreshTeamworkAuth(twAuth);
         response = await send();
