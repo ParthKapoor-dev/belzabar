@@ -92,7 +92,7 @@ bun run belz:install                   # apps/cli/scripts/install.sh (build + in
 
 From the repo root: `bun run test` (all tests), `bun run typecheck` (root `tsconfig.json`, one
 `tsc` program over every workspace), `bun run check` (both). CI: `.github/workflows/ci.yml`
-(typecheck is non-blocking until Stage 3). The envelope contract test picks up new commands
+(typecheck, then tests; both blocking — keep `tsc` at zero errors). The envelope contract test picks up new commands
 automatically; add invocations that legitimately break the contract to its `KNOWN_VIOLATIONS`
 only with a reason. Live: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live`.
 

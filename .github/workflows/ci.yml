@@ -30,14 +30,11 @@ jobs:
       - name: Install
         run: bun install --ignore-scripts
 
+      # Every workspace, integration tests included. Blocking.
+      - name: Typecheck
+        run: bun run typecheck
+
       # Unit + contract + compiled-binary pipe tests. Live suites are skipped
       # unless BELZ_LIVE=sems-dev, which CI never sets.
       - name: Test
         run: bun run test
-
-      # tsc reports pre-existing errors (52 in the pre-Stage-2 scope, 67 now that
-      # every workspace incl. integration tests is checked). Non-blocking until Stage 3
-      # (core rebuild) brings it to zero; then drop continue-on-error.
-      - name: Typecheck
-        run: bun run typecheck
-        continue-on-error: true
