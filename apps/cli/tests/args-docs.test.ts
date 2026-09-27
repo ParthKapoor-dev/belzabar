@@ -17,7 +17,7 @@ const NAMESPACE: Record<string, string> = {
 };
 
 /** Commands whose migration is waiting on another agent's commit (delete entries as they land). */
-const PENDING = new Set<string>(["belz setup"]);
+const PENDING = new Set<string>([]);
 
 describe("args spec ↔ help.txt / desc.txt", () => {
   for (const [owner, registry] of Object.entries(REGISTRIES)) {
@@ -25,7 +25,7 @@ describe("args spec ↔ help.txt / desc.txt", () => {
     for (const [name, entry] of Object.entries(registry)) {
       const invocation = ns ? `belz ${ns} ${name}` : `belz ${name}`;
       if (PENDING.has(invocation) && !(entry.module as { args?: unknown }).args) {
-        test.todo(`${invocation} (pending)`);
+        test.todo(`${invocation} (pending)`, () => {});
         continue;
       }
       test(invocation, () => {
