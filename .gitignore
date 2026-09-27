@@ -5,7 +5,7 @@ node_modules
 out
 dist
 *.tgz
-# ...except the design system's generated theme CSS, which web + extension
+# ...except the design system's generated theme CSS, which the extension
 # consume at build time and is intentionally committed.
 !packages/design/dist/
 !packages/design/dist/**

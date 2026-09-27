@@ -3,11 +3,11 @@
 // A custom Network-tab-style panel scoped to Automation Designer "chain"
 // requests. It reads the network traffic DevTools already records (no page
 // overhead, no fetch/XHR patching) and adds what the real Network tab cannot:
-// the human-readable AD method name and its service category.
+// the human-readable AD method name.
 //
-// Name + category come from two sources:
-//   - definition fetches  -> the name is in the recorded response body
-//   - belz web            -> `belz ad show` (cache-backed) gives name + category
+// The panel is standalone: the name comes from definition fetches (it is in
+// the recorded response body). Execute-only uuids have no name in their
+// traffic, so those rows show the raw uuid.
 
 import {
   classifyChainUrl,
@@ -16,9 +16,6 @@ import {
 import { createJsonView } from './json-tree.js';
 
 const MAX_ROWS = 300;
-const BELZ_WEB = 'http://localhost:65535';
-const BELZ_DEBOUNCE_MS = 250;
-const BELZ_RETRY_MS = 4000;
 
 // ---- DOM ------------------------------------------------------------------
 const recordBtn = document.getElementById('record');
@@ -26,7 +23,6 @@ const clearBtn = document.getElementById('clear');
 const preserveBox = document.getElementById('preserve');
 const filterInput = document.getElementById('filter');
 const countEl = document.getElementById('count');
-const offlineEl = document.getElementById('offline');
 const listPane = document.querySelector('.list-pane');
 const rowsEl = document.getElementById('rows');
 const emptyEl = document.getElementById('empty');
@@ -35,12 +31,10 @@ const detailBody = document.getElementById('detail-body');
 const detailClose = document.getElementById('detail-close');
 const detailCopy = document.getElementById('detail-copy');
 const detailTabs = Array.from(document.querySelectorAll('.detail-tabs button'));
-const toastEl = document.getElementById('toast');
 
 // ---- state ----------------------------------------------------------------
 const entries = []; // chronological (oldest-first), mirrors DOM order
 const uuidToName = new Map();
-const uuidToCategory = new Map();
 let nextId = 1;
 let recording = true;
 let preserveLog = false;
@@ -50,54 +44,13 @@ let activeTab = 'headers';
 let currentEnv = 'nsm-dev';
 let currentCopyText = '';
 
-const pendingUuids = new Set();
-let belzTimer = null;
-let belzRetryTimer = null;
-
-// "Open in draft" queue — processed one at a time.
-const openQueue = [];
-let openProcessing = false;
-
 // ---- env detection --------------------------------------------------------
-// The belz CLI config is the source of truth for which envs exist and which
-// host each one lives on, so we fetch that map from belz web (`/api/envs`).
-// This is what makes the panel work for ANY project the user has configured
-// (NSM, YieldSec, …) instead of only NSM. `envByHost` is the loaded registry;
-// the regex fallbacks below cover the moment before it loads / when belz web
-// is unreachable.
-const envByHost = new Map(); // lowercase hostname -> belz env name
-
-function loadEnvRegistry() {
-  fetch(BELZ_WEB + '/api/envs')
-    .then((r) => (r.ok ? r.json() : null))
-    .then((data) => {
-      if (!data || !Array.isArray(data.envs)) return;
-      envByHost.clear();
-      for (const e of data.envs) {
-        if (e && typeof e.host === 'string' && e.host && typeof e.name === 'string') {
-          envByHost.set(e.host.toLowerCase(), e.name);
-        }
-      }
-      setOffline(false);
-      detectEnv(); // re-resolve now that the real host→env mapping is known
-    })
-    .catch(() => {
-      /* belz web down — keep the built-in host rules below */
-    });
-}
-
 // Maps the inspected window's hostname to a belz env name. Public-portal hosts
 // collapse to the same env as their staff portal — the AD method behind them is
 // the same entity, and the designer only lives on the staff portal.
 function envFromHost(host) {
   if (typeof host !== 'string') return currentEnv || 'nsm-dev';
   const h = host.toLowerCase();
-
-  // 1. Exact match against the configured envs (project-agnostic).
-  const fromRegistry = envByHost.get(h);
-  if (fromRegistry) return fromRegistry;
-
-  // 2. Built-in fallbacks for before the registry loads / belz web is down.
   const nsm = h.match(/^(nsm-(?:dev|qa|uat))(?:-public)?\./);
   if (nsm) return nsm[1];
   if (h === 'staff-nss-stage.verifi-nc.com') return 'nsm-stage';
@@ -107,20 +60,6 @@ function envFromHost(host) {
   if (h === 'yieldsec.stage.expertly.cloud') return 'ys-stage';
   if (h === 'yieldsec.expertly.com') return 'ys-prod';
   return currentEnv || 'nsm-dev';
-}
-
-// AD/PD designer routes live ONLY on staff portals — the public portal serves
-// the operator app, not the designer. For NSM the public host is the staff host
-// with a `-public` modifier, so strip it; for other projects belz web already
-// returns the configured staff URL, so this is a no-op there.
-function toStaffPortalUrl(url) {
-  try {
-    const u = new URL(url);
-    u.hostname = u.hostname.replace(/^(nsm-(?:dev|qa|uat))-public\./i, '$1.');
-    return u.toString();
-  } catch {
-    return url;
-  }
 }
 
 function detectEnv() {
@@ -180,32 +119,12 @@ function el(tag, props, ...kids) {
   return node;
 }
 
-let toastTimer = null;
-function showToast(text) {
-  toastEl.textContent = text;
-  toastEl.classList.remove('hidden');
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.add('hidden'), 3000);
-}
-
 // ---- row action buttons ---------------------------------------------------
 const ICON_COPY =
   '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
   'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
   'stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/>' +
   '<path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
-const ICON_OPEN =
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
-  'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
-  'stroke-linejoin="round"><path d="M14 4h6v6"/><path d="M11 13 20 4"/>' +
-  '<path d="M19 13v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>';
-const ICON_LINK =
-  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" ' +
-  'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
-  'stroke-linejoin="round">' +
-  '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>' +
-  '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
-
 function iconButton(svg, title, handler) {
   const b = document.createElement('button');
   b.className = 'act';
@@ -241,146 +160,12 @@ function buildCurl(har) {
   return parts.join(' \\\n  ');
 }
 
-// Copy a Slack-pasteable rich link to the method's designer page — mirrors the
-// Shift+L "copy AD rich link" feature on AD pages. The designer URL is resolved
-// via belz web (same /api/resolve the "open in draft" action uses).
-async function copySlackLink(entry, btn) {
-  try {
-    const res = await fetch(BELZ_WEB + '/api/resolve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: entry.uuid, env: currentEnv })
-    });
-    const data = await res.json();
-    if (!res.ok || !data.resolved || typeof data.editUrl !== 'string') {
-      throw new Error((data && (data.reason || data.error)) || 'resolve failed');
-    }
-    setOffline(false);
-    const url = toStaffPortalUrl(data.editUrl);
-    const name =
-      data.name || uuidToName.get(entry.uuid) || entry.uuid.slice(0, 8) + '…';
-    const category = data.category || uuidToCategory.get(entry.uuid) || '';
-    const label = [category, name].filter(Boolean).join('::');
-    const html = '<a href="' + url + '">' + label + '</a>';
-    const plain = '[' + label + '](' + url + ')';
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'text/html': new Blob([html], { type: 'text/html' }),
-          'text/plain': new Blob([plain], { type: 'text/plain' })
-        })
-      ]);
-    } catch {
-      await navigator.clipboard.writeText(plain);
-    }
-    flashOk(btn);
-    showToast('copied link · ' + label);
-  } catch (err) {
-    setOffline(true);
-    showToast(
-      'could not copy link — ' +
-        (err && err.message ? err.message : 'belz web error')
-    );
-  }
-}
-
-// ---- "open in draft" queue (#3, #11) --------------------------------------
-// Opens the method's draft designer page, with inputs autofilled, in a
-// BACKGROUND tab — the user stays on the page they are already on.
-function openTab(url) {
-  try {
-    if (chrome.tabs && chrome.tabs.create) {
-      chrome.tabs.create({ url, active: false });
-      return;
-    }
-  } catch {
-    /* fall through to window.open */
-  }
-  try {
-    window.open(url, '_blank');
-  } catch {
-    /* ignore */
-  }
-}
-
-function enqueueOpen(entry) {
-  openQueue.push(entry);
-  showToast(
-    'queued ' +
-      (uuidToName.get(entry.uuid) || entry.uuid.slice(0, 8) + '…') +
-      ' · ' +
-      openQueue.length +
-      ' in queue'
-  );
-  processOpenQueue();
-}
-
-async function processOpenQueue() {
-  if (openProcessing) return;
-  const entry = openQueue.shift();
-  if (!entry) return;
-  openProcessing = true;
-  try {
-    const res = await fetch(BELZ_WEB + '/api/resolve', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: entry.uuid, env: currentEnv })
-    });
-    const data = await res.json();
-    if (!res.ok || !data.resolved || typeof data.editUrl !== 'string') {
-      throw new Error((data && (data.reason || data.error)) || 'resolve failed');
-    }
-    setOffline(false);
-    const req = entry.har && entry.har.request;
-    const body = (req && req.postData && req.postData.text) || '';
-    let url = toStaffPortalUrl(data.editUrl);
-    if (body) {
-      try {
-        url +=
-          (url.includes('?') ? '&' : '?') +
-          '_belz_autofill=' +
-          encodeURIComponent(btoa(body));
-      } catch {
-        /* body not Latin1 — open without autofill */
-      }
-    }
-    openTab(url);
-    const remaining = openQueue.length;
-    showToast(
-      'opening ' +
-        (data.name || entry.uuid.slice(0, 8) + '…') +
-        ' in draft mode' +
-        (remaining ? ' · ' + remaining + ' queued' : '')
-    );
-  } catch (err) {
-    setOffline(true);
-    showToast(
-      'could not open ' +
-        entry.uuid.slice(0, 8) +
-        '… — ' +
-        (err && err.message ? err.message : 'belz web error')
-    );
-  } finally {
-    openProcessing = false;
-    if (openQueue.length) setTimeout(processOpenQueue, 150);
-  }
-}
-
-// ---- name / category resolution -------------------------------------------
+// ---- name resolution ------------------------------------------------------
 function learnName(uuid, name) {
   if (!uuid || !name || uuidToName.get(uuid) === name) return;
   uuidToName.set(uuid, name);
   for (const entry of entries) {
     if (entry.uuid === uuid) paintName(entry);
-  }
-  reRenderDetailIf(uuid);
-}
-
-function learnCategory(uuid, category) {
-  if (!uuid || !category || uuidToCategory.get(uuid) === category) return;
-  uuidToCategory.set(uuid, category);
-  for (const entry of entries) {
-    if (entry.uuid === uuid) paintCategory(entry);
   }
   reRenderDetailIf(uuid);
 }
@@ -393,74 +178,9 @@ function reRenderDetailIf(uuid) {
 
 function paintName(entry) {
   const name = uuidToName.get(entry.uuid);
-  entry.nameCell.className = 'name s-' + entry.statusGroup + (name ? '' : ' pending');
-  entry.nameCell.textContent = name || entry.uuid.slice(0, 12) + '…';
-  entry.nameCell.title = name
-    ? name + '  ·  click to open in draft'
-    : entry.uuid + '  (resolving…)';
-}
-
-function paintCategory(entry) {
-  const cat = uuidToCategory.get(entry.uuid);
-  entry.categoryCell.className = cat ? 'category' : 'category pending';
-  entry.categoryCell.textContent = cat || '…';
-  entry.categoryCell.title = cat ? cat + '  ·  click to open in draft' : '';
-}
-
-function setOffline(off) {
-  offlineEl.classList.toggle('hidden', !off);
-}
-
-function needsBelz(uuid) {
-  return !uuidToName.has(uuid) || !uuidToCategory.has(uuid);
-}
-
-function scheduleBelzFetch() {
-  if (belzTimer) return;
-  belzTimer = setTimeout(() => {
-    belzTimer = null;
-    flushBelzFetch();
-  }, BELZ_DEBOUNCE_MS);
-}
-
-async function flushBelzFetch() {
-  const uuids = [];
-  for (const uuid of pendingUuids) {
-    if (needsBelz(uuid)) uuids.push(uuid);
-  }
-  pendingUuids.clear();
-  if (uuids.length === 0) return;
-
-  try {
-    const res = await fetch(BELZ_WEB + '/api/ad-names', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uuids, env: currentEnv })
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    setOffline(false);
-    const items = (data && data.items) || {};
-    for (const uuid of Object.keys(items)) {
-      const meta = items[uuid];
-      if (!meta) continue;
-      if (meta.name) learnName(uuid, meta.name);
-      if (meta.category) learnCategory(uuid, meta.category);
-    }
-  } catch {
-    setOffline(true);
-    // belz web is commonly started after the panel is already open — keep the
-    // uuids queued and retry on a timer so they fill in once it is up.
-    for (const uuid of uuids) {
-      if (needsBelz(uuid)) pendingUuids.add(uuid);
-    }
-    if (pendingUuids.size > 0 && !belzRetryTimer) {
-      belzRetryTimer = setTimeout(() => {
-        belzRetryTimer = null;
-        flushBelzFetch();
-      }, BELZ_RETRY_MS);
-    }
-  }
+  entry.nameCell.className = 'name s-' + entry.statusGroup;
+  entry.nameCell.textContent = name || entry.uuid;
+  entry.nameCell.title = name || entry.uuid;
 }
 
 // ---- request capture ------------------------------------------------------
@@ -485,8 +205,7 @@ function onRequest(har) {
     time: typeof har.time === 'number' ? har.time : -1,
     har,
     rowEl: null,
-    nameCell: null,
-    categoryCell: null
+    nameCell: null
   };
 
   // Follow the tail like the real Network tab if already scrolled to bottom.
@@ -505,12 +224,6 @@ function onRequest(har) {
       if (name) learnName(info.uuid, name);
     });
   }
-  // Name (for execute) + category for every row come from belz web.
-  if (needsBelz(info.uuid)) {
-    pendingUuids.add(info.uuid);
-    scheduleBelzFetch();
-  }
-
   // Cap the table — drop the oldest rows.
   while (entries.length > MAX_ROWS) {
     const old = entries.shift();
@@ -526,16 +239,7 @@ function renderRow(entry) {
   const srCell = el('td', { className: 'sr' }, String(entry.id));
 
   const nameCell = el('td', null);
-  const categoryCell = el('td', null);
   entry.nameCell = nameCell;
-  entry.categoryCell = categoryCell;
-  // Clicking the name or category opens the method in draft (#6).
-  const openFromCell = (e) => {
-    e.stopPropagation();
-    enqueueOpen(entry);
-  };
-  nameCell.addEventListener('click', openFromCell);
-  categoryCell.addEventListener('click', openFromCell);
 
   const copyCurlBtn = iconButton(ICON_COPY, 'Copy as cURL', (btn) => {
     try {
@@ -545,23 +249,10 @@ function renderRow(entry) {
       /* ignore */
     }
   });
-  const copyLinkBtn = iconButton(ICON_LINK, 'Copy Slack link', (btn) => {
-    copySlackLink(entry, btn);
-  });
-  const openBtn = iconButton(
-    ICON_OPEN,
-    'Open in draft mode (background tab)',
-    (btn) => {
-      enqueueOpen(entry);
-      flashOk(btn);
-    }
-  );
   const actionsCell = el(
     'td',
     { className: 'actions' },
-    copyCurlBtn,
-    copyLinkBtn,
-    openBtn
+    copyCurlBtn
   );
 
   const statusBadge = el(
@@ -612,7 +303,6 @@ function renderRow(entry) {
     null,
     srCell,
     nameCell,
-    categoryCell,
     actionsCell,
     statusCell,
     httpCell,
@@ -626,7 +316,6 @@ function renderRow(entry) {
 
   entry.rowEl = row;
   paintName(entry);
-  paintCategory(entry);
   applyRowFilter(entry);
 
   rowsEl.appendChild(row);
@@ -636,10 +325,8 @@ function renderRow(entry) {
 function rowMatches(entry) {
   if (!filterText) return true;
   const name = (uuidToName.get(entry.uuid) || '').toLowerCase();
-  const cat = (uuidToCategory.get(entry.uuid) || '').toLowerCase();
   return (
     name.includes(filterText) ||
-    cat.includes(filterText) ||
     entry.uuid.includes(filterText) ||
     entry.url.toLowerCase().includes(filterText)
   );
@@ -712,12 +399,10 @@ function renderDetail() {
 
   if (activeTab === 'headers') {
     const name = uuidToName.get(entry.uuid);
-    const category = uuidToCategory.get(entry.uuid);
     detailBody.append(
       el('h4', null, 'General'),
       kvGrid([
-        ['Method name', name || '(resolving…)'],
-        ['Category', category || '(resolving…)'],
+        ['Method name', name || '—'],
         ['UUID', entry.uuid],
         ['Chain kind', entry.kind + ' (' + entry.version + ')'],
         ['Request URL', entry.url],
@@ -734,7 +419,6 @@ function renderDetail() {
       {
         general: {
           methodName: name || null,
-          category: category || null,
           uuid: entry.uuid,
           chainKind: entry.kind + ' ' + entry.version,
           requestUrl: entry.url,
@@ -882,4 +566,3 @@ chrome.devtools.network.onNavigated.addListener(() => {
 });
 
 detectEnv();
-loadEnvRegistry();

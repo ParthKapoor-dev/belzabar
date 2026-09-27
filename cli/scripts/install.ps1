@@ -2,7 +2,6 @@
 #
 # Windows counterpart of cli/scripts/install.sh:
 #   - Rebuilds the belz.exe binary and installs it to a per-user location.
-#   - Builds + installs the Next.js web app to %USERPROFILE%\.belz\web.
 #   - Records install metadata, and runs `belz onboard` on first install.
 #   - No admin required — installs to %LOCALAPPDATA%\belz\bin and edits the
 #     per-user PATH only.
@@ -32,28 +31,6 @@ Write-Host "Installing dependencies..."
 Push-Location $RepoRoot
 bun install --ignore-scripts
 Pop-Location
-
-# ── 3. Build and install the web app ──────────────────────────────────────────
-Write-Host "Building web app..."
-$WebSrc = Join-Path $RepoRoot "web"
-$WebDest = Join-Path $BelzConfigDir "web"
-
-Push-Location $WebSrc
-bun install --ignore-scripts
-bun run build
-Pop-Location
-
-Write-Host "Installing web app to $WebDest..."
-if (Test-Path $WebDest) { Remove-Item -Recurse -Force $WebDest }
-New-Item -ItemType Directory -Force -Path $WebDest | Out-Null
-# Copy the whole standalone tree (preserves the root/web nesting Next.js needs).
-Copy-Item -Recurse -Force (Join-Path $WebSrc ".next\standalone\*") $WebDest
-New-Item -ItemType Directory -Force -Path (Join-Path $WebDest "web\.next") | Out-Null
-Copy-Item -Recurse -Force (Join-Path $WebSrc ".next\static") (Join-Path $WebDest "web\.next\static")
-if (Test-Path (Join-Path $WebSrc "public")) {
-  Copy-Item -Recurse -Force (Join-Path $WebSrc "public") (Join-Path $WebDest "web\public")
-}
-Write-Host "Web app installed to $WebDest"
 
 # ── 4. Build the binary ───────────────────────────────────────────────────────
 Write-Host "Building belz binary..."

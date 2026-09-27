@@ -4,7 +4,6 @@ import * as onboard from "./onboard/index";
 import * as envs from "./envs/index";
 import * as migrate_legacy from "./migrate-legacy/index";
 import * as config from "./config/index";
-import * as web from "./web/index";
 import * as setup from "./setup/index";
 import * as update from "./update/index";
 import * as extension from "./extension/index";
@@ -15,7 +14,6 @@ export const TopLevelCommandRegistry: Record<string, any> = {
   "envs": envs,
   "migrate-legacy": migrate_legacy,
   "config": config,
-  "web": web,
   "setup": setup,
   "update": update,
   "extension": extension,

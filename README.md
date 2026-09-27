@@ -1,6 +1,6 @@
 # Belzabar
 
-Developer toolset for NSM platform engineers. Ships the **`belz` CLI**, a **browser extension**, and a **web dashboard**.
+Developer toolset for NSM platform engineers. Ships the **`belz` CLI**, and a **browser extension**.
 
 ---
 
@@ -83,11 +83,6 @@ belz cache <uuid>                       # invalidate a server-side cache entry
 belz config                             # manage ~/.belz/config.json
 belz envs                               # list configured environments
 belz setup                              # re-run interactive credential setup
-
-# Web dashboard
-belz web start                          # run the local Next.js dashboard
-belz web stop
-belz web status
 ```
 
 **Global flags** (work on every command):
@@ -114,18 +109,6 @@ Active on `nsm-dev`, `nsm-qa`, `nsm-uat`, `nsm-stage`, and `staff-nss.verifi-nc.
 **Shortcuts**: `Ctrl+Shift+Enter` runs Run Test from anywhere on an AD method page; `Shift+L` copies a rich AD/PD link.
 
 See `extension/README.md` for the full feature list.
-
----
-
-## Web dashboard
-
-```bash
-belz web start            # runs at http://localhost:65535
-belz web stop
-belz web status
-```
-
-Features include VIN lookup (forward + reverse), an environment-scoped search box, and a curl-paste flow that opens the right AD method with inputs prefilled.
 
 ---
 
@@ -171,7 +154,6 @@ belzabar/
 │       ├── commands/  lib/     belz migrate …  (Jenkins flow)
 │       └── legacy/             belz migrate-legacy …  (db-migration-tool)
 ├── extension/                  browser extension (MV3, JavaScript)
-├── web/                        Next.js dashboard served by `belz web`
 ├── cloud/                      Claude Code cloud-session bootstrap (setup/publish + sandbox files)
 └── install.sh                  the public one-line installer
 ```

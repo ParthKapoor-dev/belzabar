@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "belz unified design system — single source of truth for tokens across web, extension and CLI.",
+  "description": "belz unified design system — single source of truth for tokens across the extension and CLI.",
   "exports": {
     ".": "./src/index.ts",
     "./tokens": "./src/tokens.ts",

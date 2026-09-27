@@ -156,7 +156,7 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
 
     lifecycle.note(
       "Rebuilding belz",
-      "Building the web app and recompiling the binary — this can take a minute."
+      "Recompiling the binary — this can take a minute."
     );
     const build = spawnSync(installer.cmd, installer.args, { cwd: sourceDir, stdio: "inherit" });
     if (build.status !== 0) {

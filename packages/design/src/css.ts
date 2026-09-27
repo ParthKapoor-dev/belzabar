@@ -1,7 +1,7 @@
 // CSS generator — turns the token objects into a :root custom-property block.
 //
-// The output (dist/theme.css) is the artifact the web app and the extension
-// both consume. It carries values only — no @font-face (font loading differs
+// The output (dist/theme.css) is the artifact the extension
+// consumes. It carries values only — no @font-face (font loading differs
 // per surface) and no component rules.
 
 import { palette, radius, space, fontSize, fontFamily, motion } from "./tokens";

@@ -1,7 +1,7 @@
 belz update [flags]
 
-Update belz to the latest version: pull the source checkout, rebuild the web
-app, recompile the binary, and install it.
+Update belz to the latest version: pull the source checkout, recompile the
+binary, and install it.
 
 belz is a compiled binary built from a git checkout. `belz update` fetches
 that checkout's tracking branch, fast-forwards it, and re-runs the install

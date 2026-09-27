@@ -128,10 +128,6 @@
         color: #9ba1a6;
         font-variant-numeric: tabular-nums;
       }
-      .offline {
-        color: #d29922;
-        font-size: 11px;
-      }
       .hidden {
         display: none !important;
       }
@@ -201,22 +197,6 @@
       }
       td.name.s-srverr {
         color: #f85149;
-      }
-      td.name.pending {
-        font-weight: 400;
-        font-style: italic;
-        color: #9ba1a6;
-      }
-      td.name:hover,
-      td.category:hover {
-        text-decoration: underline;
-      }
-      td.category {
-        color: #9ba1a6;
-      }
-      td.category.pending {
-        color: #9ba1a6;
-        font-style: italic;
       }
       .badge {
         display: inline-block;
@@ -503,22 +483,6 @@
         color: #9ba1a6;
       }
 
-      /* ---- toast ------------------------------------------------------ */
-      .toast {
-        position: fixed;
-        bottom: 14px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #16181b;
-        border: 1px solid #3b82f6;
-        color: #e6e7e8;
-        padding: 6px 12px;
-        border-radius: 0;
-        font-size: 12px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
-        z-index: 10;
-        pointer-events: none;
-      }
     </style>
   </head>
   <body>
@@ -532,7 +496,6 @@
       </label>
       <input id="filter" type="text" placeholder="Filter (name, uuid, url)" />
       <span class="spacer"></span>
-      <span id="offline" class="offline hidden">belz web offline &mdash; names unavailable</span>
       <span id="count" class="count">0</span>
     </div>
 
@@ -543,7 +506,6 @@
             <tr>
               <th class="col-sr">#</th>
               <th>Method Name</th>
-              <th>Category</th>
               <th class="col-act">Actions</th>
               <th>Status</th>
               <th>HTTP</th>
@@ -576,8 +538,6 @@
         <div id="detail-body" class="detail-body"></div>
       </div>
     </div>
-
-    <div id="toast" class="toast hidden"></div>
 
     <script src="dist/panel.js"></script>
   </body>

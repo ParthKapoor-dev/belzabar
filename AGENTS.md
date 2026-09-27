@@ -41,7 +41,6 @@ It ships two products:
 | `integrations/migrations/` | Jenkins migration library + commands consumed by `belz migrate` (source module) | `integrations/migrations/AGENTS.md` |
 | `integrations/migrations/legacy/` | Legacy NSM db-migration-tool client (retained for fallback) | `integrations/migrations/legacy/AGENTS.md` |
 | `extension/` | Browser extension (MV3, JavaScript) | `extension/AGENTS.md` |
-| `web/` | Next.js web dashboard served by `belz web` | — |
 
 ---
 
@@ -77,7 +76,6 @@ belz migrate <cmd> → integrations/migrations/commands/<cmd>/
 belz migrate-legacy → cli/commands/migrate-legacy/ + integrations/migrations/legacy/lib/
 belz config        → cli/commands/config/
 belz cache         → cli/commands/cache/
-belz web           → cli/commands/web/
 belz envs          → cli/commands/envs/
 belz setup         → cli/commands/setup/   (interactive first-time credentials)
 ```

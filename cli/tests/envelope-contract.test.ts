@@ -1,6 +1,6 @@
 // Envelope contract: every registered command's `--llm` output validates
 // against core's EnvelopeSchema, `ok:false` ⇔ nonzero exit, and stdout is the
-// envelope and nothing else. `web/` and the agent skills parse this output.
+// envelope and nothing else. The agent skills parse this output.
 //
 // No network: fetch is replaced by a fakeFetch with no routes (any request
 // fails inside the command), process spawning is blocked, cwd is a tmp dir.
@@ -28,7 +28,7 @@ import type { NamespacedCliOptions } from "@belzabar/core";
 const options: NamespacedCliOptions = await loadDevCliOptions();
 
 /** Commands whose bare invocation must never run, even offline (installers, config writers, browser/OS side effects). */
-const NO_BARE_RUN = new Set(["update", "setup", "onboard", "cache", "web", "extension"]);
+const NO_BARE_RUN = new Set(["update", "setup", "onboard", "cache", "extension"]);
 
 /** argv (joined by spaces) → why it currently violates the contract. */
 const KNOWN_VIOLATIONS: Record<string, string> = {};

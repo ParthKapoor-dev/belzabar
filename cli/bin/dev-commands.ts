@@ -100,7 +100,7 @@ export function buildDevCliOptions(): NamespacedCliOptions {
   const migrateCommands = loadCommandsFromDir(migrationsCommandsDir);
   const releaseCommands = loadCommandsFromDir(releaseCommandsDir);
   const allTopCommands = loadCommandsFromDir(topCommandsDir);
-  const { "migrate-legacy": migrateLegacy, config, web, extension, ...topLevelCommands } = allTopCommands;
+  const { "migrate-legacy": migrateLegacy, config, extension, ...topLevelCommands } = allTopCommands;
 
   return {
     name: "Belzabar CLI",
@@ -147,12 +147,6 @@ export function buildDevCliOptions(): NamespacedCliOptions {
         name: "Config",
         description: "Manage belz credentials and environments.",
         command: config,
-        helpResolver: makeHelpDirResolver(topCommandsDir),
-      },
-      web: {
-        name: "Web",
-        description: "Manage the Belzabar web app.",
-        command: web,
         helpResolver: makeHelpDirResolver(topCommandsDir),
       },
       extension: {

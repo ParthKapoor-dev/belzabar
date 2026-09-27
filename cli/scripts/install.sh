@@ -70,40 +70,6 @@ echo "📦 Installing dependencies..."
 cd "$REPO_ROOT"
 bun install --ignore-scripts
 
-# ── 4b. Build and install the web app ─────────────────────────────────────────
-echo ""
-echo "🌐 Building web app..."
-WEB_SRC="$REPO_ROOT/web"
-WEB_DEST="$BELZ_CONFIG_DIR/web"
-
-cd "$WEB_SRC"
-bun install --ignore-scripts
-bun run build
-
-echo "📦 Installing web app to $WEB_DEST..."
-rm -rf "$WEB_DEST"
-
-# In a Bun monorepo Next.js standalone output nests the app one level deep:
-#   .next/standalone/
-#     node_modules/          ← shared monorepo deps (must stay one level above server.js)
-#     web/
-#       server.js            ← the actual Next.js server
-#       node_modules/        ← app-level deps
-#       .next/               ← server-side build
-# We copy the whole standalone tree so relative paths between root and web/ are preserved.
-cp -r "$WEB_SRC/.next/standalone/." "$WEB_DEST/"
-
-# Static assets must live next to server.js in the web/ subdirectory
-mkdir -p "$WEB_DEST/web/.next"
-cp -r "$WEB_SRC/.next/static" "$WEB_DEST/web/.next/static"
-
-# Public directory likewise
-if [[ -d "$WEB_SRC/public" ]]; then
-  cp -r "$WEB_SRC/public" "$WEB_DEST/web/public"
-fi
-
-echo "✅ Web app installed to $WEB_DEST"
-
 # ── 5. Build the binary ───────────────────────────────────────────────────────
 echo ""
 echo "🔨 Building belz binary..."
@@ -133,7 +99,7 @@ fi
 
 # ── 8. First-time setup ──────────────────────────────────────────────────────
 # With --env-file, run `belz setup` non-interactively. Otherwise run the guided
-# `belz onboard` flow (credentials + extension + web autostart).
+# `belz onboard` flow (credentials + extension).
 if [[ ! -f "$BELZ_CONFIG_DIR/config.json" ]]; then
   echo ""
   if [[ -n "$ENV_FILE" ]]; then

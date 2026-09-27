@@ -8,11 +8,10 @@ import {
   type CommandContext,
 } from "@belzabar/core";
 import setupCommand from "../setup/index";
-import webCommand from "../web/index";
 import extensionCommand from "../extension/index";
 
 // belz onboard — the guided first-run flow. It chains the focused commands
-// (setup, extension load, web enable) behind confirm prompts, so it is safe to
+// (setup, extension load) behind confirm prompts, so it is safe to
 // re-run: every step detects what is already done and offers to skip it.
 
 type StepStatus = "done" | "skipped" | "failed";
@@ -51,15 +50,15 @@ const command: CommandModule<Record<string, never>, OnboardData> = {
   async execute(_args, context: CommandContext) {
     if (context.outputMode === "llm") {
       throw new CliError(
-        "`belz onboard` is interactive. Use `belz setup --env-file`, `belz extension load`, " +
-          "and `belz web enable` individually for non-interactive setup.",
+        "`belz onboard` is interactive. Use `belz setup --env-file` and `belz extension load` " +
+          "individually for non-interactive setup.",
         { code: "INTERACTIVE_NOT_SUPPORTED" }
       );
     }
 
     lifecycle.note(
       "Welcome to belz",
-      "This will walk through credentials, the browser extension, and the web app.\n" +
+      "This will walk through credentials and the browser extension.\n" +
         "It is safe to re-run any time — completed steps can be skipped."
     );
 
@@ -101,22 +100,6 @@ const command: CommandModule<Record<string, never>, OnboardData> = {
       );
     } else {
       steps.push({ name: "Browser extension", status: "skipped" });
-    }
-
-    // ── 3. Web app autostart ─────────────────────────────────────────────────
-    const doWeb = await prompts.confirm({
-      message: "Start the Belzabar web app automatically at login?",
-      initialValue: true,
-    });
-    if (doWeb) {
-      steps.push(
-        await runStep("Web autostart", async () => {
-          const res = await webCommand.execute({ action: "enable", verbose: false }, context);
-          if (!res.ok) throw new CliError(res.error?.message ?? "web enable failed", { code: "WEB_FAILED" });
-        })
-      );
-    } else {
-      steps.push({ name: "Web autostart", status: "skipped" });
     }
 
     lifecycle.outro("Onboarding complete.");

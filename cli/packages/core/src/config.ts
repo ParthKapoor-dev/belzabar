@@ -36,10 +36,6 @@ export interface BelzConfigFile {
     installedAt?: string; // ISO timestamp of the last install/update
     version?: string;     // git short SHA at install/update time
   };
-  /** Web app lifecycle state. */
-  web?: {
-    autostartEnabled?: boolean; // advisory mirror of the OS autostart service state
-  };
   /** Browser extension lifecycle state. */
   extension?: {
     loadedBrowsers?: string[]; // browser keys that have a force-install policy entry

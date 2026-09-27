@@ -1,7 +1,6 @@
 // @belzabar/design — belz unified design system.
 //
-// One source of truth (tokens.ts) → three surfaces:
-//   - web      consumes ./theme.css (generated) via Tailwind
+// One source of truth (tokens.ts) → two surfaces:
 //   - extension consumes ./theme.css + components.css
 //   - CLI      consumes ./terminal (truecolor ANSI bound to the same hex)
 
