@@ -12,6 +12,7 @@ const ALLOWED: string[] = [
   "values (1), (2)",
   "explain select * from t",
   "table users",
+  "show search_path",
   "select 'delete from t; drop table x' as s",
   "select \"update\", \"insert\" from t",
   "select $$ insert into x $$ as body",

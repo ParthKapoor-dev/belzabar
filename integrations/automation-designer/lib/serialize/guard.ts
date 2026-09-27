@@ -53,6 +53,8 @@ export interface GuardedSaveResult {
   payload: V1SavePayload;
   /** Overlay keys (as paths) that were verified to change the payload. */
   applied: string[];
+  /** Overlay keys whose value already matched the draft (warned, not refused). */
+  unchanged: string[];
 }
 
 export interface GuardedSaveOptions {
@@ -284,14 +286,21 @@ export function buildGuardedV1SavePayload(
     );
   }
 
+  // Keys whose value already matches the draft are harmless when other keys
+  // change something; only an overlay that changes nothing at all is refused.
   const noEffect = edits.filter(e => !changed.some(p => e.allowed.some(a => isUnder(p, a))));
-  if (noEffect.length > 0) {
+  if (noEffect.length === edits.length) {
     throw refuseNotApplied(
       noEffect.map(e => ({ key: e.key, reason: "produces no change (value identical to the current one?)" })),
     );
   }
+  for (const e of noEffect) opts.warn?.(`Overlay key ${e.key} is identical to the current draft; nothing to change.`);
 
-  return { payload, applied: edits.map(e => e.key) };
+  return {
+    payload,
+    applied: edits.filter(e => !noEffect.includes(e)).map(e => e.key),
+    unchanged: noEffect.map(e => e.key),
+  };
 }
 
 function refuseNotApplied(notApplied: NotAppliedEntry[]): CliError {

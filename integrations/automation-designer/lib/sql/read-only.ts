@@ -5,7 +5,7 @@
 // ("No results were returned by the query") — smoke-test F2. We therefore
 // refuse anything but a single read statement before sending it:
 //
-//   SELECT … | WITH … SELECT … | VALUES … | TABLE … | EXPLAIN … (without ANALYZE)
+//   SELECT … | WITH … SELECT … | VALUES … | TABLE … | SHOW … | EXPLAIN … (without ANALYZE)
 //
 // Comments and string / quoted-identifier / dollar-quoted literals are
 // stripped first so neither can hide or fake a keyword. The check is
@@ -15,7 +15,7 @@
 
 import { CliError } from "@belzabar/core";
 
-const READ_STARTS = new Set(["select", "with", "values", "table", "explain"]);
+const READ_STARTS = new Set(["select", "with", "values", "table", "explain", "show"]);
 
 /** Words that make a statement a write (or execute one) wherever they appear. */
 const WRITE_WORDS = new Set([

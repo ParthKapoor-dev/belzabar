@@ -232,6 +232,20 @@ describe("refusal codes", () => {
     expect(e.message).toContain("no change");
   });
 
+  test("an unchanged key next to a real change warns instead of refusing", async () => {
+    const m = await base();
+    const step = m.parsedSteps[1] as CustomCodeStep;
+    const warnings: string[] = [];
+    const res = buildGuardedV1SavePayload(
+      m,
+      { parsedSteps: [{ orderIndex: 2, source: step.source + "\n// edited", description: step.description ?? "" }] },
+      { warn: (w) => warnings.push(w) },
+    );
+    expect(res.applied).toEqual(["parsedSteps[orderIndex=2].source"]);
+    expect(res.unchanged).toEqual(["parsedSteps[orderIndex=2].description"]);
+    expect(warnings.join(" ")).toContain("identical");
+  });
+
   test("AD_OVERLAY_NOT_APPLIED — empty overlay", async () => {
     const m = await base();
     expectCode(() => buildGuardedV1SavePayload(m, {}), "AD_OVERLAY_NOT_APPLIED");
