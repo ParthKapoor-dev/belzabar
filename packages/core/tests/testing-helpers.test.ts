@@ -3,7 +3,7 @@
 // (IPv4 pinning + session + 401 re-login) with no network.
 import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { apiFetch } from "../src/api";
+import { apiFetch } from "../src/http/api";
 import { CliError, fail, ok, type CommandModule } from "../src/command";
 import { Config } from "../src/config";
 import { EnvelopeSchema } from "../src/envelope";

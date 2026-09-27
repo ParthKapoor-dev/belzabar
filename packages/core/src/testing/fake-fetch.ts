@@ -18,7 +18,7 @@
 // logical URL via the Host header before matching.
 
 import { readFileSync } from "fs";
-import { setIpv4ResolverForTesting } from "../dns";
+import { setIpv4ResolverForTesting } from "../http/dns";
 
 export interface RecordedRequest {
   method: string;

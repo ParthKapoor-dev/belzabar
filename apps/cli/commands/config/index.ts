@@ -6,12 +6,18 @@ import {
   writeConfigFile,
   loadSession,
   login,
+  isTokenExpired,
+  encodeSecret,
+  keepSecret,
   term,
   lifecycle,
   prompts,
   type BelzConfigFile,
   type CommandModule,
 } from "@belzabar/core";
+import { parseConfigArgs } from "./args";
+
+export { args } from "./args";
 
 // Picocolors-shaped alias over the unified belz theme.
 const pc = {
@@ -23,7 +29,7 @@ const pc = {
 };
 
 interface ConfigGetArgs   { action: "get" }
-interface ConfigTokenArgs { action: "token" }
+interface ConfigTokenArgs { action: "token"; refresh?: boolean }
 interface ConfigEditArgs  { action: "edit" }
 
 type ConfigArgs = ConfigGetArgs | ConfigTokenArgs | ConfigEditArgs;
@@ -146,11 +152,15 @@ async function runEditTui(): Promise<ConfigEditData> {
       message: current.password ? "Password (leave blank to keep current)" : "Password",
     });
 
-    const updatedEnv: Record<string, string> = {};
-    if (newUrl)  updatedEnv.url  = newUrl;
-    if (newUser) updatedEnv.user = newUser;
-    if (newPass) updatedEnv.password = btoa(newPass);
-    else if (current.password) updatedEnv.password = current.password;
+    // Keep every other field (project, …) — CORE-16. New passwords are stored
+    // plain with an explicit encoding (D5; config.json is 0600).
+    const { password: _p, passwordEncoding: _e, ...rest } = current;
+    const updatedEnv = {
+      ...rest,
+      ...(newUrl ? { url: newUrl } : {}),
+      ...(newUser ? { user: newUser } : {}),
+      ...(newPass ? encodeSecret(newPass) : keepSecret(current)),
+    };
 
     writeConfigFile({ ...cfg, environments: { ...envs, [envName]: updatedEnv } });
     lifecycle.outro(`Saved configuration for '${envName}'.`);
@@ -166,10 +176,11 @@ async function runEditTui(): Promise<ConfigEditData> {
     const user = await prompts.text({ message: "Username" });
     const pass = await prompts.password({ message: "Password" });
 
-    const entry: Record<string, string> = {};
-    if (url)  entry.url = url;
-    if (user) entry.user = user;
-    if (pass) entry.password = btoa(pass);
+    const entry = {
+      ...(url ? { url } : {}),
+      ...(user ? { user } : {}),
+      ...(pass ? encodeSecret(pass) : {}),
+    };
 
     writeConfigFile({ ...cfg, environments: { ...envs, [name]: entry } });
     lifecycle.outro(`Added environment '${name}'.`);
@@ -210,10 +221,12 @@ async function runEditTui(): Promise<ConfigEditData> {
       message: tw.password ? "Password (leave blank to keep current)" : "Password",
     });
 
-    const teamwork: Record<string, string> = {};
-    if (email) teamwork.email = email;
-    if (passRaw) teamwork.password = btoa(passRaw);
-    else if (tw.password) teamwork.password = tw.password;
+    const { password: _tp, passwordEncoding: _te, ...twRest } = tw;
+    const teamwork = {
+      ...twRest,
+      ...(email ? { email } : {}),
+      ...(passRaw ? encodeSecret(passRaw) : keepSecret(tw)),
+    };
 
     writeConfigFile({ ...cfg, teamwork } as BelzConfigFile);
     lifecycle.outro("Saved Teamwork credentials.");
@@ -240,12 +253,14 @@ async function runEditTui(): Promise<ConfigEditData> {
     defaultValue: jk.migrationJob ?? "Deployments/Expertly/Database/expertly.db-migration",
   });
 
-  const jenkins: Record<string, string> = {};
-  if (baseUrl) jenkins.baseUrl = baseUrl;
-  if (jkUser) jenkins.user = jkUser;
-  if (jkPassRaw) jenkins.password = btoa(jkPassRaw);
-  else if (jk.password) jenkins.password = jk.password;
-  if (job) jenkins.migrationJob = job;
+  const { password: _jp, passwordEncoding: _je, ...jkRest } = jk;
+  const jenkins = {
+    ...jkRest,
+    ...(baseUrl ? { baseUrl } : {}),
+    ...(jkUser ? { user: jkUser } : {}),
+    ...(jkPassRaw ? encodeSecret(jkPassRaw) : keepSecret(jk)),
+    ...(job ? { migrationJob: job } : {}),
+  };
 
   writeConfigFile({ ...cfg, jenkins } as BelzConfigFile);
   lifecycle.outro("Saved Jenkins credentials.");
@@ -255,27 +270,8 @@ async function runEditTui(): Promise<ConfigEditData> {
 const command: CommandModule<ConfigArgs, ConfigData> = {
   schema: "belz.config",
 
-  parseArgs(args) {
-    const sub = args[0];
-
-    if (!sub || sub === "--help" || sub === "-h") {
-      throw new CliError(
-        "Usage: belz config <subcommand>\nSubcommands: get, token, edit\nRun 'belz config --help' for details.",
-        { code: "MISSING_SUBCOMMAND" }
-      );
-    }
-
-    if (sub === "get")   return { action: "get" };
-    if (sub === "token") return { action: "token" };
-    if (sub === "edit")  return { action: "edit" };
-
-    const hint = sub === "envs" || sub === "env"
-      ? " To list environments, run 'belz envs'."
-      : "";
-    throw new CliError(
-      `Unknown config subcommand: '${sub}'. Available: get, token, edit.${hint}`,
-      { code: "UNKNOWN_SUBCOMMAND" }
-    );
+  parseArgs(argv) {
+    return parseConfigArgs(argv);
   },
 
   async execute(args) {
@@ -286,11 +282,7 @@ const command: CommandModule<ConfigArgs, ConfigData> = {
       const fileEnv = rawFile.environments?.[env.name];
       const session = await loadSession();
 
-      const passwordSource: "file" | "env" | "none" = fileEnv?.password
-        ? "file"
-        : env.credentials.passwordEncoded
-        ? "env"
-        : "none";
+      const passwordSource: "file" | "env" | "none" = fileEnv?.password ? "file" : "none";
 
       return ok<ConfigGetData>({
         action: "get",
@@ -303,8 +295,10 @@ const command: CommandModule<ConfigArgs, ConfigData> = {
     }
 
     if (args.action === "token") {
+      // Re-login when there is no session, the JWT `exp` has passed, or
+      // --refresh was given — never hand a dead token to curl (CORE-10).
       let session = await loadSession();
-      if (!session) {
+      if (!session || args.refresh || isTokenExpired(session.token)) {
         session = await login();
       }
       return ok<ConfigTokenData>({

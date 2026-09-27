@@ -1,3 +1,5 @@
+import { redactSecrets, redactString } from "./http/redact";
+
 const START = Date.now();
 
 export function verboseEnabled(): boolean {
@@ -11,7 +13,7 @@ function ts(): string {
 function formatMeta(meta?: Record<string, unknown>): string {
   if (!meta) return "";
   try {
-    return " " + JSON.stringify(meta);
+    return " " + JSON.stringify(redactSecrets(meta));
   } catch {
     return "";
   }
@@ -19,7 +21,7 @@ function formatMeta(meta?: Record<string, unknown>): string {
 
 export function vlog(message: string, meta?: Record<string, unknown>): void {
   if (!verboseEnabled()) return;
-  process.stderr.write(`${ts()} ${message}${formatMeta(meta)}\n`);
+  process.stderr.write(`${ts()} ${redactString(message)}${formatMeta(meta)}\n`);
 }
 
 export function vtime(label: string): () => void {

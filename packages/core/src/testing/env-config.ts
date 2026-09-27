@@ -19,6 +19,8 @@ export interface TempEnvSpec {
   /** Plain-text password (base64-encoded into config.json for you). */
   password?: string;
   project?: string;
+  /** How the password is stored in config.json: "base64" (legacy, default) or "plain" (D5). */
+  passwordEncoding?: "plain" | "base64";
   /** Session token written to sessions/<env>.json. Default "test-token"; `null` = no session (forces login). */
   token?: string | null;
 }
@@ -29,6 +31,8 @@ export interface TempEnvConfigOptions {
   jenkins?: BelzConfigFile["jenkins"];
   /** Make this env active (Config.setActiveEnv). */
   activeEnv?: string;
+  /** config.json `defaultEnv`. */
+  defaultEnv?: string;
 }
 
 export interface TempEnvConfig {
@@ -61,7 +65,7 @@ export function withTempEnvConfig(options: TempEnvConfigOptions): TempEnvConfig 
     if (!backups.has(p)) backups.set(p, existsSync(p) ? readFileSync(p, "utf8") : null);
   };
 
-  const previousActive = Config.activeEnv?.name;
+  const previousActive = Config.envWasExplicit ? Config.activeEnv?.name : undefined;
 
   backup(configPath);
   const config: BelzConfigFile = { environments: {} };
@@ -69,10 +73,13 @@ export function withTempEnvConfig(options: TempEnvConfigOptions): TempEnvConfig 
     config.environments![name] = {
       url: spec.url,
       user: spec.user ?? "test-user",
-      password: btoa(spec.password ?? "test-password"),
+      ...(spec.passwordEncoding === "plain"
+        ? { password: spec.password ?? "test-password", passwordEncoding: "plain" as const }
+        : { password: btoa(spec.password ?? "test-password") }),
       ...(spec.project ? { project: spec.project } : {}),
     };
   }
+  if (options.defaultEnv) config.defaultEnv = options.defaultEnv;
   if (options.teamwork) config.teamwork = options.teamwork;
   if (options.jenkins) config.jenkins = options.jenkins;
   mkdirSync(home, { recursive: true });
@@ -88,6 +95,7 @@ export function withTempEnvConfig(options: TempEnvConfigOptions): TempEnvConfig 
   }
 
   reloadConfig();
+  Config.resetActiveEnv(); // start from the default env, not a previous test's --env
   if (options.activeEnv) Config.setActiveEnv(options.activeEnv);
 
   let restored = false;
@@ -101,6 +109,7 @@ export function withTempEnvConfig(options: TempEnvConfigOptions): TempEnvConfig 
     reloadConfig();
     try {
       if (previousActive) Config.setActiveEnv(previousActive);
+      else Config.resetActiveEnv();
     } catch {
       /* env no longer exists: reloadConfig already fell back to nsm-dev */
     }

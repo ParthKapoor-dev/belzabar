@@ -1,8 +1,8 @@
 import { lookup, resolve4 } from "dns/promises";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import { BELZ_CONFIG_DIR } from "./config";
-import { vlog } from "./verbose";
+import { BELZ_CONFIG_DIR } from "../config";
+import { vlog } from "../verbose";
 
 interface CacheEntry {
   ip: string;
@@ -54,6 +54,24 @@ function storeCached(host: string, ip: string): void {
   } catch (err) {
     // A cache write failure must never fail the request.
     vlog(`DNS cache write failed for ${host}`, { error: String(err) });
+  }
+}
+
+/**
+ * Drop `host`'s pinned IPv4 (memory + disk). Called when a request to the
+ * pinned IP fails to connect, so a load balancer IP change is picked up at
+ * once instead of after the 5-minute TTL (CORE-20).
+ */
+export function evictIpv4Cache(host: string): void {
+  memCache.delete(host);
+  try {
+    const all = readDiskCache();
+    if (!(host in all)) return;
+    delete all[host];
+    writeFileSync(DISK_CACHE_PATH, JSON.stringify(all));
+    vlog(`DNS EVICT ${host}`);
+  } catch (err) {
+    vlog(`DNS evict failed for ${host}`, { error: String(err) });
   }
 }
 
@@ -120,6 +138,8 @@ async function resolveIPv4(host: string): Promise<string> {
 export interface Ipv4FetchPrep {
   url: string;
   init: RequestInit & { tls?: { serverName: string } };
+  /** The hostname whose IP was substituted, when the request was pinned. */
+  pinnedHost?: string;
 }
 
 /**
@@ -160,5 +180,6 @@ export async function prepareIpv4Fetch(
   return {
     url: u.toString(),
     init: { ...init, headers, tls: { serverName: host } },
+    pinnedHost: host,
   };
 }
