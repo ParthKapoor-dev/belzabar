@@ -1,16 +1,21 @@
-import { Config, ok, type CommandModule } from "@belzabar/core";
-import { assertJenkinsAuth, discoverProfiles } from "../../lib";
+import { Config, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { assertJenkinsAuth, discoverProfiles, normalizeClient } from "../../lib";
 import type { MigrateProfilesArgs, MigrateProfilesData } from "../../lib";
+
+export const args = defineArgs({
+  command: "belz migrate profiles",
+  flags: {
+    refresh: { type: "boolean" },
+    client: { type: "string" },
+  },
+});
 
 const command: CommandModule<MigrateProfilesArgs, MigrateProfilesData> = {
   schema: "belz.migrate.profiles",
-  parseArgs(args) {
-    return {
-      action: "profiles",
-      refresh: args.includes("--refresh"),
-      client: undefined,
-      raw: args.includes("--raw"),
-    };
+  parseArgs(argv) {
+    const { flags } = args.parse(argv);
+    // MG-3: --client used to be hardcoded to undefined, so every client was listed.
+    return { action: "profiles", refresh: flags.refresh, client: normalizeClient(flags.client) };
   },
   async execute(args) {
     const auth = assertJenkinsAuth(Config.getJenkins());

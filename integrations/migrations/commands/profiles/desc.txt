@@ -1,1 +1,3 @@
-belz migrate profiles            List Jenkins migration profile choices grouped by client.
+belz migrate profiles  :->  List Jenkins migration profile choices grouped by client (cached)
+belz migrate profiles --refresh  :->  Re-fetch the profile choices from Jenkins
+belz migrate profiles --client <name>  :->  List one client's profiles only

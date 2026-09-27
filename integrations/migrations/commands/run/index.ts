@@ -8,6 +8,7 @@ import {
   jobUrl,
   parseJenkinsConsole,
   parseMigrateRunArgs,
+  RUN_ARGS,
   resolveMigrationTargets,
   resolveQueueItem,
   streamConsole,
@@ -16,6 +17,8 @@ import {
 } from "../../lib";
 import type { MigrateRunArgs, MigrateRunData, TriggerBuildInput } from "../../lib";
 
+export const args = RUN_ARGS;
+
 function logProgress(quiet: boolean | undefined, line: string): void {
   if (quiet) return;
   process.stderr.write(`[migrate] ${line}\n`);
@@ -23,8 +26,10 @@ function logProgress(quiet: boolean | undefined, line: string): void {
 
 const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
   schema: "belz.migrate.run",
-  async parseArgs(args) {
-    return await parseMigrateRunArgs(args);
+  /** Triggers a Jenkins migration build. */
+  writes: true,
+  async parseArgs(argv) {
+    return await parseMigrateRunArgs(argv);
   },
   async execute(args, context) {
     const auth = assertJenkinsAuth(Config.getJenkins());

@@ -1,4 +1,6 @@
-belz migrate run  —  Trigger a migration build on Jenkins
+Usage: belz migrate run --profile <profile> --module <type> --ids "<csv>" [options]
+
+Trigger a migration build on Jenkins, follow its console, and parse the report.
 
 USAGE
   belz migrate run --profile <profile> --module <type> --ids "<csv>" [options]
@@ -9,6 +11,7 @@ REQUIRED
                                PD_COMPARISON_REPORT, AD_MIGRATION_STATUS,
                                PD_MIGRATION_STATUS, AD_Service.
                                Use --module-custom for arbitrary values.
+                               --module-name is accepted as an alias.
 
   --profile <name>             A profile name (e.g. devncdns_qancdns).
   OR
@@ -30,6 +33,7 @@ MIGRATION IDS
   aborts before the build so nothing is wasted.
 
 SAFETY
+  - --ids and --ids-file cannot be combined (MIGRATE_IDS_CONFLICT).
   - Unknown flags are errors (MIGRATE_UNKNOWN_FLAG, with a did-you-mean), as are
     stray positionals and values on switches (e.g. --dry-run=true).
   - --source-env / --target-env must match the --profile's envs (e.g.
@@ -46,13 +50,14 @@ OPTIONS
   --async Y|N                  Run asynchronously. Default: N.
   --migrate-dependents Y|N     Migrate dependent methods/pages. Default: N.
   --devops-tag <ref>           Branch/tag of infra.expertly. Default: develop.
-  --dry-run                    Validate parameters without running migration.
+  --dry-run                    Send DRY_RUN=true to the Jenkins job. NOTE: a real
+                               Jenkins build is still triggered; the job itself
+                               decides what a dry run skips.
   --no-auto-approve            Require manual approval in Jenkins (default
                                sends AUTO_APPROVE=true so we don't get stuck).
   --no-follow                  Trigger build and return without streaming logs.
   --out <path>                 Write summary.json + summary.console.log to dir.
   --quiet                      Suppress progress output.
-  --raw                        Include raw report data in JSON output.
   --llm                        Emit structured JSON for agent consumption.
 
 CONFIG

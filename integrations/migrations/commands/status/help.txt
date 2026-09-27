@@ -1,7 +1,13 @@
-belz migrate status  —  Check a Jenkins migration build's status
+Usage: belz migrate status <buildNumber> [flags]
 
-USAGE
-  belz migrate status <buildNumber> [--llm]
+Check a Jenkins migration build's status, result, and parameters.
+
+ARGUMENTS
+  <buildNumber>       Jenkins build number (digits only).
+
+FLAGS
+  --llm               Emit structured JSON for agent consumption.
+  --help, -h          Show this help message.
 
 EXAMPLES
   belz migrate status 743

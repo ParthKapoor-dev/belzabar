@@ -15,8 +15,8 @@ migrations/
 │   └── logs/                # Dump (ANSI-stripped) console of a past build
 ├── registry.ts              # Static, sorted command registry (@belzabar/migrations/registry)
 └── lib/
-    ├── args.ts              # `migrate run` arg parsing; whitelists
-    │                        #   flags (MIGRATE_UNKNOWN_FLAG) and checks --source/--target-env
+    ├── args.ts              # `migrate run` spec (RUN_ARGS, core defineArgs; unknown flags →
+    │                        #   MIGRATE_UNKNOWN_FLAG) + value checks; checks --source/--target-env
     │                        #   against the profile (PROFILE_SEGMENT_TO_ENV / envPairFromProfile)
     ├── resolve-targets.ts   # Pre-flight id resolution on the profile's source env
     ├── constants.ts         # Default job, client list, env→profile map

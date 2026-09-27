@@ -1,10 +1,16 @@
-belz migrate logs  —  Print full console output of a Jenkins migration build
+Usage: belz migrate logs <buildNumber> [flags]
 
-USAGE
-  belz migrate logs <buildNumber> [--llm]
+Print the full console output of a Jenkins migration build.
 
 DESCRIPTION
   Fetches /job/<job>/<n>/consoleText, strips ANSI escapes, and prints it.
+
+ARGUMENTS
+  <buildNumber>       Jenkins build number (digits only).
+
+FLAGS
+  --llm               Emit structured JSON for agent consumption.
+  --help, -h          Show this help message.
 
 EXAMPLES
   belz migrate logs 743

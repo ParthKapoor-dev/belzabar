@@ -1,1 +1,3 @@
-belz migrate run                 Trigger a Jenkins migration build, follow its console, and parse the report.
+belz migrate run --profile <p> --module <type> --ids "<csv>"  :->  Trigger a Jenkins migration build, follow its console, and parse the report
+belz migrate run --source-env <env> --target-env <env> --module <type> --ids-file <path>  :->  Derive the profile from an NCDNS env pair; ids from a file
+belz migrate run … --dry-run --no-follow --quiet --out <dir>  :->  DRY_RUN=true build; return without streaming; write summary.json + console log

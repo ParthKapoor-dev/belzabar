@@ -1,7 +1,6 @@
-belz migrate profiles  —  List available Jenkins migration profiles
+Usage: belz migrate profiles [--refresh] [--client <name>] [flags]
 
-USAGE
-  belz migrate profiles [--refresh] [--raw] [--llm]
+List available Jenkins migration profiles.
 
 DESCRIPTION
   Fetches the PROFILE_NAME parameter choices from the Jenkins
@@ -12,10 +11,12 @@ DESCRIPTION
 
 FLAGS
   --refresh           Bypass the local cache and re-fetch from Jenkins.
-  --raw               Include extra metadata in --llm output.
+  --client <name>     Only list one client's profiles (case-insensitive), e.g.
+                      SEMS, "NCDNS (NSS)", "YS (YieldSec)".
   --llm               Emit structured JSON for agent consumption.
+  --help, -h          Show this help message.
 
 EXAMPLES
   belz migrate profiles
   belz migrate profiles --refresh
-  belz migrate profiles --llm
+  belz migrate profiles --client SEMS --llm

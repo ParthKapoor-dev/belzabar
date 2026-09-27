@@ -1,21 +1,32 @@
-import { CliError, Config, ok, type CommandModule } from "@belzabar/core";
+import { CliError, Config, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { assertJenkinsAuth, getFullConsole, stripAnsi } from "../../lib";
 import type { MigrateLogsArgs, MigrateLogsData } from "../../lib";
 
+export const args = defineArgs({
+  command: "belz migrate logs",
+  positionals: [
+    {
+      name: "build-number",
+      required: true,
+      missingCode: "MIGRATE_BUILD_NUMBER_REQUIRED",
+      missingMessage: "belz migrate logs requires a build number.",
+    },
+  ],
+});
+
+/** MG-6: digits only — `12abc` used to be read as build 12. */
+function parseBuildNumber(input: string): number {
+  const n = /^\d+$/.test(input.trim()) ? Number(input.trim()) : NaN;
+  if (!Number.isSafeInteger(n) || n <= 0) {
+    throw new CliError(`Invalid build number '${input}'.`, { code: "MIGRATE_BUILD_NUMBER_INVALID", details: { input } });
+  }
+  return n;
+}
+
 const command: CommandModule<MigrateLogsArgs, MigrateLogsData> = {
   schema: "belz.migrate.logs",
-  parseArgs(args) {
-    const first = args.find((a) => !a.startsWith("-"));
-    if (!first) {
-      throw new CliError("belz migrate logs requires a build number.", {
-        code: "MIGRATE_BUILD_NUMBER_REQUIRED",
-      });
-    }
-    const n = Number.parseInt(first, 10);
-    if (!Number.isFinite(n) || n <= 0) {
-      throw new CliError(`Invalid build number '${first}'.`, { code: "MIGRATE_BUILD_NUMBER_INVALID" });
-    }
-    return { action: "logs", buildNumber: n };
+  parseArgs(argv) {
+    return { action: "logs", buildNumber: parseBuildNumber(args.parse(argv).positionals.buildNumber) };
   },
   async execute(args) {
     const auth = assertJenkinsAuth(Config.getJenkins());

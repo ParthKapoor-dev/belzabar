@@ -1,4 +1,4 @@
-import { CliError } from "@belzabar/core";
+import { CliError, acceptedFlags, defineArgs, suggest } from "@belzabar/core";
 import {
   JENKINS_CLIENTS,
   KNOWN_MIGRATE_TYPES,
@@ -6,45 +6,9 @@ import {
   type JenkinsClient,
   type MigrateType,
 } from "./constants";
-import type {
-  MigrateRunArgs,
-  YesNo,
-} from "./types";
+import type { MigrateRunArgs } from "./types";
 
-function getOptionValue(args: string[], name: string): string | undefined {
-  const explicit = args.find((a) => a.startsWith(`${name}=`));
-  if (explicit) {
-    const value = explicit.split("=").slice(1).join("=").trim();
-    return value || undefined;
-  }
-  const idx = args.indexOf(name);
-  if (idx === -1) return undefined;
-  const next = args[idx + 1];
-  if (!next || next.startsWith("-")) return undefined;
-  return next;
-}
-
-function hasOption(args: string[], name: string): boolean {
-  return args.includes(name) || args.some((a) => a.startsWith(`${name}=`));
-}
-
-function parseYesNo(args: string[], name: string, defaultValue: YesNo): YesNo {
-  if (!hasOption(args, name)) return defaultValue;
-  const raw = getOptionValue(args, name);
-  if (!raw) throw new CliError(`${name} requires Y or N.`, { code: "MIGRATE_INVALID_FLAG_VALUE" });
-  const normalized = raw.trim().toUpperCase();
-  if (normalized !== "Y" && normalized !== "N") {
-    throw new CliError(`${name} must be Y or N.`, { code: "MIGRATE_INVALID_FLAG_VALUE", details: { flag: name, value: raw } });
-  }
-  return normalized;
-}
-
-function parseString(args: string[], name: string): string | undefined {
-  const v = getOptionValue(args, name);
-  return v?.trim() || undefined;
-}
-
-function normalizeClient(value: string | undefined): JenkinsClient | undefined {
+export function normalizeClient(value: string | undefined): JenkinsClient | undefined {
   if (!value) return undefined;
   const trimmed = value.trim();
   const match = JENKINS_CLIENTS.find((c) => c.toLowerCase() === trimmed.toLowerCase());
@@ -104,84 +68,51 @@ function deriveProfileFromEnvPair(sourceEnv: string, targetEnv: string): string 
   return `${s}_${t}`;
 }
 
-// -------- run: flag whitelist (MG-1) ---------------------------------------
+// -------- run: argument spec (MG-1) ----------------------------------------
 //
 // `migrate run` triggers a real Jenkins build, so a typo'd safety flag
 // (`--dryrun`, `--no-autoapprove`) must be an error, never silently ignored.
+// core `defineArgs` rejects unknown flags (with a did-you-mean), values on
+// switches (`--dry-run=true`) and stray positionals; the MIGRATE_* codes predate
+// it and are kept.
 
-const RUN_VALUE_FLAGS = [
-  "--module", "--module-name", "--module-custom", "--client", "--profile",
-  "--source-env", "--target-env", "--ids", "--ids-file", "--migration-id",
-  "--async", "--migrate-dependents", "--devops-tag", "--out",
-] as const;
-const RUN_BOOLEAN_FLAGS = ["--dry-run", "--no-auto-approve", "--raw", "--quiet", "--no-follow"] as const;
-const RUN_KNOWN_FLAGS: readonly string[] = [...RUN_VALUE_FLAGS, ...RUN_BOOLEAN_FLAGS];
+const YES_NO = ["Y", "N"] as const;
 
-function editDistance(a: string, b: string): number {
-  const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    let prev = dp[0]!;
-    dp[0] = i;
-    for (let j = 1; j <= b.length; j++) {
-      const tmp = dp[j]!;
-      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j]!, dp[j - 1]!);
-      prev = tmp;
-    }
-  }
-  return dp[b.length]!;
-}
+export const RUN_ARGS = defineArgs({
+  command: "belz migrate run",
+  flags: {
+    module: { type: "string", alias: ["--module-name"] },
+    "module-custom": { type: "string" },
+    client: { type: "string" },
+    profile: { type: "string" },
+    "source-env": { type: "string" },
+    "target-env": { type: "string" },
+    ids: { type: "string" },
+    "ids-file": { type: "string" },
+    "migration-id": { type: "string" },
+    async: { type: "enum", values: YES_NO, default: "N" },
+    "migrate-dependents": { type: "enum", values: YES_NO, default: "N" },
+    "devops-tag": { type: "string" },
+    out: { type: "string" },
+    "dry-run": { type: "boolean" },
+    "no-auto-approve": { type: "boolean" },
+    quiet: { type: "boolean" },
+    "no-follow": { type: "boolean" },
+  },
+  exclusive: [["ids", "ids-file"]],
+  codes: {
+    UNKNOWN_FLAG: "MIGRATE_UNKNOWN_FLAG",
+    INVALID_VALUE: "MIGRATE_INVALID_FLAG_VALUE",
+    UNEXPECTED_ARGUMENT: "MIGRATE_UNEXPECTED_ARG",
+    CONFLICTING_FLAGS: "MIGRATE_IDS_CONFLICT",
+  },
+});
 
+const RUN_KNOWN_FLAGS: readonly string[] = [...acceptedFlags(RUN_ARGS)];
+
+/** Closest known `migrate run` flag to a typo (kept for callers of the old parser). */
 export function suggestFlag(flag: string, known: readonly string[] = RUN_KNOWN_FLAGS): string | undefined {
-  const norm = (f: string) => f.replace(/^-+/, "").replace(/[-_]/g, "").toLowerCase();
-  const n = norm(flag);
-  let best: { flag: string; d: number } | undefined;
-  for (const k of known) {
-    const d = editDistance(n, norm(k));
-    if (!best || d < best.d) best = { flag: k, d };
-  }
-  if (!best) return undefined;
-  return best.d <= Math.max(2, Math.floor(norm(best.flag).length / 3)) ? best.flag : undefined;
-}
-
-/** Reject unknown flags, `=value` on boolean flags, and stray positionals. */
-export function assertKnownRunFlags(rest: string[]): void {
-  for (let i = 0; i < rest.length; i++) {
-    const token = rest[i]!;
-    if (!token.startsWith("-")) {
-      throw new CliError(`Unexpected argument '${token}' for 'belz migrate run'.`, {
-        code: "MIGRATE_UNEXPECTED_ARG",
-        details: { arg: token },
-      });
-    }
-    const eq = token.indexOf("=");
-    const name = eq === -1 ? token : token.slice(0, eq);
-    if ((RUN_VALUE_FLAGS as readonly string[]).includes(name)) {
-      if (eq === -1) {
-        const next = rest[i + 1];
-        if (next !== undefined && !next.startsWith("-")) i++;
-      }
-      continue;
-    }
-    if ((RUN_BOOLEAN_FLAGS as readonly string[]).includes(name)) {
-      if (eq !== -1) {
-        throw new CliError(`${name} is a switch and takes no value (got '${token}').`, {
-          code: "MIGRATE_INVALID_FLAG_VALUE",
-          details: { flag: name, value: token.slice(eq + 1) },
-        });
-      }
-      continue;
-    }
-    const suggestion = suggestFlag(name);
-    throw new CliError(
-      `Unknown flag '${name}' for 'belz migrate run'.` +
-        (suggestion ? ` Did you mean '${suggestion}'?` : "") +
-        ` Known: ${RUN_KNOWN_FLAGS.join(", ")}.`,
-      {
-        code: "MIGRATE_UNKNOWN_FLAG",
-        details: { flag: name, suggestion: suggestion ?? null, known: RUN_KNOWN_FLAGS },
-      },
-    );
-  }
+  return suggest(flag, known);
 }
 
 // -------- run: profile ↔ env consistency (MG-2) -----------------------------
@@ -249,25 +180,17 @@ export function assertProfileEnvConsistent(
   }
 }
 
-export async function parseMigrateRunArgs(rest: string[]): Promise<MigrateRunArgs> {
-  assertKnownRunFlags(rest);
+export async function parseMigrateRunArgs(argv: string[]): Promise<MigrateRunArgs> {
+  const { flags } = RUN_ARGS.parse(argv);
 
-  const moduleValue = parseString(rest, "--module") ?? parseString(rest, "--module-name");
-  const customModuleValue = parseString(rest, "--module-custom");
-  const migrateType = normalizeMigrateType(moduleValue, customModuleValue);
+  const migrateType = normalizeMigrateType(flags.module, flags.moduleCustom);
+  const client = normalizeClient(flags.client);
+  const profile = flags.profile?.trim() || undefined;
+  const sourceEnv = flags.sourceEnv?.trim() || undefined;
+  const targetEnv = flags.targetEnv?.trim() || undefined;
 
-  const client = normalizeClient(parseString(rest, "--client"));
-  const profile = parseString(rest, "--profile");
-  const sourceEnv = parseString(rest, "--source-env");
-  const targetEnv = parseString(rest, "--target-env");
-
-  const idsArg = parseString(rest, "--ids");
-  const idsFile = parseString(rest, "--ids-file");
-  if (idsArg && idsFile) {
-    throw new CliError("Use either --ids or --ids-file, not both.", { code: "MIGRATE_IDS_CONFLICT" });
-  }
-  let ids = parseIdsCsv(idsArg);
-  if (idsFile) ids = await parseIdsFromFile(idsFile);
+  let ids = parseIdsCsv(flags.ids);
+  if (flags.idsFile) ids = await parseIdsFromFile(flags.idsFile);
 
   const requiresIds = !/MIGRATION_STATUS|COMPARISON_REPORT/i.test(String(migrateType));
   if (requiresIds && ids.length === 0) {
@@ -291,16 +214,14 @@ export async function parseMigrateRunArgs(rest: string[]): Promise<MigrateRunArg
     targetEnv,
     migrateType,
     ids,
-    migrationId: parseString(rest, "--migration-id"),
-    asyncMigration: parseYesNo(rest, "--async", "N"),
-    migrateDependent: parseYesNo(rest, "--migrate-dependents", "N"),
-    devopsTag: parseString(rest, "--devops-tag"),
-    dryRun: rest.includes("--dry-run"),
-    autoApprove: !rest.includes("--no-auto-approve"),
-    outPath: parseString(rest, "--out"),
-    raw: rest.includes("--raw"),
-    quiet: rest.includes("--quiet"),
-    follow: !rest.includes("--no-follow"),
+    migrationId: flags.migrationId?.trim() || undefined,
+    asyncMigration: flags.async,
+    migrateDependent: flags.migrateDependents,
+    devopsTag: flags.devopsTag?.trim() || undefined,
+    dryRun: flags.dryRun,
+    autoApprove: !flags.noAutoApprove,
+    outPath: flags.out?.trim() || undefined,
+    quiet: flags.quiet,
+    follow: !flags.noFollow,
   };
 }
-

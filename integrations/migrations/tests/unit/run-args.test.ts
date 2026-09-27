@@ -6,6 +6,10 @@ import {
   suggestFlag,
   resolveMigrationTargets,
 } from "../../lib";
+import statusCmd from "../../commands/status/index";
+import logsCmd from "../../commands/logs/index";
+import profilesCmd from "../../commands/profiles/index";
+import runCmd from "../../commands/run/index";
 
 const BASE = ["--profile", "devsems_qasems", "--module", "PD", "--ids", "abc"];
 
@@ -59,7 +63,7 @@ describe("MG-1: unknown flags are rejected with a did-you-mean", () => {
   test("all known flags still parse", async () => {
     const parsed = await parseMigrateRunArgs([
       ...BASE, "--client", "SEMS", "--migration-id", "m1", "--async", "Y", "--migrate-dependents=N",
-      "--devops-tag", "develop", "--out", "/tmp/x", "--dry-run", "--no-auto-approve", "--raw", "--quiet", "--no-follow",
+      "--devops-tag", "develop", "--out", "/tmp/x", "--dry-run", "--no-auto-approve", "--quiet", "--no-follow",
       "--source-env", "sems-dev", "--target-env=sems-qa",
     ]);
     expect(parsed.dryRun).toBe(true);
@@ -121,5 +125,59 @@ describe("MG-2: profile ↔ env consistency", () => {
       resolveMigrationTargets({ profile: "devsems_qasems", sourceEnv: "nsm-qa", migrateType: "PD", ids: ["x"] }),
     );
     expect(err.code).toBe("MIGRATE_ENV_PROFILE_MISMATCH");
+  });
+});
+
+describe("core defineArgs migration (Stage 3)", () => {
+  test("MG-9: the no-op --raw is gone", async () => {
+    const err = await codeOf(parseMigrateRunArgs([...BASE, "--raw"]));
+    expect(err.code).toBe("MIGRATE_UNKNOWN_FLAG");
+  });
+
+  test("a value flag followed by a flag is MISSING_VALUE (not silently undefined)", async () => {
+    const err = await codeOf(parseMigrateRunArgs(["--profile", "--module", "PD", "--ids", "a"]));
+    expect(err.code).toBe("MISSING_VALUE");
+  });
+
+  test("--async must be Y or N (case-insensitive)", async () => {
+    expect((await parseMigrateRunArgs([...BASE, "--async", "y"])).asyncMigration).toBe("Y");
+    const err = await codeOf(parseMigrateRunArgs([...BASE, "--async", "maybe"]));
+    expect(err.code).toBe("MIGRATE_INVALID_FLAG_VALUE");
+  });
+
+  test("--ids with --ids-file → MIGRATE_IDS_CONFLICT", async () => {
+    const err = await codeOf(parseMigrateRunArgs([...BASE, "--ids-file", "x.txt"]));
+    expect(err.code).toBe("MIGRATE_IDS_CONFLICT");
+  });
+
+  test("--module-name is an alias of --module", async () => {
+    const parsed = await parseMigrateRunArgs(["--profile", "devsems_qasems", "--module-name", "pd", "--ids", "a"]);
+    expect(parsed.migrateType).toBe("PD");
+  });
+});
+
+describe("status / logs / profiles", () => {
+  test("MG-6: build numbers are digits only", async () => {
+    for (const mod of [statusCmd, logsCmd]) {
+      expect(mod.parseArgs!(["743"], {} as any)).toMatchObject({ buildNumber: 743 });
+      for (const bad of ["12abc", "0", "-5", "1.5"]) {
+        const err = await codeOf(Promise.resolve().then(() => mod.parseArgs!([bad], {} as any)));
+        expect(err.code).toBe("MIGRATE_BUILD_NUMBER_INVALID");
+      }
+      const missing = await codeOf(Promise.resolve().then(() => mod.parseArgs!([], {} as any)));
+      expect(missing.code).toBe("MIGRATE_BUILD_NUMBER_REQUIRED");
+      const unknown = await codeOf(Promise.resolve().then(() => mod.parseArgs!(["1", "--raw"], {} as any)));
+      expect(unknown.code).toBe("UNKNOWN_FLAG");
+    }
+  });
+
+  test("MG-3: profiles --client is parsed and normalized", () => {
+    expect(profilesCmd.parseArgs!(["--client", "sems"], {} as any)).toEqual({ action: "profiles", refresh: false, client: "SEMS" });
+    expect(profilesCmd.parseArgs!(["--refresh"], {} as any)).toEqual({ action: "profiles", refresh: true, client: undefined });
+    expect(() => profilesCmd.parseArgs!(["--client", "nope"], {} as any)).toThrow(/Unknown client/);
+  });
+
+  test("migrate run is a write", () => {
+    expect(runCmd.writes).toBe(true);
   });
 });

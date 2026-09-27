@@ -76,7 +76,6 @@ export interface MigrateProfilesArgs {
   action: "profiles";
   refresh: boolean;
   client?: JenkinsClient;
-  raw: boolean;
 }
 
 export interface MigrateRunArgs {
@@ -94,7 +93,6 @@ export interface MigrateRunArgs {
   dryRun: boolean;
   autoApprove: boolean;
   outPath?: string;
-  raw: boolean;
   quiet?: boolean;
   follow: boolean;
 }
