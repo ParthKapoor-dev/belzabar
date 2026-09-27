@@ -13,7 +13,6 @@ import type {
   RawHistoryEntry,
   RawPartialUpdateOperation,
   PdStatus,
-  PdEntityType,
 } from "../types/wire";
 import type { SaveResult } from "./client";
 
@@ -101,40 +100,3 @@ export const pdApi = {
     return client.releaseLock(pageId);
   },
 };
-
-// Helper used by draft-guard to resolve siblings by name.
-export async function fetchEntityIdsByName(
-  name: string,
-  entityType: PdEntityType,
-): Promise<{ draftId: string | null; publishedId: string | null }> {
-  const [draftItems, publishedItems] = await Promise.all([
-    client.searchPagesByName(name, "DRAFT"),
-    client.searchPagesByName(name, "PUBLISHED"),
-  ]);
-
-  const expectSymbol = entityType === "COMPONENT";
-
-  const infer = (item: RawPageListItem): boolean | null => {
-    if (typeof item.isSymbol === "boolean") return item.isSymbol;
-    const layout = item.layout as { isSymbol?: unknown } | undefined;
-    if (layout && typeof layout.isSymbol === "boolean") return layout.isSymbol;
-    const nested = item.pageElement as { layout?: { isSymbol?: unknown } } | undefined;
-    if (nested?.layout && typeof nested.layout.isSymbol === "boolean") {
-      return nested.layout.isSymbol;
-    }
-    return null;
-  };
-  const pick = (items: RawPageListItem[]): RawPageListItem | null => {
-    if (items.length === 0) return null;
-    const strict = items.find((i) => infer(i) === expectSymbol);
-    return strict ?? items[0] ?? null;
-  };
-
-  const draft = pick(draftItems);
-  const published = pick(publishedItems);
-
-  return {
-    draftId: typeof draft?.id === "string" ? draft.id : null,
-    publishedId: typeof published?.id === "string" ? published.id : null,
-  };
-}

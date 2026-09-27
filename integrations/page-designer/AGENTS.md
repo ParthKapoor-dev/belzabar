@@ -50,7 +50,7 @@ When adding or removing PD commands, run `bun run generate` from `cli/` — this
 4. `lib/parser/` - parser tree: `index.ts` façade, `nodes.ts` discriminator, `variables.ts`, `http.ts`, `refs.ts`, `legacy.ts` (pre-rewrite extractors)
 5. `lib/validator/` - `index.ts` + `rules/existing.ts` (ported) + `rules/invariants.ts` (new)
 6. `lib/serialize/` - `full.ts`, `operations.ts`, `apply.ts`, `index.ts` (strategy picker)
-7. `lib/draft-guard.ts` - resolveDraftTarget (refuses PUBLISHED without --force)
+7. `lib/draft-guard.ts` - resolveDraftTarget (refuses PUBLISHED without --force). The draft/published sibling is resolved ONLY via `referenceId` (`resolveLinkedPair`, injectable `DraftGuardDeps`) — never by name (names are not unique). Missing status, dangling/wrong-status/contradicting link → refuse (`PD_DRAFT_LINK_UNRESOLVED`, not --force-able). `lib/page-dependencies.ts` (translations, page-deps) uses the same resolver. Tests: `tests/unit/draft-guard.test.ts`.
 8. `lib/lock.ts` - withLock wraps every write
 9. `lib/args/common.ts` - parsePdCommonArgs (--force, --yes, --dry-run)
 10. `lib/{analyzer,reporter,comparator,cache,resolver,page-finder,url-parser}.ts` - legacy analyze stack (unchanged)

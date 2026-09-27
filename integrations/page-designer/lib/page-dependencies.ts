@@ -12,8 +12,9 @@
 
 import { resolveInput } from "./resolver";
 import { parsePage } from "./parser/index";
-import { fetchEntityIdsByName } from "./api/index";
-import type { RawPageDependencies } from "./types/wire";
+import { resolveLinkedPair, type DraftGuardDeps } from "./draft-guard";
+import { CliError } from "@belzabar/core";
+import type { RawPageDependencies, RawPageResponse } from "./types/wire";
 
 export interface EntityIds {
   name: string;
@@ -26,12 +27,29 @@ export interface EntityIds {
  * Resolve an id / name / URL to the entity's name plus its draft AND published
  * ids in the active environment. Entity ids are env-local, so this resolves
  * against `Config.activeEnv` — pass an env-correct id (or a name) per env.
+ *
+ * The sibling is found via the row's `referenceId` link (never by name —
+ * names are not unique). An unresolvable/contradictory link is an error.
  */
 export async function resolveEntityIds(input: string, force = false): Promise<EntityIds> {
   const resolved = await resolveInput(input, force);
-  const page = parsePage(resolved.response);
-  const { draftId, publishedId } = await fetchEntityIdsByName(page.name, resolved.entityType);
-  return { name: page.name, entityType: resolved.entityType, draftId, publishedId };
+  return entityIdsFromRaw(resolved.response, resolved.entityType);
+}
+
+export async function entityIdsFromRaw(
+  raw: RawPageResponse,
+  entityType: "PAGE" | "COMPONENT",
+  deps?: DraftGuardDeps,
+): Promise<EntityIds> {
+  const page = parsePage(raw);
+  const link = await resolveLinkedPair(raw, deps);
+  if (!link.ok) {
+    throw new CliError(link.message, {
+      code: "PD_DRAFT_LINK_UNRESOLVED",
+      details: { id: page.id, name: page.name, reason: link.reason },
+    });
+  }
+  return { name: page.name, entityType, draftId: link.draftId, publishedId: link.publishedId };
 }
 
 export type TranslationVerdict = "PASS" | "FAIL" | "N/A";
@@ -62,7 +80,7 @@ const BAD_KEY_SAMPLE_CAP = 20;
 function isWellFormedKey(key: unknown): key is string {
   if (typeof key !== "string") return false;
   const parts = key.split(".");
-  return parts.length >= 2 && (parts[0] === "page" || parts[0] === "symbol") && parts[1].length > 0;
+  return parts.length >= 2 && (parts[0] === "page" || parts[0] === "symbol") && (parts[1] ?? "").length > 0;
 }
 
 /**
@@ -127,7 +145,7 @@ export function validateTranslationPhrases(
       }
       if (tpKey === mainKey) {
         mainPhraseCount++;
-        mainEmbedded.add(key.split(".")[1]);
+        mainEmbedded.add(key.split(".")[1] ?? "");
       }
     }
   }
