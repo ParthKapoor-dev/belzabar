@@ -40,10 +40,7 @@ const PAGE = "40d0b1551dd9950a968cafe4c9cc6159"; // "search-student"
 const TASK = "25085246";
 
 /** Envelope (by argv) → bug id + why it violates the contract today. */
-const KNOWN_VIOLATIONS: Record<string, string> = {
-  [`pd validate ${PAGE}`]:
-    "PD-8/F18, smoke §envelope-5: errorCount:1 (ROOT_LAYOUT_MALFORMED, a PD-5 false positive) but ok:true — Stage 6 returns failWithData",
-};
+const KNOWN_VIOLATIONS: Record<string, string> = {};
 
 const readJson = (file: string) => JSON.parse(readFileSync(file, "utf8"));
 const jsonResponse = (body: unknown) => new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
