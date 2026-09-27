@@ -92,8 +92,8 @@ Everything lives under `~/.belz/`:
 
 | Path | Contents |
 |------|----------|
-| `~/.belz/config.json` | Optional credentials (config file wins over env vars) |
-| `~/.belz/sessions/<env>.json` | Saved auth sessions per environment |
+| `~/.belz/config.json` | Credentials + `defaultEnv` (0600, zod-validated; passwords carry `passwordEncoding`) |
+| `~/.belz/sessions/<env>.json` | Saved auth sessions per environment (0600) |
 | `~/.belz/cache/methods/<env>/<uuid>.json` | Method cache (5-min soft / 1-h hard TTL) |
 | `~/.belz/cache/definitions/<env>/<id>.json` | Automation definition cache |
 | `~/.belz/cache/pages/<env>/<id>.json` | PD page/component cache |

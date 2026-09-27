@@ -21,7 +21,8 @@ migrations/
     ├── resolve-targets.ts   # Pre-flight id resolution on the profile's source env
     ├── constants.ts         # Default job, client list, env→profile map
     ├── parser.ts            # Strip ANSI, regex-extract migration ids, find REPORT JSON
-    ├── profiles.ts          # Discover + cache PROFILE_NAME choices
+    ├── profiles.ts          # Discover + cache PROFILE_NAME choices (24 h TTL);
+    │                        #   resolveClientForProfile re-fetches once on a miss
     ├── report.ts            # Summarize methodComparisonResult
     ├── artifacts.ts         # Write summary.json + summary.console.log
     ├── types.ts             # All public types
@@ -55,7 +56,8 @@ Reads `Config.getJenkins()` from `@belzabar/core`. Configure via
   "jenkins": {
     "baseUrl": "https://jenkins-asg.stg.expertly.cloud",
     "user": "<your jenkins user>",
-    "password": "<base64-encoded password or API token>",
+    "password": "<password or API token>",
+    "passwordEncoding": "plain",
     "migrationJob": "Deployments/Expertly/Database/expertly.db-migration"
   }
 }

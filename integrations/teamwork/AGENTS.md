@@ -58,8 +58,13 @@ every post. A write is logged to stderr via `logIntent` before the POST.
 ## Authentication
 
 Teamwork uses cookie-based auth, separate from the NSM Bearer token flow:
-- Credentials: `~/.belz/config.json` under `teamwork` key (email + base64-encoded password)
-- Session: `~/.belz/sessions/teamwork.json` (tw-auth cookie value)
+- Credentials: `~/.belz/config.json` under `teamwork` (`email`, `password`, `passwordEncoding`
+  `"plain"`|`"base64"`; absent = legacy base64), read via `Config.getTeamwork()`; fallback
+  env vars `BELZ_TEAMWORK_EMAIL` / `BELZ_TEAMWORK_PASSWORD` (plain)
+- Session: `~/.belz/sessions/teamwork.json` (tw-auth cookie value, written atomically, 0600)
+- HTTP: `teamworkFetch` runs on core `httpRequest` (timeout, IPv4 pin); single-flight login,
+  401 → one shared re-login, 429 → bounded backoff (Retry-After), max 6 requests in flight.
+  Non-OK → `teamworkError()` → `TW_NOT_FOUND` / `TW_HTTP_<status>`; auth → `TW_AUTH_*`
 - Auto-login on first request; auto-retry on 401
 
 ## Core Behavior Contract

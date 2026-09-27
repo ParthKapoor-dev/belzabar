@@ -194,7 +194,7 @@ bun test integrations/automation-designer/tests/unit/   # one module
 
 ## Configuration
 
-Credentials live at `~/.belz/config.json` (mode 600). Re-run `belz setup` any time to refresh. The config file takes precedence over env vars (`NSM_DEV_URL`, `NSM_DEV_USER`, `NSM_DEV_PASSWORD`, equivalents for `QA`/`UAT`/`STAGE`, plus `BELZ_JENKINS_*` for the Jenkins migration flow).
+Credentials live at `~/.belz/config.json` (mode 600; new passwords are stored as plain text with `"passwordEncoding": "plain"`, older entries are base64). Re-run `belz setup` any time to add or update envs (it merges; `--replace --force` starts over). Set `"defaultEnv"` in config.json (or `BELZ_ENV`) to change the env used when `--env` is omitted. belz reads only `BELZ_*` env vars (`BELZ_ENV`, `BELZ_HTTP_TIMEOUT_MS`, `BELZ_JENKINS_*`, `BELZ_TEAMWORK_*`), and ignores values that come from a `.env` file in the current directory.
 
 Runtime data under `~/.belz/`:
 

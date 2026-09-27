@@ -6,9 +6,8 @@
 by every integration package (`integrations/*`) and by `apps/cli`.
 
 It provides:
-- Config loading and credential management
-- Auth (session login, persistence)
-- HTTP client (`apiFetch`)
+- Config loading and credential management (`src/config/`)
+- Auth (session login, persistence) and the HTTP stack (`src/http/`)
 - The namespaced CLI runner and static command registries (`src/registry.ts`)
 - Command module interface and result types
 - **Unified UI layer** (`src/ui.ts`): clack-backed prompts, lifecycle helpers, spinners,
@@ -21,36 +20,40 @@ It provides:
 
 Everything is exported from `src/index.ts`. Grouped by concern:
 
-### Config and Credentials
+### Config and Credentials (`src/config/`)
 | Export | Description |
 |--------|-------------|
-| `Config` | Loads `~/.belz/config.json`; provides `url()`, `user()`, `password()` per env |
-| `BELZ_CONFIG_DIR` | Resolved path to `~/.belz/` |
+| `Config` | Active env + credentials. `setActiveEnv(name)` (explicit, throws `INVALID_ENV`), `resetActiveEnv()`, `activeEnv` (never throws), `defaultEnvName` (BELZ_ENV > config `defaultEnv` > `nsm-dev`), `envSource` (`flag`/`BELZ_ENV`/`config`/`builtin`), `envWasExplicit`, `configError`, `assertUsable()`, `cleanBaseUrl`/`loginId`/`password` (throw `CONFIG_INVALID`/`INVALID_ENV` when the env is unusable), `getJenkins()`, `getTeamwork()` |
+| `BELZ_CONFIG_DIR` / `CONFIG_FILE_PATH` | `~/.belz/` (or `BELZ_HOME`) and its `config.json` |
+| `loadConfigFileRaw()` / `writeConfigFile(cfg)` | Raw read (unvalidated, for read-modify-write) / atomic 0600 write |
+| `ConfigFileSchema`, `validateConfigFile` | zod schema (passthrough: unknown keys survive). Violations → `CONFIG_INVALID` naming the path |
+| `decodeSecret(value, encoding, path)` / `encodeSecret(plain)` / `keepSecret(entry)` | The one secret helper. `passwordEncoding: "plain"\|"base64"`; absent = legacy base64, decoded strictly (bad base64 → `CONFIG_INVALID`). New writes: plain + `"plain"` (file is 0600) — never guess an encoding |
+| `writeFileAtomic` / `writeSecureJson` | tmp + fsync + rename, mode 0600 (config, every session file) |
+| `trustedBelzEnv()` | The env vars belz reads: `BELZ_*` only, minus values injected by a cwd `.env*` (Bun autoloads dotenv even in the compiled binary; 1.2.x has no flag to stop it). Runtime vars: `BELZ_HOME`, `BELZ_ENV`, `BELZ_HTTP_TIMEOUT_MS`, `BELZ_JENKINS_{URL,USER,PASSWORD,JOB}`, `BELZ_TEAMWORK_{EMAIL,PASSWORD}` (plain). Legacy `NSM_*`/`TEAMWORK_*` are only read by `belz setup --from-env` |
 
-### Auth
+### HTTP (`src/http/`) — the one stack for AD/PD, Teamwork and Jenkins
 | Export | Description |
 |--------|-------------|
-| `login(env, config)` | Authenticates and returns a session |
-| `loadSession(env)` | Loads a saved session from `~/.belz/sessions/<env>.json` |
-| `saveSession(env, session)` | Persists a session to disk |
-| `AuthSession` | Session type |
-
-### HTTP
-| Export | Description |
-|--------|-------------|
-| `apiFetch(url, options, session)` | Authenticated fetch wrapper; handles `Bearer` and `Raw` auth modes |
-| `prepareIpv4Fetch(url, init)` | Pins a request to the host's IPv4 address (preserving `Host` + TLS SNI) |
+| `apiFetch(path, {authMode?, timeoutMs?, ...RequestInit})` | Expertly client. Resolves with the `Response` (map errors yourself). Bearer/Raw token from the env session; single-flight login; 401 → one shared refresh + one retry (FormData re-sent; streams → `AUTH_EXPIRED`); `"Expertly-Auth-Token": "true"` header → the session token; no Content-Type on GET |
+| `httpRequest(url, {timeoutMs?, pinIpv4?, ...RequestInit})` | The transport: 60 s default timeout → `HTTP_TIMEOUT`; network failure → `HTTP_NETWORK_ERROR`; a connect failure on the pinned IP evicts the pin and retries once by hostname. Use it for non-Expertly hosts (Teamwork, Jenkins) |
+| `login()` / `ensureSession()` / `refreshSession(stale)` / `loadSession()` / `saveSession()` | Per-env sessions in `sessions/<env>.json` (0600). Errors: `AUTH_MISSING_CREDENTIALS`, `AUTH_FAILED`, `AUTH_NO_TOKEN` |
+| `jwtExpiry(token)` / `isTokenExpired(token, skew?)` | JWT `exp` helpers (`config token` re-logs in on expiry) |
+| `httpError(res, opts)` / `expectOk` / `expectJson` / `readJsonOrNull` / `expectFound` | Response → CliError: 404 → `NOT_FOUND` (or `notFoundCode`), else `HTTP_<status>` (or `${codePrefix}_<status>`). `expectJson` treats a 2xx with an empty/`null` body as not-found (the AD chain GET does this for unknown uuids) |
+| `summarizeBody` / `readBodySummary` / `readErrorBody` | Safe bodies for messages/details: HTML → `HTML page: <title>`, truncated, redacted; `readErrorBody` keeps small JSON structured |
+| `redactSecrets(value, {keys?})` / `redactString(s)` | Scrub Authorization / Expertly-Auth-Token / cookies / JWTs / password fields. Use on anything logged, cached, or put in `error.details`. `{keys: "headers"}` only drops header-like keys (for business payloads whose `token`/`password` fields are data). `vlog` redacts automatically |
+| `singleFlight()` / `createLimiter(n)` / `sleep` / `isReplayableBody` | Building blocks for adapters (Teamwork uses them for login + a 6-request cap) |
+| `prepareIpv4Fetch(url, init)` / `evictIpv4Cache(host)` | Pins a request to the host's IPv4 address (preserving `Host` + TLS SNI) |
 
 **Why `prepareIpv4Fetch` exists.** Bun's `fetch` has no happy-eyeballs, so a host that
 advertises AAAA over a black-holed v6 path hangs on a SYN that never completes. We resolve
 IPv4 ourselves and rewrite the URL to the IP.
 
 That makes the A-record query load-bearing — and an A-only query is exactly what a flaky
-upstream resolver tends to `REFUSE`/`ETIMEOUT` while still answering AAAA. So `dns.ts`
+upstream resolver tends to `REFUSE`/`ETIMEOUT` while still answering AAAA. So `http/dns.ts`
 resolves via **both** `resolve4()` (c-ares) and `lookup()` (getaddrinfo), retries with
 backoff, and caches to `~/.belz/cache/dns.json` — a disk cache, not just an in-memory one,
 because the CLI is a short-lived process and an in-memory map would never survive to the
-next invocation.
+next invocation. `httpRequest` evicts a host's pin when the pinned IP refuses a connection.
 
 If resolution fails outright, `prepareIpv4Fetch` **returns the original hostname URL rather
 than throwing**. Callers have no fallback of their own, and a request that might hang beats a
@@ -118,9 +121,8 @@ the runner together.
 | File | Role |
 |------|------|
 | `src/index.ts` | Barrel — re-exports everything |
-| `src/config.ts` | `Config` class, `BELZ_CONFIG_DIR`, env var fallback logic |
-| `src/auth.ts` | `login`, `loadSession`, `saveSession`, `AuthSession` |
-| `src/api.ts` | `apiFetch` — authenticated HTTP with session injection |
+| `src/config/` | `index.ts` (`Config`, env table, default env), `schema.ts` (zod), `secrets.ts` (encode/decode), `fs.ts` (atomic 0600 writes), `env-vars.ts` (trusted `BELZ_*` vars, dotenv guard) |
+| `src/http/` | `transport.ts` (timeout, pin eviction, singleFlight, limiter), `auth.ts` (sessions, login), `api.ts` (`apiFetch`), `errors.ts` (status → CliError, body summaries), `redact.ts`, `dns.ts` (IPv4 pinning) |
 | `src/runner.ts` | `runNamespacedCli`, routing, envelope wrapping, help dispatch; also calls `setOutputMode()` after stripping `--llm` |
 | `src/command.ts` | `CommandModule`, `CommandContext`, `HumanPresenterHelpers`, `ok`, `fail`, `CliError`, `CommandResult`, `CommandEnvelope` |
 | `src/ui.ts` | Unified UI layer: `renderHuman`, `renderLLM`, `HumanUi`, `lifecycle`, `prompts`, `setOutputMode`, `colors` |
@@ -140,7 +142,7 @@ preload has pointed `BELZ_HOME` at a tmp dir; helpers refuse to write otherwise.
 | Helper | Use |
 |--------|-----|
 | `fakeFetch(routes).install()` / `.restore()` | Replaces `globalThis.fetch`. Routes: `{"GET /path/*": body}` or `[{method, url: string\|RegExp, response, once?}]`; a response is a JSON value, `Response`, handler `(req) => …`, `respond({status, json\|text\|file, headers})` or `fixture(path)`. String patterns match full URL or path(+query), `*` wildcard. Records `requests` / `calls(method, pattern)`; an unmatched request throws `fakeFetch: no route for …` (and lands in `unmatched`). `install()` also stubs DNS (`setIpv4ResolverForTesting`) so `apiFetch`'s IPv4 pinning runs offline; recorded `url` is the logical URL, `wireUrl` the pinned one |
-| `withTempEnvConfig({envs, teamwork?, jenkins?, activeEnv?})` | Writes `config.json` + `sessions/<env>.json` (token default `"test-token"`, `null` = no session → login) under `BELZ_HOME`, calls `reloadConfig()`. `.restore()` puts everything back |
+| `withTempEnvConfig({envs, teamwork?, jenkins?, activeEnv?, defaultEnv?})` | Writes `config.json` + `sessions/<env>.json` (token default `"test-token"`, `null` = no session → login; password base64 unless `passwordEncoding: "plain"`) under `BELZ_HOME`, calls `reloadConfig()` and resets the active env to the default. `.restore()` puts everything back |
 | `runCommand(module, argv, {env?, llm = true, helpResolver?})` | Runs one `CommandModule` through the real dispatch in-process → `{envelope, stdout, stderr, exitCode}`. Global flags parsed as in the binary; `process.exit` is trapped; output mode / active env restored after |
 | `runCliInProcess(options, argv, {env?, llm?})` | Same, through full namespace routing (`loadDevCliOptions()` gives the dev entry's maps) |
 | `spawnCli(argv, {env, cwd, bin, stdin, timeoutMs})` | Real process: `bun <cli entry>` (or a compiled `bin`) with an isolated env (scratch HOME/cwd, no inherited creds) |
@@ -148,8 +150,10 @@ preload has pointed `BELZ_HOME` at a tmp dir; helpers refuse to write otherwise.
 | `describeLive` / `describeLiveWrite` / `spawnLive` / `registerLiveResource` | Opt-in live suites: run only with `BELZ_LIVE=sems-dev` (+ `BELZ_LIVE_WRITE=1`); any other `BELZ_LIVE` or `--env` is refused. `spawnLive` uses a tmp copy of `~/.belz/config.json` + the sems-dev session (real `~/.belz` is never written). `registerLiveResource` appends to `$BELZ_LIVE_RESOURCES` or `../belzabar-workspace/live-resources.md` if it exists. Write suites: Test-Parth, `belz_tst_` prefix, `afterAll` cleanup |
 | `scratchDir(prefix)` | tmp dir under the run's `BELZ_TEST_TMP` (auto-removed) |
 
-Test seams in runtime code (test-only; do not use elsewhere): `reloadConfig()` (config.ts),
-`setIpv4ResolverForTesting()` (dns.ts).
+Test seams in runtime code (test-only; do not use elsewhere): `reloadConfig()` (config/index.ts),
+`setIpv4ResolverForTesting()` (http/dns.ts). Hanging-request tests: a fakeFetch handler that
+never resolves plus `httpRequest(url, {timeoutMs: 30})` — the timeout is raced, so it fires even
+when the fetch ignores the abort signal.
 
 ---
 
