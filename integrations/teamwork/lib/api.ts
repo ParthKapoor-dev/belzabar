@@ -170,25 +170,49 @@ async function fetchSubtasks(parentTaskId: number, orderHint: number[]): Promise
 
 // ── Comments ────────────────────────────────────────────────────────────────
 
-export async function fetchComments(taskId: number): Promise<TeamworkComment[]> {
-  const params = new URLSearchParams({
-    "include": "users,teams,files",
-    "orderBy": "date",
-    "orderMode": "asc",
-    "limit": "500",
-  });
+// Teamwork v3 ignores `limit` (it silently caps at pageSize=50), so paginate
+// with `pageSize` + `page` until meta.page.hasMore is false. Comments are
+// ordered oldest-first, so a single page would drop the NEWEST ones.
+const COMMENTS_PAGE_SIZE = 500; // Teamwork's max pageSize
+const COMMENTS_MAX_PAGES = 100; // runaway guard
 
-  const path = `/projects/api/v3/tasks/${taskId}/comments.json?${params}`;
-  const response = await teamworkFetch(path);
+export async function fetchComments(
+  taskId: number,
+  fetcher: (path: string) => Promise<Response> = teamworkFetch,
+): Promise<TeamworkComment[]> {
+  const comments: any[] = [];
+  const users: Record<string, any> = {};
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Failed to fetch comments for task ${taskId} (${response.status}): ${body}`);
+  for (let page = 1; ; page++) {
+    const params = new URLSearchParams({
+      "include": "users,teams,files",
+      "orderBy": "date",
+      "orderMode": "asc",
+      "pageSize": String(COMMENTS_PAGE_SIZE),
+      "page": String(page),
+    });
+
+    const path = `/projects/api/v3/tasks/${taskId}/comments.json?${params}`;
+    const response = await fetcher(path);
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Failed to fetch comments for task ${taskId} (${response.status}): ${body}`);
+    }
+
+    const json = await response.json() as any;
+    const batch = Array.isArray(json.comments) ? json.comments : [];
+    comments.push(...batch);
+    Object.assign(users, json.included?.users ?? {});
+
+    const hasMore = json.meta?.page?.hasMore === true;
+    if (!hasMore || batch.length === 0) break;
+    if (page >= COMMENTS_MAX_PAGES) {
+      throw new Error(
+        `Comments for task ${taskId} exceed ${COMMENTS_MAX_PAGES} pages of ${COMMENTS_PAGE_SIZE}; refusing to return a truncated list.`,
+      );
+    }
   }
-
-  const json = await response.json() as any;
-  const comments = json.comments ?? [];
-  const users = json.included?.users ?? {};
 
   return comments.map((c: any) => {
     const user = users[c.postedByUserId];

@@ -20,7 +20,7 @@ belz tw add-comment <taskId|url> ...  → teamwork/commands/add-comment/   (WRIT
 teamwork/
 ├── commands/
 │   ├── task/             belz tw task — task metadata
-│   ├── comments/         belz tw comments — all comments (read)
+│   ├── comments/         belz tw comments — all comments (read; `fetchComments` paginates pageSize=500 + page until meta.page.hasMore=false — Teamwork ignores `limit`)
 │   ├── items/            belz tw items — extract AD/PD/SQL release items
 │   ├── search/           belz tw search — keyword task search (read)
 │   └── add-comment/      belz tw add-comment — post a comment (WRITE, gated)
