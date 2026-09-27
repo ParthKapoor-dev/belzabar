@@ -176,8 +176,7 @@ All runtime state lives under `~/.belz/`:
 2. Method cache: `~/.belz/cache/methods/<env>/<uuid>.json` (soft TTL 5 min, hard 1 h; key = trimmed lower-case uuid; invalidated by `adApi.saveMethod`/`publishDraft` and `history restore`)
 3. Method finder index cache: `~/.belz/cache/method-finder/index-v1-<env>.json` (TTL 7 days)
 4. Service definition cache: `~/.belz/cache/definitions/<env>/<automationId>.json` (TTL 1 h)
-5. Migration profile cache: `~/.belz/migrations/nsm-profiles.json`
-6. Local test suites: `./suites/*.spec.json`
+5. Local test suites: `./suites/*.spec.json`
 
 ## `~/.belz/config.json`
 

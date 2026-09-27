@@ -39,7 +39,6 @@ It ships two products:
 | `integrations/page-designer/` | PD command implementations and supporting lib (source module) | `integrations/page-designer/AGENTS.md` |
 | `integrations/teamwork/` | Teamwork command implementations and supporting lib (source module) | `integrations/teamwork/AGENTS.md` |
 | `integrations/migrations/` | Jenkins migration library + commands consumed by `belz migrate` (source module) | `integrations/migrations/AGENTS.md` |
-| `integrations/migrations/legacy/` | Legacy NSM db-migration-tool client (retained for fallback) | `integrations/migrations/legacy/AGENTS.md` |
 | `extension/` | Browser extension (MV3, JavaScript) | `extension/AGENTS.md` |
 
 ---
@@ -59,7 +58,6 @@ This is a **Bun workspaces** monorepo managed with Turborepo.
 - `integrations/page-designer/`
 - `integrations/teamwork/`
 - `integrations/migrations/` (the Jenkins flow)
-- `integrations/migrations/legacy/` (legacy db-migration-tool fallback)
 
 Source modules are intentionally not workspaces. They contain pure TypeScript source that `cli/`
 imports at build time. This keeps the dependency graph simple and the binary self-contained.
@@ -73,7 +71,6 @@ belz ad <cmd>      → integrations/automation-designer/commands/<cmd>/
 belz pd <cmd>      → integrations/page-designer/commands/<cmd>/
 belz tw <cmd>      → integrations/teamwork/commands/<cmd>/
 belz migrate <cmd> → integrations/migrations/commands/<cmd>/
-belz migrate-legacy → cli/commands/migrate-legacy/ + integrations/migrations/legacy/lib/
 belz config        → cli/commands/config/
 belz cache         → cli/commands/cache/
 belz envs          → cli/commands/envs/
@@ -98,7 +95,6 @@ Everything lives under `~/.belz/`:
 | `~/.belz/cache/methods/<env>/<uuid>.json` | Method cache (5-min soft / 1-h hard TTL) |
 | `~/.belz/cache/definitions/<env>/<id>.json` | Automation definition cache |
 | `~/.belz/cache/pages/<env>/<id>.json` | PD page/component cache |
-| `~/.belz/migrations/nsm-profiles.json` | Migration profile cache |
 
 Core `Cache` namespaces every entry by env by default (`envScoped: false` opts out).
 `BELZ_HOME` overrides `~/.belz` (tests set it via the `bunfig.toml` preload).

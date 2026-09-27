@@ -13,7 +13,7 @@ if (process.argv.slice(2).includes("--help-full")) {
   await flushAndExit(0);
 }
 
-const { "migrate-legacy": migrateLegacy, config, extension, ...topLevelCommands } = TopLevelCommandRegistry;
+const { config, extension, ...topLevelCommands } = TopLevelCommandRegistry;
 const topHelpResolver = makeHelpResolver(TopHelpMap);
 
 // Prod Mode: Use generated registries + embedded help text (bundled at compile time)
@@ -51,12 +51,6 @@ await runNamespacedCli(process.argv, {
       description: "Audit releases: link tickets, trace items, detect collisions.",
       commands: ReleaseCommandRegistry,
       helpResolver: makeHelpResolver(ReleaseHelpMap),
-    },
-    "migrate-legacy": {
-      name: "Migrations (Legacy)",
-      description: "Legacy NSM db-migration-tool client. Retained until Jenkins migration is fully verified.",
-      command: migrateLegacy,
-      helpResolver: topHelpResolver,
     },
     config: {
       name: "Config",

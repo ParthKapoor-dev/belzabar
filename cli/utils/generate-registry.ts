@@ -2,7 +2,7 @@ import { readdirSync, statSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
 
 const adCommandsDir = join(process.cwd(), "../integrations/automation-designer/commands");
-const topCommandsDir = join(process.cwd(), "commands"); // cli/commands/ (envs, migrate-legacy)
+const topCommandsDir = join(process.cwd(), "commands"); // cli/commands/ (envs, config, …)
 const pdCommandsDir = join(process.cwd(), "../integrations/page-designer/commands");
 const twCommandsDir = join(process.cwd(), "../integrations/teamwork/commands");
 const migrationsCommandsDir = join(process.cwd(), "../integrations/migrations/commands");

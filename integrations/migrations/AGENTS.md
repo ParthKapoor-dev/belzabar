@@ -1,8 +1,7 @@
 # Migrations (Jenkins-backed) — Maintainer Agent
 
 This module drives `belz migrate ...` against the team's Jenkins server
-(`expertly.db-migration` job). The legacy `db-migration-tool` service lives in
-`migrations-legacy/` and is wired up as `belz migrate-legacy ...`.
+(`expertly.db-migration` job).
 
 ## Layout
 

@@ -67,10 +67,7 @@ belz pd analyze                         # static analysis across all pages
 belz migrate profiles                   # list available profiles
 belz migrate run --profile devncdns_qancdns --module AD_Method --ids "<uuid>"
 belz migrate status <buildNumber>
-belz migrate log <buildNumber>
-
-# Migrations (legacy db-migration-tool, retained as a fallback)
-belz migrate-legacy run --profile devncdns_qancdns --module AD_Method --ids "<uuid>"
+belz migrate logs <buildNumber>
 
 # Teamwork
 belz tw task <id>                       # show a Teamwork task
@@ -150,9 +147,7 @@ belzabar/
 │   ├── automation-designer/    belz ad …
 │   ├── page-designer/          belz pd …
 │   ├── teamwork/               belz tw …
-│   └── migrations/
-│       ├── commands/  lib/     belz migrate …  (Jenkins flow)
-│       └── legacy/             belz migrate-legacy …  (db-migration-tool)
+│   └── migrations/             belz migrate …  (Jenkins flow)
 ├── extension/                  browser extension (MV3, JavaScript)
 ├── cloud/                      Claude Code cloud-session bootstrap (setup/publish + sandbox files)
 └── install.sh                  the public one-line installer
@@ -196,7 +191,7 @@ cd cli && bun run build
 # Tests
 bun test integrations/automation-designer/tests/unit/
 bun test integrations/page-designer/tests/unit/
-bun test integrations/migrations/legacy/tests/unit/
+bun test integrations/migrations/tests/unit/
 ```
 
 ---

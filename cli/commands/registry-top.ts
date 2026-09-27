@@ -2,7 +2,6 @@
 // Do not edit manually.
 import * as onboard from "./onboard/index";
 import * as envs from "./envs/index";
-import * as migrate_legacy from "./migrate-legacy/index";
 import * as config from "./config/index";
 import * as setup from "./setup/index";
 import * as update from "./update/index";
@@ -12,7 +11,6 @@ import * as cache from "./cache/index";
 export const TopLevelCommandRegistry: Record<string, any> = {
   "onboard": onboard,
   "envs": envs,
-  "migrate-legacy": migrate_legacy,
   "config": config,
   "setup": setup,
   "update": update,

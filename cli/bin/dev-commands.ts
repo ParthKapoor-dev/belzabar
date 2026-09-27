@@ -12,7 +12,7 @@ const pdCommandsDir = join(import.meta.dir, "../../integrations/page-designer/co
 const twCommandsDir = join(import.meta.dir, "../../integrations/teamwork/commands");
 const migrationsCommandsDir = join(import.meta.dir, "../../integrations/migrations/commands");
 const releaseCommandsDir = join(import.meta.dir, "../../integrations/release/commands");
-const topCommandsDir = join(import.meta.dir, "../commands"); // cli/commands/ (envs, migrate-legacy)
+const topCommandsDir = join(import.meta.dir, "../commands"); // cli/commands/ (envs, config, …)
 
 function loadCommandsFromDir(dir: string): Record<string, any> {
   const map: Record<string, any> = {};
@@ -100,7 +100,7 @@ export function buildDevCliOptions(): NamespacedCliOptions {
   const migrateCommands = loadCommandsFromDir(migrationsCommandsDir);
   const releaseCommands = loadCommandsFromDir(releaseCommandsDir);
   const allTopCommands = loadCommandsFromDir(topCommandsDir);
-  const { "migrate-legacy": migrateLegacy, config, extension, ...topLevelCommands } = allTopCommands;
+  const { config, extension, ...topLevelCommands } = allTopCommands;
 
   return {
     name: "Belzabar CLI",
@@ -136,12 +136,6 @@ export function buildDevCliOptions(): NamespacedCliOptions {
         description: "Audit releases: link tickets, trace items, detect collisions.",
         commands: releaseCommands,
         helpDir: releaseCommandsDir,
-      },
-      "migrate-legacy": {
-        name: "Migrations (Legacy)",
-        description: "Legacy NSM db-migration-tool client. Retained until Jenkins migration is fully verified.",
-        command: migrateLegacy,
-        helpResolver: makeHelpDirResolver(topCommandsDir),
       },
       config: {
         name: "Config",
