@@ -4,7 +4,10 @@ Run SQL queries via Automation Designer database services.
 
 Subcommands:
   dbs                 List available database auth configurations.
-  run <QUERY>         Execute a SQL read (SELECT) query.
+  run <QUERY>         Execute ONE read statement (SELECT / WITH … SELECT / VALUES /
+                      EXPLAIN without ANALYZE). Anything else — DML, DDL, multiple
+                      statements, SELECT INTO, FOR UPDATE — is refused client-side
+                      (SQL_NOT_READ_ONLY); use update/insert/modify for writes.
   update <QUERY>      Execute a SQL write (UPDATE/DELETE) query.
   insert <QUERY>      Execute a SQL INSERT query.
   modify <QUERY>      Execute a DDL schema change (ALTER TABLE, CREATE INDEX, etc.).
@@ -21,14 +24,17 @@ Flags (run):
 Flags (update):
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
+  --yes               Skip the confirmation prompt (required with --llm).
 
 Flags (insert):
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
+  --yes               Skip the confirmation prompt (required with --llm).
 
 Flags (modify):
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
+  --yes               Skip the confirmation prompt (required with --llm).
 
 Flags (tui):
   --db <NAME|ID>      Pre-select database (skips interactive DB prompt).

@@ -54,15 +54,32 @@ rationale.
    `/users/me`); surfaced via `adApi.addChangelog` / `adApi.listChangelog`
 8a. `lib/stream-parser.ts` — parses `application/stream+json` execute responses
     (progressive chunks + final JSON envelope); used by `commands/run` `--stream`
-9. `lib/serialize/v1.ts` — HydratedMethod → V1 save payload (enforces the
-   custom-code multi-output invariant)
+9. `lib/serialize/v1.ts` — HydratedMethod → V1 save payload. Rewrites a
+   step only when its body changed, in the step's ORIGINAL encoding (custom
+   code is sniffed with `decodeBase64Strict`: plain stays plain). The
+   multi-output `elementToRetrieve` invariant throws for edited steps and
+   warns for untouched ones.
+9a. `lib/serialize/guard.ts` — `buildGuardedV1SavePayload`: the `ad save`
+   safety guard. Refuses unknown overlay keys (`AD_OVERLAY_UNKNOWN_KEY`),
+   bad types (`AD_OVERLAY_INVALID`), keys that cannot land or change nothing
+   (`AD_OVERLAY_NOT_APPLIED`), and any change outside the overlay's target
+   paths (`AD_SERIALIZER_DRIFT`, deep-diff vs the fetched jsonDefinition).
+   Writable today: summary, description (→ methodDescription),
+   inputs[].testValue, step description/source/sql/expression. NOT writable:
+   name, buttonLabel, internalMethod.
+9b. `lib/sql/read-only.ts` — `ad sql run` / TUI read mode accept one read
+   statement only (comments + literals stripped first); `SQL_NOT_READ_ONLY`.
 10. `lib/draft-guard.ts` — `resolveDraftTarget` — the **only** way to locate a
-    safe save target
+    safe save target. Fails closed: a method whose wire carries
+    neither `automationState` nor `state` parses as `UNKNOWN` and is refused
+    (`AD_DRAFT_GUARD_STATE_UNKNOWN`).
 11. `lib/base64.ts`, `lib/xml.ts` — helpers used by the parsers and V2 test
 12. `lib/hydrator.ts`, `lib/cache.ts`, `lib/method-finder.ts`,
     `lib/payload-builder.ts`, `lib/input-collector.ts`, `lib/error-parser.ts`
 13. `lib/sql/*` — SQL TUI (unchanged surface; internals migrated)
-14. `tests/unit/` — parser, serializer, version resolver, draft guard, xml,
+14. `tests/unit/` — save-guard (no-op round-trip over 36 real sems-dev
+    bodies in `tests/fixtures/real-v1/`, the `save-corruption/` case, every
+    refusal code), sql-read-only, parser, serializer, version resolver, draft guard, xml,
     base64, error detection, sql, note-flag, stream-parser tests
 15. `tests/fixtures/v1/`, `tests/fixtures/v2/` — step + method fixtures
 16. `docs/api-notes.md` — belz-owned cheatsheet (read this before touching
@@ -111,6 +128,8 @@ cd cli && bun run generate
 4. `category create <name>` — create a new AD category/service
 5. `test-case <action>` — `list | create | update | delete | bulk |
    run-suite | delete-suite` (V1 supports test-case UPDATE)
+6. `sql update|insert|modify` — SQL writes; confirmation or `--yes` like
+   every other AD write.
 
 **Every write command MUST route through `lib/draft-guard.ts:resolveDraftTarget`
 before saving.** Never POST a save payload whose UUID resolves to PUBLISHED —

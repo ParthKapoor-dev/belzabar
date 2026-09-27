@@ -13,6 +13,8 @@ import {
   DEFAULT_SQL_DB_FALLBACK,
 } from "../../lib/sql/executor";
 import { normalizeSqlDatabases } from "../../lib/sql/selector";
+import { assertReadOnlySql } from "../../lib/sql/read-only";
+import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { runSqlTuiSession } from "../../lib/sql/tui/session";
 import type { SqlTuiArgs } from "../../lib/sql/tui/types";
 import type { NormalizedSqlDatabase } from "../../lib/sql/types";
@@ -22,6 +24,7 @@ interface SqlArgs {
   query?: string;
   db?: string;
   raw: boolean;
+  yes?: boolean;
   tui?: SqlTuiArgs;
 }
 
@@ -127,6 +130,25 @@ interface SqlTuiData {
 
 type SqlData = SqlDbsData | SqlRunData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData;
 
+/** AD-32: SQL writes follow the AD write contract (confirm, or --yes; --yes mandatory in --llm). */
+async function confirmSqlWrite(
+  args: SqlArgs,
+  action: "update" | "insert" | "modify",
+  database: NormalizedSqlDatabase,
+  outputMode: "human" | "llm",
+): Promise<void> {
+  await requireConfirmation({
+    yes: !!args.yes,
+    outputMode,
+    action: `run SQL ${action} against '${database.nickname}'`,
+    details: [
+      ["Database", `${database.nickname} (${database.id})`],
+      ["Query", args.query ?? ""],
+    ],
+  });
+  logIntent("POST", "/rest/api/automation/chain/test", { sql: action, db: database.nickname });
+}
+
 function getOptionValue(args: string[], name: string): string | undefined {
   const explicit = args.find((arg) => arg.startsWith(`${name}=`));
   if (explicit) {
@@ -163,7 +185,7 @@ function parseRunQueryArgs(args: string[]): string[] {
 
   for (let i = 0; i < args.length; i++) {
     const token = args[i] as string;
-    if (token === "--raw") continue;
+    if (token === "--raw" || token === "--yes") continue;
 
     if (token.startsWith("--db=")) {
       continue;
@@ -243,11 +265,15 @@ const command: CommandModule<SqlArgs, SqlData> = {
         });
       }
 
+      // F2: refuse anything but a single read statement before any network call.
+      assertReadOnlySql(query);
+
       return {
         action,
         query,
         db: parseDbArg(rest),
         raw: rest.includes("--raw"),
+        yes: rest.includes("--yes"),
       };
     }
 
@@ -267,6 +293,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         query,
         db: parseDbArg(rest),
         raw: rest.includes("--raw"),
+        yes: rest.includes("--yes"),
       };
     }
 
@@ -286,6 +313,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         query,
         db: parseDbArg(rest),
         raw: rest.includes("--raw"),
+        yes: rest.includes("--yes"),
       };
     }
 
@@ -305,6 +333,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         query,
         db: parseDbArg(rest),
         raw: rest.includes("--raw"),
+        yes: rest.includes("--yes"),
       };
     }
 
@@ -390,6 +419,8 @@ const command: CommandModule<SqlArgs, SqlData> = {
         loadSqlUpdateContext(),
       ]);
 
+      await confirmSqlWrite(args, "update", dbContext.resolution.selected, context.outputMode);
+
       const result = await executeSqlUpdate({
         query: args.query as string,
         database: dbContext.resolution.selected,
@@ -421,6 +452,8 @@ const command: CommandModule<SqlArgs, SqlData> = {
         }),
         loadSqlInsertContext(),
       ]);
+
+      await confirmSqlWrite(args, "insert", dbContext.resolution.selected, context.outputMode);
 
       const result = await executeSqlInsert({
         query: args.query as string,
@@ -454,6 +487,8 @@ const command: CommandModule<SqlArgs, SqlData> = {
         }),
         loadSqlModifyContext(),
       ]);
+
+      await confirmSqlWrite(args, "modify", dbContext.resolution.selected, context.outputMode);
 
       const result = await executeSqlModify({
         query: args.query as string,

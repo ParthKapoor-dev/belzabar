@@ -1,4 +1,5 @@
 import { CliError } from "@belzabar/core";
+import { assertReadOnlySql } from "./read-only";
 import { ErrorParser } from "../error-parser";
 import { fetchRawMethod, testMethodMultipart } from "../api/v1";
 import type { V1RawMethodResponse } from "../types/v1-wire";
@@ -346,6 +347,8 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
 }
 
 export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promise<ExecuteSqlReadResult> {
+  // F2: the read endpoint autocommits, so a write here really happens.
+  assertReadOnlySql(options.query);
   const fallbackCategory = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
