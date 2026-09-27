@@ -1,33 +1,80 @@
-import { ensureTeamworkAuth, teamworkLogin } from "./auth";
+import { CliError, createLimiter, httpError, httpRequest, isReplayableBody, sleep } from "@belzabar/core";
+import { ensureTeamworkAuth, refreshTeamworkAuth, TEAMWORK_BASE } from "./auth";
 import type {
   TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkSubtask, TeamworkComment,
   TeamworkTaskSearchResult, AddCommentResult,
 } from "./types";
 
-const TEAMWORK_BASE = "https://projects.webintensive.com";
+// Teamwork adapter over @belzabar/core/http (TW-7/9/10):
+//   - shared transport (timeout, IPv4 pin + eviction, coded network errors);
+//   - tw-auth cookie session, 401 → one shared re-login + retry;
+//   - 429 → backoff honouring Retry-After (bounded);
+//   - at most TEAMWORK_CONCURRENCY requests in flight (release matrix fans out).
+
+export const TEAMWORK_CONCURRENCY = 6;
+const MAX_429_RETRIES = 4;
+const MAX_BACKOFF_MS = 15_000;
+const limit = createLimiter(TEAMWORK_CONCURRENCY);
+
+/** Test seam: override the 429 backoff sleep. */
+let backoffSleep: (ms: number) => Promise<void> = sleep;
+export function setTeamworkBackoffForTesting(fn: ((ms: number) => Promise<void>) | null): void {
+  backoffSleep = fn ?? sleep;
+}
+
+function retryAfterMs(res: Response, attempt: number): number {
+  const header = res.headers.get("retry-after");
+  const secs = header ? Number(header) : NaN;
+  const ms = Number.isFinite(secs) ? secs * 1000 : 1000 * 2 ** attempt;
+  return Math.min(Math.max(ms, 250), MAX_BACKOFF_MS);
+}
 
 export async function teamworkFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  const twAuth = await ensureTeamworkAuth();
-  const url = path.startsWith("http") ? path : `${TEAMWORK_BASE}${path}`;
+  return limit(async () => {
+    const url = path.startsWith("http") ? path : `${TEAMWORK_BASE}${path}`;
+    let twAuth = await ensureTeamworkAuth();
+    const send = () =>
+      httpRequest(url, {
+        ...options,
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Bun/1.0 (Belzabar CLI)",
+          ...((options.headers as Record<string, string>) ?? {}),
+          Cookie: `tw-auth=${twAuth}`,
+        },
+      });
 
-  const headers: Record<string, string> = {
-    "Accept": "application/json",
-    "User-Agent": "Bun/1.0 (Belzabar CLI)",
-    "Cookie": `tw-auth=${twAuth}`,
-    ...(options.headers as Record<string, string> ?? {}),
-  };
+    let response = await send();
+    let reauthed = false;
+    for (let attempt = 0; ; attempt++) {
+      if (response.status === 401 && !reauthed && isReplayableBody(options.body)) {
+        reauthed = true;
+        process.stderr.write("[Teamwork] 401 Unauthorized. Re-authenticating...\n");
+        await response.arrayBuffer().catch(() => undefined);
+        twAuth = await refreshTeamworkAuth(twAuth);
+        response = await send();
+        continue;
+      }
+      if (response.status === 429 && attempt < MAX_429_RETRIES && isReplayableBody(options.body)) {
+        const wait = retryAfterMs(response, attempt);
+        await response.arrayBuffer().catch(() => undefined);
+        await backoffSleep(wait);
+        response = await send();
+        continue;
+      }
+      return response;
+    }
+  });
+}
 
-  const response = await fetch(url, { ...options, headers });
-
-  // Retry on 401
-  if (response.status === 401) {
-    process.stderr.write("[Teamwork] 401 Unauthorized. Re-authenticating...\n");
-    const session = await teamworkLogin();
-    headers["Cookie"] = `tw-auth=${session.twAuth}`;
-    return fetch(url, { ...options, headers });
-  }
-
-  return response;
+/** Map a non-OK Teamwork response to TW_NOT_FOUND / TW_HTTP_<status>. */
+export async function teamworkError(response: Response, what: string): Promise<CliError> {
+  return httpError(response, {
+    message: what,
+    codePrefix: "TW_HTTP",
+    notFoundCode: "TW_NOT_FOUND",
+    notFoundMessage: `${what}: not found (HTTP 404)`,
+  });
 }
 
 // ── Task include params (from Teamwork UI) ──────────────────────────────────
@@ -55,10 +102,7 @@ export async function fetchTask(taskId: number): Promise<TeamworkTask> {
   const path = `/projects/api/v3/tasks/${taskId}.json?${TASK_INCLUDE_PARAMS}`;
   const response = await teamworkFetch(path);
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Failed to fetch task ${taskId} (${response.status}): ${body}`);
-  }
+  if (!response.ok) throw await teamworkError(response, `Failed to fetch task ${taskId}`);
 
   const json = await response.json() as any;
   const task = json.task;
@@ -195,10 +239,7 @@ export async function fetchComments(
     const path = `/projects/api/v3/tasks/${taskId}/comments.json?${params}`;
     const response = await fetcher(path);
 
-    if (!response.ok) {
-      const body = await response.text();
-      throw new Error(`Failed to fetch comments for task ${taskId} (${response.status}): ${body}`);
-    }
+    if (!response.ok) throw await teamworkError(response, `Failed to fetch comments for task ${taskId}`);
 
     const json = await response.json() as any;
     const batch = Array.isArray(json.comments) ? json.comments : [];
@@ -208,8 +249,9 @@ export async function fetchComments(
     const hasMore = json.meta?.page?.hasMore === true;
     if (!hasMore || batch.length === 0) break;
     if (page >= COMMENTS_MAX_PAGES) {
-      throw new Error(
+      throw new CliError(
         `Comments for task ${taskId} exceed ${COMMENTS_MAX_PAGES} pages of ${COMMENTS_PAGE_SIZE}; refusing to return a truncated list.`,
+        { code: "TW_TOO_MANY_COMMENTS" },
       );
     }
   }
@@ -250,10 +292,7 @@ export async function searchTasks(query: string, opts: TaskSearchOptions = {}): 
   const path = `/projects/api/v3/tasks.json?${params}`;
   const response = await teamworkFetch(path);
 
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Teamwork search failed (${response.status}): ${body}`);
-  }
+  if (!response.ok) throw await teamworkError(response, "Teamwork search failed");
 
   const json = await response.json() as any;
   const tasks = json.tasks ?? [];
@@ -299,10 +338,7 @@ export async function addComment(taskId: number, body: string, opts: AddCommentO
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Failed to post comment to task ${taskId} (${response.status}): ${text}`);
-  }
+  if (!response.ok) throw await teamworkError(response, `Failed to post comment to task ${taskId}`);
 
   const json = await response.json() as any;
   const comment = json.comment ?? {};

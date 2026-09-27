@@ -1,94 +1,81 @@
+// Teamwork cookie-session adapter over @belzabar/core/http.
+//
+// - Credentials come from Config.getTeamwork() (one secret-decode helper,
+//   explicit passwordEncoding; TW-8).
+// - Login is single-flight: concurrent 401s during `release matrix` share one
+//   POST /launchpad/v1/login.json (TW-9).
+// - The session file is written atomically with mode 0600.
+
 import { join } from "path";
-import { mkdirSync } from "fs";
-import { BELZ_CONFIG_DIR, loadConfigFileRaw } from "@belzabar/core";
+import { readFileSync } from "fs";
+import {
+  BELZ_CONFIG_DIR,
+  CliError,
+  Config,
+  httpRequest,
+  readBodySummary,
+  singleFlight,
+  writeSecureJson,
+} from "@belzabar/core";
 import type { TeamworkSession } from "./types";
 
-const TEAMWORK_BASE = "https://projects.webintensive.com";
-const SESSION_DIR = join(BELZ_CONFIG_DIR, "sessions");
-const SESSION_FILE = join(SESSION_DIR, "teamwork.json");
-
-function ensureSessionDir() {
-  try {
-    mkdirSync(SESSION_DIR, { recursive: true });
-  } catch {
-    // ignore if exists
-  }
-}
+export const TEAMWORK_BASE = "https://projects.webintensive.com";
+const SESSION_FILE = join(BELZ_CONFIG_DIR, "sessions", "teamwork.json");
 
 export async function saveTeamworkSession(session: TeamworkSession): Promise<void> {
-  ensureSessionDir();
-  await Bun.write(SESSION_FILE, JSON.stringify(session));
+  writeSecureJson(SESSION_FILE, session);
 }
 
 export async function loadTeamworkSession(): Promise<TeamworkSession | null> {
   try {
-    const file = Bun.file(SESSION_FILE);
-    if (await file.exists()) {
-      return await file.json();
-    }
+    const session = JSON.parse(readFileSync(SESSION_FILE, "utf8")) as TeamworkSession;
+    return session && typeof session.twAuth === "string" && session.twAuth ? session : null;
   } catch {
-    // ignore
+    return null;
   }
-  return null;
 }
 
-function getCredentials(): { email: string; password: string } {
-  const config = loadConfigFileRaw();
-  const tw = (config as any).teamwork;
-
-  const email = tw?.email ?? process.env.TEAMWORK_EMAIL ?? "";
-  const passwordEncoded = tw?.password ?? process.env.TEAMWORK_PASSWORD ?? "";
-  const password = passwordEncoded ? atob(passwordEncoded) : "";
-
-  return { email, password };
+function extractTwAuth(response: Response): string {
+  const cookies = response.headers.getSetCookie?.() ?? [];
+  const single = response.headers.get("set-cookie");
+  for (const cookie of [...cookies, ...(single ? [single] : [])]) {
+    const match = cookie.match(/tw-auth=([^;]+)/);
+    if (match?.[1]) return match[1];
+  }
+  return "";
 }
 
-export async function teamworkLogin(): Promise<TeamworkSession> {
-  const { email, password } = getCredentials();
-
+async function doLogin(): Promise<TeamworkSession> {
+  const { email, password } = Config.getTeamwork();
   if (!email || !password) {
-    throw new Error(
-      "Missing Teamwork credentials. Set 'teamwork.email' and 'teamwork.password' (base64) in ~/.belz/config.json, or TEAMWORK_EMAIL / TEAMWORK_PASSWORD env vars."
+    throw new CliError(
+      "Missing Teamwork credentials. Add them with 'belz config edit' (Teamwork), or set BELZ_TEAMWORK_EMAIL / BELZ_TEAMWORK_PASSWORD.",
+      { code: "TW_AUTH_MISSING_CREDENTIALS" },
     );
   }
 
   process.stderr.write(`[Teamwork] Authenticating as ${email}...\n`);
-
-  const response = await fetch(`${TEAMWORK_BASE}/launchpad/v1/login.json`, {
+  const response = await httpRequest(`${TEAMWORK_BASE}/launchpad/v1/login.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json;charset=utf-8",
-      "Accept": "application/json, text/plain, */*",
+      Accept: "application/json, text/plain, */*",
       "User-Agent": "Bun/1.0 (Belzabar CLI)",
     },
     body: JSON.stringify({ email, password, rememberMe: true }),
   });
 
   if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`Teamwork login failed (${response.status}): ${body}`);
+    const body = await readBodySummary(response, 300);
+    throw new CliError(`Teamwork login failed (HTTP ${response.status})${body ? `: ${body}` : ""}`, {
+      code: "TW_AUTH_FAILED",
+      details: { status: response.status, body },
+    });
   }
 
-  // Extract tw-auth cookie from set-cookie header
-  let twAuth = "";
-  const setCookies = response.headers.getSetCookie?.() ?? [];
-  for (const cookie of setCookies) {
-    const match = cookie.match(/tw-auth=([^;]+)/);
-    if (match) {
-      twAuth = match[1]!;
-      break;
-    }
-  }
-
-  // Fallback: try single header
+  const twAuth = extractTwAuth(response);
   if (!twAuth) {
-    const single = response.headers.get("set-cookie") ?? "";
-    const match = single.match(/tw-auth=([^;]+)/);
-    if (match) twAuth = match[1]!;
-  }
-
-  if (!twAuth) {
-    throw new Error("Teamwork login succeeded but no tw-auth cookie found in response.");
+    throw new CliError("Teamwork login succeeded but no tw-auth cookie was returned.", { code: "TW_AUTH_NO_COOKIE" });
   }
 
   const session: TeamworkSession = { twAuth };
@@ -97,9 +84,26 @@ export async function teamworkLogin(): Promise<TeamworkSession> {
   return session;
 }
 
+const loginFlight = singleFlight<TeamworkSession>();
+
+/** Log in (single-flight: concurrent callers share one request). */
+export async function teamworkLogin(): Promise<TeamworkSession> {
+  return loginFlight("teamwork", doLogin);
+}
+
+/** The cached tw-auth cookie, or a fresh login. */
 export async function ensureTeamworkAuth(): Promise<string> {
   const cached = await loadTeamworkSession();
   if (cached?.twAuth) return cached.twAuth;
-  const session = await teamworkLogin();
-  return session.twAuth;
+  return (await teamworkLogin()).twAuth;
+}
+
+/**
+ * Replace a rejected session. If a concurrent caller already refreshed it
+ * (stored cookie differs from `stale`), reuse theirs.
+ */
+export async function refreshTeamworkAuth(stale: string): Promise<string> {
+  const current = await loadTeamworkSession();
+  if (current?.twAuth && current.twAuth !== stale) return current.twAuth;
+  return (await teamworkLogin()).twAuth;
 }
