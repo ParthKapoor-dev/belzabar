@@ -2,6 +2,7 @@ import { readFile } from "fs/promises";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
+import { resolveMethodRef } from "../../lib/ids";
 import { buildGuardedV1SavePayload } from "../../lib/serialize/guard";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
@@ -85,7 +86,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
     }
 
     // Draft-safety gate — mandatory for every write path.
-    const guard = await resolveDraftTarget(uuid, "v1");
+    const guard = await resolveDraftTarget(resolveMethodRef(uuid), "v1");
     if (!guard.ok) {
       throw new CliError(guard.message, {
         code: `AD_DRAFT_GUARD_${guard.reason}`,

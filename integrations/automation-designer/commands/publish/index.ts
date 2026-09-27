@@ -1,6 +1,7 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
+import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { fingerprintMethod } from "../../lib/fingerprint";
@@ -53,7 +54,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
     return { uuid: positionals.uuid, yes: flags.yes, note: flags.note.trim() };
   },
   async execute({ uuid, yes, note }, context) {
-    const guard = await resolveDraftTarget(uuid, "v1");
+    const guard = await resolveDraftTarget(resolveMethodRef(uuid), "v1");
     if (!guard.ok) {
       throw new CliError(guard.message, {
         code: `AD_DRAFT_GUARD_${guard.reason}`,
