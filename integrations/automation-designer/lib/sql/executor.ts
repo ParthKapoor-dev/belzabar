@@ -1,11 +1,20 @@
-import { CliError } from "@belzabar/core";
+import { CliError, Config, loadConfigFileRaw, trustedBelzEnv } from "@belzabar/core";
 import { assertReadOnlySql } from "./read-only";
 import { ErrorParser } from "../error-parser";
 import { fetchRawMethod, testMethodMultipart } from "../api/v1";
+import { describeTestFailure } from "../payload-builder";
 import type { V1RawMethodResponse } from "../types/v1-wire";
 import { fetchSqlDatabases, fetchSqlSelectOperation, fetchSqlUpdateOperation, fetchSqlInsertOperation, fetchSqlModifyOperation, fetchExecutableCategory } from "./api";
 import { buildSqlReadPayload } from "./payload";
-import { parseSqlRunResult, parseSqlUpdateResult, parseSqlInsertResult, parseSqlModifyResult } from "./result";
+import {
+  insertOutputIds,
+  parseMultipleKeysError,
+  parseSqlRunResult,
+  parseSqlUpdateResult,
+  parseSqlInsertResult,
+  parseSqlModifyResult,
+} from "./result";
+import { stripSqlLiterals } from "./read-only";
 import { normalizeSqlDatabases, resolveSqlDatabase } from "./selector";
 import type {
   NormalizedSqlDatabase,
@@ -14,6 +23,35 @@ import type {
 } from "./types";
 
 export const DEFAULT_SQL_DB_FALLBACK = "NSM_Read_DB";
+
+export interface SqlDefaultDb {
+  value: string;
+  /** "config": `environments.<env>.sqlDefaultDb`; "env": BELZ_SQL_DEFAULT_DB. */
+  source: "config" | "env";
+}
+
+/**
+ * The default SQL database for the active env when `--db` is not given
+ * (AD-36 / F26): `environments.<env>.sqlDefaultDb` in ~/.belz/config.json,
+ * then BELZ_SQL_DEFAULT_DB (all envs). The hard-coded `NSM_Read_DB` fallback
+ * applies after these, and only exists on NSM.
+ */
+export function sqlDefaultDb(envName: string | undefined = safeActiveEnvName()): SqlDefaultDb | undefined {
+  if (envName) {
+    const fromConfig = loadConfigFileRaw().environments?.[envName]?.sqlDefaultDb;
+    if (typeof fromConfig === "string" && fromConfig.trim()) return { value: fromConfig.trim(), source: "config" };
+  }
+  const fromEnv = trustedBelzEnv().BELZ_SQL_DEFAULT_DB?.trim();
+  return fromEnv ? { value: fromEnv, source: "env" } : undefined;
+}
+
+function safeActiveEnvName(): string | undefined {
+  try {
+    return Config.activeEnv.name;
+  } catch {
+    return undefined;
+  }
+}
 
 export interface SqlDbContext {
   databases: NormalizedSqlDatabase[];
@@ -51,14 +89,17 @@ export interface ExecuteSqlReadResult {
 
 export async function resolveSqlDbContext(options: {
   requestedDb?: string;
-  envDefault?: string;
+  /** Default when no --db: omit to use {@link sqlDefaultDb} for the active env. */
+  envDefault?: SqlDefaultDb;
   fallbackNickname?: string;
 }): Promise<SqlDbContext> {
   const rawDatabases = await fetchSqlDatabases();
   const databases = normalizeSqlDatabases(rawDatabases);
+  const def = options.envDefault ?? sqlDefaultDb();
   const resolution = resolveSqlDatabase(databases, {
     requested: options.requestedDb,
-    envDefault: options.envDefault,
+    envDefault: def?.value,
+    envDefaultSource: def?.source,
     fallbackNickname: options.fallbackNickname ?? DEFAULT_SQL_DB_FALLBACK,
   });
 
@@ -128,9 +169,10 @@ export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<
 
   const response = await testMethodMultipart(formData);
   if (!response.ok) {
-    throw new CliError(`SQL update execution request failed (${response.status}).`, {
+    const failure = await describeTestFailure(response);
+    throw new CliError(`SQL update execution request failed (${failure.message})`, {
       code: "SQL_UPDATE_EXECUTION_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: failure.body },
     });
   }
 
@@ -179,7 +221,10 @@ export interface ExecuteSqlInsertResult {
   query: string;
   statusCode?: number;
   rowsAffected: number;
+  /** Generated key values (F25): needs `RETURNING <key column>` in the query. */
   generatedValues: string[];
+  /** Multi-row RETURNING: every returned key row (column → value). */
+  generatedKeys?: Array<Record<string, string>>;
   executionTime?: {
     time: number;
     unit: string;
@@ -204,29 +249,81 @@ export async function loadSqlInsertContext(): Promise<SqlExecutionContext> {
   return { operation, template };
 }
 
+/** True when the statement has a RETURNING clause (outside literals/comments). */
+export function hasReturningClause(query: string): boolean {
+  return /\breturning\b/i.test(stripSqlLiterals(query).text);
+}
+
+/**
+ * Ask the insert step for the generated key (F25): add the operation's
+ * `generatedId` output to the target step. The platform fills it from JDBC
+ * getGeneratedKeys, which only works with `RETURNING <one column>`.
+ */
+export function withGeneratedIdOutput(payload: V1RawMethodResponse, operation: unknown): V1RawMethodResponse {
+  const ids = insertOutputIds(operation);
+  const genId = ids.generated.find((id) => {
+    const out = ((operation as any)?.automationAPIOutputs ?? []).find((o: any) => Number(o.id) === id);
+    return out?.consumes === "generatedId";
+  });
+  if (genId === undefined) return payload;
+  const inner = JSON.parse(payload.jsonDefinition);
+  const services: any[] = Array.isArray(inner?.services) ? inner.services : [];
+  const opId = Number((operation as any)?.id);
+  const target = services.find((svc) => Number(svc?.automationApiId) === opId) ?? services[0];
+  if (!target) return payload;
+  target.outputs = Array.isArray(target.outputs) ? target.outputs : [];
+  if (!target.outputs.some((o: any) => Number(o?.automationAPIOutputId) === genId)) {
+    target.outputs.push({ automationId: null, automationAPIOutputId: genId, code: "generatedId", displayName: "generatedID" });
+  }
+  return { ...payload, jsonDefinition: JSON.stringify(inner) };
+}
+
+function failedServiceMessage(executionResult: any): string {
+  const failed = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
+  const st = failed?.executionStatus ?? executionResult?.executionStatus ?? {};
+  for (const v of [st.error, st.message, st.errorMessage]) if (typeof v === "string" && v) return v;
+  return "";
+}
+
 export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<ExecuteSqlInsertResult> {
   const fallbackCategory = await fetchExecutableCategory();
-  const payload = buildSqlReadPayload({
+  let payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
     fallbackCategory,
   });
+  const returning = hasReturningClause(options.query);
+  if (returning) payload = withGeneratedIdOutput(payload, options.context.operation);
 
   const formData = new FormData();
   formData.append("body", JSON.stringify(payload));
 
   const response = await testMethodMultipart(formData);
   if (!response.ok) {
-    throw new CliError(`SQL insert execution request failed (${response.status}).`, {
+    const failure = await describeTestFailure(response);
+    throw new CliError(`SQL insert execution request failed (${failure.message})`, {
       code: "SQL_INSERT_EXECUTION_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: failure.body },
     });
   }
 
   const executionResult = (await response.json()) as any;
-  const parsed = parseSqlInsertResult(executionResult);
+  const parsed = parseSqlInsertResult(executionResult, insertOutputIds(options.context.operation));
+  let generatedKeys: Array<Record<string, string>> | undefined;
+
+  if (!parsed.success) {
+    // Multi-row RETURNING: the rows ARE committed; the platform only fails to
+    // hand back more than one key, and lists them in its error (F25).
+    const keys = returning ? parseMultipleKeysError(failedServiceMessage(executionResult)) : null;
+    if (keys) {
+      generatedKeys = keys;
+      parsed.success = true;
+      parsed.rowsAffected = keys.length;
+      parsed.generatedValues = keys.map((k) => Object.values(k)[0] ?? "");
+    }
+  }
 
   if (!parsed.success) {
     const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
@@ -252,6 +349,7 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
     statusCode: parsed.statusCode,
     rowsAffected: parsed.rowsAffected,
     generatedValues: parsed.generatedValues,
+    ...(generatedKeys ? { generatedKeys } : {}),
     executionTime: parsed.executionTime,
   };
 
@@ -305,9 +403,10 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
 
   const response = await testMethodMultipart(formData);
   if (!response.ok) {
-    throw new CliError(`SQL modify execution request failed (${response.status}).`, {
+    const failure = await describeTestFailure(response);
+    throw new CliError(`SQL modify execution request failed (${failure.message})`, {
       code: "SQL_MODIFY_EXECUTION_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: failure.body },
     });
   }
 
@@ -363,9 +462,10 @@ export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promi
 
   const response = await testMethodMultipart(formData);
   if (!response.ok) {
-    throw new CliError(`SQL execution request failed (${response.status}).`, {
+    const failure = await describeTestFailure(response);
+    throw new CliError(`SQL execution request failed (${failure.message})`, {
       code: "SQL_EXECUTION_FAILED",
-      details: await response.text(),
+      details: { status: response.status, body: failure.body },
     });
   }
 

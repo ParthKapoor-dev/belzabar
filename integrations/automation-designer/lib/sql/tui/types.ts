@@ -1,3 +1,4 @@
+import type { SqlDefaultDb } from "../executor";
 import type { NormalizedSqlDatabase } from "../types";
 import type { SqlExecutionContext } from "../executor";
 
@@ -21,7 +22,7 @@ export interface SqlTuiSessionState {
   format: SqlTuiFormat;
   timing: boolean;
   pageSize: number;
-  envDefault?: string;
+  envDefault?: SqlDefaultDb;
   buffer: string[];
   lastQuery: string | null;
   historyEnabled: boolean;

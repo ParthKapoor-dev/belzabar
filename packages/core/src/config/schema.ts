@@ -18,6 +18,8 @@ export const EnvEntrySchema = z
     ...secretFields,
     /** Project this env belongs to (e.g. "NSM", "YieldSec"). Defaults to the env-name prefix. */
     project: z.string().optional(),
+    /** `belz ad sql`: default database (nickname or id) for this env when --db is not given (AD-36). */
+    sqlDefaultDb: z.string().min(1).optional(),
   })
   .passthrough();
 

@@ -10,6 +10,7 @@ import {
   loadSqlInsertContext,
   loadSqlModifyContext,
   resolveSqlDbContext,
+  sqlDefaultDb,
   DEFAULT_SQL_DB_FALLBACK,
 } from "../executor";
 import { fetchSqlDatabases } from "../api";
@@ -241,7 +242,7 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
     });
   }
 
-  const envDefault = process.env.BELZ_SQL_DEFAULT_DB?.trim() || undefined;
+  const envDefault = sqlDefaultDb();
 
   // Load databases first — needed for both the selector and for the session.
   const rawDatabases = await fetchSqlDatabases();
@@ -252,12 +253,13 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
   if (args.db) {
     const resolution = resolveSqlDatabase(databases, {
       requested: args.db,
-      envDefault,
+      envDefault: envDefault?.value,
+      envDefaultSource: envDefault?.source,
       fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
     });
     selectedDb = resolution.selected;
   } else {
-    const fallback = envDefault || DEFAULT_SQL_DB_FALLBACK;
+    const fallback = envDefault?.value || DEFAULT_SQL_DB_FALLBACK;
     const initialDb = databases.find((db) => db.nickname === fallback) ?? databases[0];
     selectedDb = await prompts.select({
       message: "Database:",

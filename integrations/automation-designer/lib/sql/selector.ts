@@ -75,9 +75,19 @@ export function resolveSqlDatabase(
     if (selected) {
       return {
         selected,
-        selectedBy: "env",
+        selectedBy: options.envDefaultSource ?? "env",
         envDefault: options.envDefault,
       };
+    }
+    if (options.envDefaultSource === "config") {
+      // An explicit per-env default that does not exist is a config error, not a silent fallback.
+      throw new CliError(
+        `Configured sqlDefaultDb '${options.envDefault}' not found in this environment. Fix environments.<env>.sqlDefaultDb in ~/.belz/config.json or pass --db.`,
+        {
+          code: "SQL_DEFAULT_DB_NOT_FOUND",
+          details: { envDefault: options.envDefault, available: databases.map((db) => ({ id: db.id, nickname: db.nickname })) },
+        },
+      );
     }
   }
 
@@ -91,7 +101,8 @@ export function resolveSqlDatabase(
   }
 
   throw new CliError(
-    `Default SQL database not found. Set BELZ_SQL_DEFAULT_DB or pass --db. Fallback '${options.fallbackNickname}' is unavailable.`,
+    `No default SQL database for this environment. Pass --db <nickname|id> (see 'belz ad sql dbs'), or set ` +
+      `environments.<env>.sqlDefaultDb in ~/.belz/config.json (or BELZ_SQL_DEFAULT_DB). Fallback '${options.fallbackNickname}' is unavailable.`,
     {
       code: "SQL_DEFAULT_DB_NOT_FOUND",
       details: {

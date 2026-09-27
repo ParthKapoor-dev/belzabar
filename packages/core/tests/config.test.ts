@@ -108,6 +108,14 @@ describe("schema validation (CORE-18)", () => {
     expect(Config.getAllEnvs()["nsm-dev"]).toBeDefined();
   });
 
+  test("environments.<env>.sqlDefaultDb (AD-36): a string is accepted; a non-string is CONFIG_INVALID", () => {
+    rawConfig({ environments: { "t-dev": { url: "https://t.test", sqlDefaultDb: "testing_db" } } });
+    expect(Config.configError).toBeNull();
+    expect(loadConfigFileRaw().environments?.["t-dev"]?.sqlDefaultDb).toBe("testing_db");
+    rawConfig({ environments: { "t-dev": { url: "https://t.test", sqlDefaultDb: 5 } } });
+    expect(Config.configError?.message).toContain("environments.t-dev.sqlDefaultDb");
+  });
+
   test("malformed JSON → CONFIG_INVALID (was silently ignored)", () => {
     rawConfig("{ not json");
     expect(Config.configError?.code).toBe("CONFIG_INVALID");

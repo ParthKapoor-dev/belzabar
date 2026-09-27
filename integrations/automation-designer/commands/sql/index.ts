@@ -11,6 +11,7 @@ import {
   loadSqlInsertContext,
   loadSqlModifyContext,
   resolveSqlDbContext,
+  sqlDefaultDb,
   DEFAULT_SQL_DB_FALLBACK,
 } from "../../lib/sql/executor";
 import { normalizeSqlDatabases } from "../../lib/sql/selector";
@@ -18,7 +19,7 @@ import { assertReadOnlySql } from "../../lib/sql/read-only";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { runSqlTuiSession } from "../../lib/sql/tui/session";
 import type { SqlTuiArgs } from "../../lib/sql/tui/types";
-import type { NormalizedSqlDatabase } from "../../lib/sql/types";
+import type { NormalizedSqlDatabase, SqlDbSelectedBy } from "../../lib/sql/types";
 
 interface SqlArgs {
   action: "run" | "dbs" | "tui" | "update" | "insert" | "modify";
@@ -33,6 +34,9 @@ interface SqlDbsData {
   action: "dbs";
   databases: NormalizedSqlDatabase[];
   defaultResolution: {
+    /** `environments.<env>.sqlDefaultDb` from ~/.belz/config.json. */
+    configValue?: string;
+    /** BELZ_SQL_DEFAULT_DB. */
     envValue?: string;
     fallbackNickname: string;
   };
@@ -44,7 +48,7 @@ interface SqlDbsData {
 interface SqlRunData {
   action: "run";
   database: NormalizedSqlDatabase;
-  selectedBy: "--db" | "env" | "fallback";
+  selectedBy: SqlDbSelectedBy;
   query: string;
   success: true;
   statusCode?: number;
@@ -64,7 +68,7 @@ interface SqlRunData {
 interface SqlUpdateData {
   action: "update";
   database: NormalizedSqlDatabase;
-  selectedBy: "--db" | "env" | "fallback";
+  selectedBy: SqlDbSelectedBy;
   query: string;
   success: true;
   statusCode?: number;
@@ -83,12 +87,15 @@ interface SqlUpdateData {
 interface SqlInsertData {
   action: "insert";
   database: NormalizedSqlDatabase;
-  selectedBy: "--db" | "env" | "fallback";
+  selectedBy: SqlDbSelectedBy;
   query: string;
   success: true;
   statusCode?: number;
   rowsAffected: number;
+  /** Generated key values — needs `RETURNING <key column>` in the query (F25). */
   generatedValues: string[];
+  /** Multi-row RETURNING: every returned key row. */
+  generatedKeys?: Array<Record<string, string>>;
   executionTime?: {
     time: number;
     unit: string;
@@ -103,7 +110,7 @@ interface SqlInsertData {
 interface SqlModifyData {
   action: "modify";
   database: NormalizedSqlDatabase;
-  selectedBy: "--db" | "env" | "fallback";
+  selectedBy: SqlDbSelectedBy;
   query: string;
   success: true;
   statusCode?: number;
@@ -244,7 +251,8 @@ function parseTuiOptions(flags: {
 
 const command: CommandModule<SqlArgs, SqlData> = {
   schema: "ad.sql",
-  writes: (a) => a.action === "update" || a.action === "insert" || a.action === "modify",
+  // `tui` can start in, or switch to, update/insert/modify mode: always a write (explicit --env).
+  writes: (a) => a.action === "update" || a.action === "insert" || a.action === "modify" || a.action === "tui",
   parseArgs(argv) {
     const parsed = args.parse(argv);
     resolveAdCommon(parsed.flags, "list", "sql");
@@ -271,7 +279,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
     }
   },
   async execute(args, context) {
-    const envDefault = process.env.BELZ_SQL_DEFAULT_DB?.trim() || undefined;
+    const envDefault = sqlDefaultDb(context.env.name);
 
     if (args.action === "dbs") {
       const rawDatabases = await fetchSqlDatabases();
@@ -281,7 +289,8 @@ const command: CommandModule<SqlArgs, SqlData> = {
         action: "dbs",
         databases,
         defaultResolution: {
-          envValue: envDefault,
+          ...(envDefault?.source === "config" ? { configValue: envDefault.value } : {}),
+          ...(envDefault?.source === "env" ? { envValue: envDefault.value } : {}),
           fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
         },
       };
@@ -390,6 +399,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         statusCode: result.statusCode,
         rowsAffected: result.rowsAffected,
         generatedValues: result.generatedValues,
+        ...(result.generatedKeys ? { generatedKeys: result.generatedKeys } : {}),
         executionTime: result.executionTime,
         raw: result.raw,
       };

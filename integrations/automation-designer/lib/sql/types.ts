@@ -52,12 +52,16 @@ export interface SqlSelectOperation {
 export interface SqlDbResolutionOptions {
   requested?: string;
   envDefault?: string;
+  /** Where envDefault came from: config `environments.<env>.sqlDefaultDb` or BELZ_SQL_DEFAULT_DB. */
+  envDefaultSource?: "config" | "env";
   fallbackNickname: string;
 }
 
+export type SqlDbSelectedBy = "--db" | "config" | "env" | "fallback";
+
 export interface SqlDbResolutionResult {
   selected: NormalizedSqlDatabase;
-  selectedBy: "--db" | "env" | "fallback";
+  selectedBy: SqlDbSelectedBy;
   envDefault?: string;
   requested?: string;
 }

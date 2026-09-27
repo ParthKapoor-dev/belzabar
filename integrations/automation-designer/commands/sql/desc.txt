@@ -1,8 +1,8 @@
-belz ad sql dbs  :->  List available SQL database configurations and auth types
-belz ad sql run "<query>"  :->  Execute one read statement (SELECT/WITH/VALUES/EXPLAIN); writes are refused
+belz ad sql dbs  :->  List available SQL database configurations and auth types (and the default-DB resolution)
+belz ad sql run "<query>"  :->  Execute one read statement (SELECT/WITH/VALUES/EXPLAIN) on the env's default DB (config sqlDefaultDb → BELZ_SQL_DEFAULT_DB → NSM_Read_DB); writes are refused
 belz ad sql run "<query>" --db <name|id>  :->  Execute SELECT against a specific database
-belz ad sql update "<query>" --db <name|id> [--yes]  :->  Execute UPDATE or DELETE; returns rows affected (confirm or --yes)
-belz ad sql insert "<query>" --db <name|id> [--yes]  :->  Execute INSERT (confirm or --yes); returns rows affected and generated IDs/UUIDs
-belz ad sql modify "<query>" --db <name|id> [--yes]  :->  Execute DDL (ALTER TABLE, CREATE INDEX, etc.; confirm or --yes)
-belz ad sql tui  :->  Start an interactive SQL session (prompts for DB and mode: read|insert|update|modify)
-belz ad sql tui --db <name|id> --mode <read|insert|update|modify>  :->  Start TUI with pre-selected DB and mode
+belz ad sql update "<query>" --db <name|id> --env <env> [--yes]  :->  Execute UPDATE or DELETE; returns rows affected (confirm or --yes)
+belz ad sql insert "<query> RETURNING <col>" --db <name|id> --env <env> [--yes]  :->  Execute INSERT (confirm or --yes); returns rows affected, and with RETURNING the generated values
+belz ad sql modify "<query>" --db <name|id> --env <env> [--yes]  :->  Execute DDL (ALTER TABLE, CREATE INDEX, etc.; confirm or --yes)
+belz ad sql tui --env <env>  :->  Start an interactive SQL session (prompts for DB and mode: read|insert|update|modify; a write command)
+belz ad sql tui --db <name|id> --mode <read|insert|update|modify> --env <env>  :->  Start TUI with pre-selected DB and mode

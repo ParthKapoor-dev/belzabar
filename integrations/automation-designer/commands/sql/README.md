@@ -17,8 +17,9 @@ bun run bin/cli.ts sql tui
   - Optional `--db <nickname|id>` overrides DB selection.
   - DB selection priority:
     1. `--db`
-    2. `BELZ_SQL_DEFAULT_DB`
-    3. `NSM_Read_DB` fallback
+    2. `environments.<env>.sqlDefaultDb` in `~/.belz/config.json` (per env)
+    3. `BELZ_SQL_DEFAULT_DB`
+    4. `NSM_Read_DB` fallback (NSM only)
 
 - `dbs`
   - Lists available DB auth configurations from `/rest/api/automation-systems/db_service/auth`.
