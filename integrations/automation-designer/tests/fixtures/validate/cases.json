@@ -1,0 +1,1840 @@
+{
+ "v2_apiid_bogus": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "500"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Cannot invoke \\\"com.expertly.common.model.automation.AutomationAPI.getAutomationSystem()\\\" because \\\"automationAPI\\\" is null\", \"date\": \"Sun Sep 27 16:12:34 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "automationAPIId"
+    ],
+    "value": "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa    "
+   }
+  ]
+ },
+ "v2_apiid_removed_names_ok": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1190ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "automationAPIId"
+    ],
+    "delete": true
+   }
+  ]
+ },
+ "v2_apiid_removed_names_wrong": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "404"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Automation API not found with serviceName - Helpers.Legacy and methodName - echoo\", \"date\": \"Sun Sep 27 16:12:49 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "automationAPIId"
+    ],
+    "delete": true
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "methodName"
+    ],
+    "value": "echoo"
+   }
+  ]
+ },
+ "v2_apiid_trimmed": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1021ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "automationAPIId"
+    ],
+    "value": "424ffd4c9e0f55befc238dd999dab2d6"
+   }
+  ]
+ },
+ "v2_apiid_vs_names_conflict": {
+  "desc": "apiId=echo, names=fetchKeyValue",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1257ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "methodName"
+    ],
+    "value": "fetchKeyValue"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "serviceName"
+    ],
+    "value": "Helpers.JSON"
+   }
+  ]
+ },
+ "v2_cc_executor_bad": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"JSON parse error: Cannot deserialize value of type `com.expertly.common.model.automation.chain.json.CustomCodeEnvironment` from String \\\"NOPE\\\": not one of the values accepted for Enum class: [CODE_LAMBDA, NOD",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "executor"
+    ],
+    "value": "NOPE"
+   }
+  ]
+ },
+ "v2_cc_hash_brace_literal": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1258ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=3} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": 3}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "inlineCode"
+    ],
+    "value": "const s = 'x#{';\nconsole.log(s.length)"
+   }
+  ]
+ },
+ "v2_cc_inline_b64": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1075ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "inlineCode"
+    ],
+    "value": "Y29uc3QgZyA9ICIje2dyZWV0aW5nfSI7CmNvbnNvbGUubG9nKGcudG9VcHBlckNhc2UoKSArICd8JyArIGcubGVuZ3RoKTs="
+   }
+  ]
+ },
+ "v2_cc_language_bad": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"JSON parse error: Cannot deserialize value of type `com.expertly.common.model.automation.chain.json.AutomationChainCodeLanguageType` from String \\\"TYPESCRIPT\\\": not one of the values accepted for Enum class: [",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "language"
+    ],
+    "value": "TYPESCRIPT"
+   }
+  ]
+ },
+ "v2_cc_language_null": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1056ms) exec=False steps=1:ok{greetingOut=Hello Parth} 2:FAIL[Cannot invoke \"com.expertly.common.model.automation.chain.json.AutomationChainCodeLanguageType.getCodeLambdaName()\" beca]{} 3:skip{} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": null, \"ccOut\": null}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "language"
+    ],
+    "value": null
+   }
+  ]
+ },
+ "v2_cc_multi_out_no_etr": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1308ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{a={'a': 1, 'b': 2}} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": null}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs"
+    ],
+    "value": [
+     {
+      "key": "a",
+      "fieldCode": "ccOut",
+      "name": "ccOut",
+      "type": "TEXT"
+     },
+     {
+      "key": "b",
+      "fieldCode": "ccB",
+      "name": "ccB",
+      "type": "TEXT"
+     }
+    ]
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "inlineCode"
+    ],
+    "value": "console.log(JSON.stringify({a:1,b:2}))"
+   }
+  ]
+ },
+ "v2_cc_multi_out_with_etr": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1587ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{a=1,b=2} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": null}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs"
+    ],
+    "value": [
+     {
+      "key": "a",
+      "fieldCode": "ccOut",
+      "name": "ccOut",
+      "type": "TEXT",
+      "elementToRetrieve": "a"
+     },
+     {
+      "key": "b",
+      "fieldCode": "ccB",
+      "name": "ccB",
+      "type": "TEXT",
+      "elementToRetrieve": "b"
+     }
+    ]
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "inlineCode"
+    ],
+    "value": "console.log(JSON.stringify({a:1,b:2}))"
+   }
+  ]
+ },
+ "v2_cc_output_etr_single_wrong": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1125ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=<unbound>} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": null}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs",
+     0,
+     "elementToRetrieve"
+    ],
+    "value": "result"
+   }
+  ]
+ },
+ "v2_cc_output_no_type": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1270ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs",
+     0,
+     "type"
+    ],
+    "delete": true
+   }
+  ]
+ },
+ "v2_cc_syntax_error": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1207ms) exec=False steps=1:ok{greetingOut=Hello Parth} 2:FAIL[{\"status\": 500, \"status_message\": \"Error!\", \"error\": \"<anonymous>:8: SyntaxError: Unexpected token ';'\\n    };function e]{} 3:skip{} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": null, \"ccOut\": null}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "inlineCode"
+    ],
+    "value": "const g = ;\nconsole.log(g)"
+   }
+  ]
+ },
+ "v2_combineInput_false_spel": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1202ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "combineInput"
+    ],
+    "value": false
+   }
+  ]
+ },
+ "v2_default_value_spel": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1199ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "variables",
+     0,
+     "defaultValue"
+    ],
+    "value": "#{name}"
+   }
+  ]
+ },
+ "v2_dup_input_keys": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1130ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "inputs"
+    ],
+    "value": [
+     {
+      "uuid": "44dca6330b4138da68308166d26d9b89    ",
+      "key": "name",
+      "name": "name",
+      "description": "",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": ""
+     },
+     {
+      "uuid": "44dca6330b4138da68308166d26d9b89    ",
+      "key": "name",
+      "name": "name",
+      "description": "",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": ""
+     }
+    ]
+   }
+  ]
+ },
+ "v2_dup_out_fieldcode": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1061ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{greetingOut=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"sqlRows\": null, \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "outputs",
+     0,
+     "fieldCode"
+    ],
+    "value": "greetingOut"
+   },
+   {
+    "path": [
+     "steps",
+     2,
+     "outputs",
+     0,
+     "name"
+    ],
+    "value": "greetingOut"
+   }
+  ]
+ },
+ "v2_dup_step_id": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1122ms) exec=True steps=1:ok{} 2:ok{ccOut=NULL|4} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": null, \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"NULL|4\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "id"
+    ],
+    "value": "4da10fa1434b7b3587799f29bc96ae87    "
+   }
+  ]
+ },
+ "v2_dup_variable_input_same_key": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1112ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "variables"
+    ],
+    "value": [
+     {
+      "key": "greeting",
+      "name": "greeting",
+      "description": "",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": ""
+     },
+     {
+      "key": "name",
+      "name": "name",
+      "type": "STRING",
+      "required": false,
+      "defaultValue": "X",
+      "description": "",
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+     }
+    ]
+   }
+  ]
+ },
+ "v2_empty_steps": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (727ms) exec=True steps= out={\"greetingOut\": null, \"sqlRows\": null, \"ccOut\": null}",
+  "patch": [
+   {
+    "path": [
+     "steps"
+    ],
+    "value": []
+   }
+  ]
+ },
+ "v2_entry_cond_plain_text": {
+  "desc": "expression without #{}",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1140ms) exec=True steps=1:skip{greetingOut=<unbound>} 2:ok{ccOut=|0} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": null, \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"|0\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "entryCondition",
+     "expression"
+    ],
+    "value": "name eq Parth"
+   }
+  ]
+ },
+ "v2_entry_cond_syntax": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1029ms) exec=False steps=1:skip{greetingOut=<unbound>} 2:ok{ccOut=|0} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": null, \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"|0\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "entryCondition",
+     "expression"
+    ],
+    "value": "#{name eq }"
+   }
+  ]
+ },
+ "v2_entry_cond_undeclared": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1247ms) exec=True steps=1:skip{greetingOut=<unbound>} 2:ok{ccOut=|0} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": null, \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"|0\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "entryCondition",
+     "expression"
+    ],
+    "value": "#{ghostVar} eq 1"
+   }
+  ]
+ },
+ "v2_exit_on_failure_str": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"JSON parse error: Cannot deserialize value of type `boolean` from String \\\"yes\\\": only \\\"true\\\"/\\\"True\\\"/\\\"TRUE\\\" or \\\"false\\\"/\\\"False\\\"/\\\"FALSE\\\" recognized\", \"date\": \"Sun Sep 27 16:17:53 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "exitCondition",
+     "exitOnFailure",
+     "value"
+    ],
+    "value": "yes"
+   }
+  ]
+ },
+ "v2_inputRef_bad_type": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1055ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "inputReference",
+     "type"
+    ],
+    "value": "foo"
+   }
+  ]
+ },
+ "v2_input_key_hyphen": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Input key -> na-me is not valid. It should contain only alphanumeric characters and _\", \"date\": \"Sun Sep 27 16:09:48 UTC 2026\", \"data\": \"error.automation_chain.invalid_input_key\"}",
+  "patch": [
+   {
+    "path": [
+     "inputs",
+     0,
+     "key"
+    ],
+    "value": "na-me"
+   }
+  ]
+ },
+ "v2_input_key_renamed_dangling": {
+  "desc": "rename input key; steps still ref #{name}",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1210ms) exec=False steps=1:FAIL[]{greetingOut=Hello #{name}} 2:ok{ccOut=HELLO #{NAME}|13} 3:FAIL[]{sqlRows=[{'one': '1', 'nm': '#{name}'}]} out={\"greetingOut\": \"Hello #{name}\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"#{name}\"}], \"ccOut\": \"HELLO #{NAME}|13\"}",
+  "patch": [
+   {
+    "path": [
+     "inputs",
+     0,
+     "key"
+    ],
+    "value": "fullName"
+   },
+   {
+    "path": [
+     "inputs",
+     0,
+     "name"
+    ],
+    "value": "fullName"
+   }
+  ]
+ },
+ "v2_input_type_invalid": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "500"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"An error has occurred at server side, please try again later.\", \"date\": \"Sun Sep 27 16:17:17 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "inputs",
+     0,
+     "type"
+    ],
+    "value": "FOO"
+   }
+  ]
+ },
+ "v2_loop_bad_type": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1127ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "repeatStepExecution"
+    ],
+    "value": {
+     "type": "LOOP_EXECUTION_ON_FOO",
+     "value": "3"
+    }
+   }
+  ]
+ },
+ "v2_loop_io_missing_value": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 500 (1017ms) {\"executed\": false, \"message\": \"Cannot invoke \\\"String.replace(java.lang.CharSequence, java.lang.CharSequence)\\\" because the return value of \\\"com.expertly.common.model.automation.chain.json.AutomationChainServiceConfiguration.getLoopExecutionSource()\\\" is null\", \"failed\": false, \"",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "repeatStepExecution"
+    ],
+    "value": {
+     "type": "LOOP_EXECUTION_ON_INPUT_OUTPUT",
+     "executeParallel": false
+    }
+   }
+  ]
+ },
+ "v2_loop_number_bare_counter": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1194ms) exec=True steps=1:ok{greetingOut=['Hello Parth', 'Hello Parth', 'Hello Pa} 2:ok{ccOut=['HELLO PARTH', 'HELLO PARTH', 'HELLO PA} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": [\"Hello Parth\", \"Hello Parth\", \"Hello Parth\"], \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "repeatStepExecution"
+    ],
+    "value": {
+     "type": "LOOP_EXECUTION_ON_NUMBER",
+     "value": "3",
+     "counter": "i",
+     "executeParallel": false
+    }
+   }
+  ]
+ },
+ "v2_method_name_space": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Method name belz_tst_val_ bad name is not valid. It should contain only alphanumeric characters and - . _ ~ and should not start/end with period\", \"date\": \"Sun Sep 27 16:17:39 UTC 2026\", \"data\": \"error.automat",
+  "patch": [
+   {
+    "path": [
+     "name"
+    ],
+    "value": "belz_tst_val_ bad name"
+   }
+  ]
+ },
+ "v2_method_output_nokey": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 500 (1113ms) {\"executed\": false, \"message\": \"Cannot invoke \\\"Object.hashCode()\\\" because \\\"key\\\" is null\", \"failed\": false, \"statusCode\": 500, \"executionTime\": {}, \"failingSteps\": [], \"failingStepsStatuses\": [], \"totalExecutionTime\": {}, \"calls\": [{\"category\": \"Test-Parth\", \"method\": \"belz_tst_",
+  "patch": [
+   {
+    "path": [
+     "outputs",
+     0,
+     "key"
+    ],
+    "delete": true
+   }
+  ]
+ },
+ "v2_method_output_unbound": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1049ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"ghostOut\": null, \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "outputs"
+    ],
+    "value": [
+     {
+      "uuid": "4f1604cbca3e6c9afb7d96440d4f03a5    ",
+      "key": "greetingOut",
+      "fieldCode": "greetingOut",
+      "name": "greetingOut",
+      "type": "STRING",
+      "description": ""
+     },
+     {
+      "uuid": "4d53d61886e770c70217bde627d479e6    ",
+      "key": "ccOut",
+      "fieldCode": "ccOut",
+      "name": "ccOut",
+      "type": "STRING",
+      "description": ""
+     },
+     {
+      "uuid": "44da07c87556caf2c2e094d271fed617    ",
+      "key": "sqlRows",
+      "fieldCode": "sqlRows",
+      "name": "sqlRows",
+      "type": "ARRAY",
+      "description": ""
+     },
+     {
+      "key": "ghostOut",
+      "name": "ghostOut",
+      "type": "STRING",
+      "description": ""
+     }
+    ]
+   }
+  ]
+ },
+ "v2_noop": {
+  "desc": "restore+noop",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1067ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": []
+ },
+ "v2_out_fieldcode_empty": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Step Output field code ->  is not valid. It should contain only alphanumeric characters and _\", \"date\": \"Sun Sep 27 16:09:10 UTC 2026\", \"data\": \"error.automation_chain.invalid_step_output_field_code\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "fieldCode"
+    ],
+    "value": ""
+   }
+  ]
+ },
+ "v2_out_fieldcode_null": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "500"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Cannot invoke \\\"String.equals(Object)\\\" because the return value of \\\"com.expertly.common.model.automation.chain.json.AutomationChainOutput.getCode()\\\" is null\", \"date\": \"Sun Sep 27 16:09:16 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "fieldCode"
+    ],
+    "value": null
+   }
+  ]
+ },
+ "v2_out_name_space": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Step Output name -> greeting Out is not valid. It should contain only alphanumeric characters and _\", \"date\": \"Sun Sep 27 16:09:21 UTC 2026\", \"data\": \"error.automation_chain.invalid_step_output_name\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "name"
+    ],
+    "value": "greeting Out"
+   }
+  ]
+ },
+ "v2_output_type_invalid": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "500"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"An error has occurred at server side, please try again later.\", \"date\": \"Sun Sep 27 16:17:12 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "outputs",
+     0,
+     "type"
+    ],
+    "value": "FOO"
+   }
+  ]
+ },
+ "v2_outputref_bad_index": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "500"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Index 9 out of bounds for length 3\", \"date\": \"Sun Sep 27 16:17:23 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "inputs",
+     0,
+     "properties",
+     0,
+     "outputRef"
+    ],
+    "value": {
+     "referenceStepIndex": 9,
+     "fieldCode": "nope",
+     "label": "nope"
+    }
+   }
+  ]
+ },
+ "v2_required_input_omitted": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 400 (1012ms) {\"executed\": false, \"message\": \"The following inputs are mandatory name\", \"failed\": true, \"statusCode\": 400, \"executionTime\": {}, \"failingSteps\": [], \"failingStepsStatuses\": [], \"totalExecutionTime\": {}, \"calls\": [{\"category\": \"Test-Parth\", \"method\": \"belz_tst_val_baseline\", \"param",
+  "patch": []
+ },
+ "v2_runasync_output": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1251ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "runAsync"
+    ],
+    "value": true
+   }
+  ]
+ },
+ "v2_spel_brace_literal": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1116ms) exec=False steps=1:FAIL[]{greetingOut=#{ {'a','b'}.size() }} 2:ok{ccOut=#{ {'A','B'}.SIZE() }|21} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"#{ {'a','b'}.size() }\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"#{ {'A','B'}.SIZE() }|21\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "value"
+    ],
+    "value": "#{ {'a','b'}.size() }"
+   }
+  ]
+ },
+ "v2_spel_dangling_ref": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1109ms) exec=False steps=1:FAIL[]{greetingOut=Hello #{nmae}} 2:ok{ccOut=HELLO #{NMAE}|13} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello #{nmae}\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO #{NMAE}|13\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "value"
+    ],
+    "value": "Hello #{nmae}"
+   }
+  ]
+ },
+ "v2_spel_nested": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1293ms) exec=False steps=1:FAIL[]{greetingOut=Hello #{ #{name} }} 2:ok{ccOut=HELLO #{ #{NAME} }|18} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello #{ #{name} }\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO #{ #{NAME} }|18\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "value"
+    ],
+    "value": "Hello #{ #{name} }"
+   }
+  ]
+ },
+ "v2_spel_syntax_error": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1196ms) exec=False steps=1:FAIL[]{greetingOut=Hello #{name +}} 2:ok{ccOut=HELLO #{NAME +}|15} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello #{name +}\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO #{NAME +}|15\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "value"
+    ],
+    "value": "Hello #{name +}"
+   }
+  ]
+ },
+ "v2_spel_unclosed": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1077ms) exec=True steps=1:ok{greetingOut=Hello #{name} 2:ok{ccOut=HELLO #{NAME|12} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello #{name\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO #{NAME|12\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "value"
+    ],
+    "value": "Hello #{name"
+   }
+  ]
+ },
+ "v2_sql_b64_flagged": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1120ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "inputs",
+     0,
+     "properties",
+     0,
+     "encodingType"
+    ],
+    "value": "BASE_64"
+   },
+   {
+    "path": [
+     "steps",
+     2,
+     "inputs",
+     0,
+     "properties",
+     0,
+     "value"
+    ],
+    "value": "c2VsZWN0IDEgYXMgb25lLCAnI3tuYW1lfScgYXMgbm0="
+   }
+  ]
+ },
+ "v2_sql_b64_noflag": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1862ms) exec=False steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:FAIL[{\"result\":{\"message\":\"Unexpected error occurred. Please check with system administrator for more details.\",\"status\":400,]{} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": null, \"ccOut\": \"HELLO PARTH|11\"",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "inputs",
+     0,
+     "properties",
+     0,
+     "value"
+    ],
+    "value": "c2VsZWN0IDEgYXMgb25lLCAnI3tuYW1lfScgYXMgbm0="
+   }
+  ]
+ },
+ "v2_sql_bad_account": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "500"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"An error has occurred at server side, please try again later.\", \"date\": \"Sun Sep 27 16:16:12 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "accountConfiguration",
+     "id"
+    ],
+    "value": 999999
+   },
+   {
+    "path": [
+     "steps",
+     2,
+     "accountConfiguration",
+     "name"
+    ],
+    "value": "nope"
+   }
+  ]
+ },
+ "v2_sql_flag_plain": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1073ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "inputs",
+     0,
+     "properties",
+     0,
+     "encodingType"
+    ],
+    "value": "BASE_64"
+   }
+  ]
+ },
+ "v2_sql_no_account": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (975ms) exec=False steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:FAIL[Something went wrong. Failed to execute automation! ]{} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": null, \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "accountConfiguration"
+    ],
+    "delete": true
+   }
+  ]
+ },
+ "v2_sql_syntax_error": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1099ms) exec=False steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:FAIL[{\"result\":{\"message\":\"Unexpected error occurred. Please check with system administrator for more details.\",\"status\":400,]{} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": null, \"ccOut\": \"HELLO PARTH|11\"",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     2,
+     "inputs",
+     0,
+     "properties",
+     0,
+     "value"
+    ],
+    "value": "selec 1"
+   }
+  ]
+ },
+ "v2_state_published_in_body": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Method does not have draft referenceId, Draft referenceId is mandatory for the Published method.\", \"date\": \"Sun Sep 27 16:21:02 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "metadata",
+     "state"
+    ],
+    "value": "PUBLISHED"
+   }
+  ]
+ },
+ "v2_step_extra_unknown_field": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1014ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "bogusField"
+    ],
+    "value": 123
+   }
+  ]
+ },
+ "v2_step_input_key_unknown": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1121ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "key"
+    ],
+    "value": "bogusKey"
+   }
+  ]
+ },
+ "v2_step_input_key_unknown_no_uuid": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1083ms) exec=True steps=1:ok{greetingOut=<unbound>} 2:ok{ccOut=|0} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"|0\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "key"
+    ],
+    "value": "bogusKey"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "uuid"
+    ],
+    "delete": true
+   }
+  ]
+ },
+ "v2_step_input_key_wrongcase": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1176ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "key"
+    ],
+    "value": "input"
+   }
+  ]
+ },
+ "v2_step_input_uuid_bogus": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1123ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "uuid"
+    ],
+    "value": "4bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb    "
+   }
+  ]
+ },
+ "v2_step_input_uuid_removed": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1054ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs",
+     0,
+     "uuid"
+    ],
+    "delete": true
+   }
+  ]
+ },
+ "v2_step_no_properties": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "500"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Cannot invoke \\\"com.expertly.common.model.automation.chain.v2.AutomationStepProperties.getType()\\\" because the return value of \\\"com.expertly.common.model.automation.chain.v2.AutomationChainStep.getProperties(",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     1,
+     "properties"
+    ],
+    "delete": true
+   }
+  ]
+ },
+ "v2_step_output_key_wrong": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1091ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "key"
+    ],
+    "value": "responsee"
+   }
+  ]
+ },
+ "v2_step_reorder": {
+  "desc": "CC (reads #{greeting}) moved before echo that writes it",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1084ms) exec=True steps=1:ok{ccOut=|0} 2:ok{greetingOut=Hello Parth} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"|0\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "automationAPIId"
+    ],
+    "delete": true
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "description"
+    ],
+    "value": "Step 2: custom code length"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "id"
+    ],
+    "delete": true
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "inputs"
+    ],
+    "value": []
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "methodName"
+    ],
+    "delete": true
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "fieldCode"
+    ],
+    "value": "ccOut"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "inputReference"
+    ],
+    "delete": true
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "key"
+    ],
+    "value": "ccOut"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "name"
+    ],
+    "value": "ccOut"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "type"
+    ],
+    "value": "TEXT"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "uuid"
+    ],
+    "delete": true
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "customCode",
+     "executor"
+    ],
+    "value": "CODE_LAMBDA"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "customCode",
+     "inlineCode"
+    ],
+    "value": "const g = \"#{greeting}\";\nconsole.log(g.toUpperCase() + '|' + g.length);"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "customCode",
+     "language"
+    ],
+    "value": "JAVASCRIPT"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "type"
+    ],
+    "value": "CUSTOM_CODE"
+   },
+   {
+    "path": [
+     "steps",
+     0,
+     "serviceName"
+    ],
+    "delete": true
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "automationAPIId"
+    ],
+    "value": "424ffd4c9e0f55befc238dd999dab2d6    "
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "description"
+    ],
+    "value": "Step 1: build greeting"
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "id"
+    ],
+    "value": "4da10fa1434b7b3587799f29bc96ae87    "
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "inputs"
+    ],
+    "value": [
+     {
+      "uuid": "4bd0e87488b2cf0ff019850ab3ae069c    ",
+      "value": "Hello #{name}",
+      "key": "Input",
+      "name": "Input",
+      "type": "STRING",
+      "displayWidgetSuggestion": "CUSTOM",
+      "combineInput": true,
+      "properties": [],
+      "encodedBase64": false,
+      "encodingType": "NONE"
+     }
+    ]
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "methodName"
+    ],
+    "value": "echo"
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs",
+     0,
+     "fieldCode"
+    ],
+    "value": "greetingOut"
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs",
+     0,
+     "inputReference"
+    ],
+    "value": {
+     "type": "method_input",
+     "reference": "greeting"
+    }
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs",
+     0,
+     "key"
+    ],
+    "value": "response"
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs",
+     0,
+     "name"
+    ],
+    "value": "greetingOut"
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs",
+     0,
+     "type"
+    ],
+    "delete": true
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "outputs",
+     0,
+     "uuid"
+    ],
+    "value": "454b0e868e7fdf20249caae851c08208    "
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "executor"
+    ],
+    "value": null
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "inlineCode"
+    ],
+    "value": null
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "customCode",
+     "language"
+    ],
+    "value": null
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "properties",
+     "type"
+    ],
+    "value": "EXISTING_SERVICE"
+   },
+   {
+    "path": [
+     "steps",
+     1,
+     "serviceName"
+    ],
+    "value": "Helpers.Legacy"
+   }
+  ]
+ },
+ "v2_step_type_invalid": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"JSON parse error: Cannot deserialize value of type `com.expertly.common.model.automation.chain.v2.AutomationStepType` from String \\\"FOO\\\": not one of the values accepted for Enum class: [EXISTING_SERVICE, CUST",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "properties",
+     "type"
+    ],
+    "value": "FOO"
+   }
+  ]
+ },
+ "v2_thin_update": {
+  "desc": "only uuid+user fields",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Invalid state, provided state does not match.\", \"date\": \"Sun Sep 27 16:19:33 UTC 2026\"}",
+  "patch": [
+   {
+    "path": [
+     "metadata"
+    ],
+    "delete": true
+   }
+  ]
+ },
+ "v2_var_key_dot": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"Internal variable key -> greet.ing is not valid. It should contain only alphanumeric characters and _\", \"date\": \"Sun Sep 27 16:20:34 UTC 2026\", \"data\": \"error.automation_chain.invalid_internal_variable_key\"}",
+  "patch": [
+   {
+    "path": [
+     "variables",
+     0,
+     "key"
+    ],
+    "value": "greet.ing"
+   }
+  ]
+ },
+ "v2_var_ref_emptystr": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "400"
+  ],
+  "observed": "{\"url\": \"http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2\", \"errorMessage\": \"JSON parse error: Cannot coerce empty String (\\\"\\\") to `com.expertly.common.model.automation.chain.v2.AutomationChainInputReference` value (but could if coercion was enabled using `CoercionConfig`)\", \"date\": \"",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "inputReference"
+    ],
+    "value": ""
+   }
+  ]
+ },
+ "v2_var_undeclared_ref": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1094ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=|0} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"|0\"}",
+  "patch": [
+   {
+    "path": [
+     "steps",
+     0,
+     "outputs",
+     0,
+     "inputReference",
+     "reference"
+    ],
+    "value": "nopeVar"
+   }
+  ]
+ },
+ "v2_version_tamper": {
+  "desc": "",
+  "save": [
+   "HTTP",
+   "200"
+  ],
+  "observed": "HTTP 200 (1156ms) exec=True steps=1:ok{greetingOut=Hello Parth} 2:ok{ccOut=HELLO PARTH|11} 3:ok{sqlRows=[{'one': '1', 'nm': 'Parth'}]} out={\"greetingOut\": \"Hello Parth\", \"sqlRows\": [{\"one\": \"1\", \"nm\": \"Parth\"}], \"ccOut\": \"HELLO PARTH|11\"}",
+  "patch": []
+ }
+}

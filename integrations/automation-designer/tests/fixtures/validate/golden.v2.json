@@ -1,0 +1,394 @@
+{
+  "uuid": "4d9cefcccbcebc924b3984556b1c0e66",
+  "automationApiId": "4aa317b62393f167173b94146229a31c    ",
+  "name": "belz_tst_val_baseline",
+  "summary": "belz validator research baseline",
+  "description": "belz_tst_val_ baseline for ad-validation research; safe to delete",
+  "metadata": {
+    "version": {
+      "uuid": "4d9cefcccbcebc924b3984556b1c0e66",
+      "name": "5",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 1135,
+      "uuid": "4e98700b2524e2accd47b4addf95ceca",
+      "name": "Test-Parth",
+      "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": {
+      "timeoutInSecond": 180
+    },
+    "internal": {
+      "createdAt": 1790524987076,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": 1,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "45104f3ae1ab7ec2d5f4943527383921    ",
+      "key": "name",
+      "name": "name",
+      "description": "",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": ""
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4f1604cbca3e6c9afb7d96440d4f03a5    ",
+      "key": "greetingOut",
+      "fieldCode": "greetingOut",
+      "name": "greetingOut",
+      "type": "STRING",
+      "description": ""
+    },
+    {
+      "uuid": "4d53d61886e770c70217bde627d479e6    ",
+      "key": "ccOut",
+      "fieldCode": "ccOut",
+      "name": "ccOut",
+      "type": "STRING",
+      "description": ""
+    },
+    {
+      "uuid": "44da07c87556caf2c2e094d271fed617    ",
+      "key": "sqlRows",
+      "fieldCode": "sqlRows",
+      "name": "sqlRows",
+      "type": "ARRAY",
+      "description": ""
+    }
+  ],
+  "variables": [
+    {
+      "key": "greeting",
+      "name": "greeting",
+      "description": "",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": ""
+    }
+  ],
+  "steps": [
+    {
+      "id": "4da10fa1434b7b3587799f29bc96ae87    ",
+      "automationAPIId": "424ffd4c9e0f55befc238dd999dab2d6    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "echo",
+      "coreMethod": false,
+      "description": "Step 1: build greeting",
+      "inputs": [
+        {
+          "uuid": "4bd0e87488b2cf0ff019850ab3ae069c    ",
+          "value": "Hello #{name}",
+          "key": "Input",
+          "name": "Input",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "454b0e868e7fdf20249caae851c08208    ",
+          "key": "response",
+          "fieldCode": "greetingOut",
+          "name": "greetingOut",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "greeting"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "description": "Step 2: custom code length",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "ccOut",
+          "fieldCode": "ccOut",
+          "name": "ccOut",
+          "type": "TEXT"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "const g = \"#{greeting}\";\nconsole.log(g.toUpperCase() + '|' + g.length);",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "44b3dbf25084164f8779ab790d9473f5    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "description": "Step 3: sql read",
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "select 1 as one, '#{name}' as nm",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodedBase64": false,
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "8f4b1153-4031-4933-8cfc-b932f60275f6",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "3154483b-14a3-4cc3-b67a-13294f143556",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodedBase64": false,
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodedBase64": false,
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "6745124e-489f-41d4-904b-06f1f212239f",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "371a1b5e-9bcb-4334-a412-90cadfdd79a1",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodedBase64": false,
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodedBase64": false,
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "490debfa-0f1d-f16f-a7e7-aa23f100f7da",
+              "key": "summaries",
+              "name": "Summaries",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "46fbe4a5-492d-bdee-0716-b17b8210e04d",
+                  "key": "summary",
+                  "name": "Summary",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [
+                    {
+                      "uuid": "4386dbd3-ba2d-7fca-cd73-b7d364252cd1",
+                      "key": "metrics",
+                      "name": "Metrics",
+                      "type": "ARRAY",
+                      "displayWidgetSuggestion": "ARRAY",
+                      "combineInput": false,
+                      "properties": [
+                        {
+                          "uuid": "40d8f53b-5aef-d9ae-f4bb-91ed24279ae8",
+                          "key": "metric",
+                          "name": "Metric",
+                          "type": "OBJECT",
+                          "displayWidgetSuggestion": "OBJECT",
+                          "combineInput": false,
+                          "properties": [],
+                          "encodedBase64": false,
+                          "encodingType": "NONE"
+                        }
+                      ],
+                      "encodedBase64": false,
+                      "encodingType": "NONE"
+                    }
+                  ],
+                  "encodedBase64": false,
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodedBase64": false,
+              "encodingType": "NONE"
+            }
+          ],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "sqlRows",
+          "name": "sqlRows"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "2"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [
+      "EDIT_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_IN_GUIDE",
+      "VIEW_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_DIRECTLY",
+      "OWNER_METHOD"
+    ],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

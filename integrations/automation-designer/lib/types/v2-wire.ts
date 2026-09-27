@@ -127,3 +127,9 @@ export interface V2MethodResponse {
   securityFields?: unknown[];
   [extra: string]: unknown;
 }
+
+/**
+ * A V2 method body as sent to `POST /chain/v2` (the fetched GET body with
+ * changes overlaid). The validator (lib/validate) takes this shape.
+ */
+export type V2MethodBody = V2MethodResponse;
