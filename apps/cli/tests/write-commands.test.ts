@@ -23,12 +23,13 @@ interface Case {
 
 const AD = "integrations/automation-designer";
 const PD = "integrations/page-designer";
-const STAGE_4B = "Stage 4B sets writes";
 
 const CASES: Case[] = [
   // ── Automation Designer ──
   { owner: AD, command: "save", argv: [UUID], kind: "writes" },
   { owner: AD, command: "publish", argv: [UUID], kind: "writes" },
+  { owner: AD, command: "create", argv: ["--category", "Test-Parth", "--spec", "s.json"], kind: "writes" },
+  { owner: AD, command: "delete", argv: [UUID], kind: "writes" },
   { owner: AD, command: "import", argv: ["x.json"], kind: "writes" },
   { owner: AD, command: "category", argv: ["create", "belz_tst"], kind: "writes" },
   { owner: AD, command: "changelog", argv: [UUID, "--note", "n"], kind: "writes" },
@@ -46,10 +47,10 @@ const CASES: Case[] = [
   { owner: AD, command: "sql", argv: ["insert", "INSERT INTO t (a) VALUES (1)", "--db", "x"], kind: "writes" },
   { owner: AD, command: "sql", argv: ["modify", "ALTER TABLE t ADD COLUMN b INT", "--db", "x"], kind: "writes" },
   { owner: AD, command: "sql", argv: ["run", "select 1"], kind: "reads" },
-  { owner: AD, command: "sql", argv: ["tui"], kind: "writes", todo: STAGE_4B },
-  { owner: AD, command: "test", argv: [UUID], kind: "writes", todo: STAGE_4B },
-  { owner: AD, command: "run", argv: [UUID], kind: "writes", todo: STAGE_4B },
-  { owner: AD, command: "run-suites", argv: [], kind: "writes", todo: STAGE_4B },
+  { owner: AD, command: "sql", argv: ["tui"], kind: "writes" },
+  { owner: AD, command: "test", argv: [UUID], kind: "writes" },
+  { owner: AD, command: "run", argv: [UUID], kind: "writes" },
+  { owner: AD, command: "run-suites", argv: [], kind: "writes" },
   // ── Page Designer ──
   { owner: PD, command: "save", argv: [UUID], kind: "writes" },
   { owner: PD, command: "publish", argv: [UUID], kind: "writes" },

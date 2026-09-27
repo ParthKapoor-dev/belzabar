@@ -18,6 +18,12 @@ import changelogDesc from "./commands/changelog/desc.txt" with { type: "text" };
 import * as childInfoCmd from "./commands/child-info/index";
 import childInfoHelp from "./commands/child-info/help.txt" with { type: "text" };
 import childInfoDesc from "./commands/child-info/desc.txt" with { type: "text" };
+import * as createCmd from "./commands/create/index";
+import createHelp from "./commands/create/help.txt" with { type: "text" };
+import createDesc from "./commands/create/desc.txt" with { type: "text" };
+import * as deleteCmd from "./commands/delete/index";
+import deleteHelp from "./commands/delete/help.txt" with { type: "text" };
+import deleteDesc from "./commands/delete/desc.txt" with { type: "text" };
 import * as diffCmd from "./commands/diff/index";
 import diffHelp from "./commands/diff/help.txt" with { type: "text" };
 import diffDesc from "./commands/diff/desc.txt" with { type: "text" };
@@ -93,6 +99,8 @@ export const registry = {
   category: { module: categoryCmd, help: categoryHelp, desc: categoryDesc },
   changelog: { module: changelogCmd, help: changelogHelp, desc: changelogDesc },
   "child-info": { module: childInfoCmd, help: childInfoHelp, desc: childInfoDesc },
+  create: { module: createCmd, help: createHelp, desc: createDesc },
+  delete: { module: deleteCmd, help: deleteHelp, desc: deleteDesc },
   diff: { module: diffCmd, help: diffHelp, desc: diffDesc },
   export: { module: exportCmd, help: exportHelp, desc: exportDesc },
   "export-category": { module: exportCategoryCmd, help: exportCategoryHelp, desc: exportCategoryDesc },

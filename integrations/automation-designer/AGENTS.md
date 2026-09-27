@@ -15,7 +15,8 @@ This directory is the `@belzabar/ad` workspace package. The unified `belz` binar
 belz ad <cmd>   → find, fetch, show, show-code, outputs, state, categories,
                   services, export, export-category, test-cases, test-report,
                   child-info, test, run, save-suite, run-suites, sql,
-                  save, publish, changelog, import, category, test-case,
+                  save, publish, create, delete, changelog, import,
+                  category, test-case,
                   history, trace
 ```
 
@@ -218,6 +219,19 @@ fails if a folder is missing from the registry.
    Findings also present in the current published copy are pre-existing and
    still block unless `--allow-preexisting`. After the publish the compiled
    cache of draft + published is evicted on both routes (`compiledCache`).
+2a. `create --category <name|id|uuid> --spec <file>` — new DRAFT via
+   `POST /chain/v2` (no uuid). Spec = V2 body or subset (lib/save/create.ts:
+   `buildCreateBody` fills UI defaults, drops server-owned keys and
+   method-level uuids/step ids, category from the flag).
+   `assertCreatableCategory` refuses Helpers.*/Database.*/Cache.*/Email.*/
+   Expertly.*/Web Socket/system services (WSR-6, AD_CATEGORY_PROTECTED).
+   Validated like save; duplicate name → AD_METHOD_EXISTS; verified on
+   re-read (DRAFT, name, category, step count).
+2b. `delete <uuid>` — soft delete (`DELETE /chain/v2/{uuid}`) of a DRAFT that
+   was never published only (AD_DELETE_PUBLISHED / AD_DELETE_HAS_PUBLISHED /
+   fail closed on a missing state). Verified when the V2 re-read answers
+   METHOD_NOT_FOUND — V1 keeps returning deleted records and its
+   `active`/`deprecatedAt` fields do NOT mark deletion.
 3. `import <file>` — POST `/chain/import`
 4. `category create <name>` — create a new AD category/service
 5. `test-case <action>` — `list | create | update | delete | bulk |

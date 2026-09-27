@@ -1,0 +1,44 @@
+Usage: belz ad create --category <CATEGORY> --spec <FILE> --env <env> [flags]
+
+Create a new DRAFT method from a JSON spec through the V2 route
+(POST /chain/v2 without a uuid). Returns the new uuid.
+
+The spec is a V2 method body or a subset of it: name (required), summary,
+description, inputs[], outputs[], variables[], steps[], securityFields[],
+assertions[], metadata.executionTimeLimit. A body fetched with
+`belz ad fetch <uuid> --v2` works too: server-owned keys (uuid, ids,
+metadata state/version/service, changelogs, permissions…) are dropped and
+listed in `dropped`; method-level input/output/variable uuids and step ids are
+minted by the server. Defaults follow the AD UI: exitOnFailure true, custom
+code on JAVASCRIPT/CODE_LAMBDA (type inferred from customCode.inlineCode),
+combineInput true when a value holds SpEL, input type STRING.
+
+Flags:
+  --category <CATEGORY> Target category: name, chain-category id, or uuid. (required)
+                        Core/shared categories (Helpers.*, Database.*, Cache.*,
+                        Email.*, Expertly.*, Web Socket, system services) are
+                        refused with AD_CATEGORY_PROTECTED.
+  --spec <FILE>         JSON spec file. (required)
+  --yes, -y             Skip the confirmation prompt (required with --llm).
+  --no-validate         Skip the validator. Logged loudly; not recommended.
+  --strict              Validator warnings block the create too.
+  --dry-run-compile     Also run the online checks (server compile dry run).
+  --v2                  Accepted for consistency (create always uses V2).
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Set active environment. Required: create is a write.
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Errors: AD_SPEC_UNKNOWN_KEY, AD_SPEC_INVALID, CATEGORY_NOT_FOUND,
+AD_CATEGORY_PROTECTED, AD_VALIDATION_FAILED, AD_METHOD_EXISTS (name taken in
+the category), AD_SAVE_REJECTED (server message), AD_SAVE_VERIFY_FAILED
+(the method does not read back as a DRAFT with this name/category/steps).
+
+Data: {uuid, name, state, version, category{chainCategoryId,
+chainCategoryUuid, name}, stepCount, dropped[], validation{skipped, warnings,
+layersRun}}.
+
+Examples:
+  belz ad create --category Test-Parth --spec method.json --env <env>
+  belz ad create --category 1135 --spec method.json --env <env> --yes --llm
