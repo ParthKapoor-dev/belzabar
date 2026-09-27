@@ -80,3 +80,72 @@ describe("find command parseArgs", () => {
     });
   });
 });
+
+// ─── Stage 4 fixes ──────────────────────────────────────────────────────
+import { fakeFetch, respond, withTempEnvConfig } from "@belzabar/core/testing";
+import { rawIndex, subcommandFirst } from "../../commands/find/index";
+import { loadOrBuildMethodFinderIndex, type MethodFinderIndex } from "../../lib/method-finder";
+
+describe("find: flags before the subcommand (s3-review regression)", () => {
+  test("`--refresh list` is list mode again", () => {
+    expect(subcommandFirst(["--refresh", "list"])).toEqual(["list", "--refresh"]);
+    const parsed = command.parseArgs(["--refresh", "list"], context);
+    expect(parsed.mode).toBe("browse");
+    expect(parsed.refresh).toBe(true);
+  });
+  test("value flags are skipped; a plain query is untouched", () => {
+    expect(subcommandFirst(["--limit", "5", "pick", "x"])).toEqual(["pick", "--limit", "5", "x"]);
+    expect(subcommandFirst(["--limit", "5", "someQuery"])).toEqual(["--limit", "5", "someQuery"]);
+    expect(subcommandFirst(["list"])).toEqual(["list"]);
+  });
+});
+
+describe("find pick without a terminal (F30)", () => {
+  test("human mode → INTERACTIVE_NOT_SUPPORTED before any fetch", async () => {
+    const desc = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
+    Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true });
+    try {
+      await expect(
+        command.execute({ mode: "pick", refresh: false, limit: 20, open: false, raw: false }, context),
+      ).rejects.toMatchObject({ code: "INTERACTIVE_NOT_SUPPORTED" });
+    } finally {
+      if (desc) Object.defineProperty(process.stdin, "isTTY", desc);
+      else delete (process.stdin as { isTTY?: boolean }).isTTY;
+    }
+  });
+});
+
+describe("find --raw honours --limit (F29)", () => {
+  test("index capped, truncation counted", () => {
+    const index = {
+      env: "e", generatedAt: 0, skippedCategories: [], categoryCount: 3, methodCount: 50,
+      categories: [1, 2, 3].map((i) => ({ uuid: `c${i}`, name: `c${i}`, label: "", aliasNames: [], methodCount: 0 })),
+      methods: Array.from({ length: 50 }, (_, i) => ({ uuid: `m${i}` })),
+    } as unknown as MethodFinderIndex;
+    const view = rawIndex(index, 2);
+    expect(view.index.methods.length).toBe(2);
+    expect(view.index.categories.length).toBe(2);
+    expect(view.truncated).toEqual({ methods: 48, categories: 1 });
+  });
+});
+
+describe("find index rebuild (F29, AD-10)", () => {
+  test("reports progress per category and keeps chain-category id + trimmed uuids", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-find": { url: "https://t-find.test" } }, activeEnv: "t-find" });
+    const cats = [
+      { id: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca    ", automationSystemUuid: "4037ada88a1a3ac30a1c9e63b6b0eed6    ", name: "Test-Parth" },
+      { id: 15, uuid: "4c1eb487ee7f4be7c4bfb246809bce25", name: "Schools" },
+      { id: 7, uuid: "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", name: "Other" },
+    ];
+    using ff = fakeFetch({
+      "GET /rest/api/automation/services*": respond({ json: { currentOffset: 3, result: cats } }),
+      "GET /rest/api/automation/methods*": respond({ json: { methodList: [] } }),
+    }).install();
+    const seen: Array<[number, number]> = [];
+    const { index } = await loadOrBuildMethodFinderIndex({ refresh: true, onProgress: (p) => seen.push([p.done, p.total]) });
+    expect(seen).toEqual([[1, 3], [2, 3], [3, 3]]);
+    const tp = index.categories.find((c) => c.name === "Test-Parth")!;
+    expect(tp).toMatchObject({ chainCategoryId: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca", systemUuid: "4037ada88a1a3ac30a1c9e63b6b0eed6" });
+    expect(ff.requests.filter((r) => r.url.includes("/automation/methods")).length).toBe(3);
+  });
+});

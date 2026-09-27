@@ -38,6 +38,17 @@ async function fetchChainJson<T>(response: Response, path: string, uuid: string)
       details: { uuid },
     });
   }
+  // A soft-deleted method has no automation API: the V2 GET answers 400 with
+  // an NPE ("automationAPI" is null) while V1 still returns the record.
+  if (response.status === 400) {
+    const text = await response.clone().text().catch(() => "");
+    if (/automationAPI\\?"? is null/.test(text)) {
+      throw new CliError(`Method ${uuid} has no automation API on the server (soft-deleted?).`, {
+        code: "METHOD_NOT_FOUND",
+        details: { uuid, path, status: 400, reason: "automationAPI is null" },
+      });
+    }
+  }
   await checkResponse(response, path);
   throw new Error("unreachable");
 }

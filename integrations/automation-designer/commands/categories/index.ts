@@ -1,5 +1,5 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { adApi } from "../../lib/api/index";
+import { fetchCategories, type Category } from "../../lib/categories";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface CategoriesArgs {
@@ -7,11 +7,10 @@ interface CategoriesArgs {
   user: boolean;
 }
 
-interface CategoryRow {
-  id: number | string;
-  uuid: string;
-  name: string;
-  type: "USER_GENERATED" | "SYSTEM_GENERATED" | string;
+/** `id` is the chain-category id other commands consume (null for system services). */
+interface CategoryRow extends Category {
+  id: number | null;
+  uuid: string | null;
 }
 
 interface CategoriesData {
@@ -39,20 +38,13 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
     return { system: flags.system, user: flags.user };
   },
   async execute({ system, user }) {
-    const raw = (await adApi.listCategories({ includeSystem: true })) as unknown;
-    const arr = Array.isArray(raw) ? raw : Array.isArray((raw as any)?.categories) ? (raw as any).categories : [];
-
-    const categories: CategoryRow[] = [];
-    for (const item of arr) {
-      if (!item || typeof item !== "object") continue;
-      const r = item as Record<string, unknown>;
-      const id = typeof r.id === "number" || typeof r.id === "string" ? r.id : (r.automationChainCategoryId as number | string | undefined);
-      const uuid = typeof r.uuid === "string" ? r.uuid : "";
-      const name = typeof r.name === "string" ? r.name : typeof r.label === "string" ? (r.label as string) : "";
-      const type = typeof r.type === "string" ? (r.type as string) : "";
-      if (!name) continue;
-      categories.push({ id: id ?? "", uuid, name, type });
-    }
+    // AD-09/F9: chain categories (id 1135 = what methods, POST /chain and
+    // export-category use), joined with their automation system (1318).
+    const categories: CategoryRow[] = (await fetchCategories()).map((c) => ({
+      id: c.chainCategoryId,
+      uuid: c.chainCategoryUuid ?? c.systemUuid,
+      ...c,
+    }));
 
     let filtered = categories;
     let filter: CategoriesData["filter"] = "all";
@@ -74,8 +66,8 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
     ui.section(`Categories (${data.filter}, ${data.total})`);
     if (data.categories.length === 0) ui.text("(none)");
     else ui.table(
-      ["Name", "Type", "ID", "UUID"],
-      data.categories.map(c => [c.name, c.type, String(c.id), c.uuid]),
+      ["Name", "Type", "ID", "UUID", "System ID", "System UUID"],
+      data.categories.map(c => [c.name, c.type, c.id ?? "-", c.uuid ?? "", c.systemId ?? "-", c.systemUuid ?? ""]),
     );
   },
 };

@@ -9,10 +9,10 @@ Arguments:
                       QUERY runs ranked search over methods and categories.
 
 Flags:
-  --refresh           Rebuild method index from API before searching.
-  --limit <N>         Maximum number of matches to return, 1-200. (default: 20)
+  --refresh           Rebuild method index from API before searching (progress on stderr).
+  --limit <N>         Maximum matches (and --raw index rows) to return, 1-200. (default: 20)
   --open              Open selected method URL in browser. (pick mode only)
-  --raw               Include raw cached index data in output.
+  --raw               Include the raw cached index, capped at --limit methods/categories.
   --v2                Accepted for consistency; the index is V1-only (a notice is printed).
   --help, -h          Show this help message.
 

@@ -1,11 +1,13 @@
 Usage: belz ad export <method-id-or-uuid> [flags]
 
-Export a single method via /rest/api/automation/chain/export/{id}.
+Export a single method via /rest/api/automation/chain/export/{id}. A uuid
+(any spelling, or an AD URL) is resolved to the numeric chain id first.
 
 Flags:
   --out <file>    Write the exported JSON to a file instead of stdout
   --v2            Accepted for consistency; always V1 (a notice is printed)
-  --llm           Emit a JSON envelope with {id, writtenTo, bytes, preview}
+  --llm           Emit a JSON envelope with {id, uuid, writtenTo, bytes, preview}
 
-Example:
+Examples:
   belz ad export 98765 --out /tmp/method.json
+  belz ad export 4bf56e008eabe4010508af439a15ecfb --llm

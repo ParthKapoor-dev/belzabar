@@ -27,7 +27,7 @@ async function v2Method() {
 
 describe("identityForStep (F37)", () => {
   test("always a string, whatever the wire types", () => {
-    const base = { orderIndex: 1, outputs: [], inputs: [], raw: {}, kind: "EXISTING_SERVICE" } as const;
+    const base: ParsedStep = { orderIndex: 1, outputs: [], inputs: [], raw: {}, kind: "EXISTING_SERVICE" };
     expect(identityForStep({ ...base, serviceName: "db_service", methodName: "data.read" } as ParsedStep)).toBe("db_service.data.read");
     expect(identityForStep({ ...base, automationApiId: 4184 } as ParsedStep)).toBe("apiId:4184");
     expect(identityForStep({ ...base, automationId: 3319 as unknown as string } as ParsedStep)).toBe("automationId:3319");

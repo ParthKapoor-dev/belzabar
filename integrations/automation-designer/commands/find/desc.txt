@@ -6,4 +6,4 @@ belz ad find pick <query> --open  :->  Open the selected method URL in browser a
 belz ad find <query>  :->  Search methods and categories by name, alias, UUID, and reference ID
 belz ad find <query> --limit <N>  :->  Return only the top N ranked matches
 belz ad find <query> --refresh  :->  Rebuild the index from AD APIs before searching
-belz ad find <query> --raw  :->  Include raw cached index payload in the command output
+belz ad find <query> --raw  :->  Include the raw cached index (capped at --limit rows) in the command output

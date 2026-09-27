@@ -1,2 +1,2 @@
-belz ad export-category <category-id>  :->  Export every method in a category as JSON
-belz ad export-category <category-id> --out <file>  :->  Export a category and write the JSON to a file
+belz ad export-category <category>  :->  Export every method in a category (name, id or uuid) as JSON
+belz ad export-category <category> --out <file>  :->  Export a category and write the JSON to a file

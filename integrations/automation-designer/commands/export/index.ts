@@ -1,14 +1,18 @@
-import { defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { resolveMethodRef } from "../../lib/ids";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface ExportArgs {
-  id: string | number;
+  /** Numeric chain id, or a canonical method uuid (resolved to its chain id). */
+  ref: { id: number } | { uuid: string };
   outPath?: string;
 }
 
 interface ExportData {
-  id: string | number;
+  /** Numeric chain id that was exported. */
+  id: number;
+  uuid: string | null;
   writtenTo: string | null;
   bytes: number;
   preview: unknown;
@@ -25,9 +29,23 @@ const command: CommandModule<ExportArgs, ExportData> = {
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "export", "export");
-    return { id: positionals.methodId, outPath: flags.out };
+    const input = positionals.methodId.trim();
+    const ref = /^\d+$/.test(input) ? { id: Number(input) } : { uuid: resolveMethodRef(input) };
+    return { ref, outPath: flags.out };
   },
-  async execute({ id, outPath }) {
+  async execute({ ref, outPath }) {
+    // F12 / AD-31: the export endpoint only takes the numeric chain id.
+    let id: number;
+    let uuid: string | null = null;
+    if ("id" in ref) id = ref.id;
+    else {
+      uuid = ref.uuid;
+      const raw = await adApi.fetchRawMethod(uuid, "v1");
+      if (typeof (raw as { id?: unknown }).id !== "number") {
+        throw new CliError(`Method ${uuid} has no numeric chain id; cannot export it.`, { code: "METHOD_ID_UNKNOWN", details: { uuid } });
+      }
+      id = (raw as { id: number }).id;
+    }
     const body = await adApi.exportMethod(id);
     const serialised = JSON.stringify(body, null, 2);
     let written: string | null = null;
@@ -37,6 +55,7 @@ const command: CommandModule<ExportArgs, ExportData> = {
     }
     return ok<ExportData>({
       id,
+      uuid,
       writtenTo: written,
       bytes: serialised.length,
       preview: body,

@@ -1,5 +1,6 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
+import { normalizeUuid } from "../../lib/ids";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface ServicesArgs {
@@ -8,7 +9,11 @@ interface ServicesArgs {
 }
 
 interface ServiceRow {
+  /** Chain-category id (same `id` as `ad categories`). */
+  id: number | null;
+  /** Trimmed chain-category uuid. */
   uuid: string;
+  systemUuid: string | null;
   name: string;
   label: string;
   internalService: boolean;
@@ -50,7 +55,9 @@ const command: CommandModule<ServicesArgs, ServicesData> = {
       if (!item || typeof item !== "object") continue;
       const r = item as Record<string, unknown>;
       services.push({
-        uuid: typeof r.uuid === "string" ? r.uuid : "",
+        id: typeof r.id === "number" ? r.id : null,
+        uuid: normalizeUuid(r.uuid) ?? "",
+        systemUuid: normalizeUuid(r.automationSystemUuid),
         name: typeof r.name === "string" ? r.name : "",
         label: typeof r.label === "string" ? (r.label as string) : "",
         internalService: r.internalService === true,

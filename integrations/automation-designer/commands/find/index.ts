@@ -1,7 +1,8 @@
-import { CliError, defineSubcommands, ok, openUrlInBrowser, type CommandModule, type FlagsSpec } from "@belzabar/core";
+import { CliError, defineSubcommands, lifecycle, ok, openUrlInBrowser, type CommandModule, type FlagsSpec } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { spawn } from "node:child_process";
 import {
+  type MethodFinderIndex,
   METHOD_FINDER_CACHE_TTL_MS,
   listMethodFinderCategories,
   loadOrBuildMethodFinderIndex,
@@ -40,9 +41,7 @@ interface FindBrowseData {
   };
   cache: CacheMeta;
   categories: MethodFinderCategory[];
-  raw?: {
-    index: unknown;
-  };
+  raw?: RawIndexView;
 }
 
 interface FindSearchData {
@@ -55,9 +54,7 @@ interface FindSearchData {
   cache: CacheMeta;
   totalMatches: number;
   matches: MethodFinderMatch[];
-  raw?: {
-    index: unknown;
-  };
+  raw?: RawIndexView;
 }
 
 interface FindPickData {
@@ -71,12 +68,48 @@ interface FindPickData {
   status: "selected" | "cancelled";
   selected: MethodFinderMethod | null;
   opened: boolean;
-  raw?: {
-    index: unknown;
-  };
+  raw?: RawIndexView;
 }
 
 type FindData = FindBrowseData | FindSearchData | FindPickData;
+
+/** `--raw` payload: the index capped at `--limit` methods and categories (F29: was 1.6 MB). */
+interface RawIndexView {
+  index: MethodFinderIndex;
+  truncated: { methods: number; categories: number };
+}
+
+export function rawIndex(index: MethodFinderIndex, limit: number): RawIndexView {
+  return {
+    index: { ...index, methods: index.methods.slice(0, limit), categories: index.categories.slice(0, limit) },
+    truncated: {
+      methods: Math.max(0, index.methods.length - limit),
+      categories: Math.max(0, index.categories.length - limit),
+    },
+  };
+}
+
+const SUBCOMMANDS = new Set(["list", "pick", "search"]);
+const VALUE_FLAGS = new Set(["--limit", "--env"]);
+
+/**
+ * `ad find --refresh list` worked before defineSubcommands (s3-review): if
+ * flags come first, move the first bare subcommand name to the front.
+ */
+export function subcommandFirst(argv: readonly string[]): string[] {
+  if (argv.length === 0 || !argv[0]!.startsWith("-")) return [...argv];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]!;
+    if (a === "--") break;
+    if (a.startsWith("-")) {
+      if (VALUE_FLAGS.has(a)) i++;
+      continue;
+    }
+    if (SUBCOMMANDS.has(a)) return [a, ...argv.slice(0, i), ...argv.slice(i + 1)];
+    break;
+  }
+  return [...argv];
+}
 
 const FIND_FLAGS = {
   ...AD_COMMON_FLAGS,
@@ -98,7 +131,7 @@ export const args = defineSubcommands(
 const command: CommandModule<FindArgs, FindData> = {
   schema: "ad.find",
   parseArgs(argv) {
-    const parsed = args.parse(argv);
+    const parsed = args.parse(subcommandFirst(argv));
     const { refresh, raw, open, limit } = parsed.flags;
     resolveAdCommon(parsed.flags, "list", "find");
     const query = parsed.subcommand === "list" ? "" : parsed.positionals.query.join(" ").trim();
@@ -113,7 +146,23 @@ const command: CommandModule<FindArgs, FindData> = {
       });
     }
 
-    const { index, source } = await loadOrBuildMethodFinderIndex({ refresh });
+    // F30: fzf needs a terminal; fail cleanly before any work when there is none.
+    if (mode === "pick" && context.outputMode !== "llm" && !(process.stdin.isTTY && process.stderr.isTTY)) {
+      throw new CliError("Interactive picker needs a terminal (stdin/stderr are not a TTY). Use `belz ad find <query>`.", {
+        code: "INTERACTIVE_NOT_SUPPORTED",
+      });
+    }
+
+    // F29: a rebuild walks every category (minutes on big envs) — report progress
+    // on stderr (human mode; lifecycle.notice is silent with --llm).
+    const { index, source } = await loadOrBuildMethodFinderIndex({
+      refresh,
+      onProgress: ({ done, total, category }) => {
+        if (done === 1 || done === total || done % 10 === 0) {
+          lifecycle.notice(`Indexing AD methods: ${done}/${total} categories (${category})`);
+        }
+      },
+    });
     const ageMs = Math.max(0, Date.now() - index.generatedAt);
 
     if (source === "cache") {
@@ -152,7 +201,7 @@ const command: CommandModule<FindArgs, FindData> = {
       };
 
       if (raw) {
-        data.raw = { index };
+        data.raw = rawIndex(index, limit);
       }
 
       return ok(data);
@@ -185,7 +234,7 @@ const command: CommandModule<FindArgs, FindData> = {
       }
 
       if (raw) {
-        data.raw = { index };
+        data.raw = rawIndex(index, limit);
       }
 
       return ok(data);
@@ -210,7 +259,7 @@ const command: CommandModule<FindArgs, FindData> = {
     };
 
     if (raw) {
-      data.raw = { index };
+      data.raw = rawIndex(index, limit);
     }
 
     return ok(data);
@@ -237,10 +286,11 @@ const command: CommandModule<FindArgs, FindData> = {
       }
 
       ui.table(
-        ["#", "Category", "Category UUID", "Methods"],
+        ["#", "Category", "ID", "Category UUID", "Methods"],
         data.categories.map((category, index) => [
           index + 1,
           category.name,
+          category.chainCategoryId ?? "",
           category.uuid,
           category.methodCount,
         ])

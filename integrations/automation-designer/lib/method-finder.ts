@@ -12,7 +12,12 @@ const methodFinderCache = new Cache<MethodFinderIndex>({
 });
 
 export interface MethodFinderCategory {
+  /** Chain-category uuid (trimmed) — the same identity as `ad categories` (AD-10). */
   uuid: string;
+  /** Chain-category id (methods' category.id; what export-category takes). Absent in pre-4A index caches. */
+  chainCategoryId?: number | null;
+  /** Automation-system uuid (trimmed). */
+  systemUuid?: string | null;
   name: string;
   label: string;
   aliasNames: string[];
@@ -66,6 +71,8 @@ interface MethodFinderCacheResult {
 }
 
 interface RawServiceCategory {
+  id: number | null;
+  systemUuid: string | null;
   uuid: string;
   name: string;
   label: string;
@@ -86,7 +93,17 @@ interface RawMethodRecord {
   updatedOn: number;
 }
 
-export async function loadOrBuildMethodFinderIndex(options: { refresh: boolean }): Promise<MethodFinderCacheResult> {
+export interface IndexProgress {
+  done: number;
+  total: number;
+  category: string;
+}
+
+export async function loadOrBuildMethodFinderIndex(options: {
+  refresh: boolean;
+  /** Called after each category is indexed (F29: a refresh takes minutes). */
+  onProgress?: (p: IndexProgress) => void;
+}): Promise<MethodFinderCacheResult> {
   const cacheKey = `index-v1-${Config.activeEnv.name}`;
 
   if (!options.refresh) {
@@ -96,7 +113,7 @@ export async function loadOrBuildMethodFinderIndex(options: { refresh: boolean }
     }
   }
 
-  const index = await buildMethodFinderIndex();
+  const index = await buildMethodFinderIndex(options.onProgress);
   await methodFinderCache.save(cacheKey, index);
   return { index, source: "fresh" };
 }
@@ -153,6 +170,8 @@ export function normalizeCategoryRecord(input: unknown): RawServiceCategory | nu
   if (!uuid || !name) return null;
 
   return {
+    id: getNumber(record.id),
+    systemUuid: getString(record.automationSystemUuid),
     uuid,
     name,
     label: getString(record.label) ?? name,
@@ -196,24 +215,35 @@ export function buildMethodUrl(categoryName: string, methodUuid: string): string
   return `${Config.cleanBaseUrl}/automation-designer/${encodeURIComponent(categoryName)}/${methodUuid}`;
 }
 
-async function buildMethodFinderIndex(): Promise<MethodFinderIndex> {
-  const categories = await fetchAllCategories();
-  const methods: MethodFinderMethod[] = [];
-  const skippedCategories: MethodFinderIndex["skippedCategories"] = [];
+const CATEGORY_CONCURRENCY = 4;
 
-  for (const category of categories) {
-    const result = await fetchMethodsForCategory(category);
-    category.methodCount = result.methods.length;
-    methods.push(...result.methods);
-    if (result.error) {
-      skippedCategories.push({
-        categoryUuid: category.uuid,
-        categoryName: category.name,
-        status: result.status,
-        reason: result.error,
-      });
+async function buildMethodFinderIndex(onProgress?: (p: IndexProgress) => void): Promise<MethodFinderIndex> {
+  const categories = await fetchAllCategories();
+  const skippedCategories: MethodFinderIndex["skippedCategories"] = [];
+  // Category order is kept (results land by index); fetches run a few at a time.
+  const perCategory: MethodFinderMethod[][] = new Array(categories.length);
+  let next = 0;
+  let done = 0;
+  const worker = async () => {
+    for (let i = next++; i < categories.length; i = next++) {
+      const category = categories[i]!;
+      const result = await fetchMethodsForCategory(category);
+      category.methodCount = result.methods.length;
+      perCategory[i] = result.methods;
+      if (result.error) {
+        skippedCategories.push({
+          categoryUuid: category.uuid,
+          categoryName: category.name,
+          status: result.status,
+          reason: result.error,
+        });
+      }
+      onProgress?.({ done: ++done, total: categories.length, category: category.name });
     }
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(CATEGORY_CONCURRENCY, categories.length) }, worker));
+  const methods = perCategory.flat();
+  skippedCategories.sort((a, b) => a.categoryName.localeCompare(b.categoryName));
 
   const uniqueCategories = dedupeBy(categories, c => c.uuid);
   const uniqueMethods = dedupeBy(methods, m => m.uuid);
@@ -261,6 +291,8 @@ async function fetchAllCategories(): Promise<MethodFinderCategory[]> {
 
       categories.push({
         uuid: normalized.uuid,
+        chainCategoryId: normalized.id,
+        systemUuid: normalized.systemUuid,
         name: normalized.name,
         label: normalized.label,
         aliasNames: normalized.aliasName,

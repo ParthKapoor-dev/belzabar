@@ -1,9 +1,15 @@
-Usage: belz ad export-category <category-id> [flags]
+Usage: belz ad export-category <category> [flags]
 
 Export an entire category (all methods) via
-/rest/api/automation/chain/export/category/{id}.
+/rest/api/automation/chain/export/category/{id}. The category may be given
+by name, chain-category id or uuid, or automation-system id or uuid; it is
+resolved to the chain-category id (the one `belz ad categories` shows as ID).
 
 Flags:
   --out <file>    Write the exported JSON to a file instead of stdout
   --v2            Accepted for consistency; always V1 (a notice is printed)
-  --llm           Emit a JSON envelope
+  --llm           Emit a JSON envelope with {id, category, methodCount, writtenTo, bytes, preview}
+
+Examples:
+  belz ad export-category Test-Parth --out /tmp/test-parth.json
+  belz ad export-category 1135 --llm

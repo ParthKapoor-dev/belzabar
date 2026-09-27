@@ -1,14 +1,18 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
+import { fetchCategories, requireChainCategory, type Category } from "../../lib/categories";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface ExportCategoryArgs {
-  id: string | number;
+  ref: string;
   outPath?: string;
 }
 
 interface ExportCategoryData {
-  id: string | number;
+  /** Chain-category id actually exported. */
+  id: number;
+  category: Category;
+  methodCount: number;
   writtenTo: string | null;
   bytes: number;
   preview: unknown;
@@ -16,7 +20,7 @@ interface ExportCategoryData {
 
 export const args = defineArgs({
   command: "belz ad export-category",
-  positionals: [{ name: "category-id", required: true, missingCode: "MISSING_CATEGORY_ID", missingMessage: "Missing category id argument." }],
+  positionals: [{ name: "category", required: true, missingCode: "MISSING_CATEGORY_ID", missingMessage: "Missing category (name, uuid or id) argument." }],
   flags: { ...AD_COMMON_FLAGS, out: { type: "string" } },
 });
 
@@ -25,22 +29,30 @@ const command: CommandModule<ExportCategoryArgs, ExportCategoryData> = {
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "export", "export-category");
-    return { id: positionals.categoryId, outPath: flags.out };
+    return { ref: positionals.category, outPath: flags.out };
   },
-  async execute({ id, outPath }) {
+  async execute({ ref, outPath }, context) {
+    // AD-09/F9: resolve name / uuid / system id to the chain-category id the
+    // export endpoint needs (the system id 1318 exported an empty list).
+    const category = requireChainCategory(await fetchCategories(), ref);
+    const id = category.chainCategoryId;
     const body = await adApi.exportCategory(id);
+    const methodCount = Array.isArray((body as { chainDefinitions?: unknown })?.chainDefinitions)
+      ? (body as { chainDefinitions: unknown[] }).chainDefinitions.length
+      : 0;
+    if (methodCount === 0) context.warn(`Category '${category.name}' (id ${id}) exported no methods.`);
     const serialised = JSON.stringify(body, null, 2);
     let written: string | null = null;
     if (outPath) {
       await Bun.write(outPath, serialised);
       written = outPath;
     }
-    return ok<ExportCategoryData>({ id, writtenTo: written, bytes: serialised.length, preview: body });
+    return ok<ExportCategoryData>({ id, category, methodCount, writtenTo: written, bytes: serialised.length, preview: body });
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
     const data = envelope.data as ExportCategoryData;
-    if (data.writtenTo) ui.success(`Wrote ${data.bytes} bytes to ${data.writtenTo}`);
+    if (data.writtenTo) ui.success(`Wrote ${data.methodCount} method(s) of '${data.category.name}' (${data.bytes} bytes) to ${data.writtenTo}`);
     else ui.object(data.preview);
   },
 };
