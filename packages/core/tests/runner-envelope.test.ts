@@ -10,6 +10,7 @@ import {
   failWithData,
   lifecycle,
   normalizeDetails,
+  printErr,
   ok,
   setOutputMode,
   type CommandModule,
@@ -223,6 +224,25 @@ describe("human output streams (F31, CORE-6, F32)", () => {
     // eslint-disable-next-line no-control-regex
     expect(/\x1b/.test(r.stdout + r.stderr)).toBe(false);
     setOutputMode("human");
+  });
+});
+
+describe("printErr (F32)", () => {
+  test("strips ANSI when stderr is not a TTY, unless FORCE_COLOR", () => {
+    const saved = { error: console.error, force: process.env.FORCE_COLOR };
+    const lines: string[] = [];
+    console.error = (s: string) => lines.push(s);
+    try {
+      delete process.env.FORCE_COLOR;
+      printErr("\x1b[31mred\x1b[39m");
+      process.env.FORCE_COLOR = "1";
+      printErr("\x1b[31mred\x1b[39m");
+    } finally {
+      console.error = saved.error;
+      if (saved.force === undefined) delete process.env.FORCE_COLOR;
+      else process.env.FORCE_COLOR = saved.force;
+    }
+    expect(lines).toEqual(["red", "\x1b[31mred\x1b[39m"]);
   });
 });
 

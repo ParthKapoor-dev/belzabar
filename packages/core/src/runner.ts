@@ -8,7 +8,7 @@ import {
   type CommandResult,
   type HumanPresenterHelpers,
 } from "./command";
-import { renderHuman, renderLLM, setOutputMode } from "./ui";
+import { printErr, renderHuman, renderLLM, setOutputMode } from "./ui";
 import { ui as theme, symbols, wordmark } from "./theme";
 import { verboseEnabled, vlog } from "./verbose";
 import { ENVELOPE_VERSION } from "./envelope";
@@ -468,7 +468,7 @@ export async function dispatchCommand(
       );
     }
     return printOutcome(1, () => {
-      console.error(theme.err(`Unknown command: ${theme.bold(`${binaryName} ${commandName}`)}`));
+      printErr(theme.err(`Unknown command: ${theme.bold(`${binaryName} ${commandName}`)}`));
       listCommandsHuman();
     });
   }
@@ -550,7 +550,7 @@ export async function dispatchCommand(
       );
     }
     if (writes && outputMode === "human") {
-      console.error(theme.faint(`${symbols.arrow} target env: ${activeEnv.name} (${activeEnv.baseUrl})`));
+      printErr(theme.faint(`${symbols.arrow} target env: ${activeEnv.name} (${activeEnv.baseUrl})`));
     }
 
     const result = await command.execute(parsedArgs, commandContext);
@@ -766,7 +766,7 @@ export async function dispatchNamespaced(
     );
   }
   return printOutcome(1, () => {
-    console.error(theme.err(`Unknown module or command: ${theme.bold(token)}`));
+    printErr(theme.err(`Unknown module or command: ${theme.bold(token)}`));
     printHelp();
   });
 }

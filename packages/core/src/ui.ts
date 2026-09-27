@@ -31,6 +31,20 @@ export function getOutputMode(): OutputMode {
   return currentOutputMode;
 }
 
+// eslint-disable-next-line no-control-regex
+const ANSI = /\x1b\[[0-9;?]*[A-Za-z]/g;
+
+/**
+ * Print a line on stderr. Colours are decided from stdout's TTY state
+ * (@belzabar/design/terminal), so when stderr alone is redirected
+ * (`2>log`) the escape codes are stripped — unless FORCE_COLOR asks for them.
+ */
+export function printErr(line: string): void {
+  const force = process.env.FORCE_COLOR;
+  const forced = force !== undefined && force !== "" && force !== "0" && force !== "false";
+  console.error(!process.stderr.isTTY && !forced ? line.replace(ANSI, "") : line);
+}
+
 /** Borderless cli-table3 chars — clean data grid, 2-space column gaps. */
 const BORDERLESS = {
   top: "", "top-mid": "", "top-left": "", "top-right": "",
@@ -59,12 +73,12 @@ class HumanUi implements HumanPresenterHelpers {
 
   /** Warnings go to stderr (F31), so piped stdout carries only the result. */
   warn(message: string): void {
-    console.error(theme.warn(message));
+    printErr(theme.warn(message));
   }
 
   /** Errors go to stderr (F31). */
   error(message: string): void {
-    console.error(theme.err(message));
+    printErr(theme.err(message));
   }
 
   step(message: string): void {
@@ -160,7 +174,7 @@ function renderDefaultHuman(envelope: CommandEnvelope<unknown>, ui: HumanPresent
 /** Human error block → stderr: the message, then details (a `{text}` detail prints as-is). */
 function renderErrorHuman(envelope: CommandEnvelope<unknown>): void {
   const error = envelope.error;
-  console.error(theme.err(error?.message || "Command failed."));
+  printErr(theme.err(error?.message || "Command failed."));
   const details = error?.details;
   if (details === undefined || details === null) return;
   const keys = typeof details === "object" ? Object.keys(details as object) : [];
@@ -169,7 +183,7 @@ function renderErrorHuman(envelope: CommandEnvelope<unknown>): void {
     return;
   }
   if (keys.length === 0) return;
-  console.error(theme.faint("details:"));
+  printErr(theme.faint("details:"));
   console.error(JSON.stringify(details, null, 2));
 }
 
@@ -177,7 +191,7 @@ function renderErrorHuman(envelope: CommandEnvelope<unknown>): void {
 function renderWarningsHuman(envelope: CommandEnvelope<unknown>): void {
   const warnings = envelope.meta?.warnings;
   if (!Array.isArray(warnings)) return;
-  for (const w of warnings) console.error(theme.warn(String(w)));
+  for (const w of warnings) printErr(theme.warn(String(w)));
 }
 
 /**
