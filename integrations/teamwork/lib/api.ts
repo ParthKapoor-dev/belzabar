@@ -182,20 +182,39 @@ export async function fetchTask(taskId: number): Promise<TeamworkTask> {
 
 // ── Subtasks ────────────────────────────────────────────────────────────────
 
-async function fetchSubtasks(parentTaskId: number, orderHint: number[]): Promise<TeamworkSubtask[]> {
-  const params = new URLSearchParams({
-    parentTaskId: String(parentTaskId),
-    includeCompletedTasks: "true",
-    pageSize: "250",
-  });
-  const response = await teamworkFetch(`/projects/api/v3/tasks.json?${params}`);
-  if (!response.ok) return orderHint.map((id) => ({
-    id, name: "Unknown", status: "", priority: null, progress: 0, dueDate: null, assigneeCount: 0,
-  }));
+// TW-11: /tasks.json pages at pageSize (max 500); a parent with more subtasks
+// than one page used to lose the rest. Follow meta.page.hasMore like comments.
+const SUBTASKS_PAGE_SIZE = 500;
+const SUBTASKS_MAX_PAGES = 100; // runaway guard
 
-  const json = await response.json() as any;
+export async function fetchSubtasks(
+  parentTaskId: number,
+  orderHint: number[],
+  fetcher: (path: string) => Promise<Response> = teamworkFetch,
+): Promise<TeamworkSubtask[]> {
   const byId = new Map<number, any>();
-  for (const t of (json.tasks ?? [])) byId.set(t.id, t);
+  for (let page = 1; ; page++) {
+    const params = new URLSearchParams({
+      parentTaskId: String(parentTaskId),
+      includeCompletedTasks: "true",
+      pageSize: String(SUBTASKS_PAGE_SIZE),
+      page: String(page),
+    });
+    const response = await fetcher(`/projects/api/v3/tasks.json?${params}`);
+    if (!response.ok) throw await teamworkError(response, `Failed to fetch subtasks of task ${parentTaskId}`);
+
+    const json = await response.json() as any;
+    const batch = Array.isArray(json.tasks) ? json.tasks : [];
+    for (const t of batch) byId.set(t.id, t);
+
+    if (json.meta?.page?.hasMore !== true || batch.length === 0) break;
+    if (page >= SUBTASKS_MAX_PAGES) {
+      throw new CliError(
+        `Subtasks of task ${parentTaskId} exceed ${SUBTASKS_MAX_PAGES} pages of ${SUBTASKS_PAGE_SIZE}; refusing to return a truncated list.`,
+        { code: "TW_TOO_MANY_SUBTASKS" },
+      );
+    }
+  }
 
   const ordered = orderHint.length > 0
     ? orderHint.map((id) => byId.get(id) ?? { id })

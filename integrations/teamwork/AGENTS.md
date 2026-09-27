@@ -19,7 +19,7 @@ belz tw add-comment <taskId|url> ...  → teamwork/commands/add-comment/   (WRIT
 ```
 teamwork/
 ├── commands/
-│   ├── task/             belz tw task — task metadata
+│   ├── task/             belz tw task — task metadata (subtasks via `fetchSubtasks`: pageSize=500 + page until hasMore=false; TW-11)
 │   ├── comments/         belz tw comments — all comments (read; `fetchComments` paginates pageSize=500 + page until meta.page.hasMore=false — Teamwork ignores `limit`)
 │   ├── items/            belz tw items — extract AD/PD/SQL release items
 │   ├── search/           belz tw search — keyword task search (read)
@@ -36,7 +36,7 @@ teamwork/
 │   ├── task-id.ts        parseTaskId + TASK_ID_POSITIONAL — the one `<taskId|url>` validator (INVALID_TASK_ID)
 │   └── types.ts          Shared TypeScript types
 ├── registry.ts           Static, sorted command registry (@belzabar/teamwork/registry)
-├── tests/unit/           bun test — extract, comment pagination, real comments, args (parsing)
+├── tests/unit/           bun test — extract, comment + subtask pagination, real comments, adapter, args
 └── AGENTS.md             This file
 ```
 
@@ -65,6 +65,9 @@ Teamwork uses cookie-based auth, separate from the NSM Bearer token flow:
 - HTTP: `teamworkFetch` runs on core `httpRequest` (timeout, IPv4 pin); single-flight login,
   401 → one shared re-login, 429 → bounded backoff (Retry-After), max 6 requests in flight.
   Non-OK → `teamworkError()` → `TW_NOT_FOUND` / `TW_HTTP_<status>`; auth → `TW_AUTH_*`
+- Lists (comments, subtasks) are paginated to the end or fail (`TW_HTTP_*`,
+  `TW_TOO_MANY_COMMENTS` / `TW_TOO_MANY_SUBTASKS` past 100 pages) — never a silently
+  truncated list. A failed subtask listing fails `tw task` (it used to show "Unknown" rows).
 - Auto-login on first request; auto-retry on 401
 
 ## Core Behavior Contract

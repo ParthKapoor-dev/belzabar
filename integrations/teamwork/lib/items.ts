@@ -75,10 +75,8 @@ export async function extractTicketItems(taskId: number): Promise<ItemsData> {
     ),
   ]);
 
-  // ── Assemble scanned text units, oldest-first (date order matters for
+  // ── Scan text units oldest-first (date order matters for
   //    "latest dev-note block" selection). ──
-  const units: { unit: TextUnit; text: string; isDevNote: boolean }[] = [];
-
   const ad = new Map<string, AdRef>();
   const pd = new Map<string, PdRef>();
   const db: SqlRef[] = [];
@@ -124,7 +122,6 @@ export async function extractTicketItems(taskId: number): Promise<ItemsData> {
     const pdCount = ex.pd.length;
     const isDevNote =
       ex.hasLabeledList || (adCount > 0 && pdCount > 0) || adCount >= 2 || pdCount >= 2;
-    units.push({ unit, text, isDevNote });
 
     if (isDevNote) {
       devNoteBlocks.push({
