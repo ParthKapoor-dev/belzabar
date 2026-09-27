@@ -48,7 +48,28 @@ rationale.
 6. `lib/types/v1-wire.ts`, `lib/types/v2-wire.ts` — raw wire types, parser/
    serializer/api-client only
 7. `lib/parser/{index,v1,v2}.ts` + `lib/parser/steps/{shared,v1,v2}.ts` —
-   discriminated step parsing (custom code, SpEL, SQL, Redis, existing)
+   discriminated step parsing (custom code, SpEL, SQL, Redis, existing).
+   `lib/parser/steps/classify.ts` — **step classification by service
+   identity** (AD-02): `ServiceIdentity {system, api, systemLabel?, apiUuid?,
+   apiId?, sqlInputUuids?, inputLabels?}`, `classifyService()` (db_service |
+   Database.SQL × data.read/add/update/delete/schema.modify → SQL;
+   Helpers.Legacy/echo → SPEL_ECHO; Cache.Redis get/set/remove → REDIS_*),
+   `resolveStepIdentity()` (injected resolver → V2 wire serviceName/methodName
+   → verified per-env numeric/uuid fast path). Parsers take
+   `ParseOptions {env?, resolveService?}`; without them unresolved steps stay
+   EXISTING_SERVICE (never guessed). Numeric apiIds are env-local: never
+   classify by them outside the per-env tables. V2 `orderIndex` is 1-based
+   like V1; V2 uuid is the top-level `uuid`. V1 `updatedOn`/`updatedBy`.
+7a. `lib/ids.ts` — `resolveMethodRef(input)` → trimmed lower-case 32-hex
+   (accepts padded/dashed/upper-case uuids and AD URLs; else `INVALID_UUID`).
+   **Every command taking a method uuid parses it with this.**
+   `normalizeUuid()` trims server padding (never pad uuids).
+7b. `lib/categories.ts` — one category identity (AD-09/10): `Category
+   {chainCategoryId, chainCategoryUuid, systemId, systemUuid, name, type}`
+   from `/chain/category?fetchSystemServices=false` (chain categories: what
+   methods, POST /chain and export use; Test-Parth 1135) joined with `=true`
+   (automation systems; Test-Parth 1318). `fetchCategories`, `findCategory`,
+   `requireChainCategory` (name / id / uuid / system id → chain category).
 8. `lib/api/{index,v1,v2}.ts` — unified `adApi` façade; V1 full, V2 fetch+test.
    `lib/api/changelog.ts` — change-note client (`/chain/changelog/{id}`,
    `/users/me`); surfaced via `adApi.addChangelog` / `adApi.listChangelog`
@@ -74,16 +95,21 @@ rationale.
     neither `automationState` nor `state` parses as `UNKNOWN` and is refused
     (`AD_DRAFT_GUARD_STATE_UNKNOWN`).
 11. `lib/base64.ts`, `lib/xml.ts` — helpers used by the parsers and V2 test
-12. `lib/hydrator.ts`, `lib/cache.ts`, `lib/method-finder.ts`,
+12. `lib/hydrator.ts` (definition cache; `buildServiceResolver(raw)` looks up
+    every V1 step's `/automations/{automationId}` once — `adApi.fetchMethod`
+    uses it so every V1 read/write path sees classified steps;
+    `identityFromDefinition`, `resolverFromTable` for offline/fixtures),
+    `lib/cache.ts`, `lib/method-finder.ts`,
     `lib/payload-builder.ts`, `lib/input-collector.ts`, `lib/error-parser.ts`
 13. `lib/sql/*` — SQL TUI (unchanged surface; internals migrated)
 14. `tests/unit/` — save-guard (no-op round-trip over 36 real sems-dev
     bodies in `tests/fixtures/real-v1/`, the `save-corruption/` case, every
     refusal code), sql-read-only, parser, serializer, version resolver, draft guard, xml,
     base64, error detection, sql, note-flag, stream-parser tests;
-    `real-wire.test.ts` — V1↔V2 parse parity over the 36 real methods,
-    definitions, category sources, 200-empty-body not-found (known gaps are
-    `test.todo` with bug ids: AD-02, AD-11, AD-13, AD-35 — run `bun test --todo`)
+    `real-wire.test.ts` — V1↔V2 parse parity over the 36 real methods
+    (step kinds, SQL text, service names, uuid, 1-based orderIndex),
+    definition identity == V2 wire identity, category sources,
+    200-empty-body not-found
 15. Fixtures. Real sems-dev wire, sanitized, each dir has a `manifest.json`
     (source id, env, capturedAt, endpoint); captured/refreshed with
     `bun scripts/fixtures/capture.ts <target>` (repo root, read-only, sems-dev only):
@@ -108,17 +134,19 @@ fails if a folder is missing from the registry.
 1. `fetch` — raw V1 or V2 fetch + cache
 2. `find` — search and pick methods (cached index)
 3. `show` — rich display with `[CODE]` / `[SPEL]` / `[SQL]` / `[REDIS-*]`
-   badges, `--code`, `--sql`, `--outputs`, `--variables`, `--service-detail <N>` (alias `--step <N>`, orderIndex) flags
+   badges, `--code`, `--sql`, `--outputs`, `--variables`, `--service-detail <N>` (alias `--step <N>`, orderIndex) flags.
+   Step `identity` is always a string (`service.method`, `apiId:N`, `automationId:N`);
+   step details include input values (`inputs[]`) and basic condition rows
 4. `show-code` — dump decoded custom-code source for all / a single step
 5. `outputs` — inputs/variables/outputs contract only (agent-friendly)
 6. `state` — draft/published linkage, version, staleness (wraps draft-guard)
-7. `categories` — list AD categories; filter by `--user` / `--system`
+7. `categories` — list AD categories (`id` = chain-category id, plus systemId/systemUuid); filter by `--user` / `--system`
 8. `services` — list platform services (`--internal`, `--search <q>`)
-9. `export` — export a single method as JSON
-10. `export-category` — export every method in a category
+9. `export` — export a single method as JSON (numeric chain id or any uuid spelling)
+10. `export-category` — export every method in a category (name, id or uuid → chain-category id)
 11. `test-cases` — list persistent test cases on a method
 12. `test-report` — latest test-suite execution report
-13. `child-info` — resolve a child method's inputs/outputs by name
+13. `child-info` — resolve a child method's inputs/outputs by name (unknown/draft-only → METHOD_NOT_FOUND)
 14. `test` — V1 test-before-save with rich per-step trace
 15. `run` — live-execute a published method (`--stream` opts into a streaming
     method: `application/stream+json` chunks + final JSON envelope)
@@ -150,7 +178,7 @@ unless `--yes` is passed; in `--llm` mode, `--yes` is mandatory.
 3. `execute` contains business logic and returns `ok(...)`/`fail(...)` or throws `CliError`.
 4. `presentHuman` is optional and only for human-friendly rendering.
 5. Command modules must not call `process.exit` or print ad-hoc output for machine mode.
-6. `find` supports `list` (category counts), query search, and `pick` (interactive `fzf` method picker in human mode only), plus `--open` to open the selected method URL after pick.
+6. `find` supports `list` (category counts), query search, and `pick` (interactive `fzf` method picker; needs a TTY, else INTERACTIVE_NOT_SUPPORTED), plus `--open` to open the selected method URL after pick. `--refresh` reports progress on stderr; `--raw` is capped at `--limit`; flags may precede the subcommand (`find --refresh list`).
 
 ## Output Contract
 
