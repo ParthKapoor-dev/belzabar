@@ -12,7 +12,7 @@ const context: CommandContext = {
     baseUrl: "https://nsm-dev.nc.verifi.dev",
     credentials: {
       loginId: "",
-      passwordEncoded: "",
+      password: "",
     },
   },
   envExplicit: false,
