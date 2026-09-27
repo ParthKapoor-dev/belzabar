@@ -205,7 +205,7 @@ async function teamwork(taskId: number, pageSize = 5) {
 // ── Jenkins ─────────────────────────────────────────────────────────────────
 
 async function jenkins() {
-  const { assertJenkinsAuth, buildHeaders } = await import("../../integrations/migrations/lib/jenkins");
+  const { assertJenkinsAuth, buildHeaders } = await import("@belzabar/jenkins");
   const auth = assertJenkinsAuth(Config.getJenkins());
   const host = auth.baseUrl;
   const jobBase = `${host}/${auth.job.split("/").filter(Boolean).map((s) => `job/${encodeURIComponent(s)}`).join("/")}`;
