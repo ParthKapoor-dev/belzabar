@@ -7,6 +7,7 @@ export const PAGE_FINDER_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const pageFinderCache = new Cache<PageFinderIndex>({
   dir: join(BELZ_CONFIG_DIR, "cache", "page-finder"),
   ttlMs: PAGE_FINDER_CACHE_TTL_MS,
+  envScoped: false, // key already encodes the env (index-v1-<env>)
 });
 
 export interface PageFinderPage {

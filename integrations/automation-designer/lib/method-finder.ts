@@ -8,6 +8,7 @@ export const METHOD_FINDER_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const methodFinderCache = new Cache<MethodFinderIndex>({
   dir: join(BELZ_CONFIG_DIR, "cache", "method-finder"),
   ttlMs: METHOD_FINDER_CACHE_TTL_MS,
+  envScoped: false, // key already encodes the env (index-v1-<env>)
 });
 
 export interface MethodFinderCategory {

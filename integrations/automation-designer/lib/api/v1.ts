@@ -4,7 +4,7 @@
 // (for fetch) or typed wire responses (for list/publish/etc). No command
 // should import this file directly — use lib/api/index.ts:adApi.
 
-import { apiFetch, CliError } from "@belzabar/core";
+import { apiFetch, CliError, Config } from "@belzabar/core";
 import { parseV1Method } from "../parser/v1";
 import type { HydratedMethod, ParsedStep } from "../types/common";
 import type {
@@ -373,10 +373,18 @@ export async function testExecuteV1(method: HydratedMethod): Promise<V1TestExecu
 // child-info endpoint and cache them for the lifetime of the process.
 const HISTORY_SERVICE_CATEGORY = "Expertly.Automation.Method.History";
 
+// Keyed `${env}:${methodName}` — `trace` switches env in-process, and each env
+// has its own published History uuids.
 const _historyUuidCache: Record<string, string> = {};
 
+/** Cache key for {@link resolveHistoryMethodUuid}: env-scoped. */
+export function historyUuidCacheKey(env: string | undefined, methodName: string): string {
+  return `${env ?? "default"}:${methodName}`;
+}
+
 async function resolveHistoryMethodUuid(methodName: string): Promise<string> {
-  if (_historyUuidCache[methodName]) return _historyUuidCache[methodName]!;
+  const cacheKey = historyUuidCacheKey(Config.activeEnv?.name, methodName);
+  if (_historyUuidCache[cacheKey]) return _historyUuidCache[cacheKey]!;
 
   const info = await fetchChildMethodInfo(HISTORY_SERVICE_CATEGORY, methodName);
   const body = info as Record<string, unknown>;
@@ -389,7 +397,7 @@ async function resolveHistoryMethodUuid(methodName: string): Promise<string> {
       { code: "HISTORY_SERVICE_NOT_FOUND", details: { methodName, body } },
     );
   }
-  _historyUuidCache[methodName] = uid;
+  _historyUuidCache[cacheKey] = uid;
   return uid;
 }
 

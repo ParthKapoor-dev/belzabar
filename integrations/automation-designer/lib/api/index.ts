@@ -12,6 +12,7 @@ import type { V2MethodResponse } from "../types/v2-wire";
 import * as v1 from "./v1";
 import * as v2 from "./v2";
 import * as changelog from "./changelog";
+import { CacheManager } from "../cache";
 
 export type {
   SaveMethodResult as V1SaveMethodResult,
@@ -76,12 +77,26 @@ export const adApi = {
 
   // ─── Writes ──────────────────────────────────────────────────────────
 
+  // Writes invalidate the local method cache for every uuid they touch, so a
+  // following `ad show` never serves the pre-write body (AD-06).
   async saveMethod(payload: V1SavePayload): Promise<v1.SaveMethodResult> {
-    return v1.saveMethod(payload);
+    try {
+      const saved = await v1.saveMethod(payload);
+      await CacheManager.invalidate(saved.method?.uuid);
+      return saved;
+    } finally {
+      await CacheManager.invalidate(payload.uuid);
+    }
   },
 
   async publishDraft(draftUuid: string): Promise<{ publishedUuid: string }> {
-    return v1.publishDraft(draftUuid);
+    try {
+      const result = await v1.publishDraft(draftUuid);
+      await CacheManager.invalidate(result.publishedUuid);
+      return result;
+    } finally {
+      await CacheManager.invalidate(draftUuid);
+    }
   },
 
   // ─── Changelog ───────────────────────────────────────────────────────

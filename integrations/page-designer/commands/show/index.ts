@@ -17,7 +17,7 @@ import {
   type VarDetail,
 } from "../../lib/parser/index";
 import { resolveInput, type InputKind } from "../../lib/resolver";
-import { PD_CACHE_DIR } from "../../lib/cache";
+import { pdCacheDir } from "../../lib/cache";
 import { collectAllAdIds, formatTreeLines } from "../../lib/reporter";
 import type {
   PageConfigResponse,
@@ -412,7 +412,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
     if (source === "stale") {
       // Serve stale data now; refresh the cache in a detached background process.
       context.warn("Using stale cached config — refreshing in background.");
-      triggerDetachedRefresh(PD_CACHE_DIR, resolvedId);
+      triggerDetachedRefresh(pdCacheDir(), resolvedId);
     } else if (source === "cache") {
       context.warn("Using cached config. Use --force for refresh.");
     }

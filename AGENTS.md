@@ -97,9 +97,13 @@ Everything lives under `~/.belz/`:
 |------|----------|
 | `~/.belz/config.json` | Optional credentials (config file wins over env vars) |
 | `~/.belz/sessions/<env>.json` | Saved auth sessions per environment |
-| `~/.belz/cache/methods/<uuid>.json` | Method cache (5-minute TTL) |
-| `~/.belz/cache/definitions/<id>.json` | Automation definition cache |
+| `~/.belz/cache/methods/<env>/<uuid>.json` | Method cache (5-min soft / 1-h hard TTL) |
+| `~/.belz/cache/definitions/<env>/<id>.json` | Automation definition cache |
+| `~/.belz/cache/pages/<env>/<id>.json` | PD page/component cache |
 | `~/.belz/migrations/nsm-profiles.json` | Migration profile cache |
+
+Core `Cache` namespaces every entry by env by default (`envScoped: false` opts out).
+`BELZ_HOME` overrides `~/.belz` (tests set it via the `bunfig.toml` preload).
 
 ---
 
@@ -107,10 +111,10 @@ Everything lives under `~/.belz/`:
 
 ```bash
 # Install / update the belz binary (from repo root)
-bun run install                        # or: bash ./cli/scripts/install.sh
+bun run belz:install                   # or: bash ./cli/scripts/install.sh
 
 # Clean wipe + fresh install
-bun run reinstall                      # or: bash ./cli/scripts/reinstall.sh
+bun run belz:reinstall                 # or: bash ./cli/scripts/reinstall.sh
 
 # Build only (no install)
 cd cli && bun run build               # produces cli/belz

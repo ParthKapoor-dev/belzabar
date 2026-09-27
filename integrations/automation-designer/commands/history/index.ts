@@ -4,6 +4,7 @@ import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
 import { parseVersionBody } from "../../lib/fingerprint";
 import type { HydratedMethod } from "../../lib/types/common";
+import { CacheManager } from "../../lib/cache";
 
 type Action = "list" | "show" | "diff" | "restore";
 
@@ -422,6 +423,7 @@ async function executeRestore(
     version: args.version,
     includeDraft: true,
   });
+  for (const id of [args.uuid, current.uuid, current.referenceId]) await CacheManager.invalidate(id);
 
   return ok<HistoryRestoreData>({
     action: "restore",

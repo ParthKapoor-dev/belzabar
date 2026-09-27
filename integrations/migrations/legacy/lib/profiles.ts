@@ -22,6 +22,7 @@ const PROFILE_PATTERN = /\b[a-z0-9]+ncdns_[a-z0-9]+ncdns\b/gi;
 const profileCache = new Cache<ProfileCacheData>({
   dir: join(BELZ_CONFIG_DIR, "migrations"),
   ttlMs: null,
+  envScoped: false, // keep documented path ~/.belz/migrations/nsm-profiles.json
 });
 
 const CACHE_KEY = "nsm-profiles";

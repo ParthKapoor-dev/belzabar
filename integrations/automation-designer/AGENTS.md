@@ -144,9 +144,9 @@ unless `--yes` is passed; in `--llm` mode, `--yes` is mandatory.
 All runtime state lives under `~/.belz/`:
 
 1. Auth sessions: `~/.belz/sessions/<env>.json`
-2. Method cache: `~/.belz/cache/methods/<uuid>.json` (TTL 5 minutes)
+2. Method cache: `~/.belz/cache/methods/<env>/<uuid>.json` (soft TTL 5 min, hard 1 h; key = trimmed lower-case uuid; invalidated by `adApi.saveMethod`/`publishDraft` and `history restore`)
 3. Method finder index cache: `~/.belz/cache/method-finder/index-v1-<env>.json` (TTL 7 days)
-4. Service definition cache: `~/.belz/cache/definitions/<automationId>.json`
+4. Service definition cache: `~/.belz/cache/definitions/<env>/<automationId>.json` (TTL 1 h)
 5. Migration profile cache: `~/.belz/migrations/nsm-profiles.json`
 6. Local test suites: `./suites/*.spec.json`
 

@@ -4,7 +4,11 @@ import { homedir } from "os";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import type { Environment } from "./types";
 
-export const BELZ_CONFIG_DIR = join(homedir(), ".belz");
+/**
+ * Root of all belz runtime data. `BELZ_HOME` overrides `~/.belz` (used by tests
+ * so they never touch the real directory). Read once at import time.
+ */
+export const BELZ_CONFIG_DIR = process.env.BELZ_HOME || join(homedir(), ".belz");
 
 export interface BelzConfigFile {
   environments?: Record<string, {

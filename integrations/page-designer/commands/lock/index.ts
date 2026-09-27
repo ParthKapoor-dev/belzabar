@@ -45,7 +45,8 @@ interface LockFile {
 }
 
 async function lockFilePath(): Promise<{ dir: string; file: string; env: string }> {
-  const env = Config.env || "default";
+  // Per-env lock file (PD-9): `Config.env` never existed, so every env shared default.json.
+  const env = Config.activeEnv?.name || "default";
   const dir = join(BELZ_CONFIG_DIR, "pd-locks");
   const file = join(dir, `${env}.json`);
   return { dir, file, env };

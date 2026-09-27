@@ -5,12 +5,15 @@ import type { V1AutomationDefinition, V1AutomationUserInput } from "./types/v1-w
 
 const definitionCache = new Cache<V1AutomationDefinition>({
   dir: join(BELZ_CONFIG_DIR, "cache", "definitions"),
-  // hyphenated IDs (core-maintained) → permanent; non-hyphenated → 1 hour
-  ttlMs: (key: string) => (key.includes("-") ? null : 60 * 60 * 1000),
+  // Env-scoped by core `Cache` (automation ids are env-local). Flat 1 h TTL for
+  // every id — nothing guarantees any id shape is immutable.
+  ttlMs: 60 * 60 * 1000,
 });
 
 export class ServiceHydrator {
-  static async getDefinition(automationId: string): Promise<V1AutomationDefinition | null> {
+  /** Wire payloads carry `automationId` as a number; callers may pass either. */
+  static async getDefinition(automationIdRaw: string | number): Promise<V1AutomationDefinition | null> {
+    const automationId = String(automationIdRaw).trim();
     const cached = await definitionCache.load(automationId);
     if (cached) return cached;
 
@@ -24,7 +27,7 @@ export class ServiceHydrator {
     }
   }
 
-  static async ensureCached(automationId: string): Promise<void> {
+  static async ensureCached(automationId: string | number): Promise<void> {
     await this.getDefinition(automationId);
   }
 
