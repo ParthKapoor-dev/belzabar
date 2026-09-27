@@ -170,13 +170,17 @@ export function parseGlobalFlags(argv: string[]): GlobalFlags {
   return { args, outputMode, verbose, envName, error };
 }
 
-function stripGlobalFlags(argv: string[]): {
+/**
+ * Parse the global flags and apply them to process-wide state (output mode,
+ * verbose, active env). Does not touch stdio, so it is safe to call in-process
+ * (see `dispatchNamespaced` / `core/testing` `runCommand`).
+ */
+export function resolveGlobalFlags(argv: string[]): {
   args: string[];
   outputMode: "human" | "llm";
   envName: string | null;
   envError: { code: string; message: string } | null;
 } {
-  installStdioGuard();
   const parsed = parseGlobalFlags(argv);
   if (parsed.verbose) process.env.BELZ_VERBOSE = "1";
   setOutputMode(parsed.outputMode);
@@ -193,6 +197,55 @@ function stripGlobalFlags(argv: string[]): {
   return { args: parsed.args, outputMode: parsed.outputMode, envName: parsed.envName, envError };
 }
 
+// ── Outcomes ────────────────────────────────────────────────────────────────
+//
+// Dispatch is pure with respect to process lifetime: it returns a RunOutcome
+// (an envelope, or a human-only printer) plus the exit code, and never calls
+// process.exit. `runNamespacedCli` renders it and exits; tests render it
+// in-process (core/testing `runCommand`).
+
+export type RunOutcome =
+  | {
+      kind: "envelope";
+      exitCode: number;
+      outputMode: "human" | "llm";
+      envelope: CommandEnvelope;
+      presenter?: (envelope: CommandEnvelope<unknown>, ui: HumanPresenterHelpers) => void;
+    }
+  | { kind: "print"; exitCode: number; print: () => void };
+
+function envelopeOutcome(
+  outputMode: "human" | "llm",
+  envelope: CommandEnvelope,
+  exitCode: number,
+  presenter?: (envelope: CommandEnvelope<unknown>, ui: HumanPresenterHelpers) => void
+): RunOutcome {
+  return { kind: "envelope", exitCode, outputMode, envelope, presenter };
+}
+
+function printOutcome(exitCode: number, print: () => void): RunOutcome {
+  return { kind: "print", exitCode, print };
+}
+
+/** Write an outcome to stdout/stderr (no exit). */
+export function renderOutcome(outcome: RunOutcome): void {
+  if (outcome.kind === "print") {
+    outcome.print();
+    return;
+  }
+  const { outputMode, envelope, presenter } = outcome;
+  if (outputMode === "llm") {
+    renderLLM(envelope);
+  } else {
+    renderHuman(envelope, envelope.ok ? presenter : undefined);
+  }
+}
+
+async function finishOutcome(outcome: RunOutcome): Promise<never> {
+  renderOutcome(outcome);
+  return flushAndExit(outcome.exitCode);
+}
+
 /** True when `-h`/`--help` appears anywhere before a `--` terminator. */
 export function hasHelpFlag(args: string[]): boolean {
   for (const a of args) {
@@ -202,13 +255,17 @@ export function hasHelpFlag(args: string[]): boolean {
   return false;
 }
 
-async function dispatchCommand(
+/**
+ * Run one command from `commandMap` (`args[0]` is its name) and return the
+ * outcome. Never exits the process. @internal — exported for core/testing.
+ */
+export async function dispatchCommand(
   args: string[],
   commandMap: Record<string, any>,
   outputMode: "human" | "llm",
   binaryName: string,
   helpResolver?: (cmd: string) => Promise<string | null>
-): Promise<void> {
+): Promise<RunOutcome> {
   const startedAt = Date.now();
   const warnings: string[] = [];
   const activeEnv = Config.activeEnv;
@@ -226,7 +283,7 @@ async function dispatchCommand(
 
   if (!commandName || commandName === "--help" || commandName === "-h") {
     if (outputMode === "llm") {
-      return exitWithEnvelope(
+      return envelopeOutcome(
         outputMode,
         {
           schema: `${binaryName}.help`,
@@ -240,8 +297,7 @@ async function dispatchCommand(
         0
       );
     }
-    listCommandsHuman();
-    return flushAndExit(0);
+    return printOutcome(0, listCommandsHuman);
   }
 
   const commandModule = commandMap[commandName];
@@ -249,7 +305,7 @@ async function dispatchCommand(
 
   if (!command) {
     if (outputMode === "llm") {
-      return exitWithEnvelope(
+      return envelopeOutcome(
         outputMode,
         {
           schema: `${binaryName}.runner`,
@@ -263,9 +319,10 @@ async function dispatchCommand(
         1
       );
     }
-    console.error(theme.err(`Unknown command: ${theme.bold(commandName)}`));
-    listCommandsHuman();
-    return flushAndExit(1);
+    return printOutcome(1, () => {
+      console.error(theme.err(`Unknown command: ${theme.bold(commandName)}`));
+      listCommandsHuman();
+    });
   }
 
   if (hasHelpFlag(args.slice(1))) {
@@ -274,7 +331,7 @@ async function dispatchCommand(
       helpText = await helpResolver(commandName);
     }
     if (outputMode === "llm") {
-      return exitWithEnvelope(
+      return envelopeOutcome(
         outputMode,
         {
           schema: `${binaryName}.help`,
@@ -288,8 +345,7 @@ async function dispatchCommand(
         0
       );
     }
-    console.log(helpText ?? `No help file found for '${commandName}'.`);
-    return flushAndExit(0);
+    return printOutcome(0, () => console.log(helpText ?? `No help file found for '${commandName}'.`));
   }
 
   const commandContext: CommandContext = {
@@ -312,12 +368,12 @@ async function dispatchCommand(
       : args.slice(1);
     const result = await command.execute(parsedArgs, commandContext);
     const envelope = toEnvelope(commandName, command, result, startedAt, activeEnv.name, warnings);
-    return exitWithEnvelope(outputMode, envelope, envelope.ok ? 0 : 1, command.presentHuman);
+    return envelopeOutcome(outputMode, envelope, envelope.ok ? 0 : 1, command.presentHuman);
   } catch (error: unknown) {
     const normalizedError = normalizeError(error);
     const failureResult: CommandResult = { ok: false, error: normalizedError };
     const envelope = toEnvelope(commandName, command, failureResult, startedAt, activeEnv.name, warnings);
-    return exitWithEnvelope(outputMode, envelope, 1, command.presentHuman);
+    return envelopeOutcome(outputMode, envelope, 1, command.presentHuman);
   }
 }
 
@@ -329,10 +385,20 @@ export async function runCli(
   options: CliOptions,
   helpResolver?: (cmd: string) => Promise<string | null>
 ) {
-  const { args, outputMode, envError } = stripGlobalFlags(argv.slice(2));
+  installStdioGuard();
+  return finishOutcome(await dispatchFlat(argv.slice(2), commandMap, options, helpResolver));
+}
+
+async function dispatchFlat(
+  argv: string[],
+  commandMap: Record<string, any>,
+  options: CliOptions,
+  helpResolver?: (cmd: string) => Promise<string | null>
+): Promise<RunOutcome> {
+  const { args, outputMode, envError } = resolveGlobalFlags(argv);
 
   if (envError) {
-    return exitWithEnvelope(
+    return envelopeOutcome(
       outputMode,
       {
         schema: `${options.binaryName}.runner`,
@@ -349,7 +415,7 @@ export async function runCli(
 
   if (!args[0] || args[0] === "--help" || args[0] === "-h") {
     if (outputMode === "llm") {
-      return exitWithEnvelope(
+      return envelopeOutcome(
         outputMode,
         {
           schema: `${options.binaryName}.help`,
@@ -368,10 +434,12 @@ export async function runCli(
         0
       );
     }
-    console.log();
-    console.log(wordmark);
-    await dispatchCommand([], commandMap, outputMode, options.binaryName, helpResolver);
-    return;
+    const inner = await dispatchCommand([], commandMap, outputMode, options.binaryName, helpResolver);
+    return printOutcome(inner.exitCode, () => {
+      console.log();
+      console.log(wordmark);
+      renderOutcome(inner);
+    });
   }
 
   return dispatchCommand(args, commandMap, outputMode, options.binaryName, helpResolver);
@@ -381,7 +449,20 @@ export async function runNamespacedCli(
   argv: string[],
   options: NamespacedCliOptions
 ): Promise<void> {
-  const { args, outputMode, envError, envName } = stripGlobalFlags(argv.slice(2));
+  installStdioGuard();
+  await finishOutcome(await dispatchNamespaced(argv.slice(2), options));
+}
+
+/**
+ * Route `argv` (global flags included, without the `bun script` prefix) through
+ * the namespaced CLI and return the outcome. Never exits the process.
+ * @internal — exported for core/testing.
+ */
+export async function dispatchNamespaced(
+  argv: string[],
+  options: NamespacedCliOptions
+): Promise<RunOutcome> {
+  const { args, outputMode, envError, envName } = resolveGlobalFlags(argv);
 
   vlog("belz start", {
     argv: args,
@@ -390,7 +471,7 @@ export async function runNamespacedCli(
   });
 
   if (envError) {
-    return exitWithEnvelope(
+    return envelopeOutcome(
       outputMode,
       {
         schema: `${options.binaryName}.runner`,
@@ -433,7 +514,7 @@ export async function runNamespacedCli(
 
   if (!token || token === "--help" || token === "-h") {
     if (outputMode === "llm") {
-      return exitWithEnvelope(
+      return envelopeOutcome(
         outputMode,
         {
           schema: `${options.binaryName}.help`,
@@ -459,8 +540,7 @@ export async function runNamespacedCli(
         0
       );
     }
-    printHelp();
-    return flushAndExit(0);
+    return printOutcome(0, printHelp);
   }
 
   // Module dispatch
@@ -490,7 +570,7 @@ export async function runNamespacedCli(
 
     if (!remainingArgs[0] || remainingArgs[0] === "--help" || remainingArgs[0] === "-h") {
       if (outputMode === "llm") {
-        return exitWithEnvelope(
+        return envelopeOutcome(
           outputMode,
           {
             schema: `${modBinaryName}.help`,
@@ -509,16 +589,17 @@ export async function runNamespacedCli(
           0
         );
       }
-      console.log();
-      console.log(`${theme.heading(ns.name)}  ${theme.faint(symbols.dot)}  ${theme.faint(ns.description)}`);
-      console.log();
-      console.log(`${theme.heading("usage")}  ${theme.accent(modBinaryName)} <command> [args]`);
-      console.log();
-      console.log(theme.heading("commands"));
-      Object.keys(ns.commands!).forEach(cmd => console.log(`  ${theme.accent(cmd)}`));
-      console.log();
-      console.log(theme.faint(`${symbols.arrow} ${modBinaryName} <command> --help  for details`));
-      return flushAndExit(0);
+      return printOutcome(0, () => {
+        console.log();
+        console.log(`${theme.heading(ns.name)}  ${theme.faint(symbols.dot)}  ${theme.faint(ns.description)}`);
+        console.log();
+        console.log(`${theme.heading("usage")}  ${theme.accent(modBinaryName)} <command> [args]`);
+        console.log();
+        console.log(theme.heading("commands"));
+        Object.keys(ns.commands!).forEach(cmd => console.log(`  ${theme.accent(cmd)}`));
+        console.log();
+        console.log(theme.faint(`${symbols.arrow} ${modBinaryName} <command> --help  for details`));
+      });
     }
 
     return dispatchCommand(remainingArgs, ns.commands!, outputMode, modBinaryName, helpResolver);
@@ -543,7 +624,7 @@ export async function runNamespacedCli(
 
   // Unknown
   if (outputMode === "llm") {
-    return exitWithEnvelope(
+    return envelopeOutcome(
       outputMode,
       {
         schema: `${options.binaryName}.runner`,
@@ -557,14 +638,15 @@ export async function runNamespacedCli(
       1
     );
   }
-  console.error(theme.err(`Unknown module or command: ${theme.bold(token)}`));
-  printHelp();
-  return flushAndExit(1);
+  return printOutcome(1, () => {
+    console.error(theme.err(`Unknown module or command: ${theme.bold(token)}`));
+    printHelp();
+  });
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function toEnvelope(
+export function toEnvelope(
   commandName: string,
   command: CommandModule<any, any>,
   result: CommandResult,
@@ -611,18 +693,4 @@ function normalizeError(error: unknown): CommandError {
     code: "UNHANDLED_EXCEPTION",
     message: String(error),
   };
-}
-
-async function exitWithEnvelope(
-  outputMode: "human" | "llm",
-  envelope: CommandEnvelope,
-  exitCode: number,
-  presenter?: (envelope: CommandEnvelope<unknown>, ui: HumanPresenterHelpers) => void
-) {
-  if (outputMode === "llm") {
-    renderLLM(envelope);
-  } else {
-    renderHuman(envelope, envelope.ok ? presenter : undefined);
-  }
-  await flushAndExit(exitCode);
 }

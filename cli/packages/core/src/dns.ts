@@ -66,7 +66,20 @@ function storeCached(host: string, ip: string): void {
  * queries via c-ares; lookup() goes through getaddrinfo. They fail independently,
  * so try both before giving up.
  */
+export type Ipv4Resolver = (host: string) => string | Promise<string>;
+let resolverOverride: Ipv4Resolver | null = null;
+
+/**
+ * Test seam: replace DNS resolution (and bypass the DNS cache) with `resolver`.
+ * Pass `null` to restore real resolution. Used by core/testing `fakeFetch` so
+ * the IPv4 pinning path runs without touching the network.
+ */
+export function setIpv4ResolverForTesting(resolver: Ipv4Resolver | null): void {
+  resolverOverride = resolver;
+}
+
 async function resolveIPv4(host: string): Promise<string> {
+  if (resolverOverride) return await resolverOverride(host);
   const cached = loadCached(host);
   if (cached) {
     vlog(`DNS HIT ${host} → ${cached}`);

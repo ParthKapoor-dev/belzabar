@@ -21,7 +21,8 @@ The `cli/` directory is the **orchestration layer** for the `belz` unified binar
 ```
 cli/
 ├── bin/
-│   ├── cli.ts              Dev-mode entry point (dynamic command discovery)
+│   ├── cli.ts              Dev-mode entry point (thin: --help-full + runNamespacedCli)
+│   ├── dev-commands.ts     Dev-mode command discovery: buildDevCliOptions(), buildHelpFullDynamic()
 │   └── cli-build.ts        Prod-mode entry point (pre-generated registries)
 ├── commands/
 │   ├── envs/               Top-level `belz envs` command
@@ -34,6 +35,10 @@ cli/
 │   ├── registry-pd.ts      Auto-generated — PD command registry
 │   ├── registry-top.ts     Auto-generated — top-level command registry
 │   └── registry-help.ts    Auto-generated — embedded help text (for compiled binary)
+├── tests/
+│   ├── envelope-contract.test.ts  Every registered command's --llm envelope vs EnvelopeSchema
+│   ├── compiled-pipe.test.ts      Compiles the binary to a tmp dir; >64 KiB --llm through a slow pipe
+│   └── live/                      Opt-in live suites (BELZ_LIVE=sems-dev), skipped by default
 ├── utils/
 │   └── generate-registry.ts  Generates all 4 registry files
 ├── scripts/
@@ -51,7 +56,8 @@ cli/
 ### Dev mode — `bin/cli.ts`
 
 Used during development (`bun run bin/cli.ts`). Discovers commands dynamically via `readdirSync`
-on the source module directories. No registry files needed. Help text is read from `help.txt`
+on the source module directories (`bin/dev-commands.ts`, also loaded by tests through
+`@belzabar/core/testing` `loadDevCliOptions()`). No registry files needed. Help text is read from `help.txt`
 files on disk at runtime.
 
 ### Prod mode — `bin/cli-build.ts`
@@ -113,7 +119,7 @@ Add to `../automation-designer/commands/` — see `automation-designer/AGENTS.md
 Add to `../page-designer/commands/` — see `page-designer/AGENTS.md`.
 
 ### New namespace
-1. Add entry point logic to both `bin/cli.ts` and `bin/cli-build.ts`
+1. Add entry point logic to both `bin/dev-commands.ts` and `bin/cli-build.ts`
 2. Add a new registry generator block to `utils/generate-registry.ts`
 3. Create the source module at the repo root alongside `automation-designer/`
 
@@ -139,6 +145,16 @@ Or from the repo root:
 ```bash
 bun run belz:install   # runs cli/scripts/install.sh (generate + build + install + first-time setup)
 ```
+
+---
+
+## Tests
+
+From the repo root: `bun run test` (all tests), `bun run typecheck` (`tsc -p cli/tsconfig.json`,
+covers cli + every integration it imports), `bun run check` (both). CI: `.github/workflows/ci.yml`
+(typecheck is non-blocking until Stage 3). The envelope contract test picks up new commands
+automatically; add invocations that legitimately break the contract to its `KNOWN_VIOLATIONS`
+only with a reason. Live: `BELZ_LIVE=sems-dev bun test cli/tests/live`.
 
 ---
 

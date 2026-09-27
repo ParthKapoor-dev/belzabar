@@ -15,7 +15,10 @@
     "belz:build": "bun run --cwd cli build",
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint"
+    "lint": "turbo run lint",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit -p cli/tsconfig.json",
+    "check": "bun run typecheck && bun run test"
   },
   "devDependencies": {
     "turbo": "^2.8.3"

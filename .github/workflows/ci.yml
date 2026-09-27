@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          # Pinned: the runner's stdout-flush workaround (CORE-1) is tied to
+          # Bun 1.2.x pipe behaviour; bump deliberately, with the pipe tests.
+          bun-version: 1.2.20
+
+      # --ignore-scripts: the root package's lifecycle scripts must never run
+      # the belz installer (CORE-5).
+      - name: Install
+        run: bun install --ignore-scripts
+
+      # Unit + contract + compiled-binary pipe tests. Live suites are skipped
+      # unless BELZ_LIVE=sems-dev, which CI never sets.
+      - name: Test
+        run: bun run test
+
+      # tsc reports ~54 pre-existing errors today. Non-blocking until Stage 3
+      # (core rebuild) brings it to zero; then drop continue-on-error.
+      - name: Typecheck
+        run: bun run typecheck
+        continue-on-error: true

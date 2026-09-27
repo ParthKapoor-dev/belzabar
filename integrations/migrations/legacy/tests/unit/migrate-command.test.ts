@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { createMigrateCommand } from "../../../cli/commands/migrate";
+import { createMigrateCommand } from "../../../../../cli/commands/migrate-legacy";
 import type { ParsedMigrationOutput } from "../../lib";
 
 describe("migrate command", () => {

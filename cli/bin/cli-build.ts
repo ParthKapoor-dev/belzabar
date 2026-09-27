@@ -5,11 +5,12 @@ import { TopLevelCommandRegistry } from "../commands/registry-top";
 import { MigrateCommandRegistry } from "../commands/registry-migrate";
 import { ReleaseCommandRegistry } from "../commands/registry-release";
 import { ADHelpMap, PDHelpMap, TWHelpMap, TopHelpMap, MigrateHelpMap, ReleaseHelpMap, makeHelpResolver, HELP_FULL_TEXT } from "../commands/registry-help";
-import { runNamespacedCli } from "@belzabar/core";
+import { flushAndExit, installStdioGuard, runNamespacedCli } from "@belzabar/core";
 
 if (process.argv.slice(2).includes("--help-full")) {
+  installStdioGuard(); // flush before exiting, or a piped --help-full is truncated past the pipe buffer
   console.log(HELP_FULL_TEXT);
-  process.exit(0);
+  await flushAndExit(0);
 }
 
 const { "migrate-legacy": migrateLegacy, config, web, extension, ...topLevelCommands } = TopLevelCommandRegistry;

@@ -72,8 +72,7 @@ export function writeConfigFile(config: BelzConfigFile): void {
   writeFileSync(join(BELZ_CONFIG_DIR, "config.json"), JSON.stringify(config, null, 2));
 }
 
-const configFile = loadConfigFile();
-const fileEnvs = configFile.environments ?? {};
+let configFile = loadConfigFile();
 
 const envSchema = z.object({
   // NSM Dev (Default)
@@ -103,7 +102,7 @@ const envSchema = z.object({
   BELZ_JENKINS_JOB: z.string().optional(),
 });
 
-const processEnv = envSchema.parse(process.env);
+let processEnv = envSchema.parse(process.env);
 
 // Config file wins over env vars for per-environment values
 const getCreds = (
@@ -131,57 +130,76 @@ function deriveProject(name: string): string {
   return prefix.toUpperCase();
 }
 
-const environments: Record<string, Environment> = {
-  "nsm-dev": {
-    name: "nsm-dev",
-    project: "NSM",
-    baseUrl: fileEnvs["nsm-dev"]?.url ?? processEnv.NSM_DEV_URL,
-    credentials: getCreds(
-      fileEnvs["nsm-dev"]?.user,
-      fileEnvs["nsm-dev"]?.password,
-      processEnv.NSM_DEV_USER,
-      processEnv.NSM_DEV_PASSWORD
-    ),
-  },
-  "nsm-qa": {
-    name: "nsm-qa",
-    project: "NSM",
-    baseUrl: fileEnvs["nsm-qa"]?.url ?? processEnv.NSM_QA_URL,
-    credentials: getCreds(
-      fileEnvs["nsm-qa"]?.user,
-      fileEnvs["nsm-qa"]?.password,
-      processEnv.NSM_QA_USER,
-      processEnv.NSM_QA_PASSWORD
-    ),
-  },
-  "nsm-uat": {
-    name: "nsm-uat",
-    project: "NSM",
-    baseUrl: fileEnvs["nsm-uat"]?.url ?? processEnv.NSM_UAT_URL,
-    credentials: getCreds(
-      fileEnvs["nsm-uat"]?.user,
-      fileEnvs["nsm-uat"]?.password,
-      processEnv.NSM_UAT_USER,
-      processEnv.NSM_UAT_PASSWORD
-    ),
-  },
-};
-
-// Load any custom environments from the config file that aren't built-in
-for (const [name, entry] of Object.entries(fileEnvs)) {
-  if (BUILTIN_ENVS.has(name)) continue;
-  environments[name] = {
-    name,
-    project: entry.project ?? deriveProject(name),
-    baseUrl: (entry.url ?? "").replace(/\/$/, ""),
-    credentials: {
-      loginId: entry.user ?? "",
-      passwordEncoded: entry.password ?? "",
+function buildEnvironments(): Record<string, Environment> {
+  const fileEnvs = configFile.environments ?? {};
+  const environments: Record<string, Environment> = {
+    "nsm-dev": {
+      name: "nsm-dev",
+      project: "NSM",
+      baseUrl: fileEnvs["nsm-dev"]?.url ?? processEnv.NSM_DEV_URL,
+      credentials: getCreds(
+        fileEnvs["nsm-dev"]?.user,
+        fileEnvs["nsm-dev"]?.password,
+        processEnv.NSM_DEV_USER,
+        processEnv.NSM_DEV_PASSWORD
+      ),
+    },
+    "nsm-qa": {
+      name: "nsm-qa",
+      project: "NSM",
+      baseUrl: fileEnvs["nsm-qa"]?.url ?? processEnv.NSM_QA_URL,
+      credentials: getCreds(
+        fileEnvs["nsm-qa"]?.user,
+        fileEnvs["nsm-qa"]?.password,
+        processEnv.NSM_QA_USER,
+        processEnv.NSM_QA_PASSWORD
+      ),
+    },
+    "nsm-uat": {
+      name: "nsm-uat",
+      project: "NSM",
+      baseUrl: fileEnvs["nsm-uat"]?.url ?? processEnv.NSM_UAT_URL,
+      credentials: getCreds(
+        fileEnvs["nsm-uat"]?.user,
+        fileEnvs["nsm-uat"]?.password,
+        processEnv.NSM_UAT_USER,
+        processEnv.NSM_UAT_PASSWORD
+      ),
     },
   };
+
+  // Load any custom environments from the config file that aren't built-in
+  for (const [name, entry] of Object.entries(fileEnvs)) {
+    if (BUILTIN_ENVS.has(name)) continue;
+    environments[name] = {
+      name,
+      project: entry.project ?? deriveProject(name),
+      baseUrl: (entry.url ?? "").replace(/\/$/, ""),
+      credentials: {
+        loginId: entry.user ?? "",
+        passwordEncoded: entry.password ?? "",
+      },
+    };
+  }
+  return environments;
 }
 
+let environments = buildEnvironments();
+
 let activeEnvName = "nsm-dev";
+
+/**
+ * Re-read `config.json` and the env vars, and rebuild the environment table.
+ * Config is otherwise loaded once at import time; this exists for tests
+ * (core/testing `withTempEnvConfig`) that write a throwaway config. The active
+ * env is kept when it still exists, else reset to `nsm-dev`.
+ */
+export function reloadConfig(): void {
+  configFile = loadConfigFile();
+  processEnv = envSchema.parse(process.env);
+  environments = buildEnvironments();
+  if (!environments[activeEnvName]) activeEnvName = "nsm-dev";
+}
 
 export const Config = {
   setActiveEnv: (name: string) => {

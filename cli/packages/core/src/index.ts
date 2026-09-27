@@ -13,3 +13,4 @@ export * from "./open";
 export * from "./belz-meta";
 export * from "./service";
 export * from "./browsers";
+export * from "./envelope";
