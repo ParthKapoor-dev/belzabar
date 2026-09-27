@@ -9,8 +9,8 @@
 // List is backed by GET /pages/history?pageId=<id>. Show is backed by
 // GET /pages/version/<vid>. Restore is backed by PUT /pages/revert/<vid>.
 
-import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { parsePdCommonArgs } from "../../lib/args/common";
+import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
+import { PD_YES_FLAG } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { parsePage } from "../../lib/parser/index";
 import { partitionBySeverity, validateHydrated } from "../../lib/validator/index";
@@ -97,12 +97,40 @@ type HistoryData =
 
 // -------- helpers --------------------------------------------------------
 
-function parseNum(raw: string | undefined, flag: string): number {
-  if (!raw) throw new CliError(`${flag} requires a value.`, { code: "INVALID_FLAG" });
-  const n = Number.parseInt(raw, 10);
-  if (Number.isNaN(n)) throw new CliError(`${flag} must be an integer, got: ${raw}`, { code: "INVALID_FLAG" });
-  return n;
-}
+const PAGE_ID = {
+  name: "page-id",
+  required: true,
+  missingCode: "MISSING_INPUT",
+  missingMessage: "Missing <pageId>. Provide a PD page or component id.",
+} as const;
+const VERSION = {
+  version: {
+    type: "number",
+    integer: true,
+    required: true,
+    missingCode: "MISSING_VERSION",
+    missingMessage: "--version <id> is required.",
+  },
+} as const;
+
+export const args = defineSubcommands(
+  {
+    list: { positionals: [PAGE_ID], flags: { limit: { type: "number", integer: true, min: 1, default: 50 } } },
+    show: { positionals: [PAGE_ID], flags: { ...VERSION } },
+    diff: {
+      positionals: [PAGE_ID],
+      flags: {
+        from: { type: "number", integer: true, required: true, missingCode: "MISSING_VERSION_RANGE" },
+        to: { type: "number", integer: true, required: true, missingCode: "MISSING_VERSION_RANGE" },
+      },
+    },
+    restore: { positionals: [PAGE_ID], flags: { ...VERSION, ...PD_YES_FLAG } },
+  },
+  {
+    command: "belz pd history",
+    codes: { MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "UNKNOWN_ACTION" },
+  },
+);
 
 function toRow(e: RawHistoryEntry): VersionRow {
   return {
@@ -121,47 +149,20 @@ function toRow(e: RawHistoryEntry): VersionRow {
 const command: CommandModule<HistoryArgs, HistoryData> = {
   schema: "pd.history",
 
-  parseArgs(args) {
-    const { common, rest } = parsePdCommonArgs(args);
-    const [rawAction, rawPageId, ...tail] = rest;
-    if (!rawAction) {
-      throw new CliError("Missing action. Expected: list | show | diff | restore", { code: "MISSING_ACTION" });
-    }
-    const action = rawAction as Action;
-    if (!["list", "show", "diff", "restore"].includes(action)) {
-      throw new CliError(`Unknown action "${rawAction}". Use: list | show | diff | restore`, { code: "UNKNOWN_ACTION" });
-    }
-    if (!rawPageId || rawPageId.startsWith("-")) {
-      throw new CliError("Missing <pageId>. Provide a PD page or component id.", { code: "MISSING_INPUT" });
-    }
-
-    const indexOf = (flag: string): number => tail.indexOf(flag);
-    const valueAfter = (flag: string): string | undefined => {
-      const i = indexOf(flag);
-      return i === -1 ? undefined : tail[i + 1];
-    };
-
+  writes: (a: HistoryArgs) => a.action === "restore",
+  parseArgs(argv) {
+    const r = args.parse(argv);
     const out: HistoryArgs = {
-      action,
-      pageId: rawPageId,
-      force: common.force,
-      yes: common.yes,
-      limit: 50,
+      action: r.subcommand,
+      pageId: r.positionals.pageId,
+      force: false,
+      yes: r.subcommand === "restore" ? r.flags.yes : false,
+      limit: r.subcommand === "list" ? r.flags.limit : 50,
     };
-    const limRaw = valueAfter("--limit");
-    if (limRaw) out.limit = parseNum(limRaw, "--limit");
-
-    if (action === "show" || action === "restore") {
-      const v = valueAfter("--version");
-      if (!v) throw new CliError(`--version <id> is required for "${action}".`, { code: "MISSING_VERSION" });
-      out.version = parseNum(v, "--version");
-    }
-    if (action === "diff") {
-      const f = valueAfter("--from");
-      const t = valueAfter("--to");
-      if (!f || !t) throw new CliError(`--from <A> and --to <B> are required for "diff".`, { code: "MISSING_VERSION_RANGE" });
-      out.from = parseNum(f, "--from");
-      out.to = parseNum(t, "--to");
+    if (r.subcommand === "show" || r.subcommand === "restore") out.version = r.flags.version;
+    if (r.subcommand === "diff") {
+      out.from = r.flags.from;
+      out.to = r.flags.to;
     }
     return out;
   },

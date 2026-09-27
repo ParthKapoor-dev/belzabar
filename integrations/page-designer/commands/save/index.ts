@@ -2,7 +2,7 @@
 //
 // The single safe-edit entry point. Flow:
 //
-//   1. parsePdCommonArgs(argv) → {force, yes, dryRun, rest}
+//   1. args.parse(argv) → {overlay | config, force, yes, dryRun}
 //   2. resolveDraftTarget(pageId) → refuse PUBLISHED without --force
 //   3. pdApi.fetchPage(draftId) + parsePage → HydratedPage (before)
 //   4. Load overlay file OR raw config file
@@ -17,8 +17,8 @@
 //  10. re-fetch + diff with expected; emit envelope
 
 import { readFile } from "node:fs/promises";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { parsePdCommonArgs } from "../../lib/args/common";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { PD_DRY_RUN_FLAG, PD_FORCE_FLAG, PD_YES_FLAG } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { parsePage } from "../../lib/parser/index";
 import {
@@ -70,20 +70,21 @@ interface SaveData {
   bypassedErrors: ValidationIssue[];
 }
 
-function requireExactlyOne<T>(values: Array<T | null | undefined>, labels: string[]): void {
-  const set = values.filter((v) => v !== null && v !== undefined).length;
-  if (set !== 1) {
-    throw new CliError(
-      `Exactly one of ${labels.join(" / ")} is required (got ${set}).`,
-      { code: "INVALID_FLAGS" },
-    );
-  }
-}
-
-function valueAfter(args: string[], flag: string): string | undefined {
-  const i = args.indexOf(flag);
-  return i === -1 ? undefined : args[i + 1];
-}
+export const args = defineArgs({
+  command: "belz pd save",
+  positionals: [{ name: "page-id", required: true, missingCode: "MISSING_INPUT", missingMessage: "Missing <pageId>." }],
+  flags: {
+    overlay: { type: "string" },
+    config: { type: "string" },
+    ...PD_DRY_RUN_FLAG,
+    ...PD_FORCE_FLAG,
+    ...PD_YES_FLAG,
+  },
+  // Exactly one of --overlay / --config.
+  exclusive: [["overlay", "config"]],
+  requireOneOf: [["overlay", "config"]],
+  codes: { CONFLICTING_FLAGS: "INVALID_FLAGS", MISSING_FLAG: "INVALID_FLAGS" },
+});
 
 function summariseDiff(before: HydratedPage, after: HydratedPage) {
   const vb = new Set(before.variables.map((v) => v.name));
@@ -118,23 +119,16 @@ function summariseDiff(before: HydratedPage, after: HydratedPage) {
 const command: CommandModule<SaveArgs, SaveData> = {
   schema: "pd.save",
 
+  writes: true,
   parseArgs(argv) {
-    const { common, rest } = parsePdCommonArgs(argv);
-    const pageId = rest[0];
-    if (!pageId || pageId.startsWith("-")) {
-      throw new CliError("Missing <pageId>.", { code: "MISSING_INPUT" });
-    }
-    const overlayFile = valueAfter(rest, "--overlay") ?? null;
-    const configFile = valueAfter(rest, "--config") ?? null;
-    requireExactlyOne([overlayFile, configFile], ["--overlay <file>", "--config <file>"]);
-
+    const { positionals, flags } = args.parse(argv);
     return {
-      pageId,
-      overlayFile,
-      configFile,
-      dryRun: common.dryRun,
-      force: common.force,
-      yes: common.yes,
+      pageId: positionals.pageId,
+      overlayFile: flags.overlay ?? null,
+      configFile: flags.config ?? null,
+      dryRun: flags.dryRun,
+      force: flags.force,
+      yes: flags.yes,
     };
   },
 

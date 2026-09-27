@@ -1,1 +1,3 @@
-  lock <action>  acquire | release | status — manage PD edit locks.
+belz pd lock acquire <pageId>  :->  Acquire the PD edit lock on a page
+belz pd lock release <pageId>  :->  Release the PD edit lock on a page
+belz pd lock status  :->  List locks held by belz in the active env (local record)

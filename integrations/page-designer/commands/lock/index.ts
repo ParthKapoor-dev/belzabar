@@ -11,8 +11,7 @@
 
 import { join } from "node:path";
 import { mkdir, readFile, writeFile, access } from "node:fs/promises";
-import { BELZ_CONFIG_DIR, CliError, Config, ok, type CommandModule } from "@belzabar/core";
-import { parsePdCommonArgs } from "../../lib/args/common";
+import { BELZ_CONFIG_DIR, CliError, Config, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
 import { pdApi } from "../../lib/api/index";
 
 type Action = "acquire" | "release" | "status";
@@ -73,21 +72,32 @@ async function saveLockFile(file: string, data: LockFile): Promise<void> {
   await writeFile(file, JSON.stringify(data, null, 2), "utf8");
 }
 
+const PAGE_ID = {
+  name: "page-id",
+  required: true,
+  missingCode: "MISSING_INPUT",
+  missingMessage: "Missing <pageId>.",
+} as const;
+
+export const args = defineSubcommands(
+  {
+    acquire: { positionals: [PAGE_ID] },
+    release: { positionals: [PAGE_ID] },
+    status: {},
+  },
+  {
+    command: "belz pd lock",
+    codes: { MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "UNKNOWN_ACTION" },
+  },
+);
+
 const command: CommandModule<LockArgs, LockData> = {
   schema: "pd.lock",
+  writes: (a: LockArgs) => a.action !== "status",
 
-  parseArgs(args) {
-    const { rest } = parsePdCommonArgs(args);
-    const action = rest[0] as Action | undefined;
-    if (!action) throw new CliError("Missing action. Expected: acquire | release | status", { code: "MISSING_ACTION" });
-    if (!["acquire", "release", "status"].includes(action)) {
-      throw new CliError(`Unknown action "${action}". Use: acquire | release | status`, { code: "UNKNOWN_ACTION" });
-    }
-    const pageId = action === "status" ? null : rest[1] ?? null;
-    if (action !== "status" && (!pageId || pageId.startsWith("-"))) {
-      throw new CliError(`"${action}" requires <pageId>.`, { code: "MISSING_INPUT" });
-    }
-    return { action, pageId };
+  parseArgs(argv) {
+    const r = args.parse(argv);
+    return { action: r.subcommand, pageId: r.subcommand === "status" ? null : r.positionals.pageId };
   },
 
   async execute(args) {

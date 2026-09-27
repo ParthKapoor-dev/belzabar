@@ -1,4 +1,4 @@
-import { CliError, ok, openUrlInBrowser, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, openUrlInBrowser, type CommandModule } from "@belzabar/core";
 import { spawn } from "node:child_process";
 import {
   PAGE_FINDER_CACHE_TTL_MS,
@@ -68,62 +68,25 @@ type FindData =
   | FindSearchData
   | FindPickData;
 
-function parseLimit(value: string | undefined): number {
-  if (!value) {
-    throw new CliError("--limit requires a numeric value.", { code: "MISSING_LIMIT" });
-  }
-  const parsed = Number.parseInt(value, 10);
-  if (!Number.isFinite(parsed) || Number.isNaN(parsed) || parsed <= 0) {
-    throw new CliError("--limit must be a positive integer.", { code: "INVALID_LIMIT" });
-  }
-  if (parsed > 200) {
-    throw new CliError("--limit cannot be greater than 200.", { code: "LIMIT_TOO_HIGH" });
-  }
-  return parsed;
-}
-
-function parseType(value: string | undefined): "page" | "component" {
-  if (value === "page" || value === "component") return value;
-  throw new CliError('--type must be "page" or "component".', { code: "INVALID_TYPE" });
-}
+export const args = defineArgs({
+  command: "belz pd find",
+  positionals: [{ name: "query", variadic: true }],
+  flags: {
+    refresh: { type: "boolean" },
+    open: { type: "boolean" },
+    components: { type: "boolean" },
+    limit: { type: "number", integer: true, min: 1, max: 200, default: 20 },
+    type: { type: "enum", values: ["page", "component"], caseInsensitive: false },
+  },
+});
 
 const command: CommandModule<FindArgs, FindData> = {
   schema: "pd.find",
-  parseArgs(args) {
-    let refresh = false;
-    let llm = false;
-    let open = false;
-    let limit = 20;
-    let type: "page" | "component" | undefined;
-    let components = false;
-    const positional: string[] = [];
-
-    for (let i = 0; i < args.length; i += 1) {
-      const token = args[i] ?? "";
-
-      if (token === "--refresh") { refresh = true; continue; }
-      if (token === "--llm") { llm = true; continue; }
-      if (token === "--open") { open = true; continue; }
-      if (token === "--components") { components = true; continue; }
-
-      if (token === "--limit") {
-        limit = parseLimit(args[i + 1]);
-        i += 1;
-        continue;
-      }
-
-      if (token === "--type") {
-        type = parseType(args[i + 1]);
-        i += 1;
-        continue;
-      }
-
-      if (token.startsWith("-")) {
-        throw new CliError(`Unknown flag: ${token}`, { code: "UNKNOWN_FLAG" });
-      }
-
-      positional.push(token);
-    }
+  parseArgs(argv, context) {
+    const { positionals, flags } = args.parse(argv);
+    const { refresh, open, limit, type } = flags;
+    const llm = context?.outputMode === "llm";
+    const positional = positionals.query;
 
     if (positional[0] === "list") {
       if (positional.length > 1) {
@@ -131,25 +94,12 @@ const command: CommandModule<FindArgs, FindData> = {
           code: "LIST_DOES_NOT_ACCEPT_QUERY",
         });
       }
-      return {
-        mode: components ? "browse-components" : "browse-pages",
-        refresh,
-        limit,
-        open,
-        llm,
-      };
+      return { mode: flags.components ? "browse-components" : "browse-pages", refresh, limit, open, llm };
     }
 
     if (positional[0] === "pick") {
       const query = positional.slice(1).join(" ").trim();
-      return {
-        mode: "pick",
-        query: query || undefined,
-        refresh,
-        limit,
-        open,
-        llm,
-      };
+      return { mode: "pick", query: query || undefined, refresh, limit, open, llm };
     }
 
     const query = positional.join(" ").trim();
@@ -157,15 +107,7 @@ const command: CommandModule<FindArgs, FindData> = {
       return { mode: "browse-pages", refresh, limit, open, llm };
     }
 
-    return {
-      mode: "search",
-      query: query || undefined,
-      type,
-      refresh,
-      limit,
-      open,
-      llm,
-    };
+    return { mode: "search", query: query || undefined, type, refresh, limit, open, llm };
   },
 
   async execute({ mode, query, type, refresh, limit, open }, context) {

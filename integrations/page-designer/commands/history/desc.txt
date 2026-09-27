@@ -1,1 +1,4 @@
-  history <action> <pageId>  Browse and restore previous versions of a page.
+belz pd history list <pageId> [--limit N]  :->  List every saved version of a page (metadata only)
+belz pd history show <pageId> --version <vid>  :->  Parse + validate one historical version
+belz pd history diff <pageId> --from <A> --to <B>  :->  Structural diff between two versions
+belz pd history restore <pageId> --version <vid> --yes  :->  Revert the page to that version (locked write)

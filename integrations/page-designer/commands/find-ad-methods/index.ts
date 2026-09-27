@@ -1,5 +1,5 @@
 import { file } from "bun";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { fetchComponentIdByName } from "../../lib/api/index";
 import { cachedFetchPageConfig as fetchPageConfig, cachedFetchComponentConfig as fetchComponentConfig } from "../../lib/cache";
 import { extractReferences } from "../../lib/parser/index";
@@ -19,19 +19,25 @@ interface FindAdMethodsData {
   adIds: string[];
 }
 
+export const args = defineArgs({
+  command: "belz pd find-ad-methods",
+  positionals: [
+    { name: "id", required: true, missingCode: "MISSING_TARGET_ID", missingMessage: "Missing Page ID or Component ID argument." },
+  ],
+  flags: {
+    component: { type: "boolean" },
+    recursive: { type: "boolean", alias: ["-r"] },
+  },
+});
+
 const command: CommandModule<FindAdMethodsArgs, FindAdMethodsData> = {
   schema: "pd.find-ad-methods",
-  parseArgs(args) {
-    const targetId = args[0];
-    if (!targetId || targetId.startsWith("-")) {
-      throw new CliError("Missing Page ID or Component ID argument.", {
-        code: "MISSING_TARGET_ID",
-      });
-    }
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
     return {
-      targetId,
-      recursive: args.includes("--recursive") || args.includes("-r"),
-      type: args.includes("--component") ? "COMPONENT" : "PAGE",
+      targetId: positionals.id,
+      recursive: flags.recursive,
+      type: flags.component ? "COMPONENT" : "PAGE",
     };
   },
   async execute({ targetId, recursive, type }) {

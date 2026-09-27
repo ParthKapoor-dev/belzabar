@@ -1,4 +1,4 @@
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { parsePage } from "../../lib/parser/index";
 import { resolveInput } from "../../lib/resolver";
 import { validateHydrated } from "../../lib/validator/index";
@@ -17,17 +17,22 @@ interface ValidateData {
   warnCount: number;
 }
 
+export const args = defineArgs({
+  command: "belz pd validate",
+  positionals: [
+    {
+      name: "input",
+      required: true,
+      missingCode: "MISSING_INPUT",
+      missingMessage: "Missing argument. Provide a page URL, PD designer URL, page/component ID, or component name.",
+    },
+  ],
+});
+
 const command: CommandModule<ValidateArgs, ValidateData> = {
   schema: "pd.validate",
-  parseArgs(args) {
-    const input = args[0];
-    if (!input || input.startsWith("-")) {
-      throw new CliError(
-        "Missing argument. Provide a page URL, PD designer URL, page/component ID, or component name.",
-        { code: "MISSING_INPUT" }
-      );
-    }
-    return { input };
+  parseArgs(argv) {
+    return { input: args.parse(argv).positionals.input };
   },
   async execute({ input }) {
     const resolved = await resolveInput(input);

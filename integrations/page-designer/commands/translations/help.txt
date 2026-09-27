@@ -1,4 +1,4 @@
-belz pd translations <input> [flags]
+Usage: belz pd translations <input> [flags]
 
 Validate the translation phrases of a published page or component, using the
 page-dependencies API. Built for post-release deployment validation.

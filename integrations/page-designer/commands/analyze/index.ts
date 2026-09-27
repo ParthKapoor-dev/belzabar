@@ -1,5 +1,5 @@
 import { file } from "bun";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { analyzeItem } from "../../lib/analyzer";
 
 const TARGET_PAGE_IDS = [
@@ -28,13 +28,19 @@ interface AnalyzeData {
   treeByRoot: Array<{ rootId: string; lines: string[] }>;
 }
 
+export const args = defineArgs({
+  command: "belz pd analyze",
+  positionals: [{ name: "page-id" }],
+  flags: {
+    compliance: { type: "boolean" },
+  },
+});
+
 const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
   schema: "pd.analyze",
-  parseArgs(args) {
-    return {
-      pageIdArg: args[0] && !args[0].startsWith("-") ? args[0] : undefined,
-      runCompliance: args.includes("--compliance"),
-    };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    return { pageIdArg: positionals.pageId, runCompliance: flags.compliance };
   },
   async execute({ pageIdArg, runCompliance }, context) {
     const targetIds = pageIdArg ? [pageIdArg] : TARGET_PAGE_IDS;

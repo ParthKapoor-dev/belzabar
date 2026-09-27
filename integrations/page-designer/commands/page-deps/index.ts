@@ -6,8 +6,8 @@
 // `dependencyJSON` from /rest/api/pagedesigner/pages/page-dependencies. No
 // validation — see `belz pd translations` for the release-check verdict.
 
-import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { parsePdCommonArgs } from "../../lib/args/common";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { PD_DEP_STATUS_FLAG, PD_FORCE_FLAG, PD_INPUT_POSITIONAL } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { resolveEntityIds } from "../../lib/page-dependencies";
 
@@ -32,32 +32,18 @@ interface PageDepsData {
   dependencyJSON: Record<string, unknown>;
 }
 
-function flagValue(rest: string[], flag: string): string | undefined {
-  const i = rest.indexOf(flag);
-  return i === -1 ? undefined : rest[i + 1];
-}
-
-function parseStatus(raw: string | undefined): DepStatus {
-  if (!raw) return "PUBLISHED";
-  const upper = raw.toUpperCase();
-  if (upper === "PUBLISHED" || upper === "DRAFT") return upper;
-  throw new CliError(`Invalid --status "${raw}". Use PUBLISHED or DRAFT.`, {
-    code: "PD_BAD_STATUS",
-  });
-}
+export const args = defineArgs({
+  command: "belz pd page-deps",
+  positionals: [PD_INPUT_POSITIONAL],
+  flags: { ...PD_DEP_STATUS_FLAG, ...PD_FORCE_FLAG },
+});
 
 const command: CommandModule<PageDepsArgs, PageDepsData> = {
   schema: "pd.page-deps",
 
-  parseArgs(args) {
-    const { common, rest } = parsePdCommonArgs(args);
-    const input = rest[0];
-    if (!input || input.startsWith("-")) {
-      throw new CliError("Missing <input>. Provide a PD page/component id, name, or URL.", {
-        code: "MISSING_INPUT",
-      });
-    }
-    return { input, status: parseStatus(flagValue(rest, "--status")), force: common.force };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    return { input: positionals.input, status: flags.status, force: flags.force };
   },
 
   async execute({ input, status, force }) {

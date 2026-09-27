@@ -1,4 +1,4 @@
-belz pd diff <input> --from <envA> --to <envB> [flags]
+Usage: belz pd diff <input> --from <envA> --to <envB> [flags]
 
 Compare the same page or component across two environments and report the
 structural differences — variables, derived fields, HTTP calls, layout nodes,

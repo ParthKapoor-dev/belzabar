@@ -3,8 +3,8 @@
 // POST /pages/<draftId>/publish with body {landingPage, hostIds?}.
 // Must be a DRAFT — refuses PUBLISHED. withLock wraps the call.
 
-import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { parsePdCommonArgs } from "../../lib/args/common";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { PD_FORCE_FLAG, PD_YES_FLAG } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { parsePage } from "../../lib/parser/index";
 import { resolveDraftTarget, describeDraftGuardFailure } from "../../lib/draft-guard";
@@ -29,24 +29,32 @@ interface PublishData {
   postPublishVersionId: number | null;
 }
 
+export const args = defineArgs({
+  command: "belz pd publish",
+  positionals: [{ name: "page-id", required: true, missingCode: "MISSING_INPUT", missingMessage: "Missing <pageId>." }],
+  flags: {
+    landing: { type: "boolean" },
+    // PD-16: `--host` without a value is MISSING_VALUE (it used to be dropped,
+    // publishing without deploying).
+    host: { type: "string", repeatable: true },
+    ...PD_YES_FLAG,
+    ...PD_FORCE_FLAG,
+  },
+});
+
 const command: CommandModule<PublishArgs, PublishData> = {
   schema: "pd.publish",
 
+  writes: true,
   parseArgs(argv) {
-    const { common, rest } = parsePdCommonArgs(argv);
-    const pageId = rest[0];
-    if (!pageId || pageId.startsWith("-")) {
-      throw new CliError("Missing <pageId>.", { code: "MISSING_INPUT" });
-    }
-    const landing = rest.includes("--landing");
-    const hostIds: string[] = [];
-    for (let i = 0; i < rest.length; i++) {
-      if (rest[i] === "--host") {
-        const v = rest[i + 1];
-        if (v && !v.startsWith("-")) hostIds.push(v);
-      }
-    }
-    return { pageId, landing, hostIds, yes: common.yes, force: common.force };
+    const { positionals, flags } = args.parse(argv);
+    return {
+      pageId: positionals.pageId,
+      landing: flags.landing,
+      hostIds: flags.host,
+      yes: flags.yes,
+      force: flags.force,
+    };
   },
 
   async execute(args, context) {

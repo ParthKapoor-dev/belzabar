@@ -52,7 +52,7 @@ When adding or removing PD commands, update `registry.ts` (keep it sorted).
 6. `lib/serialize/` - `full.ts`, `operations.ts`, `apply.ts`, `index.ts` (strategy picker)
 7. `lib/draft-guard.ts` - resolveDraftTarget (refuses PUBLISHED without --force). The draft/published sibling is resolved ONLY via `referenceId` (`resolveLinkedPair`, injectable `DraftGuardDeps`) — never by name (names are not unique). Missing status, dangling/wrong-status/contradicting link → refuse (`PD_DRAFT_LINK_UNRESOLVED`, not --force-able). `lib/page-dependencies.ts` (translations, page-deps) uses the same resolver. Tests: `tests/unit/draft-guard.test.ts`.
 8. `lib/lock.ts` - withLock wraps every write
-9. `lib/args/common.ts` - parsePdCommonArgs (--force, --yes, --dry-run)
+9. `lib/args/common.ts` - core `defineArgs` spec fragments (`PD_FORCE_FLAG`, `PD_YES_FLAG`, `PD_DRY_RUN_FLAG`, `PD_DEP_STATUS_FLAG`, `PD_INPUT_POSITIONAL`); every command exports its spec as `args`
 10. `lib/{analyzer,reporter,comparator,cache,resolver,page-finder,url-parser}.ts` - legacy analyze stack (unchanged)
 11. `lib/page-diff.ts` - shared structural diff (`diffPages`); used by both `history diff` and `diff`
 11. `components.json` - component whitelist used during recursive analysis

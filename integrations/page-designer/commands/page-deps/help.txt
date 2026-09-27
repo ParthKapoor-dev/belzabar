@@ -1,4 +1,4 @@
-belz pd page-deps <input> [flags]
+Usage: belz pd page-deps <input> [flags]
 
 Fetch the raw page-dependencies graph for a published page or component and
 print its `dependencyJSON`. This is the unvalidated wrapper around

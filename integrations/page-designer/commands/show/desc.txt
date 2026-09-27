@@ -7,4 +7,8 @@ belz pd show <input> --http-detail <N>  :->  Show full config for the Nth HTTP c
 belz pd show <input> --full  :->  Show all sections and all details
 belz pd show <input> --force  :->  Bypass 5-min cache and fetch fresh config
 belz pd show <input> --raw  :->  Include raw configuration JSON and source API fields
-belz pd show <input> --recursive  :->  Include recursive component dependency tree and all AD method IDs
+belz pd show <input> --recursive  :->  Include recursive component dependency tree and all AD method IDs (-r)
+belz pd show <input> --tree  :->  Full layout tree with node-kind badges and inline pitfall markers
+belz pd show <input> --node <id>  :->  Kind-specific detail for a single node (bindings, validations, events)
+belz pd show <input> --var-graph  :->  Per-variable write/read/derive/trigger map; flags dead variables
+belz pd show <input> --open  :->  Open the editable draft/symbol in the browser (-o)

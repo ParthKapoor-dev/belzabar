@@ -7,8 +7,8 @@
 // env rather than reused) and the two configs are structurally diffed via the
 // shared lib/page-diff module — the same engine `pd history diff` uses.
 
-import { CliError, Config, ok, type CommandModule } from "@belzabar/core";
-import { parsePdCommonArgs } from "../../lib/args/common";
+import { CliError, Config, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { PD_INPUT_POSITIONAL } from "../../lib/args/common";
 import { resolveInput } from "../../lib/resolver";
 import { parsePage } from "../../lib/parser/index";
 import { diffPages, type PageDiff } from "../../lib/page-diff";
@@ -37,10 +37,6 @@ interface DiffData {
   diff: PageDiff;
 }
 
-function flagValue(rest: string[], flag: string): string | undefined {
-  const i = rest.indexOf(flag);
-  return i === -1 ? undefined : rest[i + 1];
-}
 
 /** Resolve `<input>` in a specific environment and parse it. Caller restores env. */
 async function resolveInEnv(
@@ -72,25 +68,21 @@ async function resolveInEnv(
   };
 }
 
+export const args = defineArgs({
+  command: "belz pd diff",
+  positionals: [PD_INPUT_POSITIONAL],
+  flags: {
+    from: { type: "string", required: true, missingCode: "MISSING_ENV_RANGE", missingMessage: "--from <envA> and --to <envB> are both required." },
+    to: { type: "string", required: true, missingCode: "MISSING_ENV_RANGE", missingMessage: "--from <envA> and --to <envB> are both required." },
+  },
+});
+
 const command: CommandModule<DiffArgs, DiffData> = {
   schema: "pd.diff",
 
-  parseArgs(args) {
-    const { rest } = parsePdCommonArgs(args);
-    const input = rest[0];
-    if (!input || input.startsWith("-")) {
-      throw new CliError("Missing <input>. Provide a PD page/component id, name, or URL.", {
-        code: "MISSING_INPUT",
-      });
-    }
-    const from = flagValue(rest, "--from");
-    const to = flagValue(rest, "--to");
-    if (!from || !to) {
-      throw new CliError("--from <envA> and --to <envB> are both required.", {
-        code: "MISSING_ENV_RANGE",
-      });
-    }
-    return { input, from, to };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    return { input: positionals.input, from: flags.from, to: flags.to };
   },
 
   async execute({ input, from, to }) {

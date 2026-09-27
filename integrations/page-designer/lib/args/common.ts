@@ -1,51 +1,40 @@
-// Shared argument parser for every PD command.
+// Flags shared by PD commands, as core `defineArgs` spec fragments.
 //
-// Strips belz's common PD flags (--force, --yes, --dry-run) out of argv and
-// hands back the remainder for the command's own parser to consume. --env and
-// --llm are stripped upstream in packages/core/runner.ts.
+//   export const args = defineArgs({
+//     command: "belz pd save",
+//     positionals: [{ name: "page-id", required: true }],
+//     flags: { ...PD_FORCE_FLAG, ...PD_YES_FLAG, ...PD_DRY_RUN_FLAG, overlay: { type: "string" } },
+//   });
 //
-// PD has no V1/V2 distinction, so unlike the AD equivalent there is no API
-// version resolution here — just the gate flags that every write and preflight
-// command needs.
+// Spread a fragment only where the flag means something: read commands do not
+// take --yes. `--env` and `--llm` are handled by the runner.
 
-export interface PdCommonArgs {
-  force: boolean;
-  yes: boolean;
-  dryRun: boolean;
-}
+import type { FlagsSpec } from "@belzabar/core";
 
-export interface ParsedPdArgs {
-  common: PdCommonArgs;
-  rest: string[];
-}
+/** `--force`: bypass the config cache (reads) / validator errors (writes). */
+export const PD_FORCE_FLAG = {
+  force: { type: "boolean" },
+} as const satisfies FlagsSpec;
 
-/**
- * Strip PD common flags from argv.
- *   --force     bypass validator errors on write paths (banner printed)
- *   --yes       skip interactive confirmation (required in --llm mode)
- *   --dry-run   run the full flow but skip the network PUT
- */
-export function parsePdCommonArgs(argv: string[]): ParsedPdArgs {
-  const rest: string[] = [];
-  let force = false;
-  let yes = false;
-  let dryRun = false;
+/** `--yes` / `-y`: skip the confirmation prompt (required in --llm mode on writes). */
+export const PD_YES_FLAG = {
+  yes: { type: "boolean", alias: ["-y"] },
+} as const satisfies FlagsSpec;
 
-  for (const arg of argv) {
-    if (arg === "--force") {
-      force = true;
-      continue;
-    }
-    if (arg === "--yes" || arg === "-y") {
-      yes = true;
-      continue;
-    }
-    if (arg === "--dry-run") {
-      dryRun = true;
-      continue;
-    }
-    rest.push(arg);
-  }
+/** `--dry-run`: run the whole flow but skip the network write. */
+export const PD_DRY_RUN_FLAG = {
+  "dry-run": { type: "boolean" },
+} as const satisfies FlagsSpec;
 
-  return { common: { force, yes, dryRun }, rest };
-}
+/** `--status PUBLISHED|DRAFT` for the page-dependencies API. */
+export const PD_DEP_STATUS_FLAG = {
+  status: { type: "enum", values: ["PUBLISHED", "DRAFT"], default: "PUBLISHED" },
+} as const satisfies FlagsSpec;
+
+/** Positional `<input>`: a page/component id, name, or URL. */
+export const PD_INPUT_POSITIONAL = {
+  name: "input",
+  required: true,
+  missingCode: "MISSING_INPUT",
+  missingMessage: "Missing <input>. Provide a PD page/component id, name, or URL.",
+} as const;

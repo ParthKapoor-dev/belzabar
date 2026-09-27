@@ -1,5 +1,6 @@
 import { file } from "bun";
-import { CliError, Config, ok, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
+import { CliError, Config, defineArgs, ok, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
+import { PD_FORCE_FLAG } from "../../lib/args/common";
 import { analyzeItem } from "../../lib/analyzer";
 import {
   extractDirectChildComponentNames,
@@ -351,57 +352,54 @@ function formatTreeIndented(node: ComponentTreeNode, prefix = "", isLast = true,
 
 // --- Command ---
 
+export const args = defineArgs({
+  command: "belz pd show",
+  positionals: [
+    {
+      name: "input",
+      required: true,
+      missingCode: "MISSING_INPUT",
+      missingMessage: "Missing argument. Provide a page URL, PD designer URL, page/component ID, or component name.",
+    },
+  ],
+  flags: {
+    vars: { type: "boolean" },
+    http: { type: "boolean" },
+    components: { type: "boolean" },
+    full: { type: "boolean" },
+    ...PD_FORCE_FLAG,
+    raw: { type: "boolean" },
+    recursive: { type: "boolean", alias: ["-r"] },
+    // PD-23: a value flag with no value is MISSING_VALUE (was silently ignored).
+    "var-detail": { type: "string" },
+    "http-detail": { type: "number", integer: true, min: 1 },
+    tree: { type: "boolean" },
+    node: { type: "string" },
+    "var-graph": { type: "boolean" },
+    open: { type: "boolean", alias: ["-o"] },
+  },
+});
+
 const command: CommandModule<ShowArgs, ShowData> = {
   schema: "pd.show",
-  parseArgs(args) {
-    const input = args[0];
-    if (!input || input.startsWith("-")) {
-      throw new CliError(
-        "Missing argument. Provide a page URL, PD designer URL, page/component ID, or component name.",
-        { code: "MISSING_INPUT" }
-      );
-    }
-
-    const flags = {
-      vars: args.includes("--vars"),
-      http: args.includes("--http"),
-      components: args.includes("--components"),
-      full: args.includes("--full"),
-      force: args.includes("--force"),
-      raw: args.includes("--raw"),
-      recursive: args.includes("--recursive") || args.includes("-r"),
-      varDetail: null as string | null,
-      httpDetail: -1,
-      tree: args.includes("--tree"),
-      node: null as string | null,
-      varGraph: args.includes("--var-graph"),
-      open: args.includes("--open") || args.includes("-o"),
+  parseArgs(argv) {
+    const { positionals, flags: f } = args.parse(argv);
+    const flags: ShowArgs["flags"] = {
+      vars: f.vars,
+      http: f.http,
+      components: f.components,
+      full: f.full,
+      force: f.force,
+      raw: f.raw,
+      recursive: f.recursive,
+      varDetail: f.varDetail ?? null,
+      httpDetail: f.httpDetail ?? -1,
+      tree: f.tree,
+      node: f.node ?? null,
+      varGraph: f.varGraph,
+      open: f.open,
     };
-
-    const varIdx = args.indexOf("--var-detail");
-    const varDetailArg = varIdx !== -1 ? args[varIdx + 1] : undefined;
-    if (varDetailArg) {
-      flags.varDetail = varDetailArg;
-    }
-
-    const httpIdx = args.indexOf("--http-detail");
-    const httpDetailArg = httpIdx !== -1 ? args[httpIdx + 1] : undefined;
-    if (httpDetailArg) {
-      flags.httpDetail = parseInt(httpDetailArg, 10);
-      if (Number.isNaN(flags.httpDetail)) {
-        throw new CliError("--http-detail requires a valid numeric index.", {
-          code: "INVALID_HTTP_DETAIL",
-        });
-      }
-    }
-
-    const nodeIdx = args.indexOf("--node");
-    const nodeArg = nodeIdx !== -1 ? args[nodeIdx + 1] : undefined;
-    if (nodeArg) {
-      flags.node = nodeArg;
-    }
-
-    return { input, flags };
+    return { input: positionals.input, flags };
   },
 
   async execute({ input, flags }, context) {

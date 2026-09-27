@@ -17,6 +17,7 @@ Flags:
   --refresh           Rebuild the index from the API.
   --limit <N>         Max results to show (default: 20, max: 200).
   --open              Open selected item in browser (pick mode only).
+  --components        With `list`: list components instead of pages.
   --llm               Output structured JSON envelope.
 
 Global Flags:

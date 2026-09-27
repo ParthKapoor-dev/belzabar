@@ -17,9 +17,8 @@ Flags:
   --version <vid>    Version id (for show / restore).
   --from <A>         First version id (for diff).
   --to <B>           Second version id (for diff).
-  --limit <N>        Cap "list" rows (default 50).
-  --yes              Skip interactive confirmation (required for restore).
-  --force            (reserved for future --force variants)
+  --limit <N>        Cap "list" rows (default 50; list only).
+  --yes, -y          Skip interactive confirmation (required for restore).
   --help, -h         Show this help message.
 
 Notes:

@@ -1,1 +1,3 @@
-  page-deps <input>          Raw page-dependencies API output for a page/component.
+belz pd page-deps <input>  :->  Raw page-dependencies API output for a published page/component
+belz pd page-deps <input> --status DRAFT  :->  Query the DRAFT dependency graph instead of PUBLISHED
+belz pd page-deps <input> --force  :->  Bypass the config cache when resolving <input>

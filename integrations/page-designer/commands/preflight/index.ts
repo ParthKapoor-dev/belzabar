@@ -7,8 +7,7 @@
 // agent scripts can chain: `belz pd preflight ... && belz pd save ...`.
 
 import { readFile } from "node:fs/promises";
-import { CliError, ok, type CommandModule } from "@belzabar/core";
-import { parsePdCommonArgs } from "../../lib/args/common";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { pdApi } from "../../lib/api/index";
 import { parsePage } from "../../lib/parser/index";
 import { applyOverlay, pickStrategy } from "../../lib/serialize/index";
@@ -55,21 +54,20 @@ function countNodes(page: HydratedPage): number {
   return n;
 }
 
+export const args = defineArgs({
+  command: "belz pd preflight",
+  positionals: [{ name: "page-id", required: true, missingCode: "MISSING_INPUT", missingMessage: "Missing <pageId>." }],
+  flags: {
+    overlay: { type: "string" },
+  },
+});
+
 const command: CommandModule<PreflightArgs, PreflightData> = {
   schema: "pd.preflight",
 
-  parseArgs(args) {
-    const { rest } = parsePdCommonArgs(args);
-    const pageId = rest[0];
-    if (!pageId || pageId.startsWith("-")) {
-      throw new CliError("Missing <pageId>.", { code: "MISSING_INPUT" });
-    }
-    const oi = rest.indexOf("--overlay");
-    const overlayFile = oi !== -1 ? rest[oi + 1] ?? null : null;
-    if (oi !== -1 && !overlayFile) {
-      throw new CliError("--overlay requires a file path.", { code: "INVALID_FLAG" });
-    }
-    return { pageId, overlayFile };
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    return { pageId: positionals.pageId, overlayFile: flags.overlay ?? null };
   },
 
   async execute({ pageId, overlayFile }) {
