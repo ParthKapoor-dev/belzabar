@@ -13,6 +13,10 @@ import * as v1 from "./v1";
 import * as v2 from "./v2";
 import * as changelog from "./changelog";
 import { CacheManager } from "../cache";
+import { Config } from "@belzabar/core";
+import { buildServiceResolver } from "../hydrator";
+import { parseV1Method } from "../parser/v1";
+import { parseV2Method } from "../parser/v2";
 
 export type {
   SaveMethodResult as V1SaveMethodResult,
@@ -26,9 +30,25 @@ export type { ChangelogEntry } from "./changelog";
 export const adApi = {
   // ─── Reads ───────────────────────────────────────────────────────────
 
+  /**
+   * Fetch + parse, with steps classified by service identity (AD-02): V1
+   * steps are resolved through the env-scoped definition cache, V2 steps by
+   * their wire `serviceName`/`methodName`. `uuid` should already be canonical
+   * (lib/ids.ts:resolveMethodRef).
+   */
   async fetchMethod(uuid: string, version: ApiVersion): Promise<HydratedMethod> {
-    if (version === "v2") return v2.fetchMethod(uuid);
-    return v1.fetchMethod(uuid);
+    const env = Config.activeEnv.name;
+    if (version === "v2") return parseV2Method(await v2.fetchRawMethod(uuid), { env });
+    const raw = await v1.fetchRawMethod(uuid);
+    const { resolveService, unresolved } = await buildServiceResolver(raw);
+    const method = parseV1Method(raw, { env, resolveService });
+    if (unresolved.length > 0) {
+      method.parseWarnings.push(
+        `Service definition lookup failed for automationId(s) ${unresolved.join(", ")}; those steps are classified ` +
+          "by the verified fast path only and may show as EXISTING_SERVICE.",
+      );
+    }
+    return method;
   },
 
   async fetchRawMethod(
@@ -101,7 +121,7 @@ export const adApi = {
     return changelog.listChangelog(chainId);
   },
 
-  async addChangelog(chainId: number, comment: string): Promise<string> {
+  async addChangelog(chainId: number, comment: string): Promise<string | null> {
     return changelog.addChangelog(chainId, comment);
   },
 

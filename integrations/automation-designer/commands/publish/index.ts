@@ -3,6 +3,7 @@ import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
+import { fingerprintMethod } from "../../lib/fingerprint";
 
 interface PublishArgs {
   uuid: string;
@@ -15,10 +16,17 @@ interface PublishData {
   publishedUuid: string;
   draftVersion: number | string;
   publishedVersion: number | string | null;
-  inSync: boolean;
+  /** Logic fingerprint of the draft == the published body after the publish (null if unreadable). */
+  inSync: boolean | null;
   switchedFromPublished: boolean;
   changeNote: string;
-  changelogId: string;
+  /** Whether the change note was recorded (it is posted AFTER the publish, with retries). */
+  noteRecorded: boolean;
+  /** Changelog entry id of the note (null when not recorded or not identifiable). */
+  changelogId: string | null;
+  /** Chain the note was recorded on (the draft's numeric id; the server mirrors it to the published chain). */
+  noteChainId: number;
+  noteError?: string;
 }
 
 export const args = defineArgs({
@@ -74,29 +82,31 @@ const command: CommandModule<PublishArgs, PublishData> = {
       ],
     });
 
-    // Record the change note BEFORE publishing — every publish must be logged.
-    logIntent("POST", `/rest/api/automation/chain/changelog/${draft.numericId}`, {
-      chainId: draft.numericId,
-    });
-    const changelogId = await adApi.addChangelog(draft.numericId, note);
-
+    // AD-19: publish FIRST, then record the note. A failed publish must not
+    // leave an orphan note claiming a change that never shipped.
     logIntent("POST", `/rest/api/automation/chain/${draft.uuid}/publish`, { draftUuid: draft.uuid });
     const { publishedUuid } = await adApi.publishDraft(draft.uuid);
 
-    // Re-fetch both sides to compute sync state.
+    logIntent("POST", `/rest/api/automation/chain/changelog/${draft.numericId}`, { chainId: draft.numericId });
+    const noteResult = await recordNoteWithRetry(draft.numericId, note);
+    if (!noteResult.recorded) {
+      context.warn(
+        `Published, but the change note was NOT recorded (${noteResult.error}). Record it with: ` +
+          `belz ad changelog ${draft.uuid} --note "<text>" --env ${context.env.name} --yes`,
+      );
+    }
+
+    // Re-fetch both sides: sync is a logic-fingerprint comparison (AD-18).
     const freshDraft = await adApi.fetchMethod(draft.uuid, "v1");
     let publishedVersion: number | string | null = null;
+    let inSync: boolean | null = null;
     try {
       const pub = await adApi.fetchMethod(publishedUuid, "v1");
       publishedVersion = pub.version;
+      inSync = fingerprintMethod(pub) === fingerprintMethod(freshDraft);
     } catch {
       publishedVersion = null;
     }
-
-    const inSync =
-      typeof freshDraft.version === "number" &&
-      typeof publishedVersion === "number" &&
-      freshDraft.version === publishedVersion;
 
     return ok<PublishData>({
       draftUuid: freshDraft.uuid,
@@ -106,7 +116,10 @@ const command: CommandModule<PublishArgs, PublishData> = {
       inSync,
       switchedFromPublished: guard.switchedFromPublished,
       changeNote: note,
-      changelogId,
+      noteRecorded: noteResult.recorded,
+      changelogId: noteResult.id,
+      noteChainId: draft.numericId,
+      ...(noteResult.error ? { noteError: noteResult.error } : {}),
     });
   },
   presentHuman(envelope, ui) {
@@ -120,11 +133,36 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Published UUID", data.publishedUuid],
         ["Draft version", String(data.draftVersion)],
         ["Published version", String(data.publishedVersion ?? "(unknown)")],
-        ["In sync", data.inSync ? "Yes" : "No"],
-        ["Change note", data.changeNote],
+        ["In sync (logic)", data.inSync === null ? "(unknown)" : data.inSync ? "Yes" : "No"],
+        ["Change note", data.noteRecorded ? data.changeNote : `NOT RECORDED: ${data.noteError ?? ""}`],
       ],
     );
   },
 };
+
+/** Attempts at recording the post-publish change note. */
+export const NOTE_ATTEMPTS = 3;
+let noteRetryDelayMs = 1000;
+/** Tests only: no back-off sleeps. */
+export function __setNoteRetryDelayForTests(ms: number): void {
+  noteRetryDelayMs = ms;
+}
+
+async function recordNoteWithRetry(
+  chainId: number,
+  note: string,
+): Promise<{ recorded: boolean; id: string | null; error?: string }> {
+  let lastError = "";
+  for (let attempt = 1; attempt <= NOTE_ATTEMPTS; attempt++) {
+    try {
+      const id = await adApi.addChangelog(chainId, note);
+      return { recorded: true, id };
+    } catch (e) {
+      lastError = e instanceof Error ? e.message : String(e);
+      if (attempt < NOTE_ATTEMPTS) await Bun.sleep(noteRetryDelayMs * attempt);
+    }
+  }
+  return { recorded: false, id: null, error: lastError };
+}
 
 export default command;

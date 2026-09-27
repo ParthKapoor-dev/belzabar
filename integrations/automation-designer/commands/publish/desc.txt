@@ -1,2 +1,2 @@
-belz ad publish <uuid> --note "<text>"  :->  Promote a draft to its published version (draft-guarded; the note is recorded in the changelog)
-belz ad publish <uuid> --note "<text>" --yes  :->  Publish without the confirmation prompt (required with --llm)
+belz ad publish <uuid> --note "<text>" --env <env>  :->  Promote a draft to its published version (draft-guarded; the note is recorded in the changelog after the publish)
+belz ad publish <uuid> --note "<text>" --env <env> --yes  :->  Publish without the confirmation prompt (required with --llm)

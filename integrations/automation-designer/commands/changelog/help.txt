@@ -7,13 +7,21 @@ the uuid you pass) and are the audit trail for a method.
 
 Modes:
   belz ad changelog <uuid>                  List existing change notes.
-  belz ad changelog <uuid> --note "<text>"  Record a new change note, then
+  belz ad changelog <uuid> --note "<text>" --env <env> [--yes]
+                                            Record a new change note, then
                                             list the updated history.
 
 Flags:
-  --note "<text>"  Record this change note. Omit to list only.
+  --note "<text>"  Record this change note (a write: needs --env and
+                   confirmation). Omit to list only.
+  --yes, -y        Skip the confirmation prompt (required with --llm).
   --v2             Accepted for consistency; always V1 (a notice is printed).
   --llm            Emit a JSON envelope.
+
+Which chain: a listing reads the chain of the uuid you pass (draft and
+published chains have separate lists). --note resolves through the draft
+guard and records on the DRAFT chain (as publish does; the server mirrors
+draft notes to the published chain when it publishes).
 
 Note: `belz ad publish` records a change note automatically (its --note flag
 is mandatory). Use this command to log a note without publishing, or to

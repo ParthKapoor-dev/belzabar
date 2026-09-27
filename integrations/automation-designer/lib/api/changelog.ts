@@ -55,15 +55,24 @@ export async function listChangelog(chainId: number): Promise<ChangelogEntry[]> 
   return Array.isArray(body) ? (body as ChangelogEntry[]) : [];
 }
 
-/** Record a change note against a chain. Returns the created entry id (if any). */
-export async function addChangelog(chainId: number, comment: string): Promise<string> {
+/**
+ * Record a change note against a chain. Returns the created entry's id, or
+ * null when it could not be identified.
+ *
+ * Live wire (sems-dev, AD-19): the POST answers `{"success":true}` with no id,
+ * so the id is looked up afterwards in the chain's list: the newest
+ * USER_GENERATED entry with the same comment created at/after the POST.
+ * `{"success":false}` is a failure (AD_CHANGELOG_ERROR).
+ */
+export async function addChangelog(chainId: number, comment: string): Promise<string | null> {
   const user = await fetchCurrentUser();
   const path = `/rest/api/automation/chain/changelog/${chainId}`;
+  const createdAt = Date.now();
   const payload = {
     comment,
     entityType: ENTITY_TYPE,
     changelogType: CHANGELOG_TYPE,
-    createdAt: Date.now(),
+    createdAt,
     user,
   };
   const response = await apiFetch(path, {
@@ -73,6 +82,26 @@ export async function addChangelog(chainId: number, comment: string): Promise<st
     body: JSON.stringify(payload),
   });
   await checkResponse(response, path);
-  const body = (await response.json().catch(() => ({}))) as { id?: string };
-  return body.id ?? "";
+  const body = (await response.json().catch(() => ({}))) as { id?: unknown; success?: unknown };
+  if (body.success === false) {
+    throw new CliError(`The server refused the change note on chain ${chainId}.`, {
+      code: "AD_CHANGELOG_ERROR",
+      details: { path, body },
+    });
+  }
+  if (typeof body.id === "string" && body.id) return body.id;
+  try {
+    return findChangelogId(await listChangelog(chainId), comment, createdAt);
+  } catch {
+    return null;
+  }
+}
+
+/** The id of the note we just posted: newest USER_GENERATED entry with this comment, not older than the POST (60 s clock skew). */
+export function findChangelogId(entries: ChangelogEntry[], comment: string, postedAt: number): string | null {
+  const matches = entries
+    .filter((e) => e.comment === comment && e.changelogType === CHANGELOG_TYPE)
+    .filter((e) => typeof e.createdAt !== "number" || e.createdAt >= postedAt - 60_000)
+    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+  return matches[0]?.id ?? null;
 }

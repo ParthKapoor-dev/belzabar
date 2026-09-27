@@ -1,2 +1,2 @@
-belz ad changelog <uuid>  :->  List change notes recorded against a method
-belz ad changelog <uuid> --note "<text>"  :->  Record a change note (write), then list the updated history
+belz ad changelog <uuid>  :->  List change notes recorded against the chain of this uuid
+belz ad changelog <uuid> --note "<text>" --env <env> --yes  :->  Record a change note on the draft chain (write; draft-guarded, confirms), then list the updated history
