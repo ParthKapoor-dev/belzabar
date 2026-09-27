@@ -177,7 +177,7 @@ describe("overlayToPartialOperations", () => {
     const ops = overlayToPartialOperations(page, overlay);
     expect(ops).toEqual(overlay.elements!.operations.map((op) => ({
       key: op.key,
-      value: op.value,
+      value: String(op.value), // wire values are strings; these are STRING ops
       operation: op.operation,
       dataType: op.dataType,
     })));

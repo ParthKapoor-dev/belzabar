@@ -25,7 +25,8 @@ export function cleanAdId(url: string): string | null {
   return match?.[1] ?? null;
 }
 
-function parseConfig(configStr: string): RawConfiguration | null {
+function parseConfig(configStr: string | undefined): RawConfiguration | null {
+  if (configStr === undefined) return null;
   try {
     return JSON.parse(configStr);
   } catch {
@@ -46,7 +47,7 @@ function getLayoutChildren(node: RawLayoutNode): RawLayoutNode[] {
   return Object.values(node.children);
 }
 
-export function extractReferences(configStr: string, whitelist: Set<string>) {
+export function extractReferences(configStr: string | undefined, whitelist: Set<string>) {
   const adIds = new Set<string>();
   const componentNames = new Set<string>();
   const config = parseConfig(configStr);

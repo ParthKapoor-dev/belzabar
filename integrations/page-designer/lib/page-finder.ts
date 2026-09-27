@@ -252,25 +252,17 @@ function subsequenceScore(query: string, value: string): number {
 }
 
 function levenshtein(a: string, b: string): number {
-  const rows = a.length + 1;
-  const cols = b.length + 1;
-  const dp = Array.from({ length: rows }, () => new Array<number>(cols).fill(0));
-
-  for (let i = 0; i < rows; i += 1) dp[i][0] = i;
-  for (let j = 0; j < cols; j += 1) dp[0][j] = j;
-
-  for (let i = 1; i < rows; i += 1) {
-    for (let j = 1; j < cols; j += 1) {
+  // Two-row DP; indices are always in bounds, hence the `!`s.
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i += 1) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j += 1) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      dp[i][j] = Math.min(
-        dp[i - 1][j] + 1,
-        dp[i][j - 1] + 1,
-        dp[i - 1][j - 1] + cost
-      );
+      cur[j] = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + cost);
     }
+    prev = cur;
   }
-
-  return dp[rows - 1][cols - 1];
+  return prev[b.length]!;
 }
 
 function tokenize(value: string): string[] {

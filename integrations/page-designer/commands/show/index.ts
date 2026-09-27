@@ -1,7 +1,6 @@
-import { file } from "bun";
 import { CliError, Config, defineArgs, ok, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
 import { PD_FORCE_FLAG } from "../../lib/args/common";
-import { analyzeItem } from "../../lib/analyzer";
+import { analyzeItem, loadComponentsWhitelist } from "../../lib/analyzer";
 import {
   extractDirectChildComponentNames,
   extractReferences,
@@ -406,6 +405,13 @@ const command: CommandModule<ShowArgs, ShowData> = {
     const resolved = await resolveInput(input, flags.force);
     const { entityType, resolvedId, response, inputKind, source } = resolved;
     const configStr = response.configuration;
+    if (typeof configStr !== "string") {
+      // Previously crashed later with a raw TypeError (Buffer.byteLength(undefined)).
+      throw new CliError(`${entityType === "PAGE" ? "Page" : "Component"} ${resolvedId} has no configuration.`, {
+        code: "PD_CONFIG_MISSING",
+        details: { resolvedId, entityType },
+      });
+    }
 
     if (source === "stale") {
       // Serve stale data now; refresh the cache in a detached background process.
@@ -501,14 +507,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
     }
 
     if (flags.recursive) {
-      const componentsFile = file("components.json");
-      if (!(await componentsFile.exists())) {
-        throw new CliError("components.json not found. Required for recursive inspection.", {
-          code: "COMPONENTS_FILE_MISSING",
-        });
-      }
-      const list = await componentsFile.json();
-      const componentsWhitelist = new Set(list);
+      const componentsWhitelist = await loadComponentsWhitelist("components.json not found. Required for recursive inspection.");
       const visited = new Set<string>();
       const tree = await analyzeItem(resolvedId, entityType, resolvedName, visited, componentsWhitelist);
       data.recursive = {

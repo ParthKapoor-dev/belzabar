@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test";
 import { parseVariables } from "../../lib/parser/variables";
-import type { RawConfiguration } from "../../lib/types/wire";
+import type { RawConfiguration, RawDerivedVar } from "../../lib/types/wire";
 
 describe("parseVariables", () => {
   test("new format: variables.userDefined → PageVariable[]", () => {
@@ -56,7 +56,7 @@ describe("parseVariables", () => {
             spec: "(function(p){return p.raw;})",
             filterFn: null,
             sideEffect: false,
-          } as unknown as RawConfiguration["variables"]["derived"][number],
+          } as unknown as RawDerivedVar, // filterFn: null is off-type on purpose
         ],
       },
     };

@@ -1,9 +1,8 @@
-import { file } from "bun";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { fetchComponentIdByName } from "../../lib/api/index";
 import { cachedFetchPageConfig as fetchPageConfig, cachedFetchComponentConfig as fetchComponentConfig } from "../../lib/cache";
 import { extractReferences } from "../../lib/parser/index";
-import { analyzeItem } from "../../lib/analyzer";
+import { analyzeItem, loadComponentsWhitelist } from "../../lib/analyzer";
 import { collectAllAdIds } from "../../lib/reporter";
 
 interface FindAdMethodsArgs {
@@ -44,14 +43,7 @@ const command: CommandModule<FindAdMethodsArgs, FindAdMethodsData> = {
     let adIds: string[] = [];
 
     if (recursive) {
-      const componentsFile = file("components.json");
-      if (!(await componentsFile.exists())) {
-        throw new CliError("components.json not found. Required for recursive search.", {
-          code: "COMPONENTS_FILE_MISSING",
-        });
-      }
-      const list = await componentsFile.json();
-      const componentsWhitelist = new Set(list);
+      const componentsWhitelist = await loadComponentsWhitelist("components.json not found. Required for recursive search.");
 
       let actualId = targetId;
       if (type === "COMPONENT") {

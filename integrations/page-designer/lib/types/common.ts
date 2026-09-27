@@ -12,7 +12,7 @@
 //   3. The validator operates on HydratedPage; the serializer produces raw
 //      shapes FROM HydratedPage. No command ever crosses the wire boundary.
 
-import type { PdEntityType, PdStatus, RawPartialUpdateOperation } from "./wire";
+import type { PartialDataType, PdEntityType, PdStatus, RawHttpRequestItem, RawPartialUpdateOperation } from "./wire";
 
 export type { PdEntityType, PdStatus };
 
@@ -76,7 +76,7 @@ export interface PageHttpRequest {
   eventMeta: Record<string, unknown> | null;
   requestBody: string | null;
   source: "generated" | "userDefined" | "legacy"; // which bucket it came from
-  raw: unknown;
+  raw: RawHttpRequestItem;
 }
 
 // ============================================================================
@@ -272,7 +272,7 @@ export interface ElementOperation {
   key: string;                 // dot-notation path
   operation: "CREATE" | "UPDATE";
   value: unknown;              // serializer stringifies per dataType
-  dataType: "STRING" | "NUMBER" | "BOOLEAN" | "ARRAY" | "OBJECT";
+  dataType: PartialDataType;
 }
 
 export interface Overlay {
@@ -285,4 +285,4 @@ export interface Overlay {
 
 // Re-export the wire operation type so the serializer can produce it without
 // having to import wire.ts from two places.
-export type { RawPartialUpdateOperation };
+export type { PartialDataType, RawPartialUpdateOperation };

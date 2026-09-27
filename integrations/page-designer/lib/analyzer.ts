@@ -1,3 +1,5 @@
+import { file } from "bun";
+import { CliError } from "@belzabar/core";
 import { fetchComponentIdByName } from "./api/index";
 import { cachedFetchPageConfig as fetchPageConfig, cachedFetchComponentConfig as fetchComponentConfig } from "./cache";
 import { extractReferences } from "./parser/index";
@@ -6,6 +8,34 @@ import type { ReportNode } from "./types/legacy";
 /**
  * ANALYZER SERVICE
  */
+
+/**
+ * Load the component-name whitelist (a JSON array of names) used by the
+ * recursive analyzers. Anything other than a string array is refused instead
+ * of silently producing a whitelist that matches nothing.
+ */
+export async function loadComponentsWhitelist(
+  missingMessage: string,
+  path = "components.json",
+): Promise<Set<string>> {
+  const f = file(path);
+  if (!(await f.exists())) {
+    throw new CliError(missingMessage, { code: "COMPONENTS_FILE_MISSING" });
+  }
+  let list: unknown;
+  try {
+    list = await f.json();
+  } catch {
+    list = undefined;
+  }
+  if (!Array.isArray(list) || !list.every((x): x is string => typeof x === "string")) {
+    throw new CliError(`${path} must be a JSON array of component names.`, {
+      code: "COMPONENTS_FILE_INVALID",
+      details: { path },
+    });
+  }
+  return new Set(list);
+}
 
 export async function analyzeItem(
   id: string,

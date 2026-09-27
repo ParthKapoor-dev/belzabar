@@ -13,7 +13,12 @@
 // codepath not covered here.
 
 import type { HydratedPage } from "../types/common";
-import type { RawConfiguration, RawLayoutNode } from "../types/wire";
+import type { RawConfiguration, RawDerivedVar, RawLayoutNode, RawUserDefinedVar } from "../types/wire";
+
+/** A shallow copy of `raw` when it is a plain object, else `{}`. */
+function asRecord(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? { ...(raw as Record<string, unknown>) } : {};
+}
 
 export function hydratedToInnerConfig(page: HydratedPage): RawConfiguration {
   // Start from the original parsed inner config (preserves all fields we
@@ -23,18 +28,16 @@ export function hydratedToInnerConfig(page: HydratedPage): RawConfiguration {
 
   // Rebuild variables.userDefined from page.variables (keeping per-var raw
   // when present, so fields like __LAYOUT_CONFIG_METADATA round-trip).
-  const userDefined = page.variables.map((v) => {
-    const r = (v.raw && typeof v.raw === "object" && !Array.isArray(v.raw)) ? { ...(v.raw as Record<string, unknown>) } : {};
-    r.name = v.name;
+  const userDefined = page.variables.map((v): RawUserDefinedVar => {
+    const r: RawUserDefinedVar = { ...asRecord(v.raw), name: v.name };
     r.type = v.type ?? undefined;
     r.initialValue = v.initialValue;
     if (typeof v.translateInitialValue === "boolean") r.translateInitialValue = v.translateInitialValue;
     return r;
   });
 
-  const derived = page.derived.map((d) => {
-    const r = (d.raw && typeof d.raw === "object" && !Array.isArray(d.raw)) ? { ...(d.raw as Record<string, unknown>) } : {};
-    r.name = d.name;
+  const derived = page.derived.map((d): RawDerivedVar => {
+    const r: RawDerivedVar = { ...asRecord(d.raw), name: d.name };
     r.from = d.from;
     r.spec = d.spec ?? undefined;
     if (d.filterFn !== null) r.filterFn = d.filterFn;

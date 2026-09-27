@@ -39,7 +39,7 @@ describe("parsePage", () => {
     const raw = loadRaw("page-minimal.json");
     const page = parsePage(raw);
     expect(page.raw).toBe(raw);
-    expect(page.rawConfigurationString).toBe(raw.configuration);
+    expect(page.rawConfigurationString).toBe(raw.configuration!);
     expect(page.rawConfiguration).toEqual(JSON.parse(raw.configuration!));
   });
 

@@ -1,6 +1,6 @@
 import { file } from "bun";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { analyzeItem } from "../../lib/analyzer";
+import { analyzeItem, loadComponentsWhitelist } from "../../lib/analyzer";
 
 const TARGET_PAGE_IDS = [
   "49fa2576239ec5791c6ead4cf9408ce2",
@@ -45,14 +45,7 @@ const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
   async execute({ pageIdArg, runCompliance }, context) {
     const targetIds = pageIdArg ? [pageIdArg] : TARGET_PAGE_IDS;
 
-    const componentsFile = file("components.json");
-    if (!(await componentsFile.exists())) {
-      throw new CliError("components.json not found in root directory.", {
-        code: "COMPONENTS_FILE_MISSING",
-      });
-    }
-    const list = await componentsFile.json();
-    const componentsWhitelist = new Set(list);
+    const componentsWhitelist = await loadComponentsWhitelist("components.json not found in root directory.");
 
     let masterIds = new Set<string>();
     if (runCompliance) {
