@@ -32,7 +32,9 @@ teamwork/
 │   ├── auth.ts           Cookie-based authentication (tw-auth)
 │   ├── confirm.ts        Confirmation gate + write-intent logging (for add-comment)
 │   ├── extract.ts        Pure AD/PD/SQL extraction (release-prep Stage 2 patterns)
+│   ├── items.ts          extractTicketItems — ticket → release items (used by `tw items` and `release matrix`)
 │   └── types.ts          Shared TypeScript types
+├── registry.ts           Static, sorted command registry (@belzabar/teamwork/registry)
 ├── tests/unit/           bun test — extract.test.ts
 └── AGENTS.md             This file
 ```
@@ -69,5 +71,4 @@ Teamwork uses cookie-based auth, separate from the NSM Bearer token flow:
 ## Adding a New Command
 
 1. Create `teamwork/commands/<cmd>/` with `index.ts`, `help.txt`, `desc.txt`.
-2. Run `bun run generate` from `cli/` to regenerate registries.
-3. The command is automatically discovered in dev mode and embedded in prod builds.
+2. Add it to `registry.ts` (sorted); help/desc are embedded from there in dev and in the binary.

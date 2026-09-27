@@ -1,204 +1,130 @@
-# AGENTS.md — CLI
+# AGENTS.md — CLI (`apps/cli`)
 
 ## Purpose
 
-The `cli/` directory is the **orchestration layer** for the `belz` unified binary. It owns:
+`apps/cli/` is the **orchestration layer** for the `belz` binary. It owns:
 
-- Entry points (dev and prod)
-- Command registries (auto-generated)
-- Top-level commands (`envs`, `migrate`)
-- Registry generation script
+- The entry point (`bin/cli.ts`, used both in dev and for the compiled binary)
+- The wiring of every integration's command registry (`bin/options.ts`)
+- Top-level commands (`cache`, `config`, `envs`, `extension`, `onboard`, `setup`, `update`)
 - Install / reinstall scripts
-- Build configuration
 
-**No business logic lives here.** All command implementations are in the source modules:
-`automation-designer/`, `page-designer/`, and `migrations/`. The `cli/` only wires them together.
+Command implementations for `ad`, `pd`, `tw`, `migrate` and `release` live in the
+`integrations/*` workspace packages (`@belzabar/ad`, `@belzabar/pd`, …); this app only wires
+them together.
 
 ---
 
 ## Directory Map
 
 ```
-cli/
+apps/cli/
 ├── bin/
-│   ├── cli.ts              Dev-mode entry point (thin: --help-full + runNamespacedCli)
-│   ├── dev-commands.ts     Dev-mode command discovery: buildDevCliOptions(), buildHelpFullDynamic()
-│   └── cli-build.ts        Prod-mode entry point (pre-generated registries)
+│   ├── cli.ts              Entry point: --help-full, then runNamespacedCli(buildCliOptions())
+│   └── options.ts          Registries → runner options + `belz --help-full` text; REGISTRIES (for tests)
 ├── commands/
-│   ├── envs/               Top-level `belz envs` command
-│   │   ├── index.ts
-│   │   └── help.txt
-│   ├── migrate/            Top-level `belz migrate` command (passthrough to migrations/lib)
-│   │   ├── index.ts
-│   │   └── help.txt (+ README.md)
-│   ├── registry-ad.ts      Auto-generated — AD command registry
-│   ├── registry-pd.ts      Auto-generated — PD command registry
-│   ├── registry-top.ts     Auto-generated — top-level command registry
-│   └── registry-help.ts    Auto-generated — embedded help text (for compiled binary)
+│   ├── registry.ts         Static, sorted registry of the top-level commands below
+│   ├── cache/  config/  envs/  extension/  onboard/  setup/  update/
+│   │                       each: index.ts + help.txt + desc.txt
 ├── tests/
+│   ├── registry.test.ts           Every commands/*/ folder is registered, sorted, has help/desc
 │   ├── envelope-contract.test.ts  Every registered command's --llm envelope vs EnvelopeSchema
 │   ├── compiled-pipe.test.ts      Compiles the binary to a tmp dir; >64 KiB --llm through a slow pipe
+│   ├── update-paths.test.ts       `belz update` finds apps/cli/scripts (or the old cli/scripts)
+│   ├── help-flags.test.ts, cache-command.test.ts
 │   └── live/                      Opt-in live suites (BELZ_LIVE=sems-dev), skipped by default
-├── utils/
-│   └── generate-registry.ts  Generates all 4 registry files
 ├── scripts/
-│   ├── install.sh          Build + install + first-time credential setup
-│   └── reinstall.sh        Wipe ~/.belz + fresh install (delegates to install.sh)
-├── package.json            Scripts: generate, build, install-cli, link
-├── tsconfig.json
-└── bun.lock
+│   ├── install.sh / install.ps1   Build + install + first-run setup
+│   ├── reinstall.sh               Wipe ~/.belz + fresh install (delegates to install.sh)
+│   ├── record-install.mjs         Writes install metadata (sourceDir, …) for `belz update`
+│   └── swap-binary.ps1            Windows deferred binary swap
+├── package.json            Scripts: build, link. Depends on core + every integration package
+└── tsconfig.json           Extends ../../tsconfig.base.json
 ```
 
 ---
 
-## Dev Mode vs Prod Mode
+## Registries and routing
 
-### Dev mode — `bin/cli.ts`
+Each integration exports a hand-maintained `registry` (`integrations/<x>/registry.ts`, exported as
+`@belzabar/<pkg>/registry`): command name → `{ module, help, desc }`, with `help.txt`/`desc.txt`
+imported `with { type: "text" }` so the compiled binary embeds them. There is no generator.
 
-Used during development (`bun run bin/cli.ts`). Discovers commands dynamically via `readdirSync`
-on the source module directories (`bin/dev-commands.ts`, also loaded by tests through
-`@belzabar/core/testing` `loadDevCliOptions()`). No registry files needed. Help text is read from `help.txt`
-files on disk at runtime.
-
-### Prod mode — `bin/cli-build.ts`
-
-Used for the compiled binary (`bun run build`). Imports from the pre-generated registry files
-and uses embedded help text (all bundled at compile time — no filesystem access required).
-
-The `bun build --compile` step bakes everything into a single self-contained binary.
-
----
-
-## Namespace Routing
-
-The entry points call `runNamespacedCli` from `@belzabar/core` with this structure:
+`bin/options.ts` builds the `runNamespacedCli` options:
 
 ```
-belz ad <cmd>      → ADCommandRegistry (automation-designer/commands/)
-belz pd <cmd>      → PDCommandRegistry (page-designer/commands/)
-belz migrate       → migrate command (passthrough module, not a namespace)
-belz envs          → envs command (top-level)
-belz --help        → unified help listing all modules + top-level commands
+belz ad | pd | tw | migrate | release <cmd>  → namespace commands from that registry
+belz config / belz extension                 → passthrough namespaces (the module sub-routes)
+belz cache | envs | onboard | setup | update → top-level commands
 ```
 
-`migrate` is wired as a **passthrough module** (single `command` key, not `commands`), meaning
-`belz migrate <subcommand>` is handled entirely inside `commands/migrate/index.ts`.
-
----
-
-## Registry Generation
-
-The 4 registry files are **auto-generated** — do not edit them manually.
-
-```bash
-# Run from cli/
-bun run generate
-```
-
-This runs `utils/generate-registry.ts`, which:
-1. Discovers AD commands from `../automation-designer/commands/` (any folder with `index.ts`)
-2. Discovers PD commands from `../page-designer/commands/`
-3. Discovers top-level commands from `commands/` (envs, migrate)
-4. Writes `commands/registry-{ad,pd,top,help}.ts`
-
-**Always commit the generated registry files** after adding or removing commands.
+`belz --help-full` = every `desc.txt`, in fixed section order, commands sorted (deterministic;
+dev and compiled output are identical).
 
 ---
 
 ## Adding Commands
 
-### New top-level command
-1. Create `commands/<name>/index.ts` (implement `CommandModule`) and `commands/<name>/help.txt`
-2. Run `bun run generate` from `cli/` — the command is auto-discovered
-3. Commit the updated `registry-top.ts` and `registry-help.ts`
+- **Top-level:** create `commands/<name>/{index.ts,help.txt,desc.txt}` and add the entry to
+  `commands/registry.ts` (sorted). If it sub-routes itself like `config`, add it to `PASSTHROUGH`
+  in `bin/options.ts`.
+- **Integration command:** add the folder under `integrations/<x>/commands/` and the entry to
+  `integrations/<x>/registry.ts` — see that module's AGENTS.md.
+- **New namespace:** create the integration package (package.json, tsconfig, registry.ts), add it
+  to `apps/cli/package.json` dependencies, `NAMESPACES` and `REGISTRIES` in `bin/options.ts`.
 
-### New AD command
-Add to `../automation-designer/commands/` — see `automation-designer/AGENTS.md`.
-
-### New PD command
-Add to `../page-designer/commands/` — see `page-designer/AGENTS.md`.
-
-### New namespace
-1. Add entry point logic to both `bin/dev-commands.ts` and `bin/cli-build.ts`
-2. Add a new registry generator block to `utils/generate-registry.ts`
-3. Create the source module at the repo root alongside `automation-designer/`
+`tests/registry.test.ts` fails if a folder and its registry disagree.
 
 ---
 
 ## Build
 
 ```bash
-cd cli
-
-# Generate registries (required before build)
-bun run generate
-
-# Compile the binary
-bun run build
-# → produces cli/belz
-
-# Install to ~/.local/bin
-bun run install-cli
-```
-
-Or from the repo root:
-```bash
-bun run belz:install   # runs cli/scripts/install.sh (generate + build + install + first-time setup)
+bun run belz:build                     # from the repo root → apps/cli/belz
+cd apps/cli && bun run build           # same
+bun apps/cli/bin/cli.ts ad show --help # dev mode, no compile
+bun run belz:install                   # apps/cli/scripts/install.sh (build + install + first-run)
 ```
 
 ---
 
 ## Tests
 
-From the repo root: `bun run test` (all tests), `bun run typecheck` (`tsc -p cli/tsconfig.json`,
-covers cli + every integration it imports), `bun run check` (both). CI: `.github/workflows/ci.yml`
+From the repo root: `bun run test` (all tests), `bun run typecheck` (root `tsconfig.json`, one
+`tsc` program over every workspace), `bun run check` (both). CI: `.github/workflows/ci.yml`
 (typecheck is non-blocking until Stage 3). The envelope contract test picks up new commands
 automatically; add invocations that legitimately break the contract to its `KNOWN_VIOLATIONS`
-only with a reason. Live: `BELZ_LIVE=sems-dev bun test cli/tests/live`.
+only with a reason. Live: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live`.
 
 ---
 
 ## Install Scripts
 
-Both scripts live in `cli/scripts/`. Run them from anywhere:
-
 ```bash
-bash ./cli/scripts/install.sh [--env-file <path>] [--install-dir <dir>]
-bash ./cli/scripts/reinstall.sh [--env-file <path>] [--install-dir <dir>] [--yes]
+bash ./apps/cli/scripts/install.sh [--env-file <path>] [--install-dir <dir>]
+bash ./apps/cli/scripts/reinstall.sh [--env-file <path>] [--install-dir <dir>] [--yes]
 ```
 
-**`install.sh`** — Smart install/update:
-- If `belz` is already installed: rebuilds binary only (credentials untouched)
-- If not installed: runs first-time setup (prompts for credentials or reads `--env-file`)
-- Writes `~/.belz/config.json`, then builds and installs the binary
+**`install.sh`** — `bun install --ignore-scripts`, compile `bin/cli.ts`, install the binary,
+record install metadata, and on first install run `belz onboard` (or `belz setup --env-file`).
 
-**`reinstall.sh`** — Clean wipe + fresh install:
-- Deletes `~/.belz/` and the existing binary
-- Then delegates to `install.sh`
+**`reinstall.sh`** — deletes `~/.belz/` and the binary, then delegates to `install.sh`.
 
-Both scripts compute `REPO_ROOT` two levels up from `cli/scripts/` (`$SCRIPT_DIR/../..`).
+Both compute `REPO_ROOT` three levels up (`$SCRIPT_DIR/../../..`). The root one-liners
+(`install.sh`, `install.ps1`) and `belz update` use `apps/cli/scripts/`, falling back to the
+pre-restructure `cli/scripts/` for one release.
 
 ---
 
 ## Help Text Standard
 
-Every command (`commands/envs/`, `commands/migrate/`, and all source-module commands) must have
-a `help.txt` following the standard defined in `automation-designer/AGENTS.md`.
-
-## desc.txt Standard
-
-Every command must also have a `desc.txt` alongside its `help.txt`.
-Format: one line per invocation variant (`<full invocation>  :->  <what it does>`).
-Covers the base call and every meaningful flag/subcommand variant.
-This file feeds `belz --help-full`. Run `bun run generate` after updating `desc.txt` to rebuild
-the embedded `HELP_FULL_TEXT` in `registry-help.ts`.
+Every command must have a `help.txt` following the standard in
+`integrations/automation-designer/AGENTS.md`, and a `desc.txt`: one line per invocation variant
+(`<full invocation>  :->  <what it does>`). `desc.txt` feeds `belz --help-full`.
 
 ---
 
 ## Maintainer Agent Instructions
 
-You are the Maintainer Agent. When you make a meaningful change to this directory — new commands,
-changed entry-point logic, new scripts, structural changes — update this `AGENTS.md`.
-
-If you add or remove commands from any source module, run `bun run generate` and commit the
-updated registry files alongside your other changes.
+When you make a meaningful change to this directory — new commands, changed entry-point logic,
+new scripts, structural changes — update this `AGENTS.md`, the registry, and `desc.txt`.

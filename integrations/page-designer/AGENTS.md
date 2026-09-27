@@ -10,12 +10,12 @@ This directory provides the PD command modules and lib for the Page Designer. It
 4. Search pages and components from a cached index
 5. Recursively analyze page/component dependency trees with compliance checks
 
-This is a **source-only module** — no standalone binary or package.json. All commands are served via `belz pd <cmd>` (unified binary built in `cli/`).
+This is the `@belzabar/pd` workspace package — no standalone binary. All commands are served via `belz pd <cmd>` (unified binary built from `apps/cli/`, which imports this package's `registry.ts`).
 
 ## Tech
 
 1. Runtime: Bun + TypeScript
-2. Commands discovered by: `cli/utils/generate-registry.ts` from `../page-designer/commands/`
+2. Commands registered in: `registry.ts` (static, sorted; exported as `@belzabar/pd/registry`)
 3. Shared runner/framework: `@belzabar/core`
 
 ## Command Routing
@@ -40,7 +40,7 @@ belz pd publish <pageId>                 # POST /publish
 belz pd lock <acquire|release|status>    # manual lock control
 ```
 
-When adding or removing PD commands, run `bun run generate` from `cli/` — this updates `cli/commands/registry-pd.ts`.
+When adding or removing PD commands, update `registry.ts` (keep it sorted).
 
 ## Directory Map
 
@@ -154,7 +154,7 @@ Use `belz pd` as the command prefix for all PD commands.
 
 ## Safe Change Checklist
 
-1. If adding/removing commands, run `bun run generate` from `cli/` and commit `cli/commands/registry-pd.ts`.
+1. If adding/removing commands, update `registry.ts` in the same commit.
 2. Keep `components.json` and `master_ids.txt` semantics documented when formats change.
 3. Keep command `help.txt` aligned with real flags and behavior.
 4. When adding a command, include a `help.txt` following the standards above.
@@ -165,5 +165,4 @@ Use `belz pd` as the command prefix for all PD commands.
 
 You are the Maintainer Agent. When you make a meaningful change to this module — new or removed
 commands, changed traversal or parsing logic, new lib files, changed output schema, or file
-format changes — update this `AGENTS.md` in the same commit. Run `bun run generate` from `cli/`
-and commit the updated `registry-pd.ts` alongside your changes.
+format changes — update this `AGENTS.md` (and `registry.ts` for command changes) in the same commit.

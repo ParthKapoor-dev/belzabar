@@ -3,13 +3,13 @@
 ## Purpose
 
 `packages/core/` is the **`@belzabar/core`** workspace package — the shared framework consumed
-by all CLI modules (`automation-designer/`, `page-designer/`, `migrations/`) and by `cli/` itself.
+by every integration package (`integrations/*`) and by `apps/cli`.
 
 It provides:
 - Config loading and credential management
 - Auth (session login, persistence)
 - HTTP client (`apiFetch`)
-- CLI runners (flat and namespaced)
+- The namespaced CLI runner and static command registries (`src/registry.ts`)
 - Command module interface and result types
 - **Unified UI layer** (`src/ui.ts`): clack-backed prompts, lifecycle helpers, spinners,
   and the `HumanUi` implementation that every command's `presentHuman()` consumes. Tables
@@ -80,7 +80,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 ### Envelope contract (`src/envelope.ts`)
 `EnvelopeSchema` (zod, strict) is the `--llm` wire contract: `{schema, version, ok, command, data,
 error: {code (non-empty), message, details?} | null, meta: {env?, durationMs?, warnings?, …}}`,
-with `ok:true ⇔ error:null`. `cli/tests/envelope-contract.test.ts` checks every registered command
+with `ok:true ⇔ error:null`. `apps/cli/tests/envelope-contract.test.ts` checks every registered command
 against it. Change the schema and the runner together.
 
 ### UI (`src/ui.ts`)
@@ -109,6 +109,7 @@ against it. Change the schema and the runner together.
 | `src/ui.ts` | Unified UI layer: `renderHuman`, `renderLLM`, `HumanUi`, `lifecycle`, `prompts`, `setOutputMode`, `colors` |
 | `src/types.ts` | Shared domain types (`Environment`, `AuthSession`, etc.) |
 | `src/envelope.ts` | `EnvelopeSchema` — the `--llm` envelope contract |
+| `src/registry.ts` | `CommandRegistry` / `RegisteredCommand` types, `registryModules`, `registryHelpResolver`, `registryNames` |
 | `src/testing/` | `@belzabar/core/testing` — test helpers (see Testing below). Never import from runtime code |
 | `tests/preload-belz-home.ts` | bun test preload (root + per-dir `bunfig.toml`): `BELZ_HOME` → tmp dir, `BELZ_TEST_TMP` scratch root, removed by a global `afterAll` |
 
@@ -158,9 +159,9 @@ a `helpResolver` (function-based, prod mode with embedded text). Both are option
 
 Changes to `@belzabar/core` affect every module in the repository. Before changing any public
 API:
-1. Check all usages across `automation-designer/`, `page-designer/`, `migrations/`, and `cli/`
-2. Verify all modules still build after your change (`cd cli && bun run build`)
-3. Run all tests (`bun test automation-designer/tests/unit/ migrations/tests/unit/`)
+1. Check all usages across `integrations/*` and `apps/cli/`
+2. Verify everything still typechecks and builds (`bun run typecheck`, `bun run belz:build`)
+3. Run all tests (`bun run test` from the repo root)
 
 Avoid breaking changes to `CommandModule`, `ok`/`fail`, `CliError`, or the envelope schema —
 these are consumed by the MCP adapter (`automation-designer/integrations/gemini-mcp/server.ts`)

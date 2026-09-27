@@ -30,36 +30,37 @@ It ships two products:
 
 ## Repository Layout
 
-| Directory | Role | AGENTS.md |
-|-----------|------|-----------|
-| `cli/` | Builds the `belz` binary; owns entry points, registries, install scripts | `cli/AGENTS.md` |
-| `cli/packages/core/` | `@belzabar/core` — shared CLI framework (workspace package) | `cli/packages/core/AGENTS.md` |
-| `integrations/automation-designer/` | AD command implementations and supporting lib (source module) | `integrations/automation-designer/AGENTS.md` |
-| `integrations/page-designer/` | PD command implementations and supporting lib (source module) | `integrations/page-designer/AGENTS.md` |
-| `integrations/teamwork/` | Teamwork command implementations and supporting lib (source module) | `integrations/teamwork/AGENTS.md` |
-| `integrations/migrations/` | Jenkins migration library + commands consumed by `belz migrate` (source module) | `integrations/migrations/AGENTS.md` |
-| `extension/` | Browser extension (MV3, JavaScript) | `extension/AGENTS.md` |
+| Directory | Package | Role | AGENTS.md |
+|-----------|---------|------|-----------|
+| `apps/cli/` | `belzabar.cli` | Builds the `belz` binary: entry point, top-level commands, install scripts | `apps/cli/AGENTS.md` |
+| `apps/extension/` | `belzabar-extension` | Browser extension (MV3, JavaScript) | `apps/extension/AGENTS.md` |
+| `packages/core/` | `@belzabar/core` | Shared CLI framework (runner, config, auth, api, cache, ui, testing) | `packages/core/AGENTS.md` |
+| `packages/design/` | `@belzabar/design` | Design tokens shared by the CLI and the extension | — |
+| `integrations/automation-designer/` | `@belzabar/ad` | `belz ad` commands + lib | `integrations/automation-designer/AGENTS.md` |
+| `integrations/page-designer/` | `@belzabar/pd` | `belz pd` commands + lib | `integrations/page-designer/AGENTS.md` |
+| `integrations/teamwork/` | `@belzabar/teamwork` | `belz tw` commands + lib | `integrations/teamwork/AGENTS.md` |
+| `integrations/migrations/` | `@belzabar/migrations` | `belz migrate` commands + lib (Jenkins-backed) | `integrations/migrations/AGENTS.md` |
+| `integrations/release/` | `@belzabar/release` | `belz release` commands (uses AD/TW libs) | `integrations/release/AGENTS.md` |
+| `integrations/jenkins/` | `@belzabar/jenkins` | Jenkins REST client used by migrations | `integrations/jenkins/AGENTS.md` |
+| `scripts/fixtures/` | — | Read-only wire-fixture capture + sanitizer | — |
+| `cloud/` | — | Claude Code cloud-session bootstrap (publish + sandbox files) | `cloud/README.md` |
 
 ---
 
 ## Monorepo Structure
 
-This is a **Bun workspaces** monorepo managed with Turborepo.
+This is a **Bun workspaces** monorepo (no Turborepo). Root `package.json` workspaces:
+`packages/*`, `apps/*`, `integrations/*`. Every workspace has its own `package.json` and a
+`tsconfig.json` extending the root `tsconfig.base.json`.
 
-**Workspaces** (have `package.json`, hoisted dependencies):
-- `cli` — the CLI build workspace
-- `cli/packages/*` — shared packages (`@belzabar/core`)
-- `extension` — the browser extension workspace
-- `apps/*` — application workspaces
+- Integrations depend on `@belzabar/core` (and on each other through package imports, e.g.
+  `@belzabar/release` → `@belzabar/ad/lib/trace`); never through `../../..` paths.
+- Integration packages export `./registry` (their static command registry) and `./lib/*`.
+- `apps/cli` depends on every integration and wires their registries together.
 
-**Source modules** (no `package.json` — imported directly by `cli/` via relative paths):
-- `integrations/automation-designer/`
-- `integrations/page-designer/`
-- `integrations/teamwork/`
-- `integrations/migrations/` (the Jenkins flow)
-
-Source modules are intentionally not workspaces. They contain pure TypeScript source that `cli/`
-imports at build time. This keeps the dependency graph simple and the binary self-contained.
+Root scripts: `bun run test`, `bun run typecheck` (one `tsc` program over all workspaces),
+`bun run check`, `bun run build` (`bun run --filter '*' build`), `bun run belz:build`,
+`bun run belz:install`, `bun run belz:reinstall`.
 
 ---
 
@@ -70,14 +71,16 @@ belz ad <cmd>      → integrations/automation-designer/commands/<cmd>/
 belz pd <cmd>      → integrations/page-designer/commands/<cmd>/
 belz tw <cmd>      → integrations/teamwork/commands/<cmd>/
 belz migrate <cmd> → integrations/migrations/commands/<cmd>/
-belz config        → cli/commands/config/
-belz cache         → cli/commands/cache/
-belz envs          → cli/commands/envs/
-belz setup         → cli/commands/setup/   (interactive first-time credentials)
+belz release <cmd> → integrations/release/commands/<cmd>/
+belz config        → apps/cli/commands/config/
+belz extension     → apps/cli/commands/extension/
+belz cache | envs | setup | onboard | update → apps/cli/commands/<cmd>/
 ```
 
-The routing is implemented in `packages/core/src/runner.ts` (`runNamespacedCli`). The `cli/`
-directory owns the entry points that wire everything together.
+Each integration lists its commands in a hand-maintained, sorted `registry.ts` (top-level
+commands: `apps/cli/commands/registry.ts`). `apps/cli/bin/options.ts` turns the registries into
+the runner options and `belz --help-full`; `apps/cli/bin/cli.ts` is the single entry point (dev
+and compiled). Routing itself is `packages/core/src/runner.ts` (`runNamespacedCli`).
 
 **Environments:** `nsm-dev`, `nsm-qa`, `nsm-uat` (pass `--env <name>`, default: `nsm-dev`).
 
@@ -104,19 +107,19 @@ Core `Cache` namespaces every entry by env by default (`envScoped: false` opts o
 
 ```bash
 # Install / update the belz binary (from repo root)
-bun run belz:install                   # or: bash ./cli/scripts/install.sh
+bun run belz:install                   # or: bash ./apps/cli/scripts/install.sh
 
 # Clean wipe + fresh install
-bun run belz:reinstall                 # or: bash ./cli/scripts/reinstall.sh
+bun run belz:reinstall                 # or: bash ./apps/cli/scripts/reinstall.sh
 
 # Build only (no install)
-cd cli && bun run build               # produces cli/belz
+bun run belz:build                     # produces apps/cli/belz
 
 # Run in dev mode (no compile step)
-cd cli && bun run bin/cli.ts ad get --help
+bun apps/cli/bin/cli.ts ad show --help
 ```
 
-See `cli/AGENTS.md` for full build and development details.
+See `apps/cli/AGENTS.md` for full build and development details.
 
 ### Wire fixtures
 
@@ -137,20 +140,20 @@ on anything that looks like a secret or PII — re-run
 - `--llm` flag outputs a structured JSON envelope; `--env` sets the active environment
 - **All user-facing UI goes through `@belzabar/core`'s unified `ui` module** — prompts, spinners, tables, log.* helpers. Never use `inquirer`, `chalk`, or hand-rolled readline selectors. See `packages/core/AGENTS.md` for the surface. Prompts automatically refuse in `--llm` mode.
 - `help.txt` files live alongside each command's `index.ts` and follow a strict template
-  (defined in `automation-designer/AGENTS.md`)
+  (defined in `integrations/automation-designer/AGENTS.md`)
 - `desc.txt` files live alongside each `help.txt`; one line per invocation variant in format
-  `<full invocation>  :->  <what it does>`. Collected at build time into `belz --help-full`.
+  `<full invocation>  :->  <what it does>`. Embedded via the registry into `belz --help-full`.
   Update `desc.txt` whenever you add, remove, or change flags on a command.
-- Registry files in `cli/commands/registry-*.ts` are auto-generated — run `bun run generate`
-  from `cli/` after adding/removing commands (this also rebuilds `HELP_FULL_TEXT`)
+- Adding/removing a command = adding/removing its folder **and** its entry in that module's
+  `registry.ts` (keep it sorted). `apps/cli/tests/registry.test.ts` fails if they disagree.
 
 ---
 
 ## Where to Start
 
-- Working on an AD command? Read `automation-designer/AGENTS.md`
-- Working on a PD command? Read `page-designer/AGENTS.md`
-- Working on the CLI entry points, build, or registries? Read `cli/AGENTS.md`
-- Working on migrations? Read `migrations/AGENTS.md`
-- Working on the browser extension? Read `extension/AGENTS.md`
+- Working on an AD command? Read `integrations/automation-designer/AGENTS.md`
+- Working on a PD command? Read `integrations/page-designer/AGENTS.md`
+- Working on the CLI entry point, build, or top-level commands? Read `apps/cli/AGENTS.md`
+- Working on migrations? Read `integrations/migrations/AGENTS.md` (Jenkins client: `integrations/jenkins/AGENTS.md`)
+- Working on the browser extension? Read `apps/extension/AGENTS.md`
 - Working on `@belzabar/core`? Read `packages/core/AGENTS.md`

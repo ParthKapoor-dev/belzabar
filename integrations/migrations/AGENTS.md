@@ -1,7 +1,8 @@
 # Migrations (Jenkins-backed) — Maintainer Agent
 
-This module drives `belz migrate ...` against the team's Jenkins server
-(`expertly.db-migration` job).
+This module (`@belzabar/migrations`) drives `belz migrate ...` against the team's Jenkins
+server (`expertly.db-migration` job). The Jenkins REST client itself lives in
+`integrations/jenkins` (`@belzabar/jenkins`); `lib/index.ts` re-exports it.
 
 ## Layout
 
@@ -12,13 +13,9 @@ migrations/
 │   ├── run/                 # Trigger build, follow console, parse report
 │   ├── status/              # Check a build's status by number
 │   └── logs/                # Dump (ANSI-stripped) console of a past build
-└── lib/                     # Source-only library (no package.json)
-    ├── jenkins/             # HTTP client wrapping the Jenkins REST API
-    │   ├── auth.ts          # Basic auth from Config.getJenkins()
-    │   ├── crumb.ts         # CSRF crumb fetch + caching
-    │   ├── client.ts        # triggerBuild, resolveQueueItem, getBuild, getConsoleChunk
-    │   └── stream.ts        # Progressive console tail until build completes
-    ├── args.ts              # CLI arg parsing for run/profiles/status/logs; `run` whitelists
+├── registry.ts              # Static, sorted command registry (@belzabar/migrations/registry)
+└── lib/
+    ├── args.ts              # `migrate run` arg parsing; whitelists
     │                        #   flags (MIGRATE_UNKNOWN_FLAG) and checks --source/--target-env
     │                        #   against the profile (PROFILE_SEGMENT_TO_ENV / envPairFromProfile)
     ├── resolve-targets.ts   # Pre-flight id resolution on the profile's source env
@@ -28,8 +25,8 @@ migrations/
     ├── report.ts            # Summarize methodComparisonResult
     ├── artifacts.ts         # Write summary.json + summary.console.log
     ├── types.ts             # All public types
-    └── index.ts             # Barrel
-tests/unit/                  # bun test (run from cli/: bun test ../integrations/migrations/tests)
+    └── index.ts             # Barrel (also re-exports @belzabar/jenkins)
+tests/unit/                  # bun test integrations/migrations/tests
 ```
 
 ## Tests and Fixtures
@@ -72,5 +69,4 @@ Or env vars: `BELZ_JENKINS_URL`, `BELZ_JENKINS_USER`, `BELZ_JENKINS_PASSWORD`,
 1. Add `migrations/commands/<cmd>/index.ts` exporting a default `CommandModule`.
 2. Add `help.txt` (full help) and `desc.txt` (one-line description for
    `belz --help-full`).
-3. Run `cd cli && bun run generate` to refresh `registry-migrate.ts` +
-   `MigrateHelpMap` so the compiled binary sees it.
+3. Add it to `registry.ts` (sorted) so the CLI and the compiled binary see it.

@@ -1,6 +1,6 @@
 # Belzabar
 
-Developer toolset for NSM platform engineers. Ships the **`belz` CLI**, and a **browser extension**.
+Developer toolset for NSM platform engineers. Ships the **`belz` CLI** and a **browser extension**.
 
 ---
 
@@ -97,15 +97,15 @@ Run `belz --help-full` for a one-screen tour of every command with its one-line 
 ## Browser extension
 
 ```bash
-cd extension && bun run build
-# In Chrome: chrome://extensions → Developer Mode → Load unpacked → pick extension/
+cd apps/extension && bun run build
+# In Chrome: chrome://extensions → Developer Mode → Load unpacked → pick apps/extension/
 ```
 
 Active on `nsm-dev`, `nsm-qa`, `nsm-uat`, `nsm-stage`, and `staff-nss.verifi-nc.com` (NSM-prod).
 
 **Shortcuts**: `Ctrl+Shift+Enter` runs Run Test from anywhere on an AD method page; `Shift+L` copies a rich AD/PD link.
 
-See `extension/README.md` for the full feature list.
+See `apps/extension/README.md` for the full feature list.
 
 ---
 
@@ -137,18 +137,20 @@ Full walkthrough, env-var keys, and the network allowlist: [`cloud/README.md`](.
 
 ```
 belzabar/
-├── cli/                        the belz binary workspace
-│   ├── bin/                    entry points (cli.ts dev mode, cli-build.ts prod)
-│   ├── commands/               top-level commands + generated registries
-│   ├── packages/core/          @belzabar/core — shared CLI framework
-│   ├── scripts/                install.sh, reinstall.sh
-│   └── utils/                  registry generator
-├── integrations/               source modules wired into belz
-│   ├── automation-designer/    belz ad …
-│   ├── page-designer/          belz pd …
-│   ├── teamwork/               belz tw …
-│   └── migrations/             belz migrate …  (Jenkins flow)
-├── extension/                  browser extension (MV3, JavaScript)
+├── apps/
+│   ├── cli/                    the belz binary (bin/cli.ts entry, top-level commands, install scripts)
+│   └── extension/              browser extension (MV3, JavaScript)
+├── packages/
+│   ├── core/                   @belzabar/core — shared CLI framework
+│   └── design/                 @belzabar/design — design tokens
+├── integrations/               workspace packages wired into belz
+│   ├── automation-designer/    @belzabar/ad        belz ad …
+│   ├── page-designer/          @belzabar/pd        belz pd …
+│   ├── teamwork/               @belzabar/teamwork  belz tw …
+│   ├── migrations/             @belzabar/migrations belz migrate …  (Jenkins flow)
+│   ├── release/                @belzabar/release   belz release …
+│   └── jenkins/                @belzabar/jenkins   Jenkins REST client
+├── scripts/fixtures/           read-only wire-fixture capture + sanitizer
 ├── cloud/                      Claude Code cloud-session bootstrap (setup/publish + sandbox files)
 └── install.sh                  the public one-line installer
 ```
@@ -166,11 +168,8 @@ integrations/<module>/commands/<cmd>/
 └── desc.txt     # one-line description for `belz --help-full`
 ```
 
-Then regenerate the registries:
-
-```bash
-cd cli && bun run generate
-```
+Then add it to that module's `registry.ts` (sorted; it imports the module and its
+help/desc text). `apps/cli/tests/registry.test.ts` fails if a folder is missing from the registry.
 
 Use the existing commands as templates — see e.g. `integrations/page-designer/commands/show/index.ts`.
 
@@ -180,18 +179,15 @@ Use the existing commands as templates — see e.g. `integrations/page-designer/
 
 ```bash
 # Run CLI without building
-bun cli/bin/cli.ts ad show <uuid>
+bun apps/cli/bin/cli.ts ad show <uuid>
 
-# Regenerate command registries after adding/removing commands
-cd cli && bun run generate
+# Build the binary (apps/cli/belz)
+bun run belz:build
 
-# Build the binary
-cd cli && bun run build
-
-# Tests
-bun test integrations/automation-designer/tests/unit/
-bun test integrations/page-designer/tests/unit/
-bun test integrations/migrations/tests/unit/
+# Tests / typecheck (all workspaces)
+bun run test
+bun run typecheck
+bun test integrations/automation-designer/tests/unit/   # one module
 ```
 
 ---

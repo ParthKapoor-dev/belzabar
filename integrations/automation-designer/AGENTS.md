@@ -7,7 +7,7 @@ This directory contains the **AD command modules and lib** for the Automation De
 1. Namespaced `belz ad` commands for Automation Designer method workflows
 2. Shared lib for API calls, parsing, hydration, payload building, caching
 
-The unified `belz` binary is built from `cli/` (repo root). This directory is a source module — it has no binary or standalone entry point.
+This directory is the `@belzabar/ad` workspace package. The unified `belz` binary is built from `apps/cli/`, which imports this package's `registry.ts`; there is no standalone entry point.
 
 ## Command Routing
 
@@ -34,7 +34,7 @@ rationale.
 ## Tech
 
 1. Runtime: Bun + TypeScript
-2. Commands discovered by: `cli/utils/generate-registry.ts` from `../automation-designer/commands/`
+2. Commands registered in: `registry.ts` (static, sorted; exported as `@belzabar/ad/registry`)
 3. Shared runner/framework: `@belzabar/core`
 
 ## Directory Map
@@ -98,11 +98,8 @@ rationale.
 ### Adding new commands
 
 After creating a `commands/<name>/index.ts` with `help.txt` and `desc.txt`,
-regenerate the registries from the repo root:
-
-```
-cd cli && bun run generate
-```
+add the command to `registry.ts` (keep it sorted). `apps/cli/tests/registry.test.ts`
+fails if a folder is missing from the registry.
 
 ## Commands
 
@@ -195,14 +192,11 @@ Optional credential config file. Loaded at startup; **config file wins** over en
 All fields per-env are optional — missing ones fall back to env vars (`NSM_DEV_USER`, etc.).
 `password` is base64-encoded (decoded via `atob()` in `Config.password`).
 
-## Registry Generation
+## Command Registry
 
-Run `bun run generate` from `cli/` to regenerate all registries (not from this directory):
-
-- `cli/commands/registry-ad.ts` — exports `ADCommandRegistry` (imports from `../../automation-designer/commands/`)
-- `cli/commands/registry-pd.ts` — exports `PDCommandRegistry` (imports from `../../page-designer/commands/`)
-- `cli/commands/registry-top.ts` — exports `TopLevelCommandRegistry` (envs + migrate)
-- `cli/commands/registry-help.ts` — embedded help text maps for compiled binary
+`registry.ts` maps each command name to `{ module, help, desc }` (help/desc imported as text,
+so the compiled binary embeds them). `apps/cli/bin/options.ts` wires it into `belz ad`.
+`lib/trace.ts` (`traceMethod`) is also used by `@belzabar/release`.
 
 ## Important Files for Agents
 
@@ -217,8 +211,7 @@ Run `bun run generate` from `cli/` to regenerate all registries (not from this d
 9. SQL command entrypoint: `commands/sql/index.ts`
 10. SQL helper modules: `lib/sql/`
 11. SQL TUI session: `lib/sql/tui/session.ts`
-12. Migration command entrypoint: `cli/commands/migrate/index.ts`
-13. Migration helper modules: `migrations/lib/`
+12. Method tracing across envs: `lib/trace.ts` (used by `ad trace` and `release matrix`)
 
 ## Known Current Gaps
 
@@ -283,7 +276,7 @@ Rules:
 
 ## Safe Change Checklist
 
-1. If adding/removing AD commands, run `bun run generate` from `cli/` and commit all registry files.
+1. If adding/removing AD commands, update `registry.ts` (sorted) in the same commit.
 2. Keep `help.txt` and command docs aligned with actual flags.
 3. When adding a command, include both a `help.txt` and a `desc.txt` following the standards above.
 4. When changing flags or subcommands, update `desc.txt` to match — this keeps `belz --help-full` accurate.
@@ -294,5 +287,4 @@ Rules:
 
 You are the Maintainer Agent. When you make a meaningful change to this module — new or removed
 commands, changed API behavior, new lib files, output schema changes, or structural
-reorganization — update this `AGENTS.md` in the same commit. Run `bun run generate` from `cli/`
-and commit all updated registry files alongside your changes.
+reorganization — update this `AGENTS.md` and `registry.ts` in the same commit.

@@ -16,10 +16,11 @@ belz release freeze <release-name>  → release/commands/freeze/
 
 ## How it works
 
-- **matrix** links every ticket to its items by calling the teamwork linker
-  (`integrations/teamwork/commands/items` — `belz tw items`), then traces every
-  AD item across environments by calling the AD tracer
-  (`integrations/automation-designer/commands/trace` — `belz ad trace`).
+- **matrix** links every ticket to its items with the teamwork linker
+  (`extractTicketItems` from `@belzabar/teamwork/lib/items`, the logic behind
+  `belz tw items`), then traces every AD item across environments with the AD
+  tracer (`traceMethod` from `@belzabar/ad/lib/trace`, behind `belz ad trace`).
+  It calls these lib functions, never another command's `execute()`.
   It detects COLLISIONS (an AD item shared by an included and an excluded
   ticket) and, per collision, a LEAK status (has the excluded change reached
   stage). Result is persisted to the ledger.
@@ -36,6 +37,8 @@ release/
 │   └── freeze/      belz release freeze — prod snapshot from stage
 ├── lib/
 │   └── ledger.ts    JSON store under ~/.belz/promotion/
+├── registry.ts      Static, sorted command registry (@belzabar/release/registry)
+├── package.json     @belzabar/release — depends on @belzabar/core, /ad, /teamwork
 └── AGENTS.md        This file
 ```
 
@@ -51,7 +54,7 @@ release/
    `execute`, `presentHuman`).
 2. Commands never call `process.exit()` or print ad-hoc output.
 3. `--llm` mode returns raw JSON envelopes; human mode uses `presentHuman()`.
-4. `matrix` traces items SEQUENTIALLY — `ad trace` mutates the global active
+4. `matrix` traces items SEQUENTIALLY — `traceMethod` mutates the global active
    environment, so concurrent traces would race. Do not parallelize them.
 
 ## Known limitations
@@ -65,4 +68,4 @@ release/
 ## Adding a New Command
 
 1. Create `release/commands/<cmd>/` with `index.ts`, `help.txt`, `desc.txt`.
-2. Run `bun run generate` from `cli/` to regenerate registries.
+2. Add it to `registry.ts` (sorted).
