@@ -1,14 +1,20 @@
 Usage: belz ad state <uuid> [flags]
 
-Print draft/published linkage, versions, and publish-staleness for a method.
+Print draft/published linkage, versions, and whether the draft has unpublished changes.
 
 Flags:
   --v2     Parse the method via the V2 API (falls back to V1 if unsupported)
-  --llm    Emit a JSON envelope with {draftUuid, publishedUuid, state, versions}
+  --llm    Emit a JSON envelope with {draftUuid, publishedUuid, state, versions,
+           fingerprints, inSync}
 
 Notes:
   - Wraps lib/draft-guard.ts:resolveDraftTarget() and is the safe read-only
     way to inspect draft/published state before calling any write command.
+  - inSync compares the LOGIC fingerprints (lib/fingerprint.ts) of the draft
+    and the published body: true = identical, false = the draft has
+    unpublished changes, null = never published. The draft and published
+    version counters are independent, so versions.draft > versions.published
+    does not mean out of sync.
   - Exit code is 0 even when the method is PUBLISHED without a linked draft;
     the envelope `ok` field surfaces the distinction.
 

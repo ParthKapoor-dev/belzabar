@@ -1,7 +1,9 @@
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { fingerprintMethod } from "../../lib/fingerprint";
+import type { HydratedMethod } from "../../lib/types/common";
 
 interface StateArgs {
   uuid: string;
@@ -16,6 +18,19 @@ interface StateData {
   publishedUuid: string | null;
   draftVersion: number | null;
   publishedVersion: number | null;
+  /**
+   * Version counters of each side. Draft and published counters are
+   * independent (a draft save bumps only the draft), so never compare them
+   * to decide sync — see `inSync`.
+   */
+  versions: { draft: number | null; published: number | null };
+  /** 12-hex logic fingerprints (lib/fingerprint.ts) of each side. */
+  fingerprints: { draft: string | null; published: string | null };
+  /**
+   * true: draft logic == published logic; false: the draft has unpublished
+   * changes; null: no published side (never published) or it could not be read.
+   */
+  inSync: boolean | null;
   switchedFromPublished: boolean;
   message?: string;
 }
@@ -34,47 +49,60 @@ const command: CommandModule<StateArgs, StateData> = {
     return { uuid: positionals.uuid, apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, apiVersion }) {
-    // First fetch to see state immediately — needed for the UNRESOLVED case.
-    const initial = await adApi.fetchMethod(uuid, apiVersion);
-    const initialState = initial.state;
-
-    // Try to resolve the full draft/published pair via the guard.
+    // One fetch per side (AD-39): the guard hands back the input method too.
     const guard = await resolveDraftTarget(uuid, apiVersion);
+    const initial = guard.initial;
+    const versionOf = (m: HydratedMethod | null) => (m && typeof m.version === "number" ? m.version : null);
 
     if (!guard.ok) {
+      const publishedVersion = initial.state === "PUBLISHED" ? versionOf(initial) : null;
       return ok<StateData>({
         input: { uuid },
         ok: false,
-        state: initialState,
+        state: initial.state,
         draftUuid: null,
         publishedUuid: guard.publishedUuid,
         draftVersion: null,
-        publishedVersion: typeof initial.version === "number" ? initial.version : null,
+        publishedVersion,
+        versions: { draft: null, published: publishedVersion },
+        fingerprints: { draft: null, published: initial.state === "PUBLISHED" ? fingerprintMethod(initial) : null },
+        inSync: null,
         switchedFromPublished: false,
         message: guard.message,
       });
     }
 
     const draft = guard.draft;
-    let publishedVersion: number | null = null;
-    if (guard.publishedUuid && guard.publishedUuid !== draft.uuid) {
+    let published: HydratedMethod | null = null;
+    let message: string | undefined;
+    if (guard.switchedFromPublished) {
+      published = initial; // already fetched
+    } else if (guard.publishedUuid && guard.publishedUuid !== draft.uuid) {
       try {
-        const pub = await adApi.fetchMethod(guard.publishedUuid, apiVersion);
-        publishedVersion = typeof pub.version === "number" ? pub.version : null;
-      } catch {
-        publishedVersion = null;
+        published = await adApi.fetchMethod(guard.publishedUuid, apiVersion);
+      } catch (e) {
+        message = `Could not read the published side ${guard.publishedUuid}: ${(e as Error).message}`;
       }
     }
+
+    // AD-18 / F35: sync is a CONTENT question. Compare logic fingerprints.
+    const draftFp = fingerprintMethod(draft);
+    const publishedFp = published ? fingerprintMethod(published) : null;
+    const inSync = publishedFp === null ? null : draftFp === publishedFp;
 
     return ok<StateData>({
       input: { uuid },
       ok: true,
-      state: initialState,
+      state: initial.state,
       draftUuid: draft.uuid,
       publishedUuid: guard.publishedUuid,
-      draftVersion: typeof draft.version === "number" ? draft.version : null,
-      publishedVersion,
+      draftVersion: versionOf(draft),
+      publishedVersion: versionOf(published),
+      versions: { draft: versionOf(draft), published: versionOf(published) },
+      fingerprints: { draft: draftFp, published: publishedFp },
+      inSync,
       switchedFromPublished: guard.switchedFromPublished,
+      ...(message ? { message } : {}),
     });
   },
   presentHuman(envelope, ui) {
@@ -93,12 +121,14 @@ const command: CommandModule<StateArgs, StateData> = {
       ],
     );
     if (data.message) ui.warn(data.message);
-    if (data.draftVersion != null && data.publishedVersion != null) {
-      if (data.draftVersion > data.publishedVersion) {
-        ui.warn(`Draft is ahead of published (v${data.draftVersion} > v${data.publishedVersion}). Re-publish to sync.`);
-      } else if (data.draftVersion === data.publishedVersion) {
-        ui.success("Draft and published versions are in sync.");
-      }
+    if (data.inSync === true) {
+      ui.success("Draft and published logic are identical (fingerprint match).");
+    } else if (data.inSync === false) {
+      ui.warn(
+        `Draft logic differs from published (fingerprint ${data.fingerprints.draft} vs ${data.fingerprints.published}). Publish to sync.`,
+      );
+    } else if (data.ok && !data.publishedUuid) {
+      ui.text("Never published.");
     }
   },
 };

@@ -16,7 +16,13 @@ import type { ApiVersion } from "./api-version";
 import { DEFAULT_VERSION } from "./api-version";
 import type { HydratedMethod, MethodState } from "./types/common";
 
-export type DraftGuardResult =
+/**
+ * Every result also carries `initial`: the method exactly as fetched for the
+ * input uuid, so callers (e.g. `ad state`) need not fetch it again (AD-39).
+ */
+export type DraftGuardResult = DraftGuardOutcome & { initial: HydratedMethod };
+
+type DraftGuardOutcome =
   | {
       ok: true;
       draft: HydratedMethod;
@@ -89,6 +95,7 @@ export async function resolveDraftTarget(
   // neither `automationState` nor `state`. Never guess DRAFT.
   if (state !== "DRAFT" && state !== "PUBLISHED") {
     return {
+      initial,
       ok: false,
       reason: "STATE_UNKNOWN",
       resolvedState: state,
@@ -102,6 +109,7 @@ export async function resolveDraftTarget(
 
   if (state === "DRAFT") {
     return {
+      initial,
       ok: true,
       draft: initial,
       publishedUuid: referenceId,
@@ -112,6 +120,7 @@ export async function resolveDraftTarget(
   // state === "PUBLISHED"
   if (!referenceId) {
     return {
+      initial,
       ok: false,
       reason: "PUBLISHED_NO_DRAFT",
       publishedUuid: initial.uuid,
@@ -124,6 +133,7 @@ export async function resolveDraftTarget(
   const linked = await deps.fetchMethod(referenceId);
   if (linked.state !== "DRAFT") {
     return {
+      initial,
       ok: false,
       reason: "REFERENCE_NOT_DRAFT",
       resolvedState: linked.state,
@@ -135,6 +145,7 @@ export async function resolveDraftTarget(
   }
 
   return {
+    initial,
     ok: true,
     draft: linked,
     publishedUuid: initial.uuid,
