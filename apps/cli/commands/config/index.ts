@@ -7,6 +7,7 @@ import {
   loadSession,
   login,
   isTokenExpired,
+  jwtExpiry,
   encodeSecret,
   keepSecret,
   term,
@@ -40,7 +41,11 @@ interface ConfigGetData {
   url: string;
   user: string;
   passwordSource: "file" | "env" | "none";
-  token: string | null;
+  /** Never the token itself — only `config token` (explicit) prints it. */
+  tokenPresent: boolean;
+  /** ISO time the cached JWT expires, when it is a JWT with `exp`. */
+  tokenExpiresAt: string | null;
+  tokenExpired: boolean;
 }
 
 interface ConfigTokenData {
@@ -267,6 +272,12 @@ async function runEditTui(): Promise<ConfigEditData> {
   return { action: "edit", saved: true };
 }
 
+function tokenExpiresAt(token: string | undefined): string | null {
+  if (!token) return null;
+  const exp = jwtExpiry(token);
+  return exp === null ? null : new Date(exp * 1000).toISOString();
+}
+
 const command: CommandModule<ConfigArgs, ConfigData> = {
   schema: "belz.config",
 
@@ -290,7 +301,9 @@ const command: CommandModule<ConfigArgs, ConfigData> = {
         url: env.baseUrl,
         user: env.credentials.loginId || "(not set)",
         passwordSource,
-        token: session?.token ?? null,
+        tokenPresent: !!session?.token,
+        tokenExpiresAt: tokenExpiresAt(session?.token),
+        tokenExpired: session?.token ? isTokenExpired(session.token, 0) : false,
       });
     }
 
@@ -328,9 +341,11 @@ const command: CommandModule<ConfigArgs, ConfigData> = {
         d.passwordSource === "file"  ? "configured (config file)" :
         d.passwordSource === "env"   ? "configured (env var)" :
                                        "not set";
-      const tokenLabel = d.token
-        ? d.token.length > 60 ? `${d.token.slice(0, 60)}...` : d.token
-        : "(no cached session)";
+      const tokenLabel = !d.tokenPresent
+        ? "(no cached session)"
+        : d.tokenExpired
+        ? `cached (expired${d.tokenExpiresAt ? ` ${d.tokenExpiresAt}` : ""}) — 'belz config token' re-logs in`
+        : `cached${d.tokenExpiresAt ? ` (expires ${d.tokenExpiresAt})` : ""} — print it with 'belz config token'`;
 
       ui.text(`Config: ${d.env}`);
       ui.table(

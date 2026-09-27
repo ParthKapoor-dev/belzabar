@@ -3,7 +3,7 @@ Usage: belz config <subcommand> [flags]
 Manage belz credentials and environment configuration.
 
 Subcommands:
-  get             Show URL, user, password status, and cached token for the active env.
+  get             Show URL, user, password status, and whether a session token is cached (never the token).
   token           Print the raw Bearer token to stdout (for scripting/clipboard).
                   Re-logs in when there is no session or the token has expired.
     --refresh     Force a fresh login before printing the token.
