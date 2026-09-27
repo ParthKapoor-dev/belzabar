@@ -11,21 +11,22 @@ import type {
   UnknownStep,
   MethodOutput,
   StepInput,
+  ConditionRow,
 } from "../../types/common";
 import { decodeBase64Strict } from "../../base64";
+import { findMappingByInputId, walkMappingTree } from "./shared";
 import {
-  SHARED_STEP_CONSTANTS,
-  findMappingByInputId,
-  isRedisApiIdV1,
-  sqlOperationForApiIdV1,
-  walkMappingTree,
-} from "./shared";
+  classifyService,
+  resolveStepIdentity,
+  type ParseOptions,
+  type ServiceIdentity,
+} from "./classify";
 
 export interface Warn {
   (msg: string): void;
 }
 
-export function parseV1Step(raw: V1ServiceStep, orderIndex: number, warn: Warn): ParsedStep {
+export function parseV1Step(raw: V1ServiceStep, orderIndex: number, warn: Warn, opts?: ParseOptions): ParsedStep {
   const base = buildBase(raw, orderIndex);
   const activeTabId = raw.activeTab?.id;
 
@@ -34,20 +35,34 @@ export function parseV1Step(raw: V1ServiceStep, orderIndex: number, warn: Warn):
   }
 
   if (activeTabId === "existingService" || raw.automationApiId != null) {
-    const apiId = typeof raw.automationApiId === "number" ? raw.automationApiId : null;
-
-    if (apiId === SHARED_STEP_CONSTANTS.ECHO_API_ID_V1) {
-      return buildSpelEcho(raw, base);
+    // AD-02: classify by the service the step calls, not by env-local numeric ids.
+    const identity = resolveStepIdentity(
+      {
+        automationId: raw.automationId,
+        automationApiId: raw.automationApiId,
+        automationApiUuid: typeof raw.automationApiUuid === "string" ? raw.automationApiUuid : undefined,
+        categoryName: typeof raw.categoryName === "string" ? raw.categoryName : undefined,
+      },
+      opts,
+    );
+    if (identity) {
+      base.serviceName = identity.system;
+      base.methodName = identity.api;
+      if (identity.apiUuid) base.automationApiUuid = identity.apiUuid;
     }
-    if (apiId != null) {
-      const sqlOp = sqlOperationForApiIdV1(apiId);
-      if (sqlOp) return buildSql(raw, base, sqlOp, warn);
-
-      const redisKind = isRedisApiIdV1(apiId);
-      if (redisKind) return buildRedis(raw, base, redisKind);
+    const family = classifyService(identity);
+    switch (family.kind) {
+      case "SPEL_ECHO":
+        return buildSpelEcho(raw, base);
+      case "SQL":
+        return buildSql(raw, base, family.operation, identity);
+      case "REDIS_GET":
+      case "REDIS_SET":
+      case "REDIS_REMOVE":
+        return buildRedis(raw, base, family.kind, identity);
+      default:
+        return buildExistingService(raw, base);
     }
-
-    return buildExistingService(raw, base);
   }
 
   return buildUnknown(raw, base, "step has no activeTab.id and no automationApiId");
@@ -60,6 +75,9 @@ interface BaseFields {
   description?: string;
   automationId?: string;
   automationApiId?: number;
+  automationApiUuid?: string;
+  serviceName?: string;
+  methodName?: string;
   runAsync?: boolean;
   streamCapable?: boolean;
   repeatStepExecution?: boolean;
@@ -68,6 +86,7 @@ interface BaseFields {
   conditionMode?: "advance" | "basic";
   conditionExpression?: string;
   conditionConfiguration?: unknown;
+  conditionRows?: ConditionRow[];
   forceExitFromFailure?: boolean;
   forceExitErrorMessage?: string;
   outputs: MethodOutput[];
@@ -89,6 +108,7 @@ function buildBase(raw: V1ServiceStep, orderIndex: number): BaseFields {
     conditionMode: raw.conditionMode,
     conditionExpression: raw.conditionExpression,
     conditionConfiguration: raw.conditionConfiguration,
+    conditionRows: parseConditionRows(raw.condition),
     forceExitFromFailure: raw.forceExitFromFailure,
     forceExitErrorMessage: raw.forceExitErrorMessage,
     outputs: (raw.outputs ?? []).map(mapOutput),
@@ -170,8 +190,8 @@ function buildSpelEcho(raw: V1ServiceStep, base: BaseFields): SpelEchoStep {
   };
 }
 
-function buildSql(raw: V1ServiceStep, base: BaseFields, operation: string, _warn: Warn): SqlStep {
-  const loc = locateSqlMapping(raw.mappings);
+function buildSql(raw: V1ServiceStep, base: BaseFields, operation: string, identity: ServiceIdentity | null): SqlStep {
+  const loc = locateSqlMapping(raw.mappings, { inputUuids: identity?.sqlInputUuids });
   let resultShape: string | undefined;
   for (const m of walkMappingTree(raw.mappings)) {
     if (m.uiRepresentation === "DROPDOWN" && typeof m.value === "string") {
@@ -186,6 +206,7 @@ function buildSql(raw: V1ServiceStep, base: BaseFields, operation: string, _warn
     operation,
     sql: loc?.sql ?? "",
     sqlEncoding: loc?.encoding ?? "NONE",
+    sqlInputUuid: trimUuid(loc?.mapping.automationUserInputUuid),
     resultShape,
     automationAuthId: typeof raw.automationAuthId === "number" ? raw.automationAuthId : undefined,
     testAccountId: typeof raw.testAccountId === "number" ? raw.testAccountId : undefined,
@@ -208,8 +229,28 @@ export interface SqlMappingLocation {
  *   2. Otherwise, if there is exactly one non-empty CUSTOM leaf, that is the
  *      plaintext query (legacy chains, `encodingType` NONE/absent).
  *   3. Otherwise `null` — the slot is ambiguous and writes must be refused.
+ *
+ * `hint.inputUuids` (step 0) takes precedence when one of them is present.
  */
-export function locateSqlMapping(mappings: V1Mapping[] | undefined): SqlMappingLocation | null {
+export function locateSqlMapping(
+  mappings: V1Mapping[] | undefined,
+  hint: { inputUuids?: readonly string[] } = {},
+): SqlMappingLocation | null {
+  // 0. The service's own query input (definition `produces: queryString`), or
+  //    the slot the parser picked (SqlStep.sqlInputUuid) — unambiguous on sems,
+  //    where the plain-text query sits beside other CUSTOM leaves.
+  const wanted = new Set((hint.inputUuids ?? []).map((u) => u.trim().toLowerCase()).filter(Boolean));
+  if (wanted.size > 0) {
+    for (const m of walkMappingTree(mappings)) {
+      const u = trimUuid(m.automationUserInputUuid)?.toLowerCase();
+      if (u && wanted.has(u) && typeof m.value === "string") {
+        const decoded = m.encodingType === "BASE_64" && m.value.length > 0 ? decodeBase64Strict(m.value) : null;
+        return decoded === null
+          ? { mapping: m, sql: m.value, encoding: "NONE" }
+          : { mapping: m, sql: decoded, encoding: "BASE_64" };
+      }
+    }
+  }
   for (const m of walkMappingTree(mappings)) {
     if (m.encodingType === "BASE_64" && typeof m.value === "string") {
       const decoded = m.value.length > 0 ? decodeBase64Strict(m.value) : null;
@@ -229,7 +270,12 @@ export function locateSqlMapping(mappings: V1Mapping[] | undefined): SqlMappingL
   return null;
 }
 
-function buildRedis(raw: V1ServiceStep, base: BaseFields, kind: "REDIS_GET" | "REDIS_SET" | "REDIS_REMOVE"): RedisStep {
+function buildRedis(
+  raw: V1ServiceStep,
+  base: BaseFields,
+  kind: "REDIS_GET" | "REDIS_SET" | "REDIS_REMOVE",
+  identity: ServiceIdentity | null,
+): RedisStep {
   // Sub-input IDs per ad-rest-api-step-types.md §Cache.Redis. GET and REMOVE
   // share the parent OBJECT structure; SET has additional value/TTL/overwrite
   // sub-mappings.
@@ -243,9 +289,31 @@ function buildRedis(raw: V1ServiceStep, base: BaseFields, kind: "REDIS_GET" | "R
   const setTtlChildId = 41961;
   const setOverwriteChildId = 41962;
 
+  // The numeric sub-input ids above are nsm's; on other envs fall back to the
+  // service's own input labels (from the definition) when the ids miss.
+  const labels = identity?.inputLabels ?? {};
+  const byLabel = new Map<string, string>();
+  for (const m of walkMappingTree(raw.mappings)) {
+    const label = labels[trimUuid(m.automationUserInputUuid) ?? ""] ?? labels[String(m.automationUserInputId ?? "")];
+    if (label && typeof m.value === "string") byLabel.set(label.trim().toLowerCase(), m.value);
+  }
+  const LABEL_FOR: Record<number, string[]> = {
+    [getKeyChildId]: ["key"],
+    [getKeyId + 2]: ["store", "cache store"],
+    [setKeyChildId]: ["key"],
+    [setValueChildId]: ["value"],
+    [setStoreChildId]: ["store", "cache store"],
+    [setTtlChildId]: ["ttl", "expiry", "ttl (seconds)"],
+    [setOverwriteChildId]: ["overwrite"],
+  };
   const findValue = (id: number): string | undefined => {
     const m = findMappingByInputId(raw.mappings, id);
-    return typeof m?.value === "string" ? m.value : undefined;
+    if (typeof m?.value === "string") return m.value;
+    for (const l of LABEL_FOR[id] ?? []) {
+      const v = byLabel.get(l);
+      if (v !== undefined) return v;
+    }
+    return undefined;
   };
 
   if (kind === "REDIS_GET" || kind === "REDIS_REMOVE") {
@@ -268,19 +336,44 @@ function buildRedis(raw: V1ServiceStep, base: BaseFields, kind: "REDIS_GET" | "R
   };
 }
 
-function buildExistingService(raw: V1ServiceStep, base: BaseFields): ExistingServiceStep {
+function buildExistingService(_raw: V1ServiceStep, base: BaseFields): ExistingServiceStep {
   return {
     ...base,
     kind: "EXISTING_SERVICE",
   };
 }
 
-function buildUnknown(raw: V1ServiceStep, base: BaseFields, reason: string): UnknownStep {
+function buildUnknown(_raw: V1ServiceStep, base: BaseFields, reason: string): UnknownStep {
   return {
     ...base,
     kind: "UNKNOWN",
     reason,
   };
+}
+
+function trimUuid(v: unknown): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const t = v.trim();
+  return t.length > 0 ? t : undefined;
+}
+
+/** V1 basic-mode condition rows → `{field, operator, value}` (AD-40). */
+function parseConditionRows(rows: unknown[] | undefined): ConditionRow[] | undefined {
+  if (!Array.isArray(rows) || rows.length === 0) return undefined;
+  const out: ConditionRow[] = [];
+  for (const r of rows) {
+    if (!r || typeof r !== "object") continue;
+    const row = r as Record<string, any>;
+    const field = row.item?.nestedLabel ?? row.item?.fieldCode;
+    const operator = row.operator?.value ?? row.operator?.name;
+    out.push({
+      field: typeof field === "string" ? field : "",
+      operator: typeof operator === "string" ? operator : "",
+      value: row.value == null ? null : String(row.value),
+      ...(typeof row.groupOp?.value === "string" ? { groupOp: row.groupOp.value } : {}),
+    });
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 // Re-export for fixture-building convenience in tests.

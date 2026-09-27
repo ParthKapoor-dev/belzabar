@@ -100,7 +100,7 @@ describe("serializeToV1SavePayload — custom-code multi-output invariant", () =
         ],
       }),
     };
-    const method = parseV1Method(rawResponse);
+    const method = parseV1Method(rawResponse, { env: "nsm-dev" });
 
     // Unedited step: pre-existing violation is only a warning (AD-21).
     const warnings: string[] = [];
@@ -149,7 +149,7 @@ describe("serializeToV1SavePayload — custom-code multi-output invariant", () =
         ],
       }),
     };
-    const method = parseV1Method(rawResponse);
+    const method = parseV1Method(rawResponse, { env: "nsm-dev" });
     expect(() => serializeToV1SavePayload(method)).not.toThrow();
   });
 
@@ -183,7 +183,7 @@ describe("serializeToV1SavePayload — custom-code multi-output invariant", () =
         ],
       }),
     };
-    const method = parseV1Method(rawResponse);
+    const method = parseV1Method(rawResponse, { env: "nsm-dev" });
     expect(() => serializeToV1SavePayload(method)).not.toThrow();
   });
 });
@@ -216,7 +216,7 @@ describe("serializeToV1SavePayload — source rewrite", () => {
         ],
       }),
     };
-    const method = parseV1Method(rawResponse);
+    const method = parseV1Method(rawResponse, { env: "nsm-dev" });
     const step = method.parsedSteps[0] as CustomCodeStep;
     step.source = "console.log('edited');";
 
@@ -281,7 +281,7 @@ describe("serializeToV1SavePayload — SQL rewrite", () => {
       }),
     };
 
-    const method = parseV1Method(rawResponse);
+    const method = parseV1Method(rawResponse, { env: "nsm-dev" });
     expect(method.parsedSteps[0]!.kind).toBe("SQL");
     const sqlStep = method.parsedSteps[0] as SqlStep;
     expect(sqlStep.sql).toBe(originalSql);
@@ -346,7 +346,7 @@ describe("serializeToV1SavePayload — SQL rewrite", () => {
       }),
     };
 
-    const method = parseV1Method(rawResponse);
+    const method = parseV1Method(rawResponse, { env: "nsm-dev" });
     // Don't modify the SQL — just round-trip it
     const payload = serializeToV1SavePayload(method);
     const inner = JSON.parse(payload.jsonDefinition);
@@ -396,7 +396,7 @@ describe("serializeToV1SavePayload — SpEL rewrite", () => {
       }),
     };
 
-    const method = parseV1Method(rawResponse);
+    const method = parseV1Method(rawResponse, { env: "nsm-dev" });
     const echoStep = method.parsedSteps[0] as SpelEchoStep;
     expect(echoStep.expression).toBe("#{a + b}");
 

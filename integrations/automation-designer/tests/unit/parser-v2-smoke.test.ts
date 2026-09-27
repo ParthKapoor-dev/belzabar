@@ -50,7 +50,7 @@ describe("parseV2Method (real wire)", () => {
   test("discriminates step kinds via properties.type and serviceName", () => {
     const echo = parseV2Method(echoRaw);
     expect(echo.parsedSteps.map((s) => s.kind)).toEqual([
-      "EXISTING_SERVICE", "SPEL_ECHO", "EXISTING_SERVICE", "SPEL_ECHO", "SPEL_ECHO",
+      "EXISTING_SERVICE", "SPEL_ECHO", "SQL", "SPEL_ECHO", "SPEL_ECHO",
       "EXISTING_SERVICE", "EXISTING_SERVICE", "EXISTING_SERVICE",
     ]);
     const spel = echo.parsedSteps[1]!;
@@ -75,8 +75,8 @@ describe("parseV2Method (real wire)", () => {
     expect(parseMethod(echoRaw, "v2").sourceVersion).toBe("v2");
   });
 
-  // AD-35: parser reads metadata.uuid (absent on the wire) instead of top-level uuid.
-  test.todo("AD-35: uuid is read from the top-level wire field", () => {
+  // AD-35: the uuid is the top-level wire field (metadata has none).
+  test("AD-35: uuid is read from the top-level wire field", () => {
     const method = parseV2Method(echoRaw);
     expect(method.uuid).toBe("486041dfd02d9fd45a27b608ad2dce0c");
     expect(method.parseWarnings).toEqual([]);

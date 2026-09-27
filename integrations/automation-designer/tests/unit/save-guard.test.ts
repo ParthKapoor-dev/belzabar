@@ -46,7 +46,7 @@ function methodFrom(services: unknown[], extra: Record<string, unknown> = {}): H
     version: 3,
     category: { id: 1135, name: "Test-Parth" },
     jsonDefinition: JSON.stringify({ name: "m", methodDescription: "", inputs: [], services, ...extra }),
-  } as unknown as V1RawMethodResponse);
+  } as unknown as V1RawMethodResponse, { env: "nsm-dev" }); // hand-written steps use nsm apiIds (48 = SQL read)
 }
 
 const realFiles = readdirSync(`${FIX}/real-v1`).filter(f => f.endsWith(".v1.json")).sort();

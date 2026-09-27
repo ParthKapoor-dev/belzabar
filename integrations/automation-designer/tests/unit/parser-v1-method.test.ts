@@ -100,10 +100,11 @@ describe("parseV1Method (real wire)", () => {
     expect(method.name).toBe(raw.aliasName);
   });
 
-  // AD-13: parser reads lastUpdatedOn/lastUpdatedBy; the wire sends updatedOn/updatedBy.
-  test.todo("AD-13: updatedOn/updatedBy are read from the real wire fields", () => {
+  // AD-13: the wire sends updatedOn/updatedBy (numeric user id), not lastUpdatedOn/lastUpdatedBy.
+  test("AD-13: updatedOn/updatedBy are read from the real wire fields", () => {
     const method = parseV1Method(raw);
+    expect(typeof raw.updatedOn).toBe("number");
     expect(method.updatedOn).toBe(raw.updatedOn as number);
-    expect(method.updatedBy as unknown).toBe(raw.updatedBy);
+    expect(method.updatedBy).toBe(String(raw.updatedBy));
   });
 });

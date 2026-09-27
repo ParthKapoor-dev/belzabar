@@ -10,18 +10,20 @@ import type {
   ParsedStep,
 } from "../types/common";
 import { parseV2Step } from "./steps/v2";
-import { normaliseState } from "./v1";
+import { firstId, normaliseState } from "./v1";
+import type { ParseOptions } from "./steps/classify";
 
-export function parseV2Method(raw: V2MethodResponse): HydratedMethod {
+export function parseV2Method(raw: V2MethodResponse, opts?: ParseOptions): HydratedMethod {
   const warnings: string[] = [];
   const warn = (msg: string) => warnings.push(msg);
 
   const metadata = raw.metadata;
-  if (!metadata || typeof metadata.uuid !== "string") {
-    warn("V2 response is missing metadata.uuid — parse may be degraded");
-  }
+  // AD-35: the method uuid is top-level `uuid` on the real wire (metadata has none).
+  const uuid = firstString(raw.uuid, metadata?.uuid, metadata?.version?.uuid);
+  if (!uuid) warn("V2 response carries no uuid (top-level, metadata.uuid or metadata.version.uuid)");
 
-  const steps: ParsedStep[] = (raw.steps ?? []).map((s, idx) => parseV2Step(s, idx, warn));
+  // AD-35 / F8: 1-based like V1, so `--step N` targets the same step on both.
+  const steps: ParsedStep[] = (raw.steps ?? []).map((s, idx) => parseV2Step(s, idx + 1, warn, opts));
 
   const inputs: MethodField[] = (raw.inputs ?? []).map(mapField);
   const variables: MethodField[] = (raw.variables ?? []).map(mapField);
@@ -33,7 +35,7 @@ export function parseV2Method(raw: V2MethodResponse): HydratedMethod {
 
   return {
     sourceVersion: "v2",
-    uuid: metadata?.uuid ?? "",
+    uuid: uuid ?? "",
     referenceId: normaliseReferenceId(metadata?.referenceId),
     state: normaliseState(metadata?.state),
     version,
@@ -55,9 +57,10 @@ export function parseV2Method(raw: V2MethodResponse): HydratedMethod {
     securityFields: Array.isArray(raw.securityFields) ? raw.securityFields : [],
 
     fetchedAt: Date.now(),
-    createdOn: typeof metadata?.createdOn === "number" ? metadata.createdOn : undefined,
-    updatedOn: typeof metadata?.lastUpdatedOn === "number" ? metadata.lastUpdatedOn : undefined,
-    updatedBy: metadata?.lastUpdatedBy,
+    createdOn: firstNumber(metadata?.createdOn, metadata?.internal?.createdAt),
+    // The V2 GET carries no last-update stamp; kept for bodies that do.
+    updatedOn: firstNumber(metadata?.updatedOn, metadata?.lastUpdatedOn),
+    updatedBy: firstId(metadata?.updatedBy, metadata?.lastUpdatedBy),
 
     raw,
     parseWarnings: warnings,
@@ -97,6 +100,16 @@ function normaliseReferenceId(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function firstString(...values: unknown[]): string | undefined {
+  for (const v of values) if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  return undefined;
+}
+
+function firstNumber(...values: unknown[]): number | undefined {
+  for (const v of values) if (typeof v === "number" && Number.isFinite(v)) return v;
+  return undefined;
 }
 
 function parseVersion(v: unknown): number {

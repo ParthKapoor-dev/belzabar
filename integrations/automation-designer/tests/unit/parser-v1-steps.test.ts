@@ -10,7 +10,8 @@ async function loadStep(name: string): Promise<V1ServiceStep> {
 async function parse(name: string) {
   const raw = await loadStep(name);
   const warnings: string[] = [];
-  const step = parseV1Step(raw, raw.orderIndex, w => warnings.push(w));
+  // Hand-written fixtures carry nsm's documented apiIds (fast path keyed by env).
+  const step = parseV1Step(raw, raw.orderIndex, w => warnings.push(w), { env: "nsm-dev" });
   return { raw, step, warnings };
 }
 

@@ -67,8 +67,12 @@ export interface V2StepProperties {
 }
 
 export interface V2StepInput {
+  uuid?: string;
   key: string;
-  value: string | null;
+  name?: string;
+  type?: string;
+  displayWidgetSuggestion?: string;
+  value?: string | null;
   combineInput?: boolean;
   properties?: unknown[];
   reference?: string;
@@ -90,19 +94,25 @@ export interface V2Step {
 
 export interface V2Metadata {
   id?: string | number;
-  uuid: string;
+  /** Not on the real wire (AD-35) — the uuid is `V2MethodResponse.uuid`. */
+  uuid?: string;
   referenceId?: string | null;
   state: "DRAFT" | "PUBLISHED";
-  version?: { name: string; id?: unknown };
+  version?: { name: string; id?: unknown; uuid?: string };
   service?: { id: number; uuid: string; name: string };
   executionTimeLimit?: { timeoutInSecond: number };
   createdOn?: number;
+  updatedOn?: number;
+  updatedBy?: number | string;
   lastUpdatedOn?: number;
   lastUpdatedBy?: string;
+  internal?: { createdAt?: number; createdBy?: number; lastPublishedAt?: number | null; [extra: string]: unknown };
   [extra: string]: unknown;
 }
 
 export interface V2MethodResponse {
+  /** The method uuid (top-level on the real wire). */
+  uuid?: string;
   name?: string;
   summary?: string;
   description?: string;

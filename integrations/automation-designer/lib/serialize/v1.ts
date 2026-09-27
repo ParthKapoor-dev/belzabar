@@ -125,7 +125,8 @@ export function serializeToV1SavePayload(
 
       if (step.kind === "SQL") {
         const sqlStep = step as SqlStep;
-        const loc = locateSqlMapping(target.mappings);
+        // Same slot the parser read (AD-02: sems keeps the query beside other CUSTOM leaves).
+        const loc = locateSqlMapping(target.mappings, { inputUuids: sqlStep.sqlInputUuid ? [sqlStep.sqlInputUuid] : [] });
         const originalSql = loc?.sql ?? "";
         if (sqlStep.sql !== originalSql) {
           if (!loc) {

@@ -10,8 +10,14 @@ import type {
   ParsedStep,
 } from "../types/common";
 import { parseV1Step } from "./steps/v1";
+import type { ParseOptions } from "./steps/classify";
 
-export function parseV1Method(raw: V1RawMethodResponse): HydratedMethod {
+/**
+ * `opts.resolveService` / `opts.env` classify EXISTING_SERVICE steps by the
+ * service they call (AD-02). Without them (offline) only portable identities
+ * are used, and unresolved steps stay EXISTING_SERVICE.
+ */
+export function parseV1Method(raw: V1RawMethodResponse, opts?: ParseOptions): HydratedMethod {
   const warnings: string[] = [];
   const warn = (msg: string) => warnings.push(msg);
 
@@ -29,7 +35,7 @@ export function parseV1Method(raw: V1RawMethodResponse): HydratedMethod {
   const name = (typeof inner.name === "string" && inner.name.length > 0) ? inner.name : raw.aliasName || "Unknown";
   const summary = inner.summary || inner.description || inner.methodDescription || "(No description)";
 
-  const steps: ParsedStep[] = (inner.services ?? []).map((svc, idx) => parseV1Step(svc, svc.orderIndex ?? idx, warn));
+  const steps: ParsedStep[] = (inner.services ?? []).map((svc, idx) => parseV1Step(svc, svc.orderIndex ?? idx + 1, warn, opts));
 
   const inputs: MethodField[] = (inner.inputs ?? []).map(mapField).filter(Boolean) as MethodField[];
   const variables: MethodField[] = (inner.variables ?? []).map(mapField).filter(Boolean) as MethodField[];
@@ -37,7 +43,7 @@ export function parseV1Method(raw: V1RawMethodResponse): HydratedMethod {
 
   return {
     sourceVersion: "v1",
-    uuid: raw.uuid,
+    uuid: typeof raw.uuid === "string" ? raw.uuid.trim() : raw.uuid,
     numericId: typeof raw.id === "number" ? raw.id : undefined,
     referenceId: normaliseReferenceId(raw.referenceId),
     state: normaliseState(raw.automationState ?? raw.state),
@@ -62,8 +68,10 @@ export function parseV1Method(raw: V1RawMethodResponse): HydratedMethod {
 
     fetchedAt: Date.now(),
     createdOn: typeof raw.createdOn === "number" ? raw.createdOn : undefined,
-    updatedOn: typeof raw.lastUpdatedOn === "number" ? raw.lastUpdatedOn : undefined,
-    updatedBy: raw.lastUpdatedBy,
+    // AD-13: the wire sends `updatedOn`/`updatedBy` (numeric user id); older
+    // captures used `lastUpdatedOn`/`lastUpdatedBy`.
+    updatedOn: firstNumber(raw.updatedOn, raw.lastUpdatedOn),
+    updatedBy: firstId(raw.updatedBy, raw.lastUpdatedBy),
 
     raw,
     parseWarnings: warnings,
@@ -98,6 +106,20 @@ function mapOutput(o: V1OutputField): MethodOutput {
     rawResponseContainer: o.rawResponseContainer,
     raw: o,
   };
+}
+
+function firstNumber(...values: unknown[]): number | undefined {
+  for (const v of values) if (typeof v === "number" && Number.isFinite(v)) return v;
+  return undefined;
+}
+
+/** First present user id, as a string (the wire uses numbers). */
+export function firstId(...values: unknown[]): string | undefined {
+  for (const v of values) {
+    if (typeof v === "number" && Number.isFinite(v)) return String(v);
+    if (typeof v === "string" && v.trim().length > 0) return v.trim();
+  }
+  return undefined;
 }
 
 /** Fail closed: anything that is not exactly DRAFT/PUBLISHED is UNKNOWN (AD-12). */

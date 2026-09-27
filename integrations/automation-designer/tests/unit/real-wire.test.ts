@@ -19,7 +19,9 @@ import { parseV2Method } from "../../lib/parser/v2";
 import * as v1 from "../../lib/api/v1";
 import * as v2 from "../../lib/api/v2";
 import type { HydratedMethod } from "../../lib/types/common";
-import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
+import type { V1AutomationDefinition, V1RawMethodResponse } from "../../lib/types/v1-wire";
+import { buildServiceResolver, identityFromDefinition, resolverFromTable } from "../../lib/hydrator";
+import type { ServiceIdentity, ServiceResolver } from "../../lib/parser/steps/classify";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
 const FIX = `${import.meta.dir}/../fixtures`;
@@ -117,17 +119,129 @@ describe("V2 parse vs V1 parse (same method, same moment)", () => {
     }
   });
 
-  // AD-35: V2 parser parity gaps.
-  test.todo("AD-35: parseV2Method reports the method uuid (reads metadata.uuid; empty on all 36)", async () => {
-    for (const { uuid, m2 } of await pairs()) expect(m2.uuid).toBe(uuid);
+  // AD-35: V2 parser parity.
+  test("AD-35: parseV2Method reports the method uuid (top-level wire field)", async () => {
+    for (const { uuid, m2 } of await pairs()) {
+      expect(m2.uuid).toBe(uuid);
+      expect(m2.parseWarnings.some((w) => w.includes("uuid"))).toBe(false);
+    }
   });
-  test.todo("AD-35: V2 step orderIndex is 1-based like V1 (V2 is 0-based today; 34 of 36 differ)", async () => {
+  test("AD-35: V2 step orderIndex is 1-based like V1", async () => {
     for (const { m1, m2 } of await pairs()) expect(m2.parsedSteps.map((s) => s.orderIndex)).toEqual(m1.parsedSteps.map((s) => s.orderIndex));
   });
-  // AD-02: V1 classifies by nsm-numeric automationApiIds, so on sems it misses
-  // REDIS_SET/GET (44297f3e…) and SPEL_ECHO (46f978f8…, 486041df…) that V2 finds by service name.
-  test.todo("AD-02: V1 step kinds match V2 on sems (3 of 36 methods differ)", async () => {
-    for (const { m1, m2 } of await pairs()) expect(m1.parsedSteps.map((s) => s.kind)).toEqual(m2.parsedSteps.map((s) => s.kind));
+});
+
+// AD-02: steps are classified by the service they call. Offline, the service
+// identity comes from the captured definitions (/automations/{automationId});
+// for automationIds without a captured definition, from the V2 capture of the
+// same method at the same moment (V2 names the service on the wire). The
+// test below proves those two sources agree wherever both exist.
+describe("AD-02 step classification by service identity", () => {
+  async function definitionTable(): Promise<Map<string, ServiceIdentity>> {
+    const table = new Map<string, ServiceIdentity>();
+    for (const f of list("definitions", ".json").filter((f) => f !== "manifest.json")) {
+      const def = (await json(`${FIX}/definitions/${f}`)) as V1AutomationDefinition;
+      const id = identityFromDefinition(def);
+      if (id) table.set(String(def.id), id);
+    }
+    return table;
+  }
+
+  function v1Services(raw1: V1RawMethodResponse): Array<Record<string, any>> {
+    return JSON.parse(raw1.jsonDefinition).services ?? [];
+  }
+
+  /** Definitions first, then the paired V2 step (same index) for uncaptured automationIds. */
+  async function resolverFor(p: Pair, defs: Map<string, ServiceIdentity>): Promise<ServiceResolver> {
+    const table = new Map(defs);
+    v1Services(p.raw1).forEach((svc, i) => {
+      const t = p.raw2.steps?.[i];
+      const key = String(svc.automationId);
+      if (svc.automationId != null && !table.has(key) && t?.serviceName && t.methodName) {
+        table.set(key, { system: t.serviceName, api: t.methodName });
+      }
+    });
+    return resolverFromTable(table);
+  }
+
+  test("definition identity == V2 wire identity for every captured automationId", async () => {
+    const defs = await definitionTable();
+    let checked = 0;
+    for (const p of await pairs()) {
+      v1Services(p.raw1).forEach((svc, i) => {
+        const id = defs.get(String(svc.automationId));
+        const t = p.raw2.steps?.[i];
+        if (!id || !t?.serviceName) return;
+        expect([p.uuid.slice(0, 8), i, id.system, id.api]).toEqual([p.uuid.slice(0, 8), i, t.serviceName, t.methodName ?? ""]);
+        checked++;
+      });
+    }
+    expect(checked).toBeGreaterThanOrEqual(60);
+  });
+
+  test("V1 step kinds match V2 on sems for all 36 methods; SQL/SpEL/Redis are found", async () => {
+    const defs = await definitionTable();
+    const counts: Record<string, number> = {};
+    for (const p of await pairs()) {
+      const m1 = parseV1Method(p.raw1, { env: "sems-dev", resolveService: await resolverFor(p, defs) });
+      expect([p.uuid, m1.parsedSteps.map((s) => s.kind)]).toEqual([p.uuid, p.m2.parsedSteps.map((s) => s.kind)]);
+      for (const s of m1.parsedSteps) counts[s.kind] = (counts[s.kind] ?? 0) + 1;
+    }
+    expect(counts.SQL).toBe(41);
+    expect(counts.SPEL_ECHO).toBe(4);
+    expect((counts.REDIS_GET ?? 0) + (counts.REDIS_SET ?? 0)).toBe(3);
+  });
+
+  test("SQL text, operation and service names agree between V1 and V2", async () => {
+    const defs = await definitionTable();
+    let n = 0;
+    for (const p of await pairs()) {
+      const m1 = parseV1Method(p.raw1, { env: "sems-dev", resolveService: await resolverFor(p, defs) });
+      m1.parsedSteps.forEach((s, i) => {
+        const t = p.m2.parsedSteps[i]!;
+        expect(s.serviceName).toBe(t.serviceName!);
+        expect(s.methodName).toBe(t.methodName!);
+        if (s.kind === "SQL" && t.kind === "SQL") {
+          expect(s.sql.length).toBeGreaterThan(0);
+          expect(s.sql).toBe(t.sql);
+          expect(s.operation).toBe(t.operation);
+          n++;
+        }
+      });
+    }
+    expect(n).toBe(41);
+  });
+
+  test("offline, sems-dev fat steps classify through the verified fast path; other envs never guess", async () => {
+    const raw1 = (await json(`${FIX}/real-v1/486041dfd02d9fd45a27b608ad2dce0c.v1.json`)) as V1RawMethodResponse;
+    const sems = parseV1Method(raw1).parsedSteps.map((s) => s.kind);
+    expect(sems.filter((k) => k === "SPEL_ECHO").length).toBe(0); // no env, no resolver → unresolved
+    const semsFast = parseV1Method(raw1, { env: "sems-dev" }).parsedSteps.map((s) => s.kind);
+    expect(semsFast.filter((k) => k === "SPEL_ECHO").length).toBe(3);
+    const nsm = parseV1Method(raw1, { env: "nsm-dev" }).parsedSteps.map((s) => s.kind);
+    expect(nsm.filter((k) => k === "SQL" || k === "SPEL_ECHO").length).toBe(0);
+  });
+
+  test("buildServiceResolver: one lookup per distinct automationId; failures are reported", async () => {
+    const raw1 = (await json(`${FIX}/real-v1/41bb1b438875bd8b994196db1f12b7c2.v1.json`)) as V1RawMethodResponse;
+    const asked: string[] = [];
+    const { resolveService, unresolved } = await buildServiceResolver(raw1, {
+      getDefinition: async (id) => {
+        asked.push(id);
+        return id === "1040" ? ((await json(`${FIX}/definitions/1040.json`)) as V1AutomationDefinition) : null;
+      },
+    });
+    expect(new Set(asked).size).toBe(asked.length);
+    expect(asked).toContain("1040");
+    expect(unresolved).not.toContain("1040");
+    const m = parseV1Method(raw1, { env: "sems-dev", resolveService });
+    const sql = m.parsedSteps.find((s) => s.kind === "SQL");
+    expect(sql?.kind).toBe("SQL");
+    if (sql?.kind === "SQL") {
+      expect(sql.operation).toBe("read");
+      expect(sql.sql).toContain("select * from enrollment_stage_type");
+      expect(sql.sqlInputUuid).toBe("529f4d30-4692-46b3-b1fb-0fea77c68683");
+    }
   });
 });
 

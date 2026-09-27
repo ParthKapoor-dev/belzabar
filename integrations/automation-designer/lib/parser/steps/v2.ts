@@ -16,9 +16,10 @@ import type {
   MethodOutput,
   StepInput,
 } from "../../types/common";
-import { decodeBase64Safe, decodeBase64Strict } from "../../base64";
+import { decodeBase64Strict } from "../../base64";
+import { classifyService, resolveStepIdentity, type ParseOptions } from "./classify";
 
-export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string) => void): ParsedStep {
+export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string) => void, opts?: ParseOptions): ParsedStep {
   const base = buildBase(raw, orderIndex);
   const propsType = raw.properties?.type;
 
@@ -41,11 +42,20 @@ export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string)
     } as CustomCodeStep;
   }
 
-  // EXISTING_SERVICE — discriminate further by serviceName / methodName.
-  const svc = raw.serviceName ?? "";
-  const mth = raw.methodName ?? "";
+  // EXISTING_SERVICE — the V2 wire names the service (`serviceName` is the
+  // automation-system name, e.g. `db_service`; `methodName` the API label).
+  const identity = resolveStepIdentity(
+    { automationApiId: raw.automationAPIId, serviceName: raw.serviceName, methodName: raw.methodName },
+    opts,
+  );
+  if (identity) {
+    base.serviceName = identity.system;
+    base.methodName = identity.api;
+    if (identity.apiUuid) base.automationApiUuid = identity.apiUuid;
+  }
+  const family = classifyService(identity);
 
-  if (svc === "Helpers.Legacy" && mth === "echo") {
+  if (family.kind === "SPEL_ECHO") {
     const first = (raw.inputs ?? [])[0];
     return {
       ...base,
@@ -54,43 +64,47 @@ export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string)
     } as SpelEchoStep;
   }
 
-  if (svc === "Database.SQL") {
-    const operation = normaliseSqlOperation(mth);
-    const sqlInput = findInputByEncoding(raw.inputs, "BASE_64");
-    const shapeInput = (raw.inputs ?? []).find(i => i.key?.toLowerCase().includes("shape") || i.key?.toLowerCase().includes("result"));
+  if (family.kind === "SQL") {
+    const slot = findSqlInput(raw.inputs);
     let sql = "";
     let encoding: "BASE_64" | "NONE" = "NONE";
-    if (sqlInput && typeof sqlInput.value === "string") {
-      sql = decodeBase64Safe(sqlInput.value, m => warn(`[step ${base.orderIndex}] SQL ${m}`));
-      encoding = "BASE_64";
+    if (slot && typeof slot.value === "string") {
+      const decoded = slot.encodingType === "BASE_64" && slot.value.length > 0 ? decodeBase64Strict(slot.value) : null;
+      if (decoded !== null) {
+        sql = decoded;
+        encoding = "BASE_64";
+      } else {
+        sql = slot.value;
+      }
     } else {
-      const plain = (raw.inputs ?? []).find(i => typeof i.value === "string" && i.value.trim().length > 0);
-      if (plain && typeof plain.value === "string") sql = plain.value;
+      warn(`[step ${base.orderIndex}] SQL step has no queryString input`);
     }
+    const shape = findInputDeep(raw.inputs, (i) => i.displayWidgetSuggestion === "DROPDOWN" && typeof i.value === "string");
+    const accountId = raw.accountConfiguration?.id;
+    const authId = typeof accountId === "number" ? accountId : typeof accountId === "string" && /^\d+$/.test(accountId) ? Number(accountId) : undefined;
     return {
       ...base,
       kind: "SQL",
-      operation,
+      operation: family.operation,
       sql,
       sqlEncoding: encoding,
-      resultShape: typeof shapeInput?.value === "string" ? shapeInput.value : undefined,
+      sqlInputUuid: typeof slot?.uuid === "string" ? slot.uuid.trim() : undefined,
+      resultShape: typeof shape?.value === "string" ? shape.value : undefined,
+      automationAuthId: authId,
     } as SqlStep;
   }
 
-  if (svc === "Cache.Redis") {
-    const m = mth.toLowerCase();
-    const kind: RedisStep["kind"] =
-      m === "get" ? "REDIS_GET" : m === "set" ? "REDIS_SET" : m === "remove" ? "REDIS_REMOVE" : "REDIS_GET";
-    const byKey = (k: string): string | undefined => {
-      const i = (raw.inputs ?? []).find(inp => inp.key === k);
+  if (family.kind === "REDIS_GET" || family.kind === "REDIS_SET" || family.kind === "REDIS_REMOVE") {
+    const byKey = (...keys: string[]): string | undefined => {
+      const i = findInputDeep(raw.inputs, (inp) => keys.includes(String(inp.key ?? "").toLowerCase()) && typeof inp.value === "string");
       return typeof i?.value === "string" ? i.value : undefined;
     };
     const step: RedisStep = {
       ...base,
-      kind,
+      kind: family.kind,
       key: byKey("key"),
       value: byKey("value"),
-      ttlSeconds: byKey("expiry") ?? byKey("ttl"),
+      ttlSeconds: byKey("expiry", "ttl"),
       store: byKey("store"),
       overwrite: byKey("overwrite"),
     };
@@ -100,18 +114,25 @@ export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string)
   return { ...base, kind: "EXISTING_SERVICE" } as ExistingServiceStep;
 }
 
-function normaliseSqlOperation(methodName: string): string {
-  const m = methodName.toLowerCase();
-  if (m.includes("read")) return "read";
-  if (m.includes("update")) return "update";
-  if (m.includes("add") || m.includes("insert")) return "add";
-  if (m.includes("delete")) return "delete";
-  if (m.includes("schema")) return "schema.modify";
-  return methodName;
+/** Depth-first over V2 inputs and their nested `properties`. */
+function findInputDeep(inputs: unknown[] | undefined, pred: (i: V2StepInput) => boolean): V2StepInput | undefined {
+  if (!Array.isArray(inputs)) return undefined;
+  for (const raw of inputs) {
+    if (!raw || typeof raw !== "object") continue;
+    const i = raw as V2StepInput;
+    if (pred(i)) return i;
+    const nested = findInputDeep(i.properties, pred);
+    if (nested) return nested;
+  }
+  return undefined;
 }
 
-function findInputByEncoding(inputs: V2StepInput[] | undefined, encoding: string): V2StepInput | undefined {
-  return (inputs ?? []).find(i => i.encodingType === encoding);
+/** The query slot: `body.queryString` (db_service), else the first BASE_64-flagged string input. */
+function findSqlInput(inputs: V2StepInput[] | undefined): V2StepInput | undefined {
+  return (
+    findInputDeep(inputs, (i) => i.key === "queryString" && typeof i.value === "string") ??
+    findInputDeep(inputs, (i) => i.encodingType === "BASE_64" && typeof i.value === "string")
+  );
 }
 
 function buildBase(raw: V2Step, orderIndex: number) {
@@ -119,6 +140,7 @@ function buildBase(raw: V2Step, orderIndex: number) {
     orderIndex,
     description: raw.description,
     automationApiId: raw.automationAPIId,
+    automationApiUuid: undefined as string | undefined,
     serviceName: raw.serviceName,
     methodName: raw.methodName,
     runAsync: raw.properties?.runAsync,
@@ -154,9 +176,15 @@ function mapOutput(o: V2Output): MethodOutput {
 }
 
 function mapInput(i: V2StepInput): StepInput {
+  const nested = Array.isArray(i.properties)
+    ? (i.properties as unknown[]).filter((p): p is V2StepInput => !!p && typeof p === "object" && "key" in p)
+    : [];
   return {
     key: i.key,
+    label: typeof i.name === "string" && i.name.length > 0 ? i.name : undefined,
+    automationUserInputUuid: typeof i.uuid === "string" ? i.uuid.trim() : undefined,
     value: i.value ?? null,
+    mappings: nested.length > 0 ? nested.map(mapInput) : undefined,
     combineInput: i.combineInput,
     encodingType: i.encodingType,
     reference: i.reference,

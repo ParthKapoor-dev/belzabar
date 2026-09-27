@@ -13,8 +13,13 @@ export interface V1RawMethodResponse {
   /** Stringified JSON — must be JSON.parse'd to see the real method body. */
   jsonDefinition: string;
   createdOn?: number;
+  /** Real wire (AD-13): epoch ms + numeric user id. Absent on never-edited methods. */
+  updatedOn?: number;
+  updatedBy?: number | string;
+  /** Legacy spelling kept for old captures. */
   lastUpdatedOn?: number;
   lastUpdatedBy?: string;
+  deprecatedAt?: number | null;
   version?: number;
   category?: { id: number; name: string };
   owner?: { id: number; username: string };
@@ -71,8 +76,12 @@ export interface V1Mapping {
 }
 
 export interface V1ServiceStep {
+  /** Numeric on the real wire. */
   automationId?: string;
   automationApiId?: number;
+  /** "Fat" steps written by newer UIs carry the API uuid and the system name. */
+  automationApiUuid?: string;
+  categoryName?: string;
   orderIndex: number;
   description?: string;
   type?: string;
@@ -117,8 +126,12 @@ export interface V1InnerDefinition {
 // ─── Hydrator types (service catalog — shared between V1 and V2 in practice)
 
 export interface V1AutomationUserInput {
+  /** Numeric on the real wire. */
   id: string;
+  uuid?: string;
   label: string;
+  /** The input's key in the request (`queryString`, `body`, …). */
+  produces?: string;
   encodingType?: string;
   optional?: boolean;
   orderIndex?: number;
@@ -139,9 +152,11 @@ export interface V1AutomationDefinition {
   uuid: string;
   automationAPI: {
     id: number;
+    uuid?: string;
     label: string;
     serviceChainUID?: string;
-    automationSystem: { label: string; remote?: boolean };
+    /** `name` is what V2 calls `serviceName` (`db_service`); `label` may differ (`Database.SQL`). */
+    automationSystem: { label: string; name?: string; uuid?: string; remote?: boolean };
     automationUserInputs?: V1AutomationUserInput[];
     automationAPIOutputs?: V1AutomationAPIOutput[];
   };

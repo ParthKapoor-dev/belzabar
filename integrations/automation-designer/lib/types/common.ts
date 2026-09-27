@@ -86,7 +86,7 @@ export interface MethodOutput {
 export type StepKind =
   | "CUSTOM_CODE"
   | "SPEL_ECHO" // Helpers.Legacy.echo
-  | "SQL"       // Database.SQL (data.read / update / add / delete / schema.modify)
+  | "SQL"       // db_service / Database.SQL (data.read / update / add / delete / schema.modify)
   | "REDIS_GET"
   | "REDIS_SET"
   | "REDIS_REMOVE"
@@ -100,6 +100,8 @@ export type StepKind =
 export interface StepInput {
   /** V2 only — input identifier. */
   key?: string;
+  /** V2 `name` — the service's label for this input. */
+  label?: string;
   /** V1 — numeric ID of the target parameter. */
   automationUserInputId?: number;
   /** UUID form (populated by V1 and V2). */
@@ -116,6 +118,14 @@ export interface StepInput {
   raw?: unknown;
 }
 
+/** One V1 basic-mode condition row (AD-40). `groupOp` joins it to the previous row. */
+export interface ConditionRow {
+  field: string;
+  operator: string;
+  value: string | null;
+  groupOp?: string;
+}
+
 interface BaseStep {
   orderIndex: number;
   description?: string;
@@ -123,7 +133,14 @@ interface BaseStep {
   automationId?: string;
   /** V1 numeric / V2 UUID identifying the target service API. */
   automationApiId?: number | string;
-  /** Human-readable service name (V2-native; populated from hydrator on V1). */
+  /** Trimmed automationAPI uuid when known (V1 fat steps, V2, or the definition). */
+  automationApiUuid?: string;
+  /**
+   * Service identity (AD-02): automation-system name (`db_service`) and API
+   * label (`data.read`). V2 carries them on the wire; V1 gets them from the
+   * definition lookup (lib/hydrator.ts) or the verified per-env fast path.
+   * Undefined when the service could not be resolved.
+   */
   serviceName?: string;
   methodName?: string;
   runAsync?: boolean;
@@ -135,6 +152,8 @@ interface BaseStep {
   conditionMode?: "advance" | "basic";
   conditionExpression?: string;
   conditionConfiguration?: unknown;
+  /** V1 basic-mode rows (`condition[]`); the expression is `conditionExpression`. */
+  conditionRows?: ConditionRow[];
   forceExitFromFailure?: boolean;
   forceExitErrorMessage?: string;
   outputs: MethodOutput[];
@@ -165,6 +184,8 @@ export interface SqlStep extends BaseStep {
   /** Decoded SQL string. */
   sql: string;
   sqlEncoding: "BASE_64" | "NONE";
+  /** V1: uuid of the mapping that holds the query, so the serializer writes the same slot. */
+  sqlInputUuid?: string;
   resultShape?: "OBJECT" | "ARRAY" | string;
   automationAuthId?: number;
   testAccountId?: number;
@@ -239,6 +260,7 @@ export interface HydratedMethod {
   fetchedAt: number;
   createdOn?: number;
   updatedOn?: number;
+  /** User id (the wire sends a number) as a string. */
   updatedBy?: string;
 
   // Round-trip
