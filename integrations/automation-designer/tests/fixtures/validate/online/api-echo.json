@@ -1,0 +1,22 @@
+{
+ "id": 6501,
+ "uuid": "424ffd4c9e0f55befc238dd999dab2d6    ",
+ "uri": "echo",
+ "label": "echo",
+ "automationUserInputs": [
+  {
+   "id": 23538,
+   "uuid": "4bd0e87488b2cf0ff019850ab3ae069c    ",
+   "label": "Input",
+   "produces": "Input",
+   "automationUserInputs": []
+  }
+ ],
+ "automationAPIOutputs": [
+  {
+   "id": 12908,
+   "uuid": "454b0e868e7fdf20249caae851c08208    ",
+   "consumes": "response"
+  }
+ ]
+}

@@ -1,0 +1,261 @@
+{
+ "id": 19,
+ "uuid": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+ "uri": "select",
+ "label": "data.read",
+ "automationUserInputs": [
+  {
+   "id": 152,
+   "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+   "label": "",
+   "produces": "body",
+   "automationUserInputs": [
+    {
+     "id": 153,
+     "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+     "label": "SQLQuery",
+     "produces": "queryString",
+     "automationUserInputs": []
+    },
+    {
+     "id": 154,
+     "uuid": "8f4b1153-4031-4933-8cfc-b932f60275f6",
+     "label": "queryParameters",
+     "produces": "queryParams",
+     "automationUserInputs": [
+      {
+       "id": 155,
+       "uuid": "3154483b-14a3-4cc3-b67a-13294f143556",
+       "label": "parameter",
+       "produces": "test",
+       "automationUserInputs": [
+        {
+         "id": 156,
+         "uuid": "98792413-bc30-4b84-b9f9-3f11b7749b0e",
+         "label": "parameterName",
+         "produces": "key",
+         "automationUserInputs": []
+        },
+        {
+         "id": 157,
+         "uuid": "238d2c53-dc60-49fe-9b78-1d880824a061",
+         "label": "parameterValue",
+         "produces": "value",
+         "automationUserInputs": []
+        },
+        {
+         "id": 22118,
+         "uuid": "41a084dadeec8e4638b19cfbd4ed9e28    ",
+         "label": "parameterType",
+         "produces": "type",
+         "automationUserInputs": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 158,
+     "uuid": "6745124e-489f-41d4-904b-06f1f212239f",
+     "label": "Request Tags",
+     "produces": "requestTags",
+     "automationUserInputs": [
+      {
+       "id": 159,
+       "uuid": "371a1b5e-9bcb-4334-a412-90cadfdd79a1",
+       "label": "Parameter",
+       "produces": "test",
+       "automationUserInputs": [
+        {
+         "id": 160,
+         "uuid": "58ebd0d4-a273-42b4-a36f-83f44efda388",
+         "label": "Tag Key",
+         "produces": "key",
+         "automationUserInputs": []
+        },
+        {
+         "id": 161,
+         "uuid": "3eb17412-8c6d-45b5-9468-d524eda531da",
+         "label": "Tag Value",
+         "produces": "value",
+         "automationUserInputs": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 162,
+     "uuid": "beffffa1-e524-4443-8d7a-c94ffb81af9f",
+     "label": "Response types",
+     "produces": "responseTypes",
+     "automationUserInputs": []
+    },
+    {
+     "id": 1953,
+     "uuid": "490debfa-0f1d-f16f-a7e7-aa23f100f7da",
+     "label": "Summaries",
+     "produces": "summaries",
+     "automationUserInputs": [
+      {
+       "id": 1954,
+       "uuid": "46fbe4a5-492d-bdee-0716-b17b8210e04d",
+       "label": "Summary",
+       "produces": "summary",
+       "automationUserInputs": [
+        {
+         "id": 1956,
+         "uuid": "4386dbd3-ba2d-7fca-cd73-b7d364252cd1",
+         "label": "Metrics",
+         "produces": "metrics",
+         "automationUserInputs": [
+          {
+           "id": 1957,
+           "uuid": "40d8f53b-5aef-d9ae-f4bb-91ed24279ae8",
+           "label": "Metric",
+           "produces": "metric",
+           "automationUserInputs": [
+            {
+             "id": 1958,
+             "uuid": "483fa0c5-a01d-7842-19cd-a25e54c76b49",
+             "label": "Operation",
+             "produces": "operation",
+             "automationUserInputs": []
+            },
+            {
+             "id": 1959,
+             "uuid": "42af2155-1e19-3774-0c8a-baf6b20380a2",
+             "label": "Column Field",
+             "produces": "columnField",
+             "automationUserInputs": []
+            }
+           ]
+          }
+         ]
+        },
+        {
+         "id": 1955,
+         "uuid": "4a187e8f-c603-d448-7c5d-a85e5b783c1f",
+         "label": "Summary Field",
+         "produces": "summaryField",
+         "automationUserInputs": []
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": 163,
+     "uuid": "8ffc068d-67e2-4afa-83c4-1c30d199cfa1",
+     "label": "Input 1",
+     "produces": "input_1",
+     "automationUserInputs": []
+    },
+    {
+     "id": 13576,
+     "uuid": "476ea71abed20d6853a58dd1f0e06dca    ",
+     "label": "responseDataType",
+     "produces": "flatDataType",
+     "automationUserInputs": []
+    },
+    {
+     "id": 164,
+     "uuid": "f30f7cae-3139-482b-bf47-8fcabad55abd",
+     "label": "Input 2",
+     "produces": "input_2",
+     "automationUserInputs": []
+    },
+    {
+     "id": 165,
+     "uuid": "51779a5a-e16b-4385-abf5-33c39d0c5abc",
+     "label": "Input 3",
+     "produces": "input_3",
+     "automationUserInputs": []
+    },
+    {
+     "id": 44516,
+     "uuid": "4ce9c8ede832733186bea5abdc187478    ",
+     "label": "outputTypeFormat",
+     "produces": "outputTypeFormat",
+     "automationUserInputs": []
+    },
+    {
+     "id": 166,
+     "uuid": "877f55ae-848f-4f23-b688-97d1dc13908d",
+     "label": "Input 4",
+     "produces": "input_4",
+     "automationUserInputs": []
+    },
+    {
+     "id": 167,
+     "uuid": "dfef445f-6949-4e6f-8442-d50cbf1d99d3",
+     "label": "Input 5",
+     "produces": "input_5",
+     "automationUserInputs": []
+    },
+    {
+     "id": 168,
+     "uuid": "40cbb374-c1b6-436b-be14-c30e02bced48",
+     "label": "Input 6",
+     "produces": "input_6",
+     "automationUserInputs": []
+    },
+    {
+     "id": 169,
+     "uuid": "8690a19d-04a2-47b0-a044-1ac19ac5bbde",
+     "label": "Input 7",
+     "produces": "input_7",
+     "automationUserInputs": []
+    },
+    {
+     "id": 170,
+     "uuid": "c9db2b15-028f-457f-a50a-f3bb8c464e73",
+     "label": "Input 8",
+     "produces": "input_8",
+     "automationUserInputs": []
+    },
+    {
+     "id": 171,
+     "uuid": "c600af73-e52d-45c0-ab6c-7a053a497374",
+     "label": "Input 9",
+     "produces": "input_9",
+     "automationUserInputs": []
+    },
+    {
+     "id": 172,
+     "uuid": "7c7206a9-e562-40d6-a961-0506560f62bc",
+     "label": "Input 10",
+     "produces": "input_10",
+     "automationUserInputs": []
+    }
+   ]
+  }
+ ],
+ "automationAPIOutputs": [
+  {
+   "id": 81,
+   "uuid": "5b11494a-c244-47a9-a063-3434f6a00e4f",
+   "consumes": "columnNames[]"
+  },
+  {
+   "id": 84,
+   "uuid": "c648579c-ef36-4aba-9f9a-0fee168e37bb",
+   "consumes": "data[].rowColumns[]"
+  },
+  {
+   "id": 85,
+   "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+   "consumes": "flatData[]"
+  },
+  {
+   "id": 25885,
+   "uuid": "4c11494a-c244-48a9-a063-3414f7a01e4g",
+   "consumes": "responseFile"
+  },
+  {
+   "id": 86,
+   "uuid": "5b11494a-c244-47a9-a063-3434f6a00e5g",
+   "consumes": "rowsImpacted"
+  }
+ ]
+}

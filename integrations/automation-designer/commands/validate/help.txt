@@ -1,0 +1,36 @@
+Usage: belz ad validate <UUID|FILE> [flags]
+
+Run the pre-save validator over a method's V2 body (read-only).
+
+Arguments:
+  <UUID|FILE>           A method uuid (any spelling or AD URL; the V2 body is
+                        fetched from --env) or a local V2 JSON file (the body you
+                        are about to save; a path or a name ending in .json).
+
+Flags:
+  --online              Also check every step against its service contract on
+                        --env: input keys (case-sensitive), service names,
+                        automationAPIId, account ids (L4).
+  --dry-run-compile     Also compile the method on the server with every step
+                        switched off (implies --online). Nothing executes; POSTs
+                        /chain/test, so --env must be given explicitly.
+  --strict              Treat warnings as errors.
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Set active environment. (default: nsm-dev)
+                        Available: nsm-dev | nsm-qa | nsm-uat
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Notes:
+  - Layers: L1 structure, L2 per step (custom code, SQL, SpEL, loops,
+    conditions), L3 reference graph, L4 online. Rule codes are listed in
+    integrations/automation-designer/lib/validate/catalogue.ts.
+  - Errors exit 1 with AD_VALIDATION_FAILED; data carries {errors, warnings,
+    layersRun}. `ad save` / `ad publish` run the same validator and only block
+    on NEW errors (findings already in the fetched draft are warnings).
+
+Examples:
+  belz ad validate 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --env sems-dev
+  belz ad validate ./method.v2.json --online --env sems-dev --llm
+  belz ad validate ./method.v2.json --dry-run-compile --env sems-dev

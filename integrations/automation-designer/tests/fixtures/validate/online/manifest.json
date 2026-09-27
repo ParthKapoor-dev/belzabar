@@ -1,0 +1,10 @@
+{
+ "env": "sems-dev",
+ "capturedAt": "2026-09-27T19:16:44.243Z",
+ "note": "slimmed: contracts keep ids/uuids/labels/produces/consumes; auth keeps id+nickname only",
+ "endpoints": [
+  "/rest/api/automation-systems/Helpers.Legacy/automation-apis/echo",
+  "/rest/api/automation-systems/db_service/automation-apis/select",
+  "/rest/api/automation-systems/db_service/auth"
+ ]
+}

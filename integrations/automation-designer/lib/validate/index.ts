@@ -70,13 +70,20 @@ export async function validateOnline(input: ValidateOnlineInput): Promise<Valida
   const stepKeys = stepKeyTable(input.after);
   for (const f of online.findings) findings.push(toFinding(f, stepKeys));
   layers.push(...online.layers);
-  return finish(dedupe(findings), input, layers);
+  // L4 findings already true of `before` are pre-existing too (service layer only: cached lookups, no second compile).
+  const beforeExtra: string[] = [];
+  if (input.before !== undefined) {
+    const prior = await runOnline(input.before, { env: input.env, dryRunCompile: false });
+    const keys = stepKeyTable(input.before);
+    for (const f of prior.findings) beforeExtra.push(toFinding(f, keys).fingerprint);
+  }
+  return finish(dedupe(findings), input, layers, beforeExtra);
 }
 
 // ── internals ─────────────────────────────────────────────────────────────
 
-function finish(findings: RawFinding[], input: ValidateInput, layersRun: string[]): ValidationResult {
-  const before = input.before !== undefined ? new Set(collectOffline(input.before).map((f) => f.fingerprint)) : null;
+function finish(findings: RawFinding[], input: ValidateInput, layersRun: string[], beforeExtra: string[] = []): ValidationResult {
+  const before = input.before !== undefined ? new Set([...collectOffline(input.before).map((f) => f.fingerprint), ...beforeExtra]) : null;
   const overlay = input.overlayPaths?.filter((p) => p.length > 0) ?? [];
   const errors: ValidationFinding[] = [];
   const warnings: ValidationFinding[] = [];

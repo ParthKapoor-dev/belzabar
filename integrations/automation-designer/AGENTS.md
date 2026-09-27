@@ -17,7 +17,7 @@ belz ad <cmd>   → find, fetch, show, show-code, outputs, state, categories,
                   child-info, test, run, save-suite, run-suites, sql,
                   save, publish, create, delete, changelog, import,
                   category, test-case,
-                  history, trace
+                  history, trace, validate
 ```
 
 `history` lists/shows/diffs/restores a method's saved versions. `trace`
@@ -158,6 +158,32 @@ rationale.
     (numeric `automationId`, like the wire). Prefer real fixtures for new tests.
 16. `docs/api-notes.md` — belz-owned cheatsheet (read this before touching
     lib/api/*, lib/parser/*, or lib/draft-guard.ts)
+17. `lib/validate/` — the pre-save validator (Stage 5, A4) over the **V2 wire
+    body**. API (`index.ts`): `validateMethodV2({after, before?, overlayPaths?,
+    strict?})` (L1–L3, offline, pure) and `validateOnline({…, env,
+    dryRunCompile?})` (+L4) → `{errors, warnings, layersRun}`. Layers:
+    `schema.ts` L1 (zod types/enums + key regexes), `steps.ts` L2 (custom code
+    incl. compile-only JS parse, SQL, SpEL, conditions, loops, encodings),
+    `graph.ts` L3 (#{root} def-before-use, SV1/M3/DUP1/S3/AS1, outputRef, dead
+    steps), `online.ts` L4 (callee contract via
+    `GET /automation-systems/{svc}/automation-apis/{uri}` — db_service uses the
+    uri: data.read→select…; accounts via `/automation-systems/{svc}/auth`; both
+    cached 1 h in `~/.belz/cache/{api-contracts,service-accounts}/<env>/`;
+    dry-run compile = the V2 body converted to a V1 inline-test payload with
+    every step gated `#{'belz' eq 'dry-run'}`, loops/async stripped, POSTed to
+    `/chain/test` — live-verified: nothing executes, bad bindings give
+    "Error while compiling automation"). `catalogue.ts` = every rule code
+    (team validate.py codes M1, CI1, LP3… keep their meaning; belz rules are
+    `AD-<FAMILY>-nnn`) with severity/layer/description. `spel.ts` = `#{…}`
+    scanner + root extraction. **Diff-aware**: a finding whose fingerprint
+    (rule + path, `steps[i]` keyed by step id) is also in `before` becomes a
+    `preexisting` warning; `strict` promotes only new warnings. Calibration
+    (tests/unit/validate-diff.test.ts): the 36 real bodies validated against
+    themselves give 0 errors; raw counts are pinned there. Fixtures:
+    `tests/fixtures/validate/` (research golden + live case patches with the
+    observed server result; `online/` slim contract captures). Adding a rule:
+    add it to `catalogue.ts`, emit it with `report({rule, message, path, step})`,
+    add a positive + negative row in validate-l1/-rules/-online tests.
 
 ### Adding new commands
 
@@ -202,6 +228,11 @@ fails if a folder is missing from the registry.
 18. `changelog <uuid>` — list the notes of the chain the uuid names;
     `--note "<text>"` is a write: draft-guarded (recorded on the DRAFT chain,
     as publish does), confirmation / `--yes`
+19a. `validate <uuid|file>` — lib/validate over a fetched V2 body or a local
+    V2 file; `--online` (L4 service contract), `--dry-run-compile` (implies
+    `--online`, declares `writes` → explicit `--env`), `--strict`. Errors →
+    `AD_VALIDATION_FAILED` (data = result). A PUBLISHED uuid is audited without
+    AD-META-001.
 19. `history list|show|diff <uuid>` — the history of the chain the uuid
     names (`side` in the data); `trace <uuid>` — spine = active env (or
     `--spine`), envs = the spine's project family (or `--envs a,b`), a
@@ -287,6 +318,7 @@ All runtime state lives under `~/.belz/`:
 2. Method cache: `~/.belz/cache/methods/<env>/<uuid>.json` (soft TTL 5 min, hard 1 h; key = trimmed lower-case uuid; invalidated by `ad save` (lib/save), `adApi.publishDraft` and `history restore`)
 3. Method finder index cache: `~/.belz/cache/method-finder/index-v1-<env>.json` (TTL 7 days)
 4. Service definition cache: `~/.belz/cache/definitions/<env>/<automationId>.json` (TTL 1 h)
+4a. Validator L4 caches: `~/.belz/cache/api-contracts/<env>/<service>__<method>.json`, `~/.belz/cache/service-accounts/<env>/<service>.json` (TTL 1 h)
 5. Local test suites: `./suites/*.spec.json`
 
 ## `~/.belz/config.json`

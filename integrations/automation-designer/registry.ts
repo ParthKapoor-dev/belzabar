@@ -93,6 +93,9 @@ import testReportDesc from "./commands/test-report/desc.txt" with { type: "text"
 import * as traceCmd from "./commands/trace/index";
 import traceHelp from "./commands/trace/help.txt" with { type: "text" };
 import traceDesc from "./commands/trace/desc.txt" with { type: "text" };
+import * as validateCmd from "./commands/validate/index";
+import validateHelp from "./commands/validate/help.txt" with { type: "text" };
+import validateDesc from "./commands/validate/desc.txt" with { type: "text" };
 
 export const registry = {
   categories: { module: categoriesCmd, help: categoriesHelp, desc: categoriesDesc },
@@ -124,4 +127,5 @@ export const registry = {
   "test-cases": { module: testCasesCmd, help: testCasesHelp, desc: testCasesDesc },
   "test-report": { module: testReportCmd, help: testReportHelp, desc: testReportDesc },
   trace: { module: traceCmd, help: traceHelp, desc: traceDesc },
+  validate: { module: validateCmd, help: validateHelp, desc: validateDesc },
 } satisfies CommandRegistry;
