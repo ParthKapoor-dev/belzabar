@@ -7,11 +7,7 @@
 import { apiFetch, CliError, Config, expectJson, readErrorBody, redactSecrets, redactString } from "@belzabar/core";
 import { parseV1Method } from "../parser/v1";
 import type { HydratedMethod } from "../types/common";
-import type {
-  V1AutomationDefinition,
-  V1RawMethodResponse,
-  V1SavePayload,
-} from "../types/v1-wire";
+import type { V1AutomationDefinition, V1RawMethodResponse } from "../types/v1-wire";
 
 /**
  * Per-call timeout for long server-side operations (`/chain/test`, execute,
@@ -131,30 +127,6 @@ export async function getTestSuiteReport(): Promise<unknown> {
 }
 
 // ─── WRITES ──────────────────────────────────────────────────────────────
-
-export interface SaveMethodResult {
-  /** Server response body after save. */
-  response: V1RawMethodResponse;
-  /** Re-fetched method so callers can test against server-assigned IDs. */
-  method: HydratedMethod;
-}
-
-export async function saveMethod(payload: V1SavePayload): Promise<SaveMethodResult> {
-  const path = `/rest/api/automation/chain`;
-  const response = await apiFetch(path, {
-    method: "POST",
-    authMode: "Bearer",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  await checkResponse(response, path);
-  const saved = (await response.json()) as V1RawMethodResponse;
-  // Per ad-rest-api-crud-and-testing.md §"Why fetch after create": the server
-  // assigns automationId values to each existingService step on save. We must
-  // re-fetch so downstream testing works.
-  const method = await fetchMethod(saved.uuid);
-  return { response: saved, method };
-}
 
 export async function publishDraft(draftUuid: string): Promise<{ publishedUuid: string }> {
   const path = `/rest/api/automation/chain/${draftUuid}/publish`;

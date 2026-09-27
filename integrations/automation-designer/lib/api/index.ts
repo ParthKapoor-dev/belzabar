@@ -7,7 +7,7 @@
 
 import type { ApiVersion } from "../api-version";
 import type { HydratedMethod } from "../types/common";
-import type { V1AutomationDefinition, V1RawMethodResponse, V1SavePayload } from "../types/v1-wire";
+import type { V1AutomationDefinition, V1RawMethodResponse } from "../types/v1-wire";
 import type { V2MethodResponse } from "../types/v2-wire";
 import * as v1 from "./v1";
 import * as v2 from "./v2";
@@ -19,7 +19,6 @@ import { parseV1Method } from "../parser/v1";
 import { parseV2Method } from "../parser/v2";
 
 export type {
-  SaveMethodResult as V1SaveMethodResult,
   MethodVersionSummary,
   MethodVersionFull,
 } from "./v1";
@@ -93,17 +92,8 @@ export const adApi = {
   // ─── Writes ──────────────────────────────────────────────────────────
 
   // Writes invalidate the local method cache for every uuid they touch, so a
-  // following `ad show` never serves the pre-write body (AD-06).
-  async saveMethod(payload: V1SavePayload): Promise<v1.SaveMethodResult> {
-    try {
-      const saved = await v1.saveMethod(payload);
-      await CacheManager.invalidate(saved.method?.uuid);
-      return saved;
-    } finally {
-      await CacheManager.invalidate(payload.uuid);
-    }
-  },
-
+  // following `ad show` never serves the pre-write body (AD-06). Saves go
+  // through lib/save (V2 route, D1); the V1 save verb was removed.
   async publishDraft(draftUuid: string): Promise<{ publishedUuid: string }> {
     try {
       const result = await v1.publishDraft(draftUuid);

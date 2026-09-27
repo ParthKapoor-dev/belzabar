@@ -37,7 +37,8 @@ where the footguns live.
 | API façade (`adApi`) | `lib/api/index.ts` |
 | V1 endpoint wrappers | `lib/api/v1.ts` |
 | V2 endpoint wrappers (fetch + test only) | `lib/api/v2.ts` |
-| V1 save payload serializer | `lib/serialize/v1.ts` |
+| Save overlay → V2 body | `lib/serialize/v2.ts` (+ `diff.ts`) |
+| Save / create / delete pipeline | `lib/save/` |
 | Draft-safety guard | `lib/draft-guard.ts` |
 | base64 helper | `lib/base64.ts` |
 | Tiny XML HashMap reader (V2 test response) | `lib/xml.ts` |
@@ -106,9 +107,9 @@ Base64 decoding:
 - Custom code: `raw.code` is base64 — decoded into `step.source`, `sourceEncoding = "BASE_64"`.
 - SQL: the inner mapping whose `encodingType === "BASE_64"` is decoded into `step.sql`, `sqlEncoding = "BASE_64"`.
 
-**Every parsed step preserves the original wire JSON in `step.raw`.** The
-serializer (`lib/serialize/v1.ts`) prefers round-tripping `raw` when the step
-was not edited, so partially-understood and `UNKNOWN` steps save back verbatim.
+**Every parsed step preserves the original wire JSON in `step.raw`.** Saves
+(`lib/serialize/v2.ts`) never re-serialize steps: they overlay the target
+leaves onto the live V2 GET body, so every other byte is sent back verbatim.
 
 ## Draft-safety invariant
 
@@ -126,19 +127,23 @@ result:
   happen per API semantics but is handled.
 
 No write path bypasses this. If you are adding a write command and your first
-instinct is to call `adApi.saveMethod` directly with the user-provided UUID,
-stop and call `resolveDraftTarget` first.
+instinct is to POST `/chain/v2` directly with the user-provided UUID, stop and
+go through `lib/save/pipeline.ts` (which calls `resolveDraftTarget` first).
 
 ## Known gotchas
 
-1. **V1 double-serialization.** `jsonDefinition` is a string inside the save
-   payload. `lib/serialize/v1.ts` handles it — callers never stringify by hand.
-2. **V1 save assigns `automationId`s server-side.** Every write command must
-   `adApi.fetchMethod(uuid, version)` after saving, or subsequent SpEL/existing-
-   service tests will fail.
+1. **Saves use V2 (D1).** `POST /chain/v2` with the live GET body plus the
+   overlay; a thin body gets `400 Invalid state`. The server ignores
+   `metadata.version` (no optimistic locking) — belz re-GETs before POSTing.
+   A no-op save rewrites only `metadata.version.name` and
+   `metadata.internal.migrationVersion`. `buttonLabel`, `internalMethod` and
+   input `testValue`s are accepted and dropped.
+2. **Compiled-chain cache.** After a save the runtime may keep executing the
+   old body until BOTH `/rest/api/cache/invalidate` and
+   `/rest/api/automations/cache/invalidate` are called (sems-dev).
 3. **Custom-code multi-output rule.** Every output on a `CUSTOM_CODE` step
-   (beyond the first) must have `elementToRetrieve` set. `serialize/v1.ts`
-   refuses to emit a payload that violates this.
+   (beyond the first) must have `elementToRetrieve` set — a `lib/validate`
+   rule now.
 4. **V2 test does not evaluate assertions.** `runTestSuite` returns
    `executionStatus: "PASS"` when the method ran without errors, not when
    assertions pass. Commands that surface suite results must say so.

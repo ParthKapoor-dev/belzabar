@@ -35,7 +35,7 @@ export type AdOperation =
 export const DEFAULT_VERSION: Record<AdOperation, ApiVersion> = {
   fetch:     "v1",
   list:      "v1",
-  save:      "v1",
+  save:      "v2",
   publish:   "v1",
   test:      "v1",
   run:       "v1",
@@ -53,7 +53,7 @@ export const DEFAULT_VERSION: Record<AdOperation, ApiVersion> = {
 export const SUPPORTED_VERSIONS: Record<AdOperation, readonly ApiVersion[]> = {
   fetch:     ["v1", "v2"],
   list:      ["v1"],
-  save:      ["v1"],
+  save:      ["v2"],         // D1: V2 GET → overlay → POST /chain/v2; V1 save removed
   publish:   ["v1"],         // publish is a shared endpoint; nothing to split
   test:      ["v1"],         // AD-15: `ad test` only has a V1 path; --v2 falls back with a notice
   run:       ["v1"],

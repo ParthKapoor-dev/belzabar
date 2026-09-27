@@ -32,8 +32,12 @@ describe("save (AD-29)", () => {
   });
   test("parses file, --uuid, -y", () => {
     expect(parse(saveCmd, ["f.json", "--uuid", "abc", "-y"])).toEqual({
-      filePath: "f.json", uuid: "abc", category: undefined, isNew: false, yes: true,
+      filePath: "f.json", uuid: "abc", yes: true, noValidate: false, strict: false, dryRunCompile: false,
     });
+    expect(parse(saveCmd, ["f.json", "--uuid", "abc", "--no-validate", "--strict", "--dry-run-compile"])).toMatchObject({
+      noValidate: true, strict: true, dryRunCompile: true,
+    });
+    expect(code(() => parse(saveCmd, ["f.json"]))).toBe("MISSING_UUID");
   });
   test("missing file / unknown flag", () => {
     expect(code(() => parse(saveCmd, []))).toBe("MISSING_FILE");

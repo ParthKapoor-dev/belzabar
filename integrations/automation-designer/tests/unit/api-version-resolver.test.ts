@@ -19,7 +19,7 @@ describe("resolveApiVersion", () => {
   });
 
   test("returns explicit v1 when supported", () => {
-    const ops = Object.keys(DEFAULT_VERSION) as AdOperation[];
+    const ops = (Object.keys(DEFAULT_VERSION) as AdOperation[]).filter((op) => SUPPORTED_VERSIONS[op].includes("v1"));
     for (const op of ops) {
       const resolved = resolveApiVersion(op, "v1");
       expect(resolved.version).toBe("v1");
@@ -51,6 +51,11 @@ describe("resolveApiVersion", () => {
   test("fetch supports v2; test is V1-only (AD-15: `ad test` never ran the V2 path)", () => {
     expect(SUPPORTED_VERSIONS.fetch).toContain("v2");
     expect(SUPPORTED_VERSIONS.test).not.toContain("v2");
+  });
+
+  test("save is V2-only (D1): the V1 save route was removed", () => {
+    expect(SUPPORTED_VERSIONS.save).toEqual(["v2"]);
+    expect(resolveApiVersion("save", "v1")).toEqual({ version: "v2", wasFallback: true, requested: "v1" });
   });
 
   test("DEFAULT_VERSION[op] is always in SUPPORTED_VERSIONS[op]", () => {

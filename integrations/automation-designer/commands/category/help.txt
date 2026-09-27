@@ -1,4 +1,4 @@
-Usage: belz ad category create <name> [flags]
+Usage: belz ad category create <name> --env <env> [flags]
 
 Create a new AD category (service). Only the create sub-action is supported
 today.
@@ -12,3 +12,10 @@ Flags:
 
 Default permissions are ALLOW_ALL_INTERNAL_USERS; edit in the UI afterwards
 if a stricter ACL is needed.
+
+Global Flags:
+  --env <name>          Target environment. Required: category create is a write.
+
+Examples:
+  belz ad category create belz_tst_cat --env <env>
+  belz ad category create belz_tst_cat --description "scratch" --private --env <env> --yes --llm

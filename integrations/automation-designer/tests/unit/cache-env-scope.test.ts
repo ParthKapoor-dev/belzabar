@@ -13,10 +13,6 @@ process.env.BELZ_HOME = tmp;
 // Fake network layer: no HTTP ever leaves the test.
 const calls: string[] = [];
 mock.module("../../lib/api/v1", () => ({
-  saveMethod: async (payload: { uuid?: string }) => {
-    calls.push(`save:${payload.uuid}`);
-    return { response: {}, method: { uuid: "NEWDRAFT" } };
-  },
   publishDraft: async (draft: string) => {
     calls.push(`publish:${draft}`);
     return { publishedUuid: "PUB1" };
@@ -68,14 +64,9 @@ describe("AD method cache", () => {
     expect(CacheManager.dir).toBe(join(tmp, "cache", "methods", "nsm-dev"));
   });
 
-  test("adApi.saveMethod / publishDraft invalidate touched uuids (AD-06)", async () => {
+  test("adApi.publishDraft invalidates touched uuids (AD-06)", async () => {
     core.Config.setActiveEnv("nsm-dev");
-    for (const id of ["draft1", "newdraft", "pub1"]) await CacheManager.save(id, fakeMethod(id));
-    await adApi.saveMethod({ uuid: "DRAFT1" } as any);
-    expect(await CacheManager.load("draft1")).toBeNull();
-    expect(await CacheManager.load("newdraft")).toBeNull();
-    expect(await CacheManager.load("pub1")).not.toBeNull();
-    await CacheManager.save("draft1", fakeMethod("draft1"));
+    for (const id of ["draft1", "pub1"]) await CacheManager.save(id, fakeMethod(id));
     await adApi.publishDraft("draft1");
     expect(await CacheManager.load("draft1")).toBeNull();
     expect(await CacheManager.load("pub1")).toBeNull();

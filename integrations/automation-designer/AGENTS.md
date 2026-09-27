@@ -75,19 +75,31 @@ rationale.
    `/users/me`); surfaced via `adApi.addChangelog` / `adApi.listChangelog`
 8a. `lib/stream-parser.ts` — parses `application/stream+json` execute responses
     (progressive chunks + final JSON envelope); used by `commands/run` `--stream`
-9. `lib/serialize/v1.ts` — HydratedMethod → V1 save payload. Rewrites a
-   step only when its body changed, in the step's ORIGINAL encoding (custom
-   code is sniffed with `decodeBase64Strict`: plain stays plain). The
-   multi-output `elementToRetrieve` invariant throws for edited steps and
-   warns for untouched ones.
-9a. `lib/serialize/guard.ts` — `buildGuardedV1SavePayload`: the `ad save`
-   safety guard. Refuses unknown overlay keys (`AD_OVERLAY_UNKNOWN_KEY`),
-   bad types (`AD_OVERLAY_INVALID`), keys that cannot land or change nothing
-   (`AD_OVERLAY_NOT_APPLIED`), and any change outside the overlay's target
-   paths (`AD_SERIALIZER_DRIFT`, deep-diff vs the fetched jsonDefinition).
-   Writable today: summary, description (→ methodDescription),
-   inputs[].testValue, step description/source/sql/expression. NOT writable:
-   name, buttonLabel, internalMethod.
+9. `lib/serialize/v2.ts` — `planV2Overlay(live, overlay)`: the `ad save`
+   overlay applied to the live V2 GET body (D1: saves go through
+   `POST /chain/v2`; the V1 save route and serializer were removed). Writable:
+   name, summary, description, parsedSteps[{orderIndex (1-based),
+   source|sql|expression|description}]. Refused with AD_OVERLAY_NOT_APPLIED:
+   buttonLabel, internalMethod, inputs[].testValue (the V2 route answers 200
+   and drops them — live sems-dev), a field on a step of another kind, a
+   missing step, an overlay that changes nothing. Unknown keys →
+   AD_OVERLAY_UNKNOWN_KEY, bad types → AD_OVERLAY_INVALID, any change outside
+   the target leaves → AD_SERIALIZER_DRIFT. Custom code keeps its stored
+   encoding (sniffed with `decodeBase64Strict`), SQL its slot's `encodingType`.
+   `lib/serialize/diff.ts` — `diffPaths`/`getAtPath`/`isUnder`/`jsonEqual`.
+9a. `lib/save/` — the write pipeline. `pipeline.ts:saveOverlayV2` (draft
+   guard on V2 → plan → `validation.ts:runValidationGate` → confirm →
+   freshness re-GET (AD_VERSION_CONFLICT: the server ignores
+   `metadata.version`, AD-08) → POST → `verifySaved` re-GET
+   (AD_SAVE_VERIFY_FAILED; tolerates only `metadata.version` /
+   `metadata.internal`, which every save rewrites) → compiled cache + local
+   cache evicted, even when the POST/verify failed). `api.ts` —
+   `postChainV2` (AD_SAVE_REJECTED with the server message), `deleteChainV2`.
+   `compiled-cache.ts` — `invalidateCompiledCache(uuids)` POSTs
+   `{uuids,type:"AUTOMATION"}` to BOTH `/rest/api/cache/invalidate` and
+   `/rest/api/automations/cache/invalidate` (sems-dev needs both), never with
+   an empty list, never throws. `flags.ts` — `--no-validate`, `--strict`,
+   `--dry-run-compile` shared by save/publish/create.
 9b. `lib/sql/read-only.ts` — `ad sql run` / TUI read mode accept one read
    statement only (comments + literals stripped first); `SQL_NOT_READ_ONLY`.
 10. `lib/draft-guard.ts` — `resolveDraftTarget` — the **only** way to locate a
@@ -124,9 +136,10 @@ rationale.
     `insert` with `RETURNING <col>` asks for the operation's generatedId output
     (F25); a multi-row RETURNING makes the platform fail AFTER committing and
     list the keys in its error — belz parses them (`generatedKeys`).
-14. `tests/unit/` — save-guard (no-op round-trip over 36 real sems-dev
-    bodies in `tests/fixtures/real-v1/`, the `save-corruption/` case, every
-    refusal code), sql-read-only, parser, serializer, version resolver, draft guard, xml,
+14. `tests/unit/` — save-v2-overlay (round-trip + per-field overlay table
+    over the 36 real V2 bodies, every refusal code), save-command (V2 pipeline
+    via fakeFetch: freshness conflict, verify failure, cache routes, validator
+    gate), sql-read-only, parser, serializer, version resolver, draft guard, xml,
     base64, error detection, sql, note-flag, stream-parser tests;
     `real-wire.test.ts` — V1↔V2 parse parity over the 36 real methods
     (step kinds, SQL text, service names, uuid, 1-based orderIndex),
@@ -194,7 +207,7 @@ fails if a folder is missing from the registry.
 
 ### Write (`belz ad <cmd>`) — all draft-guarded
 
-1. `save <file> --uuid <draftUuid>` — save a JSON overlay onto a draft
+1. `save <file> --uuid <draftUuid>` — save a JSON overlay onto a draft (V2 route; see 9/9a)
 2. `publish <uuid> --note "<text>"` — promote a draft to its published version.
    `--note` is mandatory: belz publishes FIRST, then records the note on the
    draft chain (3 attempts); a note that still fails keeps the publish and
@@ -250,7 +263,7 @@ unless `--yes` is passed; in `--llm` mode, `--yes` is mandatory.
 All runtime state lives under `~/.belz/`:
 
 1. Auth sessions: `~/.belz/sessions/<env>.json`
-2. Method cache: `~/.belz/cache/methods/<env>/<uuid>.json` (soft TTL 5 min, hard 1 h; key = trimmed lower-case uuid; invalidated by `adApi.saveMethod`/`publishDraft` and `history restore`)
+2. Method cache: `~/.belz/cache/methods/<env>/<uuid>.json` (soft TTL 5 min, hard 1 h; key = trimmed lower-case uuid; invalidated by `ad save` (lib/save), `adApi.publishDraft` and `history restore`)
 3. Method finder index cache: `~/.belz/cache/method-finder/index-v1-<env>.json` (TTL 7 days)
 4. Service definition cache: `~/.belz/cache/definitions/<env>/<automationId>.json` (TTL 1 h)
 5. Local test suites: `./suites/*.spec.json`

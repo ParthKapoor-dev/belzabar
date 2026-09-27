@@ -1,2 +1,5 @@
-belz ad save <file> --uuid <uuid> --env <env> [--yes]  :->  Apply a JSON overlay (summary, description, inputs[].testValue, parsedSteps[].source|sql|expression|description) to the method's draft; refuses unknown/unwritable/no-op keys and any drift
+belz ad save <file> --uuid <uuid> --env <env>  :->  Save a JSON overlay (name, summary, description, parsedSteps[].source|sql|expression|description) onto the method's draft via V2; validated, freshness-checked, verified on re-read, compiled cache evicted
 belz ad save <file> --uuid <uuid> --env <env> --yes --llm  :->  Non-interactive save (--yes is required in --llm mode)
+belz ad save <file> --uuid <uuid> --env <env> --strict  :->  Validator warnings block the save too
+belz ad save <file> --uuid <uuid> --env <env> --dry-run-compile  :->  Also run the online validator checks (server compile dry run)
+belz ad save <file> --uuid <uuid> --env <env> --no-validate  :->  Skip the validator (logged loudly; not recommended)

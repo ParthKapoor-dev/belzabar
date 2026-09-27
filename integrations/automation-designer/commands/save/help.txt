@@ -1,48 +1,56 @@
-Usage: belz ad save <file> --uuid <draftUuid> [--yes]
+Usage: belz ad save <FILE> --uuid <UUID> --env <env> [flags]
 
-Save an edited method definition to an existing draft. Goes through
-resolveDraftTarget — if you pass a PUBLISHED UUID, belz automatically switches
-to the linked draft and tells you it did so.
+Save a JSON overlay onto a method's DRAFT through the V2 route
+(GET /chain/v2 → overlay → POST /chain/v2). A PUBLISHED uuid is switched to
+its linked draft (draft guard). Lean chains (steps without automationApiId)
+save normally.
 
-The <file> is a JSON overlay. Supported keys (anything else is refused with
-AD_OVERLAY_UNKNOWN_KEY):
-  summary        method summary (inner `summary`)
-  description    method description (inner `methodDescription`)
-  inputs[]       objects {code, testValue} — testValue on the matching input
-                 (note: the server drops stored testValues on save)
-  parsedSteps[]  objects {orderIndex} plus any of:
-    source       CUSTOM_CODE step: full decoded JS/Python source (plain text)
-    sql          SQL step: full decoded SQL body (plain text, NOT base64)
-    expression   SPEL_ECHO step: the SpEL expression string
-    description  any step: updated description
-  name, buttonLabel, internalMethod — recognised but NOT writable yet; refused
-                 with AD_OVERLAY_NOT_APPLIED.
-
-  Agents should always pass plain text. Edited steps are written back in the
-  step's original storage encoding (plain stays plain, base64 stays base64);
-  unedited steps are never rewritten.
+Arguments:
+  <FILE>                JSON overlay. Supported keys (anything else is refused
+                        with AD_OVERLAY_UNKNOWN_KEY):
+                          name, summary, description
+                          parsedSteps[] {orderIndex (1-based), and any of:
+                            source       CUSTOM_CODE step: full plain-text source
+                            sql          SQL step: full plain-text query
+                            expression   SPEL_ECHO step: the SpEL value
+                            description  any step}
+                        buttonLabel, internalMethod, inputs[].testValue are
+                        refused (AD_OVERLAY_NOT_APPLIED): the V2 route drops them.
+                        Always pass plain text; code and SQL are written back in
+                        the step's stored encoding (plain stays plain, base64
+                        stays base64).
 
 Flags:
-  --uuid <id>      Target DRAFT UUID (or PUBLISHED; we switch to its draft)
-  --category <n>   (future) Category name for --new
-  --new            Create a new method in the given --category (not yet wired)
-  --yes, -y        Skip the interactive confirmation prompt
-  --v2             Accepted for consistency; saves use V1 (with a notice)
-  --llm            Emit a JSON envelope; --yes is required in this mode
-  --env <name>     Target environment. Required explicitly: save is a write.
+  --uuid <UUID>         Target draft uuid (or its PUBLISHED uuid, or an AD URL). (required)
+  --yes, -y             Skip the confirmation prompt (required with --llm).
+  --no-validate         Skip the validator. Logged loudly; not recommended.
+  --strict              Validator warnings block the save too.
+  --dry-run-compile     Also run the online checks (server compile dry run).
+  --v2                  Accepted for consistency (save always uses V2).
+  --help, -h            Show this help message.
 
-Safety:
-  - Never saves to a PUBLISHED method. Writes always target the linked draft.
-  - Re-fetches the saved method after the write so automationId-dependent
-    tests work immediately.
-  - Round-trip guard: before POST, every field the overlay does not target
-    must be identical to the fetched definition, else AD_SERIALIZER_DRIFT.
-  - Effect check: every overlay key must change the payload. Unwritable keys,
-    missing/ambiguous orderIndex, a field on a step of another kind (e.g.
-    `sql` on a step not classified as SQL), or a value identical to the
-    current one → AD_OVERLAY_NOT_APPLIED. Nothing is saved.
-  - Refuses to write an EDITED CUSTOM_CODE step with >1 outputs missing
-    `elementToRetrieve` (AD_SERIALIZE_FAILED); on unedited steps this is a
-    warning only.
-  - Refuses methods whose draft/published state is missing (fail closed).
-  - Success data includes `applied[]`: the overlay keys that changed.
+Global Flags:
+  --env <name>          Set active environment. Required: save is a write.
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Pipeline and error codes:
+  1. draft guard (AD_DRAFT_GUARD_*), fresh V2 GET of the draft
+  2. overlay: AD_OVERLAY_UNKNOWN_KEY / AD_OVERLAY_INVALID / AD_OVERLAY_NOT_APPLIED;
+     only the targeted leaves may change (AD_SERIALIZER_DRIFT)
+  3. validator L1–L3 (L4 with --dry-run-compile): AD_VALIDATION_FAILED with
+     details {errors, warnings, blocking, layersRun, preexistingCount}
+  4. confirmation (AD_CONFIRMATION_REQUIRED in --llm without --yes)
+  5. freshness re-GET: AD_VERSION_CONFLICT if the draft changed since it was read
+  6. POST /chain/v2: AD_SAVE_REJECTED carries the server's message
+  7. re-GET verify: every change landed, nothing else changed, else
+     AD_SAVE_VERIFY_FAILED with details {notLanded, unexpected}
+  8. compiled cache evicted on both routes, local cache dropped
+
+Data: {action, draftUuid, publishedUuid, switchedFromPublished, previousVersion,
+version, applied[], unchanged[], validation{skipped, warnings, layersRun},
+compiledCache{ok, uuids, routes[]}}.
+
+Examples:
+  belz ad save overlay.json --uuid 4a1b2c3d... --env <env>
+  belz ad save overlay.json --uuid 4a1b2c3d... --env <env> --yes --llm
+  belz ad save overlay.json --uuid 4a1b2c3d... --env <env> --dry-run-compile --strict

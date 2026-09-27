@@ -1,4 +1,4 @@
-Usage: belz ad import <file> [flags]
+Usage: belz ad import <file> --env <env> [flags]
 
 Import one or more method definitions via
 /rest/api/automation/chain/import. The file contents are posted verbatim;
@@ -14,3 +14,10 @@ Flags:
   --yes, -y  Skip the interactive confirmation prompt
   --v2     Accepted for consistency; always V1 (a notice is printed)
   --llm    Emit a JSON envelope; --yes is required in this mode
+
+Global Flags:
+  --env <name>          Target environment. Required: import is a write.
+
+Examples:
+  belz ad import methods.json --env <env>
+  belz ad import methods.json --env <env> --yes --llm

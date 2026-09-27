@@ -1,28 +1,18 @@
 import { readFile } from "fs/promises";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { adApi } from "../../lib/api/index";
-import { resolveDraftTarget } from "../../lib/draft-guard";
 import { resolveMethodRef } from "../../lib/ids";
-import { buildGuardedV1SavePayload } from "../../lib/serialize/guard";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
-import { logIntent, requireConfirmation } from "../../lib/args/confirm";
+import { requireConfirmation } from "../../lib/args/confirm";
+import { saveOverlayV2, type SaveV2Data } from "../../lib/save/pipeline";
+import { VALIDATION_FLAGS } from "../../lib/save/flags";
 
 interface SaveArgs {
   filePath: string;
-  uuid?: string;
-  category?: string;
-  isNew: boolean;
+  uuid: string;
   yes: boolean;
-}
-
-interface SaveData {
-  action: "CREATED" | "UPDATED";
-  draftUuid: string;
-  publishedUuid: string | null;
-  version: number | string;
-  switchedFromPublished: boolean;
-  /** Overlay keys verified (pre-POST) to change the payload. */
-  applied: string[];
+  noValidate: boolean;
+  strict: boolean;
+  dryRunCompile: boolean;
 }
 
 export const args = defineArgs({
@@ -31,14 +21,17 @@ export const args = defineArgs({
   flags: {
     ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
-    uuid: { type: "string" },
-    category: { type: "string" },
-    new: { type: "boolean" },
+    ...VALIDATION_FLAGS,
+    uuid: {
+      type: "string",
+      required: true,
+      missingCode: "MISSING_UUID",
+      missingMessage: "--uuid <draftUuid> is required (to create a method use `belz ad create`).",
+    },
   },
-  exclusive: [["uuid", "new"]],
 });
 
-const command: CommandModule<SaveArgs, SaveData> = {
+const command: CommandModule<SaveArgs, SaveV2Data> = {
   schema: "ad.save",
   writes: true,
   parseArgs(argv) {
@@ -47,106 +40,51 @@ const command: CommandModule<SaveArgs, SaveData> = {
     return {
       filePath: positionals.file,
       uuid: flags.uuid,
-      category: flags.category,
-      isNew: flags.new,
       yes: flags.yes,
+      noValidate: flags.noValidate,
+      strict: flags.strict,
+      dryRunCompile: flags.dryRunCompile,
     };
   },
-  async execute({ filePath, uuid, category, isNew, yes }, context) {
+  async execute(a, context) {
     let text: string;
     try {
-      text = await readFile(filePath, "utf-8");
+      text = await readFile(a.filePath, "utf-8");
     } catch (err) {
-      throw new CliError(`Cannot read overlay file ${filePath}: ${String(err)}`, { code: "FILE_NOT_FOUND" });
+      throw new CliError(`Cannot read overlay file ${a.filePath}: ${String(err)}`, { code: "FILE_NOT_FOUND" });
     }
-    let parsed: unknown;
+    let overlay: unknown;
     try {
-      parsed = JSON.parse(text);
+      overlay = JSON.parse(text);
     } catch (err) {
-      throw new CliError(`Overlay file ${filePath} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
+      throw new CliError(`Overlay file ${a.filePath} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
     }
 
-    if (isNew) {
-      if (!category) {
-        throw new CliError("--category is required with --new.", {
-          code: "MISSING_CATEGORY",
-        });
-      }
-      throw new CliError(
-        "Create-path saves are not wired yet — they need a category catalog lookup. " +
-          "For now, save existing methods via --uuid <draftUuid>.",
-        { code: "NOT_IMPLEMENTED" },
-      );
-    }
-
-    if (!uuid) {
-      throw new CliError("--uuid is required for updates (or pass --new for creation).", {
-        code: "MISSING_UUID",
-      });
-    }
-
-    // Draft-safety gate — mandatory for every write path.
-    const guard = await resolveDraftTarget(resolveMethodRef(uuid), "v1");
-    if (!guard.ok) {
-      throw new CliError(guard.message, {
-        code: `AD_DRAFT_GUARD_${guard.reason}`,
-        details: guard,
-      });
-    }
-    const draft = guard.draft;
-
-    // Apply the overlay and build the payload through the save guard: it
-    // refuses unknown / unwritable / no-effect overlay keys and any drift in
-    // fields the overlay did not target (lib/serialize/guard.ts).
-    const { payload, applied } = buildGuardedV1SavePayload(draft, parsed, {
-      version: typeof draft.version === "number" ? draft.version + 1 : undefined,
-      warn: msg => context.warn(msg),
+    const data = await saveOverlayV2({
+      uuid: resolveMethodRef(a.uuid),
+      overlay,
+      env: context.env.name,
+      flags: { noValidate: a.noValidate, strict: a.strict, dryRunCompile: a.dryRunCompile },
+      warn: (msg) => context.warn(msg),
+      confirm: (action, details) => requireConfirmation({ yes: a.yes, outputMode: context.outputMode, action, details }),
     });
-
-    await requireConfirmation({
-      yes,
-      outputMode: context.outputMode,
-      action: `save draft ${draft.uuid}`,
-      details: [
-        ["Method", draft.name],
-        ["Draft UUID", draft.uuid],
-        ["Published UUID", guard.publishedUuid ?? "(none)"],
-        ["Linked from PUBLISHED", guard.switchedFromPublished ? "Yes" : "No"],
-        ["New version", String(payload.version ?? "")],
-        ["Category", payload.category.name],
-        ["Changes", applied.join(", ")],
-      ],
-    });
-
-    logIntent("POST", "/rest/api/automation/chain", {
-      draftUuid: draft.uuid,
-      version: payload.version,
-      bytes: payload.jsonDefinition.length,
-    });
-
-    const saved = await adApi.saveMethod(payload);
-
-    return ok<SaveData>({
-      action: "UPDATED",
-      draftUuid: saved.method.uuid,
-      publishedUuid: guard.publishedUuid,
-      version: saved.method.version,
-      switchedFromPublished: guard.switchedFromPublished,
-      applied,
-    });
+    return ok<SaveV2Data>(data);
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
-    const data = envelope.data as SaveData;
-    ui.success(`Saved ${data.action === "CREATED" ? "new draft" : "draft"}: ${data.draftUuid}`);
+    const data = envelope.data as SaveV2Data;
+    ui.success(`Saved draft ${data.draftUuid} (v${data.previousVersion ?? "?"} → v${data.version ?? "?"}), verified on re-read`);
     ui.table(
       ["Property", "Value"],
       [
-        ["Action", data.action],
         ["Draft UUID", data.draftUuid],
         ["Published UUID", data.publishedUuid ?? "(none)"],
-        ["Version", data.version],
+        ["Version", `${data.previousVersion ?? "?"} → ${data.version ?? "?"}`],
         ["Switched from PUBLISHED", data.switchedFromPublished ? "Yes" : "No"],
+        ["Applied", data.applied.join(", ")],
+        ["Unchanged", data.unchanged.join(", ") || "-"],
+        ["Validation", data.validation.skipped ? "SKIPPED" : `${data.validation.warnings.length} warning(s)`],
+        ["Compiled cache", data.compiledCache.ok ? "evicted" : "NOT evicted"],
       ],
     );
   },
