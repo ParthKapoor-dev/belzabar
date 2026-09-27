@@ -28,6 +28,7 @@ apps/cli/
 │   │                       each: index.ts + help.txt + desc.txt
 ├── tests/
 │   ├── registry.test.ts           Every commands/*/ folder is registered, sorted, has help/desc
+│   ├── write-commands.test.ts     D6: every remote-write command/sub-action declares writes (local: writesLocal)
 │   ├── envelope-contract.test.ts  Every registered command's --llm envelope vs EnvelopeSchema
 │   ├── compiled-pipe.test.ts      Compiles the binary to a tmp dir; >64 KiB --llm through a slow pipe
 │   ├── update-paths.test.ts       `belz update` finds apps/cli/scripts (or the old cli/scripts)
