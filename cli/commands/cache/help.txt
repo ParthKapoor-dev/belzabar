@@ -1,23 +1,26 @@
-Usage: belz cache [flags] [uuid...]
+Usage: belz cache [flags] <uuid...>
+       belz cache --all --yes [--type <TYPE>]
 
-Invalidate server-side cache entries for the active environment via
-POST /rest/api/cache/invalidate.
+Invalidate server-side cache entries for the active environment. Every call is
+POSTed to BOTH /rest/api/cache/invalidate and /rest/api/automations/cache/invalidate
+with body {"uuids":[...],"type":"<TYPE>"}; it succeeds if any route returns 2xx,
+and each route's result is reported.
 
-Pass one or more UUIDs to invalidate specific entries, or omit UUIDs to
-invalidate the entire cache for the given --type. Wiping the entire cache
-requires --yes (or interactive confirmation).
+An invalidate with no UUIDs flushes the ENTIRE cache of that type for the whole
+organisation, so it is refused unless both --all and --yes are passed.
 
 Args:
-  [uuid...]           One or more cache entry UUIDs. Omit to clear all.
+  <uuid...>           One or more cache entry UUIDs (e.g. method/chain UUIDs).
 
 Flags:
   --type <TYPE>       Cache type to invalidate. (default: AUTOMATION)
-  --yes, -y           Skip confirmation when clearing the entire cache.
+  --all               Flush every entry of --type (org-wide). Requires --yes.
+  --yes, -y           Confirm an --all flush.
   --help, -h          Show this help message.
 
 Global Flags:
   --env <name>        Environment to operate on. (default: nsm-dev)
-                      Available: nsm-dev | nsm-qa | nsm-uat
+                      Also accepts --env=<name> or -e <name>.
   --llm               Output structured JSON envelope for scripting/LLM use.
   -v, --verbose       Verbose request logging.
 
@@ -28,11 +31,8 @@ Examples:
   # Same, against nsm-qa
   belz cache --env nsm-qa <uuid> <uuid>
 
-  # Wipe the entire AUTOMATION cache on nsm-uat (requires confirmation)
-  belz cache --env nsm-uat
-
-  # Wipe everything non-interactively (e.g. from a script or LLM)
-  belz cache --yes --llm
+  # Wipe the entire AUTOMATION cache on nsm-uat (org-wide; use with care)
+  belz cache --env nsm-uat --all --yes
 
   # Invalidate by a non-default type
   belz cache --type PAGE <uuid>
