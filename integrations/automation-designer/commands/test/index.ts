@@ -4,6 +4,9 @@ import { adApi } from "../../lib/api/index";
 import { testMethodMultipart } from "../../lib/api/v1";
 import { ErrorParser, detectJavaException, type ParsedError } from "../../lib/error-parser";
 import { ServiceHydrator } from "../../lib/hydrator";
+import { buildV1TestPayload, describeTestFailure, stepAutomationId, v1TestFormData } from "../../lib/payload-builder";
+import { resolveMethodRef } from "../../lib/ids";
+import type { ParsedStep } from "../../lib/types/common";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
 
@@ -12,6 +15,7 @@ interface TestMethodArgs {
   inputsFile?: string;
   verbose: boolean;
   raw: boolean;
+  force: boolean;
 }
 
 interface ServiceTraceRow {
@@ -69,8 +73,6 @@ function parseOutput(testResult: unknown): unknown {
   return testResult;
 }
 
-type InnerService = Record<string, unknown>;
-
 export const args = defineArgs({
   command: "belz ad test",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
@@ -81,11 +83,37 @@ export const args = defineArgs({
     // the runner hands `--verbose`/`-v` to this command.
     verbose: { type: "boolean", alias: ["-v"] },
     raw: { type: "boolean" },
+    // Removed no-op kept so old scripts/skills (`--force`) don't hit UNKNOWN_FLAG.
+    force: { type: "boolean", hidden: true },
   },
 });
 
+/**
+ * The method step a test-response row belongs to: by position (the response
+ * lists steps in order), confirmed by automationId when both carry one, else
+ * the first step with that automationId. Falls back to the row itself.
+ */
+export function matchStep(
+  steps: ParsedStep[],
+  svc: Record<string, unknown>,
+  idx: number,
+): { step: number; description: string } {
+  const ordered = [...steps].sort((a, b) => a.orderIndex - b.orderIndex);
+  const aid = stepAutomationId(svc);
+  const sameId = (s: ParsedStep | undefined) => !!s && (!aid || !s.automationId || String(s.automationId).trim() === aid);
+  let hit: ParsedStep | undefined = ordered[idx];
+  if (!sameId(hit)) hit = aid ? ordered.find((s) => String(s.automationId ?? "").trim() === aid) : undefined;
+  const own = typeof svc.description === "string" && svc.description ? svc.description : undefined;
+  return {
+    step: hit?.orderIndex ?? idx + 1,
+    description: hit?.description || own || "Service",
+  };
+}
+
 const command: CommandModule<TestMethodArgs, TestMethodData> = {
   schema: "ad.test",
+  // Executes the chain: SQL/HTTP steps really run (and commit), so an explicit --env is required.
+  writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "test", "test");
@@ -94,9 +122,12 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       inputsFile: flags.inputs,
       verbose: flags.verbose,
       raw: flags.raw,
+      force: flags.force,
     };
   },
-  async execute({ uuid, inputsFile, verbose, raw }) {
+  async execute({ uuid: uuidArg, inputsFile, verbose, raw, force }, context) {
+    if (force) context.warn("--force is deprecated and does nothing (ad test never used the cache).");
+    const uuid = resolveMethodRef(uuidArg);
     // Fetch V1 so we can mutate `jsonDefinition` in the test payload (test-
     // before-save). The V1 raw response is what testMethodMultipart expects.
     const hydrated = await adApi.fetchMethod(uuid, "v1");
@@ -104,57 +135,13 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
 
     const values = await InputCollector.collect(hydrated.inputs, inputsFile);
 
-    // Parse inner definition
-    let innerDef: Record<string, unknown> = {};
-    try {
-      innerDef = JSON.parse(rawMethod.jsonDefinition);
-    } catch {
-      throw new CliError("Failed to parse method jsonDefinition.", { code: "INVALID_DEFINITION" });
-    }
-
-    // Inject testValues
-    if (Array.isArray(innerDef.inputs)) {
-      innerDef.inputs = (innerDef.inputs as Array<Record<string, unknown>>).map(inp => {
-        const fieldCode = typeof inp.fieldCode === "string" ? inp.fieldCode : null;
-        if (fieldCode && Object.prototype.hasOwnProperty.call(values, fieldCode)) {
-          return { ...inp, testValue: values[fieldCode] };
-        }
-        return inp;
-      });
-    }
-
-    // Inject automationApiId into each service (required by Java compiler).
-    if (Array.isArray(innerDef.services)) {
-      innerDef.services = await Promise.all(
-        (innerDef.services as InnerService[]).map(async svc => {
-          if (svc.automationApiId != null) return svc;
-          const aid = typeof svc.automationId === "string" ? svc.automationId : null;
-          if (!aid) return svc;
-          const def = await ServiceHydrator.getDefinition(aid).catch(() => null);
-          if (def?.automationAPI?.id != null) {
-            return { ...svc, automationApiId: def.automationAPI.id };
-          }
-          return svc;
-        }),
-      );
-    }
-
-    const payload = {
-      category: rawMethod.category,
-      jsonDefinition: JSON.stringify(innerDef),
-      id: rawMethod.id,
-      uuid: rawMethod.uuid,
-      version: rawMethod.version,
-    };
-
-    const formData = new FormData();
-    formData.append("body", JSON.stringify(payload));
-
-    const resultRes = await testMethodMultipart(formData);
+    const payload = await buildV1TestPayload(rawMethod, values);
+    const resultRes = await testMethodMultipart(v1TestFormData(payload));
     if (!resultRes.ok) {
-      throw new CliError(`Execution failed: ${resultRes.status} ${resultRes.statusText}`, {
+      const failure = await describeTestFailure(resultRes);
+      throw new CliError(`Execution failed: ${failure.message}`, {
         code: "TEST_EXECUTION_FAILED",
-        details: await resultRes.text(),
+        details: { status: resultRes.status, body: failure.body },
       });
     }
 
@@ -188,14 +175,17 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
     }
 
     const services = Array.isArray(result.services) ? (result.services as any[]) : [];
+    // AD-17: the test response omits step descriptions and orderIndex — join
+    // each row to the method's own steps.
+    const stepFor = (svc: any, idx: number) => matchStep(hydrated.parsedSteps, svc, idx);
     const failedSvcIndex = services.findIndex(s => s.executionStatus?.failed);
     const failedSvc = failedSvcIndex >= 0 ? services[failedSvcIndex] : null;
 
     const failedStep = failedSvc
       ? {
-          index: failedSvcIndex + 1,
+          index: stepFor(failedSvc, failedSvcIndex).step,
           automationId: failedSvc.automationId,
-          description: failedSvc.description || "Service",
+          description: stepFor(failedSvc, failedSvcIndex).description,
           parsedError: ErrorParser.parse(failedSvc.executionStatus),
         }
       : null;
@@ -204,10 +194,11 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       let status: ServiceTraceRow["status"] = "success";
       if (svc.executionStatus?.failed) status = "failed";
       else if (!svc.executionStatus || svc.executionStatus.executed === false) status = "skipped";
+      const meta = stepFor(svc, idx);
       return {
-        step: idx + 1,
+        step: meta.step,
         automationId: svc.automationId,
-        description: svc.description || "Service",
+        description: meta.description,
         status,
         totalTime: (() => {
           const et = svc.executionStatus?.executionTime;
@@ -234,10 +225,11 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       const outputs: ServiceOutputRow[] = (svc.outputs || [])
         .filter((o: any) => o.testResult !== undefined)
         .map((o: any) => ({ code: o.code, value: parseOutput(o.testResult) }));
+      const meta = stepFor(svc, idx);
       return {
-        step: idx + 1,
+        step: meta.step,
         automationId: svc.automationId,
-        description: svc.description || "Service",
+        description: meta.description,
         status,
         outputs,
       };

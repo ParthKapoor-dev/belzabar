@@ -20,7 +20,6 @@ import { parseV2Method } from "../parser/v2";
 
 export type {
   SaveMethodResult as V1SaveMethodResult,
-  V1TestExecuteResult,
   MethodVersionSummary,
   MethodVersionFull,
 } from "./v1";
@@ -158,10 +157,6 @@ export const adApi = {
   },
 
   // ─── Test execute ────────────────────────────────────────────────────
-
-  async testExecuteV1(method: HydratedMethod): Promise<v1.V1TestExecuteResult> {
-    return v1.testExecuteV1(method);
-  },
 
   async testExecuteV2(
     chainUuid: string,

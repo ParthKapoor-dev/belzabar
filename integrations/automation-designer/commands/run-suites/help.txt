@@ -2,6 +2,9 @@ Usage: belz ad run-suites [flags]
 
 Execute all saved regression test suites found in the 'suites/' directory.
 Each suite is verified for HTTP 200 and a non-failed execution result.
+Suites really execute (SQL/HTTP steps run), so an explicit --env is required.
+The test body is the same one `belz ad test` posts; a failed request reports
+the server's message.
 
 Flags:
   --v2                Accepted for consistency; suites run on V1 (with a notice).
@@ -13,6 +16,5 @@ Global Flags:
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad run-suites
-  belz ad run-suites --env nsm-qa
-  belz ad run-suites --llm
+  belz ad run-suites --env <env>
+  belz ad run-suites --env <env> --llm

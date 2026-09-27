@@ -1,6 +1,10 @@
 import { CliError, ok, apiFetch, defineArgs, type CommandModule } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { readStream } from "../../lib/stream-parser";
+import { adApi } from "../../lib/api/index";
+import { AD_LONG_OP_TIMEOUT_MS } from "../../lib/api/v1";
+import { resolveMethodRef } from "../../lib/ids";
+import type { MethodState } from "../../lib/types/common";
 
 interface RunMethodArgs {
   publishedId: string;
@@ -11,6 +15,10 @@ interface RunMethodArgs {
 
 interface RunMethodData {
   publishedId: string;
+  /** State of the uuid passed (DRAFT uuids execute the PUBLISHED body — AD-34). null if it could not be read. */
+  inputState: MethodState | null;
+  /** When a DRAFT uuid was passed: the published uuid whose body actually ran (null: never published). */
+  executesPublishedUuid?: string | null;
   path: string;
   payloadType: string;
   response: unknown;
@@ -58,6 +66,8 @@ export const args = defineArgs({
 
 const command: CommandModule<RunMethodArgs, RunMethodData> = {
   schema: "ad.run",
+  // Executes a live method with real side effects: explicit --env required.
+  writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "run", "run");
@@ -68,8 +78,28 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       stream: flags.stream,
     };
   },
-  async execute({ publishedId, payloadArg, raw, stream }, context) {
+  async execute({ publishedId: idArg, payloadArg, raw, stream }, context) {
+    const publishedId = resolveMethodRef(idArg);
     const payload = await resolvePayload(payloadArg);
+
+    // AD-34: executing a DRAFT uuid silently runs the PUBLISHED body.
+    let inputState: MethodState | null = null;
+    let executesPublishedUuid: string | null | undefined;
+    try {
+      const m = await adApi.fetchMethod(publishedId, "v1");
+      inputState = m.state;
+      if (m.state === "DRAFT") {
+        executesPublishedUuid = (m.referenceId ?? "").trim() || null;
+        context.warn(
+          executesPublishedUuid
+            ? `${publishedId} is a DRAFT: the execute endpoint runs the PUBLISHED body (${executesPublishedUuid}), not the draft. Use 'belz ad test ${publishedId} --env ${context.env.name}' to run the draft.`
+            : `${publishedId} is a DRAFT that was never published: the execute endpoint does not run draft bodies. Use 'belz ad test' to run the draft.`,
+        );
+      }
+    } catch (e) {
+      if (e instanceof CliError && e.code === "METHOD_NOT_FOUND") throw e;
+      // state unknown — execute anyway (reported as inputState:null)
+    }
     if (!payloadArg) {
       context.warn("No payload provided. Using empty object '{}'.");
     }
@@ -80,6 +110,8 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       authMode: "Raw",
       ...(stream ? { headers: { Accept: "application/stream+json" } } : {}),
       body: JSON.stringify(payload),
+      // Long-running methods; a stream stays open for as long as the method runs.
+      timeoutMs: stream ? "none" : AD_LONG_OP_TIMEOUT_MS,
     });
 
     if (!response.ok) {
@@ -104,6 +136,8 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       });
       const data: RunMethodData = {
         publishedId,
+        inputState,
+        ...(executesPublishedUuid !== undefined ? { executesPublishedUuid } : {}),
         path,
         payloadType,
         response: result.final,
@@ -120,6 +154,8 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       const json = JSON.parse(text);
       const data: RunMethodData = {
         publishedId,
+        inputState,
+        ...(executesPublishedUuid !== undefined ? { executesPublishedUuid } : {}),
         path,
         payloadType,
         response: json,
@@ -130,6 +166,8 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
     } catch {
       const data: RunMethodData = {
         publishedId,
+        inputState,
+        ...(executesPublishedUuid !== undefined ? { executesPublishedUuid } : {}),
         path,
         payloadType,
         response: text,

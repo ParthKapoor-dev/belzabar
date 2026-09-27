@@ -12,7 +12,6 @@ import type {
   V1RawMethodResponse,
   V1SavePayload,
 } from "../types/v1-wire";
-import { detectJavaException } from "../error-parser";
 
 /**
  * Per-call timeout for long server-side operations (`/chain/test`, execute,
@@ -271,7 +270,8 @@ export async function deleteTestSuite(testSuiteId: string): Promise<void> {
 /**
  * Low-level multipart POST to the V1 test endpoint. Used by the SQL module
  * which builds hand-crafted FormData bodies wrapping a SQL template method.
- * Most callers should use testExecuteV1() below instead.
+ * Build the body with lib/payload-builder.ts:buildV1TestPayload (the one
+ * V1 test payload builder, AD-38).
  */
 export async function testMethodMultipart(formData: FormData): Promise<Response> {
   const path = "/rest/api/automation/chain/test";
@@ -305,92 +305,6 @@ async function redactTestResponse(response: Response): Promise<Response> {
   headers.delete("content-length"); // body length changed
   headers.delete("content-encoding"); // already decoded
   return new Response(body, { status: response.status, statusText: response.statusText, headers });
-}
-
-// ─── TEST EXECUTE (V1 — test-before-save) ───────────────────────────────
-
-export interface V1TestExecuteResult {
-  success: boolean;
-  failedStepIndex: number | null;
-  raw: unknown;
-}
-
-/**
- * Execute a method via the V1 test endpoint. The full modified jsonDefinition
- * is sent as a multipart `body=<compact JSON>` field; the server returns rich
- * per-step trace as JSON. belz's `test` command consumes this.
- *
- * The caller is responsible for injecting testValues / automationApiIds into
- * the method before calling this. `method` must be a V1-sourced HydratedMethod
- * so that `method.raw.jsonDefinition` round-trips correctly.
- */
-export async function testExecuteV1(method: HydratedMethod): Promise<V1TestExecuteResult> {
-  const raw = method.raw as V1RawMethodResponse;
-  const innerDef: Record<string, unknown> = JSON.parse(raw.jsonDefinition);
-
-  // Patch testValue from method.inputs onto inner inputs.
-  if (Array.isArray(innerDef.inputs)) {
-    const byCode = new Map<string, Record<string, unknown>>();
-    for (const f of innerDef.inputs as Record<string, unknown>[]) {
-      if (typeof f.fieldCode === "string") byCode.set(f.fieldCode, f);
-    }
-    for (const mf of method.inputs) {
-      if (mf.testValue === undefined) continue;
-      const target = byCode.get(mf.code);
-      if (target) target.testValue = mf.testValue;
-    }
-  }
-
-  const payload = {
-    category: raw.category,
-    jsonDefinition: JSON.stringify(innerDef),
-    id: raw.id,
-    uuid: raw.uuid,
-    version: raw.version,
-  };
-
-  const formData = new FormData();
-  formData.append("body", JSON.stringify(payload));
-
-  const path = `/rest/api/automation/chain/test`;
-  const response = await apiFetch(path, {
-    method: "POST",
-    timeoutMs: AD_LONG_OP_TIMEOUT_MS,
-    authMode: "Bearer",
-    headers: {
-      "internal-ad-execution-mode": "debug",
-      "Expertly-Auth-Token": "true",
-    },
-    body: formData,
-  });
-  if (!response.ok) {
-    throw new CliError(`Execution failed: ${response.status} ${response.statusText}`, {
-      code: "TEST_EXECUTION_FAILED",
-      details: { status: response.status, body: await readErrorBody(response) },
-    });
-  }
-
-  // Debug mode echoes the request headers (Authorization: Bearer <jwt>,
-  // Expertly-Auth-Token) — scrub them before anything prints or caches this.
-  const result = redactSecrets((await response.json()) as Record<string, unknown>, { keys: "headers" });
-
-  const javaExc = detectJavaException(result);
-  if (javaExc) {
-    throw new CliError(javaExc.message, {
-      code: "BACKEND_COMPILATION_ERROR",
-      details: javaExc,
-    });
-  }
-
-  const services = Array.isArray(result.services) ? (result.services as Record<string, unknown>[]) : [];
-  const failedStepIndex = services.findIndex(s => (s.executionStatus as Record<string, unknown>)?.failed);
-  const execFailed = (result.executionStatus as Record<string, unknown>)?.failed === true;
-
-  return {
-    success: !execFailed,
-    failedStepIndex: failedStepIndex >= 0 ? failedStepIndex : null,
-    raw: result,
-  };
 }
 
 // ─── METHOD HISTORY (via published internal services) ────────────────────

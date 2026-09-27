@@ -1,5 +1,5 @@
-belz ad run <published-id>  :->  Execute a published method with empty payload
-belz ad run <published-id> '<json>'  :->  Execute with an inline JSON payload string
-belz ad run <published-id> <file.json>  :->  Execute with payload read from a JSON file
-belz ad run <published-id> '<json>' --raw  :->  Include raw execution payload in output
-belz ad run <published-id> '<json>' --stream  :->  Opt into a streaming method (application/stream+json)
+belz ad run <published-id> --env <env>  :->  Execute a published method with empty payload (real side effects: needs --env; a DRAFT uuid runs its PUBLISHED body, with a warning)
+belz ad run <published-id> '<json>' --env <env>  :->  Execute with an inline JSON payload string
+belz ad run <published-id> <file.json> --env <env>  :->  Execute with payload read from a JSON file
+belz ad run <published-id> '<json>' --env <env> --raw  :->  Include raw execution payload in output
+belz ad run <published-id> '<json>' --env <env> --stream  :->  Opt into a streaming method (application/stream+json; no timeout)

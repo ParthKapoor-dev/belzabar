@@ -1,6 +1,11 @@
 Usage: belz ad run <PUBLISHED_ID> [PAYLOAD] [flags]
 
-Execute a published Automation Designer method.
+Execute a published Automation Designer method. This has real side effects,
+so an explicit --env is required.
+
+A DRAFT uuid is accepted but the platform runs the PUBLISHED body linked to
+it (not the draft): belz warns and reports inputState/executesPublishedUuid.
+Use `belz ad test` to execute a draft.
 
 Arguments:
   <PUBLISHED_ID>      The unique ID of the published method version.
@@ -22,7 +27,7 @@ Global Flags:
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad run 40ba5566efa95b033ef7af8f7f30ee09
-  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}'
-  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --raw --llm
-  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"q":"hello"}' --stream
+  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 --env <env>
+  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}' --env <env>
+  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --env <env> --raw --llm
+  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"q":"hello"}' --env <env> --stream

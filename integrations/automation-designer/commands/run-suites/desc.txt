@@ -1,2 +1,1 @@
-belz ad run-suites  :->  Run all saved test suites in suites/; verifies HTTP 200 and non-failed execution
-belz ad run-suites --env nsm-qa  :->  Run all suites against a specific environment
+belz ad run-suites --env <env>  :->  Run all saved test suites in suites/ (really executes; needs --env); verifies HTTP 200 and non-failed execution, reports the server's error message

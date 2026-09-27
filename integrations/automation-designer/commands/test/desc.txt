@@ -1,4 +1,4 @@
-belz ad test <uuid>  :->  Execute a draft method; prompts for inputs interactively, returns service outputs and traces
-belz ad test <uuid> --inputs <file>  :->  Pass a JSON file of input values (skips interactive prompts; required with --llm)
-belz ad test <uuid> --verbose  :->  Show detailed execution trace for each step (-v)
-belz ad test <uuid> --raw  :->  Include raw execution payload in output
+belz ad test <uuid> --env <env>  :->  Execute a draft method (really runs it: needs --env); prompts for inputs interactively, returns service outputs and traces
+belz ad test <uuid> --env <env> --inputs <file>  :->  Pass a JSON file of input values (skips interactive prompts; required with --llm)
+belz ad test <uuid> --env <env> --verbose  :->  Show detailed execution trace for each step (-v)
+belz ad test <uuid> --env <env> --raw  :->  Include raw execution payload in output

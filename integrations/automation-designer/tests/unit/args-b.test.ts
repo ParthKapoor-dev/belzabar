@@ -50,8 +50,9 @@ describe("test (AD-15, CORE-7)", () => {
     expect(parse(testCmd, ["u", "-v"]).verbose).toBe(true);
     expect(parse(testCmd, ["u"]).verbose).toBe(false);
   });
-  test("--force was removed (it never did anything)", () => {
-    expect(code(() => parse(testCmd, ["u", "--force"]))).toBe("UNKNOWN_FLAG");
+  test("--force is a hidden, deprecated no-op (accepted so old scripts keep working)", () => {
+    expect(parse(testCmd, ["u", "--force"]).force).toBe(true);
+    expect(parse(testCmd, ["u"]).force).toBe(false);
   });
   test("--inputs needs a value", () => {
     expect(parse(testCmd, ["u", "--inputs", "i.json"]).inputsFile).toBe("i.json");

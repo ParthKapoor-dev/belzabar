@@ -3,6 +3,7 @@ import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { resolveMethodRef } from "../../lib/ids";
 
 interface SaveSuiteArgs {
   uuid: string;
@@ -35,7 +36,13 @@ const command: CommandModule<SaveSuiteArgs, SaveSuiteData> = {
     resolveAdCommon(flags, "test", "save-suite");
     return { uuid: positionals.uuid, suiteName: flags.name, inputsFile: flags.inputs };
   },
-  async execute({ uuid, suiteName, inputsFile }) {
+  async execute({ uuid: uuidArg, suiteName, inputsFile }) {
+    const uuid = resolveMethodRef(uuidArg);
+    if (!/^[\w.-]+$/.test(suiteName) || suiteName.startsWith(".")) {
+      throw new CliError(`Invalid suite name '${suiteName}': use letters, digits, '.', '_' or '-' (it becomes suites/<name>.spec.json).`, {
+        code: "INVALID_SUITE_NAME",
+      });
+    }
     const method = await adApi.fetchMethod(uuid, "v1");
     const values = await InputCollector.collect(method.inputs, inputsFile);
 

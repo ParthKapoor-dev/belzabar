@@ -3,7 +3,8 @@ import { join } from "path";
 import { CliError, defineArgs, fail, ok, type CommandModule } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { fetchRawMethod, testMethodMultipart } from "../../lib/api/v1";
-import { PayloadBuilder } from "../../lib/payload-builder";
+import { buildV1TestPayload, describeTestFailure, v1TestFormData } from "../../lib/payload-builder";
+import { resolveMethodRef } from "../../lib/ids";
 
 interface SuiteResult {
   name: string;
@@ -33,6 +34,8 @@ export const args = defineArgs({
 
 const command: CommandModule<undefined, RunSuitesData> = {
   schema: "ad.run-suites",
+  // Executes every suite's chain (SQL/HTTP steps really run): explicit --env required.
+  writes: true,
   parseArgs(argv) {
     const { flags } = args.parse(argv);
     resolveAdCommon(flags, "test", "run-suites");
@@ -62,18 +65,17 @@ const command: CommandModule<undefined, RunSuitesData> = {
       };
 
       try {
-        const rawMethod = await fetchRawMethod(suite.uuid);
-        const payload = PayloadBuilder.injectInputs(rawMethod, suite.inputs || {});
-        const formData = new FormData();
-        formData.append("body", JSON.stringify(payload));
-
-        const resultRes = await testMethodMultipart(formData);
+        // AD-38 / F14: the same `/chain/test` body `ad test` posts (not the whole GET body).
+        const rawMethod = await fetchRawMethod(resolveMethodRef(suite.uuid));
+        const payload = await buildV1TestPayload(rawMethod, suite.inputs || {});
+        const resultRes = await testMethodMultipart(v1TestFormData(payload));
         if (!resultRes.ok) {
+          const failure = await describeTestFailure(resultRes);
           suites.push({
             name: suite.name,
             uuid: suite.uuid,
             status: "failed",
-            reason: `API Request Failed: ${resultRes.status}`,
+            reason: `API Request Failed: ${failure.message}`,
           });
           failed++;
           continue;

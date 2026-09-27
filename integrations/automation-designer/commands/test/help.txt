@@ -1,6 +1,8 @@
 Usage: belz ad test <UUID> [flags]
 
 Execute a draft Automation Designer method for testing and inspection.
+This really runs the chain (SQL steps commit, HTTP steps call out), so it
+requires an explicit --env.
 
 Arguments:
   <UUID>              The UUID of the draft method to test.
@@ -19,8 +21,12 @@ Global Flags:
                       Available: nsm-dev | nsm-qa | nsm-uat
   --llm               Output structured JSON envelope for scripting/LLM use.
 
+Notes:
+  - Posts {category, jsonDefinition, id, uuid, version} to /chain/test with
+    testValues set and automationApiId filled on every step (lean chains).
+  - Trace rows carry the method's own step descriptions and orderIndex.
+
 Examples:
-  belz ad test 1234-5678
-  belz ad test 1234-5678 --verbose
-  belz ad test 1234-5678 --inputs ./test-data.json
-  belz ad test 1234-5678 --inputs ./test-data.json --raw --llm
+  belz ad test 4a1b2c3d... --env <env>
+  belz ad test 4a1b2c3d... --env <env> --verbose
+  belz ad test 4a1b2c3d... --env <env> --inputs ./test-data.json --raw --llm
