@@ -61,7 +61,7 @@ describe("--note", () => {
 
   test("changelog --note is optional and marks the command as a write", () => {
     const list = parse(changelog, ["u"]);
-    expect(list).toEqual({ uuid: "u", note: undefined });
+    expect(list).toEqual({ uuid: "u", note: undefined, yes: false });
     const add = parse(changelog, ["u", "--note", "hello"]);
     expect(add.note).toBe("hello");
     expect((changelog as any).writes(list)).toBe(false);
