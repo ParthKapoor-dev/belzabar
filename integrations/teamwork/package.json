@@ -1,0 +1,14 @@
+{
+  "name": "@belzabar/teamwork",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Teamwork commands and lib (`belz tw`).",
+  "exports": {
+    "./registry": "./registry.ts",
+    "./lib/*": "./lib/*.ts"
+  },
+  "dependencies": {
+    "@belzabar/core": "workspace:*"
+  }
+}

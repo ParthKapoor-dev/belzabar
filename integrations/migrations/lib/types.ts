@@ -1,16 +1,9 @@
 import type { JenkinsClient, MigrateType } from "./constants";
+import type { BuildInfo, TriggerBuildInput } from "@belzabar/jenkins";
 
 export type YesNo = "Y" | "N";
 
 export type ProfileSource = "live" | "cache";
-
-export interface JenkinsParameterDefinition {
-  name: string;
-  type: string;
-  description?: string;
-  defaultValue?: string | boolean;
-  choices?: string[];
-}
 
 export interface ProfilesByClient {
   client: JenkinsClient;
@@ -22,44 +15,6 @@ export interface ProfileResolution {
   source: ProfileSource;
   groups: ProfilesByClient[];
   flat: string[];
-}
-
-export interface TriggerBuildInput {
-  client: JenkinsClient;
-  profile: string;
-  migrateType: MigrateType | string;
-  ids: string[];
-  migrationId?: string;
-  asyncMigration: YesNo;
-  migrateDependent: YesNo;
-  devopsTag?: string;
-  dryRun?: boolean;
-  autoApprove?: boolean;
-}
-
-export interface QueueItem {
-  id: number;
-  url: string;
-  why?: string;
-  executable?: { number: number; url: string };
-  cancelled?: boolean;
-}
-
-export interface BuildInfo {
-  number: number;
-  url: string;
-  building: boolean;
-  result: "SUCCESS" | "FAILURE" | "UNSTABLE" | "ABORTED" | null;
-  duration: number;
-  timestamp: number;
-  estimatedDuration: number;
-  actions: Array<{ parameters?: Array<{ name: string; value: unknown }> }>;
-}
-
-export interface ConsoleChunk {
-  text: string;
-  nextOffset: number;
-  hasMore: boolean;
 }
 
 export interface ReportEntity {

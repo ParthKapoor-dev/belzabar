@@ -64,7 +64,10 @@ Ok "Workspaces ready"
 
 # ── Build + install + first-run ───────────────────────────────────────────────
 Info "Building and installing the belz binary"
-& powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $SrcDir "cli\scripts\install.ps1") @args
+# apps\cli\scripts is the current layout; cli\scripts is the pre-restructure one.
+$Installer = Join-Path $SrcDir "apps\cli\scripts\install.ps1"
+if (-not (Test-Path $Installer)) { $Installer = Join-Path $SrcDir "cli\scripts\install.ps1" }
+& powershell -NoProfile -ExecutionPolicy Bypass -File $Installer @args
 
 Write-Host ""
 Ok "Installed. Try:"

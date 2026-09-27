@@ -35,7 +35,8 @@ jobs:
       - name: Test
         run: bun run test
 
-      # tsc reports ~54 pre-existing errors today. Non-blocking until Stage 3
+      # tsc reports pre-existing errors (52 in the pre-Stage-2 scope, 67 now that
+      # every workspace incl. integration tests is checked). Non-blocking until Stage 3
       # (core rebuild) brings it to zero; then drop continue-on-error.
       - name: Typecheck
         run: bun run typecheck

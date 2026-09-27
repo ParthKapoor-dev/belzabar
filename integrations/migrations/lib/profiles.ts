@@ -2,8 +2,8 @@ import { mkdirSync, readFileSync, writeFileSync, statSync } from "fs";
 import { dirname } from "path";
 import { CliError } from "@belzabar/core";
 import { JENKINS_CLIENTS, MIGRATION_PROFILES_CACHE_PATH, type JenkinsClient } from "./constants";
-import type { JenkinsAuth } from "./jenkins/auth";
-import { getJobParameters } from "./jenkins/client";
+import type { JenkinsAuth } from "@belzabar/jenkins";
+import { getJobParameters } from "@belzabar/jenkins";
 import type { ProfileResolution, ProfilesByClient } from "./types";
 
 const DIVIDER_RE = /^\s*-{3,}\s*(.+?)\s*-{3,}\s*$/;

@@ -10,11 +10,11 @@
 #      bun installer if missing).
 #   2. Clones (or pulls) the repo into $BELZ_SRC_DIR (default ~/.belz/src).
 #   3. Runs `bun install --ignore-scripts` to hydrate workspaces.
-#   4. Hands off to cli/scripts/install.sh, which builds the binary,
+#   4. Hands off to apps/cli/scripts/install.sh, which builds the binary,
 #      installs it to ~/.local/bin/belz, and (on first install) walks
 #      through credential setup.
 #
-# Flags forwarded to cli/scripts/install.sh:
+# Flags forwarded to apps/cli/scripts/install.sh:
 #   --env-file <path>      Non-interactive credentials.
 #   --install-dir <dir>    Override the binary install dir.
 #
@@ -82,7 +82,12 @@ ok "Workspaces ready"
 
 # ── Build + install binary + first-run setup ──────────────────────────────────
 log "Building and installing the belz binary"
-bash "$SRC_DIR/cli/scripts/install.sh" "$@"
+# apps/cli/scripts is the current layout; cli/scripts is the pre-restructure one.
+if [[ -f "$SRC_DIR/apps/cli/scripts/install.sh" ]]; then
+  bash "$SRC_DIR/apps/cli/scripts/install.sh" "$@"
+else
+  bash "$SRC_DIR/cli/scripts/install.sh" "$@"
+fi
 
 # ── Friendly tail ─────────────────────────────────────────────────────────────
 echo

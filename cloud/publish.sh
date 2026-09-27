@@ -29,7 +29,7 @@ echo "🔨 building $ASSET…"
 cd "$REPO_ROOT"
 # --ignore-scripts: we only need workspace deps for the compile.
 bun install --frozen-lockfile --ignore-scripts 2>/dev/null || bun install --ignore-scripts
-cd "$REPO_ROOT/cli"
+cd "$REPO_ROOT/apps/cli"
 bun build --compile --minify --target=bun-linux-x64 ./bin/cli.ts --outfile "$WORK/$ASSET"
 
 # ── 2. Refresh belz-sandbox tracked content (skills + rules + setup script) ──

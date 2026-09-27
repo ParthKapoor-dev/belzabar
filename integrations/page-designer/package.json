@@ -1,0 +1,14 @@
+{
+  "name": "@belzabar/pd",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Page Designer commands and lib (`belz pd`).",
+  "exports": {
+    "./registry": "./registry.ts",
+    "./lib/*": "./lib/*.ts"
+  },
+  "dependencies": {
+    "@belzabar/core": "workspace:*"
+  }
+}

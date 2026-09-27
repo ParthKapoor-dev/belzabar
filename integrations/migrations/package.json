@@ -1,0 +1,16 @@
+{
+  "name": "@belzabar/migrations",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Jenkins-backed migration commands and lib (`belz migrate`).",
+  "exports": {
+    "./registry": "./registry.ts",
+    ".": "./lib/index.ts",
+    "./lib/*": "./lib/*.ts"
+  },
+  "dependencies": {
+    "@belzabar/core": "workspace:*",
+    "@belzabar/jenkins": "workspace:*"
+  }
+}

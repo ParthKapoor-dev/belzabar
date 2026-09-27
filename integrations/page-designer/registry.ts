@@ -1,7 +1,7 @@
 // Page Designer (`belz pd`) command registry.
 //
 // Hand-maintained and kept sorted. Every `commands/<name>/` folder must be listed here
-// (enforced by cli/tests/registry.test.ts). help.txt / desc.txt are imported as text so
+// (enforced by apps/cli/tests/registry.test.ts). help.txt / desc.txt are imported as text so
 // the compiled binary embeds them.
 
 import type { CommandRegistry } from "@belzabar/core";

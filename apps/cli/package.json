@@ -1,0 +1,20 @@
+{
+  "name": "belzabar.cli",
+  "type": "module",
+  "bin": {
+    "belz": "./bin/cli.ts"
+  },
+  "scripts": {
+    "build": "bun build --compile --minify --sourcemap ./bin/cli.ts --outfile belz",
+    "link": "bun link"
+  },
+  "private": true,
+  "dependencies": {
+    "@belzabar/core": "workspace:*",
+    "@belzabar/ad": "workspace:*",
+    "@belzabar/pd": "workspace:*",
+    "@belzabar/teamwork": "workspace:*",
+    "@belzabar/migrations": "workspace:*",
+    "@belzabar/release": "workspace:*"
+  }
+}

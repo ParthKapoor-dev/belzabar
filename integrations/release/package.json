@@ -1,0 +1,16 @@
+{
+  "name": "@belzabar/release",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Release promotion tracking commands (`belz release`).",
+  "exports": {
+    "./registry": "./registry.ts",
+    "./lib/*": "./lib/*.ts"
+  },
+  "dependencies": {
+    "@belzabar/core": "workspace:*",
+    "@belzabar/ad": "workspace:*",
+    "@belzabar/teamwork": "workspace:*"
+  }
+}

@@ -1,2 +1,2 @@
 [test]
-preload = ["../../cli/packages/core/tests/preload-belz-home.ts"]
+preload = ["../../packages/core/tests/preload-belz-home.ts"]

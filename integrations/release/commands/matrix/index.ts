@@ -4,8 +4,8 @@ import {
   type CommandEnvelope, type HumanPresenterHelpers,
 } from "@belzabar/core";
 import { readFileSync, existsSync } from "fs";
-import { traceMethod } from "../../../automation-designer/lib/trace";
-import { extractTicketItems } from "../../../teamwork/lib/items";
+import { traceMethod } from "@belzabar/ad/lib/trace";
+import { extractTicketItems } from "@belzabar/teamwork/lib/items";
 import { saveRelease } from "../../lib/ledger";
 
 // `belz release matrix <release.json>` — the release collision/leak detector.

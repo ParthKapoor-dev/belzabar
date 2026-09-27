@@ -3,7 +3,7 @@
 # Trigger: push a tag like `ext-v1.2.3`.
 #
 # What it does:
-#   1. Builds per-browser extension trees (extension/scripts/pack.mjs).
+#   1. Builds per-browser extension trees (apps/extension/scripts/pack.mjs).
 #   2. Packs a signed Chromium CRX (key from the CHROME_CRX_KEY secret).
 #   3. Signs a Firefox XPI via the Mozilla AMO API (unlisted channel).
 #   4. Generates the update manifests (updates.xml / updates.json).
@@ -22,7 +22,7 @@
 #
 # One-time setup: enable GitHub Pages (Settings → Pages → source: GitHub Actions)
 # and, after the first run, copy the printed Chrome extension ID into
-# extension/release.config.json (`chromeId`).
+# apps/extension/release.config.json (`chromeId`).
 
 name: extension-release
 
@@ -60,7 +60,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build per-browser extension trees
-        run: node extension/scripts/pack.mjs --version "${{ steps.ver.outputs.version }}"
+        run: node apps/extension/scripts/pack.mjs --version "${{ steps.ver.outputs.version }}"
 
       - name: Pack signed Chromium CRX
         id: crx
@@ -69,8 +69,8 @@ jobs:
         run: |
           printf '%s' "$CHROME_CRX_KEY" > key.pem
           npx --yes crx3 -k key.pem \
-            -o "extension/dist-pack/belzabar-${{ steps.ver.outputs.version }}.crx" \
-            extension/build/chrome
+            -o "apps/extension/dist-pack/belzabar-${{ steps.ver.outputs.version }}.crx" \
+            apps/extension/build/chrome
           # Derive the deterministic Chrome extension ID from the public key.
           ID=$(node -e '
             const {execSync}=require("child_process");const crypto=require("crypto");
@@ -91,25 +91,25 @@ jobs:
           AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
         run: |
           npx --yes web-ext@latest sign \
-            --source-dir=extension/build/firefox \
+            --source-dir=apps/extension/build/firefox \
             --channel=unlisted \
             --api-key="$AMO_JWT_ISSUER" \
             --api-secret="$AMO_JWT_SECRET" \
-            --artifacts-dir=extension/dist-pack || true
-          XPI=$(ls extension/dist-pack/*.xpi 2>/dev/null | head -1 || true)
+            --artifacts-dir=apps/extension/dist-pack || true
+          XPI=$(ls apps/extension/dist-pack/*.xpi 2>/dev/null | head -1 || true)
           echo "xpi=$XPI" >> "$GITHUB_OUTPUT"
 
       - name: Generate update manifests
         run: |
           V="${{ steps.ver.outputs.version }}"
           BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
-          FF_ID=$(node -e 'console.log(require("./extension/release.config.json").firefoxId)')
+          FF_ID=$(node -e 'console.log(require("./apps/extension/release.config.json").firefoxId)')
           mkdir -p pages/extension
-          cp extension/dist-pack/*.crx pages/extension/ 2>/dev/null || true
-          cp extension/dist-pack/*.xpi pages/extension/ 2>/dev/null || true
+          cp apps/extension/dist-pack/*.crx pages/extension/ 2>/dev/null || true
+          cp apps/extension/dist-pack/*.xpi pages/extension/ 2>/dev/null || true
           # Stable "latest" copies — Firefox force-install points install_url here.
-          cp extension/dist-pack/*.crx pages/extension/belzabar-latest.crx 2>/dev/null || true
-          cp extension/dist-pack/*.xpi pages/extension/belzabar-latest.xpi 2>/dev/null || true
+          cp apps/extension/dist-pack/*.crx pages/extension/belzabar-latest.crx 2>/dev/null || true
+          cp apps/extension/dist-pack/*.xpi pages/extension/belzabar-latest.xpi 2>/dev/null || true
           cat > pages/extension/updates.xml <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
@@ -129,8 +129,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ github.ref_name }}" --title "Extension ${{ github.ref_name }}" --notes "Automated extension release." || true
-          gh release upload "${{ github.ref_name }}" extension/dist-pack/*.crx --clobber || true
-          gh release upload "${{ github.ref_name }}" extension/dist-pack/*.xpi --clobber || true
+          gh release upload "${{ github.ref_name }}" apps/extension/dist-pack/*.crx --clobber || true
+          gh release upload "${{ github.ref_name }}" apps/extension/dist-pack/*.xpi --clobber || true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -11,7 +11,7 @@ import { assertCaptureEnv, assertReadOnly, CaptureRefused } from "./guard";
 const ROOT = resolve(import.meta.dir, "../..");
 const SKIP_DIRS = new Set(["node_modules", ".git", ".turbo", ".next", ".claude", "agents", "dist"]);
 
-/** Every directory named `fixtures` (or `ad-validation-samples`) under integrations/, cli/, scripts/. */
+/** Every directory named `fixtures` (or `ad-validation-samples`) under integrations/, apps/, scripts/, packages/. */
 function fixtureDirs(): string[] {
   const out: string[] = [];
   const visit = (d: string) => {
@@ -22,7 +22,7 @@ function fixtureDirs(): string[] {
       else visit(p);
     }
   };
-  for (const top of ["integrations", "cli", "scripts", "packages", "extension"]) {
+  for (const top of ["integrations", "apps", "scripts", "packages"]) {
     try { if (statSync(join(ROOT, top)).isDirectory()) visit(join(ROOT, top)); } catch {}
   }
   return out;
