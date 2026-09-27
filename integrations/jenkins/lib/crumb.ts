@@ -1,3 +1,4 @@
+import { CliError, httpRequest, readBodySummary } from "@belzabar/core";
 import type { JenkinsAuth } from "./auth";
 import { buildHeaders } from "./auth";
 
@@ -35,10 +36,15 @@ export async function fetchCrumb(auth: JenkinsAuth): Promise<Crumb | null> {
   if (cachedCrumb && cachedCrumb.auth === cacheKey) return cachedCrumb.crumb;
 
   const url = `${auth.baseUrl}/crumbIssuer/api/json`;
-  const res = await fetch(url, { headers: buildHeaders(auth) });
+  const res = await httpRequest(url, { headers: buildHeaders(auth) });
   if (res.status === 404) return null;
   if (!res.ok) {
-    throw new Error(`Failed to fetch Jenkins crumb (${res.status}): ${await res.text()}`);
+    const body = await readBodySummary(res, 200);
+    const hint = res.status === 401 || res.status === 403 ? " Check the Jenkins user/API token ('belz config edit')." : "";
+    throw new CliError(`Failed to fetch Jenkins CSRF crumb (HTTP ${res.status}).${hint}${body ? ` ${body}` : ""}`, {
+      code: "MIGRATE_JENKINS_CRUMB_FAILED",
+      details: { status: res.status, body },
+    });
   }
   const json = (await res.json()) as { crumb: string; crumbRequestField: string };
   const cookie = pickSessionCookies(res.headers.get("set-cookie"));

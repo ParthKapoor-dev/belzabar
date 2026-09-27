@@ -1,6 +1,5 @@
-import { mkdirSync, readFileSync, writeFileSync, statSync } from "fs";
-import { dirname } from "path";
-import { CliError } from "@belzabar/core";
+import { readFileSync } from "fs";
+import { CliError, writeSecureJson } from "@belzabar/core";
 import { JENKINS_CLIENTS, MIGRATION_PROFILES_CACHE_PATH, type JenkinsClient } from "./constants";
 import type { JenkinsAuth } from "@belzabar/jenkins";
 import { getJobParameters } from "@belzabar/jenkins";
@@ -39,11 +38,14 @@ interface ProfilesCacheFile {
   groups: ProfilesByClient[];
 }
 
+/** Cached profile lists older than this are re-fetched from Jenkins (MG-4). */
+export const PROFILES_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
 function readCache(): ProfilesCacheFile | null {
   try {
-    statSync(MIGRATION_PROFILES_CACHE_PATH);
     const raw = readFileSync(MIGRATION_PROFILES_CACHE_PATH, "utf-8");
-    return JSON.parse(raw) as ProfilesCacheFile;
+    const parsed = JSON.parse(raw) as ProfilesCacheFile;
+    return parsed && Array.isArray(parsed.groups) && typeof parsed.fetchedAt === "string" ? parsed : null;
   } catch {
     return null;
   }
@@ -51,20 +53,24 @@ function readCache(): ProfilesCacheFile | null {
 
 function writeCache(value: ProfilesCacheFile): void {
   try {
-    mkdirSync(dirname(MIGRATION_PROFILES_CACHE_PATH), { recursive: true });
-    writeFileSync(MIGRATION_PROFILES_CACHE_PATH, JSON.stringify(value, null, 2));
+    writeSecureJson(MIGRATION_PROFILES_CACHE_PATH, value, { pretty: true, mode: 0o644 });
   } catch {
     // Cache write failures shouldn't break the command.
   }
 }
 
+function isFresh(cache: ProfilesCacheFile, ttlMs: number, now = Date.now()): boolean {
+  const at = Date.parse(cache.fetchedAt);
+  return Number.isFinite(at) && now - at < ttlMs;
+}
+
 export async function discoverProfiles(
   auth: JenkinsAuth,
-  options: { refresh?: boolean } = {}
+  options: { refresh?: boolean; ttlMs?: number } = {}
 ): Promise<ProfileResolution> {
   if (!options.refresh) {
     const cache = readCache();
-    if (cache) {
+    if (cache && isFresh(cache, options.ttlMs ?? PROFILES_CACHE_TTL_MS)) {
       return {
         fetchedAt: cache.fetchedAt,
         source: "cache",
@@ -99,4 +105,22 @@ export function findClientForProfile(groups: ProfilesByClient[], profile: string
     if (group.profiles.includes(profile)) return group.client;
   }
   return undefined;
+}
+
+/**
+ * Resolve the Jenkins client group of `profile`. A miss against the cached
+ * list re-fetches from Jenkins once before giving up (MG-4: a stale cache used
+ * to send users to `migrate profiles`, which read the same stale cache).
+ */
+export async function resolveClientForProfile(
+  auth: JenkinsAuth,
+  profile: string,
+): Promise<{ client: JenkinsClient | undefined; resolution: ProfileResolution }> {
+  let resolution = await discoverProfiles(auth);
+  let client = findClientForProfile(resolution.groups, profile);
+  if (!client && resolution.source === "cache") {
+    resolution = await discoverProfiles(auth, { refresh: true });
+    client = findClientForProfile(resolution.groups, profile);
+  }
+  return { client, resolution };
 }

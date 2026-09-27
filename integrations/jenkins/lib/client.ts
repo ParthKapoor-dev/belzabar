@@ -1,4 +1,4 @@
-import { CliError } from "@belzabar/core";
+import { CliError, httpRequest, readBodySummary, sleep, type HttpInit } from "@belzabar/core";
 import { buildHeaders, type JenkinsAuth } from "./auth";
 import { fetchCrumb } from "./crumb";
 import type {
@@ -8,7 +8,40 @@ import type {
   QueueItem,
   TriggerBuildInput,
 } from "./types";
-import { QUEUE_POLL_INTERVAL_MS } from "./constants";
+import { QUEUE_POLL_INTERVAL_MS, QUEUE_TIMEOUT_MS } from "./constants";
+
+// Jenkins adapter over @belzabar/core/http (MG-5/7/8, TW-10, F28): shared
+// transport (timeout, IPv4 pin + eviction), basic auth, and error messages that
+// never carry the HTML error page or the CSRF crumb — only the status and the
+// page title, truncated and redacted.
+
+/** One Jenkins request through the shared transport. */
+export function jenkinsFetch(auth: JenkinsAuth, url: string, init: HttpInit = {}): Promise<Response> {
+  return httpRequest(url, {
+    ...init,
+    headers: { ...buildHeaders(auth), ...((init.headers as Record<string, string>) ?? {}) },
+  });
+}
+
+/** CliError for a non-OK Jenkins response: `${what} (HTTP n): <summary>`. */
+export async function jenkinsError(res: Response, what: string, code: string, details: Record<string, unknown> = {}): Promise<CliError> {
+  const body = await readBodySummary(res, 200);
+  return new CliError(`${what} (HTTP ${res.status})${body ? `: ${body}` : ""}`, {
+    code,
+    details: { ...details, status: res.status, body },
+  });
+}
+
+async function buildNotFoundOr(res: Response, buildNumber: number, what: string, code: string): Promise<CliError> {
+  if (res.status === 404) {
+    await res.arrayBuffer().catch(() => undefined);
+    return new CliError(`Build #${buildNumber} not found`, {
+      code: "MIGRATE_JENKINS_BUILD_NOT_FOUND",
+      details: { buildNumber, status: 404 },
+    });
+  }
+  return jenkinsError(res, what, code, { buildNumber });
+}
 
 function jobBase(auth: JenkinsAuth): string {
   const segments = auth.job.split("/").filter(Boolean).map(encodeURIComponent);
@@ -17,12 +50,8 @@ function jobBase(auth: JenkinsAuth): string {
 
 export async function getJobParameters(auth: JenkinsAuth): Promise<JenkinsParameterDefinition[]> {
   const url = `${jobBase(auth)}/api/json?tree=property[parameterDefinitions[name,type,description,choices,defaultParameterValue[value]]]`;
-  const res = await fetch(url, { headers: buildHeaders(auth) });
-  if (!res.ok) {
-    throw new CliError(`Failed to fetch Jenkins job parameters (${res.status}): ${await res.text()}`, {
-      code: "MIGRATE_JENKINS_PARAMS_FAILED",
-    });
-  }
+  const res = await jenkinsFetch(auth, url);
+  if (!res.ok) throw await jenkinsError(res, "Failed to fetch Jenkins job parameters", "MIGRATE_JENKINS_PARAMS_FAILED");
   const json = (await res.json()) as {
     property?: Array<{ parameterDefinitions?: Array<{
       name: string;
@@ -69,18 +98,15 @@ export async function triggerBuild(auth: JenkinsAuth, input: TriggerBuildInput):
 
   const url = `${jobBase(auth)}/buildWithParameters`;
   const body = buildParameterFormData(input);
-  const res = await fetch(url, {
+  const res = await jenkinsFetch(auth, url, {
     method: "POST",
-    headers: { ...buildHeaders(auth), ...headers },
+    headers,
     body: body.toString(),
     redirect: "manual",
   });
 
   if (res.status !== 201 && res.status !== 200 && res.status !== 303) {
-    throw new CliError(`Failed to trigger Jenkins build (${res.status}): ${await res.text()}`, {
-      code: "MIGRATE_JENKINS_TRIGGER_FAILED",
-      details: { status: res.status, url },
-    });
+    throw await jenkinsError(res, "Failed to trigger Jenkins build", "MIGRATE_JENKINS_TRIGGER_FAILED", { url });
   }
 
   const queueUrl = res.headers.get("Location");
@@ -96,21 +122,26 @@ export async function triggerBuild(auth: JenkinsAuth, input: TriggerBuildInput):
 export async function resolveQueueItem(
   auth: JenkinsAuth,
   queueUrl: string,
-  options: { signal?: AbortSignal; pollMs?: number; onWait?: (item: QueueItem) => void } = {}
+  options: { signal?: AbortSignal; pollMs?: number; timeoutMs?: number; onWait?: (item: QueueItem) => void } = {}
 ): Promise<QueueItem> {
   const pollMs = options.pollMs ?? QUEUE_POLL_INTERVAL_MS;
+  const timeoutMs = options.timeoutMs ?? QUEUE_TIMEOUT_MS;
+  const deadline = Date.now() + timeoutMs;
   const apiUrl = queueUrl.endsWith("/") ? `${queueUrl}api/json` : `${queueUrl}/api/json`;
+  let last: QueueItem | null = null;
 
   while (true) {
     if (options.signal?.aborted) {
       throw new CliError("Queue resolution aborted.", { code: "MIGRATE_ABORTED" });
     }
-    const res = await fetch(apiUrl, { headers: buildHeaders(auth) });
-    if (!res.ok) {
-      throw new CliError(`Failed to read queue item (${res.status}): ${await res.text()}`, {
-        code: "MIGRATE_JENKINS_QUEUE_READ_FAILED",
-      });
+    if (Date.now() > deadline) {
+      throw new CliError(
+        `Build is still queued after ${Math.round(timeoutMs / 1000)}s${last?.why ? ` (${last.why})` : ""}. It may still start; check ${queueUrl}`,
+        { code: "JENKINS_QUEUE_TIMEOUT", details: { queueUrl, why: last?.why, timeoutMs } },
+      );
     }
+    const res = await jenkinsFetch(auth, apiUrl);
+    if (!res.ok) throw await jenkinsError(res, "Failed to read queue item", "MIGRATE_JENKINS_QUEUE_READ_FAILED");
     const item = (await res.json()) as QueueItem;
     if (item.cancelled) {
       throw new CliError(`Queue item ${item.id} was cancelled before it could run.`, {
@@ -119,19 +150,16 @@ export async function resolveQueueItem(
       });
     }
     if (item.executable?.number) return item;
+    last = item;
     options.onWait?.(item);
-    await new Promise((r) => setTimeout(r, pollMs));
+    await sleep(pollMs);
   }
 }
 
 export async function getBuild(auth: JenkinsAuth, buildNumber: number): Promise<BuildInfo> {
   const url = `${jobBase(auth)}/${buildNumber}/api/json`;
-  const res = await fetch(url, { headers: buildHeaders(auth) });
-  if (!res.ok) {
-    throw new CliError(`Failed to fetch build #${buildNumber} (${res.status}): ${await res.text()}`, {
-      code: "MIGRATE_JENKINS_BUILD_READ_FAILED",
-    });
-  }
+  const res = await jenkinsFetch(auth, url);
+  if (!res.ok) throw await buildNotFoundOr(res, buildNumber, `Failed to fetch build #${buildNumber}`, "MIGRATE_JENKINS_BUILD_READ_FAILED");
   return (await res.json()) as BuildInfo;
 }
 
@@ -141,12 +169,8 @@ export async function getConsoleChunk(
   start: number,
 ): Promise<ConsoleChunk> {
   const url = `${jobBase(auth)}/${buildNumber}/logText/progressiveText?start=${start}`;
-  const res = await fetch(url, { headers: buildHeaders(auth) });
-  if (!res.ok) {
-    throw new CliError(`Failed to fetch console (${res.status}): ${await res.text()}`, {
-      code: "MIGRATE_JENKINS_CONSOLE_READ_FAILED",
-    });
-  }
+  const res = await jenkinsFetch(auth, url);
+  if (!res.ok) throw await buildNotFoundOr(res, buildNumber, `Failed to fetch console of build #${buildNumber}`, "MIGRATE_JENKINS_CONSOLE_READ_FAILED");
   const text = await res.text();
   const nextOffset = Number(res.headers.get("X-Text-Size") ?? start + text.length);
   const hasMore = res.headers.get("X-More-Data") === "true";
@@ -155,12 +179,8 @@ export async function getConsoleChunk(
 
 export async function getFullConsole(auth: JenkinsAuth, buildNumber: number): Promise<string> {
   const url = `${jobBase(auth)}/${buildNumber}/consoleText`;
-  const res = await fetch(url, { headers: buildHeaders(auth) });
-  if (!res.ok) {
-    throw new CliError(`Failed to fetch full console (${res.status}): ${await res.text()}`, {
-      code: "MIGRATE_JENKINS_CONSOLE_READ_FAILED",
-    });
-  }
+  const res = await jenkinsFetch(auth, url);
+  if (!res.ok) throw await buildNotFoundOr(res, buildNumber, `Failed to fetch full console of build #${buildNumber}`, "MIGRATE_JENKINS_CONSOLE_READ_FAILED");
   return await res.text();
 }
 
