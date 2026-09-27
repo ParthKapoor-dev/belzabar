@@ -2,11 +2,9 @@ import { readFile } from "fs/promises";
 import { CliError, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
-import { serializeToV1SavePayload } from "../../lib/serialize/v1";
+import { buildGuardedV1SavePayload } from "../../lib/serialize/guard";
 import { parseAdCommonArgs, emitFallbackWarning } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
-import type { HydratedMethod, CustomCodeStep, SqlStep, SpelEchoStep } from "../../lib/types/common";
-import type { V1InnerDefinition, V1SavePayload } from "../../lib/types/v1-wire";
 
 interface SaveArgs {
   filePath: string;
@@ -22,6 +20,8 @@ interface SaveData {
   publishedUuid: string | null;
   version: number | string;
   switchedFromPublished: boolean;
+  /** Overlay keys verified (pre-POST) to change the payload. */
+  applied: string[];
 }
 
 const command: CommandModule<SaveArgs, SaveData> = {
@@ -46,8 +46,18 @@ const command: CommandModule<SaveArgs, SaveData> = {
     };
   },
   async execute({ filePath, uuid, category, isNew, yes }, context) {
-    const text = await readFile(filePath, "utf-8");
-    const parsed = JSON.parse(text) as Record<string, unknown>;
+    let text: string;
+    try {
+      text = await readFile(filePath, "utf-8");
+    } catch (err) {
+      throw new CliError(`Cannot read overlay file ${filePath}: ${String(err)}`, { code: "FILE_NOT_FOUND" });
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch (err) {
+      throw new CliError(`Overlay file ${filePath} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
+    }
 
     if (isNew) {
       if (!category) {
@@ -78,16 +88,12 @@ const command: CommandModule<SaveArgs, SaveData> = {
     }
     const draft = guard.draft;
 
-    // Apply the file's changes to the in-memory HydratedMethod. The file is
-    // allowed to carry a partial overlay: { inputs?, outputs?, variables?,
-    // parsedSteps? } or a full replacement jsonDefinition. We keep this tiny
-    // and explicit for v1.
-    applyOverlay(draft, parsed);
-
-    // Build the save payload via the serializer (which enforces the custom-
-    // code multi-output invariant).
-    const payload: V1SavePayload = serializeToV1SavePayload(draft, {
+    // Apply the overlay and build the payload through the save guard: it
+    // refuses unknown / unwritable / no-effect overlay keys and any drift in
+    // fields the overlay did not target (lib/serialize/guard.ts).
+    const { payload, applied } = buildGuardedV1SavePayload(draft, parsed, {
       version: typeof draft.version === "number" ? draft.version + 1 : undefined,
+      warn: msg => context.warn(msg),
     });
 
     await requireConfirmation({
@@ -101,6 +107,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
         ["Linked from PUBLISHED", guard.switchedFromPublished ? "Yes" : "No"],
         ["New version", String(payload.version ?? "")],
         ["Category", payload.category.name],
+        ["Changes", applied.join(", ")],
       ],
     });
 
@@ -118,6 +125,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
       publishedUuid: guard.publishedUuid,
       version: saved.method.version,
       switchedFromPublished: guard.switchedFromPublished,
+      applied,
     });
   },
   presentHuman(envelope, ui) {
@@ -136,73 +144,5 @@ const command: CommandModule<SaveArgs, SaveData> = {
     );
   },
 };
-
-/**
- * Apply the user's JSON overlay onto a HydratedMethod in place. Supported
- * keys (all optional):
- *   - name, summary, description, buttonLabel, internalMethod
- *   - inputs[].testValue (mapped onto existing inputs by code)
- *   - parsedSteps[] — if present, must be an array of objects with
- *     `orderIndex` identifying the step, plus any of:
- *       - `source` — CUSTOM_CODE step source (the full decoded JS/Python)
- *       - `sql` — SQL step body (plain SQL text, NOT base64)
- *       - `expression` — SPEL_ECHO expression string
- *       - `description` — step description
- *
- * The serializer (lib/serialize/v1.ts) handles base64 re-encoding for
- * custom code and SQL. Agents should always pass plain text — never pre-
- * encode to base64.
- */
-function applyOverlay(method: HydratedMethod, overlay: Record<string, unknown>): void {
-  if (typeof overlay.name === "string") method.name = overlay.name;
-  if (typeof overlay.summary === "string") method.summary = overlay.summary;
-  if (typeof overlay.description === "string") method.description = overlay.description;
-  if (typeof overlay.buttonLabel === "string") method.buttonLabel = overlay.buttonLabel;
-  if (typeof overlay.internalMethod === "boolean") method.internalMethod = overlay.internalMethod;
-
-  if (Array.isArray(overlay.inputs)) {
-    const byCode = new Map(method.inputs.map(i => [i.code, i]));
-    for (const o of overlay.inputs) {
-      if (!o || typeof o !== "object") continue;
-      const code = (o as Record<string, unknown>).code;
-      if (typeof code !== "string") continue;
-      const target = byCode.get(code);
-      if (!target) continue;
-      if ((o as Record<string, unknown>).testValue !== undefined) {
-        target.testValue = (o as Record<string, unknown>).testValue;
-      }
-    }
-  }
-
-  if (Array.isArray(overlay.parsedSteps)) {
-    const byIndex = new Map(method.parsedSteps.map(s => [s.orderIndex, s]));
-    for (const o of overlay.parsedSteps) {
-      if (!o || typeof o !== "object") continue;
-      const entry = o as Record<string, unknown>;
-      const idx = entry.orderIndex;
-      if (typeof idx !== "number") continue;
-      const target = byIndex.get(idx);
-      if (!target) continue;
-
-      // Description (all step kinds)
-      if (typeof entry.description === "string") target.description = entry.description;
-
-      // CUSTOM_CODE — patch source
-      if (typeof entry.source === "string" && target.kind === "CUSTOM_CODE") {
-        (target as CustomCodeStep).source = entry.source;
-      }
-
-      // SQL — patch sql body
-      if (typeof entry.sql === "string" && target.kind === "SQL") {
-        (target as SqlStep).sql = entry.sql;
-      }
-
-      // SPEL_ECHO — patch expression
-      if (typeof entry.expression === "string" && target.kind === "SPEL_ECHO") {
-        (target as SpelEchoStep).expression = entry.expression;
-      }
-    }
-  }
-}
 
 export default command;

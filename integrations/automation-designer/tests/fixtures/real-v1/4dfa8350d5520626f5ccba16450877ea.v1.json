@@ -1,0 +1,18 @@
+{
+ "id": 3537,
+ "uuid": "4dfa8350d5520626f5ccba16450877ea",
+ "jsonDefinition": "{\"name\": \"replacePlaceholdersInText deprecated\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"text\", \"required\": false, \"fieldCode\": \"text\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}, {\"type\": \"JSON\", \"label\": \"jsonHolder\", \"required\": false, \"fieldCode\": \"jsonHolder\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}], \"outputs\": [], \"services\": [{\"code\": \"var text=\\\"#{text}\\\"\\n\\nvar placeholders=JSON.parse(\\\"#{jsonHolder}\\\")\\n\\n\\nfunction replacePlaceholder(str, placeHolder, newValue) {\\n    const re = new RegExp(`\\\\{\\\\{[ ]*${placeHolder}[ ]*\\\\}\\\\}`)\\n    return str.replace(re, newValue)\\n}\\n\\nconst re = new RegExp(/\\\\{{[ ]*(?<value>[A-Za-z0-9_]+)[ ]*\\\\}}/, \\\"g\\\")\\n\\nfor (const match of text.matchAll(re)) {\\n    const placeHolder = match.groups.value\\n    if (placeHolder && placeholders.hasOwnProperty(placeHolder)) {\\n        text = replacePlaceholder(text, placeHolder, placeholders[placeHolder])\\n    }\\n}\\n\\nconsole.log(text)\", \"file\": \"\", \"outputs\": [{\"code\": \"finalText\", \"type\": \"STRING\", \"displayName\": \"finalText\", \"internalVarRef\": \"finalText\"}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\", \"text\": \"CUSTOM CODE\", \"active\": false}, \"orderIndex\": 1, \"currentAccount\": null, \"loopExecutionSource\": null, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"STRING\", \"label\": \"finalText\", \"required\": false, \"fieldCode\": \"finalText\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}], \"buttonLabel\": \"\", \"methodDescription\": \"This is a helper method to replace the placeholders in a given text.\"}",
+ "version": 5,
+ "name": "replacePlaceholdersInText deprecated",
+ "aliasName": "replacePlaceholdersInText deprecated",
+ "category": {
+  "id": 23,
+  "name": "Utilities"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "active": false,
+ "updatedOn": 1677760353467,
+ "createdOn": 1677752724068
+}

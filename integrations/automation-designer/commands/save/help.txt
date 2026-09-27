@@ -4,17 +4,23 @@ Save an edited method definition to an existing draft. Goes through
 resolveDraftTarget — if you pass a PUBLISHED UUID, belz automatically switches
 to the linked draft and tells you it did so.
 
-The <file> is a JSON overlay with any of these optional keys:
-  name, summary, description, buttonLabel, internalMethod
-  inputs[]  — objects with {code, testValue} update testValue on matching inputs
-  parsedSteps[] — objects with {orderIndex} plus any of:
-    source      — CUSTOM_CODE step: full decoded JS/Python source (plain text)
-    sql         — SQL step: full decoded SQL body (plain text, NOT base64)
-    expression  — SPEL_ECHO step: the SpEL expression string
-    description — any step: updated description
+The <file> is a JSON overlay. Supported keys (anything else is refused with
+AD_OVERLAY_UNKNOWN_KEY):
+  summary        method summary (inner `summary`)
+  description    method description (inner `methodDescription`)
+  inputs[]       objects {code, testValue} — testValue on the matching input
+                 (note: the server drops stored testValues on save)
+  parsedSteps[]  objects {orderIndex} plus any of:
+    source       CUSTOM_CODE step: full decoded JS/Python source (plain text)
+    sql          SQL step: full decoded SQL body (plain text, NOT base64)
+    expression   SPEL_ECHO step: the SpEL expression string
+    description  any step: updated description
+  name, buttonLabel, internalMethod — recognised but NOT writable yet; refused
+                 with AD_OVERLAY_NOT_APPLIED.
 
-  Agents should always pass plain text — the serializer handles base64
-  re-encoding automatically.
+  Agents should always pass plain text. Edited steps are written back in the
+  step's original storage encoding (plain stays plain, base64 stays base64);
+  unedited steps are never rewritten.
 
 Flags:
   --uuid <id>      Target DRAFT UUID (or PUBLISHED; we switch to its draft)
@@ -27,5 +33,14 @@ Safety:
   - Never saves to a PUBLISHED method. Writes always target the linked draft.
   - Re-fetches the saved method after the write so automationId-dependent
     tests work immediately.
-  - Refuses to emit a payload where a CUSTOM_CODE step with >1 outputs is
-    missing `elementToRetrieve` on any output.
+  - Round-trip guard: before POST, every field the overlay does not target
+    must be identical to the fetched definition, else AD_SERIALIZER_DRIFT.
+  - Effect check: every overlay key must change the payload. Unwritable keys,
+    missing/ambiguous orderIndex, a field on a step of another kind (e.g.
+    `sql` on a step not classified as SQL), or a value identical to the
+    current one → AD_OVERLAY_NOT_APPLIED. Nothing is saved.
+  - Refuses to write an EDITED CUSTOM_CODE step with >1 outputs missing
+    `elementToRetrieve` (AD_SERIALIZE_FAILED); on unedited steps this is a
+    warning only.
+  - Refuses methods whose draft/published state is missing (fail closed).
+  - Success data includes `applied[]`: the overlay keys that changed.

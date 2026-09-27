@@ -1,0 +1,17 @@
+{
+ "id": 17232,
+ "uuid": "4266c2883951ec08d98ebbe00cf0a0aa",
+ "jsonDefinition": "{\"name\": \"zzTestTempMethod\", \"inputs\": [{\"type\": \"TEXT\", \"label\": \"a\", \"secured\": false, \"editable\": true, \"required\": true, \"fieldCode\": \"a\", \"hideInput\": false, \"sensitive\": false, \"testValue\": \"1\", \"orderIndex\": 0, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 25887, \"code\": \"a\", \"type\": \"TEXT\", \"fieldCode\": \"a\", \"sensitive\": false, \"outputCode\": \"a\", \"properties\": [], \"displayName\": \"a\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"temp test\", \"services\": [], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"Test\", \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"temp test\", \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
+ "version": 1,
+ "name": "zzTestTempMethod",
+ "aliasName": "zzTestTempMethod",
+ "category": {
+  "id": 15,
+  "name": "Schools"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "active": false,
+ "createdOn": 1786105995772
+}

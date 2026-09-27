@@ -1,0 +1,17 @@
+{
+ "id": 15287,
+ "uuid": "43d76d32dab68b381cd1a2b34b176794",
+ "jsonDefinition": "{\"name\": \"test.createFromGrid.with.mappings\", \"inputs\": [], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"cfgOut\", \"type\": \"JSON\", \"sensitive\": false, \"properties\": [], \"displayName\": \"cfgOut\", \"automationId\": 169815, \"internalVarRef\": \"cfgOut\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 13756, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"{\\\"contentGrid\\\":[],\\\"columnLabels\\\":[],\\\"columnWidths\\\":[],\\\"outputType\\\":null,\\\"outputFormat\\\":null,\\\"fileName\\\":\\\"\\\"}\", \"mappings\": [{\"value\": \"#{data}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false}, {\"value\": \"EXCEL\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false}, {\"value\": \"S3\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false}, {\"value\": \"#{reportFileName}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 169815, \"streamCapable\": false, \"automationApiId\": 6888, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
+ "version": 1,
+ "name": "test.createFromGrid.with.mappings",
+ "aliasName": "test.createFromGrid.with.mappings",
+ "category": {
+  "id": 458,
+  "name": "Schools-Data"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "active": false,
+ "createdOn": 1782712652923
+}

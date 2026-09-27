@@ -1,0 +1,17 @@
+{
+ "id": 5691,
+ "uuid": "4d0277f85b7eac6f12b2870680033c3e",
+ "jsonDefinition": "{\"name\": \"exception_msg\", \"inputs\": [], \"outputs\": [], \"services\": [{\"code\": \"if(1==1)\\n{\\n          throw \\\"invalid data\\\";\\n}\", \"file\": \"\", \"outputs\": [{\"code\": \"exceptionTest\", \"type\": \"STRING\", \"displayName\": \"exceptionTest\"}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\", \"text\": \"CUSTOM CODE\", \"active\": false}, \"orderIndex\": 1, \"customCodeEnv\": \"CODE_LAMBDA\", \"currentAccount\": null, \"forceExitStatusCode\": 500, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"\"}",
+ "version": 1,
+ "name": "exception_msg",
+ "aliasName": "exception_msg",
+ "category": {
+  "id": 19,
+  "name": "Schools-Utilities"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "active": false,
+ "createdOn": 1704706497235
+}

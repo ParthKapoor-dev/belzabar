@@ -1,0 +1,17 @@
+{
+ "id": 15286,
+ "uuid": "4648ea35c3968cdabe2cab25b83faeef",
+ "jsonDefinition": "{\"name\": \"test.createFromGrid.subinputs\", \"inputs\": [], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"testOut\", \"type\": \"JSON\", \"sensitive\": false, \"properties\": [], \"displayName\": \"testOut\", \"automationId\": 169814, \"internalVarRef\": \"testOut\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 13756, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 169814, \"streamCapable\": false, \"automationApiId\": 6888, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
+ "version": 1,
+ "name": "test.createFromGrid.subinputs",
+ "aliasName": "test.createFromGrid.subinputs",
+ "category": {
+  "id": 458,
+  "name": "Schools-Data"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "active": false,
+ "createdOn": 1782712611159
+}

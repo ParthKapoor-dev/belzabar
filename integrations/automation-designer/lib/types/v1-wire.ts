@@ -7,7 +7,9 @@ export interface V1RawMethodResponse {
   uuid: string;
   referenceId: string;
   aliasName: string;
-  automationState: "PUBLISHED" | "DRAFT";
+  automationState?: "PUBLISHED" | "DRAFT";
+  /** The wire also carries `state` (same values). */
+  state?: "PUBLISHED" | "DRAFT";
   /** Stringified JSON — must be JSON.parse'd to see the real method body. */
   jsonDefinition: string;
   createdOn?: number;

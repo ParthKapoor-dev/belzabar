@@ -37,6 +37,14 @@ export type DraftGuardResult =
     }
   | {
       ok: false;
+      reason: "STATE_UNKNOWN";
+      resolvedState: MethodState;
+      uuid: string;
+      publishedUuid: null;
+      message: string;
+    }
+  | {
+      ok: false;
       reason: "REFERENCE_NOT_DRAFT";
       resolvedState: MethodState;
       publishedUuid: string;
@@ -76,6 +84,21 @@ export async function resolveDraftTarget(
   const initial = await deps.fetchMethod(inputUuid);
   const state = initial.state;
   const referenceId = (initial.referenceId ?? "").trim() || null;
+
+  // Fail closed (AD-12): the parser reports UNKNOWN when the wire carries
+  // neither `automationState` nor `state`. Never guess DRAFT.
+  if (state !== "DRAFT" && state !== "PUBLISHED") {
+    return {
+      ok: false,
+      reason: "STATE_UNKNOWN",
+      resolvedState: state,
+      uuid: initial.uuid,
+      publishedUuid: null,
+      message:
+        `Method ${initial.uuid} has no recognisable draft/published state (automationState/state missing). ` +
+        `Refusing to write. Re-fetch the method and check it in the AD UI.`,
+    };
+  }
 
   if (state === "DRAFT") {
     return {

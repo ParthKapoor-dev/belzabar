@@ -6,6 +6,7 @@ import type {
   HydratedMethod,
   MethodField,
   MethodOutput,
+  MethodState,
   ParsedStep,
 } from "../types/common";
 import { parseV1Step } from "./steps/v1";
@@ -39,7 +40,7 @@ export function parseV1Method(raw: V1RawMethodResponse): HydratedMethod {
     uuid: raw.uuid,
     numericId: typeof raw.id === "number" ? raw.id : undefined,
     referenceId: normaliseReferenceId(raw.referenceId),
-    state: raw.automationState ?? "DRAFT",
+    state: normaliseState(raw.automationState ?? raw.state),
     aliasName: raw.aliasName,
     version: typeof raw.version === "number" ? raw.version : 0,
 
@@ -97,6 +98,13 @@ function mapOutput(o: V1OutputField): MethodOutput {
     rawResponseContainer: o.rawResponseContainer,
     raw: o,
   };
+}
+
+/** Fail closed: anything that is not exactly DRAFT/PUBLISHED is UNKNOWN (AD-12). */
+export function normaliseState(value: unknown): MethodState {
+  if (typeof value !== "string") return "UNKNOWN";
+  const upper = value.trim().toUpperCase();
+  return upper === "DRAFT" || upper === "PUBLISHED" ? upper : "UNKNOWN";
 }
 
 function normaliseReferenceId(value: unknown): string | null {

@@ -11,7 +11,7 @@ interface StateArgs {
 interface StateData {
   input: { uuid: string };
   ok: boolean;
-  state: "DRAFT" | "PUBLISHED" | null;
+  state: "DRAFT" | "PUBLISHED" | "UNKNOWN" | null;
   draftUuid: string | null;
   publishedUuid: string | null;
   draftVersion: number | null;

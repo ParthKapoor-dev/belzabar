@@ -1,0 +1,18 @@
+{
+ "id": 6097,
+ "uuid": "4c2ca735821ef5343a0ab4217dc392d0",
+ "jsonDefinition": "{\"name\": \"rohit test\", \"inputs\": [], \"outputs\": [], \"services\": [{\"outputs\": [], \"mappings\": [{\"mappings\": [{\"value\": \"{ test: 'select from users' }\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 19875, \"automationUserInputUuid\": \"446cb47762b8c55f5ab199cb42e4cbf5    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 19872, \"automationUserInputUuid\": \"40adc0be782e098e7879bc1ea517886b    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"automationId\": 89813, \"forceExitStatusCode\": null, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"rohit test\"}",
+ "version": 2,
+ "name": "rohit test",
+ "aliasName": "rohit test",
+ "category": {
+  "id": 123,
+  "name": "Schools-Regression"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "active": false,
+ "updatedOn": 1714388182584,
+ "createdOn": 1714388139554
+}

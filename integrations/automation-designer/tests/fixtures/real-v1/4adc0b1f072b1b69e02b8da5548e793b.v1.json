@@ -1,0 +1,19 @@
+{
+ "id": 6895,
+ "uuid": "4adc0b1f072b1b69e02b8da5548e793b",
+ "jsonDefinition": "{\"name\": \"tobedeleted-stackLogs.add\", \"inputs\": [], \"outputs\": [], \"summary\": \"add logs to methods_stack_log table\", \"services\": [], \"variables\": [], \"buttonLabel\": \"\", \"securityFields\": [], \"methodDescription\": \"add logs to methods_stack_log table\"}",
+ "version": 2,
+ "name": "tobedeleted-stackLogs.add",
+ "aliasName": "stackLogs.add",
+ "category": {
+  "id": 19,
+  "name": "Schools-Utilities"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "deprecatedAt": 1746697674668,
+ "active": false,
+ "updatedOn": 1746697674689,
+ "createdOn": 1746682752251
+}

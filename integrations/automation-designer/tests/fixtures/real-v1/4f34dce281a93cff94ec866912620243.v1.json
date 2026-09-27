@@ -1,0 +1,18 @@
+{
+ "id": 5353,
+ "uuid": "4f34dce281a93cff94ec866912620243",
+ "jsonDefinition": "{\"name\": \"config.backgroundJob.add\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"jobName\", \"required\": true, \"fieldCode\": \"jobName\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"Enter jobName\"}, {\"type\": \"STRING\", \"label\": \"jobType\", \"required\": true, \"fieldCode\": \"jobType\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"Enter jobType\"}], \"outputs\": [{\"id\": 11262, \"code\": \"isJobAddCount\", \"type\": \"STRING\", \"fieldCode\": \"isJobAddCount\", \"outputCode\": \"isJobAddCount\", \"properties\": [], \"displayName\": \"isJobAddCount\", \"automationId\": 65562, \"rawResponseContainer\": false, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"outputs\": [{\"code\": \"isJobAddCount\", \"displayName\": \"isJobAddCount\", \"automationId\": 65562, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"INSERT INTO  background_jobs (id, job_name, job_type) \\nVALUES ( ${UUID_WITH_HYPHEN}, '#{jobName}','#{jobType}');\\n\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 195, \"automationUserInputUuid\": \"227e3a22-2222-4208-86a5-76235585547b\"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 194, \"automationUserInputUuid\": \"e9d29329-058e-4974-b3d2-8dc6d575acce\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"description\": \"Add data into background_jobs table\", \"automationId\": 65562, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"Add data to background_jobs table\"}",
+ "version": 8,
+ "name": "config.backgroundJob.add",
+ "aliasName": "config.backgroundJob.add",
+ "category": {
+  "id": 24,
+  "name": "Schools-Configure"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "active": false,
+ "updatedOn": 1700659191075,
+ "createdOn": 1700637942481
+}

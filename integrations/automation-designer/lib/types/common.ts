@@ -12,7 +12,11 @@
 
 import type { ApiVersion } from "../api-version";
 
-export type MethodState = "DRAFT" | "PUBLISHED";
+/**
+ * `UNKNOWN` means the wire carried neither `automationState` nor `state`.
+ * Write paths must treat it as unsafe (the draft guard refuses it).
+ */
+export type MethodState = "DRAFT" | "PUBLISHED" | "UNKNOWN";
 
 export type DataType =
   | "STRING"

@@ -12,7 +12,7 @@ import type {
   MethodOutput,
   StepInput,
 } from "../../types/common";
-import { decodeBase64Safe } from "../../base64";
+import { decodeBase64Strict } from "../../base64";
 import {
   SHARED_STEP_CONSTANTS,
   findMappingByInputId,
@@ -124,18 +124,30 @@ function mapMapping(m: V1Mapping): StepInput {
 }
 
 function buildCustomCode(raw: V1ServiceStep, base: BaseFields, warn: Warn): CustomCodeStep {
-  const code = typeof raw.code === "string" ? raw.code : "";
-  const source = code.length > 0
-    ? decodeBase64Safe(code, msg => warn(`[step ${base.orderIndex}] ${msg}`))
-    : "";
+  // V1 stores `code` either as plain text (most sems-dev steps) or as base64.
+  // The runtime content-sniffs; we do the same with a *strict* decoder so
+  // plain JS is never mangled into garbage by a lenient base64 decode.
+  const { source, encoding } = decodeCustomCode(typeof raw.code === "string" ? raw.code : "");
   return {
     ...base,
     kind: "CUSTOM_CODE",
     language: normalizeLanguage(raw.language ?? null),
     customCodeEnv: typeof raw.customCodeEnv === "string" ? raw.customCodeEnv : undefined,
     source,
-    sourceEncoding: code.length > 0 ? "BASE_64" : "NONE",
+    sourceEncoding: encoding,
   };
+}
+
+/**
+ * Decode a stored custom-code body. Canonical base64 → decoded text with
+ * encoding BASE_64; anything else (including empty) is plain text, NONE.
+ * Shared with the serializer so "was this step edited?" compares against the
+ * exact same decoding.
+ */
+export function decodeCustomCode(code: string): { source: string; encoding: "BASE_64" | "NONE" } {
+  if (code.length === 0) return { source: "", encoding: "NONE" };
+  const decoded = decodeBase64Strict(code);
+  return decoded === null ? { source: code, encoding: "NONE" } : { source: decoded, encoding: "BASE_64" };
 }
 
 function normalizeLanguage(lang: string | null): CustomCodeStep["language"] {
@@ -158,32 +170,63 @@ function buildSpelEcho(raw: V1ServiceStep, base: BaseFields): SpelEchoStep {
   };
 }
 
-function buildSql(raw: V1ServiceStep, base: BaseFields, operation: string, warn: Warn): SqlStep {
-  let sql = "";
-  let encoding: "BASE_64" | "NONE" = "NONE";
+function buildSql(raw: V1ServiceStep, base: BaseFields, operation: string, _warn: Warn): SqlStep {
+  const loc = locateSqlMapping(raw.mappings);
   let resultShape: string | undefined;
-
   for (const m of walkMappingTree(raw.mappings)) {
-    if (encoding === "NONE" && typeof m.value === "string" && m.encodingType === "BASE_64") {
-      sql = decodeBase64Safe(m.value, msg => warn(`[step ${base.orderIndex}] SQL ${msg}`));
-      encoding = "BASE_64";
-    }
-    if (resultShape === undefined && m.uiRepresentation === "DROPDOWN" && typeof m.value === "string") {
+    if (m.uiRepresentation === "DROPDOWN" && typeof m.value === "string") {
       resultShape = m.value;
+      break;
     }
-    if (sql !== "" && resultShape !== undefined) break;
   }
 
   return {
     ...base,
     kind: "SQL",
     operation,
-    sql,
-    sqlEncoding: encoding,
+    sql: loc?.sql ?? "",
+    sqlEncoding: loc?.encoding ?? "NONE",
     resultShape,
     automationAuthId: typeof raw.automationAuthId === "number" ? raw.automationAuthId : undefined,
     testAccountId: typeof raw.testAccountId === "number" ? raw.testAccountId : undefined,
   };
+}
+
+export interface SqlMappingLocation {
+  mapping: V1Mapping;
+  sql: string;
+  encoding: "BASE_64" | "NONE";
+}
+
+/**
+ * Locate the mapping that holds a SQL step's query text. Shared by the parser
+ * and the serializer so both always agree on *which* slot holds the SQL.
+ *
+ *   1. The first mapping flagged `encodingType: "BASE_64"` with a string value.
+ *      Its encoding is BASE_64 only if the value is strict base64; a plain
+ *      value under the flag is plain text (the server ignores the flag then).
+ *   2. Otherwise, if there is exactly one non-empty CUSTOM leaf, that is the
+ *      plaintext query (legacy chains, `encodingType` NONE/absent).
+ *   3. Otherwise `null` — the slot is ambiguous and writes must be refused.
+ */
+export function locateSqlMapping(mappings: V1Mapping[] | undefined): SqlMappingLocation | null {
+  for (const m of walkMappingTree(mappings)) {
+    if (m.encodingType === "BASE_64" && typeof m.value === "string") {
+      const decoded = m.value.length > 0 ? decodeBase64Strict(m.value) : null;
+      return decoded === null
+        ? { mapping: m, sql: m.value, encoding: "NONE" }
+        : { mapping: m, sql: decoded, encoding: "BASE_64" };
+    }
+  }
+  const leaves: V1Mapping[] = [];
+  for (const m of walkMappingTree(mappings)) {
+    const isLeaf = !Array.isArray(m.mappings) || m.mappings.length === 0;
+    if (isLeaf && m.uiRepresentation === "CUSTOM" && typeof m.value === "string" && m.value.trim().length > 0) {
+      leaves.push(m);
+    }
+  }
+  if (leaves.length === 1) return { mapping: leaves[0]!, sql: leaves[0]!.value as string, encoding: "NONE" };
+  return null;
 }
 
 function buildRedis(raw: V1ServiceStep, base: BaseFields, kind: "REDIS_GET" | "REDIS_SET" | "REDIS_REMOVE"): RedisStep {

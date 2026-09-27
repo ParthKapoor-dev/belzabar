@@ -10,6 +10,7 @@ import type {
   ParsedStep,
 } from "../types/common";
 import { parseV2Step } from "./steps/v2";
+import { normaliseState } from "./v1";
 
 export function parseV2Method(raw: V2MethodResponse): HydratedMethod {
   const warnings: string[] = [];
@@ -34,7 +35,7 @@ export function parseV2Method(raw: V2MethodResponse): HydratedMethod {
     sourceVersion: "v2",
     uuid: metadata?.uuid ?? "",
     referenceId: normaliseReferenceId(metadata?.referenceId),
-    state: (metadata?.state as MethodState) ?? "DRAFT",
+    state: normaliseState(metadata?.state),
     version,
 
     name,

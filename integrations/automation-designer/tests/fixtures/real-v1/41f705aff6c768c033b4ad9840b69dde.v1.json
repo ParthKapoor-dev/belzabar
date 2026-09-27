@@ -1,0 +1,19 @@
+{
+ "id": 2731,
+ "uuid": "41f705aff6c768c033b4ad9840b69dde",
+ "jsonDefinition": "{\"name\": \"program.grade.evaluate.sync\", \"inputs\": [{\"type\": \"JSON\", \"label\": \"addedGrades\", \"required\": true, \"fieldCode\": \"addedGrades\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"JSON\", \"label\": \"removedGrades\", \"required\": true, \"fieldCode\": \"removedGrades\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"epId\", \"required\": true, \"fieldCode\": \"epId\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"epId uuid\"}], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"isProgramGradeEval\", \"properties\": [], \"displayName\": \"isProgramGradeEval\", \"automationId\": 19909, \"rawResponseContainer\": false, \"automationAPIOutputId\": 4753, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{addedGrades}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8922, \"automationUserInputUuid\": \"4d14c05c72402e20ad0f9648ee4f2fd4    \"}, {\"value\": \"#{removedGrades}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8923, \"automationUserInputUuid\": \"487bdef78932e7656737bedf22276566    \"}, {\"value\": \"#{epId}\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8921, \"automationUserInputUuid\": \"4424358f08dabfc6f38bac9c196192eb    \"}], \"runAsync\": true, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 19909, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"this is wrapper method to resolve async issue\", \"useServiceAuthenticationStructure\": false}",
+ "version": 1,
+ "name": "program.grade.evaluate.sync",
+ "aliasName": "program.grade.evaluate.sync",
+ "category": {
+  "id": 15,
+  "name": "Schools"
+ },
+ "state": "PUBLISHED",
+ "automationState": "PUBLISHED",
+ "referenceId": "438b502717b979a6a8539691d673fc39",
+ "methodDeprecated": false,
+ "active": false,
+ "updatedOn": 1676898850356,
+ "createdOn": 1672663088636
+}

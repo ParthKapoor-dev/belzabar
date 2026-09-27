@@ -16,7 +16,7 @@ import type {
   MethodOutput,
   StepInput,
 } from "../../types/common";
-import { decodeBase64Safe } from "../../base64";
+import { decodeBase64Safe, decodeBase64Strict } from "../../base64";
 
 export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string) => void): ParsedStep {
   const base = buildBase(raw, orderIndex);
@@ -28,14 +28,16 @@ export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string)
 
   if (propsType === "CUSTOM_CODE") {
     const cc = raw.properties?.customCode;
-    const source = typeof cc?.inlineCode === "string" ? cc.inlineCode : "";
+    const inline = typeof cc?.inlineCode === "string" ? cc.inlineCode : "";
+    const decoded = inline.length > 0 ? decodeBase64Strict(inline) : null;
+    const source = decoded ?? inline;
     return {
       ...base,
       kind: "CUSTOM_CODE",
       language: cc?.language ?? null,
       customCodeEnv: cc?.executor ?? undefined,
       source,
-      sourceEncoding: "NONE",
+      sourceEncoding: decoded !== null ? "BASE_64" : "NONE",
     } as CustomCodeStep;
   }
 

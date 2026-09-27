@@ -1,0 +1,18 @@
+{
+ "id": 570,
+ "uuid": "4d24225072bd43dd0c8a9ba39c2cbeff",
+ "jsonDefinition": "{\"name\": \"enrollment.group.update\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"group_id\", \"required\": false, \"fieldCode\": \"group_id\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"groupId to be updated\"}, {\"type\": \"STRING\", \"label\": \"group_code\", \"required\": false, \"fieldCode\": \"group_code\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new value of code\"}, {\"type\": \"STRING\", \"label\": \"group_name\", \"required\": false, \"fieldCode\": \"group_name\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new value for the group_name\"}, {\"type\": \"STRING\", \"label\": \"details\", \"required\": false, \"fieldCode\": \"details\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new details\"}], \"outputs\": [], \"services\": [{\"outputs\": [{\"code\": \"cnt\", \"displayName\": \"cnt\", \"automationId\": 631, \"automationAPIOutputId\": 87, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"UPDATE enrollment_group SET name = '#{group_name}', details= ''#{details}, group_code = \\nCASE\\nWHEN group_code IS NOT 'null' THEN '#{group_code}' \\nEND\\nWHERE id = '#{group_id}'\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 174, \"automationUserInputUuid\": \"aef549b2-fe20-4859-a697-11175062fd8e\"}, {\"mappings\": [{\"mappings\": [], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 176, \"automationUserInputUuid\": \"44970856-c45e-40ca-9b09-b4ffafb252b1\"}], \"uiRepresentation\": \"ARRAY\", \"automationUserInputId\": 175, \"automationUserInputUuid\": \"a73672e3-210f-47e7-9360-e20755d48727\"}, {\"mappings\": [{\"mappings\": [], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 180, \"automationUserInputUuid\": \"e436af7f-450b-42ec-8d59-0df6b42abfb4\"}], \"uiRepresentation\": \"ARRAY\", \"automationUserInputId\": 179, \"automationUserInputUuid\": \"1c3fa385-7a69-42c8-9690-5de3785004d0\"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 173, \"automationUserInputUuid\": \"910cb0f4-1d44-4040-a708-0e35f747b82e\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"condition\": [{\"item\": {\"type\": {\"id\": \"STRING\", \"name\": \"String\", \"type\": \"STRING\"}, \"category\": \"Input\", \"fieldCode\": \"group_id\", \"nestedLabel\": \"group_id\"}, \"value\": \"50\", \"operator\": {\"name\": \"Has the value\", \"type\": [\"Timestamp\", \"Boolean\", \"Date\", \"Default\"], \"value\": \"eq\"}, \"ignoreCase\": false}], \"orderIndex\": 1, \"fatFileType\": null, \"automationId\": 631, \"conditionMode\": \"basic\", \"conditionExpression\": \"#{group_id} eq '50'\", \"loopExecutionSource\": null, \"automationUiSelector\": {}}], \"buttonLabel\": \"\", \"methodDescription\": \"User can update the details of an enrollment group by passing group id as an input\\n\\nRecommended to be used by an Administrator\"}",
+ "version": 9,
+ "name": "enrollment.group.update",
+ "aliasName": "enrollment.group.update",
+ "category": {
+  "id": 15,
+  "name": "Schools"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "active": false,
+ "updatedOn": 1667366056086,
+ "createdOn": 1662032301108
+}

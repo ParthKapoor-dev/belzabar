@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { resolveDraftTarget, type ResolveDraftTargetDeps } from "../../lib/draft-guard";
 import type { HydratedMethod, MethodState } from "../../lib/types/common";
+import { parseV1Method } from "../../lib/parser/v1";
 
 function fakeMethod(overrides: Partial<HydratedMethod> & { uuid: string; state: MethodState }): HydratedMethod {
   return {
@@ -107,5 +108,26 @@ describe("resolveDraftTarget", () => {
     if (!result.ok) {
       expect(result.reason).toBe("PUBLISHED_NO_DRAFT");
     }
+  });
+
+  test("UNKNOWN state (automationState and state both missing) — fails closed (AD-12)", async () => {
+    const m = fakeMethod({ uuid: "nostate", state: "UNKNOWN" });
+    const result = await resolveDraftTarget("nostate", "v1", makeDeps({ nostate: m }));
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.reason).toBe("STATE_UNKNOWN");
+  });
+});
+
+describe("parser state normalisation (AD-12)", () => {
+  const base = { id: 1, uuid: "u", jsonDefinition: "{}", version: 1, category: { id: 1, name: "c" } };
+  test("reads automationState first", () => {
+    expect(parseV1Method({ ...base, automationState: "PUBLISHED", state: "DRAFT" } as any).state).toBe("PUBLISHED");
+  });
+  test("falls back to state", () => {
+    expect(parseV1Method({ ...base, state: "DRAFT" } as any).state).toBe("DRAFT");
+  });
+  test("missing both → UNKNOWN (never defaults to DRAFT)", () => {
+    expect(parseV1Method({ ...base } as any).state).toBe("UNKNOWN");
+    expect(parseV1Method({ ...base, automationState: "weird" } as any).state).toBe("UNKNOWN");
   });
 });

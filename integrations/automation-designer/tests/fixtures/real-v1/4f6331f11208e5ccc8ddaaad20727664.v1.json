@@ -1,0 +1,19 @@
+{
+ "id": 1171,
+ "uuid": "4f6331f11208e5ccc8ddaaad20727664",
+ "jsonDefinition": "{\"name\": \"configure.address.city.add\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"cityCode\", \"required\": true, \"fieldCode\": \"cityCode\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"a unique code of city\"}, {\"type\": \"STRING\", \"label\": \"displayName\", \"required\": true, \"fieldCode\": \"displayName\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"this is city's name to be shown\"}], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"userData\", \"properties\": [], \"displayName\": \"userData\", \"automationId\": 38528, \"rawResponseContainer\": false, \"automationAPIOutputId\": 9270, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"{\\\"query\\\": true}\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 13203, \"automationUserInputUuid\": \"4032e2f20ec55c05e5de9235d4935b9f    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Get the query to fetch loggedIn userId\", \"automationId\": 38528, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"id\", \"properties\": [], \"displayName\": \"id\", \"automationId\": 38529, \"rawResponseContainer\": false, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"INSERT INTO city(id,code, display_name, updated_at, updated_by) VALUES (${UUID_WITH_HYPHEN},'#{cityCode}', '#{displayName}', now(), (#{userData.query})) RETURNING id;\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 195, \"automationUserInputUuid\": \"227e3a22-2222-4208-86a5-76235585547b\"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 194, \"automationUserInputUuid\": \"e9d29329-058e-4974-b3d2-8dc6d575acce\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 2, \"description\": \"Add city in city table using MDT.&nbsp;\", \"automationId\": 38529, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"Adds new city to be list of cities available for address configurations in the system in city table\", \"useServiceAuthenticationStructure\": false}",
+ "version": 1,
+ "name": "configure.address.city.add",
+ "aliasName": "configure.address.city.add",
+ "category": {
+  "id": 15,
+  "name": "Schools"
+ },
+ "state": "PUBLISHED",
+ "automationState": "PUBLISHED",
+ "referenceId": "4283bb05ec15bdc2f723a7a75551ed08",
+ "methodDeprecated": false,
+ "active": false,
+ "updatedOn": 1686830062936,
+ "createdOn": 1665638689573
+}

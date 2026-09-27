@@ -1,0 +1,19 @@
+{
+ "id": 6510,
+ "uuid": "4f8b405c4c2803832def8f9364165441",
+ "jsonDefinition": "{\"name\": \"document.downloadFromStorage--deprecated\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"docStorageReference\", \"required\": true, \"fieldCode\": \"docStorageReference\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"docVersion\", \"required\": false, \"fieldCode\": \"docVersion\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}], \"outputs\": [{\"id\": 13118, \"code\": \"downloadUrl\", \"type\": \"STRING\", \"fieldCode\": \"downloadUrl\", \"outputCode\": \"downloadUrl\", \"properties\": [], \"displayName\": \"downloadUrl\", \"automationId\": 107029, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"\", \"services\": [{\"outputs\": [{\"code\": \"downloadJson\", \"displayName\": \"downloadJson\", \"automationId\": 107028, \"automationAPIOutputId\": 6129, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{docStorageReference}\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 10962, \"automationUserInputUuid\": \"41dac8103d7cfed30592a05047476e89    \"}, {\"value\": \"#{docVersion}\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 24210, \"automationUserInputUuid\": \"419a311593aac86a10708684d78e533d    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"automationId\": 107028, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"outputs\": [{\"code\": \"downloadUrl\", \"displayName\": \"downloadUrl\", \"automationId\": 107029, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{downloadJson}\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"4bdc5145fcc4884daf0fa9f789d4b2b3    \"}, {\"value\": \"$.downloadLink\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3474, \"automationUserInputUuid\": \"4453cc3a37a55ac04ae8bb6de03e0735    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"4e7e59d30a76a8f49ef1bb1b04664fb3    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 2, \"automationId\": 107029, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"This method downloads the document based on the passed docLocationId\"}",
+ "version": 2,
+ "name": "document.downloadFromStorage--deprecated",
+ "aliasName": "document.downloadFromStorage",
+ "category": {
+  "id": 19,
+  "name": "Schools-Utilities"
+ },
+ "state": "DRAFT",
+ "automationState": "DRAFT",
+ "methodDeprecated": false,
+ "deprecatedAt": 1728460851026,
+ "active": false,
+ "updatedOn": 1728460851032,
+ "createdOn": 1728458683991
+}

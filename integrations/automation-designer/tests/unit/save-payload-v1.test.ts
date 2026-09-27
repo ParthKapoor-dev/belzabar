@@ -65,7 +65,7 @@ describe("serializeToV1SavePayload", () => {
 });
 
 describe("serializeToV1SavePayload — custom-code multi-output invariant", () => {
-  test("rejects CUSTOM_CODE step with >1 outputs missing elementToRetrieve", async () => {
+  test("rejects an EDITED CUSTOM_CODE step with >1 outputs missing elementToRetrieve; warns when unedited", async () => {
     // Build a synthetic method with a CUSTOM_CODE step whose 2nd output lacks
     // elementToRetrieve.
     const rawResponse: V1RawMethodResponse = {
@@ -99,6 +99,13 @@ describe("serializeToV1SavePayload — custom-code multi-output invariant", () =
     };
     const method = parseV1Method(rawResponse);
 
+    // Unedited step: pre-existing violation is only a warning (AD-21).
+    const warnings: string[] = [];
+    expect(() => serializeToV1SavePayload(method, { warn: w => warnings.push(w) })).not.toThrow();
+    expect(warnings.join(" ")).toContain("pre-existing");
+
+    // Edited step: the invariant is enforced.
+    (method.parsedSteps[0] as CustomCodeStep).source = "var o = { a: 1, b: 3 }; console.log(JSON.stringify(o));";
     expect(() => serializeToV1SavePayload(method)).toThrow(SerializeError);
     try {
       serializeToV1SavePayload(method);
