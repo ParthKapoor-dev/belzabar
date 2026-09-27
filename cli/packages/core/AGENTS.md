@@ -63,6 +63,9 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 | `runNamespacedCli(argv, options)` | Namespaced runner — powers the `belz` binary |
 | `NamespaceDefinition` | Type for a single namespace (name, description, commands or command, helpDir/helpResolver) |
 | `NamespacedCliOptions` | Full config type for `runNamespacedCli` |
+| `parseGlobalFlags(argv)` | Pure global-flag parser: `--llm`, `-v/--verbose`, `-e/--env <n>`, `--env=<n>`. Stops at `--`. Duplicate/conflicting `--env` → `INVALID_ARGS` |
+| `hasHelpFlag(args)` | `-h`/`--help` anywhere before `--`. The runner shows help for the command instead of executing it (so `config token --help` never runs `token`) |
+| `installStdioGuard()` / `flushStdio()` / `flushAndExit(code)` | Bun drops `console.log` output past the 64 KiB pipe buffer and `process.exit()` discards queued writes. The runner routes console output through queued `stream.write` when not a TTY and awaits every write before exiting. **Never call a bare `process.exit()` after output in runner code — use `flushAndExit`.** |
 
 ### Command Interface
 | Export | Description |

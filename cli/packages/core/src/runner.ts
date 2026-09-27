@@ -41,47 +41,165 @@ export interface NamespacedCliOptions {
 
 // ── Shared internals ────────────────────────────────────────────────────────
 
+// ── Stdio flushing ──────────────────────────────────────────────────────────
+//
+// Bun (1.2.x) silently drops `console.log` output beyond the pipe buffer (64 KiB)
+// once `process.stdout` has been touched, and `process.exit()` discards anything
+// still queued. Both truncate `--llm` JSON when piped (`belz … --llm | jq`).
+// Fix: when a stream is not a TTY, route console output through
+// `stream.write()` (which queues instead of dropping) and, before exiting, await
+// the callback of the last write so the queue has fully drained.
+
+type StdStream = NodeJS.WriteStream;
+const pendingWrites = new Map<StdStream, Promise<void>>();
+let stdioGuardInstalled = false;
+
+function guardedWrite(stream: StdStream, text: string): void {
+  const done = new Promise<void>(resolve => {
+    try {
+      // The callback fires once the chunk is handed to the OS (or on error).
+      stream.write(text, () => resolve());
+    } catch {
+      resolve();
+    }
+  });
+  const prev = pendingWrites.get(stream) ?? Promise.resolve();
+  pendingWrites.set(stream, Promise.all([prev, done]).then(() => {}));
+}
+
+/** Route console output through queued stream writes when stdout/stderr are pipes. Idempotent. */
+export function installStdioGuard(): void {
+  if (stdioGuardInstalled) return;
+  stdioGuardInstalled = true;
+  const { format } = require("node:util") as typeof import("node:util");
+  // A closed reader (`| head`) must not crash the process or hang the flush.
+  process.stdout.on?.("error", () => {});
+  process.stderr.on?.("error", () => {});
+  if (!process.stdout.isTTY) {
+    const out = (...a: unknown[]) => guardedWrite(process.stdout, format(...a) + "\n");
+    console.log = out;
+    console.info = out;
+  }
+  if (!process.stderr.isTTY) {
+    const err = (...a: unknown[]) => guardedWrite(process.stderr, format(...a) + "\n");
+    console.error = err;
+    console.warn = err;
+  }
+}
+
+/** Resolve once every console write made through the guard has been handed to the OS. */
+export async function flushStdio(): Promise<void> {
+  // Note: a zero-length write's callback can fire before earlier queued writes
+  // drain, so we wait on every tracked write rather than appending a marker.
+  await Promise.all([...pendingWrites.values()]);
+}
+
+/** Flush stdout/stderr, then exit. Use instead of a bare `process.exit()`. */
+export async function flushAndExit(code: number): Promise<never> {
+  process.exitCode = code;
+  await flushStdio();
+  process.exit(code);
+}
+
+// ── Global flags ────────────────────────────────────────────────────────────
+
+export interface GlobalFlags {
+  /** argv with the global flags removed (everything from `--` onward is kept verbatim). */
+  args: string[];
+  outputMode: "human" | "llm";
+  verbose: boolean;
+  envName: string | null;
+  error: { code: string; message: string } | null;
+}
+
+/**
+ * Pure parser for the global flags `--llm`, `-v/--verbose`, `-e/--env <name>`, `--env=<name>`, `-e=<name>`.
+ * Parsing stops at `--`. A missing value, or `--env` given more than once, is an error.
+ */
+export function parseGlobalFlags(argv: string[]): GlobalFlags {
+  const args: string[] = [];
+  let outputMode: "human" | "llm" = "human";
+  let verbose = false;
+  let envName: string | null = null;
+  let error: GlobalFlags["error"] = null;
+  const setError = (code: string, message: string) => { if (!error) error = { code, message }; };
+  const setEnv = (value: string, flag: string) => {
+    if (envName !== null) {
+      setError(
+        "INVALID_ARGS",
+        value === envName
+          ? `Error: ${flag} given more than once.`
+          : `Error: conflicting --env values '${envName}' and '${value}'.`
+      );
+      return;
+    }
+    envName = value;
+  };
+
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i] as string;
+    if (a === "--") {
+      args.push(...argv.slice(i));
+      break;
+    }
+    if (a === "--llm") { outputMode = "llm"; continue; }
+    if (a === "-v" || a === "--verbose") { verbose = true; continue; }
+    if (a === "--env" || a === "-e") {
+      const next = argv[i + 1];
+      if (next === undefined || next === "--" || next.startsWith("-")) {
+        setError("MISSING_ENV_ARG", "Error: --env flag requires an argument.");
+        continue;
+      }
+      setEnv(next, a);
+      i++;
+      continue;
+    }
+    const eq = a.startsWith("--env=") ? "--env=" : a.startsWith("-e=") ? "-e=" : null;
+    if (eq) {
+      const value = a.slice(eq.length);
+      if (!value) {
+        setError("MISSING_ENV_ARG", "Error: --env flag requires an argument.");
+        continue;
+      }
+      setEnv(value, "--env");
+      continue;
+    }
+    args.push(a);
+  }
+
+  return { args, outputMode, verbose, envName, error };
+}
+
 function stripGlobalFlags(argv: string[]): {
   args: string[];
   outputMode: "human" | "llm";
   envName: string | null;
-  envError: string | null;
+  envError: { code: string; message: string } | null;
 } {
-  let args = [...argv];
-  let outputMode: "human" | "llm" = "human";
-  let envName: string | null = null;
-  let envError: string | null = null;
+  installStdioGuard();
+  const parsed = parseGlobalFlags(argv);
+  if (parsed.verbose) process.env.BELZ_VERBOSE = "1";
+  setOutputMode(parsed.outputMode);
 
-  const vIdx = args.findIndex(a => a === "-v" || a === "--verbose");
-  if (vIdx !== -1) {
-    process.env.BELZ_VERBOSE = "1";
-    args.splice(vIdx, 1);
-  }
-
-  const llmIndex = args.indexOf("--llm");
-  if (llmIndex !== -1) {
-    outputMode = "llm";
-    args.splice(llmIndex, 1);
-  }
-
-  setOutputMode(outputMode);
-
-  const envIndex = args.findIndex(a => a === "--env" || a === "-e");
-  if (envIndex !== -1) {
-    if (envIndex + 1 >= args.length) {
-      envError = "Error: --env flag requires an argument.";
-    } else {
-      envName = args[envIndex + 1] as string;
-      try {
-        Config.setActiveEnv(envName);
-      } catch (e: any) {
-        envError = `Error: ${e.message}`;
-      }
-      args.splice(envIndex, 2);
+  let envError = parsed.error;
+  if (!envError && parsed.envName !== null) {
+    try {
+      Config.setActiveEnv(parsed.envName);
+    } catch (e: any) {
+      envError = { code: "INVALID_ENV", message: `Error: ${e.message}` };
     }
   }
 
-  return { args, outputMode, envName, envError };
+  return { args: parsed.args, outputMode: parsed.outputMode, envName: parsed.envName, envError };
+}
+
+/** True when `-h`/`--help` appears anywhere before a `--` terminator. */
+export function hasHelpFlag(args: string[]): boolean {
+  for (const a of args) {
+    if (a === "--") return false;
+    if (a === "--help" || a === "-h") return true;
+  }
+  return false;
 }
 
 async function dispatchCommand(
@@ -123,7 +241,7 @@ async function dispatchCommand(
       );
     }
     listCommandsHuman();
-    process.exit(0);
+    return flushAndExit(0);
   }
 
   const commandModule = commandMap[commandName];
@@ -147,10 +265,10 @@ async function dispatchCommand(
     }
     console.error(theme.err(`Unknown command: ${theme.bold(commandName)}`));
     listCommandsHuman();
-    process.exit(1);
+    return flushAndExit(1);
   }
 
-  if (args[1] === "--help" || args[1] === "-h") {
+  if (hasHelpFlag(args.slice(1))) {
     let helpText: string | null = null;
     if (helpResolver) {
       helpText = await helpResolver(commandName);
@@ -171,7 +289,7 @@ async function dispatchCommand(
       );
     }
     console.log(helpText ?? `No help file found for '${commandName}'.`);
-    process.exit(0);
+    return flushAndExit(0);
   }
 
   const commandContext: CommandContext = {
@@ -194,12 +312,12 @@ async function dispatchCommand(
       : args.slice(1);
     const result = await command.execute(parsedArgs, commandContext);
     const envelope = toEnvelope(commandName, command, result, startedAt, activeEnv.name, warnings);
-    exitWithEnvelope(outputMode, envelope, envelope.ok ? 0 : 1, command.presentHuman);
+    return exitWithEnvelope(outputMode, envelope, envelope.ok ? 0 : 1, command.presentHuman);
   } catch (error: unknown) {
     const normalizedError = normalizeError(error);
     const failureResult: CommandResult = { ok: false, error: normalizedError };
     const envelope = toEnvelope(commandName, command, failureResult, startedAt, activeEnv.name, warnings);
-    exitWithEnvelope(outputMode, envelope, 1, command.presentHuman);
+    return exitWithEnvelope(outputMode, envelope, 1, command.presentHuman);
   }
 }
 
@@ -222,7 +340,7 @@ export async function runCli(
         ok: false,
         command: "global",
         data: null,
-        error: { code: envError.includes("requires") ? "MISSING_ENV_ARG" : "INVALID_ENV", message: envError },
+        error: envError,
         meta: {},
       },
       1
@@ -280,10 +398,7 @@ export async function runNamespacedCli(
         ok: false,
         command: "global",
         data: null,
-        error: {
-          code: envError.includes("requires") ? "MISSING_ENV_ARG" : "INVALID_ENV",
-          message: envError,
-        },
+        error: envError,
         meta: {},
       },
       1
@@ -345,7 +460,7 @@ export async function runNamespacedCli(
       );
     }
     printHelp();
-    process.exit(0);
+    return flushAndExit(0);
   }
 
   // Module dispatch
@@ -403,7 +518,7 @@ export async function runNamespacedCli(
       Object.keys(ns.commands!).forEach(cmd => console.log(`  ${theme.accent(cmd)}`));
       console.log();
       console.log(theme.faint(`${symbols.arrow} ${modBinaryName} <command> --help  for details`));
-      process.exit(0);
+      return flushAndExit(0);
     }
 
     return dispatchCommand(remainingArgs, ns.commands!, outputMode, modBinaryName, helpResolver);
@@ -444,7 +559,7 @@ export async function runNamespacedCli(
   }
   console.error(theme.err(`Unknown module or command: ${theme.bold(token)}`));
   printHelp();
-  process.exit(1);
+  return flushAndExit(1);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -498,7 +613,7 @@ function normalizeError(error: unknown): CommandError {
   };
 }
 
-function exitWithEnvelope(
+async function exitWithEnvelope(
   outputMode: "human" | "llm",
   envelope: CommandEnvelope,
   exitCode: number,
@@ -509,5 +624,5 @@ function exitWithEnvelope(
   } else {
     renderHuman(envelope, envelope.ok ? presenter : undefined);
   }
-  process.exit(exitCode);
+  await flushAndExit(exitCode);
 }
