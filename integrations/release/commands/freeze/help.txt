@@ -9,11 +9,18 @@ pointer. Run this right after the release is pushed to production.
 Requires that `belz release matrix` has already been run for this release
 (it writes the release record this command reads).
 
+WRITES LOCAL STATE: ~/.belz/promotion/prod-snapshots/<name>.json (atomic).
+An existing snapshot is kept unless --force (SNAPSHOT_EXISTS). Items with no
+stage data (stage not traced, or a trace error) are recorded as "unknown" with
+a warning; if no item has stage data, nothing is written
+(FREEZE_NO_STAGE_DATA). A corrupt release record is LEDGER_CORRUPT.
+
 Arguments:
   <RELEASE_NAME>        Name of a release previously audited with
                         `belz release matrix` (the `name` field of its spec).
 
 Flags:
+  --force               Replace an existing prod snapshot for this release.
   --help, -h            Show this help message.
 
 Global Flags:
@@ -21,3 +28,4 @@ Global Flags:
 
 Examples:
   belz release freeze may-12-release
+  belz release freeze may-12-release --force

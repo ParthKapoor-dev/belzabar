@@ -31,7 +31,8 @@ describe("release matrix / freeze args", () => {
     expect(await codeOf(() => matrix.parseArgs!([], ctx))).toBe("MISSING_SPEC");
     expect(await codeOf(() => matrix.parseArgs!(["r.json", "--bogus"], ctx))).toBe("UNKNOWN_FLAG");
     expect(await codeOf(() => matrix.parseArgs!(["a.json", "b.json"], ctx))).toBe("UNEXPECTED_ARGUMENT");
-    expect(freeze.parseArgs!(["may-12"], ctx)).toEqual({ name: "may-12" });
+    expect(freeze.parseArgs!(["may-12"], ctx)).toEqual({ name: "may-12", force: false });
+    expect(freeze.parseArgs!(["may-12", "--force"], ctx)).toEqual({ name: "may-12", force: true });
     expect(await codeOf(() => freeze.parseArgs!([], ctx))).toBe("MISSING_NAME");
   });
 

@@ -23,12 +23,27 @@ belz release freeze <release-name>  → release/commands/freeze/
   It calls these lib functions, never another command's `execute()`.
   It detects COLLISIONS (an AD item shared by an included and an excluded
   ticket) and, per collision, a LEAK status (has the excluded change reached
-  stage). Result is persisted to the ledger. Ticket refs are validated up
-  front with teamwork's `parseTaskId`; a junk ref or a ticket listed as both
-  included and excluded is `BAD_SPEC` before any network call.
-- **freeze** reads a saved matrix result and snapshots each item's stage
-  position as the prod pointer — prod is not queryable, so it is inferred from
-  stage at release-push time.
+  stage). Result is persisted to the ledger (overwriting that release's
+  previous audit).
+  Everything about the spec is checked **before any network call**
+  (`lib/spec.ts`): zod shape (`.strict()`: unknown keys are errors; `excluded`
+  defaults to `[]`; `included` non-empty; name must slug to something) (RL-1),
+  ticket refs via teamwork's `parseTaskId` and included/excluded overlap
+  (TW-6/RL-5), env resolution (RL-2), and the ledger slot (name collision) —
+  all `BAD_SPEC` / `LEDGER_NAME_COLLISION`.
+  **Env resolution (RL-2):** explicit `spineEnv`/`stageEnv` must be configured;
+  missing ones are `<project>-dev` / `<project>-stage`, where project =
+  `spec.project`, else the project of an explicit spine/stage env, else the
+  active env's (`context.env`: `--env` / BELZ_ENV / defaultEnv). The envelope
+  carries `data.project`.
+- **freeze** reads a saved matrix record (validated; unreadable →
+  `LEDGER_CORRUPT`) and snapshots each item's stage position as the prod
+  pointer — prod is not queryable, so it is inferred from stage at
+  release-push time. Each item gets `stageStatus` (the stage cell's trace
+  status, or `"unknown"` when stage wasn't traced / was a trace error, with a
+  warning in `data.warnings` + `meta.warnings`). No items, or no item with
+  stage data → `FREEZE_NO_STAGE_DATA`, nothing written (RL-3). An existing
+  snapshot is `SNAPSHOT_EXISTS` unless `--force` (RL-4).
 - Both commands export `args` (core `defineArgs`) and mark `writesLocal: true`
   (they write only the local ledger, so no explicit `--env` is required).
 
@@ -40,18 +55,25 @@ release/
 │   ├── matrix/      belz release matrix — release audit + collision detection
 │   └── freeze/      belz release freeze — prod snapshot from stage
 ├── lib/
-│   └── ledger.ts    JSON store under ~/.belz/promotion/
+│   ├── ledger.ts    JSON store under ~/.belz/promotion/ (atomic writes, LEDGER_CORRUPT,
+│   │                releaseSlug → INVALID_RELEASE_NAME, collision + --force guards)
+│   └── spec.ts      ReleaseSpecSchema (zod), loadReleaseSpec, resolveReleaseEnvs
 ├── registry.ts      Static, sorted command registry (@belzabar/release/registry)
-├── tests/unit/      bun test — args.test.ts (parsing, BAD_SPEC checks)
-├── package.json     @belzabar/release — depends on @belzabar/core, /ad, /teamwork
+├── tests/unit/      bun test — args.test.ts (parsing, BAD_SPEC checks), spec-ledger.test.ts
+│                    (RL-1..4; matrix end to end over the real Teamwork fixture via fakeFetch)
+├── package.json     @belzabar/release — depends on @belzabar/core, /ad, /teamwork, zod
 └── AGENTS.md        This file
 ```
 
 ## Ledger
 
-`~/.belz/promotion/`:
-- `releases/<name>.json`       — a `belz release matrix` result.
-- `prod-snapshots/<name>.json` — a `belz release freeze` snapshot.
+`~/.belz/promotion/` (files 0644, written tmp + rename via core `writeSecureJson`):
+- `releases/<slug>.json`       — a `belz release matrix` result.
+- `prod-snapshots/<slug>.json` — a `belz release freeze` snapshot.
+
+`<slug>` = `releaseSlug(name)` (lowercase, runs of other chars → `-`). Two names
+with one slug are refused (`LEDGER_NAME_COLLISION`); the stored `name` is the
+source of truth.
 
 ## Core Behavior Contract
 

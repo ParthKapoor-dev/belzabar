@@ -3,11 +3,11 @@ import {
   type CommandModule, type CommandResult, type CommandContext,
   type CommandEnvelope, type HumanPresenterHelpers,
 } from "@belzabar/core";
-import { readFileSync, existsSync } from "fs";
 import { traceMethod } from "@belzabar/ad/lib/trace";
 import { extractTicketItems } from "@belzabar/teamwork/lib/items";
 import { parseTaskId } from "@belzabar/teamwork/lib/task-id";
-import { saveRelease } from "../../lib/ledger";
+import { assertReleaseSlotFree, saveRelease } from "../../lib/ledger";
+import { loadReleaseSpec, resolveReleaseEnvs, type ReleaseSpec } from "../../lib/spec";
 
 // `belz release matrix <release.json>` — the release collision/leak detector.
 //
@@ -23,14 +23,6 @@ import { saveRelease } from "../../lib/ledger";
 //
 // AD-only for now: PD items are listed per ticket but not traced (PD pages are
 // not name-resolvable across envs — see plan).
-
-interface ReleaseSpec {
-  name: string;
-  included: string[];
-  excluded: string[];
-  spineEnv?: string;
-  stageEnv?: string;
-}
 
 interface MatrixArgs {
   specPath: string;
@@ -74,9 +66,11 @@ interface Collision {
   detail: string;
 }
 
-interface MatrixData {
+export interface MatrixData {
   name: string;
   generatedAt: string;
+  /** Project whose envs were used (RL-2): spec.project, the spec envs' project, or the active env's. */
+  project: string;
   spineEnv: string;
   stageEnv: string;
   tickets: TicketRow[];
@@ -95,7 +89,7 @@ export const args = defineArgs({
       missingCode: "MISSING_SPEC",
       missingMessage:
         "Usage: belz release matrix <release.json>\n\n" +
-        'release.json: { "name": "...", "included": [ids], "excluded": [ids], "spineEnv"?, "stageEnv"? }',
+        'release.json: { "name": "...", "included": [ids], "excluded"?: [ids], "project"?, "spineEnv"?, "stageEnv"? }',
     },
   ],
 });
@@ -131,28 +125,17 @@ function ticketIds(spec: ReleaseSpec): { id: number; kind: TicketKind }[] {
   ];
 }
 
-async function execute(args: MatrixArgs, _context: CommandContext): Promise<CommandResult<MatrixData>> {
-  if (!existsSync(args.specPath)) {
-    throw new CliError(`Release spec not found: ${args.specPath}`, { code: "SPEC_NOT_FOUND" });
-  }
-  let spec: ReleaseSpec;
-  try {
-    spec = JSON.parse(readFileSync(args.specPath, "utf-8")) as ReleaseSpec;
-  } catch (e) {
-    throw new CliError(`Could not parse ${args.specPath}: ${e instanceof Error ? e.message : e}`, {
-      code: "BAD_SPEC",
-    });
-  }
-  if (!spec.name || !Array.isArray(spec.included) || !Array.isArray(spec.excluded)) {
-    throw new CliError("Release spec needs { name, included[], excluded[] }.", { code: "BAD_SPEC" });
-  }
-
-  const spineEnv = spec.spineEnv ?? "nsm-dev";
-  const stageEnv = spec.stageEnv ?? "nsm-stage";
+async function execute(args: MatrixArgs, context: CommandContext): Promise<CommandResult<MatrixData>> {
+  // Everything that can be wrong with the spec fails here, before any network
+  // work (RL-1): shape (zod), ticket refs + overlap (TW-6/RL-5), envs (RL-2),
+  // and the ledger slot (RL-4).
+  const spec = loadReleaseSpec(args.specPath);
+  const ticketSpecs = ticketIds(spec);
+  const { project, spineEnv, stageEnv } = resolveReleaseEnvs(spec, context.env);
+  assertReleaseSlotFree(spec.name);
   const warnings: string[] = [];
 
   // ── 1. Link every ticket → its items (parallel; teamwork auth, no Config). ──
-  const ticketSpecs = ticketIds(spec);
 
   const tickets: TicketRow[] = await Promise.all(
     ticketSpecs.map(async ({ id, kind }): Promise<TicketRow> => {
@@ -252,6 +235,7 @@ async function execute(args: MatrixArgs, _context: CommandContext): Promise<Comm
   const data: MatrixData = {
     name: spec.name,
     generatedAt: new Date().toISOString(),
+    project,
     spineEnv,
     stageEnv,
     tickets,
@@ -270,6 +254,7 @@ async function execute(args: MatrixArgs, _context: CommandContext): Promise<Comm
 function presentHuman(envelope: CommandEnvelope<MatrixData>, ui: HumanPresenterHelpers): void {
   const d = envelope.data!;
   ui.success(`Release matrix: ${d.name}`);
+  ui.kv("Project", d.project);
   ui.kv("Spine env", d.spineEnv);
   ui.kv("Stage env", d.stageEnv);
   if (envelope.meta?.ledgerPath) ui.kv("Saved to", String(envelope.meta.ledgerPath));

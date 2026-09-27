@@ -3,7 +3,7 @@ import {
   type CommandModule, type CommandResult, type CommandContext,
   type CommandEnvelope, type HumanPresenterHelpers,
 } from "@belzabar/core";
-import { loadRelease, saveProdSnapshot, type ProdSnapshot } from "../../lib/ledger";
+import { loadRelease, saveProdSnapshot, type ProdSnapshot, type ProdSnapshotItem } from "../../lib/ledger";
 
 // `belz release freeze <name>` — record a prod snapshot for a release.
 //
@@ -11,35 +11,34 @@ import { loadRelease, saveProdSnapshot, type ProdSnapshot } from "../../lib/ledg
 // release is pushed, each item's then-current STAGE position is frozen into
 // the ledger as the prod pointer. Run `belz release matrix` first (it writes
 // the release record); run `freeze` right after the prod push.
+//
+// RL-3: an item whose stage cell is absent or a trace error is a MISS, recorded
+// as stageStatus "unknown" plus a warning (it used to be a silent spinePos -1,
+// indistinguishable from "not on stage"). If every item misses, nothing real
+// would be frozen: FREEZE_NO_STAGE_DATA. RL-4: an existing snapshot needs --force.
 
 interface FreezeArgs {
   name: string;
-}
-
-// Shape of the relevant slice of a saved `release matrix` record.
-interface SavedRelease {
-  name: string;
-  stageEnv: string;
-  items: {
-    uuid: string;
-    name: string;
-    envs: { env: string; status: string; spinePos: number; spineVersion: number | null }[];
-  }[];
+  force: boolean;
 }
 
 export const args = defineArgs({
   command: "belz release freeze",
   positionals: [
-    { name: "name", required: true, missingCode: "MISSING_NAME", missingMessage: "Usage: belz release freeze <release-name>" },
+    { name: "name", required: true, missingCode: "MISSING_NAME", missingMessage: "Usage: belz release freeze <release-name> [--force]" },
   ],
+  flags: {
+    force: { type: "boolean" },
+  },
 });
 
 function parseArgs(argv: string[]): FreezeArgs {
-  return { name: args.parse(argv).positionals.name };
+  const { positionals, flags } = args.parse(argv);
+  return { name: positionals.name, force: flags.force };
 }
 
-function execute(args: FreezeArgs, _context: CommandContext): CommandResult<ProdSnapshot> {
-  const release = loadRelease<SavedRelease>(args.name);
+function execute(args: FreezeArgs, context: CommandContext): CommandResult<ProdSnapshot> {
+  const release = loadRelease(args.name);
   if (!release) {
     throw new CliError(
       `No saved release '${args.name}'. Run 'belz release matrix <release.json>' first.`,
@@ -48,23 +47,50 @@ function execute(args: FreezeArgs, _context: CommandContext): CommandResult<Prod
   }
 
   const stageEnv = release.stageEnv;
+  if (release.items.length === 0) {
+    throw new CliError(`Release '${release.name}' has no AD items to freeze.`, {
+      code: "FREEZE_NO_STAGE_DATA",
+      details: { release: release.name, items: 0 },
+    });
+  }
+
+  const warnings: string[] = [];
+  const items: ProdSnapshotItem[] = release.items.map((it) => {
+    const stage = it.envs.find((e) => e.env === stageEnv);
+    if (!stage || stage.status === "error") {
+      warnings.push(
+        `${it.name} (${it.uuid}): no ${stageEnv} data${stage ? " (trace error)" : ""} — recorded as unknown.`,
+      );
+      return { uuid: it.uuid, name: it.name, spinePos: -1, spineVersion: null, stageStatus: "unknown", hash: null };
+    }
+    return {
+      uuid: it.uuid,
+      name: it.name,
+      spinePos: stage.spinePos,
+      spineVersion: stage.spineVersion,
+      stageStatus: stage.status,
+      hash: null,
+    };
+  });
+
+  if (warnings.length === items.length) {
+    throw new CliError(
+      `No item of release '${release.name}' has ${stageEnv} data, so there is nothing to freeze. ` +
+        `Re-run 'belz release matrix' once ${stageEnv} is reachable.`,
+      { code: "FREEZE_NO_STAGE_DATA", details: { release: release.name, stageEnv, missing: warnings.length } },
+    );
+  }
+
   const snapshot: ProdSnapshot = {
     release: release.name,
     frozenAt: new Date().toISOString(),
     capturedFrom: stageEnv,
-    items: release.items.map((it) => {
-      const stage = it.envs.find((e) => e.env === stageEnv);
-      return {
-        uuid: it.uuid,
-        name: it.name,
-        spinePos: stage?.spinePos ?? -1,
-        spineVersion: stage?.spineVersion ?? null,
-        hash: null,
-      };
-    }),
+    items,
+    warnings,
   };
 
-  const path = saveProdSnapshot(snapshot);
+  const path = saveProdSnapshot(snapshot, { force: args.force });
+  for (const w of warnings) context.warn(w);
   return ok(snapshot, { snapshotPath: path });
 }
 
@@ -81,7 +107,7 @@ function presentHuman(envelope: CommandEnvelope<ProdSnapshot>, ui: HumanPresente
     s.items.map((i) => [
       i.uuid.slice(0, 12) + "…",
       i.name,
-      i.spinePos >= 0 ? `#${i.spinePos} (v${i.spineVersion})` : "not on stage",
+      i.spinePos >= 0 ? `#${i.spinePos} (v${i.spineVersion})` : i.stageStatus === "unknown" ? "unknown (no stage data)" : `not on stage (${i.stageStatus})`,
     ]),
   );
 }

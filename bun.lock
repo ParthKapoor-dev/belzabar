@@ -10,6 +10,7 @@
     },
     "apps/cli": {
       "name": "belzabar.cli",
+      "version": "0.1.0",
       "bin": {
         "belz": "./bin/cli.ts",
       },
@@ -75,6 +76,7 @@
         "@belzabar/ad": "workspace:*",
         "@belzabar/core": "workspace:*",
         "@belzabar/teamwork": "workspace:*",
+        "zod": "^3.22.4",
       },
     },
     "integrations/teamwork": {

@@ -9,16 +9,28 @@ ticket — shipping the included ticket would drag the excluded ticket's edits
 along. For each collision it reports a LEAK status: whether the excluded
 change has already reached the stage environment.
 
-The result is saved to the promotion ledger (~/.belz/promotion/releases/).
+WRITES LOCAL STATE: the result is saved to the promotion ledger
+(~/.belz/promotion/releases/<name>.json, atomic write), replacing the previous
+audit of the same release. A different release name that maps to the same
+file is refused (LEDGER_NAME_COLLISION).
 
 release.json format:
   {
     "name": "may-12-release",
     "included": [26917411, "https://.../tasks/26920000"],
-    "excluded": [26918000],
-    "spineEnv": "nsm-dev",     (optional, default nsm-dev)
-    "stageEnv": "nsm-stage"    (optional, default nsm-stage)
+    "excluded": [26918000],    (optional, default [])
+    "project": "SEMS",         (optional)
+    "spineEnv": "sems-dev",    (optional)
+    "stageEnv": "sems-stage"   (optional)
   }
+
+The spec is validated before any request (BAD_SPEC; shape problems are listed together):
+unknown keys, a name without letters/digits, an empty "included", junk
+ticket refs, a ticket both included and excluded, unconfigured envs.
+
+spineEnv/stageEnv default to the project's "<project>-dev" / "<project>-stage"
+envs. The project is "project", else that of an explicit spineEnv/stageEnv,
+else that of the active env (--env / BELZ_ENV / defaultEnv; NSM by default).
 
 Arguments:
   <release.json>        Path to the release spec JSON file.
@@ -33,3 +45,7 @@ Notes:
   - AD-only: PD items are listed per ticket but not yet traced across envs.
   - Traces run sequentially (the tracer mutates the active env), so a large
     release can take a few minutes.
+
+Examples:
+  belz release matrix ./may-12.json
+  belz release matrix ./sems-release.json --env sems-dev --llm
