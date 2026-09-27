@@ -11,7 +11,7 @@ import { CliError, Config, defineArgs, ok, type CommandModule } from "@belzabar/
 import { PD_INPUT_POSITIONAL } from "../../lib/args/common";
 import { resolveInput } from "../../lib/resolver";
 import { parsePage } from "../../lib/parser/index";
-import { diffPages, type PageDiff } from "../../lib/page-diff";
+import { diffPages, isIdentical, type PageDiff } from "../../lib/page-diff";
 import type { HydratedPage } from "../../lib/types/common";
 
 interface DiffArgs {
@@ -114,19 +114,7 @@ const command: CommandModule<DiffArgs, DiffData> = {
 
     const diff = diffPages(fromResult.page, toResult.page);
 
-    const identical =
-      diff.variables.added.length === 0 &&
-      diff.variables.removed.length === 0 &&
-      diff.variables.changed.length === 0 &&
-      diff.derived.added.length === 0 &&
-      diff.derived.removed.length === 0 &&
-      diff.derived.changed.length === 0 &&
-      diff.httpRequests.added.length === 0 &&
-      diff.httpRequests.removed.length === 0 &&
-      diff.nodesAdded.length === 0 &&
-      diff.nodesRemoved.length === 0 &&
-      diff.nodesKindChanged.length === 0 &&
-      !diff.styles.changed;
+    const identical = isIdentical(diff);
 
     return ok<DiffData>({
       input,
@@ -168,13 +156,15 @@ const command: CommandModule<DiffArgs, DiffData> = {
     };
     reportGroup("Variables", d.variables.added, d.variables.removed, d.variables.changed);
     reportGroup("Derived", d.derived.added, d.derived.removed, d.derived.changed);
-    reportGroup("HTTP Requests", d.httpRequests.added, d.httpRequests.removed);
-    if (d.nodesAdded.length > 0 || d.nodesRemoved.length > 0 || d.nodesKindChanged.length > 0) {
+    reportGroup("HTTP Requests", d.httpRequests.added, d.httpRequests.removed, d.httpRequests.changed);
+    if (d.nodesAdded.length + d.nodesRemoved.length + d.nodesKindChanged.length + d.nodesChanged.length > 0) {
       ui.section("Layout Nodes");
       if (d.nodesAdded.length > 0) ui.text(`+ ${d.nodesAdded.join(", ")}`);
       if (d.nodesRemoved.length > 0) ui.text(`- ${d.nodesRemoved.join(", ")}`);
+      if (d.nodesChanged.length > 0) ui.text(`~ ${d.nodesChanged.join(", ")}`);
       for (const c of d.nodesKindChanged) ui.text(`~ ${c.nodeId}: ${c.before} → ${c.after}`);
     }
+    if (d.otherChanged.length > 0) ui.kv("Other config changed", d.otherChanged.join(", "));
   },
 };
 

@@ -24,6 +24,10 @@ export interface RawPageResponse {
   themes?: unknown;
   dynamicRoute?: string;
   relativeRoute?: string;
+  referenceId?: string | null;
+  /** true on component (symbol) bodies; absent on pages. */
+  isComponent?: boolean;
+  pageType?: string;
   authenticated?: boolean;
   createdAt?: number;
   createdBy?: number;

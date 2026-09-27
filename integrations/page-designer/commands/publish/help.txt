@@ -2,7 +2,8 @@ Usage: belz pd publish <pageId> [--landing] [--host <id> ...] [--yes]
 
 Publish a PD draft page to its deployable sibling. Wraps POST
 /pages/<draftId>/publish?landingPage=&hostIds= in an acquire/release lock
-cycle.
+cycle. The draft is validated first: validator errors block the publish
+unless --force-validation.
 
 IMPORTANT: passing --host is what makes the page go LIVE. Without --host the
 draft is published to its PUBLISHED sibling record, but the page is NOT
@@ -11,18 +12,26 @@ config. Pass --host to publish AND deploy (mirrors the designer's
 "Publish and Deploy").
 
 Arguments:
-  <pageId>            PD draft page id. If a PUBLISHED id is given, belz
-                      resolves the linked draft and publishes that (with a
-                      warning). --force overrides the guard.
+  <pageId>              PD draft page id. If a PUBLISHED id is given, belz
+                        follows its referenceId to the linked draft and
+                        publishes that (with a notice).
 
 Flags:
-  --landing           Mark this as the site's landing page (?landingPage=true).
-  --host <id>         Publish AND deploy to a specific host. Repeatable —
-                      `--host a --host b` sends ?hostIds=a,b. Omit to publish
-                      without deploying.
-  --yes, -y           Required to perform the publish.
-  --force             Bypass the PUBLISHED-input draft-guard refusal.
-  --help, -h          Show this help message.
+  --landing             Mark this as the site's landing page (?landingPage=true).
+  --host <id>           Publish AND deploy to a specific host. Repeatable —
+                        `--host a --host b` sends ?hostIds=a,b. Omit to publish
+                        without deploying.
+  --force-validation    Publish despite validator ERRORS on the draft.
+  --allow-published     Publish a PUBLISHED page that has no linked draft.
+  --force               DEPRECATED alias of --force-validation (it no longer
+                        bypasses the PUBLISHED-page guard). Prints a warning.
+  --yes, -y             Confirm the publish (required with --llm or without a
+                        terminal; otherwise belz asks).
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Environment to publish in (write commands need it explicitly).
+  --llm                 Output structured JSON envelope.
 
 Examples:
   belz pd publish 4f126300499e4d83cd07a35b4d9af9e7 --yes

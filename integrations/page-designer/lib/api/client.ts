@@ -7,7 +7,7 @@
 // All endpoints live under `/rest/api/pagedesigner`. Auth is Bearer via
 // @belzabar/core's apiFetch, which auto-refreshes on 401.
 
-import { apiFetch, CliError, readBodySummary } from "@belzabar/core";
+import { apiFetch, CliError, httpError, readBodySummary } from "@belzabar/core";
 import type {
   RawPageResponse,
   RawPageDependencies,
@@ -22,21 +22,16 @@ const PD_BASE = "/rest/api/pagedesigner";
 
 // -------- shared helpers --------------------------------------------------
 
-// Summarised (HTML → <title>), truncated to 500 chars and secret-redacted.
-async function readErrorBody(response: Response): Promise<string> {
-  return readBodySummary(response, 500);
-}
-
+// Non-OK → CliError via core's HTTP error mapping (body summarised: HTML →
+// <title>, truncated, secret-redacted). PD keeps its stable codes:
+// PD_LOCKED (409) / PD_API_ERROR (everything else).
 async function ensureOk(response: Response, context: { method: string; path: string }): Promise<void> {
   if (response.ok) return;
-  const body = await readErrorBody(response);
-  throw new CliError(
-    `${context.method} ${context.path} failed: HTTP ${response.status}`,
-    {
-      code: response.status === 409 ? "PD_LOCKED" : "PD_API_ERROR",
-      details: { status: response.status, body },
-    },
-  );
+  const mapped = await httpError(response, { method: context.method, path: context.path });
+  throw new CliError(`${context.method} ${context.path} failed: HTTP ${response.status}`, {
+    code: response.status === 409 ? "PD_LOCKED" : "PD_API_ERROR",
+    details: mapped.details,
+  });
 }
 
 // -------- reads -----------------------------------------------------------
@@ -51,25 +46,31 @@ export async function fetchPage(pageId: string): Promise<RawPageResponse | null>
   return (await response.json()) as RawPageResponse;
 }
 
-// Legacy name retained because existing commands import this identifier.
-// New code should use fetchPage() directly.
-export const fetchPageConfig = fetchPage;
-export const fetchComponentConfig = fetchPage;
+/** A list row is a component (symbol) when the server marks it so. */
+export function isComponentRow(item: RawPageListItem): boolean {
+  if (typeof item.isComponent === "boolean") return item.isComponent;
+  if (typeof item.isSymbol === "boolean") return item.isSymbol;
+  const layout = item.layout as { isSymbol?: unknown } | undefined;
+  return !!layout && layout.isSymbol === true;
+}
 
+/**
+ * The id of the DRAFT component with exactly this name, or null when there is
+ * none. Several components with one name → PD_NAME_AMBIGUOUS (never guess:
+ * names are not unique, PD-1).
+ */
 export async function fetchComponentIdByName(name: string): Promise<string | null> {
-  // Existing behaviour: prefer a DRAFT symbol; fall back to the first match.
-  const items = await searchPagesByName(name, "DRAFT");
+  const items = (await searchPagesByName(name, "DRAFT")).filter(
+    (i) => i.name === name && isComponentRow(i) && typeof i.id === "string",
+  );
   if (items.length === 0) return null;
-  const infer = (item: RawPageListItem): boolean | null => {
-    if (typeof item.isSymbol === "boolean") return item.isSymbol;
-    const layout = item.layout as { isSymbol?: unknown } | undefined;
-    if (layout && typeof layout.isSymbol === "boolean") return layout.isSymbol;
-    return null;
-  };
-  const strict = items.find((i) => infer(i) === true);
-  const pick = strict ?? items[0];
-  if (pick && typeof pick.id === "string") return pick.id;
-  return null;
+  if (items.length > 1) {
+    throw new CliError(`${items.length} components are named "${name}"; pass an id instead.`, {
+      code: "PD_NAME_AMBIGUOUS",
+      details: { name, ids: items.map((i) => i.id) },
+    });
+  }
+  return items[0]!.id as string;
 }
 
 export async function searchPagesByName(
@@ -78,8 +79,11 @@ export async function searchPagesByName(
 ): Promise<RawPageListItem[]> {
   const url = `${PD_BASE}/pages?name=${encodeURIComponent(name)}&apiInfoLevel=MEDIUM&status=${status}`;
   const response = await apiFetch(url, { method: "GET", authMode: "Bearer" });
-  if (!response.ok) return [];
-  return (await response.json()) as RawPageListItem[];
+  if (response.status === 404) return [];
+  // PD-18: a 401/5xx is an API error, not "no such page".
+  await ensureOk(response, { method: "GET", path: "/pages?name=" });
+  const data = (await response.json()) as unknown;
+  return Array.isArray(data) ? (data as RawPageListItem[]) : [];
 }
 
 export async function fetchDeployablePageByAppUrl(
@@ -91,7 +95,8 @@ export async function fetchDeployablePageByAppUrl(
     `/rest/api/public/pagedesigner/deployable/pages?${params}`,
     { method: "GET", authMode: "Bearer" },
   );
-  if (!response.ok) return null;
+  if (response.status === 404) return null;
+  await ensureOk(response, { method: "GET", path: "/deployable/pages" });
   const data = (await response.json()) as {
     deployedPages?: Array<{ referencePageId: string }>;
   };
@@ -287,7 +292,7 @@ export async function acquireLock(pageId: string): Promise<void> {
     { method: "PUT", authMode: "Bearer" },
   );
   if (response.status === 409) {
-    const body = await readErrorBody(response);
+    const body = await readBodySummary(response, 500);
     throw new CliError(
       `Page ${pageId} is locked by another session.`,
       { code: "PD_LOCKED", details: { status: 409, body } },
@@ -296,19 +301,18 @@ export async function acquireLock(pageId: string): Promise<void> {
   await ensureOk(response, { method: "PUT", path: `/pages/lock/${pageId} (acquire)` });
 }
 
-export async function releaseLock(pageId: string): Promise<void> {
+/**
+ * Release the lock. Returns true when the server accepted the release, false
+ * when it refused (e.g. the lock is held by someone else, or already gone).
+ * Never throws for an HTTP refusal — callers decide how to report it (PD-20).
+ */
+export async function releaseLock(pageId: string): Promise<boolean> {
   const response = await apiFetch(
     `${PD_BASE}/pages/lock/${pageId}?pageLockAction=RELEASED`,
     { method: "PUT", authMode: "Bearer" },
   );
-  // Release is idempotent from the caller's perspective — a 4xx here usually
-  // means the lock was already gone. Log but don't explode.
-  if (!response.ok) {
-    const body = await readErrorBody(response);
-    process.stderr.write(
-      `⚠️  releaseLock(${pageId}) got HTTP ${response.status}: ${body}\n`,
-    );
-  }
+  if (!response.ok) await readBodySummary(response); // drain
+  return response.ok;
 }
 
 // Re-export entity-type helper used by draft-guard + resolver.

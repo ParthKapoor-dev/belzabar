@@ -4,10 +4,13 @@
 
 import { walkParsed } from "../../parser/nodes";
 import type { HydratedPage, ValidationIssue } from "../../types/common";
-import type { RuleContext } from "./existing";
+import type { RuleContext } from "../context";
 
 // DERIVED_IN_INNERHTML — derived variables bound to innerHTML/textContent render empty.
 // Cites: docs/api-notes.md §Silent-page-crash
+// Severity: warn. 8 of the 15 sems-dev fixtures do this on live pages (derived
+// vars live in variables.userDefined there); validateEdit escalates it to an
+// error when an edit introduces one.
 export function ruleDerivedInInnerHtml(
   page: HydratedPage,
   _ctx: RuleContext,
@@ -25,7 +28,7 @@ export function ruleDerivedInInnerHtml(
       if (ref && derivedNames.has(ref)) {
         issues.push({
           code: "DERIVED_IN_INNERHTML",
-          severity: "error",
+          severity: "warn",
           message: `Node "${node.tagName}" at ${node.nodeId} uses derived variable "${ref}" in innerHTML/textContent — renders empty`,
           nodeId: node.nodeId,
           nodeName: node.tagName,
@@ -47,13 +50,16 @@ export function ruleDerivedInInnerHtml(
 // ARRAY_INITIAL_VALUE — server throws `ArrayNode cannot be cast to ObjectNode`
 // when a userDefined variable has an array initialValue.
 // Cites: docs/api-notes.md §Silent-page-crash
+// Severity: warn. Real editor-saved pages carry array initialValues (2 of the
+// 15 sems-dev fixtures), so it is not a hard error on an existing page; the
+// edit gate (validateEdit) escalates it to an error when an edit INTRODUCES one.
 export function ruleArrayInitialValue(page: HydratedPage): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   for (const v of page.variables) {
     if (Array.isArray(v.initialValue)) {
       issues.push({
         code: "ARRAY_INITIAL_VALUE",
-        severity: "error",
+        severity: "warn",
         message: `Variable "${v.name}" has an array initialValue — server throws ArrayNode cannot be cast to ObjectNode. Remove initialValue or populate via service call.`,
       });
     }
@@ -80,79 +86,46 @@ export function rulePhoneFieldType(page: HydratedPage): ValidationIssue[] {
   return issues;
 }
 
-// ROOT_LAYOUT_MALFORMED — page root missing unSelectable/_elementId, or
-// symbol root missing isSymbol:true.
+// ROOT_LAYOUT_MALFORMED — the root layout node is missing or is not the
+// shape the renderer needs.
 // Cites: docs/api-notes.md §Silent-page-crash (both "layout must be root div
 // node" and "symbols use isSymbol:true")
+// Calibrated against real editor output (PD-5): every sems-dev root is
+// `name:"div", unSelectable:true`; components ALSO set `isSymbol:true`, and
+// about half the pages have no root `_elementId`. So: a page root must be a
+// div with unSelectable:true; a component root must be a div with
+// isSymbol:true. `_elementId` and "unSelectable on a symbol" are not checked.
 export function ruleRootLayoutMalformed(page: HydratedPage): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   const layout = page.layout;
+  const issue = (message: string): ValidationIssue => ({ code: "ROOT_LAYOUT_MALFORMED", severity: "error", message });
 
-  if (page.entityType === "PAGE") {
-    // Expect: name==div, unSelectable==true, has _elementId
-    if (layout.kind === "GENERIC" && layout.nodeId === "__missing_root") {
-      issues.push({
-        code: "ROOT_LAYOUT_MALFORMED",
-        severity: "error",
-        message: `Page has no root layout node — the entire page will render blank`,
-      });
-      return issues;
-    }
-    const rawLayout = layout.raw as Record<string, unknown> | null;
-    if (!rawLayout || typeof rawLayout !== "object") {
-      issues.push({
-        code: "ROOT_LAYOUT_MALFORMED",
-        severity: "error",
-        message: `Page root is not a proper layout node`,
-      });
-      return issues;
-    }
-    if (rawLayout.name !== "div") {
-      issues.push({
-        code: "ROOT_LAYOUT_MALFORMED",
-        severity: "error",
-        message: `Page root must be name:"div", found "${rawLayout.name}"`,
-      });
-    }
-    if (rawLayout.unSelectable !== true) {
-      issues.push({
-        code: "ROOT_LAYOUT_MALFORMED",
-        severity: "error",
-        message: `Page root must set unSelectable:true — entire page will render blank otherwise`,
-      });
-    }
-    if (typeof rawLayout._elementId !== "string" || rawLayout._elementId.length === 0) {
-      issues.push({
-        code: "ROOT_LAYOUT_MALFORMED",
-        severity: "error",
-        message: `Page root is missing _elementId`,
-      });
-    }
-  } else {
-    // SYMBOL root must have isSymbol:true and must NOT use unSelectable.
-    const rawLayout = layout.raw as Record<string, unknown> | null;
-    if (!rawLayout || typeof rawLayout !== "object") return issues;
-    if (rawLayout.isSymbol !== true) {
-      issues.push({
-        code: "ROOT_LAYOUT_MALFORMED",
-        severity: "error",
-        message: `Symbol root must set isSymbol:true — produces incorrect JSON even if PD still renders it`,
-      });
-    }
-    if (rawLayout.unSelectable === true) {
-      issues.push({
-        code: "ROOT_LAYOUT_MALFORMED",
-        severity: "error",
-        message: `Symbol root uses unSelectable:true — use isSymbol:true instead`,
-      });
-    }
+  if (layout.kind === "GENERIC" && layout.nodeId === "__missing_root") {
+    issues.push(issue(`${page.entityType === "PAGE" ? "Page" : "Component"} has no root layout node — it will render blank`));
+    return issues;
   }
-
+  const rawLayout = layout.raw as Record<string, unknown> | null;
+  if (!rawLayout || typeof rawLayout !== "object" || Array.isArray(rawLayout)) {
+    issues.push(issue(`Root layout is not a proper layout node`));
+    return issues;
+  }
+  if (rawLayout.name !== "div") {
+    issues.push(issue(`Root layout must be name:"div", found "${String(rawLayout.name)}"`));
+  }
+  if (page.entityType === "PAGE") {
+    if (rawLayout.unSelectable !== true) {
+      issues.push(issue(`Page root must set unSelectable:true — entire page will render blank otherwise`));
+    }
+  } else if (rawLayout.isSymbol !== true) {
+    issues.push(issue(`Component root must set isSymbol:true — produces incorrect JSON even if PD still renders it`));
+  }
   return issues;
 }
 
 // BUTTON_DYNAMIC_CLASSNAME — <button> with [className] binding renders invisible.
 // Cites: docs/api-notes.md §Silent-page-crash
+// Severity: warn (the live "Student Application" page has 4 and renders);
+// escalated to an error by validateEdit when an edit introduces one.
 export function ruleButtonDynamicClassName(page: HydratedPage): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   walkParsed(page.layout, (node) => {
@@ -160,7 +133,7 @@ export function ruleButtonDynamicClassName(page: HydratedPage): ValidationIssue[
     if (node.hasDynamicClassName) {
       issues.push({
         code: "BUTTON_DYNAMIC_CLASSNAME",
-        severity: "error",
+        severity: "warn",
         message: `Button "${node.nodeId}" uses dynamic [className] binding — renders invisible. Use static className or wrap class logic in a derived variable`,
         nodeId: node.nodeId,
         nodeName: node.tagName,
@@ -196,11 +169,14 @@ export function ruleDuplicateElementIds(page: HydratedPage): ValidationIssue[] {
     }
   }
   for (const [id, count] of elemIdCount) {
-    if (count > 1) {
+    // PD-26: a node without `id` uses its _elementId as nodeId, so the same
+    // duplicate would otherwise be reported twice.
+    if (count > 1 && !((idCount.get(id) ?? 0) > 1)) {
       issues.push({
         code: "DUPLICATE_ELEMENT_IDS",
         severity: "error",
         message: `_elementId "${id}" appears ${count}× in the tree — _elementIds must be unique`,
+        nodeId: id,
       });
     }
   }

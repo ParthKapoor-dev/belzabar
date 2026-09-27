@@ -23,16 +23,3 @@ export function extractBindingReferences(configStr: string): string[] {
   }
   return Array.from(seen);
 }
-
-/**
- * Locations a variable appears in. Cheap string checks — used to build var-graph
- * labels in `show` and in the var-usage presenter.
- */
-export function findBindingLocations(configStr: string, varName: string): string[] {
-  const locations: string[] = [];
-  const escaped = varName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  if (configStr.includes(`"this.${varName}"`)) locations.push("http-trigger");
-  if (new RegExp(`\\{%${escaped}%\\}`).test(configStr)) locations.push("binding");
-  return locations;
-}

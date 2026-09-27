@@ -9,26 +9,28 @@ Arguments:
   [query]             Search term (name, route, or ID). Omit to browse.
 
 Subcommands:
-  list                List all pages (add --components for components).
+  list                List all pages (add --components for components; a
+                      component's draft/published pair is one row).
   pick                Interactive fuzzy picker (requires fzf).
 
 Flags:
   --type page|component  Restrict results to one entity type.
   --refresh           Rebuild the index from the API.
-  --limit <N>         Max results to show (default: 20, max: 200).
+  --limit <N>         Max rows (search default 20; list default all; max
+                      1000). totalMatches / total report the count before it.
   --open              Open selected item in browser (pick mode only).
   --components        With `list`: list components instead of pages.
   --llm               Output structured JSON envelope.
 
 Global Flags:
-  --env <name>        Set active environment. (default: nsm-dev)
-                      Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>        Set active environment.
 
 Examples:
   belz pd find notice
   belz pd find notice --type page
   belz pd find list
   belz pd find list --components
+  belz pd find list --limit 50
   belz pd find pick
   belz pd find pick LT-260 --open
   belz pd find --refresh

@@ -1,21 +1,33 @@
-// belz pd publish <pageId> [--landing] [--host <id>] [--yes]
+// belz pd publish <pageId> [--landing] [--host <id>...] [--yes]
+//              [--force-validation] [--allow-published]
 //
-// POST /pages/<draftId>/publish with body {landingPage, hostIds?}.
-// Must be a DRAFT — refuses PUBLISHED. withLock wraps the call.
+// POST /pages/<draftId>/publish?landingPage=&hostIds=. The draft is resolved
+// via referenceId (a PUBLISHED input publishes its linked draft), validated
+// (errors block unless --force-validation), then published inside withLock.
+// Afterwards the local cache entries of BOTH the draft and the published page
+// are dropped (s0-review: the published sibling used to stay stale).
 
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { PD_FORCE_FLAG, PD_YES_FLAG } from "../../lib/args/common";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
+import {
+  DEPRECATED_FORCE_WARNING,
+  PD_WRITE_OVERRIDE_FLAGS,
+  PD_YES_FLAG,
+  writeOverrides,
+  type WriteOverrides,
+} from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
-import { parsePage } from "../../lib/parser/index";
-import { resolveDraftTarget, describeDraftGuardFailure } from "../../lib/draft-guard";
+import { invalidatePageCache } from "../../lib/cache";
+import { gateValidation, logIntent, requireConfirmation, resolveWriteTarget } from "../../lib/edit";
 import { withLock } from "../../lib/lock";
+import { validateHydrated } from "../../lib/validator/index";
+import type { ValidationIssue } from "../../lib/types/common";
 
 interface PublishArgs {
   pageId: string;
   landing: boolean;
   hostIds: string[];
   yes: boolean;
-  force: boolean;
+  overrides: WriteOverrides;
 }
 
 interface PublishData {
@@ -27,6 +39,8 @@ interface PublishData {
   hostIds: string[];
   preVersionId: number | null;
   postPublishVersionId: number | null;
+  validation: { errorCount: number; warnCount: number };
+  bypassedErrors: ValidationIssue[];
 }
 
 export const args = defineArgs({
@@ -38,7 +52,7 @@ export const args = defineArgs({
     // publishing without deploying).
     host: { type: "string", repeatable: true },
     ...PD_YES_FLAG,
-    ...PD_FORCE_FLAG,
+    ...PD_WRITE_OVERRIDE_FLAGS,
   },
 });
 
@@ -53,32 +67,25 @@ const command: CommandModule<PublishArgs, PublishData> = {
       landing: flags.landing,
       hostIds: flags.host,
       yes: flags.yes,
-      force: flags.force,
+      overrides: writeOverrides(flags),
     };
   },
 
   async execute(args, context) {
-    const guard = await resolveDraftTarget(args.pageId);
-    if (!guard.ok) {
-      if (args.force && guard.reason === "PUBLISHED_NO_DRAFT") {
-        context.warn(
-          `⚠ --force: publishing PUBLISHED page ${guard.publishedId} directly. This is unusual — expected input is a DRAFT.`,
-        );
-      } else {
-        throw describeDraftGuardFailure(guard);
-      }
-    }
-    const targetId = guard.ok ? guard.draftId : guard.publishedId!;
-    const before = guard.ok
-      ? guard.draft
-      : parsePage((await pdApi.fetchPage(targetId))!);
+    const warn = (m: string) => context.warn(m);
+    if (args.overrides.deprecatedForce) warn(`⚠ ${DEPRECATED_FORCE_WARNING}`);
 
-    if (!args.yes) {
-      throw new CliError(
-        `"publish" is a write operation. Pass --yes to confirm publishing ${targetId}.`,
-        { code: "CONFIRMATION_REQUIRED" },
-      );
-    }
+    const target = await resolveWriteTarget(args.pageId, args.overrides, warn, "publishing");
+    const { targetId } = target;
+    const before = target.snapshot;
+    const gate = gateValidation(validateHydrated(before), args.overrides.forceValidation, warn);
+
+    await requireConfirmation(context, args.yes, "publish", [
+      ["Page", `${before.name} (${targetId})`],
+      ["Deploy to hosts", args.hostIds.length > 0 ? args.hostIds.join(", ") : "none (publish only)"],
+      ["Landing page", args.landing ? "yes" : "no"],
+    ]);
+    logIntent("publish", targetId, { hostIds: args.hostIds, landing: args.landing });
 
     // The POST /pages/<draftId>/publish response body IS the freshly-published
     // page — it carries the authoritative post-publish versionId.
@@ -98,21 +105,25 @@ const command: CommandModule<PublishArgs, PublishData> = {
     };
     const postPublishVersionId =
       typeof published.versionId === "number" ? published.versionId : null;
+    const publishedId = typeof published.id === "string" ? published.id : target.publishedId;
+    await invalidatePageCache([publishedId, target.publishedId]);
 
     return ok<PublishData>({
       pageId: args.pageId,
       draftId: targetId,
-      publishedId: typeof published.id === "string" ? published.id : guard.publishedId,
-      switchedFromPublished: guard.ok ? guard.switchedFromPublished : false,
+      publishedId,
+      switchedFromPublished: target.switchedFromPublished,
       landing: args.landing,
       hostIds: args.hostIds,
       preVersionId: before.versionId,
       postPublishVersionId,
+      validation: { errorCount: gate.errors.length, warnCount: gate.warnings.length },
+      bypassedErrors: gate.bypassedErrors,
     });
   },
 
   presentHuman(envelope, ui) {
-    if (!envelope.ok) return;
+    if (!envelope.ok || !envelope.data) return;
     const data = envelope.data as PublishData;
     ui.success(`Published ${data.draftId}.`);
     ui.table(

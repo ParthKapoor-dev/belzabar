@@ -11,10 +11,42 @@
 
 import type { FlagsSpec } from "@belzabar/core";
 
-/** `--force`: bypass the config cache (reads) / validator errors (writes). */
+/** `--force` on READ commands: bypass the local config cache. */
 export const PD_FORCE_FLAG = {
   force: { type: "boolean" },
 } as const satisfies FlagsSpec;
+
+/**
+ * Write-command guard overrides (PD-6). They used to be one `--force` that
+ * both skipped validation AND allowed writing to a PUBLISHED page.
+ *   --force-validation   proceed despite validator ERRORS (listed in bypassedErrors)
+ *   --allow-published    write/publish/restore a PUBLISHED page with no linked draft
+ *   --force              deprecated alias of --force-validation ONLY (warns)
+ */
+export const PD_WRITE_OVERRIDE_FLAGS = {
+  "force-validation": { type: "boolean" },
+  "allow-published": { type: "boolean" },
+  force: { type: "boolean" },
+} as const satisfies FlagsSpec;
+
+export interface WriteOverrides {
+  forceValidation: boolean;
+  allowPublished: boolean;
+  /** The deprecated `--force` was used (callers warn). */
+  deprecatedForce: boolean;
+}
+
+export function writeOverrides(flags: { forceValidation: boolean; allowPublished: boolean; force: boolean }): WriteOverrides {
+  return {
+    forceValidation: flags.forceValidation || flags.force,
+    allowPublished: flags.allowPublished,
+    deprecatedForce: flags.force,
+  };
+}
+
+export const DEPRECATED_FORCE_WARNING =
+  "--force is deprecated: it now means --force-validation only. Use --force-validation to bypass " +
+  "validator errors and --allow-published to write to a PUBLISHED page.";
 
 /** `--yes` / `-y`: skip the confirmation prompt (required in --llm mode on writes). */
 export const PD_YES_FLAG = {

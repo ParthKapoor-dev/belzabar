@@ -5,47 +5,70 @@
 
 import { walkParsed } from "../../parser/nodes";
 import type { HydratedPage, ValidationIssue } from "../../types/common";
+import { bindingRoot, isBuiltinRoot, type RuleContext } from "../context";
 
-export interface RuleContext {
-  // Derived once by the validator and reused by every rule.
-  bindingRefs: Set<string>;
-  definedVarNames: Set<string>;
-}
+export type { RuleContext } from "../context";
 
 // ---------- Binding-level rules -----------------------------------------
 
+/**
+ * ORPHAN_BINDING — a `{%ref%}` whose root variable is not defined. One issue
+ * per root (`{%x.a%}` + `{%x.b%}` → one issue for `x`).
+ *   - author-owned config (layout, httpRequests, derived, …) → error
+ *   - only inside `variables.generated` (editor-owned form configs) → warn:
+ *     real sems-dev pages carry stale form-config bindings the editor never
+ *     cleans up, and they render (PD-5 calibration).
+ */
 export function ruleOrphanBinding(
-  page: HydratedPage,
+  _page: HydratedPage,
   ctx: RuleContext,
 ): ValidationIssue[] {
-  const issues: ValidationIssue[] = [];
-  for (const ref of ctx.bindingRefs) {
-    if (ref === "null") continue;
-    if (ref.startsWith("$item")) continue; // loop-local
-    if (!ctx.definedVarNames.has(ref)) {
-      issues.push({
-        code: "ORPHAN_BINDING",
-        severity: "error",
-        message: `Binding {%${ref}%} used but variable "${ref}" is not defined`,
-      });
+  const byRoot = new Map<string, { refs: string[]; generatedOnly: boolean }>();
+  const visit = (ref: string, generatedOnly: boolean) => {
+    const root = bindingRoot(ref);
+    if (!root || isBuiltinRoot(root) || ctx.definedVarNames.has(root)) return;
+    const entry = byRoot.get(root);
+    if (entry) {
+      if (!entry.refs.includes(ref)) entry.refs.push(ref);
+      entry.generatedOnly &&= generatedOnly;
+    } else {
+      byRoot.set(root, { refs: [ref], generatedOnly });
     }
+  };
+  for (const ref of ctx.bindingRefs) visit(ref, false);
+  for (const ref of ctx.generatedBindingRefs) visit(ref, true);
+
+  const issues: ValidationIssue[] = [];
+  for (const [root, { refs, generatedOnly }] of byRoot) {
+    const shown = refs.slice(0, 3).map((r) => `{%${r}%}`).join(", ") + (refs.length > 3 ? ", …" : "");
+    issues.push({
+      code: "ORPHAN_BINDING",
+      severity: generatedOnly ? "warn" : "error",
+      message: generatedOnly
+        ? `Binding ${shown} inside an editor-generated form config uses undefined variable "${root}"`
+        : `Binding ${shown} used but variable "${root}" is not defined`,
+      path: root,
+    });
   }
   return issues;
 }
 
+/** UNUSED_VARIABLE — a userDefined/derived variable nothing reads or writes. */
 export function ruleUnusedVariable(
   page: HydratedPage,
   ctx: RuleContext,
 ): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
-  for (const name of ctx.definedVarNames) {
-    if (name.startsWith("__") || name.startsWith("$$")) continue;
-    if (ctx.bindingRefs.has(name)) continue;
-    if (page.rawConfigurationString.includes(`this.${name}`)) continue;
+  const own = [...page.variables.map((v) => v.name), ...page.derived.map((d) => d.name)];
+  for (const name of new Set(own)) {
+    const bare = name.trim();
+    if (bare.startsWith("__") || bare.startsWith("$$")) continue;
+    if (ctx.usedRoots.has(bare)) continue;
     issues.push({
       code: "UNUSED_VARIABLE",
       severity: "warn",
       message: `Variable "${name}" is defined but never referenced`,
+      path: name,
     });
   }
   return issues;
@@ -174,12 +197,19 @@ export function ruleDynamicColsInitial(page: HydratedPage): ValidationIssue[] {
   return issues;
 }
 
-// 10th rule: INVALID_JSON is enforced upstream by the parser (the HydratedPage
-// will be malformed before we reach the validator). We surface it via parse
-// warnings converted to errors in index.ts, so there's no standalone rule
-// function here.
+/**
+ * INVALID_JSON — the stringified `configuration` does not parse to an object.
+ * The parser records it as a parse warning (and yields an empty page); lift it
+ * into an error so no save can proceed on a config belz could not read.
+ */
+export function ruleInvalidJson(page: HydratedPage): ValidationIssue[] {
+  return page.parseWarnings
+    .filter((w) => w.startsWith("configuration JSON parse failed") || w.startsWith("configuration did not parse"))
+    .map((w) => ({ code: "INVALID_JSON", severity: "error" as const, message: `Configuration is not valid JSON: ${w}` }));
+}
 
 export const EXISTING_RULES = [
+  ruleInvalidJson,
   ruleOrphanBinding,
   ruleUnusedVariable,
   ruleFormFieldProps,

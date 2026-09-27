@@ -17,7 +17,7 @@ All paths are relative to `/rest/api/pagedesigner`. Auth: `Authorization: Bearer
 | GET | `/pages/{id}` | Full page body. `configuration` is a stringified JSON. | Used today. |
 | GET | `/pages?status=DRAFT|PUBLISHED&pageType=PAGE|COMPONENT&name=...` | List/search pages. | Used today. |
 | GET | `/pages/history?pageId={id}` | **Version history** — returns array of `{id (=versionId), pageId, status, partialUpdate, updatedAt, updatedBy, userName}`. **Observed behavior**: entries are only recorded for PUBLISHED-status pages. Pure DRAFT pages (no published sibling) return `[]` even after multiple saves (belz confirmed via live `save` that bumped versionId but produced 0 history entries). A page gets history once it has been published at least once; thereafter both the draft AND published variants may accumulate entries (all entries tagged `status: "PUBLISHED"` in the snapshots we've seen). | **Live-verified**: 538 entries on published `NCDMV NSM`; 0 entries on fresh draft even after belz-driven save. |
-| GET | `/pages/version/{versionId}` | Full page body at a specific version. | **Live-verified**. |
+| GET | `/pages/version/{versionId}` | Full page body at a specific version: `id` = the OWNING page (the published row), `referenceId` = its draft. Version ids are global — check ownership. | **Live-verified** (sems-dev 2026-09-27). |
 | GET | `/pages/{id}?version={versionId}` | Same as above, alternate form. | **Live-verified**. |
 | GET | `/pages/{id}?includeVersions=true` | Full body variant (observed in JS but not needed — prefer `/pages/version/`). | Verified 200. |
 | GET | `/deployable/pages?domain=&path=` | App-URL → reference page ID. | Used today. |
@@ -27,8 +27,8 @@ All paths are relative to `/rest/api/pagedesigner`. Auth: `Authorization: Bearer
 | Verb | Path | Body | Notes |
 |---|---|---|---|
 | PUT | `/pages/{id}` | Full: `{status, partialUpdate:false, configuration:"<stringified JSON>"}`<br>Partial: `{status, partialUpdate:true, pageElementOperations:[...]}` | `partialUpdate` is **required** — omitting it returns 400. |
-| PUT | `/pages/lock/{id}` | Both acquire AND release use query param: `?pageLockAction=ACQUIRED` / `?pageLockAction=RELEASED`. Body must NOT carry `pageLockAction` — server rejects with 400 "Required request parameter 'pageLockAction' is not present". (The Angular `httpPut(url, {pageLockAction:...})` reads the second arg as query params, not body.) 409 means locked by another session. |
-| POST | `/pages/{id}/publish` | `{landingPage: boolean, hostIds?: "id1,id2"}` | From JS: `httppost(${base}/pages/${u}/publish, {landingPage, hostIds}, {})`. Not UI-only — real API. |
+| PUT | `/pages/lock/{id}?pageLockAction=ACQUIRED\|RELEASED` | none | Query parameter only; a body-only `pageLockAction` is rejected with 400. 409 = locked by another session. |
+| POST | `/pages/{id}/publish?landingPage=&hostIds=id1,id2` | none | Parameters go in the QUERY STRING (a JSON body is ignored: the page is published but not deployed). The response body is the published page with the authoritative post-publish versionId. |
 | PUT | `/pages/revert/{versionId}` | Body `{}` (empty) | From JS: `restoreVersion(u, I={})`. |
 | PUT | `/pages/phrases/{id}` | Translation partial-update. Same shape as partial. | **Out of scope for this phase.** |
 
@@ -134,29 +134,33 @@ These are the classes of corruption belz must either prevent (validator rule) or
 | Failure | belz rule code |
 |---|---|
 | `exp-form-field` uses `props` instead of `field` (#1 silent crash) | `FORM_FIELD_PROPS` |
-| Root `layout` is `{children: [...]}` instead of a full root div node | `ROOT_LAYOUT_MALFORMED` |
-| Root `layout` on symbol missing `isSymbol:true`, or using `unSelectable:true` | `ROOT_LAYOUT_MALFORMED` |
+| Root `layout` is not a div node; page root without `unSelectable:true` | `ROOT_LAYOUT_MALFORMED` |
+| Component root missing `isSymbol:true` (real components ALSO set `unSelectable:true` — allowed) | `ROOT_LAYOUT_MALFORMED` |
+| Configuration is not valid JSON | `INVALID_JSON` |
 | `children` is an object (numeric keys) instead of array | `CHILDREN_NOT_ARRAY` |
-| `<button>` with `[className]` dynamic binding renders invisible | `BUTTON_DYNAMIC_CLASSNAME` |
 | `mat-slide-toggle` — no runtime declaration | `INVALID_SLIDE_TOGGLE` |
 | `mat-expansion-panel-header` — not a valid PD component | `INVALID_EXPANSION_HEADER` |
-| Variable `initialValue` is an array — `ArrayNode cannot be cast to ObjectNode` | `ARRAY_INITIAL_VALUE` |
-| Derived var used inside `[innerHTML]` / `innerHTML` / `[textContent]` — renders empty | `DERIVED_IN_INNERHTML` |
 | `exp-form-field` with `type:"phone"` — renders with 0 height | `PHONE_FIELD_TYPE` |
-| Binding `{%varName%}` references an undefined variable | `ORPHAN_BINDING` |
+| Binding `{%varName%}` (outside `variables.generated`) whose ROOT variable is undefined | `ORPHAN_BINDING` |
 | Two nodes share `id` or `_elementId` | `DUPLICATE_ELEMENT_IDS` |
 
 ### Warnings (validator: `warn`)
 
+Calibrated against 15 real sems-dev pages (PD-5): these fire on live, working pages. The first
+four become errors when an edit INTRODUCES them (`validateEdit`, `ESCALATE_WHEN_INTRODUCED`).
+
 | Failure | belz rule code |
 |---|---|
+| Undefined variable inside an editor-generated form config | `ORPHAN_BINDING` (warn) |
+| Derived var used inside `[innerHTML]` / `innerHTML` / `[textContent]` — renders empty | `DERIVED_IN_INNERHTML` |
+| Variable `initialValue` is an array — `ArrayNode cannot be cast to ObjectNode` | `ARRAY_INITIAL_VALUE` |
+| `<button>` with `[className]` dynamic binding renders invisible | `BUTTON_DYNAMIC_CLASSNAME` |
 | `exp-data-table` missing `datasourceState` binding | `TABLE_NO_DATASOURCE` |
 | `exp-data-table` has both dynamic `[columns]` and variable with `initialValue` | `DYNAMIC_COLS_INITIAL` |
 | Variable defined but never referenced | `UNUSED_VARIABLE` |
 | HTTP call triggers `onInit` but no `onInit` variable exists | `MISSING_ONINIT_VAR` |
 | HTTP call has empty `eventMeta: {}` — shows "undefined - undefined" in PD UI | `EMPTY_EVENT_META` |
 | Raw HTML form element (`<input>`, `<select>`, `<textarea>`, `<table>`) — should be a PD component | `CUSTOM_HTML_IN_COMPONENT` |
-| `isSymbol:true` reference whose name doesn't resolve in this env | `SYMBOL_UNRESOLVED` |
 
 ### Not validator-checkable (documentation only — surface in `show`)
 
@@ -171,74 +175,25 @@ saves, because they depend on deployed state.
 
 ---
 
-## Belz module architecture (post-refactor)
+## Belz module architecture
 
-```
-page-designer/
-├── lib/
-│   ├── args/common.ts              → parseCommonArgs(argv) → {force, yes, dryRun, rest}
-│   ├── types/{common,wire}.ts      → HydratedPage / ParsedNode / wire shapes
-│   ├── parser/{index,nodes,variables,http,refs}.ts
-│   ├── validator/{index,rules/{existing,invariants}.ts}
-│   ├── serialize/{full,operations,index}.ts
-│   ├── api/{index,client}.ts       → pdApi façade + raw HTTP wrappers
-│   ├── draft-guard.ts              → resolveDraftTarget()
-│   └── lock.ts                     → withLock(pageId, fn)
-└── commands/
-    ├── show/ validate/ find/ find-ad-methods/ analyze/   (reads — backward compatible)
-    ├── history/ preflight/ lock/                         (reads — new)
-    └── save/ publish/                                    (writes — new)
-```
-
-### Invariants
-
-1. Commands import **only** from `lib/types/common.ts`. Never `wire.ts`.
-2. Every PUT goes through `withLock`. Acquire/release is opaque to the caller.
-3. Every save runs `validateHydrated(patched)` before network. Errors block unless `--force`.
-4. Overlay is declarative. The serializer is pure: `(HydratedPage, Overlay) → operations[] | fullBody`.
-5. `raw` is preserved on every `ParsedNode`, `PageVariable`, `PageHttpRequest`, and on
-   `HydratedPage` itself. Round-trip safety is non-negotiable.
-
-### Adding a new failure-mode rule
-
-1. Pick a rule code (`UPPER_SNAKE_CASE`).
-2. Cite the failure-mode row in this file.
-3. Add the rule function to `lib/validator/rules/invariants.ts` (or `existing.ts` if it's one of
-   the 10 we already had).
-4. Add a fixture under `tests/unit/fixtures/` named `node-<scenario>.json` or
-   `page-<scenario>.json`.
-5. Add a test in `tests/unit/validator-invariants.test.ts` asserting (a) the rule fires on the bad
-   fixture and (b) does NOT fire on a matching good fixture.
-
-### Adding a new write endpoint
-
-1. Add the raw wrapper to `lib/api/client.ts`.
-2. Add a façade method to `lib/api/index.ts`.
-3. Wrap every caller in `withLock` if the endpoint is a mutation on a specific page.
-4. Document the exact body/query/response shape here.
-
----
+See `../AGENTS.md` (Directory Map, Safe-Edit Invariants). Adding a rule: put it in
+`lib/validator/rules/invariants.ts`, cite the failure mode here, add a true-positive test in
+`tests/unit/validator-real.test.ts`, and keep the real-page calibration at 0 errors.
 
 ## Save strategy (partial vs full)
 
-`lib/serialize/index.ts:serialize(page, overlay)` picks the method:
+`lib/serialize/index.ts:planSave(page, overlay)`:
 
-- **Partial** — when the overlay contains only:
-  - `variables.update` (update existing variables' initialValue/type/description)
-  - `httpRequests.update` (update existing request bodies/handlers)
-  - Discrete `elements.operations[]` (dot-notation path edits)
-  - `styles.replace` → single operation with `key: "styles"`
-- **Full** — when any of:
-  - `variables.add` / `variables.remove`
-  - `derived.add` / `derived.remove` / `derived.update`
-  - `httpRequests.add` / `httpRequests.remove`
-  - Node structural changes that aren't expressible as scalar leaf edits
-
-Rationale: partial updates are faster, safer (surgical), and play nicely with concurrent edits.
-Full updates are required when the config's shape changes non-trivially — attempting to patch
-`variables.userDefined[n]` when `n` is outside the current array length silently drops.
-
----
+- **Partial** — `variables.update`, `httpRequests.update` (request url/body/method,
+  handler success/error/inProgress, trigger, triggerFilter, responseTransformSpec),
+  `elements.operations`, `styles.replace`. Keys use the RAW array index (derived vars interleaved
+  in `userDefined` and duplicate names count). `operation` is `UPDATE` when the key exists, else
+  `CREATE`. The plan is only partial when the ops, replayed on the raw config, reproduce the
+  edited config exactly.
+- **Full** — `variables.add/remove`, `derived.*`, `httpRequests.add/remove`, legacy-format pages,
+  or ops that would not cover the edit (e.g. a parent object that does not exist yet). The body is
+  the page's own raw config with only the edit applied (lossless otherwise).
 
 ## Version history UX
 
@@ -250,13 +205,14 @@ Backed by three server endpoints. belz exposes them as:
 - `belz pd history diff <pageId> --from A --to B` → fetches both, parses both, diffs structure
   (variables added/removed, nodes added/removed/kind-changed, HTTP calls added/removed, root-level
   counts). Not a textual diff of the JSON.
-- `belz pd history restore <pageId> --version <vid>` → `withLock(pageId, () => PUT /pages/revert/<vid>)`
-  → re-fetches and emits new versionId in the envelope.
+- `belz pd history restore <pageId> --version <vid>` → checks ownership, validates (diff-aware),
+  locks the owning page and its linked draft, `PUT /pages/revert/<vid>`, re-fetches the owner.
+  Requires `--allow-published` when the owner is PUBLISHED (normally the case).
 
 **History is server-side.** belz does **not** maintain local snapshots.
 
-Empty history array on brand-new pages is a normal result (see `dummy-testing` — 0 entries until
-it's saved at least once). `history list` exits 0 with an empty array.
+Empty history on a draft id is normal: history is recorded on the PUBLISHED row (sems-dev
+"Add Student": draft 0 versions, published 104). `history list` exits 0 with an empty array.
 
 ---
 

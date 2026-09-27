@@ -36,6 +36,12 @@ export interface PageDerivedVariable {
   spec: string | null;
   filterFn: string | null;
   sideEffect: boolean;
+  /**
+   * Where the entry lives on the wire: real editor output keeps derived vars
+   * in `variables.userDefined` (entries with `from`); older/hand-built configs
+   * use `variables.derived` / `context.derived`.
+   */
+  location: "userDefined" | "derived";
   raw: unknown;
 }
 
@@ -209,6 +215,10 @@ export interface ValidationIssue {
   nodeId?: string | null;
   nodeName?: string | null;
   path?: string | null;       // dot-notation when applicable
+  /** validateEdit: the issue is new in the edited page. */
+  introduced?: boolean;
+  /** validateEdit: the issue already existed before the edit (never blocks). */
+  preExisting?: boolean;
 }
 
 // ============================================================================
@@ -286,3 +296,5 @@ export interface Overlay {
 // Re-export the wire operation type so the serializer can produce it without
 // having to import wire.ts from two places.
 export type { PartialDataType, RawPartialUpdateOperation };
+// Raw wire bodies commands pass through untouched (show --raw, history rows).
+export type { RawHistoryEntry, RawPageResponse } from "./wire";

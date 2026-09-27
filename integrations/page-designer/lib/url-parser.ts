@@ -1,3 +1,5 @@
+import { CliError } from "@belzabar/core";
+
 export type PdEntityType = "PAGE" | "COMPONENT";
 
 export interface ParsedPdUrl {
@@ -9,15 +11,24 @@ export interface ParsedPdUrl {
 
 const PD_URL_PATTERN = /^\/ui-designer\/(page|symbol)\/([^/?#]+)/i;
 
-export function parsePdUrl(input: string): ParsedPdUrl | null {
-  if (!input) return null;
-
-  let parsed: URL;
+/** Parse a URL, or null when it is not a valid absolute URL. */
+export function tryParseUrl(input: string): URL | null {
   try {
-    parsed = new URL(input);
+    return new URL(input);
   } catch {
     return null;
   }
+}
+
+/**
+ * A PD designer URL (`/ui-designer/page/<id>` or `/ui-designer/symbol/<name>`),
+ * or null when `input` is not one. A malformed %-escape in the token is an
+ * INVALID_URL CliError (PD-17), not an unhandled URIError.
+ */
+export function parsePdUrl(input: string): ParsedPdUrl | null {
+  if (!input) return null;
+  const parsed = tryParseUrl(input);
+  if (!parsed) return null;
 
   const match = parsed.pathname.match(PD_URL_PATTERN);
   if (!match?.[1] || !match[2]) {
@@ -25,7 +36,12 @@ export function parsePdUrl(input: string): ParsedPdUrl | null {
   }
 
   const route = match[1].toLowerCase();
-  const token = decodeURIComponent(match[2]);
+  let token: string;
+  try {
+    token = decodeURIComponent(match[2]);
+  } catch {
+    throw new CliError(`Malformed escape sequence in PD URL: ${input}`, { code: "INVALID_URL" });
+  }
 
   return {
     type: route === "page" ? "PAGE" : "COMPONENT",

@@ -29,7 +29,13 @@ describe("pd publish (PD-16)", () => {
 
   test("--host is repeatable; -y aliases --yes", async () => {
     const a = await publish.parseArgs!(["abc", "--host", "1", "--host=2", "-y", "--landing"], ctx);
-    expect(a).toEqual({ pageId: "abc", landing: true, hostIds: ["1", "2"], yes: true, force: false });
+    expect(a).toEqual({
+      pageId: "abc",
+      landing: true,
+      hostIds: ["1", "2"],
+      yes: true,
+      overrides: { forceValidation: false, allowPublished: false, deprecatedForce: false },
+    });
   });
 
   test("publish is a write", () => {
@@ -47,7 +53,7 @@ describe("pd show (PD-23)", () => {
 
   test("unknown flags are rejected", () => {
     expect(code(() => show.parseArgs!(["abc", "--bogus"], ctx))).toBe("UNKNOWN_FLAG");
-    expect(code(() => validate.parseArgs!(["abc", "--force"], ctx))).toBe("UNKNOWN_FLAG");
+    expect(code(() => validate.parseArgs!(["abc", "--bogus"], ctx))).toBe("UNKNOWN_FLAG");
   });
 
   test("flags parse into the existing shape", async () => {
@@ -105,12 +111,33 @@ describe("pd save / find", () => {
     expect(code(() => save.parseArgs!(["p1", "--overlay", "a", "--config", "b"], ctx))).toBe("INVALID_FLAGS");
     expect(code(() => save.parseArgs!(["p1", "--overlay"], ctx))).toBe("MISSING_VALUE");
     const a = await save.parseArgs!(["p1", "--overlay", "o.json", "--dry-run"], ctx);
-    expect(a).toEqual({ pageId: "p1", overlayFile: "o.json", configFile: null, dryRun: true, force: false, yes: false });
+    expect(a).toEqual({
+      pageId: "p1",
+      overlayFile: "o.json",
+      configFile: null,
+      dryRun: true,
+      overrides: { forceValidation: false, allowPublished: false, deprecatedForce: false },
+      yes: false,
+    });
     expect(save.writes).toBe(true);
   });
 
+  test("PD-6: --force-validation and --allow-published are separate; --force aliases validation only", async () => {
+    const o = async (...flags: string[]) => ((await save.parseArgs!(["p1", "--overlay", "o.json", ...flags], ctx)) as any).overrides;
+    expect(await o("--force-validation")).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: false });
+    expect(await o("--allow-published")).toEqual({ forceValidation: false, allowPublished: true, deprecatedForce: false });
+    expect(await o("--force")).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: true });
+    const p = (await publish.parseArgs!(["p1", "--force"], ctx)) as any;
+    expect(p.overrides).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: true });
+    const r = (await history.parseArgs!(["restore", "p1", "--version", "1", "--allow-published"], ctx)) as any;
+    expect(r.overrides.allowPublished).toBe(true);
+    expect(code(() => history.parseArgs!(["show", "p1", "--version", "1", "--allow-published"], ctx))).toBe("UNKNOWN_FLAG");
+  });
+
   test("find limit bounds and list query", async () => {
-    expect(code(() => find.parseArgs!(["x", "--limit", "500"], ctx))).toBe("INVALID_VALUE");
+    expect(code(() => find.parseArgs!(["x", "--limit", "5000"], ctx))).toBe("INVALID_VALUE");
+    expect(((await find.parseArgs!(["list"], ctx)) as any).limit).toBeNull();
+    expect(((await find.parseArgs!(["list", "--limit", "5"], ctx)) as any).limit).toBe(5);
     expect(code(() => find.parseArgs!(["list", "x"], ctx))).toBe("LIST_DOES_NOT_ACCEPT_QUERY");
     expect(((await find.parseArgs!(["list", "--components"], ctx)) as any).mode).toBe("browse-components");
     expect(((await find.parseArgs!(["pick", "a", "b"], ctx)) as any).query).toBe("a b");

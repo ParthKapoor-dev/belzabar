@@ -1,6 +1,6 @@
 import { join } from "path";
 import { BELZ_CONFIG_DIR, Cache, Config } from "@belzabar/core";
-import { fetchAllPages, fetchAllComponents, type RawPageListItem } from "./api/index";
+import { pdApi, type RawPageListItem } from "./api/index";
 
 export const PAGE_FINDER_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -67,8 +67,8 @@ export async function loadOrBuildPageFinderIndex(
 
 async function buildPageFinderIndex(): Promise<PageFinderIndex> {
   const [rawPages, rawComponents] = await Promise.all([
-    fetchAllPages(),
-    fetchAllComponents(),
+    pdApi.fetchAllPages(),
+    pdApi.fetchAllComponents(),
   ]);
 
   const pages = dedupeBy(
@@ -127,14 +127,24 @@ function normalizeComponent(raw: RawPageListItem): PageFinderComponent | null {
   };
 }
 
+/**
+ * One row per draft/published component pair (F19: search listed both). The
+ * DRAFT row is kept (its `referenceId` names the published one); a PUBLISHED
+ * row whose draft is not in the list stays.
+ */
+export function collapsePairs<T extends { id: string; referenceId: string; status: string }>(items: T[]): T[] {
+  const draftIds = new Set(items.filter((i) => i.status.toUpperCase() !== "PUBLISHED").map((i) => i.id));
+  return items.filter((i) => !(i.status.toUpperCase() === "PUBLISHED" && i.referenceId && draftIds.has(i.referenceId)));
+}
+
 export function searchPageIndex(
   index: PageFinderIndex,
   query: string,
   limit: number,
   type?: "page" | "component"
-): PageFinderMatch[] {
+): { matches: PageFinderMatch[]; total: number } {
   const q = normalize(query);
-  if (!q) return [];
+  if (!q) return { matches: [], total: 0 };
 
   const matches: PageFinderMatch[] = [];
 
@@ -146,7 +156,7 @@ export function searchPageIndex(
   }
 
   if (!type || type === "component") {
-    for (const comp of index.components) {
+    for (const comp of collapsePairs(index.components)) {
       const score = scoreComponent(q, comp);
       if (score > 0) matches.push({ type: "component", score, ...comp });
     }
@@ -155,7 +165,7 @@ export function searchPageIndex(
   matches.sort((a, b) =>
     b.score !== a.score ? b.score - a.score : a.name.localeCompare(b.name)
   );
-  return matches.slice(0, Math.max(1, limit));
+  return { matches: matches.slice(0, Math.max(1, limit)), total: matches.length };
 }
 
 function scorePage(q: string, page: PageFinderPage): number {

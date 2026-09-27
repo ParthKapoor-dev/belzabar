@@ -1,7 +1,9 @@
 Usage: belz pd validate <INPUT> [flags]
 
-Validate a Page Designer page or component against common error patterns.
-Checks for orphan bindings, unused variables, invalid components, and more.
+Validate a Page Designer page or component against known failure patterns.
+Severities are calibrated against real editor output: pages as the editor
+saves them produce no errors. Exit 1 (ok:false, PD_VALIDATION_FAILED, report
+in `data`) when any ERROR fires.
 
 Arguments:
   <INPUT>             One of:
@@ -9,23 +11,39 @@ Arguments:
                       • PD page URL:   https://.../ui-designer/page/<id>
                       • PD symbol URL: https://.../ui-designer/symbol/<name>
                       • Bare hex ID:   48b75e11e166e6b19e5796d59a936228
-                      • Component name: n_s_staff_email_correspondence
+                      • Page or component name (exact)
 
-Validation Checks:
-  ORPHAN_BINDING          {%var%} used but variable not defined (error)
-  UNUSED_VARIABLE         Variable defined but never referenced (warn)
-  FORM_FIELD_PROPS        exp-form-field with props instead of field (error)
-  CHILDREN_NOT_ARRAY      children is object instead of array (error)
-  TABLE_NO_DATASOURCE     exp-data-table missing datasourceState (warn)
-  INVALID_SLIDE_TOGGLE    mat-slide-toggle used (no runtime declaration) (error)
-  INVALID_EXPANSION_HEADER  mat-expansion-panel-header used (error)
-  MISSING_ONINIT_VAR      HTTP trigger onInit but no onInit variable (warn)
-  EMPTY_EVENT_META        eventMeta: {} on variable-triggered call (warn)
-  DYNAMIC_COLS_INITIAL    exp-data-table with [columns] + initialValue (warn)
+Flags:
+  --force             Bypass the local config cache (fetch fresh).
+
+Errors (block `save` / `publish`):
+  INVALID_JSON              configuration is not valid JSON
+  ROOT_LAYOUT_MALFORMED     root is not a div; page root lacks unSelectable:true;
+                            component root lacks isSymbol:true
+  ORPHAN_BINDING            {%var%} (outside editor-generated form configs)
+                            whose root variable is not defined
+  FORM_FIELD_PROPS          exp-form-field with props instead of field
+  CHILDREN_NOT_ARRAY        children is an object instead of an array
+  INVALID_SLIDE_TOGGLE      mat-slide-toggle (no runtime declaration)
+  INVALID_EXPANSION_HEADER  mat-expansion-panel-header
+  PHONE_FIELD_TYPE          exp-form-field type "phone" (0-height render)
+  DUPLICATE_ELEMENT_IDS     two nodes share an id / _elementId
+
+Warnings (errors when a save/restore INTRODUCES them: ORPHAN_BINDING,
+DERIVED_IN_INNERHTML, ARRAY_INITIAL_VALUE, BUTTON_DYNAMIC_CLASSNAME):
+  ORPHAN_BINDING            undefined variable inside a generated form config
+  DERIVED_IN_INNERHTML      derived var bound to innerHTML / textContent
+  ARRAY_INITIAL_VALUE       variable with an array initialValue
+  BUTTON_DYNAMIC_CLASSNAME  button with a [className] binding
+  UNUSED_VARIABLE           variable nothing reads or writes
+  TABLE_NO_DATASOURCE       exp-data-table without datasourceState
+  DYNAMIC_COLS_INITIAL      dynamic [columns] whose variable has an initialValue
+  MISSING_ONINIT_VAR        HTTP trigger onInit without an onInit variable
+  EMPTY_EVENT_META          serviceCall.eventMeta is {}
+  CUSTOM_HTML_IN_COMPONENT  raw <input>/<select>/<textarea>/<table>
 
 Global Flags:
-  --env <name>        Set active environment. (default: nsm-dev)
-                      Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>        Set active environment.
   --llm               Output structured JSON envelope for scripting/LLM use.
   --help, -h          Show this help message.
 

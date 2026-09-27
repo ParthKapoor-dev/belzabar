@@ -1,7 +1,12 @@
 Usage: belz pd preflight <pageId> [--overlay <file>]
 
 Read-only dry-run. Fetches the current page, optionally applies an overlay,
-runs the validator, and reports what would change. Makes NO network writes.
+runs the validator, and reports what would change and how `belz pd save`
+would write it (partial operations or a full save). Makes NO network writes.
+
+With --overlay the validator is diff-aware, exactly like `save`: issues the
+page already had are reported as pre-existing warnings; only issues the
+overlay INTRODUCES can be errors.
 
 Arguments:
   <pageId>            PD page or component id (hex UUID).
@@ -11,9 +16,14 @@ Flags:
                       save` help for the overlay shape.
   --help, -h          Show this help message.
 
+Global Flags:
+  --env <name>        Environment to read from.
+  --llm               Output structured JSON envelope.
+
 Exit code:
-  0 if the post-overlay page validates cleanly.
-  1 if any validator ERROR fires.
+  0 if the (post-overlay) page validates cleanly.
+  1 if any validator ERROR fires: the envelope is ok:false with code
+    PD_PREFLIGHT_FAILED and the full report in `data`.
 
 Examples:
   belz pd preflight 4f126300499e4d83cd07a35b4d9af9e7

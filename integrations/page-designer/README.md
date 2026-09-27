@@ -12,16 +12,16 @@ belz pd show <input> --components         # Show layout/component tree
 belz pd show <input> --var-detail <name>  # Full config for a specific variable or derived
 belz pd show <input> --http-detail <N>    # Full config for the Nth HTTP call (1-indexed)
 belz pd show <input> --full               # All sections + all details
-belz pd show <input> --force              # Bypass 5-min cache
+belz pd show <input> --force              # Bypass the local cache (SWR 5 min / 1 h)
 belz pd show <input> --recursive          # Recursive component tree + all AD IDs
 
-belz pd validate <input>                  # Run 10 validation checks from PD spec
+belz pd validate <input>                  # Calibrated validator (exit 1 on errors)
 belz pd find [query]                      # Search pages/components (7-day cached index)
 belz pd find-ad-methods <ID>              # Extract AD method IDs (--recursive for full tree)
-belz pd analyze [PAGE_ID]                 # Recursive dependency + compliance analysis
+belz pd analyze <id...> [--compliance f]  # Recursive dependency + compliance analysis
 ```
 
-`<input>` accepts any of: app URL, PD designer URL, bare hex ID, or component name.
+`<input>` accepts any of: app URL, PD designer URL, bare hex ID, or an exact page/component name.
 
 ## Examples
 

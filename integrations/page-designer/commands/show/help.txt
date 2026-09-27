@@ -11,11 +11,14 @@ Arguments:
                       • PD page URL:   https://.../ui-designer/page/<id>
                       • PD symbol URL: https://.../ui-designer/symbol/<name>
                       • Bare hex ID:   48b75e11e166e6b19e5796d59a936228
-                        (auto-detects page vs. component)
-                      • Component name: n_s_staff_email_correspondence
+                        (page vs. component comes from the server)
+                      • Exact component or page name:
+                        n_s_staff_email_correspondence, "Add Student"
+                        (several matches → PD_NAME_AMBIGUOUS; pass an id)
 
 Flags:
-  --vars              Show all variables (user-defined + derived).
+  --vars              Show all variables (user-defined + derived; derived vars
+                      are the entries with a `from` list).
   --http              Show all HTTP service calls.
   --components        Show the legacy (flat-name) layout tree.
   --tree              Show the full layout tree with node-kind badges
@@ -28,8 +31,9 @@ Flags:
   --var-detail <name> Show full config for a specific variable or derived.
   --http-detail <N>   Show full config for the Nth HTTP call (1-indexed).
   --full              Include all sections + all details.
-  --recursive, -r     Include recursive dependency tree and all AD method IDs.
-                      Requires components.json in the current directory.
+  --recursive, -r     Include the recursive component dependency tree and all
+                      AD method IDs (every referenced component is followed;
+                      unresolvable ones are listed in recursive.errors).
   --force             Bypass cache and fetch fresh config.
   --raw               Include raw configuration string and source API fields.
   --open, -o          Open the editable draft URL in your default browser
@@ -38,8 +42,7 @@ Flags:
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment. (default: nsm-dev)
-                      Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>        Set active environment.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:

@@ -1,97 +1,98 @@
 // Pure overlay → HydratedPage transform.
 //
-// Used by:
-//   - `preflight` and `save` to produce the "what it would look like" state
-//     that the validator runs on before anything hits the wire.
-//   - Tests to assert that applyOverlay(page, overlay) produces the expected
-//     downstream structure.
+// Used by `save`, `preflight` and `history restore` to produce the "what it
+// would look like" page the validator runs on before anything hits the wire,
+// and (via `rawConfiguration`) the exact config a full save sends.
 //
-// This function performs NO I/O. It never calls the server. It clones the
-// layout `raw` tree by path when an element-operation targets the layout,
-// so subsequent serialization round-trips the mutation.
+// The edit is applied to a deep clone of the RAW inner configuration — never
+// rebuilt from the parsed lists — so everything the overlay does not touch
+// round-trips byte-for-byte in structure (PD-22): duplicate variables, nulls,
+// legacy `context.properties` / `http`, component `inputs`/`events`, unknown
+// keys. Targets are found by their raw index (lib/serialize/locate.ts).
+//
+// An overlay that names something that does not exist (update/remove of an
+// unknown variable or callId, add of an existing name, an element key whose
+// parent does not resolve) is refused with PD_OVERLAY_INVALID instead of being
+// silently skipped.
 
+import { CliError } from "@belzabar/core";
 import { parsePage } from "../parser/index";
-import type { ElementOperation, HydratedPage, Overlay, PageVariable, PageDerivedVariable } from "../types/common";
-import type { RawConfiguration, RawLayoutNode } from "../types/wire";
-import { hydratedToInnerConfig } from "./full";
+import type { ElementOperation, HydratedPage, Overlay } from "../types/common";
+import type { RawConfiguration, RawDerivedVar, RawHttpRequestItem, RawPageResponse, RawUserDefinedVar } from "../types/wire";
+import { locateDerived, locateHttp, locateVariable, usesLegacyVariables } from "./locate";
+import { decodeValue, encodeValue, setPath } from "./paths";
 
-// Deep-clone helper scoped to serialization's needs (handles plain objects,
-// arrays, primitives, and drops functions — which shouldn't be in PD config
-// anyway).
 function deepClone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value));
+  return value === undefined ? value : JSON.parse(JSON.stringify(value));
 }
 
-// Apply a single element-operation against a parsed (not-stringified) config.
-// Mutates in place. Returns true on success, false if the path didn't resolve.
-function applyElementOpToConfig(
-  config: RawConfiguration,
-  op: ElementOperation,
-): boolean {
-  const path = parsePath(op.key);
-  if (path.length === 0) return false;
-
-  // Navigate to parent of target
-  let parent: any = config;
-  for (let i = 0; i < path.length - 1; i++) {
-    const seg = path[i]!;
-    if (parent == null) return false;
-    if (typeof seg === "number") {
-      if (!Array.isArray(parent)) return false;
-      parent = parent[seg];
-    } else {
-      parent = parent[seg];
-    }
-  }
-  if (parent == null) return false;
-
-  const last = path[path.length - 1]!;
-  parent[typeof last === "number" ? last : (last as string)] = op.value;
-  return true;
+/** The array at a `locate` list key. */
+function listAt(inner: RawConfiguration, list: string): unknown[] {
+  let cur: unknown = inner;
+  for (const seg of list.split(".")) cur = (cur as Record<string, unknown>)[seg];
+  return cur as unknown[];
 }
 
-// dot-notation with [n] support — produces an array of string | number segments.
-function parsePath(key: string): Array<string | number> {
-  const out: Array<string | number> = [];
-  const regex = /([^.\[\]]+)|\[(\d+)\]/g;
-  let m: RegExpExecArray | null;
-  while ((m = regex.exec(key)) !== null) {
-    if (m[2] !== undefined) out.push(Number(m[2]));
-    else if (m[1] !== undefined) out.push(m[1]);
-  }
-  return out;
+/** The value an element operation stores, as the server will decode it. */
+export function elementOpValue(op: ElementOperation): unknown {
+  return decodeValue(encodeValue(op.value, op.dataType), op.dataType);
 }
 
-export function applyOverlay(page: HydratedPage, overlay: Overlay): HydratedPage {
-  // Start from a full (cloned) inner config — this is the source of truth
-  // that we'll mutate, then re-parse at the end to produce the new
-  // HydratedPage (so every parsed node carries fresh `raw` identity).
-  const inner: RawConfiguration = deepClone(hydratedToInnerConfig(page));
+/** Apply the overlay to a clone of `page.rawConfiguration`; returns the new inner config. */
+export function applyOverlayToConfig(page: HydratedPage, overlay: Overlay): RawConfiguration {
+  const inner = deepClone((page.rawConfiguration ?? {}) as RawConfiguration) ?? {};
+  const problems: string[] = [];
+  const legacy = usesLegacyVariables(inner);
 
   // ----- variables ------------------------------------------------------
-  inner.variables ??= { generated: [], userDefined: [], derived: [] };
-  inner.variables.userDefined ??= [];
-  inner.variables.derived ??= [];
-
-  // remove
-  if (overlay.variables?.remove) {
-    inner.variables.userDefined = inner.variables.userDefined.filter(
-      (v) => !overlay.variables!.remove!.includes(v.name),
-    );
-  }
-  // update
-  if (overlay.variables?.update) {
-    for (const upd of overlay.variables.update) {
-      const entry = inner.variables.userDefined.find((v) => v.name === upd.name);
-      if (!entry) continue;
+  const vo = overlay.variables;
+  if (vo?.update) {
+    for (const upd of vo.update) {
+      const loc = locateVariable(inner, upd.name);
+      if (!loc) {
+        problems.push(
+          locateDerived(inner, upd.name)
+            ? `variables.update: "${upd.name}" is a derived variable — use derived.update`
+            : `variables.update: no variable named "${upd.name}"`,
+        );
+        continue;
+      }
+      if (legacy) {
+        const tuple = listAt(inner, loc.list)[loc.index] as [string, unknown];
+        if (upd.type !== undefined || upd.translateInitialValue !== undefined) {
+          problems.push(`variables.update: "${upd.name}" is on a legacy context.properties page — only initialValue can change`);
+        }
+        if (upd.initialValue !== undefined) tuple[1] = upd.initialValue;
+        continue;
+      }
+      const entry = listAt(inner, loc.list)[loc.index] as RawUserDefinedVar;
       if (upd.initialValue !== undefined) entry.initialValue = upd.initialValue;
       if (upd.type !== undefined) entry.type = upd.type;
       if (upd.translateInitialValue !== undefined) entry.translateInitialValue = upd.translateInitialValue;
     }
   }
-  // add
-  if (overlay.variables?.add) {
-    for (const v of overlay.variables.add) {
+  if (vo?.remove) {
+    for (const name of vo.remove) {
+      const loc = locateVariable(inner, name);
+      if (!loc) {
+        problems.push(`variables.remove: no variable named "${name}"`);
+        continue;
+      }
+      listAt(inner, loc.list).splice(loc.index, 1);
+    }
+  }
+  if (vo?.add) {
+    for (const v of vo.add) {
+      if (locateVariable(inner, v.name) || locateDerived(inner, v.name)) {
+        problems.push(`variables.add: "${v.name}" already exists`);
+        continue;
+      }
+      if (legacy) {
+        inner.context!.properties!.push([v.name, v.initialValue ?? null]);
+        continue;
+      }
+      inner.variables ??= {};
+      inner.variables.userDefined ??= [];
       inner.variables.userDefined.push({
         name: v.name,
         type: v.type ?? "String",
@@ -103,49 +104,76 @@ export function applyOverlay(page: HydratedPage, overlay: Overlay): HydratedPage
   }
 
   // ----- derived --------------------------------------------------------
-  if (overlay.derived?.remove) {
-    inner.variables.derived = inner.variables.derived.filter(
-      (d) => !overlay.derived!.remove!.includes(d.name),
-    );
-  }
-  if (overlay.derived?.update) {
-    for (const upd of overlay.derived.update) {
-      const entry = inner.variables.derived.find((d) => d.name === upd.name);
-      if (!entry) continue;
+  const dov = overlay.derived;
+  if (dov?.update) {
+    for (const upd of dov.update) {
+      const loc = locateDerived(inner, upd.name);
+      if (!loc) {
+        problems.push(`derived.update: no derived variable named "${upd.name}"`);
+        continue;
+      }
+      const entry = listAt(inner, loc.list)[loc.index] as RawDerivedVar;
       if (upd.from !== undefined) entry.from = upd.from;
       if (upd.spec !== undefined) entry.spec = upd.spec;
       if (upd.filterFn !== undefined) entry.filterFn = upd.filterFn;
       if (upd.sideEffect !== undefined) entry.sideEffect = upd.sideEffect;
     }
   }
-  if (overlay.derived?.add) {
-    for (const d of overlay.derived.add) {
-      inner.variables.derived.push({
-        name: d.name,
-        from: d.from,
-        spec: d.spec,
-        filterFn: d.filterFn ?? null,
-        sideEffect: d.sideEffect ?? false,
-      } as any);
+  if (dov?.remove) {
+    for (const name of dov.remove) {
+      const loc = locateDerived(inner, name);
+      if (!loc) {
+        problems.push(`derived.remove: no derived variable named "${name}"`);
+        continue;
+      }
+      listAt(inner, loc.list).splice(loc.index, 1);
+    }
+  }
+  if (dov?.add) {
+    for (const d of dov.add) {
+      if (locateVariable(inner, d.name) || locateDerived(inner, d.name)) {
+        problems.push(`derived.add: "${d.name}" already exists`);
+        continue;
+      }
+      inner.variables ??= {};
+      const hasDerivedList = Array.isArray(inner.variables.derived) && inner.variables.derived.length > 0;
+      if (hasDerivedList || legacy) {
+        inner.variables.derived ??= [];
+        inner.variables.derived.push({
+          name: d.name,
+          from: d.from,
+          spec: d.spec,
+          ...(d.filterFn !== undefined ? { filterFn: d.filterFn } : {}),
+          sideEffect: d.sideEffect ?? false,
+        });
+      } else {
+        // The editor's own shape: a derived var is a userDefined entry with `from`.
+        inner.variables.userDefined ??= [];
+        inner.variables.userDefined.push({
+          name: d.name,
+          type: "Any",
+          from: d.from,
+          spec: d.spec,
+          filterFn: d.filterFn ?? "(function (data) {\n\treturn true;\n})",
+          sideEffect: d.sideEffect ?? true,
+          initial: "",
+          compileType: "DERIVED",
+          __LAYOUT_CONFIG_METADATA: { description: "" },
+        } as RawUserDefinedVar);
+      }
     }
   }
 
   // ----- httpRequests ---------------------------------------------------
-  inner.httpRequests ??= { generated: [], userDefined: [] };
-  inner.httpRequests.userDefined ??= [];
-  inner.httpRequests.generated ??= [];
-
-  if (overlay.httpRequests?.remove) {
-    inner.httpRequests.userDefined = inner.httpRequests.userDefined.filter(
-      (h) => !overlay.httpRequests!.remove!.includes(h.meta?.serviceCall?.callId ?? ""),
-    );
-  }
-  if (overlay.httpRequests?.update) {
-    for (const upd of overlay.httpRequests.update) {
-      const entry = inner.httpRequests.userDefined.find(
-        (h) => h.meta?.serviceCall?.callId === upd.callId,
-      );
-      if (!entry) continue;
+  const ho = overlay.httpRequests;
+  if (ho?.update) {
+    for (const upd of ho.update) {
+      const loc = locateHttp(inner, upd.callId);
+      if (!loc) {
+        problems.push(`httpRequests.update: no HTTP request with callId "${upd.callId}"`);
+        continue;
+      }
+      const entry = listAt(inner, loc.list)[loc.index] as RawHttpRequestItem;
       if (upd.request) {
         entry.request ??= {};
         if (upd.request.body !== undefined) entry.request.body = upd.request.body;
@@ -163,27 +191,57 @@ export function applyOverlay(page: HydratedPage, overlay: Overlay): HydratedPage
       if (upd.responseTransformSpec !== undefined) entry.responseTransformSpec = upd.responseTransformSpec;
     }
   }
-  if (overlay.httpRequests?.add) {
-    inner.httpRequests.userDefined.push(...(overlay.httpRequests.add as any[]));
+  if (ho?.remove) {
+    for (const callId of ho.remove) {
+      const loc = locateHttp(inner, callId);
+      if (!loc) {
+        problems.push(`httpRequests.remove: no HTTP request with callId "${callId}"`);
+        continue;
+      }
+      listAt(inner, loc.list).splice(loc.index, 1);
+    }
+  }
+  if (ho?.add?.length) {
+    inner.httpRequests ??= {};
+    inner.httpRequests.userDefined ??= [];
+    for (const item of ho.add) {
+      const callId = (item as RawHttpRequestItem)?.meta?.serviceCall?.callId;
+      if (typeof callId === "string" && locateHttp(inner, callId)) {
+        problems.push(`httpRequests.add: callId "${callId}" already exists`);
+        continue;
+      }
+      inner.httpRequests.userDefined.push(item as RawHttpRequestItem);
+    }
   }
 
-  // ----- elements ops ---------------------------------------------------
-  if (overlay.elements?.operations) {
-    for (const op of overlay.elements.operations) {
-      applyElementOpToConfig(inner, op);
+  // ----- element operations ---------------------------------------------
+  for (const op of overlay.elements?.operations ?? []) {
+    if (!setPath(inner, op.key, elementOpValue(op))) {
+      problems.push(`elements.operations: key "${op.key}" does not resolve (its parent does not exist)`);
     }
   }
 
   // ----- styles ---------------------------------------------------------
-  if (overlay.styles?.replace !== undefined) {
-    inner.styles = overlay.styles.replace;
-  }
+  if (overlay.styles?.replace !== undefined) inner.styles = overlay.styles.replace;
 
-  // Re-parse to produce a fresh HydratedPage pointing at the new shapes.
-  // Wrap the mutated inner back into a wire-shaped response.
+  if (problems.length > 0) {
+    throw new CliError(`Overlay does not apply to page ${page.id}: ${problems.join("; ")}`, {
+      code: "PD_OVERLAY_INVALID",
+      details: { problems },
+    });
+  }
+  return inner;
+}
+
+/** A HydratedPage for a new inner configuration (the rest of the wire body is kept). */
+export function withConfiguration(page: HydratedPage, inner: unknown): HydratedPage {
   const reWrapped = {
     ...(page.raw as Record<string, unknown>),
     configuration: JSON.stringify(inner),
-  };
-  return parsePage(reWrapped as any);
+  } as RawPageResponse;
+  return parsePage(reWrapped);
+}
+
+export function applyOverlay(page: HydratedPage, overlay: Overlay): HydratedPage {
+  return withConfiguration(page, applyOverlayToConfig(page, overlay));
 }

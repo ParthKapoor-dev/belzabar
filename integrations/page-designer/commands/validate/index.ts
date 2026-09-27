@@ -1,16 +1,24 @@
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+// belz pd validate <input> — run every validator rule over a page/component.
+//
+// PD-8 / F18: when any rule reports an ERROR the envelope is ok:false
+// (PD_VALIDATION_FAILED, exit 1) with the full report in `data`. Rule
+// severities are calibrated against real editor output (PD-5).
+
+import { defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
+import { PD_FORCE_FLAG, PD_INPUT_POSITIONAL } from "../../lib/args/common";
 import { parsePage } from "../../lib/parser/index";
 import { resolveInput } from "../../lib/resolver";
-import { validateHydrated } from "../../lib/validator/index";
-import type { ValidationIssue, HydratedPage } from "../../lib/types/common";
-import type { RawPageResponse } from "../../lib/types/wire";
+import { partitionBySeverity, validateHydrated } from "../../lib/validator/index";
+import type { ValidationIssue } from "../../lib/types/common";
 
 interface ValidateArgs {
   input: string;
+  force: boolean;
 }
 
 interface ValidateData {
   name: string;
+  id: string;
   entityType: "PAGE" | "COMPONENT";
   issues: ValidationIssue[];
   errorCount: number;
@@ -19,40 +27,38 @@ interface ValidateData {
 
 export const args = defineArgs({
   command: "belz pd validate",
-  positionals: [
-    {
-      name: "input",
-      required: true,
-      missingCode: "MISSING_INPUT",
-      missingMessage: "Missing argument. Provide a page URL, PD designer URL, page/component ID, or component name.",
-    },
-  ],
+  positionals: [PD_INPUT_POSITIONAL],
+  flags: { ...PD_FORCE_FLAG },
 });
 
 const command: CommandModule<ValidateArgs, ValidateData> = {
   schema: "pd.validate",
   parseArgs(argv) {
-    return { input: args.parse(argv).positionals.input };
+    const { positionals, flags } = args.parse(argv);
+    return { input: positionals.input, force: flags.force };
   },
-  async execute({ input }) {
-    const resolved = await resolveInput(input);
-    const page: HydratedPage = parsePage(resolved.response as unknown as RawPageResponse);
+  async execute({ input, force }) {
+    const resolved = await resolveInput(input, force);
+    const page = parsePage(resolved.response);
     const issues = validateHydrated(page);
+    const { errors, warnings } = partitionBySeverity(issues);
 
-    const errorCount = issues.filter((i) => i.severity === "error").length;
-    const warnCount = issues.filter((i) => i.severity === "warn").length;
-
-    return ok({
+    const data: ValidateData = {
       name: page.name || resolved.resolvedId,
-      entityType: page.entityType,
+      id: resolved.resolvedId,
+      entityType: resolved.entityType,
       issues,
-      errorCount,
-      warnCount,
-    });
+      errorCount: errors.length,
+      warnCount: warnings.length,
+    };
+    if (errors.length > 0) {
+      return failWithData("PD_VALIDATION_FAILED", `${errors.length} validator error(s) on ${data.name}.`, data);
+    }
+    return ok(data);
   },
   presentHuman(envelope, ui) {
-    if (!envelope.ok) return;
-    const data = envelope.data as ValidateData;
+    const data = envelope.data as ValidateData | undefined;
+    if (!data) return;
 
     ui.kv("Name", data.name);
     ui.kv("Entity Type", data.entityType);
@@ -65,12 +71,7 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
     ui.section("Issues");
     ui.table(
       ["#", "Sev", "Code", "Message"],
-      data.issues.map((issue, idx) => [
-        idx + 1,
-        issue.severity.toUpperCase(),
-        issue.code,
-        issue.message,
-      ])
+      data.issues.map((issue, idx) => [idx + 1, issue.severity.toUpperCase(), issue.code, issue.message]),
     );
 
     ui.section("Summary");

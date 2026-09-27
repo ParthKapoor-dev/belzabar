@@ -25,10 +25,21 @@ function parseConfigurationString(str: string, warnings: string[]): RawConfigura
   }
 }
 
-function inferEntityType(raw: RawPageResponse, inner: RawConfiguration): PdEntityType {
-  // A symbol/component has `isSymbol: true` on its root layout node. Pages have
-  // `unSelectable: true` on theirs. If neither is set — fall back to checking
-  // for the presence of top-level `inputs`/`events` arrays (symbol-only).
+/**
+ * PAGE vs COMPONENT, from the server's own fields first (PD-10 / F17):
+ *   1. `isComponent` (boolean on every GET /pages/{id} component body)
+ *   2. `pageType` ("PAGE" | "COMPONENT", when present)
+ *   3. a non-empty `relativeRoute` — only pages are routable
+ * Only when none is present (e.g. a hand-built body) fall back to the config
+ * shape. The root `isSymbol` flag alone is NOT decisive: real pages copy it
+ * (e.g. both sems-dev "Add Student" pages have `layout.isSymbol: true`).
+ */
+export function inferEntityType(raw: RawPageResponse, inner: RawConfiguration = {}): PdEntityType {
+  if (typeof raw.isComponent === "boolean") return raw.isComponent ? "COMPONENT" : "PAGE";
+  const pageType = typeof raw.pageType === "string" ? raw.pageType.toUpperCase() : "";
+  if (pageType === "COMPONENT" || pageType === "SYMBOL") return "COMPONENT";
+  if (pageType === "PAGE") return "PAGE";
+  if (typeof raw.relativeRoute === "string" && raw.relativeRoute.trim()) return "PAGE";
   const layout = inner.layout as RawLayoutNode | undefined;
   if (layout?.isSymbol === true) return "COMPONENT";
   if (Array.isArray(inner.inputs) || Array.isArray(inner.events)) return "COMPONENT";
@@ -87,18 +98,3 @@ export function parsePage(raw: RawPageResponse): HydratedPage {
 
 export { findNode, walkParsed } from "./nodes";
 export { cleanAdId, extractBindingReferences } from "./refs";
-
-// Legacy extractors — still used by `show`, `find-ad-methods`, `analyze`.
-// Prefer parsePage()/validateHydrated() in new code.
-export {
-  extractReferences,
-  extractDirectChildComponentNames,
-  extractVariables,
-  extractHttpSummary,
-  extractEventHandlers,
-  extractComponentTree,
-  extractHttpDetail,
-  extractVarDetail,
-  validateConfig,
-} from "./legacy";
-export type { HttpCallDetail, VarDetail } from "./legacy";

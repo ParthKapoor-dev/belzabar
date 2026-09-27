@@ -1,4 +1,5 @@
-belz pd save <pageId> --overlay <file> --yes  :->  Apply a validated JSON overlay to a page draft (locked write)
+belz pd save <pageId> --overlay <file> --yes  :->  Apply a validated JSON overlay to a page draft (locked, re-fetched inside the lock, read back)
 belz pd save <pageId> --config <file> --yes  :->  Replace the full inner configuration (escape hatch)
-belz pd save <pageId> --overlay <file> --dry-run  :->  Run the whole flow but skip the network PUT
-belz pd save <pageId> --overlay <file> --force --yes  :->  Bypass validator errors and the PUBLISHED-input guard
+belz pd save <pageId> --overlay <file> --dry-run  :->  Plan + validate the edit without locking or writing
+belz pd save <pageId> --overlay <file> --force-validation --yes  :->  Save despite validator errors the edit introduces
+belz pd save <pageId> --overlay <file> --allow-published --yes  :->  Write to a PUBLISHED page that has no linked draft

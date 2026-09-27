@@ -28,7 +28,7 @@ beforeAll(async () => {
   origLock.acquireLock = pdApi.acquireLock;
   origLock.releaseLock = pdApi.releaseLock;
   (pdApi as any).acquireLock = async () => {};
-  (pdApi as any).releaseLock = async () => {};
+  (pdApi as any).releaseLock = async () => true;
 });
 afterEach(() => core.Config.setActiveEnv("nsm-dev"));
 afterAll(() => {

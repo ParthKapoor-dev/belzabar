@@ -1,21 +1,32 @@
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { fetchComponentIdByName } from "../../lib/api/index";
-import { cachedFetchPageConfig as fetchPageConfig, cachedFetchComponentConfig as fetchComponentConfig } from "../../lib/cache";
-import { extractReferences } from "../../lib/parser/index";
-import { analyzeItem, loadComponentsWhitelist } from "../../lib/analyzer";
-import { collectAllAdIds } from "../../lib/reporter";
+// belz pd find-ad-methods <input> [--component] [--recursive]
+//
+// AD method ids a page/component's HTTP calls execute. <input> is resolved
+// like `pd show` (id, exact name, URL — PD-14 / F20: names used to be fetched
+// as `/pages/<name>`). --recursive follows every referenced component (no
+// components.json, PD-13 / F21); unresolvable ones are listed in `errors`.
+
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { PD_FORCE_FLAG } from "../../lib/args/common";
+import { analyzeItem, collectAllAdIds, type AnalyzeError } from "../../lib/analyzer";
+import { adIdsOf } from "../../lib/extract";
+import { parsePage } from "../../lib/parser/index";
+import { resolveInput, resolveNameToId } from "../../lib/resolver";
 
 interface FindAdMethodsArgs {
   targetId: string;
   recursive: boolean;
-  type: "PAGE" | "COMPONENT";
+  component: boolean;
+  force: boolean;
 }
 
 interface FindAdMethodsData {
   targetId: string;
+  resolvedId: string;
+  name: string;
   type: "PAGE" | "COMPONENT";
   recursive: boolean;
   adIds: string[];
+  errors: AnalyzeError[];
 }
 
 export const args = defineArgs({
@@ -26,6 +37,7 @@ export const args = defineArgs({
   flags: {
     component: { type: "boolean" },
     recursive: { type: "boolean", alias: ["-r"] },
+    ...PD_FORCE_FLAG,
   },
 });
 
@@ -33,43 +45,32 @@ const command: CommandModule<FindAdMethodsArgs, FindAdMethodsData> = {
   schema: "pd.find-ad-methods",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    return {
-      targetId: positionals.id,
-      recursive: flags.recursive,
-      type: flags.component ? "COMPONENT" : "PAGE",
-    };
+    return { targetId: positionals.id, recursive: flags.recursive, component: flags.component, force: flags.force };
   },
-  async execute({ targetId, recursive, type }) {
-    let adIds: string[] = [];
+  async execute({ targetId, recursive, component, force }, context) {
+    // --component: <input> is a component NAME (only components are considered).
+    const input = component && !/^[0-9a-f]{32}$/i.test(targetId) ? await resolveNameToId(targetId, true) : targetId;
+    const resolved = await resolveInput(input, force);
+    const page = parsePage(resolved.response);
 
+    let adIds: string[];
+    const errors: AnalyzeError[] = [];
     if (recursive) {
-      const componentsWhitelist = await loadComponentsWhitelist("components.json not found. Required for recursive search.");
-
-      let actualId = targetId;
-      if (type === "COMPONENT") {
-        const id = await fetchComponentIdByName(targetId);
-        if (id) actualId = id;
-      }
-
-      const visited = new Set<string>();
-      const report = await analyzeItem(actualId, type, "Target", visited, componentsWhitelist);
+      const report = await analyzeItem(resolved.resolvedId, page.name, new Set<string>(), errors);
       adIds = collectAllAdIds([report]);
+      for (const e of errors) context.warn(`⚠ ${e.name}${e.id ? ` (${e.id})` : ""}: ${e.message}`);
     } else {
-      const data = type === "PAGE" ? await fetchPageConfig(targetId) : await fetchComponentConfig(targetId);
-      if (!data) {
-        throw new CliError(`Failed to fetch ${type} config.`, {
-          code: "CONFIG_FETCH_FAILED",
-        });
-      }
-      const refs = extractReferences(data.configuration, new Set());
-      adIds = refs.adIds;
+      adIds = adIdsOf(page);
     }
 
     return ok({
       targetId,
-      type,
+      resolvedId: resolved.resolvedId,
+      name: page.name,
+      type: resolved.entityType,
       recursive,
       adIds,
+      errors,
     });
   },
   presentHuman(envelope, ui) {

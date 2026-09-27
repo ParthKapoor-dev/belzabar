@@ -1,29 +1,39 @@
 Usage: belz pd save <pageId> (--overlay <file> | --config <file>) [flags]
 
-Safe-edit entry point. Applies a validated edit to a PD page.
+Safe-edit entry point. Applies a validated edit to a PD page draft.
 
 Exactly one of --overlay / --config must be provided.
 
-  --overlay <file>    Targeted JSON overlay (see shape below). Preferred.
-  --config <file>     Raw full inner-configuration JSON (escape hatch).
-
 Flow:
-  1. Resolve draft target (refuses PUBLISHED unless --force).
-  2. Fetch + parse current page → HydratedPage "before".
-  3. Apply edit → HydratedPage "after".
-  4. Validator gate: errors abort unless --force; warnings print + proceed.
-  5. Acquire lock, PUT (partial or full), release lock.
-  6. Re-fetch, report old/new versionId.
+  1. Resolve the draft target via the page's referenceId link. A PUBLISHED
+     input writes to its linked draft; a PUBLISHED page with NO draft is
+     refused unless --allow-published.
+  2. Apply the edit to the current page and validate it. The gate is
+     diff-aware: issues the page already had never block; issues the edit
+     INTRODUCES do (errors abort unless --force-validation).
+  3. Plan the write: partial pageElementOperations when they provably cover
+     the whole edit, otherwise a full save (data.fullSaveReason says why).
+  4. --dry-run stops here. Otherwise confirm (--yes), acquire the lock,
+     re-fetch the page INSIDE the lock, re-apply + re-validate on the latest
+     version (data.versionDrift reports a concurrent change), PUT, release.
+  5. Read back the page and compare it with the planned config (data.verify:
+     match | mismatch | stale-read).
 
 Flags:
-  --overlay <file>    See OVERLAY SHAPE below.
-  --config <file>     File is a parsed inner-configuration object. belz
-                      stringifies it and sends with partialUpdate=false.
-  --dry-run           Run the full flow but skip the network PUT.
-  --force             Bypass validator ERRORS (warnings still print).
-                      Also overrides draft-guard PUBLISHED refusal.
-  --yes, -y           Required to perform any real write.
-  --help, -h          Show this help message.
+  --overlay <file>      Targeted JSON overlay (see OVERLAY SHAPE). Preferred.
+  --config <file>       Raw full inner-configuration JSON object (escape
+                        hatch). belz stringifies it and sends it with
+                        partialUpdate=false.
+  --dry-run             Run the full flow but skip the lock and the PUT.
+  --force-validation    Proceed despite validator ERRORS (they are listed in
+                        data.bypassedErrors). Warnings always just print.
+  --allow-published     Allow writing directly to a PUBLISHED page that has
+                        no linked draft.
+  --force               DEPRECATED alias of --force-validation (it no longer
+                        allows writing to a PUBLISHED page). Prints a warning.
+  --yes, -y             Confirm the write (required with --llm or without a
+                        terminal; otherwise belz asks).
+  --help, -h            Show this help message.
 
 OVERLAY SHAPE:
   {
@@ -38,7 +48,8 @@ OVERLAY SHAPE:
       "remove": ["dead"]
     },
     "httpRequests": {
-      "update": [{"callId":"sc-001","request":{"body":"{}"}}],
+      "update": [{"callId":"sc-001","request":{"body":"{}"},
+                  "handler":{"error":[]},"responseTransformSpec":"..."}],
       "remove": ["sc-dead"]
     },
     "elements": {
@@ -50,14 +61,22 @@ OVERLAY SHAPE:
     "styles": {"replace":".latest-version .x { color: red }"}
   }
 
+  Every name / callId / element key must exist (add: must NOT exist);
+  otherwise the save is refused with PD_OVERLAY_INVALID. Derived variables
+  are the entries with a `from` list (the editor keeps them in
+  variables.userDefined) — edit them via "derived", not "variables".
+
 STRATEGY:
-  Partial save is used when the overlay only has:
-    variables.update, httpRequests.update, elements.operations, styles.replace
-  Full save is used when the overlay touches:
-    variables.add/remove, derived.*, httpRequests.add/remove
+  Partial save: variables.update, httpRequests.update (request, handler,
+  trigger, triggerFilter, responseTransformSpec), elements.operations,
+  styles.replace — with raw array indices.
+  Full save: variables.add/remove, derived.*, httpRequests.add/remove,
+  legacy-format pages, or partial ops that would not cover the edit.
+  A full save sends the page's own config with only the edit applied
+  (nothing else is rewritten).
 
 Examples:
   belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./ed.json --dry-run
   belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./ed.json --yes
   belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --config ./full.json --yes
-  belz pd save <id> --overlay ./ed.json --force --yes --llm | jq '.data.validation.issues'
+  belz pd save <id> --overlay ./ed.json --force-validation --yes --llm | jq '.data.bypassedErrors'

@@ -1,11 +1,14 @@
 Usage: belz pd diff <input> --from <envA> --to <envB> [flags]
 
 Compare the same page or component across two environments and report the
-structural differences — variables, derived fields, HTTP calls, layout nodes,
-and styles.
+structural differences: variables (added/removed/changed type or value),
+derived fields (from/spec/filterFn/sideEffect), HTTP calls (added/removed/
+changed request config), layout nodes (added/removed/changed props, events,
+kind), styles, and any other top-level config key.
 
-<input> may be a page/component id, a name, an app URL, or a PD URL. It is
-resolved INDEPENDENTLY in each environment, because entity ids are env-local.
+<input> may be a page/component id, an exact page or component name, an app
+URL, or a PD URL. It is resolved INDEPENDENTLY in each environment, because
+entity ids are env-local — pass a name or URL when the ids differ.
 
 Flags:
   --from <env>   Environment to treat as the baseline (e.g. nsm-dev)

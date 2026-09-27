@@ -1,13 +1,17 @@
-// Structural diff between two HydratedPage objects.
+// Structural diff between two HydratedPage objects — the ONE diff engine.
 //
-// Shared by `pd history diff` (two versions of one page) and `pd diff` (the
-// same page across two environments). The algorithm is purely structural — it
-// compares variables, derived fields, HTTP calls, layout nodes, and styles —
-// so it is meaningful regardless of whether the two pages come from version
-// history or from different environments.
+// Used by `pd history diff` (two versions), `pd diff` (two environments) and
+// the save / preflight edit summary (`editSummary`). Compares (PD-11):
+//   - variables: added / removed / changed (type, initialValue, translateInitialValue)
+//   - derived:   added / removed / changed (from, spec, filterFn, sideEffect)
+//   - HTTP:      added / removed / changed (the whole raw request config, by callId)
+//   - layout:    nodes added / removed / kind-changed / changed (props, events,
+//                loop, field — children excluded)
+//   - styles:    changed + line counts
+//   - everything else in the config (inputs, events, helpText, __version, …)
 
 import { walkParsed } from "./parser/index";
-import type { HydratedPage } from "./types/common";
+import type { HydratedPage, ParsedNode } from "./types/common";
 
 export interface SetDiff {
   added: string[];
@@ -24,13 +28,30 @@ export interface StyleDiff {
 export interface PageDiff {
   variables: SetDiff;
   derived: SetDiff;
-  httpRequests: { added: string[]; removed: string[] };
+  httpRequests: SetDiff;
   nodeCountBefore: number;
   nodeCountAfter: number;
   nodesAdded: string[];
   nodesRemoved: string[];
   nodesKindChanged: Array<{ nodeId: string; before: string; after: string }>;
+  /** Nodes present on both sides whose own props/events/loop/field differ. */
+  nodesChanged: string[];
   styles: StyleDiff;
+  /** Other top-level config keys that differ (inputs, events, helpText, …). */
+  otherChanged: string[];
+}
+
+/** Stable JSON (sorted keys) so equal structures compare equal regardless of key order. */
+export function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>).sort();
+    return `{${keys
+      .filter((k) => (value as Record<string, unknown>)[k] !== undefined)
+      .map((k) => `${JSON.stringify(k)}:${stableStringify((value as Record<string, unknown>)[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value ?? null);
 }
 
 export function countNodes(page: HydratedPage): number {
@@ -41,23 +62,30 @@ export function countNodes(page: HydratedPage): number {
   return n;
 }
 
-export function collectNodeIds(page: HydratedPage): Map<string, string> {
-  const m = new Map<string, string>();
+function nodeFingerprint(node: ParsedNode): string {
+  const raw = (node.raw && typeof node.raw === "object" ? node.raw : {}) as Record<string, unknown>;
+  const { children: _c, ...own } = raw;
+  return stableStringify(own);
+}
+
+function collectNodes(page: HydratedPage): Map<string, { kind: string; fp: string }> {
+  const m = new Map<string, { kind: string; fp: string }>();
   walkParsed(page.layout, (node) => {
-    m.set(node.nodeId, node.kind);
+    m.set(node.nodeId, { kind: node.kind, fp: nodeFingerprint(node) });
   });
   return m;
 }
 
-/** Set difference of two string arrays. `changed` is left empty for callers to fill. */
-export function diffStringSets(beforeArr: string[], afterArr: string[]): SetDiff {
-  const before = new Set(beforeArr);
-  const after = new Set(afterArr);
-  const added: string[] = [];
-  const removed: string[] = [];
-  for (const x of after) if (!before.has(x)) added.push(x);
-  for (const x of before) if (!after.has(x)) removed.push(x);
-  return { added, removed, changed: [] };
+/** Keyed diff: added / removed by key, changed when the fingerprints differ. */
+function keyedDiff(before: Map<string, string>, after: Map<string, string>): SetDiff {
+  const out: SetDiff = { added: [], removed: [], changed: [] };
+  for (const [k, fp] of after) {
+    const prior = before.get(k);
+    if (prior === undefined) out.added.push(k);
+    else if (prior !== fp) out.changed.push(k);
+  }
+  for (const k of before.keys()) if (!after.has(k)) out.removed.push(k);
+  return out;
 }
 
 function diffStyles(before: string, after: string): StyleDiff {
@@ -73,58 +101,125 @@ function diffStyles(before: string, after: string): StyleDiff {
   return { changed: true, linesAdded, linesRemoved };
 }
 
+const MODELLED_KEYS = new Set(["layout", "styles", "variables", "httpRequests", "http", "context"]);
+
 /** Structural diff: `a` is the "before"/"from" page, `b` is the "after"/"to" page. */
 export function diffPages(a: HydratedPage, b: HydratedPage): PageDiff {
-  const variables = diffStringSets(
-    a.variables.map((v) => v.name),
-    b.variables.map((v) => v.name),
-  );
-  const varMapA = new Map(
-    a.variables.map((v) => [v.name, JSON.stringify(v.initialValue)] as const),
-  );
-  for (const v of b.variables) {
-    const prior = varMapA.get(v.name);
-    if (prior !== undefined && prior !== JSON.stringify(v.initialValue)) {
-      variables.changed.push(v.name);
-    }
-  }
+  const varFp = (p: HydratedPage) =>
+    new Map(p.variables.map((v) => [v.name, stableStringify([v.type, v.initialValue, v.translateInitialValue ?? null])] as const));
+  const derFp = (p: HydratedPage) =>
+    new Map(p.derived.map((d) => [d.name, stableStringify([d.from, d.spec, d.filterFn, d.sideEffect])] as const));
+  const httpFp = (p: HydratedPage) =>
+    new Map(p.httpRequests.map((h) => [h.callId ?? `idx:${h.index}`, stableStringify(h.raw)] as const));
 
-  const derived = diffStringSets(
-    a.derived.map((d) => d.name),
-    b.derived.map((d) => d.name),
-  );
-  const derMapA = new Map(a.derived.map((d) => [d.name, d.spec ?? ""] as const));
-  for (const d of b.derived) {
-    const prior = derMapA.get(d.name);
-    if (prior !== undefined && prior !== (d.spec ?? "")) derived.changed.push(d.name);
-  }
-
-  const httpDiff = diffStringSets(
-    a.httpRequests.map((h) => h.callId ?? `idx:${h.index}`),
-    b.httpRequests.map((h) => h.callId ?? `idx:${h.index}`),
-  );
-
-  const nodesA = collectNodeIds(a);
-  const nodesB = collectNodeIds(b);
+  const nodesA = collectNodes(a);
+  const nodesB = collectNodes(b);
   const nodesAdded: string[] = [];
   const nodesRemoved: string[] = [];
+  const nodesChanged: string[] = [];
   const nodesKindChanged: Array<{ nodeId: string; before: string; after: string }> = [];
-  for (const [id, kind] of nodesB) {
-    const prior = nodesA.get(id);
-    if (prior === undefined) nodesAdded.push(id);
-    else if (prior !== kind) nodesKindChanged.push({ nodeId: id, before: prior, after: kind });
+  for (const [id, nb] of nodesB) {
+    const na = nodesA.get(id);
+    if (!na) nodesAdded.push(id);
+    else if (na.kind !== nb.kind) nodesKindChanged.push({ nodeId: id, before: na.kind, after: nb.kind });
+    else if (na.fp !== nb.fp) nodesChanged.push(id);
   }
-  for (const [id] of nodesA) if (!nodesB.has(id)) nodesRemoved.push(id);
+  for (const id of nodesA.keys()) if (!nodesB.has(id)) nodesRemoved.push(id);
+
+  const ra = (a.rawConfiguration ?? {}) as Record<string, unknown>;
+  const rb = (b.rawConfiguration ?? {}) as Record<string, unknown>;
+  const otherChanged: string[] = [];
+  for (const k of new Set([...Object.keys(ra), ...Object.keys(rb)])) {
+    if (MODELLED_KEYS.has(k)) continue;
+    if (stableStringify(ra[k]) !== stableStringify(rb[k])) otherChanged.push(k);
+  }
+  // variables.generated is editor-owned and not in the modelled lists.
+  const genA = (ra.variables as { generated?: unknown } | undefined)?.generated;
+  const genB = (rb.variables as { generated?: unknown } | undefined)?.generated;
+  if (stableStringify(genA ?? []) !== stableStringify(genB ?? [])) otherChanged.push("variables.generated");
 
   return {
-    variables,
-    derived,
-    httpRequests: { added: httpDiff.added, removed: httpDiff.removed },
+    variables: keyedDiff(varFp(a), varFp(b)),
+    derived: keyedDiff(derFp(a), derFp(b)),
+    httpRequests: keyedDiff(httpFp(a), httpFp(b)),
     nodeCountBefore: countNodes(a),
     nodeCountAfter: countNodes(b),
     nodesAdded,
     nodesRemoved,
     nodesKindChanged,
+    nodesChanged,
     styles: diffStyles(a.styles, b.styles),
+    otherChanged,
   };
+}
+
+export function isIdentical(d: PageDiff): boolean {
+  const sets = [d.variables, d.derived, d.httpRequests];
+  return (
+    sets.every((s) => s.added.length + s.removed.length + s.changed.length === 0) &&
+    d.nodesAdded.length + d.nodesRemoved.length + d.nodesKindChanged.length + d.nodesChanged.length === 0 &&
+    !d.styles.changed &&
+    d.otherChanged.length === 0
+  );
+}
+
+/** The flat edit summary `save` / `preflight` report (one shape for both). */
+export interface EditSummary {
+  variablesAdded: string[];
+  variablesRemoved: string[];
+  variablesChanged: string[];
+  derivedAdded: string[];
+  derivedRemoved: string[];
+  derivedChanged: string[];
+  httpAdded: string[];
+  httpRemoved: string[];
+  httpChanged: string[];
+  nodesAdded: string[];
+  nodesRemoved: string[];
+  nodesChanged: string[];
+  stylesChanged: boolean;
+  otherChanged: string[];
+}
+
+export function editSummary(before: HydratedPage, after: HydratedPage): EditSummary {
+  const d = diffPages(before, after);
+  return {
+    variablesAdded: d.variables.added,
+    variablesRemoved: d.variables.removed,
+    variablesChanged: d.variables.changed,
+    derivedAdded: d.derived.added,
+    derivedRemoved: d.derived.removed,
+    derivedChanged: d.derived.changed,
+    httpAdded: d.httpRequests.added,
+    httpRemoved: d.httpRequests.removed,
+    httpChanged: d.httpRequests.changed,
+    nodesAdded: d.nodesAdded,
+    nodesRemoved: d.nodesRemoved,
+    nodesChanged: [...d.nodesChanged, ...d.nodesKindChanged.map((k) => k.nodeId)],
+    stylesChanged: d.styles.changed,
+    otherChanged: d.otherChanged,
+  };
+}
+
+/** Human lines for an EditSummary ("+ variables: a, b"); empty when nothing changed. */
+export function editSummaryLines(s: EditSummary): string[] {
+  const lines: string[] = [];
+  const add = (sign: string, label: string, names: string[]) => {
+    if (names.length > 0) lines.push(`${sign} ${label}: ${names.join(", ")}`);
+  };
+  add("+", "variables", s.variablesAdded);
+  add("-", "variables", s.variablesRemoved);
+  add("~", "variables", s.variablesChanged);
+  add("+", "derived", s.derivedAdded);
+  add("-", "derived", s.derivedRemoved);
+  add("~", "derived", s.derivedChanged);
+  add("+", "http", s.httpAdded);
+  add("-", "http", s.httpRemoved);
+  add("~", "http", s.httpChanged);
+  add("+", "nodes", s.nodesAdded);
+  add("-", "nodes", s.nodesRemoved);
+  add("~", "nodes", s.nodesChanged);
+  if (s.stylesChanged) lines.push("~ styles changed");
+  add("~", "config", s.otherChanged);
+  return lines;
 }

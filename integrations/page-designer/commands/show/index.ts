@@ -1,33 +1,25 @@
 import { CliError, Config, defineArgs, ok, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
 import { PD_FORCE_FLAG } from "../../lib/args/common";
-import { analyzeItem, loadComponentsWhitelist } from "../../lib/analyzer";
+import { analyzeItem, collectAllAdIds, formatTreeLines, type AnalyzeError } from "../../lib/analyzer";
 import {
-  extractDirectChildComponentNames,
-  extractReferences,
-  extractVariables,
-  extractHttpSummary,
-  extractBindingReferences,
-  extractComponentTree,
-  extractHttpDetail,
-  extractVarDetail,
-  parsePage,
-  findNode,
-  walkParsed,
+  adIdsOf,
+  childComponentNames,
+  componentTree,
+  httpDetail,
+  httpSummary,
+  variablesView,
+  varDetail,
+  type ComponentTreeNode,
+  type DerivedView,
   type HttpCallDetail,
+  type HttpCallSummary,
   type VarDetail,
-} from "../../lib/parser/index";
+  type VariableView,
+} from "../../lib/extract";
+import { findNode, parsePage, walkParsed } from "../../lib/parser/index";
 import { resolveInput, type InputKind } from "../../lib/resolver";
 import { pdCacheDir } from "../../lib/cache";
-import { collectAllAdIds, formatTreeLines } from "../../lib/reporter";
-import type {
-  PageConfigResponse,
-  NormalizedVariable,
-  NormalizedDerived,
-  HttpCallSummary,
-  ComponentTreeNode,
-} from "../../lib/types/legacy";
-import type { HydratedPage, ParsedNode, NodeKind } from "../../lib/types/common";
-import type { RawPageResponse } from "../../lib/types/wire";
+import type { HydratedPage, ParsedNode, NodeKind, RawPageResponse } from "../../lib/types/common";
 
 // --- Args ---
 
@@ -247,8 +239,8 @@ interface ShowData {
     adMethodIds: string[];
   };
   vars?: {
-    userDefined: NormalizedVariable[];
-    derived: NormalizedDerived[];
+    userDefined: VariableView[];
+    derived: DerivedView[];
   };
   http?: HttpCallSummary[];
   components?: ComponentTreeNode | null;
@@ -257,6 +249,8 @@ interface ShowData {
   recursive?: {
     treeLines: string[];
     uniqueAdMethodIds: string[];
+    /** Components that could not be fetched/resolved during the walk (PD-19). */
+    errors: AnalyzeError[];
   };
   raw?: {
     configurationRaw: string;
@@ -281,51 +275,24 @@ interface ShowData {
 
 // --- Helpers ---
 
-function toRecord(data: PageConfigResponse): Record<string, unknown> {
-  return data as unknown as Record<string, unknown>;
+function str(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
 }
 
-function pickFirstDeep(input: unknown, keys: string[], maxDepth = 5): string | number | null {
-  const queue: Array<{ node: unknown; depth: number }> = [{ node: input, depth: 0 }];
-  while (queue.length > 0) {
-    const current = queue.shift();
-    if (!current) break;
-    const { node, depth } = current;
-    if (!node || typeof node !== "object") continue;
-    const record = node as Record<string, unknown>;
-    for (const key of keys) {
-      const value = record[key];
-      if (typeof value === "string" || typeof value === "number") return value;
-    }
-    if (depth >= maxDepth) continue;
-    for (const value of Object.values(record)) {
-      if (value && typeof value === "object") queue.push({ node: value, depth: depth + 1 });
-    }
-  }
-  return null;
-}
-
-function extractMetadata(source: Record<string, unknown>, fallbackId: string) {
-  // The PD API returns ONE entity (draft OR published) plus a `referenceId`
-  // pointing at the other version. Use `status` to disambiguate — otherwise a
-  // queried PUBLISHED entity's own id gets mislabeled as the Draft ID because
-  // `id` falls through both lookups.
-  const status =
-    typeof source.status === "string" ? source.status.toUpperCase() : null;
-  const ownId =
-    (pickFirstDeep(source, ["id", "uuid"]) as string | null) ?? fallbackId;
-  const refId = pickFirstDeep(source, [
-    "referenceId", "referenceID", "reference_id",
-    "publishedId", "publishedID", "published_id",
-    "publishId", "serviceChainUID",
-  ]) as string | null;
-
+/**
+ * Draft / published ids from the fetched row: the API returns ONE entity
+ * (draft OR published) plus `referenceId` pointing at the other version.
+ */
+function extractMetadata(source: RawPageResponse, fallbackId: string) {
+  const status = typeof source.status === "string" ? source.status.toUpperCase() : null;
+  const ownId = str(source.id) ?? fallbackId;
+  const refId = str(source.referenceId);
   const isPublished = status === "PUBLISHED";
   return {
     status,
     draftId: isPublished ? refId : ownId,
     publishedId: isPublished ? ownId : refId,
-    versionId: pickFirstDeep(source, ["versionId", "versionID", "version_id", "version"]),
+    versionId: typeof source.versionId === "number" ? source.versionId : null,
   };
 }
 
@@ -421,21 +388,13 @@ const command: CommandModule<ShowArgs, ShowData> = {
       context.warn("Using cached config. Use --force for refresh.");
     }
 
-    let configurationParsed: unknown | null = null;
-    try {
-      configurationParsed = JSON.parse(configStr);
-    } catch {
-      configurationParsed = null;
-    }
-
+    const page: HydratedPage = parsePage(response);
+    const configurationParsed = page.rawConfiguration;
     const resolvedName = response.name || resolvedId;
-    const refs = extractReferences(configStr, new Set<string>());
-    const childNames = extractDirectChildComponentNames(configStr);
-    const vars = extractVariables(configStr);
-    const httpCalls = extractHttpSummary(configStr);
+    const vars = variablesView(page);
+    const httpCalls = httpSummary(page);
 
-    const sourceFields = toRecord(response);
-    const rawMetadata = extractMetadata(sourceFields, resolvedId);
+    const rawMetadata = extractMetadata(response, resolvedId);
     // Build the editable-draft URL. PD pages route by draft id; symbols/
     // components route by name (the UI resolves the name to the draft).
     const editUrl = (() => {
@@ -443,11 +402,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
       if (entityType === "COMPONENT") {
         return `${base}/ui-designer/symbol/${encodeURIComponent(resolvedName)}`;
       }
-      const draftId = (rawMetadata.draftId as string | null) ?? resolvedId;
-      return `${base}/ui-designer/page/${draftId}`;
+      return `${base}/ui-designer/page/${rawMetadata.draftId ?? resolvedId}`;
     })();
-
-    const directChildComponents = childNames.map(name => ({ name }));
 
     const includeVars = flags.vars || flags.full;
     const includeHttp = flags.http || flags.full;
@@ -461,8 +417,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
         entityType,
         resolvedId,
         status: rawMetadata.status,
-        draftId: rawMetadata.draftId as string | null,
-        publishedId: rawMetadata.publishedId as string | null,
+        draftId: rawMetadata.draftId,
+        publishedId: rawMetadata.publishedId,
         versionId: rawMetadata.versionId,
         editUrl,
         configSizeBytes: Buffer.byteLength(configStr, "utf-8"),
@@ -473,32 +429,24 @@ const command: CommandModule<ShowArgs, ShowData> = {
         userDefinedVarCount: vars.userDefined.length,
         derivedVarCount: vars.derived.length,
         httpCallCount: httpCalls.length,
-        directChildComponents,
-        adMethodIds: refs.adIds,
+        directChildComponents: childComponentNames(page).map((name) => ({ name })),
+        adMethodIds: adIdsOf(page),
       },
     };
 
-    if (includeVars) {
-      data.vars = vars;
-    }
-
-    if (includeHttp) {
-      data.http = httpCalls;
-    }
-
-    if (includeComponents) {
-      data.components = extractComponentTree(configStr);
-    }
+    if (includeVars) data.vars = vars;
+    if (includeHttp) data.http = httpCalls;
+    if (includeComponents) data.components = componentTree(page.layout);
 
     if (flags.varDetail) {
-      data.varDetail = extractVarDetail(configStr, flags.varDetail);
+      data.varDetail = varDetail(page, flags.varDetail);
       if (!data.varDetail) {
         throw new CliError(`Variable "${flags.varDetail}" not found.`, { code: "VAR_NOT_FOUND" });
       }
     }
 
     if (flags.httpDetail >= 1) {
-      data.httpDetail = extractHttpDetail(configStr, flags.httpDetail);
+      data.httpDetail = httpDetail(page, flags.httpDetail);
       if (!data.httpDetail) {
         throw new CliError(`HTTP call #${flags.httpDetail} not found. Valid range: 1-${httpCalls.length}`, {
           code: "HTTP_NOT_FOUND",
@@ -507,18 +455,19 @@ const command: CommandModule<ShowArgs, ShowData> = {
     }
 
     if (flags.recursive) {
-      const componentsWhitelist = await loadComponentsWhitelist("components.json not found. Required for recursive inspection.");
-      const visited = new Set<string>();
-      const tree = await analyzeItem(resolvedId, entityType, resolvedName, visited, componentsWhitelist);
+      const errors: AnalyzeError[] = [];
+      const tree = await analyzeItem(resolvedId, resolvedName, new Set<string>(), errors);
+      for (const e of errors) context.warn(`⚠ recursive: ${e.name}${e.id ? ` (${e.id})` : ""}: ${e.message}`);
       data.recursive = {
         treeLines: formatTreeLines(tree),
         uniqueAdMethodIds: collectAllAdIds([tree]),
+        errors,
       };
     }
 
     if (flags.raw) {
       const safeSourceFields = Object.fromEntries(
-        Object.entries(sourceFields).filter(([key]) => key !== "configuration")
+        Object.entries(response).filter(([key]) => key !== "configuration")
       );
       data.raw = {
         configurationRaw: configStr,
@@ -529,7 +478,6 @@ const command: CommandModule<ShowArgs, ShowData> = {
     // ----- Phase-7 additions: tree / node / var-graph / parseWarnings --------
     const needHydrated = flags.tree || !!flags.node || flags.varGraph || flags.full;
     if (needHydrated) {
-      const page: HydratedPage = parsePage(response as unknown as RawPageResponse);
       if (page.parseWarnings.length > 0) data.parseWarnings = page.parseWarnings;
 
       if (flags.tree || flags.full) {

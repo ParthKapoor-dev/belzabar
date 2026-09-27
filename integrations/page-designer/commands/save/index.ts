@@ -1,45 +1,46 @@
-// belz pd save <pageId> [--overlay <file> | --config <file>] [--dry-run] [--force] [--yes]
+// belz pd save <pageId> (--overlay <file> | --config <file>)
+//              [--dry-run] [--force-validation] [--allow-published] [--yes]
 //
 // The single safe-edit entry point. Flow:
 //
-//   1. args.parse(argv) → {overlay | config, force, yes, dryRun}
-//   2. resolveDraftTarget(pageId) → refuse PUBLISHED without --force
-//   3. pdApi.fetchPage(draftId) + parsePage → HydratedPage (before)
-//   4. Load overlay file OR raw config file
-//   5. applyOverlay(before, overlay) OR replaceFullConfig(before, config) → after
-//   6. validateHydrated(after); errors without --force → abort with list
-//   7. Print stderr diff preview
-//   8. --dry-run → emit envelope, exit 0
-//   9. withLock(draftId, () =>
-//         strategy === "partial" ? pdApi.savePagePartial(...)
-//                                : pdApi.savePageFull(...)
-//      )
-//  10. re-fetch + diff with expected; emit envelope
+//   1. read the edit file (overlay or raw inner config)
+//   2. resolveWriteTarget: draft-guard via referenceId; a PUBLISHED page with
+//      no draft needs --allow-published
+//   3. plan + validate on the guard's snapshot (fail fast, before --yes):
+//      applyOverlay → validateEdit (diff-aware: only what the edit introduces
+//      can block) → planSave (partial ops that provably cover the overlay,
+//      else full)
+//   4. --dry-run → envelope, no lock, no write
+//   5. --yes required
+//   6. withLock(draft): FRESH fetch → re-plan + re-validate on it (PD-4;
+//      versionId drift is reported) → PUT partial/full
+//   7. verify: re-fetch and compare the stored config with the planned one
 
-import { readFile } from "node:fs/promises";
+import { isDeepStrictEqual } from "node:util";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { PD_DRY_RUN_FLAG, PD_FORCE_FLAG, PD_YES_FLAG } from "../../lib/args/common";
-import { pdApi } from "../../lib/api/index";
-import { parsePage } from "../../lib/parser/index";
 import {
-  applyOverlay,
-  hydratedToInnerConfig,
-  overlayToPartialOperations,
-  pickStrategy,
-  serializeFull,
-} from "../../lib/serialize/index";
-import { partitionBySeverity, validateHydrated } from "../../lib/validator/index";
-import { resolveDraftTarget, describeDraftGuardFailure } from "../../lib/draft-guard";
+  DEPRECATED_FORCE_WARNING,
+  PD_DRY_RUN_FLAG,
+  PD_WRITE_OVERRIDE_FLAGS,
+  PD_YES_FLAG,
+  writeOverrides,
+  type WriteOverrides,
+} from "../../lib/args/common";
+import { pdApi } from "../../lib/api/index";
+import { fetchFresh, gateValidation, logIntent, readJsonFile, requireConfirmation, resolveWriteTarget, versionDrift } from "../../lib/edit";
 import { withLock } from "../../lib/lock";
-import type { HydratedPage, Overlay, ValidationIssue } from "../../lib/types/common";
-import type { RawPartialUpdateOperation } from "../../lib/types/wire";
+import { editSummary, editSummaryLines, type EditSummary } from "../../lib/page-diff";
+import { parsePage } from "../../lib/parser/index";
+import { planSave, withConfiguration, type SavePlan } from "../../lib/serialize/index";
+import { validateEdit } from "../../lib/validator/index";
+import type { HydratedPage, Overlay, RawPartialUpdateOperation, ValidationIssue } from "../../lib/types/common";
 
 interface SaveArgs {
   pageId: string;
   overlayFile: string | null;
   configFile: string | null;
   dryRun: boolean;
-  force: boolean;
+  overrides: WriteOverrides;
   yes: boolean;
 }
 
@@ -49,24 +50,23 @@ interface SaveData {
   publishedId: string | null;
   switchedFromPublished: boolean;
   strategy: "partial" | "full";
+  /** Why a full save was used (null for partial, or a raw --config replace). */
+  fullSaveReason: string | null;
   dryRun: boolean;
   operationsCount: number;
   operationsPreview: RawPartialUpdateOperation[] | null;
   configurationBytes: number | null;
-  diffSummary: {
-    variablesAdded: string[];
-    variablesRemoved: string[];
-    variablesChanged: string[];
-    httpAdded: string[];
-    httpRemoved: string[];
-    stylesChanged: boolean;
-  };
+  diffSummary: EditSummary;
   validation: { issues: ValidationIssue[]; errorCount: number; warnCount: number };
   parseWarnings: string[];
+  /** The page changed between the first read and the in-lock fetch (PD-4). */
+  versionDrift: { from: number | null; to: number | null } | null;
   result: {
     oldVersionId: number | null;
     newVersionId: number | null;
   } | null;
+  /** Post-save read-back: does the stored config equal the planned one? */
+  verify: { status: "match" | "mismatch" | "stale-read" | "skipped"; versionId: number | null } | null;
   bypassedErrors: ValidationIssue[];
 }
 
@@ -77,7 +77,7 @@ export const args = defineArgs({
     overlay: { type: "string" },
     config: { type: "string" },
     ...PD_DRY_RUN_FLAG,
-    ...PD_FORCE_FLAG,
+    ...PD_WRITE_OVERRIDE_FLAGS,
     ...PD_YES_FLAG,
   },
   // Exactly one of --overlay / --config.
@@ -86,33 +86,41 @@ export const args = defineArgs({
   codes: { CONFLICTING_FLAGS: "INVALID_FLAGS", MISSING_FLAG: "INVALID_FLAGS" },
 });
 
-function summariseDiff(before: HydratedPage, after: HydratedPage) {
-  const vb = new Set(before.variables.map((v) => v.name));
-  const va = new Set(after.variables.map((v) => v.name));
-  const added: string[] = [], removed: string[] = [];
-  for (const n of va) if (!vb.has(n)) added.push(n);
-  for (const n of vb) if (!va.has(n)) removed.push(n);
+type Edit = { kind: "overlay"; overlay: Overlay } | { kind: "config"; config: unknown };
 
-  const ib = new Map(before.variables.map((v) => [v.name, JSON.stringify(v.initialValue)] as const));
-  const changed: string[] = [];
-  for (const v of after.variables) {
-    const prior = ib.get(v.name);
-    if (prior !== undefined && prior !== JSON.stringify(v.initialValue)) changed.push(v.name);
+interface Prepared {
+  after: HydratedPage;
+  plan: SavePlan | { strategy: "full"; configurationString: string; patched: HydratedPage; fallbackReason: null };
+  issues: ValidationIssue[];
+}
+
+function prepare(before: HydratedPage, edit: Edit): Prepared {
+  if (edit.kind === "overlay") {
+    const plan = planSave(before, edit.overlay);
+    return { after: plan.patched, plan, issues: validateEdit(before, plan.patched) };
   }
-
-  const hb = new Set(before.httpRequests.map((c) => c.callId ?? `idx:${c.index}`));
-  const ha = new Set(after.httpRequests.map((c) => c.callId ?? `idx:${c.index}`));
-  const httpAdded: string[] = [], httpRemoved: string[] = [];
-  for (const n of ha) if (!hb.has(n)) httpAdded.push(n);
-  for (const n of hb) if (!ha.has(n)) httpRemoved.push(n);
-
+  const after = withConfiguration(before, edit.config);
   return {
-    variablesAdded: added,
-    variablesRemoved: removed,
-    variablesChanged: changed,
-    httpAdded,
-    httpRemoved,
-    stylesChanged: before.styles !== after.styles,
+    after,
+    plan: { strategy: "full", configurationString: JSON.stringify(edit.config), patched: after, fallbackReason: null },
+    issues: validateEdit(before, after),
+  };
+}
+
+async function verifySaved(
+  targetId: string,
+  expected: HydratedPage,
+  newVersionId: number | null,
+): Promise<NonNullable<SaveData["verify"]>> {
+  const raw = await pdApi.fetchPage(targetId);
+  if (!raw) return { status: "skipped", versionId: null };
+  const stored = parsePage(raw);
+  if (newVersionId !== null && stored.versionId !== newVersionId) {
+    return { status: "stale-read", versionId: stored.versionId };
+  }
+  return {
+    status: isDeepStrictEqual(stored.rawConfiguration, expected.rawConfiguration) ? "match" : "mismatch",
+    versionId: stored.versionId,
   };
 }
 
@@ -127,164 +135,102 @@ const command: CommandModule<SaveArgs, SaveData> = {
       overlayFile: flags.overlay ?? null,
       configFile: flags.config ?? null,
       dryRun: flags.dryRun,
-      force: flags.force,
+      overrides: writeOverrides(flags),
       yes: flags.yes,
     };
   },
 
   async execute(args, context) {
-    // Draft-guard
-    const guard = await resolveDraftTarget(args.pageId);
-    if (!guard.ok) {
-      if (args.force && guard.reason === "PUBLISHED_NO_DRAFT") {
-        context.warn(
-          `⚠ --force: writing directly to PUBLISHED page ${guard.publishedId} (${guard.name}).`,
-        );
-      } else {
-        throw describeDraftGuardFailure(guard);
-      }
-    }
-    const targetId = guard.ok ? guard.draftId : guard.publishedId!;
-    const before = guard.ok
-      ? guard.draft
-      : parsePage((await pdApi.fetchPage(targetId))!);
+    const warn = (m: string) => context.warn(m);
+    if (args.overrides.deprecatedForce) warn(`⚠ ${DEPRECATED_FORCE_WARNING}`);
 
-    if (guard.ok && guard.switchedFromPublished) {
-      context.warn(
-        `ℹ Input resolved to PUBLISHED page; writing to the linked draft ${guard.draftId}.`,
-      );
+    const edit: Edit = args.overlayFile
+      ? { kind: "overlay", overlay: (await readJsonFile(args.overlayFile, "INVALID_OVERLAY", "Overlay")) as Overlay }
+      : { kind: "config", config: await readJsonFile(args.configFile!, "INVALID_CONFIG", "Config") };
+    if (edit.kind === "config" && (!edit.config || typeof edit.config !== "object" || Array.isArray(edit.config))) {
+      throw new CliError("Config file must hold the inner configuration OBJECT.", { code: "INVALID_CONFIG" });
     }
 
-    // Load + apply the edit
-    let after: HydratedPage;
-    let operations: RawPartialUpdateOperation[] = [];
-    let configurationString: string | null = null;
-    let strategy: "partial" | "full";
-    let overlay: Overlay | null = null;
+    const target = await resolveWriteTarget(args.pageId, args.overrides, warn, "writing to");
+    const { targetId } = target;
 
-    if (args.overlayFile) {
-      const body = await readFile(args.overlayFile, "utf8");
-      try {
-        overlay = JSON.parse(body) as Overlay;
-      } catch (err) {
-        throw new CliError(`Overlay file parse failed: ${String(err)}`, { code: "INVALID_OVERLAY" });
-      }
-      after = applyOverlay(before, overlay);
-      strategy = pickStrategy(overlay);
-      if (strategy === "partial") {
-        operations = overlayToPartialOperations(before, overlay);
-      } else {
-        configurationString = serializeFull(after);
-      }
-    } else {
-      // --config <file> → full replace. File is a raw inner-config object (not stringified).
-      const body = await readFile(args.configFile!, "utf8");
-      let parsed: unknown;
-      try {
-        parsed = JSON.parse(body);
-      } catch (err) {
-        throw new CliError(`Config file parse failed: ${String(err)}`, { code: "INVALID_CONFIG" });
-      }
-      configurationString = JSON.stringify(parsed);
-      // Build a post-save HydratedPage view by wrapping the new config into the
-      // existing wire response so the validator can score the result.
-      const rewrapped = {
-        ...(before.raw as Record<string, unknown>),
-        configuration: configurationString,
-      };
-      after = parsePage(rewrapped as any);
-      strategy = "full";
-    }
+    // Plan + validate on the snapshot first: fail fast, before --yes.
+    const first = prepare(target.snapshot, edit);
+    const firstGate = gateValidation(first.issues, args.overrides.forceValidation, warn);
 
-    // Validate (on the *post-edit* state)
-    const issues = validateHydrated(after);
-    const { errors, warnings } = partitionBySeverity(issues);
-
-    const bypassedErrors: ValidationIssue[] = [];
-    if (errors.length > 0) {
-      if (!args.force) {
-        throw new CliError(
-          `Validator found ${errors.length} error(s). Refusing to save. Use --force to bypass.`,
-          {
-            code: "PD_VALIDATION_FAILED",
-            details: {
-              issues: errors.map((e) => ({ code: e.code, message: e.message, nodeId: e.nodeId })),
-            },
-          },
-        );
-      } else {
-        bypassedErrors.push(...errors);
-        context.warn(`⚠ --force: bypassing ${errors.length} validator error(s):`);
-        for (const e of errors) context.warn(`  [${e.code}] ${e.message}`);
-      }
-    }
-    for (const w of warnings) context.warn(`⚠ ${w.code}: ${w.message}`);
-
-    const diffSummary = summariseDiff(before, after);
-
-    if (args.dryRun) {
-      return ok<SaveData>({
-        pageId: args.pageId,
-        draftId: targetId,
-        publishedId: guard.ok ? guard.publishedId : guard.publishedId,
-        switchedFromPublished: guard.ok ? guard.switchedFromPublished : false,
-        strategy,
-        dryRun: true,
-        operationsCount: operations.length,
-        operationsPreview: strategy === "partial" ? operations : null,
-        configurationBytes: strategy === "full" ? Buffer.byteLength(configurationString ?? "", "utf8") : null,
-        diffSummary,
-        validation: { issues, errorCount: errors.length, warnCount: warnings.length },
-        parseWarnings: after.parseWarnings,
-        result: null,
-        bypassedErrors,
-      });
-    }
-
-    // Require --yes for any real write in --llm mode (core's runner knows the
-    // mode via context.llm; elsewhere we just require --yes for any write).
-    if (!args.yes) {
-      throw new CliError(
-        `"save" is a write operation. Pass --yes to confirm writing to ${targetId}.`,
-        { code: "CONFIRMATION_REQUIRED" },
-      );
-    }
-
-    // Perform the write under lock
-    const beforeVersion = before.versionId;
-    const saveResult = await withLock(targetId, async () => {
-      if (strategy === "partial") {
-        // Some overlays legitimately produce zero ops (e.g. overlay.update of a
-        // field with no changes). Treat zero ops as a no-op save.
-        if (operations.length === 0) return { newVersionId: beforeVersion, raw: {} };
-        return pdApi.savePagePartial(targetId, before.status, operations);
-      }
-      return pdApi.savePageFull(targetId, before.status, configurationString!);
-    });
-
-    return ok<SaveData>({
+    const build = (
+      before: HydratedPage,
+      p: Prepared,
+      gate: typeof firstGate,
+      extra: Pick<SaveData, "dryRun" | "versionDrift" | "result" | "verify">,
+    ): SaveData => ({
       pageId: args.pageId,
       draftId: targetId,
-      publishedId: guard.ok ? guard.publishedId : guard.publishedId,
-      switchedFromPublished: guard.ok ? guard.switchedFromPublished : false,
-      strategy,
-      dryRun: false,
-      operationsCount: operations.length,
-      operationsPreview: strategy === "partial" ? operations : null,
-      configurationBytes: strategy === "full" ? Buffer.byteLength(configurationString ?? "", "utf8") : null,
-      diffSummary,
-      validation: { issues, errorCount: errors.length, warnCount: warnings.length },
-      parseWarnings: after.parseWarnings,
-      result: {
-        oldVersionId: beforeVersion,
-        newVersionId: saveResult.newVersionId,
-      },
-      bypassedErrors,
+      publishedId: target.publishedId,
+      switchedFromPublished: target.switchedFromPublished,
+      strategy: p.plan.strategy,
+      fullSaveReason: p.plan.strategy === "full" ? p.plan.fallbackReason : null,
+      operationsCount: p.plan.strategy === "partial" ? p.plan.operations.length : 0,
+      operationsPreview: p.plan.strategy === "partial" ? p.plan.operations : null,
+      configurationBytes: p.plan.strategy === "full" ? Buffer.byteLength(p.plan.configurationString, "utf8") : null,
+      diffSummary: editSummary(before, p.after),
+      validation: { issues: p.issues, errorCount: gate.errors.length, warnCount: gate.warnings.length },
+      parseWarnings: p.after.parseWarnings,
+      bypassedErrors: gate.bypassedErrors,
+      ...extra,
+    });
+
+    if (args.dryRun) {
+      return ok(build(target.snapshot, first, firstGate, { dryRun: true, versionDrift: null, result: null, verify: null }));
+    }
+
+    await requireConfirmation(context, args.yes, "save", [
+      ["Page", `${first.after.name} (${targetId})`],
+      ["Strategy", first.plan.strategy],
+      ["Changes", editSummaryLines(editSummary(target.snapshot, first.after)).join("; ") || "(none)"],
+    ]);
+    logIntent("save", targetId, { strategy: first.plan.strategy });
+
+    return withLock(targetId, async () => {
+      // PD-4: fetch, apply and validate INSIDE the lock, on the latest version.
+      const fresh = await fetchFresh(targetId);
+      const drift = versionDrift(target.snapshot, fresh, warn);
+      const p = drift ? prepare(fresh, edit) : first;
+      const gate = drift ? gateValidation(p.issues, args.overrides.forceValidation, warn, false) : firstGate;
+
+      if (isDeepStrictEqual(fresh.rawConfiguration, p.after.rawConfiguration)) {
+        warn("ℹ The edit changes nothing on the current page — no write performed.");
+        return ok(build(fresh, p, gate, {
+          dryRun: false,
+          versionDrift: drift,
+          result: { oldVersionId: fresh.versionId, newVersionId: fresh.versionId },
+          verify: { status: "skipped", versionId: fresh.versionId },
+        }));
+      }
+
+      const saved =
+        p.plan.strategy === "partial"
+          ? await pdApi.savePagePartial(targetId, fresh.status, p.plan.operations)
+          : await pdApi.savePageFull(targetId, fresh.status, p.plan.configurationString);
+
+      const verify = await verifySaved(targetId, p.after, saved.newVersionId);
+      if (verify.status === "mismatch") {
+        warn(`⚠ Read-back of ${targetId} does not match the planned config — inspect with \`belz pd show ${targetId} --force\`.`);
+      } else if (verify.status === "stale-read") {
+        warn(`ℹ Read-back returned versionId ${verify.versionId ?? "?"} (saved ${saved.newVersionId}); the server read may lag.`);
+      }
+
+      return ok(build(fresh, p, gate, {
+        dryRun: false,
+        versionDrift: drift,
+        result: { oldVersionId: fresh.versionId, newVersionId: saved.newVersionId },
+        verify,
+      }));
     });
   },
 
   presentHuman(envelope, ui) {
-    if (!envelope.ok) return;
+    if (!envelope.data) return;
     const data = envelope.data as SaveData;
 
     ui.table(
@@ -293,7 +239,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
         ["Page", data.pageId],
         ["Draft Target", data.draftId],
         ["Published", data.publishedId ?? "N/A"],
-        ["Strategy", data.strategy],
+        ["Strategy", data.fullSaveReason ? `full (${data.fullSaveReason})` : data.strategy],
         ["Dry-run", data.dryRun ? "yes" : "no"],
         ["Errors", data.validation.errorCount],
         ["Warnings", data.validation.warnCount],
@@ -306,13 +252,9 @@ const command: CommandModule<SaveArgs, SaveData> = {
     }
 
     ui.section("Diff");
-    const d = data.diffSummary;
-    if (d.variablesAdded.length > 0) ui.text(`+ variables: ${d.variablesAdded.join(", ")}`);
-    if (d.variablesRemoved.length > 0) ui.text(`- variables: ${d.variablesRemoved.join(", ")}`);
-    if (d.variablesChanged.length > 0) ui.text(`~ variables: ${d.variablesChanged.join(", ")}`);
-    if (d.httpAdded.length > 0) ui.text(`+ http: ${d.httpAdded.join(", ")}`);
-    if (d.httpRemoved.length > 0) ui.text(`- http: ${d.httpRemoved.join(", ")}`);
-    if (d.stylesChanged) ui.text(`~ styles changed`);
+    const lines = editSummaryLines(data.diffSummary);
+    if (lines.length === 0) ui.text("(no changes)");
+    for (const l of lines) ui.text(l);
 
     if (data.strategy === "partial" && data.operationsPreview) {
       ui.section("Operations");
@@ -332,6 +274,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
     if (data.result) {
       ui.success(`Saved. versionId ${data.result.oldVersionId ?? "?"} → ${data.result.newVersionId ?? "?"}.`);
     }
+    if (data.verify && data.verify.status !== "match") ui.kv("Read-back", data.verify.status);
   },
 };
 

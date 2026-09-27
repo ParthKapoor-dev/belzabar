@@ -1,16 +1,22 @@
 Usage: belz pd lock <action> [pageId]
 
-Manage PD edit locks. Writes always go through an acquire/release cycle via
-`belz pd save` automatically — this command exists for cases where you need
-to hold the lock across multiple manual operations.
+Manage PD edit locks. Every write (`save`, `publish`, `history restore`)
+already acquires and releases the lock itself — this command is for holding
+the lock across several operations. While you hold a lock acquired here,
+those writes use it as-is and do NOT release it.
 
 Actions:
-  acquire <pageId>    PUT /pages/lock/<pageId> with body {pageLockAction:"ACQUIRED"}.
-                      Returns 409 if another editor holds the lock.
+  acquire <pageId>    PUT /pages/lock/<pageId>?pageLockAction=ACQUIRED.
+                      Fails with PD_LOCKED (409) if another editor holds it.
   release <pageId>    PUT /pages/lock/<pageId>?pageLockAction=RELEASED.
-                      Idempotent — safe to call even if no lock is held.
-  status              List locks currently held by belz in this env. (Local
-                      record, kept at ~/.belz/pd-locks/<env>.json.)
+                      ok:false (PD_LOCK_RELEASE_FAILED) when the server
+                      refuses (someone else's lock, or already released).
+  status              List locks acquired with this command in the active
+                      env (local record at ~/.belz/pd-locks/<env>.json).
+
+Global Flags:
+  --env <name>        Environment (write actions need it explicitly).
+  --llm               Output structured JSON envelope.
 
 Examples:
   belz pd lock acquire 4f126300499e4d83cd07a35b4d9af9e7
@@ -18,6 +24,7 @@ Examples:
   belz pd lock status
 
 Notes:
-  • Body-on-acquire vs query-on-release is a server quirk — do not normalize.
+  • Both acquire and release send pageLockAction as a query parameter (a
+    JSON body is rejected by the server).
   • The PD editor auto-acquires on page open. If acquire returns 409, close
     the editor or have the current holder release first.

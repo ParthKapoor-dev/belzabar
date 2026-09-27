@@ -5,13 +5,15 @@
 // Includes both "Add Student" draft/published pairs (duplicate names, PD-1/PD-7)
 // and "Student Application" 4cba8f39… (475 vars, ~585 KB).
 //
-// PD-22 (full save is lossy) is recorded per page as test.todo with a diff
-// summary; the todo body holds the real assertion, fixed in Stage 6.
+// PD-22: a full save of an unedited page is lossless on every real page, and
+// a full save of an edited page differs from the original ONLY at the edit.
 
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "fs";
 import { parsePage } from "../../lib/parser/index";
 import { serializeFull } from "../../lib/serialize/full";
+import { planSave } from "../../lib/serialize/index";
+import { inferEntityType } from "../../lib/parser/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import type { RawPageResponse } from "../../lib/types/wire";
 
@@ -30,16 +32,6 @@ function diffPaths(a: unknown, b: unknown, path = "", out: string[] = []): strin
   }
   out.push(`${path}: ${JSON.stringify(a)} -> ${JSON.stringify(b)}`);
   return out;
-}
-
-/** "variables.userDefined[].initialValue ×12, inputs ×1" */
-function summarize(paths: string[]): string {
-  const counts = new Map<string, number>();
-  for (const p of paths) {
-    const k = p.split(":")[0]!.replace(/\.\d+(?=\.|$)/g, "[]");
-    counts.set(k, (counts.get(k) ?? 0) + 1);
-  }
-  return [...counts].map(([k, n]) => `${k} ×${n}`).join(", ");
 }
 
 describe("real PD fixtures", () => {
@@ -68,50 +60,66 @@ describe("parsePage on every real page", () => {
       expect(page.status).toBe(raw.status as "DRAFT" | "PUBLISHED");
       expect(page.parseWarnings).toEqual([]);
       const inner = JSON.parse(raw.configuration!);
-      expect(page.variables.length).toBe((inner.variables?.userDefined ?? []).length);
+      // Real editor output keeps derived vars (entries with `from`) in userDefined.
+      const ud = (inner.variables?.userDefined ?? []) as Array<{ from?: unknown }>;
+      expect(page.variables.length).toBe(ud.filter((v) => !Array.isArray(v.from)).length);
+      expect(page.derived.length).toBe(ud.filter((v) => Array.isArray(v.from)).length + (inner.variables?.derived ?? []).length);
+      expect(page.derived.every((d) => d.location === "userDefined")).toBe(true);
     });
   }
 
-  test("Student Application is the large one: 475 vars, 39 HTTP calls", () => {
+  test("Student Application is the large one: 475 userDefined entries (287 vars + 188 derived), 39 HTTP calls", () => {
     const page = parsePage(load("4cba8f39eb92d136694dadc4e7f2a811.json"));
-    expect(page.variables.length).toBe(475);
+    expect(page.variables.length).toBe(287);
+    expect(page.derived.length).toBe(188);
     expect(page.httpRequests.length).toBe(39);
   });
 });
 
-describe("full-save serialization of an unedited page (PD-22)", () => {
-  for (const f of files) {
-    const raw = load(f);
-    const before = JSON.parse(raw.configuration!);
-    const after = JSON.parse(serializeFull(parsePage(raw)));
-    const d = diffPaths(before, after);
-    const label = `${raw.id.slice(0, 10)} ${raw.name}`;
-    if (d.length === 0) {
-      test(`${label}: lossless`, () => expect(diffPaths(before, JSON.parse(serializeFull(parsePage(raw))))).toEqual([]));
-    } else {
-      test.todo(`PD-22: ${label}: lossless round-trip — today ${d.length} diffs: ${summarize(d)}`, () => {
-        expect(diffPaths(before, JSON.parse(serializeFull(parsePage(raw))))).toEqual([]);
-      });
-    }
-  }
-
-  test("the lossy fields are only the known PD-22 ones (no new kinds of loss)", () => {
-    const known = /^(variables\.userDefined\[\]\.initialValue|variables\.derived|inputs|events|helpText)$/;
+describe("entity type comes from the server (PD-10 / F17)", () => {
+  test("isComponent rows are COMPONENT; routed pages are PAGE even with an isSymbol root", () => {
     for (const f of files) {
       const raw = load(f);
-      const d = diffPaths(JSON.parse(raw.configuration!), JSON.parse(serializeFull(parsePage(raw))));
-      for (const p of d) expect(p.split(":")[0]!.replace(/\.\d+(?=\.|$)/g, "[]")).toMatch(known);
+      const inner = JSON.parse(raw.configuration!);
+      const expected = raw.isComponent === true ? "COMPONENT" : "PAGE";
+      expect(`${raw.name}:${parsePage(raw).entityType}`).toBe(`${raw.name}:${expected}`);
+      expect(inferEntityType(raw)).toBe(expected);
+      if (expected === "PAGE" && inner.layout?.isSymbol === true) {
+        // e.g. both "Add Student" pages: the old shape-based guess said COMPONENT
+        expect(typeof raw.relativeRoute).toBe("string");
+      }
     }
   });
 
-  test("layout and httpRequests survive the round-trip untouched on every page", () => {
+  test("a history version body (no isComponent) is typed by its route", () => {
+    const { isComponent: _c, ...page } = load("4bde22f76091a82364fda322eeeda597.json");
+    expect(inferEntityType(page as RawPageResponse)).toBe("PAGE");
+    const { isComponent: _d, ...comp } = load("43488abaf65c8efc95ad880a346f38af.json");
+    expect(inferEntityType(comp as RawPageResponse, JSON.parse(comp.configuration!))).toBe("COMPONENT");
+  });
+});
+
+describe("full-save serialization (PD-22)", () => {
+  for (const f of files) {
+    const raw = load(f);
+    const label = `${raw.id.slice(0, 10)} ${raw.name}`;
+    test(`${label}: unedited full save is lossless`, () => {
+      expect(diffPaths(JSON.parse(raw.configuration!), JSON.parse(serializeFull(parsePage(raw))))).toEqual([]);
+    });
+  }
+
+  test("an edited full save differs from the original only at the edit (every page)", () => {
     for (const f of files) {
       const raw = load(f);
+      const page = parsePage(raw);
+      const plan = planSave(page, { variables: { add: [{ name: "__belz_probe", type: "String", initialValue: "x" }] }, styles: { replace: "/*probe*/" } });
+      expect(plan.strategy).toBe("full");
+      if (plan.strategy !== "full") continue;
       const before = JSON.parse(raw.configuration!);
-      const after = JSON.parse(serializeFull(parsePage(raw)));
-      expect(after.layout).toEqual(before.layout);
-      expect(after.httpRequests ?? null).toEqual(before.httpRequests ?? null);
-      expect(after.styles ?? "").toEqual(before.styles ?? "");
+      const after = JSON.parse(plan.configurationString);
+      const d = diffPaths(before, after).map((p) => p.split(":")[0]);
+      const n = (before.variables?.userDefined ?? []).length;
+      expect(d.sort()).toEqual([`variables.userDefined.${n}`, "styles"].filter((p) => p !== "styles" || before.styles !== "/*probe*/").sort());
     }
   });
 });

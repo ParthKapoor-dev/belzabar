@@ -1,89 +1,175 @@
-import { file } from "bun";
+// Recursive dependency analysis (`pd analyze`, `pd find-ad-methods -r`,
+// `pd show -r`): a page/component, the components its layout references, and
+// every AD method id their HTTP calls execute.
+//
+// PD-13 / F21: no `components.json` whitelist and no CWD files — every symbol
+// reference in the layout is followed, resolved by exact component name via the
+// API. PD-19: fetch/resolve failures during the walk are collected in
+// `errors` (and surfaced by the commands), never swallowed.
+
 import { CliError } from "@belzabar/core";
-import { fetchComponentIdByName } from "./api/index";
-import { cachedFetchPageConfig as fetchPageConfig, cachedFetchComponentConfig as fetchComponentConfig } from "./cache";
-import { extractReferences } from "./parser/index";
-import type { ReportNode } from "./types/legacy";
+import { pdApi } from "./api/index";
+import { cachedFetchPageConfig } from "./cache";
+import { adIdsOf, childComponentNames } from "./extract";
+import { inferEntityType, parsePage } from "./parser/index";
+import type { RawPageResponse } from "./types/wire";
 
-/**
- * ANALYZER SERVICE
- */
-
-/**
- * Load the component-name whitelist (a JSON array of names) used by the
- * recursive analyzers. Anything other than a string array is refused instead
- * of silently producing a whitelist that matches nothing.
- */
-export async function loadComponentsWhitelist(
-  missingMessage: string,
-  path = "components.json",
-): Promise<Set<string>> {
-  const f = file(path);
-  if (!(await f.exists())) {
-    throw new CliError(missingMessage, { code: "COMPONENTS_FILE_MISSING" });
-  }
-  let list: unknown;
-  try {
-    list = await f.json();
-  } catch {
-    list = undefined;
-  }
-  if (!Array.isArray(list) || !list.every((x): x is string => typeof x === "string")) {
-    throw new CliError(`${path} must be a JSON array of component names.`, {
-      code: "COMPONENTS_FILE_INVALID",
-      details: { path },
-    });
-  }
-  return new Set(list);
+export interface ReportNode {
+  type: "PAGE" | "COMPONENT";
+  name: string;
+  id: string;
+  adIds: string[];
+  children: ReportNode[];
 }
 
+export interface AnalyzeError {
+  id: string | null;
+  name: string;
+  message: string;
+}
+
+export interface AnalyzerDeps {
+  fetchPage(id: string): Promise<RawPageResponse | null>;
+  componentIdByName(name: string): Promise<string | null>;
+}
+
+const defaultDeps: AnalyzerDeps = {
+  fetchPage: (id) => cachedFetchPageConfig(id),
+  componentIdByName: (name) => pdApi.fetchComponentIdByName(name),
+};
+
+function message(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+/**
+ * Walk `id` and every component it references. `visited` breaks cycles;
+ * `errors` collects every failure (the partial tree is still returned).
+ */
 export async function analyzeItem(
   id: string,
-  type: 'PAGE' | 'COMPONENT',
   name: string,
   visited: Set<string>,
-  whitelist: Set<string>
+  errors: AnalyzeError[],
+  deps: AnalyzerDeps = defaultDeps,
 ): Promise<ReportNode> {
-  // Cycle Detection: Add ID to visited
   visited.add(id);
+  const node: ReportNode = { type: "PAGE", name, id, adIds: [], children: [] };
 
-  const node: ReportNode = {
-    type,
-    name,
-    id,
-    adIds: [],
-    children: []
-  };
-
+  let raw: RawPageResponse | null;
   try {
-    // 1. Fetch Config
-    const data = type === 'PAGE' 
-      ? await fetchPageConfig(id) 
-      : await fetchComponentConfig(id);
-
-    if (!data) return node;
-    node.name = data.name || name;
-
-    // 2. Parse References
-    const { adIds, componentNames } = extractReferences(data.configuration, whitelist);
-    node.adIds = adIds;
-
-    // 3. Parallel Execution for Children
-    const childPromises = componentNames.map(async (cName) => {
-      const cId = await fetchComponentIdByName(cName);
-      
-      // Prevent recursion if no ID found or already visited
-      if (!cId || visited.has(cId)) return null;
-
-      return analyzeItem(cId, 'COMPONENT', cName, visited, whitelist);
-    });
-
-    const results = await Promise.all(childPromises);
-    node.children = results.filter((child): child is ReportNode => child !== null);
-
-  } catch (error) {
-    // Keep partial results and continue traversal for resiliency.
+    raw = await deps.fetchPage(id);
+  } catch (err) {
+    errors.push({ id, name, message: message(err) });
+    return node;
   }
+  if (!raw) {
+    errors.push({ id, name, message: `Page or component ${id} not found.` });
+    return node;
+  }
+  const page = parsePage(raw);
+  node.type = inferEntityType(raw);
+  node.name = page.name || name;
+  node.adIds = adIdsOf(page);
 
+  const children = await Promise.all(
+    childComponentNames(page).map(async (cName): Promise<ReportNode | null> => {
+      let cId: string | null;
+      try {
+        cId = await deps.componentIdByName(cName);
+      } catch (err) {
+        errors.push({ id: null, name: cName, message: message(err) });
+        return null;
+      }
+      if (!cId) {
+        errors.push({ id: null, name: cName, message: `Component "${cName}" not found in this environment.` });
+        return null;
+      }
+      if (visited.has(cId)) return null;
+      return analyzeItem(cId, cName, visited, errors, deps);
+    }),
+  );
+  node.children = children.filter((c): c is ReportNode => c !== null);
   return node;
+}
+
+// -------- reporting ---------------------------------------------------------
+
+export function formatTreeLines(node: ReportNode, prefix = "", isLast = true): string[] {
+  const lines: string[] = [];
+  const marker = isLast ? "└── " : "├── ";
+  lines.push(`${prefix}${marker}[${node.type}] ${node.name} (ID: ${node.id.substring(0, 8)}...)`);
+  const nextPrefix = prefix + (isLast ? "    " : "│   ");
+
+  node.adIds.forEach((adId, index) => {
+    const isLastAd = index === node.adIds.length - 1 && node.children.length === 0;
+    lines.push(`${nextPrefix}${isLastAd ? "└── " : "├── "}[AD] ${adId}`);
+  });
+  node.children.forEach((child, index) => {
+    lines.push(...formatTreeLines(child, nextPrefix, index === node.children.length - 1));
+  });
+  return lines;
+}
+
+export function collectAllAdIds(nodes: ReportNode[]): string[] {
+  const all = new Set<string>();
+  const walk = (n: ReportNode) => {
+    n.adIds.forEach((id) => all.add(id));
+    n.children.forEach(walk);
+  };
+  nodes.forEach(walk);
+  return [...all].sort();
+}
+
+// -------- compliance ----------------------------------------------------------
+
+export interface RogueIdInfo {
+  id: string;
+  foundIn: string[];
+}
+
+export interface ComplianceResult {
+  isCompliant: boolean;
+  rogueIds: RogueIdInfo[];
+  missingIds: string[];
+  commonIds: string[];
+}
+
+/** Parse a master AD-id list: ids separated by commas and/or whitespace. */
+export function parseMasterIds(text: string): Set<string> {
+  return new Set(text.split(/[\s,]+/).map((s) => s.trim()).filter((s) => s.length > 0));
+}
+
+export async function loadMasterIds(path: string): Promise<Set<string>> {
+  const f = Bun.file(path);
+  if (!(await f.exists())) {
+    throw new CliError(`Master id file not found: ${path}`, { code: "MASTER_IDS_FILE_MISSING", details: { path } });
+  }
+  const ids = parseMasterIds(await f.text());
+  if (ids.size === 0) {
+    throw new CliError(`Master id file ${path} lists no ids.`, { code: "MASTER_IDS_FILE_EMPTY", details: { path } });
+  }
+  return ids;
+}
+
+/** Generated AD ids vs an approved master list: rogue (not approved), missing, common. */
+export function verifyCompliance(roots: ReportNode[], masterIds: Set<string>): ComplianceResult {
+  const generated = new Set(collectAllAdIds(roots));
+  const foundIn = (adId: string): string[] => {
+    const sources = new Set<string>();
+    const walk = (n: ReportNode) => {
+      if (n.adIds.includes(adId)) sources.add(n.name);
+      n.children.forEach(walk);
+    };
+    roots.forEach(walk);
+    return [...sources];
+  };
+  const rogueIds: RogueIdInfo[] = [];
+  const commonIds: string[] = [];
+  for (const id of generated) {
+    if (masterIds.has(id)) commonIds.push(id);
+    else rogueIds.push({ id, foundIn: foundIn(id) });
+  }
+  const missingIds = [...masterIds].filter((id) => !generated.has(id));
+  return { isCompliant: rogueIds.length === 0, rogueIds, missingIds: missingIds.sort(), commonIds: commonIds.sort() };
 }

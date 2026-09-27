@@ -19,20 +19,15 @@ import type { SaveResult } from "./client";
 export type { SaveResult };
 export type { RawPageListItem };
 
-// Legacy call-site shims — re-exported so existing commands + lib files keep
-// compiling without reaching into client.ts directly.
-export const fetchPageConfig = client.fetchPage;
-export const fetchComponentConfig = client.fetchPage;
-export const fetchComponentIdByName = client.fetchComponentIdByName;
-export const fetchAllPages = client.fetchAllPages;
-export const fetchAllComponents = client.fetchAllComponents;
-export const fetchDeployablePageByAppUrl = client.fetchDeployablePageByAppUrl;
-export const searchPagesByName = client.searchPagesByName;
 
 export const pdApi = {
   // -------- reads ---------------------------------------------------------
   fetchPage(pageId: string): Promise<RawPageResponse | null> {
     return client.fetchPage(pageId);
+  },
+
+  fetchComponentIdByName(name: string): Promise<string | null> {
+    return client.fetchComponentIdByName(name);
   },
 
   searchPagesByName(name: string, status: PdStatus): Promise<RawPageListItem[]> {
@@ -96,7 +91,7 @@ export const pdApi = {
     return client.acquireLock(pageId);
   },
 
-  releaseLock(pageId: string): Promise<void> {
+  releaseLock(pageId: string): Promise<boolean> {
     return client.releaseLock(pageId);
   },
 };

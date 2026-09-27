@@ -2,6 +2,7 @@ import { CliError, defineArgs, ok, openUrlInBrowser, type CommandModule } from "
 import { spawn } from "node:child_process";
 import {
   PAGE_FINDER_CACHE_TTL_MS,
+  collapsePairs,
   loadOrBuildPageFinderIndex,
   searchPageIndex,
   type PageFinderPage,
@@ -10,12 +11,15 @@ import {
   type PageFinderIndex,
 } from "../../lib/page-finder";
 
+/** Default `--limit` for search / pick; `list` returns everything unless --limit is given. */
+const DEFAULT_SEARCH_LIMIT = 20;
+
 interface FindArgs {
   mode: "browse-pages" | "browse-components" | "search" | "pick";
   query?: string;
   type?: "page" | "component";
   refresh: boolean;
-  limit: number;
+  limit: number | null;
   open: boolean;
   llm: boolean;
 }
@@ -32,15 +36,19 @@ interface CacheMeta {
 
 interface FindBrowsePagesData {
   mode: "browse-pages";
-  request: { refresh: boolean; limit: number };
+  request: { refresh: boolean; limit: number | null };
   cache: CacheMeta;
+  /** Pages before --limit. */
+  total: number;
   pages: PageFinderPage[];
 }
 
 interface FindBrowseComponentsData {
   mode: "browse-components";
-  request: { refresh: boolean; limit: number };
+  request: { refresh: boolean; limit: number | null };
   cache: CacheMeta;
+  /** Components (draft/published pairs collapsed) before --limit. */
+  total: number;
   components: PageFinderComponent[];
 }
 
@@ -48,13 +56,14 @@ interface FindSearchData {
   mode: "search";
   request: { query: string; type?: "page" | "component"; refresh: boolean; limit: number };
   cache: CacheMeta;
+  /** Matches before --limit (PD-27: used to be counted after slicing). */
   totalMatches: number;
   matches: PageFinderMatch[];
 }
 
 interface FindPickData {
   mode: "pick";
-  request: { query: string | null; refresh: boolean; limit: number };
+  request: { query: string | null; refresh: boolean };
   cache: CacheMeta;
   status: "selected" | "cancelled";
   selected: PageFinderPage | PageFinderComponent | null;
@@ -75,7 +84,7 @@ export const args = defineArgs({
     refresh: { type: "boolean" },
     open: { type: "boolean" },
     components: { type: "boolean" },
-    limit: { type: "number", integer: true, min: 1, max: 200, default: 20 },
+    limit: { type: "number", integer: true, min: 1, max: 1000 },
     type: { type: "enum", values: ["page", "component"], caseInsensitive: false },
   },
 });
@@ -84,7 +93,8 @@ const command: CommandModule<FindArgs, FindData> = {
   schema: "pd.find",
   parseArgs(argv, context) {
     const { positionals, flags } = args.parse(argv);
-    const { refresh, open, limit, type } = flags;
+    const { refresh, open, type } = flags;
+    const limit = flags.limit ?? null;
     const llm = context?.outputMode === "llm";
     const positional = positionals.query;
 
@@ -134,21 +144,26 @@ const command: CommandModule<FindArgs, FindData> = {
       componentCount: index.componentCount,
     };
 
+    const clip = <T>(items: T[]): T[] => (limit === null ? items : items.slice(0, limit));
+
     if (mode === "browse-pages") {
       return ok<FindBrowsePagesData>({
         mode: "browse-pages",
         request: { refresh, limit },
         cache: cacheMeta,
-        pages: index.pages,
+        total: index.pages.length,
+        pages: clip(index.pages),
       });
     }
 
     if (mode === "browse-components") {
+      const components = collapsePairs(index.components);
       return ok<FindBrowseComponentsData>({
         mode: "browse-components",
         request: { refresh, limit },
         cache: cacheMeta,
-        components: index.components,
+        total: components.length,
+        components: clip(components),
       });
     }
 
@@ -162,7 +177,7 @@ const command: CommandModule<FindArgs, FindData> = {
       const { selected, selectedType } = await runFzfPicker(index, query);
       const data: FindPickData = {
         mode: "pick",
-        request: { query: query ?? null, refresh, limit },
+        request: { query: query ?? null, refresh },
         cache: cacheMeta,
         status: selected ? "selected" : "cancelled",
         selected,
@@ -178,22 +193,23 @@ const command: CommandModule<FindArgs, FindData> = {
       return ok(data);
     }
 
-    const matches = searchPageIndex(index, query ?? "", limit, type);
+    const searchLimit = limit ?? DEFAULT_SEARCH_LIMIT;
+    const { matches, total } = searchPageIndex(index, query ?? "", searchLimit, type);
     if (matches.length === 0) {
       context.warn("No page or component matches found.");
     }
 
     return ok<FindSearchData>({
       mode: "search",
-      request: { query: query ?? "", type, refresh, limit },
+      request: { query: query ?? "", type, refresh, limit: searchLimit },
       cache: cacheMeta,
-      totalMatches: matches.length,
+      totalMatches: total,
       matches,
     });
   },
 
   presentHuman(envelope, ui) {
-    if (!envelope.ok) return;
+    if (!envelope.ok || !envelope.data) return;
 
     const data = envelope.data as FindData;
 
@@ -292,7 +308,10 @@ const command: CommandModule<FindArgs, FindData> = {
           ];
         })
       );
-      ui.text("Tip: run 'belz pd show-page <id>' or 'belz pd show-component <id>' for full details.");
+      if (data.totalMatches > data.matches.length) {
+        ui.text(`Showing ${data.matches.length} of ${data.totalMatches} matches (raise --limit for more).`);
+      }
+      ui.text("Tip: run 'belz pd show <id>' for full details.");
     }
   },
 };

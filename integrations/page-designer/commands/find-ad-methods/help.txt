@@ -1,21 +1,25 @@
-Usage: belz pd find-ad-methods <ID> [flags]
+Usage: belz pd find-ad-methods <INPUT> [flags]
 
-List all Automation Designer method IDs referenced in a page or component.
+List all Automation Designer method IDs referenced in a page or component
+(the AD methods its HTTP calls execute).
 
 Arguments:
-  <ID>                UUID of the page, or name of the component.
+  <INPUT>             Page/component id, exact page or component name, or a
+                      PD / app URL (resolved like `belz pd show`).
 
 Flags:
-  --component         Treat <ID> as a component name instead of a page UUID.
-  --recursive, -r     Deep-scan all child components recursively.
+  --component         Treat a name <INPUT> as a component name only.
+  --recursive, -r     Also scan every component the layout references,
+                      recursively. Components that cannot be resolved are
+                      listed in `errors` (and warned about).
+  --force             Bypass the local config cache.
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment. (default: nsm-dev)
-                      Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>        Set active environment.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz pd find-ad-methods 49fa2576...
+  belz pd find-ad-methods 49fa2576239ec5791c6ead4cf9408ce2
   belz pd find-ad-methods n_s_staff_email_correspondence --component
-  belz pd find-ad-methods 49fa2576... --recursive --llm
+  belz pd find-ad-methods 49fa2576239ec5791c6ead4cf9408ce2 --recursive --llm

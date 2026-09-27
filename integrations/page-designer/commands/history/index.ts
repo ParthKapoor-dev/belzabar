@@ -8,16 +8,31 @@
 //
 // List is backed by GET /pages/history?pageId=<id>. Show is backed by
 // GET /pages/version/<vid>. Restore is backed by PUT /pages/revert/<vid>.
+//
+// PD-15: a version id is global, so show/diff/restore check that the version
+// belongs to <pageId> (the version body's `id` is its owning page, its
+// `referenceId` the linked sibling — history is recorded on the PUBLISHED
+// row). Restore locks the owning page AND its linked draft, validates the
+// version against the current page (diff-aware), and — because PUT
+// /pages/revert rewrites the owning page, which is normally the PUBLISHED
+// one — requires --allow-published when the owner is PUBLISHED.
 
 import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
-import { PD_YES_FLAG } from "../../lib/args/common";
+import {
+  DEPRECATED_FORCE_WARNING,
+  PD_WRITE_OVERRIDE_FLAGS,
+  PD_YES_FLAG,
+  writeOverrides,
+  type WriteOverrides,
+} from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
+import { describeDraftGuardFailure, resolveLinkedPair } from "../../lib/draft-guard";
+import { gateValidation, logIntent, requireConfirmation } from "../../lib/edit";
 import { parsePage } from "../../lib/parser/index";
-import { partitionBySeverity, validateHydrated } from "../../lib/validator/index";
+import { partitionBySeverity, validateEdit, validateHydrated } from "../../lib/validator/index";
 import { withLock } from "../../lib/lock";
-import { countNodes, diffPages } from "../../lib/page-diff";
-import type { ValidationIssue } from "../../lib/types/common";
-import type { RawHistoryEntry } from "../../lib/types/wire";
+import { countNodes, diffPages, type SetDiff } from "../../lib/page-diff";
+import type { RawHistoryEntry, RawPageResponse, ValidationIssue } from "../../lib/types/common";
 
 type Action = "list" | "show" | "diff" | "restore";
 
@@ -28,7 +43,7 @@ interface HistoryArgs {
   from?: number;
   to?: number;
   limit: number;
-  force: boolean;
+  overrides: WriteOverrides;
   yes: boolean;
 }
 
@@ -53,6 +68,8 @@ interface HistoryShowData {
   action: "show";
   pageId: string;
   versionId: number;
+  /** The page the version belongs to (may be <pageId>'s linked sibling). */
+  ownerId: string;
   name: string;
   entityType: "PAGE" | "COMPONENT";
   status: string;
@@ -73,20 +90,27 @@ interface HistoryDiffData {
   to: number;
   variables: { added: string[]; removed: string[]; changed: string[] };
   derived: { added: string[]; removed: string[]; changed: string[] };
-  httpRequests: { added: string[]; removed: string[] };
+  httpRequests: SetDiff;
   nodeCountBefore: number;
   nodeCountAfter: number;
   nodesAdded: string[];
   nodesRemoved: string[];
   nodesKindChanged: Array<{ nodeId: string; before: string; after: string }>;
+  nodesChanged: string[];
   stylesChanged: boolean;
+  otherChanged: string[];
 }
 
 interface HistoryRestoreData {
   action: "restore";
   pageId: string;
+  /** The page PUT /pages/revert rewrote (the version's owner). */
+  ownerId: string;
+  draftId: string | null;
   restoredVersionId: number;
   newVersionId: number | null;
+  validation: { errorCount: number; warnCount: number };
+  bypassedErrors: ValidationIssue[];
 }
 
 type HistoryData =
@@ -124,13 +148,29 @@ export const args = defineSubcommands(
         to: { type: "number", integer: true, required: true, missingCode: "MISSING_VERSION_RANGE" },
       },
     },
-    restore: { positionals: [PAGE_ID], flags: { ...VERSION, ...PD_YES_FLAG } },
+    restore: { positionals: [PAGE_ID], flags: { ...VERSION, ...PD_YES_FLAG, ...PD_WRITE_OVERRIDE_FLAGS } },
   },
   {
     command: "belz pd history",
     codes: { MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "UNKNOWN_ACTION" },
   },
 );
+
+/** Fetch version `vid` and check it belongs to `pageId` (PD-15). */
+async function fetchOwnedVersion(pageId: string, vid: number): Promise<RawPageResponse> {
+  const raw = await pdApi.historyGet(vid);
+  if (!raw) throw new CliError(`Version ${vid} not found.`, { code: "PD_VERSION_NOT_FOUND" });
+  const owner = typeof raw.id === "string" ? raw.id : "";
+  const sibling = typeof raw.referenceId === "string" ? raw.referenceId : "";
+  if (owner !== pageId && sibling !== pageId) {
+    throw new CliError(
+      `Version ${vid} belongs to page ${owner || "?"} (${String(raw.name ?? "")}), not ${pageId}. ` +
+        `List this page's versions with \`belz pd history list ${pageId}\`.`,
+      { code: "PD_VERSION_PAGE_MISMATCH", details: { versionId: vid, pageId, ownerId: owner || null } },
+    );
+  }
+  return raw;
+}
 
 function toRow(e: RawHistoryEntry): VersionRow {
   return {
@@ -155,7 +195,10 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
     const out: HistoryArgs = {
       action: r.subcommand,
       pageId: r.positionals.pageId,
-      force: false,
+      overrides:
+        r.subcommand === "restore"
+          ? writeOverrides(r.flags)
+          : { forceValidation: false, allowPublished: false, deprecatedForce: false },
       yes: r.subcommand === "restore" ? r.flags.yes : false,
       limit: r.subcommand === "list" ? r.flags.limit : 50,
     };
@@ -167,7 +210,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
     return out;
   },
 
-  async execute(args) {
+  async execute(args, context) {
     if (args.action === "list") {
       const entries = await pdApi.historyList(args.pageId);
       const rows = entries.map(toRow).sort((a, b) => b.versionId - a.versionId);
@@ -182,8 +225,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
 
     if (args.action === "show") {
       const vid = args.version!;
-      const raw = await pdApi.historyGet(vid);
-      if (!raw) throw new CliError(`Version ${vid} not found.`, { code: "PD_VERSION_NOT_FOUND" });
+      const raw = await fetchOwnedVersion(args.pageId, vid);
       const page = parsePage(raw);
       const issues = validateHydrated(page);
       const { errors, warnings } = partitionBySeverity(issues);
@@ -191,6 +233,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
         action: "show",
         pageId: args.pageId,
         versionId: vid,
+        ownerId: page.id,
         name: page.name,
         entityType: page.entityType,
         status: page.status,
@@ -207,11 +250,9 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
 
     if (args.action === "diff") {
       const [rawA, rawB] = await Promise.all([
-        pdApi.historyGet(args.from!),
-        pdApi.historyGet(args.to!),
+        fetchOwnedVersion(args.pageId, args.from!),
+        fetchOwnedVersion(args.pageId, args.to!),
       ]);
-      if (!rawA) throw new CliError(`Version ${args.from} not found.`, { code: "PD_VERSION_NOT_FOUND" });
-      if (!rawB) throw new CliError(`Version ${args.to} not found.`, { code: "PD_VERSION_NOT_FOUND" });
       const a = parsePage(rawA);
       const b = parsePage(rawB);
       const diff = diffPages(a, b);
@@ -229,32 +270,60 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
         nodesAdded: diff.nodesAdded,
         nodesRemoved: diff.nodesRemoved,
         nodesKindChanged: diff.nodesKindChanged,
+        nodesChanged: diff.nodesChanged,
         stylesChanged: diff.styles.changed,
+        otherChanged: diff.otherChanged,
       });
     }
 
     // restore
-    if (!args.yes) {
+    const warn = (m: string) => context.warn(m);
+    if (args.overrides.deprecatedForce) warn(`⚠ ${DEPRECATED_FORCE_WARNING}`);
+    const vid = args.version!;
+    const version = await fetchOwnedVersion(args.pageId, vid);
+    const ownerId = version.id;
+    const ownerRaw = await pdApi.fetchPage(ownerId);
+    if (!ownerRaw) throw new CliError(`Page ${ownerId} (owner of version ${vid}) not found.`, { code: "PD_NOT_FOUND" });
+    const link = await resolveLinkedPair(ownerRaw);
+    if (!link.ok) {
+      throw describeDraftGuardFailure({ ok: false, reason: link.reason, publishedId: null, inputId: ownerId, message: link.message });
+    }
+    const owner = parsePage(ownerRaw);
+    if (owner.status === "PUBLISHED" && !args.overrides.allowPublished) {
       throw new CliError(
-        `"restore" is a write operation. Pass --yes to confirm reverting page ${args.pageId} to version ${args.version}.`,
-        { code: "CONFIRMATION_REQUIRED" },
+        `Version ${vid} belongs to the PUBLISHED page ${ownerId} (${owner.name}); PUT /pages/revert rewrites that page. ` +
+          `Pass --allow-published to restore it.`,
+        { code: "PD_PUBLISHED_NO_DRAFT", details: { ownerId, draftId: link.draftId } },
       );
     }
-    const before = await pdApi.fetchPage(args.pageId);
-    await withLock(args.pageId, async () => {
-      await pdApi.historyRestore(args.version!);
-    });
-    const after = await pdApi.fetchPage(args.pageId);
+    const target = parsePage({ ...ownerRaw, configuration: version.configuration });
+    const gate = gateValidation(validateEdit(owner, target), args.overrides.forceValidation, warn);
+
+    await requireConfirmation(context, args.yes, "restore", [
+      ["Page", `${owner.name} (${ownerId}, ${owner.status})`],
+      ["Linked draft", link.draftId ?? "none"],
+      ["Restore to version", String(vid)],
+    ]);
+    logIntent("history-restore", ownerId, { versionId: vid, draftId: link.draftId });
+
+    const lockIds = [...new Set([ownerId, link.draftId].filter((x): x is string => !!x))];
+    const runLocked = (ids: string[], fn: () => Promise<void>): Promise<void> =>
+      ids.length === 0 ? fn() : withLock(ids[0]!, () => runLocked(ids.slice(1), fn));
+    await runLocked(lockIds, () => pdApi.historyRestore(vid));
+
+    const after = await pdApi.fetchPage(ownerId);
     const newVersionId =
-      after && typeof after.versionId === "number" && after.versionId !== (before?.versionId ?? null)
-        ? after.versionId
-        : null;
+      after && typeof after.versionId === "number" && after.versionId !== owner.versionId ? after.versionId : null;
 
     return ok<HistoryRestoreData>({
       action: "restore",
       pageId: args.pageId,
-      restoredVersionId: args.version!,
+      ownerId,
+      draftId: link.draftId,
+      restoredVersionId: vid,
       newVersionId,
+      validation: { errorCount: gate.errors.length, warnCount: gate.warnings.length },
+      bypassedErrors: gate.bypassedErrors,
     });
   },
 
@@ -329,18 +398,20 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       };
       reportGroup("Variables", data.variables.added, data.variables.removed, data.variables.changed);
       reportGroup("Derived", data.derived.added, data.derived.removed, data.derived.changed);
-      reportGroup("HTTP Requests", data.httpRequests.added, data.httpRequests.removed);
-      if (data.nodesAdded.length > 0 || data.nodesRemoved.length > 0 || data.nodesKindChanged.length > 0) {
+      reportGroup("HTTP Requests", data.httpRequests.added, data.httpRequests.removed, data.httpRequests.changed);
+      if (data.nodesAdded.length + data.nodesRemoved.length + data.nodesKindChanged.length + data.nodesChanged.length > 0) {
         ui.section("Layout Nodes");
         if (data.nodesAdded.length > 0) ui.text(`+ ${data.nodesAdded.join(", ")}`);
         if (data.nodesRemoved.length > 0) ui.text(`- ${data.nodesRemoved.join(", ")}`);
+        if (data.nodesChanged.length > 0) ui.text(`~ ${data.nodesChanged.join(", ")}`);
         for (const c of data.nodesKindChanged) ui.text(`~ ${c.nodeId}: ${c.before} → ${c.after}`);
       }
+      if (data.otherChanged.length > 0) ui.kv("Other config changed", data.otherChanged.join(", "));
       return;
     }
 
     // restore
-    ui.success(`Restored page ${data.pageId} to version ${data.restoredVersionId}.`);
+    ui.success(`Restored page ${data.ownerId} to version ${data.restoredVersionId}.`);
     if (data.newVersionId) ui.kv("New version", data.newVersionId);
   },
 };

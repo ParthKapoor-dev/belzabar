@@ -1,22 +1,27 @@
-Usage: belz pd analyze [PAGE_ID] [flags]
+Usage: belz pd analyze <INPUT...> [flags]
 
-Recursively analyze a page, collecting all nested components and AD method references.
-Uses the default page list from config when PAGE_ID is omitted.
+Recursively analyze one or more pages/components: every component the layout
+references (followed recursively, resolved by name in the active env) and
+every AD method their HTTP calls execute.
 
 Arguments:
-  [PAGE_ID]           UUID of the page to analyze. Uses default pages if omitted.
+  <INPUT...>          One or more page/component ids, exact names, or URLs.
 
 Flags:
-  --compliance        Verify discovered AD IDs against master_ids.txt.
+  --compliance <file> Check the discovered AD ids against a master list file
+                      (ids separated by commas and/or whitespace): rogue ids
+                      (not in the list), missing ids, common ids.
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment. (default: nsm-dev)
-                      Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>        Set active environment.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
+Notes:
+  Components that cannot be fetched or resolved are reported in `errors`
+  (and warned about); the rest of the tree is still returned.
+
 Examples:
-  belz pd analyze
-  belz pd analyze 49fa2576...
-  belz pd analyze 49fa2576... --compliance
-  belz pd analyze --compliance --llm
+  belz pd analyze 49fa2576239ec5791c6ead4cf9408ce2
+  belz pd analyze 49fa2576239ec5791c6ead4cf9408ce2 4de7b4e1d21334bf2d8884b4086d38db
+  belz pd analyze 49fa2576239ec5791c6ead4cf9408ce2 --compliance ./master_ids.txt --llm

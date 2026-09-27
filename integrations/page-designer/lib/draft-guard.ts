@@ -9,7 +9,7 @@
 //   2. DRAFT → write target is the input. Its referenceId (if any) is the
 //      published sibling, confirmed by fetching it.
 //   3. PUBLISHED → follow referenceId to the linked DRAFT. No link → refuse
-//      (caller can --force to override). A link that resolves to a non-DRAFT,
+//      (caller can pass --allow-published). A link that resolves to a non-DRAFT,
 //      a missing row, or a row whose back-link points elsewhere → refuse.
 
 import { CliError } from "@belzabar/core";
@@ -187,7 +187,7 @@ export function describeDraftGuardFailure(result: DraftGuardResult & { ok: false
   if (result.reason === "PUBLISHED_NO_DRAFT") {
     return new CliError(
       `Page "${result.name}" is PUBLISHED with no linked DRAFT (${result.publishedId}). ` +
-        `Refusing to write directly to a published page. Use --force to override.`,
+        `Refusing to write directly to a published page. Pass --allow-published to override.`,
       {
         code: "PD_PUBLISHED_NO_DRAFT",
         details: { publishedId: result.publishedId, entityType: result.entityType },

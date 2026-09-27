@@ -1,16 +1,18 @@
+// Serializer: applyOverlay (raw-config edit), partial ops (raw indices, full
+// coverage), planSave strategy, full save losslessness.
+// Bugs: PD-2 (raw indices), PD-3 (handler/transform ops), PD-22 (lossless).
 import { describe, test, expect } from "bun:test";
 import { parsePage } from "../../lib/parser/index";
 import {
   applyOverlay,
-  hydratedToInnerConfig,
-  overlayRequiresFullSave,
-  overlayToPartialOperations,
-  pickStrategy,
-  serialize,
+  fullSaveReason,
+  partialOperationsFor,
+  planSave,
+  replayOperations,
   serializeFull,
 } from "../../lib/serialize/index";
-import type { Overlay } from "../../lib/types/common";
-import type { RawPageResponse } from "../../lib/types/wire";
+import type { HydratedPage, Overlay } from "../../lib/types/common";
+import type { RawConfiguration, RawPageResponse } from "../../lib/types/wire";
 
 function wrap(inner: unknown): RawPageResponse {
   return { id: "p1", name: "p1", status: "DRAFT", configuration: JSON.stringify(inner) };
@@ -40,297 +42,241 @@ function rootInner(over: Record<string, unknown> = {}, rootOver: Record<string, 
   };
 }
 
-// ---------------------------------------------------------------------------
-// Round-trip: parse → serializeFull → parse → shape identical in meaningful bits
-// ---------------------------------------------------------------------------
-
-describe("serializeFull round-trip", () => {
-  test("parse → serializeFull → parse preserves variables, derived, layout shape", () => {
-    const raw = wrap(
-      rootInner(
-        {
-          variables: {
-            generated: [],
-            userDefined: [
-              { name: "v1", type: "String", initialValue: "x", translateInitialValue: false, __LAYOUT_CONFIG_METADATA: {} },
-              { name: "v2", type: "Any", initialValue: null, translateInitialValue: false, __LAYOUT_CONFIG_METADATA: {} },
-            ],
-            derived: [{ name: "d1", from: ["v1"], spec: "(function(p){return p.v1;})", filterFn: null, sideEffect: false }],
-          },
-        },
-      ),
-    );
-    const a = parsePage(raw);
-    const configStr = serializeFull(a);
-    const reparsed = parsePage({ ...raw, configuration: configStr });
-
-    expect(reparsed.variables.map((v) => v.name)).toEqual(a.variables.map((v) => v.name));
-    expect(reparsed.derived.map((d) => d.name)).toEqual(a.derived.map((d) => d.name));
-    expect(reparsed.layout.nodeId).toBe(a.layout.nodeId);
-    expect(reparsed.__version).toBe(5);
-  });
-
-  test("legacy context.properties is migrated to variables.userDefined on serialize", () => {
-    const raw = wrap({
-      context: { properties: [["legacy", "value"]] },
-      layout: rootInner().layout,
-      styles: "",
-    });
-    const a = parsePage(raw);
-    const configStr = serializeFull(a);
-    const parsedInner = JSON.parse(configStr);
-    expect(parsedInner.context).toBeUndefined();
-    expect(parsedInner.variables.userDefined[0].name).toBe("legacy");
-  });
-
-  test("symbol config preserves inputs/events/helpText on round-trip", () => {
-    const raw = wrap({
-      __version: 5,
-      inputs: ["propA", "propB"],
-      events: ["eventX"],
-      helpText: { foo: "bar" },
-      layout: { id: "__r", name: "div", isSymbol: true, props: { layout: { type: "flex" } }, children: [] },
-      styles: "",
-      variables: { generated: [], userDefined: [], derived: [] },
-      httpRequests: { generated: [], userDefined: [] },
-    });
-    const a = parsePage(raw);
-    const reparsed = parsePage({ ...raw, configuration: serializeFull(a) });
-    expect(reparsed.entityType).toBe("COMPONENT");
-    expect(reparsed.inputs).toEqual(["propA", "propB"]);
-    expect(reparsed.events).toEqual(["eventX"]);
-    expect(reparsed.helpText).toEqual({ foo: "bar" });
-  });
+const call = (callId: string, extra: Record<string, unknown> = {}) => ({
+  meta: { serviceCall: { label: callId, callId } },
+  handler: { success: [], error: [], inProgress: "" },
+  request: { url: "/x", body: "{}", method: "POST" },
+  trigger: [],
+  ...extra,
 });
 
-// ---------------------------------------------------------------------------
-// overlayToPartialOperations
-// ---------------------------------------------------------------------------
+const inner = (p: HydratedPage) => p.rawConfiguration as RawConfiguration;
 
-describe("overlayToPartialOperations", () => {
-  test("variables.update produces UPDATE at variables.userDefined[n].initialValue", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const overlay: Overlay = {
-      variables: { update: [{ name: "greeting", initialValue: "hello" }] },
-    };
-    const ops = overlayToPartialOperations(page, overlay);
-    expect(ops).toHaveLength(1);
-    expect(ops[0]).toEqual({
-      key: "variables.userDefined[0].initialValue",
-      value: "hello",
-      operation: "UPDATE",
-      dataType: "STRING",
-    });
-  });
-
-  test("variables.update with unknown name → no op (silently skipped)", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const overlay: Overlay = {
-      variables: { update: [{ name: "nonExistent", initialValue: "x" }] },
-    };
-    const ops = overlayToPartialOperations(page, overlay);
-    expect(ops).toEqual([]);
-  });
-
-  test("httpRequests.update produces per-field UPDATE ops against matching callId", () => {
-    const raw = wrap(
-      rootInner({
-        httpRequests: {
-          generated: [],
-          userDefined: [
-            {
-              meta: { serviceCall: { label: "Fetch", callId: "sc-001" } },
-              handler: { success: [], error: [], inProgress: "" },
-              request: { url: "/x", body: "{}", method: "POST" },
-              trigger: [],
-            },
-          ],
-        },
-      }),
-    );
-    const page = parsePage(raw);
-    const overlay: Overlay = {
-      httpRequests: {
-        update: [{ callId: "sc-001", request: { body: "{\"new\":true}", url: "/new" } }],
-      },
-    };
-    const ops = overlayToPartialOperations(page, overlay);
-    expect(ops).toEqual([
-      { key: "httpRequests.userDefined[0].request.body", value: "{\"new\":true}", operation: "UPDATE", dataType: "STRING" },
-      { key: "httpRequests.userDefined[0].request.url", value: "/new", operation: "UPDATE", dataType: "STRING" },
-    ]);
-  });
-
-  test("elements.operations pass through verbatim (with stringified value)", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const overlay: Overlay = {
-      elements: {
-        operations: [
-          { key: "layout.children[0].props.innerHTML", value: "Hi", operation: "UPDATE", dataType: "STRING" },
-          { key: "layout.props.className", value: "scope-x", operation: "UPDATE", dataType: "STRING" },
+describe("serializeFull is lossless (PD-22)", () => {
+  test("duplicate vars, null type, legacy format, inputs/events survive untouched", () => {
+    const cfg = {
+      __version: 5,
+      inputs: ["a"],
+      events: ["e"],
+      context: { properties: [["legacy", "value"]] },
+      http: [call("legacy-call")],
+      layout: rootInner().layout,
+      variables: {
+        userDefined: [
+          { name: "a", type: null, initialValue: null },
+          { name: "a", type: "String", initialValue: "dup" },
         ],
       },
+      customExtraKey: { nested: { value: 42 } },
     };
-    const ops = overlayToPartialOperations(page, overlay);
-    expect(ops).toEqual(overlay.elements!.operations.map((op) => ({
-      key: op.key,
-      value: String(op.value), // wire values are strings; these are STRING ops
-      operation: op.operation,
-      dataType: op.dataType,
-    })));
+    const page = parsePage(wrap(cfg));
+    expect(JSON.parse(serializeFull(page))).toEqual(cfg);
   });
 
-  test("styles.replace produces single UPDATE at key `styles`", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const overlay: Overlay = { styles: { replace: ".latest-version .x { color: red }" } };
-    const ops = overlayToPartialOperations(page, overlay);
-    expect(ops).toEqual([
-      { key: "styles", value: ".latest-version .x { color: red }", operation: "UPDATE", dataType: "STRING" },
-    ]);
+  test("a page's inputs/events survive (they used to be deleted on pages)", () => {
+    const cfg = rootInner({ inputs: ["x"], events: ["y"] });
+    expect(JSON.parse(serializeFull(parsePage(wrap(cfg))))).toEqual(cfg);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Strategy picker + overlayRequiresFullSave
-// ---------------------------------------------------------------------------
-
-describe("pickStrategy / overlayRequiresFullSave", () => {
-  test("partial when overlay only updates scalars", () => {
-    const overlay: Overlay = { variables: { update: [{ name: "x", initialValue: "y" }] } };
-    expect(pickStrategy(overlay)).toBe("partial");
-    expect(overlayRequiresFullSave(overlay)).toBe(false);
-  });
-
-  test("full when overlay adds variables", () => {
-    const overlay: Overlay = { variables: { add: [{ name: "new" }] } };
-    expect(pickStrategy(overlay)).toBe("full");
-  });
-
-  test("full when overlay removes httpRequests", () => {
-    const overlay: Overlay = { httpRequests: { remove: ["sc-001"] } };
-    expect(pickStrategy(overlay)).toBe("full");
-  });
-
-  test("full when overlay touches derived variables", () => {
-    const overlay: Overlay = { derived: { update: [{ name: "d" }] } };
-    expect(pickStrategy(overlay)).toBe("full");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// applyOverlay
-// ---------------------------------------------------------------------------
 
 describe("applyOverlay", () => {
-  test("variables.update changes initialValue in returned HydratedPage (pure — no network)", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const patched = applyOverlay(page, {
-      variables: { update: [{ name: "greeting", initialValue: "updated" }] },
-    });
-    const updated = patched.variables.find((v) => v.name === "greeting");
-    expect(updated?.initialValue).toBe("updated");
-    // original is untouched
+  test("variables.update changes only that entry (pure — original untouched)", () => {
+    const page = parsePage(wrap(rootInner()));
+    const patched = applyOverlay(page, { variables: { update: [{ name: "greeting", initialValue: "updated" }] } });
+    expect(patched.variables.find((v) => v.name === "greeting")?.initialValue).toBe("updated");
     expect(page.variables.find((v) => v.name === "greeting")?.initialValue).toBe("hi");
+    const expected = rootInner();
+    expected.variables.userDefined[0]!.initialValue = "updated";
+    expect(inner(patched)).toEqual(expected);
   });
 
-  test("variables.add appends a new variable", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const patched = applyOverlay(page, {
-      variables: { add: [{ name: "added", type: "Boolean", initialValue: false }] },
-    });
-    expect(patched.variables.map((v) => v.name)).toEqual(["greeting", "added"]);
+  test("variables.add / remove", () => {
+    const page = parsePage(wrap(rootInner()));
+    expect(applyOverlay(page, { variables: { add: [{ name: "added", type: "Boolean", initialValue: false }] } }).variables.map((v) => v.name)).toEqual([
+      "greeting",
+      "added",
+    ]);
+    expect(applyOverlay(page, { variables: { remove: ["greeting"] } }).variables).toEqual([]);
   });
 
-  test("variables.remove drops the entry", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const patched = applyOverlay(page, { variables: { remove: ["greeting"] } });
-    expect(patched.variables).toEqual([]);
+  test("unknown targets are refused with PD_OVERLAY_INVALID (not silently skipped)", () => {
+    const page = parsePage(wrap(rootInner({ httpRequests: { generated: [], userDefined: [call("sc-1")] } })));
+    const bad: Overlay[] = [
+      { variables: { update: [{ name: "nope", initialValue: 1 }] } },
+      { variables: { remove: ["nope"] } },
+      { variables: { add: [{ name: "greeting" }] } },
+      { derived: { update: [{ name: "nope", spec: "x" }] } },
+      { httpRequests: { update: [{ callId: "nope", trigger: [] }] } },
+      { httpRequests: { remove: ["nope"] } },
+      { elements: { operations: [{ key: "layout.children[3].props.x", value: "v", operation: "UPDATE", dataType: "STRING" }] } },
+    ];
+    for (const overlay of bad) {
+      expect(() => applyOverlay(page, overlay)).toThrow(expect.objectContaining({ code: "PD_OVERLAY_INVALID" }));
+    }
   });
 
-  test("elements.operations UPDATE on layout prop mutates the rebuilt layout", () => {
-    const raw = wrap(
-      rootInner({}, {
-        children: [{ id: "leaf", name: "div", props: { innerHTML: "old" } }],
-      }),
-    );
-    const page = parsePage(raw);
-    const patched = applyOverlay(page, {
-      elements: {
-        operations: [
-          { key: "layout.children[0].props.innerHTML", value: "new", operation: "UPDATE", dataType: "STRING" },
+  test("derived vars kept in userDefined (real editor shape) are edited in place, and added there", () => {
+    const cfg = rootInner({
+      variables: {
+        generated: [],
+        userDefined: [
+          { name: "raw", type: "String", initialValue: "x" },
+          { name: "d", type: "Any", from: ["raw"], spec: "(function(p){return p.raw})", compileType: "DERIVED", sideEffect: true },
         ],
+        derived: [],
       },
     });
-    const leaf = patched.layout.children[0];
-    expect(leaf?.props.innerHTML).toBe("new");
+    const page = parsePage(wrap(cfg));
+    expect(page.variables.map((v) => v.name)).toEqual(["raw"]);
+    expect(page.derived.map((d) => [d.name, d.location])).toEqual([["d", "userDefined"]]);
+    // variables.update on a derived name points at derived.update
+    expect(() => applyOverlay(page, { variables: { update: [{ name: "d", initialValue: 1 }] } })).toThrow(/use derived.update/);
+
+    const patched = applyOverlay(page, {
+      derived: { update: [{ name: "d", spec: "NEW" }], add: [{ name: "d2", from: ["raw"], spec: "S" }] },
+    });
+    const ud = inner(patched).variables!.userDefined as any[];
+    expect(ud[1].spec).toBe("NEW");
+    expect(ud[1].compileType).toBe("DERIVED"); // untouched keys stay
+    expect(ud[2]).toMatchObject({ name: "d2", from: ["raw"], spec: "S", compileType: "DERIVED" });
+    expect(inner(patched).variables!.derived).toEqual([]);
   });
 
-  test("styles.replace mutates styles", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const patched = applyOverlay(page, { styles: { replace: "body { color: blue }" } });
+  test("elements UPDATE mutates the layout; styles.replace", () => {
+    const page = parsePage(wrap(rootInner({}, { children: [{ id: "leaf", name: "div", props: { innerHTML: "old" } }] })));
+    const patched = applyOverlay(page, {
+      elements: { operations: [{ key: "layout.children[0].props.innerHTML", value: "new", operation: "UPDATE", dataType: "STRING" }] },
+      styles: { replace: "body { color: blue }" },
+    });
+    expect(patched.layout.children[0]?.props.innerHTML).toBe("new");
     expect(patched.styles).toBe("body { color: blue }");
   });
 });
 
-// ---------------------------------------------------------------------------
-// serialize() end-to-end
-// ---------------------------------------------------------------------------
-
-describe("serialize (strategy dispatch)", () => {
-  test("partial strategy emits only the targeted ops", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const result = serialize(page, {
-      variables: { update: [{ name: "greeting", initialValue: "hola" }] },
+describe("partial operations use RAW indices (PD-2)", () => {
+  test("duplicate names before the target: the op points at the raw index", () => {
+    const cfg = rootInner({
+      variables: {
+        generated: [],
+        userDefined: [
+          { name: "a", type: "String", initialValue: "1" },
+          { name: "a", type: "String", initialValue: "2" },
+          { name: "b", type: "String", initialValue: "3" },
+        ],
+        derived: [],
+      },
     });
-    expect(result.strategy).toBe("partial");
-    if (result.strategy !== "partial") throw new Error("strategy");
-    expect(result.operations).toHaveLength(1);
-    expect(result.operations[0]!.key).toBe("variables.userDefined[0].initialValue");
+    const page = parsePage(wrap(cfg));
+    expect(page.variables.map((v) => v.name)).toEqual(["a", "b"]); // parser de-dupes
+    const ops = partialOperationsFor(inner(page), { variables: { update: [{ name: "b", initialValue: "X" }] } });
+    expect(ops).toEqual([{ key: "variables.userDefined[2].initialValue", value: "X", operation: "UPDATE", dataType: "STRING" }]);
   });
 
-  test("full strategy emits configurationString matching applyOverlay result", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const result = serialize(page, { variables: { add: [{ name: "added", type: "String" }] } });
-    expect(result.strategy).toBe("full");
-    if (result.strategy !== "full") throw new Error("strategy");
-    const parsedInner = JSON.parse(result.configurationString);
-    expect(parsedInner.variables.userDefined.map((v: any) => v.name)).toContain("added");
+  test("derived entries interleaved in userDefined count toward the index", () => {
+    const cfg = rootInner({
+      variables: {
+        generated: [],
+        userDefined: [
+          { name: "d", from: ["x"], spec: "s" },
+          { name: "x", type: "Number", initialValue: 1 },
+        ],
+        derived: [],
+      },
+    });
+    const ops = partialOperationsFor(inner(parsePage(wrap(cfg))), { variables: { update: [{ name: "x", initialValue: 2, type: "Number" }] } });
+    expect(ops?.map((o) => [o.key, o.value, o.dataType])).toEqual([
+      ["variables.userDefined[1].initialValue", "2", "NUMBER"],
+      ["variables.userDefined[1].type", "Number", "STRING"],
+    ]);
   });
 
-  test("forced full strategy overrides picker", () => {
-    const raw = wrap(rootInner());
-    const page = parsePage(raw);
-    const result = serialize(
-      page,
-      { variables: { update: [{ name: "greeting", initialValue: "v" }] } },
-      "full",
-    );
-    expect(result.strategy).toBe("full");
+  test("legacy context.properties pages never get partial ops (full save)", () => {
+    const cfg = { context: { properties: [["a", 1]] }, layout: rootInner().layout };
+    const page = parsePage(wrap(cfg));
+    expect(fullSaveReason({ variables: { update: [{ name: "a", initialValue: 2 }] } }, inner(page))).toBe("legacy context.properties page");
+    const plan = planSave(page, { variables: { update: [{ name: "a", initialValue: 2 }] } });
+    expect(plan.strategy).toBe("full");
+    expect(JSON.parse((plan as any).configurationString)).toEqual({ ...cfg, context: { properties: [["a", 2]] } });
   });
 });
 
-// ---------------------------------------------------------------------------
-// hydratedToInnerConfig preserves unknown fields
-// ---------------------------------------------------------------------------
+describe("httpRequests.update emits every field (PD-3)", () => {
+  const cfg = rootInner({ httpRequests: { generated: [call("gen-1")], userDefined: [call("sc-0"), call("sc-1")] } });
+  const page = parsePage(wrap(cfg));
 
-describe("hydratedToInnerConfig preserves unmodelled fields", () => {
-  test("unknown top-level key survives a round-trip", () => {
-    const raw = wrap({
-      ...rootInner(),
-      customExtraKey: { nested: { value: 42 } },
+  test("request, handler.success/error/inProgress, trigger, triggerFilter, responseTransformSpec", () => {
+    const overlay: Overlay = {
+      httpRequests: {
+        update: [
+          {
+            callId: "sc-1",
+            request: { body: "{\"a\":1}", url: "/new", method: "GET" },
+            handler: { success: [["{%x%}", "data"]], error: [["{%err%}", "e"]], inProgress: "{%busy%}" },
+            trigger: ["this.x"],
+            triggerFilter: "(function(){return true})",
+            responseTransformSpec: "(function(d){return d})",
+          },
+        ],
+      },
+    };
+    const plan = planSave(page, overlay);
+    expect(plan.strategy).toBe("partial");
+    if (plan.strategy !== "partial") throw new Error("strategy");
+    expect(plan.operations.map((o) => [o.key, o.operation, o.dataType])).toEqual([
+      ["httpRequests.userDefined[1].request.body", "UPDATE", "STRING"],
+      ["httpRequests.userDefined[1].request.url", "UPDATE", "STRING"],
+      ["httpRequests.userDefined[1].request.method", "UPDATE", "STRING"],
+      ["httpRequests.userDefined[1].handler.success", "UPDATE", "ARRAY"],
+      ["httpRequests.userDefined[1].handler.error", "UPDATE", "ARRAY"],
+      ["httpRequests.userDefined[1].handler.inProgress", "UPDATE", "STRING"],
+      ["httpRequests.userDefined[1].trigger", "UPDATE", "ARRAY"],
+      ["httpRequests.userDefined[1].triggerFilter", "CREATE", "STRING"],
+      ["httpRequests.userDefined[1].responseTransformSpec", "CREATE", "STRING"],
+    ]);
+    // the ops, replayed like the server does, reproduce the planned page exactly
+    expect(replayOperations(inner(page), plan.operations)).toEqual(inner(plan.patched));
+  });
+
+  test("a call in httpRequests.generated is addressed there", () => {
+    const ops = partialOperationsFor(inner(page), { httpRequests: { update: [{ callId: "gen-1", trigger: [] }] } });
+    expect(ops?.[0]?.key).toBe("httpRequests.generated[0].trigger");
+  });
+
+  test("ops that cannot cover the edit (missing parent object) fall back to a full save", () => {
+    const noHandler = parsePage(wrap(rootInner({ httpRequests: { generated: [], userDefined: [{ meta: { serviceCall: { callId: "h" } } }] } })));
+    const plan = planSave(noHandler, { httpRequests: { update: [{ callId: "h", handler: { error: [] } }] } });
+    expect(plan.strategy).toBe("full");
+    expect((plan as any).fallbackReason).toBe("partial operations do not cover the overlay");
+    expect(JSON.parse((plan as any).configurationString).httpRequests.userDefined[0].handler).toEqual({ error: [] });
+  });
+});
+
+describe("planSave strategy", () => {
+  const page = parsePage(wrap(rootInner()));
+  test("partial for scalar updates; value encodings", () => {
+    const plan = planSave(page, {
+      variables: { update: [{ name: "greeting", initialValue: { a: 1 }, translateInitialValue: true }] },
+      styles: { replace: ".x{}" },
+      elements: { operations: [{ key: "layout.props.className", value: "c", operation: "CREATE", dataType: "STRING" }] },
     });
-    const page = parsePage(raw);
-    const back = hydratedToInnerConfig(page);
-    expect((back as any).customExtraKey).toEqual({ nested: { value: 42 } });
+    expect(plan.strategy).toBe("partial");
+    if (plan.strategy !== "partial") throw new Error("strategy");
+    expect(plan.operations).toEqual([
+      { key: "variables.userDefined[0].initialValue", value: "{\"a\":1}", operation: "UPDATE", dataType: "OBJECT" },
+      { key: "variables.userDefined[0].translateInitialValue", value: "true", operation: "UPDATE", dataType: "BOOLEAN" },
+      { key: "layout.props.className", value: "c", operation: "CREATE", dataType: "STRING" },
+      { key: "styles", value: ".x{}", operation: "UPDATE", dataType: "STRING" },
+    ]);
+  });
+
+  test.each<[string, Overlay]>([
+    ["variables.add", { variables: { add: [{ name: "n" }] } }],
+    ["variables.remove", { variables: { remove: ["greeting"] } }],
+    ["httpRequests.add", { httpRequests: { add: [call("new")] } }],
+  ])("full for %s, and the full body is the raw config with only the edit applied", (reason, overlay) => {
+    const plan = planSave(page, overlay);
+    expect(plan.strategy).toBe("full");
+    expect((plan as any).fallbackReason).toBe(reason);
+    expect(JSON.parse((plan as any).configurationString)).toEqual(inner(plan.patched));
   });
 });
