@@ -99,7 +99,8 @@ describe("parseGlobalFlags (CORE-2 / F3)", () => {
   test("conflicting --env is INVALID_ARGS", () => {
     const r = parseGlobalFlags(["envs", "--env", "nsm-dev", "--env=sems-dev"]);
     expect(r.error?.code).toBe("INVALID_ARGS");
-    expect(r.error?.message).toContain("conflicting");
+    expect(r.error?.message.toLowerCase()).toContain("conflicting");
+    expect(r.error?.message).not.toMatch(/^Error:/);
   });
 
   test("missing value is MISSING_ENV_ARG", () => {

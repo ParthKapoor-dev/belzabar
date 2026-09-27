@@ -45,7 +45,8 @@ describe("runner-level --help (F16)", () => {
 describe("global --env forms (F3)", () => {
   test("--env=<name> is honoured", async () => {
     const r = await belz("envs", "--env=nsm-qa", "--llm");
-    expect(JSON.parse(r.stdout).meta.env).toBe("nsm-qa");
+    // `envs` is not env-aware (no meta.env); it reports the selected env as data.active.
+    expect(JSON.parse(r.stdout).data.active).toBe("nsm-qa");
   }, 30_000);
 
   test("conflicting --env is rejected with INVALID_ARGS", async () => {

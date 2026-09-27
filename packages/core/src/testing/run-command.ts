@@ -14,6 +14,7 @@ import { getOutputMode, setOutputMode } from "../ui";
 import {
   dispatchCommand,
   dispatchNamespaced,
+  globalErrorOutcome,
   renderOutcome,
   resolveGlobalFlags,
   type NamespacedCliOptions,
@@ -59,11 +60,12 @@ function exclusive<T>(fn: () => Promise<T>): Promise<T> {
   return next;
 }
 
+/** Global flags go first, so a `--` in argv keeps everything after it verbatim. */
 function withGlobalArgs(argv: string[], opts: RunOptions): string[] {
-  const out = [...argv];
-  if (opts.llm !== false) out.push("--llm");
-  if (opts.env) out.push("--env", opts.env);
-  return out;
+  const globals: string[] = [];
+  if (opts.llm !== false) globals.push("--llm");
+  if (opts.env) globals.push("--env", opts.env);
+  return [...globals, ...argv];
 }
 
 async function captured(run: () => Promise<RunOutcome>): Promise<RunResult> {
@@ -138,24 +140,12 @@ export function runCommand(
   const binaryName = opts.binaryName ?? "belz";
   return exclusive(() =>
     captured(async () => {
-      const { args, outputMode, envError } = resolveGlobalFlags(withGlobalArgs(argv, opts));
-      if (envError) {
-        return {
-          kind: "envelope",
-          exitCode: 1,
-          outputMode,
-          envelope: {
-            schema: `${binaryName}.runner`,
-            version: "2.0",
-            ok: false,
-            command: "global",
-            data: null,
-            error: envError,
-            meta: {},
-          },
-        } satisfies RunOutcome;
-      }
-      return dispatchCommand([name, ...args], { [name]: module }, outputMode, binaryName, opts.helpResolver);
+      const { args, outputMode, envError, globals } = resolveGlobalFlags(withGlobalArgs(argv, opts));
+      if (envError) return globalErrorOutcome(binaryName, outputMode, envError, globals.startedAt);
+      return dispatchCommand([name, ...args], { [name]: module }, outputMode, binaryName, opts.helpResolver, {
+        globals,
+        base: -1,
+      });
     })
   );
 }

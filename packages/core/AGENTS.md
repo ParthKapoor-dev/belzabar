@@ -62,7 +62,9 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 | `runNamespacedCli(argv, options)` | Namespaced runner — powers the `belz` binary |
 | `NamespaceDefinition` | Type for a single namespace (name, description, commands or command, helpDir/helpResolver) |
 | `NamespacedCliOptions` | Full config type for `runNamespacedCli` |
-| `parseGlobalFlags(argv)` | Pure global-flag parser: `--llm`, `-v/--verbose`, `-e/--env <n>`, `--env=<n>`. Stops at `--`. Duplicate/conflicting `--env` → `INVALID_ARGS` |
+| `parseGlobalFlags(argv)` | Pure global-flag parser: `--llm`, `-v/--verbose`, `-e/--env <n>`, `--env=<n>`. Stops at `--` (everything after it, even `--llm`/`-v`, is the command's). Duplicate/conflicting `--env` → `INVALID_ARGS`. Records each `-v/--verbose` position: a `-v` **after** the command name goes to the command when it declares it (`declaresFlag(module.args, "--verbose")` or `ownsFlags`); otherwise it switches on runner debug logging (`ctx.verbose`) |
+| `--version` | `belz --version` / `--version --llm` (`belz.version` envelope). `options.build` = `{version, sha, dirty, builtAt}` from `apps/cli/bin/build-info.ts`, a Bun macro evaluated at build time |
+| Default env (D6) | Without `--env`, the runner selects the default env (`Config.resetActiveEnv`: BELZ_ENV > config.json `defaultEnv` > nsm-dev); an unknown default fails env-aware commands with `INVALID_ENV`. `ctx.envExplicit` says whether `--env` was given. An env-aware command with `writes` (bool or `(args) => bool`) refuses to run without an explicit `--env` → `ENV_REQUIRED_FOR_WRITE`, and in human mode prints `→ target env: <name> (<url>)` on stderr. `writesLocal` (local files only) needs no `--env` |
 | `hasHelpFlag(args)` | `-h`/`--help` anywhere before `--`. The runner shows help for the command instead of executing it (so `config token --help` never runs `token`) |
 | `dispatchNamespaced(argv, options)` / `dispatchCommand(...)` | In-process routing: return a `RunOutcome` (`{kind:"envelope", envelope, exitCode}` or `{kind:"print", print, exitCode}`) and **never exit**. `runNamespacedCli` = `installStdioGuard` + `dispatchNamespaced` + `renderOutcome` + `flushAndExit`. Used by `core/testing` |
 | `resolveGlobalFlags(argv)` | `parseGlobalFlags` + apply them (output mode, verbose, `Config.setActiveEnv`); no stdio side effects |
@@ -72,24 +74,39 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 ### Command Interface
 | Export | Description |
 |--------|-------------|
-| `CommandModule` | Interface: `{ parseArgs, execute, presentHuman? }` |
+| `CommandModule` | Interface: `{ parseArgs, execute, presentHuman?, envAware?, writes?, writesLocal?, ownsFlags? }`. `schema`/`version` are deprecated and ignored |
 | `ok(data)` | Returns a successful command result |
-| `fail(message, details?)` | Returns a failed command result |
+| `fail(code, message, {details?, data?})` | Returns a failed command result |
+| `failWithData(code, message, data)` | Failure that still carries its result (validator found errors, preflight failed, lookup found nothing): `ok:false`, exit 1, `data` set; the human presenter still runs, then the error is printed |
 | `CliError` | Error class for user-facing failures (caught by runner, rendered cleanly) |
 
 ### Envelope contract (`src/envelope.ts`)
-`EnvelopeSchema` (zod, strict) is the `--llm` wire contract: `{schema, version, ok, command, data,
-error: {code (non-empty), message, details?} | null, meta: {env?, durationMs?, warnings?, …}}`,
-with `ok:true ⇔ error:null`. `apps/cli/tests/envelope-contract.test.ts` checks every registered command
-against it. Change the schema and the runner together.
+`EnvelopeSchema` (zod, strict) is the `--llm` wire contract (a public contract — agents parse it):
+
+- `schema`: `<namespace>.<command>`, derived by the runner from routing (`ad.show`, `migrate.status`,
+  `release.matrix`, top-level `belz.envs`/`belz.config`); runner-level `belz.help`, `belz.runner`,
+  `belz.version`. A command's own `schema` field is ignored.
+- `version`: always `"2.0"` (`ENVELOPE_VERSION`).
+- `ok`: `true ⇔ error:null ⇔ exit 0`; failure-shaped results use `failWithData`.
+- `error`: `{code (UPPER_SNAKE), message (no "Error:" prefix), details?}`; `details` is always an
+  object (`normalizeDetails`: JSON-object strings parsed, other strings → `{text}`, arrays →
+  `{items}`, scalars → `{value}`; stack as `{stack}` only with `-v`). Exit code = `CliError.exitCode`
+  (USER_ABORT → 130).
+- `meta`: `durationMs` always; `env` only for env-aware commands (`envAware` defaults true;
+  tw/migrate/release namespaces, config/extension/envs/setup/onboard/update are not) and never on
+  runner-level envelopes; `warnings` when raised.
+
+`apps/cli/tests/envelope-contract.test.ts` (help/error paths of every command) and
+`envelope-success.test.ts` (read commands over the real fixtures) check it. Change the schema and
+the runner together.
 
 ### UI (`src/ui.ts`)
 | Export | Description |
 |--------|-------------|
-| `renderHuman(envelope, presenter?)` | Render a command envelope to humans; uses the presenter if given, else a default table/object auto-renderer |
+| `renderHuman(envelope, presenter?)` | Render a command envelope to humans: presenter (or default table/object renderer) on stdout; on failure the presenter runs only if `data` is set, and the error goes to **stderr**; `meta.warnings` follow on stderr. `ui.warn`/`ui.error` write to stderr |
 | `renderLLM(envelope)` | Emits a single-line JSON envelope to stdout — byte-stable for agents |
 | `HumanPresenterHelpers` | Interface passed to `presentHuman()`: `section/text/success/info/warn/error/step/note/kv/table/object` |
-| `lifecycle` | `{ intro, outro, cancel, note, step, spinner }` — scaffolding that no-ops in `--llm` mode |
+| `lifecycle` | `{ intro, outro, cancel, note, step, spinner }` — scaffolding that no-ops in `--llm` mode. When stdout is not a TTY the spinner draws nothing (final `stop`/`error` messages go to stderr as plain lines); colours follow NO_COLOR / FORCE_COLOR / TTY (`@belzabar/design/terminal`) |
 | `prompts` | `{ confirm, text, password, select, multiselect }` — throws `INTERACTIVE_NOT_SUPPORTED` in `--llm` mode and `NO_TTY` when stdin isn't a TTY |
 | `setOutputMode(mode)` / `getOutputMode()` | Module-level mode used by helpers that don't hold a `CommandContext` |
 | `colors` | Re-export of `picocolors` for commands that want custom inline styling |

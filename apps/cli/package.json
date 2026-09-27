@@ -1,5 +1,6 @@
 {
   "name": "belzabar.cli",
+  "version": "0.1.0",
   "type": "module",
   "bin": {
     "belz": "./bin/cli.ts"

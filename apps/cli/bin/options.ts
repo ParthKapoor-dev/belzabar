@@ -16,14 +16,27 @@ import { registry as twRegistry } from "@belzabar/teamwork/registry";
 import { registry as migrateRegistry } from "@belzabar/migrations/registry";
 import { registry as releaseRegistry } from "@belzabar/release/registry";
 import { registry as topCommands } from "../commands/registry";
+import { buildInfo } from "./build-info" with { type: "macro" };
+
+/** Version + git SHA, embedded at build time (macro). */
+export const BUILD = buildInfo();
 
 const topRegistry: CommandRegistry = topCommands;
 
 /** Top-level commands that own a namespace and do their own sub-routing. */
 const PASSTHROUGH = {
-  config: { name: "Config", description: "Manage belz credentials and environments." },
-  extension: { name: "Extension", description: "Install and manage the Belzabar browser extension." },
+  config: { name: "Config", description: "Manage belz credentials and environments.", envAware: false },
+  extension: { name: "Extension", description: "Install and manage the Belzabar browser extension.", envAware: false },
 } as const;
+
+/**
+ * Namespaces/commands that never talk to an AD/PD environment: their envelopes
+ * carry no `meta.env` (a command's own `envAware` still wins). Teamwork, Jenkins
+ * migrations (the target comes from the profile) and release (envs come from the
+ * release spec) are env-independent; so are the local top-level commands.
+ */
+const NOT_ENV_AWARE_NAMESPACES = new Set(["tw", "migrate", "release"]);
+const NOT_ENV_AWARE_TOP_LEVEL = ["envs", "setup", "onboard", "update"] as const;
 
 const NAMESPACES: Array<{ key: string; name: string; description: string; registry: CommandRegistry; header: string }> = [
   { key: "ad", name: "Automation Designer", description: "Interact with Automation Designer APIs.", registry: adRegistry, header: "belz ad <cmd>  —  Automation Designer" },
@@ -52,6 +65,7 @@ export function buildCliOptions(): NamespacedCliOptions {
       description: ns.description,
       commands: registryModules(ns.registry),
       helpResolver: registryHelpResolver(ns.registry),
+      ...(NOT_ENV_AWARE_NAMESPACES.has(ns.key) ? { envAware: false } : {}),
     };
   }
   for (const [key, meta] of Object.entries(PASSTHROUGH)) {
@@ -67,6 +81,8 @@ export function buildCliOptions(): NamespacedCliOptions {
     namespaces,
     topLevel,
     topLevelHelpResolver: topHelp,
+    topLevelEnvAware: Object.fromEntries(NOT_ENV_AWARE_TOP_LEVEL.map((k) => [k, false])),
+    build: BUILD,
   };
 }
 

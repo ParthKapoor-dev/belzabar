@@ -8,9 +8,11 @@
 // nearly every command is a missing-argument error path.
 //
 // KNOWN_VIOLATIONS lists invocations that break the contract today. They run
-// as test.todo; Stage 3 (envelope/UI) fixes them and deletes the entries.
+// as test.todo with the bug id that fixes them. Success paths over the real
+// fixtures: envelope-success.test.ts. Registry completeness: registry.test.ts;
+// a module that fails to load: entry.test.ts (CORE-22).
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, readdirSync, existsSync, rmSync } from "fs";
+import { mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import {
@@ -89,6 +91,8 @@ function violations(c: Case, r: RunResult): string[] {
   }
   if (r.envelope.ok !== (r.exitCode === 0)) out.push(`ok=${r.envelope.ok} but exitCode=${r.exitCode}`);
   if (c.kind === "help" && !(r.envelope.ok && r.exitCode === 0)) out.push("--help did not succeed");
+  if ((c.kind === "help" || c.kind === "runner") && r.envelope.meta.env !== undefined) out.push("runner-level envelope carries meta.env");
+  if (c.kind === "help" && r.envelope.schema !== "belz.help") out.push(`help schema ${r.envelope.schema}`);
   return out;
 }
 
@@ -127,20 +131,6 @@ afterAll(() => {
   Object.assign(cp, realCp);
   process.chdir(prevCwd);
   rmSync(cwd, { recursive: true, force: true });
-});
-
-describe("dev entry loads every command dir", () => {
-  // loadCommandsFromDir swallows import errors; a broken command would silently vanish.
-  for (const [ns, def] of Object.entries(options.namespaces)) {
-    if (!def.commands || !def.helpDir) continue;
-    test(`${ns}: every commands/<name>/index.ts is registered`, () => {
-      const onDisk = readdirSync(def.helpDir!, { withFileTypes: true })
-        .filter(e => e.isDirectory() && !e.name.startsWith(".") && existsSync(join(def.helpDir!, e.name, "index.ts")))
-        .map(e => e.name)
-        .sort();
-      expect(Object.keys(def.commands!).sort()).toEqual(onDisk);
-    });
-  }
 });
 
 describe("--llm envelope contract", () => {

@@ -57,12 +57,14 @@ class HumanUi implements HumanPresenterHelpers {
     console.log(theme.info(message));
   }
 
+  /** Warnings go to stderr (F31), so piped stdout carries only the result. */
   warn(message: string): void {
-    console.log(theme.warn(message));
+    console.error(theme.warn(message));
   }
 
+  /** Errors go to stderr (F31). */
   error(message: string): void {
-    console.log(theme.err(message));
+    console.error(theme.err(message));
   }
 
   step(message: string): void {
@@ -113,15 +115,6 @@ function isObjectArray(value: unknown): value is Record<string, unknown>[] {
 }
 
 function renderDefaultHuman(envelope: CommandEnvelope<unknown>, ui: HumanPresenterHelpers): void {
-  if (!envelope.ok) {
-    ui.error(envelope.error?.message ?? "Command failed.");
-    if (envelope.error?.details !== undefined) {
-      ui.section("Error Details");
-      ui.object(envelope.error.details);
-    }
-    return;
-  }
-
   const data = envelope.data;
   if (data === null || data === undefined) {
     ui.success("Command completed.");
@@ -164,16 +157,48 @@ function renderDefaultHuman(envelope: CommandEnvelope<unknown>, ui: HumanPresent
   ui.text(stringifyScalar(data));
 }
 
+/** Human error block → stderr: the message, then details (a `{text}` detail prints as-is). */
+function renderErrorHuman(envelope: CommandEnvelope<unknown>): void {
+  const error = envelope.error;
+  console.error(theme.err(error?.message || "Command failed."));
+  const details = error?.details;
+  if (details === undefined || details === null) return;
+  const keys = typeof details === "object" ? Object.keys(details as object) : [];
+  if (keys.length === 1 && keys[0] === "text") {
+    console.error((details as { text: unknown }).text);
+    return;
+  }
+  if (keys.length === 0) return;
+  console.error(theme.faint("details:"));
+  console.error(JSON.stringify(details, null, 2));
+}
+
+/** `meta.warnings` → stderr, after the result (CORE-6). */
+function renderWarningsHuman(envelope: CommandEnvelope<unknown>): void {
+  const warnings = envelope.meta?.warnings;
+  if (!Array.isArray(warnings)) return;
+  for (const w of warnings) console.error(theme.warn(String(w)));
+}
+
+/**
+ * Human rendering. Success: the command's presenter (or the default table/object
+ * view) on stdout. Failure: the presenter still runs when the envelope carries
+ * `data` (a failure-shaped result, `failWithData`), then the error goes to
+ * stderr. Warnings always follow on stderr.
+ */
 export function renderHuman(
   envelope: CommandEnvelope<unknown>,
   presenter?: (envelope: CommandEnvelope<unknown>, ui: HumanPresenterHelpers) => void
 ): void {
   const ui = new HumanUi();
-  if (presenter) {
-    presenter(envelope, ui);
-    return;
+  if (envelope.ok) {
+    if (presenter) presenter(envelope, ui);
+    else renderDefaultHuman(envelope, ui);
+  } else {
+    if (presenter && envelope.data !== null && envelope.data !== undefined) presenter(envelope, ui);
+    renderErrorHuman(envelope);
   }
-  renderDefaultHuman(envelope, ui);
+  renderWarningsHuman(envelope);
 }
 
 export function renderLLM(envelope: CommandEnvelope<unknown>): void {
@@ -216,6 +241,21 @@ export const lifecycle = {
         get isCancelled() { return false; },
       };
     }
+    if (!process.stdout.isTTY) {
+      // Not a terminal (piped/redirected): no animation frames or cursor codes
+      // in the output (F32). Final messages go to stderr as plain lines.
+      const line = (msg?: string) => { if (msg) console.error(msg); };
+      let cancelled = false;
+      return {
+        start: (_msg?: string) => {},
+        stop: (msg?: string) => line(msg),
+        message: (_msg: string) => {},
+        cancel: (msg?: string) => { cancelled = true; line(msg); },
+        error: (msg?: string) => line(msg),
+        clear: () => {},
+        get isCancelled() { return cancelled; },
+      };
+    }
     const s = spinner();
     return {
       start: (msg?: string) => s.start(msg ?? initialLabel),
@@ -251,6 +291,11 @@ function assertAnswered<T>(value: T | symbol): T {
 
 type Validator = (v: string) => string | Error | undefined;
 
+/** clack hands validators `string | undefined`; ours take a string. */
+function adaptValidator(v?: Validator): ((value: string | undefined) => string | Error | undefined) | undefined {
+  return v ? (value) => v(value ?? "") : undefined;
+}
+
 export const prompts = {
   async confirm(opts: { message: string; initialValue?: boolean }): Promise<boolean> {
     guardInteractive("confirmation");
@@ -264,14 +309,14 @@ export const prompts = {
     validate?: Validator;
   }): Promise<string> {
     guardInteractive("text input");
-    return assertAnswered(await clackText(opts));
+    return assertAnswered(await clackText({ ...opts, validate: adaptValidator(opts.validate) }));
   },
   async password(opts: {
     message: string;
     validate?: Validator;
   }): Promise<string> {
     guardInteractive("password input");
-    return assertAnswered(await clackPassword(opts));
+    return assertAnswered(await clackPassword({ ...opts, validate: adaptValidator(opts.validate) }));
   },
   async select<T>(opts: {
     message: string;

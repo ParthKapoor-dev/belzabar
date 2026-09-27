@@ -15,6 +15,8 @@ const context: CommandContext = {
       passwordEncoded: "",
     },
   },
+  envExplicit: false,
+  verbose: false,
   binaryName: "belz",
   commandName: "find",
   warn: () => {},

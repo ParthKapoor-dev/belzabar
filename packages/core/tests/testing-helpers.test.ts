@@ -192,7 +192,7 @@ describe("runCommand", () => {
 });
 
 describe("EnvelopeSchema", () => {
-  const base = { schema: "s", version: "2.0", command: "c", meta: {} };
+  const base = { schema: "t.cmd", version: "2.0", command: "c", meta: { durationMs: 0 } };
   test("accepts ok and error envelopes", () => {
     expect(EnvelopeSchema.safeParse({ ...base, ok: true, data: 1, error: null }).success).toBe(true);
     expect(
@@ -208,5 +208,19 @@ describe("EnvelopeSchema", () => {
       EnvelopeSchema.safeParse({ ...base, ok: false, data: null, error: { code: "", message: "m" } }).success
     ).toBe(false);
     expect(EnvelopeSchema.safeParse({ ...base, ok: true, data: 1, error: null, extra: 1 }).success).toBe(false);
+  });
+  test("rejects unstable names, versions, details and prefixes (CORE-23, F38)", () => {
+    const bad = (patch: Record<string, unknown>) => EnvelopeSchema.safeParse({ ...base, ok: true, data: 1, error: null, ...patch }).success;
+    expect(bad({ schema: "belz ad.runner" })).toBe(false);
+    expect(bad({ schema: "result" })).toBe(false);
+    expect(bad({ schema: "belz.migrate.status" })).toBe(false);
+    expect(bad({ version: "1.0" })).toBe(false);
+    expect(bad({ meta: {} })).toBe(false); // durationMs required
+    const err = (e: Record<string, unknown>) =>
+      EnvelopeSchema.safeParse({ ...base, ok: false, data: null, error: { code: "X", message: "m", ...e } }).success;
+    expect(err({ details: "a string" })).toBe(false);
+    expect(err({ details: ["x"] })).toBe(false);
+    expect(err({ details: { text: "ok" } })).toBe(true);
+    expect(err({ message: "Error: boom" })).toBe(false);
   });
 });

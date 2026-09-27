@@ -5,6 +5,7 @@ export type OutputMode = "human" | "llm";
 export interface CommandError {
   code: string;
   message: string;
+  /** Always an object on the wire: the runner wraps strings as `{ text }` (see `normalizeDetails`). */
   details?: unknown;
 }
 
@@ -52,14 +53,51 @@ export interface HumanPresenterHelpers {
 export interface CommandContext {
   outputMode: OutputMode;
   env: Environment;
+  /** True when `--env` was given explicitly (otherwise `env` is the default env). */
+  envExplicit: boolean;
+  /** Runner debug logging (`-v/--verbose` in global position, or BELZ_VERBOSE=1). */
+  verbose: boolean;
   binaryName: string;
   commandName: string;
   warn(message: string): void;
 }
 
 export interface CommandModule<TArgs = unknown, TData = unknown> {
+  /**
+   * @deprecated Ignored. The runner derives the envelope schema from routing:
+   * `<namespace>.<command>` (`ad.show`, `migrate.status`, `belz.config`).
+   */
   schema?: string;
+  /** @deprecated Ignored. Every envelope is `version: "2.0"` (`ENVELOPE_VERSION`). */
   version?: string;
+  /**
+   * The command talks to the active AD/PD environment. Default true. When false
+   * (teamwork, jenkins/migrate, release, local config…), the envelope omits
+   * `meta.env` and the command never needs `--env`.
+   */
+  envAware?: boolean;
+  /**
+   * The command changes state on the target environment. Such commands refuse to
+   * run on the default env: `--env` must be given explicitly (D6), else
+   * `ENV_REQUIRED_FOR_WRITE`. A function is evaluated on the parsed args (for
+   * commands with read and write sub-actions). Enforced only for env-aware
+   * commands (a non-env-aware writer such as `migrate run` names its target
+   * through its own arguments).
+   */
+  writes?: boolean | ((args: TArgs) => boolean);
+  /**
+   * The command writes local state only (files, ledgers, ~/.belz). Informational:
+   * unlike `writes`, it does not require an explicit `--env`.
+   */
+  writesLocal?: boolean;
+  /**
+   * Global-flag tokens this command declares for itself (currently only
+   * `-v`/`--verbose` can be claimed). When such a token appears after the
+   * command name, it is passed to `parseArgs` instead of switching on runner
+   * debug logging. The runner also derives this from the command module's
+   * exported `args` spec (core/args `declaresFlag`).
+   */
+  ownsFlags?: readonly string[];
   parseArgs?: (args: string[], context: CommandContext) => TArgs | Promise<TArgs>;
   execute: (args: TArgs, context: CommandContext) => CommandResult<TData> | Promise<CommandResult<TData>>;
   presentHuman?: (envelope: CommandEnvelope<TData>, ui: HumanPresenterHelpers) => void;
@@ -98,4 +136,18 @@ export function fail(
     data: options?.data,
     meta: options?.meta,
   };
+}
+
+/**
+ * A failure that still carries a result — e.g. a validator that found errors,
+ * a preflight that did not pass, a lookup that found nothing. The envelope is
+ * `ok:false` (exit 1) with `data` set, and the human presenter still runs on it.
+ */
+export function failWithData<TData>(
+  code: string,
+  message: string,
+  data: TData,
+  options?: { details?: unknown; meta?: CommandResultMeta }
+): CommandResult<never> {
+  return fail(code, message, { ...options, data });
 }
