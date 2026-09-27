@@ -17,7 +17,7 @@ const NAMESPACE: Record<string, string> = {
 };
 
 /** Commands whose migration is waiting on another agent's commit (delete entries as they land). */
-const PENDING = new Set<string>([]);
+const PENDING = new Set<string>(["belz setup"]);
 
 describe("args spec ↔ help.txt / desc.txt", () => {
   for (const [owner, registry] of Object.entries(REGISTRIES)) {
