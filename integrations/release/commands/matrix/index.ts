@@ -4,8 +4,8 @@ import {
   type CommandEnvelope, type HumanPresenterHelpers,
 } from "@belzabar/core";
 import { readFileSync, existsSync } from "fs";
-import traceCommand, { type TraceData } from "../../../automation-designer/commands/trace/index";
-import { execute as itemsExecute } from "../../../teamwork/commands/items/index";
+import { traceMethod } from "../../../automation-designer/lib/trace";
+import { extractTicketItems } from "../../../teamwork/lib/items";
 import { saveRelease } from "../../lib/ledger";
 
 // `belz release matrix <release.json>` — the release collision/leak detector.
@@ -105,7 +105,7 @@ function parseArgs(args: string[]): MatrixArgs {
   return { specPath };
 }
 
-async function execute(args: MatrixArgs, context: CommandContext): Promise<CommandResult<MatrixData>> {
+async function execute(args: MatrixArgs, _context: CommandContext): Promise<CommandResult<MatrixData>> {
   if (!existsSync(args.specPath)) {
     throw new CliError(`Release spec not found: ${args.specPath}`, { code: "SPEC_NOT_FOUND" });
   }
@@ -134,9 +134,7 @@ async function execute(args: MatrixArgs, context: CommandContext): Promise<Comma
   const tickets: TicketRow[] = await Promise.all(
     ticketSpecs.map(async ({ id, kind }): Promise<TicketRow> => {
       try {
-        const res = await itemsExecute({ taskId: id }, context);
-        if (!res.ok) return { id, kind, name: "(error)", ad: [], pd: [], error: res.error.message };
-        const d = res.data;
+        const d = await extractTicketItems(id);
         return { id, kind, name: d.taskName, ad: d.recommended.ad, pd: d.recommended.pd };
       } catch (e) {
         return { id, kind, name: "(error)", ad: [], pd: [], error: e instanceof Error ? e.message : String(e) };
@@ -166,12 +164,7 @@ async function execute(args: MatrixArgs, context: CommandContext): Promise<Comma
       : refs.included.size > 0 ? "included" : "excluded";
     const ticketIds = [...refs.included, ...refs.excluded].sort((a, b) => a - b);
     try {
-      const res = (await traceCommand.execute({ uuid, spineEnv }, context)) as CommandResult<TraceData>;
-      if (!res.ok) {
-        items.push({ uuid, name: "(trace error)", category: "", kind, tickets: ticketIds, spineLen: 0, envs: [], error: res.error.message });
-        continue;
-      }
-      const d = res.data;
+      const d = await traceMethod({ uuid, spineEnv });
       items.push({
         uuid,
         name: d.name,
