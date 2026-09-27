@@ -4,7 +4,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, readFileSync } from "fs";
 import { runCommand, scratchDir, withTempEnvConfig } from "@belzabar/core/testing";
-import diffCommand from "../../commands/diff/index";
+import diffCommand, { fetchOnEnv } from "../../commands/diff/index";
 import { adApi } from "../../lib/api/index";
 
 let prevTmp: string | undefined;
@@ -24,8 +24,9 @@ afterEach(() => {
   while (spies.length) spies.pop()!.mockRestore();
 });
 
+const UUID = "abcdef12abcdef12abcdef12abcdef12";
 const versionBody = (v: number) => ({
-  methodID: "abc",
+  methodID: UUID,
   methodVersion: v,
   methodVersionID: `vid-${v}`,
   isPublished: true,
@@ -39,10 +40,10 @@ describe("ad diff history mode", () => {
   test("writes both sides under the test tmp root (--no-editor)", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     spies.push(
-      spyOn(adApi, "fetchMethod").mockResolvedValue({ name: "m", category: { name: "C" } } as any),
+      spyOn(adApi, "fetchMethod").mockResolvedValue({ uuid: UUID, state: "DRAFT", name: "m", category: { name: "C" } } as any),
       spyOn(adApi, "historyGet").mockImplementation(async (o: { version: number }) => versionBody(o.version) as any),
     );
-    const r = await runCommand(diffCommand, ["abcdef12", "--from", "1", "--to", "2", "--no-editor"], { env: "t-dev" });
+    const r = await runCommand(diffCommand, [UUID, "--from", "1", "--to", "2", "--no-editor"], { env: "t-dev" });
     expect(r.envelope?.ok).toBe(true);
     const data = r.envelope?.data as { left: { path: string }; right: { path: string }; editor: string | null };
     expect(data.editor).toBeNull();
@@ -51,5 +52,65 @@ describe("ad diff history mode", () => {
       expect(existsSync(p)).toBe(true);
       expect(() => JSON.parse(readFileSync(p, "utf8"))).not.toThrow();
     }
+  });
+});
+
+// AD-26: cross-env diff is in-process (no `belz` subprocess) and compares the
+// semantic view, so a code-only change is visible and env-local ids are not.
+describe("ad diff cross-env (AD-26)", () => {
+  const method = (env: string, code: string, automationId: number) =>
+    ({
+      uuid: UUID,
+      state: "PUBLISHED",
+      name: "m",
+      summary: "",
+      category: { name: "C" },
+      inputs: [],
+      variables: [],
+      outputs: [],
+      parsedSteps: [
+        { orderIndex: 1, kind: "CUSTOM_CODE", description: "cc", language: "JAVASCRIPT", source: code, inputs: [], outputs: [], automationId, raw: { env } },
+      ],
+    }) as any;
+
+  async function run(codes: Record<string, string>) {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" }, "t-qa": { url: "https://q.test" } } });
+    const { Config } = await import("@belzabar/core");
+    const seen: string[] = [];
+    spies.push(
+      spyOn(adApi, "fetchMethod").mockImplementation(async () => {
+        const env = Config.activeEnv.name;
+        seen.push(env);
+        return method(env, codes[env]!, env === "t-dev" ? 1 : 2);
+      }),
+    );
+    const r = await runCommand(diffCommand, [UUID, "--from-env", "t-dev", "--to-env", "t-qa", "--no-editor"], { env: "t-dev" });
+    // fetchOnEnv restores the active env
+    Config.setActiveEnv("t-dev");
+    await fetchOnEnv(UUID, "t-qa");
+    const activeAfter = Config.activeEnv.name;
+    return { r, seen: seen.slice(0, 2), activeAfter };
+  }
+
+  test("a code-only change is reported; the active env is restored", async () => {
+    const { r, seen, activeAfter } = await run({ "t-dev": "return 1;", "t-qa": "return 2;" });
+    expect(activeAfter).toBe("t-dev");
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(seen).toEqual(["t-dev", "t-qa"]);
+    expect(d.changed).toBe(true);
+    expect(d.differences).toEqual(["$.steps[0].body.src"]);
+    expect(JSON.parse(readFileSync(d.left.path, "utf8")).steps[0].body.src).toBe("return 1;");
+  });
+
+  test("identical logic with different env-local ids -> changed:false", async () => {
+    const { r } = await run({ "t-dev": "return 1;", "t-qa": "return 1;" });
+    expect((r.envelope?.data as any).changed).toBe(false);
+  });
+
+  test("unknown env -> INVALID_ENV", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
+    const r = await runCommand(diffCommand, [UUID, "--from-env", "t-dev", "--to-env", "nope", "--no-editor"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("INVALID_ENV");
   });
 });

@@ -15,11 +15,25 @@
 import { CliError, Config } from "@belzabar/core";
 import { adApi } from "./api/index";
 import { fingerprintMethod, parseVersionBody } from "./fingerprint";
+import { resolveMethodRef } from "./ids";
 
 export interface TraceOptions {
   uuid: string;
   /** Env whose version history forms the spine. */
   spineEnv: string;
+  /**
+   * Envs to locate the method on (AD-25). Default: every configured env of
+   * the spine env's project (sems-* for a sems spine), never other projects.
+   * The spine env is always included.
+   */
+  envs?: string[];
+}
+
+/** Default env set for a trace: the spine env's project family, spine first. */
+export function traceEnvFamily(spineEnv: string, all: Record<string, { project: string }> = Config.getAllEnvs()): string[] {
+  const project = all[spineEnv]?.project;
+  const family = Object.keys(all).filter((n) => n !== spineEnv && all[n]!.project === project);
+  return [spineEnv, ...family];
 }
 
 export interface SpineEntry {
@@ -48,7 +62,12 @@ export interface EnvRow {
 }
 
 export interface TraceData {
+  /** The PUBLISHED uuid that was traced (a draft uuid is mapped to its published referenceId). */
   uuid: string;
+  /** The uuid the caller passed. */
+  inputUuid: string;
+  /** Envs located, in order. */
+  envs: string[];
   name: string;
   category: string;
   spineEnv: string;
@@ -73,12 +92,22 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
 }
 
 export async function traceMethod(args: TraceOptions): Promise<TraceData> {
-  const allEnvs = Object.keys(Config.getAllEnvs());
-  if (!allEnvs.includes(args.spineEnv)) {
-    throw new CliError(`Unknown spine env '${args.spineEnv}'. Available: ${allEnvs.join(", ")}`, {
+  const configured = Config.getAllEnvs();
+  const allEnvNames = Object.keys(configured);
+  if (!allEnvNames.includes(args.spineEnv)) {
+    throw new CliError(`Unknown spine env '${args.spineEnv}'. Available: ${allEnvNames.join(", ")}`, {
       code: "UNKNOWN_ENV",
     });
   }
+  const unknown = (args.envs ?? []).filter((e) => !allEnvNames.includes(e));
+  if (unknown.length > 0) {
+    throw new CliError(`Unknown env(s) ${unknown.join(", ")}. Available: ${allEnvNames.join(", ")}`, {
+      code: "UNKNOWN_ENV",
+    });
+  }
+  const allEnvs = args.envs && args.envs.length > 0
+    ? [args.spineEnv, ...args.envs.filter((e) => e !== args.spineEnv)]
+    : traceEnvFamily(args.spineEnv, configured);
 
   const original = Config.activeEnv.name;
   const warnings: string[] = [];
@@ -86,14 +115,28 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
   try {
     // ── 1. Build the spine from the dev (spineEnv) version history. ──
     Config.setActiveEnv(args.spineEnv);
-    const current = await adApi.fetchMethod(args.uuid, "v1");
+    const inputUuid = resolveMethodRef(args.uuid);
+    const input = await adApi.fetchMethod(inputUuid, "v1");
+    // The spine is the PUBLISHED timeline, and history.get without
+    // includeDraft reads the published chain (F7): list the same chain.
+    let uuid = inputUuid;
+    if (input.state === "DRAFT") {
+      const ref = (input.referenceId ?? "").trim();
+      if (ref) {
+        uuid = resolveMethodRef(ref);
+        warnings.push(`${args.uuid} is a DRAFT; tracing its published chain ${ref}.`);
+      } else {
+        warnings.push(`${args.uuid} is a DRAFT that was never published — there is nothing to trace.`);
+      }
+    }
+    const current = uuid === inputUuid ? input : await adApi.fetchMethod(uuid, "v1");
     const category = current.category?.name ?? "";
     const methodName = current.name;
 
     // Published timeline only — drafts are dev-only in-progress edits, never
     // promotable. includeDraft must match between spine and env rows below:
     // the flag changes the body historyGet returns for a given version.
-    const versionList = (await adApi.historyListAll(args.uuid, { includeDraft: false }))
+    const versionList = (await adApi.historyListAll(uuid, { includeDraft: false }))
       .filter((v) => v.isPublished);
     versionList.sort((a, b) => a.methodVersion - b.methodVersion);
 
@@ -142,7 +185,7 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
     for (const envName of allEnvs) {
       try {
         Config.setActiveEnv(envName);
-        const list = await adApi.historyListAll(args.uuid, { includeDraft: false });
+        const list = await adApi.historyListAll(uuid, { includeDraft: false });
         const published = list
           .filter((v) => v.isPublished)
           .sort((a, b) => a.methodVersion - b.methodVersion);
@@ -199,7 +242,9 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
     }
 
     return {
-      uuid: args.uuid,
+      uuid,
+      inputUuid: args.uuid,
+      envs: allEnvs,
       name: methodName,
       category,
       spineEnv: args.spineEnv,

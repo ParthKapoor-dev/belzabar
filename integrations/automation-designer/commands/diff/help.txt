@@ -5,14 +5,19 @@ Defaults to Zed (run in its two-file diff mode). Two modes:
 
   History mode  (default)
     Compares two versions of the same method on the current env. Uses
-    Expertly.Automation.Method.History.get to fetch each version, parses
-    them into a HydratedMethod, writes both to temp JSON files, then
-    hands them to the editor.
+    Expertly.Automation.Method.History.get to fetch each version from the
+    chain the uuid names (draft uuid -> draft history, published uuid ->
+    published history; the version numbers match `belz ad history list`).
 
   Cross-env mode  (--cross-env, or just by passing --from-env/--to-env)
-    Compares the current state of the same UUID across two envs. Shells
-    out to `belz ad show --env X --llm` per side so each env's auth
-    session is reused cleanly.
+    Compares the current state of the same UUID across two envs, fetched
+    in-process with each env's own session.
+
+  Both modes compare a semantic logic view: decoded custom code, SQL and SpEL
+  bodies, step order/kind/description, called services, conditions, input
+  mappings and the input/variable/output contract (no env-local ids). The
+  result reports changed + differences (JSON paths); the two views are written
+  to temp files for the editor.
 
 Arguments:
   <uuid>                  Method UUID. Optional — omit to pick via fzf
@@ -29,9 +34,9 @@ Cross-env-mode flags:
   --to-env <env>          Env for the right side. Optional — fzf picker if omitted.
 
 Shared flags:
-  --clean                 Strip noisy fields (fetchedAt, savedAt, parseWarnings,
-                          createdOn, modifiedOn, raw) before diffing. (default: on)
-  --raw                   Keep all fields. Overrides --clean.
+  --clean                 Write the semantic logic view to the files. (default: on)
+  --raw                   Write the full parsed method instead (all fields).
+                          changed/differences still use the semantic view.
   --editor <cmd>          Editor binary. Default: zed. The command is invoked as
                           `<editor> <diff-flag> <left> <right>` (zed's diff flag).
   --no-editor             Write both sides to temp files but do not launch an
@@ -43,8 +48,8 @@ Shared flags:
   --help, -h              Show this help message.
 
 Global Flags:
-  --env <name>            Set active env (history mode only).
-                          Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>            Set active env (history mode). In cross-env mode the
+                          fzf env picker offers the active env's project envs.
   --llm                   JSON envelope output. Interactive escalation is
                           disabled — UUID and from/to (or from-env/to-env)
                           must all be supplied.

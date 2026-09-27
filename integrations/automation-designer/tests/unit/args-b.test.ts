@@ -126,9 +126,10 @@ describe("other commands", () => {
     expect(code(() => parse(showCodeCmd, ["4bf56e008eabe4010508af439a15ecfb", "--step", "x"]))).toBe("INVALID_VALUE");
     expect(parse(showCodeCmd, ["4bf56e008eabe4010508af439a15ecfb", "--service-detail", "3"]).step).toBe(3);
   });
-  test("trace --spine default and value", () => {
-    expect(parse(traceCmd, ["u"]).spineEnv).toBe("nsm-dev");
+  test("trace --spine: no hard-coded default (the active env is used, AD-25); --envs splits", () => {
+    expect(parse(traceCmd, ["u"]).spineEnv).toBeUndefined();
     expect(parse(traceCmd, ["u", "--spine", "sems-dev"]).spineEnv).toBe("sems-dev");
+    expect(parse(traceCmd, ["u", "--envs", "sems-qa, sems-uat"]).envs).toEqual(["sems-qa", "sems-uat"]);
   });
   test("state rejects unknown flags", () => {
     expect(code(() => parse(stateCmd, ["u", "--bogus"]))).toBe("UNKNOWN_FLAG");

@@ -1,4 +1,4 @@
-import { CliError, defineArgs, ok, type CommandModule, type CommandResult } from "@belzabar/core";
+import { CliError, Config, defineArgs, ok, type CommandModule, type CommandResult } from "@belzabar/core";
 import { spawn as nodeSpawn } from "node:child_process";
 import { writeFile, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -8,7 +8,11 @@ import {
   type MethodVersionSummary,
 } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
-import { parseVersionBody } from "../../lib/fingerprint";
+import { diffPaths, methodDiffView, parseVersionBody } from "../../lib/fingerprint";
+import { getVersionOf } from "../../lib/history";
+import { resolveMethodRef } from "../../lib/ids";
+import { traceEnvFamily } from "../../lib/trace";
+import type { HydratedMethod } from "../../lib/types/common";
 import {
   loadOrBuildMethodFinderIndex,
   type MethodFinderMethod,
@@ -40,19 +44,13 @@ interface DiffData {
   right: DiffSide;
   /** null when --no-editor was passed; both sides are still written to disk. */
   editor: string | null;
+  /** true: the files hold the semantic diff view; false (--raw): the full parsed method. */
   cleaned: boolean;
+  /** Whether the two sides' logic differs (semantic view: decoded code/SQL/SpEL, contract). */
+  changed: boolean;
+  /** JSON paths (in the semantic view) that differ, capped at 200. */
+  differences: string[];
 }
-
-const KNOWN_ENVS = ["nsm-dev", "nsm-qa", "nsm-uat"];
-
-const NOISE_KEYS = new Set([
-  "fetchedAt",
-  "savedAt",
-  "parseWarnings",
-  "modifiedOn",
-  "createdOn",
-  "raw",
-]);
 
 export const args = defineArgs({
   command: "belz ad diff",
@@ -109,7 +107,7 @@ const command: CommandModule<DiffArgs, DiffData> = {
       }
     }
 
-    const uuid = args.uuid ?? (await pickMethodInteractive(context));
+    const uuid = args.uuid ? resolveMethodRef(args.uuid) : await pickMethodInteractive(context);
     if (!uuid) {
       throw new CliError("No method selected.", { code: "NO_UUID_SELECTED" });
     }
@@ -135,10 +133,14 @@ const command: CommandModule<DiffArgs, DiffData> = {
         ["right", data.right.label, data.right.path],
       ],
     );
+    if (data.changed) {
+      ui.warn(`${data.differences.length} difference(s) in the logic view:`);
+      for (const p of data.differences.slice(0, 30)) ui.text(`  ${p}`);
+    } else {
+      ui.success("No logic differences (code, SQL, SpEL, steps and contract are identical).");
+    }
     if (data.cleaned) {
-      ui.text(
-        "Stripped noisy fields (fetchedAt, savedAt, parseWarnings, createdOn, modifiedOn, raw). Pass --raw to keep them.",
-      );
+      ui.text("Files hold the semantic logic view (decoded code/SQL/SpEL, no env-local ids). Pass --raw for the full parsed method.");
     }
   },
 };
@@ -179,9 +181,10 @@ async function executeHistoryDiff(
     context.warn(`Both sides resolve to v${from} — the diff will be empty.`);
   }
 
+  // F7: read the versions from the chain the uuid names (draft vs published).
   const [leftFull, rightFull] = await Promise.all([
-    adApi.historyGet({ category, methodName, version: from, includeDraft: true }),
-    adApi.historyGet({ category, methodName, version: to, includeDraft: true }),
+    getVersionOf(current, category, from),
+    getVersionOf(current, category, to),
   ]);
 
   const leftParsed = parseVersionBody(leftFull);
@@ -191,11 +194,7 @@ async function executeHistoryDiff(
   const leftPath = join(dir, `${shortUuid(args.uuid)}-v${from}.json`);
   const rightPath = join(dir, `${shortUuid(args.uuid)}-v${to}.json`);
 
-  await Promise.all([
-    writeFile(leftPath, serialize(leftParsed, args.clean)),
-    writeFile(rightPath, serialize(rightParsed, args.clean)),
-  ]);
-
+  const cmp = await writeSides(leftParsed, rightParsed, leftPath, rightPath, args.clean);
   if (!args.noEditor) spawnEditor(args.editor, leftPath, rightPath);
 
   return ok<DiffData>({
@@ -205,13 +204,14 @@ async function executeHistoryDiff(
     right: { label: `v${to}`, path: rightPath },
     editor: args.noEditor ? null : args.editor,
     cleaned: args.clean,
+    ...cmp,
   });
 }
 
 // ─── cross-env mode ────────────────────────────────────────────────────────
-// Each env has its own auth session, so we shell out to `belz ad show --env X --llm`
-// once per side. That reuses the existing per-env auth + cache plumbing without
-// re-initialising the in-process API client.
+// AD-26: fetched IN-PROCESS (each env has its own session; Config.setActiveEnv
+// switches, as `trace` does) and compared on the semantic view, so code / SQL
+// / SpEL body changes show up and env-local ids / urls do not.
 
 async function executeCrossEnvDiff(
   args: DiffArgs & { uuid: string },
@@ -233,24 +233,26 @@ async function executeCrossEnvDiff(
     }
   }
 
+  const known = Object.keys(Config.getAllEnvs());
+  for (const env of [fromEnv, toEnv]) {
+    if (!known.includes(env)) {
+      throw new CliError(`Unknown env '${env}'. Available: ${known.join(", ")}`, { code: "INVALID_ENV" });
+    }
+  }
+
   if (fromEnv === toEnv) {
     context.warn(`Both sides resolve to ${fromEnv} — the diff will be empty.`);
   }
 
-  const [leftJson, rightJson] = await Promise.all([
-    fetchMethodViaCli(args.uuid, fromEnv),
-    fetchMethodViaCli(args.uuid, toEnv),
-  ]);
+  // Sequential: the active env is process-global.
+  const left = await fetchOnEnv(args.uuid, fromEnv);
+  const right = await fetchOnEnv(args.uuid, toEnv);
 
   const dir = await mkdtemp(join(tmpdir(), "belz-ad-diff-"));
   const leftPath = join(dir, `${shortUuid(args.uuid)}-${fromEnv}.json`);
   const rightPath = join(dir, `${shortUuid(args.uuid)}-${toEnv}.json`);
 
-  await Promise.all([
-    writeFile(leftPath, serialize(leftJson, args.clean)),
-    writeFile(rightPath, serialize(rightJson, args.clean)),
-  ]);
-
+  const cmp = await writeSides(left, right, leftPath, rightPath, args.clean);
   if (!args.noEditor) spawnEditor(args.editor, leftPath, rightPath);
 
   return ok<DiffData>({
@@ -260,67 +262,42 @@ async function executeCrossEnvDiff(
     right: { label: toEnv, path: rightPath },
     editor: args.noEditor ? null : args.editor,
     cleaned: args.clean,
+    ...cmp,
   });
 }
 
-function fetchMethodViaCli(uuid: string, env: string): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const child = nodeSpawn("belz", ["ad", "show", uuid, "--env", env, "--llm"], {
-      stdio: ["ignore", "pipe", "pipe"],
-    });
-    let stdout = "";
-    let stderr = "";
-    let missing = false;
+/** Fetch + parse the method on `env` in-process, restoring the active env afterwards. */
+export async function fetchOnEnv(uuid: string, env: string): Promise<HydratedMethod> {
+  const original = Config.activeEnv.name;
+  try {
+    Config.setActiveEnv(env);
+    return await adApi.fetchMethod(uuid, "v1");
+  } catch (e) {
+    if (e instanceof CliError) {
+      throw new CliError(`${env}: ${e.message}`, { code: e.code, details: { env, ...(e.details as object) } });
+    }
+    throw e;
+  } finally {
+    Config.setActiveEnv(original);
+  }
+}
 
-    child.on("error", (err: NodeJS.ErrnoException) => {
-      if (err.code === "ENOENT") {
-        missing = true;
-      } else {
-        reject(err);
-      }
-    });
-    child.stdout.on("data", (c: Buffer) => {
-      stdout += c.toString("utf8");
-    });
-    child.stderr.on("data", (c: Buffer) => {
-      stderr += c.toString("utf8");
-    });
-    child.on("close", (code) => {
-      if (missing) {
-        reject(
-          new CliError("'belz' binary not found on PATH for cross-env fetch.", {
-            code: "BELZ_NOT_ON_PATH",
-          }),
-        );
-        return;
-      }
-      try {
-        const envelope = JSON.parse(stdout) as {
-          ok: boolean;
-          data?: unknown;
-          error?: { message?: string };
-        };
-        if (!envelope.ok) {
-          reject(
-            new CliError(
-              `belz ad show failed for env ${env}: ${envelope.error?.message ?? "unknown error"}`,
-              { code: "CROSS_ENV_FETCH_FAILED" },
-            ),
-          );
-          return;
-        }
-        resolve(envelope.data);
-      } catch {
-        const tail = (stderr || stdout).trim().slice(-200);
-        reject(
-          new CliError(
-            `Failed to parse 'belz ad show --llm' output for env ${env} (exit ${code}).${tail ? ` Tail: ${tail}` : ""}`,
-            { code: "CROSS_ENV_PARSE_FAILED" },
-          ),
-        );
-      }
-    });
-  });
+/** Write both sides (semantic view, or the full parsed method with --raw) and compare the semantic views. */
+async function writeSides(
+  left: HydratedMethod,
+  right: HydratedMethod,
+  leftPath: string,
+  rightPath: string,
+  clean: boolean,
+): Promise<{ changed: boolean; differences: string[] }> {
+  const lv = methodDiffView(left);
+  const rv = methodDiffView(right);
+  await Promise.all([
+    writeFile(leftPath, JSON.stringify(clean ? lv : left, null, 2)),
+    writeFile(rightPath, JSON.stringify(clean ? rv : right, null, 2)),
+  ]);
+  const differences = diffPaths(lv, rv);
+  return { changed: differences.length > 0, differences };
 }
 
 // ─── interactive pickers ───────────────────────────────────────────────────
@@ -377,7 +354,8 @@ async function pickVersionInteractive(
 }
 
 async function pickEnvInteractive(promptLabel: string): Promise<string | undefined> {
-  const line = await runFzf(KNOWN_ENVS, { prompt: `${promptLabel}> ` });
+  // The active env's project family (sems-* / nsm-* …), from the config.
+  const line = await runFzf(traceEnvFamily(Config.activeEnv.name), { prompt: `${promptLabel}> ` });
   return line || undefined;
 }
 
@@ -459,22 +437,6 @@ function spawnEditor(editor: string, left: string, right: string): void {
     stdio: "ignore",
   });
   child.unref();
-}
-
-function serialize(value: unknown, clean: boolean): string {
-  return JSON.stringify(clean ? stripNoise(value) : value, null, 2);
-}
-
-function stripNoise(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(stripNoise);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .filter(([k]) => !NOISE_KEYS.has(k))
-        .map(([k, v]) => [k, stripNoise(v)]),
-    );
-  }
-  return value;
 }
 
 function shortUuid(uuid: string): string {

@@ -80,6 +80,54 @@ export function fingerprintMethod(m: HydratedMethod): string {
 }
 
 /**
+ * Env-agnostic, human-readable view of a method for DIFFING (AD-26): the same
+ * semantic step projection the fingerprint hashes (decoded code / SQL / SpEL,
+ * service names, conditions, mapping values — no env-local ids), plus the
+ * display fields and the full input / variable / output contract. Two envs
+ * running the same logic produce identical views.
+ */
+export function methodDiffView(m: HydratedMethod): Record<string, unknown> {
+  const field = (f: { code?: string; type?: unknown; required?: boolean; displayName?: string }) => ({
+    code: f.code ?? "",
+    type: f.type ?? null,
+    required: !!f.required,
+    displayName: f.displayName ?? "",
+  });
+  return {
+    name: m.name,
+    summary: m.summary ?? "",
+    description: m.description ?? "",
+    inputs: m.inputs.map(field),
+    variables: m.variables.map(field),
+    outputs: m.outputs.map((o) => field(o as unknown as { code?: string; type?: unknown })),
+    steps: [...m.parsedSteps].sort((a, b) => a.orderIndex - b.orderIndex).map(semanticStep),
+  };
+}
+
+/** JSON paths where two values differ (deep, arrays by index). Capped at `limit`. */
+export function diffPaths(a: unknown, b: unknown, limit = 200, path = "$", out: string[] = []): string[] {
+  if (out.length >= limit) return out;
+  if (a === b) return out;
+  const isObj = (v: unknown) => v !== null && typeof v === "object";
+  if (Array.isArray(a) && Array.isArray(b)) {
+    const n = Math.max(a.length, b.length);
+    for (let i = 0; i < n && out.length < limit; i++) diffPaths(a[i], b[i], limit, `${path}[${i}]`, out);
+    return out;
+  }
+  if (isObj(a) && isObj(b) && !Array.isArray(a) && !Array.isArray(b)) {
+    const ao = a as Record<string, unknown>;
+    const bo = b as Record<string, unknown>;
+    for (const k of [...new Set([...Object.keys(ao), ...Object.keys(bo)])].sort()) {
+      if (out.length >= limit) break;
+      diffPaths(ao[k], bo[k], limit, `${path}.${k}`, out);
+    }
+    return out;
+  }
+  if (stableStringify(a) !== stableStringify(b)) out.push(path);
+  return out;
+}
+
+/**
  * Parse a history version's `jsonDefinition` into a HydratedMethod.
  *
  * The history.get response carries jsonDefinition as either a V1-style

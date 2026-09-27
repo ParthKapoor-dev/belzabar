@@ -4,6 +4,8 @@ import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/co
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
 import { fingerprintMethod, parseVersionBody } from "../../lib/fingerprint";
 import { resolveDraftTarget } from "../../lib/draft-guard";
+import { getVersionOf, sideOf, type HistorySide } from "../../lib/history";
+import { resolveMethodRef } from "../../lib/ids";
 import type { HydratedMethod } from "../../lib/types/common";
 import { CacheManager } from "../../lib/cache";
 
@@ -27,8 +29,6 @@ interface VersionRow {
   addedWhen: string;
 }
 
-/** Which chain's history a uuid names: draft and published keep independent version counters (F7). */
-type HistorySide = "DRAFT" | "PUBLISHED";
 
 interface HistoryListData {
   action: "list";
@@ -155,9 +155,12 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
     }
   },
 
-  async execute(args, context) {
-    // We need the method's category name and method name to call history.get/restore.
-    // Fetch the current method first.
+  async execute(rawArgs, context) {
+    const args = { ...rawArgs, uuid: resolveMethodRef(rawArgs.uuid) };
+    // restore resolves its own target through the draft guard (one fetch).
+    if (args.action === "restore") return executeRestore(args, context);
+
+    // history.get needs the method's category name and method name.
     const current = await adApi.fetchMethod(args.uuid, "v1");
     const category = current.category?.name ?? "";
     const methodName = current.name;
@@ -169,8 +172,6 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
         return executeShow(args, current, category, methodName);
       case "diff":
         return executeDiff(args, current, category, methodName);
-      case "restore":
-        return executeRestore(args, current, category, methodName, context);
     }
   },
 
@@ -282,41 +283,6 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
 };
 
 // ─── sub-action implementations ──────────────────────────────────────────
-
-function sideOf(m: HydratedMethod): HistorySide {
-  return m.state === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
-}
-
-function sameUuid(a: string | null | undefined, b: string | null | undefined): boolean {
-  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
-}
-
-/**
- * Fetch version N of *this* chain's history (F7).
- *
- * history.get is addressed by category + method name, and the draft and the
- * published chain share both. `includeDraft: true` returns the DRAFT chain's
- * version N, otherwise the PUBLISHED chain's; `listAll` lists by uuid. So the
- * side must follow the uuid's state, and the returned `methodID` is checked
- * against the uuid (falling back to the other side once when they disagree).
- */
-export async function getVersionOf(
-  method: HydratedMethod,
-  category: string,
-  version: number,
-): Promise<MethodVersionFull> {
-  const order = sideOf(method) === "DRAFT" ? [true, false] : [false, true];
-  let last: MethodVersionFull | undefined;
-  for (const includeDraft of order) {
-    const full = await adApi.historyGet({ category, methodName: method.name, version, includeDraft });
-    if (!full.methodID || sameUuid(full.methodID, method.uuid)) return full;
-    last = full;
-  }
-  throw new CliError(
-    `History version ${version} of "${method.name}" did not resolve to ${method.uuid} (got methodID ${last?.methodID}).`,
-    { code: "HISTORY_SIDE_MISMATCH", details: { uuid: method.uuid, version, methodID: last?.methodID } },
-  );
-}
 
 async function executeList(
   args: HistoryArgs,
@@ -461,9 +427,6 @@ async function executeDiff(
 
 async function executeRestore(
   args: HistoryArgs,
-  _current: HydratedMethod,
-  category: string,
-  methodName: string,
   context: { outputMode: "human" | "llm" },
 ): Promise<CommandResult<HistoryRestoreData>> {
   if (args.version == null || Number.isNaN(args.version)) {
@@ -489,6 +452,8 @@ async function executeRestore(
     );
   }
   const draft = guard.draft;
+  const category = draft.category?.name ?? "";
+  const methodName = draft.name;
 
   // The target must exist on the draft's history before we write anything.
   const target = await getVersionOf(draft, category, args.version);

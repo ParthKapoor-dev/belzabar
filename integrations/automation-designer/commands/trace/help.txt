@@ -8,26 +8,36 @@ that spine: its latest-published version is fingerprinted and matched to a
 spine entry. This shows which change of a method has reached which env — the
 input to release collision and leak detection.
 
-Fingerprints are structural and parser-agnostic: they hash the method's
-(orderIndex, kind, description) step tuples plus the input contract, so a V1
-live response and a V2 history response of the same logic match.
+Fingerprints hash a semantic projection of the logic (step order/kind/
+description, called service names, conditions, decoded code/SQL/SpEL bodies,
+input mappings) and the input contract, never env-local ids.
 
 AD chain UUIDs are stable across environments, so one UUID resolves everywhere.
+A DRAFT uuid is mapped to its published chain (warning), since the spine is the
+published timeline.
+
+By default only the spine env's project family is traced (a sems-dev spine
+traces sems-*; nsm-* is never contacted). Use --envs to pick envs explicitly.
 
 Arguments:
   <UUID>                AD chain UUID.
 
 Flags:
-  --spine <env>         Environment whose history is the spine. Default: nsm-dev.
+  --spine <env>         Environment whose history is the spine. Default: the
+                        active env (--env, else your default env).
+  --envs <a,b,...>      Comma-separated envs to locate the method on (the spine
+                        env is always included). Default: the spine's project.
   --v2                  Accepted for consistency; ignored by trace (notice if unsupported).
   --help, -h            Show this help message.
 
 Global Flags:
+  --env <name>          Active env; the default spine.
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
   belz ad trace 4bbac4b95962448669dcaf518567e752
-  belz ad trace 4bbac4b95962448669dcaf518567e752 --spine nsm-dev --llm
+  belz ad trace 4bbac4b95962448669dcaf518567e752 --env sems-dev
+  belz ad trace 4bbac4b95962448669dcaf518567e752 --spine nsm-dev --envs nsm-qa,nsm-uat --llm
 
 Status values per environment:
   latest               env content matches the newest spine entry

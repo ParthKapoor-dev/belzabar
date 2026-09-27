@@ -1,4 +1,4 @@
-import { defineArgs, ok, type CommandModule, type CommandResult, type CommandEnvelope, type HumanPresenterHelpers } from "@belzabar/core";
+import { defineArgs, ok, type CommandContext, type CommandModule, type CommandResult, type CommandEnvelope, type HumanPresenterHelpers } from "@belzabar/core";
 import { traceMethod, type TraceData } from "../../lib/trace";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
@@ -9,34 +9,44 @@ export type { TraceData } from "../../lib/trace";
 
 interface TraceArgs {
   uuid: string;
-  spineEnv: string;
+  /** Explicit --spine; default: the active env (AD-25). */
+  spineEnv?: string;
+  envs?: string[];
 }
 
 export const args = defineArgs({
   command: "belz ad trace",
   positionals: [
-    { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Usage: belz ad trace <uuid> [--spine <env>]" },
+    { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Usage: belz ad trace <uuid> [--spine <env>] [--envs a,b]" },
   ],
   flags: {
     ...AD_COMMON_FLAGS,
-    spine: { type: "string", default: "nsm-dev" },
+    spine: { type: "string" },
+    envs: { type: "string" },
   },
 });
 
 function parseArgs(argv: string[]): TraceArgs {
   const { positionals, flags } = args.parse(argv);
   resolveAdCommon(flags, "fetch", "trace");
-  return { uuid: positionals.uuid, spineEnv: flags.spine };
+  const envs = flags.envs
+    ?.split(",")
+    .map((e) => e.trim())
+    .filter(Boolean);
+  return { uuid: positionals.uuid, spineEnv: flags.spine, ...(envs && envs.length ? { envs } : {}) };
 }
 
-async function execute(args: TraceArgs): Promise<CommandResult<TraceData>> {
-  return ok<TraceData>(await traceMethod(args));
+async function execute(args: TraceArgs, context: CommandContext): Promise<CommandResult<TraceData>> {
+  return ok<TraceData>(
+    await traceMethod({ uuid: args.uuid, spineEnv: args.spineEnv ?? context.env.name, envs: args.envs }),
+  );
 }
 
 function presentHuman(envelope: CommandEnvelope<TraceData>, ui: HumanPresenterHelpers): void {
   const d = envelope.data!;
   ui.success(`Trace: ${d.name} (${d.category || "uncategorized"})`);
-  ui.kv("UUID", d.uuid);
+  ui.kv("UUID", d.uuid + (d.inputUuid !== d.uuid ? ` (from draft ${d.inputUuid})` : ""));
+  ui.kv("Envs", d.envs.join(", "));
   ui.kv("Spine env", `${d.spineEnv} (${d.spine.length} versions)`);
 
   if (d.warnings.length > 0) {
