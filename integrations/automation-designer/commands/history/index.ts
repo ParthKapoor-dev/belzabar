@@ -1,4 +1,4 @@
-import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineSubcommands, failWithData, ok, type CommandModule, type CommandResult } from "@belzabar/core";
 import { adApi, type MethodVersionSummary, type MethodVersionFull } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
@@ -267,7 +267,7 @@ async function executeList(
   args: HistoryArgs,
   current: HydratedMethod,
   category: string,
-): Promise<{ ok: true; data: HistoryListData; meta?: Record<string, unknown> }> {
+): Promise<CommandResult<HistoryListData>> {
   const versions = await adApi.historyListAll(args.uuid, { includeDraft: true });
   const rows: VersionRow[] = versions.map(v => ({
     version: v.methodVersion,
@@ -294,7 +294,7 @@ async function executeShow(
   current: HydratedMethod,
   category: string,
   methodName: string,
-): Promise<{ ok: true; data: HistoryShowData; meta?: Record<string, unknown> }> {
+): Promise<CommandResult<HistoryShowData>> {
   if (args.version == null || Number.isNaN(args.version)) {
     throw new CliError("--version <N> is required for 'history show'.", { code: "MISSING_VERSION" });
   }
@@ -329,7 +329,7 @@ async function executeDiff(
   current: HydratedMethod,
   category: string,
   methodName: string,
-): Promise<{ ok: true; data: HistoryDiffData; meta?: Record<string, unknown> }> {
+): Promise<CommandResult<HistoryDiffData>> {
   if (args.v1 == null || args.v2num == null) {
     throw new CliError("--from <N> and --to <M> are required for 'history diff'.", { code: "MISSING_VERSION" });
   }
@@ -413,7 +413,7 @@ async function executeRestore(
   category: string,
   methodName: string,
   context: { outputMode: "human" | "llm" },
-): Promise<{ ok: true; data: HistoryRestoreData; meta?: Record<string, unknown> }> {
+): Promise<CommandResult<HistoryRestoreData>> {
   if (args.version == null || Number.isNaN(args.version)) {
     throw new CliError("--version <N> is required for 'history restore'.", { code: "MISSING_VERSION" });
   }
@@ -445,12 +445,13 @@ async function executeRestore(
   });
   for (const id of [args.uuid, current.uuid, current.referenceId]) await CacheManager.invalidate(id);
 
-  return ok<HistoryRestoreData>({
-    action: "restore",
-    uuid: args.uuid,
-    version: args.version,
-    success,
-  });
+  const data: HistoryRestoreData = { action: "restore", uuid: args.uuid, version: args.version, success };
+  // The platform answers `false` when it did not restore: that is a failed
+  // operation, so the envelope must be ok:false (exit 1), not ok:true.
+  if (!success) {
+    return failWithData("RESTORE_FAILED", `Restore of "${methodName}" to version ${args.version} returned false.`, data);
+  }
+  return ok(data);
 }
 
 export default command;

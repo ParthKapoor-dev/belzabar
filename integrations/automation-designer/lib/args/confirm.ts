@@ -1,4 +1,4 @@
-import { CliError, lifecycle, prompts } from "@belzabar/core";
+import { CliError, Config, lifecycle, prompts } from "@belzabar/core";
 
 export interface ConfirmOpts {
   yes: boolean;
@@ -36,7 +36,14 @@ export function logIntent(
   path: string,
   meta: Record<string, unknown> = {},
 ): void {
-  const envName = process.env.BELZ_ENV ?? "unknown";
+  // The env the write actually targets (`--env`, else the default env). Not
+  // BELZ_ENV: that only names the *default* env since D6 (AD-27).
+  let envName: string;
+  try {
+    envName = Config.activeEnv.name;
+  } catch {
+    envName = "unknown";
+  }
   const payload = JSON.stringify({ ts: new Date().toISOString(), method, path, env: envName, ...meta });
   process.stderr.write(`[belz ad write] ${payload}\n`);
 }
