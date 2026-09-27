@@ -9,7 +9,7 @@
 #   1. Ensures `bun` is available (offers to install it via the official
 #      bun installer if missing).
 #   2. Clones (or pulls) the repo into $BELZ_SRC_DIR (default ~/.belz/src).
-#   3. Runs `bun install` to hydrate workspaces.
+#   3. Runs `bun install --ignore-scripts` to hydrate workspaces.
 #   4. Hands off to cli/scripts/install.sh, which builds the binary,
 #      installs it to ~/.local/bin/belz, and (on first install) walks
 #      through credential setup.
@@ -76,8 +76,8 @@ else
 fi
 
 # ── Hydrate workspaces ────────────────────────────────────────────────────────
-log "Hydrating workspaces (bun install)"
-( cd "$SRC_DIR" && bun install --silent )
+log "Hydrating workspaces (bun install --ignore-scripts)"
+( cd "$SRC_DIR" && bun install --silent --ignore-scripts )
 ok "Workspaces ready"
 
 # ── Build + install binary + first-run setup ──────────────────────────────────

@@ -8,7 +8,7 @@
 #   1. Ensures `git` and `bun` are available (installs bun if missing).
 #   2. Clones (or updates) the repo into $env:BELZ_SRC_DIR
 #      (default %USERPROFILE%\.belz\src).
-#   3. Runs `bun install` to hydrate workspaces.
+#   3. Runs `bun install --ignore-scripts` to hydrate workspaces.
 #   4. Hands off to cli\scripts\install.ps1, which builds belz.exe, installs
 #      the web app, and (on first install) runs `belz onboard`.
 #
@@ -56,9 +56,9 @@ if (Test-Path (Join-Path $SrcDir ".git")) {
 }
 
 # ── Hydrate workspaces ────────────────────────────────────────────────────────
-Info "Hydrating workspaces (bun install)"
+Info "Hydrating workspaces (bun install --ignore-scripts)"
 Push-Location $SrcDir
-bun install --silent
+bun install --silent --ignore-scripts
 Pop-Location
 Ok "Workspaces ready"
 

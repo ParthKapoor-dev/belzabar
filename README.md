@@ -33,13 +33,13 @@ curl -fsSL https://raw.githubusercontent.com/ParthKapoor-dev/belzabar/main/insta
 git clone https://github.com/ParthKapoor-dev/belzabar.git
 cd belzabar
 bun install
-bun run install            # builds + installs binary + first-run setup
+bun run belz:install       # builds + installs binary + first-run setup
 ```
 
 **Full wipe + reinstall** (deletes `~/.belz/` and the binary):
 
 ```bash
-bun run reinstall
+bun run belz:reinstall
 ```
 
 ---

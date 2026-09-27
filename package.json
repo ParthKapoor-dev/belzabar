@@ -10,8 +10,8 @@
     "apps/*"
   ],
   "scripts": {
-    "install": "bash ./cli/scripts/install.sh",
-    "reinstall": "bash ./cli/scripts/reinstall.sh",
+    "belz:install": "bash ./cli/scripts/install.sh",
+    "belz:reinstall": "bash ./cli/scripts/reinstall.sh",
     "belz:build": "bun run --cwd cli build",
     "build": "turbo run build",
     "dev": "turbo run dev",

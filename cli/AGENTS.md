@@ -137,7 +137,7 @@ bun run install-cli
 
 Or from the repo root:
 ```bash
-bun run install   # runs cli/scripts/install.sh (generate + build + install + first-time setup)
+bun run belz:install   # runs cli/scripts/install.sh (generate + build + install + first-time setup)
 ```
 
 ---
