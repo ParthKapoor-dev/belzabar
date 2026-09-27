@@ -12,6 +12,11 @@ Flags:
   --from-env         Load credentials from the current process environment
                      (no prompts, no file) — e.g. inside a CI or cloud session.
   --force            Overwrite an existing config without asking.
+  --replace          Drop every configured environment not given in this run
+                     (default: merge into the existing config). Needs --force.
+  --help, -h         Show this help message.
+
+--env-file and --from-env cannot be combined.
 
 NON-INTERACTIVE KEYS (--env-file / --from-env)
   Built-in NSM envs:  NSM_DEV_USER, NSM_DEV_PASSWORD, NSM_QA_USER,
@@ -24,6 +29,9 @@ NON-INTERACTIVE KEYS (--env-file / --from-env)
   Jenkins:            BELZ_JENKINS_URL, BELZ_JENKINS_USER,
                       BELZ_JENKINS_PASSWORD, BELZ_JENKINS_JOB
   Teamwork:           TEAMWORK_EMAIL, TEAMWORK_PASSWORD
+  All *_PASSWORD values are plain text (not base64); they are stored with
+  "passwordEncoding": "plain" in ~/.belz/config.json (mode 600). Envs you
+  don't list are kept; add --replace --force to drop them.
 
 Note: 'belz setup' refuses to run interactively with --llm or on a non-TTY.
 Use --env-file or --from-env to populate config non-interactively.

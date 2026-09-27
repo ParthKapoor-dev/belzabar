@@ -1,8 +1,9 @@
 import { readFileSync, existsSync } from "fs";
-import { join } from "path";
-import { homedir } from "os";
 import {
   CliError,
+  CONFIG_FILE_PATH,
+  encodeSecret,
+  defineArgs,
   ok,
   writeConfigFile,
   loadConfigFileRaw,
@@ -26,6 +27,8 @@ interface SetupArgs {
   envFile?: string;
   fromEnv: boolean;
   force: boolean;
+  /** Replace the whole `environments` map instead of merging (requires --force). */
+  replace?: boolean;
 }
 
 interface SetupEnvSummary {
@@ -56,7 +59,8 @@ const BUILTIN_URLS: Record<string, string> = Object.fromEntries(BUILTIN_ENVS.map
 // non-interactively — e.g. from a cloud environment's variables.
 const GENERIC_ENV_RE = /^BELZ_ENV_(.+)_(URL|USER|PASSWORD|PROJECT)$/;
 
-type EnvEntry = { url?: string; user?: string; password?: string; project?: string };
+type EnvEntry = { url?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; project?: string };
+type SecretFields = { password: string; passwordEncoding: "plain" | "base64" };
 
 function parseDotEnv(content: string): Record<string, string> {
   const out: Record<string, string> = {};
@@ -74,17 +78,15 @@ function parseDotEnv(content: string): Record<string, string> {
   return out;
 }
 
-function toBase64(value: string): string {
-  if (!value) return "";
-  try {
-    // If it already decodes to printable text, assume already base64.
-    const decoded = atob(value);
-    if (decoded && /^[\x20-\x7e]+$/.test(decoded)) return value;
-  } catch { /* not base64 */ }
-  return btoa(value);
+// Every password setup reads (env file, process env, prompts) is plain text,
+// and is stored plain with an explicit `passwordEncoding: "plain"` in the 0600
+// config (D5). The old "already base64?" guess is gone: it silently kept a
+// plain password that happened to decode to printable ASCII (CORE-11, TW-8).
+function plainSecret(value: string): SecretFields {
+  return encodeSecret(value);
 }
 
-/** Group BELZ_ENV_<NAME>_* keys into per-env entries (passwords base64-encoded). */
+/** Group BELZ_ENV_<NAME>_* keys into per-env entries (passwords are plain text). */
 function collectGenericEnvs(values: Record<string, string>): Record<string, EnvEntry> {
   const grouped: Record<string, EnvEntry> = {};
   for (const [key, val] of Object.entries(values)) {
@@ -97,7 +99,7 @@ function collectGenericEnvs(values: Record<string, string>): Record<string, EnvE
     grouped[name] = entry;
     if (field === "URL") entry.url = val;
     else if (field === "USER") entry.user = val;
-    else if (field === "PASSWORD") entry.password = toBase64(val);
+    else if (field === "PASSWORD") Object.assign(entry, plainSecret(val));
     else if (field === "PROJECT") entry.project = val;
   }
   return grouped;
@@ -106,8 +108,8 @@ function collectGenericEnvs(values: Record<string, string>): Record<string, EnvE
 /** Build the full config from a flat key/value map (env file or process.env). */
 function buildConfigFromValues(values: Record<string, string>): {
   envs: Record<string, EnvEntry>;
-  tw?: { email?: string; password?: string };
-  jenkins?: { baseUrl?: string; user?: string; password?: string; migrationJob?: string };
+  tw?: { email?: string; password?: string; passwordEncoding?: "plain" | "base64" };
+  jenkins?: { baseUrl?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; migrationJob?: string };
 } {
   const envs: Record<string, EnvEntry> = {};
 
@@ -118,7 +120,7 @@ function buildConfigFromValues(values: Record<string, string>): {
     if (user || pass) {
       const entry: EnvEntry = { url };
       if (user) entry.user = user;
-      if (pass) entry.password = toBase64(pass);
+      if (pass) Object.assign(entry, plainSecret(pass));
       envs[name] = entry;
     }
   }
@@ -132,7 +134,7 @@ function buildConfigFromValues(values: Record<string, string>): {
   }
 
   // 3. Jenkins.
-  let jenkins: { baseUrl?: string; user?: string; password?: string; migrationJob?: string } | undefined;
+  let jenkins: { baseUrl?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; migrationJob?: string } | undefined;
   const jkUrl = values["BELZ_JENKINS_URL"];
   const jkUser = values["BELZ_JENKINS_USER"];
   const jkPass = values["BELZ_JENKINS_PASSWORD"];
@@ -141,18 +143,18 @@ function buildConfigFromValues(values: Record<string, string>): {
     jenkins = {};
     if (jkUrl) jenkins.baseUrl = jkUrl;
     if (jkUser) jenkins.user = jkUser;
-    if (jkPass) jenkins.password = toBase64(jkPass);
+    if (jkPass) Object.assign(jenkins, plainSecret(jkPass));
     if (jkJob) jenkins.migrationJob = jkJob;
   }
 
   // 4. Teamwork.
-  let tw: { email?: string; password?: string } | undefined;
+  let tw: { email?: string; password?: string; passwordEncoding?: "plain" | "base64" } | undefined;
   const email = values["TEAMWORK_EMAIL"];
   const twPass = values["TEAMWORK_PASSWORD"];
   if (email || twPass) {
     tw = {};
     if (email) tw.email = email;
-    if (twPass) tw.password = toBase64(twPass);
+    if (twPass) Object.assign(tw, plainSecret(twPass));
   }
 
   return { envs, tw, jenkins };
@@ -186,27 +188,25 @@ function buildSummaryBody(
   return lines.join("\n");
 }
 
+export const args = defineArgs({
+  command: "belz setup",
+  flags: {
+    "env-file": { type: "string" },
+    "from-env": { type: "boolean" },
+    force: { type: "boolean" },
+    replace: { type: "boolean" },
+  },
+  exclusive: [["env-file", "from-env"]],
+});
+
 const command: CommandModule<SetupArgs, SetupData> = {
   schema: "belz.setup",
 
-  parseArgs(args) {
-    const parsed: SetupArgs = { force: false, fromEnv: false };
-    for (let i = 0; i < args.length; i++) {
-      const a = args[i];
-      if (a === "--env-file") {
-        const next = args[i + 1];
-        if (!next) throw new CliError("--env-file requires a path argument.", { code: "MISSING_ARG" });
-        parsed.envFile = next;
-        i++;
-      } else if (a === "--from-env") {
-        parsed.fromEnv = true;
-      } else if (a === "--force") {
-        parsed.force = true;
-      } else {
-        throw new CliError(`Unknown flag: ${a}`, { code: "UNKNOWN_FLAG" });
-      }
-    }
-    return parsed;
+  /** Writes ~/.belz/config.json. */
+  writesLocal: true,
+  parseArgs(argv) {
+    const { flags } = args.parse(argv);
+    return { force: flags.force, fromEnv: flags.fromEnv, envFile: flags.envFile, replace: flags.replace };
   },
 
   async execute(args, context) {
@@ -221,20 +221,31 @@ const command: CommandModule<SetupArgs, SetupData> = {
     const existing = loadConfigFileRaw();
     const existingHasEnvs = Object.keys(existing.environments ?? {}).length > 0;
 
+    // Merging is the default (CORE-15): envs not mentioned in this run are kept.
+    // Replacing the whole map is explicit and needs --force.
+    if (args.replace && !args.force) {
+      throw new CliError("--replace discards every configured environment not in this run; add --force to confirm.", {
+        code: "SETUP_REPLACE_NEEDS_FORCE",
+      });
+    }
+
     if (existingHasEnvs && !args.force && context.outputMode === "human") {
       lifecycle.note(
         "Existing Configuration",
         buildSummaryBody(existing.environments, (existing as any).teamwork, existing.jenkins),
       );
-      const overwrite = await prompts.confirm({ message: "Overwrite the existing config?", initialValue: false });
-      if (!overwrite) {
+      const proceed = await prompts.confirm({
+        message: "Update the existing config? (environments you don't re-enter are kept)",
+        initialValue: true,
+      });
+      if (!proceed) {
         throw new CliError("Aborted: existing config preserved.", { code: "SETUP_ABORTED" });
       }
     }
 
     let envs: Record<string, EnvEntry> = {};
-    let tw: { email?: string; password?: string } | undefined;
-    let jenkins: { baseUrl?: string; user?: string; password?: string; migrationJob?: string } | undefined;
+    let tw: { email?: string; password?: string; passwordEncoding?: "plain" | "base64" } | undefined;
+    let jenkins: { baseUrl?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; migrationJob?: string } | undefined;
 
     // Non-interactive source: process.env (--from-env) or a .env file.
     let values: Record<string, string> | null = null;
@@ -264,7 +275,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
         const pass = user ? await prompts.password({ message: `Password for ${name}` }) : "";
         const entry: EnvEntry = { url };
         if (user) entry.user = user;
-        if (pass) entry.password = toBase64(pass);
+        if (pass) Object.assign(entry, plainSecret(pass));
         if (user || pass) envs[name] = entry;
       }
       const addTeamwork = await prompts.confirm({ message: "Configure Teamwork credentials now?", initialValue: false });
@@ -273,7 +284,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
         const password = await prompts.password({ message: "Teamwork password" });
         tw = {};
         if (email) tw.email = email;
-        if (password) tw.password = toBase64(password);
+        if (password) Object.assign(tw, plainSecret(password));
       }
     }
 
@@ -292,16 +303,18 @@ const command: CommandModule<SetupArgs, SetupData> = {
       }
     }
 
-    // Merge over existing config so non-credential sections (belz install
-    // metadata, web/extension state) survive. We DO own environments + teamwork
-    // + jenkins, but only overwrite jenkins/teamwork when new values were given.
-    const newConfig: BelzConfigFile = { ...existing, environments: envs };
-    if (tw) (newConfig as any).teamwork = tw;
-    if (jenkins) newConfig.jenkins = jenkins;
+    // Merge over the existing config: other sections (install metadata,
+    // extension state, defaultEnv) survive; envs are merged per name (an
+    // entry given here replaces that env's entry) unless --replace --force.
+    const environments = args.replace ? envs : { ...(existing.environments ?? {}), ...envs };
+    const newConfig: BelzConfigFile = { ...existing, environments };
+    // New secrets always carry their own passwordEncoding, so a plain spread is safe.
+    if (tw) newConfig.teamwork = { ...(existing.teamwork ?? {}), ...tw };
+    if (jenkins) newConfig.jenkins = { ...(existing.jenkins ?? {}), ...jenkins };
     writeConfigFile(newConfig);
 
     const summary: SetupData = {
-      configPath: join(homedir(), ".belz", "config.json"),
+      configPath: CONFIG_FILE_PATH,
       envs: Object.entries(envs).map(([name, e]) => ({
         name,
         url: e.url ?? "",
