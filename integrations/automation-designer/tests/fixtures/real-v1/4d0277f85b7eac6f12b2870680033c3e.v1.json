@@ -1,17 +1,147 @@
 {
- "id": 5691,
- "uuid": "4d0277f85b7eac6f12b2870680033c3e",
- "jsonDefinition": "{\"name\": \"exception_msg\", \"inputs\": [], \"outputs\": [], \"services\": [{\"code\": \"if(1==1)\\n{\\n          throw \\\"invalid data\\\";\\n}\", \"file\": \"\", \"outputs\": [{\"code\": \"exceptionTest\", \"type\": \"STRING\", \"displayName\": \"exceptionTest\"}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\", \"text\": \"CUSTOM CODE\", \"active\": false}, \"orderIndex\": 1, \"customCodeEnv\": \"CODE_LAMBDA\", \"currentAccount\": null, \"forceExitStatusCode\": 500, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"\"}",
- "version": 1,
- "name": "exception_msg",
- "aliasName": "exception_msg",
- "category": {
-  "id": 19,
-  "name": "Schools-Utilities"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "createdOn": 1704706497235
+  "id": 5691,
+  "uuid": "4d0277f85b7eac6f12b2870680033c3e",
+  "jsonDefinition": "{\"name\": \"exception_msg\", \"inputs\": [], \"outputs\": [], \"services\": [{\"code\": \"if(1==1)\\n{\\n          throw \\\"invalid data\\\";\\n}\", \"file\": \"\", \"outputs\": [{\"code\": \"exceptionTest\", \"type\": \"STRING\", \"displayName\": \"exceptionTest\"}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\", \"text\": \"CUSTOM CODE\", \"active\": false}, \"orderIndex\": 1, \"customCodeEnv\": \"CODE_LAMBDA\", \"currentAccount\": null, \"forceExitStatusCode\": 500, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"\"}",
+  "version": 1,
+  "name": "exception_msg",
+  "aliasName": "exception_msg",
+  "category": {
+    "id": 19,
+    "name": "Schools-Utilities",
+    "aliasName": [
+      "Schools - Utilities"
+    ],
+    "originalLabel": "Schools-Utilities",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 1986,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4619df2ec1d8db3afbd9a67b3319842b",
+    "automationSystemUuid": "4f6401b02dfc91e057ffaaa3f465c639    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 90601,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Admin",
+          "lastName": "SEMS",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Admin SEMS",
+          "title": "Admin SEMS"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1704706497235,
+  "state": "DRAFT",
+  "migrationVersion": 1704706497235,
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "47c77757077641fdbfd0bfa29c6c59c6",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

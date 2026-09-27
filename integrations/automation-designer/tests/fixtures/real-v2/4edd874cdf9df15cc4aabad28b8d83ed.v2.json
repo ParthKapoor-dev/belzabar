@@ -1,0 +1,922 @@
+{
+  "uuid": "4edd874cdf9df15cc4aabad28b8d83ed",
+  "automationApiId": "48ddc81eefc1579c855b8e33a75ef01e    ",
+  "name": "profileReview.notifySchoolStatsToSpecialReviewers",
+  "description": "Fetches the statistics of submitted profile updates and counts of pending reviews of a specific school, to be informed to a user who needs to perform the special reviews",
+  "metadata": {
+    "version": {
+      "uuid": "4edd874cdf9df15cc4aabad28b8d83ed",
+      "name": "7",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1684421829066,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "498ec6e97c6c4cec741d92f08f61d50d    ",
+      "key": "schoolId",
+      "name": "schoolId",
+      "description": "enter schoolid",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4e4af93bb1720ce0ddfb949987986b5a    ",
+      "key": "numPastDays",
+      "name": "numPastDays",
+      "description": "enter past days",
+      "type": "INTEGER",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": 1
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "456a114a3227fdd347eeb835dcfb3c09    ",
+      "key": "mailSentStatus",
+      "fieldCode": "mailSentStatus",
+      "name": "mailSentStatus",
+      "type": "BOOLEAN"
+    }
+  ],
+  "variables": [
+    {
+      "key": "mailSentStatus",
+      "name": "mailSentStatus",
+      "type": "BOOLEAN",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": false
+    }
+  ],
+  "steps": [
+    {
+      "id": "481b77a8eeabbc708fcabf90b559d2f8    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "description": "Fetch lastReviewClosingDate as well as statsDate",
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "SELECT CURRENT_DATE - CAST(details->>'profileValidityDays' AS Integer) as\"lastReviewClosingDate\", CURRENT_DATE - #{numPastDays} as \"statsDate\" FROM service \n",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "8f4b1153-4031-4933-8cfc-b932f60275f6",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "3154483b-14a3-4cc3-b67a-13294f143556",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "6745124e-489f-41d4-904b-06f1f212239f",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "371a1b5e-9bcb-4334-a412-90cadfdd79a1",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "490debfa-0f1d-f16f-a7e7-aa23f100f7da",
+              "key": "summaries",
+              "name": "Summaries",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "46fbe4a5-492d-bdee-0716-b17b8210e04d",
+                  "key": "summary",
+                  "name": "Summary",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [
+                    {
+                      "uuid": "4386dbd3-ba2d-7fca-cd73-b7d364252cd1",
+                      "key": "metrics",
+                      "name": "Metrics",
+                      "type": "ARRAY",
+                      "displayWidgetSuggestion": "ARRAY",
+                      "combineInput": false,
+                      "properties": [
+                        {
+                          "uuid": "40d8f53b-5aef-d9ae-f4bb-91ed24279ae8",
+                          "key": "metric",
+                          "name": "Metric",
+                          "type": "OBJECT",
+                          "displayWidgetSuggestion": "OBJECT",
+                          "combineInput": false,
+                          "properties": [],
+                          "encodingType": "NONE"
+                        }
+                      ],
+                      "encodingType": "NONE"
+                    }
+                  ],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "dateJson",
+          "name": "dateJson"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4ffc4fe86386fd6c08ee9b64cbfd7f57    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "Get lastReviewClosingDate from dateJson",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{dateJson}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$[0].lastReviewClosingDate",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "lastReviewClosingDate",
+          "name": "lastReviewClosingDate"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "414b38fd8f56854d2d07bf51cec45854    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "Get statsDate from&nbsp;dateJson",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{dateJson}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$[0].statsDate",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "statsDate",
+          "name": "statsDate"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "43d10adb6f04b08a4f438b735d5ca6ad    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "description": "Fetch school details, school stats, userEmails (having access to this school) using a query (Formulate below as a valid query). Apply the school.id filter to the stats query, if &lt;schoolId&gt; is provided.",
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "SELECT stats.*,\n(\n    SELECT \n        json_agg(u.contact_info->'email'->'primary'->>'id')\n    FROM users u \n    INNER JOIN user_roles ur on ur.user_id = u.id \n    WHERE  jsonb_typeof(ur.user_access->'sendingSchools') = 'array' AND EXISTS \n    (\n        SELECT 1\n        FROM jsonb_array_elements(ur.user_access->'sendingSchools') as ele\n        WHERE ( COALESCE(ele->>'id',NULL)::UUID = COALESCE(stats.school_id, NULL)::UUID OR ele->>'code' = '*')\n    )\n    AND jsonb_typeof(ur.roles) = 'array' AND EXISTS\n    (\n        SELECT 1 \n        FROM jsonb_array_elements(ur.roles) as ele2 \n        JOIN roles ro ON ro.id = COALESCE(ele2->>'id' , NULL)::UUID\n        WHERE ro.role_type = 'OTHERS'\n    )\n) user_emails\nFROM\n(\n    SELECT sub.school_id, sub.school_name, sub.facilities_user_name, to_char(now(),'MM-dd-yyyy') as \"today_date\",\n    count(CASE WHEN (today=1 AND needs_special_review=1) THEN 1 ELSE 0 END) today_special_reviews, \n    count(needs_special_review) total_special_reviews\n    FROM \n    (\n        SELECT s2.current_school_id AS school_id,(u.name->>'firstName') || ' ' || (u.name->>'lastName') AS facilities_user_name, s3.name AS school_name, asm.account_id, \n            (CASE WHEN (asm.details->'profileReview'->>'submittedAt')::timestamp > ( '#{statsDate}'):: timestamp THEN 1 ELSE 0 END) today, \n            (CASE WHEN EXISTS (SELECT 1 FROM approval WHERE (student_id=asm.student_id or account_id=asm.account_id) AND details->>'needsSpecialReview' = 'true') THEN 1 ELSE 0 END) needs_special_review\n        FROM account_student_mapping asm\n        INNER JOIN users u ON u.id = asm.account_id \n        INNER JOIN student s2 ON s2.id = asm.student_id \n        INNER JOIN school s3 ON s3.id = s2.current_school_id \n        WHERE asm.is_primary=true \n    AND (asm.details->'profileReview'->>'submittedAt')::timestamp > '#{lastReviewClosingDate}':: timestamp) sub \n    GROUP BY sub.school_id, sub.school_name,sub.facilities_user_name\n) stats where stats.school_id = COALESCE(NULLIF('#{schoolId}' , 'null')::uuid , stats.school_id)",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "8f4b1153-4031-4933-8cfc-b932f60275f6",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "3154483b-14a3-4cc3-b67a-13294f143556",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "6745124e-489f-41d4-904b-06f1f212239f",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "371a1b5e-9bcb-4334-a412-90cadfdd79a1",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "490debfa-0f1d-f16f-a7e7-aa23f100f7da",
+              "key": "summaries",
+              "name": "Summaries",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "46fbe4a5-492d-bdee-0716-b17b8210e04d",
+                  "key": "summary",
+                  "name": "Summary",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [
+                    {
+                      "uuid": "4386dbd3-ba2d-7fca-cd73-b7d364252cd1",
+                      "key": "metrics",
+                      "name": "Metrics",
+                      "type": "ARRAY",
+                      "displayWidgetSuggestion": "ARRAY",
+                      "combineInput": false,
+                      "properties": [
+                        {
+                          "uuid": "40d8f53b-5aef-d9ae-f4bb-91ed24279ae8",
+                          "key": "metric",
+                          "name": "Metric",
+                          "type": "OBJECT",
+                          "displayWidgetSuggestion": "OBJECT",
+                          "combineInput": false,
+                          "properties": [],
+                          "encodingType": "NONE"
+                        }
+                      ],
+                      "encodingType": "NONE"
+                    }
+                  ],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "facilitySchoolRecords",
+          "name": "facilitySchoolRecords"
+        },
+        {
+          "uuid": "5b11494a-c244-47a9-a063-3434f6a00e5g",
+          "key": "rowsImpacted",
+          "fieldCode": "facilitySchoolRecordsCount",
+          "name": "facilitySchoolRecordsCount"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4a5337634741a91683369cad75d38a25    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "set mailSentStatus to false if facilitySchoolRecordsCount is 0",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "false",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "isMailSent",
+          "name": "IsMailSent",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "mailSentStatus"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": "#{facilitySchoolRecordsCount} eq 0",
+            "expandedExpressions": [
+              {
+                "item": {
+                  "type": {
+                    "id": "NUMBER",
+                    "name": "Number",
+                    "type": "NUMBER"
+                  },
+                  "category": "Output 3.4",
+                  "fieldCode": "facilitySchoolRecordsCount",
+                  "nestedFieldCode": null
+                },
+                "value": 0,
+                "groupOp": {
+                  "value": "AND"
+                },
+                "operator": {
+                  "value": "eq"
+                },
+                "ignoreCase": false
+              }
+            ]
+          }
+        },
+        "entryCondition": {
+          "expression": "#{facilitySchoolRecordsCount} eq 0",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "NUMBER",
+                  "name": "Number",
+                  "type": "NUMBER"
+                },
+                "category": "Output 3.4",
+                "fieldCode": "facilitySchoolRecordsCount",
+                "nestedFieldCode": null
+              },
+              "value": 0,
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "476645636ce4114d66e5b5bbae04985d    ",
+      "automationAPIId": "41b4bf670d3cf0660594a01058a014e2    ",
+      "serviceName": "Schools",
+      "methodName": "internal.profileReview.notifySchoolStatsToSpecialReviewers",
+      "coreMethod": false,
+      "description": "call internal method to send mail",
+      "inputs": [
+        {
+          "uuid": "4bc638eb5ce34479929aa045fcc4817f    ",
+          "value": "#{facilitySchoolRecords.element}",
+          "key": "placeholderData",
+          "name": "placeholderData",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "40defc7fc52151e7f4fbb56a2f6bce67    ",
+          "key": "success",
+          "fieldCode": "successResponse",
+          "name": "successResponse"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "repeatStepExecution": {
+          "type": "LOOP_EXECUTION_ON_INPUT_OUTPUT",
+          "counter": null,
+          "executeParallel": false,
+          "numberOfConcurrentThread": null,
+          "value": "#{facilitySchoolRecords}"
+        },
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "isSent",
+          "fieldCode": "isSent",
+          "name": "isSent",
+          "type": "BOOLEAN",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "mailSentStatus"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "// return true if array all items are true else false\nlet queryStatusArr = JSON.parse('#{successResponse}');\nlet queryFalseStatus = queryStatusArr.filter((val) => val == false);\nlet queryNullStatus = queryStatusArr.filter((val) => val == null);\nif(queryFalseStatus.length > 0  || queryNullStatus.length > 0 || queryStatusArr.length == 0){\n    console.log(false);\n}else{\nconsole.log(true);\n}",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "4068d3fee10269a21a03b5170975b3f1",
+      "comment": "Developer: Pankaj<br>Version: 1<br>New method created",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1684833523452
+    }
+  ],
+  "testSuite": {
+    "id": "45e49a7c675e4c5ca8bc8730f9d8dda8",
+    "createdBy": 2,
+    "createdOn": 1684835454792,
+    "updatedBy": 2,
+    "updatedOn": 1684835516255,
+    "chainId": "4edd874cdf9df15cc4aabad28b8d83ed",
+    "testCases": [
+      {
+        "id": "4ac4cea2dd35b611d016bce59d6588e9",
+        "createdBy": 2,
+        "createdOn": 1684835454794,
+        "name": "profileReview.notifySchoolStatsToSpecialReviewers_1",
+        "testSuiteId": "45e49a7c675e4c5ca8bc8730f9d8dda8",
+        "inputs": [
+          {
+            "id": "4bc739880ad0eb71c39fa34f294ded93",
+            "createdOn": 1684835454796,
+            "testCaseId": "4ac4cea2dd35b611d016bce59d6588e9",
+            "fieldCode": "schoolId",
+            "value": "{\"value\": \"2861d026-4ea9-4704-89d5-9140a5f1681b\"}"
+          },
+          {
+            "id": "421f998b5fdf59bbed7694a3b609b859",
+            "createdOn": 1684835454799,
+            "testCaseId": "4ac4cea2dd35b611d016bce59d6588e9",
+            "fieldCode": "numPastDays",
+            "value": "{\"value\": 20}"
+          },
+          {
+            "id": "404564ea8ee057588e928f87f7c673ee",
+            "createdOn": 1684835454801,
+            "testCaseId": "4ac4cea2dd35b611d016bce59d6588e9",
+            "fieldCode": "mailSentStatus",
+            "value": "{}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4c78d03bcf80be4b480abf317ab364b9",
+        "createdBy": 2,
+        "createdOn": 1684835516259,
+        "name": "profileReview.notifySchoolStatsToSpecialReviewers_2",
+        "testSuiteId": "45e49a7c675e4c5ca8bc8730f9d8dda8",
+        "inputs": [
+          {
+            "id": "4a8e2632d0c32cc2aa738094abcdc7de",
+            "createdOn": 1684835516261,
+            "testCaseId": "4c78d03bcf80be4b480abf317ab364b9",
+            "fieldCode": "schoolId",
+            "value": "{}"
+          },
+          {
+            "id": "4f2f75ccc29ac1b6a742bf10c4ea0389",
+            "createdOn": 1684835516262,
+            "testCaseId": "4c78d03bcf80be4b480abf317ab364b9",
+            "fieldCode": "numPastDays",
+            "value": "{\"value\": 20}"
+          },
+          {
+            "id": "4122042f6dbd1fd6804b88da7c5ed768",
+            "createdOn": 1684835516264,
+            "testCaseId": "4c78d03bcf80be4b480abf317ab364b9",
+            "fieldCode": "mailSentStatus",
+            "value": "{}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

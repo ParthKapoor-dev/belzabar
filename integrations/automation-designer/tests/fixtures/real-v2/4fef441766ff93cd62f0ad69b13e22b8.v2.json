@@ -1,0 +1,897 @@
+{
+  "uuid": "4fef441766ff93cd62f0ad69b13e22b8",
+  "automationApiId": "43cb5288b46a6e13837aa8d13e6f442b    ",
+  "name": "Copyofcallbackonusercreated2",
+  "summary": "",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "4fef441766ff93cd62f0ad69b13e22b8",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 468,
+      "uuid": "447f4cd9faf3f62b76f0ace5fd421b6d",
+      "name": "Schools-BackgroundProcess",
+      "description": "Methods which  run in background for example the etl process for schools data population, will be defined here",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1741702915830,
+      "lastPublishedAt": 1741702915816,
+      "createdBy": 2,
+      "migrationVersion": 1741702915816,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4e265cdba4d08117c6139f1ca75a5985    ",
+      "key": "email",
+      "name": "email",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4e6e9e58ca6cf17273bb99cf6d14195c    ",
+      "key": "firstName",
+      "name": "firstName",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "499ef43b714ccac2c00d97c57b9aa2a5    ",
+      "key": "lastName",
+      "name": "lastName",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "40ff2b688635d97d1e97ad074c9fc990    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "SELECT details->'portal'->'auth'->>'applicationId' AS applicationid FROM service WHERE name='ESCHOOLS';",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "476ea71abed20d6853a58dd1f0e06dca    ",
+              "value": "OBJECT",
+              "key": "flatDataType",
+              "name": "responseDataType",
+              "type": "STRING",
+              "displayWidgetSuggestion": "DROPDOWN",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "applicationId",
+          "name": "applicationId"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "49c27312a056aaeba759814123d2d4c9    ",
+      "automationAPIId": "46682b77a0effd3479d7843f5989e6ca    ",
+      "serviceName": "Expertly.PortalUser",
+      "methodName": "users.listAll",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4bb749f9e243a11a44e09d0dfb8e71b7    ",
+          "value": "#{applicationId[0].applicationid}",
+          "key": "applicationId",
+          "name": "applicationID",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "445191c5c0ca5e1a9ce69ba1eec82eb5    ",
+          "value": "1",
+          "key": "resultSize",
+          "name": "resultSize",
+          "type": "INTEGER",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "42326b14637964f8661babb76834de67    ",
+          "value": "0",
+          "key": "startRow",
+          "name": "startRow",
+          "type": "INTEGER",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "42129d361584d9f440ac809d1091509c    ",
+          "value": "#{email}",
+          "key": "email",
+          "name": "email",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "46808bc5c343bd933d22a754bc8e3300    ",
+          "key": "response",
+          "fieldCode": "usersDataJson",
+          "name": "usersDataJson"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4a9941433d918133de7db7f4f29d157d    ",
+      "automationAPIId": "4642a0b63b3c94ed4a92825d52bbf1dd    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "insertElement",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "472880668b3b4b78c928a1a8548299df    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "47645f956cf0fc0739609fdce38d3156    ",
+              "value": "{\"email\":{\"primary\":{\"id\":\"#{email}\"}}}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4eebc2d2dd13bb5bf96c901d756e8f74    ",
+              "value": "phone",
+              "key": "key",
+              "name": "keyToInsert",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "47a6ec9bc25299158ddeb6fc6209377c    ",
+              "value": "{\"primary\": {\"number\": \"#{usersDataJson.users[0].mobilePhone}\"}}",
+              "key": "value",
+              "name": "valueToInsert",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "441f16cbfde8915f1db3adc4d6a3906c    ",
+          "key": "response",
+          "fieldCode": "contactsJson",
+          "name": "contactsJson"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{usersDataJson.total} ne 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4c3c7bddce34ea5a2bc2a6c898ae76f7    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{usersDataJson.users[0].preferredLanguages}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$[0]",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "preferredLanguage1",
+          "name": "preferredLanguage1"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{usersDataJson.total} ne 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "preferredLanguage",
+          "fieldCode": "preferredLanguage",
+          "name": "preferredLanguage",
+          "type": "STRING"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{usersDataJson.total} ne 0",
+          "expandedExpressions": []
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "let preferredLanguage = `#{preferredLanguage1}`;\npreferredLanguage = preferredLanguage.toUpperCase();\nconsole.log(preferredLanguage); ",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4fe52ccc0707900d53529fc7e67cce40    ",
+      "automationAPIId": "4642a0b63b3c94ed4a92825d52bbf1dd    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "insertElement",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "472880668b3b4b78c928a1a8548299df    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "47645f956cf0fc0739609fdce38d3156    ",
+              "value": "{\n        \"dateOfBirth\": #{usersDataJson.users[0].data.dateOfBirth},\n        \"preferredLanguage\": \"#{preferredLanguage}\"\n}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4eebc2d2dd13bb5bf96c901d756e8f74    ",
+              "value": "gender",
+              "key": "key",
+              "name": "keyToInsert",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "47a6ec9bc25299158ddeb6fc6209377c    ",
+              "value": "#{usersDataJson.users[0].data.gender}",
+              "key": "value",
+              "name": "valueToInsert",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "441f16cbfde8915f1db3adc4d6a3906c    ",
+          "key": "response",
+          "fieldCode": "detailsJson",
+          "name": "detailsJson"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{usersDataJson.total} ne 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "46ca63e49688e374a122b261e637e08c    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "#{usersDataJson.users[0].id}",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "id",
+          "name": "id"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{usersDataJson.total} ne 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "435373caa6e3f7afef5799d84e21315a    ",
+      "automationAPIId": "40025c7a39ac5a5c99639db3068a685f    ",
+      "serviceName": "Schools",
+      "methodName": "user.public.add",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4956fab2f67c419a1a769e7311563786    ",
+          "value": "#{email}",
+          "key": "userName",
+          "name": "userName",
+          "type": "TEXT",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "45a8d565e03c5531ff3dbb9b5bd93591    ",
+          "value": "#{contactsJson}",
+          "key": "contactInfo",
+          "name": "contactInfo",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "41d5c5957530b8bebb509829e3c4c13d    ",
+          "value": "#{usersDataJson.users[0].data.name}",
+          "key": "name",
+          "name": "name",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4188fc4d88e843016e4f82966d39061c    ",
+          "value": "#{detailsJson}",
+          "key": "details",
+          "name": "details",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4ea250047f1bf882d042ad09f2b3d2b0    ",
+          "value": "{\"email\":false,\"phone\":false}",
+          "key": "verified",
+          "name": "verified",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "46dea0c5c0efcb4b46d6877009c36553    ",
+          "value": "#{id}",
+          "key": "externalAuthId",
+          "name": "externalAuthId",
+          "type": "TEXT",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "46983f2ff63fdb3b79abb3da3f7ad7e4    ",
+          "value": "false",
+          "key": "authorised",
+          "name": "authorised",
+          "type": "BOOLEAN",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "487e04bde9f8d1cc2ec5bcaea874119c    ",
+          "key": "userId",
+          "fieldCode": "userId",
+          "name": "userId"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{usersDataJson.total} ne 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "447d1daf6676c809faa18c9ef89392be",
+    "createdBy": 2,
+    "createdOn": 1741702915919,
+    "chainId": "4fef441766ff93cd62f0ad69b13e22b8",
+    "testCases": [
+      {
+        "id": "4e7892bba296037af58494afab418ef3",
+        "createdBy": 2,
+        "createdOn": 1741702915923,
+        "name": "callback.on.user.created.success.1",
+        "testSuiteId": "447d1daf6676c809faa18c9ef89392be",
+        "inputs": [
+          {
+            "id": "4f55a2ac31de104bbf94a72acbf865e1",
+            "createdOn": 1741702915928,
+            "testCaseId": "4e7892bba296037af58494afab418ef3",
+            "fieldCode": "id",
+            "value": "{\"value\": \"5bd8e189-8667-43e5-93bd-ee7d5b02fee4\"}"
+          },
+          {
+            "id": "4c2ed98000b331b6bbbd9de81fbbb51f",
+            "createdOn": 1741702915933,
+            "testCaseId": "4e7892bba296037af58494afab418ef3",
+            "fieldCode": "email",
+            "value": "{\"value\":\"user@example.com\"}"
+          },
+          {
+            "id": "4f2b167ae2746a134c6a90a1d6afee64",
+            "createdOn": 1741702915935,
+            "testCaseId": "4e7892bba296037af58494afab418ef3",
+            "fieldCode": "firstName",
+            "value": "{\"value\": \"Anmol\"}"
+          },
+          {
+            "id": "4e72e52155eaf3ee0583874434ac1db3",
+            "createdOn": 1741702915937,
+            "testCaseId": "4e7892bba296037af58494afab418ef3",
+            "fieldCode": "lastName",
+            "value": "{\"value\": \"Testing\"}"
+          },
+          {
+            "id": "4181ef0cd4571aeee2168b956a9f4027",
+            "createdOn": 1741702915939,
+            "testCaseId": "4e7892bba296037af58494afab418ef3",
+            "fieldCode": "mobilePhone",
+            "value": "{\"value\": \"4758450000\"}"
+          },
+          {
+            "id": "4a2df0f3de327bb2f8509f4373434817",
+            "createdOn": 1741702915941,
+            "testCaseId": "4e7892bba296037af58494afab418ef3",
+            "fieldCode": "data",
+            "value": "{\"value\": \"{\\\"altEmail\\\":\\\"\\\",\\\"dateOfBirth\\\":{\\\"value\\\":\\\"1990-01-01\\\"},\\\"gender\\\":\\\"M\\\",\\\"name\\\":{\\\"firstName\\\":\\\"Anmol\\\",\\\"lastName\\\":\\\"Testing\\\"}}\"}"
+          },
+          {
+            "id": "4fad6d98d3fd0a7c0ff58db30e76a4ef",
+            "createdOn": 1741702915944,
+            "testCaseId": "4e7892bba296037af58494afab418ef3",
+            "fieldCode": "preferredLanguages",
+            "value": "{\"value\": \"[\\\"apa\\\"]\", \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4cbfc56f06b8abf5ab42983e42e0410d",
+        "createdBy": 2,
+        "createdOn": 1741702915945,
+        "name": "callback.on.user.created.success.2",
+        "testSuiteId": "447d1daf6676c809faa18c9ef89392be",
+        "inputs": [
+          {
+            "id": "44d6c38da50f0d8c6d59b45e4c64ffe5",
+            "createdOn": 1741702915947,
+            "testCaseId": "4cbfc56f06b8abf5ab42983e42e0410d",
+            "fieldCode": "id",
+            "value": "{\"value\": \"9f53fc8a-e030-464d-9049-5b222ec4a681\"}"
+          },
+          {
+            "id": "4628584ba7957a4fc9bab5e5781b460e",
+            "createdOn": 1741702915949,
+            "testCaseId": "4cbfc56f06b8abf5ab42983e42e0410d",
+            "fieldCode": "email",
+            "value": "{\"value\":\"user@example.com\"}"
+          },
+          {
+            "id": "476203ae6af372d3d1d1b3a7583c9e24",
+            "createdOn": 1741702915951,
+            "testCaseId": "4cbfc56f06b8abf5ab42983e42e0410d",
+            "fieldCode": "firstName",
+            "value": "{\"value\": \"Uttaran\"}"
+          },
+          {
+            "id": "443aa3f68eec5d42bd408ee75426cc1b",
+            "createdOn": 1741702915953,
+            "testCaseId": "4cbfc56f06b8abf5ab42983e42e0410d",
+            "fieldCode": "lastName",
+            "value": "{\"value\": \"Test\"}"
+          },
+          {
+            "id": "4a8dc0cee5bccdfe2254bfe3667bdc09",
+            "createdOn": 1741702915955,
+            "testCaseId": "4cbfc56f06b8abf5ab42983e42e0410d",
+            "fieldCode": "mobilePhone",
+            "value": "{\"value\": \"4758455123\"}"
+          },
+          {
+            "id": "454469166601072289f79d39918b1c6a",
+            "createdOn": 1741702915956,
+            "testCaseId": "4cbfc56f06b8abf5ab42983e42e0410d",
+            "fieldCode": "data",
+            "value": "{\"value\": \"{\\\"altEmail\\\":\\\"\\\",\\\"dateOfBirth\\\":{\\\"value\\\":\\\"1990-01-01\\\"},\\\"gender\\\":\\\"M\\\",\\\"name\\\":{\\\"firstName\\\":\\\"Uttaran\\\",\\\"lastName\\\":\\\"Test\\\"}}\"}"
+          },
+          {
+            "id": "4c7082020d073a507472ac942984b2ab",
+            "createdOn": 1741702915958,
+            "testCaseId": "4cbfc56f06b8abf5ab42983e42e0410d",
+            "fieldCode": "preferredLanguages",
+            "value": "{\"value\": \"[\\\"en\\\"]\", \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

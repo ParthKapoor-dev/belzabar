@@ -1,0 +1,554 @@
+{
+  "uuid": "464ba54e209fa0adf2a1bc0207c5dba1",
+  "automationApiId": "4199e63a3c2ed8151dd2b77cdcda12e4    ",
+  "name": "notification.setting.add",
+  "summary": "Adds the notification setting to the core system, using the core Announcement Centers API.",
+  "description": "This also set the recipients into channel_recipients as groups. Specific actorId will get added via channel.recipient.add called via cron.",
+  "metadata": {
+    "version": {
+      "uuid": "464ba54e209fa0adf2a1bc0207c5dba1",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 710,
+      "uuid": "46c0c5138d4afa7fc0daa5d2214157c1",
+      "name": "Schools-Notifications",
+      "description": "Service containing notfication related methods",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1723115063672,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "47bb678e006a03c72e3ca49f8b2a9aea    ",
+      "key": "title",
+      "name": "title",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "49ab94b7401c5fa6bbf6b4e9cdf83083    ",
+      "key": "priority",
+      "name": "priority",
+      "description": "It can be any of these ( HIGH / MEDIUM/ LOW )",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "462114da92dc34af73ebaf7d6cbd6f51    ",
+      "key": "message",
+      "name": "message",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "41e64451820247b719969ddcd42ae8ce    ",
+      "key": "channelId",
+      "name": "channelId",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "44cb2f0fec8356c461b8807d5fabf254    ",
+      "key": "channelName",
+      "name": "channelName",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4455ef55ec5247beb983a270d78e76f2    ",
+      "key": "recipientDetails",
+      "name": "recipientDetails",
+      "description": "Note: type in recipientDetails is mandatory, rest optional\n\n{\n  \"type\": \"PARENTS/ADMINS\",\n  \"epIds\": \"<epId>\",\n  \"gradeIds\": \"<gradeIds>\",\n  \"hasApplications\": \"<hasApplications>\"\n}\n",
+      "type": "JSON",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "471339128ba6b7242596a4d2f2d5aa4a    ",
+      "key": "startTime",
+      "name": "startTime",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4b3875fe5e1b0c832da185cde361e2c5    ",
+      "key": "expirationTime",
+      "name": "expirationTime",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [],
+  "variables": [
+    {
+      "key": "roleType",
+      "name": "roleType",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": "ADMIN"
+    }
+  ],
+  "steps": [
+    {
+      "id": "4aa69d7dfd08a9a8e6dda404b1c8dc91    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "<ul style=\"margin-top:0;margin-bottom:0;padding-inline-start:48px;\" id=\"isPasted\"><li dir=\"ltr\" style=\"list-style-type:disc;font-size:12pt;font-family:Calibri,sans-serif;color:#000000;background-color:transparent;font-weight:400;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;\">Set roleType = &lt;recipientDetails.type&gt;;&nbsp;<ul style=\"margin-top:0;margin-bottom:0;padding-inline-start:48px;\"><li dir=\"ltr\" style=\"list-style-type:circle;font-size:12pt;font-family:Calibri,sans-serif;color:#000000;background-color:transparent;font-weight:400;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;\">If roleType=PARENTS, set it to PUBLIC</li><li dir=\"ltr\" style=\"list-style-type:circle;font-size:12pt;font-family:Calibri,sans-serif;color:#000000;background-color:transparent;font-weight:400;font-style:normal;font-variant:normal;text-decoration:none;vertical-align:baseline;white-space:pre;\">Else roleType=ADMINS, set it to ADMIN</li></ul></li></ul>",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "\"PUBLIC\"",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "varRoleType",
+          "name": "varRoleType",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "roleType"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{recipientDetails.type} eq \"PARENTS\"",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4e8fd96353987925d9d997558cac0e91    ",
+      "automationAPIId": "422d6e83b11eb1178bccba8755c9416e    ",
+      "serviceName": "Schools",
+      "methodName": "roles.getAll",
+      "coreMethod": false,
+      "description": "Get the list of roles by calling roles.getAll passing filters as [&lt;recipientDetails.type&gt;] and setting results to roles",
+      "inputs": [
+        {
+          "uuid": "470a1027b71c112ed0fc9ae1749cbbec    ",
+          "value": "[\"#{roleType}\"]",
+          "key": "filter",
+          "name": "filter",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4b25a5f290e39055fcd383cb9c77c9cf    ",
+          "key": "roles",
+          "fieldCode": "roles",
+          "name": "roles"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "rolesDetail",
+          "fieldCode": "rolesDetail",
+          "name": "rolesDetail",
+          "type": "JSON"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "// Input roles array \nconst roles = JSON.Parse(\"#{roles}\");\n\n// Initialize empty arrays for recipients and permissions\nlet rolesDetail = {\"recipients\":[], \"permissions\":[]};\n\n// Iterate over each role in the roles array\nroles.forEach(role => {\n\n  // Extract the id from the role's details\n  const actorId = role.details.external.id;\n  \n  // Add to recipients { \"actorType\" :\"GROUP\", \"actorId\":\"<element.details->'external'->>'id'>\" }\n  rolesDetail.recipients.push({\n    \"actorType\": \"GROUP\",\n    \"actorId\": actorId\n  });\n\n  // Add to permissions {\"actorType\" : \"GROUP\", \"actorId\" :\"<element.details->’external’->>’id’>\", \"permissionType\" : \"EDIT\"}\n  rolesDetail.permissions.push({\n    \"actorType\": \"GROUP\",\n    \"actorId\": actorId,\n    \"permissionType\": \"EDIT\"\n  });\n});\n\n// Output the results\nconsole.log(JSON.stringify(rolesDetail));",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "42fe7c5eb620f3a25b5ab1ef09913a50    ",
+      "automationAPIId": "4538f1b91db761829180b54691020951    ",
+      "serviceName": "Expertly.Notification",
+      "methodName": "notificationSettings.add",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "46893f88402eb29bd539a1b5df867610    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "48eeb0713b9e42877a7a98b8307f3c08    ",
+              "value": "#{title}",
+              "key": "title",
+              "name": "notificationTitle",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "444dbb34bcf1f309a23e9bac86604481    ",
+              "value": "#{priority}",
+              "key": "priority",
+              "name": "priority",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "465add2aa990aefeadeda56252255202    ",
+              "value": "#{message}",
+              "key": "message",
+              "name": "message",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "41b581364d47bd66264eab8d1aecec1b    ",
+              "value": "#{startTime}",
+              "key": "startTime",
+              "name": "startTime",
+              "type": "TIMESTAMP",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4e52a6e8c3af7041f9ce843e8aceadc4    ",
+              "value": "#{expirationTime}",
+              "key": "expirationTime",
+              "name": "expirationTime",
+              "type": "TIMESTAMP",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "44cafdc71a4b1333f8dab8fd43374884    ",
+              "value": "[\"#{channelId}\"]",
+              "key": "channelMappings",
+              "name": "channels",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "445588b0cac420cfa1a9af4e25acaacb    ",
+          "key": "response",
+          "fieldCode": "notificationSettingId",
+          "name": "notificationSettingId"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "48796eecd147b24f47ba87f41de2caff    ",
+      "automationAPIId": "4627c4b0dc1b3ad8a6518d65127b7e86    ",
+      "serviceName": "Expertly.Notification",
+      "methodName": "channel.update",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "421c7cdc06d1e74283afb03fe1217d26    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4d63372caa2c6a583cb684879ca667ad    ",
+              "value": "#{channelName}",
+              "key": "name",
+              "name": "channelName",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4575ac948f1cd6cd2a12ae273188a8ba    ",
+              "value": "#{title}",
+              "key": "title",
+              "name": "notificationTitle",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4826d82350487f3be514a2dbcd4228bf    ",
+              "value": "#{rolesDetail.recipients}",
+              "key": "recipients",
+              "name": "recipients",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4ae890ca89deb3d36feab6b89d850b85    ",
+              "value": "#{rolesDetail.permissions}",
+              "key": "permissions",
+              "name": "permissions",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4bdc4c403770ce79a819bc6390cdfdf5    ",
+          "value": "#{channelId}",
+          "key": "channelId",
+          "name": "channelId",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

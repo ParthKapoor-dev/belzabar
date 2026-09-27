@@ -1,7 +1,7 @@
 {
   "orderIndex": 4,
   "description": "Fetch users for an organisation",
-  "automationId": "sql-step",
+  "automationId": 129128,
   "activeTab": { "id": "existingService" },
   "automationApiId": 48,
   "automationAuthId": 274,

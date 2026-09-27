@@ -1,0 +1,160 @@
+{
+  "uuid": "46f978f8b5d9728d9aebba270caf8359",
+  "automationApiId": "417869cf7832bcd24b80aa9470f84e1a    ",
+  "name": "offers.add.internalLoop.joinBuilder",
+  "summary": "Loop body: concatenate one candidateOrderingJoins fragment onto sysSortValueJoins.",
+  "description": "Internal loop method for offers.add. Threads sysSortValueJoins as a string accumulator; each iteration appends the current candidateOrderingJoins element.",
+  "metadata": {
+    "version": {
+      "uuid": "46f978f8b5d9728d9aebba270caf8359",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1783600038136,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": 1783600038136,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4d504585993d11151dd3a799c6440bfd    ",
+      "key": "joinFragment",
+      "name": "joinFragment",
+      "description": "Current SQL JOIN fragment from candidateOrderingJoins to append",
+      "type": "TEXT",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4e94fec511873534171d8f9866d349c9    ",
+      "key": "sysSortValueJoins",
+      "name": "sysSortValueJoins",
+      "description": "Running accumulator of concatenated JOIN fragments",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": ""
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4e8bc3b4f30195d7bcff8c0a95c7b7c4    ",
+      "key": "sysSortValueJoinsInternal",
+      "fieldCode": "sysSortValueJoinsInternal",
+      "name": "sysSortValueJoinsInternal",
+      "type": "TEXT",
+      "description": "Updated accumulator = sysSortValueJoins + joinFragment"
+    }
+  ],
+  "variables": [
+    {
+      "key": "sysSortValueJoinsInternal",
+      "name": "sysSortValueJoinsInternal",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "steps": [
+    {
+      "id": "41440443c5efb5bcd345a4d1a8eef1ad    ",
+      "automationAPIId": "424ffd4c9e0f55befc238dd999dab2d6    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "echo",
+      "coreMethod": false,
+      "description": "Concatenate current JOIN fragment onto the running accumulator (string join, not list append)",
+      "inputs": [
+        {
+          "uuid": "4bd0e87488b2cf0ff019850ab3ae069c    ",
+          "value": "#{(sysSortValueJoins == null ? '' : sysSortValueJoins) + ' ' + (joinFragment == null ? '' : joinFragment)}",
+          "key": "Input",
+          "name": "Input",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "454b0e868e7fdf20249caae851c08208    ",
+          "key": "response",
+          "fieldCode": "sysSortValueJoinsInternal1",
+          "name": "sysSortValueJoinsInternal1",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "sysSortValueJoinsInternal"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": "UNRESTRICTED",
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

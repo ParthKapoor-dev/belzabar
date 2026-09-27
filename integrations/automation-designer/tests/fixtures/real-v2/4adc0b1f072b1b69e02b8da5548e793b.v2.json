@@ -1,0 +1,50 @@
+{
+  "uuid": "4adc0b1f072b1b69e02b8da5548e793b",
+  "automationApiId": "41223c70f1390383135ca1a220c7fc21    ",
+  "name": "tobedeleted-stackLogs.add",
+  "summary": "add logs to methods_stack_log table",
+  "description": "add logs to methods_stack_log table",
+  "metadata": {
+    "version": {
+      "uuid": "4adc0b1f072b1b69e02b8da5548e793b",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 19,
+      "uuid": "4619df2ec1d8db3afbd9a67b3319842b",
+      "name": "Schools-Utilities",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1746682752251,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [],
+  "outputs": [],
+  "variables": [],
+  "steps": [],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

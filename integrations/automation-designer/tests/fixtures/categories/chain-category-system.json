@@ -1,0 +1,7093 @@
+[
+  {
+    "id": 10,
+    "uuid": "7f54f54c-b8d1-4f29-8efc-dc4ac54a5e4c",
+    "name": "exp_smtp",
+    "originalLabel": "Email.SMTP",
+    "active": true,
+    "label": "Email.SMTP",
+    "authType": "BASIC",
+    "authOptional": false,
+    "addAccountLabel": "Add an email account",
+    "version": "7.9",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "Smart Email Service"
+    ],
+    "description": "This service consists of methods for sending emails, using SMTP as the underlying protocol.",
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 29,
+    "uuid": "4ffa2041a4a450c74d12b404ed7ca3b4    ",
+    "name": "TEST - Swapnil Service",
+    "originalLabel": "TEST - Swapnil Service",
+    "active": true,
+    "label": "TEST - Swapnil Service",
+    "authOptional": false,
+    "version": "6",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - Swapnil Service"
+    ],
+    "automationChainCategoryId": 13,
+    "permissions": [
+      {
+        "id": 21830,
+        "automationSystemId": 29,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 27,
+    "uuid": "4a57e6f2707d92cfa1fea29b0b500e90    ",
+    "name": "TEST - Zinat Practice",
+    "originalLabel": "TEST - Zinat Practice",
+    "active": true,
+    "label": "TEST - Zinat Practice",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - Zinat Practice"
+    ],
+    "automationChainCategoryId": 11,
+    "permissions": [
+      {
+        "id": 73889,
+        "automationSystemId": 27,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 729,
+    "uuid": "49992731135ff7854fda88f295a3d92f    ",
+    "name": "Document.PDF",
+    "originalLabel": "Document.PDF",
+    "active": true,
+    "label": "Document.PDF",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Document.PDF"
+    ],
+    "automationChainCategoryId": 711,
+    "permissions": [
+      {
+        "id": 74390,
+        "automationSystemId": 729,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 24,
+    "uuid": "4c2e8cf1ab486cca1873937345f34e70    ",
+    "name": "TEST - Dipsi Practice",
+    "originalLabel": "TEST - Dipsi Practice",
+    "active": true,
+    "label": "TEST - Dipsi Practice",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - Dipsi Practice"
+    ],
+    "automationChainCategoryId": 8,
+    "permissions": [
+      {
+        "id": 68311,
+        "automationSystemId": 24,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 472,
+    "uuid": "48d08caf86b8433b531d995b79e8348e    ",
+    "name": "twilio",
+    "originalLabel": "Twilio",
+    "active": true,
+    "label": "Twilio",
+    "authType": "BASIC",
+    "authOptional": false,
+    "addAccountLabel": "Authorize an account",
+    "version": "1.0",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "twilio"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 12,
+    "uuid": "5cdd98b1-1d70-4f3d-a3df-40482dd35276",
+    "name": "caldav",
+    "originalLabel": "Ical",
+    "active": true,
+    "label": "Ical",
+    "authType": "BASIC",
+    "authOptional": false,
+    "addAccountLabel": "Add an iOs account",
+    "version": "1.7",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "caldav"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 13,
+    "uuid": "1cd90b8c-4f40-471a-9c70-a4a665f5b856",
+    "name": "ldap",
+    "originalLabel": "LDAP Server",
+    "active": true,
+    "label": "LDAP Server",
+    "authType": "BASIC",
+    "authOptional": false,
+    "addAccountLabel": "Add an ldap account",
+    "version": "2.7",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "ldap"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 15,
+    "uuid": "d002707b-0322-4827-b64d-9b69910cc6e1",
+    "name": "code_lambda",
+    "originalLabel": "Code Execution",
+    "active": true,
+    "label": "Code Execution",
+    "authOptional": false,
+    "version": "2.0",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "code_lambda"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 16,
+    "uuid": "ad48d73e-4c09-41e1-b2ae-14bdf4e42bc6",
+    "name": "js_lambda",
+    "originalLabel": "JavaScript",
+    "active": true,
+    "label": "JavaScript",
+    "authOptional": false,
+    "version": "1.7",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "js_lambda"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 41,
+    "uuid": "4a46ddcb28f94b1e853cbe23321a1fa9    ",
+    "name": "Schools-Configure",
+    "originalLabel": "Schools-Configure",
+    "active": true,
+    "label": "Schools-Configure",
+    "authOptional": true,
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools - Configure BCPS"
+    ],
+    "permissions": [
+      {
+        "id": 74887,
+        "automationSystemId": 41,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 38,
+    "uuid": "4ccbd2aba5782468b14da750fa94e212    ",
+    "name": "Dipsi Practice",
+    "originalLabel": "Dipsi Practice",
+    "active": true,
+    "label": "Dipsi Practice",
+    "authOptional": false,
+    "version": "8",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Dipsi Practice"
+    ],
+    "permissions": [
+      {
+        "id": 5432,
+        "automationSystemId": 38,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 5,
+    "uuid": "02d02688-ee14-4e8e-8d70-817d8cd105d9",
+    "name": "exp_sftp",
+    "originalLabel": "Secure File Transfer",
+    "active": true,
+    "label": "Secure File Transfer",
+    "authType": "MULTIPLE",
+    "authOptional": false,
+    "addAccountLabel": "Add SFTP Account",
+    "version": "6.0",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "Secure File Transfer"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 485,
+    "uuid": "4c685045410a7258a2748cbd95441be0    ",
+    "name": "test-Mayank",
+    "originalLabel": "test-Mayank",
+    "active": true,
+    "label": "test-Mayank",
+    "authOptional": false,
+    "version": "9",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "test-Mayank"
+    ],
+    "automationChainCategoryId": 467,
+    "permissions": [
+      {
+        "id": 58063,
+        "automationSystemId": 485,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 594,
+    "uuid": "45c5422438c66a5befb4a22edbf19fe0    ",
+    "name": "Schools-Match",
+    "originalLabel": "Schools-Match",
+    "active": true,
+    "label": "Schools-Match",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools-Match"
+    ],
+    "automationChainCategoryId": 576,
+    "permissions": [
+      {
+        "id": 71870,
+        "automationSystemId": 594,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 7,
+    "uuid": "407cdb60-e7b3-4f21-9aed-c915de802229",
+    "name": "imap",
+    "originalLabel": "Imap Email Server",
+    "active": true,
+    "label": "Imap Email Server",
+    "authType": "BASIC",
+    "authOptional": false,
+    "addAccountLabel": "Add an imap account",
+    "version": "3.0",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "imap"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 305,
+    "uuid": "43c41e31f07d7a4ea748a2374336baa6    ",
+    "name": "BCPS-MDT-RDS",
+    "active": true,
+    "label": "BCPS-MDT-RDS",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "BCPS-MDT-RDS"
+    ],
+    "automationChainCategoryId": 288,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 473,
+    "uuid": "4f95064a0e89eaeed0d7b7cb8a5ba9c6    ",
+    "name": "Helpers.PDF",
+    "originalLabel": "Helpers.PDF",
+    "active": true,
+    "label": "Helpers.PDF",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "PDF"
+    ],
+    "automationChainCategoryId": 455,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 9,
+    "uuid": "cb8cb194-2bfa-437b-ac07-5f9ee34b5984",
+    "name": "ms_office_internal",
+    "originalLabel": "Documents.Office.Legacy.EditWithRPC",
+    "active": true,
+    "label": "Documents.Office.Legacy.EditWithRPC",
+    "authOptional": false,
+    "version": "5.3",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "Office Internal"
+    ],
+    "description": "This service provides methods to perform various actions on Word, Excel, and PPT files using RPC commands. Common actions include finding and replacing placeholders with text or images, formatting text, and inserting tables.",
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 20,
+    "uuid": "4f83f54f4607ee87bb599cdab33cd189    ",
+    "name": "Helpers.Legacy",
+    "originalLabel": "Helpers.Legacy",
+    "active": true,
+    "label": "Helpers.Legacy",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helper Methods"
+    ],
+    "automationChainCategoryId": 4,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 491,
+    "uuid": "46a423aee6914c98b5748f09140e7ab6    ",
+    "name": "Email.Template",
+    "originalLabel": "Email.Template",
+    "active": true,
+    "label": "Email.Template",
+    "authOptional": true,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Email Template"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 240,
+    "uuid": "401cb91f85355d90c767b6d5c451d34b    ",
+    "name": "AD Tool Comparison",
+    "originalLabel": "AD Tool Comparison",
+    "active": true,
+    "label": "AD Tool Comparison",
+    "authOptional": false,
+    "version": "10",
+    "externalIntegration": false,
+    "owner": {
+      "id": 12,
+      "externalUuid": "f647568f-63a1-4b02-9954-098dd5265d76",
+      "email": "user@example.com",
+      "firstName": "Narender",
+      "lastName": "Mann",
+      "ssoUser": false,
+      "boss": {
+        "id": 5,
+        "email": "user@example.com",
+        "firstName": "Puneet",
+        "lastName": "Malhotra",
+        "ssoUser": false,
+        "boss": {
+          "id": 2,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "mfaEnabled": false,
+        "fullName": "Puneet Malhotra",
+        "title": "Puneet Malhotra"
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1663750567338,
+      "mfaEnabled": false,
+      "fullName": "Narender Mann",
+      "title": "Narender Mann",
+      "lastLoginDate": 1691485849997
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "AD Tool Comparison"
+    ],
+    "automationChainCategoryId": 223,
+    "permissions": [
+      {
+        "id": 62635,
+        "automationSystemId": 240,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      },
+      {
+        "id": 62636,
+        "automationSystemId": 240,
+        "permissionType": "ALLOW_USERS_TO_EDIT",
+        "groups": [],
+        "users": [
+          {
+            "id": 220,
+            "email": "user@example.com",
+            "firstName": "qa",
+            "lastName": "test",
+            "ssoUser": false,
+            "boss": {
+              "id": 2,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "qa test",
+            "title": "qa test"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 746,
+    "uuid": "476c715a9d34e2ef050ca13198a465fe    ",
+    "name": "Elastic Search",
+    "originalLabel": "Elastic Search",
+    "active": true,
+    "label": "Elastic Search",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Elastic Search"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 476,
+    "uuid": "4a2613707d5c5afc65d2b13158040e0f    ",
+    "name": "Schools-Data",
+    "originalLabel": "Schools-Data",
+    "active": true,
+    "label": "Schools-Data",
+    "authOptional": true,
+    "version": "23",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools - Data"
+    ],
+    "permissions": [
+      {
+        "id": 75350,
+        "automationSystemId": 476,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 1219,
+    "uuid": "4a6cb9496b4c3a1d4f608482787b387a    ",
+    "name": "testSc",
+    "originalLabel": "testSc",
+    "active": true,
+    "label": "testSc",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "testSc"
+    ],
+    "automationChainCategoryId": 1036,
+    "permissions": [
+      {
+        "id": 75415,
+        "automationSystemId": 1219,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 1252,
+    "uuid": "4a3eb56ed6a1d9f1cea38b774258b81d    ",
+    "name": "Test-sayam",
+    "originalLabel": "Test-sayam",
+    "active": true,
+    "label": "Test-sayam",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test-sayam"
+    ],
+    "automationChainCategoryId": 1069,
+    "permissions": [
+      {
+        "id": 75481,
+        "automationSystemId": 1252,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 35,
+    "uuid": "412c29c6bc8dd5e5d5719e26e68ad4e5    ",
+    "name": "TESTEkta",
+    "originalLabel": "TESTEkta",
+    "active": true,
+    "label": "TESTEkta",
+    "authOptional": false,
+    "version": "5",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TESTEkta"
+    ],
+    "automationChainCategoryId": 20,
+    "permissions": [
+      {
+        "id": 74306,
+        "automationSystemId": 35,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 6,
+    "uuid": "cbde649a-7385-4c1b-a57a-41f7f023590b",
+    "name": "db_service",
+    "originalLabel": "Database.SQL",
+    "active": true,
+    "label": "Database.SQL",
+    "authType": "BASIC",
+    "authOptional": false,
+    "addAccountLabel": "Add Database",
+    "version": "2.04",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "Database"
+    ],
+    "description": "This service consists of methods that perform various DB operations like adding, updating and retrieving data from the database.",
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 725,
+    "uuid": "48e7be591d0b982c8312ab513a0ddbfe    ",
+    "name": "Microsoft Office Helpers",
+    "originalLabel": "Microsoft Office Helpers",
+    "active": true,
+    "label": "Microsoft Office Helpers",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Microsoft Office Helpers"
+    ],
+    "automationChainCategoryId": 707,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 4,
+    "uuid": "cd7f12e0-5e4a-4050-95a9-e3589f8e15a5",
+    "name": "trello",
+    "originalLabel": "Trello Boards",
+    "active": true,
+    "label": "Trello Boards",
+    "authType": "API_KEY_TOKEN",
+    "authOptional": false,
+    "addAccountLabel": "Authorize an account",
+    "securityUrl": "https://trello.com/1/authorize?expiration=never&name=Expertly&scope=read,write,account&response_type=token",
+    "version": "2.0",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "trello"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 11,
+    "uuid": "15ec9d45-c0ee-4102-b3e2-0487daec75cc",
+    "name": "google_calendar",
+    "originalLabel": "Google Calendar",
+    "active": true,
+    "refreshToken": true,
+    "label": "Google Calendar",
+    "authType": "OAUTH",
+    "authOptional": false,
+    "addAccountLabel": "Authorize an account",
+    "securityUrl": "https://accounts.google.com/o/oauth2/auth?response_type=code&scope=https://www.googleapis.com/auth/calendar",
+    "version": "3.9",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "google_calendar"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 14,
+    "uuid": "8438b55f-3477-4259-9be6-b8acaa44cdcf",
+    "name": "slack",
+    "originalLabel": "Communications.Slack-Legacy",
+    "active": true,
+    "label": "Communications.Slack-Legacy",
+    "authType": "OAUTH",
+    "authOptional": false,
+    "addAccountLabel": "Authorize an account",
+    "securityUrl": "https://slack.com/oauth/authorize?response_type=code&scope=channels:history,channels:read,chat:write:user,files:read,files:write:user,search:read,users.profile:read,users:read,users:read.email,groups:read",
+    "version": "1.34",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "Slack"
+    ],
+    "description": "This service consists of methods that performs various actions on Slack, such as sending a messages on a channel, viewing all users and channels.",
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 488,
+    "uuid": "434875d968872fb56a7abae144caf2c6    ",
+    "name": "Test - Dinesh",
+    "originalLabel": "Test - Dinesh",
+    "active": true,
+    "label": "Test - Dinesh",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test - Dinesh"
+    ],
+    "automationChainCategoryId": 470,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 470,
+    "uuid": "49017e82addc3c6cafa5b742ee6ee2d4    ",
+    "name": "BCPS-TEST-MDT",
+    "originalLabel": "BCPS-TEST-MDT",
+    "active": true,
+    "label": "BCPS-TEST-MDT",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "BCPS-TEST-MDT"
+    ],
+    "automationChainCategoryId": 453,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 626,
+    "uuid": "46aceed179e1fe1f6018aa30591b99cc    ",
+    "name": "Documents.Office.Legacy.ApachePOI",
+    "originalLabel": "Documents.Office.Legacy.ApachePOI",
+    "active": true,
+    "label": "Documents.Office.Legacy.ApachePOI",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Microsoft Office"
+    ],
+    "automationChainCategoryId": 608,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 490,
+    "uuid": "46d5e02e8d866d89b6ccb1a2269825d7    ",
+    "name": "Test-Ritik",
+    "originalLabel": "Test-Ritik",
+    "active": true,
+    "label": "Test-Ritik",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test-Ritik"
+    ],
+    "automationChainCategoryId": 472,
+    "permissions": [
+      {
+        "id": 73864,
+        "automationSystemId": 490,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 206,
+    "uuid": "4f203aa118ade16f40d8b87e3da9d6ee    ",
+    "name": "Test - Sagar Practice",
+    "originalLabel": "Test - Sagar Practice",
+    "active": true,
+    "label": "Test - Sagar Practice",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test - Sagar Practice"
+    ],
+    "automationChainCategoryId": 189,
+    "permissions": [
+      {
+        "id": 26284,
+        "automationSystemId": 206,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 593,
+    "uuid": "4fb226f2e7035aae81b183feeae38d26    ",
+    "name": "Schools-Archives",
+    "active": true,
+    "label": "Schools-Archives",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools-Archives"
+    ],
+    "automationChainCategoryId": 575,
+    "permissions": [
+      {
+        "id": 71499,
+        "automationSystemId": 593,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 239,
+    "uuid": "449a0592c3f2070b5f72bd2837d72779    ",
+    "name": "Test new Service",
+    "originalLabel": "Test new Service",
+    "active": true,
+    "label": "Test new Service",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test new Service"
+    ],
+    "automationChainCategoryId": 222,
+    "permissions": [
+      {
+        "id": 25902,
+        "automationSystemId": 239,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 9,
+            "email": "user@example.com",
+            "firstName": "Chandan",
+            "lastName": "Singh",
+            "ssoUser": false,
+            "boss": {
+              "id": 5,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Chandan Singh",
+            "title": "Chandan Singh"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 475,
+    "uuid": "4ee4db4a8f664131aebab4cb7ab09ef8    ",
+    "name": "TEST-Jaswanth",
+    "originalLabel": "TEST-Jaswanth",
+    "active": true,
+    "label": "TEST-Jaswanth",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST-Jaswanth"
+    ],
+    "automationChainCategoryId": 457,
+    "permissions": [
+      {
+        "id": 68110,
+        "automationSystemId": 475,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 25,
+    "uuid": "4ced539a07f7e861e6b98e6cc3d6ac0a    ",
+    "name": "Read database tables",
+    "active": true,
+    "label": "Read database tables",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Read database tables"
+    ],
+    "automationChainCategoryId": 9,
+    "permissions": [
+      {
+        "id": 8,
+        "automationSystemId": 25,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 23,
+    "uuid": "45c9ba9b93068ef2b09787eed653de2e    ",
+    "name": "TEST - Snehal Practice",
+    "originalLabel": "TEST - Snehal Practice",
+    "active": true,
+    "label": "TEST - Snehal Practice",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - Snehal Practice"
+    ],
+    "automationChainCategoryId": 7,
+    "permissions": [
+      {
+        "id": 61772,
+        "automationSystemId": 23,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 484,
+    "uuid": "4f31372a253c2d38b128a94a95aba64f    ",
+    "name": "Chart Service",
+    "active": true,
+    "label": "Chart Service",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Chart Service"
+    ],
+    "automationChainCategoryId": 466,
+    "permissions": [
+      {
+        "id": 54224,
+        "automationSystemId": 484,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 32,
+    "uuid": "4785997eef9e8773246985392362ece5    ",
+    "name": "TEST-test",
+    "originalLabel": "TEST-test",
+    "active": true,
+    "label": "TEST-test",
+    "authType": "BASIC",
+    "authOptional": true,
+    "addAccountLabel": "Add Account",
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 5,
+      "externalUuid": "83eee9e6-4778-4881-a27a-4afbed6c066d",
+      "email": "user@example.com",
+      "firstName": "Puneet",
+      "lastName": "Malhotra",
+      "ssoUser": false,
+      "boss": {
+        "id": 2,
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "mfaEnabled": false,
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS"
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1660744118723,
+      "mfaEnabled": false,
+      "fullName": "Puneet Malhotra",
+      "title": "Puneet Malhotra",
+      "lastLoginDate": 1687264888857
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - test"
+    ],
+    "templateId": "4b773a98dae4b334794abaf764f0757b",
+    "permissions": [
+      {
+        "id": 74689,
+        "automationSystemId": 32,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 173,
+    "uuid": "46c4fa30c00028522d30914cd69030b8    ",
+    "name": "TEST - DHIRAJ PRACTICE",
+    "originalLabel": "TEST - DHIRAJ PRACTICE",
+    "active": true,
+    "label": "TEST - DHIRAJ PRACTICE",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - DHIRAJ PRACTICE"
+    ],
+    "automationChainCategoryId": 156,
+    "permissions": [
+      {
+        "id": 74199,
+        "automationSystemId": 173,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 306,
+    "uuid": "499b203112db36f319cf99ed1a84c700    ",
+    "name": "Test -Durga",
+    "originalLabel": "Test -Durga",
+    "active": true,
+    "label": "Test -Durga",
+    "authOptional": false,
+    "version": "3",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test -Durga"
+    ],
+    "automationChainCategoryId": 289,
+    "permissions": [
+      {
+        "id": 62050,
+        "automationSystemId": 306,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 74,
+    "uuid": "42cdb625aa9e1af7767f8730e38f1f7e    ",
+    "name": "Example services",
+    "originalLabel": "Example services",
+    "active": true,
+    "label": "Example services",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Example services"
+    ],
+    "automationChainCategoryId": 57,
+    "permissions": [
+      {
+        "id": 48696,
+        "automationSystemId": 74,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 493,
+    "uuid": "4c5cd162405461c39bfa8bce012139b7    ",
+    "name": "Mangesh practice",
+    "originalLabel": "Mangesh practice",
+    "active": true,
+    "label": "Mangesh practice",
+    "authOptional": false,
+    "version": "3",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Mangesh practice"
+    ],
+    "automationChainCategoryId": 475,
+    "permissions": [
+      {
+        "id": 70546,
+        "automationSystemId": 493,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 487,
+    "uuid": "4e68536932703bdda2e6a3df9ad27a74    ",
+    "name": "test-arpit",
+    "originalLabel": "test-arpit",
+    "active": true,
+    "label": "test-arpit",
+    "authOptional": false,
+    "version": "3",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "test-arpit"
+    ],
+    "automationChainCategoryId": 469,
+    "permissions": [
+      {
+        "id": 69621,
+        "automationSystemId": 487,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 8,
+    "uuid": "f7e2efb8-e15e-4545-9830-4abcb2427207",
+    "name": "exp_http",
+    "originalLabel": "HTTP",
+    "active": true,
+    "label": "HTTP",
+    "authType": "MULTIPLE",
+    "authOptional": true,
+    "addAccountLabel": "Add an authentication",
+    "version": "9.74",
+    "externalIntegration": true,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [
+      "HTTP API Service"
+    ],
+    "description": "This service consists of HTTP methods that enables you to perform CRUD (Create, Read, Update, and Delete) actions on API resources in a standardized way.",
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 40,
+    "uuid": "446b5df39b2a13280c0a913f6ca919c6    ",
+    "name": "Utilities",
+    "originalLabel": "Utilities",
+    "active": true,
+    "label": "Utilities",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Utilities"
+    ],
+    "permissions": [
+      {
+        "id": 75220,
+        "automationSystemId": 40,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 527,
+    "uuid": "49e6e17e44bab9d8a528b841abd2f2b3    ",
+    "name": "Expertly.Report",
+    "originalLabel": "Expertly.Report",
+    "active": true,
+    "label": "Expertly.Report",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Report Designer"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 922,
+    "uuid": "4a3de78350bc8046f25b99bd46bf7bbe    ",
+    "name": "Test_15Oct",
+    "originalLabel": "Test_15Oct",
+    "active": true,
+    "label": "Test_15Oct",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test_15Oct"
+    ],
+    "automationChainCategoryId": 904,
+    "permissions": [
+      {
+        "id": 74491,
+        "automationSystemId": 922,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 856,
+    "uuid": "490744fd1639c44c5f57a5c4e5d561fd    ",
+    "name": "Helpers.CSV",
+    "originalLabel": "Helpers.CSV",
+    "active": true,
+    "label": "Helpers.CSV",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helpers.CSV"
+    ],
+    "permissions": [
+      {
+        "id": 75221,
+        "automationSystemId": 856,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 627,
+    "uuid": "416790c4a18e3b35f39b9fd24c1344db    ",
+    "name": "Pankaj-Test",
+    "originalLabel": "Pankaj-Test",
+    "active": true,
+    "label": "Pankaj-Test",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Pankaj-Test"
+    ],
+    "automationChainCategoryId": 609,
+    "permissions": [
+      {
+        "id": 74304,
+        "automationSystemId": 627,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 1318,
+    "uuid": "4037ada88a1a3ac30a1c9e63b6b0eed6    ",
+    "name": "Test-Parth",
+    "originalLabel": "Test-Parth",
+    "active": true,
+    "label": "Test-Parth",
+    "authOptional": false,
+    "version": "4",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test-Parth"
+    ],
+    "automationChainCategoryId": 1135,
+    "permissions": [
+      {
+        "id": 75580,
+        "automationSystemId": 1318,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 486,
+    "uuid": "4436ad8ed1895edc7c1c85dd21f76ea7    ",
+    "name": "Schools-BackgroundProcess",
+    "originalLabel": "Schools-BackgroundProcess",
+    "active": true,
+    "label": "Schools-BackgroundProcess",
+    "authOptional": true,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools - Background Process"
+    ],
+    "permissions": [
+      {
+        "id": 75349,
+        "automationSystemId": 486,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 692,
+    "uuid": "4d117a462fc8194578f3a9d2ad953d1d    ",
+    "name": "Schools-Waitlist",
+    "originalLabel": "Schools-Waitlist",
+    "active": true,
+    "label": "Schools-Waitlist",
+    "authOptional": true,
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools - Waitlist"
+    ],
+    "permissions": [
+      {
+        "id": 75353,
+        "automationSystemId": 692,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 659,
+    "uuid": "4b50dc9b1f78d96d15b2b2cb8f8a02ab    ",
+    "name": "Test Python Wrapper",
+    "originalLabel": "Test Python Wrapper",
+    "active": true,
+    "label": "Test Python Wrapper",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test Python Wrapper"
+    ],
+    "automationChainCategoryId": 641,
+    "permissions": [
+      {
+        "id": 74322,
+        "automationSystemId": 659,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 338,
+    "uuid": "452f2b9484ecfb691f64a0de9433f0ee    ",
+    "name": "testmanav",
+    "originalLabel": "testmanav",
+    "active": true,
+    "label": "testmanav",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "testmanav"
+    ],
+    "automationChainCategoryId": 321,
+    "permissions": [
+      {
+        "id": 66934,
+        "automationSystemId": 338,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 26,
+    "uuid": "42da887ecbde9a8e73eabf18b7b93307    ",
+    "name": "Read database tables2",
+    "active": true,
+    "label": "Read database tables2",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Read database tables2"
+    ],
+    "automationChainCategoryId": 10,
+    "permissions": [
+      {
+        "id": 9,
+        "automationSystemId": 26,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 560,
+    "uuid": "40afd72a0d3630d13b428f93dfcdd79c    ",
+    "name": "ujjwal dev test",
+    "originalLabel": "ujjwal dev test",
+    "active": true,
+    "label": "ujjwal dev test",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "ujjwal dev test"
+    ],
+    "automationChainCategoryId": 542,
+    "permissions": [
+      {
+        "id": 69816,
+        "automationSystemId": 560,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 9,
+            "email": "user@example.com",
+            "firstName": "Chandan",
+            "lastName": "Singh",
+            "ssoUser": false,
+            "boss": {
+              "id": 5,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Chandan Singh",
+            "title": "Chandan Singh"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 37,
+    "uuid": "479eb7e12a6fc59b5a268ebe34d10343    ",
+    "name": "Sample methods",
+    "originalLabel": "Sample methods",
+    "active": true,
+    "label": "Sample methods",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Sample methods"
+    ],
+    "automationChainCategoryId": 21,
+    "permissions": [
+      {
+        "id": 11731,
+        "automationSystemId": 37,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 437,
+    "uuid": "41bc854b943da7a604fab95810030862    ",
+    "name": "ServiceRemote",
+    "originalLabel": "ServiceRemote",
+    "active": true,
+    "label": "ServiceRemote",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "ServiceRemote"
+    ],
+    "automationChainCategoryId": 420,
+    "permissions": [
+      {
+        "id": 39251,
+        "automationSystemId": 437,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 483,
+    "uuid": "4e85cff393beb0117e69b202b5d00bd9    ",
+    "name": "Test service",
+    "originalLabel": "Test service",
+    "active": true,
+    "label": "Test service",
+    "authOptional": false,
+    "version": "3",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test service"
+    ],
+    "automationChainCategoryId": 465,
+    "permissions": [
+      {
+        "id": 68205,
+        "automationSystemId": 483,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 307,
+    "uuid": "45e951f5ad9b26b4a2df8a9dd76802f4    ",
+    "name": "BCPS-TEST-MDT-RDS",
+    "active": true,
+    "label": "BCPS-TEST-MDT-RDS",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "BCPS-TEST-MDT-RDS"
+    ],
+    "automationChainCategoryId": 290,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 728,
+    "uuid": "4f43b20402dce4d0e98cb0c9956076ca    ",
+    "name": "Schools-Notifications",
+    "originalLabel": "Schools-Notifications",
+    "active": true,
+    "label": "Schools-Notifications",
+    "authOptional": false,
+    "version": "4",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools-Notifications"
+    ],
+    "automationChainCategoryId": 710,
+    "permissions": [
+      {
+        "id": 74389,
+        "automationSystemId": 728,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 39,
+    "uuid": "44f6f2d3273cbea34b729c8f90ad327f    ",
+    "name": "testservice-vandana",
+    "originalLabel": "testservice-vandana",
+    "active": true,
+    "label": "testservice-vandana",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "testservice-vandana"
+    ],
+    "automationChainCategoryId": 22,
+    "permissions": [
+      {
+        "id": 73796,
+        "automationSystemId": 39,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 273,
+    "uuid": "4665c6baa5ad7674e7d388ae7bde142c    ",
+    "name": "TEST-Avani",
+    "originalLabel": "TEST-Avani",
+    "active": true,
+    "label": "TEST-Avani",
+    "authOptional": false,
+    "version": "6",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST-Avani"
+    ],
+    "automationChainCategoryId": 256,
+    "permissions": [
+      {
+        "id": 71773,
+        "automationSystemId": 273,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 36,
+    "uuid": "47581f76b5b9235f7eb39c320b43ff72    ",
+    "name": "TEST - Test Service",
+    "originalLabel": "TEST - Test Service",
+    "active": true,
+    "label": "TEST - Test Service",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - Test Service"
+    ],
+    "automationChainCategoryId": 5,
+    "permissions": [
+      {
+        "id": 68238,
+        "automationSystemId": 36,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 471,
+    "uuid": "4882c5cac1127d7d5ae3b75f41f9bfa5    ",
+    "name": "BCPS-MDT-NEW",
+    "active": true,
+    "label": "BCPS-MDT-NEW",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "BCPS-MDT-NEW"
+    ],
+    "automationChainCategoryId": 454,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 272,
+    "uuid": "49fb9551e9cd8ee0ee4888ba46112ffd    ",
+    "name": "Test - Expertly",
+    "originalLabel": "Test - Expertly",
+    "active": true,
+    "label": "Test - Expertly",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test - Expertly"
+    ],
+    "automationChainCategoryId": 255,
+    "permissions": [
+      {
+        "id": 39830,
+        "automationSystemId": 272,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 727,
+    "uuid": "4684acb462c8da87f9c0b0177cb00342    ",
+    "name": "Notification_Service_Test",
+    "originalLabel": "Notification_Service_Test",
+    "active": true,
+    "label": "Notification_Service_Test",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Notification_Service_Test"
+    ],
+    "automationChainCategoryId": 709,
+    "permissions": [
+      {
+        "id": 74388,
+        "automationSystemId": 727,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 42,
+    "uuid": "4dedf5fd75e2bd894d4e8f08774a85e3    ",
+    "name": "Sample Service Method",
+    "originalLabel": "Sample Service Method",
+    "active": true,
+    "label": "Sample Service Method",
+    "authOptional": false,
+    "version": "8",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Sample Service Method"
+    ],
+    "automationChainCategoryId": 25,
+    "permissions": [
+      {
+        "id": 14724,
+        "automationSystemId": 42,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 28,
+    "uuid": "44d57b347d68992f36b99b5ef904134b    ",
+    "name": "BCPS-MDT-Local",
+    "originalLabel": "BCPS-MDT-Local",
+    "active": true,
+    "label": "BCPS-MDT-Local",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "BCPS-MDT-Local"
+    ],
+    "automationChainCategoryId": 12,
+    "permissions": [
+      {
+        "id": 61032,
+        "automationSystemId": 28,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      },
+      {
+        "id": 61033,
+        "automationSystemId": 28,
+        "permissionType": "ALLOW_USERS_TO_EDIT",
+        "groups": [
+          {
+            "id": 3,
+            "name": "BCPS",
+            "membershipInherited": true,
+            "titleGT": "BCPS"
+          }
+        ],
+        "users": [
+          {
+            "id": 9,
+            "email": "user@example.com",
+            "firstName": "Chandan",
+            "lastName": "Singh",
+            "ssoUser": false,
+            "boss": {
+              "id": 5,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Chandan Singh",
+            "title": "Chandan Singh"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 492,
+    "uuid": "4af8e05140065b3497f88056063279f0    ",
+    "name": "AS Dms Test",
+    "originalLabel": "AS Dms Test",
+    "active": true,
+    "label": "AS Dms Test",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "AS Dms Test"
+    ],
+    "automationChainCategoryId": 474,
+    "permissions": [
+      {
+        "id": 71259,
+        "automationSystemId": 492,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 308,
+    "uuid": "4c05f6fac9af5084a0f4a0f09d5ec03a    ",
+    "name": "testparva",
+    "originalLabel": "testparva",
+    "active": true,
+    "label": "testparva",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "testparva"
+    ],
+    "automationChainCategoryId": 291,
+    "permissions": [
+      {
+        "id": 66926,
+        "automationSystemId": 308,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 371,
+    "uuid": "4e3da24f4345c3ab33a0a92e9165442b    ",
+    "name": "Test-RahulT",
+    "originalLabel": "Test-RahulT",
+    "active": true,
+    "label": "Test-RahulT",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test-RahulT"
+    ],
+    "automationChainCategoryId": 354,
+    "permissions": [
+      {
+        "id": 62336,
+        "automationSystemId": 371,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 489,
+    "uuid": "4df72e7df742290312768a573617b6bd    ",
+    "name": "Test-Avani-Announcement Center",
+    "originalLabel": "Test-Avani-Announcement Center",
+    "active": true,
+    "label": "Test-Avani-Announcement Center",
+    "authOptional": false,
+    "version": "3",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test-Avani-Announcement Center"
+    ],
+    "automationChainCategoryId": 471,
+    "permissions": [
+      {
+        "id": 61941,
+        "automationSystemId": 489,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 30,
+    "uuid": "4324fe43cfcf6b0bd66e974564ee192f    ",
+    "name": "BCPS-TEST-MDT-Local",
+    "originalLabel": "BCPS-TEST-MDT-Local",
+    "active": true,
+    "label": "BCPS-TEST-MDT-Local",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "BCPS-TEST-MDT-Local"
+    ],
+    "automationChainCategoryId": 14,
+    "permissions": [
+      {
+        "id": 44333,
+        "automationSystemId": 30,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      },
+      {
+        "id": 44334,
+        "automationSystemId": 30,
+        "permissionType": "ALLOW_USERS_TO_EDIT",
+        "groups": [
+          {
+            "id": 3,
+            "name": "BCPS",
+            "membershipInherited": true,
+            "titleGT": "BCPS"
+          }
+        ],
+        "users": []
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 479,
+    "uuid": "4d8119555a233ef5ccfd9ad44c710537    ",
+    "name": "TEST-BCPS-MDT-Local-2",
+    "active": true,
+    "label": "TEST-BCPS-MDT-Local-2",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST-BCPS-MDT-Local-2"
+    ],
+    "automationChainCategoryId": 461,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 744,
+    "uuid": "47f2979969aa0bf96044b7e707d3d902    ",
+    "name": "Migration_test",
+    "originalLabel": "Migration_test",
+    "active": true,
+    "label": "Migration_test",
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Migration_test"
+    ],
+    "description": "",
+    "automationChainCategoryId": 726,
+    "permissions": [
+      {
+        "id": 74391,
+        "automationSystemId": 744,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 22,
+    "uuid": "4199ce661926f47e6152bcd4072ec392    ",
+    "name": "TEST - BCPS-Test",
+    "originalLabel": "TEST - BCPS-Test",
+    "active": true,
+    "label": "TEST - BCPS-Test",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - BCPS-Test"
+    ],
+    "automationChainCategoryId": 6,
+    "permissions": [
+      {
+        "id": 26108,
+        "automationSystemId": 22,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 107,
+    "uuid": "416028efbfc7aa2c96dca0559ed8236c    ",
+    "name": "TEST-BCPS-MDT-Local",
+    "originalLabel": "TEST-BCPS-MDT-Local",
+    "active": true,
+    "label": "TEST-BCPS-MDT-Local",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST-BCPS-MDT-Local"
+    ],
+    "automationChainCategoryId": 90,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 481,
+    "uuid": "41a9629e830f7d40fa82ae9a08e5cff6    ",
+    "name": "Notification Service",
+    "originalLabel": "Notification Service",
+    "active": true,
+    "label": "Notification Service",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Notification Service"
+    ],
+    "automationChainCategoryId": 463,
+    "permissions": [
+      {
+        "id": 52839,
+        "automationSystemId": 481,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 438,
+    "uuid": "492ea3eb004a437381b7b1a9a7a24853    ",
+    "name": "Trial",
+    "originalLabel": "Trial",
+    "active": true,
+    "label": "Trial",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Trial"
+    ],
+    "automationChainCategoryId": 421,
+    "permissions": [
+      {
+        "id": 41050,
+        "automationSystemId": 438,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 478,
+    "uuid": "44125e5e54c0df27f221bdd7c948cbc0    ",
+    "name": "alex test",
+    "originalLabel": "alex test",
+    "active": true,
+    "label": "alex test",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "alex test"
+    ],
+    "automationChainCategoryId": 460,
+    "permissions": [
+      {
+        "id": 62843,
+        "automationSystemId": 478,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 239,
+            "email": "user@example.com",
+            "firstName": "alex",
+            "lastName": "hales",
+            "ssoUser": false,
+            "boss": {
+              "id": 2,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "alex hales",
+            "title": "alex hales"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 477,
+    "uuid": "49c8ec9d4fc7299b318f9f874f245c19    ",
+    "name": "TestServices",
+    "originalLabel": "TestServices",
+    "active": true,
+    "label": "TestServices",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TestServices"
+    ],
+    "automationChainCategoryId": 459,
+    "permissions": [
+      {
+        "id": 69704,
+        "automationSystemId": 477,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 6,
+            "email": "user@example.com",
+            "firstName": "user@example.com",
+            "lastName": "ekta",
+            "blocked": true,
+            "ssoUser": false,
+            "boss": {
+              "id": 2,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "user@example.com ekta",
+            "title": "user@example.com ekta"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 17,
+    "uuid": "4b591fb1c314143c05588ec4f53fe520    ",
+    "name": "Expertly.Legacy",
+    "originalLabel": "Expertly.Legacy",
+    "active": true,
+    "label": "Expertly.Legacy",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly Services"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 34,
+    "uuid": "4f6401b02dfc91e057ffaaa3f465c639    ",
+    "name": "Schools-Utilities",
+    "originalLabel": "Schools-Utilities",
+    "active": true,
+    "label": "Schools-Utilities",
+    "authOptional": true,
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools - Utilities"
+    ],
+    "permissions": [
+      {
+        "id": 75680,
+        "automationSystemId": 34,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 140,
+    "uuid": "4c7a39495c53cdd4a8af8827b01b2dd5    ",
+    "name": "Schools-Regression",
+    "originalLabel": "Schools-Regression",
+    "active": true,
+    "label": "Schools-Regression",
+    "authOptional": true,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools - Regression"
+    ],
+    "permissions": [
+      {
+        "id": 75351,
+        "automationSystemId": 140,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 339,
+    "uuid": "41aae5c8ba1eb6bbd73e9526913f01ae    ",
+    "name": "Test-Sandeep",
+    "originalLabel": "Test-Sandeep",
+    "active": true,
+    "label": "Test-Sandeep",
+    "authOptional": false,
+    "version": "3",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Test-Sandeep"
+    ],
+    "automationChainCategoryId": 322,
+    "permissions": [
+      {
+        "id": 74297,
+        "automationSystemId": 339,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 21,
+    "uuid": "4fddad568f6c53b62c8ea6d433407134    ",
+    "name": "TEST - test_service",
+    "originalLabel": "TEST - test_service",
+    "active": true,
+    "label": "TEST - test_service",
+    "authOptional": false,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "TEST - test_service"
+    ],
+    "automationChainCategoryId": 17,
+    "permissions": [
+      {
+        "id": 5241,
+        "automationSystemId": 21,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 1186,
+    "uuid": "48c39e05433de5080272a0287671427a    ",
+    "name": "Expertly.Automation.Encryption",
+    "originalLabel": "Expertly.Automation.Encryption",
+    "active": true,
+    "label": "Expertly.Automation.Encryption",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Encryption"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 474,
+    "uuid": "429aa2787e23f615b02b97dac3829f35    ",
+    "name": "Database.ChangeHistoryAudit",
+    "originalLabel": "Database.ChangeHistoryAudit",
+    "active": true,
+    "label": "Database.ChangeHistoryAudit",
+    "authOptional": true,
+    "version": "74",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Database ChangeLog Auditing"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 1187,
+    "uuid": "453f72a02b18b9c7ad02bff49d461b93    ",
+    "name": "Helpers.Logical",
+    "originalLabel": "Helpers.Logical",
+    "active": true,
+    "label": "Helpers.Logical",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helpers.Logical"
+    ],
+    "automationChainCategoryId": 1004,
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 19,
+    "uuid": "418e01948181ce381eb9995ab231b6ae    ",
+    "name": "Expertly.DMS",
+    "originalLabel": "Expertly.DMS",
+    "active": true,
+    "label": "Expertly.DMS",
+    "authOptional": true,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "DMS"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 955,
+    "uuid": "427360a171d04d7ffe28a1f743983a5e    ",
+    "name": "Expertly.PageDesigner.Migration",
+    "originalLabel": "Expertly.PageDesigner.Migration",
+    "active": true,
+    "label": "Expertly.PageDesigner.Migration",
+    "authOptional": true,
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.PageDesigner.Migration"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 404,
+    "uuid": "46a26742b834a1f9614faf181ffa263b    ",
+    "name": "Expertly.PortalUser",
+    "originalLabel": "Expertly.PortalUser",
+    "active": true,
+    "label": "Expertly.PortalUser",
+    "authOptional": true,
+    "version": "148",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly Application"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 1285,
+    "uuid": "4a42421970e47a5f391e91567f2db86f    ",
+    "name": "Expertly.Organization.Settings",
+    "originalLabel": "Expertly.Organization.Settings",
+    "active": true,
+    "label": "Expertly.Organization.Settings",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Organization.Settings"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 480,
+    "uuid": "411b06bc8c385f17b4d68c4fdc334442    ",
+    "name": "Expertly.Notification",
+    "originalLabel": "Expertly.Notification",
+    "active": true,
+    "label": "Expertly.Notification",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Announcement Center"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 31,
+    "uuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "name": "Schools",
+    "originalLabel": "Schools",
+    "active": true,
+    "label": "Schools",
+    "authOptional": true,
+    "version": "8",
+    "externalIntegration": false,
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Schools"
+    ],
+    "permissions": [
+      {
+        "id": 75712,
+        "automationSystemId": 31,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 730,
+    "uuid": "422a9beebf375959da4ea2d0cffee04d    ",
+    "name": "Expertly.DMS-Legacy",
+    "originalLabel": "Expertly.DMS-Legacy",
+    "active": true,
+    "label": "Expertly.DMS-Legacy",
+    "authOptional": true,
+    "version": "148",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.DMS-Legacy",
+      "DMS"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 791,
+    "uuid": "48f61e6335953f6850adbf624577ee6c    ",
+    "name": "Expertly.Automation.Performance",
+    "originalLabel": "Expertly.Automation.Performance",
+    "active": true,
+    "label": "Expertly.Automation.Performance",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Performance"
+    ],
+    "automationChainCategoryId": 773,
+    "permissions": [
+      {
+        "id": 74393,
+        "automationSystemId": 791,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 745,
+    "uuid": "4f533031a62b28a29ba7881d70d9a56a    ",
+    "name": "Expertly.User",
+    "originalLabel": "Expertly.User",
+    "active": true,
+    "label": "Expertly.User",
+    "authOptional": true,
+    "version": "148",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.User"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 790,
+    "uuid": "40c000101bb972ad5273b212ae1e4d28    ",
+    "name": "Engineering.DevOps.Grafana",
+    "originalLabel": "Engineering.DevOps.Grafana",
+    "active": true,
+    "label": "Engineering.DevOps.Grafana",
+    "authOptional": false,
+    "version": "1",
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Engineering.DevOps.Grafana"
+    ],
+    "automationChainCategoryId": 772,
+    "permissions": [
+      {
+        "id": 74392,
+        "automationSystemId": 790,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 734,
+    "uuid": "457dfbf45f13bba7fad59ebb9b511ec8    ",
+    "name": "ExpertlyServices.Project",
+    "originalLabel": "ExpertlyServices.Project",
+    "active": true,
+    "label": "ExpertlyServices.Project",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "ExpertlyServices.Project"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 736,
+    "uuid": "43dedf59d63771f6bd35afe60cd13f76    ",
+    "name": "Documents.CSV",
+    "originalLabel": "Documents.CSV",
+    "active": true,
+    "label": "Documents.CSV",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helper Methods - JSON",
+      "Documents.CSV"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 732,
+    "uuid": "42f8805ddfc3ed719b83b6d362cf03bc    ",
+    "name": "Expertly.MasterList",
+    "originalLabel": "Expertly.MasterList",
+    "active": true,
+    "label": "Expertly.MasterList",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly Services",
+      "Expertly.MasterList"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 740,
+    "uuid": "41a0339ad9f38e8f1006988b4216c0ba    ",
+    "name": "Tagging",
+    "originalLabel": "Tagging",
+    "active": true,
+    "label": "Tagging",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Tagging"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 733,
+    "uuid": "40eca5f2f6e352d8f72f86fd8643ab36    ",
+    "name": "Expertly.CustomEntity",
+    "originalLabel": "Expertly.CustomEntity",
+    "active": true,
+    "label": "Expertly.CustomEntity",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.CustomEntity",
+      "Expertly Services"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 741,
+    "uuid": "4b46bf2e862792fd63e1b4ff54a084b3    ",
+    "name": "Files.Utils",
+    "originalLabel": "Files.Utils",
+    "active": true,
+    "label": "Files.Utils",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "File.Utils",
+      "Files.Utils"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 482,
+    "uuid": "41d572886b5dc22ab708b14d3d252f0b    ",
+    "name": "Translation Manager",
+    "originalLabel": "Translation Manager",
+    "active": true,
+    "label": "Translation Manager",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Translation Manager"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 18,
+    "uuid": "42f3c455fed730e770e694b56195a73d    ",
+    "name": "Expertly.Organization",
+    "originalLabel": "Expertly.Organization",
+    "active": true,
+    "label": "Expertly.Organization",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly Organizations"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 731,
+    "uuid": "4c09422d8b34198e4543908389b2a3c6    ",
+    "name": "Expertly.Activity",
+    "originalLabel": "Expertly.Activity",
+    "active": true,
+    "label": "Expertly.Activity",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Activity",
+      "Expertly Services"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 494,
+    "uuid": "43930a9e7a903e23de8faa4c9a33a5d9    ",
+    "name": "Cache.Redis",
+    "originalLabel": "Cache.Redis",
+    "active": true,
+    "label": "Cache.Redis",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Cache"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 737,
+    "uuid": "4ee4fab6549d84c18e63badf2242054f    ",
+    "name": "Documents.Word",
+    "originalLabel": "Documents.Word",
+    "active": true,
+    "label": "Documents.Word",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Documents.Word",
+      "Microsoft Office"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 739,
+    "uuid": "4be6f3581aee2b9c05129978cde3054c    ",
+    "name": "Expertly.Automation.Method",
+    "originalLabel": "Expertly.Automation.Method",
+    "active": true,
+    "label": "Expertly.Automation.Method",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Method"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 747,
+    "uuid": "493ace7da7c90b8d58198840cd0c9909    ",
+    "name": "Helpers.List",
+    "originalLabel": "Helpers.List",
+    "active": true,
+    "label": "Helpers.List",
+    "authOptional": true,
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helpers.List"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 726,
+    "uuid": "43e39f830069166d4699bc9c70911694    ",
+    "name": "Database.FlexibleStorage",
+    "originalLabel": "Database.FlexibleStorage",
+    "active": true,
+    "label": "Database.FlexibleStorage",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Flexible Storage",
+      "Database.FlexibleStorage"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 738,
+    "uuid": "44adb2b8754f9ccdb2c1920596b95073    ",
+    "name": "Documents.PowerPoint",
+    "originalLabel": "Documents.PowerPoint",
+    "active": true,
+    "label": "Documents.PowerPoint",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Microsoft Office",
+      "Documents.PowerPoint"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 742,
+    "uuid": "45ac3bb2b91bff6c3811b6273a692ef8    ",
+    "name": "Communications.Email",
+    "originalLabel": "Communications.Email",
+    "active": true,
+    "label": "Communications.Email",
+    "authOptional": true,
+    "version": "2",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Communications.Email",
+      "Communication.Email"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 748,
+    "uuid": "4f19cdd4f1dc18ac57769dc56d8ad2f9    ",
+    "name": "Expertly.Automation.Scheduler",
+    "originalLabel": "Expertly.Automation.Scheduler",
+    "active": true,
+    "label": "Expertly.Automation.Scheduler",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Scheduler"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 749,
+    "uuid": "4a1db9e40daf8cf42f61b8b4e593ed28    ",
+    "name": "Expertly.PageDesigner",
+    "originalLabel": "Expertly.PageDesigner",
+    "active": true,
+    "label": "Expertly.PageDesigner",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.PageDesigner"
+    ],
+    "permissions": [],
+    "remote": true,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 750,
+    "uuid": "487275d0029d730d6cfe8afda977a707    ",
+    "name": "Helpers.Table",
+    "originalLabel": "Helpers.Table",
+    "active": true,
+    "label": "Helpers.Table",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helpers.Table"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 751,
+    "uuid": "4568337519dbd971864f9fab470d3389    ",
+    "name": "Helpers.String",
+    "originalLabel": "Helpers.String",
+    "active": true,
+    "label": "Helpers.String",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helpers.String"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 752,
+    "uuid": "4f39f2037c99dd74794c90268582597d    ",
+    "name": "Helpers.Math",
+    "originalLabel": "Helpers.Math",
+    "active": true,
+    "label": "Helpers.Math",
+    "authOptional": true,
+    "version": "147",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helpers.Math"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 743,
+    "uuid": "4df49685e624e006af9e80391a5bb915    ",
+    "name": "Expertly.Automation.Service",
+    "originalLabel": "Expertly.Automation.Service",
+    "active": true,
+    "label": "Expertly.Automation.Service",
+    "authOptional": true,
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Service"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 735,
+    "uuid": "401699459d5501745c269d611b886769    ",
+    "name": "Documents.Excel",
+    "originalLabel": "Documents.Excel",
+    "active": true,
+    "label": "Documents.Excel",
+    "authOptional": true,
+    "version": "111",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helper Methods - JSON",
+      "Documents.Excel",
+      "Microsoft Office"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 753,
+    "uuid": "4ceb9bfe2fe476ebb5ad93c30cf649d0    ",
+    "name": "Expertly.Automation.Test",
+    "originalLabel": "Expertly.Automation.Test",
+    "active": true,
+    "label": "Expertly.Automation.Test",
+    "authOptional": true,
+    "version": "147",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Test"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 754,
+    "uuid": "4064a2e8b282b70496b0a81ac940a246    ",
+    "name": "Documents.PDF",
+    "originalLabel": "Documents.PDF",
+    "active": true,
+    "label": "Documents.PDF",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Documents.PDF"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 755,
+    "uuid": "4ec4f7256a2e5940964fb8c08403da6b    ",
+    "name": "Helpers.General",
+    "originalLabel": "Helpers.General",
+    "active": true,
+    "label": "Helpers.General",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helpers.General"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 757,
+    "uuid": "424367e381def901f01581c10a4675af    ",
+    "name": "Expertly.Automation.Method.History",
+    "originalLabel": "Expertly.Automation.Method.History",
+    "active": true,
+    "label": "Expertly.Automation.Method.History",
+    "authOptional": true,
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Method.History"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 33,
+    "uuid": "4717769777d25cdcd3beb256841cc3e0    ",
+    "name": "Helpers.JSON",
+    "originalLabel": "Helpers.JSON",
+    "active": true,
+    "label": "Helpers.JSON",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Helper Methods - JSON"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 756,
+    "uuid": "40b699eea2cad40273718c70cacd053e    ",
+    "name": "Expertly.Automation.Batch",
+    "originalLabel": "Expertly.Automation.Batch",
+    "active": true,
+    "label": "Expertly.Automation.Batch",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Batch"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 823,
+    "uuid": "4f0e01cb231c13c67a83a3e811f030de    ",
+    "name": "Documents.DelimitedText",
+    "originalLabel": "Documents.DelimitedText",
+    "active": true,
+    "label": "Documents.DelimitedText",
+    "authOptional": true,
+    "version": "3",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Documents.DelimitedText"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 889,
+    "uuid": "45998b3731168489bafdb0d777282b9d    ",
+    "name": "Utils.Files",
+    "originalLabel": "Utils.Files",
+    "active": true,
+    "label": "Utils.Files",
+    "authOptional": true,
+    "version": "87",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Utils.Files"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 890,
+    "uuid": "40901a3fb97e0b70941d843a2e0f65e1    ",
+    "name": "Expertly.Automation.Request",
+    "originalLabel": "Expertly.Automation.Request",
+    "active": true,
+    "label": "Expertly.Automation.Request",
+    "authOptional": true,
+    "version": "87",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Request"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 758,
+    "uuid": "4a32e35a0ee019ec036a88eb9dfc5476    ",
+    "name": "Expertly.Automation.Migration",
+    "originalLabel": "Expertly.Automation.Migration",
+    "active": true,
+    "label": "Expertly.Automation.Migration",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Automation.Migration"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  },
+  {
+    "id": 759,
+    "uuid": "452635122999e5f425e596fbfe5fc026    ",
+    "name": "Expertly.Auth",
+    "originalLabel": "Expertly.Auth",
+    "active": true,
+    "label": "Expertly.Auth",
+    "authOptional": true,
+    "version": "1",
+    "externalIntegration": false,
+    "owner": {
+      "id": 1,
+      "email": "user@example.com",
+      "firstName": "Super",
+      "lastName": "User",
+      "ssoUser": false,
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Super User",
+      "title": "Super User",
+      "lastLoginDate": 1659613325465
+    },
+    "accessMode": "PUBLIC",
+    "type": "USER_GENERATED",
+    "aliasName": [
+      "Expertly.Auth"
+    ],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "isAuthenticationStructureInherited": false
+  }
+]

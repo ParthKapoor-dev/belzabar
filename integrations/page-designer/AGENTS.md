@@ -120,6 +120,16 @@ All extraction functions normalize both into common types (`NormalizedVariable`,
 9. Recursive traversal (legacy analyze): `lib/analyzer.ts`, `lib/reporter.ts`, `lib/comparator.ts`.
 10. Legacy types + extractors (analyze/find-ad-methods still use these): `lib/types/legacy.ts`, `lib/parser/legacy.ts`.
 
+## Tests and Fixtures
+
+- `tests/unit/fixtures/` — small hand-written node/page fixtures.
+- `tests/fixtures/real/` — 15 real sems-dev pages/components (raw `GET /pages/{id}`,
+  sanitized, `manifest.json`), incl. both duplicate-name "Add Student" pairs and
+  "Student Application" `4cba8f39…` (~585 KB). Refresh with
+  `bun scripts/fixtures/capture.ts pd <id,id,…>` from the repo root.
+- `tests/unit/real-pages.test.ts` — parse every real page; full-save round-trip is
+  recorded per page as `test.todo` (PD-22, Stage 6 fixes it); referenceId pairing.
+
 ## Safe-Edit Invariants (DO NOT BYPASS)
 
 1. **Every PUT goes through `withLock(pageId, fn)`**. The lock manager acquires, runs, releases in finally.

@@ -1,0 +1,38 @@
+[
+  {
+    "file": "build-1904-console-0.txt",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:19:50.505Z",
+    "bytes": 27234,
+    "source": {
+      "build": 1904,
+      "start": 0,
+      "X-Text-Size": "27107",
+      "X-More-Data": null
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/1904/logText/progressiveText?start=0",
+    "status": 200
+  },
+  {
+    "file": "build-1904.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:19:50.141Z",
+    "bytes": 3112,
+    "source": {
+      "build": 1904
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/1904/api/json",
+    "status": 200
+  },
+  {
+    "file": "job-parameters.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:19:48.039Z",
+    "bytes": 10300,
+    "source": {
+      "job": "Deployments/Expertly/Database/expertly.db-migration"
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/api/json?tree=property[parameterDefinitions[name,type,description,choices,defaultParameterValue[value]]]",
+    "status": 200
+  }
+]

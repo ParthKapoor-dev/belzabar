@@ -1,0 +1,117 @@
+{
+  "_class": "org.jenkinsci.plugins.workflow.job.WorkflowRun",
+  "actions": [
+    {
+      "_class": "hudson.model.ParametersAction",
+      "parameters": [
+        {
+          "_class": "hudson.model.StringParameterValue",
+          "name": "CLIENT",
+          "value": "SEMS"
+        },
+        {
+          "_class": "hudson.model.StringParameterValue",
+          "name": "PROFILE_NAME",
+          "value": "devsems_qasems"
+        },
+        {
+          "_class": "hudson.model.StringParameterValue",
+          "name": "MIGRATE_TYPE",
+          "value": "AD_Method"
+        },
+        {
+          "_class": "hudson.model.TextParameterValue",
+          "name": "IDS",
+          "value": "4d075e621c93206fb95d84795fc05e00"
+        },
+        {
+          "_class": "hudson.model.StringParameterValue",
+          "name": "MIGRATION_ID",
+          "value": ""
+        },
+        {
+          "_class": "hudson.model.StringParameterValue",
+          "name": "ASYNC_MIGRATION",
+          "value": "N"
+        },
+        {
+          "_class": "hudson.model.StringParameterValue",
+          "name": "MIGRATE_DEPENDENT",
+          "value": "N"
+        },
+        {
+          "_class": "hudson.model.StringParameterValue",
+          "name": "DEVOPS_TAG",
+          "value": "develop"
+        },
+        {
+          "_class": "hudson.model.BooleanParameterValue",
+          "name": "DRY_RUN",
+          "value": false
+        },
+        {
+          "_class": "hudson.model.BooleanParameterValue",
+          "name": "AUTO_APPROVE",
+          "value": true
+        }
+      ]
+    },
+    {
+      "_class": "hudson.model.CauseAction",
+      "causes": [
+        {
+          "_class": "hudson.model.Cause$UserIdCause",
+          "shortDescription": "Started by user praveen",
+          "userId": "praveen",
+          "userName": "praveen"
+        }
+      ]
+    },
+    {
+      "_class": "org.jenkinsci.plugins.workflow.libs.LibrariesAction"
+    },
+    {},
+    {
+      "_class": "org.jenkinsci.plugins.workflow.cps.EnvActionImpl"
+    },
+    {},
+    {},
+    {},
+    {
+      "_class": "org.jenkinsci.plugins.displayurlapi.actions.RunDisplayAction"
+    },
+    {
+      "_class": "org.jenkinsci.plugins.pipeline.modeldefinition.actions.RestartDeclarativePipelineAction"
+    },
+    {},
+    {
+      "_class": "org.jenkinsci.plugins.workflow.job.views.FlowGraphAction"
+    },
+    {},
+    {},
+    {}
+  ],
+  "artifacts": [],
+  "building": false,
+  "description": null,
+  "displayName": "#1904",
+  "duration": 35936,
+  "estimatedDuration": 37817,
+  "executor": null,
+  "fullDisplayName": "Deployments » Expertly » Database » expertly.db-migration #1904",
+  "id": "1904",
+  "keepLog": false,
+  "number": 1904,
+  "queueId": 52543,
+  "result": "SUCCESS",
+  "timestamp": 1790423139927,
+  "url": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/1904/",
+  "changeSets": [],
+  "culprits": [],
+  "inProgress": false,
+  "nextBuild": null,
+  "previousBuild": {
+    "number": 1903,
+    "url": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/1903/"
+  }
+}

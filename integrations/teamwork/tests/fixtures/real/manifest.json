@@ -1,0 +1,63 @@
+[
+  {
+    "file": "task-25085246-comments-p1.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:19:29.656Z",
+    "bytes": 5487,
+    "source": {
+      "taskId": 25085246,
+      "page": 1,
+      "pageSize": 2
+    },
+    "endpoint": "/projects/api/v3/tasks/25085246/comments.json?include=users,teams,files&orderBy=date&orderMode=asc&pageSize=2&page=1",
+    "status": 200
+  },
+  {
+    "file": "task-25085246-comments-p2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:19:29.986Z",
+    "bytes": 5365,
+    "source": {
+      "taskId": 25085246,
+      "page": 2,
+      "pageSize": 2
+    },
+    "endpoint": "/projects/api/v3/tasks/25085246/comments.json?include=users,teams,files&orderBy=date&orderMode=asc&pageSize=2&page=2",
+    "status": 200
+  },
+  {
+    "file": "task-25085246.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:19:29.360Z",
+    "bytes": 13657,
+    "source": {
+      "taskId": 25085246
+    },
+    "endpoint": "/projects/api/v3/tasks/25085246.json?include=users,tags,projects,tasklists,workflows,workflows.stages&getSubTasks=true&includeCommentStats=true",
+    "status": 200
+  },
+  {
+    "file": "task-25807610-comments-p1.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:18:29.426Z",
+    "bytes": 8594,
+    "source": {
+      "taskId": 25807610,
+      "page": 1,
+      "pageSize": 5
+    },
+    "endpoint": "/projects/api/v3/tasks/25807610/comments.json?include=users,teams,files&orderBy=date&orderMode=asc&pageSize=5&page=1",
+    "status": 200
+  },
+  {
+    "file": "task-25807610.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:18:29.127Z",
+    "bytes": 14453,
+    "source": {
+      "taskId": 25807610
+    },
+    "endpoint": "/projects/api/v3/tasks/25807610.json?include=users,tags,projects,tasklists,workflows,workflows.stages&getSubTasks=true&includeCommentStats=true",
+    "status": 200
+  }
+]

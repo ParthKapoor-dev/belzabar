@@ -1,0 +1,196 @@
+{
+  "comments": [
+    {
+      "id": 9861359,
+      "installationId": 216133,
+      "installation": {
+        "id": 216133,
+        "type": "installations"
+      },
+      "htmlBody": "<div>\n  Creating a separate Deployment for client deployment on code build server&nbsp;&nbsp; \n</div>",
+      "body": "Creating a separate Deployment for client deployment on code build server   ",
+      "postedByUserId": 301769,
+      "postedBy": 301769,
+      "postedDateTime": "2024-09-13T09:23:02Z",
+      "projectId": 310720,
+      "project": {
+        "id": 310720,
+        "type": "projects"
+      },
+      "objectId": 25085246,
+      "object": {
+        "id": 25085246,
+        "type": "tasks"
+      },
+      "objectType": "task",
+      "deleted": false,
+      "deletedByUserId": 0,
+      "deletedBy": null,
+      "dateDeleted": null,
+      "lastEditedByUserId": 301769,
+      "lastEditedBy": 301769,
+      "dateLastEdited": "2024-09-13T09:23:02Z",
+      "contentType": "HTML",
+      "reactionsCount": 0,
+      "peopleNotifiedCount": 2,
+      "fileIds": null,
+      "files": [],
+      "fileCount": 0,
+      "isPrivate": 0,
+      "lockdownID": 0,
+      "commentLink": "tasks/25085246?c=9861359",
+      "meta": {
+        "permissions": {
+          "canEdit": false,
+          "canDelete": false
+        },
+        "isRead": false
+      }
+    },
+    {
+      "id": 10149521,
+      "installationId": 216133,
+      "installation": {
+        "id": 216133,
+        "type": "installations"
+      },
+      "htmlBody": "<div> \n <span class=\"atwho-inserted\">@dhanwanp</span> As discussed please pick and complete this as per the discussion we did to fetch client info from env.json file \n</div>",
+      "body": "@dhanwanp As discussed please pick and complete this as per the discussion we did to fetch client info from env.json file ",
+      "postedByUserId": 218900,
+      "postedBy": 218900,
+      "postedDateTime": "2025-03-20T15:58:41Z",
+      "projectId": 310720,
+      "project": {
+        "id": 310720,
+        "type": "projects"
+      },
+      "objectId": 25085246,
+      "object": {
+        "id": 25085246,
+        "type": "tasks"
+      },
+      "objectType": "task",
+      "deleted": false,
+      "deletedByUserId": 0,
+      "deletedBy": null,
+      "dateDeleted": null,
+      "lastEditedByUserId": 218900,
+      "lastEditedBy": 218900,
+      "dateLastEdited": "2025-03-20T15:58:41Z",
+      "contentType": "HTML",
+      "reactionsCount": 0,
+      "peopleNotifiedCount": 2,
+      "fileIds": null,
+      "files": [],
+      "fileCount": 0,
+      "isPrivate": 0,
+      "lockdownID": 0,
+      "commentLink": "tasks/25085246?c=10149521",
+      "meta": {
+        "permissions": {
+          "canEdit": false,
+          "canDelete": false
+        },
+        "isRead": false
+      }
+    }
+  ],
+  "meta": {
+    "page": {
+      "pageOffset": 0,
+      "pageSize": 2,
+      "count": 4,
+      "hasMore": true
+    }
+  },
+  "included": {
+    "users": {
+      "218900": {
+        "id": 218900,
+        "firstName": "Kartik",
+        "lastName": "Jaiswal",
+        "title": "",
+        "email": "user@example.com",
+        "companyId": 63821,
+        "companyRoleId": 0,
+        "company": {
+          "id": 63821,
+          "type": "companies"
+        },
+        "isAdmin": true,
+        "siteOwner": false,
+        "inOwnerCompany": false,
+        "isClientUser": false,
+        "isServiceAccount": false,
+        "type": "account",
+        "deleted": false,
+        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_ace78233cd9fbe538a22cd3aacbfcc29.png",
+        "lengthOfDay": 8,
+        "workingHoursId": 14357,
+        "workingHour": {
+          "id": 14357,
+          "type": "workingHours"
+        },
+        "canAccessPortfolio": false,
+        "canAddProjects": true,
+        "canManagePortfolio": false,
+        "isPlaceholderResource": false,
+        "timezone": "America/Toronto",
+        "lastLogin": "2026-09-25T13:46:48Z",
+        "createdBy": {
+          "id": 206812,
+          "type": "users"
+        },
+        "createdAt": "2018-01-04T14:13:02Z",
+        "updatedBy": {
+          "id": 195580,
+          "type": "users"
+        },
+        "updatedAt": "2026-09-22T12:31:20Z"
+      },
+      "301769": {
+        "id": 301769,
+        "firstName": "Dhanwan",
+        "lastName": "prajapat",
+        "title": "",
+        "email": "user@example.com",
+        "companyId": 28178,
+        "companyRoleId": 5,
+        "company": {
+          "id": 28178,
+          "type": "companies"
+        },
+        "isAdmin": false,
+        "siteOwner": false,
+        "inOwnerCompany": true,
+        "isClientUser": false,
+        "isServiceAccount": false,
+        "type": "account",
+        "deleted": true,
+        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_f735316b66e66daf351ee863a96ffe37.png",
+        "lengthOfDay": 8,
+        "workingHoursId": 49554,
+        "workingHour": {
+          "id": 49554,
+          "type": "workingHours"
+        },
+        "canAccessPortfolio": false,
+        "canAddProjects": false,
+        "canManagePortfolio": false,
+        "isPlaceholderResource": false,
+        "timezone": "America/Toronto",
+        "lastLogin": "2025-04-24T08:06:38Z",
+        "createdBy": {
+          "id": 209574,
+          "type": "users"
+        },
+        "createdAt": "2024-05-30T05:32:34Z",
+        "updatedBy": {
+          "id": 209574,
+          "type": "users"
+        },
+        "updatedAt": "2025-04-28T06:03:03Z"
+      }
+    }
+  }
+}

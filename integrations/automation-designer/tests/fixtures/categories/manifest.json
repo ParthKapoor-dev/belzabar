@@ -1,0 +1,29 @@
+[
+  {
+    "file": "automation-services.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:58.756Z",
+    "bytes": 228108,
+    "source": {},
+    "endpoint": "/rest/api/automation/services?limit=2000&offset=0",
+    "status": 200
+  },
+  {
+    "file": "chain-category-system.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:57.453Z",
+    "bytes": 184814,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/category?fetchSystemServices=true",
+    "status": 200
+  },
+  {
+    "file": "chain-category.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:56.043Z",
+    "bytes": 261448,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/category?fetchSystemServices=false",
+    "status": 200
+  }
+]

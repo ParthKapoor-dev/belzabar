@@ -1,19 +1,125 @@
 {
- "id": 6895,
- "uuid": "4adc0b1f072b1b69e02b8da5548e793b",
- "jsonDefinition": "{\"name\": \"tobedeleted-stackLogs.add\", \"inputs\": [], \"outputs\": [], \"summary\": \"add logs to methods_stack_log table\", \"services\": [], \"variables\": [], \"buttonLabel\": \"\", \"securityFields\": [], \"methodDescription\": \"add logs to methods_stack_log table\"}",
- "version": 2,
- "name": "tobedeleted-stackLogs.add",
- "aliasName": "stackLogs.add",
- "category": {
-  "id": 19,
-  "name": "Schools-Utilities"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "deprecatedAt": 1746697674668,
- "active": false,
- "updatedOn": 1746697674689,
- "createdOn": 1746682752251
+  "id": 6895,
+  "uuid": "4adc0b1f072b1b69e02b8da5548e793b",
+  "jsonDefinition": "{\"name\": \"tobedeleted-stackLogs.add\", \"inputs\": [], \"outputs\": [], \"summary\": \"add logs to methods_stack_log table\", \"services\": [], \"variables\": [], \"buttonLabel\": \"\", \"securityFields\": [], \"methodDescription\": \"add logs to methods_stack_log table\"}",
+  "version": 2,
+  "name": "tobedeleted-stackLogs.add",
+  "aliasName": "stackLogs.add",
+  "category": {
+    "id": 19,
+    "name": "Schools-Utilities",
+    "aliasName": [
+      "Schools - Utilities"
+    ],
+    "originalLabel": "Schools-Utilities",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 1986,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4619df2ec1d8db3afbd9a67b3319842b",
+    "automationSystemUuid": "4f6401b02dfc91e057ffaaa3f465c639    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1746682752251,
+  "updatedBy": 2,
+  "updatedOn": 1746697674689,
+  "state": "DRAFT",
+  "methodDeprecated": false,
+  "deprecatedAt": 1746697674668,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "41223c70f1390383135ca1a220c7fc21",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

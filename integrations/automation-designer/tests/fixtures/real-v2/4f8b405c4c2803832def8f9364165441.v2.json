@@ -1,0 +1,303 @@
+{
+  "uuid": "4f8b405c4c2803832def8f9364165441",
+  "automationApiId": "45f84a3f7095c69a9f4f9d9348614508    ",
+  "name": "document.downloadFromStorage--deprecated",
+  "summary": "",
+  "description": "This method downloads the document based on the passed docLocationId",
+  "metadata": {
+    "version": {
+      "uuid": "4f8b405c4c2803832def8f9364165441",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 19,
+      "uuid": "4619df2ec1d8db3afbd9a67b3319842b",
+      "name": "Schools-Utilities",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1728458683991,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4b6ad47165a4bf1cdb8285954a33cd56    ",
+      "key": "docStorageReference",
+      "name": "docStorageReference",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4c06e32eba782cbe07998c49085148cf    ",
+      "key": "docVersion",
+      "name": "docVersion",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4b2abc6e006175936b66847c5d3bbaa2    ",
+      "referenceUuid": "41131c1926df663db369b6fef714eba2    ",
+      "key": "downloadUrl",
+      "fieldCode": "downloadUrl",
+      "name": "downloadUrl",
+      "type": "STRING"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "4f54bd1e0aaf1c49e7c6bf4e01c1dab4    ",
+      "automationAPIId": "43c362a9b0c8544bd05cb4590bb4052e    ",
+      "serviceName": "Expertly.DMS",
+      "methodName": "file.download",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "41dac8103d7cfed30592a05047476e89    ",
+          "value": "#{docStorageReference}",
+          "key": "fileId",
+          "name": "id",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "419a311593aac86a10708684d78e533d    ",
+          "value": "#{docVersion}",
+          "key": "version",
+          "name": "version",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4c11e2e369b301533e1e921461bb2026    ",
+          "key": "response",
+          "fieldCode": "downloadJson",
+          "name": "downloadJson"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4851b07ed239cfe725f8a4e0f394cf0c    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{downloadJson}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$.downloadLink",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "downloadUrl",
+          "name": "downloadUrl"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "42f36c025318f3f5fa2794e59b8f019a",
+      "comment": "Developer =&gt; Ritik<br>Changes =&gt; Method implementation<br>Reviewer =&gt; Mayank",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1728460011431
+    }
+  ],
+  "testSuite": {
+    "id": "413d522d4357406aca3e90323a85baee",
+    "createdBy": 2,
+    "createdOn": 1728459907945,
+    "chainId": "4f8b405c4c2803832def8f9364165441",
+    "testCases": [
+      {
+        "id": "4ff1445889ceaed61839a6ca6905cb8e",
+        "createdBy": 2,
+        "createdOn": 1728459907948,
+        "name": "document.downloadFromStorage.success1",
+        "testSuiteId": "413d522d4357406aca3e90323a85baee",
+        "inputs": [
+          {
+            "id": "44a439ae18d6f1c89c398eb1a8463f1d",
+            "createdOn": 1728459907952,
+            "testCaseId": "4ff1445889ceaed61839a6ca6905cb8e",
+            "fieldCode": "docStorageReference",
+            "value": "{\"value\": \"Q0FkWlBFLzBWNkUyOVkzOHFjSzJMRWpjM1l5ZFJhRFVPbE1wa3QrTkZFSGZZOGNqWTNYWWpLZVU0TTFSMGs4aVhTT1JOSmlGQWJ4VzFvbzVITFNBMzZOWnlLM3FKZGNZRXM3ZFRrMDdIN0pnc2hkNytSMlhuTnIzSzhSSWMvKzM=\"}"
+          },
+          {
+            "id": "49748c84c601cac1809b832cd7107422",
+            "createdOn": 1728459907966,
+            "testCaseId": "4ff1445889ceaed61839a6ca6905cb8e",
+            "fieldCode": "docVersion",
+            "value": "{}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

@@ -1,18 +1,124 @@
 {
- "id": 6097,
- "uuid": "4c2ca735821ef5343a0ab4217dc392d0",
- "jsonDefinition": "{\"name\": \"rohit test\", \"inputs\": [], \"outputs\": [], \"services\": [{\"outputs\": [], \"mappings\": [{\"mappings\": [{\"value\": \"{ test: 'select from users' }\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 19875, \"automationUserInputUuid\": \"446cb47762b8c55f5ab199cb42e4cbf5    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 19872, \"automationUserInputUuid\": \"40adc0be782e098e7879bc1ea517886b    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"automationId\": 89813, \"forceExitStatusCode\": null, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"rohit test\"}",
- "version": 2,
- "name": "rohit test",
- "aliasName": "rohit test",
- "category": {
-  "id": 123,
-  "name": "Schools-Regression"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "updatedOn": 1714388182584,
- "createdOn": 1714388139554
+  "id": 6097,
+  "uuid": "4c2ca735821ef5343a0ab4217dc392d0",
+  "jsonDefinition": "{\"name\": \"rohit test\", \"inputs\": [], \"outputs\": [], \"services\": [{\"outputs\": [], \"mappings\": [{\"mappings\": [{\"value\": \"{ test: 'select from users' }\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 19875, \"automationUserInputUuid\": \"446cb47762b8c55f5ab199cb42e4cbf5    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 19872, \"automationUserInputUuid\": \"40adc0be782e098e7879bc1ea517886b    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"automationId\": 89813, \"forceExitStatusCode\": null, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"rohit test\"}",
+  "version": 2,
+  "name": "rohit test",
+  "aliasName": "rohit test",
+  "category": {
+    "id": 123,
+    "name": "Schools-Regression",
+    "aliasName": [
+      "Schools - Regression"
+    ],
+    "originalLabel": "Schools-Regression",
+    "description": "Regression test cases list.",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 1657,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4f4df7b28e1045cb041d88eea4430d59",
+    "automationSystemUuid": "4c7a39495c53cdd4a8af8827b01b2dd5    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1714388139554,
+  "updatedBy": 2,
+  "updatedOn": 1714388182584,
+  "state": "DRAFT",
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "40cc96cd34512d4480529dd294858142",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

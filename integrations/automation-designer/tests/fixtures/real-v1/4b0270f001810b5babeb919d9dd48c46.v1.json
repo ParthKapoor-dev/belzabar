@@ -1,20 +1,129 @@
 {
- "id": 8092,
- "uuid": "4b0270f001810b5babeb919d9dd48c46",
- "jsonDefinition": "{\"name\": \"supportingData.updateProofs\", \"inputs\": [{\"type\": \"TEXT\", \"uuid\": \"49b1f95f0e45d6d8a82fa304e6ad4288\", \"label\": \"dataId\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"dataId\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"TEXT\", \"uuid\": \"40bd8a8dbb16d2a9699daa93f74b32b7\", \"label\": \"proofId\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"proofId\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"TEXT\", \"uuid\": \"47fef8eacd43ecb269799cbe90556c39\", \"label\": \"operation\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"operation\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"description\": \"\\\"add\\\" or \\\"remove\\\"\", \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"JSON\", \"uuid\": \"422ec16fce15aeb36983a7b69a81c348\", \"label\": \"placeholdersMap\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"placeholdersMap\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 15130, \"code\": \"updateStatus\", \"type\": \"BOOLEAN\", \"uuid\": \"44b666dcf1411ea77989a34db61a183e\", \"fieldCode\": \"updateStatus\", \"outputCode\": \"updateStatus\", \"properties\": [], \"displayName\": \"updateStatus\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"\", \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"updateProofsConfig\", \"uuid\": \"4fa353524ef4bbafa0eaa0e3e6f367c2\", \"properties\": [], \"displayName\": \"updateProofsConfig\", \"automationId\": 148293, \"rawResponseContainer\": false, \"automationAPIOutputId\": 85, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"U0VMRUNUIHVwZGF0ZV9wcm9vZnNfcHJvYy0+Picje29wZXJhdGlvbn1RdWVyeScgQVMgcXVlcnksIGRhdGFfa2V5IEZST00gc3VwcG9ydGluZ19kYXRhIFdIRVJFIGlkID0gJyN7ZGF0YUlkfSc=\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"BASE_64\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 153, \"automationUserInputUuid\": \"529f4d30-4692-46b3-b1fb-0fea77c68683\"}, {\"value\": \"OBJECT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 13576, \"automationUserInputUuid\": \"476ea71abed20d6853a58dd1f0e06dca    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 152, \"automationUserInputUuid\": \"8d49cef8-1a21-4214-9ebd-20e7174fec0c\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Fetch update_proofs_proc-&gt;&gt;'&lt;operation&gt;Query', data_key from supporting_data table for id = &lt;dataId&gt;\", \"automationId\": 148293, \"streamCapable\": false, \"automationApiId\": 19, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"automationAuthId\": 149, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceReturnCondition\": [], \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"forceReturnConditionMode\": \"advance\", \"forceReturnConditionExpression\": \"#{updateProofsConfig[0].query} eq null\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"varPlaceholdersMap\", \"uuid\": \"41915be9bf719fc169cab56688f00710\", \"properties\": [], \"displayName\": \"varPlaceholdersMap\", \"automationId\": 148294, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1428, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{placeholdersMap}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3464, \"automationUserInputUuid\": \"4b48c95ae8ed77de7704b7812d528da6    \"}, {\"value\": \"{\\\"dataKey\\\": \\\"#{updateProofsConfig[0].data_key}\\\", \\\"proofId\\\": \\\"#{proofId}\\\"}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3466, \"automationUserInputUuid\": \"43fbcd5156782a663491bb4de528f783    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 3463, \"automationUserInputUuid\": \"42e3af077e7307e234df8f01907201a4    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 2, \"automationId\": 148294, \"streamCapable\": false, \"automationApiId\": 655, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"query\", \"uuid\": \"44225af6cbcffe21983d929350e0dcb5\", \"properties\": [], \"displayName\": \"query\", \"automationId\": 148295, \"rawResponseContainer\": false, \"automationAPIOutputId\": 5810, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{updateProofsConfig[0].query}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 10414, \"automationUserInputUuid\": \"444bebe5823e6370adc992d0a566d0b5    \"}, {\"value\": \"#{varPlaceholdersMap}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 10415, \"automationUserInputUuid\": \"4f607ba1a37b4ff6e77692802cf268ba    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 3, \"automationId\": 148295, \"streamCapable\": false, \"automationApiId\": 3377, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"updatedReviewStatus\", \"uuid\": \"4eb86135e99042801e7d982d94fa28a9\", \"properties\": [], \"displayName\": \"updatedReviewStatus\", \"automationId\": 148296, \"rawResponseContainer\": false, \"automationAPIOutputId\": 85, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"I3txdWVyeX0=\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"BASE_64\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 153, \"automationUserInputUuid\": \"529f4d30-4692-46b3-b1fb-0fea77c68683\"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 152, \"automationUserInputUuid\": \"8d49cef8-1a21-4214-9ebd-20e7174fec0c\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 4, \"automationId\": 148296, \"streamCapable\": false, \"automationApiId\": 19, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"automationAuthId\": 2, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"status\", \"uuid\": \"4bf1190ba3bf5791b3d9b4926eced415\", \"properties\": [], \"displayName\": \"status\", \"automationId\": 148297, \"internalVarRef\": \"updateStatus\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 385, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"true\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 933, \"automationUserInputUuid\": \"4d6ef6b1ef9882a84c52be9b0c66599e    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"forceExist\": false, \"orderIndex\": 5, \"automationId\": 148297, \"conditionMode\": \"advance\", \"streamCapable\": false, \"automationApiId\": 100, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"conditionExpression\": \"#{updatedReviewStatus} ne null and  #{updatedReviewStatus.size()} gt 0\", \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"BOOLEAN\", \"label\": \"updateStatus\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"updateStatus\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"inputVarRef\": \"\", \"defaultValue\": false, \"encodingType\": \"NONE\"}], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"\", \"useServiceAuthenticationStructure\": false}",
- "version": 4,
- "name": "supportingData.updateProofs",
- "aliasName": "supportingData.updateProofs",
- "category": {
-  "id": 15,
-  "name": "Schools"
- },
- "state": "PUBLISHED",
- "automationState": "PUBLISHED",
- "referenceId": "4f909e2c14473e43bfe8ac0b61c0be3c",
- "methodDeprecated": false,
- "deprecatedAt": 1769098507383,
- "active": false,
- "updatedOn": 1769098507399,
- "createdOn": 1756324751612
+  "id": 8092,
+  "uuid": "4b0270f001810b5babeb919d9dd48c46",
+  "jsonDefinition": "{\"name\": \"supportingData.updateProofs\", \"inputs\": [{\"type\": \"TEXT\", \"uuid\": \"49b1f95f0e45d6d8a82fa304e6ad4288\", \"label\": \"dataId\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"dataId\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"TEXT\", \"uuid\": \"40bd8a8dbb16d2a9699daa93f74b32b7\", \"label\": \"proofId\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"proofId\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"TEXT\", \"uuid\": \"47fef8eacd43ecb269799cbe90556c39\", \"label\": \"operation\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"operation\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"description\": \"\\\"add\\\" or \\\"remove\\\"\", \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"JSON\", \"uuid\": \"422ec16fce15aeb36983a7b69a81c348\", \"label\": \"placeholdersMap\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"placeholdersMap\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 15130, \"code\": \"updateStatus\", \"type\": \"BOOLEAN\", \"uuid\": \"44b666dcf1411ea77989a34db61a183e\", \"fieldCode\": \"updateStatus\", \"outputCode\": \"updateStatus\", \"properties\": [], \"displayName\": \"updateStatus\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"\", \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"updateProofsConfig\", \"uuid\": \"4fa353524ef4bbafa0eaa0e3e6f367c2\", \"properties\": [], \"displayName\": \"updateProofsConfig\", \"automationId\": 148293, \"rawResponseContainer\": false, \"automationAPIOutputId\": 85, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"U0VMRUNUIHVwZGF0ZV9wcm9vZnNfcHJvYy0+Picje29wZXJhdGlvbn1RdWVyeScgQVMgcXVlcnksIGRhdGFfa2V5IEZST00gc3VwcG9ydGluZ19kYXRhIFdIRVJFIGlkID0gJyN7ZGF0YUlkfSc=\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"BASE_64\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 153, \"automationUserInputUuid\": \"529f4d30-4692-46b3-b1fb-0fea77c68683\"}, {\"value\": \"OBJECT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 13576, \"automationUserInputUuid\": \"476ea71abed20d6853a58dd1f0e06dca    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 152, \"automationUserInputUuid\": \"8d49cef8-1a21-4214-9ebd-20e7174fec0c\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Fetch update_proofs_proc-&gt;&gt;'&lt;operation&gt;Query', data_key from supporting_data table for id = &lt;dataId&gt;\", \"automationId\": 148293, \"streamCapable\": false, \"automationApiId\": 19, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"automationAuthId\": 149, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceReturnCondition\": [], \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"forceReturnConditionMode\": \"advance\", \"forceReturnConditionExpression\": \"#{updateProofsConfig[0].query} eq null\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"varPlaceholdersMap\", \"uuid\": \"41915be9bf719fc169cab56688f00710\", \"properties\": [], \"displayName\": \"varPlaceholdersMap\", \"automationId\": 148294, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1428, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{placeholdersMap}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3464, \"automationUserInputUuid\": \"4b48c95ae8ed77de7704b7812d528da6    \"}, {\"value\": \"{\\\"dataKey\\\": \\\"#{updateProofsConfig[0].data_key}\\\", \\\"proofId\\\": \\\"#{proofId}\\\"}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3466, \"automationUserInputUuid\": \"43fbcd5156782a663491bb4de528f783    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 3463, \"automationUserInputUuid\": \"42e3af077e7307e234df8f01907201a4    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 2, \"automationId\": 148294, \"streamCapable\": false, \"automationApiId\": 655, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"query\", \"uuid\": \"44225af6cbcffe21983d929350e0dcb5\", \"properties\": [], \"displayName\": \"query\", \"automationId\": 148295, \"rawResponseContainer\": false, \"automationAPIOutputId\": 5810, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{updateProofsConfig[0].query}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 10414, \"automationUserInputUuid\": \"444bebe5823e6370adc992d0a566d0b5    \"}, {\"value\": \"#{varPlaceholdersMap}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 10415, \"automationUserInputUuid\": \"4f607ba1a37b4ff6e77692802cf268ba    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 3, \"automationId\": 148295, \"streamCapable\": false, \"automationApiId\": 3377, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"updatedReviewStatus\", \"uuid\": \"4eb86135e99042801e7d982d94fa28a9\", \"properties\": [], \"displayName\": \"updatedReviewStatus\", \"automationId\": 148296, \"rawResponseContainer\": false, \"automationAPIOutputId\": 85, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"I3txdWVyeX0=\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"BASE_64\", \"securedInput\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 153, \"automationUserInputUuid\": \"529f4d30-4692-46b3-b1fb-0fea77c68683\"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 152, \"automationUserInputUuid\": \"8d49cef8-1a21-4214-9ebd-20e7174fec0c\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 4, \"automationId\": 148296, \"streamCapable\": false, \"automationApiId\": 19, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"automationAuthId\": 2, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"status\", \"uuid\": \"4bf1190ba3bf5791b3d9b4926eced415\", \"properties\": [], \"displayName\": \"status\", \"automationId\": 148297, \"internalVarRef\": \"updateStatus\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 385, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"true\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 933, \"automationUserInputUuid\": \"4d6ef6b1ef9882a84c52be9b0c66599e    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"forceExist\": false, \"orderIndex\": 5, \"automationId\": 148297, \"conditionMode\": \"advance\", \"streamCapable\": false, \"automationApiId\": 100, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"conditionExpression\": \"#{updatedReviewStatus} ne null and  #{updatedReviewStatus.size()} gt 0\", \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"BOOLEAN\", \"label\": \"updateStatus\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"updateStatus\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"inputVarRef\": \"\", \"defaultValue\": false, \"encodingType\": \"NONE\"}], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"\", \"useServiceAuthenticationStructure\": false}",
+  "version": 4,
+  "name": "supportingData.updateProofs",
+  "aliasName": "supportingData.updateProofs",
+  "category": {
+    "id": 15,
+    "name": "Schools",
+    "aliasName": [
+      "Schools"
+    ],
+    "originalLabel": "Schools",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 2018,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+    "automationSystemUuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1756324751612,
+  "updatedBy": 2,
+  "updatedOn": 1769098507399,
+  "referenceId": "4f909e2c14473e43bfe8ac0b61c0be3c",
+  "state": "PUBLISHED",
+  "migrationVersion": 1756324751446,
+  "methodDeprecated": false,
+  "deprecatedAt": 1769098507383,
+  "securityTags": [],
+  "migration": false,
+  "lastPublishedAt": 1769098507374,
+  "lastPublishedBy": 2,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "4b8e3a2505970fc2f8bb9654b1ef08af",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "PUBLISHED"
 }

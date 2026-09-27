@@ -1,0 +1,2371 @@
+{
+  "uuid": "4629ab579e58d96c570d871e19e6ec5c",
+  "automationApiId": "4a9822a1ee48ca9bdcf987436ea68428    ",
+  "name": "Copy of notification.getData",
+  "description": "Return sendToRecipients in commonRecipients, commonPlaceholderData, recipientNotificationData",
+  "metadata": {
+    "version": {
+      "uuid": "4629ab579e58d96c570d871e19e6ec5c",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 575,
+      "uuid": "4efdb8255734477b5ef28911f8947483",
+      "name": "Schools-Archives",
+      "description": "backup of old methods",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1702395350729,
+      "lastPublishedAt": 1702395350707,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "468cae38b27b4995f458bded39b98f4c    ",
+      "key": "templateDataConfig",
+      "name": "templateDataConfig",
+      "description": "templateData to be used\n{dataQueries, recipientsListQuery( OR recipientsDataQuery)=optional\n}\ndataQueries –> will only return one column (json with key and value pair) and will have only one row too.\n recipientsDataQuery -> will return a json map of {<recipient - email/phone> : <data>,... }\nrecipientsListQuery -> will return a list of recipients - email or phone number depending upon the type of notification.\n",
+      "type": "JSON",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4d3ff03ccc251a75284baec60e9efdc1    ",
+      "key": "sendToRecipients",
+      "name": "sendToRecipients",
+      "description": "list of sendToRecipients",
+      "type": "JSON",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "447ebb295ad18163fa00bdad27bdd7e1    ",
+      "key": "parameterJson",
+      "name": "parameterJson",
+      "description": "parameterJson with key/value to be used in the template_data_config->query",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": "{}"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4055d332a7459af5fe95a86aabe44545    ",
+      "key": "commonRecipients",
+      "fieldCode": "commonRecipients",
+      "name": "commonRecipients",
+      "type": "JSON"
+    },
+    {
+      "uuid": "49c3046aad45180a9c8887e1855199bc    ",
+      "key": "parameterJsonOutput",
+      "fieldCode": "parameterJsonOutput",
+      "name": "commonPlaceholderData",
+      "type": "JSON"
+    },
+    {
+      "uuid": "47df4b304e8a2321489695b8a4e8604d    ",
+      "key": "recipientNotificationDataFinal",
+      "fieldCode": "recipientNotificationDataFinal",
+      "name": "recipientNotificationData",
+      "type": "JSON"
+    }
+  ],
+  "variables": [
+    {
+      "key": "commonRecipients",
+      "name": "commonRecipients",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": "[]"
+    },
+    {
+      "key": "recipientNotificationDataFinal",
+      "name": "recipientNotificationDataFinal",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "key": "parameterJsonOutput",
+      "name": "parameterJsonOutput",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": "{}"
+    }
+  ],
+  "steps": [
+    {
+      "id": "4abc3c10b101bdf03de0984be57e9474    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "initialize the internal variable",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{parameterJson}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "parameterJson1",
+          "name": "parameterJson1",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "parameterJsonOutput"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4bf06ca0f19df875a7b98d7c772042a8    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "set the input to the internal variable commonRecipients",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{sendToRecipients}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "commonRecipients0",
+          "name": "commonRecipients0",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "commonRecipients"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4be4cb8ed6f6b96aee769f98ff61297a    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "Check if sendToRecipients list is empty. If it is, then set findRecipients=True&nbsp;",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{sendToRecipients}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$.length()",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "sendToRecipientsCount",
+          "name": "sendToRecipientsCount"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4265c99b781c79bb8ac2b2e20495526d    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "stringify the object templateDataConfig&nbsp; to check in conditions",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "#{templateDataConfig}",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "templateDataConfigStr",
+          "name": "templateDataConfigStr"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "46b0d23c2f793afa896e9f92b0fb91d8    ",
+      "automationAPIId": "4de09baa1bea879857de9ccf691b7296    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "evaluateExpression",
+      "coreMethod": false,
+      "description": "if sendToRecipientsCount=0, set findRecipients to true, else false",
+      "inputs": [
+        {
+          "uuid": "4fa203647bb53d604a94ab0cbfb99c86    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4b4848bee87392f6d7999379dc5d2130    ",
+              "value": "{\n\t\"operator\": \"==\",\n\t\"operands\": [\n\t\t{\n\t\t\t\"contextHandler\": \"sendToRecipientsCount\"\n\t\t},\n\t\t{\n\t\t\t\"contextHandler\": \"temp\"\n\t\t}\n\t]\n}",
+              "key": "expression",
+              "name": "expression",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4e0e16215d0d4c6f8f77ae952aed4002    ",
+              "value": "{\n  \"sendToRecipientsCount\":\"#{sendToRecipientsCount}\",\n  \"temp\":\"0\"\n}",
+              "key": "context",
+              "name": "context",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4019996c6478179faf729effe072efb3    ",
+          "key": "response",
+          "fieldCode": "findRecipients",
+          "name": "findRecipients"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4f7f3b6dd8906d8d8be68fb0a4f43fdc    ",
+      "automationAPIId": "492a440d34d8550c14a2bb803c7e351b    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "replacePlaceholdersInText",
+      "coreMethod": false,
+      "description": "If findRecipients=True and templateDataConfig.recipientsListQuery is configured then Use replacePlaceholdersInText to replace all the key &nbsp;in parameterJson with&nbsp; value,&nbsp;in the &nbsp;recipientsListQuery&nbsp;",
+      "inputs": [
+        {
+          "uuid": "444bebe5823e6370adc992d0a566d0b5    ",
+          "value": "#{templateDataConfig.recipientsListQuery}",
+          "key": "text",
+          "name": "text",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f607ba1a37b4ff6e77692802cf268ba    ",
+          "value": "#{parameterJson}",
+          "key": "placeholders",
+          "name": "placeholders",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4832e42217c0dd695c4da2e97ec848ac    ",
+          "key": "finalText",
+          "fieldCode": "recipientsListQuery",
+          "name": "recipientsListQuery"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{findRecipients} eq true and #{templateDataConfigStr}.contains('recipientsListQuery') and #{parameterJson} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.2",
+                "fieldCode": "findRecipients",
+                "nestedFieldCode": null
+              },
+              "value": "true",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Output 3.3",
+                "fieldCode": "templateDataConfigStr",
+                "nestedFieldCode": null
+              },
+              "value": "recipientsListQuery",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "contains"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Input",
+                "fieldCode": "parameterJson",
+                "nestedFieldCode": "parameterJson"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "48b00d66f03ad23f9fefb53cd8128d9d    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "description": "if findRecipients=true and recipientsListQuery, Execute the updated query to fetch the list, and set the list into sendToRecipients list.&nbsp;<br id=\"isPasted\">Note: since AD method replaceplaceholdersintext cannot handle replacement into $, doing that here: replace(\"DOLLAR\",\"$\")}&nbsp;",
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "#{recipientsListQuery.replace(\"DOLLAR\",\"$\")}",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "476ea71abed20d6853a58dd1f0e06dca    ",
+              "value": "OBJECT",
+              "key": "flatDataType",
+              "name": "responseDataType",
+              "type": "STRING",
+              "displayWidgetSuggestion": "DROPDOWN",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "5b11494a-c244-47a9-a063-3434f6a00e4f",
+          "key": "columnNames[]",
+          "fieldCode": "commonRecipients1Columns",
+          "name": "commonRecipients1Columns"
+        },
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "commonRecipients1",
+          "name": "commonRecipients1"
+        },
+        {
+          "uuid": "5b11494a-c244-47a9-a063-3434f6a00e5g",
+          "key": "rowsImpacted",
+          "fieldCode": "commonRecipients1Count",
+          "name": "commonRecipients1Count"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{findRecipients} eq true and #{recipientsListQuery} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.5",
+                "fieldCode": "findRecipients",
+                "nestedFieldCode": null
+              },
+              "value": "true",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Output 3.6",
+                "fieldCode": "recipientsListQuery",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "425ffaef2d9587728463ae2f55386b08    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "to extract just emails without the key \"email\"",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{commonRecipients1}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$[0].email",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "commonRecipients01",
+          "name": "commonRecipients01",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "commonRecipients"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{commonRecipients1Count} gt 0 and #{findRecipients} eq true and #{commonRecipients1Columns}.contains(\"email\")",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "41328a535e36780a7892b1e5e0dcb729    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "to extract just phones without the key \"phone\"&nbsp;",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{commonRecipients1}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$..phone",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "commonRecipients02",
+          "name": "commonRecipients02",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "commonRecipients"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{commonRecipients1Count} gt 0 and #{findRecipients} eq true and #{commonRecipients1Columns}.contains(\"phone\")",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "477f98a61312edc563cebdde4365350e    ",
+      "automationAPIId": "492a440d34d8550c14a2bb803c7e351b    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "replacePlaceholdersInText",
+      "coreMethod": false,
+      "description": "if&nbsp; templateDataConfig.recipientsDataQuery is configured then use replacePlaceholdersInText to replace all the keys in parameterJson with value &nbsp;in the templateDataConfig.recipientsDataQuery&nbsp;",
+      "inputs": [
+        {
+          "uuid": "444bebe5823e6370adc992d0a566d0b5    ",
+          "value": "#{templateDataConfig.recipientsDataQuery}",
+          "key": "text",
+          "name": "text",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f607ba1a37b4ff6e77692802cf268ba    ",
+          "value": "#{parameterJson}",
+          "key": "placeholders",
+          "name": "placeholders",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4832e42217c0dd695c4da2e97ec848ac    ",
+          "key": "finalText",
+          "fieldCode": "recipientsQuery",
+          "name": "recipientsQuery"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateDataConfigStr}.contains('recipientsDataQuery')",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Output 3.3",
+                "fieldCode": "templateDataConfigStr",
+                "nestedFieldCode": null
+              },
+              "value": "recipientsDataQuery",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "contains"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4eb515dd7a173fb7114dba155a50bc70    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "description": "if recipientsDataQuery, Execute the updated query to fetch the extraPlaceholders;<br>Note: since AD method replaceplaceholdersintext cannot handle replacement into $, doing that here: replace(\"DOLLAR\",\"$\")}&nbsp;",
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "#{recipientsQuery.replace(\"DOLLAR\",\"$\")}",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "recipientsDataQueryRecords",
+          "name": "recipientNotificationData"
+        },
+        {
+          "uuid": "5b11494a-c244-47a9-a063-3434f6a00e5g",
+          "key": "rowsImpacted",
+          "fieldCode": "recipientNotificationDataCount",
+          "name": "recipientNotificationDataCount"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateDataConfigStr}.contains('recipientsDataQuery')",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Output 3.3",
+                "fieldCode": "templateDataConfigStr",
+                "nestedFieldCode": null
+              },
+              "value": "recipientsDataQuery",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "contains"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "recipientNotificationData",
+          "fieldCode": "recipientNotificationData",
+          "name": "recipientNotificationData",
+          "type": "JSON",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "recipientNotificationDataFinal"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateDataConfigStr}.contains('recipientsDataQuery')",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Output 3.4",
+                "fieldCode": "templateDataConfigStr",
+                "nestedFieldCode": null
+              },
+              "value": "recipientsDataQuery",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "contains"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "//if recipientsDataQuery, set the output into recipientNotificationData (Structure expected {<recipientId>: <recipientPlaceholderJson>,...}\nlet obj={};\n\nlet rcpList=JSON.parse(`#{sendToRecipients}`);\nlet dataCount = `#{recipientNotificationDataCount}`;\nlet recs = null;\nif(dataCount>0){\n  recs = JSON.parse(`#{recipientsDataQueryRecords}`);\n}\nfor(let i=0; i < rcpList.length; i++){\n  let number=rcpList[i];\n  if(recs != null){\n    obj[number]= recs[0];\n  } else {\n    obj[number]={};\n  }  \n}\n//const map = new Map(Object.entries(obj));\nconst map = JSON.stringify(obj);\n\nconsole.log(map);\n\n",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "updatedArrays",
+          "fieldCode": "updatedArrays",
+          "name": "updatedArrays",
+          "type": "JSON"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{findRecipients} eq false and #{recipientNotificationDataCount} gt 0",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.4",
+                "fieldCode": "findRecipients",
+                "nestedFieldCode": null
+              },
+              "value": "false",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "NUMBER",
+                  "name": "Number",
+                  "type": "NUMBER"
+                },
+                "category": "Output 3.8",
+                "fieldCode": "recipientNotificationDataCount",
+                "nestedFieldCode": null
+              },
+              "value": 0,
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "gt"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "/* If findRecipients=False then iterate over keys of recipientNotificationData, and for each recipientId, If the recipientId is not present in sendToRecipients then remove it from the recipientNotificationData json ELSE Remove the recipeintId  from sendToRecipients list (the recipientId now becomes eligible for individual email)\n*/\n\nlet recipientNotificationDataJson = JSON.parse(`#{recipientNotificationDataFinal}`);\nlet sendToRecipientsJson = JSON.parse(`#{sendToRecipients}`);\nlet recipientNotificationDataOut = {};\n\nfor (const [recipientId, value] of Object.entries(recipientNotificationDataJson)) {\n  let arrindex = sendToRecipientsJson.indexOf(recipientId);\n  if( arrindex== -1 ){ \n  //check if only mobile no exists and not with countrycode etc\n    if(recipientId.length >=10 && recipientId.length<=15){\n       //assume it is phone\n        let last10 = recipientId.slice(-10);\n        if(sendToRecipientsJson.indexOf(last10) ==-1){ //remove it from out array\n        } else {\n          recipientNotificationDataOut[recipientId]=value;\n          sendToRecipientsJson.splice(arrindex,1); //remove from sendToRecipients\n        }\n     } else { //remove it from out array, this is email\n    }\n  }  else {\n    recipientNotificationDataOut[recipientId]=value;\n   sendToRecipientsJson.splice(arrindex,1); //remove from sendToRecipients\n  }   \n}\n\n//const map = JSON.stringify(recipientNotificationDataOut);\n\n\nlet res = {\n  commonRecipients: sendToRecipientsJson,\n  recipientNotificationData: recipientNotificationDataOut\n}\nconsole.log(JSON.stringify(res));\n",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "40f375ac61daf611eb928f95a796b320    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "extract the commonRecipients from updatedArrays",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{updatedArrays}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$.commonRecipients",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "commonRecipients2",
+          "name": "commonRecipients2",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "commonRecipients"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{findRecipients} eq false and #{recipientNotificationDataCount} gt 0",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.4",
+                "fieldCode": "findRecipients",
+                "nestedFieldCode": null
+              },
+              "value": "false",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "NUMBER",
+                  "name": "Number",
+                  "type": "NUMBER"
+                },
+                "category": "Output 3.8",
+                "fieldCode": "recipientNotificationDataCount",
+                "nestedFieldCode": null
+              },
+              "value": 0,
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "gt"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4392972904e0a157b135a9f71163f7fe    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "extract the notificationData from updatedArrays",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{updatedArrays}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$.recipientNotificationData",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "recipientNotificationDataUpdated",
+          "name": "recipientNotificationDataUpdated",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "recipientNotificationDataFinal"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{findRecipients} eq false and #{recipientNotificationDataCount} gt 0",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.4",
+                "fieldCode": "findRecipients",
+                "nestedFieldCode": null
+              },
+              "value": "false",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "NUMBER",
+                  "name": "Number",
+                  "type": "NUMBER"
+                },
+                "category": "Output 3.8",
+                "fieldCode": "recipientNotificationDataCount",
+                "nestedFieldCode": null
+              },
+              "value": 0,
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "gt"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4cc58c68cc5d1cacd5a1966277c615bf    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "Fetch templateDataConfig.dataQueries, into dataQueries list.",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{templateDataConfig}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$.dataQueries",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "dataQueries",
+          "name": "dataQueries"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateDataConfigStr}.contains('dataQueries')",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Output 3.3",
+                "fieldCode": "templateDataConfigStr",
+                "nestedFieldCode": null
+              },
+              "value": "dataQueries",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "contains"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4c6d81e74abd79cb0d30aa6ac02a094b    ",
+      "automationAPIId": "410ac833e346bf457fe384acae92288c    ",
+      "serviceName": "Schools",
+      "methodName": "notification.getData.internal",
+      "coreMethod": false,
+      "description": "If dataQueries exists then iterate over the list and call notification.getData.internal and populate the results into commonPlaceholderData json",
+      "inputs": [
+        {
+          "uuid": "4e02fae28bc770cd50a0b0dabde299c6    ",
+          "value": "#{dataQueries.element}",
+          "key": "dataQuery",
+          "name": "dataQuery",
+          "type": "TEXT",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4cd0a5bfb4db829e47269bd021e0026c    ",
+          "value": "#{parameterJson}",
+          "key": "parameterJson",
+          "name": "parameterJson",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4b6ad5b12d3a775cbd23872b040021a6    ",
+          "key": "commonPlaceholderData",
+          "fieldCode": "commonPlaceholderData",
+          "name": "commonPlaceholderData"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "repeatStepExecution": {
+          "type": "LOOP_EXECUTION_ON_INPUT_OUTPUT",
+          "counter": null,
+          "executeParallel": false,
+          "numberOfConcurrentThread": null,
+          "value": "#{dataQueries}"
+        },
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{dataQueries} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.8",
+                "fieldCode": "dataQueries",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "parameterJsonMerged",
+          "fieldCode": "parameterJsonMerged",
+          "name": "parameterJsonMerged",
+          "type": "JSON",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "parameterJsonOutput"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{commonPlaceholderData} ne null and #{dataQueries} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.15",
+                "fieldCode": "commonPlaceholderData",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.15",
+                "fieldCode": "dataQueries",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "//After the dataQueries iteration, convert commonPlaceholderData to a json object and not an array\n\nlet res1=JSON.parse(`#{commonPlaceholderData}`);\nlet obj={};\nres1[0].forEach(function(data, index) {\n  Object.keys(data).forEach(function(key) {\n    obj[key]=data[key];\n  })\n});\n\n//console.log(obj[0]);\nconsole.log(JSON.stringify(obj));\n",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "4b6ba715a0409d50cb1c96790d272d2f",
+      "comment": "Developer: Vandana<br>Version: 1.1<br>Reason: replace DOLLAR with $ in jsonpathquery",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1689235010975
+    },
+    {
+      "id": "46db5201c628d9c2208783dd1d6e9c17",
+      "comment": "Developer: Vandana<br>Version: 1",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1686994232421
+    },
+    {
+      "id": "4e8b42ea4373629fa1308106473de6ef",
+      "comment": "developer : Arpit M<br id=\"isPasted\">reason : change method from evaluate expression to expression evaluator<br>Version: 1.2<br>reviewer: Mayank",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1699360280213
+    }
+  ],
+  "testSuite": {
+    "id": "4a493d4154f06f6af8fbab208fbec33b",
+    "createdBy": 2,
+    "createdOn": 1702395351027,
+    "chainId": "4629ab579e58d96c570d871e19e6ec5c",
+    "testCases": [
+      {
+        "id": "46763193400938ae9e6bb768d1441a36",
+        "createdBy": 2,
+        "createdOn": 1702395351029,
+        "name": "notification.getData.success.1",
+        "testSuiteId": "4a493d4154f06f6af8fbab208fbec33b",
+        "inputs": [
+          {
+            "id": "47cf880def6a8cc8882ea25ec95a94e0",
+            "createdOn": 1702395351030,
+            "testCaseId": "46763193400938ae9e6bb768d1441a36",
+            "fieldCode": "templateDataConfig",
+            "value": "{\"value\": \"{\\\"recipientsDataQuery\\\":\\\"select u.contact_info->'primary'->'email'->>'id' as email, json_build_object('firstName', u.name->'firstName','lastName',u.name->'lastName') \\\\\\\"userDetails\\\\\\\" from users u left join account_student_mapping asm on asm.account_id=u.id and asm.is_primary=true left join student s on s.id=asm.student_id where u.user_type='PUBLIC' and s.current_grade between 5 and 6 \\\"}\"}"
+          },
+          {
+            "id": "4741446b12385d2e78fab1e2b27f6121",
+            "createdOn": 1702395351031,
+            "testCaseId": "46763193400938ae9e6bb768d1441a36",
+            "fieldCode": "sendToRecipients",
+            "value": "{\"value\": \"[]\"}"
+          },
+          {
+            "id": "434c12397928fe6a025bb03b2066bb24",
+            "createdOn": 1702395351032,
+            "testCaseId": "46763193400938ae9e6bb768d1441a36",
+            "fieldCode": "defaultRecipientCode",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4eb440d1fde257151bd988fcbad7d970",
+            "createdOn": 1702395351034,
+            "testCaseId": "46763193400938ae9e6bb768d1441a36",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"userId\\\":\\\"0fd8ae10-d81e-495a-b5b9-74f5f17d02c9\\\"}\"}"
+          },
+          {
+            "id": "4da12428b5c951beb4cdb6ad7d28f5d1",
+            "createdOn": 1702395351035,
+            "testCaseId": "46763193400938ae9e6bb768d1441a36",
+            "fieldCode": "commonRecipients",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "47e04c3bbd7026be79bf81a33fab86f9",
+            "createdOn": 1702395351036,
+            "testCaseId": "46763193400938ae9e6bb768d1441a36",
+            "fieldCode": "recipientNotificationDataFinal",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4087c40aeaa90bb74358a2e61957065f",
+        "createdBy": 2,
+        "createdOn": 1702395351037,
+        "name": "notification.getData.success.2",
+        "testSuiteId": "4a493d4154f06f6af8fbab208fbec33b",
+        "inputs": [
+          {
+            "id": "4a52e37e748977f2d45eae6b5fd652ef",
+            "createdOn": 1702395351039,
+            "testCaseId": "4087c40aeaa90bb74358a2e61957065f",
+            "fieldCode": "templateDataConfig",
+            "value": "{\"value\": \"{\\\"recipientsListQuery\\\":\\\"select distinct contact_info->'email'->'primary'->>'id'::text as email from users u left join user_roles ur on ur.user_id = u.id where u.user_type='EXPERTLY' and u.contact_info->'email'->'primary'->>'id' is not null \\\"}\"}"
+          },
+          {
+            "id": "4ec828e0431e38cbe24fb6d315cfcd99",
+            "createdOn": 1702395351040,
+            "testCaseId": "4087c40aeaa90bb74358a2e61957065f",
+            "fieldCode": "sendToRecipients",
+            "value": "{\"value\": \"[]\"}"
+          },
+          {
+            "id": "464d57820fb613a27084b3eedf18e0a0",
+            "createdOn": 1702395351041,
+            "testCaseId": "4087c40aeaa90bb74358a2e61957065f",
+            "fieldCode": "defaultRecipientCode",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "47f73e01081cabb498ee943b2cfc1915",
+            "createdOn": 1702395351043,
+            "testCaseId": "4087c40aeaa90bb74358a2e61957065f",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"userId\\\":\\\"0fd8ae10-d81e-495a-b5b9-74f5f17d02c9\\\"}\"}"
+          },
+          {
+            "id": "4d7cdb736caa8a312bcbbf326183d2d3",
+            "createdOn": 1702395351044,
+            "testCaseId": "4087c40aeaa90bb74358a2e61957065f",
+            "fieldCode": "commonRecipients",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "49bddc511400f44aee82a8a0e049174a",
+            "createdOn": 1702395351045,
+            "testCaseId": "4087c40aeaa90bb74358a2e61957065f",
+            "fieldCode": "recipientNotificationDataFinal",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "49bf32b96909db788eebb5355520abdb",
+        "createdBy": 2,
+        "createdOn": 1702395351046,
+        "name": "notification.getData.success.3",
+        "testSuiteId": "4a493d4154f06f6af8fbab208fbec33b",
+        "inputs": [
+          {
+            "id": "412c2775bd30f69c46ed9ae7177f51d0",
+            "createdOn": 1702395351047,
+            "testCaseId": "49bf32b96909db788eebb5355520abdb",
+            "fieldCode": "templateDataConfig",
+            "value": "{\"value\": \"{\\\"recipientsListQuery\\\":\\\"select distinct contact_info->'email'->'primary'->>'id'::text email from users u left join user_roles ur on ur.user_id = u.id where u.user_type='EXPERTLY' and u.contact_info->'email'->'primary'->>'id' is not null and ur.is_admin=true\\\"}\"}"
+          },
+          {
+            "id": "49e79d4cd0e46c1984e68d9fd9b604c2",
+            "createdOn": 1702395351048,
+            "testCaseId": "49bf32b96909db788eebb5355520abdb",
+            "fieldCode": "sendToRecipients",
+            "value": "{\"value\": \"[]\"}"
+          },
+          {
+            "id": "425e0de067f8c65e6402ad8748f8ef6d",
+            "createdOn": 1702395351049,
+            "testCaseId": "49bf32b96909db788eebb5355520abdb",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"userId\\\":\\\"111111\\\"}\"}"
+          },
+          {
+            "id": "4491ffa49f80d050af0eb5f4a1999091",
+            "createdOn": 1702395351051,
+            "testCaseId": "49bf32b96909db788eebb5355520abdb",
+            "fieldCode": "commonRecipients",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4af906da0939bbf81f898b89f7865d80",
+            "createdOn": 1702395351052,
+            "testCaseId": "49bf32b96909db788eebb5355520abdb",
+            "fieldCode": "recipientNotificationDataFinal",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "40f7f164d4f472cf7a9897639af654b7",
+            "createdOn": 1702395351053,
+            "testCaseId": "49bf32b96909db788eebb5355520abdb",
+            "fieldCode": "parameterJsonOutput",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "452cf98461fa9ff8d5a8b7435a1b4c36",
+        "createdBy": 2,
+        "createdOn": 1702395351054,
+        "name": "notification.getData.success.4",
+        "testSuiteId": "4a493d4154f06f6af8fbab208fbec33b",
+        "inputs": [
+          {
+            "id": "4649f8be73a1b12f52a6960caa0ac01e",
+            "createdOn": 1702395351055,
+            "testCaseId": "452cf98461fa9ff8d5a8b7435a1b4c36",
+            "fieldCode": "templateDataConfig",
+            "value": "{\"value\": \"{\\\"recipientsQuery\\\":\\\"select CONCAT(name->>'firstName',' ',name->>'lastName') as \\\\\\\"userName\\\\\\\", name->>'firstName' as \\\\\\\"firstName\\\\\\\", jsonb_path_query_array(contact_info->'email'->'others', 'DOLLAR[*] ? (@.id == \\\\\\\"{{newEmail}}\\\\\\\")')->0->'token' as token from users where id='{{userId}}' \\\",\\\"recipientsDataQuery\\\":\\\" select  json_build_object(contact_info->'email'->'primary'->>'id',json_build_object('firstName',name->'firstName','userName',CONCAT(name->>'firstName',' ',name->>'lastName'),'token', jsonb_path_query_array(contact_info->'email'->'others', 'DOLLAR[*] ? (@.id == \\\\\\\"{{newEmail}}\\\\\\\")')->0->'token' )) from users where  id='{{userId}}'\\\"}\"}"
+          },
+          {
+            "id": "43abb9f88dc4a15c70c39b5c0f14c0bf",
+            "createdOn": 1702395351056,
+            "testCaseId": "452cf98461fa9ff8d5a8b7435a1b4c36",
+            "fieldCode": "sendToRecipients",
+            "value": "{\"value\":\"[\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "42626a7a43d963a8221cb728897016a9",
+            "createdOn": 1702395351057,
+            "testCaseId": "452cf98461fa9ff8d5a8b7435a1b4c36",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\":\"{\\\"userId\\\":\\\"0fd8ae10-d81e-495a-b5b9-74f5f17d02c9\\\",\\\"newEmail\\\":\\\"user@example.com\\\",\\\"oldEmail\\\":\\\"user@example.com\\\"}\"}"
+          },
+          {
+            "id": "41c897b21c003ed561f4a0b5a5e3ad9a",
+            "createdOn": 1702395351059,
+            "testCaseId": "452cf98461fa9ff8d5a8b7435a1b4c36",
+            "fieldCode": "commonRecipients",
+            "value": "{}"
+          },
+          {
+            "id": "40546146cf49a414945784b0b31d3f1e",
+            "createdOn": 1702395351060,
+            "testCaseId": "452cf98461fa9ff8d5a8b7435a1b4c36",
+            "fieldCode": "recipientNotificationDataFinal",
+            "value": "{}"
+          },
+          {
+            "id": "42bcae5929d2fe522917979a8e29344d",
+            "createdOn": 1702395351061,
+            "testCaseId": "452cf98461fa9ff8d5a8b7435a1b4c36",
+            "fieldCode": "parameterJsonOutput",
+            "value": "{}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "48e7111811954da69fcdb53edf4942e6",
+        "createdBy": 2,
+        "createdOn": 1702395351062,
+        "name": "notification.getData.success.4.dataQueries",
+        "testSuiteId": "4a493d4154f06f6af8fbab208fbec33b",
+        "inputs": [
+          {
+            "id": "41f78d1c0221f26eca9983b21125f355",
+            "createdOn": 1702395351063,
+            "testCaseId": "48e7111811954da69fcdb53edf4942e6",
+            "fieldCode": "templateDataConfig",
+            "value": "{\"value\": \"{\\\"dataQueries\\\":[\\\" SELECT json_agg(distinct jsonb_build_object('ParentId',parent_json_data::jsonb->'details'->'external'->>'id','StudentId',student_json_data::jsonb->'details'->'external'->>'id','Errors',error_reasons)) as errorsList from processed_sems_data where error_codes is not null and processed_at >= '2023-08-05' and 'DUPLICATE' != ANY(error_codes) \\\"]}\"}"
+          },
+          {
+            "id": "413a5d84a97b0c0a6c9d8f9685a06e3a",
+            "createdOn": 1702395351064,
+            "testCaseId": "48e7111811954da69fcdb53edf4942e6",
+            "fieldCode": "sendToRecipients",
+            "value": "{\"value\":\"[\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "4c632137e2fd6c834188bc074e9d488d",
+            "createdOn": 1702395351066,
+            "testCaseId": "48e7111811954da69fcdb53edf4942e6",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "4d2751b66385d0fef66eb15350d80f9d",
+            "createdOn": 1702395351067,
+            "testCaseId": "48e7111811954da69fcdb53edf4942e6",
+            "fieldCode": "commonRecipients",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4b39b99fb5a81c4aa4b6b860afee18aa",
+            "createdOn": 1702395351068,
+            "testCaseId": "48e7111811954da69fcdb53edf4942e6",
+            "fieldCode": "recipientNotificationDataFinal",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4dc8884ebd6ff3be5e5ca240fa51a1cf",
+            "createdOn": 1702395351069,
+            "testCaseId": "48e7111811954da69fcdb53edf4942e6",
+            "fieldCode": "parameterJsonOutput",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4dc75d32c990052eb8d7a193357f5b4d",
+        "createdBy": 2,
+        "createdOn": 1702395351070,
+        "name": "notification.getData.success.4.email",
+        "testSuiteId": "4a493d4154f06f6af8fbab208fbec33b",
+        "inputs": [
+          {
+            "id": "4ca2d4e5e5463794ef38b030170d73ec",
+            "createdOn": 1702395351071,
+            "testCaseId": "4dc75d32c990052eb8d7a193357f5b4d",
+            "fieldCode": "templateDataConfig",
+            "value": "{\"value\": \"{\\\"recipientsQuery\\\":\\\"select name->>'firstName' as \\\\\\\"firstName\\\\\\\" from users where id={{userId}}\\\",\\\"recipientsDataQuery\\\":\\\"select name->>'firstName' as \\\\\\\"firstName\\\\\\\" from users where id='{{userId}}'\\\"}\"}"
+          },
+          {
+            "id": "4c9af63574a46eab6f55a6bb131b364c",
+            "createdOn": 1702395351072,
+            "testCaseId": "4dc75d32c990052eb8d7a193357f5b4d",
+            "fieldCode": "sendToRecipients",
+            "value": "{\"value\":\"[\\\"user@example.com\\\",\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "4ffb057c29b4cbbf61ac96760e4805bd",
+            "createdOn": 1702395351073,
+            "testCaseId": "4dc75d32c990052eb8d7a193357f5b4d",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"userId\\\":\\\"b1454b23-7f97-4f14-abad-7a69785b61be\\\"}\"}"
+          },
+          {
+            "id": "41a977cbb6d213234d2ca85e5be2ac1c",
+            "createdOn": 1702395351075,
+            "testCaseId": "4dc75d32c990052eb8d7a193357f5b4d",
+            "fieldCode": "commonRecipients",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4e7acabf72cad747a36f915094b921d9",
+            "createdOn": 1702395351076,
+            "testCaseId": "4dc75d32c990052eb8d7a193357f5b4d",
+            "fieldCode": "recipientNotificationDataFinal",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4f07a2cab85b46103fe38857118776c7",
+            "createdOn": 1702395351077,
+            "testCaseId": "4dc75d32c990052eb8d7a193357f5b4d",
+            "fieldCode": "parameterJsonOutput",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4caebd34c5e20044cac58b9bd5c060a1",
+        "createdBy": 2,
+        "createdOn": 1702395351078,
+        "name": "notification.getData.success.4.recipientDataQuery",
+        "testSuiteId": "4a493d4154f06f6af8fbab208fbec33b",
+        "inputs": [
+          {
+            "id": "4fd5a49e75e0fc2884ec9a013731f255",
+            "createdOn": 1702395351079,
+            "testCaseId": "4caebd34c5e20044cac58b9bd5c060a1",
+            "fieldCode": "templateDataConfig",
+            "value": "{\"value\": \"{\\\"recipientsDataQuery\\\":\\\"select name->>'firstName' as \\\\\\\"firstName\\\\\\\" from users where id='{{userId}}'\\\"}\"}"
+          },
+          {
+            "id": "42c438886fc6d0ecfdcfb6ed9e9988ee",
+            "createdOn": 1702395351080,
+            "testCaseId": "4caebd34c5e20044cac58b9bd5c060a1",
+            "fieldCode": "sendToRecipients",
+            "value": "{\"value\": \"[\\\"+919815390160\\\",\\\"9815094449\\\"]\"}"
+          },
+          {
+            "id": "4880793ff6316a27f055a67acffaa36c",
+            "createdOn": 1702395351081,
+            "testCaseId": "4caebd34c5e20044cac58b9bd5c060a1",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"userId\\\":\\\"b1454b23-7f97-4f14-abad-7a69785b61be\\\",\\\"defaultCountryCode\\\":\\\"+91\\\"}\"}"
+          },
+          {
+            "id": "427ed3b4a6bd59f65b7e88b0c9206d90",
+            "createdOn": 1702395351083,
+            "testCaseId": "4caebd34c5e20044cac58b9bd5c060a1",
+            "fieldCode": "commonRecipients",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4d8060b1578ce3394de798ceb41e9d97",
+            "createdOn": 1702395351084,
+            "testCaseId": "4caebd34c5e20044cac58b9bd5c060a1",
+            "fieldCode": "recipientNotificationDataFinal",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "45bad45ce3939a6270f7ac3fdc5b217d",
+            "createdOn": 1702395351085,
+            "testCaseId": "4caebd34c5e20044cac58b9bd5c060a1",
+            "fieldCode": "parameterJsonOutput",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

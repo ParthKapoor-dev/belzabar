@@ -1,0 +1,561 @@
+{
+  "task": {
+    "id": 25807610,
+    "name": "Creating code for client migrations to be moved outside of normal deployments, before AD/PD migrations *",
+    "description": "",
+    "descriptionContentType": "TEXT",
+    "priority": "medium",
+    "hasDeskTickets": false,
+    "progress": 80,
+    "displayOrder": 2000,
+    "decimalDisplayOrder": 2000,
+    "crmDealIds": null,
+    "tagIds": [
+      86067
+    ],
+    "tags": [
+      {
+        "id": 86067,
+        "type": "tags"
+      }
+    ],
+    "updatedAt": "2026-07-31T14:22:00Z",
+    "updatedBy": 195580,
+    "deletedAt": null,
+    "deletedBy": null,
+    "parentTask": {
+      "id": 25085246,
+      "type": "tasks"
+    },
+    "isPrivate": 0,
+    "lockdown": null,
+    "status": "new",
+    "tasklist": {
+      "id": 1802048,
+      "type": "tasklists",
+      "meta": {
+        "name": "CAPA - Master List",
+        "projectId": 310720
+      }
+    },
+    "startDate": null,
+    "dueDate": "2025-12-10",
+    "startDateOffset": null,
+    "dueDateOffset": null,
+    "dueDateBase": "2025-12-10",
+    "dueDateFromMilestone": false,
+    "estimateMinutes": 1800,
+    "accumulatedEstimatedMinutes": 2040,
+    "assignees": [
+      {
+        "id": 298621,
+        "type": "users"
+      }
+    ],
+    "commentFollowers": [
+      {
+        "id": 218900,
+        "type": "users"
+      },
+      {
+        "id": 298621,
+        "type": "users"
+      }
+    ],
+    "changeFollowers": [],
+    "completeFollowers": [],
+    "attachments": [],
+    "notify": false,
+    "isArchived": false,
+    "capacities": null,
+    "proofs": null,
+    "userPermissions": {
+      "canEdit": true,
+      "canComplete": true,
+      "canLogTime": true,
+      "canViewEstTime": true,
+      "canAddSubtasks": true
+    },
+    "createdBy": 298621,
+    "createdAt": "2025-03-25T07:21:23Z",
+    "sequence": null,
+    "workflowStages": [
+      {
+        "workflowId": 5597,
+        "stageId": 35878,
+        "stageTaskDisplayOrder": 2001
+      }
+    ],
+    "meta": {
+      "commentStats": {
+        "total": 3,
+        "read": 0
+      }
+    },
+    "dateUpdated": "2026-07-31T14:22:00Z",
+    "parentTaskId": 25085246,
+    "tasklistId": 1802048,
+    "assigneeUserIds": [
+      298621
+    ],
+    "assigneeUsers": [
+      {
+        "id": 298621,
+        "type": "users"
+      }
+    ],
+    "assigneeCompanyIds": null,
+    "assigneeCompanies": [],
+    "assigneeTeamIds": null,
+    "assigneeTeams": [],
+    "assigneeJobRoleIds": null,
+    "assigneeJobRoles": [],
+    "createdByUserId": 298621,
+    "sequenceId": null
+  },
+  "meta": {},
+  "included": {
+    "users": {
+      "195580": {
+        "id": 195580,
+        "firstName": "Yuvraj",
+        "lastName": "Vig",
+        "title": "",
+        "email": "user@example.com",
+        "companyId": 28178,
+        "companyRoleId": 0,
+        "company": {
+          "id": 28178,
+          "type": "companies"
+        },
+        "isAdmin": true,
+        "siteOwner": false,
+        "inOwnerCompany": true,
+        "isClientUser": false,
+        "isServiceAccount": false,
+        "type": "account",
+        "deleted": false,
+        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/tf_71481a33-b2fb-4c25-b24e-b6d2c0ab7c35.Screen_Shot_2021-07-30_at_10.58.25_AM.png",
+        "lengthOfDay": 8,
+        "workingHoursId": 10568,
+        "workingHour": {
+          "id": 10568,
+          "type": "workingHours"
+        },
+        "canAccessPortfolio": false,
+        "canAddProjects": true,
+        "canManagePortfolio": false,
+        "isPlaceholderResource": false,
+        "timezone": "Asia/Kolkata",
+        "lastLogin": "2026-09-24T07:25:07Z",
+        "createdBy": {
+          "id": 57982,
+          "type": "users"
+        },
+        "createdAt": "2016-12-20T12:02:01Z",
+        "updatedBy": {
+          "id": 141006,
+          "type": "users"
+        },
+        "updatedAt": "2025-03-24T11:47:11Z"
+      },
+      "218900": {
+        "id": 218900,
+        "firstName": "Kartik",
+        "lastName": "Jaiswal",
+        "title": "",
+        "email": "user@example.com",
+        "companyId": 63821,
+        "companyRoleId": 0,
+        "company": {
+          "id": 63821,
+          "type": "companies"
+        },
+        "isAdmin": true,
+        "siteOwner": false,
+        "inOwnerCompany": false,
+        "isClientUser": false,
+        "isServiceAccount": false,
+        "type": "account",
+        "deleted": false,
+        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_ace78233cd9fbe538a22cd3aacbfcc29.png",
+        "lengthOfDay": 8,
+        "workingHoursId": 14357,
+        "workingHour": {
+          "id": 14357,
+          "type": "workingHours"
+        },
+        "canAccessPortfolio": false,
+        "canAddProjects": true,
+        "canManagePortfolio": false,
+        "isPlaceholderResource": false,
+        "timezone": "America/Toronto",
+        "lastLogin": "2026-09-25T13:46:48Z",
+        "createdBy": {
+          "id": 206812,
+          "type": "users"
+        },
+        "createdAt": "2018-01-04T14:13:02Z",
+        "updatedBy": {
+          "id": 195580,
+          "type": "users"
+        },
+        "updatedAt": "2026-09-22T12:31:20Z"
+      },
+      "298621": {
+        "id": 298621,
+        "firstName": "Srishti",
+        "lastName": "Saxena",
+        "title": "",
+        "email": "user@example.com",
+        "companyId": 28178,
+        "companyRoleId": 7,
+        "company": {
+          "id": 28178,
+          "type": "companies"
+        },
+        "isAdmin": false,
+        "siteOwner": false,
+        "inOwnerCompany": true,
+        "isClientUser": false,
+        "isServiceAccount": false,
+        "type": "account",
+        "deleted": false,
+        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_f10c27ebda2b96fd2856e273418ef45a.png",
+        "lengthOfDay": 8,
+        "workingHoursId": 43571,
+        "workingHour": {
+          "id": 43571,
+          "type": "workingHours"
+        },
+        "canAccessPortfolio": true,
+        "canAddProjects": false,
+        "canManagePortfolio": false,
+        "isPlaceholderResource": false,
+        "timezone": "America/Toronto",
+        "lastLogin": "2026-09-26T12:03:40Z",
+        "createdBy": {
+          "id": 209574,
+          "type": "users"
+        },
+        "createdAt": "2023-09-04T07:06:19Z",
+        "updatedBy": {
+          "id": 298621,
+          "type": "users"
+        },
+        "updatedAt": "2023-09-05T06:14:57Z"
+      }
+    },
+    "tasklists": {
+      "1802048": {
+        "id": 1802048,
+        "name": "CAPA - Master List",
+        "description": "TT: DevOps \nWO: Devops\n\nThis list includes the CAPAs to be filled by DevOps. New CAPAs will be added here and also the old ones competed in past will be added in this list for reference.",
+        "displayOrder": 4013,
+        "projectId": 310720,
+        "project": {
+          "id": 310720,
+          "type": "projects"
+        },
+        "milestoneId": null,
+        "milestone": null,
+        "isPinned": true,
+        "isPrivate": false,
+        "lockdownId": null,
+        "lockdown": null,
+        "status": "reopened",
+        "defaultTaskId": 24213580,
+        "defaultTask": {
+          "id": 24213580,
+          "type": "tasks"
+        },
+        "isBillable": null,
+        "tasklistBudget": null,
+        "createdAt": "2024-01-03T14:44:45Z",
+        "updatedAt": "2026-08-13T15:52:46Z",
+        "icon": null
+      }
+    },
+    "projects": {
+      "310720": {
+        "id": 310720,
+        "name": "Expertly DevOps",
+        "description": "Expertly DevOps backlog\n\nPM/lead channels:\nmanagement_infra\ne_team_devops_lead\n\nInternal channel:\ne_team_devops_internal\n\nBA/PM: Gaurav Rawat\nTechnical lead: Anubhav Agarwal",
+        "projectNumber": null,
+        "type": "normal",
+        "status": "active",
+        "subStatus": "current",
+        "company": {
+          "id": 34768,
+          "type": "companies"
+        },
+        "tags": [
+          {
+            "id": 57879,
+            "type": "tags"
+          }
+        ],
+        "startAt": null,
+        "endAt": null,
+        "category": {
+          "id": 23802,
+          "type": "projectCategories"
+        },
+        "ownedBy": 0,
+        "update": null,
+        "budgetCount": 0,
+        "timeBudget": null,
+        "financialBudget": null,
+        "createdBy": 57982,
+        "createdAt": "2019-06-18T11:14:22Z",
+        "updatedAt": "2026-09-25T12:12:17Z",
+        "updatedBy": 244612,
+        "completedAt": null,
+        "completedBy": null,
+        "deletedAt": null,
+        "deletedBy": null,
+        "archivedAt": null,
+        "archivedBy": null,
+        "defaultPrivacy": "open",
+        "activePages": {
+          "billing": true,
+          "forms": true,
+          "comments": true,
+          "files": true,
+          "links": true,
+          "messages": true,
+          "milestones": true,
+          "notebooks": true,
+          "riskRegister": false,
+          "tasks": true,
+          "list": true,
+          "board": true,
+          "gantt": true,
+          "table": true,
+          "time": true,
+          "finance": true,
+          "proofs": true,
+          "tickets": true,
+          "schedule": true,
+          "timeline": true
+        },
+        "directFileUploadsEnabled": true,
+        "harvestTimersEnabled": false,
+        "integrations": {
+          "oneDriveBusiness": {
+            "account": "",
+            "enabled": false,
+            "folder": "root",
+            "folderName": "root"
+          },
+          "sharepoint": {
+            "account": "",
+            "enabled": false,
+            "folder": "root",
+            "folderName": "root"
+          },
+          "xero": {
+            "baseCurrency": "",
+            "connected": false,
+            "countryCode": "",
+            "enabled": false,
+            "organisation": ""
+          },
+          "googleDrive": {
+            "access": "allPeopleOnProject",
+            "enabled": false,
+            "folder": "15ADVUXqs7FJyVK7QpWrC22GOKdZbI-2G",
+            "folderName": "Expertly DevOps"
+          }
+        },
+        "isOnBoardingProject": false,
+        "isSampleProject": false,
+        "logo": "",
+        "logoIcon": null,
+        "logoColor": null,
+        "notifyEveryone": false,
+        "allowNotifyAnyone": false,
+        "notifyCommentIncludeCreator": true,
+        "notifyTaskAssignee": false,
+        "overviewStartPage": "default",
+        "privacyEnabled": false,
+        "projectOwner": {
+          "id": 0,
+          "type": "users"
+        },
+        "replyByEmailEnabled": true,
+        "showAnnouncement": false,
+        "announcement": "",
+        "skipWeekends": false,
+        "startPage": "projectoverview",
+        "tasksStartPage": "default",
+        "customfieldValues": [],
+        "isBillable": true,
+        "timelogRequiresTask": false,
+        "workflows": [
+          {
+            "id": 5597,
+            "type": "workflows"
+          }
+        ],
+        "customFieldValueIds": null,
+        "customFieldValues": [],
+        "companyId": 34768,
+        "tagIds": [
+          57879
+        ],
+        "workflowIds": [
+          5597
+        ],
+        "startDate": null,
+        "endDate": null,
+        "categoryId": 23802,
+        "ownerId": 0,
+        "updateId": null,
+        "timeBudgetId": null,
+        "financialBudgetId": null,
+        "projectOwnerId": 0
+      }
+    },
+    "tags": {
+      "86067": {
+        "id": 86067,
+        "projectId": 0,
+        "project": {
+          "id": 0,
+          "type": "projects"
+        },
+        "name": "womi:exe-322",
+        "color": "#37ced0"
+      }
+    },
+    "workflows": {
+      "5597": {
+        "id": 5597,
+        "name": "Expertly DevOps - 310720",
+        "createdBy": 269142,
+        "createdAt": "2025-08-21T10:00:01Z",
+        "updatedBy": 269142,
+        "updatedAt": "2026-09-25T10:13:18Z",
+        "status": "active",
+        "lockdown": null,
+        "projectSpecific": true,
+        "defaultWorkflow": false,
+        "stages": [
+          {
+            "id": 35874,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35878,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35881,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35884,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35886,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35887,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35889,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35891,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35893,
+            "type": "workflowStages"
+          },
+          {
+            "id": 35897,
+            "type": "workflowStages"
+          },
+          {
+            "id": 222562,
+            "type": "workflowStages"
+          },
+          {
+            "id": 222803,
+            "type": "workflowStages"
+          },
+          {
+            "id": 222942,
+            "type": "workflowStages"
+          },
+          {
+            "id": 222943,
+            "type": "workflowStages"
+          },
+          {
+            "id": 223121,
+            "type": "workflowStages"
+          },
+          {
+            "id": 223466,
+            "type": "workflowStages"
+          },
+          {
+            "id": 223983,
+            "type": "workflowStages"
+          },
+          {
+            "id": 224010,
+            "type": "workflowStages"
+          },
+          {
+            "id": 224248,
+            "type": "workflowStages"
+          }
+        ],
+        "projectIds": [
+          310720
+        ],
+        "companies": [
+          {
+            "id": 34768,
+            "type": "companies"
+          }
+        ]
+      }
+    },
+    "stages": {
+      "35878": {
+        "id": 35878,
+        "workflow": {
+          "id": 5597,
+          "type": "workflows"
+        },
+        "name": "B2. Backlog - TBD within 1  month",
+        "color": "#822da4",
+        "showCompletedTasks": true,
+        "createdAt": "2025-08-21T10:00:01Z",
+        "createdBy": 269142,
+        "updatedAt": "2026-04-17T06:44:27Z",
+        "updatedBy": 250031,
+        "deletedAt": null,
+        "deletedBy": null,
+        "displayOrder": 2002,
+        "taskIds": [
+          24563976,
+          25807610,
+          25987866,
+          26561852,
+          26655740,
+          26945910
+        ]
+      }
+    }
+  }
+}

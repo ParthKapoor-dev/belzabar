@@ -1,19 +1,266 @@
 {
- "id": 2731,
- "uuid": "41f705aff6c768c033b4ad9840b69dde",
- "jsonDefinition": "{\"name\": \"program.grade.evaluate.sync\", \"inputs\": [{\"type\": \"JSON\", \"label\": \"addedGrades\", \"required\": true, \"fieldCode\": \"addedGrades\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"JSON\", \"label\": \"removedGrades\", \"required\": true, \"fieldCode\": \"removedGrades\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"epId\", \"required\": true, \"fieldCode\": \"epId\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"epId uuid\"}], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"isProgramGradeEval\", \"properties\": [], \"displayName\": \"isProgramGradeEval\", \"automationId\": 19909, \"rawResponseContainer\": false, \"automationAPIOutputId\": 4753, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{addedGrades}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8922, \"automationUserInputUuid\": \"4d14c05c72402e20ad0f9648ee4f2fd4    \"}, {\"value\": \"#{removedGrades}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8923, \"automationUserInputUuid\": \"487bdef78932e7656737bedf22276566    \"}, {\"value\": \"#{epId}\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8921, \"automationUserInputUuid\": \"4424358f08dabfc6f38bac9c196192eb    \"}], \"runAsync\": true, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 19909, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"this is wrapper method to resolve async issue\", \"useServiceAuthenticationStructure\": false}",
- "version": 1,
- "name": "program.grade.evaluate.sync",
- "aliasName": "program.grade.evaluate.sync",
- "category": {
-  "id": 15,
-  "name": "Schools"
- },
- "state": "PUBLISHED",
- "automationState": "PUBLISHED",
- "referenceId": "438b502717b979a6a8539691d673fc39",
- "methodDeprecated": false,
- "active": false,
- "updatedOn": 1676898850356,
- "createdOn": 1672663088636
+  "id": 2731,
+  "uuid": "41f705aff6c768c033b4ad9840b69dde",
+  "jsonDefinition": "{\"name\": \"program.grade.evaluate.sync\", \"inputs\": [{\"type\": \"JSON\", \"label\": \"addedGrades\", \"required\": true, \"fieldCode\": \"addedGrades\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"JSON\", \"label\": \"removedGrades\", \"required\": true, \"fieldCode\": \"removedGrades\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"epId\", \"required\": true, \"fieldCode\": \"epId\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"epId uuid\"}], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"isProgramGradeEval\", \"properties\": [], \"displayName\": \"isProgramGradeEval\", \"automationId\": 19909, \"rawResponseContainer\": false, \"automationAPIOutputId\": 4753, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{addedGrades}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8922, \"automationUserInputUuid\": \"4d14c05c72402e20ad0f9648ee4f2fd4    \"}, {\"value\": \"#{removedGrades}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8923, \"automationUserInputUuid\": \"487bdef78932e7656737bedf22276566    \"}, {\"value\": \"#{epId}\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8921, \"automationUserInputUuid\": \"4424358f08dabfc6f38bac9c196192eb    \"}], \"runAsync\": true, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 19909, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"this is wrapper method to resolve async issue\", \"useServiceAuthenticationStructure\": false}",
+  "version": 1,
+  "name": "program.grade.evaluate.sync",
+  "aliasName": "program.grade.evaluate.sync",
+  "category": {
+    "id": 15,
+    "name": "Schools",
+    "aliasName": [
+      "Schools"
+    ],
+    "originalLabel": "Schools",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 2018,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+    "automationSystemUuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 66473,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Admin",
+          "lastName": "SEMS",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Admin SEMS",
+          "title": "Admin SEMS"
+        }
+      ]
+    },
+    {
+      "id": 66474,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_USERS_TO_EDIT",
+      "groups": [],
+      "users": [
+        {
+          "id": 229,
+          "email": "user@example.com",
+          "firstName": "krunal",
+          "lastName": "test",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "krunal test",
+          "title": "krunal test"
+        },
+        {
+          "id": 12,
+          "email": "user@example.com",
+          "firstName": "Narender",
+          "lastName": "Mann",
+          "ssoUser": false,
+          "boss": {
+            "id": 5,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Narender Mann",
+          "title": "Narender Mann"
+        },
+        {
+          "id": 235,
+          "email": "user@example.com",
+          "firstName": "Pankaj",
+          "lastName": "Yadav",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Pankaj Yadav",
+          "title": "Pankaj Yadav"
+        },
+        {
+          "id": 300,
+          "email": "user@example.com",
+          "firstName": "Sandeep",
+          "lastName": "Shukla",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Sandeep Shukla",
+          "title": "Sandeep Shukla"
+        },
+        {
+          "id": 301,
+          "email": "user@example.com",
+          "firstName": "Krunal",
+          "lastName": "Fijiwala",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Krunal Fijiwala",
+          "title": "Krunal Fijiwala"
+        },
+        {
+          "id": 236,
+          "email": "user@example.com",
+          "firstName": "Vandana C",
+          "lastName": "Chaddha",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Vandana C Chaddha",
+          "title": "Vandana C Chaddha"
+        },
+        {
+          "id": 6,
+          "email": "user@example.com",
+          "firstName": "user@example.com",
+          "lastName": "ekta",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "user@example.com ekta",
+          "title": "user@example.com ekta"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1672663088636,
+  "updatedBy": 2,
+  "updatedOn": 1676898850356,
+  "referenceId": "438b502717b979a6a8539691d673fc39",
+  "state": "PUBLISHED",
+  "migrationVersion": 1672663088563,
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "lastPublishedAt": 1676898850327,
+  "lastPublishedBy": 2,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "49c1de93ce59c6d06af2b8bd906a30e1",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "PUBLISHED"
 }

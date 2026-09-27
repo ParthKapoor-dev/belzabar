@@ -1,0 +1,252 @@
+{
+  "_class": "org.jenkinsci.plugins.workflow.job.WorkflowJob",
+  "property": [
+    {
+      "_class": "org.jenkinsci.plugins.workflow.job.properties.DisableConcurrentBuildsJobProperty"
+    },
+    {
+      "_class": "com.sonyericsson.rebuild.RebuildSettings"
+    },
+    {
+      "_class": "hudson.model.ParametersDefinitionProperty",
+      "parameterDefinitions": [
+        {
+          "_class": "hudson.model.ChoiceParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.StringParameterValue",
+            "value": "SEMS"
+          },
+          "description": "Select the client/product for migration.",
+          "name": "CLIENT",
+          "type": "ChoiceParameterDefinition",
+          "choices": [
+            "SEMS",
+            "Exp AI",
+            "YS (YieldSec)",
+            "TH (TownHouse)",
+            "NCDNS (NSS)",
+            "DNREC",
+            "AHS (NC AHS)",
+            "Core/Other"
+          ]
+        },
+        {
+          "_class": "hudson.model.ChoiceParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.StringParameterValue",
+            "value": "--- SEMS ---"
+          },
+          "description": "Migration profile (source_target). Must match selected CLIENT.\nSEMS: devsems_qasems, qasems_stagesems, qasems_uatsems, stagesems_stage2sems, uatsems_stagesems, devsems_uatsems\nExp AI: demoai_qaai, devai_qaai, qaai_stageai, stageai_stage2ai\nYS: demoys_qays, demoys_stageys, qays_stageys, stageys_stage2ys\nTH: qath_stageth, stageth_stage2th\nNCDNS: devncdns_qancdns, qancdns_stgncdns, qancdns_uatncdns, stgncdns_stg2ncdns, uatncdns_stgncdns\nDNREC: qa1cdnrec_qa2cdnrec,qa1cdnrec_qa4dnrec,qa1cdnrec_qa12cdnrec,qa1cdnrec_qa16cdnrec,qa1cdnrec_qa14cdnrec,qa1cdnrec_istgdnrec,qa1cdnrec_istg2dnrec,qa2cdnrec_qa1cdnrec,qa2cdnrec_qa4dnrec,qa2cdnrec_qa12cdnrec,qa2cdnrec_qa16cdnrec,qa2cdnrec_qa14cdnrec,qa2cdnrec_istgdnrec,qa2cdnrec_istg2dnrec,qa4dnrec_qa1cdnrec,qa4dnrec_qa2cdnrec,qa4dnrec_qa12cdnrec,qa4dnrec_qa16cdnrec,qa4dnrec_qa14cdnrec,qa4dnrec_istgdnrec,qa4dnrec_istg2dnrec,qa12cdnrec_qa1cdnrec,qa12cdnrec_qa2cdnrec,qa12cdnrec_qa4dnrec,qa12cdnrec_qa16cdnrec,qa12cdnrec_qa14cdnrec,qa12cdnrec_istgdnrec,qa12cdnrec_istg2dnrec,qa14cdnrec_qa1cdnrec,qa14cdnrec_qa2cdnrec,qa14cdnrec_qa4dnrec,qa14cdnrec_qa12cdnrec,qa14cdnrec_qa16cdnrec,qa14cdnrec_istgdnrec,qa14cdnrec_istg2dnrec,qa16cdnrec_qa1cdnrec,qa16cdnrec_qa2cdnrec,qa16cdnrec_qa4dnrec,qa16cdnrec_qa12cdnrec,qa16cdnrec_qa14cdnrec,qa16cdnrec_istgdnrec,qa16cdnrec_istg2dnrec,istgdnrec_qa1cdnrec,istgdnrec_qa2cdnrec,istgdnrec_qa4dnrec,istgdnrec_qa12cdnrec,istgdnrec_qa16cdnrec,istgdnrec_qa14cdnrec,istgdnrec_istg2dnrec,istg2dnrec_qa1cdnrec,istg2dnrec_qa2cdnrec,istg2dnrec_qa4dnrec,istg2dnrec_qa12cdnrec,istg2dnrec_qa16cdnrec,istg2dnrec_qa14cdnrec,istg2dnrec_istgdnrec,qa1cdnrec_stagednrec,qa2cdnrec_stagednrec,qa4dnrec_stagednrec,qa12cdnrec_stagednrec,qa14cdnrec_stagednrec,qa16cdnrec_stagednrec,istgdnrec_stagednrec,istg2dnrec_stagednrec,stagednrec_proddnrec\nAHS: qaahs_proahs, proahs_uatahs, proahs_sqaahs, sqaahs_uatahs, uatahs_stgahs, stgahs_stg2ahs\nCore/Other: qa13core_qa26core, qa3c_*, qa23c_*",
+          "name": "PROFILE_NAME",
+          "type": "ChoiceParameterDefinition",
+          "choices": [
+            "--- SEMS ---",
+            "devsems_qasems",
+            "qasems_stagesems",
+            "qasems_uatsems",
+            "stagesems_stage2sems",
+            "uatsems_stagesems",
+            "devsems_uatsems",
+            "--- Exp AI ---",
+            "demoai_qaai",
+            "devai_qaai",
+            "qaai_stageai",
+            "stageai_stage2ai",
+            "--- YS (YieldSec) ---",
+            "demoys_qays",
+            "demoys_stageys",
+            "qays_stageys",
+            "stageys_stage2ys",
+            "--- TH (TownHouse) ---",
+            "qath_stageth",
+            "stageth_stage2th",
+            "--- NCDNS (NSS) ---",
+            "devncdns_qancdns",
+            "qancdns_stgncdns",
+            "qancdns_uatncdns",
+            "stgncdns_stg2ncdns",
+            "uatncdns_stgncdns",
+            "--- DNREC ---",
+            "qa1cdnrec_qa2cdnrec",
+            "qa1cdnrec_qa4dnrec",
+            "qa1cdnrec_qa12cdnrec",
+            "qa1cdnrec_qa16cdnrec",
+            "qa1cdnrec_qa14cdnrec",
+            "qa1cdnrec_istgdnrec",
+            "qa1cdnrec_istg2dnrec",
+            "qa2cdnrec_qa1cdnrec",
+            "qa2cdnrec_qa4dnrec",
+            "qa2cdnrec_qa12cdnrec",
+            "qa2cdnrec_qa16cdnrec",
+            "qa2cdnrec_qa14cdnrec",
+            "qa2cdnrec_istgdnrec",
+            "qa2cdnrec_istg2dnrec",
+            "qa4dnrec_qa1cdnrec",
+            "qa4dnrec_qa2cdnrec",
+            "qa4dnrec_qa12cdnrec",
+            "qa4dnrec_qa16cdnrec",
+            "qa4dnrec_qa14cdnrec",
+            "qa4dnrec_istgdnrec",
+            "qa4dnrec_istg2dnrec",
+            "qa12cdnrec_qa1cdnrec",
+            "qa12cdnrec_qa2cdnrec",
+            "qa12cdnrec_qa4dnrec",
+            "qa12cdnrec_qa16cdnrec",
+            "qa12cdnrec_qa14cdnrec",
+            "qa12cdnrec_istgdnrec",
+            "qa12cdnrec_istg2dnrec",
+            "qa14cdnrec_qa1cdnrec",
+            "qa14cdnrec_qa2cdnrec",
+            "qa14cdnrec_qa4dnrec",
+            "qa14cdnrec_qa12cdnrec",
+            "qa14cdnrec_qa16cdnrec",
+            "qa14cdnrec_istgdnrec",
+            "qa14cdnrec_istg2dnrec",
+            "qa16cdnrec_qa1cdnrec",
+            "qa16cdnrec_qa2cdnrec",
+            "qa16cdnrec_qa4dnrec",
+            "qa16cdnrec_qa12cdnrec",
+            "qa16cdnrec_qa14cdnrec",
+            "qa16cdnrec_istgdnrec",
+            "qa16cdnrec_istg2dnrec",
+            "istgdnrec_qa1cdnrec",
+            "istgdnrec_qa2cdnrec",
+            "istgdnrec_qa4dnrec",
+            "istgdnrec_qa12cdnrec",
+            "istgdnrec_qa16cdnrec",
+            "istgdnrec_qa14cdnrec",
+            "istgdnrec_istg2dnrec",
+            "istg2dnrec_qa1cdnrec",
+            "istg2dnrec_qa2cdnrec",
+            "istg2dnrec_qa4dnrec",
+            "istg2dnrec_qa12cdnrec",
+            "istg2dnrec_qa16cdnrec",
+            "istg2dnrec_qa14cdnrec",
+            "istg2dnrec_istgdnrec",
+            "qa1cdnrec_stagednrec",
+            "qa2cdnrec_stagednrec",
+            "qa4dnrec_stagednrec",
+            "qa12cdnrec_stagednrec",
+            "qa14cdnrec_stagednrec",
+            "qa16cdnrec_stagednrec",
+            "istgdnrec_stagednrec",
+            "istg2dnrec_stagednrec",
+            "stagednrec_proddnrec",
+            "--- AHS (NC AHS) ---",
+            "qaahs_proahs",
+            "proahs_uatahs",
+            "proahs_sqaahs",
+            "sqaahs_uatahs",
+            "uatahs_stgahs",
+            "stgahs_stg2ahs",
+            "--- Core/Other ---",
+            "qa13core_qa26core",
+            "qa3c_qa23c",
+            "qa3c_qa9c",
+            "qa3c_demo",
+            "qa3c_devncdns",
+            "qa23c_demo",
+            "qa23c_lini"
+          ]
+        },
+        {
+          "_class": "hudson.model.ChoiceParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.StringParameterValue",
+            "value": "AD_Method"
+          },
+          "description": "Migration operation type",
+          "name": "MIGRATE_TYPE",
+          "type": "ChoiceParameterDefinition",
+          "choices": [
+            "AD_Method",
+            "PD",
+            "AD_COMPARISON_REPORT",
+            "PD_COMPARISON_REPORT",
+            "AD_MIGRATION_STATUS",
+            "PD_MIGRATION_STATUS",
+            "AD_Service"
+          ]
+        },
+        {
+          "_class": "hudson.model.TextParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.TextParameterValue",
+            "value": ""
+          },
+          "description": "Comma-separated UUIDs (method IDs for AD, page IDs for PD)",
+          "name": "IDS",
+          "type": "TextParameterDefinition"
+        },
+        {
+          "_class": "hudson.model.StringParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.StringParameterValue",
+            "value": ""
+          },
+          "description": "Migration ID (UUID). Required for COMPARISON_REPORT and MIGRATION_STATUS operations.",
+          "name": "MIGRATION_ID",
+          "type": "StringParameterDefinition"
+        },
+        {
+          "_class": "hudson.model.ChoiceParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.StringParameterValue",
+            "value": "N"
+          },
+          "description": "Run migration asynchronously (Y) or synchronously (N)",
+          "name": "ASYNC_MIGRATION",
+          "type": "ChoiceParameterDefinition",
+          "choices": [
+            "N",
+            "Y"
+          ]
+        },
+        {
+          "_class": "hudson.model.ChoiceParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.StringParameterValue",
+            "value": "N"
+          },
+          "description": "Migrate dependent methods/pages (Y/N)",
+          "name": "MIGRATE_DEPENDENT",
+          "type": "ChoiceParameterDefinition",
+          "choices": [
+            "N",
+            "Y"
+          ]
+        },
+        {
+          "_class": "hudson.model.StringParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.StringParameterValue",
+            "value": "develop"
+          },
+          "description": "Branch/tag in infra.expertly repository",
+          "name": "DEVOPS_TAG",
+          "type": "StringParameterDefinition"
+        },
+        {
+          "_class": "hudson.model.BooleanParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.BooleanParameterValue",
+            "value": false
+          },
+          "description": "If checked, only validate parameters without running migration.",
+          "name": "DRY_RUN",
+          "type": "BooleanParameterDefinition"
+        },
+        {
+          "_class": "hudson.model.BooleanParameterDefinition",
+          "defaultParameterValue": {
+            "_class": "hudson.model.BooleanParameterValue",
+            "value": false
+          },
+          "description": "Skip manual approval for migrations",
+          "name": "AUTO_APPROVE",
+          "type": "BooleanParameterDefinition"
+        }
+      ]
+    }
+  ]
+}

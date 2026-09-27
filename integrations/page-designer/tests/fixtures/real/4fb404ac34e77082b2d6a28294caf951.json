@@ -1,0 +1,39 @@
+{
+  "id": "4fb404ac34e77082b2d6a28294caf951",
+  "versionId": 57113,
+  "dynamicRoute": "{\"name\": \"test-symbol-page\"}",
+  "ownerId": 2,
+  "name": "test-symbol-page",
+  "configuration": "{\"layout\": {\"id\": \"__node_id_3681_967891_736258_551434\", \"name\": \"div\", \"props\": {\"layout\": {\"gap\": \"16px\", \"type\": \"flex\", \"inline\": false, \"direction\": \"column\"}}, \"children\": [{\"id\": \"__node_id_3696_172494_203612_474866\", \"name\": \"testUI\", \"isSymbol\": true}], \"isSymbol\": true, \"canBeRemoved\": false, \"unSelectable\": true}, \"styles\": \"\", \"__version\": 4, \"variables\": {\"generated\": [], \"userDefined\": []}, \"httpRequests\": {\"generated\": [], \"userDefined\": []}}",
+  "status": "DRAFT",
+  "createdBy": 2,
+  "updatedBy": 2,
+  "publishedAt": 1676620748544,
+  "createdAt": 1676620735945,
+  "updatedAt": 1676620744053,
+  "isComponent": true,
+  "referenceId": "4117012f934cdc5c006da4fc52e4dae6",
+  "hostIds": "22,99",
+  "themes": [
+    {
+      "hostId": 22,
+      "themeFileId": 0,
+      "themeFileLink": "https://sems-dev.qa.expertly.cloud/static/22/prod-parent-css-host-22.css.css?v=f168d5207954f7e4f74b990d878179bf",
+      "themeName": null,
+      "themeFileContent": null,
+      "etag": null,
+      "empty": false
+    },
+    {
+      "hostId": 99,
+      "themeFileId": 0,
+      "themeFileLink": "https://sems-dev.qa.expertly.cloud/static/99/prod-admin-host-99.css.css?v=73a7860a756731d2542fe65434f5c7fc",
+      "themeName": null,
+      "themeFileContent": null,
+      "etag": null,
+      "empty": false
+    }
+  ],
+  "aliasName": "",
+  "alias_name": ""
+}

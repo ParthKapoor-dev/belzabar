@@ -1,0 +1,69 @@
+{
+  "uuid": "4266c2883951ec08d98ebbe00cf0a0aa",
+  "automationApiId": "43921a96a48710ff6152ba1006e97180    ",
+  "name": "zzTestTempMethod",
+  "summary": "temp test",
+  "description": "temp test",
+  "metadata": {
+    "version": {
+      "uuid": "4266c2883951ec08d98ebbe00cf0a0aa",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1786105995772,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": 1786105995772,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4a27c255e6cf18234f2a8e3f91e4442d    ",
+      "key": "a",
+      "name": "a",
+      "type": "TEXT",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4f6f0cedd2bca311917ab074aa30c5c6    ",
+      "key": "a",
+      "fieldCode": "a",
+      "name": "a",
+      "type": "TEXT"
+    }
+  ],
+  "variables": [],
+  "steps": [],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

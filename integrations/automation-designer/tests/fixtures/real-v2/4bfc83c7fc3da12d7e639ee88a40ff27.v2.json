@@ -1,0 +1,1046 @@
+{
+  "uuid": "4bfc83c7fc3da12d7e639ee88a40ff27",
+  "automationApiId": "4a01a2e0de9321a19cd4b778a9a802bb    ",
+  "name": "verification.token.create",
+  "summary": "",
+  "description": "Creates a verification token for email and phone update.",
+  "metadata": {
+    "version": {
+      "uuid": "4bfc83c7fc3da12d7e639ee88a40ff27",
+      "name": "3",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 19,
+      "uuid": "4619df2ec1d8db3afbd9a67b3319842b",
+      "name": "Schools-Utilities",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1684228158583,
+      "lastPublishedAt": 1766413804579,
+      "createdBy": 2,
+      "migrationVersion": 1684228158581,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "PUBLISHED",
+    "referenceId": "448ba90c686e104056a3a74b3c52d194"
+  },
+  "inputs": [
+    {
+      "uuid": "4d6035e06f645550762385a5bce877c0    ",
+      "key": "loggedInUserId",
+      "name": "loggedInUserId",
+      "description": "enter the userid",
+      "type": "TEXT",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4177039eeda519c42b759a5338bf75fb    ",
+      "key": "email",
+      "name": "email",
+      "description": "enter the email",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4bffcf84723ab49ab65e9074515136ff    ",
+      "key": "phone",
+      "name": "phone",
+      "description": "enter the mobile number",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "43c012437ebf1be462d88adb6db8f3d5    ",
+      "key": "verificationToken",
+      "fieldCode": "verificationToken",
+      "name": "verificationToken",
+      "type": "TEXT"
+    },
+    {
+      "uuid": "414f330b9f0ca07d37659d1078434b8d    ",
+      "key": "token",
+      "fieldCode": "token",
+      "name": "token",
+      "type": "TEXT"
+    }
+  ],
+  "variables": [
+    {
+      "key": "verificationToken",
+      "name": "verificationToken",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "key": "token",
+      "name": "token",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "steps": [
+    {
+      "id": "4e77f746689a8d0953ceac1ff83f120c    ",
+      "automationAPIId": "46765a6107235bb245fe8ac08f215cfb    ",
+      "serviceName": "Helpers.General",
+      "methodName": "raiseException",
+      "coreMethod": false,
+      "description": "If email and phone are not provided<ul><li>Throw exception \"Email OR phone not provided\" and exit</li></ul>",
+      "inputs": [
+        {
+          "uuid": "404385d13dcab885c912936851cb698a    ",
+          "value": "Email OR phone not provided",
+          "key": "message",
+          "name": "message",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "45dbd3c35d8b36a089868216dd250a17    ",
+          "value": "400",
+          "key": "status",
+          "name": "status",
+          "type": "INTEGER",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "446fa7f85f4695c3ffeba04a04538b15    ",
+          "key": "response",
+          "fieldCode": "raiseException1",
+          "name": "raiseException1"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": 400,
+            "message": "Email OR phone not provided"
+          },
+          "conditionalExit": {
+            "code": 400,
+            "message": "Email OR phone not provided",
+            "expression": "#{email} eq null and #{phone} eq null",
+            "expandedExpressions": [
+              {
+                "item": {
+                  "type": {
+                    "id": "TEXT",
+                    "name": "Text",
+                    "type": "TEXT"
+                  },
+                  "category": "Input",
+                  "fieldCode": "email",
+                  "nestedFieldCode": "email"
+                },
+                "value": "null",
+                "groupOp": {
+                  "value": "AND"
+                },
+                "operator": {
+                  "value": "eq"
+                },
+                "ignoreCase": false
+              },
+              {
+                "item": {
+                  "type": {
+                    "id": "TEXT",
+                    "name": "Text",
+                    "type": "TEXT"
+                  },
+                  "category": "Input",
+                  "fieldCode": "phone",
+                  "nestedFieldCode": "phone"
+                },
+                "value": "null",
+                "groupOp": {
+                  "value": "AND"
+                },
+                "operator": {
+                  "value": "eq"
+                },
+                "ignoreCase": false
+              }
+            ]
+          }
+        },
+        "entryCondition": {
+          "expression": "#{email} eq null and #{phone} eq null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "TEXT",
+                  "name": "Text",
+                  "type": "TEXT"
+                },
+                "category": "Input",
+                "fieldCode": "email",
+                "nestedFieldCode": "email"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "TEXT",
+                  "name": "Text",
+                  "type": "TEXT"
+                },
+                "category": "Input",
+                "fieldCode": "phone",
+                "nestedFieldCode": "phone"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4794d4799af4e0887871b7442562627a    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "description": "If email is passed<ul><li>Get details.internal.auth.id into authId from the users table for the loggedInuserId</li></ul>",
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "c2VsZWN0IGRldGFpbHMtPidpbnRlcm5hbCctPidhdXRoJy0+PidpZCcgYXMgaWQgZnJvbSB1c2VycyB3aGVyZSBpZCA9ICcje2xvZ2dlZEluVXNlcklkfSc=",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "BASE_64"
+            },
+            {
+              "uuid": "476ea71abed20d6853a58dd1f0e06dca    ",
+              "value": "OBJECT",
+              "key": "flatDataType",
+              "name": "responseDataType",
+              "type": "STRING",
+              "displayWidgetSuggestion": "DROPDOWN",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "authJson",
+          "name": "authJson"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 149,
+        "name": "BCPS-RDS-READ-DB"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{email} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "TEXT",
+                  "name": "Text",
+                  "type": "TEXT"
+                },
+                "category": "Input",
+                "fieldCode": "email",
+                "nestedFieldCode": "email"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "440f2551482355b415238aab1195ce1f    ",
+      "automationAPIId": "46765a6107235bb245fe8ac08f215cfb    ",
+      "serviceName": "Helpers.General",
+      "methodName": "raiseException",
+      "coreMethod": false,
+      "description": "If email is passed and authId is not present throw exception INTERNAL_ERROR",
+      "inputs": [
+        {
+          "uuid": "404385d13dcab885c912936851cb698a    ",
+          "value": "INTERNAL_ERROR",
+          "key": "message",
+          "name": "message",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "45dbd3c35d8b36a089868216dd250a17    ",
+          "value": "400",
+          "key": "status",
+          "name": "status",
+          "type": "INTEGER",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "446fa7f85f4695c3ffeba04a04538b15    ",
+          "key": "response",
+          "fieldCode": "raiseException2",
+          "name": "raiseException2"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": 400,
+            "message": "INTERNAL_ERROR"
+          },
+          "conditionalExit": {
+            "code": 400,
+            "message": "INTERNAL_ERROR",
+            "expression": "#{email} ne null and (#{authJson.size()} eq 0 or #{authJson[0].id} eq null)",
+            "expandedExpressions": []
+          }
+        },
+        "entryCondition": {
+          "expression": "#{email} ne null and (#{authJson.size()} eq 0 or #{authJson[0].id} eq null)",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4d94306da8b49daea6dd86273522fcea    ",
+      "automationAPIId": "4932cbafecb323c8fe05a817f0f93ae0    ",
+      "serviceName": "Schools",
+      "methodName": "service.getKey",
+      "coreMethod": false,
+      "description": "If email is passed<ul><li>Call service.getKey method by passing keys = [\"portal.auth.applicationId\"] and set result into applicationId</li></ul>",
+      "inputs": [
+        {
+          "uuid": "48f1837e816ea39f8c38babe2d14cc6d    ",
+          "value": "[\"portal.auth.applicationId\"]",
+          "key": "keys",
+          "name": "keys",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4260ff685ac72e4cf8cf97d8bf55eed6    ",
+          "key": "serviceResponse",
+          "fieldCode": "portalJson",
+          "name": "portalJson"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{email} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "TEXT",
+                  "name": "Text",
+                  "type": "TEXT"
+                },
+                "category": "Input",
+                "fieldCode": "email",
+                "nestedFieldCode": "email"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "42be6616c060bc29ee9f8e3ccf4f68d7    ",
+      "automationAPIId": "45a3464d5d824746a2f587f06a780be9    ",
+      "serviceName": "Expertly.PortalUser",
+      "methodName": "user.initiateEmailUpdate",
+      "coreMethod": false,
+      "description": "If email is passed<ul><li>Call user.initiateEmailUpdate by passing userUUID = &lt;authId&gt;, newEmail = &lt;email&gt;, portalID = &lt;applicationId&gt; and set result into token.</li></ul>",
+      "inputs": [
+        {
+          "uuid": "4a7d4d82f21954d385b28cdf2ebafb29    ",
+          "value": "#{authJson[0].id}",
+          "key": "userUUID",
+          "name": "userUUID",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4198b3daf281bc9d0ad8808cc1653043    ",
+          "value": "#{email}",
+          "key": "newEmail",
+          "name": "newEmail",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4570d2b70ca2feb86050a07b60655b31    ",
+          "value": "#{portalJson[\"portal.auth.applicationId\"].value}",
+          "key": "portalID",
+          "name": "portalID",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "49bcdc6818257f8ddd18b76392bc1c86    ",
+          "key": "response",
+          "fieldCode": "emailToken",
+          "name": "emailToken",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "token"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{email} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "TEXT",
+                  "name": "Text",
+                  "type": "TEXT"
+                },
+                "category": "Input",
+                "fieldCode": "email",
+                "nestedFieldCode": "email"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4fced02ff007d75ad6edae60817e6b65    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "If email is passed<ul><li>Prepare verificationToken as &lt;emailToken&gt;~&lt;userId&gt;~&lt;email&gt;</li></ul>",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "#{emailToken}~#{loggedInUserId}~#{email}",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "emailVerificationToken",
+          "name": "emailVerificationToken",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "verificationToken"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{email} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "TEXT",
+                  "name": "Text",
+                  "type": "TEXT"
+                },
+                "category": "Input",
+                "fieldCode": "email",
+                "nestedFieldCode": "email"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "41115f1aee679b5786bca2472a67045e    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "If phonenumber is passed<ul><li>Get RandomUUID from the AD helper method as token</li></ul>",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "#{T(java.util.UUID).randomUUID()}",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "phoneToken",
+          "name": "phoneToken",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "token"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{phone} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "TEXT",
+                  "name": "Text",
+                  "type": "TEXT"
+                },
+                "category": "Input",
+                "fieldCode": "phone",
+                "nestedFieldCode": "phone"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4258f33b75b77642608c93cf1269e386    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "If phone is passed<ul id=\"isPasted\"><li>Prepare verificationToken as &lt;phoneToken&gt;~&lt;userId&gt;~&lt;phone&gt;</li></ul>",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "#{phoneToken}~#{loggedInUserId}~#{phone}",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "phoneVerificationToken",
+          "name": "phoneVerificationToken",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "verificationToken"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{phone} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "TEXT",
+                  "name": "Text",
+                  "type": "TEXT"
+                },
+                "category": "Input",
+                "fieldCode": "phone",
+                "nestedFieldCode": "phone"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "435a98cf6814d39d7021b323c961ac4e",
+      "comment": "Developer: Siva Medasani<br>Date:12-05-2023",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1683892994709
+    },
+    {
+      "id": "4503fe907ca6d1be0c2ea4ec8013c1f1",
+      "comment": "Developer =&gt; Snehal<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Doc version =&gt; 1&nbsp;<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason =&gt; Add output created token<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">reviewer =&gt; krunal&nbsp;",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1686203275745
+    }
+  ],
+  "testSuite": {
+    "id": "4e4e982a5e6d6d1a2f7587a8732a4e08",
+    "createdBy": 2,
+    "createdOn": 1766413804784,
+    "chainId": "4bfc83c7fc3da12d7e639ee88a40ff27",
+    "testCases": [
+      {
+        "id": "47c9deccb50d02b8e0468afc0e607dde",
+        "createdBy": 2,
+        "createdOn": 1766413804786,
+        "name": "email.generateVerificationToken",
+        "testSuiteId": "4e4e982a5e6d6d1a2f7587a8732a4e08",
+        "inputs": [
+          {
+            "id": "47728d35de4c7c1a89f18c11d31c3457",
+            "createdOn": 1766413804789,
+            "testCaseId": "47c9deccb50d02b8e0468afc0e607dde",
+            "fieldCode": "loggedInUserId",
+            "value": "{\"value\": \"4935a476-3ec0-4289-b6f3-0115777e080b\"}"
+          },
+          {
+            "id": "4468bc4c5267ae63bca9b9f7a3b3f32a",
+            "createdOn": 1766413804792,
+            "testCaseId": "47c9deccb50d02b8e0468afc0e607dde",
+            "fieldCode": "email",
+            "value": "{\"value\":\"user@example.com\"}"
+          },
+          {
+            "id": "4f23327de9db95e35e91be660585da70",
+            "createdOn": 1766413804794,
+            "testCaseId": "47c9deccb50d02b8e0468afc0e607dde",
+            "fieldCode": "phone",
+            "value": "{}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4767f00b6bda2f5c0d558245c454390e",
+        "createdBy": 2,
+        "createdOn": 1766413804797,
+        "name": "verification.token.create.success.1",
+        "testSuiteId": "4e4e982a5e6d6d1a2f7587a8732a4e08",
+        "inputs": [
+          {
+            "id": "4d024dac6261f66373979b80f8d197c2",
+            "createdOn": 1766413804799,
+            "testCaseId": "4767f00b6bda2f5c0d558245c454390e",
+            "fieldCode": "loggedInUserId",
+            "value": "{}"
+          },
+          {
+            "id": "4c2f1397a2b90523eb349809e9d89fac",
+            "createdOn": 1766413804803,
+            "testCaseId": "4767f00b6bda2f5c0d558245c454390e",
+            "fieldCode": "email",
+            "value": "{}"
+          },
+          {
+            "id": "4ffeca9cba6e8b75ea868c483b608172",
+            "createdOn": 1766413804806,
+            "testCaseId": "4767f00b6bda2f5c0d558245c454390e",
+            "fieldCode": "phone",
+            "value": "{}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "PUBLISHED"
+}

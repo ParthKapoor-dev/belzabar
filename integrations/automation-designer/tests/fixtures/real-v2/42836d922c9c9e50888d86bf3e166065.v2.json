@@ -1,0 +1,144 @@
+{
+  "uuid": "42836d922c9c9e50888d86bf3e166065",
+  "automationApiId": "4d6a783d104fa2b6976f9160c93dfedd    ",
+  "name": "View Snapshots get application",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "42836d922c9c9e50888d86bf3e166065",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 123,
+      "uuid": "4f4df7b28e1045cb041d88eea4430d59",
+      "name": "Schools-Regression",
+      "description": "Regression test cases list.",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1708167661063,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": 1708167661063,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "43e53ce5b2f58f8280c885885f800e4e    ",
+      "automationAPIId": "467b90e2f663b13163399756c17fa5e4    ",
+      "serviceName": "Database.ChangeHistoryAudit",
+      "methodName": "snapshots.view",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "485cc063e4ba6f5abebfa654687d9305    ",
+          "key": "request",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4866aaaefd422e303b8ab9c4f23753d8    ",
+              "value": "2023-01-01",
+              "key": "fromDate",
+              "name": "fromDate",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4cdaaef7526ff716c90e93e8a8646944    ",
+              "value": "2025-01-01",
+              "key": "toDate",
+              "name": "toDate",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "41de4445fcec8873156eb4052196f981    ",
+              "value": "application",
+              "key": "tableName",
+              "name": "tableName",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4e900bc23a881e015a77bcf2de5d777a    ",
+          "key": "response",
+          "fieldCode": "responseData",
+          "name": "responseData"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

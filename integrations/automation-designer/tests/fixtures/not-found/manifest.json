@@ -1,0 +1,26 @@
+[
+  {
+    "file": "v1-chain-missing.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:59.770Z",
+    "bytes": 55,
+    "source": {
+      "uuid": "00000000000000000000000000000000"
+    },
+    "endpoint": "/rest/api/automation/chain/00000000000000000000000000000000",
+    "status": 200,
+    "note": "wrapper: {status, contentType, body(raw text)}"
+  },
+  {
+    "file": "v2-chain-missing.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:15:00.447Z",
+    "bytes": 55,
+    "source": {
+      "uuid": "00000000000000000000000000000000"
+    },
+    "endpoint": "/rest/api/automation/chain/v2/00000000000000000000000000000000?basicInfo=false",
+    "status": 200,
+    "note": "wrapper: {status, contentType, body(raw text)}"
+  }
+]

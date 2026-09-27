@@ -1,7 +1,7 @@
 {
   "orderIndex": 1,
   "description": "Compute sum and product",
-  "automationId": "cc-step-1",
+  "automationId": 129127,
   "activeTab": { "id": "customCode" },
   "language": "JAVASCRIPT",
   "customCodeEnv": "CODE_LAMBDA",

@@ -1,19 +1,265 @@
 {
- "id": 1171,
- "uuid": "4f6331f11208e5ccc8ddaaad20727664",
- "jsonDefinition": "{\"name\": \"configure.address.city.add\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"cityCode\", \"required\": true, \"fieldCode\": \"cityCode\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"a unique code of city\"}, {\"type\": \"STRING\", \"label\": \"displayName\", \"required\": true, \"fieldCode\": \"displayName\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"this is city's name to be shown\"}], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"userData\", \"properties\": [], \"displayName\": \"userData\", \"automationId\": 38528, \"rawResponseContainer\": false, \"automationAPIOutputId\": 9270, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"{\\\"query\\\": true}\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 13203, \"automationUserInputUuid\": \"4032e2f20ec55c05e5de9235d4935b9f    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Get the query to fetch loggedIn userId\", \"automationId\": 38528, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"id\", \"properties\": [], \"displayName\": \"id\", \"automationId\": 38529, \"rawResponseContainer\": false, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"INSERT INTO city(id,code, display_name, updated_at, updated_by) VALUES (${UUID_WITH_HYPHEN},'#{cityCode}', '#{displayName}', now(), (#{userData.query})) RETURNING id;\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 195, \"automationUserInputUuid\": \"227e3a22-2222-4208-86a5-76235585547b\"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 194, \"automationUserInputUuid\": \"e9d29329-058e-4974-b3d2-8dc6d575acce\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 2, \"description\": \"Add city in city table using MDT.&nbsp;\", \"automationId\": 38529, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"Adds new city to be list of cities available for address configurations in the system in city table\", \"useServiceAuthenticationStructure\": false}",
- "version": 1,
- "name": "configure.address.city.add",
- "aliasName": "configure.address.city.add",
- "category": {
-  "id": 15,
-  "name": "Schools"
- },
- "state": "PUBLISHED",
- "automationState": "PUBLISHED",
- "referenceId": "4283bb05ec15bdc2f723a7a75551ed08",
- "methodDeprecated": false,
- "active": false,
- "updatedOn": 1686830062936,
- "createdOn": 1665638689573
+  "id": 1171,
+  "uuid": "4f6331f11208e5ccc8ddaaad20727664",
+  "jsonDefinition": "{\"name\": \"configure.address.city.add\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"cityCode\", \"required\": true, \"fieldCode\": \"cityCode\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"a unique code of city\"}, {\"type\": \"STRING\", \"label\": \"displayName\", \"required\": true, \"fieldCode\": \"displayName\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"description\": \"this is city's name to be shown\"}], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"userData\", \"properties\": [], \"displayName\": \"userData\", \"automationId\": 38528, \"rawResponseContainer\": false, \"automationAPIOutputId\": 9270, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"{\\\"query\\\": true}\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 13203, \"automationUserInputUuid\": \"4032e2f20ec55c05e5de9235d4935b9f    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Get the query to fetch loggedIn userId\", \"automationId\": 38528, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"id\", \"properties\": [], \"displayName\": \"id\", \"automationId\": 38529, \"rawResponseContainer\": false, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"INSERT INTO city(id,code, display_name, updated_at, updated_by) VALUES (${UUID_WITH_HYPHEN},'#{cityCode}', '#{displayName}', now(), (#{userData.query})) RETURNING id;\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 195, \"automationUserInputUuid\": \"227e3a22-2222-4208-86a5-76235585547b\"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 194, \"automationUserInputUuid\": \"e9d29329-058e-4974-b3d2-8dc6d575acce\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 2, \"description\": \"Add city in city table using MDT.&nbsp;\", \"automationId\": 38529, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"Adds new city to be list of cities available for address configurations in the system in city table\", \"useServiceAuthenticationStructure\": false}",
+  "version": 1,
+  "name": "configure.address.city.add",
+  "aliasName": "configure.address.city.add",
+  "category": {
+    "id": 15,
+    "name": "Schools",
+    "aliasName": [
+      "Schools"
+    ],
+    "originalLabel": "Schools",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 2018,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+    "automationSystemUuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 68751,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Admin",
+          "lastName": "SEMS",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Admin SEMS",
+          "title": "Admin SEMS"
+        }
+      ]
+    },
+    {
+      "id": 68752,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_USERS_TO_EDIT",
+      "groups": [],
+      "users": [
+        {
+          "id": 229,
+          "email": "user@example.com",
+          "firstName": "krunal",
+          "lastName": "test",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "krunal test",
+          "title": "krunal test"
+        },
+        {
+          "id": 12,
+          "email": "user@example.com",
+          "firstName": "Narender",
+          "lastName": "Mann",
+          "ssoUser": false,
+          "boss": {
+            "id": 5,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Narender Mann",
+          "title": "Narender Mann"
+        },
+        {
+          "id": 235,
+          "email": "user@example.com",
+          "firstName": "Pankaj",
+          "lastName": "Yadav",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Pankaj Yadav",
+          "title": "Pankaj Yadav"
+        },
+        {
+          "id": 300,
+          "email": "user@example.com",
+          "firstName": "Sandeep",
+          "lastName": "Shukla",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Sandeep Shukla",
+          "title": "Sandeep Shukla"
+        },
+        {
+          "id": 301,
+          "email": "user@example.com",
+          "firstName": "Krunal",
+          "lastName": "Fijiwala",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Krunal Fijiwala",
+          "title": "Krunal Fijiwala"
+        },
+        {
+          "id": 236,
+          "email": "user@example.com",
+          "firstName": "Vandana C",
+          "lastName": "Chaddha",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Vandana C Chaddha",
+          "title": "Vandana C Chaddha"
+        },
+        {
+          "id": 6,
+          "email": "user@example.com",
+          "firstName": "user@example.com",
+          "lastName": "ekta",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "user@example.com ekta",
+          "title": "user@example.com ekta"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1665638689573,
+  "updatedBy": 2,
+  "updatedOn": 1686830062936,
+  "referenceId": "4283bb05ec15bdc2f723a7a75551ed08",
+  "state": "PUBLISHED",
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "lastPublishedAt": 1686830062934,
+  "lastPublishedBy": 2,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "45d989ba9dba4a8588f88c20c7631994",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "PUBLISHED"
 }

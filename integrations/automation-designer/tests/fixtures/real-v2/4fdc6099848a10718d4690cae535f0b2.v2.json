@@ -1,0 +1,500 @@
+{
+  "uuid": "4fdc6099848a10718d4690cae535f0b2",
+  "automationApiId": "43019bb03e5aefabc5288f4fa715a8b7    ",
+  "name": "config.backgroundJob.delete",
+  "description": "delete backgorundJob based on id where id is uuid",
+  "metadata": {
+    "version": {
+      "uuid": "4fdc6099848a10718d4690cae535f0b2",
+      "name": "10",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 24,
+      "uuid": "4700658b809a62a86d4ab58da1ccbda6",
+      "name": "Schools-Configure",
+      "description": "Configuration for Expertly SEMS",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1700645219445,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4502fa5a469e233741489f57908ede7f    ",
+      "key": "id",
+      "name": "id",
+      "description": "uuid",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "491f26ea30c29d80bb8d8a0a6f94135d    ",
+      "referenceUuid": "46edb43660a8d4fde62f8afcdb4682eb    ",
+      "key": "jobIsDeleted",
+      "fieldCode": "jobIsDeleted",
+      "name": "jobIsDeleted",
+      "type": "BOOLEAN"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "4d1344c3db2f91363d48ac325c466788    ",
+      "automationAPIId": "7cacda5d-186b-4e1b-aaf1-a8acb617f35b",
+      "serviceName": "db_service",
+      "methodName": "data.delete",
+      "coreMethod": false,
+      "description": "Delete the background_jobs based on id which is uuid",
+      "inputs": [
+        {
+          "uuid": "c3f9b402-51df-415e-aa63-574bec25d1ad",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "5bed11b1-071d-4afd-bd2b-cf10fa6d8734",
+              "value": "DELETE FROM  background_jobs  WHERE id='#{id}';",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "c349cfc9-d31f-462a-8399-8e4be2234bbe",
+          "key": "rowsImpacted",
+          "fieldCode": "isDelete",
+          "name": "isDelete"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "413f981ef3c949a86fdda4b0d3d28238    ",
+      "automationAPIId": "478998f919370197e6e7ac78ec4a7d23    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "expression.evaluate",
+      "coreMethod": false,
+      "description": "checking whether record is deleted&nbsp;&nbsp; or not&nbsp;",
+      "inputs": [
+        {
+          "uuid": "4fbda65037c198c0dc539599fbde863c    ",
+          "value": "{ \"operator\": \">\", \"operands\"\n: [ \n     { \"contextHandler\": \"isDelete\" }, \n     { \"contextHandler\": \"temp\" } \n] } ",
+          "key": "expression",
+          "name": "expression",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4217c08e404d18db64a99e95fcf010e0    ",
+          "value": "{ \"isDelete\": #{isDelete}, \"temp\": 0 }",
+          "key": "context",
+          "name": "context",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4352f5abe34a2a4c52e496aba5f4e17f    ",
+          "key": "strResult",
+          "fieldCode": "checkRecordDeleted",
+          "name": "checkRecordDeleted"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": 500,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": 500,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "400422aa8cb96ecda26e8bd0cc72040e    ",
+      "automationAPIId": "480a16ccf2a90f0aae1cbc85352eedfb    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "compare",
+      "coreMethod": false,
+      "description": "get true/false response by using Compare JSON helper method&nbsp;",
+      "inputs": [
+        {
+          "uuid": "4188dc545d9c8c1912f681ab0365921a    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "46fd5bb6490857425b8daaee27bc5eb9    ",
+              "value": "#{checkRecordDeleted}",
+              "key": "first",
+              "name": "firstJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4f205446aea7e834c4f5a23371c9e383    ",
+              "value": "\"Yes\"",
+              "key": "second",
+              "name": "secondJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "46edb43660a8d4fde62f8afcdb4682eb    ",
+          "key": "response",
+          "fieldCode": "jobIsDeleted",
+          "name": "jobIsDeleted"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "4dba5b44948a350b763bb32a2f09c35a",
+    "createdBy": 2,
+    "createdOn": 1700651583529,
+    "updatedBy": 2,
+    "updatedOn": 1700659762101,
+    "chainId": "4fdc6099848a10718d4690cae535f0b2",
+    "testCases": [
+      {
+        "id": "45fb80bd61d8a8a4fa4092eeb2c12799",
+        "createdBy": 2,
+        "createdOn": 1700654551388,
+        "updatedBy": 2,
+        "updatedOn": 1700658849486,
+        "name": "config.backgroundJob.delete.success01",
+        "testSuiteId": "4dba5b44948a350b763bb32a2f09c35a",
+        "inputs": [
+          {
+            "id": "46d65f910227a0ea6391968777e97ebb",
+            "createdOn": 1700658849495,
+            "testCaseId": "45fb80bd61d8a8a4fa4092eeb2c12799",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"Gov\"}"
+          },
+          {
+            "id": "46ee7676d13fd06c4d79960acb87b132",
+            "createdOn": 1700658849496,
+            "testCaseId": "45fb80bd61d8a8a4fa4092eeb2c12799",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"Perm\"}"
+          },
+          {
+            "id": "4d721c57cc797695d7cdb52ac04106f7",
+            "createdOn": 1700658849499,
+            "testCaseId": "45fb80bd61d8a8a4fa4092eeb2c12799",
+            "fieldCode": "id",
+            "value": "{\"value\": \"cfce00cb-8971-4126-9fc9-6b061754b259\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "49bab6afd45b6713e3138e181183f5f3",
+        "createdBy": 2,
+        "createdOn": 1700656740177,
+        "updatedBy": 2,
+        "updatedOn": 1700659762102,
+        "name": "config.backgroundJob.delete.Success02",
+        "testSuiteId": "4dba5b44948a350b763bb32a2f09c35a",
+        "inputs": [
+          {
+            "id": "44ee957a62289eccada4a5de253dad87",
+            "createdOn": 1700659762109,
+            "testCaseId": "49bab6afd45b6713e3138e181183f5f3",
+            "fieldCode": "id",
+            "value": "{\"value\": \"c20d1e7b-1007-4eb7-9bec-5e29e357fd85\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4e5b06286fcb06b7f30081ca92b6c45c",
+        "createdBy": 2,
+        "createdOn": 1700651583530,
+        "name": "config.backgroundJob.update.Success03",
+        "testSuiteId": "4dba5b44948a350b763bb32a2f09c35a",
+        "inputs": [
+          {
+            "id": "4ee48b854dfb303a11508ed8d3275d5f",
+            "createdOn": 1700651583533,
+            "testCaseId": "4e5b06286fcb06b7f30081ca92b6c45c",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"Gov\"}"
+          },
+          {
+            "id": "48270f4cea839cc9a9b7a05704745864",
+            "createdOn": 1700651583536,
+            "testCaseId": "4e5b06286fcb06b7f30081ca92b6c45c",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"Perm\"}"
+          },
+          {
+            "id": "4515c7d544311be975018b438a241280",
+            "createdOn": 1700651583539,
+            "testCaseId": "4e5b06286fcb06b7f30081ca92b6c45c",
+            "fieldCode": "id",
+            "value": "{\"value\": \"cfce00cb-8971-4126-9fc9-6b061754b259\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "42174bb22a010479db95b1324860693f",
+        "createdBy": 2,
+        "createdOn": 1700654086590,
+        "updatedBy": 2,
+        "updatedOn": 1700656226290,
+        "name": "config.backgroundJob.update.Success05",
+        "testSuiteId": "4dba5b44948a350b763bb32a2f09c35a",
+        "inputs": [
+          {
+            "id": "4053aaa42ccd2d5c56b79a00ec315de3",
+            "createdOn": 1700656226296,
+            "testCaseId": "42174bb22a010479db95b1324860693f",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"mouse\"}"
+          },
+          {
+            "id": "416791c64467427113909e81ec772c7f",
+            "createdOn": 1700656226298,
+            "testCaseId": "42174bb22a010479db95b1324860693f",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"keyboard\"}"
+          },
+          {
+            "id": "454ffe1a171af6b5fba2af05b3aaffeb",
+            "createdOn": 1700656226301,
+            "testCaseId": "42174bb22a010479db95b1324860693f",
+            "fieldCode": "id",
+            "value": "{\"value\": \"89563b32-5945-498a-bcbe-9a5eb0a25e21\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "434ce7c3dbdb4fc682999d6ad9d6d187",
+        "createdBy": 2,
+        "createdOn": 1700658126196,
+        "name": "config.backgroundJob.update.success.1",
+        "testSuiteId": "4dba5b44948a350b763bb32a2f09c35a",
+        "inputs": [
+          {
+            "id": "4aad617c1d40a9d2a3d48f25dc6733ff",
+            "createdOn": 1700658126199,
+            "testCaseId": "434ce7c3dbdb4fc682999d6ad9d6d187",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"Go\"}"
+          },
+          {
+            "id": "4f643f29b42eee9c645085bb2b718686",
+            "createdOn": 1700658126203,
+            "testCaseId": "434ce7c3dbdb4fc682999d6ad9d6d187",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"Per\"}"
+          },
+          {
+            "id": "4fe8d00003fb90addb548ec19632994f",
+            "createdOn": 1700658126207,
+            "testCaseId": "434ce7c3dbdb4fc682999d6ad9d6d187",
+            "fieldCode": "id",
+            "value": "{\"value\": \"0703b0d0-d646-484f-affb-6315d94bd40b\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "45b21ea026f5430e769fb77450eba0a4",
+        "createdBy": 2,
+        "createdOn": 1700659530972,
+        "name": "config.backgroundJob.update.success.3",
+        "testSuiteId": "4dba5b44948a350b763bb32a2f09c35a",
+        "inputs": [
+          {
+            "id": "4098a7892fe35a5fc4a191dbab05b263",
+            "createdOn": 1700659530975,
+            "testCaseId": "45b21ea026f5430e769fb77450eba0a4",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"Go\"}"
+          },
+          {
+            "id": "4cbe3acfbf4117b8e6a7b99c3c7bd3ee",
+            "createdOn": 1700659530977,
+            "testCaseId": "45b21ea026f5430e769fb77450eba0a4",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"Per\"}"
+          },
+          {
+            "id": "416bc5ee09a3cecc61509101b2a67d03",
+            "createdOn": 1700659530980,
+            "testCaseId": "45b21ea026f5430e769fb77450eba0a4",
+            "fieldCode": "id",
+            "value": "{\"value\": \"0703b0d0-d646-484f-affb-6315d94bd40b\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

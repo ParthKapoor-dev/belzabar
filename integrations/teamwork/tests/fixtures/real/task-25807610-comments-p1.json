@@ -1,0 +1,200 @@
+{
+  "comments": [
+    {
+      "id": 10539559,
+      "installationId": 216133,
+      "installation": {
+        "id": 216133,
+        "type": "installations"
+      },
+      "htmlBody": "<p>Hi <a href=\"/app/people/218900\" rel=\"noopener noreferrer nofollow\" target=\"_blank\">@KartikJ</a> sir, pls review the below PRs</p> \n<p><strong>codedeploy module updates</strong></p> \n<p><a rel=\"noopener noreferrer nofollow\" href=\"https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.terraform.modules/pull-requests/42473/details?region=us-east-2\" target=\"_blank\">https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.terraform.modules/pull-requests/42473/details?region=us-east-2</a></p> \n<p><strong>client migration infra</strong></p> \n<p><a rel=\"noopener noreferrer nofollow\" href=\"https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/42474/details?region=us-east-2\" target=\"_blank\">https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/42474/details?region=us-east-2</a></p> \n<p><strong>move client migration</strong></p> \n<p><a rel=\"noopener noreferrer nofollow\" href=\"https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/39347/details?region=us-east-2\" target=\"_blank\">https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/39347/details?region=us-east-2</a><br>cc: <a href=\"/app/people/250031\" rel=\"noopener noreferrer nofollow\" target=\"_blank\">@GauravR</a></p>",
+      "body": "Hi @KartikJ sir, pls review the below PRs\r\n\r\n codedeploy module updates\r\n\r\n https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.terraform.modules/pull-requests/42473/details?region=us-east-2 client migration infra\r\n\r\n https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/42474/details?region=us-east-2 move client migration\r\n\r\n https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/39347/details?region=us-east-2\r\ncc: @GauravR",
+      "postedByUserId": 298621,
+      "postedBy": 298621,
+      "postedDateTime": "2025-12-04T12:20:25Z",
+      "projectId": 310720,
+      "project": {
+        "id": 310720,
+        "type": "projects"
+      },
+      "objectId": 25807610,
+      "object": {
+        "id": 25807610,
+        "type": "tasks"
+      },
+      "objectType": "task",
+      "deleted": false,
+      "deletedByUserId": 0,
+      "deletedBy": null,
+      "dateDeleted": null,
+      "lastEditedByUserId": 298621,
+      "lastEditedBy": 298621,
+      "dateLastEdited": "2025-12-04T12:20:25Z",
+      "contentType": "HTML",
+      "reactionsCount": 0,
+      "peopleNotifiedCount": 2,
+      "fileIds": null,
+      "files": [],
+      "fileCount": 0,
+      "isPrivate": 0,
+      "lockdownID": 0,
+      "commentLink": "tasks/25807610?c=10539559",
+      "meta": {
+        "permissions": {
+          "canEdit": false,
+          "canDelete": false
+        },
+        "isRead": false
+      }
+    },
+    {
+      "id": 10541741,
+      "installationId": 216133,
+      "installation": {
+        "id": 216133,
+        "type": "installations"
+      },
+      "htmlBody": "<p>Hi <a href=\"/app/people/218900\" rel=\"noopener noreferrer nofollow\" target=\"_blank\">@KartikJ</a> sir, pls review this PR</p> \n<p><strong>codedeploy_multiple_group_infra</strong></p> \n<p><a rel=\"noopener noreferrer nofollow\" href=\"https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/42480/details?region=us-east-2\" target=\"_blank\">https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/42480/details?region=us-east-2</a></p>",
+      "body": "Hi @KartikJ sir, pls review this PR\r\n\r\n codedeploy_multiple_group_infra\r\n\r\n https://us-east-2.console.aws.amazon.com/codesuite/codecommit/repositories/infra.expertly/pull-requests/42480/details?region=us-east-2",
+      "postedByUserId": 298621,
+      "postedBy": 298621,
+      "postedDateTime": "2025-12-05T14:29:09Z",
+      "projectId": 310720,
+      "project": {
+        "id": 310720,
+        "type": "projects"
+      },
+      "objectId": 25807610,
+      "object": {
+        "id": 25807610,
+        "type": "tasks"
+      },
+      "objectType": "task",
+      "deleted": false,
+      "deletedByUserId": 0,
+      "deletedBy": null,
+      "dateDeleted": null,
+      "lastEditedByUserId": 298621,
+      "lastEditedBy": 298621,
+      "dateLastEdited": "2025-12-05T14:29:09Z",
+      "contentType": "HTML",
+      "reactionsCount": 0,
+      "peopleNotifiedCount": 2,
+      "fileIds": null,
+      "files": [],
+      "fileCount": 0,
+      "isPrivate": 0,
+      "lockdownID": 0,
+      "commentLink": "tasks/25807610?c=10541741",
+      "meta": {
+        "permissions": {
+          "canEdit": false,
+          "canDelete": false
+        },
+        "isRead": false
+      }
+    },
+    {
+      "id": 10643771,
+      "installationId": 216133,
+      "installation": {
+        "id": 216133,
+        "type": "installations"
+      },
+      "htmlBody": "<p>Hi <a href=\"/app/people/250031\" rel=\"noopener noreferrer nofollow\" target=\"_blank\">@GauravR</a> sir, this is currently pending confirmation to create a new repository to include the database changes, which are currently maintained in the tools repository for clients.</p> \n<p>As discussed with Kartik Sir, we are avoiding deploying the complete infrastructure via Terraform at this stage. The discussion regarding the creation of that new repository is still pending; until then, this is on hold.</p>",
+      "body": "Hi @GauravR sir, this is currently pending confirmation to create a new repository to include the database changes, which are currently maintained in the tools repository for clients.\r\n\r\n As discussed with Kartik Sir, we are avoiding deploying the complete infrastructure via Terraform at this stage. The discussion regarding the creation of that new repository is still pending; until then, this is on hold.",
+      "postedByUserId": 298621,
+      "postedBy": 298621,
+      "postedDateTime": "2026-02-27T11:12:23Z",
+      "projectId": 310720,
+      "project": {
+        "id": 310720,
+        "type": "projects"
+      },
+      "objectId": 25807610,
+      "object": {
+        "id": 25807610,
+        "type": "tasks"
+      },
+      "objectType": "task",
+      "deleted": false,
+      "deletedByUserId": 0,
+      "deletedBy": null,
+      "dateDeleted": null,
+      "lastEditedByUserId": 298621,
+      "lastEditedBy": 298621,
+      "dateLastEdited": "2026-02-27T11:12:23Z",
+      "contentType": "HTML",
+      "reactionsCount": 0,
+      "peopleNotifiedCount": 2,
+      "fileIds": null,
+      "files": [],
+      "fileCount": 0,
+      "isPrivate": 0,
+      "lockdownID": 0,
+      "commentLink": "tasks/25807610?c=10643771",
+      "meta": {
+        "permissions": {
+          "canEdit": false,
+          "canDelete": false
+        },
+        "isRead": false
+      }
+    }
+  ],
+  "meta": {
+    "page": {
+      "pageOffset": 0,
+      "pageSize": 5,
+      "count": 3,
+      "hasMore": false
+    }
+  },
+  "included": {
+    "users": {
+      "298621": {
+        "id": 298621,
+        "firstName": "Srishti",
+        "lastName": "Saxena",
+        "title": "",
+        "email": "user@example.com",
+        "companyId": 28178,
+        "companyRoleId": 7,
+        "company": {
+          "id": 28178,
+          "type": "companies"
+        },
+        "isAdmin": false,
+        "siteOwner": false,
+        "inOwnerCompany": true,
+        "isClientUser": false,
+        "isServiceAccount": false,
+        "type": "account",
+        "deleted": false,
+        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_f10c27ebda2b96fd2856e273418ef45a.png",
+        "lengthOfDay": 8,
+        "workingHoursId": 43571,
+        "workingHour": {
+          "id": 43571,
+          "type": "workingHours"
+        },
+        "canAccessPortfolio": true,
+        "canAddProjects": false,
+        "canManagePortfolio": false,
+        "isPlaceholderResource": false,
+        "timezone": "America/Toronto",
+        "lastLogin": "2026-09-26T12:03:40Z",
+        "createdBy": {
+          "id": 209574,
+          "type": "users"
+        },
+        "createdAt": "2023-09-04T07:06:19Z",
+        "updatedBy": {
+          "id": 298621,
+          "type": "users"
+        },
+        "updatedAt": "2023-09-05T06:14:57Z"
+      }
+    }
+  }
+}

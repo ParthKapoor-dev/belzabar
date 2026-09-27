@@ -1,0 +1,189 @@
+{
+  "uuid": "431df1ec1915d760ebc89123b5f0afa0    ",
+  "id": 101160,
+  "active": true,
+  "createdAt": 1723463666886,
+  "status": "REGISTERED",
+  "updatedAt": 1723463670473,
+  "automationAPI": {
+    "id": 3709,
+    "uuid": "4f206fae9c8e93bc11e69013f303d4fc    ",
+    "uri": "codename.getForCategories",
+    "httpMethod": "POST",
+    "label": "codename.getForCategories",
+    "originalLabel": "codename.getForCategories",
+    "active": true,
+    "automationSystem": {
+      "id": 31,
+      "uuid": "4e1fe16472f681778299aa17dc8665af    ",
+      "name": "Schools",
+      "originalLabel": "Schools",
+      "active": true,
+      "label": "Schools",
+      "authOptional": true,
+      "externalIntegration": false,
+      "accessMode": "PUBLIC",
+      "type": "USER_GENERATED",
+      "aliasName": [
+        "Schools"
+      ],
+      "permissions": [],
+      "remote": false,
+      "permissionSet": [],
+      "isAuthenticationStructureInherited": false
+    },
+    "automationUserInputs": [
+      {
+        "id": 11591,
+        "uuid": "4f224c37a09864ab0802921d944b8c7d    ",
+        "orderIndex": 0,
+        "label": "categories",
+        "produces": "categories",
+        "automationUserInputSources": [
+          {
+            "id": 20795,
+            "uri": "INPUTS_STEP_DATA_ARRAY",
+            "valueParam": "id",
+            "labelParam": "name",
+            "automationSourceInputs": [],
+            "httpMethod": "LOCAL",
+            "data": "\"[{ \\\"name\\\" : \\\"This exactly\\\", \\\"id\\\" : 1,  \\\"moduleProperty\\\" : \\\"\\\" }, { \\\"name\\\" : \\\"Step response\\\", \\\"id\\\" : 2, \\\"moduleProperty\\\" : \\\"answer\\\" }, { \\\"name\\\" : \\\"Response comments\\\",  \\\"id\\\" : 3 ,  \\\"moduleProperty\\\" : \\\"answerdescription\\\" }, { \\\"name\\\" : \\\"Activity title\\\", \\\"id\\\" : 4, \\\"moduleProperty\\\" : \\\"activitytitle\\\" }, { \\\"name\\\" : \\\"Activity description\\\", \\\"id\\\" : 5,  \\\"moduleProperty\\\" : \\\"activitydescription\\\" }, { \\\"name\\\" : \\\"Activity status\\\", \\\"id\\\" : 6, \\\"moduleProperty\\\" : \\\"activitystatus\\\" }, { \\\"name\\\" : \\\"Activity duedate\\\", \\\"id\\\" : 7, \\\"moduleProperty\\\" : \\\"activityduedate\\\"  }]\""
+          }
+        ],
+        "automationUserInputs": [],
+        "optional": false,
+        "showOnUi": true,
+        "showOnSDUi": true,
+        "disableStringReplacement": false,
+        "hideInput": false,
+        "encodedBase64": false,
+        "sensitive": false,
+        "encodingType": "NONE",
+        "sourceInput": false
+      }
+    ],
+    "automationAPIOutputs": [
+      {
+        "id": 6508,
+        "uuid": "4cbe19714568ed538a308d7238b1f4e6    ",
+        "optional": true,
+        "consumes": "categoriesWithCodeList",
+        "displayName": "categoriesWithCodeList",
+        "showOnUi": true,
+        "active": true,
+        "orderIndex": 1,
+        "sensitive": false
+      },
+      {
+        "id": 12167,
+        "uuid": "418d21ee6c0332031c2c951a46f04cf0    ",
+        "optional": true,
+        "consumes": "translatedKeys",
+        "displayName": "translatedKeys",
+        "showOnUi": true,
+        "active": true,
+        "orderIndex": 2,
+        "sensitive": false
+      }
+    ],
+    "serviceChainId": 3669,
+    "serviceChainUID": "4bb6211eeceb5b9efe50a2d4d24d274b",
+    "hideOnUi": false,
+    "referenceId": "4ade614d755a1bd7817591c983b1583b    ",
+    "state": "PUBLISHED",
+    "lastPublishedAt": 1709198872870,
+    "lastPublishedBy": 2,
+    "methodType": "SYSTEM_GENERATED",
+    "updatedBy": 2,
+    "updatedOn": 1709198872959,
+    "aliasName": "codename.getForCategories",
+    "methodDeprecated": false,
+    "accountRequired": false,
+    "streamCapable": false,
+    "automationState": "PUBLISHED"
+  },
+  "automationUserInputValues": [
+    {
+      "createdAt": 1723463670463,
+      "value": "[\"CHANNEL_TYPE\"]",
+      "produces": "categories",
+      "createdBy": 2,
+      "automationUserInput": {
+        "id": 11591,
+        "uuid": "4f224c37a09864ab0802921d944b8c7d    ",
+        "orderIndex": 0,
+        "label": "categories",
+        "produces": "categories",
+        "optional": false,
+        "showOnUi": true,
+        "showOnSDUi": true,
+        "disableStringReplacement": false,
+        "hideInput": false,
+        "encodedBase64": false,
+        "sensitive": false,
+        "encodingType": "NONE",
+        "sourceInput": false,
+        "dataType": "JSON",
+        "uiRepresentation": "CUSTOM"
+      },
+      "inputValues": [],
+      "inputParams": [],
+      "dataType": "JSON",
+      "optional": false,
+      "file": null,
+      "secured": false,
+      "sensitive": false,
+      "secureField": false,
+      "sourceInput": false,
+      "fileType": false
+    }
+  ],
+  "automationSourceInputValues": [],
+  "automationUserOutputValues": [
+    {
+      "id": 499298,
+      "uuid": "43841931e57a1dc3d9e1b4c4432d11f1    ",
+      "automation": null,
+      "apiOutput": {
+        "id": 6508,
+        "uuid": "4cbe19714568ed538a308d7238b1f4e6    ",
+        "optional": true,
+        "automationApi": {
+          "id": 3709,
+          "active": true,
+          "hideOnUi": false,
+          "methodType": "SYSTEM_GENERATED",
+          "methodDeprecated": false,
+          "accountRequired": false,
+          "streamCapable": false
+        },
+        "consumes": "categoriesWithCodeList",
+        "displayName": "categoriesWithCodeList",
+        "showOnUi": true,
+        "active": true,
+        "sensitive": false,
+        "dataType": "ARRAY"
+      },
+      "value": null,
+      "moduleId": 13,
+      "moduleExtraData": null,
+      "label": "codeList",
+      "moduleProperty": null,
+      "rawResponseContainer": true,
+      "moduleType": "CHAINING"
+    }
+  ],
+  "uiSelectorValue": [],
+  "createdBy": 2,
+  "updatedBy": 2,
+  "triggerId": 13,
+  "showError": false,
+  "asyncAutomation": false,
+  "dependentOnStep": 0,
+  "service": "Schools",
+  "action": "codename.getForCategories",
+  "describableAutomation": false,
+  "massAutomation": false,
+  "moduleTypeNumber": 4,
+  "moduleType": "CHAINING"
+}

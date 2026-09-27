@@ -1,0 +1,296 @@
+{
+  "uuid": "4f34dce281a93cff94ec866912620243",
+  "automationApiId": "456b3526a24ba09b06ccb728311f5cc2    ",
+  "name": "config.backgroundJob.add",
+  "description": "Add data to background_jobs table",
+  "metadata": {
+    "version": {
+      "uuid": "4f34dce281a93cff94ec866912620243",
+      "name": "8",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 24,
+      "uuid": "4700658b809a62a86d4ab58da1ccbda6",
+      "name": "Schools-Configure",
+      "description": "Configuration for Expertly SEMS",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1700637942481,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4dbefeda431772dd6a6fa081997687b5    ",
+      "key": "jobName",
+      "name": "jobName",
+      "description": "Enter jobName",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "467de22beb84f093efe2a3d5ba41555a    ",
+      "key": "jobType",
+      "name": "jobType",
+      "description": "Enter jobType",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "498dcfb2481c18314602b02ef983dae4    ",
+      "referenceUuid": "46a59d29-0e7e-595a-9a5c-973167e31d58",
+      "key": "isJobAddCount",
+      "fieldCode": "isJobAddCount",
+      "name": "isJobAddCount",
+      "type": "STRING"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "465f9168098aaed996c89179529030dd    ",
+      "automationAPIId": "f5164443-9f04-4391-b2d1-fe0b8e00f5a9",
+      "serviceName": "db_service",
+      "methodName": "data.add",
+      "coreMethod": false,
+      "description": "Add data into background_jobs table",
+      "inputs": [
+        {
+          "uuid": "e9d29329-058e-4974-b3d2-8dc6d575acce",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "227e3a22-2222-4208-86a5-76235585547b",
+              "value": "INSERT INTO  background_jobs (id, job_name, job_type) \nVALUES ( ${UUID_WITH_HYPHEN}, '#{jobName}','#{jobType}');\n",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "46a59d29-0e7e-595a-9a5c-973167e31d58",
+          "key": "uuid",
+          "fieldCode": "isJobAddCount",
+          "name": "isJobAddCount"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "4145f843f46a53bfc51e97b3fa19601b",
+    "createdBy": 2,
+    "createdOn": 1700638237912,
+    "updatedBy": 2,
+    "updatedOn": 1700653144055,
+    "chainId": "4f34dce281a93cff94ec866912620243",
+    "testCases": [
+      {
+        "id": "4be0e55a55ef5674f0d5a86349ed992b",
+        "createdBy": 2,
+        "createdOn": 1700638237915,
+        "updatedBy": 2,
+        "updatedOn": 1700639088054,
+        "name": "config.backgroundJob.add.success01",
+        "testSuiteId": "4145f843f46a53bfc51e97b3fa19601b",
+        "inputs": [
+          {
+            "id": "492035c121def3e9c518970e00bf4807",
+            "createdOn": 1700639088069,
+            "testCaseId": "4be0e55a55ef5674f0d5a86349ed992b",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"Tester\"}"
+          },
+          {
+            "id": "420f2aaa9af256cab0f5bedbbce179ab",
+            "createdOn": 1700639088071,
+            "testCaseId": "4be0e55a55ef5674f0d5a86349ed992b",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"intern\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "452b094dc1eec00ad486bbc6741d209a",
+        "createdBy": 2,
+        "createdOn": 1700650308694,
+        "name": "config.backgroundJob.add.Success01",
+        "testSuiteId": "4145f843f46a53bfc51e97b3fa19601b",
+        "inputs": [
+          {
+            "id": "4eff4af725cbbade526b8bf76eca2f9a",
+            "createdOn": 1700650308696,
+            "testCaseId": "452b094dc1eec00ad486bbc6741d209a",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"Go\"}"
+          },
+          {
+            "id": "4a7daaf1b0fbc67ca97c8dc2d2417129",
+            "createdOn": 1700650308698,
+            "testCaseId": "452b094dc1eec00ad486bbc6741d209a",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"Per\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4768f706905da0127980aa5b7dd1b49a",
+        "createdBy": 2,
+        "createdOn": 1700640777120,
+        "name": "config.backgroundJob.add.success02",
+        "testSuiteId": "4145f843f46a53bfc51e97b3fa19601b",
+        "inputs": [
+          {
+            "id": "418d07e251c672ed1a298652f22e5806",
+            "createdOn": 1700640777123,
+            "testCaseId": "4768f706905da0127980aa5b7dd1b49a",
+            "fieldCode": "jobName",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4d8fc612944a9be23813810f78746ef6",
+            "createdOn": 1700640777125,
+            "testCaseId": "4768f706905da0127980aa5b7dd1b49a",
+            "fieldCode": "jobType",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "41b85e36837aaf735523a94e468e9d8d",
+        "createdBy": 2,
+        "createdOn": 1700651544964,
+        "name": "config.backgroundJob.add.Success03",
+        "testSuiteId": "4145f843f46a53bfc51e97b3fa19601b",
+        "inputs": [
+          {
+            "id": "4f61ec1dd0ee9797cc6e87d717e34ea2",
+            "createdOn": 1700651544967,
+            "testCaseId": "41b85e36837aaf735523a94e468e9d8d",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"Go\"}"
+          },
+          {
+            "id": "4d0f6e81c2cf4d959032a4ecef4400db",
+            "createdOn": 1700651544970,
+            "testCaseId": "41b85e36837aaf735523a94e468e9d8d",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"Per\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4aa613bab293361552ada7b4fca4a766",
+        "createdBy": 2,
+        "createdOn": 1700653144060,
+        "name": "config.backgroundJob.add.Success04",
+        "testSuiteId": "4145f843f46a53bfc51e97b3fa19601b",
+        "inputs": [
+          {
+            "id": "4de17da990ad7275e12185451dac6ced",
+            "createdOn": 1700653144063,
+            "testCaseId": "4aa613bab293361552ada7b4fca4a766",
+            "fieldCode": "jobName",
+            "value": "{\"value\": \"Gover\"}"
+          },
+          {
+            "id": "43943072804c809473ea963cd7d33863",
+            "createdOn": 1700653144065,
+            "testCaseId": "4aa613bab293361552ada7b4fca4a766",
+            "fieldCode": "jobType",
+            "value": "{\"value\": \"Permana\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

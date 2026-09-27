@@ -1,0 +1,940 @@
+[
+  {
+    "file": "1000.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:00.325Z",
+    "bytes": 7260,
+    "source": {
+      "automationId": "1000",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/1000?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "101104.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:51.172Z",
+    "bytes": 17529,
+    "source": {
+      "automationId": "101104",
+      "usedBy": [
+        "40b7959fb1dd8b4cf2ee9f5e54630ea8"
+      ]
+    },
+    "endpoint": "/rest/api/automations/101104?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "101160.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:52.072Z",
+    "bytes": 6016,
+    "source": {
+      "automationId": "101160",
+      "usedBy": [
+        "40b7959fb1dd8b4cf2ee9f5e54630ea8"
+      ]
+    },
+    "endpoint": "/rest/api/automations/101160?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "1038.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:57.288Z",
+    "bytes": 14413,
+    "source": {
+      "automationId": "1038",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/1038?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "1039.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:59.327Z",
+    "bytes": 10258,
+    "source": {
+      "automationId": "1039",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/1039?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "1040.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:53.255Z",
+    "bytes": 97410,
+    "source": {
+      "automationId": "1040",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/1040?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "1041.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:58.435Z",
+    "bytes": 5955,
+    "source": {
+      "automationId": "1041",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/1041?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "1042.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:01.301Z",
+    "bytes": 37159,
+    "source": {
+      "automationId": "1042",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/1042?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "1043.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:02.312Z",
+    "bytes": 37154,
+    "source": {
+      "automationId": "1043",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/1043?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "120491.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:51.498Z",
+    "bytes": 14512,
+    "source": {
+      "automationId": "120491",
+      "usedBy": [
+        "4540d7de58533f1b9545a9537368e546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/120491?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "120492.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:52.222Z",
+    "bytes": 9939,
+    "source": {
+      "automationId": "120492",
+      "usedBy": [
+        "4540d7de58533f1b9545a9537368e546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/120492?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "120493.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:53.009Z",
+    "bytes": 27922,
+    "source": {
+      "automationId": "120493",
+      "usedBy": [
+        "4540d7de58533f1b9545a9537368e546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/120493?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "120494.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:53.705Z",
+    "bytes": 5933,
+    "source": {
+      "automationId": "120494",
+      "usedBy": [
+        "4540d7de58533f1b9545a9537368e546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/120494?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129130.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:24.713Z",
+    "bytes": 10226,
+    "source": {
+      "automationId": "129130",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129130?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129131.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:25.799Z",
+    "bytes": 7307,
+    "source": {
+      "automationId": "129131",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129131?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129132.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:26.726Z",
+    "bytes": 10195,
+    "source": {
+      "automationId": "129132",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129132?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129133.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:27.809Z",
+    "bytes": 65943,
+    "source": {
+      "automationId": "129133",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129133?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129134.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:28.819Z",
+    "bytes": 15640,
+    "source": {
+      "automationId": "129134",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129134?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129135.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:29.735Z",
+    "bytes": 5965,
+    "source": {
+      "automationId": "129135",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129135?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129136.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:30.801Z",
+    "bytes": 65913,
+    "source": {
+      "automationId": "129136",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129136?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129137.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:31.538Z",
+    "bytes": 5993,
+    "source": {
+      "automationId": "129137",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129137?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129138.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:32.655Z",
+    "bytes": 64953,
+    "source": {
+      "automationId": "129138",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129138?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129139.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:33.373Z",
+    "bytes": 5983,
+    "source": {
+      "automationId": "129139",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129139?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129140.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:34.096Z",
+    "bytes": 5947,
+    "source": {
+      "automationId": "129140",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129140?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129141.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:35.242Z",
+    "bytes": 65721,
+    "source": {
+      "automationId": "129141",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129141?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129142.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:35.944Z",
+    "bytes": 10207,
+    "source": {
+      "automationId": "129142",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129142?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129143.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:36.717Z",
+    "bytes": 10200,
+    "source": {
+      "automationId": "129143",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129143?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129144.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:37.494Z",
+    "bytes": 10198,
+    "source": {
+      "automationId": "129144",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129144?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129145.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:38.500Z",
+    "bytes": 26153,
+    "source": {
+      "automationId": "129145",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129145?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129146.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:39.423Z",
+    "bytes": 14347,
+    "source": {
+      "automationId": "129146",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129146?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129147.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:41.277Z",
+    "bytes": 10204,
+    "source": {
+      "automationId": "129147",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129147?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129148.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:42.002Z",
+    "bytes": 10209,
+    "source": {
+      "automationId": "129148",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129148?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129149.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:42.752Z",
+    "bytes": 10205,
+    "source": {
+      "automationId": "129149",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129149?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129150.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:43.433Z",
+    "bytes": 5958,
+    "source": {
+      "automationId": "129150",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129150?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129151.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:44.348Z",
+    "bytes": 5955,
+    "source": {
+      "automationId": "129151",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129151?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129152.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:45.039Z",
+    "bytes": 5959,
+    "source": {
+      "automationId": "129152",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129152?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129153.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:46.656Z",
+    "bytes": 10195,
+    "source": {
+      "automationId": "129153",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129153?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "129154.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:47.406Z",
+    "bytes": 10193,
+    "source": {
+      "automationId": "129154",
+      "usedBy": [
+        "438185931da72f5b89aaac3c6248a18e"
+      ]
+    },
+    "endpoint": "/rest/api/automations/129154?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "169815.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:48.160Z",
+    "bytes": 17662,
+    "source": {
+      "automationId": "169815",
+      "usedBy": [
+        "43d76d32dab68b381cd1a2b34b176794"
+      ]
+    },
+    "endpoint": "/rest/api/automations/169815?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "190665.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:48.906Z",
+    "bytes": 19270,
+    "source": {
+      "automationId": "190665",
+      "usedBy": [
+        "44297f3eeadecd794d33bfa2b4cd2222"
+      ]
+    },
+    "endpoint": "/rest/api/automations/190665?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "190666.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:49.637Z",
+    "bytes": 19272,
+    "source": {
+      "automationId": "190666",
+      "usedBy": [
+        "44297f3eeadecd794d33bfa2b4cd2222"
+      ]
+    },
+    "endpoint": "/rest/api/automations/190666?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "190667.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:50.493Z",
+    "bytes": 10455,
+    "source": {
+      "automationId": "190667",
+      "usedBy": [
+        "44297f3eeadecd794d33bfa2b4cd2222"
+      ]
+    },
+    "endpoint": "/rest/api/automations/190667?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "19909.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:03.142Z",
+    "bytes": 13797,
+    "source": {
+      "automationId": "19909",
+      "usedBy": [
+        "41f705aff6c768c033b4ad9840b69dde"
+      ]
+    },
+    "endpoint": "/rest/api/automations/19909?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79792.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:11.756Z",
+    "bytes": 32698,
+    "source": {
+      "automationId": "79792",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79792?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79793.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:12.465Z",
+    "bytes": 11938,
+    "source": {
+      "automationId": "79793",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79793?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79794.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:13.545Z",
+    "bytes": 62501,
+    "source": {
+      "automationId": "79794",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79794?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79795.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:14.457Z",
+    "bytes": 77833,
+    "source": {
+      "automationId": "79795",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79795?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79796.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:15.416Z",
+    "bytes": 8498,
+    "source": {
+      "automationId": "79796",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79796?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79797.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:16.333Z",
+    "bytes": 8557,
+    "source": {
+      "automationId": "79797",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79797?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79798.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:17.103Z",
+    "bytes": 8506,
+    "source": {
+      "automationId": "79798",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79798?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79799.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:18.002Z",
+    "bytes": 7620,
+    "source": {
+      "automationId": "79799",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79799?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79800.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:19.240Z",
+    "bytes": 77109,
+    "source": {
+      "automationId": "79800",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79800?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79801.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:20.330Z",
+    "bytes": 7282,
+    "source": {
+      "automationId": "79801",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79801?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79802.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:21.313Z",
+    "bytes": 27515,
+    "source": {
+      "automationId": "79802",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79802?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79803.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:22.034Z",
+    "bytes": 12672,
+    "source": {
+      "automationId": "79803",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79803?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "79804.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:23.739Z",
+    "bytes": 11897,
+    "source": {
+      "automationId": "79804",
+      "usedBy": [
+        "42eca7d0b957039f8538aa7480498546"
+      ]
+    },
+    "endpoint": "/rest/api/automations/79804?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "81530.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:10.764Z",
+    "bytes": 35704,
+    "source": {
+      "automationId": "81530",
+      "usedBy": [
+        "42836d922c9c9e50888d86bf3e166065"
+      ]
+    },
+    "endpoint": "/rest/api/automations/81530?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "92123.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:04.033Z",
+    "bytes": 7278,
+    "source": {
+      "automationId": "92123",
+      "usedBy": [
+        "422a34a9657e3daa50108389a35609db"
+      ]
+    },
+    "endpoint": "/rest/api/automations/92123?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "92124.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:04.989Z",
+    "bytes": 11906,
+    "source": {
+      "automationId": "92124",
+      "usedBy": [
+        "422a34a9657e3daa50108389a35609db"
+      ]
+    },
+    "endpoint": "/rest/api/automations/92124?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "92125.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:05.761Z",
+    "bytes": 8485,
+    "source": {
+      "automationId": "92125",
+      "usedBy": [
+        "422a34a9657e3daa50108389a35609db"
+      ]
+    },
+    "endpoint": "/rest/api/automations/92125?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "92172.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:06.855Z",
+    "bytes": 76983,
+    "source": {
+      "automationId": "92172",
+      "usedBy": [
+        "422a34a9657e3daa50108389a35609db"
+      ]
+    },
+    "endpoint": "/rest/api/automations/92172?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "92173.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:07.780Z",
+    "bytes": 11904,
+    "source": {
+      "automationId": "92173",
+      "usedBy": [
+        "422a34a9657e3daa50108389a35609db"
+      ]
+    },
+    "endpoint": "/rest/api/automations/92173?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "92176.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:08.563Z",
+    "bytes": 28047,
+    "source": {
+      "automationId": "92176",
+      "usedBy": [
+        "422a34a9657e3daa50108389a35609db"
+      ]
+    },
+    "endpoint": "/rest/api/automations/92176?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "92177.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:14:09.650Z",
+    "bytes": 77286,
+    "source": {
+      "automationId": "92177",
+      "usedBy": [
+        "422a34a9657e3daa50108389a35609db"
+      ]
+    },
+    "endpoint": "/rest/api/automations/92177?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "976.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:54.238Z",
+    "bytes": 36958,
+    "source": {
+      "automationId": "976",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/976?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "988.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:55.154Z",
+    "bytes": 5736,
+    "source": {
+      "automationId": "988",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/988?basicinfo=false",
+    "status": 200
+  },
+  {
+    "file": "998.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-27T17:13:56.286Z",
+    "bytes": 96352,
+    "source": {
+      "automationId": "998",
+      "usedBy": [
+        "41bb1b438875bd8b994196db1f12b7c2"
+      ]
+    },
+    "endpoint": "/rest/api/automations/998?basicinfo=false",
+    "status": 200
+  }
+]

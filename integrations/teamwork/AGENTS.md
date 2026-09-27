@@ -37,6 +37,12 @@ teamwork/
 └── AGENTS.md             This file
 ```
 
+## Tests and Fixtures
+
+`tests/fixtures/real/` — sanitized real task + comment pages (task 25085246 captured
+with pageSize=2 → 2 pages), `manifest.json`. Refresh (read-only) with
+`bun scripts/fixtures/capture.ts tw <taskId> [pageSize]`. Used by `tests/unit/real-comments.test.ts`.
+
 ## Write Safety
 
 `add-comment` is the only command that writes to Teamwork. It routes through

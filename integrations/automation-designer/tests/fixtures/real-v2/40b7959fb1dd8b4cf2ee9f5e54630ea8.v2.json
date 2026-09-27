@@ -1,0 +1,338 @@
+{
+  "uuid": "40b7959fb1dd8b4cf2ee9f5e54630ea8",
+  "automationApiId": "4155f8a7e2a8a634b6558df5bdf46a9d    ",
+  "name": "notification.setting.getList",
+  "summary": "",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "40b7959fb1dd8b4cf2ee9f5e54630ea8",
+      "name": "4",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 710,
+      "uuid": "46c0c5138d4afa7fc0daa5d2214157c1",
+      "name": "Schools-Notifications",
+      "description": "Service containing notfication related methods",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1723114770283,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4b4268c36a08ee139c778d4f9d0e7310    ",
+      "key": "pageNumber",
+      "name": "pageNumber",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4127bbcee79586a65dc399787af22493    ",
+      "key": "pageSize",
+      "name": "pageSize",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4807139fc19bf5436fd1bcff69d7b43c    ",
+      "key": "channelName",
+      "name": "channelName",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "451786a5c1d4cc066ac2b6c10671419c    ",
+      "key": "type",
+      "name": "type",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4160019879625ba3cd0a829836688303    ",
+      "key": "status",
+      "name": "status",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4562f3a708399dbc248e86a9de87beeb    ",
+      "key": "startTime",
+      "name": "startTime",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "409c40a743df6bd02c85b886887b1be6    ",
+      "key": "expirationTime",
+      "name": "expirationTime",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "49bc5239bcadc85a629895b27556289f    ",
+      "key": "title",
+      "name": "title",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "46d9378e02898c8e33fd83432d5b1504    ",
+      "key": "isCurrent",
+      "name": "isCurrent",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "40d513051195e7eeea0aaa8df28e502c    ",
+      "key": "priority",
+      "name": "priority",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4a8fc6e70458c25d423186f7788bb9b0    ",
+      "key": "notificationsList",
+      "fieldCode": "notificationsList",
+      "name": "notificationsList",
+      "type": "JSON"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "43ce4c178e9702663a96b51a8e80ef44    ",
+      "automationAPIId": "4629c7fd2089d4ae4b1f96642fd0a97b    ",
+      "serviceName": "Expertly.Notification",
+      "methodName": "notificationSettings.getAll",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "46720e4b2dfaeb3fa440af2ed14beef1    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4578f7b1dc27cafa755a859f294f0cde    ",
+              "value": "START_TIME",
+              "key": "sortingOn",
+              "name": "sortEntity",
+              "type": "ENUM",
+              "displayWidgetSuggestion": "DROPDOWN",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4b71450b6ab390bc8172bc144ec68beb    ",
+          "key": "response",
+          "fieldCode": "notificationListRecords",
+          "name": "notificationListRecords"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "431df1ec1915d760ebc89123b5f0afa0    ",
+      "automationAPIId": "4f206fae9c8e93bc11e69013f303d4fc    ",
+      "serviceName": "Schools",
+      "methodName": "codename.getForCategories",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4f224c37a09864ab0802921d944b8c7d    ",
+          "value": "[\"CHANNEL_TYPE\"]",
+          "key": "categories",
+          "name": "categories",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4cbe19714568ed538a308d7238b1f4e6    ",
+          "key": "categoriesWithCodeList",
+          "fieldCode": "codeList",
+          "name": "codeList"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "notificationsList",
+          "fieldCode": "notificationsList",
+          "name": "notificationsList",
+          "type": "JSON"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "const notificationListRecord = JSON.parse(\"#{notificationListRecords}\")\nconst notificationList = notificationListRecord.body\nconst codeList = JSON.parse(\"#{codeList}\")\n\n\nconst resultList = notificationList.map(item => {\n  const { id, title, status, priority } = item\n  return {\n    id, title,\n    status, priority\n  }\n})\n\nconsole.log(JSON.stringify(resultList))",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

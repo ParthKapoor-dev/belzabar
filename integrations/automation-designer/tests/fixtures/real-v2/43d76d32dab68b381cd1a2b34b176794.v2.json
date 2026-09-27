@@ -1,0 +1,103 @@
+{
+  "uuid": "43d76d32dab68b381cd1a2b34b176794",
+  "automationApiId": "44580f60e71514c97e1fb3ba5c53bd2f    ",
+  "name": "test.createFromGrid.with.mappings",
+  "metadata": {
+    "version": {
+      "uuid": "43d76d32dab68b381cd1a2b34b176794",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 458,
+      "uuid": "4ba9e1272450a6fd983e8203ab0ca80c",
+      "name": "Schools-Data",
+      "description": "Define data sources for the schools, to be used in the Report Designer",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1782712652923,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": 1782712652923,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "4795e69c943740fa822eb78935320280    ",
+      "automationAPIId": "427c65773b8bbdf77e2e8f21c669953b    ",
+      "serviceName": "Documents.Excel",
+      "methodName": "createFromGrid",
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "uuid": "433724d2700ff61bbdd9833987b2ac89    ",
+          "key": "isDeactivated",
+          "fieldCode": "cfgOut",
+          "name": "cfgOut",
+          "type": "JSON",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "cfgOut"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

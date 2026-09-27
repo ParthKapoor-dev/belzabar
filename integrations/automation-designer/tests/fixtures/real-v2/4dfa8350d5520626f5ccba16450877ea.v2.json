@@ -1,0 +1,169 @@
+{
+  "uuid": "4dfa8350d5520626f5ccba16450877ea",
+  "automationApiId": "484011b69fb1fd29ef78ba6f74ca1e9d    ",
+  "name": "replacePlaceholdersInText deprecated",
+  "description": "This is a helper method to replace the placeholders in a given text.",
+  "metadata": {
+    "version": {
+      "uuid": "4dfa8350d5520626f5ccba16450877ea",
+      "name": "5",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 23,
+      "uuid": "45f844d88a4cf39c4577ae1993b99002",
+      "name": "Utilities",
+      "description": "General Purpose Utility Methods",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1677752724068,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "46307657d528a8de640a9ec885b7c92a    ",
+      "key": "text",
+      "name": "text",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "41b7a035f442efc4a1bb81e3b9c4a74a    ",
+      "key": "jsonHolder",
+      "name": "jsonHolder",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [],
+  "variables": [
+    {
+      "key": "finalText",
+      "name": "finalText",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "steps": [
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "finalText",
+          "fieldCode": "finalText",
+          "name": "finalText",
+          "type": "STRING",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "finalText"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "var text=\"#{text}\"\n\nvar placeholders=JSON.parse(\"#{jsonHolder}\")\n\n\nfunction replacePlaceholder(str, placeHolder, newValue) {\n    const re = new RegExp(`\\{\\{[ ]*${placeHolder}[ ]*\\}\\}`)\n    return str.replace(re, newValue)\n}\n\nconst re = new RegExp(/\\{{[ ]*(?<value>[A-Za-z0-9_]+)[ ]*\\}}/, \"g\")\n\nfor (const match of text.matchAll(re)) {\n    const placeHolder = match.groups.value\n    if (placeHolder && placeholders.hasOwnProperty(placeHolder)) {\n        text = replacePlaceholder(text, placeHolder, placeholders[placeHolder])\n    }\n}\n\nconsole.log(text)",
+          "language": "JAVASCRIPT",
+          "executor": null,
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "4483261f1cd7996a7ffda073b6b4779b",
+    "createdBy": 2,
+    "createdOn": 1677752883629,
+    "chainId": "4dfa8350d5520626f5ccba16450877ea",
+    "testCases": [
+      {
+        "id": "4f0cd31323398cad4b99936b2f84dccc",
+        "createdBy": 2,
+        "createdOn": 1677752883631,
+        "name": "replacePlaceholdersInText.success.1",
+        "testSuiteId": "4483261f1cd7996a7ffda073b6b4779b",
+        "inputs": [
+          {
+            "id": "403f31f2367bd49cc47ea227e1cf5540",
+            "createdOn": 1677752883632,
+            "testCaseId": "4f0cd31323398cad4b99936b2f84dccc",
+            "fieldCode": "text",
+            "value": "{\"value\": \"\\\"Hello My name is {{name}} and i am from {{company   }} and {{name}}\\\"\"}"
+          },
+          {
+            "id": "4c9540329701dcd2f5c18b6d10a7a3fe",
+            "createdOn": 1677752883633,
+            "testCaseId": "4f0cd31323398cad4b99936b2f84dccc",
+            "fieldCode": "jsonHolder",
+            "value": "{\"value\": \"{\\\"name\\\":\\\"Siva\\\",\\\"company\\\":\\\"belzabar\\\"}\"}"
+          },
+          {
+            "id": "43fa949f50fdc8b2e9169036368a7bbc",
+            "createdOn": 1677752883635,
+            "testCaseId": "4f0cd31323398cad4b99936b2f84dccc",
+            "fieldCode": "finalText",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

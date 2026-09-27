@@ -1,0 +1,1548 @@
+{
+  "uuid": "41bb1b438875bd8b994196db1f12b7c2",
+  "automationApiId": "4a7be2a58311932701999d9f8f990ec2    ",
+  "name": "configure.enrollment.stage.type.add.old",
+  "description": "Enrollment Stage Type Add",
+  "metadata": {
+    "version": {
+      "uuid": "41bb1b438875bd8b994196db1f12b7c2",
+      "name": "17",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1662629527643,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4b9c321b85639654be789a87d5a861b8    ",
+      "key": "code",
+      "name": "code",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "497b8bd8fb56513f3580b6eebcea466a    ",
+      "key": "stage_name",
+      "name": "stage_name",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4da38440958515b1ff1d8186149d8e1f    ",
+      "key": "application_type",
+      "name": "application_type",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "499076da43c38f4effcf892b13e6e16e    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "select * from enrollment_stage_type where code = '#{code}';",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "8f4b1153-4031-4933-8cfc-b932f60275f6",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "3154483b-14a3-4cc3-b67a-13294f143556",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "6745124e-489f-41d4-904b-06f1f212239f",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "371a1b5e-9bcb-4334-a412-90cadfdd79a1",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "490debfa-0f1d-f16f-a7e7-aa23f100f7da",
+              "key": "summaries",
+              "name": "Summaries",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "46fbe4a5-492d-bdee-0716-b17b8210e04d",
+                  "key": "summary",
+                  "name": "Summary",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [
+                    {
+                      "uuid": "4386dbd3-ba2d-7fca-cd73-b7d364252cd1",
+                      "key": "metrics",
+                      "name": "Metrics",
+                      "type": "ARRAY",
+                      "displayWidgetSuggestion": "ARRAY",
+                      "combineInput": false,
+                      "properties": [
+                        {
+                          "uuid": "40d8f53b-5aef-d9ae-f4bb-91ed24279ae8",
+                          "key": "metric",
+                          "name": "Metric",
+                          "type": "OBJECT",
+                          "displayWidgetSuggestion": "OBJECT",
+                          "combineInput": false,
+                          "properties": [],
+                          "encodingType": "NONE"
+                        }
+                      ],
+                      "encodingType": "NONE"
+                    }
+                  ],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "enrollment_stage_type_info",
+          "name": "enrollment_stage_type_info"
+        },
+        {
+          "uuid": "5b11494a-c244-47a9-a063-3434f6a00e5g",
+          "key": "rowsImpacted",
+          "fieldCode": "enrollment_stage_type_count",
+          "name": "enrollment_stage_type_count"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 3,
+        "name": "BCPS-Local-1"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "code_value",
+          "fieldCode": "code_value",
+          "name": "code_value",
+          "type": "STRING"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "if('#{enrollment_stage_type_count}' != 0){\n    throw \"Code already exist. Try another code\";\n}else{\n   console.log(\"codeNotExist\")\n}\n\n",
+          "language": "JAVASCRIPT",
+          "executor": null,
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4921aebf92853c03bb6d8cadf6e0c5d4    ",
+      "automationAPIId": "f5164443-9f04-4391-b2d1-fe0b8e00f5a9",
+      "serviceName": "db_service",
+      "methodName": "data.add",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "e9d29329-058e-4974-b3d2-8dc6d575acce",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "227e3a22-2222-4208-86a5-76235585547b",
+              "value": "INSERT INTO enrollment_stage_type VALUES('#{code}','#{stage_name}','#{application_type}');",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "ac6a876f-83ad-4ffb-bbf3-92e2979ede1f",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "fb24140e-ab10-4302-b96b-7ecd80eca119",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "1e5a25fa-036e-47b4-a549-bc2d32ac9d58",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "287ae762-e890-43bd-b768-f735657f3087",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "c48de553-1a14-413e-9ba1-49759c341ce0",
+          "key": "rowsImpacted",
+          "fieldCode": "typeCount",
+          "name": "typeCount"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 3,
+        "name": "BCPS-Local-1"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} ne null and #{code_value} eq 'codeNotExist'",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": null
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": null,
+                "category": "Output 3.2",
+                "fieldCode": "code_value",
+                "nestedFieldCode": null
+              },
+              "value": "codeNotExist",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "43a91a2a5c9bc8baf32e8e979b3c015d    ",
+      "automationAPIId": "4f6ac5d3c985da1607508598329bef51    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "find.initials.from.string",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "48aba77c7501725b286aacf3899f6fa5    ",
+          "value": "#{stage_name}",
+          "key": "display_name",
+          "name": "display_name",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4fa6fc55f4cb7e2a24eeb0325c31a5e4    ",
+          "key": "response",
+          "fieldCode": "stage_name_initials",
+          "name": "stage_name_initials"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} eq null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "426516ed3f4901730017ac4069408eb5    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "SELECT code  FROM enrollment_stage_type WHERE code LIKE '#{stage_name_initials}!_%' ESCAPE '!' OR code  LIKE '#{stage_name_initials}' ORDER BY code;\n",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "8f4b1153-4031-4933-8cfc-b932f60275f6",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "3154483b-14a3-4cc3-b67a-13294f143556",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "6745124e-489f-41d4-904b-06f1f212239f",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "371a1b5e-9bcb-4334-a412-90cadfdd79a1",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "490debfa-0f1d-f16f-a7e7-aa23f100f7da",
+              "key": "summaries",
+              "name": "Summaries",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "46fbe4a5-492d-bdee-0716-b17b8210e04d",
+                  "key": "summary",
+                  "name": "Summary",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [
+                    {
+                      "uuid": "4386dbd3-ba2d-7fca-cd73-b7d364252cd1",
+                      "key": "metrics",
+                      "name": "Metrics",
+                      "type": "ARRAY",
+                      "displayWidgetSuggestion": "ARRAY",
+                      "combineInput": false,
+                      "properties": [
+                        {
+                          "uuid": "40d8f53b-5aef-d9ae-f4bb-91ed24279ae8",
+                          "key": "metric",
+                          "name": "Metric",
+                          "type": "OBJECT",
+                          "displayWidgetSuggestion": "OBJECT",
+                          "combineInput": false,
+                          "properties": [],
+                          "encodingType": "NONE"
+                        }
+                      ],
+                      "encodingType": "NONE"
+                    }
+                  ],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "existing_code_list",
+          "name": "existing_code_list"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 3,
+        "name": "BCPS-Local-1"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} eq null and #{stage_name_initials} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": null,
+                "category": "Output 3.4",
+                "fieldCode": "stage_name_initials",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4eb6187332162ac0c34da20719317fb0    ",
+      "automationAPIId": "480a16ccf2a90f0aae1cbc85352eedfb    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "compare",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4188dc545d9c8c1912f681ab0365921a    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "46fd5bb6490857425b8daaee27bc5eb9    ",
+              "key": "first",
+              "name": "firstJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "outputRef": {
+                "referenceStepIndex": 2,
+                "fieldCode": "existingCodeList",
+                "label": "existingCodeList",
+                "uuid": "4174b0488bc4751ab313972c63e6d1f0    ",
+                "apiOutputUuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+                "automationId": null
+              },
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4f205446aea7e834c4f5a23371c9e383    ",
+              "value": "[]",
+              "key": "second",
+              "name": "secondJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "46edb43660a8d4fde62f8afcdb4682eb    ",
+          "key": "response",
+          "fieldCode": "similar_code_not_found",
+          "name": "similar_code_not_found"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{serviceSuccess3_5} eq true and #{code} eq null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "BOOLEAN",
+                  "name": "trueFalse",
+                  "type": null
+                },
+                "category": "Output 3.5",
+                "fieldCode": "serviceSuccess3_5",
+                "nestedFieldCode": null
+              },
+              "value": true,
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4164d8a46754de6409268e0e9664264d    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "#{similar_code_not_found}",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "similar_code_not_found_str",
+          "name": "similar_code_not_found_str"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} eq null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "494c48b3f308bee6dc6682ccc3785bfe    ",
+      "automationAPIId": "42fe14d723b89cb39bbb935cf379e38b    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "list.getListOfElements",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "40169021280091b68a1f9d6d24f52dd7    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "48e8b91d0e1aa3a69b3d98f8371e70af    ",
+              "value": "#{existing_code_list}",
+              "key": "json",
+              "name": "inputList",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4b815a3d7a88e1ba6618ab4504407c1d    ",
+              "value": "$.code",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "40810610d2f9bb3d663ca5d7bdc03744    ",
+          "key": "response",
+          "fieldCode": "list_of_code",
+          "name": "list_of_code"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} eq null and #{similar_code_not_found_str} eq 'false'",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": null,
+                "category": "Output 3.5",
+                "fieldCode": "similar_code_not_found_str",
+                "nestedFieldCode": null
+              },
+              "value": "false",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "486b4a8a81082f25f518a1c8d5ec2609    ",
+      "automationAPIId": "4583500a4b34de7e0bcfb3b48075c54e    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "find.missing.suffix",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4b5b50a5ff7a17575fc68878ccde96b1    ",
+          "value": "#{list_of_code}",
+          "key": "codeList",
+          "name": "codeList",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4b4a5ed4506f4543bd3f83730d00fae2    ",
+          "key": "getUniqueCode",
+          "fieldCode": "generated_code",
+          "name": "generated_code"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} eq null and #{similar_code_not_found_str} eq 'false'",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": null,
+                "category": "Output 3.5",
+                "fieldCode": "similar_code_not_found_str",
+                "nestedFieldCode": null
+              },
+              "value": "false",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4c77c0b8d3d7e2f40f06975987d2f035    ",
+      "automationAPIId": "f5164443-9f04-4391-b2d1-fe0b8e00f5a9",
+      "serviceName": "db_service",
+      "methodName": "data.add",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "e9d29329-058e-4974-b3d2-8dc6d575acce",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "227e3a22-2222-4208-86a5-76235585547b",
+              "value": "INSERT INTO enrollment_stage_type VALUES('#{stage_name_initials}','#{stage_name}','#{application_type}');",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "ac6a876f-83ad-4ffb-bbf3-92e2979ede1f",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "fb24140e-ab10-4302-b96b-7ecd80eca119",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "1e5a25fa-036e-47b4-a549-bc2d32ac9d58",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "287ae762-e890-43bd-b768-f735657f3087",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "7b9e3139-2b5a-48ab-854d-d0504bcb475a",
+          "key": "generatedId",
+          "fieldCode": "enrollment_stage_type_code",
+          "name": "enrollment_stage_type_code"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 3,
+        "name": "BCPS-Local-1"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} eq null and #{similar_code_not_found_str} eq 'true'",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": null,
+                "category": "Output 3.7",
+                "fieldCode": "similar_code_not_found_str",
+                "nestedFieldCode": null
+              },
+              "value": "true",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "49fdeb43c8a41672850d88e1b86c88a2    ",
+      "automationAPIId": "f5164443-9f04-4391-b2d1-fe0b8e00f5a9",
+      "serviceName": "db_service",
+      "methodName": "data.add",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "e9d29329-058e-4974-b3d2-8dc6d575acce",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "227e3a22-2222-4208-86a5-76235585547b",
+              "value": "INSERT INTO enrollment_stage_type VALUES('#{generated_code}','#{stage_name}','#{application_type}');",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "ac6a876f-83ad-4ffb-bbf3-92e2979ede1f",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "fb24140e-ab10-4302-b96b-7ecd80eca119",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "1e5a25fa-036e-47b4-a549-bc2d32ac9d58",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "287ae762-e890-43bd-b768-f735657f3087",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "7b9e3139-2b5a-48ab-854d-d0504bcb475a",
+          "key": "generatedId",
+          "fieldCode": "enrollment_stage_type_code",
+          "name": "enrollment_stage_type_code"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 3,
+        "name": "BCPS-Local-1"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{code} eq null and #{similar_code_not_found_str} eq 'false'",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "code",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": null,
+                "category": "Output 3.7",
+                "fieldCode": "similar_code_not_found_str",
+                "nestedFieldCode": null
+              },
+              "value": "false",
+              "groupOp": null,
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "47c7c83343127ab2931d92bb318f2d90",
+    "createdBy": 2,
+    "createdOn": 1662648505398,
+    "updatedBy": 2,
+    "updatedOn": 1662993220477,
+    "chainId": "41bb1b438875bd8b994196db1f12b7c2",
+    "testCases": [
+      {
+        "id": "434c02222e6d27c8966889a1a74cf442",
+        "createdBy": 2,
+        "createdOn": 1662993220479,
+        "name": "configure.enrollment.stage.type.add_1",
+        "testSuiteId": "47c7c83343127ab2931d92bb318f2d90",
+        "inputs": [
+          {
+            "id": "4075fecb94811e0327ee9a145d392f90",
+            "createdOn": 1662993220479,
+            "testCaseId": "434c02222e6d27c8966889a1a74cf442",
+            "fieldCode": "code",
+            "value": "{\"value\": \"Test\"}"
+          },
+          {
+            "id": "4b9700c0c52d75fc397c9ca58503ca69",
+            "createdOn": 1662993220480,
+            "testCaseId": "434c02222e6d27c8966889a1a74cf442",
+            "fieldCode": "stage_name",
+            "value": "{\"value\": \"Tenup Test Code\"}"
+          },
+          {
+            "id": "4015e7d6960440445ae891a5a13fb9e7",
+            "createdOn": 1662993220481,
+            "testCaseId": "434c02222e6d27c8966889a1a74cf442",
+            "fieldCode": "application_type",
+            "value": "{\"value\": \"App Type\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4b361e021158c093232caef2c55fc6fb",
+        "createdBy": 2,
+        "createdOn": 1662648505399,
+        "name": "Test",
+        "testSuiteId": "47c7c83343127ab2931d92bb318f2d90",
+        "inputs": [
+          {
+            "id": "40c39a95840d311e1a25bf8a9fc178b6",
+            "createdOn": 1662648505399,
+            "testCaseId": "4b361e021158c093232caef2c55fc6fb",
+            "fieldCode": "code",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "424d0f2a8980991288b39e1928445b47",
+            "createdOn": 1662648505399,
+            "testCaseId": "4b361e021158c093232caef2c55fc6fb",
+            "fieldCode": "display_name",
+            "value": "{\"value\": \"T h k\"}"
+          },
+          {
+            "id": "4367f36d0983bd4b4cbc9c87a94cb5d4",
+            "createdOn": 1662648505399,
+            "testCaseId": "4b361e021158c093232caef2c55fc6fb",
+            "fieldCode": "application_type",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

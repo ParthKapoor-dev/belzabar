@@ -1,17 +1,123 @@
 {
- "id": 16013,
- "uuid": "46f978f8b5d9728d9aebba270caf8359",
- "jsonDefinition": "{\"name\": \"offers.add.internalLoop.joinBuilder\", \"scope\": \"UNRESTRICTED\", \"inputs\": [{\"type\": \"TEXT\", \"label\": \"joinFragment\", \"secured\": false, \"editable\": false, \"required\": true, \"fieldCode\": \"joinFragment\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"description\": \"Current SQL JOIN fragment from candidateOrderingJoins to append\", \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"TEXT\", \"label\": \"sysSortValueJoins\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"sysSortValueJoins\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"description\": \"Running accumulator of concatenated JOIN fragments\", \"inputVarRef\": \"\", \"defaultValue\": \"\", \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 24175, \"code\": \"sysSortValueJoinsInternal\", \"type\": \"TEXT\", \"fieldCode\": \"sysSortValueJoinsInternal\", \"sensitive\": false, \"outputCode\": \"sysSortValueJoinsInternal\", \"properties\": [], \"description\": \"Updated accumulator = sysSortValueJoins + joinFragment\", \"displayName\": \"sysSortValueJoinsInternal\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"Loop body: concatenate one candidateOrderingJoins fragment onto sysSortValueJoins.\", \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"sysSortValueJoinsInternal1\", \"sensitive\": false, \"properties\": [], \"displayName\": \"sysSortValueJoinsInternal1\", \"automationId\": 175394, \"internalVarRef\": \"sysSortValueJoinsInternal\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 12908, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{(sysSortValueJoins == null ? '' : sysSortValueJoins) + ' ' + (joinFragment == null ? '' : joinFragment)}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 23538, \"automationUserInputUuid\": \"4bd0e87488b2cf0ff019850ab3ae069c    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Concatenate current JOIN fragment onto the running accumulator (string join, not list append)\", \"automationId\": 175394, \"conditionMode\": \"advance\", \"streamCapable\": false, \"automationApiId\": 6501, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"TEXT\", \"label\": \"sysSortValueJoinsInternal\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"sysSortValueJoinsInternal\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}], \"assertions\": [], \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"Internal loop method for offers.add. Threads sysSortValueJoins as a string accumulator; each iteration appends the current candidateOrderingJoins element.\", \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
- "version": 1,
- "name": "offers.add.internalLoop.joinBuilder",
- "aliasName": "offers.add.internalLoop.joinBuilder",
- "category": {
-  "id": 15,
-  "name": "Schools"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "createdOn": 1783600038136
+  "id": 16013,
+  "uuid": "46f978f8b5d9728d9aebba270caf8359",
+  "jsonDefinition": "{\"name\": \"offers.add.internalLoop.joinBuilder\", \"scope\": \"UNRESTRICTED\", \"inputs\": [{\"type\": \"TEXT\", \"label\": \"joinFragment\", \"secured\": false, \"editable\": false, \"required\": true, \"fieldCode\": \"joinFragment\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"description\": \"Current SQL JOIN fragment from candidateOrderingJoins to append\", \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"TEXT\", \"label\": \"sysSortValueJoins\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"sysSortValueJoins\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"description\": \"Running accumulator of concatenated JOIN fragments\", \"inputVarRef\": \"\", \"defaultValue\": \"\", \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 24175, \"code\": \"sysSortValueJoinsInternal\", \"type\": \"TEXT\", \"fieldCode\": \"sysSortValueJoinsInternal\", \"sensitive\": false, \"outputCode\": \"sysSortValueJoinsInternal\", \"properties\": [], \"description\": \"Updated accumulator = sysSortValueJoins + joinFragment\", \"displayName\": \"sysSortValueJoinsInternal\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"Loop body: concatenate one candidateOrderingJoins fragment onto sysSortValueJoins.\", \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"sysSortValueJoinsInternal1\", \"sensitive\": false, \"properties\": [], \"displayName\": \"sysSortValueJoinsInternal1\", \"automationId\": 175394, \"internalVarRef\": \"sysSortValueJoinsInternal\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 12908, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{(sysSortValueJoins == null ? '' : sysSortValueJoins) + ' ' + (joinFragment == null ? '' : joinFragment)}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 23538, \"automationUserInputUuid\": \"4bd0e87488b2cf0ff019850ab3ae069c    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Concatenate current JOIN fragment onto the running accumulator (string join, not list append)\", \"automationId\": 175394, \"conditionMode\": \"advance\", \"streamCapable\": false, \"automationApiId\": 6501, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"TEXT\", \"label\": \"sysSortValueJoinsInternal\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"sysSortValueJoinsInternal\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}], \"assertions\": [], \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"Internal loop method for offers.add. Threads sysSortValueJoins as a string accumulator; each iteration appends the current candidateOrderingJoins element.\", \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
+  "version": 1,
+  "name": "offers.add.internalLoop.joinBuilder",
+  "aliasName": "offers.add.internalLoop.joinBuilder",
+  "category": {
+    "id": 15,
+    "name": "Schools",
+    "aliasName": [
+      "Schools"
+    ],
+    "originalLabel": "Schools",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 2018,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+    "automationSystemUuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1783600038136,
+  "state": "DRAFT",
+  "migrationVersion": 1783600038136,
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "417869cf7832bcd24b80aa9470f84e1a",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

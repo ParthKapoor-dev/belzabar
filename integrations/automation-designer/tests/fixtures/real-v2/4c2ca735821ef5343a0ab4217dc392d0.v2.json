@@ -1,0 +1,115 @@
+{
+  "uuid": "4c2ca735821ef5343a0ab4217dc392d0",
+  "automationApiId": "40cc96cd34512d4480529dd294858142    ",
+  "name": "rohit test",
+  "description": "rohit test",
+  "metadata": {
+    "version": {
+      "uuid": "4c2ca735821ef5343a0ab4217dc392d0",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 123,
+      "uuid": "4f4df7b28e1045cb041d88eea4430d59",
+      "name": "Schools-Regression",
+      "description": "Regression test cases list.",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1714388139554,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "468362a1ec3b683275ee87d1b64461e2    ",
+      "automationAPIId": "4f2dc06f3d5cdfff918289b277a8ea95    ",
+      "serviceName": "Documents.Office.Legacy.ApachePOI",
+      "methodName": "excel.edit",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "40adc0be782e098e7879bc1ea517886b    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "446cb47762b8c55f5ab199cb42e4cbf5    ",
+              "value": "{ test: 'select from users' }",
+              "key": "commands",
+              "name": "commands",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

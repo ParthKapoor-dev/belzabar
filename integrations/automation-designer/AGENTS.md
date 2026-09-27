@@ -80,8 +80,18 @@ rationale.
 14. `tests/unit/` — save-guard (no-op round-trip over 36 real sems-dev
     bodies in `tests/fixtures/real-v1/`, the `save-corruption/` case, every
     refusal code), sql-read-only, parser, serializer, version resolver, draft guard, xml,
-    base64, error detection, sql, note-flag, stream-parser tests
-15. `tests/fixtures/v1/`, `tests/fixtures/v2/` — step + method fixtures
+    base64, error detection, sql, note-flag, stream-parser tests;
+    `real-wire.test.ts` — V1↔V2 parse parity over the 36 real methods,
+    definitions, category sources, 200-empty-body not-found (known gaps are
+    `test.todo` with bug ids: AD-02, AD-11, AD-13, AD-35 — run `bun test --todo`)
+15. Fixtures. Real sems-dev wire, sanitized, each dir has a `manifest.json`
+    (source id, env, capturedAt, endpoint); captured/refreshed with
+    `bun scripts/fixtures/capture.ts <target>` (repo root, read-only, sems-dev only):
+    `real-v1/` (36 V1 bodies), `real-v2/` (same 36, V2), `definitions/`
+    (`/automations/{automationId}` for 10 of them), `categories/`
+    (`/chain/category`, `/automation/services`), `not-found/`.
+    `tests/fixtures/v1/step-*.json` are hand-written single-step fixtures
+    (numeric `automationId`, like the wire). Prefer real fixtures for new tests.
 16. `docs/api-notes.md` — belz-owned cheatsheet (read this before touching
     lib/api/*, lib/parser/*, or lib/draft-guard.ts)
 

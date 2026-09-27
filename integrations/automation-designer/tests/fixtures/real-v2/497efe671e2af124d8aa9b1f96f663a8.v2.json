@@ -1,0 +1,669 @@
+{
+  "uuid": "497efe671e2af124d8aa9b1f96f663a8",
+  "automationApiId": "4f0e8c499fa6623fa1549eae2b3083a4    ",
+  "name": "codename.add",
+  "description": "Insert data into code_name table. Probably will be replaced with configure.codename.add",
+  "metadata": {
+    "version": {
+      "uuid": "497efe671e2af124d8aa9b1f96f663a8",
+      "name": "8",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1663752489404,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4575f2545087e8aebbe5abb548e96aa3    ",
+      "key": "code",
+      "name": "code",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4bd3661b97e211b6b5969bad9eaecdd9    ",
+      "key": "displayName",
+      "name": "displayName",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "47afcf974002667d012e8361e27985f1    ",
+      "key": "type",
+      "name": "type",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "463b0a4219dbfb22455f8cce043e83ef    ",
+      "referenceUuid": "41131c1926df663db369b6fef714eba2    ",
+      "fieldCode": "programTypeCode",
+      "name": "programTypeCode",
+      "type": "JSON"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "47fc090dd6989922a2f29b75061e88af    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "SELECT id FROM users WHERE user_name ='#{LoggedInUser.Email}'",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "8f4b1153-4031-4933-8cfc-b932f60275f6",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "3154483b-14a3-4cc3-b67a-13294f143556",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "6745124e-489f-41d4-904b-06f1f212239f",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "371a1b5e-9bcb-4334-a412-90cadfdd79a1",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "490debfa-0f1d-f16f-a7e7-aa23f100f7da",
+              "key": "summaries",
+              "name": "Summaries",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "46fbe4a5-492d-bdee-0716-b17b8210e04d",
+                  "key": "summary",
+                  "name": "Summary",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [
+                    {
+                      "uuid": "4386dbd3-ba2d-7fca-cd73-b7d364252cd1",
+                      "key": "metrics",
+                      "name": "Metrics",
+                      "type": "ARRAY",
+                      "displayWidgetSuggestion": "ARRAY",
+                      "combineInput": false,
+                      "properties": [
+                        {
+                          "uuid": "40d8f53b-5aef-d9ae-f4bb-91ed24279ae8",
+                          "key": "metric",
+                          "name": "Metric",
+                          "type": "OBJECT",
+                          "displayWidgetSuggestion": "OBJECT",
+                          "combineInput": false,
+                          "properties": [],
+                          "encodingType": "NONE"
+                        }
+                      ],
+                      "encodingType": "NONE"
+                    }
+                  ],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "uuidJson",
+          "name": "uuidJson"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 5,
+        "name": "BCPS-Test-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4b608b82975d0f40562eb132c1d4b742    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{uuidJson}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$[0].id",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "uuid",
+          "name": "uuid"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4ff78318aa30800fe6b8a3f228cdbf6c    ",
+      "automationAPIId": "f5164443-9f04-4391-b2d1-fe0b8e00f5a9",
+      "serviceName": "db_service",
+      "methodName": "data.add",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "e9d29329-058e-4974-b3d2-8dc6d575acce",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "227e3a22-2222-4208-86a5-76235585547b",
+              "value": "INSERT INTO code_name(type, code, display_name, updated_by, updated_at) VALUES ('#{type}', '#{code}', '#{displayName}', '#{uuid}', now());",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "ac6a876f-83ad-4ffb-bbf3-92e2979ede1f",
+              "key": "queryParams",
+              "name": "queryParameters",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "fb24140e-ab10-4302-b96b-7ecd80eca119",
+                  "key": "test",
+                  "name": "parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "1e5a25fa-036e-47b4-a549-bc2d32ac9d58",
+              "key": "requestTags",
+              "name": "Request Tags",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "287ae762-e890-43bd-b768-f735657f3087",
+                  "key": "test",
+                  "name": "Parameter",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "c48de553-1a14-413e-9ba1-49759c341ce0",
+          "key": "rowsImpacted",
+          "fieldCode": "cnt",
+          "name": "cnt"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 5,
+        "name": "BCPS-Test-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4eaba6274194681d8d998e426cab7007    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{code}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "programTypeCode",
+          "name": "programTypeCode"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{serviceSuccess3_3} eq true",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "BOOLEAN",
+                  "name": "trueFalse",
+                  "type": null
+                },
+                "category": "Output 3.3",
+                "fieldCode": "serviceSuccess3_3",
+                "nestedFieldCode": null
+              },
+              "value": true,
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "4c6ecdb6dcfdf5925f20a2bc54fff3ef",
+    "createdBy": 2,
+    "createdOn": 1663754172284,
+    "updatedBy": 2,
+    "updatedOn": 1665746456072,
+    "chainId": "497efe671e2af124d8aa9b1f96f663a8",
+    "testCases": [
+      {
+        "id": "47ef7daccba36b00bd7cadcc546d119b",
+        "createdBy": 2,
+        "createdOn": 1663754172286,
+        "name": "addProgramTypeTest",
+        "testSuiteId": "4c6ecdb6dcfdf5925f20a2bc54fff3ef",
+        "inputs": [
+          {
+            "id": "44de1a0478ae2b435378a43f052bd404",
+            "createdOn": 1663754172288,
+            "testCaseId": "47ef7daccba36b00bd7cadcc546d119b",
+            "fieldCode": "code",
+            "value": "{\"value\": \"6\"}"
+          },
+          {
+            "id": "4085796c437c61f76134a3a38460f3de",
+            "createdOn": 1663754172292,
+            "testCaseId": "47ef7daccba36b00bd7cadcc546d119b",
+            "fieldCode": "displayName",
+            "value": "{\"value\": \"PT6\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4354bc2c9ec4183046f99fba50095f98",
+        "createdBy": 2,
+        "createdOn": 1665746456074,
+        "name": "codename.add.final.success.codename",
+        "testSuiteId": "4c6ecdb6dcfdf5925f20a2bc54fff3ef",
+        "inputs": [
+          {
+            "id": "441326909e7b0c266c60854edfc048e8",
+            "createdOn": 1665746456075,
+            "testCaseId": "4354bc2c9ec4183046f99fba50095f98",
+            "fieldCode": "code",
+            "value": "{\"value\": \"PROGRAM_TYPE\"}"
+          },
+          {
+            "id": "49651258685734eef599935828a329f3",
+            "createdOn": 1665746456076,
+            "testCaseId": "4354bc2c9ec4183046f99fba50095f98",
+            "fieldCode": "displayName",
+            "value": "{\"value\": \"Test Coe\"}"
+          },
+          {
+            "id": "474d8c27f74025e9d8e79d9a23805498",
+            "createdOn": 1665746456077,
+            "testCaseId": "4354bc2c9ec4183046f99fba50095f98",
+            "fieldCode": "type",
+            "value": "{\"value\": \"PROGRAM_TYPE\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "42e2a5de11a912366c3884497456bdd8",
+        "createdBy": 2,
+        "createdOn": 1663761286338,
+        "updatedBy": 2,
+        "updatedOn": 1663766438150,
+        "name": "program.type.add_1",
+        "testSuiteId": "4c6ecdb6dcfdf5925f20a2bc54fff3ef",
+        "inputs": [
+          {
+            "id": "4fa61260f9743194ec3b9a52eec71c2f",
+            "createdOn": 1663766438151,
+            "testCaseId": "42e2a5de11a912366c3884497456bdd8",
+            "fieldCode": "code",
+            "value": "{\"value\": \"9\"}"
+          },
+          {
+            "id": "4cae20d79e3fe36040f098a2b2d8af47",
+            "createdOn": 1663766438151,
+            "testCaseId": "42e2a5de11a912366c3884497456bdd8",
+            "fieldCode": "displayName",
+            "value": "{\"value\": \"PT8\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4a689f191b076700f2429bea76a2748d",
+        "createdBy": 2,
+        "createdOn": 1663857349949,
+        "name": "typename.add_1",
+        "testSuiteId": "4c6ecdb6dcfdf5925f20a2bc54fff3ef",
+        "inputs": [
+          {
+            "id": "4d7cf404dfb0e246de90b8d4154add15",
+            "createdOn": 1663857349949,
+            "testCaseId": "4a689f191b076700f2429bea76a2748d",
+            "fieldCode": "type",
+            "value": "{\"value\": \"PROGRAM\"}"
+          },
+          {
+            "id": "417569d9f3ab2e1fb710b3e6ef4fd0d6",
+            "createdOn": 1663857349949,
+            "testCaseId": "4a689f191b076700f2429bea76a2748d",
+            "fieldCode": "code",
+            "value": "{\"value\": \"22\"}"
+          },
+          {
+            "id": "496d428636e44c00724788f30eeaafed",
+            "createdOn": 1663857349950,
+            "testCaseId": "4a689f191b076700f2429bea76a2748d",
+            "fieldCode": "displayName",
+            "value": "{\"value\": \"PT22\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

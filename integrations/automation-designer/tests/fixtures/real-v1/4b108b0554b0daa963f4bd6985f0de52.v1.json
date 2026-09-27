@@ -1,19 +1,128 @@
 {
- "id": 5861,
- "uuid": "4b108b0554b0daa963f4bd6985f0de52",
- "jsonDefinition": "{\"name\": \"internal.match.iteration.report.prepareRepeatedText\", \"inputs\": [{\"type\": \"JSON\", \"label\": \"placeHolder\", \"required\": true, \"fieldCode\": \"placeHolder\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"text\", \"required\": true, \"fieldCode\": \"text\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"finaltext\", \"required\": false, \"fieldCode\": \"finaltext\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"outputs\": [{\"id\": 11987, \"code\": \"nextPlaceHolder\", \"type\": \"JSON\", \"fieldCode\": \"nextPlaceHolder\", \"outputCode\": \"nextPlaceHolder\", \"properties\": [], \"displayName\": \"nextPlaceHolder\", \"automationId\": 78266, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1434, \"hiddenAutomationAPIOutputIds\": []}, {\"id\": 11990, \"code\": \"finalTextRes\", \"type\": \"STRING\", \"fieldCode\": \"finalTextRes\", \"outputCode\": \"finalTextRes\", \"properties\": [], \"displayName\": \"finalTextRes\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"repeatText\", \"properties\": [], \"displayName\": \"repeatText\", \"automationId\": 78264, \"internalVarRef\": \"finalRepeatText\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 5810, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{text}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 10414, \"automationUserInputUuid\": \"444bebe5823e6370adc992d0a566d0b5    \"}, {\"value\": \"#{placeHolder}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 10415, \"automationUserInputUuid\": \"4f607ba1a37b4ff6e77692802cf268ba    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 78264, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"repeatText1\", \"properties\": [], \"displayName\": \"repeatText1\", \"automationId\": 78265, \"internalVarRef\": \"finalRepeatText\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 384, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \",#{repeatText}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 932, \"automationUserInputUuid\": \"4462c47dc2839ac0f98da4c13546b0bc    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [{\"item\": {\"type\": {\"id\": \"STRING\", \"name\": \"String\"}, \"category\": \"Input\", \"fieldCode\": \"finaltext\", \"nestedFieldCode\": \"finaltext\"}, \"value\": \"null\", \"groupOp\": {\"value\": \"AND\"}, \"operator\": {\"value\": \"ne\"}, \"ignoreCase\": false}], \"forceExist\": false, \"orderIndex\": 2, \"automationId\": 78265, \"conditionMode\": \"basic\", \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false}, \"conditionExpression\": \"#{finaltext} ne null\", \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"nextPlaceHolder\", \"properties\": [], \"displayName\": \"nextPlaceHolder\", \"automationId\": 78266, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1434, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{placeHolder}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3488, \"automationUserInputUuid\": \"4015bc2afd384da3ac33a00d144c764c    \"}, {\"value\": \"i\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3490, \"automationUserInputUuid\": \"4e770cbbd4c306b77e5880aa60f88775    \"}, {\"value\": \"#{placeHolder.i + 1}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3491, \"automationUserInputUuid\": \"4676b862adfc06d8b6b5a6407a0ec80d    \"}], \"withPrefix\": false, \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 3487, \"automationUserInputUuid\": \"454ec1382570fe66d6cdb79655b1f12c    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 3, \"automationId\": 78266, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"code\": \"let finalText=\\\"#{finaltext}\\\";\\nlet repeatText=\\\"#{finalRepeatText}\\\"\\n\\nfinalText=finalText == 'null' ? '':finalText;\\n\\nfinalText=finalText + repeatText;\\n\\nconsole.log(JSON.stringify(finalText))\\n\", \"file\": \"\", \"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"finalTextRes\", \"type\": \"STRING\", \"properties\": [], \"displayName\": \"finalTextRes\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\"}, \"forceExist\": false, \"orderIndex\": 4, \"customCodeEnv\": \"CODE_LAMBDA\", \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"STRING\", \"label\": \"finalRepeatText\", \"required\": false, \"fieldCode\": \"finalRepeatText\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"\", \"useServiceAuthenticationStructure\": false}",
- "version": 1,
- "name": "internal.match.iteration.report.prepareRepeatedText",
- "aliasName": "internal.match.iteration.report.prepareRepeatedText",
- "category": {
-  "id": 15,
-  "name": "Schools"
- },
- "state": "PUBLISHED",
- "automationState": "PUBLISHED",
- "referenceId": "4b6833766e141a259d50bfcd3d606c37",
- "methodDeprecated": false,
- "active": false,
- "updatedOn": 1706608437792,
- "createdOn": 1706602652170
+  "id": 5861,
+  "uuid": "4b108b0554b0daa963f4bd6985f0de52",
+  "jsonDefinition": "{\"name\": \"internal.match.iteration.report.prepareRepeatedText\", \"inputs\": [{\"type\": \"JSON\", \"label\": \"placeHolder\", \"required\": true, \"fieldCode\": \"placeHolder\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"text\", \"required\": true, \"fieldCode\": \"text\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"finaltext\", \"required\": false, \"fieldCode\": \"finaltext\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"outputs\": [{\"id\": 11987, \"code\": \"nextPlaceHolder\", \"type\": \"JSON\", \"fieldCode\": \"nextPlaceHolder\", \"outputCode\": \"nextPlaceHolder\", \"properties\": [], \"displayName\": \"nextPlaceHolder\", \"automationId\": 78266, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1434, \"hiddenAutomationAPIOutputIds\": []}, {\"id\": 11990, \"code\": \"finalTextRes\", \"type\": \"STRING\", \"fieldCode\": \"finalTextRes\", \"outputCode\": \"finalTextRes\", \"properties\": [], \"displayName\": \"finalTextRes\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"repeatText\", \"properties\": [], \"displayName\": \"repeatText\", \"automationId\": 78264, \"internalVarRef\": \"finalRepeatText\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 5810, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{text}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 10414, \"automationUserInputUuid\": \"444bebe5823e6370adc992d0a566d0b5    \"}, {\"value\": \"#{placeHolder}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 10415, \"automationUserInputUuid\": \"4f607ba1a37b4ff6e77692802cf268ba    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 78264, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"repeatText1\", \"properties\": [], \"displayName\": \"repeatText1\", \"automationId\": 78265, \"internalVarRef\": \"finalRepeatText\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 384, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \",#{repeatText}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 932, \"automationUserInputUuid\": \"4462c47dc2839ac0f98da4c13546b0bc    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [{\"item\": {\"type\": {\"id\": \"STRING\", \"name\": \"String\"}, \"category\": \"Input\", \"fieldCode\": \"finaltext\", \"nestedFieldCode\": \"finaltext\"}, \"value\": \"null\", \"groupOp\": {\"value\": \"AND\"}, \"operator\": {\"value\": \"ne\"}, \"ignoreCase\": false}], \"forceExist\": false, \"orderIndex\": 2, \"automationId\": 78265, \"conditionMode\": \"basic\", \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false}, \"conditionExpression\": \"#{finaltext} ne null\", \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"nextPlaceHolder\", \"properties\": [], \"displayName\": \"nextPlaceHolder\", \"automationId\": 78266, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1434, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{placeHolder}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3488, \"automationUserInputUuid\": \"4015bc2afd384da3ac33a00d144c764c    \"}, {\"value\": \"i\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3490, \"automationUserInputUuid\": \"4e770cbbd4c306b77e5880aa60f88775    \"}, {\"value\": \"#{placeHolder.i + 1}\", \"mappings\": [], \"withPrefix\": false, \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 3491, \"automationUserInputUuid\": \"4676b862adfc06d8b6b5a6407a0ec80d    \"}], \"withPrefix\": false, \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 3487, \"automationUserInputUuid\": \"454ec1382570fe66d6cdb79655b1f12c    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 3, \"automationId\": 78266, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"code\": \"let finalText=\\\"#{finaltext}\\\";\\nlet repeatText=\\\"#{finalRepeatText}\\\"\\n\\nfinalText=finalText == 'null' ? '':finalText;\\n\\nfinalText=finalText + repeatText;\\n\\nconsole.log(JSON.stringify(finalText))\\n\", \"file\": \"\", \"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"finalTextRes\", \"type\": \"STRING\", \"properties\": [], \"displayName\": \"finalTextRes\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\"}, \"forceExist\": false, \"orderIndex\": 4, \"customCodeEnv\": \"CODE_LAMBDA\", \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"STRING\", \"label\": \"finalRepeatText\", \"required\": false, \"fieldCode\": \"finalRepeatText\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"\", \"useServiceAuthenticationStructure\": false}",
+  "version": 1,
+  "name": "internal.match.iteration.report.prepareRepeatedText",
+  "aliasName": "internal.match.iteration.report.prepareRepeatedText",
+  "category": {
+    "id": 15,
+    "name": "Schools",
+    "aliasName": [
+      "Schools"
+    ],
+    "originalLabel": "Schools",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 2018,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+    "automationSystemUuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1706602652170,
+  "updatedBy": 2,
+  "updatedOn": 1706608437792,
+  "referenceId": "4b6833766e141a259d50bfcd3d606c37",
+  "state": "PUBLISHED",
+  "migrationVersion": 1706602652051,
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "lastPublishedAt": 1706608437777,
+  "lastPublishedBy": 2,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "46b700042a25a1cb3119945ad8c6a2cc",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "PUBLISHED"
 }

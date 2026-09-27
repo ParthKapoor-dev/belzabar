@@ -125,6 +125,16 @@ cd cli && bun run bin/cli.ts ad get --help
 
 See `cli/AGENTS.md` for full build and development details.
 
+### Wire fixtures
+
+`scripts/fixtures/capture.ts` captures real API responses into each module's
+`tests/fixtures/…` (with `manifest.json`). It is **read-only** (GET only) and
+**sems-dev only**, and runs every body through `scripts/fixtures/sanitize.ts`
+(tokens, cookies, secret keys, auth `fieldValue`s, e-mails, phones).
+`scripts/fixtures/fixtures-secrets.test.ts` scans every `fixtures/` dir and fails
+on anything that looks like a secret or PII — re-run
+`bun scripts/fixtures/capture.ts resanitize <dir>` if it trips.
+
 ---
 
 ## Key Shared Patterns

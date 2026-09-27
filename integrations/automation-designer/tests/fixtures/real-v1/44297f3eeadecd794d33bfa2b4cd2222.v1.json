@@ -1,17 +1,123 @@
 {
- "id": 19377,
- "uuid": "44297f3eeadecd794d33bfa2b4cd2222",
- "jsonDefinition": "{\"name\": \"TestRedisCanReplaceLock\", \"inputs\": [{\"type\": \"TEXT\", \"label\": \"lockKey\", \"secured\": false, \"editable\": true, \"required\": true, \"fieldCode\": \"lockKey\", \"hideInput\": false, \"sensitive\": false, \"testValue\": \"proto:lock:test:001\", \"orderIndex\": 0, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 28065, \"code\": \"setResult1\", \"type\": \"TEXT\", \"fieldCode\": \"setResult1\", \"sensitive\": false, \"outputCode\": \"setResult1\", \"properties\": [], \"displayName\": \"setResult1\", \"automationId\": 190665, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13250, \"hiddenAutomationAPIOutputIds\": []}, {\"id\": 28066, \"code\": \"setResult2\", \"type\": \"TEXT\", \"fieldCode\": \"setResult2\", \"sensitive\": false, \"outputCode\": \"setResult2\", \"properties\": [], \"displayName\": \"setResult2\", \"automationId\": 190666, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13250, \"hiddenAutomationAPIOutputIds\": []}, {\"id\": 28067, \"code\": \"getResult\", \"type\": \"TEXT\", \"fieldCode\": \"getResult\", \"sensitive\": false, \"outputCode\": \"getResult\", \"properties\": [], \"displayName\": \"getResult\", \"automationId\": 190667, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13249, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"Prototype: Cache.Redis canReplace lock semantics\", \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"setResult1\", \"sensitive\": false, \"properties\": [], \"displayName\": \"setResult1\", \"automationId\": 190665, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13250, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"\", \"mappings\": [{\"value\": \"#{lockKey}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24887, \"automationUserInputUuid\": \"424d8568c9656fce2e3d9fc3a749ada3    \"}, {\"value\": \"first-writer\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24888, \"automationUserInputUuid\": \"406f19c2f27d39418492b3904b5fdd21    \"}, {\"value\": \"PERSISTENT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24889, \"automationUserInputUuid\": \"4508d74e3e21ddeb1afd82223cccdf7d    \"}, {\"value\": \"60\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24890, \"automationUserInputUuid\": \"4829e37db0bf73e02129bb3106a51143    \"}, {\"value\": \"true\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24891, \"automationUserInputUuid\": \"4e4504fbac0ee32f4e759cd6e0eb6e0d    \"}, {\"value\": \"false\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24892, \"automationUserInputUuid\": \"4cc5bd2ea385b977016d9101a9c7864d    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 24886, \"automationUserInputUuid\": \"40649f9e1399765c445a80f80d035790    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Step 1: SET lockKey to 'first-writer' with canReplace=true (unconditional first write)\", \"automationId\": 190665, \"streamCapable\": false, \"automationApiId\": 6701, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": false, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"setResult2\", \"sensitive\": false, \"properties\": [], \"displayName\": \"setResult2\", \"automationId\": 190666, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13250, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"\", \"mappings\": [{\"value\": \"#{lockKey}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24887, \"automationUserInputUuid\": \"424d8568c9656fce2e3d9fc3a749ada3    \"}, {\"value\": \"second-writer\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24888, \"automationUserInputUuid\": \"406f19c2f27d39418492b3904b5fdd21    \"}, {\"value\": \"PERSISTENT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24889, \"automationUserInputUuid\": \"4508d74e3e21ddeb1afd82223cccdf7d    \"}, {\"value\": \"60\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24890, \"automationUserInputUuid\": \"4829e37db0bf73e02129bb3106a51143    \"}, {\"value\": \"false\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24891, \"automationUserInputUuid\": \"4e4504fbac0ee32f4e759cd6e0eb6e0d    \"}, {\"value\": \"false\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24892, \"automationUserInputUuid\": \"4cc5bd2ea385b977016d9101a9c7864d    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 24886, \"automationUserInputUuid\": \"40649f9e1399765c445a80f80d035790    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 2, \"description\": \"Step 2: attempt SET lockKey to 'second-writer' with canReplace=false, while the key already exists from step 1 \u2014 this is the lock-acquisition semantics under test\", \"automationId\": 190666, \"streamCapable\": false, \"automationApiId\": 6701, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": false, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"getResult\", \"sensitive\": false, \"properties\": [], \"displayName\": \"getResult\", \"automationId\": 190667, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13249, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"\", \"mappings\": [{\"value\": \"#{lockKey}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24884, \"automationUserInputUuid\": \"4c0771ba0602cf69799f93e95669190b    \"}, {\"value\": \"PERSISTENT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24885, \"automationUserInputUuid\": \"4891742227542200762b819a36ed9118    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 24883, \"automationUserInputUuid\": \"43ce8273355756255c4799566bdf0e84    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 3, \"description\": \"Step 3: GET lockKey to confirm which write actually won\", \"automationId\": 190667, \"streamCapable\": false, \"automationApiId\": 6700, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": false, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"Test\", \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"Prototype to confirm Cache.Redis set's canReplace=false semantics for lock-acquisition: writes a key, then attempts a second write with canReplace=false, and reads back the final value to confirm which write actually won.\", \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
- "version": 1,
- "name": "TestRedisCanReplaceLock",
- "aliasName": "TestRedisCanReplaceLock",
- "category": {
-  "id": 15,
-  "name": "Schools"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "createdOn": 1788418086274
+  "id": 19377,
+  "uuid": "44297f3eeadecd794d33bfa2b4cd2222",
+  "jsonDefinition": "{\"name\": \"TestRedisCanReplaceLock\", \"inputs\": [{\"type\": \"TEXT\", \"label\": \"lockKey\", \"secured\": false, \"editable\": true, \"required\": true, \"fieldCode\": \"lockKey\", \"hideInput\": false, \"sensitive\": false, \"testValue\": \"proto:lock:test:001\", \"orderIndex\": 0, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 28065, \"code\": \"setResult1\", \"type\": \"TEXT\", \"fieldCode\": \"setResult1\", \"sensitive\": false, \"outputCode\": \"setResult1\", \"properties\": [], \"displayName\": \"setResult1\", \"automationId\": 190665, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13250, \"hiddenAutomationAPIOutputIds\": []}, {\"id\": 28066, \"code\": \"setResult2\", \"type\": \"TEXT\", \"fieldCode\": \"setResult2\", \"sensitive\": false, \"outputCode\": \"setResult2\", \"properties\": [], \"displayName\": \"setResult2\", \"automationId\": 190666, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13250, \"hiddenAutomationAPIOutputIds\": []}, {\"id\": 28067, \"code\": \"getResult\", \"type\": \"TEXT\", \"fieldCode\": \"getResult\", \"sensitive\": false, \"outputCode\": \"getResult\", \"properties\": [], \"displayName\": \"getResult\", \"automationId\": 190667, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13249, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"Prototype: Cache.Redis canReplace lock semantics\", \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"setResult1\", \"sensitive\": false, \"properties\": [], \"displayName\": \"setResult1\", \"automationId\": 190665, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13250, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"\", \"mappings\": [{\"value\": \"#{lockKey}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24887, \"automationUserInputUuid\": \"424d8568c9656fce2e3d9fc3a749ada3    \"}, {\"value\": \"first-writer\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24888, \"automationUserInputUuid\": \"406f19c2f27d39418492b3904b5fdd21    \"}, {\"value\": \"PERSISTENT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24889, \"automationUserInputUuid\": \"4508d74e3e21ddeb1afd82223cccdf7d    \"}, {\"value\": \"60\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24890, \"automationUserInputUuid\": \"4829e37db0bf73e02129bb3106a51143    \"}, {\"value\": \"true\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24891, \"automationUserInputUuid\": \"4e4504fbac0ee32f4e759cd6e0eb6e0d    \"}, {\"value\": \"false\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24892, \"automationUserInputUuid\": \"4cc5bd2ea385b977016d9101a9c7864d    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 24886, \"automationUserInputUuid\": \"40649f9e1399765c445a80f80d035790    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"Step 1: SET lockKey to 'first-writer' with canReplace=true (unconditional first write)\", \"automationId\": 190665, \"streamCapable\": false, \"automationApiId\": 6701, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": false, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"setResult2\", \"sensitive\": false, \"properties\": [], \"displayName\": \"setResult2\", \"automationId\": 190666, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13250, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"\", \"mappings\": [{\"value\": \"#{lockKey}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24887, \"automationUserInputUuid\": \"424d8568c9656fce2e3d9fc3a749ada3    \"}, {\"value\": \"second-writer\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24888, \"automationUserInputUuid\": \"406f19c2f27d39418492b3904b5fdd21    \"}, {\"value\": \"PERSISTENT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24889, \"automationUserInputUuid\": \"4508d74e3e21ddeb1afd82223cccdf7d    \"}, {\"value\": \"60\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24890, \"automationUserInputUuid\": \"4829e37db0bf73e02129bb3106a51143    \"}, {\"value\": \"false\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24891, \"automationUserInputUuid\": \"4e4504fbac0ee32f4e759cd6e0eb6e0d    \"}, {\"value\": \"false\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24892, \"automationUserInputUuid\": \"4cc5bd2ea385b977016d9101a9c7864d    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 24886, \"automationUserInputUuid\": \"40649f9e1399765c445a80f80d035790    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 2, \"description\": \"Step 2: attempt SET lockKey to 'second-writer' with canReplace=false, while the key already exists from step 1 — this is the lock-acquisition semantics under test\", \"automationId\": 190666, \"streamCapable\": false, \"automationApiId\": 6701, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": false, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"getResult\", \"sensitive\": false, \"properties\": [], \"displayName\": \"getResult\", \"automationId\": 190667, \"rawResponseContainer\": false, \"automationAPIOutputId\": 13249, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"\", \"mappings\": [{\"value\": \"#{lockKey}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24884, \"automationUserInputUuid\": \"4c0771ba0602cf69799f93e95669190b    \"}, {\"value\": \"PERSISTENT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 24885, \"automationUserInputUuid\": \"4891742227542200762b819a36ed9118    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 24883, \"automationUserInputUuid\": \"43ce8273355756255c4799566bdf0e84    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 3, \"description\": \"Step 3: GET lockKey to confirm which write actually won\", \"automationId\": 190667, \"streamCapable\": false, \"automationApiId\": 6700, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": false, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"Test\", \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"Prototype to confirm Cache.Redis set's canReplace=false semantics for lock-acquisition: writes a key, then attempts a second write with canReplace=false, and reads back the final value to confirm which write actually won.\", \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
+  "version": 1,
+  "name": "TestRedisCanReplaceLock",
+  "aliasName": "TestRedisCanReplaceLock",
+  "category": {
+    "id": 15,
+    "name": "Schools",
+    "aliasName": [
+      "Schools"
+    ],
+    "originalLabel": "Schools",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 2018,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+    "automationSystemUuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1788418086274,
+  "state": "DRAFT",
+  "migrationVersion": 1788418086274,
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "44480d01a3f50890a1afb65c287d4f9b",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

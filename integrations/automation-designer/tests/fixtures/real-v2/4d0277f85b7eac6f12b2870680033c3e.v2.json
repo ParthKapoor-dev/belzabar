@@ -1,0 +1,95 @@
+{
+  "uuid": "4d0277f85b7eac6f12b2870680033c3e",
+  "automationApiId": "47c77757077641fdbfd0bfa29c6c59c6    ",
+  "name": "exception_msg",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "4d0277f85b7eac6f12b2870680033c3e",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 19,
+      "uuid": "4619df2ec1d8db3afbd9a67b3319842b",
+      "name": "Schools-Utilities",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1704706497235,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": 1704706497235,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "exceptionTest",
+          "fieldCode": "exceptionTest",
+          "name": "exceptionTest",
+          "type": "STRING"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": 500,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": 500,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "if(1==1)\n{\n          throw \"invalid data\";\n}",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

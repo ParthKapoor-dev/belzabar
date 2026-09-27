@@ -5,8 +5,11 @@ import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
 import type { HydratedMethod, CustomCodeStep, SqlStep, SpelEchoStep } from "../../lib/types/common";
 import { encodeBase64 } from "../../lib/base64";
 
+// Real sems-dev V1 body (AD-13: replaces the hand-written method-full.json).
+const REAL_FIXTURE = `${import.meta.dir}/../fixtures/real-v1/4b108b0554b0daa963f4bd6985f0de52.v1.json`;
+
 async function loadMethod(): Promise<HydratedMethod> {
-  const raw = (await Bun.file(`${import.meta.dir}/../fixtures/v1/method-full.json`).json()) as V1RawMethodResponse;
+  const raw = (await Bun.file(REAL_FIXTURE).json()) as V1RawMethodResponse;
   return parseV1Method(raw);
 }
 
@@ -21,12 +24,12 @@ describe("serializeToV1SavePayload", () => {
     const payload = serializeToV1SavePayload(method);
     expect(typeof payload.jsonDefinition).toBe("string");
     const inner = JSON.parse(payload.jsonDefinition);
-    expect(inner.name).toBe("UserService.lookupV2");
+    expect(inner.name).toBe("internal.match.iteration.report.prepareRepeatedText");
   });
 
   test("carries id and uuid on update", () => {
     const payload = serializeToV1SavePayload(method);
-    expect(payload.id).toBe(98765);
+    expect(payload.id).toBe(5861);
     expect(payload.uuid).toBe(method.uuid);
   });
 
@@ -51,12 +54,12 @@ describe("serializeToV1SavePayload", () => {
 
   test("carries category", () => {
     const payload = serializeToV1SavePayload(method);
-    expect(payload.category).toEqual({ id: 12, name: "UserService" });
+    expect(payload.category).toEqual({ id: 15, name: "Schools" });
   });
 
   test("round-trips unknown fields via raw", () => {
-    // method-full.json's Redis GET step has mappings nested; the serializer
-    // should leave them untouched end-to-end.
+    // The first real step has nested mappings; the serializer should leave
+    // them untouched end-to-end.
     const before = JSON.parse((method.raw as V1RawMethodResponse).jsonDefinition);
     const payload = serializeToV1SavePayload(method);
     const after = JSON.parse(payload.jsonDefinition);

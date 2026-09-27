@@ -1,0 +1,763 @@
+{
+  "uuid": "422a34a9657e3daa50108389a35609db",
+  "automationApiId": "4bf6beb2899865491315a8e29d09c7f5    ",
+  "name": "program.isAccessAllowed",
+  "description": "This method can be used to validate that the logged in user is allowed to make modifications to program’s PDM; to make offers in the program",
+  "metadata": {
+    "version": {
+      "uuid": "422a34a9657e3daa50108389a35609db",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 576,
+      "uuid": "4a6a553383d1f68e3205a87d69c04ae7",
+      "name": "Schools-Match",
+      "description": "Category for methods implemented for eSEMS Matching workflow",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1715346848298,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "40e20e820f752c6b3cb9876217b59c24    ",
+      "key": "programId",
+      "name": "programId",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4e4f2ae83c7b6d8a2cb190296c6ac40d    ",
+      "key": "epStageId",
+      "name": "epStageId",
+      "description": "Passed when action is making an update on the program’s applicants, ex. Ranking, Offers",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4c49bca243c197373175a31189ad2859    ",
+      "key": "stagesForUpdate",
+      "name": "stagesForUpdate",
+      "description": " Ex.[“CHOICE_APPLICATION”, “OFFER_RESPONSE”] or [“WAITLIST”]",
+      "type": "ARRAY",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "4c6ff66d3f85b4f29dd1b5070b162ccd    ",
+      "automationAPIId": "4dc2b292b68c703351eba414c9665021    ",
+      "serviceName": "Schools",
+      "methodName": "user.getLoggedInUser",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4032e2f20ec55c05e5de9235d4935b9f    ",
+          "value": "{\"record\":true}",
+          "key": "filter",
+          "name": "filter",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4e91409a7bc0ea33536ea0eee126cd9f    ",
+          "key": "userData",
+          "fieldCode": "userData",
+          "name": "userData"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4fce3c00300176f2bdd0a9ad1c752e16    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{userData}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$.record.userType",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "userType",
+          "name": "userType"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4547b8594ae2f16be4359ac77aede271    ",
+      "automationAPIId": "4e91af8fcf23dac5afb3ba4f6b7e0ca3    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "exception.raise",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4476b54ac44fe5780a4d8dae123c3574    ",
+          "value": "AUTH_FAIL",
+          "key": "message",
+          "name": "message",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f39e20c44b7d5e2932ba81a416c7aea    ",
+          "value": "500",
+          "key": "status",
+          "name": "status",
+          "type": "INTEGER",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4c509fd11129161fff7fbe73a1fcabcb    ",
+          "key": "response",
+          "fieldCode": "errorMessage",
+          "name": "errorMessage"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{userType} eq \"PUBLIC\"",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.2",
+                "fieldCode": "userType",
+                "nestedFieldCode": null
+              },
+              "value": "PUBLIC",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4b68b775be37ff9548498fcc32fa8b21    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "select school_id from program where id='#{programId}'",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "schoolData",
+          "name": "schoolData"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "44647ad8f6178e6fffc2a1388d79ddfa    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{schoolData}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$[*].school_id",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "idArray",
+          "name": "idArray"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "isAllowed",
+          "fieldCode": "isAllowed",
+          "name": "isAllowed",
+          "type": "BOOLEAN"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "let data = JSON.parse(`#{userData}`)\nlet idArray = JSON.parse(`#{idArray}`)\n\nlet receivingSchools = data.record.userAccess.receivingSchools;\n\nif (receivingSchools[0].code === '*') {\n  console.log(true);\n} else {\n  const found = idArray.some(id => receivingSchools.some(school => school.code === id));\n  console.log(found);\n}",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4b4a644439ad187ac37ead7e3a2c5c2b    ",
+      "automationAPIId": "48b3ccd5244e89a78845b8618c6fe2f1    ",
+      "serviceName": "Schools",
+      "methodName": "features.getEnabledForLevel",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "43b8c28cbfa5750e15308554c88fa75e    ",
+          "value": "#{epStageId}",
+          "key": "epStageId",
+          "name": "epStageId",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4e4bbec47b1405ed627aa1afe5b6add4    ",
+          "value": "SYSTEM",
+          "key": "featureType",
+          "name": "featureType",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "41c060578fef9fc43df7832fd79ed06c    ",
+          "value": "[\"SESSION\"]",
+          "key": "featureCodePrefixes",
+          "name": "featureCodePrefixes",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f3205f1c7deab92252881c246bf3cbc    ",
+          "value": "true",
+          "key": "fetchDetails",
+          "name": "fetchDetails",
+          "type": "BOOLEAN",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4444ccd657c2f1ad04ff9011b66440a0    ",
+          "key": "featuresJsonVal2",
+          "fieldCode": "featureJsonVal",
+          "name": "featureJsonVal"
+        },
+        {
+          "uuid": "4f95b27dbcdbeefd3307b90bf1bd41b4    ",
+          "key": "translatedKeys",
+          "fieldCode": "translatedKeys",
+          "name": "translatedKeys"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{epStageId} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": "STRING"
+                },
+                "category": "Input",
+                "fieldCode": "epStageId",
+                "nestedFieldCode": "epStageId"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "460b32bbbfaa168557a4a7156c9a555f    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "SELECT ep_id, closed FROM enrollment_stage es1 WHERE id='#{epStageId}' AND stage_type_code IN (json_elments_to_text('#{stagesForUpdate}')) AND EXISTS (SELECT 1 FROM enrollment_stage es2 WHERE es1.ep_id=es2.ep_id AND es1.round_no=es2.round_no AND stage_type_code=’CHOICE_APPLICATION’ AND opening_time BETWEEN to_date('#{epStartDate}', 'YYYY-MM-DD') AND now())",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "data",
+          "name": "data"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "400393869ec1aafa4fbaa71166951308",
+    "createdBy": 2,
+    "createdOn": 1715407566197,
+    "chainId": "422a34a9657e3daa50108389a35609db",
+    "testCases": [
+      {
+        "id": "4a94b06df0fb3133da2b8962cc917377",
+        "createdBy": 2,
+        "createdOn": 1715407566197,
+        "name": "test.1",
+        "testSuiteId": "400393869ec1aafa4fbaa71166951308",
+        "inputs": [
+          {
+            "id": "41d00b571f7773834a4e983bc33e78f6",
+            "createdOn": 1715407566198,
+            "testCaseId": "4a94b06df0fb3133da2b8962cc917377",
+            "fieldCode": "programId",
+            "value": "{\"value\": \"c1675627-5cb9-4eca-a8af-eaf7163711a5\"}"
+          },
+          {
+            "id": "4cc586ccbae7767c56d2be4917fa5e62",
+            "createdOn": 1715407566198,
+            "testCaseId": "4a94b06df0fb3133da2b8962cc917377",
+            "fieldCode": "epStageId",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "488808ddae886809d3fd95da81c07f2e",
+            "createdOn": 1715407566199,
+            "testCaseId": "4a94b06df0fb3133da2b8962cc917377",
+            "fieldCode": "stagesForUpdate",
+            "value": "{\"value\": null, \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

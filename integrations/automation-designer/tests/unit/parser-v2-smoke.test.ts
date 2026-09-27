@@ -1,60 +1,84 @@
+// parseV2Method smoke tests against REAL sems-dev V2 bodies (AD-13: the old
+// hand-written v2/method-smoke.json put `uuid` under `metadata`, which the
+// wire never does — the real body has a top-level `uuid`).
+//
+// Fixtures (tests/fixtures/real-v2/):
+//   486041dfd02d…  DRAFT, Schools-Configure, EXISTING_SERVICE + SPEL_ECHO steps
+//   4b108b0554b0…  PUBLISHED (has referenceId), Schools, custom-code step
+
 import { describe, expect, test, beforeAll } from "bun:test";
 import { parseV2Method, parseMethod } from "../../lib/parser/index";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
-describe("parseV2Method (smoke)", () => {
-  let raw: V2MethodResponse;
+const FIX = `${import.meta.dir}/../fixtures/real-v2`;
+const load = async (uuid: string) => (await Bun.file(`${FIX}/${uuid}.v2.json`).json()) as V2MethodResponse & Record<string, any>;
+
+describe("parseV2Method (real wire)", () => {
+  let echoRaw: V2MethodResponse & Record<string, any>;
+  let ccRaw: V2MethodResponse & Record<string, any>;
 
   beforeAll(async () => {
-    const file = Bun.file(`${import.meta.dir}/../fixtures/v2/method-smoke.json`);
-    raw = (await file.json()) as V2MethodResponse;
+    echoRaw = await load("486041dfd02d9fd45a27b608ad2dce0c");
+    ccRaw = await load("4b108b0554b0daa963f4bd6985f0de52");
   });
 
-  test("identity fields are populated from metadata", () => {
-    const method = parseV2Method(raw);
-    expect(method.sourceVersion).toBe("v2");
-    expect(method.uuid).toBe("v2-draft-uuid-00000000000000000000000000000001");
-    expect(method.state).toBe("DRAFT");
-    expect(method.version).toBe(1);
-    expect(method.referenceId).toBeNull();
+  test("identity fields (state, version, referenceId) come from metadata", () => {
+    const draft = parseV2Method(echoRaw);
+    expect(draft.sourceVersion).toBe("v2");
+    expect(draft.state).toBe("DRAFT");
+    expect(draft.version).toBe(2);
+    expect(draft.referenceId).toBeNull();
+
+    const pub = parseV2Method(ccRaw);
+    expect(pub.state).toBe("PUBLISHED");
+    expect(pub.referenceId).toBe("4b6833766e141a259d50bfcd3d606c37");
   });
 
-  test("name, summary, category", () => {
-    const method = parseV2Method(raw);
-    expect(method.name).toBe("Calculator.sum");
-    expect(method.summary).toBe("Adds two numbers");
-    expect(method.category?.name).toBe("Calculator");
-    expect(method.category?.uuid).toBe("svc-uuid-abcdef");
+  test("name and category (service) with uuid", () => {
+    const method = parseV2Method(echoRaw);
+    expect(method.name).toBe("Copy.configurations.features.download.internal.1");
+    expect(method.category).toEqual({ id: 24, uuid: "4700658b809a62a86d4ab58da1ccbda6", name: "Schools-Configure" });
   });
 
-  test("maps inputs and outputs", () => {
-    const method = parseV2Method(raw);
-    expect(method.inputs.length).toBe(2);
-    expect(method.inputs[0]!.code).toBe("firstNumber");
-    expect(method.inputs[0]!.displayName).toBe("First Number");
-    expect(method.outputs.length).toBe(1);
-    expect(method.outputs[0]!.code).toBe("sum");
+  test("maps inputs and outputs from key/name", () => {
+    const method = parseV2Method(echoRaw);
+    expect(method.inputs.map((i) => i.code)).toEqual(["featureConfig", "moduleConfigsJson"]);
+    expect(method.inputs[0]!.displayName).toBe("featureConfig");
+    expect(method.outputs.map((o) => o.code)).toEqual(["moduleConfigsJson1"]);
   });
 
   test("discriminates step kinds via properties.type and serviceName", () => {
-    const method = parseV2Method(raw);
-    expect(method.parsedSteps.length).toBe(2);
+    const echo = parseV2Method(echoRaw);
+    expect(echo.parsedSteps.map((s) => s.kind)).toEqual([
+      "EXISTING_SERVICE", "SPEL_ECHO", "EXISTING_SERVICE", "SPEL_ECHO", "SPEL_ECHO",
+      "EXISTING_SERVICE", "EXISTING_SERVICE", "EXISTING_SERVICE",
+    ]);
+    const spel = echo.parsedSteps[1]!;
+    if (spel.kind !== "SPEL_ECHO") throw new Error("kind");
+    expect(spel.expression).toContain("#{featureConfig.display");
 
-    const echo = method.parsedSteps[0]!;
-    expect(echo.kind).toBe("SPEL_ECHO");
-    if (echo.kind !== "SPEL_ECHO") throw new Error("kind");
-    expect(echo.expression).toBe("#{firstNumber + secondNumber}");
-
-    const cc = method.parsedSteps[1]!;
+    const cc = parseV2Method(ccRaw).parsedSteps[3]!;
     expect(cc.kind).toBe("CUSTOM_CODE");
     if (cc.kind !== "CUSTOM_CODE") throw new Error("kind");
     expect(cc.language).toBe("JAVASCRIPT");
-    expect(cc.source).toContain("doubled");
     expect(cc.sourceEncoding).toBe("NONE");
+    expect(cc.source).toContain('let finalText="#{finaltext}"');
+  });
+
+  test("real wire pads some ids with trailing spaces (AD-13) and parse still succeeds", () => {
+    expect(ccRaw.automationApiId).toMatch(/^[0-9a-f]{32}\s+$/);
+    expect(ccRaw.steps![0]!.id as unknown as string).toMatch(/\s+$/);
+    expect(() => parseV2Method(ccRaw)).not.toThrow();
   });
 
   test("parseMethod('v2') dispatches V2 parser", () => {
-    const method = parseMethod(raw, "v2");
-    expect(method.sourceVersion).toBe("v2");
+    expect(parseMethod(echoRaw, "v2").sourceVersion).toBe("v2");
+  });
+
+  // AD-35: parser reads metadata.uuid (absent on the wire) instead of top-level uuid.
+  test.todo("AD-35: uuid is read from the top-level wire field", () => {
+    const method = parseV2Method(echoRaw);
+    expect(method.uuid).toBe("486041dfd02d9fd45a27b608ad2dce0c");
+    expect(method.parseWarnings).toEqual([]);
   });
 });

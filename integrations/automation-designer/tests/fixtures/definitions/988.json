@@ -1,0 +1,178 @@
+{
+  "uuid": "43a91a2a5c9bc8baf32e8e979b3c015d    ",
+  "id": 988,
+  "active": true,
+  "createdAt": 1662646683288,
+  "status": "REGISTERED",
+  "updatedAt": 1662991907211,
+  "automationAPI": {
+    "id": 725,
+    "uuid": "4f6ac5d3c985da1607508598329bef51    ",
+    "uri": "find.initials.from.string",
+    "httpMethod": "POST",
+    "label": "find.initials.from.string",
+    "originalLabel": "find.initials.from.string",
+    "active": true,
+    "automationSystem": {
+      "id": 34,
+      "uuid": "4f6401b02dfc91e057ffaaa3f465c639    ",
+      "name": "Schools-Utilities",
+      "originalLabel": "Schools-Utilities",
+      "active": true,
+      "label": "Schools-Utilities",
+      "authOptional": true,
+      "externalIntegration": false,
+      "accessMode": "PUBLIC",
+      "type": "USER_GENERATED",
+      "aliasName": [
+        "Schools - Utilities"
+      ],
+      "permissions": [],
+      "remote": false,
+      "permissionSet": [],
+      "isAuthenticationStructureInherited": false
+    },
+    "automationUserInputs": [
+      {
+        "id": 3708,
+        "uuid": "48aba77c7501725b286aacf3899f6fa5    ",
+        "orderIndex": 0,
+        "label": "display_name",
+        "produces": "display_name",
+        "automationUserInputSources": [
+          {
+            "id": 4234,
+            "uri": "INPUTS_STEP_DATA_ARRAY",
+            "valueParam": "id",
+            "labelParam": "name",
+            "automationSourceInputs": [],
+            "httpMethod": "LOCAL",
+            "data": "\"[{ \\\"name\\\" : \\\"This exactly\\\", \\\"id\\\" : 1,  \\\"moduleProperty\\\" : \\\"\\\" }, { \\\"name\\\" : \\\"Step response\\\", \\\"id\\\" : 2, \\\"moduleProperty\\\" : \\\"answer\\\" }, { \\\"name\\\" : \\\"Response comments\\\",  \\\"id\\\" : 3 ,  \\\"moduleProperty\\\" : \\\"answerdescription\\\" }, { \\\"name\\\" : \\\"Activity title\\\", \\\"id\\\" : 4, \\\"moduleProperty\\\" : \\\"activitytitle\\\" }, { \\\"name\\\" : \\\"Activity description\\\", \\\"id\\\" : 5,  \\\"moduleProperty\\\" : \\\"activitydescription\\\" }, { \\\"name\\\" : \\\"Activity status\\\", \\\"id\\\" : 6, \\\"moduleProperty\\\" : \\\"activitystatus\\\" }, { \\\"name\\\" : \\\"Activity duedate\\\", \\\"id\\\" : 7, \\\"moduleProperty\\\" : \\\"activityduedate\\\"  }]\""
+          }
+        ],
+        "automationUserInputs": [],
+        "optional": false,
+        "showOnUi": true,
+        "showOnSDUi": true,
+        "disableStringReplacement": false,
+        "hideInput": false,
+        "encodedBase64": false,
+        "sensitive": false,
+        "encodingType": "NONE",
+        "sourceInput": false
+      }
+    ],
+    "automationAPIOutputs": [
+      {
+        "id": 1517,
+        "uuid": "4fa6fc55f4cb7e2a24eeb0325c31a5e4    ",
+        "optional": true,
+        "consumes": "response",
+        "displayName": "response",
+        "showOnUi": true,
+        "active": true,
+        "orderIndex": 999,
+        "sensitive": false
+      }
+    ],
+    "serviceChainId": 583,
+    "serviceChainUID": "4982a39438b06dc590ada457668b432e",
+    "hideOnUi": false,
+    "referenceId": "4c5b1600d505f8557e14a340e4c5431c    ",
+    "state": "PUBLISHED",
+    "lastPublishedAt": 1662118414373,
+    "lastPublishedBy": 2,
+    "methodType": "SYSTEM_GENERATED",
+    "updatedBy": 2,
+    "updatedOn": 1662118414399,
+    "aliasName": "find.initials.from.string",
+    "methodDeprecated": false,
+    "accountRequired": false,
+    "streamCapable": false,
+    "automationState": "PUBLISHED"
+  },
+  "automationUserInputValues": [
+    {
+      "createdAt": 1662991907210,
+      "value": "#{stage_name}",
+      "produces": "display_name",
+      "createdBy": 2,
+      "automationUserInput": {
+        "id": 3708,
+        "uuid": "48aba77c7501725b286aacf3899f6fa5    ",
+        "orderIndex": 0,
+        "label": "display_name",
+        "produces": "display_name",
+        "optional": false,
+        "showOnUi": true,
+        "showOnSDUi": true,
+        "disableStringReplacement": false,
+        "hideInput": false,
+        "encodedBase64": false,
+        "sensitive": false,
+        "encodingType": "NONE",
+        "sourceInput": false,
+        "dataType": "STRING",
+        "uiRepresentation": "CUSTOM"
+      },
+      "inputValues": [],
+      "inputParams": [],
+      "dataType": "STRING",
+      "optional": false,
+      "file": null,
+      "secured": false,
+      "sensitive": false,
+      "secureField": false,
+      "sourceInput": false,
+      "fileType": false
+    }
+  ],
+  "automationSourceInputValues": [],
+  "automationUserOutputValues": [
+    {
+      "id": 11626,
+      "uuid": "456f14ba4f78ed6b1576aaab0a0a84ac    ",
+      "automation": null,
+      "apiOutput": {
+        "id": 1517,
+        "uuid": "4fa6fc55f4cb7e2a24eeb0325c31a5e4    ",
+        "optional": true,
+        "automationApi": {
+          "id": 725,
+          "active": true,
+          "hideOnUi": false,
+          "methodType": "SYSTEM_GENERATED",
+          "methodDeprecated": false,
+          "accountRequired": false,
+          "streamCapable": false
+        },
+        "consumes": "response",
+        "displayName": "response",
+        "showOnUi": true,
+        "active": true,
+        "sensitive": false,
+        "dataType": "STRING"
+      },
+      "value": null,
+      "moduleId": 13,
+      "moduleExtraData": null,
+      "label": "stage_name_initials",
+      "moduleProperty": null,
+      "rawResponseContainer": true,
+      "moduleType": "CHAINING"
+    }
+  ],
+  "uiSelectorValue": [],
+  "createdBy": 2,
+  "updatedBy": 2,
+  "triggerId": 13,
+  "showError": false,
+  "asyncAutomation": false,
+  "dependentOnStep": 0,
+  "service": "Baltimore Schools - Utilities",
+  "action": "find.initials.from.string",
+  "describableAutomation": false,
+  "massAutomation": false,
+  "moduleTypeNumber": 4,
+  "moduleType": "CHAINING"
+}

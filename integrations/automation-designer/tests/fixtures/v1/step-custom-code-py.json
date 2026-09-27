@@ -1,7 +1,7 @@
 {
   "orderIndex": 2,
   "description": "Sum in Python",
-  "automationId": "cc-step-py",
+  "automationId": 129127,
   "activeTab": { "id": "customCode" },
   "language": "PYTHON",
   "customCodeEnv": "CODE_LAMBDA",

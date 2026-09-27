@@ -1,18 +1,148 @@
 {
- "id": 5353,
- "uuid": "4f34dce281a93cff94ec866912620243",
- "jsonDefinition": "{\"name\": \"config.backgroundJob.add\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"jobName\", \"required\": true, \"fieldCode\": \"jobName\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"Enter jobName\"}, {\"type\": \"STRING\", \"label\": \"jobType\", \"required\": true, \"fieldCode\": \"jobType\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"Enter jobType\"}], \"outputs\": [{\"id\": 11262, \"code\": \"isJobAddCount\", \"type\": \"STRING\", \"fieldCode\": \"isJobAddCount\", \"outputCode\": \"isJobAddCount\", \"properties\": [], \"displayName\": \"isJobAddCount\", \"automationId\": 65562, \"rawResponseContainer\": false, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"outputs\": [{\"code\": \"isJobAddCount\", \"displayName\": \"isJobAddCount\", \"automationId\": 65562, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"INSERT INTO  background_jobs (id, job_name, job_type) \\nVALUES ( ${UUID_WITH_HYPHEN}, '#{jobName}','#{jobType}');\\n\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 195, \"automationUserInputUuid\": \"227e3a22-2222-4208-86a5-76235585547b\"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 194, \"automationUserInputUuid\": \"e9d29329-058e-4974-b3d2-8dc6d575acce\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"description\": \"Add data into background_jobs table\", \"automationId\": 65562, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"Add data to background_jobs table\"}",
- "version": 8,
- "name": "config.backgroundJob.add",
- "aliasName": "config.backgroundJob.add",
- "category": {
-  "id": 24,
-  "name": "Schools-Configure"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "updatedOn": 1700659191075,
- "createdOn": 1700637942481
+  "id": 5353,
+  "uuid": "4f34dce281a93cff94ec866912620243",
+  "jsonDefinition": "{\"name\": \"config.backgroundJob.add\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"jobName\", \"required\": true, \"fieldCode\": \"jobName\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"Enter jobName\"}, {\"type\": \"STRING\", \"label\": \"jobType\", \"required\": true, \"fieldCode\": \"jobType\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"Enter jobType\"}], \"outputs\": [{\"id\": 11262, \"code\": \"isJobAddCount\", \"type\": \"STRING\", \"fieldCode\": \"isJobAddCount\", \"outputCode\": \"isJobAddCount\", \"properties\": [], \"displayName\": \"isJobAddCount\", \"automationId\": 65562, \"rawResponseContainer\": false, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"outputs\": [{\"code\": \"isJobAddCount\", \"displayName\": \"isJobAddCount\", \"automationId\": 65562, \"automationAPIOutputId\": 714, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"INSERT INTO  background_jobs (id, job_name, job_type) \\nVALUES ( ${UUID_WITH_HYPHEN}, '#{jobName}','#{jobType}');\\n\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 195, \"automationUserInputUuid\": \"227e3a22-2222-4208-86a5-76235585547b\"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 194, \"automationUserInputUuid\": \"e9d29329-058e-4974-b3d2-8dc6d575acce\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"description\": \"Add data into background_jobs table\", \"automationId\": 65562, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"Add data to background_jobs table\"}",
+  "version": 8,
+  "name": "config.backgroundJob.add",
+  "aliasName": "config.backgroundJob.add",
+  "category": {
+    "id": 24,
+    "name": "Schools-Configure",
+    "aliasName": [
+      "Schools - Configure BCPS"
+    ],
+    "originalLabel": "Schools-Configure",
+    "description": "Configuration for Expertly SEMS",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 1193,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4700658b809a62a86d4ab58da1ccbda6",
+    "automationSystemUuid": "4a46ddcb28f94b1e853cbe23321a1fa9    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 87051,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Admin",
+          "lastName": "SEMS",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Admin SEMS",
+          "title": "Admin SEMS"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1700637942481,
+  "updatedBy": 2,
+  "updatedOn": 1700659191075,
+  "state": "DRAFT",
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "456b3526a24ba09b06ccb728311f5cc2",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

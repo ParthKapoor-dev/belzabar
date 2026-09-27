@@ -1,18 +1,148 @@
 {
- "id": 5354,
- "uuid": "4fdc6099848a10718d4690cae535f0b2",
- "jsonDefinition": "{\"name\": \"config.backgroundJob.delete\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"id\", \"required\": true, \"fieldCode\": \"id\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"uuid\"}], \"outputs\": [{\"id\": 11265, \"code\": \"jobIsDeleted\", \"type\": \"BOOLEAN\", \"fieldCode\": \"jobIsDeleted\", \"outputCode\": \"jobIsDeleted\", \"properties\": [], \"displayName\": \"jobIsDeleted\", \"automationId\": 65640, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1435, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"outputs\": [{\"code\": \"isDelete\", \"displayName\": \"isDelete\", \"automationId\": 65572, \"automationAPIOutputId\": 90, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"DELETE FROM  background_jobs  WHERE id='#{id}';\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 206, \"automationUserInputUuid\": \"5bed11b1-071d-4afd-bd2b-cf10fa6d8734\"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 205, \"automationUserInputUuid\": \"c3f9b402-51df-415e-aa63-574bec25d1ad\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"description\": \"Delete the background_jobs based on id which is uuid\", \"automationId\": 65572, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"outputs\": [{\"code\": \"checkRecordDeleted\", \"displayName\": \"checkRecordDeleted\", \"automationId\": 65573, \"automationAPIOutputId\": 1863, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"{ \\\"operator\\\": \\\">\\\", \\\"operands\\\"\\n: [ \\n     { \\\"contextHandler\\\": \\\"isDelete\\\" }, \\n     { \\\"contextHandler\\\": \\\"temp\\\" } \\n] } \", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 4004, \"automationUserInputUuid\": \"4fbda65037c198c0dc539599fbde863c    \"}, {\"value\": \"{ \\\"isDelete\\\": #{isDelete}, \\\"temp\\\": 0 }\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 4005, \"automationUserInputUuid\": \"4217c08e404d18db64a99e95fcf010e0    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 2, \"description\": \"checking whether record is deleted&nbsp;&nbsp; or not&nbsp;\", \"automationId\": 65573, \"forceExitStatusCode\": 500, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"outputs\": [{\"code\": \"jobIsDeleted\", \"displayName\": \"jobIsDeleted\", \"automationId\": 65640, \"automationAPIOutputId\": 1435, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{checkRecordDeleted}\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3493, \"automationUserInputUuid\": \"46fd5bb6490857425b8daaee27bc5eb9    \"}, {\"value\": \"\\\"Yes\\\"\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3494, \"automationUserInputUuid\": \"4f205446aea7e834c4f5a23371c9e383    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3492, \"automationUserInputUuid\": \"4188dc545d9c8c1912f681ab0365921a    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 3, \"description\": \"get true/false response by using Compare JSON helper method&nbsp;\", \"automationId\": 65640, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"delete backgorundJob based on id where id is uuid\"}",
- "version": 10,
- "name": "config.backgroundJob.delete",
- "aliasName": "config.backgroundJob.delete",
- "category": {
-  "id": 24,
-  "name": "Schools-Configure"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "updatedOn": 1700715174495,
- "createdOn": 1700645219445
+  "id": 5354,
+  "uuid": "4fdc6099848a10718d4690cae535f0b2",
+  "jsonDefinition": "{\"name\": \"config.backgroundJob.delete\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"id\", \"required\": true, \"fieldCode\": \"id\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"uuid\"}], \"outputs\": [{\"id\": 11265, \"code\": \"jobIsDeleted\", \"type\": \"BOOLEAN\", \"fieldCode\": \"jobIsDeleted\", \"outputCode\": \"jobIsDeleted\", \"properties\": [], \"displayName\": \"jobIsDeleted\", \"automationId\": 65640, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1435, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"outputs\": [{\"code\": \"isDelete\", \"displayName\": \"isDelete\", \"automationId\": 65572, \"automationAPIOutputId\": 90, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"DELETE FROM  background_jobs  WHERE id='#{id}';\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 206, \"automationUserInputUuid\": \"5bed11b1-071d-4afd-bd2b-cf10fa6d8734\"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 205, \"automationUserInputUuid\": \"c3f9b402-51df-415e-aa63-574bec25d1ad\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"description\": \"Delete the background_jobs based on id which is uuid\", \"automationId\": 65572, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"outputs\": [{\"code\": \"checkRecordDeleted\", \"displayName\": \"checkRecordDeleted\", \"automationId\": 65573, \"automationAPIOutputId\": 1863, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"{ \\\"operator\\\": \\\">\\\", \\\"operands\\\"\\n: [ \\n     { \\\"contextHandler\\\": \\\"isDelete\\\" }, \\n     { \\\"contextHandler\\\": \\\"temp\\\" } \\n] } \", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 4004, \"automationUserInputUuid\": \"4fbda65037c198c0dc539599fbde863c    \"}, {\"value\": \"{ \\\"isDelete\\\": #{isDelete}, \\\"temp\\\": 0 }\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 4005, \"automationUserInputUuid\": \"4217c08e404d18db64a99e95fcf010e0    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 2, \"description\": \"checking whether record is deleted&nbsp;&nbsp; or not&nbsp;\", \"automationId\": 65573, \"forceExitStatusCode\": 500, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"outputs\": [{\"code\": \"jobIsDeleted\", \"displayName\": \"jobIsDeleted\", \"automationId\": 65640, \"automationAPIOutputId\": 1435, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{checkRecordDeleted}\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3493, \"automationUserInputUuid\": \"46fd5bb6490857425b8daaee27bc5eb9    \"}, {\"value\": \"\\\"Yes\\\"\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3494, \"automationUserInputUuid\": \"4f205446aea7e834c4f5a23371c9e383    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3492, \"automationUserInputUuid\": \"4188dc545d9c8c1912f681ab0365921a    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 3, \"description\": \"get true/false response by using Compare JSON helper method&nbsp;\", \"automationId\": 65640, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"delete backgorundJob based on id where id is uuid\"}",
+  "version": 10,
+  "name": "config.backgroundJob.delete",
+  "aliasName": "config.backgroundJob.delete",
+  "category": {
+    "id": 24,
+    "name": "Schools-Configure",
+    "aliasName": [
+      "Schools - Configure BCPS"
+    ],
+    "originalLabel": "Schools-Configure",
+    "description": "Configuration for Expertly SEMS",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 1193,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4700658b809a62a86d4ab58da1ccbda6",
+    "automationSystemUuid": "4a46ddcb28f94b1e853cbe23321a1fa9    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 87115,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Admin",
+          "lastName": "SEMS",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Admin SEMS",
+          "title": "Admin SEMS"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1700645219445,
+  "updatedBy": 2,
+  "updatedOn": 1700715174495,
+  "state": "DRAFT",
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "43019bb03e5aefabc5288f4fa715a8b7",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

@@ -1,0 +1,430 @@
+{
+  "uuid": "44297f3eeadecd794d33bfa2b4cd2222",
+  "automationApiId": "44480d01a3f50890a1afb65c287d4f9b    ",
+  "name": "TestRedisCanReplaceLock",
+  "summary": "Prototype: Cache.Redis canReplace lock semantics",
+  "description": "Prototype to confirm Cache.Redis set's canReplace=false semantics for lock-acquisition: writes a key, then attempts a second write with canReplace=false, and reads back the final value to confirm which write actually won.",
+  "metadata": {
+    "version": {
+      "uuid": "44297f3eeadecd794d33bfa2b4cd2222",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1788418086274,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": 1788418086274,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4375a26c53277428d5a68f412854154e    ",
+      "key": "lockKey",
+      "name": "lockKey",
+      "type": "TEXT",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4fe67bcf1d9dfc791f409c655a3c98bc    ",
+      "referenceUuid": "456d6de2b5d5d5b08489857bb855433c    ",
+      "key": "setResult1",
+      "fieldCode": "setResult1",
+      "name": "setResult1",
+      "type": "TEXT"
+    },
+    {
+      "uuid": "4198a104a3529e6dc3dcb2b5e066a1b2    ",
+      "referenceUuid": "456d6de2b5d5d5b08489857bb855433c    ",
+      "key": "setResult2",
+      "fieldCode": "setResult2",
+      "name": "setResult2",
+      "type": "TEXT"
+    },
+    {
+      "uuid": "47c8440c2e0f0b38316c992c5329ddf3    ",
+      "referenceUuid": "4fa35e25432113623e3ca14547bbb670    ",
+      "key": "getResult",
+      "fieldCode": "getResult",
+      "name": "getResult",
+      "type": "TEXT"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "4357e149550921e09b788dc3c2d4d891    ",
+      "automationAPIId": "4954080a4640be01364a9b597ce2b82d    ",
+      "serviceName": "Cache.Redis",
+      "methodName": "set",
+      "coreMethod": false,
+      "description": "Step 1: SET lockKey to 'first-writer' with canReplace=true (unconditional first write)",
+      "inputs": [
+        {
+          "uuid": "40649f9e1399765c445a80f80d035790    ",
+          "value": "",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "424d8568c9656fce2e3d9fc3a749ada3    ",
+              "value": "#{lockKey}",
+              "key": "key",
+              "name": "key",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "406f19c2f27d39418492b3904b5fdd21    ",
+              "value": "first-writer",
+              "key": "value",
+              "name": "value",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4508d74e3e21ddeb1afd82223cccdf7d    ",
+              "value": "PERSISTENT",
+              "key": "scope",
+              "name": "scope",
+              "type": "ENUM",
+              "displayWidgetSuggestion": "DROPDOWN",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4829e37db0bf73e02129bb3106a51143    ",
+              "value": "60",
+              "key": "expirationSeconds",
+              "name": "expirationSeconds",
+              "type": "INTEGER",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4e4504fbac0ee32f4e759cd6e0eb6e0d    ",
+              "value": "true",
+              "key": "canReplace",
+              "name": "canReplace",
+              "type": "BOOLEAN",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4cc5bd2ea385b977016d9101a9c7864d    ",
+              "value": "false",
+              "key": "thisUserSessionOnly",
+              "name": "thisUserSessionOnly",
+              "type": "BOOLEAN",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "456d6de2b5d5d5b08489857bb855433c    ",
+          "key": "response",
+          "fieldCode": "setResult1",
+          "name": "setResult1"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "43cbdff756704ba1f524b965d9fe2c57    ",
+      "automationAPIId": "4954080a4640be01364a9b597ce2b82d    ",
+      "serviceName": "Cache.Redis",
+      "methodName": "set",
+      "coreMethod": false,
+      "description": "Step 2: attempt SET lockKey to 'second-writer' with canReplace=false, while the key already exists from step 1 — this is the lock-acquisition semantics under test",
+      "inputs": [
+        {
+          "uuid": "40649f9e1399765c445a80f80d035790    ",
+          "value": "",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "424d8568c9656fce2e3d9fc3a749ada3    ",
+              "value": "#{lockKey}",
+              "key": "key",
+              "name": "key",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "406f19c2f27d39418492b3904b5fdd21    ",
+              "value": "second-writer",
+              "key": "value",
+              "name": "value",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4508d74e3e21ddeb1afd82223cccdf7d    ",
+              "value": "PERSISTENT",
+              "key": "scope",
+              "name": "scope",
+              "type": "ENUM",
+              "displayWidgetSuggestion": "DROPDOWN",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4829e37db0bf73e02129bb3106a51143    ",
+              "value": "60",
+              "key": "expirationSeconds",
+              "name": "expirationSeconds",
+              "type": "INTEGER",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4e4504fbac0ee32f4e759cd6e0eb6e0d    ",
+              "value": "false",
+              "key": "canReplace",
+              "name": "canReplace",
+              "type": "BOOLEAN",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4cc5bd2ea385b977016d9101a9c7864d    ",
+              "value": "false",
+              "key": "thisUserSessionOnly",
+              "name": "thisUserSessionOnly",
+              "type": "BOOLEAN",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "456d6de2b5d5d5b08489857bb855433c    ",
+          "key": "response",
+          "fieldCode": "setResult2",
+          "name": "setResult2"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4962d07f30c1e57e5969b3544ef6b59d    ",
+      "automationAPIId": "48cee4eb419d451c5397a5225c88c11c    ",
+      "serviceName": "Cache.Redis",
+      "methodName": "get",
+      "coreMethod": false,
+      "description": "Step 3: GET lockKey to confirm which write actually won",
+      "inputs": [
+        {
+          "uuid": "43ce8273355756255c4799566bdf0e84    ",
+          "value": "",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4c0771ba0602cf69799f93e95669190b    ",
+              "value": "#{lockKey}",
+              "key": "key",
+              "name": "key",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4891742227542200762b819a36ed9118    ",
+              "value": "PERSISTENT",
+              "key": "scope",
+              "name": "scope",
+              "type": "ENUM",
+              "displayWidgetSuggestion": "DROPDOWN",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4fa35e25432113623e3ca14547bbb670    ",
+          "key": "response",
+          "fieldCode": "getResult",
+          "name": "getResult"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

@@ -1,0 +1,880 @@
+{
+  "uuid": "486041dfd02d9fd45a27b608ad2dce0c",
+  "automationApiId": "4b044776779c6ade67658c1efbe66169    ",
+  "name": "Copy.configurations.features.download.internal.1",
+  "summary": "",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "486041dfd02d9fd45a27b608ad2dce0c",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 24,
+      "uuid": "4700658b809a62a86d4ab58da1ccbda6",
+      "name": "Schools-Configure",
+      "description": "Configuration for Expertly SEMS",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1771329384120,
+      "lastPublishedAt": 1771329384097,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "487f1eb98c9ea1402f15b0bf0a080779    ",
+      "key": "featureConfig",
+      "name": "featureConfig",
+      "description": "Is a JSON element containing type, code, display_name, id, display_key, details fetched from feature_config table",
+      "type": "JSON",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "42736d9b3edc3de87e1a8cc71db67581    ",
+      "key": "moduleConfigsJson",
+      "name": "moduleConfigsJson",
+      "type": "JSON",
+      "required": true,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": "{}"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "41e8205e674683912b42b760d962eab9    ",
+      "referenceUuid": "45677c45b45559fb0466baa716ab9eb9    ",
+      "key": "moduleConfigsJson1",
+      "fieldCode": "moduleConfigsJson1",
+      "name": "moduleConfigsUpdated",
+      "type": "JSON"
+    }
+  ],
+  "variables": [
+    {
+      "key": "typeConfig",
+      "name": "typeConfig",
+      "description": "Configs json being collected to be provided to the user in output",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": "{}"
+    },
+    {
+      "key": "varServiceId",
+      "name": "varServiceId",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "key": "childList",
+      "name": "childList",
+      "type": "ARRAY",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE",
+      "defaultValue": "[]"
+    },
+    {
+      "key": "childJson",
+      "name": "childJson",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "steps": [
+    {
+      "id": "4e3de2b991d16d9632b5957c0046ad1e    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{moduleConfigsJson}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "#{featureConfig.type}",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "typeConfig1",
+          "name": "typeConfig1",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "typeConfig"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{moduleConfigsJson}.contains(\"#{featureConfig.type}\")",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4115f7c9ca7fe2503e7db07a86d7299a    ",
+      "automationAPIId": "424ffd4c9e0f55befc238dd999dab2d6    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "echo",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4bd0e87488b2cf0ff019850ab3ae069c    ",
+          "value": "{\n\"displayName\": #{featureConfig.display_name}, \n\"displayKey\": #{featureConfig.display_key}, \n\"details\": #{featureConfig.details}\n}",
+          "key": "Input",
+          "name": "Input",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "454b0e868e7fdf20249caae851c08208    ",
+          "key": "response",
+          "fieldCode": "childJson1",
+          "name": "childJson1",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "childJson"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4a053f8959e387780889b65a451d27be    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "description": "Fetch configurations of the global service",
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "U0VMRUNUIGxldmVsLCBsZXZlbF92YWx1ZSBBUyAibGV2ZWxWYWx1ZSIsIG92ZXJyaWRkZW4sIChDQVNFIFdIRU4gb3ZlcnJpZGRlbiBUSEVOIGRpc3BsYXlfbmFtZSBFTFNFIE5VTEwgRU5EKSBBUyAiZGlzcGxheU5hbWUiLCAoQ0FTRSBXSEVOIG92ZXJyaWRkZW4gVEhFTiBkaXNwbGF5X2tleSBFTFNFIE5VTEwgRU5EKSBBUyAiZGlzcGxheUtleSIsIChDQVNFIFdIRU4gb3ZlcnJpZGRlbiBUSEVOIGRldGFpbHMgRUxTRSBOVUxMIEVORCkgQVMgZGV0YWlscyBGUk9NIGZlYXR1cmVfc3RhdHVzIFdIRVJFIE5PVCBkZWxldGVkIEFORCBlbmFibGVkIEFORCBmZWF0dXJlX2NvbmZpZ19pZD0nI3tmZWF0dXJlQ29uZmlnLmlkfSc=",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "BASE_64"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "enabledFeatures",
+          "name": "enabledFeatures"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "40cb5b26cce04ef9fbc38a1321cdd661    ",
+      "automationAPIId": "424ffd4c9e0f55befc238dd999dab2d6    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "echo",
+      "coreMethod": false,
+      "description": "TEST STEP",
+      "inputs": [
+        {
+          "uuid": "4bd0e87488b2cf0ff019850ab3ae069c    ",
+          "value": "{\n\"level\": \"#{enabledFeatures.element.level}\", \n\"levelValue\": \"#{enabledFeatures.element.levelValue}\"\n}",
+          "key": "Input",
+          "name": "Input",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "454b0e868e7fdf20249caae851c08208    ",
+          "key": "response",
+          "fieldCode": "childList01",
+          "name": "childList01"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "repeatStepExecution": {
+          "type": "LOOP_EXECUTION_ON_INPUT_OUTPUT",
+          "counter": null,
+          "executeParallel": false,
+          "numberOfConcurrentThread": null,
+          "value": "#{enabledFeatures}"
+        },
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": "#{enabledFeatures[2].overridden} == 'f' OR #{enabledFeatures.element.overridden} == 'f'",
+            "expandedExpressions": []
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4179992437986be93798b3614cc4a16d    ",
+      "automationAPIId": "424ffd4c9e0f55befc238dd999dab2d6    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "echo",
+      "coreMethod": false,
+      "description": "",
+      "inputs": [
+        {
+          "uuid": "4bd0e87488b2cf0ff019850ab3ae069c    ",
+          "value": " {\n\"overridden\": true, \n\"level\": \"#{enabledFeatures.element.level}\", \n\"levelValue\": \"#{enabledFeatures.element.levelValue}\", \n\"displayName\": \"#{enabledFeatures.element.displayName}\", \n\"displayKey\": \"#{enabledFeatures.element.displayKey}\", \n\"details\": #{enabledFeatures.element.details}\n}",
+          "key": "Input",
+          "name": "Input",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "454b0e868e7fdf20249caae851c08208    ",
+          "key": "response",
+          "fieldCode": "childList02",
+          "name": "childList02"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "repeatStepExecution": {
+          "type": "LOOP_EXECUTION_ON_INPUT_OUTPUT",
+          "counter": null,
+          "executeParallel": false,
+          "numberOfConcurrentThread": null,
+          "value": "#{enabledFeatures}"
+        },
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{enabledFeatures[1].overridden} == 't' OR #{enabledFeatures.element.overridden} == 't'",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4a758010d96e466180d7aa50eda607af    ",
+      "automationAPIId": "466c575371f913f0a79b8baf997fd1c1    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "list.merge",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4a88bffef401749c95a2a510f1adc2fa    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4403665493f66887de70ac7ebff825fb    ",
+              "key": "json",
+              "name": "inputList",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "outputRef": {
+                "referenceStepIndex": 3,
+                "fieldCode": "childList01",
+                "label": "childList01",
+                "uuid": "4737095ca53f32b42bc9a43e5969d406",
+                "apiOutputUuid": "454b0e868e7fdf20249caae851c08208    ",
+                "automationId": null
+              },
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "43fb8e3e2984d7417a5e8b247f877cf7    ",
+              "key": "listToMerge",
+              "name": "listToMerge",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "outputRef": {
+                "referenceStepIndex": 3,
+                "fieldCode": "childList01",
+                "label": "childList01",
+                "uuid": "4737095ca53f32b42bc9a43e5969d406",
+                "apiOutputUuid": "454b0e868e7fdf20249caae851c08208    ",
+                "automationId": null
+              },
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4200835d07dac3b4ad449c0b31a72750    ",
+          "key": "response",
+          "fieldCode": "childListMerged",
+          "name": "childListMerged",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "childList"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "44e1b207f5043473d54db6e27e197e02    ",
+      "automationAPIId": "468b8725600b661fb0088582684e8dd8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "setOrUpdateElement",
+      "coreMethod": false,
+      "description": "",
+      "inputs": [
+        {
+          "uuid": "454ec1382570fe66d6cdb79655b1f12c    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4015bc2afd384da3ac33a00d144c764c    ",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "outputRef": {
+                "referenceStepIndex": 1,
+                "fieldCode": "childJson1",
+                "label": "childJson1",
+                "uuid": "4ad63b90d3ac9151fa9dba0cd7051f78",
+                "apiOutputUuid": "454b0e868e7fdf20249caae851c08208    ",
+                "automationId": null
+              },
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4a6a608e85164b2aad069617e650362e    ",
+              "value": "$",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4e770cbbd4c306b77e5880aa60f88775    ",
+              "value": "enabledLevels",
+              "key": "name",
+              "name": "fieldName",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4676b862adfc06d8b6b5a6407a0ec80d    ",
+              "value": "#{childList}",
+              "key": "value",
+              "name": "valueToInsert",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "45677c45b45559fb0466baa716ab9eb9    ",
+          "key": "response",
+          "fieldCode": "childJson2",
+          "name": "childJson2",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "childJson"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4f1da4d4beb6aaabb298b5adb63c6cdf    ",
+      "automationAPIId": "468b8725600b661fb0088582684e8dd8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "setOrUpdateElement",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "454ec1382570fe66d6cdb79655b1f12c    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4015bc2afd384da3ac33a00d144c764c    ",
+              "value": "#{typeConfig}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4a6a608e85164b2aad069617e650362e    ",
+              "value": "$",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4e770cbbd4c306b77e5880aa60f88775    ",
+              "value": "#{featureConfig.code}",
+              "key": "name",
+              "name": "fieldName",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4676b862adfc06d8b6b5a6407a0ec80d    ",
+              "value": "#{childJson}",
+              "key": "value",
+              "name": "valueToInsert",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "45677c45b45559fb0466baa716ab9eb9    ",
+          "key": "response",
+          "fieldCode": "typeConfig01",
+          "name": "typeConfig01"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "46a79643b14033a60dd8b69d51ad9055",
+    "createdBy": 2,
+    "createdOn": 1771329384454,
+    "updatedBy": 2,
+    "updatedOn": 1771333431992,
+    "chainId": "486041dfd02d9fd45a27b608ad2dce0c",
+    "testCases": [
+      {
+        "id": "44e1b9e0ff836b012d9cbd2ac118a12d",
+        "createdBy": 2,
+        "createdOn": 1771329384456,
+        "updatedBy": 2,
+        "updatedOn": 1771333431991,
+        "name": "feature_download_prog_type",
+        "testSuiteId": "46a79643b14033a60dd8b69d51ad9055",
+        "inputs": [
+          {
+            "id": "41ff7d04ad15889959429cf96e36a99a",
+            "createdOn": 1771329384458,
+            "testCaseId": "44e1b9e0ff836b012d9cbd2ac118a12d",
+            "fieldCode": "featureConfig",
+            "value": "{\"value\": \"{\\\"type\\\":\\\"UPLOADED_DOCUMENT\\\",\\\"code\\\":\\\"APPLICATION.NON_ATTENDING.FORM\\\",\\\"display_name\\\":\\\"APPLICATION NON_ATTENDING FORM\\\",\\\"id\\\":\\\"47bba937-ea4d-47c7-8585-19a118e2470c\\\",\\\"display_key\\\":null,\\\"details\\\":{\\\"docName\\\":\\\"NonAttendingApplicationForm\\\",\\\"templates\\\":{\\\"EN\\\":{\\\"name\\\":\\\"NonAttendingApplicationForm.pdf\\\",\\\"path\\\":\\\"E_SCHOOL/2023-24/ADMIN/RESOURCES/APPLICATIONFORM\\\",\\\"downloadFileName\\\":\\\"NonAttendingApplicationForm.pdf\\\"}}}}\"}"
+          },
+          {
+            "id": "46d338986e7e0701ff3daef4660fce13",
+            "createdOn": 1771329384462,
+            "testCaseId": "44e1b9e0ff836b012d9cbd2ac118a12d",
+            "fieldCode": "moduleConfigsJson",
+            "value": "{\"value\": \"{}\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "41aadf6f61271d87a94db9fe329ca264",
+        "createdBy": 2,
+        "createdOn": 1771329384466,
+        "updatedBy": 2,
+        "updatedOn": 1771333431992,
+        "name": "feature_download_upload_doc",
+        "testSuiteId": "46a79643b14033a60dd8b69d51ad9055",
+        "inputs": [
+          {
+            "id": "43b656d63ad4ff6f1ba3aa2fbde455b1",
+            "createdOn": 1771329384467,
+            "testCaseId": "41aadf6f61271d87a94db9fe329ca264",
+            "fieldCode": "featureConfig",
+            "value": "{\"value\": \"{\\\"type\\\":\\\"UPLOADED_DOCUMENT\\\",\\\"code\\\":\\\"APPLICATION.NON_ATTENDING.FORM\\\",\\\"display_name\\\":\\\"APPLICATION NON_ATTENDING FORM\\\",\\\"id\\\":\\\"47bba937-ea4d-47c7-8585-19a118e2470c\\\",\\\"display_key\\\":null,\\\"details\\\":{\\\"docName\\\":\\\"NonAttendingApplicationForm\\\",\\\"templates\\\":{\\\"EN\\\":{\\\"name\\\":\\\"NonAttendingApplicationForm.pdf\\\",\\\"path\\\":\\\"E_SCHOOL/2023-24/ADMIN/RESOURCES/APPLICATIONFORM\\\",\\\"downloadFileName\\\":\\\"NonAttendingApplicationForm.pdf\\\"}}}}\"}"
+          },
+          {
+            "id": "4522face146522454e91a830fbe16afa",
+            "createdOn": 1771329384472,
+            "testCaseId": "41aadf6f61271d87a94db9fe329ca264",
+            "fieldCode": "moduleConfigsJson",
+            "value": "{\"value\": \"{}\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": true,
+  "deprecatedAt": 1771333431751,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

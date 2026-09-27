@@ -1,18 +1,262 @@
 {
- "id": 570,
- "uuid": "4d24225072bd43dd0c8a9ba39c2cbeff",
- "jsonDefinition": "{\"name\": \"enrollment.group.update\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"group_id\", \"required\": false, \"fieldCode\": \"group_id\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"groupId to be updated\"}, {\"type\": \"STRING\", \"label\": \"group_code\", \"required\": false, \"fieldCode\": \"group_code\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new value of code\"}, {\"type\": \"STRING\", \"label\": \"group_name\", \"required\": false, \"fieldCode\": \"group_name\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new value for the group_name\"}, {\"type\": \"STRING\", \"label\": \"details\", \"required\": false, \"fieldCode\": \"details\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new details\"}], \"outputs\": [], \"services\": [{\"outputs\": [{\"code\": \"cnt\", \"displayName\": \"cnt\", \"automationId\": 631, \"automationAPIOutputId\": 87, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"UPDATE enrollment_group SET name = '#{group_name}', details= ''#{details}, group_code = \\nCASE\\nWHEN group_code IS NOT 'null' THEN '#{group_code}' \\nEND\\nWHERE id = '#{group_id}'\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 174, \"automationUserInputUuid\": \"aef549b2-fe20-4859-a697-11175062fd8e\"}, {\"mappings\": [{\"mappings\": [], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 176, \"automationUserInputUuid\": \"44970856-c45e-40ca-9b09-b4ffafb252b1\"}], \"uiRepresentation\": \"ARRAY\", \"automationUserInputId\": 175, \"automationUserInputUuid\": \"a73672e3-210f-47e7-9360-e20755d48727\"}, {\"mappings\": [{\"mappings\": [], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 180, \"automationUserInputUuid\": \"e436af7f-450b-42ec-8d59-0df6b42abfb4\"}], \"uiRepresentation\": \"ARRAY\", \"automationUserInputId\": 179, \"automationUserInputUuid\": \"1c3fa385-7a69-42c8-9690-5de3785004d0\"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 173, \"automationUserInputUuid\": \"910cb0f4-1d44-4040-a708-0e35f747b82e\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"condition\": [{\"item\": {\"type\": {\"id\": \"STRING\", \"name\": \"String\", \"type\": \"STRING\"}, \"category\": \"Input\", \"fieldCode\": \"group_id\", \"nestedLabel\": \"group_id\"}, \"value\": \"50\", \"operator\": {\"name\": \"Has the value\", \"type\": [\"Timestamp\", \"Boolean\", \"Date\", \"Default\"], \"value\": \"eq\"}, \"ignoreCase\": false}], \"orderIndex\": 1, \"fatFileType\": null, \"automationId\": 631, \"conditionMode\": \"basic\", \"conditionExpression\": \"#{group_id} eq '50'\", \"loopExecutionSource\": null, \"automationUiSelector\": {}}], \"buttonLabel\": \"\", \"methodDescription\": \"User can update the details of an enrollment group by passing group id as an input\\n\\nRecommended to be used by an Administrator\"}",
- "version": 9,
- "name": "enrollment.group.update",
- "aliasName": "enrollment.group.update",
- "category": {
-  "id": 15,
-  "name": "Schools"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "updatedOn": 1667366056086,
- "createdOn": 1662032301108
+  "id": 570,
+  "uuid": "4d24225072bd43dd0c8a9ba39c2cbeff",
+  "jsonDefinition": "{\"name\": \"enrollment.group.update\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"group_id\", \"required\": false, \"fieldCode\": \"group_id\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"groupId to be updated\"}, {\"type\": \"STRING\", \"label\": \"group_code\", \"required\": false, \"fieldCode\": \"group_code\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new value of code\"}, {\"type\": \"STRING\", \"label\": \"group_name\", \"required\": false, \"fieldCode\": \"group_name\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new value for the group_name\"}, {\"type\": \"STRING\", \"label\": \"details\", \"required\": false, \"fieldCode\": \"details\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"description\": \"new details\"}], \"outputs\": [], \"services\": [{\"outputs\": [{\"code\": \"cnt\", \"displayName\": \"cnt\", \"automationId\": 631, \"automationAPIOutputId\": 87, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"UPDATE enrollment_group SET name = '#{group_name}', details= ''#{details}, group_code = \\nCASE\\nWHEN group_code IS NOT 'null' THEN '#{group_code}' \\nEND\\nWHERE id = '#{group_id}'\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 174, \"automationUserInputUuid\": \"aef549b2-fe20-4859-a697-11175062fd8e\"}, {\"mappings\": [{\"mappings\": [], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 176, \"automationUserInputUuid\": \"44970856-c45e-40ca-9b09-b4ffafb252b1\"}], \"uiRepresentation\": \"ARRAY\", \"automationUserInputId\": 175, \"automationUserInputUuid\": \"a73672e3-210f-47e7-9360-e20755d48727\"}, {\"mappings\": [{\"mappings\": [], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 180, \"automationUserInputUuid\": \"e436af7f-450b-42ec-8d59-0df6b42abfb4\"}], \"uiRepresentation\": \"ARRAY\", \"automationUserInputId\": 179, \"automationUserInputUuid\": \"1c3fa385-7a69-42c8-9690-5de3785004d0\"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 173, \"automationUserInputUuid\": \"910cb0f4-1d44-4040-a708-0e35f747b82e\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"condition\": [{\"item\": {\"type\": {\"id\": \"STRING\", \"name\": \"String\", \"type\": \"STRING\"}, \"category\": \"Input\", \"fieldCode\": \"group_id\", \"nestedLabel\": \"group_id\"}, \"value\": \"50\", \"operator\": {\"name\": \"Has the value\", \"type\": [\"Timestamp\", \"Boolean\", \"Date\", \"Default\"], \"value\": \"eq\"}, \"ignoreCase\": false}], \"orderIndex\": 1, \"fatFileType\": null, \"automationId\": 631, \"conditionMode\": \"basic\", \"conditionExpression\": \"#{group_id} eq '50'\", \"loopExecutionSource\": null, \"automationUiSelector\": {}}], \"buttonLabel\": \"\", \"methodDescription\": \"User can update the details of an enrollment group by passing group id as an input\\n\\nRecommended to be used by an Administrator\"}",
+  "version": 9,
+  "name": "enrollment.group.update",
+  "aliasName": "enrollment.group.update",
+  "category": {
+    "id": 15,
+    "name": "Schools",
+    "aliasName": [
+      "Schools"
+    ],
+    "originalLabel": "Schools",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 2018,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+    "automationSystemUuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 65913,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Admin",
+          "lastName": "SEMS",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Admin SEMS",
+          "title": "Admin SEMS"
+        }
+      ]
+    },
+    {
+      "id": 65914,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_USERS_TO_EDIT",
+      "groups": [],
+      "users": [
+        {
+          "id": 229,
+          "email": "user@example.com",
+          "firstName": "krunal",
+          "lastName": "test",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "krunal test",
+          "title": "krunal test"
+        },
+        {
+          "id": 12,
+          "email": "user@example.com",
+          "firstName": "Narender",
+          "lastName": "Mann",
+          "ssoUser": false,
+          "boss": {
+            "id": 5,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Narender Mann",
+          "title": "Narender Mann"
+        },
+        {
+          "id": 235,
+          "email": "user@example.com",
+          "firstName": "Pankaj",
+          "lastName": "Yadav",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Pankaj Yadav",
+          "title": "Pankaj Yadav"
+        },
+        {
+          "id": 300,
+          "email": "user@example.com",
+          "firstName": "Sandeep",
+          "lastName": "Shukla",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Sandeep Shukla",
+          "title": "Sandeep Shukla"
+        },
+        {
+          "id": 301,
+          "email": "user@example.com",
+          "firstName": "Krunal",
+          "lastName": "Fijiwala",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Krunal Fijiwala",
+          "title": "Krunal Fijiwala"
+        },
+        {
+          "id": 236,
+          "email": "user@example.com",
+          "firstName": "Vandana C",
+          "lastName": "Chaddha",
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Vandana C Chaddha",
+          "title": "Vandana C Chaddha"
+        },
+        {
+          "id": 6,
+          "email": "user@example.com",
+          "firstName": "user@example.com",
+          "lastName": "ekta",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "user@example.com ekta",
+          "title": "user@example.com ekta"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1662032301108,
+  "updatedBy": 2,
+  "updatedOn": 1667366056086,
+  "state": "DRAFT",
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "4c74d8ab5a75d230aaabac2d471bacf1",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

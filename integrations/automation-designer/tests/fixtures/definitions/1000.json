@@ -1,0 +1,206 @@
+{
+  "uuid": "486b4a8a81082f25f518a1c8d5ec2609    ",
+  "id": 1000,
+  "active": true,
+  "createdAt": 1662648175445,
+  "status": "REGISTERED",
+  "updatedAt": 1662992428709,
+  "automationAPI": {
+    "id": 739,
+    "uuid": "4583500a4b34de7e0bcfb3b48075c54e    ",
+    "uri": "find.missing.suffix",
+    "httpMethod": "POST",
+    "label": "find.missing.suffix",
+    "originalLabel": "find.missing.suffix",
+    "active": true,
+    "automationSystem": {
+      "id": 34,
+      "uuid": "4f6401b02dfc91e057ffaaa3f465c639    ",
+      "name": "Schools-Utilities",
+      "originalLabel": "Schools-Utilities",
+      "active": true,
+      "label": "Schools-Utilities",
+      "authOptional": true,
+      "externalIntegration": false,
+      "accessMode": "PUBLIC",
+      "type": "USER_GENERATED",
+      "aliasName": [
+        "Schools - Utilities"
+      ],
+      "permissions": [],
+      "remote": false,
+      "permissionSet": [],
+      "isAuthenticationStructureInherited": false
+    },
+    "automationUserInputs": [
+      {
+        "id": 3758,
+        "uuid": "4b5b50a5ff7a17575fc68878ccde96b1    ",
+        "orderIndex": 0,
+        "label": "codeList",
+        "produces": "codeList",
+        "automationUserInputSources": [
+          {
+            "id": 4377,
+            "uri": "INPUTS_STEP_DATA_ARRAY",
+            "valueParam": "id",
+            "labelParam": "name",
+            "automationSourceInputs": [],
+            "httpMethod": "LOCAL",
+            "data": "\"[{ \\\"name\\\" : \\\"This exactly\\\", \\\"id\\\" : 1,  \\\"moduleProperty\\\" : \\\"\\\" }, { \\\"name\\\" : \\\"Step response\\\", \\\"id\\\" : 2, \\\"moduleProperty\\\" : \\\"answer\\\" }, { \\\"name\\\" : \\\"Response comments\\\",  \\\"id\\\" : 3 ,  \\\"moduleProperty\\\" : \\\"answerdescription\\\" }, { \\\"name\\\" : \\\"Activity title\\\", \\\"id\\\" : 4, \\\"moduleProperty\\\" : \\\"activitytitle\\\" }, { \\\"name\\\" : \\\"Activity description\\\", \\\"id\\\" : 5,  \\\"moduleProperty\\\" : \\\"activitydescription\\\" }, { \\\"name\\\" : \\\"Activity status\\\", \\\"id\\\" : 6, \\\"moduleProperty\\\" : \\\"activitystatus\\\" }, { \\\"name\\\" : \\\"Activity duedate\\\", \\\"id\\\" : 7, \\\"moduleProperty\\\" : \\\"activityduedate\\\"  }]\""
+          }
+        ],
+        "automationUserInputs": [],
+        "optional": true,
+        "showOnUi": true,
+        "showOnSDUi": true,
+        "disableStringReplacement": false,
+        "hideInput": false,
+        "encodedBase64": false,
+        "sensitive": false,
+        "encodingType": "NONE",
+        "sourceInput": false
+      },
+      {
+        "id": 3879,
+        "uuid": "4e40b6da47d08a6c027293072654e987    ",
+        "orderIndex": 1,
+        "label": "initials",
+        "produces": "initials",
+        "automationUserInputSources": [
+          {
+            "id": 4652,
+            "uri": "INPUTS_STEP_DATA_ARRAY",
+            "valueParam": "id",
+            "labelParam": "name",
+            "automationSourceInputs": [],
+            "httpMethod": "LOCAL",
+            "data": "\"[{ \\\"name\\\" : \\\"This exactly\\\", \\\"id\\\" : 1,  \\\"moduleProperty\\\" : \\\"\\\" }, { \\\"name\\\" : \\\"Step response\\\", \\\"id\\\" : 2, \\\"moduleProperty\\\" : \\\"answer\\\" }, { \\\"name\\\" : \\\"Response comments\\\",  \\\"id\\\" : 3 ,  \\\"moduleProperty\\\" : \\\"answerdescription\\\" }, { \\\"name\\\" : \\\"Activity title\\\", \\\"id\\\" : 4, \\\"moduleProperty\\\" : \\\"activitytitle\\\" }, { \\\"name\\\" : \\\"Activity description\\\", \\\"id\\\" : 5,  \\\"moduleProperty\\\" : \\\"activitydescription\\\" }, { \\\"name\\\" : \\\"Activity status\\\", \\\"id\\\" : 6, \\\"moduleProperty\\\" : \\\"activitystatus\\\" }, { \\\"name\\\" : \\\"Activity duedate\\\", \\\"id\\\" : 7, \\\"moduleProperty\\\" : \\\"activityduedate\\\"  }]\""
+          }
+        ],
+        "automationUserInputs": [],
+        "optional": true,
+        "showOnUi": true,
+        "showOnSDUi": true,
+        "disableStringReplacement": false,
+        "hideInput": false,
+        "encodedBase64": false,
+        "sensitive": false,
+        "encodingType": "NONE",
+        "sourceInput": false
+      }
+    ],
+    "automationAPIOutputs": [
+      {
+        "id": 1542,
+        "uuid": "4b4a5ed4506f4543bd3f83730d00fae2    ",
+        "optional": true,
+        "consumes": "getUniqueCode",
+        "displayName": "getUniqueCode",
+        "showOnUi": true,
+        "active": true,
+        "orderIndex": 999,
+        "sensitive": false
+      }
+    ],
+    "serviceChainId": 597,
+    "serviceChainUID": "479e0e81d489604286b5acd902bf1f62",
+    "hideOnUi": false,
+    "referenceId": "461d78324dce03efc982bb8ae1c359d1    ",
+    "state": "PUBLISHED",
+    "lastPublishedAt": 1664280122541,
+    "lastPublishedBy": 2,
+    "methodType": "SYSTEM_GENERATED",
+    "updatedBy": 2,
+    "updatedOn": 1664280122591,
+    "aliasName": "find.missing.suffix",
+    "methodDeprecated": false,
+    "accountRequired": false,
+    "streamCapable": false,
+    "automationState": "PUBLISHED"
+  },
+  "automationUserInputValues": [
+    {
+      "createdAt": 1662992428708,
+      "value": "#{list_of_code}",
+      "produces": "codeList",
+      "createdBy": 2,
+      "automationUserInput": {
+        "id": 3758,
+        "uuid": "4b5b50a5ff7a17575fc68878ccde96b1    ",
+        "orderIndex": 0,
+        "label": "codeList",
+        "produces": "codeList",
+        "optional": true,
+        "showOnUi": true,
+        "showOnSDUi": true,
+        "disableStringReplacement": false,
+        "hideInput": false,
+        "encodedBase64": false,
+        "sensitive": false,
+        "encodingType": "NONE",
+        "sourceInput": false,
+        "dataType": "STRING",
+        "uiRepresentation": "CUSTOM"
+      },
+      "inputValues": [],
+      "inputParams": [],
+      "dataType": "STRING",
+      "optional": false,
+      "file": null,
+      "secured": false,
+      "sensitive": false,
+      "secureField": false,
+      "sourceInput": false,
+      "fileType": false
+    }
+  ],
+  "automationSourceInputValues": [],
+  "automationUserOutputValues": [
+    {
+      "id": 11652,
+      "uuid": "44579a0296afe85f596bb1b29ddc6dc7    ",
+      "automation": null,
+      "apiOutput": {
+        "id": 1542,
+        "uuid": "4b4a5ed4506f4543bd3f83730d00fae2    ",
+        "optional": true,
+        "automationApi": {
+          "id": 739,
+          "active": true,
+          "hideOnUi": false,
+          "methodType": "SYSTEM_GENERATED",
+          "methodDeprecated": false,
+          "accountRequired": false,
+          "streamCapable": false
+        },
+        "consumes": "getUniqueCode",
+        "displayName": "getUniqueCode",
+        "showOnUi": true,
+        "active": true,
+        "sensitive": false,
+        "dataType": "STRING"
+      },
+      "value": null,
+      "moduleId": 13,
+      "moduleExtraData": null,
+      "label": "generated_code",
+      "moduleProperty": null,
+      "rawResponseContainer": true,
+      "moduleType": "CHAINING"
+    }
+  ],
+  "uiSelectorValue": [],
+  "createdBy": 2,
+  "updatedBy": 2,
+  "triggerId": 13,
+  "showError": false,
+  "asyncAutomation": false,
+  "dependentOnStep": 0,
+  "service": "Baltimore Schools - Utilities",
+  "action": "find.missing.suffix",
+  "describableAutomation": false,
+  "massAutomation": false,
+  "moduleTypeNumber": 4,
+  "moduleType": "CHAINING"
+}

@@ -33,6 +33,13 @@ migrations/
 tests/unit/                  # bun test (run from cli/: bun test ../integrations/migrations/tests)
 ```
 
+## Tests and Fixtures
+
+`tests/fixtures/real/` — sanitized Jenkins captures (host rewritten to
+`jenkins.example.com`): job parameters (profiles), build 1904 status, its console
+chunk; `manifest.json`. Refresh (read-only) with `bun scripts/fixtures/capture.ts jenkins`.
+`tests/unit/real-jenkins.test.ts` replays them through the client via `fakeFetch`.
+
 ## Conventions
 
 Imports inside the module use relative paths. From outside (the CLI), import

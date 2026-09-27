@@ -1,0 +1,1955 @@
+{
+  "uuid": "48eb3b028829715b4a438099776465c5",
+  "automationApiId": "4ec461eb13ab5060debd8885fe763e25    ",
+  "name": "Copy of email.send",
+  "description": "This method is a general method to send out emails to users.\n",
+  "metadata": {
+    "version": {
+      "uuid": "48eb3b028829715b4a438099776465c5",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 575,
+      "uuid": "4efdb8255734477b5ef28911f8947483",
+      "name": "Schools-Archives",
+      "description": "backup of old methods",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1702386413881,
+      "lastPublishedAt": 1702386413855,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "4a3534c6879261c8ad95a0e40795ee5e    ",
+      "key": "emailType",
+      "name": "emailType",
+      "description": "enter emailType",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4d791337f051925991158abd06acd25e    ",
+      "key": "recipientPlaceholderData",
+      "name": "recipientPlaceholderData",
+      "description": "recipientPlaceholderData {<sendToEmail>: {Jsondata}}\n individual emails get sent to each email key in recipientPlaceholderData json.\n",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4f68f90fdbb9e76ea8b2b02fb4c47c8f    ",
+      "key": "sendToEmails",
+      "name": "sendToEmails",
+      "description": "enter sendToEmails; The batch email gets sent to emailIds provided in sendToEmails list",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "43a78075ade5af1c2f6f84db9f8b46ab    ",
+      "key": "parameterJson",
+      "name": "parameterJson",
+      "description": "parameterJson( {key: value} ) for the queries",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": "{}"
+    },
+    {
+      "uuid": "460e4200662c72283d80998a760e1744    ",
+      "key": "commonPlaceholderData",
+      "name": "commonPlaceholderData",
+      "description": "commonPlaceholderData json {key:value,..}",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4b01e60edc13ba15820c99deafe2dbc9    ",
+      "key": "sentStatus",
+      "fieldCode": "sentStatus",
+      "name": "status",
+      "type": "BOOLEAN"
+    },
+    {
+      "uuid": "4619c66ff13b3d5116d99ee584842335    ",
+      "key": "perEmailStatus",
+      "fieldCode": "perEmailStatus",
+      "name": "perEmailStatus",
+      "type": "JSON"
+    }
+  ],
+  "variables": [
+    {
+      "key": "sentStatus",
+      "name": "sentStatus",
+      "type": "BOOLEAN",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": false
+    },
+    {
+      "key": "templateDateConfig",
+      "name": "templateDateConfig",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "key": "recipientEmails",
+      "name": "recipientEmails",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": "[]"
+    },
+    {
+      "key": "perEmailStatus",
+      "name": "perEmailStatus",
+      "type": "ARRAY",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE",
+      "defaultValue": "[]"
+    }
+  ],
+  "steps": [
+    {
+      "id": "4d730b3ff7b3af0ed6e89ad4828c06d4    ",
+      "automationAPIId": "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
+      "serviceName": "db_service",
+      "methodName": "data.read",
+      "coreMethod": false,
+      "description": "fetch body, template_data_config from user_correspondence_template",
+      "inputs": [
+        {
+          "uuid": "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "529f4d30-4692-46b3-b1fb-0fea77c68683",
+              "value": "select active, subject, body, template_data_config as \"templateDataConfig\" from user_correspondence_template  where type='EMAIL' and correspondence_type= '#{emailType}';",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "fd4d3307-7178-4df2-bfa1-2a32cb5b3392",
+          "key": "flatData[]",
+          "fieldCode": "templateRecords",
+          "name": "templateRecords"
+        },
+        {
+          "uuid": "5b11494a-c244-47a9-a063-3434f6a00e5g",
+          "key": "rowsImpacted",
+          "fieldCode": "templateRecordsCount",
+          "name": "templateRecordsCount"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4c856fd3eb02f5348d85869c9de89532    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "set status as false if template is not active",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "false",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "sentStatus2",
+          "name": "sentStatus2",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "sentStatus"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": "#{templateRecordsCount}  gt 0 and (#{templateRecords[0].active} eq \"f\" or #{templateRecords[0].active} eq false)",
+            "expandedExpressions": []
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateRecordsCount}  gt 0 and (#{templateRecords[0].active} eq \"f\" or #{templateRecords[0].active} eq false)",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "449a0c0c473c85ceafc180e4748833a1    ",
+      "automationAPIId": "4e91494ae5e9e0a8a48aaa5c759a05dc    ",
+      "serviceName": "Schools",
+      "methodName": "notification.getData",
+      "coreMethod": false,
+      "description": "Call notification.getData method, passing it templateDataConfig, sendToEmails, and set the output into batchRecipients, batchEmailPlaceholders, recipientNotificationData (json)<br id=\"isPasted\">If batchRecipients size=0 and recipientNotificationData size=0 then Return from method, with status as False and perEmailStatus as empty json",
+      "inputs": [
+        {
+          "uuid": "459375c6afbbea5619ee84eb2f80726b    ",
+          "value": "#{templateRecords[0].templateDataConfig}",
+          "key": "templateDataConfig",
+          "name": "templateDataConfig",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4abfc15425c0fb7769938ac9f0836612    ",
+          "value": "#{sendToEmails}",
+          "key": "sendToRecipients",
+          "name": "sendToRecipients",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4130219af39cbd067a349444ef8dcaa8    ",
+          "value": "#{parameterJson}",
+          "key": "parameterJson",
+          "name": "parameterJson",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "46dc8d7ca18b097db58683ea69137b99    ",
+          "key": "commonRecipients",
+          "fieldCode": "batchRecipients",
+          "name": "batchRecipients"
+        },
+        {
+          "uuid": "49c621eaffa14371238ab8c30e2e27b2    ",
+          "key": "recipientNotificationDataFinal",
+          "fieldCode": "recipientNotificationData",
+          "name": "recipientNotificationData"
+        },
+        {
+          "uuid": "4cb7c832f1fc323569bba13c5cb30b11    ",
+          "key": "parameterJsonOutput",
+          "fieldCode": "batchEmailPlaceholders",
+          "name": "batchEmailPlaceholders"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": "(#{batchRecipients} eq null or #{batchRecipients.size()} eq 0) and  (#{recipientNotificationData} eq null or  #{recipientNotificationData} eq 0 )",
+            "expandedExpressions": []
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4759c6692c7cdcff1050a82db25fc900    ",
+      "automationAPIId": "41f6c59cb304d083461d9b4cdebc6754    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "merge",
+      "coreMethod": false,
+      "description": "Merge commonPlaceholderData onto batchEmailPlaceholders, and set into batchEmailPlaceholders (preferring values from commonPlaceholderData for commonKeys)&nbsp;",
+      "inputs": [
+        {
+          "uuid": "42e3af077e7307e234df8f01907201a4    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4b48c95ae8ed77de7704b7812d528da6    ",
+              "value": "#{commonPlaceholderData}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "43fbcd5156782a663491bb4de528f783    ",
+              "value": "#{batchEmailPlaceholders}",
+              "key": "mapToMerge",
+              "name": "JSONToMerge",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "441c9cc86bed5259651f822503b3b120    ",
+          "key": "response",
+          "fieldCode": "batchEmailPlaceholdersFinal",
+          "name": "batchEmailPlaceholdersFinal"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4c7c0f2b2a36986b62f18fe0aca2cf4c    ",
+      "automationAPIId": "492a440d34d8550c14a2bb803c7e351b    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "replacePlaceholdersInText",
+      "coreMethod": false,
+      "description": "If batchRecipients size&gt;0 then Use replacePlaceholdersInText to replace all the placeholders in body, with batchEmailPlaceholders1, and set into batchEmailBody&nbsp;",
+      "inputs": [
+        {
+          "uuid": "444bebe5823e6370adc992d0a566d0b5    ",
+          "value": "#{templateRecords[0].body}",
+          "key": "text",
+          "name": "text",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f607ba1a37b4ff6e77692802cf268ba    ",
+          "value": "#{batchEmailPlaceholdersFinal}",
+          "key": "placeholders",
+          "name": "placeholders",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4832e42217c0dd695c4da2e97ec848ac    ",
+          "key": "finalText",
+          "fieldCode": "batchEmailBody",
+          "name": "batchEmailBody"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateRecordsCount}  gt 0 and #{templateRecords[0].body} ne null and  #{batchRecipients} ne null and #{batchRecipients.size()}  gt 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "466ec3f4e6df985469f1ad8488900784    ",
+      "automationAPIId": "492a440d34d8550c14a2bb803c7e351b    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "replacePlaceholdersInText",
+      "coreMethod": false,
+      "description": "Use replacePlaceholdersInText to replace all the placeholders in , with batchEmailPlaceholders, and set into batchEmailSubject",
+      "inputs": [
+        {
+          "uuid": "444bebe5823e6370adc992d0a566d0b5    ",
+          "value": "#{templateRecords[0].subject}",
+          "key": "text",
+          "name": "text",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f607ba1a37b4ff6e77692802cf268ba    ",
+          "value": "#{batchEmailPlaceholdersFinal}",
+          "key": "placeholders",
+          "name": "placeholders",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4832e42217c0dd695c4da2e97ec848ac    ",
+          "key": "finalText",
+          "fieldCode": "batchEmailSubject",
+          "name": "batchEmailSubject"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateRecordsCount}  gt 0 and #{templateRecords[0].body} ne null and  #{batchRecipients} ne null and #{batchRecipients.size()}  gt 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4b27d51cc82ad79980dca49e68219ff1    ",
+      "automationAPIId": "3b3a1191-f5a8-423a-8482-853c72997def",
+      "serviceName": "exp_smtp",
+      "methodName": "Send Multiple Emails With Dynamic Inputs",
+      "coreMethod": false,
+      "description": "If batchRecipients size&gt;0 then send the batch email using smtp automation, to all emails available in sendToEmails list, separated by commas, and set into bcc list, batchEmailSubject and batchEmailBody. Setting the \"to\" to user@example.com HACK but it is not going to this email. So for testing setting mine on 230809 - currently working for one email only. BCC email not working so updated in To email",
+      "inputs": [
+        {
+          "uuid": "425237dfe89dcbffed58898f18e03d41    ",
+          "value": "#{batchRecipients}",
+          "key": "to",
+          "name": "to",
+          "type": "ARRAY",
+          "displayWidgetSuggestion": "ARRAY",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4e66fc389be0e4715007888a07943f69    ",
+          "value": "",
+          "key": "bcc",
+          "name": "bcc",
+          "type": "ARRAY",
+          "displayWidgetSuggestion": "ARRAY",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "450a97888d0be1984ee394627bfcdd30    ",
+          "value": "#{batchEmailSubject}",
+          "key": "subject",
+          "name": "subject",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4532e805d0be9854f32da899281ab6e8    ",
+          "value": "#{batchEmailBody}",
+          "key": "html",
+          "name": "body",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [],
+      "accountConfiguration": {
+        "id": 4,
+        "name": "QA5Instance"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateRecordsCount}  gt 0 and #{templateRecords[0].body} ne null and  #{batchRecipients} ne null and #{batchRecipients.size()}  gt 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "outputJson",
+          "fieldCode": "outputJson",
+          "name": "outputJson",
+          "type": "JSON",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "perEmailStatus"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateRecordsCount}  gt 0 and #{templateRecords[0].body} ne null and  #{batchRecipients} ne null and #{batchRecipients.size()}  gt 0",
+          "expandedExpressions": []
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "//if control has come here, assume batchemails have gone successfully\n//add all emails from batchRecipients into perEmailStatus json as key and value as True\n\nlet out = {};\nlet rcpt=JSON.parse(`#{batchRecipients}`);\nfor(let i=0; i < rcpt.length; i++){\n  let email = rcpt[i];\n  out[email]=true;\n}\nconsole.log(JSON.stringify(out));",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "43389fdca9e89278c79db14444703492    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "set status as true",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "true",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "sentStatus1",
+          "name": "sentStatus1",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "sentStatus"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{templateRecordsCount}  gt 0 and #{templateRecords[0].body} ne null and (#{batchRecipients.size()}  gt 0 or #{recipientNotificationData.size()} gt 0)",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "recipientNotificationDataArray",
+          "fieldCode": "recipientNotificationDataArray",
+          "name": "recipientNotificationDataArray",
+          "type": "ARRAY"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{recipientNotificationData} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "JSON",
+                  "name": "Json",
+                  "type": "JSON"
+                },
+                "category": "Output 3.3",
+                "fieldCode": "recipientNotificationData",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "//to convert to an array from jsonmap, in order to be able to iterate over it\nlet outlist=[];\nlet pjson = JSON.parse(`#{recipientNotificationData}`);\nfor (const [recipientId, value] of Object.entries(pjson)) {\n//thats why iteration on its key is needed\n  let mapValue = null;\n  let innerVal = JSON.parse(value.json_build_object);\n  Object.keys(innerVal).forEach(function(vkey){\n  // Object.keys(value).forEach(function(vkey){\n  //   mapValue = value[vkey];\n      mapValue = innerVal[vkey];\n  });\n   let newobj = {\n      \"key\":recipientId,\n      //\"data\":JSON.parse(mapValue)[recipientId]\n      \"data\":mapValue\n  }\n   outlist.push(newobj);\n}\nconsole.log(JSON.stringify(outlist));",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "46a36fec8de47ad1158e83bd1a1da3ea    ",
+      "automationAPIId": "4eac1e5559ea42efa6cc82892accd3b4    ",
+      "serviceName": "Schools",
+      "methodName": "email.send.internal",
+      "coreMethod": false,
+      "description": "If recipientNotificationData (Structure: {&lt;recipientEmail&gt; : &lt;recipientPlaceholders&gt;, …}) size&gt;0 then for each key (recipientEmail), call email.send.internal",
+      "inputs": [
+        {
+          "uuid": "4a2e326613b08f8ad831b391a573d4bd    ",
+          "value": "#{recipientNotificationDataArray.element.key}",
+          "key": "sendToEmail",
+          "name": "sendToEmail",
+          "type": "TEXT",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4bd56e552452354d3e5bbd48ddb49087    ",
+          "value": "#{recipientNotificationDataArray.element.data}",
+          "key": "recipientPlaceholders",
+          "name": "recipientPlaceholders",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4451139f407203099444b9122003af0c    ",
+          "value": "#{recipientPlaceholderData}",
+          "key": "recipientPlaceholdersData",
+          "name": "recipientPlaceholdersData",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4752bbe75e68c0ed38d8b529e4dbaab7    ",
+          "value": "#{batchEmailPlaceholdersFinal}",
+          "key": "batchEmailPlaceholders",
+          "name": "batchEmailPlaceholders",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4ac2e613a293c004f973bb6d643a1674    ",
+          "key": "perEmailStatus",
+          "fieldCode": "perEmailStatusFinal",
+          "name": "perEmailStatusFinal"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "repeatStepExecution": {
+          "type": "LOOP_EXECUTION_ON_INPUT_OUTPUT",
+          "counter": null,
+          "executeParallel": false,
+          "numberOfConcurrentThread": null,
+          "value": "#{recipientNotificationDataArray}"
+        },
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": " #{recipientNotificationDataArray} ne null  and   #{recipientNotificationDataArray.size()} gt 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4cd31f6e0181f6261ca289013e0d6fdd    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "hack since setting perEmailStatusFinal to internal perEmailStatus in above step shows only 1 element.",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{perEmailStatusFinal}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "perEmailStatus3",
+          "name": "perEmailStatus3",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "perEmailStatus"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": " #{recipientNotificationDataArray} ne null  and   #{recipientNotificationDataArray.size()} gt 0",
+          "expandedExpressions": []
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "406303e9e5998eecf1178a7c7d139af8",
+      "comment": "Developer: Vandana<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Version: 1.2<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason: make changes for template_data_config",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1688385192037
+    },
+    {
+      "id": "4e14edbcaa3e610ed08cac6c7b6df85c",
+      "comment": "Developer =&gt; Parva<br id=\"isPasted\">Doc version =&gt; 1&nbsp;<br>Reason =&gt; fetch email information from user_correspondence_template table and other some changes<br>Reviewer =&gt; Krunal&nbsp;",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1683030464787
+    },
+    {
+      "id": "491f0879d27759312ef680cb95d522ce",
+      "comment": "Developer: Vandana<br>Version: 1.1<br>Reason: make changes for placeholder_query",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1684473221454
+    },
+    {
+      "id": "47cf6490c26f23b8c77a9b26cfc02c3f",
+      "comment": "Developer: Vandana<br>Version: 1.3<br>Reason: dont run recipient custom code(3.10) if recipientData null",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1691504089181
+    },
+    {
+      "id": "46ff7cea1972ea2efa66a006d2db1f15",
+      "comment": "Developer =&gt; Dhiraj<br id=\"isPasted\">Doc version =&gt; 1.4<br>Reason =&gt; SP 19 remove hard cored email to dynamic in 3.7 and remove bcc email<br>Reviewer =&gt; Mayank",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1699008315284
+    }
+  ],
+  "testSuite": {
+    "id": "4708874a2b061ec22648af07012596b1",
+    "createdBy": 2,
+    "createdOn": 1702386414210,
+    "chainId": "48eb3b028829715b4a438099776465c5",
+    "testCases": [
+      {
+        "id": "4a76f119c6300c3d6f838fee4003dc1d",
+        "createdBy": 2,
+        "createdOn": 1702386414212,
+        "name": "email.send.issue",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "4b8b5704d14ecec38429bda2e34ffeda",
+            "createdOn": 1702386414213,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"APP_DATA_REJECT\"}"
+          },
+          {
+            "id": "45ae8d2ca991a529ce3d97c136682c07",
+            "createdOn": 1702386414214,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "recipientPlaceholderData",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4bae43f056f229666de5891923be17bd",
+            "createdOn": 1702386414215,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "42ea5a87a635af61d2f49782a72c690e",
+            "createdOn": 1702386414216,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"applicationId\\\":\\\"2d6e7ded-a8e6-44da-9b44-8249a85f9198\\\",\\\"epId\\\":\\\"7077e0a5-c3a2-46db-921c-7aedf9a1a49a\\\",\\\"roundNo\\\":1,\\\"accountId\\\":\\\"794d9129-6e29-4849-8f5e-971d2a4300c7\\\"}\"}"
+          },
+          {
+            "id": "47fda077f7d4de23705ea3d62d579fbe",
+            "createdOn": 1702386414218,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "commonPlaceholderData",
+            "value": "{\"value\": \"{\\\"studentFirstName\\\":\\\"Quiana\\\",\\\"studentMiddleName\\\":\\\"Lashaye\\\",\\\"studentLastName\\\":\\\"Harcum\\\"}\"}"
+          },
+          {
+            "id": "45a350fe22f93e7957bb9970889b7dc7",
+            "createdOn": 1702386414219,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "sentStatus",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "423f9d8700cad1eac99cade4d66bc9a2",
+            "createdOn": 1702386414220,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "templateDateConfig",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4614f3d17264bf875e58a7fb981a4462",
+            "createdOn": 1702386414221,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "recipientEmails",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4e7444216ca299c5e1609d850fc8ad1c",
+            "createdOn": 1702386414222,
+            "testCaseId": "4a76f119c6300c3d6f838fee4003dc1d",
+            "fieldCode": "perEmailStatus",
+            "value": "{\"value\": null, \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "42bbc77e93eb16ea295ab3b2a84cd71e",
+        "createdBy": 2,
+        "createdOn": 1702386414223,
+        "name": "email.send.issue.check.1",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "467191c2346be688d96c9116ddb279e9",
+            "createdOn": 1702386414224,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"APP_DATA_REJECT\"}"
+          },
+          {
+            "id": "48e7085460874e3c8386a210e446a3af",
+            "createdOn": 1702386414226,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "recipientPlaceholderData",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "41c3eaae0325fcca66149ef805b62f92",
+            "createdOn": 1702386414227,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "4aa15c61023baa3f7c78949856bb76e5",
+            "createdOn": 1702386414228,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"applicationId\\\":\\\"9f99beca-e6fa-4cea-8367-c3ea7195da9f\\\",\\\"epId\\\":\\\"7077e0a5-c3a2-46db-921c-7aedf9a1a49a\\\",\\\"roundNo\\\":1,\\\"studentId\\\":\\\"2d6e7ded-a8e6-44da-9b44-8249a85f9198\\\"}\"}"
+          },
+          {
+            "id": "4eeb9c18d5df62905ca7bb0ce4a8e955",
+            "createdOn": 1702386414229,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "commonPlaceholderData",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "41b5c3220d9449d376e9ad5b27a196c6",
+            "createdOn": 1702386414230,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "sentStatus",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "45d508d69da88f5df96cb4666a95d184",
+            "createdOn": 1702386414231,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "templateDateConfig",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "43f2551095d9a915f2668b5e274125b3",
+            "createdOn": 1702386414232,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "recipientEmails",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4bf1cd79224065d7bdd3970c2f8c674f",
+            "createdOn": 1702386414234,
+            "testCaseId": "42bbc77e93eb16ea295ab3b2a84cd71e",
+            "fieldCode": "perEmailStatus",
+            "value": "{\"value\": null, \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "42ac759a7858115e9fbd8ad6746fd708",
+        "createdBy": 2,
+        "createdOn": 1702386414235,
+        "name": "email.send.success1",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "4e6e9ed4bb6ce9ca1856add71569204f",
+            "createdOn": 1702386414236,
+            "testCaseId": "42ac759a7858115e9fbd8ad6746fd708",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"STUDENT_ACCOUNT_RELINK\"}"
+          },
+          {
+            "id": "4253d286e0aeb2e7713bb8770364fa80",
+            "createdOn": 1702386414237,
+            "testCaseId": "42ac759a7858115e9fbd8ad6746fd708",
+            "fieldCode": "placeholderData",
+            "value": "{\"value\":\"{\\\"user@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"Ghervara\\\"},\\\"user2@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"Patel\\\"}}\"}"
+          },
+          {
+            "id": "428c3900864576b70cf0920ba5a77043",
+            "createdOn": 1702386414238,
+            "testCaseId": "42ac759a7858115e9fbd8ad6746fd708",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\",\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "4879e2c199344a0c71b2823600582aa4",
+            "createdOn": 1702386414240,
+            "testCaseId": "42ac759a7858115e9fbd8ad6746fd708",
+            "fieldCode": "subject",
+            "value": "{\"value\": \"\"}"
+          },
+          {
+            "id": "4cd39eea4f06e784caa3a8cda3e2c752",
+            "createdOn": 1702386414241,
+            "testCaseId": "42ac759a7858115e9fbd8ad6746fd708",
+            "fieldCode": "body",
+            "value": "{\"value\": \"\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "41c9610507ee4a81e105ab8d63a0f912",
+        "createdBy": 2,
+        "createdOn": 1702386414242,
+        "name": "email.send.success.1",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "44dc0a4b0afb5c3be2b78ebe38034ae3",
+            "createdOn": 1702386414243,
+            "testCaseId": "41c9610507ee4a81e105ab8d63a0f912",
+            "fieldCode": "senderEmails",
+            "value": "{\"value\": null, \"properties\": [{\"value\": []}]}"
+          },
+          {
+            "id": "4367d4719e2fe8ee31888e1beebed3d8",
+            "createdOn": 1702386414244,
+            "testCaseId": "41c9610507ee4a81e105ab8d63a0f912",
+            "fieldCode": "emailType",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4dcf822a2ea9f18ee4a4a2bf54a714e9",
+            "createdOn": 1702386414245,
+            "testCaseId": "41c9610507ee4a81e105ab8d63a0f912",
+            "fieldCode": "placeholderData",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4f408120bd54830ad032865745450158",
+            "createdOn": 1702386414246,
+            "testCaseId": "41c9610507ee4a81e105ab8d63a0f912",
+            "fieldCode": "subject",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4b3545455d9837327650bcfcb3d35de0",
+            "createdOn": 1702386414247,
+            "testCaseId": "41c9610507ee4a81e105ab8d63a0f912",
+            "fieldCode": "body",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "45d7993ea356ca6cbecfa073edafdc86",
+        "createdBy": 2,
+        "createdOn": 1702386414249,
+        "name": "email.send.success.2",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "4c596200809016ab263dad2ec5ce65a2",
+            "createdOn": 1702386414250,
+            "testCaseId": "45d7993ea356ca6cbecfa073edafdc86",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"ACCOUNT_CHANGE_TO_OLD\"}"
+          },
+          {
+            "id": "40e64f3a5356a716f9a0b89c27830afa",
+            "createdOn": 1702386414251,
+            "testCaseId": "45d7993ea356ca6cbecfa073edafdc86",
+            "fieldCode": "placeholderData",
+            "value": "{\"value\":\"{\\\"user@example.com\\\":{\\\"oldEmail\\\":\\\"user@example.com\\\",\\\"newEmail\\\":\\\"user@example.com\\\"}}\"}"
+          },
+          {
+            "id": "442bb4907a503ca21f21af0080f15b1a",
+            "createdOn": 1702386414252,
+            "testCaseId": "45d7993ea356ca6cbecfa073edafdc86",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "483f883d93145769fabb95602f749e18",
+            "createdOn": 1702386414253,
+            "testCaseId": "45d7993ea356ca6cbecfa073edafdc86",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\":\"{\\\"userId\\\":\\\"0fd8ae10-d81e-495a-b5b9-74f5f17d02c9\\\",\\\"newEmail\\\":\\\"user@example.com\\\"}\"}"
+          },
+          {
+            "id": "49a9513552d7ff70061ea55ea83f056d",
+            "createdOn": 1702386414254,
+            "testCaseId": "45d7993ea356ca6cbecfa073edafdc86",
+            "fieldCode": "placeholderQuery",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4555e5e30f940935c16e88f636449916",
+        "createdBy": 2,
+        "createdOn": 1702386414255,
+        "name": "email.send.success.3",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "47d84c466724568e9d4fae523701c5bb",
+            "createdOn": 1702386414257,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"ACCOUNT_UPDATED_TO_OLD\"}"
+          },
+          {
+            "id": "412cd03c52ef7754823e8f9f05a28860",
+            "createdOn": 1702386414258,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "recipientPlaceholderData",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "4a65b77af7fa992a27849cac997438e7",
+            "createdOn": 1702386414259,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\",\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "4284eb34bbd86677243bb9c8367a5683",
+            "createdOn": 1702386414260,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"userId\\\":\\\"b1454b23-7f97-4f14-abad-7a69785b61be\\\"}\"}"
+          },
+          {
+            "id": "42a1820ea911efe8ef86a21db01a7da0",
+            "createdOn": 1702386414261,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "commonPlaceholderData",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "4a4a66ef96927a011e0596e5b19b56be",
+            "createdOn": 1702386414262,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "placeholderQuery",
+            "value": "{}"
+          },
+          {
+            "id": "495f456b6c8b6bc5ba8f8463267a8ea8",
+            "createdOn": 1702386414263,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "sentStatus",
+            "value": "{}"
+          },
+          {
+            "id": "49b977bc304b3682c5caa21ca3a6220f",
+            "createdOn": 1702386414264,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "templateDateConfig",
+            "value": "{}"
+          },
+          {
+            "id": "478358b17d87b3d83e809435902fa3d7",
+            "createdOn": 1702386414266,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "recipientEmails",
+            "value": "{}"
+          },
+          {
+            "id": "47097ffd81bd27060d7982084b22d2f7",
+            "createdOn": 1702386414267,
+            "testCaseId": "4555e5e30f940935c16e88f636449916",
+            "fieldCode": "perEmailStatus",
+            "value": "{}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+        "createdBy": 2,
+        "createdOn": 1702386414268,
+        "name": "email.send.success.4",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "4933f88bb12b4d4b0d02a39408b3e06c",
+            "createdOn": 1702386414269,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"ACCOUNT_UPDATED_TO_OLD\"}"
+          },
+          {
+            "id": "4ba19723c88dae3b371daba1be817f23",
+            "createdOn": 1702386414270,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "recipientPlaceholderData",
+            "value": "{\"value\":\"{\\\"user@example.com\\\":{\\\"oldEmail\\\":\\\"user@example.com\\\"}}\"}"
+          },
+          {
+            "id": "49a2d551c24e2fb48c669a752e826fa0",
+            "createdOn": 1702386414272,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\",\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "4690a0a37e326d87eb5b81290a88a77f",
+            "createdOn": 1702386414273,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{\\\"userId\\\":\\\"b1454b23-7f97-4f14-abad-7a69785b61be\\\"}\"}"
+          },
+          {
+            "id": "48c23cb9927b5d0bd8cc85a9324b67ce",
+            "createdOn": 1702386414274,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "commonPlaceholderData",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "436a87095ca3641db6e29e0c5137bca9",
+            "createdOn": 1702386414275,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "sentStatus",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "472264527ae92a218d7c80e45b1a5728",
+            "createdOn": 1702386414276,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "templateDateConfig",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4131a9e713cb3b75682f969301a58748",
+            "createdOn": 1702386414277,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "recipientEmails",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "48f34230e6e52596281385d01db2e7b4",
+            "createdOn": 1702386414278,
+            "testCaseId": "4403adf6fcbaf1c1f4f3a1963e19fcba",
+            "fieldCode": "perEmailStatus",
+            "value": "{\"value\": null, \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+        "createdBy": 2,
+        "createdOn": 1702386414280,
+        "name": "email.send.success.5",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "43bff262f523d8969a388ddeefaa67a0",
+            "createdOn": 1702386414281,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "sentStatus",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4f0cc992c8475672373fa73821a92ed4",
+            "createdOn": 1702386414282,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"ETL_USERS_STUDENTS_STATS\"}"
+          },
+          {
+            "id": "4a5494fc2a41cec0b010950cbf4d8431",
+            "createdOn": 1702386414283,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "recipientPlaceholderData",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "43529c7cdb1d03c87c87b5420acbec66",
+            "createdOn": 1702386414284,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "475f1fd0dcfbb050fdbd8f81579dbdc4",
+            "createdOn": 1702386414285,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "404fdf52c11f2ca62e6dbac758f832d7",
+            "createdOn": 1702386414286,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "commonPlaceholderData",
+            "value": "{\"value\": \"{\\\"recordsRead\\\":null,\\\"recordsDuplicate\\\":0,\\\"recordsError\\\":0,\\\"usersAdded\\\":16,\\\"usersUpdated\\\":0,\\\"studentsAdded\\\":0,\\\"studentsUpdated\\\":0,\\\"asmAdded\\\":0,\\\"asmUpdated\\\":0}\"}"
+          },
+          {
+            "id": "4309d02905bd94525b0fa2abb77cffc3",
+            "createdOn": 1702386414287,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "templateDateConfig",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4bbcb256027874fc7059917495a9eb35",
+            "createdOn": 1702386414288,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "recipientEmails",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4df1ec1326a96528c71c97f771f4c35a",
+            "createdOn": 1702386414290,
+            "testCaseId": "4852610c1722a3c6e9e38a4ce1d7d5a2",
+            "fieldCode": "perEmailStatus",
+            "value": "{\"value\": null, \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4508b8c7c6a23f9c60e7837d15295c34",
+        "createdBy": 2,
+        "createdOn": 1702386414291,
+        "name": "email.send.success.5.batchQuery",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "4c68df0496f3fb35e7fa88926e0f992a",
+            "createdOn": 1702386414292,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"ETL_USERS_STUDENTS_STATS\"}"
+          },
+          {
+            "id": "48db9f677f7ac90bc2adab377355a52f",
+            "createdOn": 1702386414293,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "recipientPlaceholderData",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "45b9f8bae1c808e17aa68139ca8bba28",
+            "createdOn": 1702386414294,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\",\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "47656834d91b5eb5232ea06d11c8401a",
+            "createdOn": 1702386414295,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "48845e1d588cb82bddb0a2e013b3077f",
+            "createdOn": 1702386414296,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "commonPlaceholderData",
+            "value": "{\"value\": \"{\\\"recordsRead\\\":null,\\\"recordsDuplicate\\\":0,\\\"recordsError\\\":0,\\\"usersAdded\\\":8,\\\"usersUpdated\\\":0,\\\"studentsAdded\\\":0,\\\"studentsUpdated\\\":0,\\\"asmAdded\\\":0,\\\"asmUpdated\\\":0}\"}"
+          },
+          {
+            "id": "492682c5eb9add022e40a9e2582742ff",
+            "createdOn": 1702386414297,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "sentStatus",
+            "value": "{}"
+          },
+          {
+            "id": "44c5d5a083bf05066e0287e93a1c6fc1",
+            "createdOn": 1702386414299,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "templateDateConfig",
+            "value": "{\"value\": \"\"}"
+          },
+          {
+            "id": "4a2fdb1a992f4c3e650e82833d3761c7",
+            "createdOn": 1702386414300,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "recipientEmails",
+            "value": "{}"
+          },
+          {
+            "id": "4fefe7078d649276bf3b94db5c65ee2d",
+            "createdOn": 1702386414301,
+            "testCaseId": "4508b8c7c6a23f9c60e7837d15295c34",
+            "fieldCode": "perEmailStatus",
+            "value": "{\"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4f66c3d425c28a4a6eb7923046749acc",
+        "createdBy": 2,
+        "createdOn": 1702386414302,
+        "name": "email.send.success.6",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "4ce2781a26a13ca96c48a1a113d736b3",
+            "createdOn": 1702386414303,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"STUDENT_ACCOUNT_DELINK\"}"
+          },
+          {
+            "id": "4ba09380696dbca47d158fb1871e8805",
+            "createdOn": 1702386414304,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "recipientPlaceholderData",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "48bb8331e0f3ef7e323480469bc49337",
+            "createdOn": 1702386414305,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "sendToEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "410e2ed1f07412d64be491e95d30f3c3",
+            "createdOn": 1702386414306,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "parameterJson",
+            "value": "{\"value\":\"{\\\"userFullName\\\":\\\"dhirajj prajapatii\\\",\\\"studentName\\\":\\\"Jaccy Last\\\",\\\"oldUserName\\\":\\\"user@example.com\\\",\\\"newUserName\\\":\\\"user@example.com\\\"}\"}"
+          },
+          {
+            "id": "4b3a22ea45bf4fadd9248e190f7f55b3",
+            "createdOn": 1702386414307,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "commonPlaceholderData",
+            "value": "{\"value\": \"{}\"}"
+          },
+          {
+            "id": "4d2e2e2669a30684af1490e03de6ce47",
+            "createdOn": 1702386414309,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "sentStatus",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4629685fc101e170024d87ceacc3a24c",
+            "createdOn": 1702386414310,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "templateDateConfig",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "42d7eca10e34ad8da5febbb54147cdfe",
+            "createdOn": 1702386414311,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "recipientEmails",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "49f47b55be1316ca5965b125af636073",
+            "createdOn": 1702386414312,
+            "testCaseId": "4f66c3d425c28a4a6eb7923046749acc",
+            "fieldCode": "perEmailStatus",
+            "value": "{\"value\": null, \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4529a2e60393b1a44bd68c2ca8b2c7a1",
+        "createdBy": 2,
+        "createdOn": 1702386414313,
+        "name": "testcase_success",
+        "testSuiteId": "4708874a2b061ec22648af07012596b1",
+        "inputs": [
+          {
+            "id": "42f8d99b6ec1056b8dfab44e7f740ac5",
+            "createdOn": 1702386414314,
+            "testCaseId": "4529a2e60393b1a44bd68c2ca8b2c7a1",
+            "fieldCode": "senderEmails",
+            "value": "{\"value\":\"[\\\"user@example.com\\\",\\\"user@example.com\\\"]\"}"
+          },
+          {
+            "id": "4b009150ba0b16df415eaafc87f34277",
+            "createdOn": 1702386414315,
+            "testCaseId": "4529a2e60393b1a44bd68c2ca8b2c7a1",
+            "fieldCode": "emailType",
+            "value": "{\"value\": \"STUDENT_ACCOUNT_RELINK\"}"
+          },
+          {
+            "id": "44308c25dc79276e077da7b3e699af43",
+            "createdOn": 1702386414316,
+            "testCaseId": "4529a2e60393b1a44bd68c2ca8b2c7a1",
+            "fieldCode": "placeholderData",
+            "value": "{\"value\":\"{\\\"user@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"Ghervara\\\"},\\\"user2@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"Patel\\\"}}\"}"
+          },
+          {
+            "id": "477cd47dd6b44cfa0545999fed630931",
+            "createdOn": 1702386414318,
+            "testCaseId": "4529a2e60393b1a44bd68c2ca8b2c7a1",
+            "fieldCode": "subject",
+            "value": "{\"value\": \"This is test subject for employee of {{name}} tenupsoft\"}"
+          },
+          {
+            "id": "40795845a5a20c7509e68f521bec3831",
+            "createdOn": 1702386414319,
+            "testCaseId": "4529a2e60393b1a44bd68c2ca8b2c7a1",
+            "fieldCode": "body",
+            "value": "{\"value\": \"This is test body for employee of {{lastName}} tenupsoft\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

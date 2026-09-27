@@ -1,18 +1,148 @@
 {
- "id": 3537,
- "uuid": "4dfa8350d5520626f5ccba16450877ea",
- "jsonDefinition": "{\"name\": \"replacePlaceholdersInText deprecated\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"text\", \"required\": false, \"fieldCode\": \"text\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}, {\"type\": \"JSON\", \"label\": \"jsonHolder\", \"required\": false, \"fieldCode\": \"jsonHolder\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}], \"outputs\": [], \"services\": [{\"code\": \"var text=\\\"#{text}\\\"\\n\\nvar placeholders=JSON.parse(\\\"#{jsonHolder}\\\")\\n\\n\\nfunction replacePlaceholder(str, placeHolder, newValue) {\\n    const re = new RegExp(`\\\\{\\\\{[ ]*${placeHolder}[ ]*\\\\}\\\\}`)\\n    return str.replace(re, newValue)\\n}\\n\\nconst re = new RegExp(/\\\\{{[ ]*(?<value>[A-Za-z0-9_]+)[ ]*\\\\}}/, \\\"g\\\")\\n\\nfor (const match of text.matchAll(re)) {\\n    const placeHolder = match.groups.value\\n    if (placeHolder && placeholders.hasOwnProperty(placeHolder)) {\\n        text = replacePlaceholder(text, placeHolder, placeholders[placeHolder])\\n    }\\n}\\n\\nconsole.log(text)\", \"file\": \"\", \"outputs\": [{\"code\": \"finalText\", \"type\": \"STRING\", \"displayName\": \"finalText\", \"internalVarRef\": \"finalText\"}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\", \"text\": \"CUSTOM CODE\", \"active\": false}, \"orderIndex\": 1, \"currentAccount\": null, \"loopExecutionSource\": null, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"STRING\", \"label\": \"finalText\", \"required\": false, \"fieldCode\": \"finalText\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}], \"buttonLabel\": \"\", \"methodDescription\": \"This is a helper method to replace the placeholders in a given text.\"}",
- "version": 5,
- "name": "replacePlaceholdersInText deprecated",
- "aliasName": "replacePlaceholdersInText deprecated",
- "category": {
-  "id": 23,
-  "name": "Utilities"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "updatedOn": 1677760353467,
- "createdOn": 1677752724068
+  "id": 3537,
+  "uuid": "4dfa8350d5520626f5ccba16450877ea",
+  "jsonDefinition": "{\"name\": \"replacePlaceholdersInText deprecated\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"text\", \"required\": false, \"fieldCode\": \"text\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}, {\"type\": \"JSON\", \"label\": \"jsonHolder\", \"required\": false, \"fieldCode\": \"jsonHolder\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}], \"outputs\": [], \"services\": [{\"code\": \"var text=\\\"#{text}\\\"\\n\\nvar placeholders=JSON.parse(\\\"#{jsonHolder}\\\")\\n\\n\\nfunction replacePlaceholder(str, placeHolder, newValue) {\\n    const re = new RegExp(`\\\\{\\\\{[ ]*${placeHolder}[ ]*\\\\}\\\\}`)\\n    return str.replace(re, newValue)\\n}\\n\\nconst re = new RegExp(/\\\\{{[ ]*(?<value>[A-Za-z0-9_]+)[ ]*\\\\}}/, \\\"g\\\")\\n\\nfor (const match of text.matchAll(re)) {\\n    const placeHolder = match.groups.value\\n    if (placeHolder && placeholders.hasOwnProperty(placeHolder)) {\\n        text = replacePlaceholder(text, placeHolder, placeholders[placeHolder])\\n    }\\n}\\n\\nconsole.log(text)\", \"file\": \"\", \"outputs\": [{\"code\": \"finalText\", \"type\": \"STRING\", \"displayName\": \"finalText\", \"internalVarRef\": \"finalText\"}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\", \"text\": \"CUSTOM CODE\", \"active\": false}, \"orderIndex\": 1, \"currentAccount\": null, \"loopExecutionSource\": null, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"STRING\", \"label\": \"finalText\", \"required\": false, \"fieldCode\": \"finalText\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}], \"buttonLabel\": \"\", \"methodDescription\": \"This is a helper method to replace the placeholders in a given text.\"}",
+  "version": 5,
+  "name": "replacePlaceholdersInText deprecated",
+  "aliasName": "replacePlaceholdersInText deprecated",
+  "category": {
+    "id": 23,
+    "name": "Utilities",
+    "aliasName": [
+      "Utilities"
+    ],
+    "originalLabel": "Utilities",
+    "description": "General Purpose Utility Methods",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 1526,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "45f844d88a4cf39c4577ae1993b99002",
+    "automationSystemUuid": "446b5df39b2a13280c0a913f6ca919c6    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 41753,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Admin",
+          "lastName": "SEMS",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Admin SEMS",
+          "title": "Admin SEMS"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1677752724068,
+  "updatedBy": 2,
+  "updatedOn": 1677760353467,
+  "state": "DRAFT",
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "484011b69fb1fd29ef78ba6f74ca1e9d",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

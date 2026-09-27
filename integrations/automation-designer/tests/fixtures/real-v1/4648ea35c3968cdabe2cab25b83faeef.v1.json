@@ -1,17 +1,123 @@
 {
- "id": 15286,
- "uuid": "4648ea35c3968cdabe2cab25b83faeef",
- "jsonDefinition": "{\"name\": \"test.createFromGrid.subinputs\", \"inputs\": [], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"testOut\", \"type\": \"JSON\", \"sensitive\": false, \"properties\": [], \"displayName\": \"testOut\", \"automationId\": 169814, \"internalVarRef\": \"testOut\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 13756, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 169814, \"streamCapable\": false, \"automationApiId\": 6888, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
- "version": 1,
- "name": "test.createFromGrid.subinputs",
- "aliasName": "test.createFromGrid.subinputs",
- "category": {
-  "id": 458,
-  "name": "Schools-Data"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "active": false,
- "createdOn": 1782712611159
+  "id": 15286,
+  "uuid": "4648ea35c3968cdabe2cab25b83faeef",
+  "jsonDefinition": "{\"name\": \"test.createFromGrid.subinputs\", \"inputs\": [], \"outputs\": [], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"testOut\", \"type\": \"JSON\", \"sensitive\": false, \"properties\": [], \"displayName\": \"testOut\", \"automationId\": 169814, \"internalVarRef\": \"testOut\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 13756, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 169814, \"streamCapable\": false, \"automationApiId\": 6888, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"loopConfiguration\": {\"executeParallel\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
+  "version": 1,
+  "name": "test.createFromGrid.subinputs",
+  "aliasName": "test.createFromGrid.subinputs",
+  "category": {
+    "id": 458,
+    "name": "Schools-Data",
+    "aliasName": [
+      "Schools - Data"
+    ],
+    "originalLabel": "Schools-Data",
+    "description": "Define data sources for the schools, to be used in the Report Designer",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 1656,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4ba9e1272450a6fd983e8203ab0ca80c",
+    "automationSystemUuid": "4a2613707d5c5afc65d2b13158040e0f    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1782712611159,
+  "state": "DRAFT",
+  "migrationVersion": 1782712611159,
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "4f7eb27038334c4a0a79a494a1bbe3dd",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }

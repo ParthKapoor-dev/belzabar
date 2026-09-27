@@ -1,19 +1,125 @@
 {
- "id": 6425,
- "uuid": "40b7959fb1dd8b4cf2ee9f5e54630ea8",
- "jsonDefinition": "{\"name\": \"notification.setting.getList\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"pageNumber\", \"required\": false, \"fieldCode\": \"pageNumber\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"pageSize\", \"required\": false, \"fieldCode\": \"pageSize\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"channelName\", \"required\": false, \"fieldCode\": \"channelName\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"type\", \"required\": false, \"fieldCode\": \"type\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"status\", \"required\": false, \"fieldCode\": \"status\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"startTime\", \"required\": false, \"fieldCode\": \"startTime\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"expirationTime\", \"required\": false, \"fieldCode\": \"expirationTime\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"title\", \"required\": false, \"fieldCode\": \"title\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"isCurrent\", \"required\": false, \"fieldCode\": \"isCurrent\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"priority\", \"required\": false, \"fieldCode\": \"priority\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}], \"outputs\": [{\"id\": 12963, \"code\": \"notificationsList\", \"type\": \"JSON\", \"fieldCode\": \"notificationsList\", \"outputCode\": \"notificationsList\", \"properties\": [], \"displayName\": \"notificationsList\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"\", \"services\": [{\"outputs\": [{\"code\": \"notificationListRecords\", \"displayName\": \"notificationListRecords\", \"automationId\": 101104, \"automationAPIOutputId\": 9506, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"START_TIME\", \"uiRepresentation\": \"DROPDOWN\", \"automationUserInputId\": 13788, \"automationUserInputUuid\": \"4578f7b1dc27cafa755a859f294f0cde    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 13787, \"automationUserInputUuid\": \"46720e4b2dfaeb3fa440af2ed14beef1    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"automationId\": 101104, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"outputs\": [{\"code\": \"codeList\", \"displayName\": \"codeList\", \"automationId\": 101160, \"automationAPIOutputId\": 6508, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"[\\\"CHANNEL_TYPE\\\"]\", \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 11591, \"automationUserInputUuid\": \"4f224c37a09864ab0802921d944b8c7d    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 2, \"automationId\": 101160, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"code\": \"const notificationListRecord = JSON.parse(\\\"#{notificationListRecords}\\\")\\nconst notificationList = notificationListRecord.body\\nconst codeList = JSON.parse(\\\"#{codeList}\\\")\\n\\n\\nconst resultList = notificationList.map(item => {\\n  const { id, title, status, priority } = item\\n  return {\\n    id, title,\\n    status, priority\\n  }\\n})\\n\\nconsole.log(JSON.stringify(resultList))\", \"file\": \"\", \"outputs\": [{\"code\": \"notificationsList\", \"type\": \"JSON\", \"displayName\": \"notificationsList\"}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\", \"text\": \"CUSTOM CODE\", \"active\": false}, \"orderIndex\": 3, \"customCodeEnv\": \"CODE_LAMBDA\", \"currentAccount\": null, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"\"}",
- "version": 4,
- "name": "notification.setting.getList",
- "aliasName": "notification.getList",
- "category": {
-  "id": 710,
-  "name": "Schools-Notifications"
- },
- "state": "DRAFT",
- "automationState": "DRAFT",
- "methodDeprecated": false,
- "deprecatedAt": 1723548015173,
- "active": false,
- "updatedOn": 1723548015181,
- "createdOn": 1723114770283
+  "id": 6425,
+  "uuid": "40b7959fb1dd8b4cf2ee9f5e54630ea8",
+  "jsonDefinition": "{\"name\": \"notification.setting.getList\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"pageNumber\", \"required\": false, \"fieldCode\": \"pageNumber\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"pageSize\", \"required\": false, \"fieldCode\": \"pageSize\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"channelName\", \"required\": false, \"fieldCode\": \"channelName\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"type\", \"required\": false, \"fieldCode\": \"type\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"status\", \"required\": false, \"fieldCode\": \"status\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"startTime\", \"required\": false, \"fieldCode\": \"startTime\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"expirationTime\", \"required\": false, \"fieldCode\": \"expirationTime\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"title\", \"required\": false, \"fieldCode\": \"title\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"isCurrent\", \"required\": false, \"fieldCode\": \"isCurrent\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}, {\"type\": \"STRING\", \"label\": \"priority\", \"required\": false, \"fieldCode\": \"priority\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"inputVarRef\": \"\"}], \"outputs\": [{\"id\": 12963, \"code\": \"notificationsList\", \"type\": \"JSON\", \"fieldCode\": \"notificationsList\", \"outputCode\": \"notificationsList\", \"properties\": [], \"displayName\": \"notificationsList\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"\", \"services\": [{\"outputs\": [{\"code\": \"notificationListRecords\", \"displayName\": \"notificationListRecords\", \"automationId\": 101104, \"automationAPIOutputId\": 9506, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"START_TIME\", \"uiRepresentation\": \"DROPDOWN\", \"automationUserInputId\": 13788, \"automationUserInputUuid\": \"4578f7b1dc27cafa755a859f294f0cde    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 13787, \"automationUserInputUuid\": \"46720e4b2dfaeb3fa440af2ed14beef1    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"automationId\": 101104, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"outputs\": [{\"code\": \"codeList\", \"displayName\": \"codeList\", \"automationId\": 101160, \"automationAPIOutputId\": 6508, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"[\\\"CHANNEL_TYPE\\\"]\", \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 11591, \"automationUserInputUuid\": \"4f224c37a09864ab0802921d944b8c7d    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 2, \"automationId\": 101160, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\"}, {\"code\": \"const notificationListRecord = JSON.parse(\\\"#{notificationListRecords}\\\")\\nconst notificationList = notificationListRecord.body\\nconst codeList = JSON.parse(\\\"#{codeList}\\\")\\n\\n\\nconst resultList = notificationList.map(item => {\\n  const { id, title, status, priority } = item\\n  return {\\n    id, title,\\n    status, priority\\n  }\\n})\\n\\nconsole.log(JSON.stringify(resultList))\", \"file\": \"\", \"outputs\": [{\"code\": \"notificationsList\", \"type\": \"JSON\", \"displayName\": \"notificationsList\"}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\", \"text\": \"CUSTOM CODE\", \"active\": false}, \"orderIndex\": 3, \"customCodeEnv\": \"CODE_LAMBDA\", \"currentAccount\": null, \"repeatStepExecution\": false, \"automationUiSelector\": {}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"buttonLabel\": \"\", \"methodDescription\": \"\"}",
+  "version": 4,
+  "name": "notification.setting.getList",
+  "aliasName": "notification.getList",
+  "category": {
+    "id": 710,
+    "name": "Schools-Notifications",
+    "aliasName": [
+      null
+    ],
+    "originalLabel": "Schools-Notifications",
+    "description": "Service containing notfication related methods",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 662,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790524815956
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "46c0c5138d4afa7fc0daa5d2214157c1",
+    "automationSystemUuid": "4f43b20402dce4d0e98cb0c9956076ca",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1723114770283,
+  "updatedBy": 2,
+  "updatedOn": 1723548015181,
+  "state": "DRAFT",
+  "methodDeprecated": false,
+  "deprecatedAt": 1723548015173,
+  "securityTags": [],
+  "migration": false,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "4155f8a7e2a8a634b6558df5bdf46a9d",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "DRAFT"
 }
