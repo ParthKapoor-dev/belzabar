@@ -1,4 +1,5 @@
-import { CliError, ok } from "@belzabar/core";
+import { CliError, defineArgs, ok } from "@belzabar/core";
+import { parseTaskId, TASK_ID_POSITIONAL } from "../../lib/task-id";
 import type { CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
 import { addComment, fetchTask } from "../../lib/api";
 import { requireConfirmation, logIntent } from "../../lib/confirm";
@@ -19,50 +20,38 @@ interface AddCommentData {
   url: string;
 }
 
-function parseTaskId(input: string): number {
-  const urlMatch = input.match(/\/tasks\/(\d+)/);
-  if (urlMatch) return parseInt(urlMatch[1]!, 10);
-
-  const num = parseInt(input, 10);
-  if (isNaN(num)) {
-    throw new CliError(`Invalid task ID: '${input}'. Provide a numeric ID or Teamwork task URL.`, {
-      code: "INVALID_TASK_ID",
-    });
-  }
-  return num;
-}
 
 export const schema = "tw.add-comment";
 export const version = "1.0";
 
-export function parseArgs(args: string[], _context: CommandContext): AddCommentArgs {
-  let body: string | undefined;
-  let bodyFile: string | undefined;
-  let contentType: "TEXT" | "HTML" = "TEXT";
-  let yes = false;
-  const positional: string[] = [];
+export const args = defineArgs({
+  command: "belz tw add-comment",
+  positionals: [
+    { ...TASK_ID_POSITIONAL, missingMessage: 'Missing <taskId|url>. Usage: belz tw add-comment <taskId|url> --body "<text>"' },
+  ],
+  flags: {
+    // TW-5: `--body --yes` is MISSING_VALUE, never a comment reading "--yes".
+    body: { type: "string" },
+    "body-file": { type: "string" },
+    html: { type: "boolean" },
+    yes: { type: "boolean", alias: ["-y"] },
+  },
+  exclusive: [["body", "body-file"]],
+  requireOneOf: [["body", "body-file"]],
+});
 
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i]!;
-    if (a === "--body") body = args[++i];
-    else if (a === "--body-file") bodyFile = args[++i];
-    else if (a === "--html") contentType = "HTML";
-    else if (a === "--yes" || a === "-y") yes = true;
-    else positional.push(a);
-  }
+/** Posting a comment changes the ticket: requires an explicit target (D6 runner check). */
+export const writes = true;
 
-  if (positional.length === 0) {
-    throw new CliError('Missing <taskId|url>. Usage: belz tw add-comment <taskId|url> --body "<text>"', {
-      code: "MISSING_ARG",
-    });
-  }
-  if (body === undefined && bodyFile === undefined) {
-    throw new CliError('Missing comment text. Pass --body "<text>" or --body-file <path>.', {
-      code: "MISSING_BODY",
-    });
-  }
-
-  return { taskId: parseTaskId(positional[0]!), body, bodyFile, contentType, yes };
+export function parseArgs(argv: string[], _context?: CommandContext): AddCommentArgs {
+  const { positionals, flags } = args.parse(argv);
+  return {
+    taskId: parseTaskId(positionals.taskId),
+    body: flags.body,
+    bodyFile: flags.bodyFile,
+    contentType: flags.html ? "HTML" : "TEXT",
+    yes: flags.yes,
+  };
 }
 
 export async function execute(args: AddCommentArgs, context: CommandContext): Promise<CommandResult<AddCommentData>> {

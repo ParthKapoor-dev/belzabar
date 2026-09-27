@@ -15,6 +15,7 @@ Arguments:
 Flags:
   --body "<text>"       The comment text (plain text / markdown).
   --body-file <path>    Read the comment text from a file instead of --body.
+                        Exactly one of --body / --body-file is required.
   --html                Send the body as HTML instead of plain text.
   --yes, -y             Skip the confirmation prompt (required in --llm mode).
   --help, -h            Show this help message.

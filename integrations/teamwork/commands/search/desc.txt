@@ -1,2 +1,3 @@
 belz tw search <query>        :->  Search Teamwork tasks by keyword
 belz tw search <query> --llm  :->  Output as structured JSON envelope
+belz tw search <query> --project <id> --limit <n> --all  :->  Restrict to a project, cap results (≤500), include completed tasks

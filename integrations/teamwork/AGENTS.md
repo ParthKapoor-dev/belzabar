@@ -33,9 +33,10 @@ teamwork/
 │   ├── confirm.ts        Confirmation gate + write-intent logging (for add-comment)
 │   ├── extract.ts        Pure AD/PD/SQL extraction (release-prep Stage 2 patterns)
 │   ├── items.ts          extractTicketItems — ticket → release items (used by `tw items` and `release matrix`)
+│   ├── task-id.ts        parseTaskId + TASK_ID_POSITIONAL — the one `<taskId|url>` validator (INVALID_TASK_ID)
 │   └── types.ts          Shared TypeScript types
 ├── registry.ts           Static, sorted command registry (@belzabar/teamwork/registry)
-├── tests/unit/           bun test — extract.test.ts
+├── tests/unit/           bun test — extract, comment pagination, real comments, args (parsing)
 └── AGENTS.md             This file
 ```
 
@@ -63,7 +64,10 @@ Teamwork uses cookie-based auth, separate from the NSM Bearer token flow:
 
 ## Core Behavior Contract
 
-1. Every command exports `schema`, `parseArgs`, `execute`, and optionally `presentHuman`.
+1. Every command exports `schema`, `args` (a core `defineArgs` spec), `parseArgs` (built on
+   `args.parse`: unknown flags, missing values and bad task ids are CliErrors), `execute`, and
+   optionally `presentHuman`. `add-comment` also exports `writes = true`. Every flag in the spec
+   must be documented in help.txt (checked by `apps/cli/tests/args-docs.test.ts`).
 2. Commands **never** call `process.exit()` or print ad-hoc output.
 3. All data flows through `ok(data)` / `CliError` — the runner handles envelopes.
 4. `--llm` mode returns raw JSON envelopes; human mode uses `presentHuman()`.

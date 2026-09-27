@@ -9,8 +9,9 @@ Arguments:
 
 Flags:
   --project <id>        Restrict to a single project (numeric project id).
-  --limit <n>           Max results to return (default: 25).
+  --limit <n>           Max results to return, 1-500 (default: 25).
   --all                 Include completed tasks (default: open tasks only).
+  --include-completed   Same as --all.
   --help, -h            Show this help message.
 
 Global Flags:

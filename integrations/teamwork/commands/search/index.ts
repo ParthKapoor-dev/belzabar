@@ -1,4 +1,4 @@
-import { CliError, ok } from "@belzabar/core";
+import { CliError, defineArgs, ok } from "@belzabar/core";
 import type { CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
 import { searchTasks } from "../../lib/api";
 import type { TeamworkTaskSearchResult } from "../../lib/types";
@@ -19,36 +19,28 @@ interface SearchData {
 export const schema = "tw.search";
 export const version = "1.0";
 
-export function parseArgs(args: string[], _context: CommandContext): SearchArgs {
-  let limit = 25;
-  let projectId: number | undefined;
-  let includeCompleted = false;
-  const positional: string[] = [];
+export const args = defineArgs({
+  command: "belz tw search",
+  positionals: [
+    { name: "query", variadic: true }, // required: checked below (keeps the MISSING_QUERY code)
+  ],
+  flags: {
+    // TW-2: Teamwork rejects pageSize > 500 with a 400.
+    limit: { type: "number", integer: true, min: 1, max: 500, default: 25 },
+    project: { type: "number", integer: true, min: 1 },
+    all: { type: "boolean", alias: ["--include-completed"] },
+  },
+});
 
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i]!;
-    if (a === "--limit") {
-      const n = parseInt(args[++i] ?? "", 10);
-      if (isNaN(n) || n < 1) throw new CliError("--limit requires a positive number.", { code: "INVALID_LIMIT" });
-      limit = n;
-    } else if (a === "--project") {
-      const n = parseInt(args[++i] ?? "", 10);
-      if (isNaN(n)) throw new CliError("--project requires a numeric project id.", { code: "INVALID_PROJECT" });
-      projectId = n;
-    } else if (a === "--all" || a === "--include-completed") {
-      includeCompleted = true;
-    } else {
-      positional.push(a);
-    }
-  }
-
-  const query = positional.join(" ").trim();
+export function parseArgs(argv: string[], _context?: CommandContext): SearchArgs {
+  const { positionals, flags } = args.parse(argv);
+  const query = positionals.query.join(" ").trim();
   if (!query) {
     throw new CliError("Missing search query. Usage: belz tw search <query> [--project <id>] [--limit N] [--all]", {
       code: "MISSING_QUERY",
     });
   }
-  return { query, limit, projectId, includeCompleted };
+  return { query, limit: flags.limit, projectId: flags.project, includeCompleted: flags.all };
 }
 
 export async function execute(args: SearchArgs, _context: CommandContext): Promise<CommandResult<SearchData>> {

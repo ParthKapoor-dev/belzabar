@@ -1,4 +1,5 @@
-import { CliError, ok } from "@belzabar/core";
+import { defineArgs, ok } from "@belzabar/core";
+import { parseTaskId, TASK_ID_POSITIONAL } from "../../lib/task-id";
 import type { CommandModule, CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
 import { fetchComments } from "../../lib/api";
 import type { TeamworkComment } from "../../lib/types";
@@ -13,27 +14,18 @@ interface GetCommentsData {
   total: number;
 }
 
-function parseTaskId(input: string): number {
-  const urlMatch = input.match(/\/tasks\/(\d+)/);
-  if (urlMatch) return parseInt(urlMatch[1]!, 10);
-
-  const num = parseInt(input, 10);
-  if (isNaN(num)) {
-    throw new CliError(`Invalid task ID: '${input}'. Provide a numeric ID or Teamwork task URL.`, {
-      code: "INVALID_TASK_ID",
-    });
-  }
-  return num;
-}
 
 export const schema = "tw.comments";
 export const version = "1.0";
 
-export function parseArgs(args: string[], _context: CommandContext): GetCommentsArgs {
-  if (args.length === 0) {
-    throw new CliError("Missing required argument: <taskId|url>", { code: "MISSING_ARG" });
-  }
-  return { taskId: parseTaskId(args[0]!) };
+export const args = defineArgs({
+  command: "belz tw comments",
+  positionals: [TASK_ID_POSITIONAL],
+});
+
+export function parseArgs(argv: string[], _context?: CommandContext): GetCommentsArgs {
+  const { positionals } = args.parse(argv);
+  return { taskId: parseTaskId(positionals.taskId) };
 }
 
 export async function execute(args: GetCommentsArgs, _context: CommandContext): Promise<CommandResult<GetCommentsData>> {
