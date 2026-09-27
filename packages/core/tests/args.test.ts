@@ -226,3 +226,38 @@ describe("doc check", () => {
     expect(suggest("--dryrun", ["--dry-run", "--raw"])).toBe("--dry-run");
   });
 });
+
+describe("dash values and duplicates (s3 review)", () => {
+  const spec = defineArgs({
+    command: "belz tw comment",
+    flags: { body: { type: "string" }, limit: { type: "number" }, tag: { type: "string", repeatable: true } },
+  });
+
+  test("a string value starting with '-' → MISSING_VALUE with a --flag=<value> hint", () => {
+    const e = err(() => spec.parse(["--body", "-item"]));
+    expect(e.code).toBe("MISSING_VALUE");
+    expect(e.message).toContain("--body=<value>");
+    expect(e.message).toContain("--body=-item");
+    expect((e.details as any).hint).toBe("--body=<value>");
+    expect(spec.parse(["--body=-item"]).flags.body).toBe("-item");
+  });
+
+  test("a huge flag-like token is truncated in the message", () => {
+    const sql = "--comment\n" + "SELECT 1 ".repeat(200);
+    const e = err(() => spec.parse(["--body", sql]));
+    expect(e.message.length).toBeLessThan(400);
+    const u = err(() => spec.parse([sql]));
+    expect(u.code).toBe("UNKNOWN_FLAG");
+    expect(u.message.length).toBeLessThan(400);
+    expect(u.message).toContain("--flag=<value>");
+  });
+
+  test("repeated non-repeatable flag names both values", () => {
+    const e = err(() => spec.parse(["--limit", "5", "--limit", "50"]));
+    expect(e.code).toBe("DUPLICATE_FLAG");
+    expect(e.message).toContain("'5'");
+    expect(e.message).toContain("'50'");
+    expect((e.details as any).values).toEqual([5, 50]);
+    expect(spec.parse(["--tag", "a", "--tag", "b"]).flags.tag).toEqual(["a", "b"]);
+  });
+});

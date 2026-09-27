@@ -63,6 +63,12 @@ export function flagSpellings(key: string, flag: FlagSpec): string[] {
   return [`--${key}`, ...(flag.alias ?? [])];
 }
 
+/** A token as shown in an error message: single line, at most `max` chars (SQL/free text can be huge). */
+export function shownToken(token: string, max = 40): string {
+  const flat = token.replace(/\s+/g, " ");
+  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
+}
+
 function label(spec: { command?: string }): string {
   return spec.command ? ` for '${spec.command}'` : "";
 }
@@ -148,10 +154,11 @@ export function parseWithSpec<S extends ArgsSpec>(spec: S, argv: readonly string
       throw argError(
         spec,
         "UNKNOWN_FLAG",
-        `Unknown flag '${name}'${label(spec)}.` +
+        `Unknown flag '${shownToken(name)}'${label(spec)}.` +
           (suggestion ? ` Did you mean '${suggestion}'?` : "") +
-          (known.length ? ` Known: ${known.join(", ")}.` : " This command takes no flags."),
-        { flag: name, suggestion: suggestion ?? null, known },
+          (known.length ? ` Known: ${known.join(", ")}.` : " This command takes no flags.") +
+          " If this is a value that starts with '-', pass it as --flag=<value> or after '--'.",
+        { flag: shownToken(name, 200), suggestion: suggestion ?? null, known },
       );
     }
 
@@ -170,11 +177,16 @@ export function parseWithSpec<S extends ArgsSpec>(spec: S, argv: readonly string
       const next = argv[i + 1];
       const takesDash = flag.type === "string" && flag.allowDashValue;
       if (next === undefined || next === "--" || (!takesDash && FLAG_LIKE.test(next))) {
+        const gotFlag = next !== undefined && next !== "--";
         throw argError(
           spec,
           "MISSING_VALUE",
-          `${name} requires a value${label(spec)}` + (next !== undefined && next !== "--" ? ` (got flag '${next}').` : "."),
-          { flag: name, next: next ?? null },
+          `${name} requires a value${label(spec)}` +
+            (gotFlag
+              ? ` (got flag '${shownToken(next)}'). If the value itself starts with '-', use ${name}=<value>` +
+                ` (e.g. ${name}=${shownToken(next, 20)}).`
+              : "."),
+          { flag: name, next: next === undefined ? null : shownToken(next, 200), ...(gotFlag ? { hint: `${name}=<value>` } : {}) },
         );
       }
       raw = next;
@@ -186,10 +198,13 @@ export function parseWithSpec<S extends ArgsSpec>(spec: S, argv: readonly string
       ((values[key] ??= []) as unknown[]).push(value);
     } else {
       if (provided.has(key)) {
-        throw argError(spec, "DUPLICATE_FLAG", `${name} given more than once${label(spec)}.`, {
-          flag: `--${key}`,
-          values: [values[key], value],
-        });
+        const prev = values[key];
+        throw argError(
+          spec,
+          "DUPLICATE_FLAG",
+          `--${key} given more than once${label(spec)} ('${shownToken(String(prev))}' then '${shownToken(String(value))}'); it takes a single value — pass it once.`,
+          { flag: `--${key}`, values: [prev, value] },
+        );
       }
       values[key] = value;
     }
