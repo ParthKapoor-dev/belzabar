@@ -7,7 +7,7 @@
 // All endpoints live under `/rest/api/pagedesigner`. Auth is Bearer via
 // @belzabar/core's apiFetch, which auto-refreshes on 401.
 
-import { apiFetch, CliError } from "@belzabar/core";
+import { apiFetch, CliError, readBodySummary } from "@belzabar/core";
 import type {
   RawPageResponse,
   RawPageDependencies,
@@ -22,13 +22,9 @@ const PD_BASE = "/rest/api/pagedesigner";
 
 // -------- shared helpers --------------------------------------------------
 
+// Summarised (HTML → <title>), truncated to 500 chars and secret-redacted.
 async function readErrorBody(response: Response): Promise<string> {
-  try {
-    const text = await response.text();
-    return text.length > 500 ? `${text.slice(0, 500)}…` : text;
-  } catch {
-    return "";
-  }
+  return readBodySummary(response, 500);
 }
 
 async function ensureOk(response: Response, context: { method: string; path: string }): Promise<void> {
