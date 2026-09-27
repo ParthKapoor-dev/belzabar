@@ -59,6 +59,13 @@ If resolution fails outright, `prepareIpv4Fetch` **returns the original hostname
 than throwing**. Callers have no fallback of their own, and a request that might hang beats a
 command that cannot run at all. Do not "simplify" this back into a throw.
 
+### Argument parsing (`src/args/`)
+| Export | Description |
+|--------|-------------|
+| `defineArgs(spec)` | Declarative positionals + flags (boolean/string/number/enum, repeatable, aliases, exclusive/requireOneOf groups) → typed `parse(argv)`; CliError codes `UNKNOWN_FLAG` (did-you-mean), `MISSING_VALUE`, `INVALID_VALUE`, `MISSING_FLAG`, `MISSING_ARGUMENT`, `UNEXPECTED_ARGUMENT`, `CONFLICTING_FLAGS`, `DUPLICATE_FLAG` |
+| `defineSubcommands(map, opts)` | argv[0] selects a sub-spec (`UNKNOWN_SUBCOMMAND`, `MISSING_SUBCOMMAND`); optional `default` |
+| `checkCommandDocs`, `declaresFlag`, `acceptedFlags` | help.txt/desc.txt drift check; lets the runner leave command-declared flags (`-v`) alone |
+
 ### CLI Runners
 | Export | Description |
 |--------|-------------|

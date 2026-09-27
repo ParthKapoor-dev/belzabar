@@ -136,6 +136,11 @@ on anything that looks like a secret or PII — re-run
 ## Key Shared Patterns
 
 - All commands implement `CommandModule` from `@belzabar/core` (`parseArgs` + `execute` + optional `presentHuman`)
+- Arguments are declared with core `defineArgs` / `defineSubcommands` (`packages/core/src/args/`) and
+  exported from the command's `index.ts` as `args`; `parseArgs` calls `args.parse(argv)`. Never hand-roll
+  argv parsing. Unknown flags, missing values and bad numbers fail with stable codes (`UNKNOWN_FLAG`,
+  `MISSING_VALUE`, `INVALID_VALUE`, …). `apps/cli/tests/args-docs.test.ts` fails when help.txt/desc.txt
+  drift from the spec. Mark remote writes with `writes: true` (or a function of the parsed args).
 - `ok(data)` / `fail(message)` / `throw new CliError(message)` for results
 - `--llm` flag outputs a structured JSON envelope; `--env` sets the active environment
 - **All user-facing UI goes through `@belzabar/core`'s unified `ui` module** — prompts, spinners, tables, log.* helpers. Never use `inquirer`, `chalk`, or hand-rolled readline selectors. See `packages/core/AGENTS.md` for the surface. Prompts automatically refuse in `--llm` mode.
