@@ -1,51 +1,216 @@
-// `ad history restore`: a platform answer of `false` is a failed restore and
-// must produce an ok:false envelope (found while making the history sub-action
-// return types honest: they claimed `ok: true` only). Also covers logIntent
-// reporting the *active* env rather than BELZ_ENV (AD-27).
+// `ad history` against the real history wire (fixtures/history, captured from
+// belz_tst_s4b_hist1 on sems-dev).
+//
+// F7: history.get is addressed by category + method name; `includeDraft:"true"`
+// returns the DRAFT chain's version N, otherwise the PUBLISHED chain's. `list`
+// lists by uuid, so show/diff must pick the side that matches the uuid.
+// AD-23: restore goes through the draft guard, fails closed on an unknown
+// response, re-fetches and reports the resulting version.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { withTempEnvConfig, runCommand } from "@belzabar/core/testing";
+import { readFileSync } from "fs";
+import { join } from "path";
+import {
+  fakeFetch,
+  respond,
+  runCommand,
+  withTempEnvConfig,
+  type FakeFetch,
+  type RecordedRequest,
+  type TempEnvConfig,
+} from "@belzabar/core/testing";
 import historyCommand from "../../commands/history/index";
-import { adApi } from "../../lib/api/index";
-import { CacheManager } from "../../lib/cache";
+import { interpretRestoreResponse } from "../../lib/api/v1";
 import { logIntent } from "../../lib/args/confirm";
 
+const FIX = join(import.meta.dir, "../fixtures/history");
+const load = (f: string) => JSON.parse(readFileSync(join(FIX, f), "utf8"));
+const DRAFT = "4bdea25c480a8e9dbc1cae830cb89b68";
+const PUB = "0000000000000000000000000000beef";
+
+let ff: FakeFetch | null = null;
+let cfg: TempEnvConfig | null = null;
 const spies: Array<{ mockRestore(): void }> = [];
 afterEach(() => {
+  ff?.restore();
+  ff = null;
+  cfg?.restore();
+  cfg = null;
   while (spies.length) spies.pop()!.mockRestore();
 });
 
-function fakeAd(restoreResult: boolean) {
-  spies.push(
-    spyOn(adApi, "fetchMethod").mockResolvedValue({
-      uuid: "abc",
-      referenceId: "ref",
-      name: "myMethod",
-      version: 7,
-      category: { name: "Cat" },
-    } as any),
-    spyOn(adApi, "historyRestore").mockResolvedValue(restoreResult),
-    spyOn(CacheManager, "invalidate").mockResolvedValue(undefined as any),
-    spyOn(process.stderr, "write").mockImplementation(() => true),
-  );
+interface WireOpts {
+  /** Chain body returned for GET chain/<DRAFT> (v1). Default: the real draft. */
+  draftV1?: any;
+  /** restore handler; default: the real success answer. */
+  restore?: (req: RecordedRequest) => unknown;
+  /** V2 chain body served after a restore (default: the real one). */
+  draftV2?: any;
+  publishedV1?: any;
 }
 
-describe("ad history restore", () => {
-  test("restore returning false -> ok:false RESTORE_FAILED with data", async () => {
-    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
-    fakeAd(false);
-    const r = await runCommand(historyCommand, ["restore", "abc", "--version", "3", "--yes"], { env: "t-dev" });
+/** The history services + chain endpoints. `get` serves the draft fixtures for includeDraft, a "published" body otherwise. */
+function wire(opts: WireOpts = {}) {
+  cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
+  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
+  const pubGet = (v: string) => ({ ...load("get-draft-v1.json"), methodID: PUB, methodVersion: Number(v), methodVersionID: `pub-${v}` });
+  ff = fakeFetch([
+    { method: "GET", url: `/rest/api/automation/chain/${DRAFT}`, response: opts.draftV1 ?? load("chain-v1-draft.json") },
+    { method: "GET", url: `/rest/api/automation/chain/${PUB}`, response: opts.publishedV1 ?? { error: "no published fixture" } },
+    { method: "GET", url: `/rest/api/automation/chain/v2/${DRAFT}?basicInfo=false`, response: opts.draftV2 ?? load("chain-v2-draft.json") },
+    {
+      method: "GET",
+      url: /automation-systems\/Expertly\.Automation\.Method\.History\/automation-apis\//,
+      response: (req: RecordedRequest) => ({ serviceChainUID: `hist-${req.url.split("/").pop()}` }),
+    },
+    { method: "POST", url: /chain\/execute\/hist-listAll/, response: load("listAll-draft.json") },
+    {
+      method: "POST",
+      url: /chain\/execute\/hist-get/,
+      response: (req: RecordedRequest) => {
+        const b = req.json();
+        if (b.includeDraft !== "true") return pubGet(b.version);
+        if (b.version === "1") return load("get-draft-v1.json");
+        if (b.version === "3") return load("get-draft-v3.json");
+        return respond({ status: 500, json: load("get-not-found-500.json") });
+      },
+    },
+    {
+      method: "POST",
+      url: /chain\/execute\/hist-restore/,
+      response: opts.restore ?? (() => ({ response: true, executionStatus: { executed: true, failed: false, statusCode: 200 } })),
+    },
+  ]).install();
+  return ff;
+}
+
+const getCalls = (f: FakeFetch) => f.requests.filter((r) => r.url.includes("execute/hist-get")).map((r) => r.json());
+const restoreCalls = (f: FakeFetch) => f.requests.filter((r) => r.url.includes("execute/hist-restore"));
+
+describe("ad history show/list version mapping (F7)", () => {
+  test("show on a DRAFT uuid reads the draft chain's history (includeDraft) and matches list", async () => {
+    const f = wire();
+    const list = await runCommand(historyCommand, ["list", DRAFT], { env: "t-dev" });
+    const show = await runCommand(historyCommand, ["show", DRAFT, "--version", "3"], { env: "t-dev" });
+    expect(show.envelope?.ok).toBe(true);
+    const listed = (list.envelope?.data as any).versions.find((v: any) => v.version === 3);
+    expect((show.envelope?.data as any).versionUUID).toBe(listed.versionUUID);
+    expect((show.envelope?.data as any).side).toBe("DRAFT");
+    expect(getCalls(f)).toEqual([{ serviceName: "Test-Parth", methodName: "belz_tst_s4b_hist1", version: "3", includeDraft: "true" }]);
+  });
+
+  test("show on a PUBLISHED uuid reads the published chain's history (no includeDraft)", async () => {
+    const pub = { ...load("chain-v1-draft.json"), uuid: PUB, automationState: "PUBLISHED", referenceId: DRAFT };
+    const f = wire({ publishedV1: pub });
+    const show = await runCommand(historyCommand, ["show", PUB, "--version", "2"], { env: "t-dev" });
+    expect(show.envelope?.ok).toBe(true);
+    expect((show.envelope?.data as any).versionUUID).toBe("pub-2");
+    expect((show.envelope?.data as any).side).toBe("PUBLISHED");
+    expect(getCalls(f)[0].includeDraft).toBeUndefined();
+  });
+
+  test("unknown version -> HISTORY_VERSION_NOT_FOUND (server 500 'No record found.')", async () => {
+    wire();
+    const r = await runCommand(historyCommand, ["show", DRAFT, "--version", "99"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(false);
+    expect(r.envelope?.error?.code).toBe("HISTORY_VERSION_NOT_FOUND");
+  });
+
+  test("diff compares the same records show returns (code change v1 -> v3 is visible)", async () => {
+    wire();
+    const r = await runCommand(historyCommand, ["diff", DRAFT, "--from", "1", "--to", "3"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.v1StepCount).toBe(1);
+    expect(d.steps[0].changed).toBe(true);
+    expect(d.steps[0].detail).toBe("Source changed");
+  });
+});
+
+describe("ad history restore (AD-23)", () => {
+  test("success: draft-guarded, restores the draft side, reports resulting version + content match", async () => {
+    const f = wire();
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.success).toBe(true);
+    expect(d.platformResponse).toBe(true);
+    expect(d.uuid).toBe(DRAFT);
+    expect(d.resultingVersion).toBe(4); // fixture: the draft after restoring v1
+    expect(d.contentMatches).toBe(true); // v4 carries v1's code
+    expect(restoreCalls(f)[0]!.json()).toEqual({ serviceName: "Test-Parth", methodName: "belz_tst_s4b_hist1", version: "1", includeDraft: "true" });
+  });
+
+  test("a PUBLISHED uuid is refused before any write (versions are per chain)", async () => {
+    const pub = { ...load("chain-v1-draft.json"), uuid: PUB, automationState: "PUBLISHED", referenceId: DRAFT };
+    const f = wire({ publishedV1: pub });
+    const r = await runCommand(historyCommand, ["restore", PUB, "--version", "1", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("HISTORY_RESTORE_NEEDS_DRAFT");
+    expect(r.envelope?.error?.message).toContain(DRAFT);
+    expect(restoreCalls(f)).toHaveLength(0);
+  });
+
+  test("unknown state -> draft guard refuses, no write", async () => {
+    const noState = load("chain-v1-draft.json");
+    delete noState.automationState;
+    delete noState.state;
+    const f = wire({ draftV1: noState });
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("AD_DRAFT_GUARD_STATE_UNKNOWN");
+    expect(restoreCalls(f)).toHaveLength(0);
+  });
+
+  test("a version missing from the draft history is refused before the write", async () => {
+    const f = wire();
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "99", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("HISTORY_VERSION_NOT_FOUND");
+    expect(restoreCalls(f)).toHaveLength(0);
+  });
+
+  test("platform false -> ok:false RESTORE_FAILED", async () => {
+    wire({ restore: () => ({ response: false, executionStatus: { failed: false } }) });
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
     expect(r.envelope?.ok).toBe(false);
     expect(r.envelope?.error?.code).toBe("RESTORE_FAILED");
-    expect((r.envelope?.data as any)?.success).toBe(false);
     expect(r.exitCode).not.toBe(0);
   });
 
-  test("restore returning true -> ok:true", async () => {
-    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
-    fakeAd(true);
-    const r = await runCommand(historyCommand, ["restore", "abc", "--version", "3", "--yes"], { env: "t-dev" });
+  test("unrecognised response + content not verified -> ok:false RESTORE_UNCONFIRMED (fail closed)", async () => {
+    // after the "restore", the draft still carries v3's code
+    const v2 = load("chain-v2-draft.json");
+    const step = v2.steps[0].properties.customCode;
+    step.inlineCode = step.inlineCode.replace("v1-content", "v3-content");
+    wire({ restore: () => ({ something: "else" }), draftV2: v2 });
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(false);
+    expect(r.envelope?.error?.code).toBe("RESTORE_UNCONFIRMED");
+    expect((r.envelope?.data as any).platformResponse).toBeNull();
+  });
+
+  test("unrecognised response but verified content -> ok", async () => {
+    wire({ restore: () => ({ something: "else" }) });
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
     expect(r.envelope?.ok).toBe(true);
-    expect((r.envelope?.data as any)?.success).toBe(true);
+    expect((r.envelope?.data as any).contentMatches).toBe(true);
+  });
+
+  test("--llm without --yes -> AD_CONFIRMATION_REQUIRED, no write", async () => {
+    const f = wire();
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
+    expect(restoreCalls(f)).toHaveLength(0);
+  });
+});
+
+describe("interpretRestoreResponse", () => {
+  test("real success wire, false, failed status, unknown shapes", () => {
+    expect(interpretRestoreResponse({ response: true, executionStatus: { executed: true, failed: false } })).toBe(true);
+    expect(interpretRestoreResponse({ response: "true" })).toBe(true);
+    expect(interpretRestoreResponse({ response: false })).toBe(false);
+    expect(interpretRestoreResponse({ response: true, executionStatus: { failed: true } })).toBe(false);
+    expect(interpretRestoreResponse({ response: { response: true } })).toBe(true);
+    expect(interpretRestoreResponse({})).toBeNull();
+    expect(interpretRestoreResponse(null)).toBeNull();
+    expect(interpretRestoreResponse({ response: [1] })).toBeNull();
   });
 });
 

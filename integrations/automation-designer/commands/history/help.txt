@@ -9,7 +9,7 @@ Actions:
                                       step kinds, inputs, full structure)
   diff <uuid> --from N --to M           Compare two versions side by side (step
                                       count, kind changes, input changes)
-  restore <uuid> --version N [--yes]  Revert the method to a previous version
+  restore <uuid> --version N [--yes]  Revert the DRAFT to a previous version
 
 Flags:
   --version <N>    Version number (for show/restore)
@@ -25,8 +25,17 @@ Notes:
   - 'diff' fetches both versions in parallel and compares step structure,
     step bodies, and inputs. It does NOT compute a textual diff of the
     jsonDefinition — it compares parsed step representations.
-  - 'restore' is a write operation and goes through the confirmation gate.
-    It calls the Expertly.Automation.Method.History.restore internal service.
+  - The draft and the published chain keep SEPARATE version histories.
+    list/show/diff read the history of the chain the uuid names (a draft
+    uuid -> draft history, a published uuid -> published history), so the
+    same --version N always means the same record in list and show.
+  - 'restore' is a write: it requires --env, goes through the draft guard and
+    the confirmation gate, and only accepts a DRAFT uuid (a published uuid is
+    refused with the draft uuid to use). It calls the
+    Expertly.Automation.Method.History.restore internal service, which saves
+    the old body as a NEW draft version; belz re-fetches the draft and reports
+    resultingVersion and contentMatches. An unrecognised platform answer is a
+    failure unless the re-fetched draft verifiably matches (RESTORE_UNCONFIRMED).
   - Version numbers are integers starting at 1. Use 'list' to see which
     versions exist.
 
@@ -35,4 +44,4 @@ Examples:
   belz ad history show 4e3f3f8d... --version 3
   belz ad history diff 4e3f3f8d... --from 1 --to 5
   belz ad history show 4e3f3f8d... --version 1 --llm | jq '.data.method.parsedSteps'
-  belz ad history restore 4e3f3f8d... --version 3 --yes
+  belz ad history restore 4e3f3f8d... --version 3 --env <env> --yes

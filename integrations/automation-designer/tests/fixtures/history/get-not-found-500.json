@@ -1,0 +1,12 @@
+{
+  "executed": false,
+  "message": "com.expertly.common.exception.EEException: No record found.",
+  "failed": true,
+  "statusCode": 500,
+  "executionTime": {},
+  "failingSteps": [],
+  "failingStepsStatuses": [],
+  "totalExecutionTime": {},
+  "calls": [],
+  "errorMessage": "com.expertly.common.exception.EEException: No record found."
+}

@@ -1,0 +1,122 @@
+{
+  "methodVersion": 3,
+  "isDeactivated": false,
+  "methodVersionID": "462c85e3-baa1-11f1-be52-0affd1f1700f",
+  "isPublished": false,
+  "addedBy": 2,
+  "executionStatus": {
+    "executed": true,
+    "failed": false,
+    "statusCode": 200,
+    "executionTime": {
+      "time": 36,
+      "unit": "milliseconds"
+    },
+    "failingSteps": [],
+    "failingStepsStatuses": [],
+    "totalExecutionTime": {
+      "time": 57,
+      "unit": "milliseconds"
+    },
+    "calls": []
+  },
+  "methodID": "4bdea25c480a8e9dbc1cae830cb89b68",
+  "jsonDefinition": {
+    "uuid": "4bdea25c480a8e9dbc1cae830cb89b68",
+    "automationApiId": "4237d8830f9d0e9f62d99d495d08c240    ",
+    "name": "belz_tst_s4b_hist1",
+    "summary": "belz stage-4b probe — safe to delete",
+    "description": "",
+    "metadata": {
+      "version": {
+        "uuid": "4bdea25c480a8e9dbc1cae830cb89b68",
+        "name": "3",
+        "description": null,
+        "breaking": false
+      },
+      "service": {
+        "id": 1135,
+        "uuid": "4e98700b2524e2accd47b4addf95ceca",
+        "name": "Test-Parth",
+        "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+        "systemService": false
+      },
+      "categories": null,
+      "executionTimeLimit": null,
+      "internal": {
+        "createdAt": 1790533713800,
+        "lastPublishedAt": null,
+        "createdBy": 2,
+        "migrationVersion": 1790533713800,
+        "lastPublishedBy": null,
+        "sourceEnvironment": null,
+        "systemMethod": false
+      },
+      "state": "DRAFT",
+      "referenceId": null
+    },
+    "inputs": [],
+    "outputs": [],
+    "variables": [],
+    "steps": [
+      {
+        "coreMethod": false,
+        "description": "s4b cc step",
+        "inputs": [],
+        "outputs": [
+          {
+            "key": "greeting",
+            "fieldCode": "greeting",
+            "name": "greeting",
+            "type": "STRING"
+          }
+        ],
+        "properties": {
+          "runAsync": false,
+          "exitCondition": {
+            "exitOnFailure": {
+              "value": true,
+              "code": null,
+              "message": null
+            },
+            "conditionalExit": {
+              "code": null,
+              "message": null,
+              "expression": null,
+              "expandedExpressions": null
+            }
+          },
+          "entryCondition": {
+            "expression": null,
+            "expandedExpressions": null
+          },
+          "type": "CUSTOM_CODE",
+          "customCode": {
+            "inlineCode": "const g = \"v3-content\";\nconsole.log(g);",
+            "language": "JAVASCRIPT",
+            "executor": "INTERNAL_SERVER",
+            "fileName": null,
+            "file": null
+          },
+          "databaseRead": {
+            "query": null,
+            "account": "null"
+          }
+        },
+        "interfaceMigration": false
+      }
+    ],
+    "changelogs": [],
+    "permissions": {
+      "permissionSet": [],
+      "methodScope": null,
+      "allowedCategories": []
+    },
+    "methodDeprecated": false,
+    "migration": false,
+    "interfaceMigration": false,
+    "securityFields": [],
+    "automationState": "DRAFT"
+  },
+  "addedWhen": "2026-09-27 18:28:45.497"
+}

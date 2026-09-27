@@ -1,0 +1,137 @@
+{
+  "uuid": "4bdea25c480a8e9dbc1cae830cb89b68",
+  "automationApiId": "4237d8830f9d0e9f62d99d495d08c240    ",
+  "name": "belz_tst_s4b_hist1",
+  "summary": "belz stage-4b probe — safe to delete",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "4bdea25c480a8e9dbc1cae830cb89b68",
+      "name": "4",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 1135,
+      "uuid": "4e98700b2524e2accd47b4addf95ceca",
+      "name": "Test-Parth",
+      "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1790533713800,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": 1,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "coreMethod": false,
+      "description": "s4b cc step",
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "greeting",
+          "fieldCode": "greeting",
+          "name": "greeting",
+          "type": "STRING"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "const g = \"v1-content\";\nconsole.log(g);",
+          "language": "JAVASCRIPT",
+          "executor": "INTERNAL_SERVER",
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "45e53ef169d880e101aebc18df3cb229",
+      "comment": "Method reverted to version 1 by Admin SEMS",
+      "user": {
+        "id": 2,
+        "externalUuid": "00000000-0000-0000-0000-000000000000",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790524815956
+      },
+      "createdAt": 1790533744878,
+      "changelogType": "EXPERTLY_SYSTEM",
+      "entityVersion": "1"
+    }
+  ],
+  "permissions": {
+    "permissionSet": [
+      "EDIT_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_IN_GUIDE",
+      "VIEW_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_DIRECTLY",
+      "OWNER_METHOD"
+    ],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

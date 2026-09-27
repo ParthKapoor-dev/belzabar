@@ -14,6 +14,14 @@ import type {
 } from "../types/v1-wire";
 import { detectJavaException } from "../error-parser";
 
+/**
+ * Per-call timeout for long server-side operations (`/chain/test`, execute,
+ * publish, history restore, test suites). The core default (60 s to headers)
+ * is too short for heavy chains, and a timed-out POST may still complete on
+ * the server, so retries can double-apply.
+ */
+export const AD_LONG_OP_TIMEOUT_MS = 10 * 60_000;
+
 // ─── Error envelope used by every V1 request ────────────────────────────
 
 async function checkResponse(response: Response, path: string): Promise<void> {
@@ -153,6 +161,7 @@ export async function publishDraft(draftUuid: string): Promise<{ publishedUuid: 
   const path = `/rest/api/automation/chain/${draftUuid}/publish`;
   const response = await apiFetch(path, {
     method: "POST",
+    timeoutMs: AD_LONG_OP_TIMEOUT_MS,
     authMode: "Bearer",
     headers: { "Content-Type": "application/json" },
   });
@@ -244,6 +253,7 @@ export async function runTestSuite(chainUuid: string): Promise<unknown> {
   const path = `/rest/api/automation/chain/testsuite/execute`;
   const response = await apiFetch(path, {
     method: "POST",
+    timeoutMs: AD_LONG_OP_TIMEOUT_MS,
     authMode: "Bearer",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chainUuid }),
@@ -267,6 +277,7 @@ export async function testMethodMultipart(formData: FormData): Promise<Response>
   const path = "/rest/api/automation/chain/test";
   const response = await apiFetch(path, {
     method: "POST",
+    timeoutMs: AD_LONG_OP_TIMEOUT_MS,
     authMode: "Bearer",
     headers: {
       "internal-ad-execution-mode": "debug",
@@ -344,6 +355,7 @@ export async function testExecuteV1(method: HydratedMethod): Promise<V1TestExecu
   const path = `/rest/api/automation/chain/test`;
   const response = await apiFetch(path, {
     method: "POST",
+    timeoutMs: AD_LONG_OP_TIMEOUT_MS,
     authMode: "Bearer",
     headers: {
       "internal-ad-execution-mode": "debug",
@@ -449,12 +461,7 @@ export async function historyListAll(
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    throw new CliError(`History listAll failed: ${response.status}`, {
-      code: "HISTORY_LIST_FAILED",
-      details: await response.text(),
-    });
-  }
+  if (!response.ok) await throwHistoryError(response, "listAll");
 
   const body = (await response.json()) as Record<string, unknown>;
   const items = extractHistoryResponse(body);
@@ -470,6 +477,11 @@ export async function historyListAll(
  * The get endpoint requires `serviceName` + `methodName` + `version` (passing
  * only `methodUUID` + `version` via the execute endpoint results in a 500).
  * Callers should pass `category` (the service/category name) and `methodName`.
+ *
+ * F7: `includeDraft: true` selects the DRAFT chain's history, otherwise the
+ * PUBLISHED chain's. The two chains keep independent version counters, so
+ * the caller must pick the side that matches the uuid it listed
+ * (`listAll` lists by `methodUUID`, i.e. exactly the chain it is given).
  */
 export async function historyGet(opts: {
   category: string;
@@ -492,12 +504,7 @@ export async function historyGet(opts: {
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    throw new CliError(`History get failed: ${response.status}`, {
-      code: "HISTORY_GET_FAILED",
-      details: await response.text(),
-    });
-  }
+  if (!response.ok) await throwHistoryError(response, "get", opts.version);
 
   const body = (await response.json()) as Record<string, unknown>;
   const inner = extractHistoryResponseSingle(body);
@@ -511,13 +518,22 @@ export async function historyGet(opts: {
 /**
  * Restore a method to a previous version. Calls the published
  * Expertly.Automation.Method.History.restore service.
+ *
+ * `includeDraft: true` restores the DRAFT chain named by category+methodName
+ * (`version` is a draft-history version); without it the PUBLISHED chain is
+ * restored — callers must never do that (the command goes through the draft
+ * guard). Live wire (sems-dev): `{response: true, executionStatus: {...}}` on
+ * success, HTTP 500 `EEException: No record found.` for an unknown version.
+ *
+ * Returns `true` / `false` for a recognised answer and `null` when the
+ * response shape is not recognised (fail closed, AD-23: never assume success).
  */
 export async function historyRestore(opts: {
   category: string;
   methodName: string;
   version: number;
   includeDraft?: boolean;
-}): Promise<boolean> {
+}): Promise<boolean | null> {
   const payload: Record<string, unknown> = {
     serviceName: opts.category,
     methodName: opts.methodName,
@@ -531,23 +547,55 @@ export async function historyRestore(opts: {
     method: "POST",
     authMode: "Raw",
     body: JSON.stringify(payload),
+    timeoutMs: AD_LONG_OP_TIMEOUT_MS,
   });
 
-  if (!response.ok) {
-    throw new CliError(`History restore failed: ${response.status}`, {
-      code: "HISTORY_RESTORE_FAILED",
-      details: await response.text(),
+  if (!response.ok) await throwHistoryError(response, "restore", opts.version);
+
+  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  return interpretRestoreResponse(body);
+}
+
+/** Map a history.restore execute body to true / false / null (unrecognised). Exported for tests. */
+export function interpretRestoreResponse(body: unknown): boolean | null {
+  if (!body || typeof body !== "object" || Array.isArray(body)) return null;
+  const b = body as Record<string, unknown>;
+  const status = b.executionStatus as Record<string, unknown> | undefined;
+  if (status && status.failed === true) return false;
+  const asBool = (v: unknown): boolean | null =>
+    v === true || v === "true" ? true : v === false || v === "false" ? false : null;
+  const direct = asBool(b.response);
+  if (direct !== null) return direct;
+  if (b.response && typeof b.response === "object" && !Array.isArray(b.response)) {
+    return asBool((b.response as Record<string, unknown>).response);
+  }
+  return null;
+}
+
+/**
+ * History execute calls answer an unknown version with HTTP 500
+ * `EEException: No record found.` — map that to HISTORY_VERSION_NOT_FOUND.
+ */
+async function throwHistoryError(response: Response, op: "get" | "restore" | "listAll", version?: number): Promise<never> {
+  const text = await response.text().catch(() => "");
+  let message = "";
+  try {
+    const j = JSON.parse(text) as Record<string, unknown>;
+    message = String(j.errorMessage ?? j.message ?? "");
+  } catch {
+    message = redactString(text).slice(0, 300);
+  }
+  if (/no record found/i.test(message)) {
+    throw new CliError(`History version ${version ?? "?"} not found for this method.`, {
+      code: "HISTORY_VERSION_NOT_FOUND",
+      details: { op, version, status: response.status, message },
     });
   }
-
-  const body = (await response.json()) as Record<string, unknown>;
-  const inner = body.response;
-  if (typeof inner === "boolean") return inner;
-  if (typeof inner === "object" && inner != null) {
-    const r = (inner as Record<string, unknown>).response;
-    return r === true || r === "true";
-  }
-  return true;
+  const code = op === "get" ? "HISTORY_GET_FAILED" : op === "restore" ? "HISTORY_RESTORE_FAILED" : "HISTORY_LIST_FAILED";
+  throw new CliError(`History ${op} failed: ${response.status}${message ? ` — ${message}` : ""}`, {
+    code,
+    details: { op, version, status: response.status, message },
+  });
 }
 
 // Unwrap the standard execute response wrapper

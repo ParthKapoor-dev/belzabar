@@ -2,7 +2,8 @@ import { CliError, defineSubcommands, failWithData, ok, type CommandModule, type
 import { adApi, type MethodVersionSummary, type MethodVersionFull } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
-import { parseVersionBody } from "../../lib/fingerprint";
+import { fingerprintMethod, parseVersionBody } from "../../lib/fingerprint";
+import { resolveDraftTarget } from "../../lib/draft-guard";
 import type { HydratedMethod } from "../../lib/types/common";
 import { CacheManager } from "../../lib/cache";
 
@@ -26,9 +27,13 @@ interface VersionRow {
   addedWhen: string;
 }
 
+/** Which chain's history a uuid names: draft and published keep independent version counters (F7). */
+type HistorySide = "DRAFT" | "PUBLISHED";
+
 interface HistoryListData {
   action: "list";
   uuid: string;
+  side: HistorySide;
   methodName: string;
   category: string;
   totalVersions: number;
@@ -38,6 +43,7 @@ interface HistoryListData {
 interface HistoryShowData {
   action: "show";
   uuid: string;
+  side: HistorySide;
   version: number;
   versionUUID: string;
   methodName: string;
@@ -62,6 +68,7 @@ interface DiffStepRow {
 interface HistoryDiffData {
   action: "diff";
   uuid: string;
+  side: HistorySide;
   v1: number;
   v2: number;
   v1StepCount: number;
@@ -74,9 +81,19 @@ interface HistoryDiffData {
 
 interface HistoryRestoreData {
   action: "restore";
+  /** The draft that was restored (resolved through the draft guard). */
   uuid: string;
+  /** The uuid the caller passed. */
+  inputUuid: string;
   version: number;
   success: boolean;
+  /** Platform answer: true / false / null when the response shape was not recognised. */
+  platformResponse: boolean | null;
+  previousVersion: number | null;
+  /** Draft version after the restore (the platform saves the restored body as a new version). */
+  resultingVersion: number | null;
+  /** Whether the re-fetched draft's logic fingerprint equals the target version's. */
+  contentMatches: boolean | null;
 }
 
 type HistoryData = HistoryListData | HistoryShowData | HistoryDiffData | HistoryRestoreData;
@@ -163,7 +180,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
 
     switch (data.action) {
       case "list": {
-        ui.section(`Version History: ${data.methodName} (${data.totalVersions} versions)`);
+        ui.section(`Version History (${data.side.toLowerCase()} chain): ${data.methodName} (${data.totalVersions} versions)`);
         if (data.versions.length === 0) {
           ui.text("No version history available for this method.");
         } else {
@@ -183,7 +200,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       }
 
       case "show": {
-        ui.section(`Version ${data.version} of ${data.methodName}`);
+        ui.section(`Version ${data.version} of ${data.methodName} (${data.side.toLowerCase()} chain)`);
         ui.table(
           ["Property", "Value"],
           [
@@ -251,9 +268,12 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
 
       case "restore": {
         if (data.success) {
-          ui.success(`Restored method to version ${data.version}.`);
+          ui.success(
+            `Restored draft ${data.uuid} to the content of version ${data.version}` +
+              (data.resultingVersion != null ? ` (now v${data.resultingVersion}).` : "."),
+          );
         } else {
-          ui.warn(`Restore to version ${data.version} returned false — check the method state in the UI.`);
+          ui.warn(`Restore to version ${data.version} was not confirmed — check the method in the UI.`);
         }
         break;
       }
@@ -262,6 +282,41 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
 };
 
 // ─── sub-action implementations ──────────────────────────────────────────
+
+function sideOf(m: HydratedMethod): HistorySide {
+  return m.state === "PUBLISHED" ? "PUBLISHED" : "DRAFT";
+}
+
+function sameUuid(a: string | null | undefined, b: string | null | undefined): boolean {
+  return !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/**
+ * Fetch version N of *this* chain's history (F7).
+ *
+ * history.get is addressed by category + method name, and the draft and the
+ * published chain share both. `includeDraft: true` returns the DRAFT chain's
+ * version N, otherwise the PUBLISHED chain's; `listAll` lists by uuid. So the
+ * side must follow the uuid's state, and the returned `methodID` is checked
+ * against the uuid (falling back to the other side once when they disagree).
+ */
+export async function getVersionOf(
+  method: HydratedMethod,
+  category: string,
+  version: number,
+): Promise<MethodVersionFull> {
+  const order = sideOf(method) === "DRAFT" ? [true, false] : [false, true];
+  let last: MethodVersionFull | undefined;
+  for (const includeDraft of order) {
+    const full = await adApi.historyGet({ category, methodName: method.name, version, includeDraft });
+    if (!full.methodID || sameUuid(full.methodID, method.uuid)) return full;
+    last = full;
+  }
+  throw new CliError(
+    `History version ${version} of "${method.name}" did not resolve to ${method.uuid} (got methodID ${last?.methodID}).`,
+    { code: "HISTORY_SIDE_MISMATCH", details: { uuid: method.uuid, version, methodID: last?.methodID } },
+  );
+}
 
 async function executeList(
   args: HistoryArgs,
@@ -282,6 +337,7 @@ async function executeList(
   return ok<HistoryListData>({
     action: "list",
     uuid: args.uuid,
+    side: sideOf(current),
     methodName: current.name,
     category,
     totalVersions: rows.length,
@@ -299,18 +355,13 @@ async function executeShow(
     throw new CliError("--version <N> is required for 'history show'.", { code: "MISSING_VERSION" });
   }
 
-  const full = await adApi.historyGet({
-    category,
-    methodName,
-    version: args.version,
-    includeDraft: true,
-  });
-
+  const full = await getVersionOf(current, category, args.version);
   const parsed = parseVersionBody(full);
 
   return ok<HistoryShowData>({
     action: "show",
     uuid: args.uuid,
+    side: sideOf(current),
     version: full.methodVersion,
     versionUUID: full.methodVersionID,
     methodName,
@@ -328,15 +379,15 @@ async function executeDiff(
   args: HistoryArgs,
   current: HydratedMethod,
   category: string,
-  methodName: string,
+  _methodName: string,
 ): Promise<CommandResult<HistoryDiffData>> {
   if (args.v1 == null || args.v2num == null) {
     throw new CliError("--from <N> and --to <M> are required for 'history diff'.", { code: "MISSING_VERSION" });
   }
 
   const [fullV1, fullV2] = await Promise.all([
-    adApi.historyGet({ category, methodName, version: args.v1, includeDraft: true }),
-    adApi.historyGet({ category, methodName, version: args.v2num, includeDraft: true }),
+    getVersionOf(current, category, args.v1),
+    getVersionOf(current, category, args.v2num),
   ]);
 
   const parsedV1 = parseVersionBody(fullV1);
@@ -396,6 +447,7 @@ async function executeDiff(
   return ok<HistoryDiffData>({
     action: "diff",
     uuid: args.uuid,
+    side: sideOf(current),
     v1: args.v1,
     v2: args.v2num,
     v1StepCount: parsedV1.parsedSteps.length,
@@ -409,7 +461,7 @@ async function executeDiff(
 
 async function executeRestore(
   args: HistoryArgs,
-  current: HydratedMethod,
+  _current: HydratedMethod,
   category: string,
   methodName: string,
   context: { outputMode: "human" | "llm" },
@@ -418,40 +470,109 @@ async function executeRestore(
     throw new CliError("--version <N> is required for 'history restore'.", { code: "MISSING_VERSION" });
   }
 
+  // AD-23: a restore is a write — it must land on the DRAFT, never the published chain.
+  const guard = await resolveDraftTarget(args.uuid, "v1");
+  if (!guard.ok) {
+    throw new CliError(guard.message, {
+      code: `AD_DRAFT_GUARD_${guard.reason}`,
+      details: { uuid: args.uuid, publishedUuid: guard.publishedUuid },
+    });
+  }
+  if (guard.switchedFromPublished) {
+    // Version numbers are per chain (F7): the N the caller saw for the
+    // published uuid is not the draft's N. Refuse instead of guessing.
+    throw new CliError(
+      `${args.uuid} is the PUBLISHED chain; its history versions differ from the draft's. ` +
+        `Restore works on the draft: pick a version from 'belz ad history list ${guard.draft.uuid}' ` +
+        `and run 'belz ad history restore ${guard.draft.uuid} --version <N>'.`,
+      { code: "HISTORY_RESTORE_NEEDS_DRAFT", details: { publishedUuid: args.uuid, draftUuid: guard.draft.uuid } },
+    );
+  }
+  const draft = guard.draft;
+
+  // The target must exist on the draft's history before we write anything.
+  const target = await getVersionOf(draft, category, args.version);
+  const targetMethod = parseVersionBody(target);
+  const targetIsV2 = isV2Body(target.jsonDefinition);
+
   await requireConfirmation({
     yes: args.yes,
     outputMode: context.outputMode,
-    action: `restore method "${methodName}" to version ${args.version}`,
+    action: `restore draft "${methodName}" to version ${args.version}`,
     details: [
       ["Method", methodName],
       ["Category", category],
-      ["UUID", args.uuid],
-      ["Target version", String(args.version)],
-      ["Current version", String(current.version)],
+      ["Draft UUID", draft.uuid],
+      ["Target version", `${args.version} (${target.addedWhen})`],
+      ["Current version", String(draft.version)],
     ],
   });
 
   logIntent("POST", "Expertly.Automation.Method.History.restore (via execute)", {
+    uuid: draft.uuid,
     category,
     methodName,
     version: args.version,
   });
 
-  const success = await adApi.historyRestore({
-    category,
-    methodName,
-    version: args.version,
-    includeDraft: true,
-  });
-  for (const id of [args.uuid, current.uuid, current.referenceId]) await CacheManager.invalidate(id);
+  let platformResponse: boolean | null;
+  try {
+    platformResponse = await adApi.historyRestore({
+      category,
+      methodName,
+      version: args.version,
+      includeDraft: true,
+    });
+  } finally {
+    for (const id of new Set([args.uuid, draft.uuid, draft.referenceId])) await CacheManager.invalidate(id);
+  }
 
-  const data: HistoryRestoreData = { action: "restore", uuid: args.uuid, version: args.version, success };
+  // Re-fetch and verify: report the resulting version and whether the draft
+  // now carries the target version's logic.
+  let resultingVersion: number | null = null;
+  let contentMatches: boolean | null = null;
+  try {
+    const after = await adApi.fetchMethod(draft.uuid, targetIsV2 ? "v2" : "v1");
+    resultingVersion = typeof after.version === "number" ? after.version : null;
+    contentMatches = fingerprintMethod(after) === fingerprintMethod(targetMethod);
+  } catch {
+    // leave as null — reported below
+  }
+
+  const previousVersion = typeof draft.version === "number" ? draft.version : null;
+  const success = platformResponse === true || (platformResponse === null && contentMatches === true);
+  const data: HistoryRestoreData = {
+    action: "restore",
+    uuid: draft.uuid,
+    inputUuid: args.uuid,
+    version: args.version,
+    success,
+    platformResponse,
+    previousVersion,
+    resultingVersion,
+    contentMatches,
+  };
   // The platform answers `false` when it did not restore: that is a failed
   // operation, so the envelope must be ok:false (exit 1), not ok:true.
-  if (!success) {
+  if (platformResponse === false) {
     return failWithData("RESTORE_FAILED", `Restore of "${methodName}" to version ${args.version} returned false.`, data);
   }
+  // Fail closed (AD-23): an unrecognised answer is only a success when the
+  // re-fetched draft verifiably carries the target content.
+  if (platformResponse === null && !success) {
+    return failWithData(
+      "RESTORE_UNCONFIRMED",
+      `Restore of "${methodName}" to version ${args.version} returned an unrecognised response and the draft could not be verified. Check the method before retrying.`,
+      data,
+    );
+  }
   return ok(data);
+}
+
+function isV2Body(jd: unknown): boolean {
+  if (!jd || typeof jd !== "object" || Array.isArray(jd)) return false;
+  const o = jd as Record<string, unknown>;
+  return !!(o.metadata || o.steps);
 }
 
 export default command;

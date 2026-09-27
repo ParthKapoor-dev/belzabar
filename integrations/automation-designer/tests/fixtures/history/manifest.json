@@ -1,0 +1,15 @@
+{
+  "env": "sems-dev",
+  "capturedAt": "2026-09-27T18:31:00Z",
+  "source": "belz_tst_s4b_hist1 (Test-Parth, chain id 20136, draft 4bdea25c480a8e9dbc1cae830cb89b68) after 2 saves + a restore of v1 (so v4 carries v1's code)",
+  "sanitized": "emails -> user@example.com, externalUuid zeroed",
+  "files": {
+    "listAll-draft.json": "POST chain/execute/<History.listAll> {methodUUID:<draft>, includeDraft:'true'}",
+    "get-draft-v1.json": "POST chain/execute/<History.get> {serviceName:'Test-Parth', methodName, version:'1', includeDraft:'true'}",
+    "get-draft-v3.json": "same, version '3'",
+    "get-not-found-500.json": "same, version '99' -> HTTP 500 'No record found.'",
+    "chain-v1-draft.json": "GET /rest/api/automation/chain/<draft>",
+    "chain-v2-draft.json": "GET /rest/api/automation/chain/v2/<draft>?basicInfo=false"
+  },
+  "restoreSuccessWire": "{\"response\":true,\"executionStatus\":{\"executed\":true,\"failed\":false,\"statusCode\":200}}"
+}

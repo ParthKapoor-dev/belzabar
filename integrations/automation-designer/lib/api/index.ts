@@ -173,7 +173,7 @@ export const adApi = {
     methodName: string;
     version: number;
     includeDraft?: boolean;
-  }): Promise<boolean> {
+  }): Promise<boolean | null> {
     return v1.historyRestore(opts);
   },
 };
