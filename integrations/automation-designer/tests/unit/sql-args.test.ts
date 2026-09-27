@@ -1,28 +1,32 @@
 import { describe, expect, test } from "bun:test";
+import type { CommandContext } from "@belzabar/core";
 import sqlCommand from "../../commands/sql";
+
+// sql parseArgs ignores the context.
+const parse = (argv: string[]) => sqlCommand.parseArgs!(argv, {} as CommandContext);
 
 describe("sql command parseArgs", () => {
   test("parses run query", () => {
-    const parsed = sqlCommand.parseArgs?.(["run", "select 1"]) as any;
+    const parsed = parse(["run", "select 1"]) as any;
     expect(parsed.action).toBe("run");
     expect(parsed.query).toBe("select 1");
   });
 
   test("parses run query with db and raw flags", () => {
-    const parsed = sqlCommand.parseArgs?.(["run", "select * from users", "--db", "NSM_QA_DB", "--raw"]) as any;
+    const parsed = parse(["run", "select * from users", "--db", "NSM_QA_DB", "--raw"]) as any;
     expect(parsed.action).toBe("run");
     expect(parsed.db).toBe("NSM_QA_DB");
     expect(parsed.raw).toBe(true);
   });
 
   test("parses db listing subcommand", () => {
-    const parsed = sqlCommand.parseArgs?.(["dbs", "--raw"]) as any;
+    const parsed = parse(["dbs", "--raw"]) as any;
     expect(parsed.action).toBe("dbs");
     expect(parsed.raw).toBe(true);
   });
 
   test("parses tui args", () => {
-    const parsed = sqlCommand.parseArgs?.([
+    const parsed = parse([
       "tui",
       "--db",
       "NSM_QA_DB",
@@ -44,7 +48,7 @@ describe("sql command parseArgs", () => {
 
   test("throws on unknown subcommand", () => {
     try {
-      sqlCommand.parseArgs?.(["unknown"]);
+      parse(["unknown"]);
       throw new Error("expected parseArgs to throw");
     } catch (error: any) {
       expect(error.code).toBe("INVALID_SQL_SUBCOMMAND");
@@ -53,7 +57,7 @@ describe("sql command parseArgs", () => {
 
   test("throws when run query is missing", () => {
     try {
-      sqlCommand.parseArgs?.(["run"]);
+      parse(["run"]);
       throw new Error("expected parseArgs to throw");
     } catch (error: any) {
       expect(error.code).toBe("MISSING_SQL_QUERY");
@@ -62,7 +66,7 @@ describe("sql command parseArgs", () => {
 
   test("throws on invalid tui format", () => {
     try {
-      sqlCommand.parseArgs?.(["tui", "--format", "xml"]);
+      parse(["tui", "--format", "xml"]);
       throw new Error("expected parseArgs to throw");
     } catch (error: any) {
       expect(error.code).toBe("SQL_TUI_INVALID_FORMAT");
@@ -71,7 +75,7 @@ describe("sql command parseArgs", () => {
 
   test("throws on invalid tui page size", () => {
     try {
-      sqlCommand.parseArgs?.(["tui", "--page-size", "0"]);
+      parse(["tui", "--page-size", "0"]);
       throw new Error("expected parseArgs to throw");
     } catch (error: any) {
       expect(error.code).toBe("SQL_TUI_INVALID_PAGE_SIZE");

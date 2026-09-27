@@ -6,9 +6,7 @@ import { parseV1Method } from "../../lib/parser/v1";
 function fakeMethod(overrides: Partial<HydratedMethod> & { uuid: string; state: MethodState }): HydratedMethod {
   return {
     sourceVersion: "v1",
-    uuid: overrides.uuid,
     referenceId: overrides.referenceId ?? null,
-    state: overrides.state,
     aliasName: "fake",
     version: 1,
     name: "fake.method",
@@ -23,7 +21,7 @@ function fakeMethod(overrides: Partial<HydratedMethod> & { uuid: string; state: 
     fetchedAt: 0,
     raw: {},
     parseWarnings: [],
-    ...overrides,
+    ...overrides, // uuid + state come from here (required)
   } as HydratedMethod;
 }
 

@@ -316,13 +316,11 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
     input: process.stdin,
     output: process.stdout,
     historySize: 2000,
+    // Seed history via the typed option (`rl.history` is not part of the public type); newest first.
+    history: state.historyEnabled ? [...state.historyEntries].reverse() : [],
     terminal: process.stdin.isTTY,
     completer: (line: string) => completer(line, state.databases.map((db) => db.nickname)),
   });
-
-  if (state.historyEnabled && state.historyEntries.length > 0) {
-    rl.history = [...state.historyEntries].reverse();
-  }
 
   const ask = async (prompt: string): Promise<string> => {
     return new Promise((resolve) => {
