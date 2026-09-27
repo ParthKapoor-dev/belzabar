@@ -2,9 +2,9 @@
 // messages), build 404 → "Build #n not found", queue deadline, crumb errors
 // (MG-5/7/8, F28).
 import { afterEach, describe, expect, test } from "bun:test";
-import { CliError } from "@belzabar/core";
+import { CliError, DEFAULT_JENKINS_JOB } from "@belzabar/core";
 import { fakeFetch, respond, type FakeFetch } from "@belzabar/core/testing";
-import { fetchCrumb, getBuild, getConsoleChunk, resolveQueueItem, triggerBuild, type JenkinsAuth } from "../lib";
+import { assertJenkinsAuth, buildHeaders, fetchCrumb, getBuild, getConsoleChunk, resolveQueueItem, triggerBuild, type JenkinsAuth } from "../lib";
 
 const auth: JenkinsAuth = { baseUrl: "https://jenkins.test", user: "u", password: "p", job: "A/b" };
 const JOB = "https://jenkins.test/job/A/job/b";
@@ -91,5 +91,18 @@ describe("jenkins client", () => {
     expect(e.message).toBe("Failed to trigger Jenkins build (HTTP 500): HTML page: Server Error");
     expect(JSON.stringify(e.details)).not.toContain("c0ffee");
     expect(ff.calls("POST")[0]!.headers["jenkins-crumb"]).toBe("c0ffee");
+  });
+
+  test("basic auth encodes UTF-8 credentials (btoa threw on non-Latin-1)", () => {
+    const h = buildHeaders({ ...auth, user: "jö", password: "pässwörd€" });
+    const decoded = Buffer.from(h.Authorization!.replace(/^Basic /, ""), "base64").toString("utf8");
+    expect(decoded).toBe("jö:pässwörd€");
+    expect(buildHeaders(auth).Authorization).toBe(`Basic ${btoa("u:p")}`);
+  });
+
+  test("assertJenkinsAuth defaults the job to core's DEFAULT_JENKINS_JOB", () => {
+    expect(assertJenkinsAuth({ baseUrl: "https://j.test/", user: "u", password: "p" })).toEqual({
+      baseUrl: "https://j.test", user: "u", password: "p", job: DEFAULT_JENKINS_JOB,
+    });
   });
 });

@@ -10,7 +10,8 @@ consumer today and re-exports it from its `lib/index.ts`. It has no commands.
 ```
 jenkins/
 ├── lib/
-│   ├── auth.ts        JenkinsAuth, buildHeaders, assertJenkinsAuth (from Config.getJenkins())
+│   ├── auth.ts        JenkinsAuth, buildHeaders (UTF-8 basic auth), assertJenkinsAuth (from
+│   │                  Config.getJenkins(); job defaults to core DEFAULT_JENKINS_JOB)
 │   ├── crumb.ts       CSRF crumb fetch + per-process cache
 │   ├── client.ts      jenkinsFetch, jenkinsError, getJobParameters, triggerBuild,
 │   │                  resolveQueueItem, getBuild, getConsoleChunk, getFullConsole, buildUrl, jobUrl
@@ -22,7 +23,7 @@ jenkins/
 └── package.json       depends on @belzabar/core only
 ```
 
-Tests: `tests/client.test.ts` (error mapping, queue deadline, crumb errors) and, with the
+Tests: `tests/client.test.ts` (error mapping, queue deadline, crumb errors, auth header) and, with the
 consumer, `integrations/migrations/tests/unit/real-jenkins.test.ts` (sanitized captures via
 `fakeFetch`).
 

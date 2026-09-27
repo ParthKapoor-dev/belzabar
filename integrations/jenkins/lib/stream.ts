@@ -1,4 +1,4 @@
-import { CliError } from "@belzabar/core";
+import { CliError, sleep } from "@belzabar/core";
 import type { JenkinsAuth } from "./auth";
 import { getBuild, getConsoleChunk } from "./client";
 import { CONSOLE_POLL_INTERVAL_MS, DEFAULT_TIMEOUT_MS } from "./constants";
@@ -46,7 +46,7 @@ export async function streamConsole(
     offset = chunk.nextOffset;
 
     if (chunk.hasMore) {
-      await new Promise((r) => setTimeout(r, pollMs));
+      await sleep(pollMs);
       continue;
     }
 
@@ -65,6 +65,6 @@ export async function streamConsole(
       };
     }
 
-    await new Promise((r) => setTimeout(r, pollMs));
+    await sleep(pollMs);
   }
 }

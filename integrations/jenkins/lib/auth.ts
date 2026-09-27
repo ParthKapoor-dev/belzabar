@@ -1,4 +1,4 @@
-import { CliError } from "@belzabar/core";
+import { CliError, DEFAULT_JENKINS_JOB } from "@belzabar/core";
 
 export interface JenkinsAuth {
   baseUrl: string;
@@ -8,7 +8,8 @@ export interface JenkinsAuth {
 }
 
 export function buildHeaders(auth: JenkinsAuth, extra: Record<string, string> = {}): Record<string, string> {
-  const basic = `Basic ${btoa(`${auth.user}:${auth.password}`)}`;
+  // UTF-8 then base64: `btoa` throws on non-Latin-1 characters in a password.
+  const basic = `Basic ${Buffer.from(`${auth.user}:${auth.password}`, "utf8").toString("base64")}`;
   return {
     Authorization: basic,
     Accept: "application/json",
@@ -31,6 +32,6 @@ export function assertJenkinsAuth(auth: { baseUrl?: string; user?: string; passw
     baseUrl: (auth.baseUrl as string).replace(/\/$/, ""),
     user: auth.user as string,
     password: auth.password as string,
-    job: auth.migrationJob || "Deployments/Expertly/Database/expertly.db-migration",
+    job: auth.migrationJob || DEFAULT_JENKINS_JOB,
   };
 }
