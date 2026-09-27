@@ -5,16 +5,15 @@ import {
   adIdsOf,
   childComponentNames,
   componentTree,
+  findNodes,
   httpDetail,
   httpSummary,
   variablesView,
   varDetail,
   type ComponentTreeNode,
-  type DerivedView,
+  type FoundNode,
   type HttpCallDetail,
-  type HttpCallSummary,
   type VarDetail,
-  type VariableView,
 } from "../../lib/extract";
 import { findNode, parsePage, walkParsed } from "../../lib/parser/index";
 import { resolveInput, type InputKind } from "../../lib/resolver";
@@ -40,7 +39,107 @@ interface ShowArgs {
     node: string | null;         // --node <id> detailed node dump
     varGraph: boolean;           // --var-graph variable write/read/derive/trigger map
     open: boolean;               // --open / -o open the editable draft URL in the browser
+    // Stage 7
+    find: string | null;         // --find <text|id|component>
+    fields: string[] | null;     // --fields a,b,… (vars / http rows); ["all"] = every field
   };
+}
+
+// --- Compact rows (Stage 7, 7.9) ---
+//
+// --vars / --http rows carry only the fields an agent needs to pick the next
+// call; empty values (null, "", [], {}) are omitted. `--fields a,b` picks
+// fields explicitly (full values), `--fields all` = every field.
+
+const VAR_FIELDS = ["name", "type", "initialValue", "from", "spec", "filterFn", "sideEffect"] as const;
+const HTTP_FIELDS = ["index", "label", "callId", "adId", "serviceUuid", "method", "triggers", "outputs", "inProgressVar", "eventMeta"] as const;
+const DEFAULT_VAR_FIELDS = ["name", "type", "initialValue"];
+const DEFAULT_DERIVED_FIELDS = ["name", "from", "sideEffect"];
+const DEFAULT_HTTP_FIELDS = ["index", "label", "callId", "adId", "triggers", "outputs"];
+/** A default-mode initialValue longer than this (JSON) is replaced by `initialValueBytes`. */
+const SHORT_VALUE = 80;
+
+type Row = Record<string, unknown>;
+
+function isEmpty(v: unknown): boolean {
+  if (v === null || v === undefined || v === "") return true;
+  if (Array.isArray(v)) return v.length === 0;
+  if (typeof v === "object") return Object.keys(v as object).length === 0;
+  return false;
+}
+
+function pick(full: Row, fields: readonly string[]): Row {
+  const out: Row = {};
+  for (const f of fields) if (f in full && !isEmpty(full[f])) out[f] = full[f];
+  return out;
+}
+
+export function parseFields(raw: string | undefined): string[] | null {
+  if (raw === undefined) return null;
+  const list = raw.split(",").map((f) => f.trim()).filter(Boolean);
+  if (list.includes("all")) return ["all"];
+  const known = new Set<string>([...VAR_FIELDS, ...HTTP_FIELDS]);
+  const bad = list.filter((f) => !known.has(f));
+  if (bad.length || list.length === 0) {
+    throw new CliError(`--fields: unknown field(s) ${bad.join(", ") || "(none given)"}. Vars: ${VAR_FIELDS.join(",")}; HTTP: ${HTTP_FIELDS.join(",")}; or "all".`, {
+      code: "INVALID_VALUE",
+    });
+  }
+  return list;
+}
+
+function varRows(page: HydratedPage, fields: string[] | null): { userDefined: Row[]; derived: Row[] } {
+  const all = fields?.[0] === "all";
+  const user = page.variables.map((v): Row => {
+    const full: Row = { name: v.name, type: v.type, initialValue: v.initialValue };
+    if (fields) return all ? full : pick(full, ["name", ...fields]);
+    const row = pick(full, DEFAULT_VAR_FIELDS);
+    const json = v.initialValue === undefined ? "" : JSON.stringify(v.initialValue);
+    if (typeof v.initialValue !== "number" && typeof v.initialValue !== "boolean" && json.length > SHORT_VALUE) {
+      delete row.initialValue;
+      row.initialValueBytes = json.length;
+    }
+    return row;
+  });
+  const derived = page.derived.map((d): Row => {
+    const full: Row = { name: d.name, from: d.from, spec: d.spec, filterFn: d.filterFn, sideEffect: d.sideEffect };
+    if (fields) return all ? full : pick(full, ["name", ...fields]);
+    return pick(full, DEFAULT_DERIVED_FIELDS);
+  });
+  return { userDefined: user, derived };
+}
+
+function httpRows(page: HydratedPage, fields: string[] | null): Row[] {
+  return page.httpRequests.map((c): Row => {
+    const full: Row = {
+      index: c.index,
+      label: c.label.trim(),
+      callId: c.callId,
+      adId: c.adId,
+      serviceUuid: c.serviceUuid,
+      method: c.method,
+      triggers: c.triggers,
+      outputs: c.successMappings.map((m) => m.variable),
+      inProgressVar: c.inProgressVar,
+      eventMeta: c.hasEventMeta ? (c.eventMetaEmpty ? "empty" : "set") : null,
+    };
+    if (fields?.[0] === "all") return full;
+    return pick(full, fields ? ["index", ...fields] : DEFAULT_HTTP_FIELDS);
+  });
+}
+
+/** `--components`: one line per node, one space of indent per level. */
+function componentLines(node: ComponentTreeNode, depth = 0, out: string[] = []): string[] {
+  out.push(`${" ".repeat(depth)}${node.name}${node.id ? `#${node.id}` : ""}${node.isSymbol ? " [sym]" : ""}${node.hasEvents ? " [ev]" : ""}`);
+  for (const c of node.children) componentLines(c, depth + 1, out);
+  return out;
+}
+
+/** `--tree`: the human tree line, one space of indent per level. */
+function treeLine(e: TreeLineEntry): string {
+  const badges = e.badge + (e.loop ? " [loop]" : "") + (e.hasEvents ? " [events]" : "");
+  const summary = e.summary && e.summary !== e.tagName ? ` — ${e.summary}` : "";
+  return `${" ".repeat(e.depth)}${badges} ${e.tagName}#${e.nodeId}${summary}`;
 }
 
 // --- Kind badges for --tree / --llm parsedNodes ---
@@ -213,37 +312,35 @@ function buildVarGraph(page: HydratedPage): VarGraphEntry[] {
 
 // --- Data ---
 
+interface ShowSummary {
+  name: string;
+  entityType: "PAGE" | "COMPONENT";
+  resolvedId: string;
+  status: string | null;
+  draftId: string | null;
+  publishedId: string | null;
+  versionId: string | number | null;
+  // The overview fields below are only on a bare `pd show` (and --full/--raw):
+  // with a section flag the summary is just the identity above (Stage 7, 7.9).
+  inputKind?: InputKind;
+  editUrl?: string | null;
+  configSizeBytes?: number;
+  topLevelKeys?: string[];
+  userDefinedVarCount?: number;
+  derivedVarCount?: number;
+  httpCallCount?: number;
+  directChildComponents?: Array<{ name: string }>;
+  adMethodIds?: string[];
+}
+
 interface ShowData {
-  request: {
-    input: string;
-    inputKind: InputKind;
-    entityType: "PAGE" | "COMPONENT";
-    flags: ShowArgs["flags"];
-  };
   source: "cache" | "stale" | "fresh";
-  summary: {
-    name: string;
-    entityType: "PAGE" | "COMPONENT";
-    resolvedId: string;
-    status: string | null;
-    draftId: string | null;
-    publishedId: string | null;
-    versionId: string | number | null;
-    editUrl: string | null;
-    configSizeBytes: number;
-    topLevelKeys: string[];
-    userDefinedVarCount: number;
-    derivedVarCount: number;
-    httpCallCount: number;
-    directChildComponents: Array<{ name: string }>;
-    adMethodIds: string[];
-  };
-  vars?: {
-    userDefined: VariableView[];
-    derived: DerivedView[];
-  };
-  http?: HttpCallSummary[];
-  components?: ComponentTreeNode | null;
+  summary: ShowSummary;
+  vars?: { userDefined: Row[]; derived: Row[] };
+  http?: Row[];
+  /** One line per node: `<indent>name#id [sym] [ev]`. */
+  components?: string[];
+  find?: { query: string; total: number; matches: FoundNode[] };
   varDetail?: VarDetail | null;
   httpDetail?: HttpCallDetail | null;
   recursive?: {
@@ -257,7 +354,8 @@ interface ShowData {
     sourceFields: Record<string, unknown>;
   };
   // Phase-7 additions
-  tree?: TreeLineEntry[];
+  /** One line per node: `<indent>[BADGE] [loop] [events] tag#id — summary`. */
+  tree?: string[];
   nodeDetail?: {
     nodeId: string;
     kind: NodeKind;
@@ -303,18 +401,6 @@ function truncate(value: unknown, maxLen = 80): string {
   return str.substring(0, maxLen) + "...";
 }
 
-function formatTreeIndented(node: ComponentTreeNode, prefix = "", isLast = true, isRoot = true): string[] {
-  const connector = isRoot ? "" : isLast ? "└── " : "├── ";
-  const symbol = node.isSymbol ? " [symbol]" : "";
-  const events = node.hasEvents ? " [events]" : "";
-  const line = `${prefix}${connector}${node.name}${symbol}${events}`;
-  const lines = [line];
-  const childPrefix = isRoot ? "" : prefix + (isLast ? "    " : "│   ");
-  node.children.forEach((child, i) => {
-    lines.push(...formatTreeIndented(child, childPrefix, i === node.children.length - 1, false));
-  });
-  return lines;
-}
 
 // --- Command ---
 
@@ -343,6 +429,8 @@ export const args = defineArgs({
     node: { type: "string" },
     "var-graph": { type: "boolean" },
     open: { type: "boolean", alias: ["-o"] },
+    find: { type: "string" },
+    fields: { type: "string" },
   },
 });
 
@@ -364,6 +452,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
       node: f.node ?? null,
       varGraph: f.varGraph,
       open: f.open,
+      find: f.find ?? null,
+      fields: parseFields(f.fields),
     };
     return { input: positionals.input, flags };
   },
@@ -409,17 +499,24 @@ const command: CommandModule<ShowArgs, ShowData> = {
     const includeHttp = flags.http || flags.full;
     const includeComponents = flags.components || flags.full;
 
+    const sectionMode =
+      !flags.full && !flags.raw &&
+      (flags.vars || flags.http || flags.components || flags.tree || !!flags.find || !!flags.node ||
+        !!flags.varDetail || flags.httpDetail >= 1 || flags.varGraph);
+    const identity: ShowSummary = {
+      name: resolvedName,
+      entityType,
+      resolvedId,
+      status: rawMetadata.status,
+      draftId: rawMetadata.draftId,
+      publishedId: rawMetadata.publishedId,
+      versionId: rawMetadata.versionId,
+    };
     const data: ShowData = {
-      request: { input, inputKind, entityType, flags },
       source,
-      summary: {
-        name: resolvedName,
-        entityType,
-        resolvedId,
-        status: rawMetadata.status,
-        draftId: rawMetadata.draftId,
-        publishedId: rawMetadata.publishedId,
-        versionId: rawMetadata.versionId,
+      summary: sectionMode ? identity : {
+        ...identity,
+        inputKind,
         editUrl,
         configSizeBytes: Buffer.byteLength(configStr, "utf-8"),
         topLevelKeys:
@@ -434,9 +531,13 @@ const command: CommandModule<ShowArgs, ShowData> = {
       },
     };
 
-    if (includeVars) data.vars = vars;
-    if (includeHttp) data.http = httpCalls;
-    if (includeComponents) data.components = componentTree(page.layout);
+    if (includeVars) data.vars = varRows(page, flags.fields);
+    if (includeHttp) data.http = httpRows(page, flags.fields);
+    if (includeComponents) data.components = componentLines(componentTree(page.layout));
+    if (flags.find) {
+      const matches = findNodes(page, flags.find);
+      data.find = { query: flags.find, total: matches.length, matches };
+    }
 
     if (flags.varDetail) {
       data.varDetail = varDetail(page, flags.varDetail);
@@ -481,7 +582,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
       if (page.parseWarnings.length > 0) data.parseWarnings = page.parseWarnings;
 
       if (flags.tree || flags.full) {
-        data.tree = buildTreeLines(page.layout);
+        data.tree = buildTreeLines(page.layout).map(treeLine);
       }
 
       if (flags.node) {
@@ -568,62 +669,48 @@ const command: CommandModule<ShowArgs, ShowData> = {
         ["Draft ID", s.draftId ?? "N/A"],
         ["Published ID", s.publishedId ?? "N/A"],
         ["Version ID", s.versionId ?? "N/A"],
-        ["Edit URL", s.editUrl ?? "N/A"],
-        ["Config Size", `${s.configSizeBytes} bytes`],
-        ["Variables", `${s.userDefinedVarCount} user-defined, ${s.derivedVarCount} derived`],
-        ["HTTP Calls", s.httpCallCount],
-        ["Child Components", s.directChildComponents.length],
-        ["AD Methods", s.adMethodIds.length],
+        ...(s.configSizeBytes === undefined ? [] : [
+          ["Edit URL", s.editUrl ?? "N/A"],
+          ["Config Size", `${s.configSizeBytes} bytes`],
+          ["Variables", `${s.userDefinedVarCount} user-defined, ${s.derivedVarCount} derived`],
+          ["HTTP Calls", s.httpCallCount ?? 0],
+          ["Child Components", s.directChildComponents?.length ?? 0],
+          ["AD Methods", s.adMethodIds?.length ?? 0],
+        ]),
         ["Source", data.source === "stale" ? "stale (refreshing…)" : data.source],
       ]
     );
 
-    if (s.directChildComponents.length > 0) {
+    const children = s.directChildComponents ?? [];
+    if (children.length > 0) {
       ui.section("Direct Child Components");
-      ui.table(
-        ["#", "Component Name"],
-        s.directChildComponents.map((c, idx) => [idx + 1, c.name])
-      );
+      ui.table(["#", "Component Name"], children.map((c, idx) => [idx + 1, c.name]));
     }
 
-    if (s.adMethodIds.length > 0) {
+    const adIds = s.adMethodIds ?? [];
+    if (adIds.length > 0) {
       ui.section("Direct AD Method IDs");
-      ui.table(
-        ["#", "Method ID"],
-        s.adMethodIds.map((id, idx) => [idx + 1, id])
-      );
+      ui.table(["#", "Method ID"], adIds.map((id, idx) => [idx + 1, id]));
     }
 
-    // --vars
+    const cell = (v: unknown, max = 60) => (v === undefined ? "—" : Array.isArray(v) ? v.join(", ") || "—" : truncate(v, max));
+
+    // --vars (rows carry only the requested fields; see --fields)
     if (data.vars) {
       ui.section("User-Defined Variables");
       if (data.vars.userDefined.length === 0) {
         ui.text("None.");
       } else {
-        ui.table(
-          ["#", "Name", "Type", "Initial Value"],
-          data.vars.userDefined.map((v, i) => [
-            i + 1,
-            v.name,
-            v.type ?? "—",
-            truncate(v.initialValue, 60),
-          ])
-        );
+        const cols = [...new Set(data.vars.userDefined.flatMap((r) => Object.keys(r)))];
+        ui.table(["#", ...cols], data.vars.userDefined.map((r, i) => [i + 1, ...cols.map((c) => cell(r[c]))]));
       }
 
       ui.section("Derived Variables");
       if (data.vars.derived.length === 0) {
         ui.text("None.");
       } else {
-        ui.table(
-          ["#", "Name", "Dependencies", "Side Effect"],
-          data.vars.derived.map((d, i) => [
-            i + 1,
-            d.name,
-            d.from.join(", ") || "none",
-            d.sideEffect ? "Yes" : "No",
-          ])
-        );
+        const cols = [...new Set(data.vars.derived.flatMap((r) => Object.keys(r)))];
+        ui.table(["#", ...cols], data.vars.derived.map((r, i) => [i + 1, ...cols.map((c) => cell(r[c]))]));
       }
     }
 
@@ -633,27 +720,28 @@ const command: CommandModule<ShowArgs, ShowData> = {
       if (data.http.length === 0) {
         ui.text("None.");
       } else {
+        const cols = [...new Set(data.http.flatMap((r) => Object.keys(r)))];
+        ui.table(cols, data.http.map((r) => cols.map((c) => cell(r[c], 40))));
+      }
+    }
+
+    // --find
+    if (data.find) {
+      ui.section(`Nodes matching "${data.find.query}" (${data.find.total})`);
+      if (data.find.total === 0) ui.text("None.");
+      else {
         ui.table(
-          ["#", "Label", "AD ID", "Method", "Triggers", "Outputs"],
-          data.http.map(h => [
-            h.index,
-            h.label,
-            h.adId ?? "N/A",
-            h.method ?? "N/A",
-            h.triggers.join(", ") || "none",
-            h.outputBindings.join(", ") || "none",
-          ])
+          ["Id", "Component", "Label", "Path"],
+          data.find.matches.map((m) => [m.id, m.component, m.label ?? "", m.path]),
         );
+        ui.info('Edit by id: {"nodes":{"update":[{"id":"<id>","props":{…}}]}} in `belz pd save --overlay`.');
       }
     }
 
     // --components
     if (data.components) {
       ui.section("Component Tree");
-      const lines = formatTreeIndented(data.components);
-      for (const line of lines) {
-        ui.text(line);
-      }
+      for (const line of data.components) ui.text(line);
     }
 
     // --var-detail
@@ -751,14 +839,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
     // --tree (kind-badge layout tree)
     if (data.tree) {
       ui.section("Layout Tree");
-      for (const entry of data.tree) {
-        const indent = "  ".repeat(entry.depth);
-        const badges =
-          entry.badge +
-          (entry.loop ? " [loop]" : "") +
-          (entry.hasEvents ? " [events]" : "");
-        ui.text(`${indent}${badges} ${entry.tagName}#${entry.nodeId} — ${entry.summary}`);
-      }
+      for (const line of data.tree) ui.text(line);
     }
 
     // --node <id>
@@ -826,10 +907,10 @@ const command: CommandModule<ShowArgs, ShowData> = {
 
     // Hints for available flags
     if (
-      !data.vars && !data.http && !data.components && !data.varDetail &&
+      !data.vars && !data.http && !data.components && !data.varDetail && !data.find &&
       !data.httpDetail && !data.tree && !data.nodeDetail && !data.varGraph
     ) {
-      ui.info("Use --vars, --http, --components, --tree, --var-graph, --node <id>, or --full for more detail.");
+      ui.info("Use --vars, --http, --components, --tree, --find <text|id|component>, --var-graph, --node <id>, or --full for more detail.");
     }
   },
 };

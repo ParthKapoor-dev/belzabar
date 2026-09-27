@@ -20,6 +20,9 @@ Flags:
                       1000). totalMatches / total report the count before it.
   --open              Open selected item in browser (pick mode only).
   --components        With `list`: list components instead of pages.
+  --full              Full rows (url, updatedAt) and cache metadata. By
+                      default rows are id, referenceId, name, route/status
+                      (+ type, score in search).
   --llm               Output structured JSON envelope.
 
 Global Flags:
@@ -31,6 +34,7 @@ Examples:
   belz pd find list
   belz pd find list --components
   belz pd find list --limit 50
+  belz pd find list --full --llm
   belz pd find pick
   belz pd find pick LT-260 --open
   belz pd find --refresh

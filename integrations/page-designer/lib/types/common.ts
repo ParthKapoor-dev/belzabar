@@ -291,11 +291,43 @@ export interface ElementOperation {
   dataType: PartialDataType;
 }
 
+/**
+ * Node-id overlay ops (Stage 7): address layout nodes by `id` (or
+ * `_elementId`). Maps are MERGED into the node; a `null` value removes that
+ * key (full save). `events` entries replace the whole handler list of that
+ * event name.
+ */
+export interface NodeUpdate {
+  id: string;
+  props?: Record<string, unknown>;
+  field?: Record<string, unknown>;
+  attrs?: Record<string, unknown>;
+  events?: Record<string, unknown>;
+}
+
+export interface NodeInsert {
+  /** id / _elementId of the parent node. */
+  parentId: string;
+  /** Position among the parent's children (default: append). */
+  index?: number;
+  /** The raw node ({name, props, children, …}); missing ids are generated. */
+  node: Record<string, unknown>;
+}
+
+export interface NodesOverlay {
+  update?: NodeUpdate[];
+  insert?: NodeInsert[];
+  /** ids of the nodes to delete (with their subtrees). */
+  remove?: string[];
+}
+
 export interface Overlay {
   variables?: VariableOverlay;
   derived?: DerivedOverlay;
   httpRequests?: HttpOverlay;
   elements?: { operations: ElementOperation[] };
+  /** Applied AFTER elements.operations (whose paths refer to the unedited tree). */
+  nodes?: NodesOverlay;
   styles?: { replace: string };
 }
 

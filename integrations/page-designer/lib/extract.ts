@@ -203,3 +203,100 @@ export function componentTree(node: ParsedNode): ComponentTreeNode {
     children: node.children.map(componentTree),
   };
 }
+
+// -------- `show --find` ---------------------------------------------------------
+
+export interface FoundNode {
+  id: string;
+  /** Component / tag name (`exp-form-field`, `button`, a symbol name). */
+  component: string;
+  kind: ParsedNode["kind"];
+  /** Short visible text / label / binding, when the node has one. */
+  label?: string;
+  /** Key path in the inner config (elements.operations key prefix). */
+  path: string;
+  /** For nodes.insert next to this node: its parent's id and its index there. */
+  parentId: string | null;
+  index: number | null;
+  /** How the query matched: id | component | text. */
+  match: "id" | "component" | "text";
+}
+
+const stripTags = (s: string) => s.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+/** The text an agent would recognise the node by (innerHTML, label, placeholder, binding, symbol name). */
+export function nodeLabel(node: ParsedNode): string | undefined {
+  const field = node.kind === "FORM_FIELD" ? node.field ?? {} : {};
+  const candidates = [
+    node.props.innerHTML,
+    (field as Record<string, unknown>).label,
+    node.props.label,
+    (field as Record<string, unknown>).placeholder,
+    node.props.placeholder,
+    node.props["[innerHTML]"],
+    node.props.text,
+    node.props.template,
+    node.kind === "SYMBOL" ? `<${node.symbolName}>` : undefined,
+  ];
+  for (const c of candidates) {
+    if (typeof c !== "string") continue;
+    const t = stripTags(c);
+    if (t) return t.length > 60 ? `${t.slice(0, 57)}…` : t;
+  }
+  // A button's text lives in its child span.
+  if (node.kind === "BUTTON") {
+    for (const child of node.children) {
+      const t = nodeLabel(child);
+      if (t) return t;
+    }
+  }
+  return undefined;
+}
+
+function strings(obj: unknown): string[] {
+  if (!obj || typeof obj !== "object") return [];
+  return Object.values(obj as Record<string, unknown>).filter((v): v is string => typeof v === "string");
+}
+
+/**
+ * Nodes matching `query`: an exact id / _elementId (that node), else an exact
+ * component name (every node of it, case-insensitive), else a case-insensitive
+ * substring of the node's label, id, or any string prop / field / attr.
+ */
+export function findNodes(page: HydratedPage, query: string): FoundNode[] {
+  const q = query.trim();
+  const ql = q.toLowerCase();
+  const rows: Array<FoundNode & { node: ParsedNode }> = [];
+  const visit = (n: ParsedNode, parent: ParsedNode | null, index: number | null) => {
+    rows.push({
+      node: n,
+      id: n.nodeId,
+      component: n.tagName,
+      kind: n.kind,
+      label: nodeLabel(n),
+      path: n.path,
+      parentId: parent?.nodeId ?? null,
+      index,
+      match: "text",
+    });
+    n.children.forEach((c, i) => visit(c, n, c.path.endsWith("]") ? i : null));
+  };
+  visit(page.layout, null, null);
+  const clean = ({ node: _n, ...rest }: FoundNode & { node: ParsedNode }): FoundNode => {
+    const out = { ...rest };
+    if (out.label === undefined) delete out.label;
+    return out;
+  };
+
+  const byId = rows.filter((r) => r.id === q || r.node.elementId === q);
+  if (byId.length) return byId.map((r) => clean({ ...r, match: "id" }));
+  const byComponent = rows.filter((r) => r.component.toLowerCase() === ql);
+  if (byComponent.length) return byComponent.map((r) => clean({ ...r, match: "component" }));
+  return rows
+    .filter((r) => {
+      const n = r.node;
+      const hay = [r.label ?? "", r.id, ...strings(n.props), ...(n.kind === "FORM_FIELD" ? strings(n.field) : []), ...strings((n.raw as { attrs?: unknown })?.attrs)];
+      return hay.some((s) => s.toLowerCase().includes(ql));
+    })
+    .map((r) => clean({ ...r, match: "text" }));
+}

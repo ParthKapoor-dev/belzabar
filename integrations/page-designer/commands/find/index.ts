@@ -11,6 +11,20 @@ import {
   type PageFinderIndex,
 } from "../../lib/page-finder";
 
+/**
+ * Compact rows (Stage 7, 7.9): list/search rows drop `url` (it is
+ * `<base>/ui-designer/page/<id>` or `/symbol/<name>`) and `updatedAt`; the
+ * request echo is gone and cache metadata is `{source, ageMs, pages,
+ * components}`. `--full` restores the full rows and cache block.
+ */
+type Compact<T> = T extends unknown ? Omit<T, "url" | "updatedAt"> : never;
+
+function compactRow<T extends { url: string; updatedAt: number }>(row: T, full: boolean): T | Compact<T> {
+  if (full) return row;
+  const { url: _u, updatedAt: _t, ...rest } = row;
+  return rest as Compact<T>;
+}
+
 /** Default `--limit` for search / pick; `list` returns everything unless --limit is given. */
 const DEFAULT_SEARCH_LIMIT = 20;
 
@@ -22,43 +36,42 @@ interface FindArgs {
   limit: number | null;
   open: boolean;
   llm: boolean;
+  full: boolean;
 }
 
 interface CacheMeta {
   source: "cache" | "fresh";
-  generatedAt: number;
+  generatedAt?: number;
   ageMs: number;
-  ttlMs: number;
-  expiresAt: number;
+  ttlMs?: number;
+  expiresAt?: number;
   pageCount: number;
   componentCount: number;
 }
 
 interface FindBrowsePagesData {
   mode: "browse-pages";
-  request: { refresh: boolean; limit: number | null };
   cache: CacheMeta;
   /** Pages before --limit. */
   total: number;
-  pages: PageFinderPage[];
+  pages: Array<PageFinderPage | Compact<PageFinderPage>>;
 }
 
 interface FindBrowseComponentsData {
   mode: "browse-components";
-  request: { refresh: boolean; limit: number | null };
   cache: CacheMeta;
   /** Components (draft/published pairs collapsed) before --limit. */
   total: number;
-  components: PageFinderComponent[];
+  components: Array<PageFinderComponent | Compact<PageFinderComponent>>;
 }
 
 interface FindSearchData {
   mode: "search";
-  request: { query: string; type?: "page" | "component"; refresh: boolean; limit: number };
+  query: string;
   cache: CacheMeta;
   /** Matches before --limit (PD-27: used to be counted after slicing). */
   totalMatches: number;
-  matches: PageFinderMatch[];
+  matches: Array<PageFinderMatch | Compact<PageFinderMatch>>;
 }
 
 interface FindPickData {
@@ -86,6 +99,7 @@ export const args = defineArgs({
     components: { type: "boolean" },
     limit: { type: "number", integer: true, min: 1, max: 1000 },
     type: { type: "enum", values: ["page", "component"], caseInsensitive: false },
+    full: { type: "boolean" },
   },
 });
 
@@ -93,7 +107,7 @@ const command: CommandModule<FindArgs, FindData> = {
   schema: "pd.find",
   parseArgs(argv, context) {
     const { positionals, flags } = args.parse(argv);
-    const { refresh, open, type } = flags;
+    const { refresh, open, type, full } = flags;
     const limit = flags.limit ?? null;
     const llm = context?.outputMode === "llm";
     const positional = positionals.query;
@@ -104,23 +118,23 @@ const command: CommandModule<FindArgs, FindData> = {
           code: "LIST_DOES_NOT_ACCEPT_QUERY",
         });
       }
-      return { mode: flags.components ? "browse-components" : "browse-pages", refresh, limit, open, llm };
+      return { mode: flags.components ? "browse-components" : "browse-pages", refresh, limit, open, llm, full };
     }
 
     if (positional[0] === "pick") {
       const query = positional.slice(1).join(" ").trim();
-      return { mode: "pick", query: query || undefined, refresh, limit, open, llm };
+      return { mode: "pick", query: query || undefined, refresh, limit, open, llm, full };
     }
 
     const query = positional.join(" ").trim();
     if (!query && !refresh) {
-      return { mode: "browse-pages", refresh, limit, open, llm };
+      return { mode: "browse-pages", refresh, limit, open, llm, full };
     }
 
-    return { mode: "search", query: query || undefined, type, refresh, limit, open, llm };
+    return { mode: "search", query: query || undefined, type, refresh, limit, open, llm, full };
   },
 
-  async execute({ mode, query, type, refresh, limit, open }, context) {
+  async execute({ mode, query, type, refresh, limit, open, full }, context) {
     if (open && mode !== "pick") {
       throw new CliError("--open is only supported with `belz pd find pick`.", {
         code: "OPEN_REQUIRES_PICK",
@@ -134,25 +148,26 @@ const command: CommandModule<FindArgs, FindData> = {
       context.warn("Using cached page index. Use --refresh to fetch latest data.");
     }
 
-    const cacheMeta: CacheMeta = {
-      source,
-      generatedAt: index.generatedAt,
-      ageMs,
-      ttlMs: PAGE_FINDER_CACHE_TTL_MS,
-      expiresAt: index.generatedAt + PAGE_FINDER_CACHE_TTL_MS,
-      pageCount: index.pageCount,
-      componentCount: index.componentCount,
-    };
+    const cacheMeta: CacheMeta = full
+      ? {
+          source,
+          generatedAt: index.generatedAt,
+          ageMs,
+          ttlMs: PAGE_FINDER_CACHE_TTL_MS,
+          expiresAt: index.generatedAt + PAGE_FINDER_CACHE_TTL_MS,
+          pageCount: index.pageCount,
+          componentCount: index.componentCount,
+        }
+      : { source, ageMs, pageCount: index.pageCount, componentCount: index.componentCount };
 
     const clip = <T>(items: T[]): T[] => (limit === null ? items : items.slice(0, limit));
 
     if (mode === "browse-pages") {
       return ok<FindBrowsePagesData>({
         mode: "browse-pages",
-        request: { refresh, limit },
         cache: cacheMeta,
         total: index.pages.length,
-        pages: clip(index.pages),
+        pages: clip(index.pages).map((r) => compactRow(r, full)),
       });
     }
 
@@ -160,10 +175,9 @@ const command: CommandModule<FindArgs, FindData> = {
       const components = collapsePairs(index.components);
       return ok<FindBrowseComponentsData>({
         mode: "browse-components",
-        request: { refresh, limit },
         cache: cacheMeta,
         total: components.length,
-        components: clip(components),
+        components: clip(components).map((r) => compactRow(r, full)),
       });
     }
 
@@ -201,10 +215,10 @@ const command: CommandModule<FindArgs, FindData> = {
 
     return ok<FindSearchData>({
       mode: "search",
-      request: { query: query ?? "", type, refresh, limit: searchLimit },
+      query: query ?? "",
       cache: cacheMeta,
       totalMatches: total,
-      matches,
+      matches: matches.map((r) => compactRow(r, full)),
     });
   },
 
@@ -280,7 +294,7 @@ const command: CommandModule<FindArgs, FindData> = {
 
     if (data.mode === "search") {
       if (data.matches.length === 0) {
-        ui.info(`No matches found for '${data.request.query}'.`);
+        ui.info(`No matches found for '${data.query}'.`);
         return;
       }
       ui.table(

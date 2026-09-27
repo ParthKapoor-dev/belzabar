@@ -5,6 +5,7 @@
 //                          .handler.{success,error,inProgress}, .trigger,
 //                          .triggerFilter, .responseTransformSpec
 //   elements.operations  → pass-through
+//   nodes.update         → <node path>.{props,field,attrs,events}.<key> (lib/serialize/nodes.ts)
 //   styles.replace       → `styles`
 //
 // `i` is always the RAW array index (PD-2). Anything partial ops cannot
@@ -17,6 +18,7 @@
 import type { Overlay, PartialDataType, RawPartialUpdateOperation } from "../types/common";
 import type { RawConfiguration } from "../types/wire";
 import { locateHttp, locateVariable, usesLegacyHttp, usesLegacyVariables } from "./locate";
+import { nodeUpdateOps, nodesFullSaveReason } from "./nodes";
 import { encodeValue, guessDataType, hasPath } from "./paths";
 
 /** Why this overlay cannot be a partial save, or null when it can. */
@@ -28,7 +30,7 @@ export function fullSaveReason(overlay: Overlay, inner: RawConfiguration): strin
   if (overlay.httpRequests?.remove?.length) return "httpRequests.remove";
   if (overlay.variables?.update?.length && usesLegacyVariables(inner)) return "legacy context.properties page";
   if (overlay.httpRequests?.update?.length && usesLegacyHttp(inner)) return "legacy http page";
-  return null;
+  return nodesFullSaveReason(overlay.nodes);
 }
 
 function op(inner: RawConfiguration, key: string, value: unknown, dataType: PartialDataType): RawPartialUpdateOperation {
@@ -82,6 +84,9 @@ export function partialOperationsFor(inner: RawConfiguration, overlay: Overlay):
   for (const e of overlay.elements?.operations ?? []) {
     ops.push({ key: e.key, value: encodeValue(e.value, e.dataType), operation: e.operation, dataType: e.dataType });
   }
+
+  // nodes.update → ops at the node's path (only reached when nothing is inserted/removed).
+  ops.push(...nodeUpdateOps(inner, overlay.nodes?.update ?? []));
 
   if (overlay.styles?.replace !== undefined) ops.push(op(inner, "styles", overlay.styles.replace, "STRING"));
 

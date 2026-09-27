@@ -1,7 +1,9 @@
 belz pd show <input>  :->  Display overview of a page or component (name, IDs, variable/HTTP/component counts)
-belz pd show <input> --vars  :->  List all user-defined and derived variables with types
+belz pd show <input> --vars  :->  List all user-defined and derived variables (compact rows: name, type, short initialValue; derived: from, sideEffect)
+belz pd show <input> --vars --fields <a,b,…|all>  :->  Pick the --vars/--http row fields (e.g. name,spec) or all
+belz pd show <input> --find <text|id|component>  :->  Find layout nodes: id, component, label, key path, parentId/index (for node-id overlay ops)
 belz pd show <input> --http  :->  List all HTTP service calls with AD IDs and triggers
-belz pd show <input> --components  :->  Show the full layout/component tree
+belz pd show <input> --components  :->  Show the layout tree, one line per node (name#id [sym] [ev])
 belz pd show <input> --var-detail <name>  :->  Show full config for a specific variable or derived (spec code, dependencies)
 belz pd show <input> --http-detail <N>  :->  Show full config for the Nth HTTP call (input bindings, handlers, transform code)
 belz pd show <input> --full  :->  Show all sections and all details

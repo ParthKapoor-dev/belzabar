@@ -58,20 +58,41 @@ OVERLAY SHAPE:
          "operation":"UPDATE","dataType":"STRING"}
       ]
     },
+    "nodes": {
+      "update": [{"id":"__node_id_1_2_3_4",
+                  "props":{"innerHTML":"New","isVisible":null},
+                  "field":{"label":"Email"}, "attrs":{}, "events":{}}],
+      "insert": [{"parentId":"__node_id_9_8_7_6","index":0,
+                  "node":{"name":"span","props":{"innerHTML":"Hi"}}}],
+      "remove": ["__node_id_5_5_5_5"]
+    },
     "styles": {"replace":".latest-version .x { color: red }"}
   }
 
-  Every name / callId / element key must exist (add: must NOT exist);
-  otherwise the save is refused with PD_OVERLAY_INVALID. Derived variables
+  Every name / callId / element key / node id must exist (add: must NOT
+  exist), and an unknown top-level section is refused; otherwise the save
+  is refused with PD_OVERLAY_INVALID.
+
+  NODES (by id — no children[i] paths; find ids with `belz pd show <page>`
+  and its find option): a node is matched by `id`, else `_elementId`; an
+  ambiguous id is refused. update MERGES props / field / attrs / events into
+  the node (`null` deletes a key; an events entry replaces that event's
+  handler list). insert adds `node` under parentId at index (default:
+  append); missing ids on the node and its children are generated
+  (deterministic, editor format). remove deletes the node and its subtree.
+  Order: elements.operations (paths refer to the unedited tree), then
+  nodes.update, nodes.insert, nodes.remove. Derived variables
   are the entries with a `from` list (the editor keeps them in
   variables.userDefined) — edit them via "derived", not "variables".
 
 STRATEGY:
   Partial save: variables.update, httpRequests.update (request, handler,
   trigger, triggerFilter, responseTransformSpec), elements.operations,
-  styles.replace — with raw array indices.
+  nodes.update (keys set at the node's path), styles.replace — with raw
+  array indices.
   Full save: variables.add/remove, derived.*, httpRequests.add/remove,
-  legacy-format pages, or partial ops that would not cover the edit.
+  nodes.insert/remove, a nodes.update that deletes a key (null), legacy-format
+  pages, or partial ops that would not cover the edit.
   A full save sends the page's own config with only the edit applied
   (nothing else is rewritten).
 

@@ -26,6 +26,8 @@ export interface FakePd {
   searchRows: Array<Record<string, unknown>>;
   /** Status the name search answers with (default 200). */
   searchStatus: number;
+  /** GET /pages/page-dependencies?id=<pubId> → {dependencyJSON: deps[pubId]}. */
+  deps: Record<string, Record<string, unknown>>;
   restore(): void;
 }
 
@@ -62,6 +64,7 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
     saveStatus: 200,
     searchRows: [],
     searchStatus: 200,
+    deps: {},
     ff: null as unknown as FakeFetch,
     cfg: null as unknown as TempEnvConfig,
     log: () => state.ff.requests.map((r) => `${r.method} ${new URL(r.url).pathname.replace(BASE, "")}${new URL(r.url).search}`),
@@ -120,6 +123,20 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
         pages.set(p.id, saved);
         return json({ versionId: saved.versionId });
       }
+    }
+    if (path === "/pages/page-dependencies") {
+      const d = state.deps[u.searchParams.get("id") ?? ""];
+      return d ? json({ dependencyJSON: d }) : json({ error: "not found" }, 404);
+    }
+    if (path === "/pages" && u.searchParams.has("pageType") && !u.searchParams.has("name")) {
+      // The finder index lists: every stored page of that type (offset 0 only).
+      if (u.searchParams.get("offset") !== "0") return json([]);
+      const wantComponent = u.searchParams.get("pageType") === "COMPONENT";
+      return json(
+        [...pages.values()]
+          .filter((p) => (p.isComponent === true) === wantComponent)
+          .map(({ configuration: _c, ...row }) => row),
+      );
     }
     if (path === "/pages" && u.searchParams.has("name")) {
       if (state.searchStatus !== 200) return new Response("<html><title>Server Error</title></html>", { status: state.searchStatus });

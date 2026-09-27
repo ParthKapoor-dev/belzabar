@@ -20,6 +20,7 @@ import { parsePage } from "../parser/index";
 import type { ElementOperation, HydratedPage, Overlay } from "../types/common";
 import type { RawConfiguration, RawDerivedVar, RawHttpRequestItem, RawPageResponse, RawUserDefinedVar } from "../types/wire";
 import { locateDerived, locateHttp, locateVariable, usesLegacyVariables } from "./locate";
+import { applyNodeOps } from "./nodes";
 import { decodeValue, encodeValue, setPath } from "./paths";
 
 function deepClone<T>(value: T): T {
@@ -33,6 +34,8 @@ function listAt(inner: RawConfiguration, list: string): unknown[] {
   return cur as unknown[];
 }
 
+const OVERLAY_SECTIONS = new Set(["variables", "derived", "httpRequests", "elements", "nodes", "styles"]);
+
 /** The value an element operation stores, as the server will decode it. */
 export function elementOpValue(op: ElementOperation): unknown {
   return decodeValue(encodeValue(op.value, op.dataType), op.dataType);
@@ -43,6 +46,10 @@ export function applyOverlayToConfig(page: HydratedPage, overlay: Overlay): RawC
   const inner = deepClone((page.rawConfiguration ?? {}) as RawConfiguration) ?? {};
   const problems: string[] = [];
   const legacy = usesLegacyVariables(inner);
+  // A typo'd section ("node", "element") would otherwise be silently ignored.
+  for (const key of Object.keys(overlay ?? {})) {
+    if (!OVERLAY_SECTIONS.has(key)) problems.push(`unknown overlay section "${key}" (expected ${[...OVERLAY_SECTIONS].join(", ")})`);
+  }
 
   // ----- variables ------------------------------------------------------
   const vo = overlay.variables;
@@ -220,6 +227,9 @@ export function applyOverlayToConfig(page: HydratedPage, overlay: Overlay): RawC
       problems.push(`elements.operations: key "${op.key}" does not resolve (its parent does not exist)`);
     }
   }
+
+  // ----- node-id ops (after elements: their paths refer to the unedited tree)
+  if (overlay.nodes) problems.push(...applyNodeOps(inner, overlay.nodes, page.id));
 
   // ----- styles ---------------------------------------------------------
   if (overlay.styles?.replace !== undefined) inner.styles = overlay.styles.replace;

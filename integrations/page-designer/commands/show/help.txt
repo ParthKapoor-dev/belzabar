@@ -16,12 +16,34 @@ Arguments:
                         n_s_staff_email_correspondence, "Add Student"
                         (several matches → PD_NAME_AMBIGUOUS; pass an id)
 
+Output is compact (for agents): with any section flag the summary is just
+the identity (name, ids, status, versionId); rows omit empty fields.
+
 Flags:
   --vars              Show all variables (user-defined + derived; derived vars
-                      are the entries with a `from` list).
-  --http              Show all HTTP service calls.
-  --components        Show the legacy (flat-name) layout tree.
-  --tree              Show the full layout tree with node-kind badges
+                      are the entries with a `from` list). Rows: name, type,
+                      initialValue (a value over 80 chars JSON becomes
+                      initialValueBytes — read it with --var-detail);
+                      derived: name, from, sideEffect.
+  --http              Show all HTTP service calls. Rows: index, label, callId,
+                      adId, triggers, outputs.
+  --fields <a,b,…>    Pick the --vars / --http row fields (full values):
+                      vars   name,type,initialValue,from,spec,filterFn,sideEffect
+                      http   index,label,callId,adId,serviceUuid,method,
+                             triggers,outputs,inProgressVar,eventMeta
+                      `--fields all` = every field.
+  --find <text|id|component>
+                      Find layout nodes: an exact id / _elementId, else every
+                      node of an exact component name (exp-form-field, button,
+                      a symbol name), else a case-insensitive text match on
+                      labels, ids and string props. Each match has id,
+                      component, kind, label, path (the key path save accepts:
+                      elements.operations key = <path>.props.<prop>), parentId
+                      and index (for nodes.insert). Prefer editing by id:
+                      {"nodes":{"update":[{"id":"<id>","props":{…}}]}}.
+  --components        Show the layout tree, one line per node
+                      (`<indent>name#id [sym] [ev]`).
+  --tree              Show the full layout tree (one line per node) with node-kind badges
                       ([FORM] [TABLE] [BTN] [SYM] [LAYOUT] [-]). Highlights
                       known pitfalls inline (USES-PROPS!, DYN-CLASS!, NO-DS).
   --node <id>         Dump kind-specific detail for a single node by id
@@ -30,7 +52,7 @@ Flags:
                       Flags "dead" variables (no writers AND no readers).
   --var-detail <name> Show full config for a specific variable or derived.
   --http-detail <N>   Show full config for the Nth HTTP call (1-indexed).
-  --full              Include all sections + all details.
+  --full              Include all sections + all details (the full summary too).
   --recursive, -r     Include the recursive component dependency tree and all
                       AD method IDs (every referenced component is followed;
                       unresolvable ones are listed in recursive.errors).
@@ -50,6 +72,9 @@ Examples:
   belz pd show https://nsm-dev.nc.verifi.dev/ui-designer/page/48b75e11e166e6b19e5796d59a936228
   belz pd show n_s_staff_email_correspondence
   belz pd show 48b75e11e166e6b19e5796d59a936228 --vars
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --vars --fields name,spec
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --find "Save and Exit"
+  belz pd show 48b75e11e166e6b19e5796d59a936228 --find exp-layout-dialog --llm
   belz pd show 48b75e11e166e6b19e5796d59a936228 --http
   belz pd show 48b75e11e166e6b19e5796d59a936228 --components
   belz pd show 48b75e11e166e6b19e5796d59a936228 --var-detail showLoader

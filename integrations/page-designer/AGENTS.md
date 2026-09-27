@@ -30,6 +30,7 @@ belz pd analyze <INPUT...>       # recursive dependency (+ --compliance <file>)
 belz pd history <action>         # server-backed version history (list/show/diff/restore)
 belz pd diff <INPUT> --from <envA> --to <envB>   # cross-environment structural diff
 belz pd preflight <pageId>       # dry-run: parse + validate + (optional) overlay, no save
+belz pd page-deps <INPUT>        # page-dependencies summary (--full: raw graph)
 ```
 
 **Writes:**
@@ -50,7 +51,7 @@ When adding or removing PD commands, update `registry.ts` (keep it sorted).
 4. `lib/parser/` - the ONE parser stack: `index.ts` (`parsePage`, `inferEntityType`), `nodes.ts` discriminator (every ParsedNode carries `path`, its key path in the inner config: `layout.children[2].children[0]`), `variables.ts`, `http.ts`, `refs.ts`. (`parser/legacy.ts`, `types/legacy.ts` are gone.)
 5. `lib/extract.ts` - read views on a HydratedPage: `adIdsOf`, `childComponentNames` (starts at root.children, PD-25), and the `show` views (vars, http summary/detail, var detail, component tree).
 6. `lib/validator/` - `index.ts` (`validateHydrated`, diff-aware `validateEdit`, `ESCALATE_WHEN_INTRODUCED`), `context.ts` (binding refs, defined names, usage), `rules/existing.ts`, `rules/invariants.ts`, `rules/lint.ts` (Stage 7: pd-review §3a–3d + figma-to-pd rules, figma codes kept: V1, V4, T1–T6, C5, R1, H1, F1, U1), `catalogue.ts` (`PD_RULES`: every code, default severity, source), `recursive.ts` (`validateRecursive` + `symbolInterfaceIssues` for `validate --recursive`).
-7. `lib/serialize/` - `apply.ts` (overlay → edited clone of the RAW config; unknown targets → `PD_OVERLAY_INVALID`), `locate.ts` (raw-index lookup), `paths.ts` (key paths + wire value encoding), `operations.ts` (partial ops), `full.ts` (full body = raw config), `index.ts` (`planSave`).
+7. `lib/serialize/` - `apply.ts` (overlay → edited clone of the RAW config; unknown targets → `PD_OVERLAY_INVALID`), `locate.ts` (raw-index lookup), `nodes.ts` (node-id ops: `locateNode`, `applyNodeOps`, `nodeUpdateOps`, `rawNodes`), `paths.ts` (key paths + wire value encoding), `operations.ts` (partial ops), `full.ts` (full body = raw config), `index.ts` (`planSave`).
 8. `lib/edit.ts` - shared write pipeline: `resolveWriteTarget` (draft-guard + `--allow-published`), `gateValidation`, `versionDrift`, `fetchFresh`, `readJsonFile` (PD-17), `requireConfirmation`, `logIntent` (`[belz pd write]` stderr line).
 9. `lib/draft-guard.ts` - `resolveDraftTarget`. The draft/published sibling is resolved ONLY via `referenceId` (`resolveLinkedPair`, injectable `DraftGuardDeps`) — never by name. Missing status, dangling/wrong-status/contradicting link → `PD_DRAFT_LINK_UNRESOLVED`. `lib/page-dependencies.ts` (translations, page-deps) uses the same resolver.
 10. `lib/lock.ts` - `withLock` (re-entrant: skips acquire/release when this process or `belz pd lock acquire` already holds the lock; invalidates the page cache), plus the per-env lock-file helpers used by `pd lock`.
@@ -68,17 +69,19 @@ compliance list is an explicit `--compliance <file>` (PD-13 / F21).
 ## Commands Implemented
 
 **Reads:**
-1. `show` — overview + `--vars/--http/--components/--var-detail/--http-detail/--tree/--node/--var-graph/--full/--recursive/--raw/--open`. Derived vars are the userDefined entries with `from`.
+1. `show` — overview + `--vars/--http/--components/--var-detail/--http-detail/--tree/--node/--var-graph/--find/--fields/--full/--recursive/--raw/--open`. Derived vars are the userDefined entries with `from`. Compact output (Stage 7, 7.9): no `request` echo; with a section flag the `summary` is only the identity (name, entityType, resolvedId, status, draftId, publishedId, versionId); `--vars`/`--http` rows omit empty values and default to a field subset (`--fields a,b` / `--fields all`; a long initialValue becomes `initialValueBytes`); `--components`/`--tree` are one string line per node. `--find <text|id|component>` (lib/extract.ts `findNodes`) returns `{id, component, kind, label, path, parentId, index, match}` — `path` is the save-pipeline key path, the id is what `nodes.*` overlay ops take.
 2. `validate` — every rule; ok:false `PD_VALIDATION_FAILED` (exit 1, report in `data`) on errors. Output: `issues` = errors only, `warnings` = `{CODE: {count, refs}}` (refs = var name / callId / node id); `--full` = the flat list of every issue. `--recursive` validates each symbol used (transitively, the DRAFT component by name, once each) into `data.recursive.entities` (+ `longestChain`, totals, `fetchErrors`) and adds SYMBOL_NOT_FOUND / SYMBOL_UNKNOWN_INPUT / SYMBOL_UNKNOWN_EVENT / SYMBOL_NESTING_DEPTH. `--force` bypasses the cache.
-3. `find` — fuzzy page/component search; `list` returns all rows unless `--limit`; component draft/published pairs are one row; `totalMatches`/`total` count before the limit.
+3. `find` — fuzzy page/component search; `list` returns all rows unless `--limit`; component draft/published pairs are one row; `totalMatches`/`total` count before the limit. Rows drop `url`/`updatedAt` and the cache block is `{source, ageMs, pageCount, componentCount}` unless `--full` (no `request` echo; search echoes `query`).
 4. `find-ad-methods` — any input (id/name/URL), `--component`, `--recursive` (with `errors`).
 5. `analyze <input...> [--compliance <file>]` — explicit roots only.
 6. `history <action>` — list, show, diff, restore. show/diff/restore refuse a version not owned by `<pageId>` or its sibling (`PD_VERSION_PAGE_MISMATCH`). History lives on the PUBLISHED id.
 7. `diff <input> --from <envA> --to <envB>` — per-env resolution + `diffPages`. Flips `Config.activeEnv` per side and restores it.
 8. `preflight <pageId> [--overlay <file>]` — dry-run; with an overlay validated exactly like `save`. ok:false `PD_PREFLIGHT_FAILED` (exit 1) on errors.
+8a. `page-deps <input> [--full]` — page-dependencies API. The raw `dependencyJSON` is every entity's full page row + phrase arrays (6 MB for Student Application), so the default is a summary (`counts`, `entities[]`: key, name, id, status, isComponent, referenceId, configBytes, phrase counts; queried entity first); `--full` adds `dependencyJSON`/`dependencyKeys`. Keys: the queried entity's published id, dependencies by component NAME.
+8b. `translations <input>` — release check of the phrase keys (lib/page-dependencies.ts).
 
 **Writes (all: confirmation or `--yes`, `[belz pd write]` intent line, lock):**
-9. `save <pageId>` — see Safe-Edit Invariants. Data: `strategy`, `fullSaveReason`, `operationsPreview`, `diffSummary`, `validation`, `versionDrift`, `result`, `verify`, `bypassedErrors`.
+9. `save <pageId>` — see Safe-Edit Invariants. The overlay's `nodes.update/insert/remove` address layout nodes by id (lib/serialize/nodes.ts): update merges props/field/attrs/events (null deletes → full save; otherwise partial ops at the node path), insert generates missing ids deterministically (editor format), insert/remove are full saves; applied after `elements.operations`. Unknown overlay sections are PD_OVERLAY_INVALID. Data: `strategy`, `fullSaveReason`, `operationsPreview`, `diffSummary`, `validation`, `versionDrift`, `result`, `verify`, `bypassedErrors`.
 10. `publish <pageId>` — draft-guard, validator gate, locked POST, then drops the cache of the draft AND the published page.
 11. `lock <acquire|release|status>` — manual lock control (`~/.belz/pd-locks/<env>.json`); a refused release is ok:false `PD_LOCK_RELEASE_FAILED`.
 12. `history restore` — validates the version against the current page (diff-aware), locks the owning page and its linked draft, needs `--allow-published` when the owner is PUBLISHED (the revert endpoint rewrites the owner).

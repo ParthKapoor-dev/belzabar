@@ -1,9 +1,15 @@
 Usage: belz pd page-deps <input> [flags]
 
-Fetch the raw page-dependencies graph for a published page or component and
-print its `dependencyJSON`. This is the unvalidated wrapper around
-GET /rest/api/pagedesigner/pages/page-dependencies — use `belz pd translations`
-for the release-check verdict.
+Fetch the page-dependencies graph for a published page or component. This is
+the unvalidated wrapper around GET /rest/api/pagedesigner/pages/page-dependencies
+— use `belz pd translations` for the release-check verdict.
+
+The raw `dependencyJSON` holds every entity's full page row (configuration
+included) and its translated/original phrase arrays: megabytes for a real
+page. By default belz returns a summary instead — data.entities has one row
+per entity (key, name, id, status, isComponent, referenceId, configBytes,
+translatedPhrases, originalPhrases; the queried entity first) and data.counts
+the totals. --full adds the raw data.dependencyJSON / data.dependencyKeys.
 
 <input> is resolved in the active environment to the entity's PUBLISHED id,
 then queried. It accepts:
@@ -18,6 +24,7 @@ name and let belz resolve it there.
 Flags:
   --status <PUBLISHED|DRAFT>  Dependency status to query (default: PUBLISHED).
   --force                     Bypass the config cache when resolving <input>.
+  --full                      Also return the raw dependencyJSON (large).
   --llm                       Emit the JSON envelope.
   --env <name>                Environment to resolve + query (default: nsm-dev).
   --help, -h                  Show this help message.
@@ -25,3 +32,4 @@ Flags:
 Examples:
   belz pd page-deps 40d89f5f4b65e79c0856953d668ce67a --env nsm-prod
   belz pd page-deps n_s_public_portal_login --env nsm-prod --llm
+  belz pd page-deps n_s_public_portal_login --full --llm | jq '.data.dependencyJSON | keys'
