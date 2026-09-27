@@ -5,6 +5,8 @@ Manage belz credentials and environment configuration.
 Subcommands:
   get             Show URL, user, password status, and cached token for the active env.
   token           Print the raw Bearer token to stdout (for scripting/clipboard).
+                  Re-logs in when there is no session or the token has expired.
+    --refresh     Force a fresh login before printing the token.
   edit            Interactively add, edit, or remove credentials in ~/.belz/config.json.
 
 Flags:
@@ -20,4 +22,5 @@ Examples:
   belz config get --env nsm-qa
   belz config token
   belz config token --env nsm-qa --llm
+  belz config token --refresh
   belz config edit

@@ -13,6 +13,7 @@ import { tmpdir } from "os";
 import { dirname, join } from "path";
 import {
   CliError,
+  defineSubcommands,
   ok,
   lifecycle,
   prompts,
@@ -30,6 +31,16 @@ const CHROME_FORCELIST_ENTRY = `${release.chromeId};${release.chromeUpdateXmlUrl
 const FIREFOX_INSTALL_URL = `${release.pagesBaseUrl}/belzabar-latest.xpi`;
 
 type ExtAction = "load" | "remove" | "list" | "status";
+
+const BROWSER_TARGETS = {
+  positionals: [{ name: "browsers", variadic: true }],
+  flags: { all: { type: "boolean" } },
+} as const;
+
+export const args = defineSubcommands(
+  { list: {}, status: {}, load: { ...BROWSER_TARGETS }, remove: { ...BROWSER_TARGETS } },
+  { command: "belz extension", default: "list" },
+);
 
 interface ExtArgs {
   action: ExtAction;
@@ -251,21 +262,14 @@ async function pickBrowsers(args: ExtArgs, installed: DetectedBrowser[], context
 const command: CommandModule<ExtArgs, ExtData> = {
   schema: "belz.extension",
 
-  parseArgs(args) {
-    // The runner already strips the "extension" token — args[0] is the
-    // sub-command (load / remove / list / status).
-    const sub = args[0];
-    const valid: ExtAction[] = ["load", "remove", "list", "status"];
-    const action = (valid.includes(sub as ExtAction) ? sub : "list") as ExtAction;
-    const operands = valid.includes(sub as ExtAction) ? args.slice(1) : args;
-    const browsers: string[] = [];
-    let all = false;
-    for (const token of operands) {
-      if (token === "--all") all = true;
-      else if (token.startsWith("-")) throw new CliError(`Unknown flag: ${token}`, { code: "UNKNOWN_FLAG" });
-      else browsers.push(token);
+  parseArgs(argv) {
+    // The runner already strips the "extension" token — argv[0] is the
+    // sub-command (load / remove / list / status); bare `belz extension` lists.
+    const parsed = args.parse(argv);
+    if (parsed.subcommand === "load" || parsed.subcommand === "remove") {
+      return { action: parsed.subcommand, browsers: parsed.positionals.browsers, all: parsed.flags.all };
     }
-    return { action, browsers, all };
+    return { action: parsed.subcommand, browsers: [], all: false };
   },
 
   async execute(args, context) {

@@ -1,4 +1,4 @@
-belz onboard
+Usage: belz onboard
 
 Guided first-run setup for belz. Walks through, in order:
 
@@ -9,10 +9,9 @@ Each step is confirmed before it runs and is safe to skip. `belz onboard` is
 idempotent — re-run it any time; steps that are already done are detected and
 offered for skipping.
 
-This command is interactive. For non-interactive / scripted setup, run the
-underlying commands directly:
-  belz setup --env-file <path>
-  belz extension load --all
+This command is interactive and takes no flags. For non-interactive /
+scripted setup, run the underlying commands directly (see `belz setup --help`
+and `belz extension --help`).
 
 Examples:
   belz onboard            Run the guided setup

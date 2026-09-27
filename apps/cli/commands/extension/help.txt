@@ -1,4 +1,4 @@
-belz extension <subcommand> [browsers…|--all]
+Usage: belz extension <subcommand> [browsers…|--all]
 
 Install the Belzabar browser extension into your browsers and keep it there.
 
@@ -9,6 +9,7 @@ whenever a new version is released — you never load it again.
 
 Subcommands:
   list             Show detected browsers and whether the extension is loaded
+                   (the default when no subcommand is given)
   status           Alias of `list`
   load   [...]     Force-install the extension into the given browsers
   remove [...]     Remove the force-install policy from the given browsers

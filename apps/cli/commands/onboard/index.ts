@@ -1,5 +1,6 @@
 import {
   CliError,
+  defineArgs,
   ok,
   lifecycle,
   prompts,
@@ -40,10 +41,15 @@ async function runStep(
   }
 }
 
+export const args = defineArgs({ command: "belz onboard" });
+
 const command: CommandModule<Record<string, never>, OnboardData> = {
   schema: "belz.onboard",
 
-  parseArgs() {
+  /** Writes ~/.belz/config.json and browser policy files (via setup / extension load). */
+  writesLocal: true,
+  parseArgs(argv) {
+    args.parse(argv);
     return {};
   },
 

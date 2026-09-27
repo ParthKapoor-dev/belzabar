@@ -1,5 +1,5 @@
 import { Config } from "@belzabar/core";
-import { ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 
 interface EnvRow {
   name: string;
@@ -15,9 +15,14 @@ interface EnvsData {
   envs: EnvRow[];
 }
 
+export const args = defineArgs({ command: "belz envs" });
+
 const command: CommandModule<undefined, EnvsData> = {
   schema: "belz.envs",
-  parseArgs: () => undefined,
+  parseArgs: (argv) => {
+    args.parse(argv);
+    return undefined;
+  },
   async execute() {
   const envs = Config.getAllEnvs();
   const active = Config.activeEnv;

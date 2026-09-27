@@ -1,4 +1,4 @@
-belz update [flags]
+Usage: belz update [flags]
 
 Update belz to the latest version: pull the source checkout, recompile the
 binary, and install it.
@@ -12,6 +12,7 @@ Flags:
   --check       Report whether an update is available, without changing anything.
   -f, --force   Update even with no new commits, and discard uncommitted changes
                 in the source checkout (hard reset to the remote branch).
+  --help, -h    Show this help message.
 
 Examples:
   belz update --check     See if a newer version exists

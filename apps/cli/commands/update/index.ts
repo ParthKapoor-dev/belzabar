@@ -3,6 +3,7 @@ import { existsSync } from "fs";
 import { join } from "path";
 import {
   CliError,
+  defineArgs,
   ok,
   lifecycle,
   getSourceDir,
@@ -63,20 +64,22 @@ export function installScriptDir(sourceDir: string): string {
 
 // ── command ─────────────────────────────────────────────────────────────────────
 
+export const args = defineArgs({
+  command: "belz update",
+  flags: {
+    check: { type: "boolean" },
+    force: { type: "boolean", alias: ["-f"] },
+  },
+});
+
 const command: CommandModule<UpdateArgs, UpdateData> = {
   schema: "belz.update",
 
-  parseArgs(args) {
-    let check = false;
-    let force = false;
-    for (const token of args) {
-      if (token === "--check") check = true;
-      else if (token === "--force" || token === "-f") force = true;
-      else if (token.startsWith("-")) {
-        throw new CliError(`Unknown flag: ${token}`, { code: "UNKNOWN_FLAG" });
-      }
-    }
-    return { check, force };
+  /** Rebuilds and reinstalls the local belz binary. */
+  writesLocal: true,
+  parseArgs(argv) {
+    const { flags } = args.parse(argv);
+    return { check: flags.check, force: flags.force };
   },
 
   async execute(args) {

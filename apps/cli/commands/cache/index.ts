@@ -2,6 +2,7 @@ import {
   apiFetch,
   Config,
   CliError,
+  defineArgs,
   ok,
   lifecycle,
   type CommandModule,
@@ -95,52 +96,25 @@ export async function invalidateOnAllRoutes(
   return results;
 }
 
+export const args = defineArgs({
+  command: "belz cache",
+  positionals: [{ name: "uuids", variadic: true }],
+  flags: {
+    type: { type: "string", default: DEFAULT_TYPE },
+    all: { type: "boolean" },
+    yes: { type: "boolean", alias: ["-y"] },
+  },
+});
+
 const command: CommandModule<CacheArgs, CacheData> = {
   schema: "belz.cache",
 
-  parseArgs(args) {
-    const positional: string[] = [];
-    let type = DEFAULT_TYPE;
-    let yes = false;
-    let all = false;
-
-    for (let i = 0; i < args.length; i += 1) {
-      const token = args[i] ?? "";
-      if (token === "--yes" || token === "-y") {
-        yes = true;
-        continue;
-      }
-      if (token === "--all") {
-        all = true;
-        continue;
-      }
-      if (token === "--type") {
-        const value = args[i + 1];
-        if (!value || value.startsWith("-")) {
-          throw new CliError("--type requires a value (e.g. --type AUTOMATION).", {
-            code: "MISSING_TYPE_VALUE",
-          });
-        }
-        type = value;
-        i += 1;
-        continue;
-      }
-      if (token.startsWith("--type=")) {
-        type = token.slice("--type=".length);
-        if (!type) {
-          throw new CliError("--type= requires a non-empty value.", {
-            code: "MISSING_TYPE_VALUE",
-          });
-        }
-        continue;
-      }
-      if (token.startsWith("-")) {
-        throw new CliError(`Unknown flag: ${token}`, { code: "UNKNOWN_FLAG" });
-      }
-      positional.push(token);
-    }
-
-    const uuids = parseUuids(positional);
+  /** Invalidates server-side cache entries on the target environment. */
+  writes: true,
+  parseArgs(argv) {
+    const { positionals, flags } = args.parse(argv);
+    const { type, yes, all } = flags;
+    const uuids = parseUuids(positionals.uuids);
     if (all && uuids.length > 0) {
       throw new CliError("--all cannot be combined with UUIDs.", { code: "INVALID_ARGS" });
     }

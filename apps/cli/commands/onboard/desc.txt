@@ -1,1 +1,1 @@
-belz onboard           — Guided first-run setup (credentials, extension)
+belz onboard  :->  Guided first-run setup (credentials, extension); interactive only
