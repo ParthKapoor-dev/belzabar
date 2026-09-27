@@ -100,8 +100,30 @@ rationale.
     uses it so every V1 read/write path sees classified steps;
     `identityFromDefinition`, `resolverFromTable` for offline/fixtures),
     `lib/cache.ts`, `lib/method-finder.ts`,
-    `lib/payload-builder.ts`, `lib/input-collector.ts`, `lib/error-parser.ts`
-13. `lib/sql/*` — SQL TUI (unchanged surface; internals migrated)
+    `lib/input-collector.ts`, `lib/error-parser.ts`
+12a. `lib/payload-builder.ts` — `buildV1TestPayload(raw, inputs)`: the ONE
+    `/chain/test` body (`{category, jsonDefinition, id, uuid, version}`,
+    testValues set, `automationApiId` filled from the definition for steps
+    whose NUMERIC `automationId` lacks one — AD-16/38), `v1TestFormData`,
+    `describeTestFailure` (server message for a failed test POST — F14).
+    Used by `test`, `run-suites` and the SQL executor.
+12b. `lib/history.ts` — `getVersionOf(method, category, N)`: history.get is
+    addressed by category + name and `includeDraft:"true"` reads the DRAFT
+    chain's version N, otherwise the PUBLISHED chain's; `listAll` lists by
+    uuid. Draft and published keep independent version counters, so version
+    N is read from the side the uuid names (F7). Used by `history` and `diff`.
+12c. `lib/test-suite.ts` — `summarizeTestSuite`: the structured
+    `{testSuiteId, testCases, total}` of `test-cases` and `test-case list` (F24).
+12d. `lib/fingerprint.ts` — `fingerprintMethod` (12-hex logic hash, used by
+    `state`, `publish`, `history restore`, `trace`) and `methodDiffView` /
+    `diffPaths` (the semantic view `diff` compares: decoded code/SQL/SpEL,
+    services, conditions, mappings, contract; no env-local ids).
+13. `lib/sql/*` — SQL executor + TUI. Default DB when `--db` is absent
+    (AD-36): `environments.<env>.sqlDefaultDb` in `~/.belz/config.json` →
+    `BELZ_SQL_DEFAULT_DB` → `NSM_Read_DB` (NSM only); `selectedBy` says which.
+    `insert` with `RETURNING <col>` asks for the operation's generatedId output
+    (F25); a multi-row RETURNING makes the platform fail AFTER committing and
+    list the keys in its error — belz parses them (`generatedKeys`).
 14. `tests/unit/` — save-guard (no-op round-trip over 36 real sems-dev
     bodies in `tests/fixtures/real-v1/`, the `save-corruption/` case, every
     refusal code), sql-read-only, parser, serializer, version resolver, draft guard, xml,
@@ -139,7 +161,10 @@ fails if a folder is missing from the registry.
    step details include input values (`inputs[]`) and basic condition rows
 4. `show-code` — dump decoded custom-code source for all / a single step
 5. `outputs` — inputs/variables/outputs contract only (agent-friendly)
-6. `state` — draft/published linkage, version, staleness (wraps draft-guard)
+6. `state` — draft/published linkage, `versions`, and `inSync` = logic
+   fingerprints of draft and published are equal (AD-18: the two version
+   counters are independent, never compare them). One fetch per side (the
+   guard returns `initial`).
 7. `categories` — list AD categories (`id` = chain-category id, plus systemId/systemUuid); filter by `--user` / `--system`
 8. `services` — list platform services (`--internal`, `--search <q>`)
 9. `export` — export a single method as JSON (numeric chain id or any uuid spelling)
@@ -147,24 +172,51 @@ fails if a folder is missing from the registry.
 11. `test-cases` — list persistent test cases on a method
 12. `test-report` — latest test-suite execution report
 13. `child-info` — resolve a child method's inputs/outputs by name (unknown/draft-only → METHOD_NOT_FOUND)
-14. `test` — V1 test-before-save with rich per-step trace
+14. `test` — V1 test-before-save with rich per-step trace (rows joined to the
+    method's steps: real description + orderIndex). **Declares `writes`**: it
+    really runs the chain (SQL commits).
 15. `run` — live-execute a published method (`--stream` opts into a streaming
-    method: `application/stream+json` chunks + final JSON envelope)
-16. `save-suite`, `run-suites` — local `.spec.json` suites (V1)
-17. `sql` — interactive SQL TUI against the AD SQL service
-18. `changelog <uuid>` — list change notes; `--note "<text>"` records one
+    method: `application/stream+json` chunks + final JSON envelope; no
+    timeout). **Declares `writes`.** A DRAFT uuid runs its PUBLISHED body —
+    belz warns and reports `inputState` / `executesPublishedUuid` (AD-34).
+16. `save-suite`, `run-suites` — local `.spec.json` suites (V1); run-suites
+    **declares `writes`** and posts the same body as `test`.
+17. `sql` — SQL run/dbs/update/insert/modify/tui (`tui` declares `writes`:
+    it can switch to write modes)
+18. `changelog <uuid>` — list the notes of the chain the uuid names;
+    `--note "<text>"` is a write: draft-guarded (recorded on the DRAFT chain,
+    as publish does), confirmation / `--yes`
+19. `history list|show|diff <uuid>` — the history of the chain the uuid
+    names (`side` in the data); `trace <uuid>` — spine = active env (or
+    `--spine`), envs = the spine's project family (or `--envs a,b`), a
+    draft uuid is traced via its published chain (AD-25); `diff` — history
+    or cross-env (in-process, AD-26), reports `changed` + `differences`
 
 ### Write (`belz ad <cmd>`) — all draft-guarded
 
 1. `save <file> --uuid <draftUuid>` — save a JSON overlay onto a draft
 2. `publish <uuid> --note "<text>"` — promote a draft to its published version.
-   `--note` is mandatory: belz POSTs it to the chain's changelog before publishing.
+   `--note` is mandatory: belz publishes FIRST, then records the note on the
+   draft chain (3 attempts); a note that still fails keeps the publish and
+   reports `noteRecorded:false` + a warning (AD-19). `changelogId` is looked
+   up in the list (the POST answers `{"success":true}` without an id).
 3. `import <file>` — POST `/chain/import`
 4. `category create <name>` — create a new AD category/service
 5. `test-case <action>` — `list | create | update | delete | bulk |
    run-suite | delete-suite` (V1 supports test-case UPDATE)
 6. `sql update|insert|modify` — SQL writes; confirmation or `--yes` like
    every other AD write.
+7. `history restore <draftUuid> --version N` — draft-guarded; a published
+   uuid is refused (`HISTORY_RESTORE_NEEDS_DRAFT`, versions are per chain);
+   the target version must exist; fails closed on an unrecognised answer
+   unless the re-fetched draft matches (`RESTORE_UNCONFIRMED`); reports
+   `resultingVersion` / `contentMatches` (AD-23).
+8. `changelog <uuid> --note` (see above).
+
+Also `writes` (explicit `--env`, D6) without a draft guard, because they
+execute rather than save: `test`, `run`, `run-suites`, `sql tui`.
+Long server operations (`/chain/test`, execute, publish, test suites,
+history restore) pass a 10 min per-call timeout (`AD_LONG_OP_TIMEOUT_MS`).
 
 **Every write command MUST route through `lib/draft-guard.ts:resolveDraftTarget`
 before saving.** Never POST a save payload whose UUID resolves to PUBLISHED —
@@ -233,7 +285,7 @@ so the compiled binary embeds them). `apps/cli/bin/options.ts` wires it into `be
 3. Method parser: `lib/parser.ts`
 4. Find command entrypoint: `commands/find/index.ts`
 5. Show command deep inspection: `commands/show/index.ts`
-6. Test payload injection: `lib/payload-builder.ts`
+6. Test payload: `lib/payload-builder.ts:buildV1TestPayload`
 7. Trace error interpretation: `lib/error-parser.ts`
 8. Changelog client: `lib/api/changelog.ts`
 9. SQL command entrypoint: `commands/sql/index.ts`
@@ -243,7 +295,8 @@ so the compiled binary embeds them). `apps/cli/bin/options.ts` wires it into `be
 
 ## Known Current Gaps
 
-1. `test` has only a V1 path (`--v2` falls back with a notice); `--force` was removed (AD-15).
+1. `test` has only a V1 path (`--v2` falls back with a notice); `--force` is a hidden,
+   deprecated no-op (warns) so old scripts keep working (AD-15).
 2. `save-suite` writes to `suites/` path and assumes directory availability.
 
 ## desc.txt Standard
