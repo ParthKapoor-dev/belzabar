@@ -11,7 +11,7 @@
 // caught here instead of 7s into Jenkins.
 
 import { apiFetch, CliError, Config } from "@belzabar/core";
-import { ENV_TO_PROFILE_SEGMENT } from "./constants";
+import { envPairFromProfile } from "./args";
 import type { ResolvedTarget } from "./types";
 
 export interface ResolveTargetsResult {
@@ -22,15 +22,6 @@ export interface ResolveTargetsResult {
 
 const PD_MODULE = /^PD$/i;
 const AD_MODULE = /^AD_(Method|Service)$/i;
-
-/** Reverse ENV_TO_PROFILE_SEGMENT: derive a belz env from a profile's source segment. */
-function sourceEnvFromProfile(profile: string): string | undefined {
-  const segment = profile.split("_")[0];
-  for (const [env, seg] of Object.entries(ENV_TO_PROFILE_SEGMENT)) {
-    if (seg === segment) return env;
-  }
-  return undefined;
-}
 
 async function getJson(path: string, env: string): Promise<Record<string, unknown>> {
   const res = await apiFetch(path, { method: "GET", authMode: "Bearer" });
@@ -96,10 +87,20 @@ export async function resolveMigrationTargets(opts: {
   const isAd = AD_MODULE.test(opts.migrateType);
   if ((!isPd && !isAd) || opts.ids.length === 0) return null;
 
-  const sourceEnv = opts.sourceEnv ?? sourceEnvFromProfile(opts.profile);
-  if (!sourceEnv) return null; // non-NCDNS profile with no --source-env: can't pick an env
-
+  // The profile decides what Jenkins migrates; never resolve ids on another env.
+  const derived = envPairFromProfile(opts.profile)?.sourceEnv;
+  if (opts.sourceEnv && derived && opts.sourceEnv !== derived) {
+    throw new CliError(
+      `Profile '${opts.profile}' migrates from ${derived}, but --source-env is ${opts.sourceEnv}.`,
+      { code: "MIGRATE_ENV_PROFILE_MISMATCH", details: { profile: opts.profile, sourceEnv: opts.sourceEnv, expected: derived } },
+    );
+  }
   const envs = Config.getAllEnvs();
+  // A derived env that isn't configured locally → skip pre-flight (ids go
+  // through as given), matching the old behaviour for unmapped profiles.
+  const sourceEnv = opts.sourceEnv ?? (derived && envs[derived] ? derived : undefined);
+  if (!sourceEnv) return null; // unknown profile family and no --source-env: can't pick an env
+
   if (!envs[sourceEnv]) {
     throw new CliError(
       `Cannot resolve migration ids: source env '${sourceEnv}' is not configured. ` +

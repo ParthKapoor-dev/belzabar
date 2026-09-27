@@ -24,10 +24,18 @@ MIGRATION IDS
   resolves every id against the SOURCE environment and automatically swaps a
   PD draft for its published sibling (showing the name of each entity being
   migrated) — the migration service itself only accepts published ids, so belz
-  does that translation for you. Resolution needs --source-env (or an NCDNS
-  profile it can derive the source env from) plus configured credentials for
-  that env. If an id is a draft with no published version, belz aborts before
-  the build so nothing is wasted.
+  does that translation for you. Resolution needs --source-env (or an NCDNS /
+  SEMS / YS profile it can derive the source env from) plus configured
+  credentials for that env. If an id is a draft with no published version, belz
+  aborts before the build so nothing is wasted.
+
+SAFETY
+  - Unknown flags are errors (MIGRATE_UNKNOWN_FLAG, with a did-you-mean), as are
+    stray positionals and values on switches (e.g. --dry-run=true).
+  - --source-env / --target-env must match the --profile's envs (e.g.
+    devsems_qasems = sems-dev → sems-qa); a contradiction aborts with
+    MIGRATE_ENV_PROFILE_MISMATCH. For a profile whose envs belz can't derive,
+    pass both env flags or neither (MIGRATE_ENV_PROFILE_UNVERIFIED).
 
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by

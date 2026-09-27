@@ -124,7 +124,154 @@ function parseBuildNumber(args: string[], action: string): number {
   return n;
 }
 
+// -------- run: flag whitelist (MG-1) ---------------------------------------
+//
+// `migrate run` triggers a real Jenkins build, so a typo'd safety flag
+// (`--dryrun`, `--no-autoapprove`) must be an error, never silently ignored.
+
+const RUN_VALUE_FLAGS = [
+  "--module", "--module-name", "--module-custom", "--client", "--profile",
+  "--source-env", "--target-env", "--ids", "--ids-file", "--migration-id",
+  "--async", "--migrate-dependents", "--devops-tag", "--out",
+] as const;
+const RUN_BOOLEAN_FLAGS = ["--dry-run", "--no-auto-approve", "--raw", "--quiet", "--no-follow"] as const;
+const RUN_KNOWN_FLAGS: readonly string[] = [...RUN_VALUE_FLAGS, ...RUN_BOOLEAN_FLAGS];
+
+function editDistance(a: string, b: string): number {
+  const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    let prev = dp[0]!;
+    dp[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = dp[j]!;
+      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j]!, dp[j - 1]!);
+      prev = tmp;
+    }
+  }
+  return dp[b.length]!;
+}
+
+export function suggestFlag(flag: string, known: readonly string[] = RUN_KNOWN_FLAGS): string | undefined {
+  const norm = (f: string) => f.replace(/^-+/, "").replace(/[-_]/g, "").toLowerCase();
+  const n = norm(flag);
+  let best: { flag: string; d: number } | undefined;
+  for (const k of known) {
+    const d = editDistance(n, norm(k));
+    if (!best || d < best.d) best = { flag: k, d };
+  }
+  if (!best) return undefined;
+  return best.d <= Math.max(2, Math.floor(norm(best.flag).length / 3)) ? best.flag : undefined;
+}
+
+/** Reject unknown flags, `=value` on boolean flags, and stray positionals. */
+export function assertKnownRunFlags(rest: string[]): void {
+  for (let i = 0; i < rest.length; i++) {
+    const token = rest[i]!;
+    if (!token.startsWith("-")) {
+      throw new CliError(`Unexpected argument '${token}' for 'belz migrate run'.`, {
+        code: "MIGRATE_UNEXPECTED_ARG",
+        details: { arg: token },
+      });
+    }
+    const eq = token.indexOf("=");
+    const name = eq === -1 ? token : token.slice(0, eq);
+    if ((RUN_VALUE_FLAGS as readonly string[]).includes(name)) {
+      if (eq === -1) {
+        const next = rest[i + 1];
+        if (next !== undefined && !next.startsWith("-")) i++;
+      }
+      continue;
+    }
+    if ((RUN_BOOLEAN_FLAGS as readonly string[]).includes(name)) {
+      if (eq !== -1) {
+        throw new CliError(`${name} is a switch and takes no value (got '${token}').`, {
+          code: "MIGRATE_INVALID_FLAG_VALUE",
+          details: { flag: name, value: token.slice(eq + 1) },
+        });
+      }
+      continue;
+    }
+    const suggestion = suggestFlag(name);
+    throw new CliError(
+      `Unknown flag '${name}' for 'belz migrate run'.` +
+        (suggestion ? ` Did you mean '${suggestion}'?` : "") +
+        ` Known: ${RUN_KNOWN_FLAGS.join(", ")}.`,
+      {
+        code: "MIGRATE_UNKNOWN_FLAG",
+        details: { flag: name, suggestion: suggestion ?? null, known: RUN_KNOWN_FLAGS },
+      },
+    );
+  }
+}
+
+// -------- run: profile ↔ env consistency (MG-2) -----------------------------
+//
+// Jenkins migrates whatever the PROFILE says; --source-env only picks where
+// belz pre-resolves ids. They must agree, or ids get resolved on one env while
+// Jenkins migrates another. Profile segment → belz env, where known.
+
+export const PROFILE_SEGMENT_TO_ENV: Record<string, string> = {
+  devncdns: "nsm-dev",
+  qancdns: "nsm-qa",
+  uatncdns: "nsm-uat",
+  stgncdns: "nsm-stage",
+  stg2ncdns: "nsm-stage2",
+  devsems: "sems-dev",
+  qasems: "sems-qa",
+  uatsems: "sems-uat",
+  stagesems: "sems-stage",
+  stage2sems: "sems-stage2",
+  qays: "ys-qa",
+  stageys: "ys-stage",
+};
+
+/** Derive {sourceEnv, targetEnv} from a profile like `devsems_qasems`; null when unknown. */
+export function envPairFromProfile(profile: string): { sourceEnv: string; targetEnv: string } | null {
+  const parts = profile.trim().toLowerCase().split("_");
+  if (parts.length !== 2) return null;
+  const sourceEnv = PROFILE_SEGMENT_TO_ENV[parts[0]!];
+  const targetEnv = PROFILE_SEGMENT_TO_ENV[parts[1]!];
+  if (!sourceEnv || !targetEnv) return null;
+  return { sourceEnv, targetEnv };
+}
+
+export function assertProfileEnvConsistent(
+  profile: string,
+  sourceEnv: string | undefined,
+  targetEnv: string | undefined,
+): void {
+  if (!sourceEnv && !targetEnv) return;
+  const pair = envPairFromProfile(profile);
+  if (!pair) {
+    // Unknown profile family: we cannot check the envs, so both must be given
+    // explicitly (a lone --source-env is too easy to get wrong silently).
+    if (!sourceEnv || !targetEnv) {
+      throw new CliError(
+        `Cannot derive environments from profile '${profile}'. Pass BOTH --source-env and --target-env ` +
+          `matching the profile, or omit both (ids are then sent to Jenkins unresolved).`,
+        { code: "MIGRATE_ENV_PROFILE_UNVERIFIED", details: { profile, sourceEnv, targetEnv } },
+      );
+    }
+    return;
+  }
+  const mismatches: string[] = [];
+  if (sourceEnv && sourceEnv !== pair.sourceEnv) mismatches.push(`--source-env ${sourceEnv} (profile says ${pair.sourceEnv})`);
+  if (targetEnv && targetEnv !== pair.targetEnv) mismatches.push(`--target-env ${targetEnv} (profile says ${pair.targetEnv})`);
+  if (mismatches.length > 0) {
+    throw new CliError(
+      `Profile '${profile}' migrates ${pair.sourceEnv} → ${pair.targetEnv}, but ${mismatches.join(" and ")}. ` +
+        `Fix or drop the env flags.`,
+      {
+        code: "MIGRATE_ENV_PROFILE_MISMATCH",
+        details: { profile, expected: pair, sourceEnv, targetEnv },
+      },
+    );
+  }
+}
+
 export async function parseMigrateRunArgs(rest: string[]): Promise<MigrateRunArgs> {
+  assertKnownRunFlags(rest);
+
   const moduleValue = parseString(rest, "--module") ?? parseString(rest, "--module-name");
   const customModuleValue = parseString(rest, "--module-custom");
   const migrateType = normalizeMigrateType(moduleValue, customModuleValue);
@@ -154,6 +301,7 @@ export async function parseMigrateRunArgs(rest: string[]): Promise<MigrateRunArg
   }
 
   const resolvedProfile = profile || deriveProfileFromEnvPair(sourceEnv as string, targetEnv as string);
+  if (profile) assertProfileEnvConsistent(profile, sourceEnv, targetEnv);
 
   return {
     action: "run",

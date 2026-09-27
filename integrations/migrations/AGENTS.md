@@ -19,7 +19,10 @@ migrations/
     │   ├── crumb.ts         # CSRF crumb fetch + caching
     │   ├── client.ts        # triggerBuild, resolveQueueItem, getBuild, getConsoleChunk
     │   └── stream.ts        # Progressive console tail until build completes
-    ├── args.ts              # CLI arg parsing for run/profiles/status/logs
+    ├── args.ts              # CLI arg parsing for run/profiles/status/logs; `run` whitelists
+    │                        #   flags (MIGRATE_UNKNOWN_FLAG) and checks --source/--target-env
+    │                        #   against the profile (PROFILE_SEGMENT_TO_ENV / envPairFromProfile)
+    ├── resolve-targets.ts   # Pre-flight id resolution on the profile's source env
     ├── constants.ts         # Default job, client list, env→profile map
     ├── parser.ts            # Strip ANSI, regex-extract migration ids, find REPORT JSON
     ├── profiles.ts          # Discover + cache PROFILE_NAME choices
@@ -27,6 +30,7 @@ migrations/
     ├── artifacts.ts         # Write summary.json + summary.console.log
     ├── types.ts             # All public types
     └── index.ts             # Barrel
+tests/unit/                  # bun test (run from cli/: bun test ../integrations/migrations/tests)
 ```
 
 ## Conventions
