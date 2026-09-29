@@ -34,9 +34,9 @@ function setup(routes: Parameters<typeof fakeFetch>[0]) {
 
 describe("chain fetch not-found", () => {
   for (const body of ["", "null"]) {
-    test(`v1 + v2 fetchMethod/fetchRawMethod: 200 with ${JSON.stringify(body)} → METHOD_NOT_FOUND`, async () => {
+    test(`v1 + v2 fetchRawMethod: 200 with ${JSON.stringify(body)} → METHOD_NOT_FOUND`, async () => {
       setup([{ url: /\/rest\/api\/automation\/chain\//, response: respond({ status: 200, text: body }) }]);
-      for (const p of [v1.fetchMethod(UUID), v1.fetchRawMethod(UUID), v2.fetchMethod(UUID), v2.fetchRawMethod(UUID)]) {
+      for (const p of [v1.fetchRawMethod(UUID), v2.fetchRawMethod(UUID)]) {
         const e = await caught(p);
         expect(e).toBeInstanceOf(CliError);
         expect(e.code).toBe("METHOD_NOT_FOUND");
@@ -53,8 +53,8 @@ describe("chain fetch not-found", () => {
         response: respond({ status: 500, headers: { "content-type": "text/html" }, text: `<html><title>Boom</title>${"z".repeat(50_000)}</html>` }),
       },
     ]);
-    expect((await caught(v1.fetchMethod(UUID))).code).toBe("METHOD_NOT_FOUND");
-    const e = await caught(v2.fetchMethod(UUID));
+    expect((await caught(v1.fetchRawMethod(UUID))).code).toBe("METHOD_NOT_FOUND");
+    const e = await caught(v2.fetchRawMethod(UUID));
     expect(e.code).toBe("AD_API_ERROR");
     expect((e.details as any).body).toBe("HTML page: Boom");
   });
@@ -80,18 +80,5 @@ describe("test responses are redacted", () => {
     expect(json.token).toBe("an-output-named-token");
     // the request itself still carried the real token
     expect(ff!.requests[0]!.headers["expertly-auth-token"]).toBe(JWT);
-  });
-
-  test("v2 testExecute scrubs the XML echo", async () => {
-    setup([
-      {
-        method: "POST",
-        url: /test\/execute\//,
-        response: respond({ text: `<HashMap><executionStatus><failed>false</failed></executionStatus><auth>Bearer ${JWT}</auth></HashMap>` }),
-      },
-    ]);
-    const r = await v2.testExecute(UUID, {});
-    expect(r.rawXml).not.toContain(JWT);
-    expect(JSON.stringify(r.outputs)).not.toContain(JWT);
   });
 });

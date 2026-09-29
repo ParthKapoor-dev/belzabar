@@ -1,8 +1,9 @@
 // Parse a single V2 step into a ParsedStep.
 //
-// V2 is thinner than V1: we only need enough discrimination so `belz ad show
-// --v2` can render a method parsed via V2. Write-side support for V2 is out
-// of scope for the current phase — the V2 parser feeds read commands only.
+// V2 names each step's service on the wire (serviceName / methodName), so no
+// definition lookup is needed. V2 is the default parse of the agent views
+// (`show --compact` / `--story`); the save pipeline (V2, the only write route)
+// works on the raw V2 body, not on this parse.
 
 import type { V2Step, V2StepInput, V2Output, V2StepProperties } from "../../types/v2-wire";
 import type {

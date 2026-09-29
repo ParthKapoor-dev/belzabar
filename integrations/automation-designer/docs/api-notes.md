@@ -38,12 +38,11 @@ where the footguns live.
 | Shared step helpers / constants | `lib/parser/steps/shared.ts` |
 | API façade (`adApi`) | `lib/api/index.ts` |
 | V1 endpoint wrappers | `lib/api/v1.ts` |
-| V2 endpoint wrappers (fetch + test only) | `lib/api/v2.ts` |
+| V2 raw GET (`fetchRawMethod`) | `lib/api/v2.ts` |
 | Save overlay → V2 body | `lib/serialize/v2.ts` (+ `diff.ts`) |
 | Save / create / delete pipeline | `lib/save/` |
 | Draft-safety guard | `lib/draft-guard.ts` |
 | base64 helper | `lib/base64.ts` |
-| Tiny XML HashMap reader (V2 test response) | `lib/xml.ts` |
 
 ## Version resolution
 

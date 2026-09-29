@@ -1,12 +1,11 @@
 // V1 Automation Designer HTTP client.
 //
-// This module knows the V1 REST surface. It returns either a HydratedMethod
-// (for fetch) or typed wire responses (for list/publish/etc). No command
-// should import this file directly — use lib/api/index.ts:adApi.
+// This module knows the V1 REST surface and returns typed wire responses.
+// Parsing (with the service resolver, AD-02) is adApi.fetchMethod's job:
+// a V1 body parsed without it misclassifies SQL / echo steps. Prefer
+// lib/api/index.ts:adApi; a few callers need the raw wire directly.
 
 import { apiFetch, CliError, Config, expectJson, readErrorBody, redactSecrets, redactString } from "@belzabar/core";
-import { parseV1Method } from "../parser/v1";
-import type { HydratedMethod } from "../types/common";
 import type { V1AutomationDefinition, V1RawMethodResponse } from "../types/v1-wire";
 
 /**
@@ -48,13 +47,6 @@ async function fetchChainJson<T>(response: Response, path: string, uuid: string)
 }
 
 // ─── READS ───────────────────────────────────────────────────────────────
-
-export async function fetchMethod(uuid: string): Promise<HydratedMethod> {
-  const path = `/rest/api/automation/chain/${uuid}`;
-  const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  const raw = await fetchChainJson<V1RawMethodResponse>(response, path, uuid);
-  return parseV1Method(raw);
-}
 
 export async function fetchRawMethod(uuid: string): Promise<V1RawMethodResponse> {
   const path = `/rest/api/automation/chain/${uuid}`;

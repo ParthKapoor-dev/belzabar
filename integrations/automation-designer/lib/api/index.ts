@@ -1,9 +1,11 @@
 // Unified AD API façade.
 //
-// Commands import ONLY from here. Verbs take an ApiVersion and dispatch to
+// Most commands go through here. Verbs take an ApiVersion and dispatch to
 // lib/api/v1.ts or lib/api/v2.ts internally. Verbs where V2 is not supported
 // silently stay on V1 — the --v2 fallback warning is the caller's job (via
-// lib/args/common.ts:emitFallbackWarning).
+// lib/args/common.ts:emitFallbackWarning). Some callers use the wire modules
+// directly for raw bodies or V1-only routes (many commands, the save
+// pipeline, validate, sql, trace, callers).
 
 import type { ApiVersion } from "../api-version";
 import type { HydratedMethod } from "../types/common";
@@ -22,7 +24,6 @@ export type {
   MethodVersionSummary,
   MethodVersionFull,
 } from "./v1";
-export type { V2TestExecuteResult } from "./v2";
 export type { ChangelogEntry } from "./changelog";
 
 export const adApi = {
@@ -145,15 +146,6 @@ export const adApi = {
 
   async deleteTestSuite(testSuiteId: string): Promise<void> {
     return v1.deleteTestSuite(testSuiteId);
-  },
-
-  // ─── Test execute ────────────────────────────────────────────────────
-
-  async testExecuteV2(
-    chainUuid: string,
-    inputs: Record<string, string>,
-  ): Promise<v2.V2TestExecuteResult> {
-    return v2.testExecute(chainUuid, inputs);
   },
 
   // ─── Method History ──────────────────────────────────────────────────
