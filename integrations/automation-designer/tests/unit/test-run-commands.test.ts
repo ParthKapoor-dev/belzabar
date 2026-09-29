@@ -122,7 +122,7 @@ describe("ad test", () => {
     const body = await testBody(f);
     const inner = JSON.parse(body.jsonDefinition);
     // (exact ids are pinned by the buildV1TestPayload tests; cache-env-scope's
-    // process-wide mock.module of lib/api/v1 may serve the definitions here)
+    // test file may already have cached the definitions)
     for (const s of inner.services) expect(s.automationApiId).not.toBeUndefined();
     const d = r.envelope?.data as any;
     expect(d.trace.map((t: any) => t.step)).toEqual([1, 2]);

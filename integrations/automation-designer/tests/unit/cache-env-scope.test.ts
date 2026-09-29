@@ -2,42 +2,57 @@
 // BELZ_HOME is set to a tmp dir by the bunfig.toml test preload before
 // @belzabar/core is first imported; beforeAll asserts it so nothing can ever
 // touch the real ~/.belz.
-import { afterAll, beforeAll, describe, expect, mock, test } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, rmSync } from "fs";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
+import { existsSync, readdirSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import * as core from "@belzabar/core";
+import { fakeFetch, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
+import { CacheManager } from "../../lib/cache";
+import { ServiceHydrator } from "../../lib/hydrator";
+import { adApi } from "../../lib/api/index";
 
-const tmp = process.env.BELZ_HOME ?? mkdtempSync(join(tmpdir(), "belz-ad-cache-test-"));
-process.env.BELZ_HOME = tmp;
-
-// Fake network layer: no HTTP ever leaves the test.
+// Fake network through fakeFetch, never mock.module: Bun module mocks are
+// process-wide and leaked a fake publishDraft into later test files.
+const tmp = core.BELZ_CONFIG_DIR;
 const calls: string[] = [];
-mock.module("../../lib/api/v1", () => ({
-  publishDraft: async (draft: string) => {
-    calls.push(`publish:${draft}`);
-    return { publishedUuid: "PUB1" };
-  },
-  fetchAutomationDefinition: async (id: string) => {
-    calls.push(`def:${id}`);
-    return { automationAPI: { id } };
-  },
-  historyUuidCacheKey: (env: string | undefined, name: string) => `${env ?? "default"}:${name}`,
-}));
+let ff: FakeFetch | null = null;
+let cfg: TempEnvConfig | null = null;
 
-let core: typeof import("@belzabar/core");
-let CacheManager: typeof import("../../lib/cache").CacheManager;
-let ServiceHydrator: typeof import("../../lib/hydrator").ServiceHydrator;
-let adApi: typeof import("../../lib/api/index").adApi;
-
-beforeAll(async () => {
-  core = await import("@belzabar/core");
-  ({ CacheManager } = await import("../../lib/cache"));
-  ({ ServiceHydrator } = await import("../../lib/hydrator"));
-  ({ adApi } = await import("../../lib/api/index"));
-  // Guard: never write outside the tmp root.
-  if (core.BELZ_CONFIG_DIR !== tmp || !tmp.startsWith(tmpdir())) {
-    throw new Error(`refusing to run: BELZ_CONFIG_DIR=${core.BELZ_CONFIG_DIR} is not the test tmp dir`);
-  }
+beforeAll(() => {
+  if (!tmp.startsWith(tmpdir())) throw new Error(`refusing to run: BELZ_CONFIG_DIR=${tmp} is not a test tmp dir`);
+});
+beforeEach(() => {
+  cfg = withTempEnvConfig({
+    envs: { "nsm-dev": { url: "https://nsm-dev.test" }, "nsm-qa": { url: "https://nsm-qa.test" }, e1: { url: "https://e1.test" } },
+    activeEnv: "nsm-dev",
+  });
+  ff = fakeFetch([
+    {
+      method: "POST",
+      url: /\/chain\/[^/]+\/publish$/,
+      response: (req: RecordedRequest) => {
+        const draft = req.url.split("/chain/")[1]!.split("/")[0]!;
+        calls.push(`publish:${draft}`);
+        return { referenceId: "pub1" };
+      },
+    },
+    {
+      method: "GET",
+      url: /\/rest\/api\/automations\/[^/?]+\?basicinfo=false$/,
+      response: (req: RecordedRequest) => {
+        const id = req.url.split("/automations/")[1]!.split("?")[0]!;
+        calls.push(`def:${id}`);
+        return { automationAPI: { id } };
+      },
+    },
+  ]).install();
+});
+afterEach(() => {
+  ff?.restore();
+  ff = null;
+  cfg?.restore();
+  cfg = null;
 });
 afterAll(() => rmSync(join(tmp, "cache"), { recursive: true, force: true }));
 
@@ -68,6 +83,7 @@ describe("AD method cache", () => {
     core.Config.setActiveEnv("nsm-dev");
     for (const id of ["draft1", "pub1"]) await CacheManager.save(id, fakeMethod(id));
     await adApi.publishDraft("draft1");
+    expect(calls).toContain("publish:draft1");
     expect(await CacheManager.load("draft1")).toBeNull();
     expect(await CacheManager.load("pub1")).toBeNull();
   });
