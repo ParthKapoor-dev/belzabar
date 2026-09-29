@@ -26,8 +26,31 @@ export interface RuleContext {
 
 const BINDING_RE = /\{%([^%]+)%\}/g;
 
-/** Runtime-scope roots that are never declared as page variables. */
-const BUILTIN_ROOTS = new Set(["pageContext", "null", "true", "false", "undefined", "this"]);
+/**
+ * Runtime-scope roots that are never declared as page variables. `ref` is the
+ * element-reference scope (`[expPopoverTriggerFor]: "{%ref.Popover_ref_1%}"`,
+ * 3 live sems-dev pages, never declared — OTH-R10 calibration).
+ */
+const BUILTIN_ROOTS = new Set(["pageContext", "null", "true", "false", "undefined", "this", "ref"]);
+
+/**
+ * Drop JS comments from a multi-line code body (handlers, specs, filterFns),
+ * so a `{%x%}` inside a comment is not a binding (OTH-R11: live "Enrollment"
+ * failed ORPHAN_BINDING on a commented-out line). Single-line values (the
+ * bindings themselves, URLs) are returned as-is; a `//` preceded by `:`
+ * (`https://`) or inside a quote-free URL is kept.
+ */
+export function stripCodeComments(text: string): string {
+  if (!text.includes("\n")) return text;
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/(^|[\s;{}(),])\/\/[^\n]*/g, "$1");
+}
+
+/** JSON text of `value` with comments stripped from every code body. */
+function authorJson(value: unknown): string {
+  return JSON.stringify(value, (_k, v: unknown) => (typeof v === "string" ? stripCodeComments(v) : v)) ?? "";
+}
 
 export function collectBindingRefs(text: string, into = new Set<string>()): Set<string> {
   BINDING_RE.lastIndex = 0;
@@ -70,13 +93,16 @@ export function buildRuleContext(page: HydratedPage): RuleContext {
   const inner = (page.rawConfiguration ?? {}) as RawConfiguration;
   const generated = Array.isArray(inner.variables?.generated) ? inner.variables!.generated! : [];
 
-  // Author scope = the whole config minus variables.generated.
-  let authorText = page.rawConfigurationString;
+  // Author scope = the whole config minus variables.generated; code comments
+  // never hold bindings (OTH-R11).
+  let authorText: string;
   let generatedText = "";
   if (generated.length > 0) {
     const { generated: _g, ...restVars } = inner.variables ?? {};
-    authorText = JSON.stringify({ ...inner, variables: restVars });
-    generatedText = JSON.stringify(generated);
+    authorText = authorJson({ ...inner, variables: restVars });
+    generatedText = authorJson(generated);
+  } else {
+    authorText = page.rawConfiguration ? authorJson(inner) : page.rawConfigurationString;
   }
   const bindingRefs = collectBindingRefs(authorText);
   const generatedBindingRefs = new Set<string>();

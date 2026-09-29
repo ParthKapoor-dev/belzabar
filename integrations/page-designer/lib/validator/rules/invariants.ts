@@ -4,7 +4,7 @@
 
 import { walkParsed } from "../../parser/nodes";
 import type { HydratedPage, ValidationIssue } from "../../types/common";
-import type { RuleContext } from "../context";
+import { bindingRoot, type RuleContext } from "../context";
 
 // DERIVED_IN_INNERHTML — derived variables bound to innerHTML/textContent render empty.
 // Cites: docs/api-notes.md §Silent-page-crash
@@ -15,7 +15,7 @@ export function ruleDerivedInInnerHtml(
   page: HydratedPage,
   _ctx: RuleContext,
 ): ValidationIssue[] {
-  const derivedNames = new Set(page.derived.map((d) => d.name));
+  const derivedNames = new Set(page.derived.map((d) => d.name.trim()));
   if (derivedNames.size === 0) return [];
   const issues: ValidationIssue[] = [];
 
@@ -24,7 +24,8 @@ export function ruleDerivedInInnerHtml(
     const regex = /\{%([^%]+)%\}/g;
     let m: RegExpExecArray | null;
     while ((m = regex.exec(value)) !== null) {
-      const ref = m[1];
+      // OTH-R17: `{% name %}` and `{%name.x%}` bind the derived var too.
+      const ref = m[1] ? bindingRoot(m[1].trim()) : null;
       if (ref && derivedNames.has(ref)) {
         issues.push({
           code: "DERIVED_IN_INNERHTML",
@@ -42,6 +43,7 @@ export function ruleDerivedInInnerHtml(
     checkBinding(props["innerHTML"], node);
     checkBinding(props["[innerHTML]"], node);
     checkBinding(props["[textContent]"], node);
+    checkBinding(props["textContent"], node);
   });
 
   return issues;
@@ -101,6 +103,12 @@ export function rulePhoneFieldType(page: HydratedPage): ValidationIssue[] {
  * only contributes `styles`. Found live in Stage 7 (style_parent_site_inner_pages).
  */
 export function isStyleOnlySymbol(page: HydratedPage): boolean {
+  const inner = (page.rawConfiguration ?? {}) as { layout?: unknown; styles?: unknown };
+  // OTH-R10 calibration: live `style_school_management` / `style_annual_registration`
+  // have NO layout key at all, only non-empty `styles`.
+  if (page.entityType === "COMPONENT" && inner.layout === undefined) {
+    return typeof inner.styles === "string" && inner.styles.trim() !== "";
+  }
   const l = page.layout.raw as Record<string, unknown> | null;
   return (
     page.entityType === "COMPONENT" &&
@@ -115,6 +123,7 @@ export function ruleRootLayoutMalformed(page: HydratedPage): ValidationIssue[] {
   const layout = page.layout;
   const issue = (message: string): ValidationIssue => ({ code: "ROOT_LAYOUT_MALFORMED", severity: "error", message });
 
+  if (isStyleOnlySymbol(page)) return issues;
   if (layout.kind === "GENERIC" && layout.nodeId === "__missing_root") {
     issues.push(issue(`${page.entityType === "PAGE" ? "Page" : "Component"} has no root layout node — it will render blank`));
     return issues;
@@ -124,7 +133,6 @@ export function ruleRootLayoutMalformed(page: HydratedPage): ValidationIssue[] {
     issues.push(issue(`Root layout is not a proper layout node`));
     return issues;
   }
-  if (isStyleOnlySymbol(page)) return issues;
   if (rawLayout.name !== "div") {
     issues.push(issue(`Root layout must be name:"div", found "${String(rawLayout.name)}"`));
   }
