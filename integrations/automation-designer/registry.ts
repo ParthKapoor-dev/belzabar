@@ -45,6 +45,9 @@ import historyDesc from "./commands/history/desc.txt" with { type: "text" };
 import * as importCmd from "./commands/import/index";
 import importHelp from "./commands/import/help.txt" with { type: "text" };
 import importDesc from "./commands/import/desc.txt" with { type: "text" };
+import * as lintCmd from "./commands/lint/index";
+import lintHelp from "./commands/lint/help.txt" with { type: "text" };
+import lintDesc from "./commands/lint/desc.txt" with { type: "text" };
 import * as outputsCmd from "./commands/outputs/index";
 import outputsHelp from "./commands/outputs/help.txt" with { type: "text" };
 import outputsDesc from "./commands/outputs/desc.txt" with { type: "text" };
@@ -111,6 +114,7 @@ export const registry = {
   find: { module: findCmd, help: findHelp, desc: findDesc },
   history: { module: historyCmd, help: historyHelp, desc: historyDesc },
   import: { module: importCmd, help: importHelp, desc: importDesc },
+  lint: { module: lintCmd, help: lintHelp, desc: lintDesc },
   outputs: { module: outputsCmd, help: outputsHelp, desc: outputsDesc },
   publish: { module: publishCmd, help: publishHelp, desc: publishDesc },
   run: { module: runCmd, help: runHelp, desc: runDesc },

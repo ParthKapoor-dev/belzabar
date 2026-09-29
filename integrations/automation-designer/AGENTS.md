@@ -17,7 +17,7 @@ belz ad <cmd>   → find, fetch, show, show-code, outputs, state, categories,
                   child-info, test, run, save-suite, run-suites, sql,
                   save, publish, create, delete, changelog, import,
                   category, test-case,
-                  history, trace, validate
+                  history, trace, validate, lint
 ```
 
 `history` lists/shows/diffs/restores a method's saved versions. `trace`
@@ -213,7 +213,10 @@ rationale.
     `bun scripts/fixtures/capture.ts <target>` (repo root, read-only, sems-dev only):
     `real-v1/` (36 V1 bodies), `real-v2/` (same 36, V2), `definitions/`
     (`/automations/{automationId}` for 10 of them), `categories/`
-    (`/chain/category`, `/automation/services`), `not-found/`.
+    (`/chain/category`, `/automation/services`), `not-found/`,
+    `child-info/` (full automation-API contracts + a slimmed `/auth` list),
+    `callers/` (the "Example services" V1 method listing + V2 bodies of its
+    methods). One-off GETs: `capture.ts ad-raw <subdir> <file> <endpoint>`.
     `tests/fixtures/v1/step-*.json` are hand-written single-step fixtures
     (numeric `automationId`, like the wire). Prefer real fixtures for new tests.
 15a. `lib/compact.ts` — `pruneEmpty`, `abbreviate`/`oneLine`, and the
@@ -251,6 +254,8 @@ rationale.
     observed server result; `online/` slim contract captures). Adding a rule:
     add it to `catalogue.ts`, emit it with `report({rule, message, path, step})`,
     add a positive + negative row in validate-l1/-rules/-online tests.
+    `lint.ts` = the advisory review rules of `ad lint` (own `LINT_RULES`
+    catalogue, always `warn`; not run by save/publish).
 
 ### Adding new commands
 
@@ -263,7 +268,15 @@ fails if a folder is missing from the registry.
 ### Read (`belz ad <cmd>`)
 
 1. `fetch` — raw V1 or V2 fetch + cache
-2. `find` — search and pick methods (cached index)
+2. `find` — search and pick methods (cached index). Compact rows (7.9:
+   name, alias, category, state, uuid, referenceId, apiUuid, summary, score;
+   `--fields a,b|all`), `--category <prefix>`, and `--describe <words>` (7.5:
+   word search over name/alias/summary/description/category,
+   `lib/method-finder.ts:describeSearch`). The index (schema 2,
+   `METHOD_FINDER_SCHEMA`) keeps per method `automationApiUuid`, `summary`,
+   `description` (≤400 chars), `calls` (`u:<apiUuid>` / `n:<numericApiId>` from
+   the listing's V1 jsonDefinition) and `opaqueSteps` (automationId-only steps);
+   describe/callers rebuild a schema-1 cache, plain find keeps using it.
 3. `show <uuid|url|file>` — rich display with `[CODE]` / `[SPEL]` / `[SQL]` / `[REDIS-*]`
    badges, `--code`, `--sql`, `--outputs`, `--variables`, `--service-detail <N>` (alias `--step <N>`, orderIndex) flags.
    Step `identity` is a string when present (`service.method`, `apiId:N`, `automationId:N`);
@@ -282,12 +295,19 @@ fails if a folder is missing from the registry.
    counters are independent, never compare them). One fetch per side (the
    guard returns `initial`).
 7. `categories` — list AD categories (`id` = chain-category id, plus systemId/systemUuid); filter by `--user` / `--system`
-8. `services` — list platform services (`--internal`, `--search <q>`)
+8. `services` — list platform services (`--internal`, `--limit`, `--fields a,b|all`);
+   compact rows by default. `--search <q>` fuzzy-ranks (method-finder scorer,
+   `scoreFuzzy`) over name/label/aliases/description, adds `score`, top 20.
 9. `export` — export a single method as JSON (numeric chain id or any uuid spelling)
 10. `export-category` — export every method in a category (name, id or uuid → chain-category id)
 11. `test-cases` — list persistent test cases on a method
 12. `test-report` — latest test-suite execution report
-13. `child-info` — resolve a child method's inputs/outputs by name (unknown/draft-only → METHOD_NOT_FOUND)
+13. `child-info` — resolve a child method's inputs/outputs by name (unknown/draft-only → METHOD_NOT_FOUND).
+    `--shape` (7.5, `lib/api-shape.ts`): one line per input (V2 step key path =
+    `produces`, type, required, BASE_64, enum values from DROPDOWN sources,
+    default, UI label), output keys (`consumes`), apiUuid / numeric apiId /
+    methodUuid, and accounts from `/automation-systems/{svc}/auth` as
+    `id nickname (scope)` — never field values. `--all` adds UI-hidden inputs.
 14. `test` — V1 test-before-save with rich per-step trace (rows joined to the
     method's steps: real description + orderIndex) and `outputs {code:
     value}`. `--expect out=v` (repeatable) → `expectations {total, passed,
@@ -310,6 +330,16 @@ fails if a folder is missing from the registry.
 18. `changelog <uuid>` — list the notes of the chain the uuid names;
     `--note "<text>"` is a write: draft-guarded (recorded on the DRAFT chain,
     as publish does), confirmation / `--yes`
+19b. `lint <uuid|file>` (7.4) — read-only review: the validator (L1–L3,
+    `--online` L4) + `lib/validate/lint.ts` advisory rules (Q2 SELECT-list
+    subquery, Q3 raw feature_config/feature_status read, Q4 re-lookup of a
+    bound :param, AD-LINT-001…010: JSON-juggling custom code, SQL without a
+    table, SQL built by replacePlaceholdersInText, key `language`, >30 steps,
+    echo read/write race, `+` on numeric inputs, BASE_64 variable, FLOAT
+    default digits, descriptions with `--docs`). Grouped by step (`groups
+    [{scope, findings}]`, `byRule`); errors → AD_LINT_FAILED; `--strict`.
+    Lint rules are warnings (calibrated on the 36 real bodies:
+    tests/unit/lint.test.ts pins the counts).
 19a. `validate <uuid|file>` — lib/validate over a fetched V2 body or a local
     V2 file; `--online` (L4 service contract), `--dry-run-compile` (implies
     `--online`, declares `writes` → explicit `--env`), `--strict`. Errors →
@@ -411,7 +441,7 @@ All runtime state lives under `~/.belz/`:
 
 1. Auth sessions: `~/.belz/sessions/<env>.json`
 2. Method cache: `~/.belz/cache/methods/<env>/<uuid>.json` (soft TTL 5 min, hard 1 h; key = trimmed lower-case uuid; invalidated by `ad save` (lib/save), `adApi.publishDraft` and `history restore`)
-3. Method finder index cache: `~/.belz/cache/method-finder/index-v1-<env>.json` (TTL 7 days)
+3. Method finder index cache: `~/.belz/cache/method-finder/index-v1-<env>.json` (TTL 7 days; `schemaVersion` inside, see `find`)
 4. Service definition cache: `~/.belz/cache/definitions/<env>/<automationId>.json` (TTL 1 h)
 4a. Validator L4 caches: `~/.belz/cache/api-contracts/<env>/<service>__<method>.json`, `~/.belz/cache/service-accounts/<env>/<service>.json` (TTL 1 h)
 5. Local test suites: `./suites/*.spec.json`

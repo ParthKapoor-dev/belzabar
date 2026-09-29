@@ -1,0 +1,50 @@
+Usage: belz ad lint <UUID|FILE> [flags]
+
+Review a method's V2 body (read-only): the pre-save validator plus the
+review rules from the team skills, grouped by step, one line per finding.
+
+Arguments:
+  <UUID|FILE>           A method uuid (any spelling or AD URL; fetched from --env)
+                        or a local V2 JSON file (a path or a name ending in .json).
+
+Flags:
+  --online              Also check every step against its service contract on
+                        --env (validator L4: input keys, services, accounts).
+  --docs                Also report missing descriptions (method, summary, inputs,
+                        outputs, variables, steps, exit-on-failure messages).
+  --strict              Treat warnings as errors.
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Set active environment. (default: nsm-dev)
+                        Available: nsm-dev | nsm-qa | nsm-uat
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Rules:
+  Validator (L1-L3, errors block saves): see `belz ad validate`; includes SQL
+  Q1 (bare ? jsonb operator), Q5 (autoformat damage), AD-SQL-004 (#{} spliced
+  into SQL), SP1 (nested ternary), CI1, AS1, ...
+  Lint (advisory warnings, lib/validate/lint.ts):
+    Q2           SELECT-list subquery runs once per row
+    Q3           raw read of feature_config/feature_status (use features_getEnabledForLevel)
+    Q4           query returns only columns it filters by equality to a bound :param
+    AD-LINT-001  custom code that only parses JSON and reads/sets one key
+    AD-LINT-002  SQL that reads no table
+    AD-LINT-003  SQL text built by replacePlaceholdersInText
+    AD-LINT-004  input/variable key 'language'
+    AD-LINT-005  more than 30 steps
+    AD-LINT-006  echo reads and writes the same variable
+    AD-LINT-007  '+' on two numeric inputs/variables (text concatenation)
+    AD-LINT-008  variable encodingType BASE_64 (stripped on save)
+    AD-LINT-009  FLOAT default with more than 6 significant digits
+    AD-LINT-010  missing descriptions (--docs)
+
+Notes:
+  - Errors exit 1 with AD_LINT_FAILED. Data: {clean, counts, byRule, groups:
+    [{scope, orderIndex, findings: [{severity, rule, message, path, fix?}]}]}.
+  - A PUBLISHED record is audited without AD-META-001.
+
+Examples:
+  belz ad lint 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --env sems-dev
+  belz ad lint ./method.v2.json --docs --llm
+  belz ad lint 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --online --strict --env sems-dev
