@@ -10,8 +10,7 @@
 // Validation errors block unless --force-validation; bypassed errors are
 // reported in `bypassedErrors`.
 
-import { CliError, type CommandContext, confirmWrite, logWriteIntent } from "@belzabar/core";
-import { readFile } from "node:fs/promises";
+import { CliError, type CommandContext, confirmWrite, logWriteIntent, readJsonInput } from "@belzabar/core";
 import { pdApi } from "./api/index";
 import { describeDraftGuardFailure, resolveDraftTarget } from "./draft-guard";
 import { parsePage } from "./parser/index";
@@ -20,22 +19,15 @@ import type { WriteOverrides } from "./args/common";
 import { partitionBySeverity } from "./validator/index";
 
 /** Read + JSON-parse a user file; a missing/unreadable/invalid file is a CliError (PD-17). */
-export async function readJsonFile(path: string, invalidCode: string, what: string): Promise<unknown> {
-  let body: string;
-  try {
-    body = await readFile(path, "utf8");
-  } catch (err) {
-    const code = (err as NodeJS.ErrnoException)?.code;
-    throw new CliError(
-      code === "ENOENT" ? `${what} file not found: ${path}` : `Cannot read ${what} file ${path}: ${String(err)}`,
-      { code: code === "ENOENT" ? "PD_FILE_NOT_FOUND" : "PD_FILE_UNREADABLE", details: { path } },
-    );
-  }
-  try {
-    return JSON.parse(body);
-  } catch (err) {
-    throw new CliError(`${what} file parse failed: ${String(err)}`, { code: invalidCode, details: { path } });
-  }
+export function readJsonFile(path: string, invalidCode: string, what: string): Promise<unknown> {
+  return readJsonInput(path, {
+    unreadable: (err, missing) =>
+      new CliError(missing ? `${what} file not found: ${path}` : `Cannot read ${what} file ${path}: ${String(err)}`, {
+        code: missing ? "PD_FILE_NOT_FOUND" : "PD_FILE_UNREADABLE",
+        details: { path },
+      }),
+    invalid: (err) => new CliError(`${what} file parse failed: ${String(err)}`, { code: invalidCode, details: { path } }),
+  });
 }
 
 export interface WriteTarget {

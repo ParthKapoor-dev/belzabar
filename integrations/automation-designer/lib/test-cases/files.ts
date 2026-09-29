@@ -11,7 +11,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
-import { CliError } from "@belzabar/core";
+import { CliError, type JsonInputErrors, readJsonInputSync } from "@belzabar/core";
 import { caseFileName, parseCaseInput, serializeCaseFile, type CaseFile } from "./case-file";
 
 export interface MethodMeta {
@@ -43,15 +43,16 @@ export function serializeMethodMeta(m: MethodMeta): string {
   return `${JSON.stringify({ name: m.name, category: m.category, uuids, inputs, outputs: [...m.outputs].sort() }, null, 2)}\n`;
 }
 
+/** Any read or parse failure of `path` is INVALID_JSON. */
+function notJson(path: string): JsonInputErrors {
+  const invalid = (err: unknown) => new CliError(`${path} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
+  return { unreadable: invalid, invalid };
+}
+
 export function readMethodMeta(dir: string): MethodMeta | null {
   const p = join(dir, METHOD_FILE);
   if (!existsSync(p)) return null;
-  let j: unknown;
-  try {
-    j = JSON.parse(readFileSync(p, "utf-8"));
-  } catch (err) {
-    throw new CliError(`${p} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
-  }
+  const j = readJsonInputSync(p, notJson(p));
   const o = (j ?? {}) as Record<string, unknown>;
   return {
     name: typeof o.name === "string" ? o.name : "",
@@ -76,12 +77,7 @@ export function readCaseFiles(dir: string): LoadedCase[] {
   const out: LoadedCase[] = [];
   for (const f of readdirSync(casesDir).filter((n) => n.endsWith(".json")).sort()) {
     const path = join(casesDir, f);
-    let j: unknown;
-    try {
-      j = JSON.parse(readFileSync(path, "utf-8"));
-    } catch (err) {
-      throw new CliError(`${path} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
-    }
+    const j = readJsonInputSync(path, notJson(path));
     out.push({ path, file: parseCaseInput(j, path) });
   }
   const seen = new Map<string, string>();

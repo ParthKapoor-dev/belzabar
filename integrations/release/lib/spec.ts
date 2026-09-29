@@ -2,9 +2,9 @@
 // zod (RL-1) and its spine/stage envs resolved from the project (RL-2), so a bad
 // spec is BAD_SPEC before any Teamwork or AD request.
 
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { z } from "zod";
-import { CliError, Config, type Environment } from "@belzabar/core";
+import { CliError, Config, type Environment, readJsonInputSync } from "@belzabar/core";
 import { releaseSlug } from "./ledger";
 
 const TicketRef = z.union([z.number(), z.string()]);
@@ -52,12 +52,8 @@ export function loadReleaseSpec(path: string): ReleaseSpec {
   if (!existsSync(path)) {
     throw new CliError(`Release spec not found: ${path}`, { code: "SPEC_NOT_FOUND" });
   }
-  let raw: unknown;
-  try {
-    raw = JSON.parse(readFileSync(path, "utf-8"));
-  } catch (e) {
-    throw new CliError(`Could not parse ${path}: ${e instanceof Error ? e.message : e}`, { code: "BAD_SPEC" });
-  }
+  const bad = (e: unknown) => new CliError(`Could not parse ${path}: ${e instanceof Error ? e.message : e}`, { code: "BAD_SPEC" });
+  const raw = readJsonInputSync(path, { unreadable: bad, invalid: bad });
   return validateReleaseSpec(raw, path);
 }
 

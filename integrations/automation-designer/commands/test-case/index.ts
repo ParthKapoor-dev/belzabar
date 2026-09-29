@@ -1,6 +1,5 @@
-import { readFile } from "fs/promises";
 import { resolve } from "path";
-import { CliError, defineSubcommands, failWithData, ok, type CommandModule } from "@belzabar/core";
+import { CliError, type CommandModule, defineSubcommands, failWithData, ok, readJsonInput } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
@@ -156,18 +155,11 @@ export const args = defineSubcommands(
 /** Repeatable flag values, or undefined when none were given. */
 const some = (v: string[]): string[] | undefined => (v.length > 0 ? v : undefined);
 
-async function readJson(path: string): Promise<unknown> {
-  let text: string;
-  try {
-    text = await readFile(path, "utf-8");
-  } catch (err) {
-    throw new CliError(`Cannot read ${path}: ${String(err)}`, { code: "FILE_NOT_FOUND" });
-  }
-  try {
-    return JSON.parse(text);
-  } catch (err) {
-    throw new CliError(`${path} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
-  }
+function readJson(path: string): Promise<unknown> {
+  return readJsonInput(path, {
+    unreadable: (err) => new CliError(`Cannot read ${path}: ${String(err)}`, { code: "FILE_NOT_FOUND" }),
+    invalid: (err) => new CliError(`${path} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" }),
+  });
 }
 
 /** The case a create/update describes: --file, then --name/--description/--input/--assert on top. */

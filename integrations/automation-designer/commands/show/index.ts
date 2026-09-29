@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, statSync } from "fs";
-import { CliError, ok, Config, defineArgs, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
+import { existsSync, statSync } from "fs";
+import { CliError, type CommandModule, Config, defineArgs, ok, openUrlInBrowser, readJsonInputSync, triggerDetachedRefresh } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
@@ -327,12 +327,8 @@ function mapOutputFields(outputs: MethodOutput[]): NonNullable<ShowMethodData["o
 
 /** A local V2 (`steps[]`) or V1 (`services[]` / `jsonDefinition`) method body. */
 export function parseMethodFile(path: string): HydratedMethod {
-  let body: unknown;
-  try {
-    body = JSON.parse(readFileSync(path, "utf8"));
-  } catch (e) {
-    throw new CliError(`Cannot read ${path} as JSON: ${(e as Error).message}`, { code: "INVALID_FILE" });
-  }
+  const unusable = (e: unknown) => new CliError(`Cannot read ${path} as JSON: ${(e as Error).message}`, { code: "INVALID_FILE" });
+  const body = readJsonInputSync(path, { unreadable: unusable, invalid: unusable });
   const o = body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
   if (o && Array.isArray(o.steps)) return parseV2Method(o as unknown as V2MethodResponse);
   if (o && (typeof o.jsonDefinition === "string" || Array.isArray(o.services))) {

@@ -22,6 +22,7 @@ every `integrations/*` package and by `apps/cli`. Package exports: `.` → `src/
 | `src/ui.ts` / `src/theme/` | Human/LLM rendering, `lifecycle`, `prompts`; palette (`theme/tokens.ts`), truecolor styling + glyphs (`theme/terminal.ts`) |
 | `src/confirm.ts` | `confirmWrite` (the one write gate: `--yes` / --llm refusal / prompt, per-namespace codes, wording and details shape) and `logWriteIntent` (`[belz <ns> write] {...}` stderr audit line) |
 | `src/output/fields.ts` | `--fields a,b\|all`: `parseFieldList` (→ `FieldSelection`, unknown → `INVALID_VALUE`), `projectRow`, `pickFields`, `isEmptyValue` |
+| `src/json-input.ts` | `readJsonInput` / `readJsonInputSync(path, {unreadable(err, missing), invalid(err)})` — user JSON files (`--file`, `--spec`, case files, ledgers) with the caller's codes |
 | `src/guards.ts` | Wire-JSON value guards: `isObj`, `asObj`, `str` (trimmed or undefined), `strOrNull`, `num` (finite), `numLike` (also numeric strings), `Obj` |
 | `src/search.ts` | Fuzzy scoring for the AD/PD finders: `scoreText`, `normalizeSearchText`, `tokenize`, `containsWordStart`, `levenshtein` (also the arg parser's "did you mean"), `dedupeBy` |
 | `src/verbose.ts` | `vlog` / `vtime` — redacted stderr debug lines when `BELZ_VERBOSE=1` (`-v`) |

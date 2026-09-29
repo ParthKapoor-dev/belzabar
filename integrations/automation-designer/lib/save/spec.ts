@@ -2,9 +2,8 @@
 // and by `lint` / `validate`, which accept the same compact spec (CLI trial:
 // they rejected it, so agents had to dig `data.body` out of `create --dry-run`).
 
-import { readFile } from "fs/promises";
 import { dirname } from "path";
-import { CliError, isObj } from "@belzabar/core";
+import { CliError, isObj, readJsonInput } from "@belzabar/core";
 import { fetchCategories, requireChainCategory, type Category } from "../categories";
 import { isRawV2Step } from "../serialize/compact";
 import { assertCreatableCategory, buildCreateBody, compactSteps } from "./create";
@@ -13,15 +12,12 @@ import { resolveSpecSources } from "./sources";
 
 /** Read + parse a spec file and inline its codeFile / sqlFile references. */
 export async function readSpecFile(path: string): Promise<unknown> {
-  let spec: unknown;
-  try {
-    spec = JSON.parse(await readFile(path, "utf-8"));
-  } catch (err) {
-    const missing = (err as NodeJS.ErrnoException).code === "ENOENT";
-    throw new CliError(`${missing ? "Cannot read" : "Invalid JSON in"} spec file ${path}: ${String(err)}`, {
-      code: missing ? "FILE_NOT_FOUND" : "INVALID_JSON",
-    });
-  }
+  const invalid = (err: unknown) => new CliError(`Invalid JSON in spec file ${path}: ${String(err)}`, { code: "INVALID_JSON" });
+  const spec = await readJsonInput(path, {
+    unreadable: (err, missing) =>
+      missing ? new CliError(`Cannot read spec file ${path}: ${String(err)}`, { code: "FILE_NOT_FOUND" }) : invalid(err),
+    invalid,
+  });
   await resolveSpecSources(spec, dirname(path));
   return spec;
 }

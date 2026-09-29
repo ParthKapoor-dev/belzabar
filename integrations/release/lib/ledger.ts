@@ -10,9 +10,9 @@
 // same file are LEDGER_NAME_COLLISION; a snapshot is only replaced with --force.
 
 import { join } from "path";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { z } from "zod";
-import { BELZ_CONFIG_DIR, CliError, writeSecureJson } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, CliError, readJsonInputSync, writeSecureJson } from "@belzabar/core";
 
 const PROMOTION_DIR = join(BELZ_CONFIG_DIR, "promotion");
 const RELEASES_DIR = join(PROMOTION_DIR, "releases");
@@ -99,17 +99,10 @@ function corrupt(path: string, why: string): CliError {
 
 function readJson(path: string): unknown | null {
   if (!existsSync(path)) return null;
-  let text: string;
-  try {
-    text = readFileSync(path, "utf-8");
-  } catch (e) {
-    throw corrupt(path, e instanceof Error ? e.message : String(e));
-  }
-  try {
-    return JSON.parse(text);
-  } catch (e) {
-    throw corrupt(path, `not valid JSON: ${e instanceof Error ? e.message : e}`);
-  }
+  return readJsonInputSync(path, {
+    unreadable: (e) => corrupt(path, e instanceof Error ? e.message : String(e)),
+    invalid: (e) => corrupt(path, `not valid JSON: ${e instanceof Error ? e.message : e}`),
+  });
 }
 
 /** A saved matrix record, validated; null when there is none. LEDGER_CORRUPT when unreadable. */
