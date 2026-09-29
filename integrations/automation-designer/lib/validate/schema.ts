@@ -10,13 +10,14 @@ import { z } from "zod";
 import { classifyService } from "../parser/steps/classify";
 import { arr, str, type Report, type StepRef } from "./types";
 import { isObj, str as nonBlank } from "@belzabar/core";
+import { isEntityId, isHex32 } from "@belzabar/core/platform";
 
 /** ^\w+$ — input, variable and output keys; step output name/fieldCode (live-verified). */
 const KEY_RE = /^[A-Za-z0-9_]+$/;
 /** Method names also allow `. ~ -`, but not a leading/trailing `.` (live-verified). */
 const METHOD_NAME_RE = /^[A-Za-z0-9_.~-]+$/;
-/** 32 hex (the server pads with spaces) or a dashed uuid (db_service). */
-const UUID_RE = /^(?:[0-9a-fA-F]{32}\s*|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
+/** 32 hex (the server pads it with trailing spaces) or a dashed uuid (db_service). */
+const isWireUuid = (s: string): boolean => isEntityId(s) || isHex32(s.trimEnd());
 
 const STEP_TYPES = ["EXISTING_SERVICE", "CUSTOM_CODE"] as const;
 /** Server enum (400 on anything else). */
@@ -350,7 +351,7 @@ function checkStepStructure(s: unknown, i: number, report: Report): void {
   const type = props?.type;
 
   const id = nonBlank(s.id);
-  if (id && !UUID_RE.test(str(s.id)!)) {
+  if (id && !isWireUuid(str(s.id)!)) {
     report({ rule: "S2", message: `Step id ${JSON.stringify(s.id)} is not a uuid; the server will replace it.`, path: at("id"), step: ref });
   }
 
@@ -359,7 +360,7 @@ function checkStepStructure(s: unknown, i: number, report: Report): void {
     if (!apiId && !(nonBlank(s.serviceName) && nonBlank(s.methodName))) {
       report({ rule: "ES1", message: "EXISTING_SERVICE step names no service: set automationAPIId or serviceName + methodName.", path: at("automationAPIId"), step: ref });
     }
-    if (apiId && !UUID_RE.test(str(s.automationAPIId)!)) {
+    if (apiId && !isWireUuid(str(s.automationAPIId)!)) {
       report({ rule: "ES2", message: `automationAPIId ${JSON.stringify(s.automationAPIId)} is not a uuid.`, path: at("automationAPIId"), step: ref });
     }
   }
@@ -371,7 +372,7 @@ function checkStepStructure(s: unknown, i: number, report: Report): void {
       report({ rule: "EI2", message: `Step input "${str(inp.key) ?? "?"}" has type "${t}", not a known data type.`, path: jsonPath([...path, "type"]), step: ref });
     }
     const u = nonBlank(inp.uuid);
-    if (u && !UUID_RE.test(str(inp.uuid)!)) {
+    if (u && !isWireUuid(str(inp.uuid)!)) {
       report({ rule: "AD-SCHEMA-003", message: `Step input uuid ${JSON.stringify(inp.uuid)} is not a uuid.`, path: jsonPath([...path, "uuid"]), step: ref });
     }
   });
@@ -404,7 +405,7 @@ function checkStepStructure(s: unknown, i: number, report: Report): void {
       report({ rule: "AD-OUT-002", message: "Step output has no key (the service output it binds).", path: op("key"), step: ref });
     }
     const u = nonBlank(o.uuid);
-    if (u && !UUID_RE.test(str(o.uuid)!)) {
+    if (u && !isWireUuid(str(o.uuid)!)) {
       report({ rule: "AD-SCHEMA-003", message: `Step output uuid ${JSON.stringify(o.uuid)} is not a uuid.`, path: op("uuid"), step: ref });
     }
   });

@@ -16,7 +16,7 @@ export const args = defineArgs({
 
 const command: CommandModule<TestCasesArgs, TestCasesData> = {
   parseArgs(argv) {
-    const { positionals, flags } = args.parse(argv);
+    const { positionals } = args.parse(argv);
     return { uuid: positionals.uuid };
   },
   async execute({ uuid: uuidArg }) {

@@ -2,7 +2,6 @@ import { existsSync, statSync } from "fs";
 import { CliError, type CommandModule, Config, defineArgs, ok, openUrlInBrowser, readJsonInputSync, triggerDetachedRefresh } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
-import { adApi } from "../../lib/api/index";
 import { AD_V2_FLAG, apiVersionOf } from "../../lib/args/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { abbreviate, htmlToText, pruneEmpty } from "../../lib/compact";
@@ -26,7 +25,6 @@ import type {
   UnknownStep,
   MethodField,
   MethodOutput,
-  StepInput,
   ConditionRow,
 } from "../../lib/types/common";
 import type { V1RawMethodResponse } from "../../lib/types/v1-wire";

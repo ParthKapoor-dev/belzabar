@@ -1,6 +1,6 @@
 // Parse a single V1 service step into a ParsedStep.
 
-import type { V1ServiceStep, V1Mapping, V1OutputField, V1InputField } from "../../types/v1-wire";
+import type { V1ServiceStep, V1Mapping, V1OutputField } from "../../types/v1-wire";
 import type {
   ParsedStep,
   CustomCodeStep,

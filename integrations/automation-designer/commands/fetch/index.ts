@@ -1,5 +1,4 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { fetchMethodChecked } from "../../lib/view-fetch";
 import { resolveMethodRef } from "@belzabar/core/platform";

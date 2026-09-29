@@ -4,6 +4,9 @@
 
 import { dirname } from "path";
 import { CliError, isObj, readJsonInput } from "@belzabar/core";
+import { resolveMethodRef } from "@belzabar/core/platform";
+import * as v2 from "../api/v2";
+import type { V2MethodBody } from "../types/v2-wire";
 import { fetchCategories, requireChainCategory, type Category } from "../categories";
 import { isRawV2Step } from "../serialize/compact";
 import { assertCreatableCategory, buildCreateBody, compactSteps } from "./create";
@@ -87,4 +90,23 @@ export async function loadBodyOrSpec<T>(path: string, categoryFlag: string | nul
   }
   const { body, dropped, category } = await expandSpec(raw, categoryFlag);
   return { body: body as T, spec: { expanded: true, dropped, category: { chainCategoryId: category.chainCategoryId, name: category.name } } };
+}
+
+/**
+ * The `<uuid|file>` argument of `lint` / `validate`: a path (ends in `.json`,
+ * contains `/` or starts with `.`), otherwise a method uuid (canonicalised).
+ */
+export function methodTarget(input: string): { kind: "uuid" | "file"; target: string } {
+  const isFile = input.endsWith(".json") || input.includes("/") || input.startsWith(".");
+  return isFile ? { kind: "file", target: input } : { kind: "uuid", target: resolveMethodRef(input) };
+}
+
+/** The V2 body a `<uuid|file>` target names: the local file (body or compact spec) or the saved method. */
+export async function loadTargetBody(
+  t: { kind: "uuid" | "file"; target: string },
+  categoryFlag: string | null,
+): Promise<LoadedBody<V2MethodBody>> {
+  if (t.kind === "file") return loadBodyOrSpec<V2MethodBody>(t.target, categoryFlag);
+  if (categoryFlag) throw new CliError("--category applies only to a compact spec file.", { code: "INVALID_ARGUMENT" });
+  return { body: await v2.fetchRawMethod(t.target), spec: null };
 }

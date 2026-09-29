@@ -3,8 +3,7 @@ import { BELZ_CONFIG_DIR, Cache, type CacheResult, currentCacheEnv, ENTITY_CACHE
 import { invalidateMethodIndexEntry } from "./method-finder";
 import type { HydratedMethod } from "./types/common";
 
-// Env-scoped by core `Cache`: `cache/methods/<env>/<uuid>.json`. Legacy
-// unscoped `cache/methods/<uuid>.json` files are simply never read again.
+// Parsed-method cache, env-scoped by core `Cache`: `cache/methods/<env>/<uuid>.json`.
 const methodCache = new Cache<HydratedMethod>({
   dir: join(BELZ_CONFIG_DIR, "cache", "methods"),
   staleMs: ENTITY_CACHE_STALE_MS,
@@ -37,8 +36,8 @@ export class CacheManager {
 
   /**
    * Drop a cached method after belz wrote it (save/publish/delete/restore).
-   * Also marks its method-index entry stale so `ad callers` re-reads it
-   * (ADR-R1). Never throws.
+   * Also marks its method-index entry stale so `ad callers` re-reads it.
+   * Never throws.
    */
   static async invalidate(uuid: string | null | undefined, env?: string): Promise<void> {
     if (!uuid) return;

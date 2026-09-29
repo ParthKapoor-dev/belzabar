@@ -18,6 +18,7 @@
 // bodies, and input mapping VALUES.
 
 import { createHash } from "crypto";
+import { isObj } from "@belzabar/core";
 import { parseV1Method, parseV2Method } from "./parser/index";
 import { decodeBase64Strict } from "./base64";
 import type { HydratedMethod, ParsedStep, StepInput } from "./types/common";
@@ -327,18 +328,15 @@ export function methodDiffView(m: HydratedMethod): Record<string, unknown> {
 export function diffPaths(a: unknown, b: unknown, limit = 200, path = "$", out: string[] = []): string[] {
   if (out.length >= limit) return out;
   if (a === b) return out;
-  const isObj = (v: unknown) => v !== null && typeof v === "object";
   if (Array.isArray(a) && Array.isArray(b)) {
     const n = Math.max(a.length, b.length);
     for (let i = 0; i < n && out.length < limit; i++) diffPaths(a[i], b[i], limit, `${path}[${i}]`, out);
     return out;
   }
-  if (isObj(a) && isObj(b) && !Array.isArray(a) && !Array.isArray(b)) {
-    const ao = a as Record<string, unknown>;
-    const bo = b as Record<string, unknown>;
-    for (const k of [...new Set([...Object.keys(ao), ...Object.keys(bo)])].sort()) {
+  if (isObj(a) && isObj(b)) {
+    for (const k of [...new Set([...Object.keys(a), ...Object.keys(b)])].sort()) {
       if (out.length >= limit) break;
-      diffPaths(ao[k], bo[k], limit, `${path}.${k}`, out);
+      diffPaths(a[k], b[k], limit, `${path}.${k}`, out);
     }
     return out;
   }

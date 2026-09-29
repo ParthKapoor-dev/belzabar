@@ -1,7 +1,6 @@
 // core/args migration of AD commands (part A): strict parsing regressions
 // (AD-29, AD-37, F34) and the changelog/publish --note contract.
 import { describe, expect, test } from "bun:test";
-import { CliError } from "@belzabar/core";
 import categories from "../../commands/categories/index";
 import category from "../../commands/category/index";
 import changelog from "../../commands/changelog/index";

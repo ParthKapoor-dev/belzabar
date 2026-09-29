@@ -18,7 +18,7 @@
 
 import { arr, str, type ValidationFinding } from "./types";
 import { jsonPath, stepKind, stepRef } from "./schema";
-import { customCodeSource, findSqlInput, sqlSkeleton } from "./steps";
+import { customCodeSource, escapeRe, findSqlInput, sqlSkeleton } from "./steps";
 import { replaceSpelBlocks, scanSpel, spelRoots } from "./spel";
 import { decodeBase64Strict } from "../base64";
 import { isObj, str as nonBlank } from "@belzabar/core";
@@ -58,7 +58,6 @@ interface LintOptions {
 
 type Obj = Record<string, unknown>;
 
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** Q3 matchers from `LintOptions.resolverTables` (a table matches with or without a schema prefix). */
 function resolvedTables(map: Record<string, string> | undefined): Array<{ table: RegExp; resolver: string }> {

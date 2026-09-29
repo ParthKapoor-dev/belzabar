@@ -2,7 +2,6 @@
 // read-only gate (ANALYZE executes the statement). Plan rows below are the
 // live acme-dev answers (testing_db, 2026-09-29).
 import { describe, expect, test } from "bun:test";
-import { CliError } from "@belzabar/core";
 import sqlCommand, { readPlan } from "../../commands/sql/index";
 import { buildExplainSql, splitExplain } from "../../lib/sql/read-only";
 import { errorCode as code } from "@belzabar/core/testing";

@@ -6,11 +6,11 @@ import type {
   HydratedMethod,
   MethodField,
   MethodOutput,
-  MethodState,
   ParsedStep,
 } from "../types/common";
 import { parseV2Step } from "./steps/v2";
-import { firstId, normaliseState } from "./v1";
+import { firstId, firstNumber, normaliseState } from "./v1";
+import { strOrNull } from "@belzabar/core";
 import type { ParseOptions } from "./steps/classify";
 
 export function parseV2Method(raw: V2MethodResponse, opts?: ParseOptions): HydratedMethod {
@@ -36,7 +36,7 @@ export function parseV2Method(raw: V2MethodResponse, opts?: ParseOptions): Hydra
   return {
     sourceVersion: "v2",
     uuid: uuid ?? "",
-    referenceId: normaliseReferenceId(metadata?.referenceId),
+    referenceId: strOrNull(metadata?.referenceId),
     state: normaliseState(metadata?.state),
     version,
 
@@ -97,19 +97,8 @@ function mapOutput(o: V2Output): MethodOutput {
   };
 }
 
-function normaliseReferenceId(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
 function firstString(...values: unknown[]): string | undefined {
   for (const v of values) if (typeof v === "string" && v.trim().length > 0) return v.trim();
-  return undefined;
-}
-
-function firstNumber(...values: unknown[]): number | undefined {
-  for (const v of values) if (typeof v === "number" && Number.isFinite(v)) return v;
   return undefined;
 }
 

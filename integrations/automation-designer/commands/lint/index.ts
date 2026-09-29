@@ -5,13 +5,10 @@
 // Output is grouped by step, one line per finding. Errors (validator) exit 1
 // with AD_LINT_FAILED; lint rules only warn unless --strict.
 
-import { CliError, defineArgs, failWithData, loadConfigFileRaw, ok, type CommandModule } from "@belzabar/core";
-import * as v2 from "../../lib/api/v2";
-import { resolveMethodRef } from "@belzabar/core/platform";
+import { defineArgs, failWithData, loadConfigFileRaw, ok, type CommandModule } from "@belzabar/core";
 import { validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
 import { lintMethodV2 } from "../../lib/validate/lint";
-import type { V2MethodBody } from "../../lib/types/v2-wire";
-import { loadBodyOrSpec, type LoadedBody } from "../../lib/save/spec";
+import { loadTargetBody, methodTarget, type LoadedBody } from "../../lib/save/spec";
 
 interface LintArgs {
   target: string;
@@ -64,9 +61,6 @@ export const args = defineArgs({
   },
 });
 
-function looksLikeFile(target: string): boolean {
-  return target.endsWith(".json") || target.includes("/") || target.startsWith(".");
-}
 
 
 /** Group findings by step (method-level first), one compact line each. */
@@ -98,11 +92,8 @@ function stepIndexFromPath(path: string): number | null {
 const command: CommandModule<LintArgs, LintData> = {
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    const target = positionals.target;
-    const kind = looksLikeFile(target) ? "file" : "uuid";
     return {
-      target: kind === "uuid" ? resolveMethodRef(target) : target,
-      kind,
+      ...methodTarget(positionals.target),
       category: flags.category ?? null,
       online: flags.online,
       docs: flags.docs,
@@ -110,9 +101,7 @@ const command: CommandModule<LintArgs, LintData> = {
     };
   },
   async execute(a, context) {
-    if (a.kind === "uuid" && a.category) throw new CliError("--category applies only to a compact spec file.", { code: "INVALID_ARGUMENT" });
-    const loaded: LoadedBody<V2MethodBody> =
-      a.kind === "file" ? await loadBodyOrSpec<V2MethodBody>(a.target, a.category) : { body: await v2.fetchRawMethod(a.target), spec: null };
+    const loaded = await loadTargetBody(a, a.category);
     const body = loaded.body;
     const state = typeof body.metadata?.state === "string" ? body.metadata.state : null;
     const result = a.online ? await validateOnline({ after: body, env: context.env.name }) : validateMethodV2({ after: body });

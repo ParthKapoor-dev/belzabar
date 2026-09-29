@@ -180,7 +180,7 @@ function basicRowsMismatch(rows: Array<Record<string, unknown>>, expr: string): 
   return undefined;
 }
 
-function escapeRe(s: string): string {
+export function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 

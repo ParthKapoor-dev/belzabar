@@ -5,7 +5,7 @@ import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { loadTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
-import { caseFromWire, parseCaseInput, type CaseFile } from "../../lib/test-cases/case-file";
+import { parseCaseInput, type CaseFile } from "../../lib/test-cases/case-file";
 import { assertionFromExpectation, parseExpectation } from "../../lib/test-cases/expect";
 import { methodDirFor, readCaseFiles, readMethodMeta, writeMethodDir, type MethodMeta, type WriteResult } from "../../lib/test-cases/files";
 import {

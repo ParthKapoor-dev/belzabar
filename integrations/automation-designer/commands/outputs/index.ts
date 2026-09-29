@@ -55,7 +55,7 @@ export const args = defineArgs({
 
 const command: CommandModule<OutputsArgs, OutputsData> = {
   parseArgs(argv) {
-    const { positionals, flags } = args.parse(argv);
+    const { positionals } = args.parse(argv);
     return { uuid: resolveMethodRef(positionals.uuid) };
   },
   async execute({ uuid }, context) {

@@ -1,5 +1,5 @@
 import { CliError, defineSubcommands, failWithData, ok, type CommandModule, type CommandResult } from "@belzabar/core";
-import { adApi, type MethodVersionSummary, type MethodVersionFull } from "../../lib/api/index";
+import { adApi } from "../../lib/api/index";
 import { AD_YES_FLAG } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
 import { diffPaths, fingerprintMethod, fingerprintProjection, parseVersionBody } from "../../lib/fingerprint";

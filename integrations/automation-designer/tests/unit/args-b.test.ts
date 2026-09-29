@@ -1,7 +1,6 @@
 // defineArgs migration: run, run-suites, save, save-suite, services, show-code,
 // sql, state, test, test-case, test-cases, test-report, trace.
 import { describe, expect, test } from "bun:test";
-import { CliError } from "@belzabar/core";
 import saveCmd from "../../commands/save";
 import saveSuiteCmd from "../../commands/save-suite";
 import testCmd from "../../commands/test";

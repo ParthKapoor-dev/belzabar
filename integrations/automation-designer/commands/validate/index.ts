@@ -7,12 +7,9 @@
 // switched off, so it needs an explicit --env like other test endpoints).
 // Errors → AD_VALIDATION_FAILED (ok:false, exit 1) with the full result as data.
 
-import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
-import * as v2 from "../../lib/api/v2";
-import { resolveMethodRef } from "@belzabar/core/platform";
+import { defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import { auditExistingRecord, validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
-import type { V2MethodBody } from "../../lib/types/v2-wire";
-import { loadBodyOrSpec, type LoadedBody } from "../../lib/save/spec";
+import { loadTargetBody, methodTarget, type LoadedBody } from "../../lib/save/spec";
 
 interface ValidateArgs {
   target: string;
@@ -49,19 +46,13 @@ export const args = defineArgs({
   },
 });
 
-function looksLikeFile(target: string): boolean {
-  return target.endsWith(".json") || target.includes("/") || target.startsWith(".");
-}
 
 const command: CommandModule<ValidateArgs, ValidateData> = {
   writes: (a) => a.dryRunCompile,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    const target = positionals.target;
-    const kind = looksLikeFile(target) ? "file" : "uuid";
     return {
-      target: kind === "uuid" ? resolveMethodRef(target) : target,
-      kind,
+      ...methodTarget(positionals.target),
       category: flags.category ?? null,
       online: flags.online || flags.dryRunCompile,
       dryRunCompile: flags.dryRunCompile,
@@ -69,9 +60,7 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
     };
   },
   async execute(a, context) {
-    if (a.kind === "uuid" && a.category) throw new CliError("--category applies only to a compact spec file.", { code: "INVALID_ARGUMENT" });
-    const loaded: LoadedBody<V2MethodBody> =
-      a.kind === "file" ? await loadBodyOrSpec<V2MethodBody>(a.target, a.category) : { body: await v2.fetchRawMethod(a.target), spec: null };
+    const loaded = await loadTargetBody(a, a.category);
     const body = loaded.body;
     const notes: string[] = [];
     const input = { after: body, strict: a.strict };

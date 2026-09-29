@@ -36,7 +36,7 @@ export function reportFound(report: unknown): boolean {
 
 const command: CommandModule<TestReportArgs, TestReportData> = {
   parseArgs(argv) {
-    const { flags } = args.parse(argv);
+    args.parse(argv);
     return {};
   },
   async execute() {

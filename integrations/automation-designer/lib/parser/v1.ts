@@ -9,6 +9,7 @@ import type {
   MethodState,
   ParsedStep,
 } from "../types/common";
+import { strOrNull } from "@belzabar/core";
 import { parseV1Step } from "./steps/v1";
 import type { ParseOptions } from "./steps/classify";
 
@@ -45,7 +46,7 @@ export function parseV1Method(raw: V1RawMethodResponse, opts?: ParseOptions): Hy
     sourceVersion: "v1",
     uuid: typeof raw.uuid === "string" ? raw.uuid.trim() : raw.uuid,
     numericId: typeof raw.id === "number" ? raw.id : undefined,
-    referenceId: normaliseReferenceId(raw.referenceId),
+    referenceId: strOrNull(raw.referenceId),
     state: normaliseState(raw.automationState ?? raw.state),
     aliasName: raw.aliasName,
     version: typeof raw.version === "number" ? raw.version : 0,
@@ -108,7 +109,8 @@ function mapOutput(o: V1OutputField): MethodOutput {
   };
 }
 
-function firstNumber(...values: unknown[]): number | undefined {
+/** The first finite number among `values`. */
+export function firstNumber(...values: unknown[]): number | undefined {
   for (const v of values) if (typeof v === "number" && Number.isFinite(v)) return v;
   return undefined;
 }
@@ -127,10 +129,4 @@ export function normaliseState(value: unknown): MethodState {
   if (typeof value !== "string") return "UNKNOWN";
   const upper = value.trim().toUpperCase();
   return upper === "DRAFT" || upper === "PUBLISHED" ? upper : "UNKNOWN";
-}
-
-function normaliseReferenceId(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
 }

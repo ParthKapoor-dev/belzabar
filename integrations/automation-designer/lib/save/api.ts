@@ -6,7 +6,7 @@
 //
 // Error bodies are summarised and redacted by core `readErrorBody`.
 
-import { apiFetch, CliError, ensureApiOk, readErrorBody } from "@belzabar/core";
+import { apiFetch, CliError, ensureApiOk } from "@belzabar/core";
 import type { V2MethodResponse } from "../types/v2-wire";
 
 const CHAIN_V2_PATH = "/rest/api/automation/chain/v2";

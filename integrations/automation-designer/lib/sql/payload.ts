@@ -1,4 +1,5 @@
 import { CliError } from "@belzabar/core";
+import { encodeBase64 } from "../base64";
 import type { V1RawMethodResponse } from "../types/v1-wire";
 import type { BuildSqlPayloadOptions, SqlOperationInput } from "./types";
 
@@ -79,7 +80,7 @@ function findFirstSqlLeafMapping(mappings: any[]): any | null {
 }
 
 function upsertSqlQueryMapping(service: any, rootInputId: number | null, queryInputId: number | null, query: string): void {
-  const encoded = Buffer.from(query, "utf8").toString("base64");
+  const encoded = encodeBase64(query);
 
   if (!Array.isArray(service.mappings)) {
     service.mappings = [];
@@ -180,7 +181,7 @@ function buildFallbackInnerDefinition(operation: any, dbAuthId: number, query: s
   }
 
   const rootInputId = findRootInputId(operation?.automationUserInputs);
-  const encoded = Buffer.from(query, "utf8").toString("base64");
+  const encoded = encodeBase64(query);
   const queryLeaf = {
     automationUserInputId: queryInputId,
     uiRepresentation: "CUSTOM",
