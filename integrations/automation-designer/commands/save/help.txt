@@ -1,27 +1,57 @@
-Usage: belz ad save <FILE> --uuid <UUID> --env <env> [flags]
+Usage: belz ad save [FILE] --uuid <UUID> --env <env> [flags]
 
 Save a JSON overlay onto a method's DRAFT through the V2 route
 (GET /chain/v2 → overlay → POST /chain/v2). A PUBLISHED uuid is switched to
-its linked draft (draft guard). Lean chains (steps without automationApiId)
-save normally.
+its linked draft (draft guard). You write only the change; belz fills the V2
+boilerplate (uuids, contract ids, encodings, UI defaults).
 
 Arguments:
-  <FILE>                JSON overlay. Supported keys (anything else is refused
-                        with AD_OVERLAY_UNKNOWN_KEY):
+  [FILE]                JSON overlay (optional when --sql-file/--code-file carry
+                        the change). Keys (anything else → AD_OVERLAY_UNKNOWN_KEY):
                           name, summary, description
-                          parsedSteps[] {orderIndex (1-based), and any of:
-                            source       CUSTOM_CODE step: full plain-text source
-                            sql          SQL step: full plain-text query
-                            expression   SPEL_ECHO step: the SpEL value
-                            description  any step}
-                        buttonLabel, internalMethod, inputs[].testValue are
-                        refused (AD_OVERLAY_NOT_APPLIED): the V2 route drops them.
-                        Always pass plain text; code and SQL are written back in
-                        the step's stored encoding (plain stays plain, base64
-                        stays base64).
+                          parsedSteps[] {orderIndex, source|sql|expression|description}
+                          ops[]   structural ops, applied in order:
+                            {"op":"add-step", "after":N | "before":N, "step":{STEP}}
+                            {"op":"remove-step", "step":N}
+                            {"op":"move-step", "step":N, "after":M | "before":M}
+                            {"op":"update-step", "step":N, "set":{STEP fields,
+                                                  "removeOutputs":["fieldCode"]}}
+                            {"op":"set-input"|"set-variable"|"set-output", "key":K,
+                             type?, required?, description?, default?}   (upsert)
+                            {"op":"remove-input"|"remove-variable"|"remove-output", "key":K}
+                        Step numbers N/M are ALWAYS positions in the fetched draft
+                        (as `belz ad show` prints them), whatever other ops do.
+                        after:0 = first; no anchor = append.
+                        STEP (compact; the same format `ad create` takes):
+                          service "Svc/method" | code "<js>" | sql "<SQL>"
+                          codeFile / sqlFile   path, relative to FILE
+                          inputs {"key": value, "body.nested": value}  (null removes)
+                          outputs ["key"] | [{key, as, var, type}] | {"as": "key"}
+                            as = the name the method sees; var = write it to a variable
+                          when "<SpEL>" | null        entry condition
+                          exit {onFailure, code, message}
+                          exitIf {when, code, message} | null   conditional exit
+                          loop {over:"#{list}"} | {times:n} | {while:"<SpEL>"} |
+                               {from,to,by} (+counter, parallel, threads) | null
+                          account <id|nickname> (db_service), description,
+                          language, async
+                        sql alone picks db_service/data.read|add|update|delete
+                        from the verb. Input/output keys are checked against the
+                        callee contract (online, cached 1 h).
+                        Refused with AD_OVERLAY_NOT_APPLIED because the server
+                        drops them: buttonLabel, internalMethod, testValue, a
+                        variable's BASE_64 encoding, input/output keys the callee
+                        does not have, unknown services/accounts, a field on a
+                        step of another kind. Code and SQL are plain text; they
+                        are stored in the step's existing encoding (new steps:
+                        plain, base64 only if the text itself is base64).
 
 Flags:
   --uuid <UUID>         Target draft uuid (or its PUBLISHED uuid, or an AD URL). (required)
+  --sql-file <N=PATH>   Replace step N's SQL with the file (repeatable).
+  --code-file <N=PATH>  Replace step N's custom code with the file (repeatable).
+  --dry-run             Plan + validate only; nothing is written. Returns
+                        {applied, order, valid, validation{errors, warnings}}.
   --yes, -y             Skip the confirmation prompt (required with --llm).
   --no-validate         Skip the validator. Logged loudly; not recommended.
   --strict              Validator warnings block the save too.
@@ -30,20 +60,22 @@ Flags:
   --help, -h            Show this help message.
 
 Global Flags:
-  --env <name>          Set active environment. Required: save is a write.
+  --env <name>          Set active environment. Required: save is a write
+                        (not with --dry-run).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Pipeline and error codes:
   1. draft guard (AD_DRAFT_GUARD_*), fresh V2 GET of the draft
   2. overlay: AD_OVERLAY_UNKNOWN_KEY / AD_OVERLAY_INVALID / AD_OVERLAY_NOT_APPLIED;
-     only the targeted leaves may change (AD_SERIALIZER_DRIFT)
+     untouched steps and fields must stay byte-identical (AD_SERIALIZER_DRIFT)
   3. validator L1–L3 (L4 with --dry-run-compile): AD_VALIDATION_FAILED with
      details {errors, warnings, blocking, layersRun, preexistingCount}
   4. confirmation (AD_CONFIRMATION_REQUIRED in --llm without --yes)
   5. freshness re-GET: AD_VERSION_CONFLICT if the draft changed since it was read
   6. POST /chain/v2: AD_SAVE_REJECTED carries the server's message
-  7. re-GET verify: every change landed, nothing else changed, else
-     AD_SAVE_VERIFY_FAILED with details {notLanded, unexpected}
+  7. re-GET verify: every value sent landed and nothing else changed (new
+     steps may gain server ids/uuids/types), else AD_SAVE_VERIFY_FAILED with
+     details {notLanded, unexpected}
   8. compiled cache evicted on both routes, local cache dropped
 
 Data: {action, draftUuid, publishedUuid, switchedFromPublished, previousVersion,
@@ -51,6 +83,6 @@ version, applied[], unchanged[], validation{skipped, warnings, layersRun},
 compiledCache{ok, uuids, routes[]}}.
 
 Examples:
-  belz ad save overlay.json --uuid 4a1b2c3d... --env <env>
-  belz ad save overlay.json --uuid 4a1b2c3d... --env <env> --yes --llm
-  belz ad save overlay.json --uuid 4a1b2c3d... --env <env> --dry-run-compile --strict
+  belz ad save overlay.json --uuid 4a1b2c3d... --env <env> --dry-run --llm
+  belz ad save --uuid 4a1b2c3d... --sql-file 3=query.sql --env <env> --yes --llm
+  belz ad save overlay.json --uuid 4a1b2c3d... --env <env> --code-file 2=step2.js --strict

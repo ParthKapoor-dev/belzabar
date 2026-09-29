@@ -88,6 +88,27 @@ rationale.
    the target leaves → AD_SERIALIZER_DRIFT. Custom code keeps its stored
    encoding (sniffed with `decodeBase64Strict`), SQL its slot's `encodingType`.
    `lib/serialize/diff.ts` — `diffPaths`/`getAtPath`/`isUnder`/`jsonEqual`.
+   **Structural ops (Stage 7.2)**: overlay key `ops[]` → `lib/serialize/ops.ts`
+   `applyStructuralOps`: add-step / remove-step / move-step / update-step,
+   set-/remove-input|variable|output. Step numbers are ALWAYS fetched positions
+   (what `ad show` prints); placement `after: N` / `before: N` (`after: 0` =
+   first, no anchor = append; several after one anchor keep op order). The
+   plan then carries `structural {touched, order}`; L0 = every step not
+   updated/removed and every field not set/removed is byte-identical.
+   `lib/serialize/compact.ts` — the **compact step format** shared with
+   `ad create --spec` (service / code / sql, inputs k=v with dotted nesting,
+   outputs [key | {key, as, var, type, elementToRetrieve}] | {as: key}, when,
+   exit, exitIf, loop {over|times|while|from/to}, account, async) and its
+   expansion against callee contracts (`ServiceCatalog`: contracts + db
+   accounts, loaded by `lib/save/services.ts` via the validator's
+   `fetchContract`). Live facts it encodes (sems-dev 2026-09-29): a step has
+   ONE exit code/message pair — the server mirrors it into `exitOnFailure` and
+   `conditionalExit` — and the code is an integer; step output → variable is
+   `inputReference {type:"method_input", reference}`; unknown input/output
+   keys, unknown services and accounts are refused (the server drops/500s);
+   custom-code outputs are bound by key (`as` ≠ key refused), several outputs
+   get `elementToRetrieve`; new code is stored plain unless the text itself is
+   base64, new SQL plain with encodingType NONE.
 9a. `lib/save/` — the write pipeline. `pipeline.ts:saveOverlayV2` (draft
    guard on V2 → plan → `validation.ts:runValidationGate` → confirm →
    freshness re-GET (AD_VERSION_CONFLICT: the server ignores
@@ -103,6 +124,16 @@ rationale.
    `/rest/api/automations/cache/invalidate` (sems-dev needs both), never with
    an empty list, never throws. `flags.ts` — `--no-validate`, `--strict`,
    `--dry-run-compile` shared by save/publish/create.
+   Structural saves verify with `verifyStructural(uuid, expected, after,
+   touched)`: the re-read must equal the body sent except bookkeeping and,
+   under `touched` (new/updated steps and fields; `""` = everything, used by
+   `ad create`), server-filled fields (ids, uuids, types) and uuid padding.
+   `--dry-run` (save and create) returns `{valid, validation{errors,
+   warnings}}` as data (`dryRunValidation`) and writes nothing.
+   `services.ts` — `loadServiceCatalog`, `servicesOfOps`,
+   `servicesOfCompactSteps`. `sources.ts` — `codeFile`/`sqlFile` resolution
+   (relative to the spec/overlay file) and `--sql-file`/`--code-file N=path`
+   → update-step ops.
 9b. `lib/sql/read-only.ts` — `ad sql run` / TUI read mode accept one read
    statement only (comments + literals stripped first); `SQL_NOT_READ_ONLY`.
 10. `lib/draft-guard.ts` — `resolveDraftTarget` — the **only** way to locate a
@@ -162,7 +193,10 @@ rationale.
     `insert` with `RETURNING <col>` asks for the operation's generatedId output
     (F25); a multi-row RETURNING makes the platform fail AFTER committing and
     list the keys in its error — belz parses them (`generatedKeys`).
-14. `tests/unit/` — save-v2-overlay (round-trip + per-field overlay table
+14. `tests/unit/` — save-structural (ops placement/refusals/encodings/
+    compact expansion, verifyStructural), author-commands (save ops +
+    --sql-file/--code-file/--dry-run and create --spec compact via fakeFetch),
+    save-v2-overlay (round-trip + per-field overlay table
     over the 36 real V2 bodies, every refusal code), save-command (V2 pipeline
     via fakeFetch: freshness conflict, verify failure, cache routes, validator
     gate), sql-read-only, parser, serializer, version resolver, draft guard, xml,
@@ -284,7 +318,9 @@ fails if a folder is missing from the registry.
 
 ### Write (`belz ad <cmd>`) — all draft-guarded
 
-1. `save <file> --uuid <draftUuid>` — save a JSON overlay onto a draft (V2 route; see 9/9a)
+1. `save [file] --uuid <draftUuid>` — save a JSON overlay onto a draft (V2 route; see 9/9a):
+   leaf edits, structural `ops[]`, `--sql-file`/`--code-file N=path`
+   (repeatable; file optional then), `--dry-run` (not a write: no --env needed)
 2. `publish <uuid> --note "<text>"` — promote a draft to its published version.
    `--note` is mandatory: belz publishes FIRST, then records the note on the
    draft chain (3 attempts); a note that still fails keeps the publish and
@@ -295,14 +331,17 @@ fails if a folder is missing from the registry.
    Findings also present in the current published copy are pre-existing and
    still block unless `--allow-preexisting`. After the publish the compiled
    cache of draft + published is evicted on both routes (`compiledCache`).
-2a. `create --category <name|id|uuid> --spec <file>` — new DRAFT via
-   `POST /chain/v2` (no uuid). Spec = V2 body or subset (lib/save/create.ts:
-   `buildCreateBody` fills UI defaults, drops server-owned keys and
-   method-level uuids/step ids, category from the flag).
-   `assertCreatableCategory` refuses Helpers.*/Database.*/Cache.*/Email.*/
-   Expertly.*/Web Socket/system services (WSR-6, AD_CATEGORY_PROTECTED).
-   Validated like save; duplicate name → AD_METHOD_EXISTS; verified on
-   re-read (DRAFT, name, category, step count).
+2a. `create --spec <file> [--category <name|id|uuid>]` — new DRAFT via
+   `POST /chain/v2` (no uuid). Spec = compact (serialize/compact.ts; steps by
+   service/code/sql, `category` may be in the spec — must agree with the flag)
+   or a V2 body/subset (lib/save/create.ts: `buildCreateBody` fills UI
+   defaults, drops server-owned keys and method-level uuids/step ids; raw and
+   compact steps can mix). `assertCreatableCategory` refuses Helpers.*/
+   Database.*/Cache.*/Email.*/Expertly.*/Web Socket/system services (WSR-6,
+   AD_CATEGORY_PROTECTED). Validated like save; duplicate name →
+   AD_METHOD_EXISTS; verified on re-read (DRAFT, name, category, step count,
+   then `verifyStructural` over the whole body). `--dry-run` prints the
+   expanded body + validation, creates nothing (not a write).
 2b. `delete <uuid>` — soft delete (`DELETE /chain/v2/{uuid}`) of a DRAFT that
    was never published only (AD_DELETE_PUBLISHED / AD_DELETE_HAS_PUBLISHED /
    fail closed on a missing state). Verified when the V2 re-read answers

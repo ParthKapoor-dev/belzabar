@@ -33,6 +33,7 @@ describe("save (AD-29)", () => {
   test("parses file, --uuid, -y", () => {
     expect(parse(saveCmd, ["f.json", "--uuid", "abc", "-y"])).toEqual({
       filePath: "f.json", uuid: "abc", yes: true, noValidate: false, strict: false, dryRunCompile: false,
+      sqlFiles: [], codeFiles: [], dryRun: false,
     });
     expect(parse(saveCmd, ["f.json", "--uuid", "abc", "--no-validate", "--strict", "--dry-run-compile"])).toMatchObject({
       noValidate: true, strict: true, dryRunCompile: true,
@@ -40,11 +41,17 @@ describe("save (AD-29)", () => {
     expect(code(() => parse(saveCmd, ["f.json"]))).toBe("MISSING_UUID");
   });
   test("missing file / unknown flag", () => {
-    expect(code(() => parse(saveCmd, []))).toBe("MISSING_FILE");
+    expect(code(() => parse(saveCmd, ["--uuid", "abc"]))).toBe("MISSING_FILE");
+    // Stage 7.2: the file is optional when --sql-file / --code-file carry the change.
+    expect(parse(saveCmd, ["--uuid", "abc", "--sql-file", "2=q.sql", "--sql-file", "3=r.sql", "--code-file", "1=c.js"])).toMatchObject({
+      filePath: null, sqlFiles: ["2=q.sql", "3=r.sql"], codeFiles: ["1=c.js"],
+    });
     expect(code(() => parse(saveCmd, ["f.json", "--uid", "x"]))).toBe("UNKNOWN_FLAG");
   });
-  test("is a write command", () => {
-    expect(saveCmd.writes).toBe(true);
+  test("is a write command (except --dry-run)", () => {
+    const writes = saveCmd.writes as (a: unknown) => boolean;
+    expect(writes(parse(saveCmd, ["f.json", "--uuid", "abc"]))).toBe(true);
+    expect(writes(parse(saveCmd, ["f.json", "--uuid", "abc", "--dry-run"]))).toBe(false);
   });
 });
 

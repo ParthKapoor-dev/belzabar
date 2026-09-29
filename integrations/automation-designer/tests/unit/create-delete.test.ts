@@ -167,7 +167,8 @@ describe("ad create", () => {
     const r = await runCommand(createCommand, ["--category", "Test-Parth", "--spec", file(spec)], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
     expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
-    expect((await runCommand(createCommand, ["--spec", "x.json"], { env: "t-dev" })).envelope?.error?.code).toBe("MISSING_CATEGORY");
+    // No --category and no spec.category (read from the spec file, Stage 7.3).
+    expect((await runCommand(createCommand, ["--spec", file(spec), "--yes"], { env: "t-dev" })).envelope?.error?.code).toBe("MISSING_CATEGORY");
     expect((await runCommand(createCommand, ["--category", "x"], { env: "t-dev" })).envelope?.error?.code).toBe("MISSING_SPEC");
   });
 });

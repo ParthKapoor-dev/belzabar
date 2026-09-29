@@ -1,4 +1,5 @@
 import { readFile } from "fs/promises";
+import { dirname } from "path";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
@@ -6,14 +7,17 @@ import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { fetchCategories, requireChainCategory } from "../../lib/categories";
 import { normalizeUuid } from "../../lib/ids";
 import { postChainV2 } from "../../lib/save/api";
-import { assertCreatableCategory, buildCreateBody } from "../../lib/save/create";
+import { assertCreatableCategory, buildCreateBody, compactSteps } from "../../lib/save/create";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
-import { versionName } from "../../lib/save/pipeline";
+import { dryRunValidation, verifyStructural, versionName, type DryRunValidation } from "../../lib/save/pipeline";
+import { loadServiceCatalog, servicesOfCompactSteps } from "../../lib/save/services";
+import { resolveSpecSources } from "../../lib/save/sources";
 import { runValidationGate, type ValidationSummary } from "../../lib/save/validation";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
 interface CreateArgs {
-  category: string;
+  category: string | null;
+  dryRun: boolean;
   specPath: string;
   yes: boolean;
   noValidate: boolean;
@@ -33,25 +37,38 @@ interface CreateData {
   validation: ValidationSummary;
 }
 
+interface CreateDryRunData {
+  dryRun: true;
+  /** No blocking validator findings (the create would pass the gate). */
+  valid: boolean;
+  category: { chainCategoryId: number; chainCategoryUuid: string | null; name: string };
+  dropped: string[];
+  validation: DryRunValidation;
+  /** The expanded V2 body that would be POSTed. */
+  body: Record<string, unknown>;
+}
+
 export const args = defineArgs({
   command: "belz ad create",
   flags: {
     ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
     ...VALIDATION_FLAGS,
-    category: { type: "string", required: true, missingCode: "MISSING_CATEGORY", missingMessage: "--category <name|id|uuid> is required." },
-    spec: { type: "string", required: true, missingCode: "MISSING_SPEC", missingMessage: "--spec <file> is required (a V2 method body or subset)." },
+    category: { type: "string", description: "Target category (or spec.category)" },
+    spec: { type: "string", required: true, missingCode: "MISSING_SPEC", missingMessage: "--spec <file> is required (a compact spec, or a V2 method body or subset)." },
+    "dry-run": { type: "boolean", description: "Expand + validate only; print the V2 body, create nothing" },
   },
 });
 
-const command: CommandModule<CreateArgs, CreateData> = {
+const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
   schema: "ad.create",
-  writes: true,
+  writes: (a) => !a.dryRun,
   parseArgs(argv) {
     const { flags } = args.parse(argv);
     resolveAdCommon(flags, "save", "create");
     return {
-      category: flags.category,
+      category: flags.category ?? null,
+      dryRun: flags.dryRun,
       specPath: flags.spec,
       yes: flags.yes,
       noValidate: flags.noValidate,
@@ -70,15 +87,37 @@ const command: CommandModule<CreateArgs, CreateData> = {
       });
     }
 
-    const category = requireChainCategory(await fetchCategories(), a.category);
+    await resolveSpecSources(spec, dirname(a.specPath));
+    const specCategory = spec && typeof spec === "object" && !Array.isArray(spec) ? (spec as Record<string, unknown>).category : undefined;
+    if (specCategory !== undefined && typeof specCategory !== "string" && typeof specCategory !== "number") {
+      throw new CliError("spec.category must be a category name, id or uuid.", { code: "AD_SPEC_INVALID", details: { path: "category" } });
+    }
+    const categoryRef = a.category ?? (specCategory === undefined ? null : String(specCategory));
+    if (!categoryRef) {
+      throw new CliError("--category <name|id|uuid> is required (or set category in the spec).", { code: "MISSING_CATEGORY" });
+    }
+    const categories = await fetchCategories();
+    const category = requireChainCategory(categories, categoryRef);
+    if (a.category && specCategory !== undefined && requireChainCategory(categories, String(specCategory)).chainCategoryId !== category.chainCategoryId) {
+      throw new CliError(`--category ${a.category} and spec.category ${String(specCategory)} name different categories.`, {
+        code: "AD_SPEC_INVALID",
+        details: { flag: a.category, spec: specCategory },
+      });
+    }
     assertCreatableCategory(category);
-    const { body, dropped } = buildCreateBody(spec, category);
+    const catalog = await loadServiceCatalog(servicesOfCompactSteps(compactSteps(spec)));
+    const { body, dropped } = buildCreateBody(spec, category, catalog);
     if (dropped.length > 0) context.warn(`Dropped server-owned spec key(s): ${dropped.join(", ")}.`);
+    const flags = { noValidate: a.noValidate, strict: a.strict, dryRunCompile: a.dryRunCompile };
+    const gate = { after: body as V2MethodResponse, env: context.env.name, action: "create", warn: (m: string) => context.warn(m) };
+    const categoryData = { chainCategoryId: category.chainCategoryId, chainCategoryUuid: category.chainCategoryUuid, name: category.name };
 
-    const validation = await runValidationGate(
-      { noValidate: a.noValidate, strict: a.strict, dryRunCompile: a.dryRunCompile },
-      { after: body as V2MethodResponse, env: context.env.name, action: "create", warn: (m) => context.warn(m) },
-    );
+    if (a.dryRun) {
+      const validation = await dryRunValidation(() => runValidationGate(flags, gate));
+      return ok<CreateDryRunData>({ dryRun: true, valid: validation.errors.length === 0, category: categoryData, dropped, validation, body });
+    }
+
+    const validation = await runValidationGate(flags, gate);
 
     const steps = body.steps as unknown[];
     await requireConfirmation({
@@ -128,13 +167,15 @@ const command: CommandModule<CreateArgs, CreateData> = {
         details: { uuid, problems },
       });
     }
+    // Every value sent must read back (the server only adds ids, uuids and defaults).
+    verifyStructural(uuid, body, back, [""]);
 
     return ok<CreateData>({
       uuid,
       name: String(back.name),
       state: back.metadata?.state ?? null,
       version: versionName(back),
-      category: { chainCategoryId: category.chainCategoryId, chainCategoryUuid: category.chainCategoryUuid, name: category.name },
+      category: categoryData,
       stepCount: (back.steps ?? []).length,
       dropped,
       validation,
@@ -142,6 +183,15 @@ const command: CommandModule<CreateArgs, CreateData> = {
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
+    if ((envelope.data as CreateDryRunData).dryRun) {
+      const d = envelope.data as CreateDryRunData;
+      ui.info(JSON.stringify(d.body, null, 2));
+      const line = `Dry run: ${d.valid ? "valid" : `${d.validation.errors.length} blocking finding(s)`}, ${d.validation.warnings.length} warning(s); nothing created`;
+      if (d.valid) ui.success(line);
+      else ui.warn(line);
+      for (const f of d.validation.errors) ui.warn(`${f.rule} ${f.path}: ${f.message}`);
+      return;
+    }
     const d = envelope.data as CreateData;
     ui.success(`Created draft ${d.name}: ${d.uuid}`);
     ui.table(

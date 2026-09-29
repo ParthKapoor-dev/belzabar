@@ -1,14 +1,19 @@
 import { readFile } from "fs/promises";
+import { dirname } from "path";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { requireConfirmation } from "../../lib/args/confirm";
-import { saveOverlayV2, type SaveV2Data } from "../../lib/save/pipeline";
+import { saveOverlayV2, type SaveDryRunData, type SaveV2Data } from "../../lib/save/pipeline";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
+import { addFileFlagOps, resolveOverlaySources } from "../../lib/save/sources";
 
 interface SaveArgs {
-  filePath: string;
+  filePath: string | null;
   uuid: string;
+  sqlFiles: string[];
+  codeFiles: string[];
+  dryRun: boolean;
   yes: boolean;
   noValidate: boolean;
   strict: boolean;
@@ -17,7 +22,7 @@ interface SaveArgs {
 
 export const args = defineArgs({
   command: "belz ad save",
-  positionals: [{ name: "file", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing <file> argument." }],
+  positionals: [{ name: "file" }],
   flags: {
     ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
@@ -28,18 +33,28 @@ export const args = defineArgs({
       missingCode: "MISSING_UUID",
       missingMessage: "--uuid <draftUuid> is required (to create a method use `belz ad create`).",
     },
+    "sql-file": { type: "string", repeatable: true, description: "N=path: replace step N's SQL with the file" },
+    "code-file": { type: "string", repeatable: true, description: "N=path: replace step N's custom code with the file" },
+    "dry-run": { type: "boolean", description: "Plan and validate only; nothing is written" },
   },
 });
 
-const command: CommandModule<SaveArgs, SaveV2Data> = {
+const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
   schema: "ad.save",
-  writes: true,
+  writes: (a) => !a.dryRun,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "save", "save");
+    const filePath = positionals.file ?? null;
+    if (!filePath && flags.sqlFile.length === 0 && flags.codeFile.length === 0) {
+      throw new CliError("Missing <file> argument (or --sql-file / --code-file).", { code: "MISSING_FILE" });
+    }
     return {
-      filePath: positionals.file,
+      filePath,
       uuid: flags.uuid,
+      sqlFiles: flags.sqlFile,
+      codeFiles: flags.codeFile,
+      dryRun: flags.dryRun,
       yes: flags.yes,
       noValidate: flags.noValidate,
       strict: flags.strict,
@@ -47,20 +62,30 @@ const command: CommandModule<SaveArgs, SaveV2Data> = {
     };
   },
   async execute(a, context) {
-    let text: string;
-    try {
-      text = await readFile(a.filePath, "utf-8");
-    } catch (err) {
-      throw new CliError(`Cannot read overlay file ${a.filePath}: ${String(err)}`, { code: "FILE_NOT_FOUND" });
+    let overlay: unknown = {};
+    if (a.filePath) {
+      let text: string;
+      try {
+        text = await readFile(a.filePath, "utf-8");
+      } catch (err) {
+        throw new CliError(`Cannot read overlay file ${a.filePath}: ${String(err)}`, { code: "FILE_NOT_FOUND" });
+      }
+      try {
+        overlay = JSON.parse(text);
+      } catch (err) {
+        throw new CliError(`Overlay file ${a.filePath} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
+      }
+      await resolveOverlaySources(overlay, dirname(a.filePath));
     }
-    let overlay: unknown;
-    try {
-      overlay = JSON.parse(text);
-    } catch (err) {
-      throw new CliError(`Overlay file ${a.filePath} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
+    if (a.sqlFiles.length || a.codeFiles.length) {
+      if (!overlay || typeof overlay !== "object" || Array.isArray(overlay)) {
+        throw new CliError("Overlay must be a JSON object.", { code: "AD_OVERLAY_INVALID" });
+      }
+      await addFileFlagOps(overlay as Record<string, unknown>, { sqlFiles: a.sqlFiles, codeFiles: a.codeFiles }, process.cwd());
     }
 
     const data = await saveOverlayV2({
+      dryRun: a.dryRun,
       uuid: resolveMethodRef(a.uuid),
       overlay,
       env: context.env.name,
@@ -68,10 +93,27 @@ const command: CommandModule<SaveArgs, SaveV2Data> = {
       warn: (msg) => context.warn(msg),
       confirm: (action, details) => requireConfirmation({ yes: a.yes, outputMode: context.outputMode, action, details }),
     });
-    return ok<SaveV2Data>(data);
+    return ok<SaveV2Data | SaveDryRunData>(data);
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
+    if ((envelope.data as SaveDryRunData).action === "DRY_RUN") {
+      const d = envelope.data as SaveDryRunData;
+      const head = `Dry run: draft ${d.draftUuid} v${d.version ?? "?"}: ${d.valid ? "valid" : `${d.validation.errors.length} blocking finding(s)`} (nothing written)`;
+      if (d.valid) ui.success(head);
+      else ui.warn(head);
+      for (const f of d.validation.errors) ui.warn(`${f.rule} ${f.path}: ${f.message}`);
+      ui.table(
+        ["Property", "Value"],
+        [
+          ["Applied", d.applied.join("; ")],
+          ["Unchanged", d.unchanged.join(", ") || "-"],
+          ...(d.order ? [["Step order", d.order.map((f) => (f === null ? "new" : String(f))).join(" ")] as [string, string]] : []),
+          ["Validation", d.validation.skipped ? "SKIPPED" : `${d.validation.warnings.length} warning(s)`],
+        ],
+      );
+      return;
+    }
     const data = envelope.data as SaveV2Data;
     ui.success(`Saved draft ${data.draftUuid} (v${data.previousVersion ?? "?"} → v${data.version ?? "?"}), verified on re-read`);
     ui.table(

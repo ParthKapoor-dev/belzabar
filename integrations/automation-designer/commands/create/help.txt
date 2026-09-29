@@ -1,24 +1,50 @@
-Usage: belz ad create --category <CATEGORY> --spec <FILE> --env <env> [flags]
+Usage: belz ad create --spec <FILE> [--category <CATEGORY>] --env <env> [flags]
 
-Create a new DRAFT method from a JSON spec through the V2 route
+Create a new DRAFT method from a spec through the V2 route
 (POST /chain/v2 without a uuid). Returns the new uuid.
 
-The spec is a V2 method body or a subset of it: name (required), summary,
-description, inputs[], outputs[], variables[], steps[], securityFields[],
-assertions[], metadata.executionTimeLimit. A body fetched with
-`belz ad fetch <uuid> --v2` works too: server-owned keys (uuid, ids,
-metadata state/version/service, changelogs, permissions…) are dropped and
-listed in `dropped`; method-level input/output/variable uuids and step ids are
-minted by the server. Defaults follow the AD UI: exitOnFailure true, custom
-code on JAVASCRIPT/CODE_LAMBDA (type inferred from customCode.inlineCode),
-combineInput true when a value holds SpEL, input type STRING.
+Compact spec (belz expands it to the full V2 body with UI defaults):
+  {
+    "name": "orders.list", "category": "Test-Parth",
+    "summary": "…", "description": "…",
+    "inputs":    ["id", {"key": "limit", "type": "INTEGER", "required": true,
+                          "default": 10, "description": "…"}],
+    "variables": ["rows"],
+    "outputs":   ["rows", {"key": "count", "type": "INTEGER"}],
+    "steps": [
+      {"sql": "SELECT … WHERE id = '#{id}'", "account": "BCPS-RDS",
+       "outputs": {"rows": "flatData[]"}, "when": "#{id} ne null"},
+      {"service": "Helpers.Legacy/echo", "inputs": {"Input": "#{rows.size()}"},
+       "outputs": [{"key": "response", "as": "count"}]},
+      {"codeFile": "step3.js", "outputs": ["a", "b"], "exit": {"onFailure": false}}
+    ]
+  }
+  Step keys: service "Svc/method" | code | codeFile | sql | sqlFile (paths
+  relative to the spec), inputs {key: value, "body.nested": value}, outputs
+  ["key"] | [{key, as, var, type, elementToRetrieve}] | {as: key}, when,
+  exit {onFailure, code, message}, exitIf {when, code, message},
+  loop {over} | {times} | {while} | {from, to, by} (+counter, parallel,
+  threads), account (db_service; defaults to the only account), description,
+  language, async. `sql` alone picks db_service data.read/add/update/delete
+  from the verb. Service input/output keys, accounts and services are checked
+  online against the callee contract (unknown ones are refused: the server
+  would drop them). Custom-code outputs get elementToRetrieve when there are
+  several. See `belz ad save --help` for the same format in structural edits.
+
+A V2 method body (e.g. from `belz ad fetch <uuid> --v2`) or a subset of it
+works too: server-owned keys (uuid, ids, metadata state/version/service,
+changelogs, permissions…) are dropped and listed in `dropped`; step ids and
+method-level uuids are minted by the server. Raw and compact steps can mix.
 
 Flags:
-  --category <CATEGORY> Target category: name, chain-category id, or uuid. (required)
+  --spec <FILE>         Spec file (compact, or a V2 body/subset). (required)
+  --category <CATEGORY> Target category: name, chain-category id, or uuid. Required
+                        unless the spec has "category" (both must agree).
                         Core/shared categories (Helpers.*, Database.*, Cache.*,
                         Email.*, Expertly.*, Web Socket, system services) are
                         refused with AD_CATEGORY_PROTECTED.
-  --spec <FILE>         JSON spec file. (required)
+  --dry-run             Expand + validate only; create nothing. Returns
+                        {dryRun, valid, body, validation{errors, warnings}}.
   --yes, -y             Skip the confirmation prompt (required with --llm).
   --no-validate         Skip the validator. Logged loudly; not recommended.
   --strict              Validator warnings block the create too.
@@ -27,18 +53,21 @@ Flags:
   --help, -h            Show this help message.
 
 Global Flags:
-  --env <name>          Set active environment. Required: create is a write.
+  --env <name>          Set active environment. Required: create is a write
+                        (not with --dry-run).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
-Errors: AD_SPEC_UNKNOWN_KEY, AD_SPEC_INVALID, CATEGORY_NOT_FOUND,
-AD_CATEGORY_PROTECTED, AD_VALIDATION_FAILED, AD_METHOD_EXISTS (name taken in
-the category), AD_SAVE_REJECTED (server message), AD_SAVE_VERIFY_FAILED
-(the method does not read back as a DRAFT with this name/category/steps).
+Errors: MISSING_CATEGORY, AD_SPEC_UNKNOWN_KEY, AD_SPEC_INVALID,
+AD_SPEC_NOT_APPLIED (key/service/account the server would drop or reject),
+CATEGORY_NOT_FOUND, AD_CATEGORY_PROTECTED, AD_VALIDATION_FAILED,
+AD_METHOD_EXISTS (name taken in the category), AD_SAVE_REJECTED (server
+message), AD_SAVE_VERIFY_FAILED (a value sent does not read back).
 
 Data: {uuid, name, state, version, category{chainCategoryId,
 chainCategoryUuid, name}, stepCount, dropped[], validation{skipped, warnings,
 layersRun}}.
 
 Examples:
+  belz ad create --spec method.json --dry-run --env <env> --llm
   belz ad create --category Test-Parth --spec method.json --env <env>
   belz ad create --category 1135 --spec method.json --env <env> --yes --llm

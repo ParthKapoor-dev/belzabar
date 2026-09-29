@@ -23,13 +23,17 @@
 // Pure: no network.
 
 import { CliError } from "@belzabar/core";
-import type { V2MethodResponse, V2Step, V2StepInput } from "../types/v2-wire";
+import type { V2MethodResponse, V2Step } from "../types/v2-wire";
 import { decodeBase64Strict, encodeBase64 } from "../base64";
 import { parseV2Step } from "../parser/steps/v2";
 import type { ParseOptions } from "../parser/steps/classify";
 import { diffPaths, getAtPath, isUnder, jsonEqual, pathSegments } from "./diff";
+import { emptyCatalog, encodeSql, findSqlSlot, isObj, Problems, type ServiceCatalog } from "./compact";
+import { applyStructuralOps, OP_NAMES } from "./ops";
 
-const TOP_LEVEL_KEYS = new Set(["name", "summary", "description", "buttonLabel", "internalMethod", "inputs", "parsedSteps"]);
+export { encodeSql };
+
+const TOP_LEVEL_KEYS = new Set(["name", "summary", "description", "buttonLabel", "internalMethod", "inputs", "parsedSteps", "ops"]);
 const INPUT_KEYS = new Set(["code", "testValue"]);
 const STEP_KEYS = new Set(["orderIndex", "source", "sql", "expression", "description"]);
 
@@ -56,6 +60,17 @@ export interface V2OverlayPlan {
   applied: string[];
   /** Overlay keys whose value already equals the draft (warned, not refused). */
   unchanged: string[];
+  /**
+   * Present when the overlay has structural `ops`: the post-save verify then
+   * compares the whole body, tolerating server-filled fields (ids, uuids,
+   * types) only under `touched` (paths in `body`).
+   */
+  structural?: { touched: string[]; order: Array<number | null> };
+}
+
+export interface PlanOptions extends ParseOptions {
+  /** Callee contracts + db accounts for ops (lib/save/services.ts loadServiceCatalog). */
+  catalog?: ServiceCatalog;
 }
 
 interface PlannedEdit {
@@ -68,7 +83,7 @@ interface PlannedEdit {
  * Apply an `ad save` overlay to a live V2 body. Throws CliError with a stable
  * code on any refusal (see file header). `live` is never mutated.
  */
-export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: ParseOptions = {}): V2OverlayPlan {
+export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: PlanOptions = {}): V2OverlayPlan {
   if (!overlay || typeof overlay !== "object" || Array.isArray(overlay)) {
     throw new CliError("Overlay must be a JSON object.", { code: "AD_OVERLAY_INVALID" });
   }
@@ -186,27 +201,31 @@ export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: Pa
     }
   }
 
-  if (invalid.length > 0) {
-    throw new CliError(`Overlay has invalid values: ${invalid.map((x) => `${x.key} (${x.reason})`).join("; ")}`, {
-      code: "AD_OVERLAY_INVALID",
-      details: { invalid },
-    });
-  }
-  if (notApplied.length > 0) throw refuseNotApplied(notApplied);
-  if (edits.length === 0) {
+  // ── structural ops (fetched step positions; see ops.ts) ───────────────
+  const hasOps = "ops" in o;
+  const problems = new Problems();
+  problems.invalid.push(...invalid);
+  problems.notApplied.push(...notApplied);
+  const body = structuredClone(live) as V2MethodResponse;
+  for (const e of edits) setAtPath(body, e.path, e.value);
+  const edited = hasOps ? (structuredClone(body) as V2MethodResponse) : body;
+  const lockedSteps = new Set(edits.map((e) => /^steps\[(\d+)\]/.exec(e.path)).filter((m): m is RegExpExecArray => !!m).map((m) => Number(m[1]) + 1));
+  const structural = hasOps
+    ? applyStructuralOps(body, o.ops, { catalog: opts.catalog ?? emptyCatalog(), p: problems, parse: opts, lockedSteps })
+    : null;
+  throwProblems(problems);
+
+  if (edits.length === 0 && !structural?.applied.length) {
     throw new CliError("Overlay contains no changes; nothing to save.", {
       code: "AD_OVERLAY_NOT_APPLIED",
       details: { notApplied: [] },
     });
   }
 
-  // ── apply onto a deep copy ────────────────────────────────────────────
-  const body = structuredClone(live) as V2MethodResponse;
-  for (const e of edits) setAtPath(body, e.path, e.value);
-
   // ── L0: only target leaves changed (metadata / ids untouched) ─────────
-  const changed = diffPaths(live, body);
+  const changed = diffPaths(live, edited);
   const drift = changed.filter((p) => !edits.some((e) => isUnder(p, e.path)));
+  if (structural) drift.push(...structuralDrift(edited, body, structural));
   if (drift.length > 0) {
     throw new CliError(
       `Refusing to save: the overlay changed fields it did not target: ${drift.slice(0, 20).join(", ")}. ` +
@@ -216,16 +235,81 @@ export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: Pa
   }
 
   const noEffect = edits.filter((e) => jsonEqual(getAtPath(live, e.path), e.value));
-  if (noEffect.length === edits.length) {
+  if (structural) {
+    if (jsonEqual(live, body)) {
+      throw refuseNotApplied([...structural.applied, ...edits.map((e) => e.key)].map((key) => ({ key, reason: "identical to the current draft (no change)" })));
+    }
+  } else if (noEffect.length === edits.length) {
     throw refuseNotApplied(noEffect.map((e) => ({ key: e.key, reason: "identical to the current draft (no change)" })));
   }
   const effective = edits.filter((e) => !noEffect.includes(e));
-  return {
+  const plan: V2OverlayPlan = {
     body,
     targets: effective.map((e) => ({ key: e.key, path: e.path, value: e.value })),
-    applied: effective.map((e) => e.key),
+    applied: [...effective.map((e) => e.key), ...(structural?.applied ?? [])],
     unchanged: noEffect.map((e) => e.key),
   };
+  if (structural) {
+    // Legacy leaf edits: a whole step (at its new position) or a top-level key is touched.
+    const touched = new Set(structural.touched);
+    for (const e of effective) {
+      const m = /^steps\[(\d+)\]/.exec(e.path);
+      if (!m) touched.add(e.path);
+      else {
+        const at = structural.order.indexOf(Number(m[1]) + 1);
+        if (at >= 0) touched.add(`steps[${at}]`);
+      }
+    }
+    plan.structural = { touched: [...touched], order: structural.order };
+  }
+  return plan;
+}
+
+/** Throw the collected problems with the most specific stable code. */
+function throwProblems(p: Problems): void {
+  if (p.unknown.length > 0) {
+    throw new CliError(
+      `Unknown overlay key(s): ${p.unknown.join(", ")}. Supported: name, summary, description; ` +
+        `parsedSteps[] {${[...STEP_KEYS].join(", ")}}; ops[] {op: ${OP_NAMES.join(" | ")}}.`,
+      { code: "AD_OVERLAY_UNKNOWN_KEY", details: { unknown: p.unknown } },
+    );
+  }
+  if (p.invalid.length > 0) {
+    throw new CliError(`Overlay has invalid values: ${p.invalid.map((x) => `${x.key} (${x.reason})`).join("; ")}`, {
+      code: "AD_OVERLAY_INVALID",
+      details: { invalid: p.invalid },
+    });
+  }
+  if (p.notApplied.length > 0) throw refuseNotApplied(p.notApplied);
+}
+
+/**
+ * L0 for ops: every step not updated/removed reads exactly as fetched (at its
+ * new position), method fields not set/removed are unchanged, and nothing
+ * outside steps/inputs/outputs/variables moved.
+ */
+function structuralDrift(
+  edited: V2MethodResponse,
+  body: V2MethodResponse,
+  s: { order: Array<number | null>; updated: number[]; touched: string[] },
+): string[] {
+  const out: string[] = [];
+  const lists = ["steps", "inputs", "outputs", "variables"];
+  const strip = (b: V2MethodResponse) => Object.fromEntries(Object.entries(b).filter(([k]) => !lists.includes(k)));
+  out.push(...diffPaths(strip(edited), strip(body)));
+  const before = edited.steps ?? [];
+  s.order.forEach((from, i) => {
+    if (from === null || s.updated.includes(from)) return;
+    if (!jsonEqual(before[from - 1], body.steps?.[i])) out.push(`steps[${i}] (fetched step ${from})`);
+  });
+  for (const list of ["inputs", "outputs", "variables"] as const) {
+    const prev = new Map(((edited[list] ?? []) as unknown[]).filter(isObj).map((f) => [f.key, f]));
+    ((body[list] ?? []) as unknown[]).forEach((f, i) => {
+      if (!isObj(f) || s.touched.includes(`${list}[${i}]`)) return;
+      if (!jsonEqual(prev.get(f.key), f)) out.push(`${list}[${i}]`);
+    });
+  }
+  return out;
 }
 
 /**
@@ -237,43 +321,6 @@ export function encodeSource(current: unknown, source: string): string {
   const wasB64 = typeof current === "string" && current.length > 0 && decodeBase64Strict(current) !== null;
   if (wasB64 || decodeBase64Strict(source) !== null) return encodeBase64(source);
   return source;
-}
-
-/**
- * SQL encoding is flag-driven (`encodingType`): BASE_64 slots holding base64
- * get base64; everything else stays plain (a BASE_64 flag on a plain value is
- * ignored by the runtime, so plain stays plain there too).
- */
-export function encodeSql(slot: V2StepInput, sql: string): string {
-  const v = slot.value;
-  const storedB64 = slot.encodingType === "BASE_64" && (typeof v !== "string" || v.length === 0 || decodeBase64Strict(v) !== null);
-  return storedB64 ? encodeBase64(sql) : sql;
-}
-
-/** Same slot the parser reads (`body.queryString`, else the first BASE_64 string input), with its path. */
-function findSqlSlot(inputs: unknown, path: string): { input: V2StepInput; path: string } | null {
-  return (
-    findInput(inputs, path, (i) => i.key === "queryString" && typeof i.value === "string") ??
-    findInput(inputs, path, (i) => i.encodingType === "BASE_64" && typeof i.value === "string")
-  );
-}
-
-function findInput(
-  inputs: unknown,
-  path: string,
-  pred: (i: V2StepInput) => boolean,
-): { input: V2StepInput; path: string } | null {
-  if (!Array.isArray(inputs)) return null;
-  for (let k = 0; k < inputs.length; k++) {
-    const raw = inputs[k];
-    if (!raw || typeof raw !== "object") continue;
-    const i = raw as V2StepInput;
-    const p = `${path}[${k}]`;
-    if (pred(i)) return { input: i, path: p };
-    const nested = findInput(i.properties, `${p}.properties`, pred);
-    if (nested) return nested;
-  }
-  return null;
 }
 
 function setAtPath(root: unknown, path: string, value: unknown): void {
@@ -316,7 +363,7 @@ function checkKnownKeys(o: Record<string, unknown>): void {
   if (unknown.length > 0) {
     throw new CliError(
       `Unknown overlay key(s): ${unknown.join(", ")}. Supported: name, summary, description; ` +
-        `parsedSteps[] {${[...STEP_KEYS].join(", ")}}.`,
+        `parsedSteps[] {${[...STEP_KEYS].join(", ")}}; ops[] {op: ${OP_NAMES.join(" | ")}}.`,
       { code: "AD_OVERLAY_UNKNOWN_KEY", details: { unknown } },
     );
   }

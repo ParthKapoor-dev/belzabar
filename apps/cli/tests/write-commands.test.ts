@@ -26,9 +26,11 @@ const PD = "integrations/page-designer";
 
 const CASES: Case[] = [
   // ── Automation Designer ──
-  { owner: AD, command: "save", argv: [UUID], kind: "writes" },
+  { owner: AD, command: "save", argv: ["o.json", "--uuid", UUID], kind: "writes" },
+  { owner: AD, command: "save", argv: ["o.json", "--uuid", UUID, "--dry-run"], kind: "reads" },
   { owner: AD, command: "publish", argv: [UUID], kind: "writes" },
   { owner: AD, command: "create", argv: ["--category", "Test-Parth", "--spec", "s.json"], kind: "writes" },
+  { owner: AD, command: "create", argv: ["--spec", "s.json", "--dry-run"], kind: "reads" },
   { owner: AD, command: "delete", argv: [UUID], kind: "writes" },
   { owner: AD, command: "import", argv: ["x.json"], kind: "writes" },
   { owner: AD, command: "category", argv: ["create", "belz_tst"], kind: "writes" },

@@ -5,8 +5,13 @@
 // metadata state/version/internal, changelogs, permissions…) are dropped and
 // reported; the category comes from --category, never from the spec. Defaults
 // mirror what the AD UI writes (exitOnFailure true, JavaScript on CODE_LAMBDA
-// for custom code, combineInput true when a value holds SpEL). Stage 7 adds a
-// compact spec on top of this.
+// for custom code, combineInput true when a value holds SpEL).
+//
+// Stage 7.3: steps may also be COMPACT (lib/serialize/compact.ts: `service` /
+// `code` / `sql` + `inputs` k=v, `outputs`, `when`, `loop`, …); they are
+// expanded against the callee contracts in `catalog`. Method inputs, outputs
+// and variables may be plain key strings; `default` is the defaultValue.
+// `category` may be given in the spec instead of --category.
 //
 // Live sems-dev (2026-09-28): a minimal body is accepted and the server mints
 // step ids and input/output uuids; a duplicate name is refused with
@@ -14,6 +19,7 @@
 
 import { CliError } from "@belzabar/core";
 import type { Category } from "../categories";
+import { emptyCatalog, expandCompactStep, isRawV2Step, Problems, type ServiceCatalog } from "../serialize/compact";
 
 /** WSR-6: core/shared categories are never written from belz. */
 const PROTECTED_CATEGORY = /^(helpers|database|cache|email|expertly)(\.|$)/i;
@@ -35,7 +41,7 @@ export function assertCreatableCategory(c: Category): void {
   }
 }
 
-const SPEC_KEYS = new Set(["name", "summary", "description", "inputs", "outputs", "variables", "steps", "securityFields", "assertions", "metadata"]);
+const SPEC_KEYS = new Set(["name", "category", "summary", "description", "inputs", "outputs", "variables", "steps", "securityFields", "assertions", "metadata"]);
 /** Present on fetched V2 bodies; server-owned or ignored on create. Dropped with a notice. */
 const DROPPED_KEYS = new Set([
   "uuid",
@@ -65,6 +71,21 @@ function withDefaults(defaults: Obj, given: unknown): Obj {
     out[k] = isObj(v) && isObj(out[k]) ? withDefaults(out[k] as Obj, v) : structuredClone(v);
   }
   return out;
+}
+
+/** A compact method field: a key string, or an object using `default` for defaultValue. */
+function compactField(given: unknown, where: string): unknown {
+  if (typeof given === "string") return { key: given };
+  if (!isObj(given)) return given;
+  if ("testValue" in given) {
+    throw new CliError(`${where}.testValue is dropped by every save; pass inputs to \`ad test\` instead.`, {
+      code: "AD_SPEC_INVALID",
+      details: { path: `${where}.testValue` },
+    });
+  }
+  if (!("default" in given)) return given;
+  const { default: dv, ...rest } = given;
+  return { ...rest, defaultValue: dv };
 }
 
 // Method-level inputs/outputs/variables get fresh uuids from the server: a
@@ -136,7 +157,16 @@ export interface CreateBody {
   dropped: string[];
 }
 
-export function buildCreateBody(spec: unknown, category: Category & { chainCategoryId: number }): CreateBody {
+/** Compact steps in a spec (the ones expanded against callee contracts). */
+export function compactSteps(spec: unknown): unknown[] {
+  return isObj(spec) && Array.isArray(spec.steps) ? spec.steps.filter((s) => !isRawV2Step(s)) : [];
+}
+
+export function buildCreateBody(
+  spec: unknown,
+  category: Category & { chainCategoryId: number },
+  catalog: ServiceCatalog = emptyCatalog(),
+): CreateBody {
   if (!isObj(spec)) throw new CliError("Spec must be a JSON object (a V2 method body or a subset).", { code: "AD_SPEC_INVALID" });
   const unknown = Object.keys(spec).filter((k) => !SPEC_KEYS.has(k) && !DROPPED_KEYS.has(k));
   if (unknown.length > 0) {
@@ -165,12 +195,32 @@ export function buildCreateBody(spec: unknown, category: Category & { chainCateg
       service: { id: category.chainCategoryId, uuid: category.chainCategoryUuid, name: category.name },
       ...(isObj(meta.executionTimeLimit) ? { executionTimeLimit: meta.executionTimeLimit } : {}),
     },
-    inputs: ((spec.inputs as unknown[]) ?? []).map(field),
-    outputs: ((spec.outputs as unknown[]) ?? []).map(methodOutput),
-    variables: ((spec.variables as unknown[]) ?? []).map(field),
-    steps: ((spec.steps as unknown[]) ?? []).map(step),
+    inputs: ((spec.inputs as unknown[]) ?? []).map((f, i) => field(compactField(f, `inputs[${i}]`))),
+    outputs: ((spec.outputs as unknown[]) ?? []).map((f, i) => methodOutput(compactField(f, `outputs[${i}]`))),
+    variables: ((spec.variables as unknown[]) ?? []).map((f, i) => field(compactField(f, `variables[${i}]`))),
+    steps: expandSteps((spec.steps as unknown[]) ?? [], catalog),
     ...(Array.isArray(spec.securityFields) ? { securityFields: spec.securityFields } : {}),
     ...(Array.isArray(spec.assertions) ? { assertions: spec.assertions } : {}),
   };
   return { body, dropped };
+}
+
+/** Raw V2 steps get UI defaults; compact steps are expanded (problems → AD_SPEC_*). */
+function expandSteps(steps: unknown[], catalog: ServiceCatalog): Obj[] {
+  const p = new Problems();
+  const out = steps.map((s, i) => (isRawV2Step(s) ? step(s, i) : (expandCompactStep(s, catalog, `steps[${i}]`, p) as Obj | null)));
+  if (p.unknown.length > 0) {
+    throw new CliError(`Unknown spec key(s): ${p.unknown.join(", ")}. See \`belz ad create --help\` for the compact step keys.`, {
+      code: "AD_SPEC_UNKNOWN_KEY",
+      details: { unknown: p.unknown },
+    });
+  }
+  const problems = [...p.invalid, ...p.notApplied];
+  if (problems.length > 0) {
+    throw new CliError(`Spec has problems: ${problems.map((x) => `${x.key} (${x.reason})`).join("; ")}`, {
+      code: p.invalid.length > 0 ? "AD_SPEC_INVALID" : "AD_SPEC_NOT_APPLIED",
+      details: { invalid: p.invalid, notApplied: p.notApplied },
+    });
+  }
+  return out as Obj[];
 }

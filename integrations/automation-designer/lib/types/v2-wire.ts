@@ -37,9 +37,10 @@ export interface V2EntryCondition {
 }
 
 export interface V2ExitCondition {
-  exitOnFailure: { value: boolean; code: string | null; message: string };
+  /** code: the HTTP status (an integer on the wire). */
+  exitOnFailure: { value: boolean; code: number | string | null; message: string };
   conditionalExit: {
-    code: string | null;
+    code: number | string | null;
     message: string;
     expression: string | null;
     expandedExpressions?: unknown | null;

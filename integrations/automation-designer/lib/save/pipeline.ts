@@ -20,11 +20,13 @@ import { resolveDraftTarget } from "../draft-guard";
 import { CacheManager } from "../cache";
 import { logIntent } from "../args/confirm";
 import { diffPaths, getAtPath, isUnder, jsonEqual } from "../serialize/diff";
-import { planV2Overlay, type OverlayTarget } from "../serialize/v2";
+import { planV2Overlay, type OverlayTarget, type V2OverlayPlan } from "../serialize/v2";
+import { isObj } from "../serialize/compact";
+import { loadServiceCatalog, servicesOfOps } from "./services";
 import type { V2MethodResponse } from "../types/v2-wire";
 import { postChainV2 } from "./api";
 import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-cache";
-import { runValidationGate, type ValidationFlags, type ValidationSummary } from "./validation";
+import { runValidationGate, type ValidationFinding, type ValidationFlags, type ValidationSummary } from "./validation";
 
 /**
  * Server-owned bookkeeping: rewritten by every save (`metadata.version`,
@@ -45,6 +47,41 @@ export interface SaveV2Input {
   warn: (msg: string) => void;
   /** Called after validation, before the freshness re-GET; throws to abort. */
   confirm: (action: string, details: Array<[string, string]>) => Promise<void>;
+  /** Plan + validate only: nothing is written (no confirm, no POST). */
+  dryRun?: boolean;
+}
+
+export interface SaveDryRunData {
+  action: "DRY_RUN";
+  draftUuid: string;
+  version: string | null;
+  applied: string[];
+  unchanged: string[];
+  /** New step order: fetched position, or null for a new step. Present for structural ops. */
+  order?: Array<number | null>;
+  /** No blocking validator findings: the real save would pass the gate. */
+  valid: boolean;
+  validation: DryRunValidation;
+}
+
+/** Validator result as a dry run reports it: blocking findings are data, not an error. */
+export interface DryRunValidation {
+  skipped: boolean;
+  errors: ValidationFinding[];
+  warnings: ValidationFinding[];
+  layersRun: string[];
+}
+
+/** Run the gate, turning AD_VALIDATION_FAILED into data (for --dry-run). */
+export async function dryRunValidation(run: () => Promise<ValidationSummary>): Promise<DryRunValidation> {
+  try {
+    const v = await run();
+    return { skipped: v.skipped, errors: [], warnings: v.warnings, layersRun: v.layersRun };
+  } catch (err) {
+    if (!(err instanceof CliError) || err.code !== "AD_VALIDATION_FAILED") throw err;
+    const d = err.details as { warnings: ValidationFinding[]; blocking: ValidationFinding[]; layersRun: string[] };
+    return { skipped: false, errors: d.blocking, warnings: d.warnings.filter((w) => !d.blocking.includes(w)), layersRun: d.layersRun };
+  }
 }
 
 export interface SaveV2Data {
@@ -67,24 +104,42 @@ export function versionName(body: V2MethodResponse | null | undefined): string |
   return typeof n === "string" || typeof n === "number" ? String(n) : null;
 }
 
-export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data> {
+export function saveOverlayV2(input: SaveV2Input & { dryRun: true }): Promise<SaveDryRunData>;
+export function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data>;
+export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | SaveDryRunData> {
   const guard = await resolveDraftTarget(input.uuid, "v2");
   if (!guard.ok) {
     throw new CliError(guard.message, { code: `AD_DRAFT_GUARD_${guard.reason}`, details: guard });
   }
   const draftUuid = guard.draft.uuid;
   const live = guard.draft.raw as V2MethodResponse;
-  const plan = planV2Overlay(live, input.overlay, { env: input.env });
+  const ops = isObj(input.overlay) ? input.overlay.ops : undefined;
+  const catalog = ops !== undefined ? await loadServiceCatalog(servicesOfOps(live, ops)) : undefined;
+  const plan = planV2Overlay(live, input.overlay, { env: input.env, catalog });
   for (const k of plan.unchanged) input.warn(`Overlay key ${k} is identical to the current draft; nothing to change.`);
 
-  const validation = await runValidationGate(input.flags, {
+  const gate = {
     after: plan.body,
     before: live,
-    overlayPaths: plan.targets.map((t) => t.path),
+    overlayPaths: plan.structural ? plan.structural.touched : plan.targets.map((t) => t.path),
     env: input.env,
     action: "save",
     warn: input.warn,
-  });
+  };
+  if (input.dryRun) {
+    const v = await dryRunValidation(() => runValidationGate(input.flags, gate));
+    return {
+      action: "DRY_RUN",
+      draftUuid,
+      version: versionName(live),
+      applied: plan.applied,
+      unchanged: plan.unchanged,
+      ...(plan.structural ? { order: plan.structural.order } : {}),
+      valid: v.errors.length === 0,
+      validation: v,
+    };
+  }
+  const validation = await runValidationGate(input.flags, gate);
 
   const previousVersion = versionName(live);
   await input.confirm(`save draft ${draftUuid}`, [
@@ -129,7 +184,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data> {
     }
   }
 
-  verifySaved(draftUuid, live, after, plan.targets);
+  verifyPlan(draftUuid, live, after, plan);
 
   return {
     action: "UPDATED",
@@ -143,6 +198,56 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data> {
     validation,
     compiledCache,
   };
+}
+
+/** Verify with the check that fits the plan (leaf targets, or the whole body for ops). */
+export function verifyPlan(uuid: string, before: V2MethodResponse, after: V2MethodResponse, plan: V2OverlayPlan): void {
+  if (plan.structural) verifyStructural(uuid, plan.body, after, plan.structural.touched);
+  else verifySaved(uuid, before, after, plan.targets);
+}
+
+/** uuid-like keys the server pads to 36 characters. */
+const PADDED_KEYS = new Set(["uuid", "id", "automationAPIId", "automationApiId"]);
+
+/**
+ * Post-save verify for structural ops and creates: the draft read back must
+ * equal `expected` (the body sent) everywhere, except server bookkeeping and,
+ * under a `touched` path (a new/updated step or field; "" = the whole body),
+ * fields the server fills in (ids, uuids, types) and uuid padding. A value
+ * belz sent that reads back different or missing is `notLanded`; any other
+ * difference is `unexpected`. Throws AD_SAVE_VERIFY_FAILED.
+ */
+export function verifyStructural(uuid: string, expected: unknown, after: unknown, touched: string[]): void {
+  const all = touched.includes("");
+  const underTouched = (p: string) => all || touched.some((t) => isUnder(p, t));
+  const notLanded: Array<{ path: string; expected: unknown; actual: unknown }> = [];
+  const unexpected: string[] = [];
+  for (const p of diffPaths(expected, after)) {
+    if (SERVER_OWNED_ON_SAVE.some((s) => isUnder(p, s))) continue;
+    const want = getAtPath(expected, p);
+    const got = getAtPath(after, p);
+    if (underTouched(p)) {
+      if (want === undefined) continue; // server-filled
+      const last = p.replace(/\[\d+\]$/, "").split(".").pop() ?? "";
+      if (PADDED_KEYS.has(last) && typeof want === "string" && typeof got === "string" && want.trim().toLowerCase() === got.trim().toLowerCase()) continue;
+      notLanded.push({ path: p, expected: want, actual: got });
+    } else unexpected.push(p);
+  }
+  if (notLanded.length === 0 && unexpected.length === 0) return;
+  throw new CliError(
+    `Saved, but the draft read back does not match the request: ` +
+      [
+        notLanded.length ? `${notLanded.length} value(s) did not land (${notLanded.slice(0, 10).map((n) => n.path).join(", ")})` : "",
+        unexpected.length ? `${unexpected.length} other path(s) changed (${unexpected.slice(0, 10).join(", ")})` : "",
+      ]
+        .filter(Boolean)
+        .join("; ") +
+      `. Inspect with: belz ad show ${uuid} --full`,
+    {
+      code: "AD_SAVE_VERIFY_FAILED",
+      details: { uuid, version: versionName(after as V2MethodResponse), notLanded: notLanded.slice(0, 100), unexpected: unexpected.slice(0, 100) },
+    },
+  );
 }
 
 /**
