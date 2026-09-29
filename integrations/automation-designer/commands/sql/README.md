@@ -21,6 +21,12 @@ bun run bin/cli.ts sql tui
     3. `BELZ_SQL_DEFAULT_DB`
     4. `NSM_Read_DB` fallback (NSM only)
 
+- `explain <query>` (7.11)
+  - Plan of one read statement: `EXPLAIN [(ANALYZE, BUFFERS, FORMAT JSON)] <query>`.
+  - The inner statement passes the same read-only gate as `run` (`lib/sql/read-only.ts:splitExplain`):
+    ANALYZE executes it, so DML is refused even inside `EXPLAIN ANALYZE`.
+  - `--analyze`, `--buffers` (needs --analyze), `--format text|json`; `timing` from the plan.
+
 - `dbs`
   - Lists available DB auth configurations from `/rest/api/automation-systems/db_service/auth`.
 

@@ -5,9 +5,12 @@ Run SQL queries via Automation Designer database services.
 Subcommands:
   dbs                 List available database auth configurations.
   run <QUERY>         Execute ONE read statement (SELECT / WITH … SELECT / VALUES /
-                      EXPLAIN without ANALYZE). Anything else — DML, DDL, multiple
+                      EXPLAIN [ANALYZE] of a read). Anything else — DML, DDL, multiple
                       statements, SELECT INTO, FOR UPDATE — is refused client-side
                       (SQL_NOT_READ_ONLY); use update/insert/modify for writes.
+  explain <QUERY>     Show the query plan of ONE read statement (pass it without
+                      EXPLAIN). The statement must pass the same read-only gate as
+                      run: --analyze really executes it, so DML is always refused.
   update <QUERY>      Execute a SQL write (UPDATE/DELETE) query.
   insert <QUERY>      Execute a SQL INSERT query. Add `RETURNING <key column>` to get
                       the generated key(s) back in generatedValues (one row, or
@@ -24,6 +27,14 @@ Flags (run):
                       environments.<env>.sqlDefaultDb in ~/.belz/config.json →
                       BELZ_SQL_DEFAULT_DB → NSM_Read_DB (exists on NSM only).
                       selectedBy reports which one was used.
+  --raw               Include raw operation metadata and execution response.
+
+Flags (explain):
+  --analyze           EXPLAIN ANALYZE: execute the statement and report real row
+                      counts and timings (timing {planningMs, executionMs}).
+  --buffers           Add buffer usage (needs --analyze).
+  --format <FMT>      text (default; plan = lines) | json (plan = parsed JSON).
+  --db <NAME|ID>      Database nickname or ID (same default resolution as run).
   --raw               Include raw operation metadata and execution response.
 
 Flags (update):
@@ -67,6 +78,7 @@ Examples:
   belz ad sql dbs
   belz ad sql run "select * from users limit 1"
   belz ad sql run "select * from users limit 1" --db NSM_QA_DB
+  belz ad sql explain "select * from users where email = 'x'" --analyze --db NSM_QA_DB
   belz ad sql update "UPDATE users SET status = 'active' WHERE id = 1" --db NSM_Write_DB --env <env>
   belz ad sql insert "INSERT INTO users (name) VALUES ('test') RETURNING id" --db NSM_Write_DB --env <env> --yes
   belz ad sql modify "CREATE INDEX IF NOT EXISTS idx_name ON users(name)" --db NSM_Write_DB --env <env>

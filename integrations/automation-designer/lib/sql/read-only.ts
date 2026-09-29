@@ -5,7 +5,13 @@
 // ("No results were returned by the query") — smoke-test F2. We therefore
 // refuse anything but a single read statement before sending it:
 //
-//   SELECT … | WITH … SELECT … | VALUES … | TABLE … | SHOW … | EXPLAIN … (without ANALYZE)
+//   SELECT … | WITH … SELECT … | VALUES … | TABLE … | SHOW …
+//   EXPLAIN [ANALYZE] [VERBOSE] <read> | EXPLAIN (option [value], …) <read>
+//
+// EXPLAIN is judged by its inner statement (7.11): the inner statement must
+// pass this same gate. That matters because EXPLAIN ANALYZE really executes
+// it — `EXPLAIN ANALYZE DELETE …` deletes — so ANALYZE is only allowed in
+// EXPLAIN's own option position, never inside the statement.
 //
 // Comments and string / quoted-identifier / dollar-quoted literals are
 // stripped first so neither can hide or fake a keyword. The check is
@@ -15,7 +21,7 @@
 
 import { CliError } from "@belzabar/core";
 
-const READ_STARTS = new Set(["select", "with", "values", "table", "explain", "show"]);
+const READ_STARTS = new Set(["select", "with", "values", "table", "show"]);
 
 /** Words that make a statement a write (or execute one) wherever they appear. */
 const WRITE_WORDS = new Set([
@@ -161,29 +167,87 @@ export function checkReadOnlySql(sql: string): ReadOnlyVerdict {
   if (normalized.includes(";")) {
     return { ok: false, reason: "multiple statements are not allowed", normalized };
   }
+  if (/^explain\b/i.test(normalized)) {
+    const ex = splitExplain(normalized);
+    if ("reason" in ex) return { ok: false, reason: ex.reason, normalized };
+    const inner = checkStatement(ex.inner);
+    if (inner) return { ok: false, reason: `EXPLAIN${ex.analyze ? " ANALYZE" : ""} of a statement that ${inner}`, normalized };
+    return { ok: true, normalized };
+  }
+  const reason = checkStatement(normalized);
+  return reason ? { ok: false, reason, normalized } : { ok: true, normalized };
+}
 
-  const words = (normalized.toLowerCase().match(/[a-z_][a-z0-9_$]*/g) ?? []);
+/** Why a single literal-free, non-EXPLAIN statement is not a read (undefined = it is). */
+function checkStatement(normalized: string): string | undefined {
+  const words = normalized.toLowerCase().match(/[a-z_][a-z0-9_$]*/g) ?? [];
   const first = words[0];
   if (!first || !READ_STARTS.has(first)) {
-    return {
-      ok: false,
-      reason: `statement starts with '${first ?? normalized.slice(0, 20)}', not SELECT/WITH/VALUES/TABLE/EXPLAIN`,
-      normalized,
-    };
+    return `starts with '${first ?? normalized.slice(0, 20)}', not SELECT/WITH/VALUES/TABLE/SHOW`;
   }
-  const bad = words.find(w => WRITE_WORDS.has(w));
-  if (bad) {
-    return { ok: false, reason: `contains '${bad.toUpperCase()}' (a write or executing clause)`, normalized };
+  const bad = words.find((w) => WRITE_WORDS.has(w));
+  if (bad) return `contains '${bad.toUpperCase()}' (a write or executing clause)`;
+  return undefined;
+}
+
+const EXPLAIN_OPTIONS = new Set([
+  "analyze", "analyse", "verbose", "costs", "settings", "generic_plan", "buffers", "serialize",
+  "wal", "timing", "summary", "memory", "format",
+]);
+const EXPLAIN_VALUES = new Set(["true", "false", "on", "off", "1", "0", "text", "json", "xml", "yaml", "none", "binary"]);
+
+export interface ExplainParts {
+  analyze: boolean;
+  /** The explained statement (literals already blanked). */
+  inner: string;
+}
+
+/**
+ * Split a literal-free `EXPLAIN …` into its options and the explained
+ * statement: `EXPLAIN [ANALYZE] [VERBOSE] stmt` or `EXPLAIN (opt [val], …) stmt`.
+ */
+export function splitExplain(normalized: string): ExplainParts | { reason: string } {
+  let rest = normalized.replace(/^explain\b/i, "").trimStart();
+  let analyze = false;
+  if (rest.startsWith("(")) {
+    const close = rest.indexOf(")");
+    if (close < 0) return { reason: "unclosed EXPLAIN option list" };
+    for (const raw of rest.slice(1, close).split(",")) {
+      const [name, value, ...more] = raw.trim().toLowerCase().split(/\s+/);
+      if (!name || !EXPLAIN_OPTIONS.has(name) || more.length > 0 || (value !== undefined && !EXPLAIN_VALUES.has(value))) {
+        return { reason: `unknown EXPLAIN option '${raw.trim()}'` };
+      }
+      if ((name === "analyze" || name === "analyse") && !["false", "off", "0"].includes(value ?? "true")) analyze = true;
+    }
+    rest = rest.slice(close + 1).trimStart();
+  } else {
+    for (;;) {
+      const m = /^(analyze|analyse|verbose)\b/i.exec(rest);
+      if (!m) break;
+      if (m[1]!.toLowerCase() !== "verbose") analyze = true;
+      rest = rest.slice(m[0].length).trimStart();
+    }
   }
-  return { ok: true, normalized };
+  if (!rest) return { reason: "EXPLAIN without a statement" };
+  return { analyze, inner: rest };
+}
+
+/** `EXPLAIN [(ANALYZE, BUFFERS, FORMAT JSON)] <statement>` for `ad sql explain`. */
+export function buildExplainSql(statement: string, opts: { analyze?: boolean; buffers?: boolean; format?: "text" | "json" } = {}): string {
+  const options: string[] = [];
+  if (opts.analyze) options.push("ANALYZE");
+  if (opts.buffers) options.push("BUFFERS");
+  if (opts.format && opts.format !== "text") options.push(`FORMAT ${opts.format.toUpperCase()}`);
+  const body = statement.trim().replace(/;\s*$/, "").trim();
+  return options.length > 0 ? `EXPLAIN (${options.join(", ")}) ${body}` : `EXPLAIN ${body}`;
 }
 
 /** Throw SQL_NOT_READ_ONLY unless `sql` is a single read statement. */
-export function assertReadOnlySql(sql: string): void {
+export function assertReadOnlySql(sql: string, command = "sql run"): void {
   const verdict = checkReadOnlySql(sql);
   if (verdict.ok) return;
   throw new CliError(
-    `'sql run' only accepts a single read statement (SELECT / WITH … SELECT / VALUES / EXPLAIN without ANALYZE): ` +
+    `'${command}' only accepts a single read statement (SELECT / WITH … SELECT / VALUES / EXPLAIN [ANALYZE] of a read): ` +
       `${verdict.reason}. Use 'belz ad sql update' (UPDATE/DELETE), 'sql insert' (INSERT) or 'sql modify' (DDL) ` +
       `for writes. If a column name collides with a keyword, double-quote it.`,
     { code: "SQL_NOT_READ_ONLY", details: { reason: verdict.reason } },

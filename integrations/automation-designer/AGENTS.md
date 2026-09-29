@@ -134,8 +134,11 @@ rationale.
    `servicesOfCompactSteps`. `sources.ts` — `codeFile`/`sqlFile` resolution
    (relative to the spec/overlay file) and `--sql-file`/`--code-file N=path`
    → update-step ops.
-9b. `lib/sql/read-only.ts` — `ad sql run` / TUI read mode accept one read
+9b. `lib/sql/read-only.ts` — `ad sql run` / `explain` / TUI read mode accept one read
    statement only (comments + literals stripped first); `SQL_NOT_READ_ONLY`.
+   EXPLAIN is judged by its inner statement (`splitExplain`): `EXPLAIN
+   [ANALYZE] <read>` passes, `EXPLAIN ANALYZE DELETE …` does not (ANALYZE
+   executes). `buildExplainSql` builds `ad sql explain`'s statement.
 10. `lib/draft-guard.ts` — `resolveDraftTarget` — the **only** way to locate a
     safe save target. Fails closed: a method whose wire carries
     neither `automationState` nor `state` parses as `UNKNOWN` and is refused
@@ -300,8 +303,10 @@ fails if a folder is missing from the registry.
     belz warns and reports `inputState` / `executesPublishedUuid` (AD-34).
 16. `save-suite`, `run-suites` — local `.spec.json` suites (V1); run-suites
     **declares `writes`** and posts the same body as `test`.
-17. `sql` — SQL run/dbs/update/insert/modify/tui (`tui` declares `writes`:
-    it can switch to write modes)
+17. `sql` — SQL run/explain/dbs/update/insert/modify/tui (`tui` declares `writes`:
+    it can switch to write modes). `explain "<read>" [--analyze [--buffers]]
+    [--format text|json]` (7.11) → `plan` (lines or parsed JSON) + `timing
+    {planningMs, executionMs}`; a read, gated like run.
 18. `changelog <uuid>` — list the notes of the chain the uuid names;
     `--note "<text>"` is a write: draft-guarded (recorded on the DRAFT chain,
     as publish does), confirmation / `--yes`

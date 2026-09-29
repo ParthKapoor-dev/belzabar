@@ -1,6 +1,9 @@
 belz ad sql dbs  :->  List available SQL database configurations and auth types (and the default-DB resolution)
-belz ad sql run "<query>"  :->  Execute one read statement (SELECT/WITH/VALUES/EXPLAIN) on the env's default DB (config sqlDefaultDb → BELZ_SQL_DEFAULT_DB → NSM_Read_DB); writes are refused
+belz ad sql run "<query>"  :->  Execute one read statement (SELECT/WITH/VALUES/EXPLAIN [ANALYZE] of a read) on the env's default DB (config sqlDefaultDb → BELZ_SQL_DEFAULT_DB → NSM_Read_DB); writes are refused
 belz ad sql run "<query>" --db <name|id>  :->  Execute SELECT against a specific database
+belz ad sql explain "<query>"  :->  Query plan (EXPLAIN) of one read statement; the statement must pass the read-only gate; plan = lines
+belz ad sql explain "<query>" --analyze [--buffers]  :->  EXPLAIN ANALYZE: executes the (read-only) statement; adds timing {planningMs, executionMs}
+belz ad sql explain "<query>" --format json  :->  Plan as parsed JSON (EXPLAIN FORMAT JSON)
 belz ad sql update "<query>" --db <name|id> --env <env> [--yes]  :->  Execute UPDATE or DELETE; returns rows affected (confirm or --yes)
 belz ad sql insert "<query> RETURNING <col>" --db <name|id> --env <env> [--yes]  :->  Execute INSERT (confirm or --yes); returns rows affected, and with RETURNING the generated values
 belz ad sql modify "<query>" --db <name|id> --env <env> [--yes]  :->  Execute DDL (ALTER TABLE, CREATE INDEX, etc.; confirm or --yes)

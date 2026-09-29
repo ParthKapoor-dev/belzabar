@@ -15,15 +15,16 @@ import {
   DEFAULT_SQL_DB_FALLBACK,
 } from "../../lib/sql/executor";
 import { normalizeSqlDatabases } from "../../lib/sql/selector";
-import { assertReadOnlySql } from "../../lib/sql/read-only";
+import { assertReadOnlySql, buildExplainSql, checkReadOnlySql } from "../../lib/sql/read-only";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { runSqlTuiSession } from "../../lib/sql/tui/session";
 import type { SqlTuiArgs } from "../../lib/sql/tui/types";
 import type { NormalizedSqlDatabase, SqlDbSelectedBy } from "../../lib/sql/types";
 
 interface SqlArgs {
-  action: "run" | "dbs" | "tui" | "update" | "insert" | "modify";
+  action: "run" | "dbs" | "tui" | "update" | "insert" | "modify" | "explain";
   query?: string;
+  explain?: { statement: string; analyze: boolean; buffers: boolean; format: "text" | "json" };
   db?: string;
   raw: boolean;
   yes?: boolean;
@@ -54,6 +55,31 @@ interface SqlRunData {
   statusCode?: number;
   rows: unknown[];
   rowCount: number;
+  executionTime?: {
+    time: number;
+    unit: string;
+  };
+  raw?: {
+    operation: unknown;
+    payload: unknown;
+    executionResult: unknown;
+  };
+}
+
+interface SqlExplainData {
+  action: "explain";
+  database: NormalizedSqlDatabase;
+  selectedBy: SqlDbSelectedBy;
+  /** The statement as given. */
+  statement: string;
+  /** What was sent: EXPLAIN [(options)] <statement>. */
+  query: string;
+  analyze: boolean;
+  format: "text" | "json";
+  /** text: the plan lines; json: the parsed plan. */
+  plan: string[] | unknown;
+  /** From the plan (ANALYZE): planning / execution time in ms. */
+  timing?: { planningMs?: number; executionMs?: number };
   executionTime?: {
     time: number;
     unit: string;
@@ -136,7 +162,7 @@ interface SqlTuiData {
   };
 }
 
-type SqlData = SqlDbsData | SqlRunData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData;
+type SqlData = SqlDbsData | SqlRunData | SqlExplainData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData;
 
 /** AD-32: SQL writes follow the AD write contract (confirm, or --yes; --yes mandatory in --llm). */
 async function confirmSqlWrite(
@@ -179,6 +205,17 @@ export const args = defineSubcommands(
       positionals: queryPositional("run", "select * from users limit 1"),
       flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG },
     },
+    explain: {
+      positionals: queryPositional("explain", "select * from users where id = 1"),
+      flags: {
+        ...AD_COMMON_FLAGS,
+        ...DB_FLAG,
+        ...RAW_FLAG,
+        analyze: { type: "boolean" },
+        buffers: { type: "boolean" },
+        format: { type: "enum", values: ["text", "json"], default: "text" },
+      },
+    },
     update: {
       positionals: queryPositional("update", "UPDATE table SET col = val WHERE ..."),
       flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
@@ -206,7 +243,7 @@ export const args = defineSubcommands(
   {
     command: "belz ad sql",
     codes: SQL_CODES,
-    missingMessage: "Missing SQL subcommand. Use one of: run, dbs, tui, update, insert, modify.",
+    missingMessage: "Missing SQL subcommand. Use one of: run, explain, dbs, tui, update, insert, modify.",
   },
 );
 
@@ -249,6 +286,33 @@ function parseTuiOptions(flags: {
   };
 }
 
+/** The plan from EXPLAIN's `QUERY PLAN` rows, plus ANALYZE timings when present. */
+export function readPlan(rows: unknown[], format: "text" | "json"): { plan: string[] | unknown; timing?: { planningMs?: number; executionMs?: number } } {
+  const cells = rows.map((r) => (r && typeof r === "object" ? Object.values(r as Record<string, unknown>)[0] : r));
+  if (format === "json") {
+    let plan: unknown = cells[0];
+    if (typeof plan === "string") {
+      try {
+        plan = JSON.parse(plan);
+      } catch {
+        /* keep the text */
+      }
+    }
+    const top = Array.isArray(plan) ? (plan[0] as Record<string, unknown> | undefined) : undefined;
+    const timing: { planningMs?: number; executionMs?: number } = {};
+    if (typeof top?.["Planning Time"] === "number") timing.planningMs = top["Planning Time"] as number;
+    if (typeof top?.["Execution Time"] === "number") timing.executionMs = top["Execution Time"] as number;
+    return Object.keys(timing).length > 0 ? { plan, timing } : { plan };
+  }
+  const lines = cells.map((c) => String(c ?? ""));
+  const timing: { planningMs?: number; executionMs?: number } = {};
+  for (const l of lines) {
+    const m = /^\s*(Planning|Execution) Time:\s*([\d.]+)\s*ms/.exec(l);
+    if (m) timing[m[1] === "Planning" ? "planningMs" : "executionMs"] = Number(m[2]);
+  }
+  return Object.keys(timing).length > 0 ? { plan: lines, timing } : { plan: lines };
+}
+
 const command: CommandModule<SqlArgs, SqlData> = {
   schema: "ad.sql",
   // `tui` can start in, or switch to, update/insert/modify mode: always a write (explicit --env).
@@ -264,6 +328,24 @@ const command: CommandModule<SqlArgs, SqlData> = {
         // F2: refuse anything but a single read statement before any network call.
         assertReadOnlySql(parsed.positionals.query);
         return { action: "run", query: parsed.positionals.query, db: parsed.flags.db, raw: parsed.flags.raw };
+      case "explain": {
+        // 7.11: the explained statement must pass the read-only gate — ANALYZE really executes it.
+        const statement = parsed.positionals.query;
+        if (/^explain\b/i.test(checkReadOnlySql(statement).normalized)) {
+          throw new CliError("Pass the statement without EXPLAIN; use --analyze / --buffers / --format for the options.", {
+            code: "SQL_EXPLAIN_NESTED",
+          });
+        }
+        assertReadOnlySql(statement, "sql explain");
+        const f = parsed.flags;
+        if (f.buffers && !f.analyze) {
+          throw new CliError("--buffers needs --analyze (buffer counts come from executing the statement).", { code: "SQL_EXPLAIN_BUFFERS_NEEDS_ANALYZE" });
+        }
+        const explain = { statement, analyze: f.analyze, buffers: f.buffers, format: f.format as "text" | "json" };
+        const query = buildExplainSql(statement, explain);
+        assertReadOnlySql(query, "sql explain");
+        return { action: "explain", query, explain, db: f.db, raw: f.raw };
+      }
       case "update":
       case "insert":
       case "modify":
@@ -334,6 +416,35 @@ const command: CommandModule<SqlArgs, SqlData> = {
         raw: result.raw,
       };
 
+      return ok(data);
+    }
+
+    if (args.action === "explain") {
+      const [dbContext, executionContext] = await Promise.all([
+        resolveSqlDbContext({ requestedDb: args.db, envDefault, fallbackNickname: DEFAULT_SQL_DB_FALLBACK }),
+        loadSqlExecutionContext(),
+      ]);
+      const ex = args.explain!;
+      const result = await executeSqlReadQuery({
+        query: args.query as string,
+        database: dbContext.resolution.selected,
+        context: executionContext,
+        raw: args.raw,
+      });
+      const { plan, timing } = readPlan(result.rows, ex.format);
+      const data: SqlExplainData = {
+        action: "explain",
+        database: result.database,
+        selectedBy: dbContext.resolution.selectedBy,
+        statement: ex.statement,
+        query: result.query,
+        analyze: ex.analyze,
+        format: ex.format,
+        plan,
+        ...(timing ? { timing } : {}),
+        executionTime: result.executionTime,
+        raw: result.raw,
+      };
       return ok(data);
     }
 
@@ -499,6 +610,17 @@ const command: CommandModule<SqlArgs, SqlData> = {
         ui.object(data.rows);
       }
 
+      if (data.raw) {
+        ui.section("Raw Data");
+        ui.object(data.raw);
+      }
+      return;
+    }
+
+    if (data.action === "explain") {
+      ui.success(`EXPLAIN${data.analyze ? " ANALYZE" : ""} on '${data.database.nickname}'.`);
+      if (Array.isArray(data.plan) && data.plan.every((l) => typeof l === "string")) ui.text((data.plan as string[]).join("\n"));
+      else ui.object(data.plan);
       if (data.raw) {
         ui.section("Raw Data");
         ui.object(data.raw);
