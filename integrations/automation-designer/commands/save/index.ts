@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import { dirname } from "path";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { resolveMethodRef } from "@belzabar/core/platform";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { requireConfirmation } from "../../lib/args/confirm";
 import { saveOverlayV2, type SaveDryRunData, type SaveV2Data } from "../../lib/save/pipeline";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
@@ -24,7 +24,6 @@ export const args = defineArgs({
   command: "belz ad save",
   positionals: [{ name: "file" }],
   flags: {
-    ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
     ...VALIDATION_FLAGS,
     uuid: {
@@ -40,14 +39,12 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
-  schema: "ad.save",
   // ADW-R6: --dry-run-compile POSTs the executing /chain/test route (steps gated
   // off), so even a dry run with it must name --env explicitly.
   writes: (a) => !a.dryRun || a.dryRunCompile,
   requiresEnv: true, // --dry-run reads the target draft: never the default env silently
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "save", "save");
     const filePath = positionals.file ?? null;
     if (!filePath && flags.sqlFile.length === 0 && flags.codeFile.length === 0) {
       throw new CliError("Missing <file> argument (or --sql-file / --code-file).", { code: "MISSING_FILE" });

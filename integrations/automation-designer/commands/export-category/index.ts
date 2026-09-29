@@ -1,7 +1,6 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { fetchCategories, requireChainCategory, type Category } from "../../lib/categories";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface ExportCategoryArgs {
   ref: string;
@@ -23,14 +22,12 @@ interface ExportCategoryData {
 export const args = defineArgs({
   command: "belz ad export-category",
   positionals: [{ name: "category", required: true, missingCode: "MISSING_CATEGORY_ID", missingMessage: "Missing category (name, uuid or id) argument." }],
-  flags: { ...AD_COMMON_FLAGS, out: { type: "string" }, full: { type: "boolean" } },
+  flags: { out: { type: "string" }, full: { type: "boolean" } },
 });
 
 const command: CommandModule<ExportCategoryArgs, ExportCategoryData> = {
-  schema: "ad.export-category",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "export", "export-category");
     return { ref: positionals.category, outPath: flags.out, full: flags.full };
   },
   async execute({ ref, outPath, full }, context) {

@@ -1,6 +1,6 @@
 import { CliError, currentCacheEnv, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { normalizeUuid } from "@belzabar/core/platform";
 import { addMethodToIndex, invalidateMethodIndexEntry } from "../../lib/method-finder";
@@ -47,7 +47,6 @@ interface CreateDryRunData {
 export const args = defineArgs({
   command: "belz ad create",
   flags: {
-    ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
     ...VALIDATION_FLAGS,
     category: { type: "string", description: "Target category (or spec.category)" },
@@ -57,14 +56,12 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
-  schema: "ad.create",
   // ADW-R6: --dry-run-compile POSTs the executing /chain/test route (steps gated
   // off), so even a dry run with it must name --env explicitly.
   writes: (a) => !a.dryRun || a.dryRunCompile,
   requiresEnv: true, // --dry-run reads the target env (category, callee contracts): never the default silently
   parseArgs(argv) {
     const { flags } = args.parse(argv);
-    resolveAdCommon(flags, "save", "create");
     return {
       category: flags.category ?? null,
       dryRun: flags.dryRun,

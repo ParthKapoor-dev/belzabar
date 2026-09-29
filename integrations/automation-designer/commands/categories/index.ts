@@ -1,6 +1,5 @@
 import { type CommandModule, defineArgs, ok, parseFieldList, projectRow } from "@belzabar/core";
 import { fetchCategories, type Category } from "../../lib/categories";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 
 interface CategoriesArgs {
@@ -34,7 +33,6 @@ const UNFILTERED_HINT_AT = 25;
 export const args = defineArgs({
   command: "belz ad categories",
   flags: {
-    ...AD_COMMON_FLAGS,
     user: { type: "boolean" },
     system: { type: "boolean" },
     fields: { type: "string" },
@@ -45,10 +43,8 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<CategoriesArgs, CategoriesData> = {
-  schema: "ad.categories",
   parseArgs(argv) {
     const { flags } = args.parse(argv);
-    resolveAdCommon(flags, "category", "categories");
     parseFieldList(flags.fields, CATEGORY_FIELDS);
     const search = flags.search?.trim() || undefined;
     return { system: flags.system, user: flags.user, ...(search ? { search } : {}), ...(flags.fields !== undefined ? { fields: flags.fields } : {}) };

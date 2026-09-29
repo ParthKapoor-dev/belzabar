@@ -1,7 +1,6 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
 import { CliError, defineArgs, fail, ok, readJsonOrNull, type CommandModule } from "@belzabar/core";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { fetchRawMethod, testMethodMultipart } from "../../lib/api/v1";
 import { buildV1TestPayload, describeTestFailure, v1TestFormData } from "../../lib/payload-builder";
 import { resolveMethodRef } from "@belzabar/core/platform";
@@ -30,7 +29,6 @@ interface TestExecutionResponse {
 export const args = defineArgs({
   command: "belz ad run-suites",
   flags: {
-    ...AD_COMMON_FLAGS,
     "legacy-env": {
       type: "string",
       description: "Env that suites without an `env` field were saved for; they run only when it equals --env",
@@ -43,12 +41,10 @@ interface RunSuitesArgs {
 }
 
 const command: CommandModule<RunSuitesArgs, RunSuitesData> = {
-  schema: "ad.run-suites",
   // Executes every suite's chain (SQL/HTTP steps really run): explicit --env required.
   writes: true,
   parseArgs(argv) {
     const { flags } = args.parse(argv);
-    resolveAdCommon(flags, "test", "run-suites");
     return { legacyEnv: flags.legacyEnv?.trim() || undefined };
   },
   async execute({ legacyEnv }, context) {

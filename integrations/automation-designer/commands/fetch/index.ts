@@ -3,7 +3,7 @@ import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { fetchMethodChecked } from "../../lib/view-fetch";
 import { resolveMethodRef } from "@belzabar/core/platform";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { AD_V2_FLAG, apiVersionOf } from "../../lib/args/common";
 import type { HydratedMethod } from "../../lib/types/common";
 
 interface FetchMethodArgs {
@@ -35,15 +35,13 @@ interface FetchMethodData {
 export const args = defineArgs({
   command: "belz ad fetch",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
-  flags: { ...AD_COMMON_FLAGS, raw: { type: "boolean" } },
+  flags: { ...AD_V2_FLAG, raw: { type: "boolean" } },
 });
 
 const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
-  schema: "ad.fetch",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    const common = resolveAdCommon(flags, "fetch", "fetch");
-    return { uuid: resolveMethodRef(positionals.uuid), raw: flags.raw, apiVersion: common.apiVersion.version };
+    return { uuid: resolveMethodRef(positionals.uuid), raw: flags.raw, apiVersion: apiVersionOf(flags) };
   },
   async execute({ uuid, raw, apiVersion }, context) {
     const method = await fetchMethodChecked(uuid, apiVersion); // V1 serves soft-deleted methods

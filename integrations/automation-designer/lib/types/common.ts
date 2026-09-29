@@ -10,7 +10,8 @@
 // it from each parser. If it is wire-specific, keep the raw JSON in
 // `raw`/`raw` sub-fields and add a view-only helper in a parser file.
 
-import type { ApiVersion } from "../api-version";
+/** The AD wire format a method was read from. */
+export type ApiVersion = "v1" | "v2";
 
 /**
  * `UNKNOWN` means the wire carried neither `automationState` nor `state`.

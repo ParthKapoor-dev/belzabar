@@ -2,7 +2,6 @@ import { join } from "path";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
 
 interface SaveSuiteArgs {
@@ -23,17 +22,14 @@ export const args = defineArgs({
   command: "belz ad save-suite",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {
-    ...AD_COMMON_FLAGS,
     name: { type: "string", required: true, missingCode: "MISSING_SUITE_NAME", missingMessage: "--name argument is required." },
     inputs: { type: "string" },
   },
 });
 
 const command: CommandModule<SaveSuiteArgs, SaveSuiteData> = {
-  schema: "ad.save-suite",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "test", "save-suite");
     return { uuid: positionals.uuid, suiteName: flags.name, inputsFile: flags.inputs };
   },
   async execute({ uuid: uuidArg, suiteName, inputsFile }, context) {

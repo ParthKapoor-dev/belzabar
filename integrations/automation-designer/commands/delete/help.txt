@@ -15,7 +15,6 @@ Arguments:
 
 Flags:
   --yes, -y             Skip the confirmation prompt (required with --llm).
-  --v2                  Accepted for consistency (delete always uses V2).
   --help, -h            Show this help message.
 
 Global Flags:

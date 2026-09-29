@@ -54,7 +54,6 @@ function looksLikeFile(target: string): boolean {
 }
 
 const command: CommandModule<ValidateArgs, ValidateData> = {
-  schema: "ad.validate",
   writes: (a) => a.dryRunCompile,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);

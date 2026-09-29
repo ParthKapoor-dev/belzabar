@@ -1,7 +1,6 @@
 import { CliError, type CommandModule, defineArgs, type FieldSelection, ok, parseFieldList, projectRow } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { normalizeUuid } from "@belzabar/core/platform";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { abbreviate } from "../../lib/compact";
 import { scoreFuzzy } from "../../lib/method-finder";
 
@@ -94,7 +93,6 @@ export const args = defineArgs({
   positionals: [{ name: "service" }],
   flags: {
     all: { type: "boolean" },
-    ...AD_COMMON_FLAGS,
     internal: { type: "boolean" },
     search: { type: "string" },
     limit: { type: "number", integer: true, min: 1, max: 2000 },
@@ -131,10 +129,8 @@ export function rankServices<T extends { name: string; label: string; aliasNames
 }
 
 const command: CommandModule<ServicesArgs, ServicesData | ServiceMethodsData> = {
-  schema: "ad.services",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "list", "services");
     const service = positionals.service?.trim() || undefined;
     if (service && (flags.internal || flags.fields !== undefined)) {
       throw new CliError("--internal and --fields apply to the service list, not to one service's methods.", { code: "INVALID_ARGUMENT" });

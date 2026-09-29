@@ -19,7 +19,6 @@ Flags:
   --dry-run-compile     Also run the online checks (server compile dry run).
   --allow-preexisting   Publish even if the current published copy already has
                         the same validator errors (they block by default).
-  --v2                  Accepted for consistency (a notice is printed).
   --help, -h            Show this help message.
 
 Global Flags:

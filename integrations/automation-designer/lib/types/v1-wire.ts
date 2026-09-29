@@ -165,15 +165,3 @@ export interface V1AutomationDefinition {
   automationAuth?: { nickname: string };
   [extra: string]: unknown;
 }
-
-// ─── V1 save payload (what `POST /rest/api/automation/chain` expects) ────
-
-export interface V1SavePayload {
-  /** Stringified JSON of the inner definition. */
-  jsonDefinition: string;
-  category: { id: number; name: string };
-  methodDeprecated?: boolean;
-  version?: number;
-  id?: number;
-  uuid?: string;
-}

@@ -14,7 +14,6 @@ for and that equals --env. Re-save such suites with save-suite to pin the env.
 Flags:
   --legacy-env <env>  Run suites that carry no env as <env> suites; only when
                       <env> equals --env (otherwise they fail ENV_MISSING).
-  --v2                Accepted for consistency; suites run on V1 (with a notice).
   --help, -h          Show this help message.
 
 Global Flags:

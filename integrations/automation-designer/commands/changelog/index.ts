@@ -2,7 +2,7 @@ import { CliError, type CommandModule, defineArgs, ok, parseFieldList, projectRo
 import { adApi, type ChangelogEntry } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { resolveMethodRef } from "@belzabar/core/platform";
-import { AD_COMMON_FLAGS, AD_NOTE_FLAG, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_NOTE_FLAG, AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import type { HydratedMethod } from "../../lib/types/common";
 import { htmlToText } from "../../lib/compact";
@@ -68,15 +68,13 @@ function chainIdOf(method: HydratedMethod): number {
 export const args = defineArgs({
   command: "belz ad changelog",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
-  flags: { ...AD_COMMON_FLAGS, ...AD_NOTE_FLAG, ...AD_YES_FLAG, fields: { type: "string" } },
+  flags: { ...AD_NOTE_FLAG, ...AD_YES_FLAG, fields: { type: "string" } },
 });
 
 const command: CommandModule<ChangelogArgs, ChangelogData> = {
-  schema: "ad.changelog",
   writes: (a) => a.note !== undefined,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "list", "changelog") // changelog is V1-only: --v2 prints the fallback notice;
     const note = flags.note?.trim();
     if (flags.note !== undefined && !note) {
       throw new CliError('--note needs a non-empty text.', { code: "MISSING_CHANGE_NOTE" });

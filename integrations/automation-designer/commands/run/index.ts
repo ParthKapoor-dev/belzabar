@@ -1,5 +1,4 @@
 import { apiFetch, CliError, type CommandModule, defineArgs, ensureApiOk, ok } from "@belzabar/core";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { readStream } from "../../lib/stream-parser";
 import { adApi } from "../../lib/api/index";
 import { AD_LONG_OP_TIMEOUT_MS } from "../../lib/api/v1";
@@ -67,19 +66,16 @@ export const args = defineArgs({
     { name: "payload" },
   ],
   flags: {
-    ...AD_COMMON_FLAGS,
     raw: { type: "boolean" },
     stream: { type: "boolean" },
   },
 });
 
 const command: CommandModule<RunMethodArgs, RunMethodData> = {
-  schema: "ad.run",
   // Executes a live method with real side effects: explicit --env required.
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "run", "run");
     return {
       publishedId: positionals.publishedId,
       payloadArg: positionals.payload,

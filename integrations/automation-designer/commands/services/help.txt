@@ -30,7 +30,6 @@ Flags:
   --fields <a,b|all>    Pick row fields: name,id,uuid,systemUuid,label,type,
                         internalService,aliasNames,description,score; `all` =
                         full rows (untrimmed).
-  --v2                  Accepted for consistency; this command is V1-only (notice printed).
   --help, -h            Show this help message.
 
 Global Flags:

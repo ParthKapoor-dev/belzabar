@@ -7,7 +7,6 @@ Flags:
   --out <file>    Write the exported JSON to a file; the envelope then carries
                   only {id, uuid, writtenTo, bytes, methods} (no body).
   --full          With --out: also include the body (`preview`) in the output.
-  --v2            Accepted for consistency; always V1 (a notice is printed)
   --llm           Emit a JSON envelope with {id, uuid, writtenTo, bytes, methods, preview}
 
 Examples:

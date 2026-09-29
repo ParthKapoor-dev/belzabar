@@ -2,7 +2,7 @@ import { CliError, type CommandModule, defineArgs, isObj, ok } from "@belzabar/c
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { resolveMethodRef } from "@belzabar/core/platform";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { fingerprintMethod } from "../../lib/fingerprint";
 import * as v2 from "../../lib/api/v2";
@@ -48,7 +48,6 @@ export const args = defineArgs({
   command: "belz ad publish",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
   flags: {
-    ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
     ...VALIDATION_FLAGS,
     "allow-preexisting": { type: "boolean", description: "Publish even if the published copy already has the same validator errors" },
@@ -62,11 +61,9 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<PublishArgs, PublishData> = {
-  schema: "ad.publish",
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "publish", "publish");
     return {
       uuid: positionals.uuid,
       yes: flags.yes,

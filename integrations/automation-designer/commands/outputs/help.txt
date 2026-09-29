@@ -9,7 +9,6 @@ Arguments:
   <uuid>   Method uuid (any spelling or AD URL).
 
 Flags:
-  --v2     Accepted for consistency (outputs always reads V2 first).
   --help, -h  Show this help message.
 
 Global Flags:

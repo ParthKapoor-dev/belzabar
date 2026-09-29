@@ -1,7 +1,7 @@
 import { resolve } from "path";
 import { CliError, type CommandModule, defineSubcommands, failWithData, ok, readJsonInput } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { loadTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
@@ -110,39 +110,38 @@ const CASE_FLAGS = {
 
 export const args = defineSubcommands(
   {
-    list: { positionals: [UUID], flags: { ...AD_COMMON_FLAGS } },
+    list: { positionals: [UUID], flags: {} },
     create: {
       positionals: [UUID],
-      flags: { ...AD_COMMON_FLAGS, ...CASE_FLAGS, name: { type: "string" }, description: { type: "string", allowEmpty: true }, ...AD_YES_FLAG },
+      flags: { ...CASE_FLAGS, name: { type: "string" }, description: { type: "string", allowEmpty: true }, ...AD_YES_FLAG },
       requireOneOf: [["file", "name"]],
       codes: { MISSING_FLAG: "MISSING_FILE", MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "INVALID_ACTION" },
     },
     update: {
       positionals: [UUID, TC_ID],
-      flags: { ...AD_COMMON_FLAGS, ...CASE_FLAGS, ...AD_YES_FLAG },
+      flags: { ...CASE_FLAGS, ...AD_YES_FLAG },
       requireOneOf: [["file", "input", "assert"]],
     },
-    delete: { positionals: [TC_ID], flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG } },
+    delete: { positionals: [TC_ID], flags: { ...AD_YES_FLAG } },
     bulk: {
       positionals: [UUID],
-      flags: { ...AD_COMMON_FLAGS, file: { type: "string", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing --file argument." }, ...AD_YES_FLAG },
+      flags: { file: { type: "string", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing --file argument." }, ...AD_YES_FLAG },
     },
-    "run-suite": { positionals: [UUID], flags: { ...AD_COMMON_FLAGS, wait: { type: "boolean" }, ...AD_YES_FLAG } },
+    "run-suite": { positionals: [UUID], flags: { wait: { type: "boolean" }, ...AD_YES_FLAG } },
     "delete-suite": {
       positionals: [{ name: "test-suite-id", required: true, missingCode: "MISSING_SUITE_ID", missingMessage: "Missing <testSuiteId>." }],
-      flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG },
+      flags: { ...AD_YES_FLAG },
     },
     export: {
       positionals: [UUID],
       flags: {
-        ...AD_COMMON_FLAGS,
         dir: { type: "string", required: true, missingCode: "MISSING_DIR", missingMessage: "Missing --dir <root>." },
         prune: { type: "boolean" },
       },
     },
     sync: {
       positionals: [{ name: "dir", required: true, missingCode: "MISSING_DIR", missingMessage: "Missing <methodDir>." }],
-      flags: { ...AD_COMMON_FLAGS, uuid: { type: "string" }, apply: { type: "boolean" }, prune: { type: "boolean" }, ...AD_YES_FLAG },
+      flags: { uuid: { type: "string" }, apply: { type: "boolean" }, prune: { type: "boolean" }, ...AD_YES_FLAG },
     },
   },
   {
@@ -199,12 +198,10 @@ async function fetchContract(uuid: string): Promise<HydratedMethod> {
 }
 
 const command: CommandModule<TestCaseArgs, TestCaseData> = {
-  schema: "ad.test-case",
   writes: (a) => !["list", "export", "sync"].includes(a.action) || (a.action === "sync" && !!a.apply),
   requiresEnv: (a) => a.action === "sync", // the sync plan previews writes on the target env
   parseArgs(argv) {
     const p = args.parse(argv);
-    resolveAdCommon(p.flags, "testCase", "test-case");
     const base = { yes: false };
     switch (p.subcommand) {
       case "list":

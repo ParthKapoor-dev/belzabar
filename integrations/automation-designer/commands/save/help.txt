@@ -81,7 +81,6 @@ Flags:
   --dry-run-compile     Also run the online checks (server compile dry run:
                         POSTs the executing /chain/test route with every step
                         gated off, so --dry-run then counts as a write).
-  --v2                  Accepted for consistency (save always uses V2).
   --help, -h            Show this help message.
 
 Global Flags:

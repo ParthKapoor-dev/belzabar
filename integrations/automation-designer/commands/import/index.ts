@@ -1,7 +1,7 @@
 import { readFile } from "fs/promises";
 import { CliError, type CommandModule, currentCacheEnv, defineArgs, isObj, ok } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { dropMethodIndex } from "../../lib/method-finder";
 import { CacheManager } from "../../lib/cache";
@@ -35,18 +35,15 @@ export const args = defineArgs({
   command: "belz ad import",
   positionals: [{ name: "file", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing <file> argument." }],
   flags: {
-    ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
     "no-validate": { type: "boolean", description: "Skip the validator on V2 records. Logged loudly; not recommended" },
   },
 });
 
 const command: CommandModule<ImportArgs, ImportData> = {
-  schema: "ad.import",
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "import", "import");
     return { filePath: positionals.file, yes: flags.yes, noValidate: flags.noValidate };
   },
   async execute({ filePath, yes, noValidate }, context) {

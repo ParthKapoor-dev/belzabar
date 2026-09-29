@@ -1,8 +1,7 @@
 // V2 Automation Designer reads: the raw `GET /chain/v2/{uuid}` body.
 // `adApi.fetchMethod(uuid, "v2")` parses it; the save / create / delete
 // pipeline (lib/save/, the only write route) reads it through
-// fetchRawMethod too. Writes live in lib/save/api.ts. Other operations are
-// V1-only; SUPPORTED_VERSIONS in api-version.ts gates `--v2`.
+// fetchRawMethod too. Writes live in lib/save/api.ts; other reads are V1.
 
 import { apiFetch, CliError, currentCacheEnv, ensureApiOk, expectJson } from "@belzabar/core";
 import { markMethodGone, unmarkMethodGone } from "../method-finder";

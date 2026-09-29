@@ -14,7 +14,6 @@ Flags:
                       chainCategoryId,chainCategoryUuid,label; `all` = full
                       rows. Default: id, uuid, name, type, systemId (empty
                       values omitted).
-  --v2                Accepted for consistency; categories always use V1 (a notice is printed)
   --help, -h          Show this help message.
 
 Global Flags:

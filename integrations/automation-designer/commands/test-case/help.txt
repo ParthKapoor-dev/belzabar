@@ -47,7 +47,6 @@ Flags:
   --prune               export: delete case files no longer on the server;
                         sync: delete server cases that have no file.
   --yes, -y             Skip the interactive confirmation prompt (write actions)
-  --v2                  Accepted for consistency; V1-only (notice printed)
   --help, -h            Show this help message.
 
 Global Flags:

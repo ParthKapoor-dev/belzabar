@@ -7,7 +7,7 @@
 //   3 existing-service steps + 1 custom-code step.
 
 import { describe, expect, test, beforeAll } from "bun:test";
-import { parseV1Method, parseMethod } from "../../lib/parser/index";
+import { parseV1Method } from "../../lib/parser/index";
 import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
 
 const FIXTURE = `${import.meta.dir}/../fixtures/real-v1/4b108b0554b0daa963f4bd6985f0de52.v1.json`;
@@ -85,10 +85,6 @@ describe("parseV1Method (real wire)", () => {
 
   test("parseWarnings is empty for a clean real body", () => {
     expect(parseV1Method(raw).parseWarnings).toEqual([]);
-  });
-
-  test("parseMethod façade dispatches v1 by default", () => {
-    expect(parseMethod(raw, "v1").sourceVersion).toBe("v1");
   });
 
   test("malformed jsonDefinition adds a warning instead of throwing", () => {

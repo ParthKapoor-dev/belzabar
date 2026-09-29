@@ -1,5 +1,5 @@
 import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { fetchSqlDatabases } from "../../lib/sql/api";
 import {
   executeSqlReadQuery,
@@ -198,15 +198,14 @@ function queryPositional(action: string, example: string) {
 
 export const args = defineSubcommands(
   {
-    dbs: { flags: { ...AD_COMMON_FLAGS, ...RAW_FLAG } },
+    dbs: { flags: { ...RAW_FLAG } },
     run: {
       positionals: queryPositional("run", "select * from users limit 1"),
-      flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG },
+      flags: { ...DB_FLAG, ...RAW_FLAG },
     },
     explain: {
       positionals: queryPositional("explain", "select * from users where id = 1"),
       flags: {
-        ...AD_COMMON_FLAGS,
         ...DB_FLAG,
         ...RAW_FLAG,
         analyze: { type: "boolean" },
@@ -216,19 +215,18 @@ export const args = defineSubcommands(
     },
     update: {
       positionals: queryPositional("update", "UPDATE table SET col = val WHERE ..."),
-      flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
     },
     insert: {
       positionals: queryPositional("insert", "INSERT INTO table (col) VALUES ('val')"),
-      flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
     },
     modify: {
       positionals: queryPositional("modify", "ALTER TABLE users ADD COLUMN age INT"),
-      flags: { ...AD_COMMON_FLAGS, ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
     },
     tui: {
       flags: {
-        ...AD_COMMON_FLAGS,
         ...DB_FLAG,
         mode: { type: "string" },
         format: { type: "string", default: "table" },
@@ -312,12 +310,10 @@ export function readPlan(rows: unknown[], format: "text" | "json"): { plan: stri
 }
 
 const command: CommandModule<SqlArgs, SqlData> = {
-  schema: "ad.sql",
   // `tui` can start in, or switch to, update/insert/modify mode: always a write (explicit --env).
   writes: (a) => a.action === "update" || a.action === "insert" || a.action === "modify" || a.action === "tui",
   parseArgs(argv) {
     const parsed = args.parse(argv);
-    resolveAdCommon(parsed.flags, "list", "sql");
 
     switch (parsed.subcommand) {
       case "dbs":

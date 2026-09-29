@@ -5,7 +5,6 @@
 // documented in lib/callers.ts.
 
 import { CliError, defineArgs, lifecycle, ok, type CommandModule } from "@belzabar/core";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { loadDirtyMethods, loadOrBuildMethodFinderIndex, METHOD_FINDER_SCHEMA } from "../../lib/method-finder";
 import {
@@ -55,7 +54,6 @@ export const args = defineArgs({
     { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." },
   ],
   flags: {
-    ...AD_COMMON_FLAGS,
     category: { type: "string" },
     all: { type: "boolean" },
     pd: { type: "boolean" },
@@ -65,10 +63,8 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<CallersArgs, CallersData> = {
-  schema: "ad.callers",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "list", "callers");
     const categories = (flags.category ?? "").split(",").map((c) => c.trim()).filter(Boolean);
     if (flags.category !== undefined && categories.length === 0) {
       throw new CliError("--category needs at least one category name.", { code: "MISSING_VALUE" });

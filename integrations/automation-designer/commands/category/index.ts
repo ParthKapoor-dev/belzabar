@@ -1,6 +1,6 @@
 import { defineSubcommands, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 
 interface CategoryArgs {
@@ -22,7 +22,6 @@ export const args = defineSubcommands(
     create: {
       positionals: [{ name: "name", required: true, missingCode: "MISSING_NAME", missingMessage: "Missing category <name>." }],
       flags: {
-        ...AD_COMMON_FLAGS,
         ...AD_YES_FLAG,
         description: { type: "string" },
         private: { type: "boolean" },
@@ -37,11 +36,9 @@ export const args = defineSubcommands(
 );
 
 const command: CommandModule<CategoryArgs, CategoryData> = {
-  schema: "ad.category",
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "category", "category");
     return {
       action: "create",
       name: positionals.name,

@@ -3,7 +3,7 @@ import { CliError, type CommandModule, Config, defineArgs, ok, openUrlInBrowser,
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { AD_V2_FLAG, apiVersionOf } from "../../lib/args/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { abbreviate, htmlToText, pruneEmpty } from "../../lib/compact";
 import { parseV1Method, parseV2Method } from "../../lib/parser/index";
@@ -355,7 +355,7 @@ export const args = defineArgs({
     { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." },
   ],
   flags: {
-    ...AD_COMMON_FLAGS,
+    ...AD_V2_FLAG,
     code: { type: "boolean" },
     sql: { type: "boolean" },
     outputs: { type: "boolean" },
@@ -384,10 +384,8 @@ export function stepTableRows(steps: Array<{ orderIndex: number; kind: ParsedSte
 }
 
 const command: CommandModule<ShowMethodArgs, ShowData> = {
-  schema: "ad.show",
   parseArgs(argv) {
     const { positionals, flags: f } = args.parse(argv);
-    const common = resolveAdCommon(f, "fetch", "show");
     const target: ShowTarget = looksLikeFile(positionals.uuid)
       ? { kind: "file", path: positionals.uuid }
       : { kind: "uuid", uuid: resolveMethodRef(positionals.uuid) };
@@ -406,7 +404,7 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       compact: f.compact,
       story: f.story,
     };
-    return { target, flags, apiVersion: common.apiVersion.version };
+    return { target, flags, apiVersion: apiVersionOf(f) };
   },
   async execute({ target, flags, apiVersion }, context) {
     let method: HydratedMethod;

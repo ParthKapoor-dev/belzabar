@@ -29,7 +29,6 @@ Flags:
                         httpRequests executing the method (2 large list reads,
                         cached 1 h).
   --refresh             Rebuild the method index (and the PD reference index).
-  --v2                  Accepted for consistency; ignored.
   --help, -h            Show this help message.
 
 Global Flags:

@@ -19,7 +19,6 @@ Flags:
                         numeric API id, and the service's auth accounts as
                         `id nickname (scope)` (never field values).
   --all                 With --shape: also list inputs/outputs hidden in the UI.
-  --v2                  Accepted for consistency; always V1 (a notice is printed).
   --help, -h            Show this help message.
 
 Global Flags:

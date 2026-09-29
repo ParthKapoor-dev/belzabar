@@ -27,7 +27,6 @@ Flags:
                         active env (--env, else your default env).
   --envs <a,b,...>      Comma-separated envs to locate the method on (the spine
                         env is always included). Default: the spine's project.
-  --v2                  Accepted for consistency; ignored by trace (notice if unsupported).
   --help, -h            Show this help message.
 
 Global Flags:

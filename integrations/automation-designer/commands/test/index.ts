@@ -3,7 +3,7 @@ import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@bel
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
 import { resolveMethodRef } from "@belzabar/core/platform";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { requireConfirmation } from "../../lib/args/confirm";
 import {
   counterpart,
@@ -38,7 +38,6 @@ interface TestMethodArgs {
   yes: boolean;
   verbose: boolean;
   raw: boolean;
-  force: boolean;
 }
 
 interface ExpectationBlock {
@@ -90,7 +89,6 @@ export const args = defineArgs({
   command: "belz ad test",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {
-    ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
     inputs: { type: "string" },
     input: { type: "string", repeatable: true },
@@ -101,8 +99,6 @@ export const args = defineArgs({
     // the runner hands `--verbose`/`-v` to this command.
     verbose: { type: "boolean", alias: ["-v"] },
     raw: { type: "boolean" },
-    // Removed no-op kept so old scripts/skills (`--force`) don't hit UNKNOWN_FLAG.
-    force: { type: "boolean", hidden: true },
   },
   exclusive: [["inputs", "case"]],
 });
@@ -145,12 +141,10 @@ function requireInputs(method: HydratedMethod, values: Record<string, unknown>, 
 }
 
 const command: CommandModule<TestMethodArgs, TestMethodData> = {
-  schema: "ad.test",
   // Executes the chain: SQL/HTTP steps really run (and commit), so an explicit --env is required.
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "test", "test");
     // Fail on a malformed --expect before anything runs.
     for (const e of flags.expect) parseExpectation(e);
     return {
@@ -163,11 +157,9 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       yes: flags.yes,
       verbose: flags.verbose,
       raw: flags.raw,
-      force: flags.force,
     };
   },
   async execute(a, context) {
-    if (a.force) context.warn("--force is deprecated and does nothing (ad test never used the cache).");
     const uuid = resolveMethodRef(a.uuid);
     // V1 fetch: the test body is the fetched definition (test-before-save).
     const given = await adApi.fetchMethod(uuid, "v1");

@@ -31,9 +31,9 @@ describe("strict flags (AD-29)", () => {
     expect(code(() => parse(diff, ["u", "--from", "x"]))).toBe("INVALID_VALUE");
   });
 
-  test("--v2 is accepted everywhere (AD-37)", () => {
-    expect(parse(find, ["--v2", "foo"]).query).toBe("foo");
-    expect(parse(categories, ["--v2"])).toEqual({ system: false, user: false });
+  test("--v2 exists only on commands that fetch a method", () => {
+    expect(code(() => parse(find, ["--v2", "foo"]))).toBe("UNKNOWN_FLAG");
+    expect(code(() => parse(categories, ["--v2"]))).toBe("UNKNOWN_FLAG");
   });
 });
 

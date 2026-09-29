@@ -63,7 +63,6 @@ Flags (tui):
   --no-history        Disable persisted query history for this session.
 
 Flags (all subcommands):
-  --v2                Accepted for consistency; SQL runs through V1 (notice printed).
 
 TUI meta commands:
   \q  \h  \status  \db  \use <db>  \mode [read|insert|update|modify]  \history  \clear  \timing  \format [table|json]  \last  \r

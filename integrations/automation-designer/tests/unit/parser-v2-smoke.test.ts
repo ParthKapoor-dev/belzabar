@@ -7,7 +7,7 @@
 //   4b108b0554b0…  PUBLISHED (has referenceId), Schools, custom-code step
 
 import { describe, expect, test, beforeAll } from "bun:test";
-import { parseV2Method, parseMethod } from "../../lib/parser/index";
+import { parseV2Method } from "../../lib/parser/index";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 import { jsonFixtures } from "@belzabar/core/testing";
 
@@ -70,10 +70,6 @@ describe("parseV2Method (real wire)", () => {
     expect(ccRaw.automationApiId).toMatch(/^[0-9a-f]{32}\s+$/);
     expect(ccRaw.steps![0]!.id as unknown as string).toMatch(/\s+$/);
     expect(() => parseV2Method(ccRaw)).not.toThrow();
-  });
-
-  test("parseMethod('v2') dispatches V2 parser", () => {
-    expect(parseMethod(echoRaw, "v2").sourceVersion).toBe("v2");
   });
 
   // AD-35: the uuid is the top-level wire field (metadata has none).

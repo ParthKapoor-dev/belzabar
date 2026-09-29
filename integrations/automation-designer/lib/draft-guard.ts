@@ -11,9 +11,7 @@
 // and refuse to proceed on a non-ok result.
 
 import { adApi } from "./api/index";
-import type { ApiVersion } from "./api-version";
-import { DEFAULT_VERSION } from "./api-version";
-import type { HydratedMethod, MethodState } from "./types/common";
+import type { ApiVersion, HydratedMethod, MethodState } from "./types/common";
 
 /**
  * Every result also carries `initial`: the method exactly as fetched for the
@@ -83,7 +81,7 @@ function defaultDeps(version: ApiVersion): ResolveDraftTargetDeps {
  */
 export async function resolveDraftTarget(
   inputUuid: string,
-  version: ApiVersion = DEFAULT_VERSION.fetch,
+  version: ApiVersion = "v1",
   deps: ResolveDraftTargetDeps = defaultDeps(version),
 ): Promise<DraftGuardResult> {
   const initial = await deps.fetchMethod(inputUuid);

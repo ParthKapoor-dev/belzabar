@@ -9,11 +9,10 @@ where the footguns live.
 
 ## TL;DR
 
-- **V1 is the default** for reads, test and publish; V2 is opt-in via `--v2`.
-  `save`, `create` and `delete` always use V2 (`/chain/v2`, D1); the V1 save
-  route was removed.
-- Every AD command accepts `--v2`. When the selected operation does not
-  implement V2 the CLI prints a one-line fallback warning and runs V1.
+- **V1 is the default** for reads, test and publish. `fetch`, `show` and
+  `show-code` take `--v2` to read the method through the V2 API instead.
+  `save`, `create` and `delete` always use V2 (`/chain/v2`); belz has no V1
+  save route. Every other command talks to the one route it needs.
 - All parser output is a single shape (`HydratedMethod` / `ParsedStep` in
   `lib/types/common.ts`). Commands never see raw wire types.
 - All write paths pass through `resolveDraftTarget` in `lib/draft-guard.ts`.
@@ -23,12 +22,11 @@ where the footguns live.
 
 | Concern | File |
 |---|---|
-| Version enum, defaults, resolver | `lib/api-version.ts` |
-| Shared `--v2` / `--env` flag parser | `lib/args/common.ts` |
+| `--v2` flag and `apiVersionOf` | `lib/args/common.ts` |
 | In-memory types (what commands see) | `lib/types/common.ts` |
 | V1 raw wire shapes | `lib/types/v1-wire.ts` |
 | V2 raw wire shapes | `lib/types/v2-wire.ts` |
-| Parser façade (`parseMethod`) | `lib/parser/index.ts` |
+| Parser entry points (`parseV1Method`, `parseV2Method`) | `lib/parser/index.ts` |
 | V1 method parser | `lib/parser/v1.ts` |
 | V2 method parser | `lib/parser/v2.ts` |
 | V1 step parser | `lib/parser/steps/v1.ts` |
@@ -42,32 +40,21 @@ where the footguns live.
 | Draft-safety guard | `lib/draft-guard.ts` |
 | base64 helper | `lib/base64.ts` |
 
-## Version resolution
+## Version selection
 
-Every operation is a member of `AdOperation` (fetch, list, save, publish, test,
-run, export, import, testCase, category, childInfo). Two tables live in
-`lib/api-version.ts`:
+`ApiVersion` (`"v1" | "v2"`) lives in `lib/types/common.ts`. Only the commands
+that read a method definition (`fetch`, `show`, `show-code`) spread
+`AD_V2_FLAG` and pass `apiVersionOf(flags)` to `adApi.fetchMethod`. Every other
+command calls the wire module for its route directly.
 
-- `DEFAULT_VERSION[op]` — the version used when the caller does not pass `--v2`.
-  **To flip the default for an op, change one cell here.**
-- `SUPPORTED_VERSIONS[op]` — which versions belz actually implements for that op.
-  If the user passes `--v2` for an op that is V1-only, `resolveApiVersion` warns
-  and returns `{version: "v1", wasFallback: true, requested: "v2"}`.
+### Adding V2 support to another read
 
-`lib/args/common.ts:parseAdCommonArgs(argv, op, cmdName)` strips `--v2` from
-argv and returns a resolved version. Every AD command calls this once at the
-top of `parseArgs()`. Commands never read the flag directly and never touch
-`DEFAULT_VERSION` — they take the resolved version.
-
-### Adding V2 support to a new operation
-
-1. Add `"v2"` to `SUPPORTED_VERSIONS[op]` in `lib/api-version.ts`.
-2. Add a verb to `lib/api/v2.ts` that hits the V2 endpoint and returns either a
+1. Add a verb to `lib/api/v2.ts` that hits the V2 endpoint and returns either a
    `HydratedMethod` (via `parseV2Method`) or a typed response.
-3. Update `lib/api/index.ts:adApi.<verb>` to dispatch by version.
+2. Update `lib/api/index.ts:adApi.<verb>` to dispatch by version.
+3. Spread `AD_V2_FLAG` in the command's args and document `--v2` in its
+   help.txt and desc.txt.
 4. Commit a smoke fixture under `tests/fixtures/v2/` and a smoke test.
-5. Optionally flip `DEFAULT_VERSION[op]` to `"v2"` once the V2 path is battle-
-   tested.
 
 ## V1 vs V2 — what actually differs (quick reference)
 
@@ -86,8 +73,7 @@ top of `parseArgs()`. Commands never read the flag directly and never touch
 
 belz's **default choice is V1** for almost everything because V1 supports test-
 before-save (the developer loop) and returns a rich per-step trace. V2 is
-better when you need to verify the saved, live method runs under the real wire
-format — that is why `test --v2` exists as an opt-in.
+better when you need to see the saved method exactly as the V2 wire holds it.
 
 ## Parser rules (the thing belz used to get wrong)
 

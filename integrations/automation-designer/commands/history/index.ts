@@ -1,6 +1,6 @@
 import { CliError, defineSubcommands, failWithData, ok, type CommandModule, type CommandResult } from "@belzabar/core";
 import { adApi, type MethodVersionSummary, type MethodVersionFull } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
 import { diffPaths, fingerprintMethod, fingerprintProjection, parseVersionBody } from "../../lib/fingerprint";
 import { resolveDraftTarget } from "../../lib/draft-guard";
@@ -144,17 +144,16 @@ const VERSION_FLAG = {
 
 export const args = defineSubcommands(
   {
-    list: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS } },
-    show: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS, version: VERSION_FLAG, full: { type: "boolean" } } },
+    list: { positionals: UUID_ARG, flags: {} },
+    show: { positionals: UUID_ARG, flags: { version: VERSION_FLAG, full: { type: "boolean" } } },
     diff: {
       positionals: UUID_ARG,
       flags: {
-        ...AD_COMMON_FLAGS,
         from: { ...VERSION_FLAG, missingMessage: "--from <N> and --to <M> are required for 'history diff'." },
         to: { ...VERSION_FLAG, missingMessage: "--from <N> and --to <M> are required for 'history diff'." },
       },
     },
-    restore: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG, version: VERSION_FLAG } },
+    restore: { positionals: UUID_ARG, flags: { ...AD_YES_FLAG, version: VERSION_FLAG } },
   },
   {
     command: "belz ad history",
@@ -169,11 +168,9 @@ export const args = defineSubcommands(
 );
 
 const command: CommandModule<HistoryArgs, HistoryData> = {
-  schema: "ad.history",
   writes: (a) => a.action === "restore",
   parseArgs(argv) {
     const parsed = args.parse(argv);
-    resolveAdCommon(parsed.flags, "list", "history"); // history is V1-only: --v2 prints the fallback notice
     const base = { action: parsed.subcommand, uuid: parsed.positionals.uuid };
     switch (parsed.subcommand) {
       case "list":

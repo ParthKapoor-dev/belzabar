@@ -1,5 +1,4 @@
 import { CliError, type CommandModule, defineSubcommands, type FieldSelection, type FlagsSpec, lifecycle, ok, openUrlInBrowser, parseFieldList, projectRow } from "@belzabar/core";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { abbreviate } from "../../lib/compact";
 import { spawn } from "node:child_process";
 import {
@@ -168,7 +167,6 @@ export function subcommandFirst(argv: readonly string[]): string[] {
 }
 
 const FIND_FLAGS = {
-  ...AD_COMMON_FLAGS,
   refresh: { type: "boolean" },
   raw: { type: "boolean" },
   open: { type: "boolean" },
@@ -188,11 +186,9 @@ export const args = defineSubcommands(
 );
 
 const command: CommandModule<FindArgs, FindData> = {
-  schema: "ad.find",
   parseArgs(argv) {
     const parsed = args.parse(subcommandFirst(argv));
     const { refresh, raw, open, limit, describe, category } = parsed.flags;
-    resolveAdCommon(parsed.flags, "list", "find");
     const query = parsed.subcommand === "list" ? "" : parsed.positionals.query.join(" ").trim();
     if (describe && (parsed.subcommand !== "search" || !query)) {
       throw new CliError("--describe needs search words: `belz ad find --describe <text>`.", { code: "MISSING_QUERY" });

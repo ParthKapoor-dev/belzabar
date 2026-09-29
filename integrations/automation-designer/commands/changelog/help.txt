@@ -19,7 +19,6 @@ Flags:
                    Pick entry fields: id,when,author,note,type,html,user,
                    createdAt; `all` = the server's entries unchanged.
                    Default: id, when (ISO), author, note (plain text).
-  --v2             Accepted for consistency; always V1 (a notice is printed).
   --llm            Emit a JSON envelope.
 
 Which chain: a listing reads the chain of the uuid you pass (draft and

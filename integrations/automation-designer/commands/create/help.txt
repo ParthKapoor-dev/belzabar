@@ -37,7 +37,7 @@ Compact spec (belz expands it to the full V2 body with UI defaults):
   would drop them). Custom-code outputs get elementToRetrieve when there are
   several. See `belz ad save --help` for the same format in structural edits.
 
-A V2 method body (e.g. from `belz ad fetch <uuid> --v2`) or a subset of it
+A V2 method body (e.g. the V2 `data.raw` of `belz ad fetch`) or a subset of it
 works too: server-owned keys (uuid, ids, metadata state/version/service,
 changelogs, permissions…) are dropped and listed in `dropped`; step ids and
 method-level uuids are minted by the server. Raw and compact steps can mix.
@@ -57,7 +57,6 @@ Flags:
   --dry-run-compile     Also run the online checks (server compile dry run:
                         POSTs the executing /chain/test route with every step
                         gated off, so --dry-run then counts as a write).
-  --v2                  Accepted for consistency (create always uses V2).
   --help, -h            Show this help message.
 
 Global Flags:

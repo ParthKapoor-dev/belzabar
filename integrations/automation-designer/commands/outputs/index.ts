@@ -2,7 +2,6 @@ import { type CommandModule, defineArgs, isObj, ok, str } from "@belzabar/core";
 import { fetchViewMethod } from "../../lib/view-fetch";
 import type { ParsedStep } from "../../lib/types/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface OutputsArgs {
   uuid: string;
@@ -51,14 +50,12 @@ export function stepOutputRows(steps: ParsedStep[], declared: { outputs: string[
 export const args = defineArgs({
   command: "belz ad outputs",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
-  flags: { ...AD_COMMON_FLAGS },
+  flags: {},
 });
 
 const command: CommandModule<OutputsArgs, OutputsData> = {
-  schema: "ad.outputs",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "fetch", "outputs");
     return { uuid: resolveMethodRef(positionals.uuid) };
   },
   async execute({ uuid }, context) {

@@ -1,6 +1,5 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { apiShape, fetchAccountLines, type ApiShape } from "../../lib/api-shape";
 import { trimUuidPadding } from "@belzabar/core/platform";
 
@@ -26,17 +25,14 @@ export const args = defineArgs({
     { name: "method-name", required: true, missingCode: "MISSING_METHOD_NAME", missingMessage: "Missing <method-name> argument." },
   ],
   flags: {
-    ...AD_COMMON_FLAGS,
     shape: { type: "boolean" },
     all: { type: "boolean" },
   },
 });
 
 const command: CommandModule<ChildInfoArgs, ChildInfoPayload> = {
-  schema: "ad.child-info",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "childInfo", "child-info");
     if (flags.all && !flags.shape) {
       throw new CliError("--all only applies with --shape.", { code: "INVALID_ARGUMENT" });
     }

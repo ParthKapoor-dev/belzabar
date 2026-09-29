@@ -1,5 +1,4 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { loadTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
 
@@ -12,14 +11,12 @@ type TestCasesData = TestSuiteSummary;
 export const args = defineArgs({
   command: "belz ad test-cases",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
-  flags: { ...AD_COMMON_FLAGS },
+  flags: {},
 });
 
 const command: CommandModule<TestCasesArgs, TestCasesData> = {
-  schema: "ad.test-cases",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "testCase", "test-cases");
     return { uuid: positionals.uuid };
   },
   async execute({ uuid: uuidArg }) {

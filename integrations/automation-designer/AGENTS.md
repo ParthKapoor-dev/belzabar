@@ -21,8 +21,7 @@ commands/<name>/       index.ts (args + CommandModule), help.txt, desc.txt
 lib/
   api/                 adApi façade: index.ts dispatches, v1.ts / v2.ts wire calls,
                        changelog.ts (change notes, /users/me)
-  api-version.ts       AdOperation → DEFAULT_VERSION / SUPPORTED_VERSIONS (save = v2, rest v1)
-  args/common.ts       AD_COMMON_FLAGS (--v2), AD_YES_FLAG, AD_NOTE_FLAG, resolveAdCommon
+  args/common.ts       AD_V2_FLAG (--v2) + apiVersionOf, AD_YES_FLAG, AD_NOTE_FLAG
   args/confirm.ts      confirmation prompt for writes (--yes; mandatory in --llm)
   types/               common.ts = HydratedMethod / ParsedStep (commands import ONLY this);
                        v1-wire.ts / v2-wire.ts = raw wire (parsers, serializer, api only)
@@ -128,10 +127,10 @@ all of them together.
   - `HISTORY_*`, `RESTORE_UNCONFIRMED`
   - `SQL_*`
   - `AD_CONFIRMATION_REQUIRED` (in `--llm` without `--yes`)
-- Every command accepts `--v2`. `resolveAdCommon(flags, op, cmd)` resolves it through
-  `lib/api-version.ts`. If the operation has no V2 path, it falls back to V1 and
-  prints a one-line notice on stderr. To flip a default, edit one cell of
-  `DEFAULT_VERSION`. `save`, `create` and `delete` always use V2.
+- `--v2` exists only on the commands that read a method (`fetch`, `show`,
+  `show-code`): they spread `AD_V2_FLAG` and pass `apiVersionOf(flags)` to
+  `adApi.fetchMethod`. Reads default to V1; `save`, `create` and `delete` always
+  use V2.
 - Any command that takes a method uuid parses it with `resolveMethodRef`.
 - Never call `response.json()` on a server response. V1 routes go through
   `lib/api/v1.ts:readJson` (status check + core `readJsonOrNull`): a 2xx with an
@@ -380,7 +379,7 @@ literals — and splices the result into the SQL before the DB runs it. `EXPLAIN
 ## Adding or changing a command
 1. Create `commands/<name>/index.ts`:
    - Export `args` built with core `defineArgs` / `defineSubcommands`, spreading
-     `AD_COMMON_FLAGS` (and `AD_YES_FLAG` for writes).
+     `AD_YES_FLAG` for writes (and `AD_V2_FLAG` only if it fetches a method).
    - `parseArgs` calls `args.parse(argv)`.
    - Set `writes` for anything that changes or executes remote state.
    - A save-like write goes through `resolveDraftTarget` and `lib/save/`.

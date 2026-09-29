@@ -1,6 +1,6 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { CacheManager } from "../../lib/cache";
 import { resolveMethodRef } from "@belzabar/core/platform";
@@ -24,15 +24,13 @@ interface DeleteData {
 export const args = defineArgs({
   command: "belz ad delete",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
-  flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG },
+  flags: { ...AD_YES_FLAG },
 });
 
 const command: CommandModule<DeleteArgs, DeleteData> = {
-  schema: "ad.delete",
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "save", "delete");
     return { uuid: resolveMethodRef(positionals.uuid), yes: flags.yes };
   },
   async execute({ uuid, yes }, context) {

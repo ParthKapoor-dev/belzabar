@@ -18,7 +18,6 @@ Flags:
   --to <M>         Second version (for diff)
   --full           show: also return the full parsed method (`method`)
   --yes, -y        Skip interactive confirmation (restore; required for --llm mode)
-  --v2             Accepted for consistency; history is V1-only (a notice is printed)
   --llm            Emit a JSON envelope
 
 Notes:

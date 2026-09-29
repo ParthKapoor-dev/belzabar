@@ -1,14 +1,12 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { fingerprintMethod } from "../../lib/fingerprint";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import type { HydratedMethod } from "../../lib/types/common";
 
 interface StateArgs {
   uuid: string;
-  apiVersion: "v1" | "v2";
 }
 
 interface StateData {
@@ -39,20 +37,18 @@ interface StateData {
 export const args = defineArgs({
   command: "belz ad state",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
-  flags: { ...AD_COMMON_FLAGS },
+  flags: {},
 });
 
 const command: CommandModule<StateArgs, StateData> = {
-  schema: "ad.state",
   parseArgs(argv) {
-    const { positionals, flags } = args.parse(argv);
-    const common = resolveAdCommon(flags, "fetch", "state");
-    return { uuid: positionals.uuid, apiVersion: common.apiVersion.version };
+    const { positionals } = args.parse(argv);
+    return { uuid: positionals.uuid };
   },
   async execute({ uuid: uuidArg }) {
     const uuid = resolveMethodRef(uuidArg);
-    // Both sides are read on V2 whatever --v2 says: the sync fingerprint must
-    // compare V2 bodies (V1 serialisation noise differs draft vs published).
+    // Both sides are read on V2: the sync fingerprint must compare V2 bodies
+    // (V1 serialisation noise differs between draft and published).
     const apiVersion = "v2" as const;
     // One fetch per side (AD-39): the guard hands back the input method too.
     const guard = await resolveDraftTarget(uuid, apiVersion);

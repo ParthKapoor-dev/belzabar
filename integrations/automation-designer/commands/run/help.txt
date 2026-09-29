@@ -18,7 +18,6 @@ Flags:
                       progressive chunks are shown and the final JSON envelope
                       is parsed out separately (responseFormat="stream").
                       Non-streaming methods are unaffected.
-  --v2                Accepted for consistency; run has no V2 path (V1 with a notice).
   --help, -h          Show this help message.
 
 Global Flags:

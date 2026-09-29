@@ -1,6 +1,5 @@
 import { defineArgs, ok, type CommandContext, type CommandModule, type CommandResult, type CommandEnvelope, type HumanPresenterHelpers } from "@belzabar/core";
 import { traceMethod, type TraceData } from "../../lib/trace";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 export type { TraceData } from "../../lib/trace";
 
@@ -20,7 +19,6 @@ export const args = defineArgs({
     { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Usage: belz ad trace <uuid> [--spine <env>] [--envs a,b]" },
   ],
   flags: {
-    ...AD_COMMON_FLAGS,
     spine: { type: "string" },
     envs: { type: "string" },
   },
@@ -28,7 +26,6 @@ export const args = defineArgs({
 
 function parseArgs(argv: string[]): TraceArgs {
   const { positionals, flags } = args.parse(argv);
-  resolveAdCommon(flags, "fetch", "trace");
   const envs = flags.envs
     ?.split(",")
     .map((e) => e.trim())
@@ -85,8 +82,6 @@ function presentHuman(envelope: CommandEnvelope<TraceData>, ui: HumanPresenterHe
 }
 
 const command: CommandModule<TraceArgs, TraceData> = {
-  schema: "ad.trace",
-  version: "1.0",
   parseArgs,
   execute,
   presentHuman,

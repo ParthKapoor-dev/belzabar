@@ -45,8 +45,6 @@ Shared flags:
                           editor. Use this in headless/scripted contexts — the
                           file paths are returned as data.left.path and
                           data.right.path, ready to diff programmatically.
-  --v2                    Accepted for consistency; diff is V1-only (a notice
-                          is printed).
   --help, -h              Show this help message.
 
 Global Flags:

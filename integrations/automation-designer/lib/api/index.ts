@@ -1,14 +1,11 @@
 // Unified AD API façade.
 //
 // Most commands go through here. Verbs take an ApiVersion and dispatch to
-// lib/api/v1.ts or lib/api/v2.ts internally. Verbs where V2 is not supported
-// silently stay on V1 — the --v2 fallback warning is the caller's job (via
-// lib/args/common.ts:emitFallbackWarning). Some callers use the wire modules
-// directly for raw bodies or V1-only routes (many commands, the save
-// pipeline, validate, sql, trace, callers).
+// lib/api/v1.ts or lib/api/v2.ts; verbs with no V2 route stay on V1. Some
+// callers use the wire modules directly for raw bodies or V1-only routes (the
+// save pipeline, validate, sql, trace, callers).
 
-import type { ApiVersion } from "../api-version";
-import type { HydratedMethod } from "../types/common";
+import type { ApiVersion, HydratedMethod } from "../types/common";
 import type { V1AutomationDefinition, V1RawMethodResponse } from "../types/v1-wire";
 import type { V2MethodResponse } from "../types/v2-wire";
 import * as v1 from "./v1";

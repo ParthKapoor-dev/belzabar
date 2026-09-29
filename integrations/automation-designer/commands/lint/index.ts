@@ -96,7 +96,6 @@ function stepIndexFromPath(path: string): number | null {
 }
 
 const command: CommandModule<LintArgs, LintData> = {
-  schema: "ad.lint",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     const target = positionals.target;

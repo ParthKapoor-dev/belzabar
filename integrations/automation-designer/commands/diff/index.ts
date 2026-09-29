@@ -7,7 +7,6 @@ import {
   adApi,
   type MethodVersionSummary,
 } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { diffPaths, methodDiffView, parseVersionBody } from "../../lib/fingerprint";
 import { getVersionOf } from "../../lib/history";
 import { resolveMethodRef } from "@belzabar/core/platform";
@@ -61,7 +60,6 @@ export const args = defineArgs({
   command: "belz ad diff",
   positionals: [{ name: "uuid" }],
   flags: {
-    ...AD_COMMON_FLAGS,
     "cross-env": { type: "boolean" },
     from: { type: "number", integer: true, min: 1 },
     to: { type: "number", integer: true, min: 1 },
@@ -75,10 +73,8 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<DiffArgs, DiffData> = {
-  schema: "ad.diff",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "list", "diff"); // diff is V1-only: --v2 prints the fallback notice
     const mode: Mode = flags.crossEnv || flags.fromEnv || flags.toEnv ? "cross-env" : "history";
     return {
       mode,

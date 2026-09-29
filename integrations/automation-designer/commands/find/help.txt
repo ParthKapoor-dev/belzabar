@@ -33,7 +33,6 @@ Flags:
   --open              Open selected method URL in browser. (pick mode only)
   --raw               Include the raw cached index (only --category's part when
                       given), capped at --limit methods/categories.
-  --v2                Accepted for consistency; the index is V1-only (a notice is printed).
   --help, -h          Show this help message.
 
 Global Flags:

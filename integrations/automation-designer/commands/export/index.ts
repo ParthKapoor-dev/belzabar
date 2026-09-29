@@ -1,7 +1,6 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { adApi } from "../../lib/api/index";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { extractMethodNames } from "../import/index";
 
 interface ExportArgs {
@@ -30,14 +29,12 @@ interface ExportData {
 export const args = defineArgs({
   command: "belz ad export",
   positionals: [{ name: "method-id", required: true, missingCode: "MISSING_METHOD_ID", missingMessage: "Missing method id (numeric) or UUID argument." }],
-  flags: { ...AD_COMMON_FLAGS, out: { type: "string" }, full: { type: "boolean" } },
+  flags: { out: { type: "string" }, full: { type: "boolean" } },
 });
 
 const command: CommandModule<ExportArgs, ExportData> = {
-  schema: "ad.export",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    resolveAdCommon(flags, "export", "export");
     const input = positionals.methodId.trim();
     const ref = /^\d+$/.test(input) ? { id: Number(input) } : { uuid: resolveMethodRef(input) };
     return { ref, outPath: flags.out, full: flags.full };
