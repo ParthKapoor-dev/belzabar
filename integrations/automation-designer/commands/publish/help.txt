@@ -36,6 +36,9 @@ Safety:
   - The change note is POSTed AFTER the publish call. If it still fails after
     retries the publish stands: the envelope is ok with noteRecorded:false,
     noteError, and a warning with the `belz ad changelog` command to re-record.
+    A note POST that may have reached the server (connection reset or timeout
+    after sending) is not re-sent: belz looks for it in the changelog, and
+    otherwise says to check `belz ad changelog` before re-recording.
   - After publishing, the compiled cache of the draft and published uuids is
     evicted on both cache routes (data.compiledCache).
   - Re-fetches both draft and published and reports inSync (logic

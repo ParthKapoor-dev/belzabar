@@ -120,6 +120,11 @@ export const adApi = {
     return changelog.addChangelog(chainId, comment);
   },
 
+  /** Id of a note with this comment posted at/after `postedAt` (60 s skew), or null. */
+  async findChangelogNote(chainId: number, comment: string, postedAt: number): Promise<string | null> {
+    return changelog.findChangelogId(await changelog.listChangelog(chainId), comment, postedAt);
+  },
+
   async createCategory(body: Record<string, unknown>): Promise<unknown> {
     return v1.createCategory(body);
   },

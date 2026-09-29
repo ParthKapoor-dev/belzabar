@@ -43,7 +43,7 @@ afterEach(() => {
 
 interface Opts {
   publish?: (req: RecordedRequest) => unknown;
-  changelogPost?: (req: RecordedRequest) => unknown;
+  changelogPost?: (req: RecordedRequest, notes: any[]) => unknown;
   published?: boolean; // draft already linked to PUB
   /** V2 GET bodies of the draft / published side (default: the history fixture). */
   draftV2?: () => unknown;
@@ -89,7 +89,7 @@ function wire(opts: Opts = {}) {
       method: "POST",
       url: /\/chain\/changelog\/\d+$/,
       response: (req: RecordedRequest) => {
-        if (opts.changelogPost) return opts.changelogPost(req);
+        if (opts.changelogPost) return opts.changelogPost(req, notes);
         const b = req.json();
         notes.push({ id: `note-${notes.length + 1}`, comment: b.comment, changelogType: b.changelogType, createdAt: b.createdAt });
         return { success: true };
@@ -135,6 +135,29 @@ describe("ad publish (AD-19)", () => {
     expect(d.changelogId).toBeNull();
     expect(posts(f).filter((p) => p.includes("changelog"))).toHaveLength(NOTE_ATTEMPTS);
     expect(JSON.stringify(r.envelope?.meta ?? {}) + r.stderr).toContain("NOT recorded");
+  });
+
+  test("NEW-1: a note POST that may have completed (reset after send) is not re-sent; found in the list -> recorded", async () => {
+    const f = wire({
+      changelogPost: (req, notes) => {
+        const b = req.json();
+        notes.push({ id: "note-x", comment: b.comment, changelogType: b.changelogType, createdAt: b.createdAt });
+        throw new Error("ECONNRESET"); // the server stored it; the answer never arrived
+      },
+    });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
+    expect(posts(f).filter((p) => p.includes("changelog"))).toHaveLength(1);
+    const d = r.envelope?.data as any;
+    expect([d.noteRecorded, d.changelogId]).toEqual([true, "note-x"]);
+  });
+
+  test("NEW-1: may-have-completed and not in the list -> one POST, noteRecorded:false, says check before re-recording", async () => {
+    const f = wire({ changelogPost: () => { throw new Error("ECONNRESET"); } });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
+    expect(posts(f).filter((p) => p.includes("changelog"))).toHaveLength(1);
+    const d = r.envelope?.data as any;
+    expect(d.noteRecorded).toBe(false);
+    expect(d.noteError).toContain("may have been recorded");
   });
 
   test("{success:false} from the changelog POST is a failure, not a recorded note", async () => {

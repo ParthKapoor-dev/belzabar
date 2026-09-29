@@ -216,16 +216,37 @@ async function recordNoteWithRetry(
   note: string,
 ): Promise<{ recorded: boolean; id: string | null; error?: string }> {
   let lastError = "";
+  const startedAt = Date.now();
   for (let attempt = 1; attempt <= NOTE_ATTEMPTS; attempt++) {
     try {
       const id = await adApi.addChangelog(chainId, note);
       return { recorded: true, id };
     } catch (e) {
       lastError = e instanceof Error ? e.message : String(e);
+      // NEW-1: a POST that reached the server (reset / timeout after sending:
+      // core marks it mayHaveCompleted, retryable:false) may have created the
+      // note. Re-sending would duplicate it: look it up instead, never retry.
+      if (e instanceof CliError && isRecord(e.details) && (e.details.mayHaveCompleted === true || e.details.retryable === false)) {
+        try {
+          const id = await adApi.findChangelogNote(chainId, note, startedAt);
+          if (id) return { recorded: true, id };
+        } catch {
+          // unreadable list: report below
+        }
+        return {
+          recorded: false,
+          id: null,
+          error: `${lastError} The note may have been recorded anyway; check \`belz ad changelog\` before recording it again.`,
+        };
+      }
       if (attempt < NOTE_ATTEMPTS) await Bun.sleep(noteRetryDelayMs * attempt);
     }
   }
   return { recorded: false, id: null, error: lastError };
+}
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 export default command;
