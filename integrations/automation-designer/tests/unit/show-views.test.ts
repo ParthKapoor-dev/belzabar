@@ -313,3 +313,26 @@ describe("exit status codes", () => {
     expect(storyMarkdown(m2)).toContain("stops the method on failure (400)");
   });
 });
+
+// the default view and step detail once dropped the conditional exit (send-gate).
+describe("default show and step detail surface every gate", () => {
+  test("Gates column, Exit If / Account detail, and methodDiffView see the conditional exit", async () => {
+    const m = await v2(LOOP_UUID);
+    const idx = m.parsedSteps.findIndex((s) => s.forceReturnExpression);
+    expect(idx).toBeGreaterThanOrEqual(0);
+    const step = m.parsedSteps[idx]!;
+
+    const data = (await show(m, [])).envelope?.data as any;
+    expect(data.steps[idx].gates.some((g: string) => g.startsWith("exit-if "))).toBe(true);
+
+    const detail = (await show(m, ["--service-detail", String(step.orderIndex)])).envelope?.data as any;
+    expect(detail.stepDetail.exitIf.expression).toBe(step.forceReturnExpression);
+    expect(detail.stepDetail.config.some((c: any) => c.key === "Exit If")).toBe(true);
+
+    const { methodDiffView, diffPaths } = await import("../../lib/fingerprint");
+    const changed = structuredClone(await v2Raw(LOOP_UUID)) as any;
+    changed.steps[idx].properties.exitCondition.conditionalExit.expression = "#{x} eq 1";
+    const m2 = parseV2Method(changed, { env: "acme-dev" });
+    expect(diffPaths(methodDiffView(m), methodDiffView(m2))).toEqual([`$.steps[${idx}].exitIf.expr`]);
+  });
+});
