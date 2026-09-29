@@ -10,6 +10,8 @@ the server's message. A suite file that is not valid JSON fails on its own
 A legacy suite without `env` names a uuid of an unknown env, so it is not run
 either (reason ENV_MISSING) unless --legacy-env names the env it was saved
 for and that equals --env. Re-save such suites with save-suite to pin the env.
+Output values are not asserted: use `belz ad test` expectations or the server-side
+test cases (`belz ad test-case`) for that.
 
 Flags:
   --legacy-env <env>  Run suites that carry no env as <env> suites; only when

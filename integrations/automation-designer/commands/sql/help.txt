@@ -18,6 +18,7 @@ Subcommands:
                       several: generatedKeys lists every returned key row).
   modify <QUERY>      Execute a DDL schema change (ALTER TABLE, CREATE INDEX, etc.).
   tui                 Start an interactive SQL session (can run writes: --env required).
+                      Human use only: with --llm it fails SQL_TUI_UNSUPPORTED_IN_LLM.
 
 Flags (dbs):
   --raw               Include raw API response.

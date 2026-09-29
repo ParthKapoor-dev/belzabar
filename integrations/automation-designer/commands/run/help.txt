@@ -25,6 +25,14 @@ Global Flags:
                       really executes the chain. Any env from `belz envs`.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
+Notes:
+  - Posts the payload to /rest/api/automation/chain/execute/<id>?encrypted=true
+    with the raw session token (no Bearer prefix).
+  - A non-2xx answer fails EXECUTION_FAILED; details = {path, status, body}
+    (the body parsed and redacted).
+  - Without --stream the call times out after 10 minutes; with --stream it
+    stays open for as long as the method runs.
+
 Examples:
   belz ad run 40ba5566efa95b033ef7af8f7f30ee09 --env <env>
   belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}' --env <env>

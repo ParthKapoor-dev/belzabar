@@ -1,4 +1,4 @@
-// tr2 (acme-dev 2026-09-29): compact-format friction.
+// Compact-format friction found by an agent trial:
 //  - An omitted db_service account defaults only when the service has exactly
 //    one account; otherwise the error says how many and lists id=nickname.
 //  - An indexed / pathed step output key (`flatData[0].greeting`) is refused
@@ -33,7 +33,7 @@ function failure(ops: unknown[], cat = catalog()): CliError {
   throw new Error("expected a CliError");
 }
 
-describe("db_service account default (tr2 #1)", () => {
+describe("db_service account default", () => {
   test("several accounts, none named: refused, message counts and lists id=nickname", () => {
     const accounts = catalog().accounts.get("db_service")!;
     expect(accounts.length).toBeGreaterThan(1);
@@ -51,7 +51,7 @@ describe("db_service account default (tr2 #1)", () => {
   });
 });
 
-describe("indexed SQL step outputs (tr2 #2)", () => {
+describe("indexed SQL step outputs", () => {
   test("flatData[0].col is refused with the echo-reduce pattern", () => {
     const e = failure([{ op: "add-step", step: { sql: "SELECT 1 AS greeting", account: 2, outputs: { greeting: "flatData[0].greeting" } } }]);
     const text = `${e.message} ${JSON.stringify(e.details)}`;
