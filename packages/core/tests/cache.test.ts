@@ -62,6 +62,17 @@ describe("core Cache — env scoping (CORE-3)", () => {
   });
 });
 
+describe("core Cache — private files (CORE-R5)", () => {
+  test("save creates 0700 dirs and 0600 entry files", async () => {
+    const c = makeCache("private");
+    await c.save("k1", { v: "x" }, "env-p");
+    const { statSync } = await import("fs");
+    expect(statSync(join(tmp, "private")).mode & 0o777).toBe(0o700);
+    expect(statSync(join(tmp, "private", "env-p")).mode & 0o777).toBe(0o700);
+    expect(statSync(join(tmp, "private", "env-p", "k1.json")).mode & 0o777).toBe(0o600);
+  });
+});
+
 describe("core Cache — keys", () => {
   test("numeric keys work with a TTL function (F5: key.includes is not a function)", async () => {
     const seen: unknown[] = [];

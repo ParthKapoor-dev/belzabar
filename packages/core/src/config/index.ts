@@ -14,7 +14,7 @@ import { homedir } from "os";
 import { readFileSync } from "fs";
 import { CliError } from "../command";
 import type { Environment } from "../types";
-import { writeSecureJson } from "./fs";
+import { hardenBelzHome, writeSecureJson } from "./fs";
 import { decodeSecret } from "./secrets";
 import { trustedBelzEnv } from "./env-vars";
 import { validateConfigFile, envEntryProblem, type BelzConfigFile } from "./schema";
@@ -138,6 +138,9 @@ function buildEnvironments(config: BelzConfigFile): Record<string, Environment> 
   }
   return environments;
 }
+
+// Repair loose permissions left by older installs before anything is read (CORE-R5).
+hardenBelzHome(BELZ_CONFIG_DIR);
 
 let loaded = loadConfig();
 let trusted = trustedBelzEnv();

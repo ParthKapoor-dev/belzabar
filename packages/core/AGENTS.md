@@ -41,6 +41,7 @@ Everything is exported from `src/index.ts`. Grouped by concern:
 | `ConfigFileSchema`, `validateConfigFile` | zod schema (passthrough: unknown keys survive). Violations → `CONFIG_INVALID` naming the path |
 | `decodeSecret(value, encoding, path)` / `encodeSecret(plain)` / `keepSecret(entry)` | The one secret helper. `passwordEncoding: "plain"\|"base64"`; absent = legacy base64, decoded strictly (bad base64 → `CONFIG_INVALID`). New writes: plain + `"plain"` (file is 0600) — never guess an encoding |
 | `writeFileAtomic` / `writeSecureJson` | tmp + fsync + rename, mode 0600 (config, every session file) |
+| `hardenBelzHome(home)` | Runs once when config loads: tightens a pre-existing belz home to 0700 (home, `sessions/`, `cache/`) and 0600 (`config.json`, session files). Never throws; no-op on Windows (CORE-R5). `Cache.save` creates 0700 dirs / 0600 files |
 | `trustedBelzEnv()` | The env vars belz reads: `BELZ_*` only, minus values injected by a cwd `.env*` (Bun autoloads dotenv even in the compiled binary; 1.2.x has no flag to stop it). Runtime vars: `BELZ_HOME`, `BELZ_ENV`, `BELZ_HTTP_TIMEOUT_MS`, `BELZ_HTTP_WRITE_TIMEOUT_MS`, `BELZ_JENKINS_{URL,USER,PASSWORD,JOB}`, `BELZ_TEAMWORK_{EMAIL,PASSWORD}` (plain). `BELZ_SRC_DIR` (update's fallback source dir) also goes through it. Legacy `NSM_*`/`TEAMWORK_*` are only read by `belz setup --from-env`, via `withoutDotenvInjected()` (same dotenv filter for every key; `dropped` lists ignored keys, surfaced as a warning) — CORE-R14 |
 
 ### HTTP (`src/http/`) — the one stack for AD/PD, Teamwork and Jenkins

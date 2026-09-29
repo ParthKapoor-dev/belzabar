@@ -49,7 +49,7 @@ function storeCached(host: string, ip: string): void {
   try {
     const all = readDiskCache();
     all[host] = entry;
-    mkdirSync(CACHE_DIR, { recursive: true });
+    mkdirSync(CACHE_DIR, { recursive: true, mode: 0o700 });
     writeFileSync(DISK_CACHE_PATH, JSON.stringify(all));
   } catch (err) {
     // A cache write failure must never fail the request.

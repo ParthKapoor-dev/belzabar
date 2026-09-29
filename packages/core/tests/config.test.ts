@@ -1,7 +1,7 @@
 // core/config: schema validation, secrets (D5), atomic 0600 writes, default
 // env (D6), and the cwd-.env guard (CORE-28).
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, readFileSync, statSync, writeFileSync, readdirSync } from "fs";
+import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync, readdirSync } from "fs";
 import { join } from "path";
 import {
   BELZ_CONFIG_DIR,
@@ -13,6 +13,7 @@ import {
   loadConfigFileRaw,
   reloadConfig,
   trustedBelzEnv,
+  hardenBelzHome,
   withoutDotenvInjected,
   writeConfigFile,
   writeSecureJson,
@@ -169,6 +170,43 @@ describe("atomic 0600 writes (CORE-12)", () => {
     expect(statSync(p).mode & 0o777).toBe(0o600);
     expect(readdirSync(join(dir, "sub"))).toEqual(["s.json"]);
   });
+});
+
+describe("permission repair (CORE-R5)", () => {
+  function looseHome(): string {
+    const home = join(scratchDir("perm-"), "belz");
+    mkdirSync(join(home, "sessions"), { recursive: true });
+    mkdirSync(join(home, "cache", "definitions", "t-dev"), { recursive: true });
+    writeFileSync(join(home, "config.json"), "{}");
+    writeFileSync(join(home, "sessions", "t-dev.json"), "{}");
+    writeFileSync(join(home, "sessions", "t-qa.json"), "{}");
+    for (const d of [home, join(home, "sessions"), join(home, "cache")]) chmodSync(d, 0o755);
+    for (const f of ["config.json", "sessions/t-dev.json", "sessions/t-qa.json"]) chmodSync(join(home, f), 0o644);
+    return home;
+  }
+  const mode = (p: string) => statSync(p).mode & 0o777;
+
+  test("hardenBelzHome tightens the home, sessions, cache and config.json; idempotent", () => {
+    const home = looseHome();
+    const changed = hardenBelzHome(home);
+    expect(changed.length).toBe(6);
+    expect(mode(home)).toBe(0o700);
+    expect(mode(join(home, "sessions"))).toBe(0o700);
+    expect(mode(join(home, "cache"))).toBe(0o700);
+    expect(mode(join(home, "config.json"))).toBe(0o600);
+    expect(mode(join(home, "sessions", "t-dev.json"))).toBe(0o600);
+    expect(mode(join(home, "sessions", "t-qa.json"))).toBe(0o600);
+    expect(hardenBelzHome(home)).toEqual([]);
+    expect(hardenBelzHome(join(home, "missing"))).toEqual([]); // never throws
+  });
+
+  test("a spawned belz repairs an old install's loose permissions on startup", async () => {
+    const home = looseHome();
+    const r = await spawnCli(["envs", "--llm"], { env: { BELZ_HOME: home }, timeoutMs: 30_000 });
+    expect((r.envelope as any)?.ok).toBe(true);
+    expect(mode(home)).toBe(0o700);
+    expect(mode(join(home, "sessions", "t-dev.json"))).toBe(0o600);
+  }, 30_000);
 });
 
 describe("default env (D6 / CORE-26)", () => {

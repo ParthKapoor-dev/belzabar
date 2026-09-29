@@ -81,7 +81,7 @@ export function shouldRefresh(cacheDir: string, key: string): boolean {
 function markRefreshing(cacheDir: string, key: string): void {
   try {
     const dir = join(cacheDir, ".refresh");
-    mkdirSync(dir, { recursive: true });
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
     pruneStaleLocks(dir);
     writeFileSync(lockPath(cacheDir, key), String(Date.now()));
   } catch {

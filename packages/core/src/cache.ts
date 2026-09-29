@@ -1,4 +1,4 @@
-import { mkdir, rm } from "fs/promises";
+import { mkdir, rm, writeFile } from "fs/promises";
 import { join } from "path";
 import { vlog } from "./verbose";
 import { Config } from "./config";
@@ -74,9 +74,10 @@ export class Cache<T> {
 
   async save(rawKey: string | number, data: T, env?: string): Promise<void> {
     const key = normalizeCacheKey(rawKey);
-    await mkdir(this.dirFor(env), { recursive: true });
+    // Private: definition caches hold auth records (CORE-R5).
+    await mkdir(this.dirFor(env), { recursive: true, mode: 0o700 });
     const entry: CacheEntry<T> = { savedAt: Date.now(), data };
-    await Bun.write(this.filePath(key, env), JSON.stringify(entry, null, 2));
+    await writeFile(this.filePath(key, env), JSON.stringify(entry, null, 2), { mode: 0o600 });
     vlog(`CACHE WRITE ${key}`);
   }
 
