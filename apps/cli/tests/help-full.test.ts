@@ -6,12 +6,13 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "fs";
 import { tmpdir } from "os";
 import { join, resolve } from "path";
+import { EnvelopeSchema } from "@belzabar/core";
 import { BUILD, buildHelpFull, REGISTRIES } from "../bin/options";
 
 const CLI = resolve(import.meta.dir, "../bin/cli.ts");
 
-function runHelpFull(env: Record<string, string>, cwd: string): { out: string; code: number } {
-  const proc = Bun.spawnSync([process.execPath, CLI, "--help-full"], {
+function runHelpFull(env: Record<string, string>, cwd: string, args: string[] = ["--help-full"]): { out: string; code: number } {
+  const proc = Bun.spawnSync([process.execPath, CLI, ...args], {
     cwd,
     env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", ...env },
     stdout: "pipe",
@@ -50,4 +51,21 @@ describe("belz --help-full", () => {
       expect([...positions].sort((x, y) => x - y)).toEqual(positions);
     }
   });
+
+  test("CORE-R11: --help-full --llm is one belz.help envelope carrying the text", () => {
+    const home = mkdtempSync(join(tmpdir(), "hf-llm-"));
+    for (const args of [["--help-full", "--llm"], ["--llm", "--help-full"]]) {
+      const r = runHelpFull({ BELZ_HOME: home }, tmpdir(), args);
+      expect(r.code).toBe(0);
+      const env = EnvelopeSchema.parse(JSON.parse(r.out));
+      expect(env.schema).toBe("belz.help");
+      expect(env.ok).toBe(true);
+      expect((env.data as { text: string }).text).toBe(buildHelpFull());
+    }
+  }, 30_000);
+
+  test("CORE-R11: --help-full after `--` belongs to the command, not the runner", () => {
+    const r = runHelpFull({ BELZ_HOME: mkdtempSync(join(tmpdir(), "hf-dd-")) }, tmpdir(), ["ad", "show", "--", "--help-full", "--llm"]);
+    expect(r.out).not.toContain("NOTE FOR LLM AGENTS");
+  }, 30_000);
 });

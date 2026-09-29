@@ -49,6 +49,12 @@ export interface NamespacedCliOptions {
   topLevelEnvAware?: Record<string, boolean>;
   /** Enables `--version` (as the first argument). */
   build?: BuildInfo;
+  /**
+   * `belz --help-full`: the full command reference. Honoured only as the
+   * first argument after the global flags (never after a command name or
+   * `--`); in `--llm` mode it is a `belz.help` envelope with `data.text` (CORE-R11).
+   */
+  helpFull?: () => string;
 }
 
 // ── Shared internals ────────────────────────────────────────────────────────
@@ -643,6 +649,18 @@ export async function dispatchNamespaced(
       );
     }
     return printOutcome(0, () => console.log(formatBuildInfo(options.binaryName, build)));
+  }
+
+  if (token === "--help-full" && options.helpFull) {
+    const text = options.helpFull();
+    if (outputMode === "llm") {
+      return envelopeOutcome(
+        outputMode,
+        runnerEnvelope(options.binaryName, "help", "help-full", startedAt, { ok: true, data: { text } }),
+        0
+      );
+    }
+    return printOutcome(0, () => console.log(text));
   }
 
   if (!token || token === "--help" || token === "-h") {

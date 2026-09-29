@@ -83,6 +83,7 @@ export function buildCliOptions(): NamespacedCliOptions {
     topLevelHelpResolver: topHelp,
     topLevelEnvAware: Object.fromEntries(NOT_ENV_AWARE_TOP_LEVEL.map((k) => [k, false])),
     build: BUILD,
+    helpFull: buildHelpFull,
   };
 }
 

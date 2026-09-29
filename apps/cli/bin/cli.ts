@@ -19,9 +19,4 @@ try {
   await flushAndExit(70);
 }
 
-if (process.argv.slice(2).includes("--help-full")) {
-  console.log(options!.buildHelpFull());
-  await flushAndExit(0);
-}
-
 await runNamespacedCli(process.argv, options!.buildCliOptions());

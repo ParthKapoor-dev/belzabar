@@ -21,7 +21,7 @@ this app only wires them together. The framework (runner, args, envelope, http, 
 ```
 apps/cli/
 ├── bin/
-│   ├── cli.ts          Entry: installStdioGuard → load options → --help-full | runNamespacedCli
+│   ├── cli.ts          Entry: installStdioGuard → load options → runNamespacedCli
 │   ├── options.ts      NAMESPACES + registries → runner options; buildHelpFull(); REGISTRIES (tests)
 │   └── build-info.ts   Bun macro: {version, sha, dirty, builtAt} for `belz --version`
 ├── commands/
@@ -61,8 +61,9 @@ belz --version | --help | --help-full        → runner / entry point
 - `belz --help-full` (`buildHelpFull`) prints every `desc.txt`: namespaces in the fixed
   `NAMESPACES` order, then top-level; commands sorted by `registryNames`. It has no env-, clock-,
   locale- or build-dependent content (`tests/help-full.test.ts` spawns it twice under different
-  env/TZ/locale and requires byte-identical output). `bin/cli.ts` prints it before dispatching
-  anything and exits through `flushAndExit`.
+  env/TZ/locale and requires byte-identical output). The runner handles it (`helpFull` option)
+  only as the first argument after the global flags (not after a command or `--`); with `--llm`
+  it is a `belz.help` envelope with `data.text` (CORE-R11).
 
 ---
 
