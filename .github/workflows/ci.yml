@@ -26,9 +26,10 @@ jobs:
           bun-version: 1.2.20
 
       # --ignore-scripts: the root package's lifecycle scripts must never run
-      # the belz installer (CORE-5).
+      # the belz installer (CORE-5). --frozen-lockfile: test exactly the
+      # committed dependency set (CORE-R7).
       - name: Install
-        run: bun install --ignore-scripts
+        run: bun install --frozen-lockfile --ignore-scripts
 
       # Every workspace, integration tests included. Blocking.
       - name: Typecheck

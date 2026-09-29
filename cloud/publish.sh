@@ -28,7 +28,15 @@ trap 'rm -rf "$WORK"' EXIT
 echo "🔨 building $ASSET…"
 cd "$REPO_ROOT"
 # --ignore-scripts: we only need workspace deps for the compile.
-bun install --frozen-lockfile --ignore-scripts 2>/dev/null || bun install --ignore-scripts
+# --frozen-lockfile with no fallback: the cloud binary must be built from the
+# committed dependency set; a stale bun.lock fails the publish (CORE-R7).
+bun install --frozen-lockfile --ignore-scripts
+# Same Bun as CI (the CORE-1 stdout-flush workaround is Bun-1.2-specific).
+EXPECTED_BUN="1.2.20"
+if [[ "$(bun --version)" != "$EXPECTED_BUN" ]]; then
+  echo "❌ cloud/publish.sh builds with Bun $EXPECTED_BUN (found $(bun --version)); see .github/workflows/ci.yml" >&2
+  exit 1
+fi
 cd "$REPO_ROOT/apps/cli"
 bun build --compile --minify --target=bun-linux-x64 ./bin/cli.ts --outfile "$WORK/$ASSET"
 

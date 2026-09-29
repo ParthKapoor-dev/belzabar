@@ -49,6 +49,9 @@ In **belzabar**'s GitHub settings:
 ```bash
 SANDBOX_REPO=your-org/belz-sandbox bash cloud/publish.sh
 ```
+It builds with the same Bun as CI (1.2.20 — it refuses any other version) and
+`bun install --frozen-lockfile`, so a stale `bun.lock` fails the publish
+(`scripts/ci-pins.test.ts` keeps the workflows and this script in step).
 
 ### 3. Create the cloud environment (claude.ai/code → New cloud environment)
 - **Repository:** `belz-sandbox` (NOT belzabar).

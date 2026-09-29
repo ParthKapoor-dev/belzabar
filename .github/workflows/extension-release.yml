@@ -50,14 +50,16 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: latest
+          # Pinned to the CI version (ci.yml): the stdout-flush workaround (CORE-1) is
+          # tied to Bun 1.2.x pipe behaviour; bump every workflow together (CORE-R7).
+          bun-version: 1.2.20
 
       - name: Resolve version from tag
         id: ver
         run: echo "version=${GITHUB_REF_NAME#ext-v}" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Build per-browser extension trees
         run: node apps/extension/scripts/pack.mjs --version "${{ steps.ver.outputs.version }}"
