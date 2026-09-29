@@ -40,7 +40,7 @@ const command: CommandModule<ChildInfoArgs, ChildInfoPayload> = {
   },
   async execute({ category, methodName, shape, all }) {
     const body = await adApi.fetchChildMethodInfo(category, methodName);
-    // F23: the server answers an unknown (or draft-only) method with 200 + null.
+    // the server answers an unknown (or draft-only) method with 200 + null.
     if (body == null || (typeof body === "object" && !Array.isArray(body) && Object.keys(body).length === 0)) {
       throw new CliError(
         `No published method '${methodName}' in category '${category}' (child-info resolves published methods only).`,
@@ -49,7 +49,7 @@ const command: CommandModule<ChildInfoArgs, ChildInfoPayload> = {
     }
     if (!shape) return ok<ChildInfoPayload>({ category, methodName, body: trimUuidPadding(body) });
 
-    // 7.5: only what wiring a step needs; accounts as id + nickname (never values).
+    // only what wiring a step needs; accounts as id + nickname (never values).
     const view = apiShape(body, category, methodName, { all });
     const accounts = await fetchAccountLines(category).catch(() => []);
     if (accounts.length) view.accounts = accounts;

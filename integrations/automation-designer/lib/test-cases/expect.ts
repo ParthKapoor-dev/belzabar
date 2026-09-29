@@ -1,4 +1,4 @@
-// Output expectations for `ad test --expect` and test-case assertions (7.7).
+// Output expectations for `ad test --expect` and test-case assertions.
 //
 //   out=val     equal            out!=val   not equal
 //   out~=val    contains         out>val  out<val  out>=val  out<=val   numeric
@@ -58,7 +58,7 @@ const LHS_RE = /^\s*([A-Za-z_][A-Za-z0-9_]*)((?:\.[A-Za-z0-9_$-]+|\[\d+\])*)\s*/
 
 function invalid(source: string, why: string, code = "INVALID_EXPECTATION"): CliError {
   // A persisted assertion (`test-case --assert`) is the UI's SpEL: whole outputs only,
-  // so it must not suggest `out.path` (CLI trial: the hint contradicted the error).
+  // so it must not suggest `out.path` (the hint contradicted the error).
   const hint =
     code === "INVALID_ASSERTION"
       ? "Use out=value, out!=value, out~=value, out>n, out<n on a whole output (to look inside a JSON output, use `belz ad test --expect out.path[0]=value`, which is checked locally)."

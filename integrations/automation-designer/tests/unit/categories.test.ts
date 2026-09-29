@@ -1,4 +1,4 @@
-// One category identity (AD-09, AD-10, F9) over the real acme-dev listings.
+// One category identity over the real acme-dev listings.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { runCommand, withTempEnvConfig } from "@belzabar/core/testing";
 import { buildCategories, findCategory, requireChainCategory } from "../../lib/categories";
@@ -48,7 +48,7 @@ describe("buildCategories", () => {
     expect(userWithSystem.length).toBeGreaterThanOrEqual(120);
   });
 
-  test("ad find's index (from /automation/services) agrees on uuid and id (AD-10)", () => {
+  test("ad find's index (from /automation/services) agrees on uuid and id", () => {
     for (const row of services.result) {
       const f = normalizeCategoryRecord(row)!;
       if (row.type !== "USER_GENERATED") continue;
@@ -69,7 +69,7 @@ describe("buildCategories", () => {
 });
 
 describe("ad categories / export-category", () => {
-  test("categories lists chainCategoryId as id, plus systemId (F9)", async () => {
+  test("categories lists chainCategoryId as id, plus systemId", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     stubListings();
     const r = await runCommand(categoriesCommand, ["--user"], { env: "t-dev" });
@@ -77,7 +77,7 @@ describe("ad categories / export-category", () => {
     expect(tp).toMatchObject({ id: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca", systemId: 1318 });
   });
 
-  test("unfiltered listing warns toward --search; a search does not (CLI trial tr2)", async () => {
+  test("unfiltered listing warns toward --search; a search does not", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     stubListings();
     const all = await runCommand(categoriesCommand, [], { env: "t-dev" });

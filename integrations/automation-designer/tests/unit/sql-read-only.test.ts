@@ -11,7 +11,7 @@ const ALLOWED: string[] = [
   "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n+1 FROM t WHERE n < 5) SELECT sum(n) FROM t",
   "values (1), (2)",
   "explain select * from t",
-  // 7.11: EXPLAIN [ANALYZE] is judged by its inner statement.
+  // EXPLAIN [ANALYZE] is judged by its inner statement.
   "explain analyze select * from t",
   "EXPLAIN ANALYZE VERBOSE with x as (select 1) select * from x",
   "explain (analyze, buffers, format json) select * from t where a = 'delete'",
@@ -60,7 +60,7 @@ const REFUSED: Array<[string, string]> = [
   ["merge into t using s on true when matched then delete", "starts with 'merge'"],
   ["do $$ begin delete from t; end $$", "starts with 'do'"],
   ["call proc()", "starts with 'call'"],
-  // ADW-R1: SpEL is evaluated server-side before the DB runs the query, even inside literals.
+  // SpEL is evaluated server-side before the DB runs the query, even inside literals.
   ["select 1 as x #{'; delete from t'}", "SpEL"],
   ["select '#{1+1}' as x", "SpEL"],
   ["select #{'current_database()'} as x", "SpEL"],
@@ -68,7 +68,7 @@ const REFUSED: Array<[string, string]> = [
   ["select $$ #{x} $$", "SpEL"],
 ];
 
-describe("checkReadOnlySql (F2)", () => {
+describe("checkReadOnlySql", () => {
   for (const q of ALLOWED) {
     test(`allows: ${JSON.stringify(q)}`, () => {
       const v = checkReadOnlySql(q);
@@ -86,7 +86,7 @@ describe("checkReadOnlySql (F2)", () => {
 });
 
 describe("sql run parseArgs gate", () => {
-  test("ADW-R1: refuses SpEL in run and explain before any network call", () => {
+  test("refuses SpEL in run and explain before any network call", () => {
     for (const argv of [["run", "select 1 as x #{'; delete from t'}"], ["explain", "select '#{1+1}'"]]) {
       try {
         sqlCommand.parseArgs?.(argv, {} as any);

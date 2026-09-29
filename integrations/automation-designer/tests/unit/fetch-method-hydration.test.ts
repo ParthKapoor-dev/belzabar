@@ -1,4 +1,4 @@
-// adApi.fetchMethod classifies V1 steps through the definition lookup (AD-02):
+// adApi.fetchMethod classifies V1 steps through the definition lookup:
 // one GET /automations/{id} per distinct automationId, served from fixtures.
 import { afterEach, describe, expect, test } from "bun:test";
 import { fakeFetch, fixture, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
@@ -59,7 +59,7 @@ describe("adApi.fetchMethod (V1) resolves step services", () => {
   });
 });
 
-describe("V2 GET of a soft-deleted method (AD-40)", () => {
+describe("V2 GET of a soft-deleted method", () => {
   test("the server's 400 NPE `automationAPI is null` → METHOD_NOT_FOUND", async () => {
     cfg = withTempEnvConfig({ envs: { "t-del": { url: "https://t-del.test" } }, activeEnv: "t-del" });
     // Real acme-dev body for the soft-deleted belz_tst_ad_audit1 (2026-09-28).
@@ -74,9 +74,9 @@ describe("V2 GET of a soft-deleted method (AD-40)", () => {
   });
 });
 
-// ADR-R11 / ADR-R12: a parse with failed definition lookups is never cached,
+// a parse with failed definition lookups is never cached,
 // and fetch reports only the definitions it actually resolved (once each).
-describe("degraded V1 parses (ADR-R11, R12)", () => {
+describe("degraded V1 parses", () => {
   test("show does not cache a parse with unresolved services; a clean one is cached", async () => {
     const { runCommand } = await import("@belzabar/core/testing");
     const { CacheManager } = await import("../../lib/cache");

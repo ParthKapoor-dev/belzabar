@@ -13,7 +13,7 @@ export interface V1RawMethodResponse {
   /** Stringified JSON — must be JSON.parse'd to see the real method body. */
   jsonDefinition: string;
   createdOn?: number;
-  /** Real wire (AD-13): epoch ms + numeric user id. Absent on never-edited methods. */
+  /** Real wire: epoch ms + numeric user id. Absent on never-edited methods. */
   updatedOn?: number;
   updatedBy?: number | string;
   /** Legacy spelling kept for old captures. */

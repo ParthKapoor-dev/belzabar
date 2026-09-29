@@ -1,4 +1,4 @@
-// 7.4: `belz ad lint` — lib/validate/lint.ts review rules (positive + negative
+// `belz ad lint` — lib/validate/lint.ts review rules (positive + negative
 // per rule, on the research golden method), calibration over the 36 real
 // acme-dev bodies, and the command (grouping, exit code) via fakeFetch.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
@@ -203,7 +203,7 @@ describe("ad lint command", () => {
     expect((await runCommand(lintCommand, [join(dir, "bad.json")], {})).envelope?.error?.code).toBe("INVALID_JSON");
   });
 
-  test("a compact create spec is expanded first, as create --dry-run does (CLI trial)", async () => {
+  test("a compact create spec is expanded first, as create --dry-run does", async () => {
     cfg = withTempEnvConfig({ envs: { "t-lint": { url: "https://t.test" } }, activeEnv: "t-lint" });
     spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
     const CATS = `${import.meta.dir}/../fixtures/categories`;

@@ -1,4 +1,4 @@
-// belz ad lint <uuid|file> — read-only review of a method's V2 body (7.4):
+// belz ad lint <uuid|file> — read-only review of a method's V2 body:
 // the pre-save validator (lib/validate L1–L3, + L4 with --online) plus the
 // advisory review rules of lib/validate/lint.ts (SQL Q2–Q4, common AD
 // anti-patterns, platform prose rules; descriptions with --docs).

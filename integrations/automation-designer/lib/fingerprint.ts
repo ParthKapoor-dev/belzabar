@@ -12,7 +12,7 @@
 // description) hash fails the first test — it collapses body edits.
 //
 // So we hash the wire body minus server bookkeeping and env-local ids (see
-// `fingerprintProjection`, ADW-R2). Methods without a wire body fall back to
+// `fingerprintProjection`). Methods without a wire body fall back to
 // a SEMANTIC step projection: step order/kind/description, the called
 // service+method NAMES, condition expressions, the decoded code/SQL/expression
 // bodies, and input mapping VALUES.
@@ -70,7 +70,7 @@ function semanticStep(s: ParsedStep): unknown {
   return base;
 }
 
-// ─── Wire projection (ADW-R2) ────────────────────────────────────────────
+// ─── Wire projection ────────────────────────────────────────────
 //
 // The hydrated model is lossy: it has no step-output fieldCode /
 // elementToRetrieve, no conditional exit, no account name, … so a
@@ -254,7 +254,7 @@ export function fingerprintProjection(m: HydratedMethod): unknown {
 
 /**
  * The V2 GET adds `fieldCode` (a copy of `key`) to each METHOD output; history
- * bodies omit it (live, ADW-R8). A fieldCode that only repeats the
+ * bodies omit it (live). A fieldCode that only repeats the
  * key is derived, so it is dropped. (Step outputs' fieldCode is a binding and
  * stays.)
  */
@@ -300,7 +300,7 @@ export function fingerprintMethod(m: HydratedMethod): string {
 }
 
 /**
- * Env-agnostic, human-readable view of a method for DIFFING (AD-26): the same
+ * Env-agnostic, human-readable view of a method for DIFFING: the same
  * semantic step projection the fingerprint hashes (decoded code / SQL / SpEL,
  * service names, conditions, mapping values — no env-local ids), plus the
  * display fields and the full input / variable / output contract. Two envs

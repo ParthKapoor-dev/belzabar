@@ -35,7 +35,7 @@ export function parseV1Step(raw: V1ServiceStep, orderIndex: number, warn: Warn, 
   }
 
   if (activeTabId === "existingService" || raw.automationApiId != null) {
-    // AD-02: classify by the service the step calls, not by env-local numeric ids.
+    // classify by the service the step calls, not by env-local numeric ids.
     const identity = resolveStepIdentity(
       {
         automationId: raw.automationId,
@@ -299,7 +299,7 @@ function buildRedis(
     const label = labels[trimUuid(m.automationUserInputUuid) ?? ""] ?? labels[String(m.automationUserInputId ?? "")];
     if (label && typeof m.value === "string") byLabel.set(label.trim().toLowerCase(), m.value);
   }
-  // some envs name them scope / expirationSeconds / canReplace (ADR-R3).
+  // some envs name them scope / expirationSeconds / canReplace.
   const LABEL_FOR: Record<number, string[]> = {
     [getKeyChildId]: ["key"],
     [getKeyId + 2]: ["store", "cache store", "scope"],
@@ -360,7 +360,7 @@ function trimUuid(v: unknown): string | undefined {
   return t.length > 0 ? t : undefined;
 }
 
-/** V1 basic-mode condition rows → `{field, operator, value}` (AD-40). */
+/** V1 basic-mode condition rows → `{field, operator, value}`. */
 function parseConditionRows(rows: unknown[] | undefined): ConditionRow[] | undefined {
   if (!Array.isArray(rows) || rows.length === 0) return undefined;
   const out: ConditionRow[] = [];

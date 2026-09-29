@@ -69,7 +69,7 @@ describe("ad validate", () => {
     expect(d.notes[0]).toContain("AD-META-001");
   });
 
-  test("ADW-R15: an existing record's legacy spaced name is a warning; the same body as a file (a new body) is an error", async () => {
+  test("an existing record's legacy spaced name is a warning; the same body as a file (a new body) is an error", async () => {
     env();
     const real = realV2().find((f) => f.file.startsWith("48eb3b02"))!.body; // "Copy of email.send", DRAFT
     const uuid = String(real.uuid).trim();

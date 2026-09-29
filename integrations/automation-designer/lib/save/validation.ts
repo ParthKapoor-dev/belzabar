@@ -3,7 +3,7 @@
 // Runs lib/validate (L1–L3, or L4 with --dry-run-compile), blocks on errors
 // (and on new warnings with --strict), and turns the result into
 // AD_VALIDATION_FAILED with `details = {errors, warnings, layersRun,
-// preexistingCount}` (research/ad-validation §6.3). `--no-validate` skips it,
+// preexistingCount}`. `--no-validate` skips it,
 // loudly: a stderr write-log line plus a warning.
 
 import { CliError } from "@belzabar/core";

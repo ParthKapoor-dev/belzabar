@@ -1,5 +1,5 @@
-// `ad state`: sync is a content question (AD-18 / F35), `versions` is in the
-// data as the help promises (F35), and each side is fetched once (AD-39).
+// `ad state`: sync is a content question, `versions` is in the
+// data as the help promises, and each side is fetched once.
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -55,7 +55,7 @@ describe("ad state", () => {
     expect(d.publishedUuid).toBe(PUB);
   });
 
-  test("one GET per side (AD-39)", async () => {
+  test("one GET per side", async () => {
     const f = pair();
     await runCommand(stateCommand, [PUB], { env: "t-dev" });
     const gets = f.requests.filter((q) => q.method === "GET").map((q) => q.url.split("/").pop()!.split("?")[0]);

@@ -65,7 +65,7 @@ const command: CommandModule<RunSuitesArgs, RunSuitesData> = {
     let legacy = 0;
     for (const file of files) {
       const suitePath = join(suitesDir, file);
-      // ADW-R13: a malformed suite fails on its own; the earlier suites already ran
+      // a malformed suite fails on its own; the earlier suites already ran
       // (with side effects), so the run must still end with a summary.
       let suite: { name: string; uuid: string; env?: string; inputs?: Record<string, unknown> };
       try {
@@ -90,7 +90,7 @@ const command: CommandModule<RunSuitesArgs, RunSuitesData> = {
         failed++;
         continue;
       }
-      // ADW-R13: a suite saved before save-suite recorded the env names a bare
+      // a suite saved before save-suite recorded the env names a bare
       // uuid of an unknown env. It is refused unless the operator states which
       // env such suites belong to (--legacy-env) and that is the target env.
       if (typeof suite.env !== "string") {
@@ -110,7 +110,7 @@ const command: CommandModule<RunSuitesArgs, RunSuitesData> = {
       }
 
       try {
-        // AD-38 / F14: the same `/chain/test` body `ad test` posts (not the whole GET body).
+        // the same `/chain/test` body `ad test` posts (not the whole GET body).
         const rawMethod = await fetchRawMethod(resolveMethodRef(suite.uuid));
         const payload = await buildV1TestPayload(rawMethod, suite.inputs || {});
         const resultRes = await testMethodMultipart(v1TestFormData(payload));
@@ -156,7 +156,7 @@ const command: CommandModule<RunSuitesArgs, RunSuitesData> = {
 
     if (legacy > 0) {
       context.warn(
-        `${legacy} suite(s) carry no env (saved before ADW-R13)${legacyEnv === context.env.name ? ` and ran as ${legacyEnv} suites (--legacy-env)` : " and were not run"}; re-save them with \`belz ad save-suite\` to pin the env.`,
+        `${legacy} suite(s) carry no env (saved before suites recorded one)${legacyEnv === context.env.name ? ` and ran as ${legacyEnv} suites (--legacy-env)` : " and were not run"}; re-save them with \`belz ad save-suite\` to pin the env.`,
       );
     }
     const summary: RunSuitesData = { total: files.length, passed, failed, suites };

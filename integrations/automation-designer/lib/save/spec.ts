@@ -1,5 +1,5 @@
 // A method spec file → the V2 body `ad create` would POST. Shared by `create`
-// and by `lint` / `validate`, which accept the same compact spec (CLI trial:
+// and by `lint` / `validate`, which accept the same compact spec (
 // they rejected it, so agents had to dig `data.body` out of `create --dry-run`).
 
 import { dirname } from "path";

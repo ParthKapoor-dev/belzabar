@@ -1,11 +1,11 @@
-// Property tests over the real acme-dev wire captures (Stage 1).
+// Property tests over the real acme-dev wire captures.
 //
 // Fixtures (captured by scripts/fixtures/capture.ts, sanitized, see each
 // dir's manifest.json):
 //   real-v1/      36 V1 bodies   GET /rest/api/automation/chain/{uuid}
 //   real-v2/      same 36, V2    GET /rest/api/automation/chain/v2/{uuid}?basicInfo=false
 //   definitions/  step records   GET /rest/api/automations/{automationId}?basicinfo=false
-//   categories/   AD-09/AD-10 identity sources: /chain/category (+system) and /automation/services
+//   categories/   category identity sources: /chain/category (+system) and /automation/services
 //   not-found/    200 + empty body for a nonexistent uuid (V1 and V2)
 //
 // Known gaps are `test.todo` with the bug id; each todo carries the real
@@ -63,7 +63,7 @@ describe("fixture inventory + manifests", () => {
   }
 });
 
-describe("V1 real wire shape (AD-13)", () => {
+describe("V1 real wire shape", () => {
   test("numeric id / step automationId, updatedOn not lastUpdatedOn, state + automationState agree", async () => {
     let withUpdatedOn = 0;
     for (const { raw1 } of await pairs()) {
@@ -120,24 +120,24 @@ describe("V2 parse vs V1 parse (same method, same moment)", () => {
     }
   });
 
-  // AD-35: V2 parser parity.
-  test("AD-35: parseV2Method reports the method uuid (top-level wire field)", async () => {
+  // V2 parser parity.
+  test("parseV2Method reports the method uuid (top-level wire field)", async () => {
     for (const { uuid, m2 } of await pairs()) {
       expect(m2.uuid).toBe(uuid);
       expect(m2.parseWarnings.some((w) => w.includes("uuid"))).toBe(false);
     }
   });
-  test("AD-35: V2 step orderIndex is 1-based like V1", async () => {
+  test("V2 step orderIndex is 1-based like V1", async () => {
     for (const { m1, m2 } of await pairs()) expect(m2.parsedSteps.map((s) => s.orderIndex)).toEqual(m1.parsedSteps.map((s) => s.orderIndex));
   });
 });
 
-// AD-02: steps are classified by the service they call. Offline, the service
+// steps are classified by the service they call. Offline, the service
 // identity comes from the captured definitions (/automations/{automationId});
 // for automationIds without a captured definition, from the V2 capture of the
 // same method at the same moment (V2 names the service on the wire). The
 // test below proves those two sources agree wherever both exist.
-describe("AD-02 step classification by service identity", () => {
+describe("step classification by service identity", () => {
   async function definitionTable(): Promise<Map<string, ServiceIdentity>> {
     const table = new Map<string, ServiceIdentity>();
     for (const f of list("definitions", ".json").filter((f) => f !== "manifest.json")) {
@@ -193,7 +193,7 @@ describe("AD-02 step classification by service identity", () => {
     expect((counts.REDIS_GET ?? 0) + (counts.REDIS_SET ?? 0)).toBe(3);
   });
 
-  // ADR-R3: acme names the Redis inputs scope / expirationSeconds / canReplace.
+  // acme names the Redis inputs scope / expirationSeconds / canReplace.
   test("Redis scope, TTL and canReplace parse on V1 and V2 and show in the compact line", async () => {
     const defs = await definitionTable();
     const p = (await pairs()).find((x) => x.uuid.startsWith("44297f3e"))!;
@@ -278,7 +278,7 @@ describe("service definitions (/automations/{automationId})", () => {
   });
 });
 
-describe("category identity sources (AD-09/AD-10)", () => {
+describe("category identity sources", () => {
   test("/chain/category is a list of {id, name}; /automation/services is {currentOffset, result[]}", async () => {
     const chain = (await json(`${FIX}/categories/chain-category.json`)) as Array<{ id: number; name: string }>;
     const withSystem = (await json(`${FIX}/categories/chain-category-system.json`)) as unknown[];
@@ -331,19 +331,19 @@ describe("not-found (200 + empty body)", () => {
     expect(ff.requests[0]!.url).toBe(`https://t-dev.test/rest/api/automation/chain/v2/${uuid}?basicInfo=false`);
   });
 
-  // AD-11 (fixed; ADR-R10 flipped the todos): a 200 with an empty body is METHOD_NOT_FOUND.
-  test("AD-11: V1 fetchRawMethod maps 200-empty-body to METHOD_NOT_FOUND", async () => {
+  // A 200 with an empty body is METHOD_NOT_FOUND.
+  test("V1 fetchRawMethod maps 200-empty-body to METHOD_NOT_FOUND", async () => {
     serveEmpty();
     await expect(v1.fetchRawMethod(missing)).rejects.toMatchObject({ code: "METHOD_NOT_FOUND" });
   });
-  test("AD-11: V2 fetchRawMethod maps 200-empty-body to METHOD_NOT_FOUND", async () => {
+  test("V2 fetchRawMethod maps 200-empty-body to METHOD_NOT_FOUND", async () => {
     serveEmpty();
     await expect(v2.fetchRawMethod(missing)).rejects.toMatchObject({ code: "METHOD_NOT_FOUND" });
   });
 });
 
-// ADR-R8: a V2 method output with only fieldCode/name still has a code.
-describe("V2 method outputs without `key` (ADR-R8)", () => {
+// a V2 method output with only fieldCode/name still has a code.
+describe("V2 method outputs without `key`", () => {
   test("code falls back to fieldCode, then name; matches V1", async () => {
     const uuid = "4a49e392ca76084725c3839ff97007ae";
     const raw2 = (await json(`${FIX}/real-v2/${uuid}.v2.json`)) as V2MethodResponse;

@@ -15,7 +15,7 @@ interface ExportCategoryData {
   methodCount: number;
   writtenTo?: string;
   bytes: number;
-  /** The export body — omitted when written to --out unless --full (7.9). */
+  /** The export body — omitted when written to --out unless --full. */
   preview?: unknown;
 }
 
@@ -31,7 +31,7 @@ const command: CommandModule<ExportCategoryArgs, ExportCategoryData> = {
     return { ref: positionals.category, outPath: flags.out, full: flags.full };
   },
   async execute({ ref, outPath, full }, context) {
-    // AD-09/F9: resolve name / uuid / system id to the chain-category id the
+    // resolve name / uuid / system id to the chain-category id the
     // export endpoint needs (the system id 1318 exported an empty list).
     const category = requireChainCategory(await fetchCategories(), ref);
     const id = category.chainCategoryId;

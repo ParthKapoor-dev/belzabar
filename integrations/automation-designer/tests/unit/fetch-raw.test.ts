@@ -1,6 +1,5 @@
-// `ad fetch --raw` returns the wire body once as data.raw (smoke --llm envelope
-// #7: it nested the whole hydrated method, with its own `raw` inside, under
-// data.raw.method — the wire body twice plus every parsed step).
+// `ad fetch --raw` returns the wire body once as data.raw (not the whole
+// hydrated method, whose own `raw` would carry the wire body a second time).
 import { afterEach, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";

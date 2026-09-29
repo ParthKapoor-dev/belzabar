@@ -1,4 +1,4 @@
-// 7.7 / 7.12: `ad test --expect`, `--case` and `--compare-published` over the
+// `ad test --expect`, `--case` and `--compare-published` over the
 // real acme-dev bodies of belz_tst_s7c_t1 (fixtures/test-cases: draft
 // 4252b87e… whose echo was changed to "Hi #{name}", and its published copy
 // 4725bcfb… still saying "Hello #{name}") and the real /chain/test answers.
@@ -45,7 +45,7 @@ function wire(opts: { failed?: boolean } = {}) {
   return inputs;
 }
 
-describe("ad test --expect (7.7)", () => {
+describe("ad test --expect", () => {
   test("outputs map + passing expectations → ok", async () => {
     const inputs = wire();
     const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--expect", "greetingOut=Hi World", "--expect", "greetingOut~=World"], { env: ENV });
@@ -128,7 +128,7 @@ describe("ad test input files: stable error codes (was UNHANDLED_EXCEPTION)", ()
   });
 });
 
-describe("ad test: a FAILED execution (ADW-R12)", () => {
+describe("ad test: a FAILED execution", () => {
   test("exits 1 with AD_TEST_FAILED and keeps the run data", async () => {
     const inputs = wire({ failed: true });
     const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs], { env: ENV });
@@ -145,7 +145,7 @@ describe("ad test: a FAILED execution (ADW-R12)", () => {
   });
 });
 
-describe("ad test --compare-published (7.12)", () => {
+describe("ad test --compare-published", () => {
   test("draft uuid: runs both, diffs the outputs", async () => {
     const inputs = wire();
     const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--compare-published", "--yes"], { env: ENV });
@@ -171,7 +171,7 @@ describe("ad test --compare-published (7.12)", () => {
     expect(d.compare.published.expectations).toMatchObject({ passed: 1, failed: 0 });
   });
 
-  test("ADW-R14: the second (published) execution needs confirmation; --llm without --yes runs nothing", async () => {
+  test("the second (published) execution needs confirmation; --llm without --yes runs nothing", async () => {
     const inputs = wire();
     const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--compare-published"], { env: ENV });
     expect(r.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
@@ -212,7 +212,7 @@ describe("lib/test-run helpers", () => {
   });
 });
 
-// CLI trial: `ad test` took only `--inputs <file>` (in --llm), while
+// `ad test` took only `--inputs <file>` (in --llm), while
 // `test-case create` takes `--input k=v` and `ad run` inline JSON.
 describe("ad test --input k=v and inline --inputs JSON", () => {
   const posted = () => ad.ff.requests.find((q) => q.method === "POST")!.body ?? "";

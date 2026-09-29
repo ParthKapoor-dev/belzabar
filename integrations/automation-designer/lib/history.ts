@@ -1,4 +1,4 @@
-// Method history helpers shared by `ad history` and `ad diff` (F7).
+// Method history helpers shared by `ad history` and `ad diff`.
 //
 // history.get is addressed by category + method name, and the draft and the
 // published chain share both. `includeDraft: true` returns the DRAFT chain's

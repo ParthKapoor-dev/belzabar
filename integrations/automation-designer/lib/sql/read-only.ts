@@ -2,13 +2,13 @@
 //
 // The server runs `sql run` queries through executeQuery with autocommit, so
 // DML/DDL there really commits — and is then reported as a *failure*
-// ("No results were returned by the query") — smoke-test F2. We therefore
+// ("No results were returned by the query"). We therefore
 // refuse anything but a single read statement before sending it:
 //
 //   SELECT … | WITH … SELECT … | VALUES … | TABLE … | SHOW …
 //   EXPLAIN [ANALYZE] [VERBOSE] <read> | EXPLAIN (option [value], …) <read>
 //
-// EXPLAIN is judged by its inner statement (7.11): the inner statement must
+// EXPLAIN is judged by its inner statement: the inner statement must
 // pass this same gate. That matters because EXPLAIN ANALYZE really executes
 // it — `EXPLAIN ANALYZE DELETE …` deletes — so ANALYZE is only allowed in
 // EXPLAIN's own option position, never inside the statement.
@@ -160,7 +160,7 @@ export function stripSqlLiterals(sql: string): { text: string; unterminated: boo
 export function checkReadOnlySql(sql: string): ReadOnlyVerdict {
   const { text, unterminated } = stripSqlLiterals(sql);
   const normalized = text.trim().replace(/[;\s]+$/, "").trim();
-  // ADW-R1: the query travels with combineInputs:true, so the server evaluates
+  // the query travels with combineInputs:true, so the server evaluates
   // every `#{…}` (inside literals and comments too) and splices the result into
   // the SQL text before the DB sees it. Nothing after that can be checked here.
   if (sql.includes("#{")) {

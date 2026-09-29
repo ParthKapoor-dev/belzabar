@@ -1,5 +1,5 @@
 // A method's persistent test suite as case files, plus the write helpers that
-// verify every write by reading the suite back (7.7 / 7.13).
+// verify every write by reading the suite back.
 //
 // Live facts (2026-09-29) this module is built around:
 //   - `POST /chain/testcases/{chainUuid}` stores the body verbatim (creates the

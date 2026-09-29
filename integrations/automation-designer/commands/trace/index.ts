@@ -8,7 +8,7 @@ export type { TraceData } from "../../lib/trace";
 
 interface TraceArgs {
   uuid: string;
-  /** Explicit --spine; default: the active env (AD-25). */
+  /** Explicit --spine; default: the active env. */
   spineEnv?: string;
   envs?: string[];
 }

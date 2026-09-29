@@ -1,4 +1,4 @@
-// Stage 7.2 — structural `ad save` ops (lib/serialize/ops.ts + compact.ts) on
+// structural `ad save` ops (lib/serialize/ops.ts + compact.ts) on
 // real acme-dev V2 bodies, with callee contracts / db accounts from the slim
 // acme-dev captures (tests/fixtures/validate/online). Also verifyStructural,
 // the post-save check used for ops and creates.
@@ -282,7 +282,7 @@ describe("update-step on existing steps", () => {
     expect(code(() => plan(live, [{ op: "update-step", step: 1, set: { removeOutputs: ["nope"] } }]))).toBe("AD_OVERLAY_NOT_APPLIED");
   });
 
-  test("update-step outputs MERGE; replaceOutputs REPLACES the list (CLI trial)", () => {
+  test("update-step outputs MERGE; replaceOutputs REPLACES the list", () => {
     const live = real(U);
     const fcs = (b: typeof live, i: number) => (b.steps![i]!.outputs ?? []).map((o) => o.fieldCode);
     expect([...fcs(live, 0)].sort()).toEqual(["enrollment_stage_type_count", "enrollment_stage_type_info"]);
@@ -384,7 +384,7 @@ describe("verifyStructural (post-save check for ops and creates)", () => {
   });
 });
 
-describe("ADW-R7: removals must not be mistaken for server-filled fields", () => {
+describe("removals must not be mistaken for server-filled fields", () => {
   const live = {
     name: "m",
     outputs: [{ key: "keep", type: "TEXT" }, { key: "gone", type: "TEXT" }],

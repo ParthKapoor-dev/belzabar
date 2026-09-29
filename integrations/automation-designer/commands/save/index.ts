@@ -39,7 +39,7 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
-  // ADW-R6: --dry-run-compile POSTs the executing /chain/test route (steps gated
+  // --dry-run-compile POSTs the executing /chain/test route (steps gated
   // off), so even a dry run with it must name --env explicitly.
   writes: (a) => !a.dryRun || a.dryRunCompile,
   requiresEnv: true, // --dry-run reads the target draft: never the default env silently

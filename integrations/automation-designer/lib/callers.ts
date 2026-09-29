@@ -1,4 +1,4 @@
-// `ad callers <uuid>` (Stage 7.6): a reverse index — which AD methods (and,
+// `ad callers <uuid>`: a reverse index — which AD methods (and,
 // with --pd, which PD pages / components) call a given method. Read-only.
 //
 // Target identity: the method's own automation-API uuid (V2 `automationApiId`)
@@ -148,7 +148,7 @@ export function stepRefsOf(body: unknown): StepRef[] {
 
 /**
  * Refs-cache key: the index's `updatedOn`, or — for a method belz changed
- * after the index was built (ADR-R1) — the mark time, so the edit is re-read.
+ * after the index was built — the mark time, so the edit is re-read.
  */
 function refsKey(m: MethodFinderMethod, dirty?: Map<string, number>): string {
   const mark = dirty?.get(m.uuid.toLowerCase());

@@ -109,7 +109,7 @@ export interface StepInput {
   raw?: unknown;
 }
 
-/** One V1 basic-mode condition row (AD-40). `groupOp` joins it to the previous row. */
+/** One V1 basic-mode condition row. `groupOp` joins it to the previous row. */
 export interface ConditionRow {
   field: string;
   operator: string;
@@ -127,7 +127,7 @@ interface BaseStep {
   /** Trimmed automationAPI uuid when known (V1 fat steps, V2, or the definition). */
   automationApiUuid?: string;
   /**
-   * Service identity (AD-02): automation-system name (`db_service`) and API
+   * Service identity: automation-system name (`db_service`) and API
    * label (`data.read`). V2 carries them on the wire; V1 gets them from the
    * definition lookup (lib/hydrator.ts) or the verified per-env fast path.
    * Undefined when the service could not be resolved.
@@ -266,7 +266,7 @@ export interface HydratedMethod {
   parseWarnings: string[];
   /**
    * V1 only: automationIds whose service definition lookup failed, so their
-   * steps may be misclassified. A parse with any is never cached (ADR-R11).
+   * steps may be misclassified. A parse with any is never cached.
    */
   unresolvedServices?: string[];
 }

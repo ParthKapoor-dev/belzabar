@@ -81,12 +81,12 @@ describe("find command parseArgs", () => {
   });
 });
 
-// ─── Stage 4 fixes ──────────────────────────────────────────────────────
+// ─── flags before the subcommand ─────────────────────────────────────────
 import { fakeFetch, respond, withTempEnvConfig } from "@belzabar/core/testing";
 import { rawIndex, subcommandFirst } from "../../commands/find/index";
 import { loadOrBuildMethodFinderIndex, type MethodFinderIndex } from "../../lib/method-finder";
 
-describe("find: flags before the subcommand (s3-review regression)", () => {
+describe("find: flags before the subcommand", () => {
   test("`--refresh list` is list mode again", () => {
     expect(subcommandFirst(["--refresh", "list"])).toEqual(["list", "--refresh"]);
     const parsed = command.parseArgs(["--refresh", "list"], context);
@@ -100,7 +100,7 @@ describe("find: flags before the subcommand (s3-review regression)", () => {
   });
 });
 
-describe("find pick without a terminal (F30)", () => {
+describe("find pick without a terminal", () => {
   test("human mode → INTERACTIVE_NOT_SUPPORTED before any fetch", async () => {
     const desc = Object.getOwnPropertyDescriptor(process.stdin, "isTTY");
     Object.defineProperty(process.stdin, "isTTY", { value: false, configurable: true });
@@ -115,7 +115,7 @@ describe("find pick without a terminal (F30)", () => {
   });
 });
 
-describe("find --raw honours --limit (F29)", () => {
+describe("find --raw honours --limit", () => {
   test("index capped, truncation counted", () => {
     const index = {
       env: "e", generatedAt: 0, skippedCategories: [], categoryCount: 3, methodCount: 50,
@@ -129,7 +129,7 @@ describe("find --raw honours --limit (F29)", () => {
   });
 });
 
-describe("find index rebuild (F29, AD-10)", () => {
+describe("find index rebuild", () => {
   test("reports progress per category and keeps chain-category id + trimmed uuids", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-find": { url: "https://t-find.test" } }, activeEnv: "t-find" });
     const cats = [

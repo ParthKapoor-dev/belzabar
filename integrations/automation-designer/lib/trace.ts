@@ -24,7 +24,7 @@ interface TraceOptions {
   /** Env whose version history forms the spine. */
   spineEnv: string;
   /**
-   * Envs to locate the method on (AD-25). Default: every configured env of
+   * Envs to locate the method on. Default: every configured env of
    * the spine env's project (`acme-*` for an `acme-dev` spine), never other projects.
    * The spine env is always included.
    */
@@ -34,7 +34,7 @@ interface TraceOptions {
 /** Default env set for a trace: the spine env's project family, spine first. */
 /**
  * Published history versions are immutable, and each `historyGet` is a chain
- * execute: bodies are cached per env + methodVersionID (ADR-R14).
+ * execute: bodies are cached per env + methodVersionID.
  */
 const historyBodyCache = new Cache<MethodVersionFull>({
   dir: join(BELZ_CONFIG_DIR, "cache", "history-versions"),
@@ -144,7 +144,7 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
     const inputUuid = resolveMethodRef(args.uuid);
     const input = await adApi.fetchMethod(inputUuid, "v1");
     // The spine is the PUBLISHED timeline, and history.get without
-    // includeDraft reads the published chain (F7): list the same chain.
+    // includeDraft reads the published chain: list the same chain.
     let uuid = inputUuid;
     if (input.state === "DRAFT") {
       const ref = (input.referenceId ?? "").trim();

@@ -18,11 +18,11 @@ export function parseV2Method(raw: V2MethodResponse, opts?: ParseOptions): Hydra
   const warn = (msg: string) => warnings.push(msg);
 
   const metadata = raw.metadata;
-  // AD-35: the method uuid is top-level `uuid` on the real wire (metadata has none).
+  // the method uuid is top-level `uuid` on the real wire (metadata has none).
   const uuid = firstString(raw.uuid, metadata?.uuid, metadata?.version?.uuid);
   if (!uuid) warn("V2 response carries no uuid (top-level, metadata.uuid or metadata.version.uuid)");
 
-  // AD-35 / F8: 1-based like V1, so `--step N` targets the same step on both.
+  // 1-based like V1, so `--step N` targets the same step on both.
   const steps: ParsedStep[] = (raw.steps ?? []).map((s, idx) => parseV2Step(s, idx + 1, warn, opts));
 
   const inputs: MethodField[] = (raw.inputs ?? []).map(mapField);
@@ -86,7 +86,7 @@ function mapField(f: V2Field): MethodField {
 
 function mapOutput(o: V2Output): MethodOutput {
   return {
-    // Some real V2 method outputs carry only fieldCode / name (ADR-R8).
+    // Some real V2 method outputs carry only fieldCode / name.
     code: o.key || o.fieldCode || o.name || "",
     displayName: o.name,
     type: o.type,

@@ -27,7 +27,7 @@ interface FindArgs {
 
 type Row = Record<string, unknown>;
 
-/** Index freshness (7.9: compact — no ttl/expiry arithmetic for the caller to do). */
+/** Index freshness (compact — no ttl/expiry arithmetic for the caller to do). */
 interface CacheMeta {
   source: "cache" | "fresh";
   generatedAt: number;
@@ -76,7 +76,7 @@ interface FindPickData {
 
 type FindData = FindBrowseData | FindSearchData | FindDescribeData | FindPickData;
 
-// ── Compact rows (7.9) ──────────────────────────────────────────────────────
+// ── Compact rows ──────────────────────────────────────────────────────
 // Default rows carry what picks the next command; `--fields a,b` picks
 // fields, `--fields all` returns the full index records. Empty values are omitted.
 
@@ -127,7 +127,7 @@ function categoryRow(c: MethodFinderCategory & { score?: number }, sel: FieldSel
   return projectRow(full, sel, DEFAULT_CATEGORY_FIELDS);
 }
 
-/** `--raw` payload: the index capped at `--limit` methods and categories (F29: was 1.6 MB). */
+/** `--raw` payload: the index capped at `--limit` methods and categories (was 1.6 MB). */
 interface RawIndexView {
   index: MethodFinderIndex;
   truncated: { methods: number; categories: number };
@@ -208,14 +208,14 @@ const command: CommandModule<FindArgs, FindData> = {
       });
     }
 
-    // F30: fzf needs a terminal; fail cleanly before any work when there is none.
+    // fzf needs a terminal; fail cleanly before any work when there is none.
     if (mode === "pick" && context.outputMode !== "llm" && !(process.stdin.isTTY && process.stderr.isTTY)) {
       throw new CliError("Interactive picker needs a terminal (stdin/stderr are not a TTY). Use `belz ad find <query>`.", {
         code: "INTERACTIVE_NOT_SUPPORTED",
       });
     }
 
-    // F29: a rebuild walks every category (minutes on big envs) — report progress
+    // a rebuild walks every category (minutes on big envs) — report progress
     // on stderr (human mode; lifecycle.notice is silent with --llm).
     const { index, source } = await loadOrBuildMethodFinderIndex({
       refresh,
@@ -269,7 +269,7 @@ const command: CommandModule<FindArgs, FindData> = {
         categories,
       };
       if (catRef) {
-        // CLI trial: `find --category X` returned only a count; list the methods.
+        // `find --category X` returned only a count; list the methods.
         const methods = [...scoped.methods].sort((a, b) => a.methodName.localeCompare(b.methodName) || a.state.localeCompare(b.state));
         data.totalMethods = methods.length;
         data.methods = methods.slice(0, limit).map((m) => methodRow(m, sel, DEFAULT_METHOD_FIELDS.filter((f) => f !== "type" && f !== "score"), false));

@@ -1,4 +1,4 @@
-// Output-trimming helpers shared by the AD read commands (Stage 7: 7.1 / 7.9).
+// Output-trimming helpers shared by the AD read commands.
 //
 // - `pruneEmpty` drops null / undefined / "" / [] / {} recursively (false and 0
 //   are kept: they carry meaning). Used on --llm payloads so agents do not pay

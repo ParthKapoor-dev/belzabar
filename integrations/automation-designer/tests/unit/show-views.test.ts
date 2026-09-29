@@ -1,4 +1,4 @@
-// Stage 7.1: `ad show --compact` / `--story` and the lean default envelope,
+// `ad show --compact` / `--story` and the lean default envelope,
 // over the 36 real acme-dev V2 bodies (+ V1 with definition labels).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readdirSync } from "fs";
@@ -68,7 +68,7 @@ describe("compact helpers", () => {
   });
 });
 
-describe("ad show default envelope is lean (7.1)", () => {
+describe("ad show default envelope is lean", () => {
   test("no request echo, no badge duplicate, no empty fields, bodies only on demand", async () => {
     const r = await show(await v2(SQL_UUID), ["--services"]);
     const data = r.envelope?.data as any;
@@ -105,7 +105,7 @@ describe("ad show default envelope is lean (7.1)", () => {
   });
 });
 
-describe("ad show --compact (7.1)", () => {
+describe("ad show --compact", () => {
   test("one line per step with decoded SQL/code, conditions and outputs", async () => {
     const m = await v2(SQL_UUID);
     const data = (await show(m, ["--compact"])).envelope?.data as any;
@@ -177,8 +177,8 @@ describe("ad show --compact (7.1)", () => {
   });
 });
 
-// ADR-R4: the agent views read V2 so their keys are the ones `ad save` ops take.
-describe("ad show --compact / --story read V2 (ADR-R4, R13)", () => {
+// the agent views read V2 so their keys are the ones `ad save` ops take.
+describe("ad show --compact / --story read V2", () => {
   test("without --v2 the views fetch V2, fresh, and say so", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     const m = await v2(SQL_UUID);
@@ -219,7 +219,7 @@ describe("ad show --compact / --story read V2 (ADR-R4, R13)", () => {
   });
 });
 
-describe("ad show --story (7.1)", () => {
+describe("ad show --story", () => {
   test("renders the approval template with decoded code and SQL", async () => {
     const m = await v2(SQL_UUID);
     const data = (await show(m, ["--story"])).envelope?.data as any;
@@ -265,7 +265,7 @@ describe("ad show <file> (local body before save)", () => {
   });
 });
 
-describe("show human step table (smoke UX: HTML in cells)", () => {
+describe("show human step table: no HTML in cells", () => {
   test("rich-text descriptions become plain text, cut to 100 chars", () => {
     const rows = stepTableRows([
       { orderIndex: 2, kind: "EXISTING_SERVICE", description: 'If it returns false<ul><li>Return false with message "Operation not allowed"</li></ul>', identity: "Helpers.Legacy.exception.raise" },
@@ -277,8 +277,8 @@ describe("show human step table (smoke UX: HTML in cells)", () => {
   });
 });
 
-// ADR-R5: rich-text step descriptions are shown as text; --full does not cut them.
-describe("HTML step descriptions (ADR-R5)", () => {
+// rich-text step descriptions are shown as text; --full does not cut them.
+describe("HTML step descriptions", () => {
   const RICH = "42eca7d0b957039f8538aa7480498546.v2.json";
   test("compact and story show the text, not the markup; --full keeps it whole", async () => {
     const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${RICH}`).json(), { env: "acme-dev" });
@@ -293,8 +293,8 @@ describe("HTML step descriptions (ADR-R5)", () => {
   });
 });
 
-// ADR-R9: the exit status code is part of the error contract.
-describe("exit status codes (ADR-R9)", () => {
+// the exit status code is part of the error contract.
+describe("exit status codes", () => {
   test("V1 and V2 both render exit-on-fail and exit-if with the status code", async () => {
     const uuid = "4bfc83c74c3c3d2f60a5c7f6fa8bca3b";
     const files = readdirSync(`${FIX}/real-v2`).filter((f) => f.startsWith(uuid.slice(0, 8)));

@@ -1,12 +1,12 @@
 // `ad test`, `ad run-suites`, `ad run` over a real acme-dev V1 body
 // (fixtures/real-v1/4f6331f1…: 2 steps with NUMERIC automationId and no
 // automationApiId, 2 inputs).
-// AD-16: automationApiId injection works with numeric ids (one shared helper).
-// AD-17: trace rows carry the method's step descriptions / orderIndex.
-// AD-38 / F14: run-suites posts the same body as `test`, and surfaces the
-// server's message. AD-34: `run` on a DRAFT uuid warns (live acme-dev
-// 2026-09-29: it runs the draft's own saved body, not the published copy). Decision (main):
-// test/run/run-suites are writes (explicit --env).
+// automationApiId injection works with numeric ids (one shared helper).
+// trace rows carry the method's step descriptions / orderIndex.
+// run-suites posts the same body as `test`, and surfaces the
+// server's message. `run` on a DRAFT uuid warns (live: it runs the draft's
+// own saved body, not the published copy). test/run/run-suites are writes
+// (explicit --env).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -74,7 +74,7 @@ const okTestResponse = () => ({
   outputs: [{ testResult: '{"a":1}' }],
 });
 
-describe("buildV1TestPayload (AD-16 / AD-38)", () => {
+describe("buildV1TestPayload", () => {
   test("numeric automationId gets automationApiId; testValues set; only the 5 test keys", async () => {
     const raw = rawBody();
     const payload = await buildV1TestPayload(raw, { cityCode: "X1" }, {
@@ -97,7 +97,7 @@ describe("buildV1TestPayload (AD-16 / AD-38)", () => {
 });
 
 describe("ad test", () => {
-  test("posts the injected payload; trace rows carry real descriptions + orderIndex (AD-17)", async () => {
+  test("posts the injected payload; trace rows carry real descriptions + orderIndex", async () => {
     const f = wire(okTestResponse);
     const inputs = join(scratchDir("ad-test"), "in.json");
     writeFileSync(inputs, JSON.stringify({ cityCode: "C", displayName: "D" }));
@@ -130,7 +130,7 @@ describe("ad test", () => {
   });
 });
 
-describe("matchStep (AD-17)", () => {
+describe("matchStep", () => {
   const steps = [
     { orderIndex: 1, description: "first", automationId: 10 },
     { orderIndex: 2, description: "second", automationId: 20 },
@@ -142,7 +142,7 @@ describe("matchStep (AD-17)", () => {
   });
 });
 
-describe("ad run-suites (AD-38 / F14)", () => {
+describe("ad run-suites", () => {
   function suitesDir(): string {
     const dir = scratchDir("ad-suites");
     mkdirSync(join(dir, "suites"), { recursive: true });
@@ -152,7 +152,7 @@ describe("ad run-suites (AD-38 / F14)", () => {
   const legacySuite = (dir: string) =>
     writeFileSync(join(dir, "suites", "s1.spec.json"), JSON.stringify({ name: "s1", uuid: UUID, inputs: { cityCode: "Z" } }));
 
-  test("ADW-R13: a legacy suite without env is refused (ENV_MISSING), nothing runs", async () => {
+  test("a legacy suite without env is refused (ENV_MISSING), nothing runs", async () => {
     const dir = suitesDir();
     legacySuite(dir);
     const f = wire(okTestResponse);
@@ -164,7 +164,7 @@ describe("ad run-suites (AD-38 / F14)", () => {
     expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
   });
 
-  test("ADW-R13: --legacy-env for another env still refuses; the matching one runs it", async () => {
+  test("--legacy-env for another env still refuses; the matching one runs it", async () => {
     const dir = suitesDir();
     legacySuite(dir);
     const f = wire(okTestResponse);
@@ -189,7 +189,7 @@ describe("ad run-suites (AD-38 / F14)", () => {
     expect(JSON.parse(body.jsonDefinition).inputs.find((i: any) => i.fieldCode === "cityCode").testValue).toBe("Z");
   });
 
-  test("ADW-R13: a malformed suite fails on its own (INVALID_JSON), the others still run and a summary is returned", async () => {
+  test("a malformed suite fails on its own (INVALID_JSON), the others still run and a summary is returned", async () => {
     const dir = suitesDir();
     writeFileSync(join(dir, "suites", "a-broken.spec.json"), "{ not json");
     const f = wire(okTestResponse);
@@ -205,7 +205,7 @@ describe("ad run-suites (AD-38 / F14)", () => {
     expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(1);
   });
 
-  test("ADW-R13: a suite saved on another env is not run (ENV_MISMATCH)", async () => {
+  test("a suite saved on another env is not run (ENV_MISMATCH)", async () => {
     const dir = suitesDir();
     writeFileSync(join(dir, "suites", "s1.spec.json"), JSON.stringify({ name: "s1", uuid: UUID, env: "orb-qa", inputs: {} }));
     const f = wire(okTestResponse);
@@ -216,7 +216,7 @@ describe("ad run-suites (AD-38 / F14)", () => {
     expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
   });
 
-  test("ADW-R13: save-suite records the env the uuid belongs to", async () => {
+  test("save-suite records the env the uuid belongs to", async () => {
     const dir = suitesDir();
     wire(okTestResponse);
     spies.push(spyOn(process, "cwd").mockReturnValue(dir));
@@ -247,7 +247,7 @@ describe("ad run payload file", () => {
   });
 });
 
-describe("ad run (AD-34)", () => {
+describe("ad run", () => {
   test("a DRAFT uuid warns that the draft's saved body runs and names the published copy", async () => {
     const draft = { ...rawBody(), automationState: "DRAFT", referenceId: "0000000000000000000000000000beef" };
     wire(okTestResponse, draft);
@@ -260,7 +260,7 @@ describe("ad run (AD-34)", () => {
     expect(JSON.stringify(r.envelope?.meta ?? {}) + r.stderr).toContain("runs the draft's saved body");
   });
 
-  test("a failed execute reports details as an object (F38)", async () => {
+  test("a failed execute reports details as an object", async () => {
     wire(okTestResponse, rawBody(), respond({ status: 500, json: { errorMessage: "boom" } }));
     const r = await runCommand(runCommandModule, [UUID, "{}"], { env: "t-s4b-run" });
     expect(r.envelope?.error?.code).toBe("EXECUTION_FAILED");

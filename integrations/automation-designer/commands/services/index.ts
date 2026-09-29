@@ -36,7 +36,7 @@ interface ServicesData {
   services: Array<Record<string, unknown>>;
 }
 
-/** One method of a service (CLI trial: agents guessed method names and hit 404s). */
+/** One method of a service (agents guessed method names and hit 404s). */
 export interface ServiceMethodRow {
   /** The name `Svc/method` compact steps and `ad child-info` take (the API uri). */
   method: string;
@@ -83,7 +83,7 @@ export function serviceMethodRows(body: unknown, all: boolean): ServiceMethodRow
   return rows.sort((a, b) => a.method.localeCompare(b.method));
 }
 
-// 7.9: compact rows by default (label / aliases only when they differ from the
+// compact rows by default (label / aliases only when they differ from the
 // name, description cut at 100 chars, empties dropped); --fields picks, --fields all = full rows.
 export const SERVICE_FIELDS = ["name", "id", "uuid", "systemUuid", "label", "type", "internalService", "aliasNames", "description", "score"] as const;
 const DEFAULT_FIELDS = ["name", "id", "type", "internalService", "label", "aliasNames", "description", "score"];
@@ -101,7 +101,7 @@ export const args = defineArgs({
 });
 
 /**
- * 7.5: rank services for a free-text query. Each query word scores its best
+ * rank services for a free-text query. Each query word scores its best
  * hit over name (1.0), label (0.95), aliases (0.92) and description (0.6),
  * using the method index's scorer (exact > prefix > word start > substring >
  * fuzzy); the service score is the sum. Zero-score services are dropped.

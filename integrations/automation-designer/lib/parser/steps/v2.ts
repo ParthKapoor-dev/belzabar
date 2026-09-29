@@ -105,7 +105,7 @@ export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string)
       kind: family.kind,
       key: byKey("key"),
       value: byKey("value"),
-      // some envs key them expirationSeconds / scope / canReplace (ADR-R3).
+      // some envs key them expirationSeconds / scope / canReplace.
       ttlSeconds: byKey("expiry", "ttl", "expirationseconds"),
       store: byKey("store", "scope"),
       overwrite: byKey("overwrite", "canreplace"),

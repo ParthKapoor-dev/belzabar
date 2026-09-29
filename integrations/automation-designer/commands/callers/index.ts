@@ -1,6 +1,6 @@
 // belz ad callers <uuid|url> [--category a,b | --all] [--pd] [--refresh]
 //
-// Reverse index (Stage 7.6): which AD methods — and with --pd which PD pages /
+// Reverse index: which AD methods — and with --pd which PD pages /
 // components — call the given method. Read-only. Scope and caching are
 // documented in lib/callers.ts.
 

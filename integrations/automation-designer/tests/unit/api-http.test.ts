@@ -1,4 +1,4 @@
-// AD-11 / F10: an unknown uuid is answered with 200 + empty body → METHOD_NOT_FOUND.
+// an unknown uuid is answered with 200 + empty body → METHOD_NOT_FOUND.
 // ad-validation §1.7: debug-mode test responses echo the bearer token → redacted.
 import { afterEach, describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
@@ -74,7 +74,7 @@ describe("test responses are redacted", () => {
   });
 });
 
-// CLI trial: every V1 read did `response.json()`, so a 200 + empty body was a raw
+// every V1 read did `response.json()`, so a 200 + empty body was a raw
 // "JSON Parse error: Unexpected EOF" (UNHANDLED_EXCEPTION). Now empty → null,
 // non-JSON → HTTP_BAD_JSON.
 describe("V1 reads/writes: empty and non-JSON 200 bodies", () => {

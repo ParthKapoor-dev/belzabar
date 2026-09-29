@@ -182,7 +182,7 @@ async function executeHistoryDiff(
     context.warn(`Both sides resolve to v${from} — the diff will be empty.`);
   }
 
-  // F7: read the versions from the chain the uuid names (draft vs published).
+  // read the versions from the chain the uuid names (draft vs published).
   const [leftFull, rightFull] = await Promise.all([
     getVersionOf(current, category, from),
     getVersionOf(current, category, to),
@@ -210,7 +210,7 @@ async function executeHistoryDiff(
 }
 
 // ─── cross-env mode ────────────────────────────────────────────────────────
-// AD-26: fetched IN-PROCESS (each env has its own session; Config.setActiveEnv
+// fetched IN-PROCESS (each env has its own session; Config.setActiveEnv
 // switches, as `trace` does) and compared on the semantic view, so code / SQL
 // / SpEL body changes show up and env-local ids / urls do not.
 
@@ -433,7 +433,7 @@ function runFzf(rows: string[], opts: FzfOpts): Promise<string | undefined> {
 // ─── helpers ───────────────────────────────────────────────────────────────
 
 /**
- * Launch the diff editor (ADR-R7): never by default in --llm mode (an agent
+ * Launch the diff editor: never by default in --llm mode (an agent
  * run must not pop a window on the developer's desktop), and a missing
  * binary is a warning plus `editor: null`, not a crash or a false "Opened".
  */

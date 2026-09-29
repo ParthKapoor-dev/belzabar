@@ -1,4 +1,4 @@
-// CLI trial tr2: `ad test-case run-suite` gave no way to observe completion and
+// `ad test-case run-suite` gave no way to observe completion and
 // `ad test-report` answered all zeros (read as "nothing happened").
 // Live acme-dev 2026-09-29 (belz_tst_fixt2_idx, one passing + one failing case):
 // /testsuite/execute returns at once ("you will receive an email"), the report

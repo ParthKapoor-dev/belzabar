@@ -108,7 +108,7 @@ describe("resolveDraftTarget", () => {
     }
   });
 
-  test("UNKNOWN state (automationState and state both missing) — fails closed (AD-12)", async () => {
+  test("UNKNOWN state (automationState and state both missing) — fails closed", async () => {
     const m = fakeMethod({ uuid: "nostate", state: "UNKNOWN" });
     const result = await resolveDraftTarget("nostate", "v1", makeDeps({ nostate: m }));
     expect(result.ok).toBe(false);
@@ -116,7 +116,7 @@ describe("resolveDraftTarget", () => {
   });
 });
 
-describe("parser state normalisation (AD-12)", () => {
+describe("parser state normalisation", () => {
   const base = { id: 1, uuid: "u", jsonDefinition: "{}", version: 1, category: { id: 1, name: "c" } };
   test("reads automationState first", () => {
     expect(parseV1Method({ ...base, automationState: "PUBLISHED", state: "DRAFT" } as any).state).toBe("PUBLISHED");

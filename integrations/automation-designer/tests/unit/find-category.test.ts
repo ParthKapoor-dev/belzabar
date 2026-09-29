@@ -1,4 +1,4 @@
-// CLI trial: `ad find --category X` returned only a count, `--raw` ignored
+// `ad find --category X` returned only a count, `--raw` ignored
 // --category, `ad categories` had no filter, and a deleted method stayed in
 // the cached index until `--refresh`. Real "Example services" listing fixture.
 import { describe, expect, test } from "bun:test";

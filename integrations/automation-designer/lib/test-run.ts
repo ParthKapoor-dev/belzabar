@@ -3,7 +3,7 @@
 // {code: value} map (what `--expect` and `--compare-published` compare).
 //
 // The body is the method as fetched (test-before-save), so the same function
-// runs a DRAFT and its PUBLISHED copy with identical inputs (7.12).
+// runs a DRAFT and its PUBLISHED copy with identical inputs.
 
 import { CliError, readJsonOrNull } from "@belzabar/core";
 import { testMethodMultipart } from "./api/v1";
@@ -137,7 +137,7 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
   }
 
   const services: Svc[] = Array.isArray(result.services) ? (result.services as Svc[]) : [];
-  // AD-17: the test response omits step descriptions and orderIndex — join each row to the method's own steps.
+  // the test response omits step descriptions and orderIndex — join each row to the method's own steps.
   const stepFor = (svc: Svc, idx: number) => matchStep(hydrated.parsedSteps, svc, idx);
   const failedIdx = services.findIndex((s) => s.executionStatus?.failed);
   const failedSvc = failedIdx >= 0 ? services[failedIdx]! : null;
@@ -193,7 +193,7 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
   };
 }
 
-// ── draft vs published (7.12) ────────────────────────────────────────────
+// ── draft vs published ────────────────────────────────────────────
 
 export interface OutputDifference {
   output: string;

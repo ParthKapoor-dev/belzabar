@@ -56,7 +56,7 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
-  // ADW-R6: --dry-run-compile POSTs the executing /chain/test route (steps gated
+  // --dry-run-compile POSTs the executing /chain/test route (steps gated
   // off), so even a dry run with it must name --env explicitly.
   writes: (a) => !a.dryRun || a.dryRunCompile,
   requiresEnv: true, // --dry-run reads the target env (category, callee contracts): never the default silently
@@ -115,7 +115,7 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
       throw err;
     }
     const uuid = normalizeUuid(created.uuid);
-    await invalidateMethodIndexEntry(currentCacheEnv(), uuid); // ADR-R1: `ad callers` reads it before the next index build
+    await invalidateMethodIndexEntry(currentCacheEnv(), uuid); // `ad callers` reads it before the next index build
     if (!uuid) {
       throw new CliError("Create answered without a uuid; check the category in the AD UI.", {
         code: "AD_SAVE_INVALID_RESPONSE",
@@ -123,7 +123,7 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
       });
     }
 
-    // `find` lists it at once (CLI trial), without an index rebuild.
+    // `find` lists it at once, without an index rebuild.
     if (category.chainCategoryUuid) {
       await addMethodToIndex(currentCacheEnv(), {
         uuid,

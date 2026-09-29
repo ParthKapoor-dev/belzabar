@@ -1,8 +1,7 @@
 // Fixtures for the validator tests (lib/validate).
 //
-//   golden()          the research baseline method (Test-Tester, acme-dev): echo → custom code → SQL
-//   caseBody(name)    golden + the live case's patch (tests/fixtures/validate/cases.json was derived
-//                     from research/ad-validation-samples/cases/v2_*.req.json vs the golden; each
+//   golden()          the baseline method: echo → custom code → SQL
+//   caseBody(name)    golden + a live case's patch (tests/fixtures/validate/cases.json; each
 //                     entry keeps the observed server/runtime result)
 //   realV2()          the 36 real acme-dev V2 bodies (tests/fixtures/real-v2)
 

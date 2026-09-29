@@ -1,4 +1,4 @@
-// `ad child-info --shape` (Stage 7.5): the part of an automation-API contract
+// `ad child-info --shape`: the part of an automation-API contract
 // an agent needs to wire a step — V2 step input keys (`produces`, case-
 // sensitive, nested with dots), types, required flags, encodings, enum values,
 // defaults; output keys (`consumes`); and, for services that need an account,

@@ -65,7 +65,7 @@ describe("fingerprintMethod", () => {
   });
 });
 
-// ─── ADW-R2: the fingerprint covers everything that changes behaviour ─────
+// ─── the fingerprint covers everything that changes behaviour ─────
 
 
 const FIX = join(import.meta.dir, "../fixtures");
@@ -80,7 +80,7 @@ const mutated = (fn: (b: Body) => void) => {
   return fpOf(b);
 };
 
-describe("fingerprintMethod over the wire body (ADW-R2)", () => {
+describe("fingerprintMethod over the wire body", () => {
   const base = fpOf(readJson(BASE));
 
   const BEHAVIOUR: Array<[string, (b: Body) => void]> = [
@@ -197,7 +197,7 @@ describe("fingerprintMethod over the wire body (ADW-R2)", () => {
 // (captured read-only, tests/fixtures/cross-env). They differ only in
 // serialisation noise: `encodedBase64:false` present in qa only, and
 // `databaseRead.account` = the env-local numeric id ("149") vs "null".
-describe("fingerprint across environments (ADW-R2 regression)", () => {
+describe("fingerprint across environments", () => {
   const hist = (f: string) => parseVersionBody(readJson(`cross-env/${f}`));
   const PAIRS: Array<[string, string, string]> = [
     ["4bfc83c7 (dev v3 = qa v1)", "4bfc83c7fc3da12d7e639ee88a40ff27.acme-dev.history-v3.json", "4bfc83c7fc3da12d7e639ee88a40ff27.acme-qa.history-v1.json"],
@@ -228,7 +228,7 @@ describe("fingerprint across environments (ADW-R2 regression)", () => {
     expect(withChange((jd) => (jd.steps[0].inputs[0].encodedBase64 = true))).not.toBe(base);
   });
 
-  test("the V2 GET of a published method matches its own history body (ADW-R8: fieldCode, service spelling)", () => {
+  test("the V2 GET of a published method matches its own history body (fieldCode, service spelling)", () => {
     for (const [get, h] of [
       ["real-v2/4bfc83c7fc3da12d7e639ee88a40ff27.v2.json", "4bfc83c7fc3da12d7e639ee88a40ff27.acme-dev.history-v3.json"],
       ["real-v2/4b0270f001810b5babeb919d9dd48c46.v2.json", "4b0270f001810b5babeb919d9dd48c46.acme-dev.history-v4.json"],

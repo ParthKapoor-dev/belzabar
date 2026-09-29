@@ -1,4 +1,4 @@
-// Step classification by service identity (AD-02).
+// Step classification by service identity.
 //
 // A step's real service is `automationSystem` + `automationAPI` of the
 // automation record it points at (`GET /automations/{automationId}`). The

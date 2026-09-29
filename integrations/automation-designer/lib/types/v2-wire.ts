@@ -107,7 +107,7 @@ export interface V2Step {
 
 interface V2Metadata {
   id?: string | number;
-  /** Not on the real wire (AD-35) — the uuid is `V2MethodResponse.uuid`. */
+  /** Not on the real wire — the uuid is `V2MethodResponse.uuid`. */
   uuid?: string;
   referenceId?: string | null;
   state: "DRAFT" | "PUBLISHED";

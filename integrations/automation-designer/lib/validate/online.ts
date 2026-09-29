@@ -343,7 +343,7 @@ async function dryRunCompile(body: Record<string, unknown>, contracts: Map<numbe
     if (msg && /compil/i.test(msg)) {
       return [{ rule: "AD-COMPILE-001", message: `The server could not compile the method: ${msg}.`, path: "", fix: "Check bound services, input uuids and account ids (belz ad validate --online).", evidence: `${res.status} ${msg}` }];
     }
-    // ADW-R11: any other non-2xx (500 "automationAPI is null" for a bogus apiId, a bad account,
+    // any other non-2xx (500 "automationAPI is null" for a bogus apiId, a bad account,
     // 400 "Invalid state", …) is the server refusing this body — blocking, not a lookup warning.
     return [{ rule: "AD-COMPILE-002", message: `Dry-run compile was refused with ${res.status}${msg ? `: ${msg}` : ""}; the save would fail or the method would not run.`, path: "", fix: "Check bound services (automationAPIId), accounts and input uuids (belz ad validate --online).", evidence: `${res.status}${msg ? ` ${msg}` : ""}` }];
   }

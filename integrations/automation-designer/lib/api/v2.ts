@@ -13,7 +13,7 @@ function checkResponse(response: Response, path: string): Promise<void> {
 
 /**
  * Parse a chain GET. 404 — and 200 with an empty/`null` body, which is how
- * the server answers an unknown uuid (AD-11 / F10) — are METHOD_NOT_FOUND.
+ * the server answers an unknown uuid — are METHOD_NOT_FOUND.
  */
 async function fetchChainJson<T>(response: Response, path: string, uuid: string): Promise<T> {
   if (response.ok || response.status === 404) {

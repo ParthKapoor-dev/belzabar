@@ -1,4 +1,4 @@
-// On-disk layout for exported test cases (7.13) — built to live in its own
+// On-disk layout for exported test cases — built to live in its own
 // git repository (the team's unit-test repo), so nothing in it is tied to
 // belz or to one environment's ids:
 //

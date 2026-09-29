@@ -1,7 +1,7 @@
 // V1 Automation Designer HTTP client.
 //
 // This module knows the V1 REST surface and returns typed wire responses.
-// Parsing (with the service resolver, AD-02) is adApi.fetchMethod's job:
+// Parsing (with the service resolver) is adApi.fetchMethod's job:
 // a V1 body parsed without it misclassifies SQL / echo steps. Prefer
 // lib/api/index.ts:adApi; a few callers need the raw wire directly.
 
@@ -40,7 +40,7 @@ async function readJson<T = unknown>(response: Response, path: string): Promise<
 
 /**
  * The raw V1 chain. 404 — and 200 with an empty/`null` body, which is how the
- * server answers an unknown uuid (AD-11 / F10) — are METHOD_NOT_FOUND.
+ * server answers an unknown uuid — are METHOD_NOT_FOUND.
  */
 export async function fetchRawMethod(uuid: string): Promise<V1RawMethodResponse> {
   const path = adChainPath(uuid);
@@ -228,7 +228,7 @@ export async function deleteTestSuite(testSuiteId: string): Promise<void> {
  * Low-level multipart POST to the V1 test endpoint. Used by the SQL module
  * which builds hand-crafted FormData bodies wrapping a SQL template method.
  * Build the body with lib/payload-builder.ts:buildV1TestPayload (the one
- * V1 test payload builder, AD-38).
+ * V1 test payload builder).
  */
 export async function testMethodMultipart(formData: FormData): Promise<Response> {
   const path = "/rest/api/automation/chain/test";
@@ -350,7 +350,7 @@ export async function historyListAll(
  * only `methodUUID` + `version` via the execute endpoint results in a 500).
  * Callers should pass `category` (the service/category name) and `methodName`.
  *
- * F7: `includeDraft: true` selects the DRAFT chain's history, otherwise the
+ * `includeDraft: true` selects the DRAFT chain's history, otherwise the
  * PUBLISHED chain's. The two chains keep independent version counters, so
  * the caller must pick the side that matches the uuid it listed
  * (`listAll` lists by `methodUUID`, i.e. exactly the chain it is given).
@@ -404,7 +404,7 @@ export async function historyGet(opts: {
  * success, HTTP 500 `EEException: No record found.` for an unknown version.
  *
  * Returns `true` / `false` for a recognised answer and `null` when the
- * response shape is not recognised (fail closed, AD-23: never assume success).
+ * response shape is not recognised (fail closed: never assume success).
  */
 export async function historyRestore(opts: {
   category: string;

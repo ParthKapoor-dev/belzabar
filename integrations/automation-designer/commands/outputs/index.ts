@@ -7,7 +7,7 @@ interface OutputsArgs {
   uuid: string;
 }
 
-/** A value a step writes (CLI trial: `show --compact` listed `flatData[]→json` while `outputs` said nothing). */
+/** A value a step writes (`show --compact` listed `flatData[]→json` while `outputs` said nothing). */
 interface StepOutputRow {
   step: number;
   /** The callee's output key (V2 `key`). */
@@ -59,7 +59,7 @@ const command: CommandModule<OutputsArgs, OutputsData> = {
     return { uuid: resolveMethodRef(positionals.uuid) };
   },
   async execute({ uuid }, context) {
-    // The same fresh V2 read as `show --compact`, so names agree (CLI trial).
+    // The same fresh V2 read as `show --compact`, so names agree.
     const m = await fetchViewMethod(uuid, (w) => context.warn(w));
     const declared = { outputs: m.outputs.map((o) => o.code), variables: m.variables.map((v) => v.code), inputs: m.inputs.map((i) => i.code) };
     const stepOutputs = stepOutputRows(m.parsedSteps, declared);

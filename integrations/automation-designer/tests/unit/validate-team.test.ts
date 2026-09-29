@@ -1,7 +1,7 @@
 // Ports of the team validator's tests (expertly.coding.agents …/ad/scripts/tests/
 // test_validate_{ci1,as1,lp,sp1,vb1,nc1_dup1,ok1_on1,g4g5g6}.py) with their inline
 // fixtures, so the shared rule codes keep the team's meaning.
-// Deliberate differences (catalogue.ts): CI1 and DUP1 are warnings (ADW-R15: they
+// Deliberate differences (catalogue.ts): CI1 and DUP1 are warnings (they
 // fire on 58 / 5 spots of working real acme-dev methods); the rest keep their severity.
 
 import { describe, expect, test } from "bun:test";
@@ -52,7 +52,7 @@ describe("CI1 (test_validate_ci1.py)", () => {
     ["nested SpEL with flag absent", nested("#{msg}", null), false],
   ];
   for (const [label, inp, want] of cases) test(`${want ? "fires" : "silent"}: ${label}`, () => expect(firesAny(method([inp]), "CI1")).toBe(want));
-  test("is a warning (ADW-R15) naming combineInput and the UI", () => {
+  test("is a warning naming combineInput and the UI", () => {
     const w = warns(method([flat("#{msg}", false)]), "CI1")[0]!;
     expect(w.message).toContain("combineInput");
     expect(w.message).toContain("UI");

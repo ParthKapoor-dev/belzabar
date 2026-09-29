@@ -1,4 +1,4 @@
-// F24: `ad test-case list` returns the same structured result as `ad test-cases`
+// `ad test-case list` returns the same structured result as `ad test-cases`
 // (it returned the raw body — `null` for a method without a suite).
 import { afterEach, describe, expect, test } from "bun:test";
 import { respond, runCommand } from "@belzabar/core/testing";
@@ -32,7 +32,7 @@ const SUITE = {
   testCases: [{ id: "tc1", name: "happy", inputs: [{}, {}], assertions: [{}] }],
 };
 
-describe("test-case list == test-cases (F24)", () => {
+describe("test-case list == test-cases", () => {
   for (const [label, body] of [["a suite", SUITE], ["no suite (null body)", null]] as const) {
     test(label, async () => {
       wire(body);
@@ -56,7 +56,7 @@ describe("test-case list == test-cases (F24)", () => {
     });
   });
 
-  test("an unknown uuid is METHOD_NOT_FOUND, not an empty ok suite (smoke: ok on failure)", async () => {
+  test("an unknown uuid is METHOD_NOT_FOUND, not an empty ok suite", async () => {
     ad.install({
       [`GET /rest/api/automation/chain/testsuite/service-chain/${UUID}`]: respond({ status: 200, text: "null" }),
       // Real acme-dev answer for a missing uuid (fixtures/not-found): 200 + empty body.

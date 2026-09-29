@@ -1,4 +1,4 @@
-// AD test cases: the UI wire encoding ↔ a git-friendly case file (7.7 / 7.13).
+// AD test cases: the UI wire encoding ↔ a git-friendly case file.
 //
 // Wire (what `POST /chain/testcases/{chainUuid}` takes and the suite GET
 // returns — api-endpoints.md §8.2, live 2026-09-29):

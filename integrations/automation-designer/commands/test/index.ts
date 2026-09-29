@@ -95,7 +95,7 @@ export const args = defineArgs({
     case: { type: "string" },
     expect: { type: "string", repeatable: true },
     "compare-published": { type: "boolean" },
-    // A command flag, not the runner's debug switch (CORE-7): declared here so
+    // A command flag, not the runner's debug switch: declared here so
     // the runner hands `--verbose`/`-v` to this command.
     verbose: { type: "boolean", alias: ["-v"] },
     raw: { type: "boolean" },
@@ -194,7 +194,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
     }
 
     if (published && pair) {
-      // ADW-R14: the published copy runs too, with the same side effects (SQL commits,
+      // the published copy runs too, with the same side effects (SQL commits,
       // HTTP calls, e-mails) — through the production body. Confirm it (--yes in --llm).
       await requireConfirmation({
         yes: a.yes,
@@ -248,7 +248,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
         { details: { failed } },
       );
     }
-    // ADW-R12: a failed execution is a failed command (like `ad run` / `run-suites`), not ok:true.
+    // a failed execution is a failed command (like `ad run` / `run-suites`), not ok:true.
     if (!run.success) {
       const where = run.failedStep ? ` at step ${run.failedStep.index}: ${run.failedStep.parsedError.summary}` : "";
       return failWithData("AD_TEST_FAILED", `The method execution FAILED${where}.`, data);

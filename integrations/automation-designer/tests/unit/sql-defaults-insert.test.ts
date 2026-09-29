@@ -1,10 +1,10 @@
-// AD-36 / F26: per-env default SQL database (`environments.<env>.sqlDefaultDb`).
-// F25: `sql insert … RETURNING` returns the generated values. Wire shapes
+// per-env default SQL database (`environments.<env>.sqlDefaultDb`).
+// `sql insert … RETURNING` returns the generated values. Wire shapes
 // below are from live acme-dev probes on belz_tst_s4b_t1 (testing_db):
 //   single row + RETURNING id → outputs [{88: "1"}, {89: "6"}]
 //   multi row  + RETURNING id → step failed "…contains multiple keys: [{id=17}, {id=18}]"
 //                               (rows committed)
-// s3-review major: `sql tui` is a write (explicit --env).
+// major: `sql tui` is a write (explicit --env).
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "fs";
 import { withTempEnvConfig, type TempEnvConfig } from "@belzabar/core/testing";
@@ -46,7 +46,7 @@ const dbs: NormalizedSqlDatabase[] = [
   { id: 2, nickname: "ZCPS-RDS", source: null, host: null, port: null, authUsageType: null, derivedAuthType: null },
 ];
 
-describe("per-env SQL default DB (AD-36 / F26)", () => {
+describe("per-env SQL default DB", () => {
   test("config environments.<env>.sqlDefaultDb wins over BELZ_SQL_DEFAULT_DB, per env", () => {
     configWithSqlDefault("testing_db");
     process.env.BELZ_SQL_DEFAULT_DB = "ZCPS-RDS";
@@ -70,7 +70,7 @@ describe("per-env SQL default DB (AD-36 / F26)", () => {
   });
 });
 
-describe("sql insert … RETURNING (F25)", () => {
+describe("sql insert … RETURNING", () => {
   test("hasReturningClause ignores literals and comments", () => {
     expect(hasReturningClause("INSERT INTO t (a) VALUES (1) RETURNING id")).toBe(true);
     expect(hasReturningClause("insert into t (a) values ('returning')")).toBe(false);
@@ -105,7 +105,7 @@ describe("sql insert … RETURNING (F25)", () => {
   });
 });
 
-describe("sql tui is a write (s3-review major)", () => {
+describe("sql tui is a write", () => {
   test("writes() is true for tui, update/insert/modify; false for run/dbs", () => {
     const w = (sqlCommand as any).writes as (a: any) => boolean;
     expect(w({ action: "tui" })).toBe(true);

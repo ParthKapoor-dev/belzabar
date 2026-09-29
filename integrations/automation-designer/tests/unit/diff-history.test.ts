@@ -55,8 +55,8 @@ describe("ad diff history mode", () => {
   });
 });
 
-// ADR-R7: --llm never opens an editor by default; a missing binary is a warning.
-describe("ad diff editor (ADR-R7)", () => {
+// --llm never opens an editor by default; a missing binary is a warning.
+describe("ad diff editor", () => {
   function stubHistory() {
     spies.push(
       spyOn(adApi, "fetchMethod").mockResolvedValue({ uuid: UUID, state: "DRAFT", name: "m", category: { name: "C" } } as any),
@@ -87,9 +87,9 @@ describe("ad diff editor (ADR-R7)", () => {
   });
 });
 
-// AD-26: cross-env diff is in-process (no `belz` subprocess) and compares the
+// cross-env diff is in-process (no `belz` subprocess) and compares the
 // semantic view, so a code-only change is visible and env-local ids are not.
-describe("ad diff cross-env (AD-26)", () => {
+describe("ad diff cross-env", () => {
   const method = (env: string, code: string, automationId: number) =>
     ({
       uuid: UUID,

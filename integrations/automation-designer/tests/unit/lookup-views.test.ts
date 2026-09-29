@@ -1,4 +1,4 @@
-// Stage 7.5 / 7.9: `child-info --shape`, `services --search` (fuzzy, compact
+// `child-info --shape`, `services --search` (fuzzy, compact
 // rows, --fields) and `find --describe` (index schema 2), on real acme-dev
 // fixtures through fakeFetch.
 import { describe, expect, test } from "bun:test";
@@ -14,7 +14,7 @@ const CI = `${FIX}/child-info`;
 const EXAMPLE_CAT = "4423ad307059bc3fc6859804c9bd12e0"; // "Example services" on acme-dev
 const ENVS = { envs: { "t-dev": { url: "https://t.test" } }, activeEnv: "t-dev" };
 
-describe("child-info --shape (7.5)", () => {
+describe("child-info --shape", () => {
   test("db_service select: V2 key paths, BASE_64, enums, defaults, labels; hidden inputs counted", async () => {
     const shape = apiShape(await Bun.file(`${CI}/db_service__select.json`).json(), "db_service", "select");
     expect(shape.apiId).toBe(19);
@@ -66,7 +66,7 @@ describe("child-info --shape (7.5)", () => {
     ]);
   });
 
-  test("command: plain body has the server's uuid padding trimmed (smoke envelope #8)", async () => {
+  test("command: plain body has the server's uuid padding trimmed", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch({
       "GET /rest/api/automation-systems/Example%20services/automation-apis/array%20output": fixture(`${CI}/Example_services__array_output.json`),
@@ -86,7 +86,7 @@ describe("child-info --shape (7.5)", () => {
   });
 });
 
-describe("services --search (7.5) and compact rows (7.9)", () => {
+describe("services --search and compact rows", () => {
   const route = { "GET /rest/api/automation/services*": fixture(`${FIX}/categories/automation-services.json`) };
 
   test("fuzzy ranking: exact name first, typos still match", () => {
@@ -135,7 +135,7 @@ describe("services --search (7.5) and compact rows (7.9)", () => {
   });
 });
 
-describe("method index schema 2 + find --describe (7.5)", () => {
+describe("method index schema 2 + find --describe", () => {
   function routes() {
     return {
       "GET /rest/api/automation/services*": respond({
@@ -201,7 +201,7 @@ describe("method index schema 2 + find --describe (7.5)", () => {
     expect(bad.envelope?.error?.code).toBe("MISSING_QUERY");
   });
 
-  test("totalMatches counts every match; --limit caps only the rows (smoke envelope #9)", async () => {
+  test("totalMatches counts every match; --limit caps only the rows", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch(routes()).install();
     const all = (await runCommand(findCommand, ["method", "--refresh", "--limit", "200"], { env: "t-dev" })).envelope?.data as any;

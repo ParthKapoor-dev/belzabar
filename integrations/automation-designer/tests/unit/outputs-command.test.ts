@@ -1,4 +1,4 @@
-// CLI trial: `ad outputs` (V1, contract only) said `variables: []` while
+// `ad outputs` (V1, contract only) said `variables: []` while
 // `show --compact` (V2) showed `-> flatData[]→json, rowsImpacted→rc`; it was
 // unclear whether json/rc exist. Both now read V2 fresh, and outputs lists
 // what every step writes and whether the method declares it.

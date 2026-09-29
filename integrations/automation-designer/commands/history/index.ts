@@ -60,7 +60,7 @@ interface HistoryShowData {
   addedWhen: string;
   stepCount: number;
   inputCount: number;
-  /** 7.9: the version as a compact view (`in`/`out`/`vars` + one line per step, see `ad show --compact`). */
+  /** the version as a compact view (`in`/`out`/`vars` + one line per step, see `ad show --compact`). */
   in?: string;
   out?: string;
   vars?: string;
@@ -82,7 +82,7 @@ interface DiffStepRow {
 const DIFF_CELL_MAX = 60;
 
 /**
- * Human `history diff` table rows (F36): the AD UI's rich-text descriptions
+ * Human `history diff` table rows: the AD UI's rich-text descriptions
  * become plain text cut to DIFF_CELL_MAX, so the table fits a terminal. The
  * `--llm` data keeps the full descriptions.
  */
@@ -468,7 +468,7 @@ async function executeRestore(
     throw new CliError("--version <N> is required for 'history restore'.", { code: "MISSING_VERSION" });
   }
 
-  // AD-23: a restore is a write — it must land on the DRAFT, never the published chain.
+  // a restore is a write — it must land on the DRAFT, never the published chain.
   const guard = await resolveDraftTarget(args.uuid, "v1");
   if (!guard.ok) {
     throw new CliError(guard.message, {
@@ -477,7 +477,7 @@ async function executeRestore(
     });
   }
   if (guard.switchedFromPublished) {
-    // Version numbers are per chain (F7): the N the caller saw for the
+    // Version numbers are per chain: the N the caller saw for the
     // published uuid is not the draft's N. Refuse instead of guessing.
     throw new CliError(
       `${args.uuid} is the PUBLISHED chain; its history versions differ from the draft's. ` +
@@ -526,7 +526,7 @@ async function executeRestore(
     });
   } finally {
     for (const id of new Set([args.uuid, draft.uuid, draft.referenceId])) await CacheManager.invalidate(id);
-    // ADW-R8: like save/publish/delete — otherwise `ad test` keeps running the old compiled body.
+    // like save/publish/delete — otherwise `ad test` keeps running the old compiled body.
     compiledCache = await invalidateCompiledCache([draft.uuid]);
   }
   if (!compiledCache.ok) {
@@ -543,7 +543,7 @@ async function executeRestore(
   try {
     const after = await adApi.fetchMethod(draft.uuid, targetIsV2 ? "v2" : "v1");
     resultingVersion = typeof after.version === "number" ? after.version : null;
-    // Same normalised projection as trace/state (ADW-R8): the V2 GET and the
+    // Same normalised projection as trace/state: the V2 GET and the
     // history body differ in display-only fields (fieldCode, service spelling).
     contentMatches = fingerprintMethod(after) === fingerprintMethod(targetMethod);
     if (!contentMatches) contentDiff = diffPaths(fingerprintProjection(after), fingerprintProjection(targetMethod), 10);
@@ -562,7 +562,7 @@ async function executeRestore(
   }
 
   const previousVersion = typeof draft.version === "number" ? draft.version : null;
-  // ADW-R8: success means the re-fetched draft verifiably carries the target
+  // success means the re-fetched draft verifiably carries the target
   // content. The restore is addressed by category + name, so a `true` answer
   // alone does not prove the right chain/version was restored.
   const success = platformResponse !== false && contentMatches === true;
@@ -585,7 +585,7 @@ async function executeRestore(
   if (platformResponse === false) {
     return failWithData("RESTORE_FAILED", `Restore of "${methodName}" to version ${args.version} returned false.`, data);
   }
-  // Fail closed (AD-23, ADW-R8): whatever the platform answered, the restore
+  // Fail closed: whatever the platform answered, the restore
   // is only a success when the re-fetched draft matches the target content.
   if (!success) {
     return failWithData(

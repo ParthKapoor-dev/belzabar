@@ -1,4 +1,4 @@
-// `ad create` (spec → V2 create body, WSR-6 category guard, verify) and
+// `ad create` (spec → V2 create body, core-category guard, verify) and
 // `ad delete` (soft delete of never-published drafts only).
 import { afterEach, describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "fs";
@@ -37,7 +37,7 @@ describe("buildCreateBody", () => {
     ],
   };
 
-  test("ADW-R10: fields expand like save's set-input (refusals shared); real V2 method fields still work", () => {
+  test("fields expand like save's set-input (refusals shared); real V2 method fields still work", () => {
     const code = (spec: unknown) => {
       try {
         buildCreateBody(spec, TEST_TESTER);
@@ -102,7 +102,7 @@ describe("buildCreateBody", () => {
   });
 });
 
-describe("assertCreatableCategory (WSR-6)", () => {
+describe("assertCreatableCategory", () => {
   const cat = (name: string, type = "USER_GENERATED"): Category => ({ ...TEST_TESTER, name, type });
   test.each(["Helpers.JSON", "Helpers.Legacy", "Database.SQL", "Cache.Redis", "Email", "Expertly.Notification", "Web Socket"])("%s is refused", (n) => {
     expect(() => assertCreatableCategory(cat(n))).toThrow(/core\/shared/);
@@ -167,13 +167,13 @@ describe("ad create", () => {
     const r = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec)], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
     expect(ad.ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
-    // No --category and no spec.category (read from the spec file, Stage 7.3).
+    // No --category and no spec.category (read from the spec file).
     expect((await runCommand(createCommand, ["--spec", file(spec), "--yes"], { env: "t-dev" })).envelope?.error?.code).toBe("MISSING_CATEGORY");
     expect((await runCommand(createCommand, ["--category", "x"], { env: "t-dev" })).envelope?.error?.code).toBe("MISSING_SPEC");
   });
 });
 
-describe("ad create --dry-run needs an explicit --env (CLI trial: it silently read orb-dev)", () => {
+describe("ad create --dry-run needs an explicit --env (it used to read the default env silently)", () => {
   test("no --env → ENV_REQUIRED_FOR_WRITE before any request; with --env it runs", async () => {
     wireCreate();
     const r = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec), "--dry-run"]);

@@ -1,4 +1,4 @@
-// 7.11: `ad sql explain` — EXPLAIN [ANALYZE] only of statements that pass the
+// `ad sql explain` — EXPLAIN [ANALYZE] only of statements that pass the
 // read-only gate (ANALYZE executes the statement). Plan rows below are the
 // live acme-dev answers (testing_db, 2026-09-29).
 import { describe, expect, test } from "bun:test";

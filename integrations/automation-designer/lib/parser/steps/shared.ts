@@ -2,7 +2,7 @@
 //
 // Service identification (which step is SQL / SpEL echo / Redis) lives in
 // ./classify.ts — numeric apiIds are env-local and only used there as a
-// verified per-env fast path (AD-02).
+// verified per-env fast path.
 
 /**
  * Walk a V1 mapping tree (which can nest OBJECT → CUSTOM / DROPDOWN mappings)

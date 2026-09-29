@@ -107,7 +107,7 @@ export class ServiceHydrator {
   }
 }
 
-// ─── Step service identity (AD-02) ────────────────────────────────────────
+// ─── Step service identity ────────────────────────────────────────
 
 /** Service identity of an automation record (`GET /automations/{automationId}`). */
 export function identityFromDefinition(def: V1AutomationDefinition | null | undefined): ServiceIdentity | null {
@@ -155,7 +155,7 @@ const LOOKUP_CONCURRENCY = 6;
 
 /**
  * Look up every existing-service step of a V1 body so the parser can classify
- * it by service (AD-02). Every distinct automationId goes through the
+ * it by service. Every distinct automationId goes through the
  * env-scoped definition cache (one GET each, cached 1 h): the definition also
  * names the SQL query input, which the numeric fast path cannot. A failed
  * lookup falls back to the verified per-env fast path in the parser

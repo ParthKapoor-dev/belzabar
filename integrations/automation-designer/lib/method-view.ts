@@ -1,4 +1,4 @@
-// Agent-facing views of a HydratedMethod (Stage 7, 7.1).
+// Agent-facing views of a HydratedMethod.
 //
 //   compactMethod(method)  → `ad show --compact`: a header + ONE line per step
 //                            (index, kind/service, description, entry condition,
@@ -21,7 +21,7 @@ import { isObj, str } from "@belzabar/core";
 export type InputLabeler = (input: StepInput) => string | undefined;
 
 /**
- * Step inputs as `path = value` rows (AD-40): nested mappings are flattened
+ * Step inputs as `path = value` rows: nested mappings are flattened
  * to dotted label paths, empty slots skipped, BASE_64-flagged values decoded.
  * `labelFor` supplies V1 labels (from the service definition); V2 inputs
  * carry their own key/name.
@@ -63,7 +63,7 @@ interface StepFacts {
   loop?: { type?: string; over?: string; counter?: string; parallel?: boolean };
   exitOnFailure?: boolean;
   exitMessage?: string;
-  /** HTTP status of the exit (ADR-R9). */
+  /** HTTP status of the exit. */
   exitCode?: string;
   exitIf?: string;
   exitIfCode?: string;
@@ -229,7 +229,7 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
   let head = `${step.orderIndex} ${step.kind === "SQL" && ident ? "SQL" : kindLabel(step)}`;
   if (ident) head += ` ${ident}`;
   // AD rich-text descriptions (`<ul id="isPasted" style=…`) as plain text;
-  // cut at 80 unless --full (bodyChars 0) (ADR-R5).
+  // cut at 80 unless --full (bodyChars 0).
   const desc = str(step.description) ? htmlToText(step.description!) : "";
   if (desc) head += ` "${abbreviate(desc, bodyChars === 0 ? 0 : 80)}"`;
   parts.push(head);
@@ -246,7 +246,7 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
     const tag = body.kind === "SQL" ? "sql: " : body.kind === "CODE" ? "code: " : "= ";
     parts.push(`${tag}${abbreviate(body.text, bodyChars)}`);
   }
-  // Every set input, Redis included (ADR-R3: scope / expirationSeconds /
+  // Every set input, Redis included (scope / expirationSeconds /
   // canReplace are what a lock step is about).
   const inputs = inputPairs(step, opts.labels?.get(step.orderIndex));
   if (inputs.length) parts.push(inputs.map((i) => `${i.input}=${abbreviate(i.value, valueChars)}`).join(", "));

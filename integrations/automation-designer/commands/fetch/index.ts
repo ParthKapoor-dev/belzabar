@@ -45,12 +45,12 @@ const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
   async execute({ uuid, raw, apiVersion }, context) {
     const method = await fetchMethodChecked(uuid, apiVersion); // V1 serves soft-deleted methods
     const unresolved = method.unresolvedServices ?? [];
-    // A degraded parse (a definition lookup failed) is not cached (ADR-R11).
+    // A degraded parse (a definition lookup failed) is not cached.
     if (unresolved.length === 0) await CacheManager.save(uuid, method);
     else context.warn(`Service definition lookup failed for ${unresolved.join(", ")}; the method was not cached.`);
 
-    // V1-only: adApi.fetchMethod already looked every step up (AD-02); report
-    // the ones it resolved, without re-requesting the failures (ADR-R12).
+    // V1-only: adApi.fetchMethod already looked every step up; report
+    // the ones it resolved, without re-requesting the failures.
     const hydratedServiceIds: string[] = [];
     if (method.sourceVersion === "v1") {
       const failed = new Set(unresolved);

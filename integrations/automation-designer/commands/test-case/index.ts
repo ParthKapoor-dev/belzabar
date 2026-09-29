@@ -83,7 +83,7 @@ interface SyncData {
   verified?: boolean;
 }
 
-/** `list` returns the same structured summary as `ad test-cases` (F24); other writes return the server response. */
+/** `list` returns the same structured summary as `ad test-cases`; other writes return the server response. */
 type TestCaseData =
   | ({ action: "list" } & TestSuiteSummary)
   | WriteData

@@ -67,7 +67,7 @@ interface StepSummaryRow {
 }
 
 /**
- * Default `ad show` payload. Lean by design (7.1): no request echo, empty /
+ * Default `ad show` payload. Lean by design: no request echo, empty /
  * null fields dropped (pruneEmpty), the wire body only with `--raw` and only
  * once (`raw`), code / SQL bodies only when asked for (`--code`, `--sql`,
  * `--full`).
@@ -103,7 +103,7 @@ interface ShowMethodData {
   raw?: unknown;
 }
 
-/** `source` / `fetchedAt` (ADR-R13): the views are always read fresh, or from a local file. */
+/** `source` / `fetchedAt`: the views are always read fresh, or from a local file. */
 type ViewSource = { source: "fresh" | "file"; sourceVersion: "v1" | "v2"; fetchedAt?: string };
 type CompactData = { view: "compact" } & ViewSource & CompactMethodView;
 interface StoryData extends ViewSource {
@@ -139,7 +139,7 @@ interface StepDetailView {
   config: Array<{ key: string; value: string }>;
   outputs: Array<{ code: string; type: string; displayName: string; link?: string }>;
   condition?: { mode?: string; expression?: string; rows?: ConditionRow[] };
-  /** Step input values (AD-40). */
+  /** Step input values. */
   inputs?: Array<{ input: string; value: string }>;
   loop?: { source?: string; parallel?: boolean };
   reason?: string;
@@ -363,7 +363,7 @@ export const args = defineArgs({
     full: { type: "boolean" },
     force: { type: "boolean" },
     raw: { type: "boolean" },
-    // AD-14 / F6: `--service-detail N` is the documented spelling; `--step N` the original one.
+    // `--service-detail N` is the documented spelling; `--step N` the original one.
     step: { type: "number", integer: true, min: 1, alias: ["--service-detail"] },
     open: { type: "boolean", alias: ["-o"] },
     compact: { type: "boolean" },
@@ -374,7 +374,7 @@ export const args = defineArgs({
 
 /**
  * Human "Service Chain" rows: the AD UI's rich-text step descriptions as plain
- * text cut to 100 chars (smoke UX: raw `<ul><li>` / `&lt;` in table cells).
+ * text cut to 100 chars (raw `<ul><li>` / `&lt;` would otherwise fill the cells).
  * The `--llm` data keeps the description as stored.
  */
 export function stepTableRows(steps: Array<{ orderIndex: number; kind: ParsedStep["kind"]; description?: string; identity?: string }>): Array<Array<string | number>> {
@@ -412,7 +412,7 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       method = parseMethodFile(target.path);
       source = "file";
     } else if (flags.compact || flags.story) {
-      // ADR-R4: the agent views read V2, whose input paths (`body.json`) and
+      // the agent views read V2, whose input paths (`body.json`) and
       // output keys (`key→fieldCode`) are what `ad save` ops / `create --spec`
       // take. V1 names inputs by UI label and drops the service output key.
       source = "fresh";
@@ -428,7 +428,7 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
         source = "fresh";
         // V1 serves soft-deleted methods: fetchMethodChecked reads V2 beside it.
         m = await fetchMethodChecked(uuid, apiVersion);
-        // A degraded parse (a definition lookup failed) is not cached (ADR-R11).
+        // A degraded parse (a definition lookup failed) is not cached.
         if (apiVersion === "v1" && !m.unresolvedServices?.length) await CacheManager.save(uuid, m);
       } else {
         await assertNotKnownDeleted(uuid); // a cached copy of a method seen deleted since

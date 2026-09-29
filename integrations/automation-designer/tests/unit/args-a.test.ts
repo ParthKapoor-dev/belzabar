@@ -1,5 +1,5 @@
 // core/args migration of AD commands (part A): strict parsing regressions
-// (AD-29, AD-37, F34) and the changelog/publish --note contract.
+// and the changelog/publish --note contract.
 import { describe, expect, test } from "bun:test";
 import categories from "../../commands/categories/index";
 import category from "../../commands/category/index";
@@ -17,7 +17,7 @@ import { errorCode as code } from "@belzabar/core/testing";
 const ctx = {} as any;
 const parse = (cmd: any, argv: string[]) => cmd.parseArgs(argv, ctx);
 
-describe("strict flags (AD-29)", () => {
+describe("strict flags", () => {
   test("unknown flags are rejected", () => {
     expect(code(() => parse(exportCmd, ["123", "--outt", "f"]))).toBe("UNKNOWN_FLAG");
     expect(code(() => parse(publish, ["u", "--note", "n", "--bogus"]))).toBe("UNKNOWN_FLAG");
@@ -36,7 +36,7 @@ describe("strict flags (AD-29)", () => {
   });
 });
 
-describe("categories (F34)", () => {
+describe("categories", () => {
   test("--user and --system are exclusive", () => {
     expect(code(() => parse(categories, ["--user", "--system"]))).toBe("CONFLICTING_FLAGS");
     expect(parse(categories, ["--user"])).toEqual({ system: false, user: true });
@@ -83,7 +83,7 @@ describe("history", () => {
 });
 
 describe("other writes", () => {
-  test("ADW-R6: save/create --dry-run is a read, but --dry-run-compile (executing /chain/test) is a write", () => {
+  test("save/create --dry-run is a read, but --dry-run-compile (executing /chain/test) is a write", () => {
     const w = (cmd: any, argv: string[]) => cmd.writes(parse(cmd, argv));
     expect(w(save, ["ov.json", "--uuid", "u", "--dry-run"])).toBe(false);
     expect(w(save, ["ov.json", "--uuid", "u", "--dry-run", "--dry-run-compile"])).toBe(true);

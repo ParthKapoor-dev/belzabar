@@ -19,8 +19,7 @@ interface RunMethodData {
   /**
    * When a DRAFT uuid was passed: its published copy (null: never published).
    * The execute endpoint runs the uuid's OWN saved body, so a draft uuid runs
-   * the draft (unpublished changes included), not this copy — live
-   * 2026-09-29 (AD-34's "runs the published body" did not reproduce).
+   * the draft (unpublished changes included), not this copy (verified live).
    */
   publishedUuid?: string | null;
   path: string;

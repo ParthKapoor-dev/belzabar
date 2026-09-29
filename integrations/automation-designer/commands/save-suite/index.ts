@@ -45,7 +45,7 @@ const command: CommandModule<SaveSuiteArgs, SaveSuiteData> = {
     const suite = {
       name: suiteName,
       uuid,
-      // ADW-R13: the uuid is env-specific; run-suites refuses to replay it elsewhere.
+      // the uuid is env-specific; run-suites refuses to replay it elsewhere.
       env: context.env.name,
       description: `Test suite for ${method.name}`,
       inputs: values,

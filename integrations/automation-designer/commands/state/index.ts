@@ -50,7 +50,7 @@ const command: CommandModule<StateArgs, StateData> = {
     // Both sides are read on V2: the sync fingerprint must compare V2 bodies
     // (V1 serialisation noise differs between draft and published).
     const apiVersion = "v2" as const;
-    // One fetch per side (AD-39): the guard hands back the input method too.
+    // One fetch per side: the guard hands back the input method too.
     const guard = await resolveDraftTarget(uuid, apiVersion);
     const initial = guard.initial;
     const versionOf = (m: HydratedMethod | null) => (m && typeof m.version === "number" ? m.version : null);
@@ -86,7 +86,7 @@ const command: CommandModule<StateArgs, StateData> = {
       }
     }
 
-    // AD-18 / F35: sync is a CONTENT question. Compare logic fingerprints.
+    // sync is a CONTENT question. Compare logic fingerprints.
     const draftFp = fingerprintMethod(draft);
     const publishedFp = published ? fingerprintMethod(published) : null;
     const inSync = publishedFp === null ? null : draftFp === publishedFp;

@@ -40,7 +40,7 @@ const command: CommandModule<ExportArgs, ExportData> = {
     return { ref, outPath: flags.out, full: flags.full };
   },
   async execute({ ref, outPath, full }) {
-    // F12 / AD-31: the export endpoint only takes the numeric chain id.
+    // the export endpoint only takes the numeric chain id.
     let id: number;
     let uuid: string | null = null;
     if ("id" in ref) id = ref.id;

@@ -1,5 +1,5 @@
 // One summary of a method's persistent test suite, shared by `ad test-cases`
-// and `ad test-case list` (F24: `test-case list` returned the raw body —
+// and `ad test-case list` (`test-case list` returned the raw body —
 // `null` when the method has no suite — while `test-cases` was structured).
 
 import { adApi } from "./api/index";

@@ -15,7 +15,7 @@ import type { ApiVersion, HydratedMethod, MethodState } from "./types/common";
 
 /**
  * Every result also carries `initial`: the method exactly as fetched for the
- * input uuid, so callers (e.g. `ad state`) need not fetch it again (AD-39).
+ * input uuid, so callers (e.g. `ad state`) need not fetch it again.
  */
 type DraftGuardResult = DraftGuardOutcome & { initial: HydratedMethod };
 
@@ -88,7 +88,7 @@ export async function resolveDraftTarget(
   const state = initial.state;
   const referenceId = (initial.referenceId ?? "").trim() || null;
 
-  // Fail closed (AD-12): the parser reports UNKNOWN when the wire carries
+  // Fail closed: the parser reports UNKNOWN when the wire carries
   // neither `automationState` nor `state`. Never guess DRAFT.
   if (state !== "DRAFT" && state !== "PUBLISHED") {
     return {

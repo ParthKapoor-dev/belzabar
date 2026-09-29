@@ -15,7 +15,7 @@ import type { ParseOptions } from "./steps/classify";
 
 /**
  * `opts.resolveService` / `opts.env` classify EXISTING_SERVICE steps by the
- * service they call (AD-02). Without them (offline) only portable identities
+ * service they call. Without them (offline) only portable identities
  * are used, and unresolved steps stay EXISTING_SERVICE.
  */
 export function parseV1Method(raw: V1RawMethodResponse, opts?: ParseOptions): HydratedMethod {
@@ -69,7 +69,7 @@ export function parseV1Method(raw: V1RawMethodResponse, opts?: ParseOptions): Hy
 
     fetchedAt: Date.now(),
     createdOn: typeof raw.createdOn === "number" ? raw.createdOn : undefined,
-    // AD-13: the wire sends `updatedOn`/`updatedBy` (numeric user id); older
+    // the wire sends `updatedOn`/`updatedBy` (numeric user id); older
     // captures used `lastUpdatedOn`/`lastUpdatedBy`.
     updatedOn: firstNumber(raw.updatedOn, raw.lastUpdatedOn),
     updatedBy: firstId(raw.updatedBy, raw.lastUpdatedBy),
@@ -124,7 +124,7 @@ export function firstId(...values: unknown[]): string | undefined {
   return undefined;
 }
 
-/** Fail closed: anything that is not exactly DRAFT/PUBLISHED is UNKNOWN (AD-12). */
+/** Fail closed: anything that is not exactly DRAFT/PUBLISHED is UNKNOWN. */
 export function normaliseState(value: unknown): MethodState {
   if (typeof value !== "string") return "UNKNOWN";
   const upper = value.trim().toUpperCase();

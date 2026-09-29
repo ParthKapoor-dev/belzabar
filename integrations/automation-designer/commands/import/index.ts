@@ -62,7 +62,7 @@ const command: CommandModule<ImportArgs, ImportData> = {
     // A saved `--llm` envelope carries the export body in data.preview.
     const payload = unwrapEnvelope(parsed);
 
-    // ADW-R9: nothing unrecognised is ever sent.
+    // nothing unrecognised is ever sent.
     const records = extractMethodRecords(payload);
     if (records.length === 0) {
       throw new CliError(
@@ -125,7 +125,7 @@ const command: CommandModule<ImportArgs, ImportData> = {
     logIntent("POST", "/rest/api/automation/chain/import", { file: filePath, methodCount: methods.length });
 
     const response = await adApi.importMethods(payload);
-    await dropMethodIndex(currentCacheEnv()); // ADR-R1: imported uuids are unknown, so rebuild the index
+    await dropMethodIndex(currentCacheEnv()); // imported uuids are unknown, so rebuild the index
     for (const m of methods) if (m.uuid) await CacheManager.invalidate(m.uuid);
 
     return ok<ImportData>({ filePath, methods, validation, response });
@@ -208,7 +208,7 @@ export function extractMethodRecords(payload: unknown): Array<{ name: string; re
 
 /**
  * One name per method in an import file. Understands belz's own export
- * shapes (F13): `ad export` → `{chainDefinition, testSuite}`,
+ * shapes: `ad export` → `{chainDefinition, testSuite}`,
  * `ad export-category` → `{chainDefinitions: [{chainDefinition, testSuite}]}`,
  * an `--llm` envelope around either (`data.preview`), plus plain method
  * records / lists (`methods`, `methodList`, arrays).

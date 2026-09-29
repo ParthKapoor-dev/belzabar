@@ -13,7 +13,7 @@
 //     the server rejects them with 400 (v2_cc_executor_bad / _language_bad);
 //   - CR1 (entry condition reads an undefined name) is an error: the step is
 //     silently skipped and the run stays green (v2_entry_cond_undeclared).
-//   - CI1 and DUP1 are warnings (ADW-R15): 58 CI1 and 5 DUP1 hits on the 36
+//   - CI1 and DUP1 are warnings: 58 CI1 and 5 DUP1 hits on the 36
 //     real a dev env bodies, 8 of them PUBLISHED and running. SpEL with
 //     combineInput:false runs via the API (only the UI runner cannot run it),
 //     and a fieldCode written by two steps is often an intentional overwrite

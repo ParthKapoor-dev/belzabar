@@ -4,11 +4,11 @@ const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
 /**
  * An index with skipped categories (a listing failed mid-build, e.g. a 503) is
- * only reused this long, then rebuilt (ADR-R2).
+ * only reused this long, then rebuilt.
  */
 const PARTIAL_INDEX_TTL_MS = 15 * 60 * 1000;
 /**
- * Bumped when index records gain fields. 2 (Stage 7): `summary`, `description`,
+ * Bumped when index records gain fields. 2: `summary`, `description`,
  * `automationApiUuid`, `calls`, `opaqueSteps` — used by `find --describe` and
  * `ad callers`, which rebuild an older cached index (plain `find` keeps using it).
  */
@@ -19,7 +19,7 @@ const TEXT_CAP = 400;
 const indexStore = finderIndexStore<MethodFinderIndex>("method-finder");
 
 /**
- * Methods belz itself wrote since the index was built (ADR-R1): uuid → when
+ * Methods belz itself wrote since the index was built: uuid → when
  * it was marked. Kept beside the index (not in it) so a mark never rewrites
  * the multi-MB index nor resets its age.
  */
@@ -108,7 +108,7 @@ async function withoutGone(index: MethodFinderIndex): Promise<MethodFinderIndex>
 
 /**
  * Add a method belz just created to the cached index (if there is one), so
- * `find` lists it without a rebuild (CLI trial). Never throws.
+ * `find` lists it without a rebuild. Never throws.
  */
 export async function addMethodToIndex(
   env: string,
@@ -155,7 +155,7 @@ export async function loadDirtyMethods(index: MethodFinderIndex): Promise<Map<st
 }
 
 export interface MethodFinderCategory {
-  /** Chain-category uuid (trimmed) — the same identity as `ad categories` (AD-10). */
+  /** Chain-category uuid (trimmed) — the same identity as `ad categories`. */
   uuid: string;
   /** Chain-category id (methods' category.id; what export-category takes). Absent in pre-4A index caches. */
   chainCategoryId?: number | null;
@@ -202,7 +202,7 @@ export interface MethodFinderIndex {
   /** When the listing started; belz writes marked after it are re-read (absent in older caches). */
   buildStartedAt?: number;
   generatedAt: number;
-  /** True when some category listings failed (`skippedCategories`): methods are missing (ADR-R2). */
+  /** True when some category listings failed (`skippedCategories`): methods are missing. */
   partial?: boolean;
   categories: MethodFinderCategory[];
   methods: MethodFinderMethod[];
@@ -264,7 +264,7 @@ interface IndexProgress {
 
 export async function loadOrBuildMethodFinderIndex(options: {
   refresh: boolean;
-  /** Called after each category is indexed (F29: a refresh takes minutes). */
+  /** Called after each category is indexed (a refresh takes minutes). */
   onProgress?: (p: IndexProgress) => void;
   /** Rebuild a cached index older than this schema (describe / callers need 2). */
   minSchema?: number;
@@ -693,7 +693,7 @@ function asRawMethodRecord(value: Record<string, unknown>): RawMethodRecord {
   };
 }
 
-// ── Stage 7.5: fuzzy scoring for other catalogues, description search ──────
+// ── fuzzy scoring for other catalogues, description search ──────
 
 /** The index's name scoring (exact > prefix > word start > substring > fuzzy), for other catalogues (`ad services --search`). */
 export function scoreFuzzy(query: string, value: string, weight = 1): number {

@@ -116,7 +116,7 @@ interface SqlInsertData {
   success: true;
   statusCode?: number;
   rowsAffected: number;
-  /** Generated key values — needs `RETURNING <key column>` in the query (F25). */
+  /** Generated key values — needs `RETURNING <key column>` in the query. */
   generatedValues: string[];
   /** Multi-row RETURNING: every returned key row. */
   generatedKeys?: Array<Record<string, string>>;
@@ -162,7 +162,7 @@ interface SqlTuiData {
 
 type SqlData = SqlDbsData | SqlRunData | SqlExplainData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData;
 
-/** AD-32: SQL writes follow the AD write contract (confirm, or --yes; --yes mandatory in --llm). */
+/** SQL writes follow the AD write contract (confirm, or --yes; --yes mandatory in --llm). */
 async function confirmSqlWrite(
   args: SqlArgs,
   action: "update" | "insert" | "modify",
@@ -319,11 +319,11 @@ const command: CommandModule<SqlArgs, SqlData> = {
       case "dbs":
         return { action: "dbs", raw: parsed.flags.raw };
       case "run":
-        // F2: refuse anything but a single read statement before any network call.
+        // refuse anything but a single read statement before any network call.
         assertReadOnlySql(parsed.positionals.query);
         return { action: "run", query: parsed.positionals.query, db: parsed.flags.db, raw: parsed.flags.raw };
       case "explain": {
-        // 7.11: the explained statement must pass the read-only gate — ANALYZE really executes it.
+        // the explained statement must pass the read-only gate — ANALYZE really executes it.
         const statement = parsed.positionals.query;
         if (/^explain\b/i.test(checkReadOnlySql(statement).normalized)) {
           throw new CliError("Pass the statement without EXPLAIN; use --analyze / --buffers / --format for the options.", {

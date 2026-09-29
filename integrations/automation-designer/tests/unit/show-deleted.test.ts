@@ -1,4 +1,4 @@
-// fix-verify / CLI trial: V1 keeps serving a soft-deleted draft (no V1 field
+// V1 keeps serving a soft-deleted draft (no V1 field
 // marks it), so `ad show` / `ad fetch` presented it as live while `show
 // --compact` (V2) said METHOD_NOT_FOUND. The V1 path now reads V2 beside it.
 import { describe, expect, test } from "bun:test";

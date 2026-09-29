@@ -7,7 +7,7 @@
 // mirror what the AD UI writes (exitOnFailure true, JavaScript on CODE_LAMBDA
 // for custom code, combineInput true when a value holds SpEL).
 //
-// Stage 7.3: steps may also be COMPACT (lib/serialize/compact.ts: `service` /
+// steps may also be COMPACT (lib/serialize/compact.ts: `service` /
 // `code` / `sql` + `inputs` k=v, `outputs`, `when`, `loop`, …); they are
 // expanded against the callee contracts in `catalog`. Method inputs, outputs
 // and variables may be plain key strings; `default` is the defaultValue.
@@ -21,7 +21,7 @@ import { CliError, isObj } from "@belzabar/core";
 import type { Category } from "../categories";
 import { emptyCatalog, expandCompactStep, expandField, isRawV2Step, Problems, type FieldKind, type ServiceCatalog } from "../serialize/compact";
 
-/** WSR-6: core/shared categories are never written from belz. */
+/** core/shared categories are never written from belz. */
 const PROTECTED_CATEGORY = /^(helpers|database|cache|email|expertly)(\.|$)/i;
 const PROTECTED_NAMES = new Set(["web socket", "websocket"]);
 
@@ -31,7 +31,7 @@ export function assertCreatableCategory(c: Category): void {
     c.type === "SYSTEM_GENERATED"
       ? "it is a system service"
       : PROTECTED_CATEGORY.test(name) || PROTECTED_NAMES.has(name.toLowerCase())
-        ? "it is a core/shared platform category (WSR-6)"
+        ? "it is a core/shared platform category"
         : null;
   if (reason) {
     throw new CliError(`Refusing to create a method in '${name}': ${reason}. Use a project category.`, {
@@ -173,7 +173,7 @@ export function buildCreateBody(
 
 /**
  * Method inputs / outputs / variables through the same `expandField` as
- * `save`'s set-input/-output/-variable (ADW-R10): unknown keys, testValue
+ * `save`'s set-input/-output/-variable: unknown keys, testValue
  * and a variable's BASE_64 encoding are refused instead of sent (the server
  * drops them, and the post-create verify would fail AFTER the method exists).
  */

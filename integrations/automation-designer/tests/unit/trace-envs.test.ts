@@ -1,6 +1,6 @@
-// AD-25: `ad trace` defaults the spine to the active env and only visits the
+// `ad trace` defaults the spine to the active env and only visits the
 // spine's project family (or --envs); a DRAFT uuid is traced via its
-// published chain (F7: the published history is what history.get reads
+// published chain (the published history is what history.get reads
 // without includeDraft).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { Config } from "@belzabar/core";
@@ -37,7 +37,7 @@ function fake() {
 
 const ENVS = { "alpha-x": { url: "https://sx.test" }, "alpha-y": { url: "https://sy.test" }, "beta-x": { url: "https://y.test" } };
 
-describe("ad trace env scope (AD-25)", () => {
+describe("ad trace env scope", () => {
   test("traceEnvFamily: spine first, same project only", () => {
     using _cfg = withTempEnvConfig({ envs: ENVS });
     expect(traceEnvFamily("alpha-x")).toEqual(["alpha-x", "alpha-y"]);
@@ -68,8 +68,8 @@ describe("ad trace env scope (AD-25)", () => {
   });
 });
 
-// ADR-R14: published history versions are immutable; a re-run reads them from cache.
-describe("trace caches published history bodies (ADR-R14)", () => {
+// published history versions are immutable; a re-run reads them from cache.
+describe("trace caches published history bodies", () => {
   test("second run makes no historyGet calls; cache is per env + methodVersionID", async () => {
     using _cfg = withTempEnvConfig({ envs: ENVS });
     const vid = `r14-${Date.now()}`;

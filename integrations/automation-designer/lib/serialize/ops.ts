@@ -1,4 +1,4 @@
-// Structural `ad save` ops (Stage 7.2): add / remove / move / update steps and
+// Structural `ad save` ops: add / remove / move / update steps and
 // upsert / remove method inputs, outputs and variables, on top of the live V2
 // body. Steps are always named by their position in the FETCHED draft (the
 // numbers `belz ad show` prints), whatever other ops do, so an agent can write

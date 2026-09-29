@@ -28,7 +28,7 @@ interface ChangelogData {
   entries: Array<Record<string, unknown>>;
 }
 
-// 7.9: compact entries (id, when = ISO time, author, note = the rich-text
+// compact entries (id, when = ISO time, author, note = the rich-text
 // comment as plain text); `--fields a,b` picks (type, html = raw comment,
 // user = full user object), `--fields all` = the server's entries unchanged.
 export const ENTRY_FIELDS = ["id", "when", "author", "note", "type", "html", "user", "createdAt"] as const;
@@ -85,7 +85,7 @@ const command: CommandModule<ChangelogArgs, ChangelogData> = {
   async execute({ uuid: uuidArg, note, yes, fields }, context) {
     const uuid = resolveMethodRef(uuidArg);
     if (note) {
-      // AD-33: a note is recorded on the DRAFT chain (as `publish` does; the
+      // a note is recorded on the DRAFT chain (as `publish` does; the
       // server mirrors draft notes to the published chain on publish), so the
       // result no longer depends on which uuid of the pair was passed.
       const guard = await resolveDraftTarget(uuid, "v1");
@@ -94,7 +94,7 @@ const command: CommandModule<ChangelogArgs, ChangelogData> = {
       }
       const draft = guard.draft;
       const chainId = chainIdOf(draft);
-      // AD-32: a note is a write — confirm (or --yes; mandatory in --llm).
+      // a note is a write — confirm (or --yes; mandatory in --llm).
       await requireConfirmation({
         yes,
         outputMode: context.outputMode,

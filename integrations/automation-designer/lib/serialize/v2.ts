@@ -1,4 +1,4 @@
-// `ad save` overlay → V2 save body (Stage 5, D1: the save route is
+// `ad save` overlay → V2 save body (the save route is
 // `GET /chain/v2/{uuid}` → overlay → `POST /chain/v2`).
 //
 // The body sent is the live V2 GET body with ONLY the overlay's target leaves
@@ -8,7 +8,7 @@
 // check requires. Custom code is written in the step's stored encoding; SQL in
 // its slot's `encodingType`.
 //
-// Guarantees (carried over from the Stage-0 V1 guard):
+// Guarantees:
 //   1. Unknown overlay keys → AD_OVERLAY_UNKNOWN_KEY; bad value types →
 //      AD_OVERLAY_INVALID.
 //   2. Keys that cannot land → AD_OVERLAY_NOT_APPLIED: missing/ambiguous step,

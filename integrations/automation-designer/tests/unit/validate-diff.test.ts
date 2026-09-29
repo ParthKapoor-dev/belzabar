@@ -43,7 +43,7 @@ describe("diff-aware", () => {
     expect(moved?.preexisting).toBe(true);
   });
 
-  test("ADW-R3: a DIFFERENT broken body at the same path is new and blocks", () => {
+  test("a DIFFERENT broken body at the same path is new and blocks", () => {
     const before = caseBody("v2_cc_syntax_error");
     const same = validateMethodV2({ after: structuredClone(before), before });
     expect(same.errors).toEqual([]);
@@ -53,7 +53,7 @@ describe("diff-aware", () => {
     expect(r.errors.map((e) => e.rule)).toContain("AD-CC-001");
   });
 
-  test("ADW-R3: a different dangling #{ref} at the same input is new", () => {
+  test("a different dangling #{ref} at the same input is new", () => {
     const before = caseBody("v2_spel_dangling_ref");
     const after = structuredClone(before) as any; // `any`: test mutation of the wire body
     const v = after.steps[0].inputs[0].value as string;
@@ -63,7 +63,7 @@ describe("diff-aware", () => {
     expect(r.errors.some((e) => e.rule === "AD-REF-001" && e.path === "steps[0].inputs[0].value")).toBe(true);
   });
 
-  test("ADW-R3: a new unbound output that lands on an old unbound output's index is new", () => {
+  test("a new unbound output that lands on an old unbound output's index is new", () => {
     const before = mutate((m) => m.outputs.unshift({ key: "ghost", fieldCode: "ghost", name: "ghost", type: "STRING", description: "" }));
     const after = structuredClone(before) as any; // `any`: test mutation of the wire body
     after.outputs[0] = { key: "ghost2", fieldCode: "ghost2", name: "ghost2", type: "STRING", description: "" };
@@ -74,7 +74,7 @@ describe("diff-aware", () => {
     expect(m3.map((f) => [f.path, !!f.preexisting])).toEqual([["outputs[0].key", false]]);
   });
 
-  test("ADW-R3: removing an earlier output does not turn an old finding into a new one", () => {
+  test("removing an earlier output does not turn an old finding into a new one", () => {
     const before = mutate((m) => m.outputs.push({ key: "ghost", fieldCode: "ghost", name: "ghost", type: "STRING", description: "" }));
     const after = structuredClone(before) as any; // `any`: test mutation of the wire body
     after.outputs.splice(0, 1); // ghost moves from outputs[3] to outputs[2]
@@ -83,7 +83,7 @@ describe("diff-aware", () => {
     expect(m3.map((f) => [f.path, f.preexisting])).toEqual([["outputs[2].key", true]]);
   });
 
-  test("ADW-R4: steps align by position/service when the ids differ (draft vs published)", () => {
+  test("steps align by position/service when the ids differ (draft vs published)", () => {
     for (const { name, draft, published } of draftPublishedPairs()) {
       const map = alignSteps(published, draft);
       expect({ name, map }).toEqual({ name, map: draft.steps.map((_s: unknown, i: number) => i) });
@@ -96,7 +96,7 @@ describe("diff-aware", () => {
     expect(alignSteps(before, after)).toEqual([0, -1, 1, 2]);
   });
 
-  test("ADW-R4: every real draft validated against its published copy has only pre-existing findings", () => {
+  test("every real draft validated against its published copy has only pre-existing findings", () => {
     let preexisting = 0;
     for (const { name, draft, published } of draftPublishedPairs()) {
       const r = validateMethodV2({ after: draft, before: published });
@@ -107,7 +107,7 @@ describe("diff-aware", () => {
     expect(preexisting).toBeGreaterThan(0); // e.g. 438b5027's CI1 inputs are matched across different step ids
   });
 
-  test("ADW-R4: a new error in a draft is still new against the published copy", () => {
+  test("a new error in a draft is still new against the published copy", () => {
     const { draft, published } = draftPublishedPairs().find((p) => p.name === "41f705af")!;
     const after = structuredClone(draft);
     after.outputs.push({ key: "ghostOut", name: "ghostOut", type: "STRING" });
@@ -115,7 +115,7 @@ describe("diff-aware", () => {
     expect([...r.errors, ...r.warnings].some((f) => f.rule === "M3" && !f.preexisting)).toBe(true);
   });
 
-  test("ADW-R3: an unrelated edit to a SQL body keeps its old findings pre-existing (real 422a34a9)", () => {
+  test("an unrelated edit to a SQL body keeps its old findings pre-existing (real 422a34a9)", () => {
     const before = JSON.parse(readFileSync(`${import.meta.dir}/../fixtures/real-v2/422a34a9657e3daa50108389a35609db.v2.json`, "utf8"));
     const PATH = "steps[7].inputs[0].properties[0].value";
     const base = validateMethodV2({ after: before });
@@ -182,10 +182,10 @@ describe("calibration: 36 real acme-dev V2 bodies", () => {
       "AD-SPEL-001:error": 3, // 43818593: entry conditions with an unclosed #{
       "AD-SQL-004:warn": 37, // #{…} spliced into SQL (common style)
       "CC3:warn": 4, // custom code that never prints
-      "CI1:warn": 58, // SpEL with combineInput:false: runs via the API, not from the UI runner (ADW-R15: warn)
+      "CI1:warn": 58, // SpEL with combineInput:false: runs via the API, not from the UI runner (warn)
       "CO1:error": 3, // STRIING
       "CO2:error": 3,
-      "DUP1:warn": 5, // duplicate output names/fieldCodes (3 methods; ADW-R15: warn)
+      "DUP1:warn": 5, // duplicate output names/fieldCodes (3 methods; a warning)
       "M1:error": 5, // method names with spaces ("Copy of …"): refused on create/rename; audit → warn
       "OK1:error": 2, // method outputs with fieldCode but no key
       "Q5:error": 1, // 422a34a9: ’CHOICE_APPLICATION’ curly quotes in SQL
@@ -194,7 +194,7 @@ describe("calibration: 36 real acme-dev V2 bodies", () => {
     });
   });
 
-  // ADW-R15: calibration WITHOUT self-diffing. Auditing each real record as it is stored
+  // calibration WITHOUT self-diffing. Auditing each real record as it is stored
   // (auditExistingRecord, what `ad validate <uuid>` reports), every remaining error is a
   // real defect of that method (reviewed 2026-09-29). Before R15: 97 errors on 25 bodies
   // (CI1 58, AD-META-001 8, M1 5, DUP1 5 were not defects); after: 21 on 7.
@@ -216,7 +216,7 @@ describe("calibration: 36 real acme-dev V2 bodies", () => {
   });
 });
 
-// Every row of research/ad-validation.md §4 → the rule that catches it (tested in
+// Every known server rejection → the rule that catches it (tested in
 // validate-l1/-rules/-online tests) or why it is out of the validator's scope.
 const CATALOGUE_4: Array<[string, string]> = [
   // 4.1 rejected by the server
@@ -243,7 +243,7 @@ const CATALOGUE_4: Array<[string, string]> = [
   ["V1 jsonDefinition invalid JSON", "N/A: the command rejects unparseable JSON before validating; save is V2"],
   ["V1 step missing activeTab", "S1 (V2 analog: properties)"],
   ["V1 category.id = categories-listing id", "N/A: V1 save only; V2 resolves metadata.service by name"],
-  ["V1 save of a lean chain", "N/A: V2 accepts lean chains (D1)"],
+  ["V1 save of a lean chain", "N/A: V2 accepts lean chains"],
   ["changelog entry without user", "N/A: publish/changelog path (5A)"],
   // 4.2 accepted and broken afterwards
   ["serializer re-encodes plain CC code", "N/A here: L0 round-trip invariant in the save pipeline (5A)"],

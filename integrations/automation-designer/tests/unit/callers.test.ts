@@ -1,4 +1,4 @@
-// Stage 7.6: `ad callers` — reverse index over AD steps (method index refs +
+// `ad callers` — reverse index over AD steps (method index refs +
 // V2 bodies for automationId-only steps) and PD httpRequests. Real acme-dev
 // "Example services" fixtures through fakeFetch.
 import { describe, expect, setSystemTime, test } from "bun:test";
@@ -175,7 +175,7 @@ describe("PD references", () => {
   });
 });
 
-// ADR-R1 / ADR-R2: the index goes stale when belz writes a method, and a
+// the index goes stale when belz writes a method, and a
 // partial index (a category listing failed) must not claim full coverage.
 describe("stale and partial method index", () => {
   const target: CallTarget = {
@@ -264,8 +264,8 @@ describe("stale and partial method index", () => {
   });
 });
 
-// ADR-R6: listing failures surface as stable codes, not UNHANDLED_EXCEPTION.
-describe("listing failures have stable codes (ADR-R6)", () => {
+// listing failures surface as stable codes, not UNHANDLED_EXCEPTION.
+describe("listing failures have stable codes", () => {
   test("index build: category listing 503 → AD_INDEX_FETCH_FAILED", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch(routes({ "GET /rest/api/automation/services*": respond({ status: 503, text: "" }) })).install();

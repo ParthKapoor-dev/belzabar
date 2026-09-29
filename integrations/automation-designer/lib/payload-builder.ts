@@ -1,11 +1,11 @@
-// The ONE V1 `/chain/test` payload builder (AD-38).
+// The ONE V1 `/chain/test` payload builder.
 //
 // `ad test` and `ad run-suites` both post `{category, jsonDefinition, id,
 // uuid, version}` (as the AD UI does) with the inputs' `testValue`s set and
 // every step carrying an `automationApiId` — the Java compiler needs it, and
 // lean (V2-created) chains lack it, which the server answers with 400
 // "Invalid Automation API Id" (chain-write-api.md). Posting the whole GET body
-// (changelogs, permissions, …) is what made `run-suites` fail with 400 (F14).
+// (changelogs, permissions, …) is what made `run-suites` fail with 400.
 
 import { CliError, readErrorBody } from "@belzabar/core";
 import { ServiceHydrator } from "./hydrator";
@@ -28,7 +28,7 @@ const defaultDeps: BuildTestPayloadDeps = {
   getDefinition: (id) => ServiceHydrator.getDefinition(id),
 };
 
-/** A step's `automationId` as a string: the wire carries a NUMBER (AD-16); "" when absent. */
+/** A step's `automationId` as a string: the wire carries a NUMBER; "" when absent. */
 export function stepAutomationId(step: Record<string, unknown>): string {
   const v = step.automationId;
   if (typeof v === "number" && Number.isFinite(v)) return String(v);
@@ -94,7 +94,7 @@ export function v1TestFormData(payload: V1TestPayload): FormData {
 
 /**
  * The server's reason for a failed `/chain/test` (status + message), so
- * callers never report a bare "API Request Failed: 400" (F14).
+ * callers never report a bare "API Request Failed: 400".
  */
 export async function describeTestFailure(response: Response): Promise<{ message: string; body: unknown }> {
   const body = await readErrorBody(response);

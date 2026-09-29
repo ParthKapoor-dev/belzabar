@@ -1,7 +1,6 @@
-// Stage 5 (D1) — `ad save` overlay → V2 body, on real acme-dev V2 wire.
-// Replaces the Stage-0 V1 guard tests (save-guard / save-payload-v1 /
-// sql-overlay-acme): AD-01 (fields dropped), AD-03 (SQL encoding), AD-22
-// (unedited steps rewritten), val-P0 (plain custom code corrupted).
+// `ad save` overlay → V2 body, on real V2 wire bodies: no field is dropped,
+// SQL keeps its encoding, unedited steps are not rewritten, plain custom code
+// stays plain.
 import { describe, expect, test } from "bun:test";
 import { readdirSync } from "fs";
 import { CliError } from "@belzabar/core";
@@ -69,7 +68,7 @@ describe("overlay → payload, per field kind", () => {
       value: () => "new",
     },
     {
-      name: "CC source, plain stays plain (val-P0)",
+      name: "CC source, plain stays plain",
       uuid: SQL_NONE,
       overlay: { parsedSteps: [{ orderIndex: 2, source: "console.log('x');" }] },
       path: "steps[1].properties.customCode.inlineCode",
@@ -90,7 +89,7 @@ describe("overlay → payload, per field kind", () => {
       value: () => encodeBase64("console.log('b');"),
     },
     {
-      name: "SQL, plain NONE slot stays plain (AD-03)",
+      name: "SQL, plain NONE slot stays plain",
       uuid: SQL_NONE,
       overlay: { parsedSteps: [{ orderIndex: 1, sql: "select 2" }] },
       path: "steps[0].inputs[0].properties[0].value",

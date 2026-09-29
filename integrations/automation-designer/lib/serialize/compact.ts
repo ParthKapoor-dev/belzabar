@@ -1,4 +1,4 @@
-// Compact authoring format → V2 wire (Stage 7: `ad create --spec`, structural
+// Compact authoring format → V2 wire (`ad create --spec`, structural
 // `ad save` ops). An agent writes a few lines per step; belz fills the V2
 // boilerplate the AD UI would write.
 //
@@ -567,7 +567,7 @@ export function applyStepFields(
       }
     }
   }
-  // Output semantics (CLI trial: agents expected `outputs` to replace):
+  // Output semantics (agents expected `outputs` to replace):
   //   outputs         MERGE — upsert by fieldCode (the `as` name); others stay
   //   removeOutputs   drop these fieldCodes
   //   replaceOutputs  REPLACE — the step's outputs become exactly this list

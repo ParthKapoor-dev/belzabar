@@ -16,7 +16,7 @@ import { errorCode as code } from "@belzabar/core/testing";
 const ctx = {} as any;
 const parse = (cmd: any, argv: string[]) => cmd.parseArgs(argv, ctx);
 
-describe("save (AD-29)", () => {
+describe("save", () => {
   test("--uuid followed by a flag is MISSING_VALUE, not uuid='--yes'", () => {
     expect(code(() => parse(saveCmd, ["f.json", "--uuid", "--yes"]))).toBe("MISSING_VALUE");
   });
@@ -32,7 +32,7 @@ describe("save (AD-29)", () => {
   });
   test("missing file / unknown flag", () => {
     expect(code(() => parse(saveCmd, ["--uuid", "abc"]))).toBe("MISSING_FILE");
-    // Stage 7.2: the file is optional when --sql-file / --code-file carry the change.
+    // the file is optional when --sql-file / --code-file carry the change.
     expect(parse(saveCmd, ["--uuid", "abc", "--sql-file", "2=q.sql", "--sql-file", "3=r.sql", "--code-file", "1=c.js"])).toMatchObject({
       filePath: null, sqlFiles: ["2=q.sql", "3=r.sql"], codeFiles: ["1=c.js"],
     });
@@ -45,7 +45,7 @@ describe("save (AD-29)", () => {
   });
 });
 
-describe("test (AD-15, CORE-7)", () => {
+describe("test", () => {
   test("--verbose and -v are command flags", () => {
     expect(parse(testCmd, ["u", "--verbose"]).verbose).toBe(true);
     expect(parse(testCmd, ["u", "-v"]).verbose).toBe(true);
@@ -118,7 +118,7 @@ describe("other commands", () => {
     expect(parse(runCmd, ["p", "{}", "--stream"])).toEqual({ publishedId: "p", payloadArg: "{}", raw: false, stream: true });
     expect(code(() => parse(runCmd, []))).toBe("MISSING_PUBLISHED_ID");
   });
-  test("services --search requires a value (F34)", () => {
+  test("services --search requires a value", () => {
     expect(code(() => parse(servicesCmd, ["--search"]))).toBe("MISSING_VALUE");
     expect(parse(servicesCmd, ["--search", "redis", "--internal"])).toEqual({ all: false, internal: true, search: "redis", fields: { mode: "default" } });
   });
@@ -126,7 +126,7 @@ describe("other commands", () => {
     expect(code(() => parse(showCodeCmd, ["4bf56e008eabe4010508af439a15ecfb", "--step", "x"]))).toBe("INVALID_VALUE");
     expect(parse(showCodeCmd, ["4bf56e008eabe4010508af439a15ecfb", "--service-detail", "3"]).step).toBe(3);
   });
-  test("trace --spine: no hard-coded default (the active env is used, AD-25); --envs splits", () => {
+  test("trace --spine: no hard-coded default (the active env is used); --envs splits", () => {
     expect(parse(traceCmd, ["u"]).spineEnv).toBeUndefined();
     expect(parse(traceCmd, ["u", "--spine", "acme-dev"]).spineEnv).toBe("acme-dev");
     expect(parse(traceCmd, ["u", "--envs", "acme-qa, acme-uat"]).envs).toEqual(["acme-qa", "acme-uat"]);

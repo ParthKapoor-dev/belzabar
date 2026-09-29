@@ -1,4 +1,4 @@
-// `ad save` — the V2 save pipeline (Stage 5, D1).
+// `ad save` — the V2 save pipeline.
 //
 //   1. resolveDraftTarget(uuid, "v2")      draft guard; its GET is the fresh live body
 //   2. planV2Overlay(live, overlay)        overlay → body + L0 (only targets change)
@@ -9,7 +9,7 @@
 //   7. post-save verify re-GET             AD_SAVE_VERIFY_FAILED unless exactly the targets changed
 //   8. compiled cache (both routes) + local method cache invalidated (always, once POSTed)
 //
-// The server ignores `metadata.version` (AD-08), so the freshness check is the
+// The server ignores `metadata.version`, so the freshness check is the
 // only lost-update protection. A no-op V2 save changes only
 // `metadata.version.name` and `metadata.internal.*` (live 2026-09-28);
 // those are the only paths verify tolerates besides the targets.
@@ -206,7 +206,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
  * Re-GET the draft and refuse (AD_VERSION_CONFLICT) when anything but the
  * change log / test suite moved since `seen` was read — the server ignores
  * `metadata.version`, so belz checks it (save, and publish after its
- * confirmation: ADW-R5).
+ * confirmation, which can wait indefinitely).
  */
 export async function assertDraftUnchanged(draftUuid: string, seen: V2MethodResponse, outcome: string): Promise<V2MethodResponse> {
   const fresh = await v2.fetchRawMethod(draftUuid);
@@ -247,7 +247,7 @@ export function verifyStructural(uuid: string, expected: unknown, after: unknown
   const underTouched = (p: string) => all || touched.some((t) => isUnder(p, t));
   const notLanded: Array<{ path: string; expected: unknown; actual: unknown }> = [];
   const unexpected: string[] = [];
-  // ADW-R7: a value the ops removed is absent from `expected`, so the loop
+  // a value the ops removed is absent from `expected`, so the loop
   // below would take it for a server-filled field. Check removals explicitly.
   for (const r of removals) {
     const got = getAtPath(after, r.path);
@@ -330,7 +330,7 @@ function collectRemovals(a: unknown, b: unknown, path: string, out: Removal[]): 
  * What the structural ops removed from the fetched draft (`live`) to get
  * `expected`: step outputs / inputs / loop / output bindings of kept steps
  * (paths in `expected`'s step numbering, via `order`), and method inputs,
- * variables and outputs. Each must be gone after the save (ADW-R7).
+ * variables and outputs. Each must be gone after the save.
  */
 export function structuralRemovals(live: unknown, expected: unknown, order: Array<number | null>): Removal[] {
   const out: Removal[] = [];

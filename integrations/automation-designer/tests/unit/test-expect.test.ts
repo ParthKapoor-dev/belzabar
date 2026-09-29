@@ -1,4 +1,4 @@
-// 7.7: `ad test --expect` expressions and the test-case assertion encoding
+// `ad test --expect` expressions and the test-case assertion encoding
 // (advance-mode SpEL `#{out} op literal`, api-endpoints.md §8.5).
 import { describe, expect, test } from "bun:test";
 import {
@@ -90,7 +90,7 @@ describe("assertions ↔ SpEL (UI encoding)", () => {
     for (const bad of ["a.b=1", "n>=1", "o={\"a\":1}"]) {
       expect(() => assertionFromExpectation(parseExpectation(bad))).toThrow(expect.objectContaining({ code: "INVALID_ASSERTION" }));
     }
-    // CLI trial: the hint must not suggest the out.path form the error just refused
+    // the hint must not suggest the out.path form the error just refused
     let msg = "";
     try {
       assertionFromExpectation(parseExpectation("a.b=1"));

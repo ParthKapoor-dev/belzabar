@@ -27,7 +27,7 @@ export const adApi = {
   // ─── Reads ───────────────────────────────────────────────────────────
 
   /**
-   * Fetch + parse, with steps classified by service identity (AD-02): V1
+   * Fetch + parse, with steps classified by service identity: V1
    * steps are resolved through the env-scoped definition cache, V2 steps by
    * their wire `serviceName`/`methodName`. `uuid` should already be canonical
    * (lib/ids.ts:resolveMethodRef).
@@ -95,8 +95,8 @@ export const adApi = {
   // ─── Writes ──────────────────────────────────────────────────────────
 
   // Writes invalidate the local method cache for every uuid they touch, so a
-  // following `ad show` never serves the pre-write body (AD-06). Saves go
-  // through lib/save (V2 route, D1); the V1 save verb was removed.
+  // following `ad show` never serves the pre-write body. Saves go
+  // through lib/save (the V2 route).
   async publishDraft(draftUuid: string): Promise<{ publishedUuid: string }> {
     try {
       const result = await v1.publishDraft(draftUuid);

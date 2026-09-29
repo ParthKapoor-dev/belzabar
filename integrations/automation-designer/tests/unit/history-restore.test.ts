@@ -1,10 +1,10 @@
 // `ad history` against the real history wire (fixtures/history, captured from
 // belz_tst_s4b_hist1 on acme-dev).
 //
-// F7: history.get is addressed by category + method name; `includeDraft:"true"`
+// history.get is addressed by category + method name; `includeDraft:"true"`
 // returns the DRAFT chain's version N, otherwise the PUBLISHED chain's. `list`
 // lists by uuid, so show/diff must pick the side that matches the uuid.
-// AD-23: restore goes through the draft guard, fails closed on an unknown
+// restore goes through the draft guard, fails closed on an unknown
 // response, re-fetches and reports the resulting version.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "fs";
@@ -75,7 +75,7 @@ function wire(opts: WireOpts = {}) {
 const getCalls = (f: FakeFetch) => f.requests.filter((r) => r.url.includes("execute/hist-get")).map((r) => r.json());
 const restoreCalls = (f: FakeFetch) => f.requests.filter((r) => r.url.includes("execute/hist-restore"));
 
-describe("ad history show/list version mapping (F7)", () => {
+describe("ad history show/list version mapping", () => {
   test("show on a DRAFT uuid reads the draft chain's history (includeDraft) and matches list", async () => {
     const f = wire();
     const list = await runCommand(historyCommand, ["list", DRAFT], { env: "t-dev" });
@@ -115,7 +115,7 @@ describe("ad history show/list version mapping (F7)", () => {
   });
 });
 
-describe("ad history restore (AD-23)", () => {
+describe("ad history restore", () => {
   test("success: draft-guarded, restores the draft side, reports resulting version + content match", async () => {
     const f = wire();
     const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
@@ -182,7 +182,7 @@ describe("ad history restore (AD-23)", () => {
     expect((r.envelope?.data as any).contentMatches).toBe(true);
   });
 
-  test("ADW-R8: platform true but the draft does not carry the target content -> ok:false RESTORE_UNCONFIRMED", async () => {
+  test("platform true but the draft does not carry the target content -> ok:false RESTORE_UNCONFIRMED", async () => {
     const v2 = load("chain-v2-draft.json");
     const step = v2.steps[0].properties.customCode;
     step.inlineCode = step.inlineCode.replace("v1-content", "v3-content");
@@ -194,7 +194,7 @@ describe("ad history restore (AD-23)", () => {
     expect([d.platformResponse, d.contentMatches, d.success]).toEqual([true, false, false]);
   });
 
-  test("ADW-R8 regression: a real V2 GET vs its own history body (GET-only fieldCode, service spelling) -> success", async () => {
+  test("a real V2 GET vs its own history body (GET-only fieldCode, service spelling) -> success", async () => {
     // Real acme-dev 4bfc83c7: the V2 GET spells the category "Schools-Utilities"
     // and adds method-output fieldCode; the history body of the same version
     // says "Schools - Utilities" and has no fieldCode.
@@ -210,7 +210,7 @@ describe("ad history restore (AD-23)", () => {
     expect([d.contentMatches, d.success]).toEqual([true, true]);
   });
 
-  test("ADW-R8: a content mismatch names the differing paths", async () => {
+  test("a content mismatch names the differing paths", async () => {
     const v2 = load("chain-v2-draft.json");
     const step = v2.steps[0].properties.customCode;
     step.inlineCode = step.inlineCode.replace("v1-content", "v3-content");
@@ -220,7 +220,7 @@ describe("ad history restore (AD-23)", () => {
     expect((r.envelope?.data as any).contentDiff).toEqual(["$.steps[0].properties.customCode.inlineCode"]);
   });
 
-  test("ADW-R8: the compiled cache of the draft is evicted on both routes; the restored body is validated", async () => {
+  test("the compiled cache of the draft is evicted on both routes; the restored body is validated", async () => {
     const f = wire();
     const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
     expect(r.envelope?.ok).toBe(true);
@@ -256,7 +256,7 @@ describe("interpretRestoreResponse", () => {
   });
 });
 
-describe("logIntent (AD-27)", () => {
+describe("logIntent", () => {
   test("reports the active env, not BELZ_ENV", () => {
     using _cfg = withTempEnvConfig({
       envs: { "t-dev": { url: "https://t.test" }, "t-qa": { url: "https://q.test" } },

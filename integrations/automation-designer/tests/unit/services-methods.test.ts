@@ -1,4 +1,4 @@
-// CLI trial: no command listed a service's methods, so agents guessed
+// no command listed a service's methods, so agents guessed
 // (`Helpers.String/toUpperCase`) and hit 404-style rejections. Real acme-dev
 // /automation-systems/{svc}/automation-apis listings (fixtures/services).
 import { describe, expect, test } from "bun:test";

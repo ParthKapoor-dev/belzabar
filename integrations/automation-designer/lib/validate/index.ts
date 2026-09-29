@@ -1,17 +1,17 @@
-// AD pre-save validator (Stage 5, requirement A4) — public API.
+// AD pre-save validator — public API.
 //
 //   validateMethodV2({after, before?, overlayPaths?, strict?})       L1–L3, offline, pure
 //   validateOnline({…, env, dryRunCompile?})                         L1–L4 (service lookup, optional dry-run compile)
 //
 // Input is the V2 wire body (`GET /chain/v2/{uuid}` shape) — exactly what the
-// V2 save route POSTs. Layers (research/ad-validation.md §6.2):
+// V2 save route POSTs. Layers:
 //   L1 structure (schema.ts) · L2 per step (steps.ts) · L3 reference graph
 //   (graph.ts) · L4 online (online.ts). Rule codes: catalogue.ts.
 //
 // Diff-aware: with `before` (the fetched draft, or the published copy on
 // publish), a finding whose identity is also found in `before` is downgraded
 // to a warning with `preexisting: true`, so methods that already break a rule
-// stay saveable and only NEW violations block. The identity (ADW-R3/R4) is
+// stay saveable and only NEW violations block. The identity is
 // semantic, not positional: rule + path with each step index replaced by the
 // ALIGNED `before` step (same step id, else an in-order match on the step's
 // service/type — a draft and its published copy have different step ids) and
@@ -91,7 +91,7 @@ export async function validateOnline(input: ValidateOnlineInput): Promise<Valida
  * Findings for AUDITING an existing record (`ad validate <uuid>`, the real-body
  * calibration) rather than a body about to be saved: AD-META-001 on a
  * PUBLISHED record and M1 on its existing name describe how the record was
- * stored, not its logic, so they become notes/warnings (ADW-R15). The server
+ * stored, not its logic, so they become notes/warnings. The server
  * refuses such names on create and rename (live 400 on V1 and V2), so M1
  * stays an error for new bodies and renames.
  */
@@ -190,8 +190,8 @@ function findingIdentity(f: ValidationFinding, body: unknown, stepAnchors: strin
   // A TEXT leaf (SQL, code, a SpEL template: long or multi-line) is identified
   // by the finding's subject — its normalised message, which names the
   // offending ref/token — not by the whole text, so an unrelated edit to the
-  // same body (a comment, another clause) keeps an old finding pre-existing
-  // (ADW-R3). A short scalar keeps its value: a different broken value at the
+  // same body (a comment, another clause) keeps an old finding pre-existing.
+  // A short scalar keeps its value: a different broken value at the
   // same place is new.
   const leaf =
     typeof last === "string" && isBookkeepingKey(last)

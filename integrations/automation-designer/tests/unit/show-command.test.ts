@@ -1,6 +1,6 @@
-// `ad show`: canonical uuid from any spelling (AD-30/F11), identity is always
-// a string (F37), step inputs + basic conditions are rendered (AD-40), and SQL
-// on acme shows once the step is classified (AD-02).
+// `ad show`: canonical uuid from any spelling, identity is always
+// a string, step inputs + basic conditions are rendered, and SQL
+// on acme shows once the step is classified.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { runCommand, withTempEnvConfig } from "@belzabar/core/testing";
 import showCommand, { flattenStepInputs, identityForStep } from "../../commands/show/index";
@@ -25,7 +25,7 @@ async function v2Method() {
   return parseV2Method((await Bun.file(`${FIX}/real-v2/${UUID}.v2.json`).json()) as V2MethodResponse, { env: "acme-dev" });
 }
 
-describe("identityForStep (F37)", () => {
+describe("identityForStep", () => {
   test("always a string, whatever the wire types", () => {
     const base: ParsedStep = { orderIndex: 1, outputs: [], inputs: [], raw: {}, kind: "EXISTING_SERVICE" };
     expect(identityForStep({ ...base, serviceName: "db_service", methodName: "data.read" } as ParsedStep)).toBe("db_service.data.read");
@@ -35,7 +35,7 @@ describe("identityForStep (F37)", () => {
   });
 });
 
-describe("flattenStepInputs (AD-40)", () => {
+describe("flattenStepInputs", () => {
   test("V2 db_service inputs flatten to body.queryString", async () => {
     const m = await v2Method();
     const rows = flattenStepInputs(m.parsedSteps[0]!.inputs);
@@ -86,13 +86,13 @@ describe("ad show command", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  test("--sql shows the decoded SQL, step inputs and string identities; editUrl uses the uuid (AD-35)", async () => {
+  test("--sql shows the decoded SQL, step inputs and string identities; editUrl uses the uuid", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     stub(await v2Method());
     const r = await runCommand(showCommand, [UUID, "--v2", "--sql"], { env: "t-dev" });
     const data = r.envelope?.data as any;
     expect(data.summary.editUrl.endsWith(`/${UUID}`)).toBe(true);
-    // F37: identity is a string when present (empty ones are pruned from the lean payload, 7.1).
+    // identity is a string when present (empty ones are pruned from the lean payload).
     for (const s of data.steps) expect(s.identity === undefined || typeof s.identity === "string").toBe(true);
     const first = data.allStepDetails[0];
     expect(first.kind).toBe("SQL");

@@ -1,4 +1,4 @@
-// Regression tests for env-scoped AD caches (AD-04, AD-05, AD-06, AD-24, F4, F5).
+// Regression tests for env-scoped AD caches.
 // BELZ_HOME is set to a tmp dir by the bunfig.toml test preload before
 // @belzabar/core is first imported; beforeAll asserts it so nothing can ever
 // touch the real ~/.belz.
@@ -59,7 +59,7 @@ afterAll(() => rmSync(join(tmp, "cache"), { recursive: true, force: true }));
 const fakeMethod = (tag: string) => ({ uuid: tag, sourceVersion: "v1" }) as any;
 
 describe("AD method cache", () => {
-  test("is env-scoped (AD-04 / F4)", async () => {
+  test("is env-scoped", async () => {
     await CacheManager.save("aaaa", fakeMethod("dev-body"), "orb-dev");
     expect((await CacheManager.load("aaaa", "orb-dev"))?.uuid).toBe("dev-body");
     expect(await CacheManager.load("aaaa", "orb-qa")).toBeNull();
@@ -79,7 +79,7 @@ describe("AD method cache", () => {
     expect(CacheManager.dir).toBe(join(tmp, "cache", "methods", "orb-dev"));
   });
 
-  test("adApi.publishDraft invalidates touched uuids (AD-06)", async () => {
+  test("adApi.publishDraft invalidates touched uuids", async () => {
     core.Config.setActiveEnv("orb-dev");
     for (const id of ["draft1", "pub1"]) await CacheManager.save(id, fakeMethod(id));
     await adApi.publishDraft("draft1");
@@ -90,7 +90,7 @@ describe("AD method cache", () => {
 });
 
 describe("AD definition cache (hydrator)", () => {
-  test("numeric automationId hits the cache (F5) and is env-scoped (AD-05)", async () => {
+  test("numeric automationId hits the cache and is env-scoped", async () => {
     core.Config.setActiveEnv("orb-dev");
     calls.length = 0;
     await ServiceHydrator.getDefinition(590 as unknown as string);
@@ -102,7 +102,7 @@ describe("AD definition cache (hydrator)", () => {
     core.Config.setActiveEnv("orb-dev");
   });
 
-  test("hyphenated ids are not cached forever (AD-05)", async () => {
+  test("hyphenated ids are not cached forever", async () => {
     const file = join(tmp, "cache", "definitions", "orb-dev", "a-b.json");
     await Bun.write(file, JSON.stringify({ savedAt: Date.now() - 2 * 60 * 60 * 1000, data: { automationAPI: {} } }));
     calls.length = 0;

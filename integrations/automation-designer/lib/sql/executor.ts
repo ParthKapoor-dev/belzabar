@@ -29,8 +29,8 @@ export interface SqlDefaultDb {
 }
 
 /**
- * The default SQL database for the active env when `--db` is not given
- * (AD-36 / F26): `environments.<env>.sqlDefaultDb` in ~/.belz/config.json,
+ * The default SQL database for the active env when `--db` is not given:
+ * `environments.<env>.sqlDefaultDb` in ~/.belz/config.json,
  * then BELZ_SQL_DEFAULT_DB (all envs). There is no built-in database name:
  * without either, pass --db.
  */
@@ -110,7 +110,7 @@ export async function resolveSqlDbContext(options: {
 /**
  * Start the executable-category lookup (cached per process) while the
  * operation contract and template load: it is needed only at execute time and
- * was a serial ~2 s on a dev env (smoke UX: ~5 s per statement). Marked
+ * was a serial ~2 s on a dev env (~5 s per statement). Marked
  * handled here; the execute path awaits the same promise and sees any error.
  */
 function prefetchExecutableCategory(): void {
@@ -231,7 +231,7 @@ interface ExecuteSqlInsertResult {
   query: string;
   statusCode?: number;
   rowsAffected: number;
-  /** Generated key values (F25): needs `RETURNING <key column>` in the query. */
+  /** Generated key values: needs `RETURNING <key column>` in the query. */
   generatedValues: string[];
   /** Multi-row RETURNING: every returned key row (column → value). */
   generatedKeys?: Array<Record<string, string>>;
@@ -266,7 +266,7 @@ export function hasReturningClause(query: string): boolean {
 }
 
 /**
- * Ask the insert step for the generated key (F25): add the operation's
+ * Ask the insert step for the generated key: add the operation's
  * `generatedId` output to the target step. The platform fills it from JDBC
  * getGeneratedKeys, which only works with `RETURNING <one column>`.
  */
@@ -326,7 +326,7 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
 
   if (!parsed.success) {
     // Multi-row RETURNING: the rows ARE committed; the platform only fails to
-    // hand back more than one key, and lists them in its error (F25).
+    // hand back more than one key, and lists them in its error.
     const keys = returning ? parseMultipleKeysError(failedServiceMessage(executionResult)) : null;
     if (keys) {
       generatedKeys = keys;
@@ -458,7 +458,7 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
 }
 
 export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promise<ExecuteSqlReadResult> {
-  // F2: the read endpoint autocommits, so a write here really happens.
+  // the read endpoint autocommits, so a write here really happens.
   assertReadOnlySql(options.query);
   const fallbackCategory = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({

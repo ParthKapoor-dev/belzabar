@@ -1,8 +1,8 @@
 // `ad publish` + `ad changelog --note`.
-// AD-19: publish first, then the note (retried); a failed publish leaves no
+// publish first, then the note (retried); a failed publish leaves no
 // note; the note id is found from the list (the POST answers {"success":true},
-// no id — live acme-dev). F39: an unknown uuid is a clean METHOD_NOT_FOUND.
-// AD-32/33: `changelog --note` confirms and records on the draft chain.
+// no id — live). An unknown uuid is a clean METHOD_NOT_FOUND.
+// `changelog --note` confirms and records on the draft chain.
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
@@ -95,7 +95,7 @@ const posts = (f: FakeFetch) =>
     .filter((r) => r.method === "POST" && !r.url.endsWith("cache/invalidate"))
     .map((r) => r.url.replace("https://t-dev.test", ""));
 
-describe("ad publish (AD-19)", () => {
+describe("ad publish", () => {
   test("publishes first, then records the note; reports noteRecorded + the note id from the list", async () => {
     const f = wire();
     const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
@@ -156,7 +156,7 @@ describe("ad publish (AD-19)", () => {
     expect((r.envelope?.data as any).noteRecorded).toBe(false);
   });
 
-  test("F39: unknown uuid -> METHOD_NOT_FOUND before any write", async () => {
+  test("unknown uuid -> METHOD_NOT_FOUND before any write", async () => {
     ad.install({ "GET /rest/api/automation/chain/*": respond({ status: 200, text: "" }) });
     const r = await runCommand(publishCommand, ["00000000000000000000000000000000", "--note", "x", "--yes"], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("METHOD_NOT_FOUND");
@@ -164,7 +164,7 @@ describe("ad publish (AD-19)", () => {
   });
 });
 
-describe("ad changelog --note (AD-32/33)", () => {
+describe("ad changelog --note", () => {
   test("--llm without --yes -> AD_CONFIRMATION_REQUIRED, nothing posted", async () => {
     const f = wire();
     const r = await runCommand(changelogCommand, [DRAFT, "--note", "hello"], { env: "t-dev" });
@@ -205,7 +205,7 @@ describe("findChangelogId", () => {
   });
 });
 
-describe("ad publish — validator gate + compiled cache (Stage 5)", () => {
+describe("ad publish — validator gate + compiled cache", () => {
   const err = { rule: "AD-SCHEMA-001", severity: "error" as const, message: "bad", path: "outputs[0].key" };
 
   test("validation errors on the draft block the publish (nothing POSTed)", async () => {
@@ -268,7 +268,7 @@ describe("ad publish — freshness and real draft/published pairs", () => {
   const PAIRS = join(import.meta.dir, "../fixtures/draft-published");
   const pair = (f: string) => JSON.parse(readFileSync(join(PAIRS, f), "utf8"));
 
-  test("ADW-R5: a draft that changed between validation and the publish → AD_VERSION_CONFLICT, nothing published", async () => {
+  test("a draft that changed between validation and the publish → AD_VERSION_CONFLICT, nothing published", async () => {
     let reads = 0;
     const f = wire({
       draftV2: () => {
@@ -284,7 +284,7 @@ describe("ad publish — freshness and real draft/published pairs", () => {
     expect(posts(f)).toEqual([]);
   });
 
-  test("ADW-R5: an unchanged draft publishes (changelog/testSuite churn is ignored)", async () => {
+  test("an unchanged draft publishes (changelog/testSuite churn is ignored)", async () => {
     let reads = 0;
     wire({
       draftV2: () => {
@@ -297,7 +297,7 @@ describe("ad publish — freshness and real draft/published pairs", () => {
     expect(reads).toBeGreaterThanOrEqual(2);
   });
 
-  test("ADW-R4: an unchanged real draft (different step ids from its published copy) publishes", async () => {
+  test("an unchanged real draft (different step ids from its published copy) publishes", async () => {
     const draft = pair("438b502717b979a6a8539691d673fc39.draft.v2.json");
     const published = pair("41f705aff6c768c033b4ad9840b69dde.published.v2.json");
     wire({ published: true, draftV2: () => structuredClone(draft), publishedV2: () => structuredClone(published) });
@@ -306,7 +306,7 @@ describe("ad publish — freshness and real draft/published pairs", () => {
     expect((r.envelope?.data as any).validation.warnings.every((w: any) => w.preexisting)).toBe(true);
   });
 
-  test("ADW-R4: pre-existing errors matched across different step ids block only until --allow-preexisting", async () => {
+  test("pre-existing errors matched across different step ids block only until --allow-preexisting", async () => {
     const draft = pair("4ec6d9821f97ab6809e092ca0e414c84.draft.v2.json");
     const published = pair("438185931da72f5b89aaac3c6248a18e.published.v2.json");
     wire({ published: true, draftV2: () => structuredClone(draft), publishedV2: () => structuredClone(published) });

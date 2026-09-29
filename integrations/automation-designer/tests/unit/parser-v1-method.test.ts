@@ -1,4 +1,4 @@
-// parseV1Method against a REAL acme-dev V1 body (AD-13: the old hand-written
+// parseV1Method against a REAL acme-dev V1 body (the old hand-written
 // method-full.json used `lastUpdatedOn`/`lastUpdatedBy` and string
 // `automationId`s, which the wire never sends).
 //
@@ -96,8 +96,8 @@ describe("parseV1Method (real wire)", () => {
     expect(method.name).toBe(raw.aliasName);
   });
 
-  // AD-13: the wire sends updatedOn/updatedBy (numeric user id), not lastUpdatedOn/lastUpdatedBy.
-  test("AD-13: updatedOn/updatedBy are read from the real wire fields", () => {
+  // the wire sends updatedOn/updatedBy (numeric user id), not lastUpdatedOn/lastUpdatedBy.
+  test("updatedOn/updatedBy are read from the real wire fields", () => {
     const method = parseV1Method(raw);
     expect(typeof raw.updatedOn).toBe("number");
     expect(method.updatedOn).toBe(raw.updatedOn as number);

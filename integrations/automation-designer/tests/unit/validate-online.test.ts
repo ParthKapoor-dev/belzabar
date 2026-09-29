@@ -154,7 +154,7 @@ describe("L4 dry-run compile", () => {
     }
   });
 
-  test("ADW-R11: any other non-2xx is a blocking AD-COMPILE-002 (was an AD-SVC-006 warning)", async () => {
+  test("any other non-2xx is a blocking AD-COMPILE-002 (was an AD-SVC-006 warning)", async () => {
     for (const resp of [
       () => respond({ status: 500, json: { errorMessage: "automationAPI is null" } }),
       () => respond({ status: 400, json: { message: "Invalid state, provided state does not match." } }),

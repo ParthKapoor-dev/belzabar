@@ -1,7 +1,7 @@
 // `ad save` — V2 pipeline end to end against a fake acme-dev (fakeFetch):
-// draft guard → overlay → validate → confirm → freshness re-GET (AD-08) →
-// POST /chain/v2 → post-save verify (AD-01) → compiled cache on both routes
-// (AD-20) → local cache.
+// draft guard → overlay → validate → confirm → freshness re-GET →
+// POST /chain/v2 → post-save verify → compiled cache on both routes
+// → local cache.
 import { afterEach, describe, expect, test } from "bun:test";
 import { writeFileSync } from "fs";
 import { join } from "path";
@@ -126,7 +126,7 @@ describe("ad save (V2 pipeline)", () => {
     expect(s.posts[0]!.uuid).toBe(U);
   });
 
-  test("AD-08: draft moved between read and POST → AD_VERSION_CONFLICT, nothing POSTed", async () => {
+  test("draft moved between read and POST → AD_VERSION_CONFLICT, nothing POSTed", async () => {
     const s = wire({
       onGet: (n, b) => {
         if (n >= 2) b.metadata.version!.name = "99";
@@ -139,7 +139,7 @@ describe("ad save (V2 pipeline)", () => {
     expect(s.posts).toHaveLength(0);
   });
 
-  test("AD-08: same version but a changed body is a conflict too", async () => {
+  test("same version but a changed body is a conflict too", async () => {
     const s = wire({
       onGet: (n, b) => {
         if (n >= 2) b.description = "someone else";
@@ -151,7 +151,7 @@ describe("ad save (V2 pipeline)", () => {
     expect(s.posts).toHaveLength(0);
   });
 
-  test("AD-01: server drops a field → AD_SAVE_VERIFY_FAILED with a diff; caches still evicted", async () => {
+  test("server drops a field → AD_SAVE_VERIFY_FAILED with a diff; caches still evicted", async () => {
     wire({
       onPost: (b) => {
         b.summary = base().summary as string; // not persisted

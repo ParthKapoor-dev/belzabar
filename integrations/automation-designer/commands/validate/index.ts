@@ -72,7 +72,7 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
     let errors = result.errors;
     let warnings = result.warnings;
     if (a.kind === "uuid") {
-      // Auditing an existing record (ADW-R15): how it is stored (a PUBLISHED
+      // Auditing an existing record: how it is stored (a PUBLISHED
       // record, a legacy name) is not a finding about its logic.
       const audit = auditExistingRecord(result, body);
       errors = audit.errors;

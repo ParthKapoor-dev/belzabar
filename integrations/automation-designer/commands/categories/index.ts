@@ -23,7 +23,7 @@ interface CategoriesData {
   categories: Array<Record<string, unknown>>;
 }
 
-// 7.9: `id`/`uuid` already are the chain-category id/uuid, so the default row
+// `id`/`uuid` already are the chain-category id/uuid, so the default row
 // drops the chainCategoryId/chainCategoryUuid duplicates (and systemUuid,
 // label); `--fields a,b` picks, `--fields all` = the full row.
 export const CATEGORY_FIELDS = ["id", "uuid", "name", "type", "systemId", "systemUuid", "chainCategoryId", "chainCategoryUuid", "label"] as const;
@@ -38,7 +38,7 @@ export const args = defineArgs({
     fields: { type: "string" },
     search: { type: "string" },
   },
-  // F34: the two filters contradict each other.
+  // the two filters contradict each other.
   exclusive: [["user", "system"]],
 });
 
@@ -51,7 +51,7 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
   },
   async execute({ system, user, search, fields }, context) {
     const sel = parseFieldList(fields, CATEGORY_FIELDS);
-    // AD-09/F9: chain categories (the id methods, POST /chain and
+    // chain categories (the id methods, POST /chain and
     // export-category use), joined with their automation system.
     const categories: CategoryRow[] = (await fetchCategories()).map((c) => ({
       id: c.chainCategoryId,
@@ -70,7 +70,7 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
     }
 
     if (search) {
-      // CLI trial: finding one row meant reading all ~140 (15 KB).
+      // finding one row meant reading all ~140 (15 KB).
       const q = search.toLowerCase();
       filtered = filtered.filter(
         (c) =>
@@ -82,7 +82,7 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
     }
 
     filtered.sort((a, b) => a.name.localeCompare(b.name));
-    // CLI trial tr2: the unfiltered list (~140 rows, 16 KB) was the first thing agents ran.
+    // the unfiltered list (~140 rows, 16 KB) was the first thing agents ran.
     if (!search && filtered.length > UNFILTERED_HINT_AT) {
       context.warn(`${filtered.length} categories listed; next time narrow with --search <text> (name/label substring, id or uuid).`);
     }

@@ -124,7 +124,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
       ],
     });
 
-    // ADW-R5: the confirmation can wait indefinitely; publish only the body
+    // the confirmation can wait indefinitely; publish only the body
     // that was validated. Anything else moving on the draft is a conflict.
     await assertDraftUnchanged(
       draft.uuid,
@@ -132,7 +132,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
       "Nothing was published; re-run the publish so the current draft is validated.",
     );
 
-    // AD-19: publish FIRST, then record the note. A failed publish must not
+    // publish FIRST, then record the note. A failed publish must not
     // leave an orphan note claiming a change that never shipped.
     logIntent("POST", `/rest/api/automation/chain/${draft.uuid}/publish`, { draftUuid: draft.uuid });
     const { publishedUuid } = await adApi.publishDraft(draft.uuid);
@@ -153,7 +153,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
       );
     }
 
-    // Re-fetch both sides: sync is a logic-fingerprint comparison (AD-18).
+    // Re-fetch both sides: sync is a logic-fingerprint comparison.
     // V2 on both sides: the sync fingerprint compares V2 bodies (see lib/fingerprint).
     const freshDraft = await adApi.fetchMethod(draft.uuid, "v2");
     let publishedVersion: number | string | null = null;

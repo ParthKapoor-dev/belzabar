@@ -1,4 +1,4 @@
-// parseV2Method smoke tests against REAL acme-dev V2 bodies (AD-13: the old
+// parseV2Method smoke tests against REAL acme-dev V2 bodies (the old
 // hand-written v2/method-smoke.json put `uuid` under `metadata`, which the
 // wire never does — the real body has a top-level `uuid`).
 //
@@ -66,14 +66,14 @@ describe("parseV2Method (real wire)", () => {
     expect(cc.source).toContain('let finalText="#{finaltext}"');
   });
 
-  test("real wire pads some ids with trailing spaces (AD-13) and parse still succeeds", () => {
+  test("real wire pads some ids with trailing spaces and parse still succeeds", () => {
     expect(ccRaw.automationApiId).toMatch(/^[0-9a-f]{32}\s+$/);
     expect(ccRaw.steps![0]!.id as unknown as string).toMatch(/\s+$/);
     expect(() => parseV2Method(ccRaw)).not.toThrow();
   });
 
-  // AD-35: the uuid is the top-level wire field (metadata has none).
-  test("AD-35: uuid is read from the top-level wire field", () => {
+  // the uuid is the top-level wire field (metadata has none).
+  test("uuid is read from the top-level wire field", () => {
     const method = parseV2Method(echoRaw);
     expect(method.uuid).toBe("486041dfd02d9fd45a27b608ad2dce0c");
     expect(method.parseWarnings).toEqual([]);

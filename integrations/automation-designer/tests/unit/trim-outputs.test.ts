@@ -1,4 +1,4 @@
-// Stage 7.9: compact default output (+ --fields / --full) for `categories`,
+// compact default output (+ --fields / --full) for `categories`,
 // `changelog`, `export`, `export-category` and `history show`, on real
 // acme-dev fixtures.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
@@ -150,7 +150,7 @@ describe("history show: compact view by default, --full adds the parse", () => {
   });
 });
 
-describe("history diff human table (F36)", () => {
+describe("history diff human table", () => {
   test("rich-text descriptions become plain text cut to 60 chars", () => {
     const long = `[EXISTING_SERVICE] If &lt;insCnt&gt; &gt; 0<ul><li>Set queryToExecute = 'WITH' + ${"x".repeat(400)}</li></ul>`;
     const rows = diffTableRows([

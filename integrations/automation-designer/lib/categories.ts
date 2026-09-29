@@ -1,4 +1,4 @@
-// One category identity model (AD-09, AD-10, F9).
+// One category identity model.
 //
 // The platform has two id spaces for what the UI calls a "category":
 //   - the chain category (`/chain/category?fetchSystemServices=false`,

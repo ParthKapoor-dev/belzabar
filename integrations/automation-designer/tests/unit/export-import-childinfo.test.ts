@@ -1,5 +1,5 @@
-// ad export takes a uuid (F12/AD-31), ad import recognises belz's export
-// shapes (F13), ad child-info reports not-found (F23).
+// ad export takes a uuid, ad import recognises belz's export
+// shapes, ad child-info reports not-found.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -67,7 +67,7 @@ function writeTmp(text: string): string {
   return file;
 }
 
-describe("ad import: extractMethodNames (F13)", () => {
+describe("ad import: extractMethodNames", () => {
   const def = (name: string) => ({ chainDefinition: { name, aliasName: name, jsonDefinition: "{}" }, testSuite: null });
   test("ad export shape", () => expect(extractMethodNames(def("a"))).toEqual(["a"]));
   test("ad export-category shape", () =>
@@ -97,8 +97,8 @@ describe("ad import: extractMethodNames (F13)", () => {
   });
 });
 
-// ADW-R9: nothing unrecognised, malformed or aimed at a PUBLISHED chain is ever sent.
-describe("ad import guards (ADW-R9)", () => {
+// nothing unrecognised, malformed or aimed at a PUBLISHED chain is ever sent.
+describe("ad import guards", () => {
   const run = async (content: unknown, fetchImpl?: (uuid: string) => unknown) => {
     const cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     quiet();
@@ -167,7 +167,7 @@ describe("ad import guards (ADW-R9)", () => {
   });
 });
 
-describe("ad child-info (F23)", () => {
+describe("ad child-info", () => {
   test("null body → METHOD_NOT_FOUND, not ok:true", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     spies.push(spyOn(adApi, "fetchChildMethodInfo").mockResolvedValue(null));

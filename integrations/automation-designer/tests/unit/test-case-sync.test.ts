@@ -1,4 +1,4 @@
-// 7.7 / 7.13: test cases as git-friendly files, fetch-back verified writes,
+// test cases as git-friendly files, fetch-back verified writes,
 // export and sync — over the real acme-dev suite of belz_tst_s7c_t1
 // (fixtures/test-cases/suite.json) and an in-memory fake of the suite store
 // that mimics the live server: PUT keeps name/description, DELETE is soft and
@@ -296,7 +296,7 @@ describe("test-case bulk", () => {
   });
 });
 
-describe("test-case export / sync (7.13)", () => {
+describe("test-case export / sync", () => {
   test("export writes <root>/<Category>/<method>/{method.json, cases/*.json}; re-export is a no-op", async () => {
     wire();
     const root = scratchDir("tc-export");
@@ -412,7 +412,7 @@ describe("files", () => {
   });
 });
 
-// ── a method with no suite yet (CLI trial: 200 + empty body crashed every action) ──
+// ── a method with no suite yet (200 + empty body crashed every action) ──
 
 describe("no suite yet: the suite GET answers 200 with an empty body", () => {
   test("list and export are empty, not UNHANDLED_EXCEPTION", async () => {
