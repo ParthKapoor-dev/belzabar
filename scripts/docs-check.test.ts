@@ -70,7 +70,7 @@ describe("commandCandidates / checkCommand", () => {
   });
 
   test("unknown namespaces, commands and strict subcommands fail", () => {
-    expect(checkCommand(INDEX, ["web"])).toContain("unknown command `belz web`");
+    expect(checkCommand(INDEX, ["frobnicate"])).toContain("unknown command `belz frobnicate`");
     expect(checkCommand(INDEX, ["pd", "write"])).toContain("unknown command `belz pd write`");
     expect(checkCommand(INDEX, ["ad", "sql", "drop"])).toContain("unknown subcommand");
     expect(checkCommand(INDEX, ["cache", "clear"])).toContain("unknown subcommand");
@@ -95,7 +95,7 @@ describe("checkDocs on a temp repo", () => {
         "`lib/save/missing.ts`", // 2: missing (doc-relative)
         "`integrations/pd/x.ts`", // 3: missing (root-relative)
         "`@belzabar/ad/lib/trace` `@belzabar/nope`", // 4: unknown package
-        "`belz ad show <uuid>` `belz web`", // 5: unknown command
+        "`belz ad show <uuid>` `belz frobnicate`", // 5: unknown command
         "[ok](../ad/lib/save/verify.ts) [bad](../ad/lib/gone.ts)", // 6: missing link
       ].join("\n"),
     );
@@ -114,7 +114,7 @@ describe("checkDocs on a temp repo", () => {
       "integrations/ad/AGENTS.md:2: missing path lib/save/missing.ts",
       "integrations/ad/AGENTS.md:3: missing path integrations/pd/x.ts",
       "integrations/ad/AGENTS.md:4: unknown package @belzabar/nope",
-      "integrations/ad/AGENTS.md:5: unknown command `belz web`",
+      "integrations/ad/AGENTS.md:5: unknown command `belz frobnicate`",
       "integrations/ad/AGENTS.md:6: missing path ../ad/lib/gone.ts",
     ]);
   });
