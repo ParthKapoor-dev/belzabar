@@ -86,7 +86,8 @@ function mapField(f: V2Field): MethodField {
 
 function mapOutput(o: V2Output): MethodOutput {
   return {
-    code: o.key,
+    // Some real V2 method outputs carry only fieldCode / name (ADR-R8).
+    code: o.key || o.fieldCode || o.name || "",
     displayName: o.name,
     type: o.type,
     description: o.description,

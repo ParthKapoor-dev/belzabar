@@ -343,3 +343,17 @@ describe("not-found (200 + empty body)", () => {
     await expect(v2.fetchRawMethod(missing)).rejects.toMatchObject({ code: "METHOD_NOT_FOUND" });
   });
 });
+
+// ADR-R8: a V2 method output with only fieldCode/name still has a code.
+describe("V2 method outputs without `key` (ADR-R8)", () => {
+  test("code falls back to fieldCode, then name; matches V1", async () => {
+    const uuid = "4a49e392ca76084725c3839ff97007ae";
+    const raw2 = (await json(`${FIX}/real-v2/${uuid}.v2.json`)) as V2MethodResponse;
+    expect(raw2.outputs?.some((o) => !o.key)).toBe(true);
+    const m2 = parseV2Method(raw2, { env: "sems-dev" });
+    const m1 = parseV1Method((await json(`${FIX}/real-v1/${uuid}.v1.json`)) as V1RawMethodResponse, { env: "sems-dev" });
+    for (const o of m2.outputs) expect(o.code).not.toBe("");
+    expect(m2.outputs.map((o) => o.code)).toEqual(m1.outputs.map((o) => o.code));
+    expect(parseV2Method({ ...raw2, outputs: [{ name: "onlyName" } as never] }, { env: "sems-dev" }).outputs[0]!.code).toBe("onlyName");
+  });
+});
