@@ -1,4 +1,4 @@
 belz pd history list <pageId> [--limit N]  :->  List every saved version of a page (metadata only; history lives on the published id)
 belz pd history show <pageId> --version <vid>  :->  Parse + validate one historical version of this page
 belz pd history diff <pageId> --from <A> --to <B>  :->  Structural diff between two versions of this page
-belz pd history restore <pageId> --version <vid> --allow-published --yes  :->  Revert the page to that version (locked, validated write)
+belz pd history restore <pageId> --version <vid> --acknowledge-unverified --yes  :->  Revert the page to that version (UNVERIFIED revert semantics; refused without the flag; locked, validated, reports which row changed)

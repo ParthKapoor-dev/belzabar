@@ -209,9 +209,11 @@ Backed by three server endpoints. belz exposes them as:
 - `belz pd history diff <pageId> --from A --to B` → fetches both, parses both, diffs structure
   (variables added/removed, nodes added/removed/kind-changed, HTTP calls added/removed, root-level
   counts). Not a textual diff of the JSON.
-- `belz pd history restore <pageId> --version <vid>` → checks ownership, validates (diff-aware),
-  locks the owning page and its linked draft, `PUT /pages/revert/<vid>`, re-fetches the owner.
-  Requires `--allow-published` when the owner is PUBLISHED (normally the case).
+- `belz pd history restore <pageId> --version <vid> --acknowledge-unverified` → checks ownership,
+  locks the owning page and its linked draft, re-fetches the owner and validates the version
+  against it (diff-aware), `PUT /pages/revert/<vid>`, then reads back BOTH rows and reports which
+  changed (`data.changed`). Which row the revert rewrites is **unverified** (no PD live writes), so
+  without `--acknowledge-unverified` it is refused with `PD_RESTORE_UNVERIFIED`.
 
 **History is server-side.** belz does **not** maintain local snapshots.
 

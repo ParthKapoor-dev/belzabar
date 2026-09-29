@@ -129,8 +129,10 @@ describe("pd save / find", () => {
     expect(await o("--force")).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: true });
     const p = (await publish.parseArgs!(["p1", "--force"], ctx)) as any;
     expect(p.overrides).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: true });
-    const r = (await history.parseArgs!(["restore", "p1", "--version", "1", "--allow-published"], ctx)) as any;
-    expect(r.overrides.allowPublished).toBe(true);
+    // OTH-R8: restore has its own acknowledgement flag; --allow-published is not a restore flag.
+    expect(code(() => history.parseArgs!(["restore", "p1", "--version", "1", "--allow-published"], ctx))).toBe("UNKNOWN_FLAG");
+    const r = (await history.parseArgs!(["restore", "p1", "--version", "1", "--acknowledge-unverified"], ctx)) as any;
+    expect(r.acknowledgeUnverified).toBe(true);
     expect(code(() => history.parseArgs!(["show", "p1", "--version", "1", "--allow-published"], ctx))).toBe("UNKNOWN_FLAG");
   });
 

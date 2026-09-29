@@ -26,15 +26,15 @@ component name (component first, then page; several matches → `PD_NAME_AMBIGUO
 | `belz pd page-deps <input>` | page-dependencies summary; `--status PUBLISHED\|DRAFT`, `--full` (raw graph) |
 | `belz pd translations <input>` | Release check of phrase keys; `--status`, `--expect-draft <id>`, `--force` |
 | `belz pd diff <input> --from <envA> --to <envB>` | Cross-env structural diff (flips `Config.activeEnv` per side, then restores it) |
-| `belz pd history <list\|show\|diff\|restore> <pageId>` | Server version history (lives on the PUBLISHED id: `list` on a draft with no versions adds `publishedId` + `hint` and a warning); `restore` writes |
+| `belz pd history <list\|show\|diff\|restore> <pageId>` | Server version history (lives on the PUBLISHED id: `list` on a draft with no versions adds `publishedId` + `hint` and a warning); `restore` writes and is refused (`PD_RESTORE_UNVERIFIED`) without `--acknowledge-unverified` |
 | `belz pd preflight <pageId> [--overlay <file>]` | Dry run of `save`: parse + validate + plan; never writes |
 | `belz pd save <pageId> --overlay <file> \| --config <file>` | Validated, locked save; `--dry-run` |
 | `belz pd publish <pageId>` | Draft-guard + diff-aware validate (vs the PUBLISHED version) + locked publish, re-validated on a fresh read inside the lock; `--landing`, `--host <id>` (repeatable) |
 | `belz pd lock <acquire\|release\|status>` | Manual lock control (`~/.belz/pd-locks/<env>.json`, atomic 0600; a 5xx release keeps the record) |
 
 Write overrides (`lib/args/common.ts`, on save/publish/history restore): `--force-validation`
-(proceed despite validator errors; they land in `bypassedErrors`), `--allow-published` (write a
-PUBLISHED page with no linked draft), `--force` (deprecated alias of `--force-validation` only;
+(proceed despite validator errors; they land in `bypassedErrors`), `--allow-published` (save /
+publish only: write a PUBLISHED page with no linked draft; restore uses `--acknowledge-unverified`), `--force` (deprecated alias of `--force-validation` only;
 warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 
 ## Contracts
@@ -48,7 +48,7 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 - **Error codes** (grep `code: "PD_` for the full set): `PD_NOT_FOUND`, `PD_NAME_AMBIGUOUS`,
   `PD_API_ERROR` / `PD_LOCKED` (409) from `lib/api/client.ts` (non-OK bodies summarised by core
   `httpError`), `PD_DRAFT_LINK_UNRESOLVED`, `PD_PUBLISHED_NO_DRAFT`, `PD_NOT_PUBLISHED`,
-  `PD_OVERLAY_INVALID`, `PD_VERSION_NOT_FOUND`, `PD_VERSION_PAGE_MISMATCH`, `PD_FILE_NOT_FOUND`,
+  `PD_OVERLAY_INVALID`, `PD_VERSION_NOT_FOUND`, `PD_VERSION_PAGE_MISMATCH`, `PD_RESTORE_UNVERIFIED`, `PD_FILE_NOT_FOUND`,
   `PD_FILE_UNREADABLE`, `PD_FILE_UNWRITABLE`, `PD_DIFF_SAME_ENV`, `PD_UNKNOWN_ENV`. Arg errors
   come from core `defineArgs` (`MISSING_INPUT`, `INVALID_FLAGS`, `MISSING_ENV_RANGE`,
   `MISSING_VERSION_RANGE`, `MISSING_ACTION`, …).
@@ -64,7 +64,7 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
   `referenceId` (`resolveLinkedPair`), never by name. `resolveWriteTarget` (`lib/edit.ts`) is the
   only way to a writable id.
 
-## Save pipeline (`save`, `preflight`, `history restore`)
+## Save pipeline (`save`, `preflight`; `publish` / `history restore` share steps 1–3 and 5)
 
 1. `resolveWriteTarget` → draft id. 2. `withLock(id)` (nested calls are re-entrant; a page
 recorded by `belz pd lock acquire` still re-acquires the server lock — a stale record fails closed
@@ -181,8 +181,10 @@ Config facts (verified on real sems-dev pages): derived variables live in
 
 ## Known gaps
 
-1. What `PUT /pages/revert/<vid>` rewrites (owner vs draft) is not verified live; restore locks
-   both and needs `--allow-published` for a PUBLISHED owner.
+1. What `PUT /pages/revert/<vid>` rewrites (owner vs draft) is not verified live (OTH-R2). So
+   `history restore` refuses unless `--acknowledge-unverified`; then it locks both rows,
+   validates against a fresh in-lock read of the owner, and reads both back
+   (`data.changed: {owner, draft}`). The safe route is `history show` + `save --config` on the draft.
 2. Server parsing of bracketed partial-op keys (`props.[innerHTML]`) is not verified live, so
    belz never sends them: those edits are full saves (OTH-R1).
 3. `pd diff` across envs reports HTTP calls as changed when their env-local AD ids differ.

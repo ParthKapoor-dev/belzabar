@@ -57,18 +57,31 @@ describe("pd history (PD-15)", () => {
   });
 
   test("restore of another page's version never touches this page", async () => {
-    const r = await run(history, ["restore", PUB, "--version", "200", "--allow-published", "--yes"]);
+    const r = await run(history, ["restore", PUB, "--version", "200", "--acknowledge-unverified", "--yes"]);
     expect(r.envelope?.error?.code).toBe("PD_VERSION_PAGE_MISMATCH");
     expect(pd.log().some((l) => l.startsWith("PUT"))).toBe(false);
   });
 
-  test("restore into a PUBLISHED owner needs --allow-published; then locks owner + draft", async () => {
-    expect((await run(history, ["restore", DRAFT, "--version", "100", "--yes"])).envelope?.error?.code).toBe("PD_PUBLISHED_NO_DRAFT");
+  test("OTH-R2/R8: restore refuses by default (PD_RESTORE_UNVERIFIED), and no longer takes --allow-published", async () => {
+    const r = await run(history, ["restore", DRAFT, "--version", "100", "--yes"]);
+    expect(r.envelope?.error).toMatchObject({ code: "PD_RESTORE_UNVERIFIED", details: { ownerId: PUB, ownerStatus: "PUBLISHED", draftId: DRAFT } });
+    expect(String(r.envelope?.error?.message)).toContain("belz pd save <draftId> --config");
     expect(pd.log().some((l) => l.startsWith("PUT"))).toBe(false);
+    const old = await run(history, ["restore", DRAFT, "--version", "100", "--allow-published", "--yes"]);
+    expect(old.envelope?.error?.code).toBe("UNKNOWN_FLAG");
+  });
 
-    const r = await run(history, ["restore", DRAFT, "--version", "100", "--allow-published", "--yes"]);
+  test("with --acknowledge-unverified: locks owner + draft, re-reads the owner inside the lock, reports which row changed", async () => {
+    const r = await run(history, ["restore", DRAFT, "--version", "100", "--acknowledge-unverified", "--yes"]);
     expect(r.envelope?.ok).toBe(true);
-    expect(r.envelope?.data).toMatchObject({ ownerId: PUB, draftId: DRAFT, restoredVersionId: 100, newVersionId: 2 });
+    expect(r.envelope?.data).toMatchObject({
+      ownerId: PUB,
+      draftId: DRAFT,
+      restoredVersionId: 100,
+      newVersionId: 2,
+      changed: { owner: true, draft: false },
+      versionDrift: null,
+    });
     const puts = pd.log().filter((l) => l.startsWith("PUT"));
     expect(puts).toEqual([
       `PUT /pages/lock/${PUB}?pageLockAction=ACQUIRED`,
@@ -77,12 +90,15 @@ describe("pd history (PD-15)", () => {
       `PUT /pages/lock/${DRAFT}?pageLockAction=RELEASED`,
       `PUT /pages/lock/${PUB}?pageLockAction=RELEASED`,
     ]);
+    const log = pd.log();
+    const lastAcquire = log.indexOf(`PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`);
+    expect(log.slice(lastAcquire + 1, log.indexOf("PUT /pages/revert/100"))).toContain(`GET /pages/${PUB}`);
     expect(innerOf(pd.pages.get(PUB)!).variables!.userDefined![0]!.initialValue).toBe("old");
   });
 
   test("restore validates the version (diff-aware): a version that introduces an error is blocked", async () => {
     pd.versions.set(101, page(PUB, cleanInner({ layout: { id: "r", name: "span", unSelectable: true, children: [] } }), { status: "PUBLISHED", referenceId: DRAFT }));
-    const r = await run(history, ["restore", PUB, "--version", "101", "--allow-published", "--yes"]);
+    const r = await run(history, ["restore", PUB, "--version", "101", "--acknowledge-unverified", "--yes"]);
     expect(r.envelope?.error?.code).toBe("PD_VALIDATION_FAILED");
     expect(pd.log().some((l) => l.startsWith("PUT"))).toBe(false);
   });
