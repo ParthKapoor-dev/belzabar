@@ -10,10 +10,8 @@
 //                            (What it does / Approach / Service, Inputs,
 //                            Outputs, Steps tables, decoded custom code).
 //
-// Works on V1 and V2 parses. Loop and exit details are read from the step's
-// wire JSON (`raw`) because the V2 wire shape (`repeatStepExecution.{type,
-// value,counter}`, `exitCondition.conditionalExit.expression`) is richer than
-// the shared ParsedStep fields.
+// Works on V1 and V2 parses. Loops and exit-on-failure come from ParsedStep;
+// only the conditional exit (not a ParsedStep field) is read from the wire.
 
 import { decodeBase64Strict } from "./base64";
 import { abbreviate, oneLine } from "./compact";
@@ -83,41 +81,26 @@ export function stepFacts(step: ParsedStep): StepFacts {
   if (nonBlank(step.conditionExpression)) facts.when = oneLine(step.conditionExpression!);
   if (step.runAsync) facts.async = true;
 
-  const props = isObj(raw.properties) ? raw.properties : null;
-  if (props) {
-    // V2 wire
-    const rse = isObj(props.repeatStepExecution) ? props.repeatStepExecution : null;
-    if (rse && (nonBlank(rse.type) || nonBlank(rse.value) || rse.rangeStartInclusive != null)) {
-      const over =
-        nonBlank(rse.value) ??
-        (rse.rangeStartInclusive != null ? `${String(rse.rangeStartInclusive)}..${String(rse.rangeEndExclusive ?? "")}` : undefined);
-      facts.loop = { type: nonBlank(rse.type), over, counter: nonBlank(rse.counter), parallel: rse.executeParallel === true || undefined };
-    }
-    const exit = isObj(props.exitCondition) ? props.exitCondition : null;
-    const onFail = exit && isObj(exit.exitOnFailure) ? exit.exitOnFailure : null;
-    if (onFail?.value === true) {
-      facts.exitOnFailure = true;
-      facts.exitMessage = nonBlank(onFail.message);
-    }
-    const cond = exit && isObj(exit.conditionalExit) ? exit.conditionalExit : null;
-    if (cond && nonBlank(cond.expression)) facts.exitIf = oneLine(cond.expression as string);
-  } else {
-    // V1 wire
-    if (step.repeatStepExecution || raw.repeatStepExecution === true) {
-      const cfg = isObj(raw.loopConfiguration) ? raw.loopConfiguration : {};
-      facts.loop = {
-        type: nonBlank(cfg.type),
-        over: nonBlank(step.loopExecutionSource) ?? nonBlank(cfg.value),
-        counter: nonBlank(cfg.counter),
-        parallel: step.loopConfiguration?.executeParallel === true || undefined,
-      };
-    }
-    if (step.forceExitFromFailure) {
-      facts.exitOnFailure = true;
-      facts.exitMessage = nonBlank(step.forceExitErrorMessage);
-    }
-    if (nonBlank(raw.forceReturnConditionExpression)) facts.exitIf = oneLine(raw.forceReturnConditionExpression as string);
+  // Loop + exit-on-failure come from the parser (V1 and V2 alike).
+  if (step.repeatStepExecution) {
+    const cfg = step.loopConfiguration ?? {};
+    facts.loop = {
+      type: nonBlank(cfg.type),
+      over: nonBlank(step.loopExecutionSource),
+      counter: nonBlank(cfg.counter),
+      parallel: cfg.executeParallel === true || undefined,
+    };
   }
+  if (step.forceExitFromFailure) {
+    facts.exitOnFailure = true;
+    facts.exitMessage = nonBlank(step.forceExitErrorMessage);
+  }
+  // Conditional exit is not on ParsedStep: V2 `exitCondition.conditionalExit`, V1 `forceReturnConditionExpression`.
+  const props = isObj(raw.properties) ? raw.properties : null;
+  const exit = props && isObj(props.exitCondition) ? props.exitCondition : null;
+  const cond = exit && isObj(exit.conditionalExit) ? nonBlank(exit.conditionalExit.expression) : undefined;
+  const exitIf = cond ?? nonBlank(raw.forceReturnConditionExpression);
+  if (exitIf) facts.exitIf = oneLine(exitIf);
   return facts;
 }
 

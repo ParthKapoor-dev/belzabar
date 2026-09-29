@@ -59,7 +59,11 @@ rationale.
    → verified per-env numeric/uuid fast path). Parsers take
    `ParseOptions {env?, resolveService?}`; without them unresolved steps stay
    EXISTING_SERVICE (never guessed). Numeric apiIds are env-local: never
-   classify by them outside the per-env tables. V2 `orderIndex` is 1-based
+   classify by them outside the per-env tables. V2 loops: `parseV2Loop` reads
+   the real `properties.repeatStepExecution` `{type, value, counter,
+   executeParallel, numberOfConcurrentThread, range…}` (older `{enabled,
+   source}` still accepted) into `repeatStepExecution` / `loopExecutionSource` /
+   `loopConfiguration{type, counter, …}` like V1. V2 `orderIndex` is 1-based
    like V1; V2 uuid is the top-level `uuid`. V1 `updatedOn`/`updatedBy`.
 7a. `lib/ids.ts` — `resolveMethodRef(input)` → trimmed lower-case 32-hex
    (accepts padded/dashed/upper-case uuids and AD URLs; else `INVALID_UUID`).
@@ -226,9 +230,9 @@ rationale.
     `--fields a,b|all` convention (`parseFieldList` + `projectRow`, same as
     `pd show --fields`) used by the trimmed read commands (Stage 7.9).
     `lib/method-view.ts` — `compactMethod`/`compactStepLine`/`renderCompact`
-    (`show --compact`), `storyMarkdown` (`show --story`), `stepFacts` (loop /
-    exit read from the step wire: V2 `repeatStepExecution.{type,value,counter}`,
-    `exitCondition`), `flattenStepInputs`/`identityForStep` (moved from show).
+    (`show --compact`), `storyMarkdown` (`show --story`), `stepFacts` (loop and
+    exit-on-failure from ParsedStep; only the conditional exit is read from the
+    wire), `flattenStepInputs`/`identityForStep` (moved from show).
 16. `docs/api-notes.md` — belz-owned cheatsheet (read this before touching
     lib/api/*, lib/parser/*, or lib/draft-guard.ts)
 17. `lib/validate/` — the pre-save validator (Stage 5, A4) over the **V2 wire

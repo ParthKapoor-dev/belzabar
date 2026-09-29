@@ -4,7 +4,7 @@
 // --v2` can render a method parsed via V2. Write-side support for V2 is out
 // of scope for the current phase — the V2 parser feeds read commands only.
 
-import type { V2Step, V2StepInput, V2Output } from "../../types/v2-wire";
+import type { V2Step, V2StepInput, V2Output, V2StepProperties } from "../../types/v2-wire";
 import type {
   ParsedStep,
   CustomCodeStep,
@@ -135,6 +135,35 @@ function findSqlInput(inputs: V2StepInput[] | undefined): V2StepInput | undefine
   );
 }
 
+const nonBlank = (v: unknown): string | undefined =>
+  typeof v === "string" && v.trim() ? v.trim() : typeof v === "number" ? String(v) : undefined;
+
+/**
+ * V2 loop → the version-neutral loop fields. A step loops when the object
+ * names a type, a value or a range (real wire), or says `enabled: true`
+ * (older shape). `null` / absent / all-null → no loop.
+ */
+export function parseV2Loop(rse: V2StepProperties["repeatStepExecution"]): {
+  repeatStepExecution?: boolean;
+  loopExecutionSource?: string;
+  loopConfiguration?: NonNullable<ParsedStep["loopConfiguration"]>;
+} {
+  if (!rse || typeof rse !== "object") return {};
+  const type = nonBlank(rse.type);
+  const start = nonBlank(rse.rangeStartInclusive);
+  const range = start !== undefined ? `${start}..${nonBlank(rse.rangeEndExclusive) ?? ""}` : undefined;
+  const source = nonBlank(rse.value) ?? range ?? nonBlank(rse.source);
+  const enabled = rse.enabled === true || !!type || !!source;
+  if (!enabled) return rse.enabled === false ? { repeatStepExecution: false } : {};
+  const config: NonNullable<ParsedStep["loopConfiguration"]> = {};
+  if (typeof rse.executeParallel === "boolean") config.executeParallel = rse.executeParallel;
+  if (type) config.type = type;
+  const counter = nonBlank(rse.counter);
+  if (counter) config.counter = counter;
+  if (typeof rse.numberOfConcurrentThread === "number") config.numberOfConcurrentThread = rse.numberOfConcurrentThread;
+  return { repeatStepExecution: true, ...(source ? { loopExecutionSource: source } : {}), loopConfiguration: config };
+}
+
 function buildBase(raw: V2Step, orderIndex: number) {
   return {
     orderIndex,
@@ -145,13 +174,7 @@ function buildBase(raw: V2Step, orderIndex: number) {
     methodName: raw.methodName,
     runAsync: raw.properties?.runAsync,
     streamCapable: undefined,
-    repeatStepExecution: raw.properties?.repeatStepExecution?.enabled,
-    loopExecutionSource: typeof raw.properties?.repeatStepExecution?.source === "string"
-      ? raw.properties.repeatStepExecution.source
-      : undefined,
-    loopConfiguration: {
-      executeParallel: raw.properties?.repeatStepExecution?.executeParallel,
-    },
+    ...parseV2Loop(raw.properties?.repeatStepExecution),
     conditionMode: undefined,
     conditionExpression: raw.properties?.entryCondition?.expression ?? undefined,
     conditionConfiguration: undefined,

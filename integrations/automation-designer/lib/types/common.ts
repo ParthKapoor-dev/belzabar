@@ -145,9 +145,12 @@ interface BaseStep {
   methodName?: string;
   runAsync?: boolean;
   streamCapable?: boolean;
+  /** The step loops. V1: `repeatStepExecution`; V2: a `properties.repeatStepExecution` object with a type/value. */
   repeatStepExecution?: boolean;
+  /** What the loop runs over: V1 `loopExecutionSource`; V2 `value` (or `start..end` for a range). */
   loopExecutionSource?: string;
-  loopConfiguration?: { executeParallel?: boolean; type?: string };
+  /** Loop type (`LOOP_EXECUTION_ON_*`), counter variable, parallelism. */
+  loopConfiguration?: { executeParallel?: boolean; type?: string; counter?: string; numberOfConcurrentThread?: number };
   /** V1 advanced condition mode ("advance" / "basic"). */
   conditionMode?: "advance" | "basic";
   conditionExpression?: string;

@@ -58,12 +58,24 @@ export interface V2StepProperties {
   runAsync?: boolean;
   entryCondition?: V2EntryCondition;
   exitCondition?: V2ExitCondition;
+  /**
+   * Real wire (sems-dev): `{type, value, counter, executeParallel,
+   * numberOfConcurrentThread}` (+ `rangeStartInclusive`/`rangeEndExclusive`
+   * for LOOP_EXECUTION_ON_RANGE, `expandedExpression` for _ON_CONDITION).
+   * `enabled`/`source` are an older belz guess, still read for compatibility.
+   */
   repeatStepExecution?: {
+    type?: string | null;
+    value?: string | null;
+    counter?: string | null;
+    executeParallel?: boolean | null;
+    numberOfConcurrentThread?: number | null;
+    rangeStartInclusive?: string | number | null;
+    rangeEndExclusive?: string | number | null;
     enabled?: boolean;
     source?: string;
-    executeParallel?: boolean;
     [extra: string]: unknown;
-  };
+  } | null;
   customCode?: V2CustomCodeProperties;
 }
 
