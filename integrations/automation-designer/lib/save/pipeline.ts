@@ -22,7 +22,7 @@ import { logIntent } from "../args/confirm";
 import { diffPaths, getAtPath, isUnder, jsonEqual } from "../serialize/diff";
 import { planV2Overlay, type OverlayTarget, type V2OverlayPlan } from "../serialize/v2";
 import { isObj } from "../serialize/compact";
-import { BOOKKEEPING_KEYS } from "../fingerprint";
+import { isBookkeepingKey } from "../fingerprint";
 import { loadServiceCatalog, servicesOfOps } from "./services";
 import type { V2MethodResponse } from "../types/v2-wire";
 import { postChainV2 } from "./api";
@@ -318,7 +318,7 @@ function collectRemovals(a: unknown, b: unknown, path: string, out: Removal[]): 
   }
   if (!isObj(a) || !isObj(b)) return;
   for (const [k, av] of Object.entries(a)) {
-    if (av === null || av === undefined || BOOKKEEPING_KEYS.has(k)) continue; // ids/uuids: server-owned
+    if (av === null || av === undefined || isBookkeepingKey(k)) continue; // ids/uuids: server-owned
     const p = path ? `${path}.${k}` : k;
     if (!(k in b) || b[k] === null || b[k] === undefined) {
       if (!isEmptyish(av)) out.push({ path: p });

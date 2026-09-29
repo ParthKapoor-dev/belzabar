@@ -120,6 +120,16 @@ export const BOOKKEEPING_KEYS: ReadonlySet<string> = new Set([
   "addedWhen",
 ]);
 
+/**
+ * A bookkeeping key: one of BOOKKEEPING_KEYS, or any other id / uuid field
+ * (`…Id`, `…Uuid`, `…Ids`, `…Uuids`) — row and wiring ids are env-local and
+ * their space padding differs between copies (a V1 `automationUuid` read back
+ * padded after a history restore, live sems-dev).
+ */
+export function isBookkeepingKey(k: string): boolean {
+  return BOOKKEEPING_KEYS.has(k) || /(Id|Uuid)s?$/.test(k);
+}
+
 /** The body to project: the V2 object, or V1's parsed jsonDefinition. */
 function wireBody(raw: unknown): Record<string, unknown> | undefined {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
@@ -150,7 +160,7 @@ function projectWire(value: unknown): unknown {
   const obj = value as Record<string, unknown>;
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (BOOKKEEPING_KEYS.has(k)) continue;
+    if (isBookkeepingKey(k)) continue;
     if (k === "metadata") {
       // Only the behavioural parts: where the method lives and its time limit.
       const md = (v ?? {}) as Record<string, unknown>;
@@ -191,7 +201,7 @@ export function fingerprintProjection(m: HydratedMethod): unknown {
  * Stable 12-hex fingerprint of everything that changes a method's behaviour.
  *
  * With the wire body (every fetched / history-parsed method): the whole body
- * minus bookkeeping (see BOOKKEEPING_KEYS) — steps' inputs, outputs, SQL,
+ * minus bookkeeping (see isBookkeepingKey) — steps' inputs, outputs, SQL,
  * code, service, account (by name), conditions, exit, loop, async, and the
  * method's inputs, outputs, variables and display fields. A draft and its
  * published copy of the same content match. Without a body (hand-built

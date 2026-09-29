@@ -128,6 +128,7 @@ describe("fingerprintMethod over the wire body (ADW-R2)", () => {
     ["testSuite", (b) => delete b.testSuite],
     ["permissions", (b) => (b.permissions = { permissionSet: [] })],
     ["method uuid", (b) => (b.uuid = "ffffffffffffffffffffffffffffffff")],
+    ["any other …Id / …Uuid field (padding differs after a restore, live)", (b) => ((b.steps[0].outputs[0].automationUuid = "4f11484a706062c55fafb7dde8ae3fd2    "), (b.steps[0].outputs[0].referenceUuid = "x"))],
     ["base64 vs plain custom code", (b) => (b.steps[1].properties.customCode.inlineCode = encodeBase64(b.steps[1].properties.customCode.inlineCode))],
   ];
   for (const [what, fn] of BOOKKEEPING) {

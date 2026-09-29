@@ -27,7 +27,7 @@ import { ruleInfo } from "./catalogue";
 import { checkStructure } from "./schema";
 import { checkSteps } from "./steps";
 import { checkGraph } from "./graph";
-import { BOOKKEEPING_KEYS } from "../fingerprint";
+import { isBookkeepingKey } from "../fingerprint";
 import { isObj, arr, nonBlank, str, type FindingInput, type Report, type ValidationFinding, type ValidationResult } from "./types";
 
 export type { ValidationFinding, ValidationResult, StepRef, Severity } from "./types";
@@ -184,7 +184,7 @@ function findingIdentity(f: ValidationFinding, body: unknown, stepAnchors: strin
     last = p;
   }
   const leaf =
-    typeof last === "string" && BOOKKEEPING_KEYS.has(last)
+    typeof last === "string" && isBookkeepingKey(last)
       ? ""
       : node === null || node === undefined
         ? "∅"
