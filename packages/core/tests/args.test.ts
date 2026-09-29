@@ -185,7 +185,7 @@ describe("defineSubcommands", () => {
 describe("doc check", () => {
   const def = defineArgs({
     positionals: [{ name: "uuid", required: true }],
-    flags: { full: { type: "boolean" }, step: { type: "number", alias: ["--service-detail"] }, old: { type: "boolean", hidden: true } },
+    flags: { full: { type: "boolean" }, step: { type: "number", alias: ["--service-detail"] } },
   });
 
   test("in sync", () => {
@@ -203,7 +203,6 @@ describe("doc check", () => {
     expect(problems.some(p => p.includes("mentions --bogus"))).toBe(true);
     expect(problems.some(p => p.includes("must start with 'Usage: belz ad show'"))).toBe(true);
     expect(problems.some(p => p.startsWith("desc.txt line"))).toBe(true);
-    expect(problems.some(p => p.includes("--old"))).toBe(false);
   });
 
   test("helpers", () => {
@@ -212,7 +211,7 @@ describe("doc check", () => {
   });
 });
 
-describe("dash values and duplicates (s3 review)", () => {
+describe("dash values and duplicates", () => {
   const spec = defineArgs({
     command: "belz tw comment",
     flags: { body: { type: "string" }, limit: { type: "number" }, tag: { type: "string", repeatable: true } },

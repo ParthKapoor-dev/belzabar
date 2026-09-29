@@ -31,8 +31,6 @@ interface BaseFlag {
   required?: boolean;
   /** Collect every occurrence into an array (value flags only). */
   repeatable?: boolean;
-  /** Not documented in help.txt on purpose (deprecated spellings). Skips the help check. */
-  hidden?: boolean;
   /** Override the error code / message when a required flag is missing. */
   missingCode?: string;
   missingMessage?: string;

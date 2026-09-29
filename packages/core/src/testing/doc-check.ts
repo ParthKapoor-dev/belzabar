@@ -25,10 +25,9 @@ export function checkCommandDocs({ invocation, def, help, desc }: DocCheckInput)
   const accepted = acceptedFlags(def);
   const isKnown = (f: string) => accepted.has(f) || (GLOBAL_FLAGS as readonly string[]).includes(f);
 
-  // 1. Every declared (non-hidden) spelling is documented in help.txt.
+  // 1. Every declared spelling is documented in help.txt.
   for (const spec of specsOf(def)) {
     for (const [key, flag] of Object.entries(spec.flags ?? {})) {
-      if (flag.hidden) continue;
       for (const t of [`--${key}`, ...(flag.alias ?? [])]) {
         const re = new RegExp(`(?<![\\w-])${t.replace(/[-]/g, "\\-")}(?![\\w-])`);
         if (!re.test(help)) problems.push(`help.txt does not document ${t}`);
