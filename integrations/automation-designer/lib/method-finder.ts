@@ -114,6 +114,43 @@ async function withoutGone(index: MethodFinderIndex): Promise<MethodFinderIndex>
   };
 }
 
+/**
+ * Add a method belz just created to the cached index (if there is one), so
+ * `find` lists it without a rebuild (CLI trial). Never throws.
+ */
+export async function addMethodToIndex(
+  env: string,
+  m: { uuid: string; name: string; categoryUuid: string; categoryName: string; summary?: string },
+): Promise<void> {
+  try {
+    const key = indexKey(env);
+    const index = await methodFinderCache.load(key);
+    const uuid = m.uuid.trim().toLowerCase();
+    if (!index || index.methods.some((x) => x.uuid.toLowerCase() === uuid)) return;
+    const now = Date.now();
+    index.methods.push({
+      uuid,
+      referenceId: "",
+      aliasName: m.name,
+      methodName: m.name,
+      state: "DRAFT",
+      version: 1,
+      categoryUuid: m.categoryUuid,
+      categoryName: m.categoryName,
+      createdOn: now,
+      updatedOn: now,
+      url: buildMethodUrl(m.categoryName, uuid),
+      ...(m.summary ? { summary: m.summary } : {}),
+    });
+    index.methodCount = index.methods.length;
+    const cat = index.categories.find((c) => c.uuid === m.categoryUuid);
+    if (cat) cat.methodCount += 1;
+    await methodFinderCache.save(key, index);
+  } catch {
+    /* best effort: a rebuild lists it anyway */
+  }
+}
+
 /** Drop the env's whole index (a write whose method uuids are unknown, e.g. `ad import`). Never throws. */
 export async function dropMethodIndex(env: string): Promise<void> {
   await methodFinderCache.invalidate(indexKey(env));

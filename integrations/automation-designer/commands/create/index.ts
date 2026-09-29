@@ -3,7 +3,7 @@ import * as v2 from "../../lib/api/v2";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { normalizeUuid } from "../../lib/ids";
-import { invalidateMethodIndexEntry } from "../../lib/method-finder";
+import { addMethodToIndex, invalidateMethodIndexEntry } from "../../lib/method-finder";
 import { postChainV2 } from "../../lib/save/api";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
 import { expandSpec, readSpecFile } from "../../lib/save/spec";
@@ -123,6 +123,17 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
       throw new CliError("Create answered without a uuid; check the category in the AD UI.", {
         code: "AD_SAVE_INVALID_RESPONSE",
         details: { name: body.name },
+      });
+    }
+
+    // `find` lists it at once (CLI trial), without an index rebuild.
+    if (category.chainCategoryUuid) {
+      await addMethodToIndex(currentCacheEnv(), {
+        uuid,
+        name: String(body.name),
+        categoryUuid: category.chainCategoryUuid,
+        categoryName: category.name,
+        ...(typeof body.summary === "string" ? { summary: body.summary } : {}),
       });
     }
 

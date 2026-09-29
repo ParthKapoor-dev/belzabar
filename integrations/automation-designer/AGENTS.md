@@ -351,7 +351,7 @@ literals — and splices the result into the SQL before the DB runs it. `EXPLAIN
 |---|---|---|---|
 | Methods | `methods/<env>/<uuid>.json` | 5 min soft (SWR) / 1 h hard | save, publish, delete, history restore; `show --force` bypasses. A V1 parse with failed definition lookups (`unresolvedServices`) is never cached |
 | Service definitions | `definitions/<env>/<automationId>.json` | 1 h | — |
-| Method index | `method-finder/index-v1-<env>.json` (+ `dirty-<env>.json`) | 7 days (`callers`: 24 h; partial index: 15 min) | `find --refresh`, `callers --refresh`; `ad import` drops it. belz writes mark the uuid dirty, and `callers` re-reads dirty methods. A V2 read answering METHOD_NOT_FOUND (deleted / unknown) marks the uuid gone (`gone-<env>.json`): `find`/`callers` drop it from the cached index at once; a rebuild clears the marks |
+| Method index | `method-finder/index-v1-<env>.json` (+ `dirty-<env>.json`) | 7 days (`callers`: 24 h; partial index: 15 min) | `find --refresh`, `callers --refresh`; `ad import` drops it. belz writes mark the uuid dirty, and `callers` re-reads dirty methods; `create` adds the new draft to the cached index (`addMethodToIndex`). A V2 read answering METHOD_NOT_FOUND (deleted / unknown) marks the uuid gone (`gone-<env>.json`): `find`/`callers` drop it from the cached index at once; a rebuild clears the marks |
 | Callers | `callers/`, `callers-errors/` (1 day), `pd-ad-refs/` (1 h) | — | `callers --refresh` |
 | Published history bodies | `history-versions/<env>/<methodVersionID>.json` | 30 days (immutable) | — |
 | Validator L4 | `api-contracts/`, `service-accounts/` | 1 h | — |

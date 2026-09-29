@@ -6,6 +6,7 @@ import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig } from "@bel
 import findCommand from "../../commands/find/index";
 import categoriesCommand from "../../commands/categories/index";
 import * as v2 from "../../lib/api/v2";
+import { addMethodToIndex } from "../../lib/method-finder";
 
 const FIX = `${import.meta.dir}/../fixtures`;
 const CAT = "4423ad307059bc3fc6859804c9bd12e0"; // "Example services"
@@ -72,6 +73,21 @@ describe("ad find --category", () => {
     expect(d.methods.map((m: any) => m.uuid)).not.toContain(GONE);
     expect(d.totalMethods).toBe(11);
     expect(d.categories[0].methods).toBe(11);
+  });
+});
+
+describe("a method belz created is in the cached index at once", () => {
+  test("addMethodToIndex (called by ad create) → find --category lists it", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes()).install();
+    await runCommand(findCommand, ["--refresh"], { env: "t-dev" });
+    const NEW = "4fffffffffffffffffffffffffffffff";
+    await addMethodToIndex("t-dev", { uuid: NEW, name: "belz_tst_new", categoryUuid: OTHER, categoryName: "Schools", summary: "s" });
+    await addMethodToIndex("t-dev", { uuid: NEW, name: "belz_tst_new", categoryUuid: OTHER, categoryName: "Schools" }); // idempotent
+    const d = (await runCommand(findCommand, ["--category", "Schools"], { env: "t-dev" })).envelope?.data as any;
+    expect(d.cache.source).toBe("cache");
+    expect(d.methods).toEqual([expect.objectContaining({ name: "belz_tst_new", uuid: NEW, state: "DRAFT" })]);
+    expect(d.categories[0].methods).toBe(1);
   });
 });
 
