@@ -1,5 +1,5 @@
 // Renderer invariants: configs the PD runtime renders blank, invisible or not
-// at all (docs/api-notes.md §Failure-mode catalog). Same shape as existing.ts:
+// at all (lib/validator/README.md). Same shape as existing.ts:
 // (page, ctx) → ValidationIssue[], severities from lib/validator/catalogue.ts.
 
 import { walkParsed } from "../../parser/nodes";

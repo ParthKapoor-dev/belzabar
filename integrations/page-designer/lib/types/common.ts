@@ -215,7 +215,7 @@ export interface HydratedPage {
 export type ValidationSeverity = "error" | "warn";
 
 export interface ValidationIssue {
-  code: string;               // UPPER_SNAKE_CASE rule code — see docs/api-notes.md
+  code: string;               // rule code from lib/validator/catalogue.ts
   severity: ValidationSeverity;
   message: string;
   nodeId?: string | null;

@@ -1,11 +1,10 @@
 // Raw API shapes (wire types). These mirror what the PD REST API emits on the
 // wire — nothing more, nothing less.
 //
-// Import rules: only lib/api/client.ts and lib/parser/** may import from this
-// file. Commands and presenters import from ./common.ts exclusively. This
-// separation is the whole point of splitting types — keep wire-level
-// weirdness (stringified configuration, numeric versionIds, dual formats)
-// away from every downstream consumer.
+// Import rule: lib/ code may import from this file; commands import from
+// ./common.ts only (it re-exports the few raw bodies they pass through), so
+// wire-level weirdness (stringified configuration, numeric versionIds, dual
+// formats) stays out of commands and presenters.
 
 export type PdStatus = "DRAFT" | "PUBLISHED";
 export type PdEntityType = "PAGE" | "COMPONENT";
@@ -105,7 +104,7 @@ export interface RawHistoryEntry {
 // Shape: { key, value, operation, dataType }. Field is `key` (dot-notation
 // path), NOT `path`. `value` is ALWAYS a string — numbers are stringified,
 // booleans are stringified, objects/arrays are JSON.stringify'd. See
-// docs/api-notes.md.
+// lib/api/README.md.
 
 type PartialOperation = "CREATE" | "UPDATE";
 export type PartialDataType = "STRING" | "NUMBER" | "BOOLEAN" | "ARRAY" | "OBJECT";

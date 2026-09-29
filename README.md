@@ -164,7 +164,7 @@ Where the docs live:
 - **Maintainer docs**: `AGENTS.md` at the root and in every module (layout, contracts, how to
   add a command, testing).
 - **Platform API notes**: `integrations/automation-designer/docs/api-notes.md`,
-  `integrations/page-designer/docs/api-notes.md`.
+  `integrations/page-designer/lib/api/README.md`.
 
 ---
 
