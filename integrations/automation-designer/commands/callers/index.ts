@@ -11,13 +11,13 @@ import { loadDirtyMethods, loadOrBuildMethodFinderIndex, METHOD_FINDER_SCHEMA } 
 import {
   findAdCallers,
   findPdCallers,
-  loadPdRefs,
   resolveCallTarget,
   type AdCaller,
   type AdCallersResult,
   type CallTarget,
   type PdCaller,
 } from "../../lib/callers";
+import { loadPdRefs } from "@belzabar/pd/lib/ad-refs";
 
 interface CallersArgs {
   uuid: string;

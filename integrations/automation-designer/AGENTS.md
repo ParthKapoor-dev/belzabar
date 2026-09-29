@@ -60,7 +60,7 @@ lib/
                        equal to its key dropped (tests/fixtures/cross-env: real dev/qa pairs)
                        + methodDiffView
   trace.ts             traceMethod (ad trace, release matrix)
-  callers.ts           reverse index (ad callers); reads PD via @belzabar/pd/lib/*
+  callers.ts           reverse index (ad callers); PD side from @belzabar/pd/lib/ad-refs
   api-shape.ts         child-info --shape
   stream-parser.ts     application/stream+json (run --stream)
   error-parser.ts, input-collector.ts, base64.ts

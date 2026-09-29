@@ -157,6 +157,7 @@ editor metadata; sorts keys; turns multi-line strings into `{"$lines": [...]}` (
 | Path | Role |
 |---|---|
 | `lib/api/` | `pdApi` façade (`index.ts`) + raw HTTP client (`client.ts`) |
+| `lib/ad-refs.ts` | `loadPdRefs` / `pdRefsOf`: slim index of the `/chain/execute/<uuid>` httpRequests in every PAGE draft + component (cache `pd-ad-refs/`, 1 h); used by `belz ad callers --pd` |
 | `lib/types/` | `common.ts` (HydratedPage, ParsedNode, Overlay, ValidationIssue), `wire.ts` (raw API shapes; commands never import it) |
 | `lib/parser/` | `parsePage` / `inferEntityType` (`index.ts`), node discriminator (`nodes.ts`, every node carries its key `path`), `variables.ts`, `http.ts`, `refs.ts` |
 | `lib/serialize/` | `apply.ts`, `nodes.ts`, `locate.ts`, `paths.ts`, `operations.ts`, `full.ts`, `overlay-shape.ts` (structural overlay check), `index.ts` (`planSave`, `replayOperations`) |

@@ -151,6 +151,24 @@ export async function fetchAllPages(): Promise<RawPageListItem[]> {
   return results;
 }
 
+/** PAGE drafts with configuration (the plain page list omits it; apiInfoLevel=MEDIUM includes it). */
+export async function fetchPagesWithConfig(): Promise<RawPageResponse[]> {
+  const path = `${PD_BASE}/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM`;
+  const res = await apiFetch(path, {
+    method: "GET",
+    authMode: "Bearer",
+    timeoutMs: 180_000,
+  });
+  if (!res.ok) {
+    throw new CliError(`Listing PD pages failed: ${res.status}`, {
+      code: "PD_LIST_FAILED",
+      details: { path, status: res.status },
+    });
+  }
+  const body = await readJsonOrNull<unknown>(res);
+  return Array.isArray(body) ? (body as RawPageResponse[]) : [];
+}
+
 export async function fetchAllComponents(): Promise<RawPageListItem[]> {
   const results: RawPageListItem[] = [];
   let offset = 0;

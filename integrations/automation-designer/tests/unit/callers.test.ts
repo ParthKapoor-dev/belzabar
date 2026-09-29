@@ -5,7 +5,8 @@ import { describe, expect, setSystemTime, test } from "bun:test";
 import { existsSync } from "fs";
 import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type RecordedRequest } from "@belzabar/core/testing";
 import callersCommand from "../../commands/callers/index";
-import { findAdCallers, findPdCallers, loadPdRefs, pdRefsOf, resolveCallTarget, stepRefsOf, type CallTarget } from "../../lib/callers";
+import { findAdCallers, findPdCallers, resolveCallTarget, stepRefsOf, type CallTarget } from "../../lib/callers";
+import { loadPdRefs, pdRefsOf } from "@belzabar/pd/lib/ad-refs";
 import { loadOrBuildMethodFinderIndex, type MethodFinderIndex } from "../../lib/method-finder";
 
 const FIX = `${import.meta.dir}/../fixtures`;

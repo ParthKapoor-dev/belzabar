@@ -22,10 +22,8 @@
 //     the slim reference index is cached 1 h.
 
 import { join } from "path";
-import { apiFetch, BELZ_CONFIG_DIR, Cache, CliError, isObj, lifecycle, readJsonOrNull, str } from "@belzabar/core";
-import { parsePage } from "@belzabar/pd/lib/parser/index";
-import { pdApi } from "@belzabar/pd/lib/api/index";
-import type { RawPageResponse } from "@belzabar/pd/lib/types/wire";
+import { BELZ_CONFIG_DIR, Cache, CliError, isObj, lifecycle, str } from "@belzabar/core";
+import type { PdRefItem } from "@belzabar/pd/lib/ad-refs";
 import { fetchRawMethod } from "./api/v2";
 import { adApi } from "./api/index";
 import { normalizeUuid } from "@belzabar/core/platform";
@@ -359,68 +357,6 @@ export async function findAdCallers(
 }
 
 // ── PD side ─────────────────────────────────────────────────────────────────
-
-export interface PdRefItem {
-  type: "PAGE" | "COMPONENT";
-  id: string;
-  name: string;
-  status: string;
-  calls: Array<{ adId: string; label: string; callId?: string; triggers?: string[] }>;
-}
-
-const pdRefsCache = new Cache<PdRefItem[]>({ dir: join(BELZ_CONFIG_DIR, "cache", "pd-ad-refs"), ttlMs: 60 * 60 * 1000 });
-
-export function pdRefsOf(item: RawPageResponse, type: PdRefItem["type"]): PdRefItem | null {
-  if (typeof item.configuration !== "string" || !item.configuration.includes("/chain/execute/")) return null;
-  const page = parsePage(item);
-  const calls = page.httpRequests
-    .filter((c) => c.adId)
-    .map((c) => ({
-      adId: c.adId!.toLowerCase(),
-      label: c.label.trim(),
-      ...(c.callId ? { callId: c.callId } : {}),
-      ...(c.triggers.length ? { triggers: c.triggers } : {}),
-    }));
-  if (calls.length === 0) return null;
-  return { type, id: String(item.id), name: String(item.name ?? ""), status: String(item.status ?? "DRAFT"), calls };
-}
-
-/** PAGE drafts with configuration (the plain page list omits it; apiInfoLevel=MEDIUM includes it). */
-async function fetchPagesWithConfig(): Promise<RawPageResponse[]> {
-  const res = await apiFetch("/rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM", {
-    method: "GET",
-    authMode: "Bearer",
-    timeoutMs: 180_000,
-  });
-  if (!res.ok) {
-    throw new CliError(`Listing PD pages failed: ${res.status}`, {
-      code: "PD_LIST_FAILED",
-      details: { path: "/rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM", status: res.status },
-    });
-  }
-  const body = await readJsonOrNull<unknown>(res);
-  return Array.isArray(body) ? (body as RawPageResponse[]) : [];
-}
-
-export async function loadPdRefs(refresh: boolean): Promise<{ items: PdRefItem[]; source: "cache" | "fresh" }> {
-  if (!refresh) {
-    const cached = await pdRefsCache.load("index");
-    if (cached) return { items: cached, source: "cache" };
-  }
-  lifecycle.notice("Listing PD pages and components (with configuration)…");
-  const [pages, components] = await Promise.all([fetchPagesWithConfig(), pdApi.fetchAllComponents()]);
-  const items: PdRefItem[] = [];
-  for (const p of pages) {
-    const r = pdRefsOf(p, "PAGE");
-    if (r) items.push(r);
-  }
-  for (const c of components as RawPageResponse[]) {
-    const r = pdRefsOf(c, "COMPONENT");
-    if (r) items.push(r);
-  }
-  await pdRefsCache.save("index", items);
-  return { items, source: "fresh" };
-}
 
 export interface PdCaller {
   type: "PAGE" | "COMPONENT";
