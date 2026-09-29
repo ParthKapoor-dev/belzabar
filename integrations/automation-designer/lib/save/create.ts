@@ -17,7 +17,7 @@
 // step ids and input/output uuids; a duplicate name is refused with
 // `error.automation_chain.duplicate_method_name`.
 
-import { CliError, isObj } from "@belzabar/core";
+import { CliError, isObj, type Obj } from "@belzabar/core";
 import type { Category } from "../categories";
 import { emptyCatalog, expandCompactStep, expandField, isRawV2Step, Problems, type FieldKind, type ServiceCatalog } from "../serialize/compact";
 
@@ -60,7 +60,6 @@ const DROPPED_KEYS = new Set([
   "internalMethod",
 ]);
 
-type Obj = Record<string, unknown>;
 
 /** Defaults under `given`: objects merge recursively, `given` wins, arrays are taken as given. */
 function withDefaults(defaults: Obj, given: unknown): Obj {

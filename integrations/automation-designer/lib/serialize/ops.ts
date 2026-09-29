@@ -30,7 +30,7 @@ import {
   type FieldKind,
   type ServiceCatalog,
 } from "./compact";
-import { isObj } from "@belzabar/core";
+import { isObj, type Obj } from "@belzabar/core";
 
 export const OP_NAMES = [
   "add-step",
@@ -265,7 +265,6 @@ export function applyStructuralOps(
   return res;
 }
 
-type Obj = Record<string, unknown>;
 
 function anchorLabel(op: Obj): string {
   if ("before" in op) return ` before ${String(op.before)}`;

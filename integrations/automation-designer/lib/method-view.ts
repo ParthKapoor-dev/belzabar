@@ -16,7 +16,7 @@
 import { decodeBase64Strict } from "./base64";
 import { abbreviate, htmlToText, oneLine } from "./compact";
 import type { HydratedMethod, MethodField, MethodOutput, ParsedStep, StepInput } from "./types/common";
-import { isObj, str } from "@belzabar/core";
+import { isObj, str, type Obj } from "@belzabar/core";
 
 export type InputLabeler = (input: StepInput) => string | undefined;
 
@@ -56,7 +56,6 @@ export function identityForStep(step: ParsedStep): string {
 
 // ── Wire facts (loop / exit) ────────────────────────────────────────────────
 
-type Obj = Record<string, unknown>;
 
 interface StepFacts {
   when?: string;

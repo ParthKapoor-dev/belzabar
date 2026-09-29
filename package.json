@@ -15,7 +15,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "docs:check": "bun scripts/docs-check.ts",
     "check": "bun run typecheck && bun run docs:check && bun run dead-code && bun run test",
-    "dead-code": "bun scripts/dead-code.ts --summary"
+    "dead-code": "bun scripts/dead-code.ts --summary --check"
   },
   "devDependencies": {
     "@belzabar/core": "workspace:*",

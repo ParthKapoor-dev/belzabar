@@ -5,9 +5,8 @@
 
 import { readFile } from "fs/promises";
 import { isAbsolute, resolve } from "path";
-import { CliError, isObj } from "@belzabar/core";
+import { CliError, isObj, type Obj } from "@belzabar/core";
 
-type Obj = Record<string, unknown>;
 
 async function readText(path: string, baseDir: string, what: string): Promise<string> {
   const full = isAbsolute(path) ? path : resolve(baseDir, path);

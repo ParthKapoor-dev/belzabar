@@ -21,7 +21,7 @@ import { jsonPath, stepKind, stepRef } from "./schema";
 import { customCodeSource, escapeRe, findSqlInput, sqlSkeleton } from "./steps";
 import { replaceSpelBlocks, scanSpel, spelRoots } from "./spel";
 import { decodeBase64Strict } from "../base64";
-import { isObj, str as nonBlank } from "@belzabar/core";
+import { isObj, str as nonBlank, type Obj } from "@belzabar/core";
 
 interface LintRuleInfo {
   description: string;
@@ -56,7 +56,6 @@ interface LintOptions {
   resolverTables?: Record<string, string>;
 }
 
-type Obj = Record<string, unknown>;
 
 
 /** Q3 matchers from `LintOptions.resolverTables` (a table matches with or without a schema prefix). */

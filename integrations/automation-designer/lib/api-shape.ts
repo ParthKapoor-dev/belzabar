@@ -7,10 +7,9 @@
 // The contract is GET /rest/api/automation-systems/{service}/automation-apis/{method}
 // (what `ad child-info` fetches); accounts are GET /automation-systems/{service}/auth.
 
-import { apiFetch, isObj, str } from "@belzabar/core";
+import { apiFetch, isObj, str, type Obj } from "@belzabar/core";
 import { normalizeUuid } from "@belzabar/core/platform";
 
-type Obj = Record<string, unknown>;
 
 export interface ApiShape {
   service: string;

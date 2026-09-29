@@ -1,4 +1,4 @@
-import { type CommandModule, defineArgs, isObj, ok, str } from "@belzabar/core";
+import { type CommandModule, defineArgs, isObj, ok, str, type Obj } from "@belzabar/core";
 import { fetchViewMethod } from "../../lib/view-fetch";
 import type { ParsedStep } from "../../lib/types/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
@@ -31,7 +31,6 @@ interface OutputsData {
   notes?: string[];
 }
 
-type Obj = Record<string, unknown>;
 
 export function stepOutputRows(steps: ParsedStep[], declared: { outputs: string[]; variables: string[]; inputs: string[] }): StepOutputRow[] {
   const rows: StepOutputRow[] = [];

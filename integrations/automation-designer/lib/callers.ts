@@ -22,14 +22,13 @@
 //     the slim reference index is cached 1 h.
 
 import { join } from "path";
-import { BELZ_CONFIG_DIR, Cache, CliError, isObj, lifecycle, str } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, Cache, CliError, isObj, lifecycle, str, type Obj } from "@belzabar/core";
 import type { PdRefItem } from "@belzabar/pd/lib/ad-refs";
 import { fetchRawMethod } from "./api/v2";
 import { adApi } from "./api/index";
 import { normalizeUuid } from "@belzabar/core/platform";
 import type { MethodFinderIndex, MethodFinderMethod } from "./method-finder";
 
-type Obj = Record<string, unknown>;
 const lower = (v: unknown): string | undefined => str(v)?.toLowerCase();
 
 // ── Target ──────────────────────────────────────────────────────────────────
