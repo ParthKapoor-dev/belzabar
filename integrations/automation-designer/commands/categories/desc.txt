@@ -1,4 +1,4 @@
-belz ad categories  :->  List all AD categories (user- and system-generated; compact rows id, uuid, name, type, systemId)
+belz ad categories  :->  List all AD categories (~140 rows on sems-dev; to find one, use --search instead) (user- and system-generated; compact rows id, uuid, name, type, systemId)
 belz ad categories --user  :->  Only USER_GENERATED categories
 belz ad categories --system  :->  Only SYSTEM_GENERATED categories (exclusive with --user)
 belz ad categories --fields <a,b|all>  :->  Pick row fields, or all for the full rows (chainCategoryId/Uuid, systemUuid, label)

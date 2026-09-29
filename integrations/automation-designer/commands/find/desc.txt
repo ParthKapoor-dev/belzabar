@@ -1,4 +1,4 @@
-belz ad find  :->  List all service categories with method counts from the local method index
+belz ad find  :->  List all service categories with method counts from the local method index (every category; to list one category's methods use --category <name|id>)
 belz ad find list  :->  Explicitly list all service categories with method counts
 belz ad find pick  :->  Open an interactive fzf picker to quickly select a method
 belz ad find pick <query>  :->  Open fzf picker with an initial query prefilled

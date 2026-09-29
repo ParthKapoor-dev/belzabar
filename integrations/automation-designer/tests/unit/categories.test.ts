@@ -77,6 +77,17 @@ describe("ad categories / export-category", () => {
     expect(tp).toMatchObject({ id: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca", systemId: 1318 });
   });
 
+  test("unfiltered listing warns toward --search; a search does not (CLI trial tr2)", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
+    stubListings();
+    const all = await runCommand(categoriesCommand, [], { env: "t-dev" });
+    expect((all.envelope?.data as any).total).toBe(140);
+    expect(JSON.stringify(all.envelope?.meta.warnings)).toContain("--search");
+    const one = await runCommand(categoriesCommand, ["--search", "test-parth"], { env: "t-dev" });
+    expect((one.envelope?.data as any).total).toBe(1);
+    expect(JSON.stringify(one.envelope?.meta.warnings ?? [])).not.toContain("--search");
+  });
+
   test("export-category by name / system id exports chain category 1135", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     stubListings();

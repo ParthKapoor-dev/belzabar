@@ -29,6 +29,7 @@ interface CategoriesData {
 // label); `--fields a,b` picks, `--fields all` = the full row.
 export const CATEGORY_FIELDS = ["id", "uuid", "name", "type", "systemId", "systemUuid", "chainCategoryId", "chainCategoryUuid", "label"] as const;
 const DEFAULT_FIELDS = ["id", "uuid", "name", "type", "systemId"];
+const UNFILTERED_HINT_AT = 25;
 
 export const args = defineArgs({
   command: "belz ad categories",
@@ -52,7 +53,7 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
     const search = flags.search?.trim() || undefined;
     return { system: flags.system, user: flags.user, ...(search ? { search } : {}), ...(flags.fields !== undefined ? { fields: flags.fields } : {}) };
   },
-  async execute({ system, user, search, fields }) {
+  async execute({ system, user, search, fields }, context) {
     const sel = parseFieldList(fields, CATEGORY_FIELDS);
     // AD-09/F9: chain categories (id 1135 = what methods, POST /chain and
     // export-category use), joined with their automation system (1318).
@@ -85,6 +86,10 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
     }
 
     filtered.sort((a, b) => a.name.localeCompare(b.name));
+    // CLI trial tr2: the unfiltered list (~140 rows, 16 KB) was the first thing agents ran.
+    if (!search && filtered.length > UNFILTERED_HINT_AT) {
+      context.warn(`${filtered.length} categories listed; next time narrow with --search <text> (name/label substring, id or uuid).`);
+    }
 
     return ok<CategoriesData>({
       total: filtered.length,
