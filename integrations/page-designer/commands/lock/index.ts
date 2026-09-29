@@ -5,10 +5,13 @@
 //   release <pageId>   PUT /pages/lock/<pageId>?pageLockAction=RELEASED
 //   status             List locks this belz user acquired manually (local record).
 //
-// Acquired locks are recorded in ~/.belz/pd-locks/<env>.json. `withLock`
-// (every save/publish/restore) sees that record and leaves a manually-held
-// lock alone (re-entrant, PD-20). The server is the source of truth for
-// ownership; the file is only a reminder for the operator.
+// Acquired locks are recorded in ~/.belz/pd-locks/<env>.json (atomic, 0600).
+// `withLock` (every save/publish/restore) still acquires the server lock for a
+// recorded page (OTH-R4: the record can be stale) but does not release it
+// afterwards (PD-20). The server is the source of truth for ownership; the
+// file is only a reminder for the operator. A release that fails with a 5xx
+// keeps the record (OTH-R9: the lock may still be ours); a 4xx refusal means
+// we do not hold it, so the record goes.
 
 import { defineSubcommands, failWithData, ok, type CommandModule } from "@belzabar/core";
 import { pdApi } from "../../lib/api/index";
@@ -33,6 +36,9 @@ interface LockReleaseData {
   env: string;
   /** The server accepted the release (PD-20: it used to always "succeed"). */
   released: boolean;
+  httpStatus: number;
+  /** The local record was kept because the outcome is unknown (5xx, OTH-R9). */
+  recordKept: boolean;
 }
 interface LockStatusData {
   action: "status";
@@ -79,15 +85,24 @@ const command: CommandModule<LockArgs, LockData> = {
       return ok<LockAcquireData>({ action: "acquire", pageId: args.pageId!, env, acquiredAt });
     }
     if (args.action === "release") {
-      const released = await pdApi.releaseLock(args.pageId!);
+      const status = await pdApi.releaseLockStatus(args.pageId!);
+      const released = status < 300;
       const { data, file, env } = await loadLockFile();
-      delete data.locks[args.pageId!];
-      await saveLockFile(file, data);
-      const out: LockReleaseData = { action: "release", pageId: args.pageId!, env, released };
+      // OTH-R9: only a definite answer drops the record. 2xx = released; 4xx =
+      // refused (not ours / already gone), so we do not hold it either way.
+      // A 5xx leaves the outcome unknown: keep the record so `status` shows it.
+      const recordKept = status >= 500 && args.pageId! in data.locks;
+      if (!recordKept && args.pageId! in data.locks) {
+        delete data.locks[args.pageId!];
+        await saveLockFile(file, data);
+      }
+      const out: LockReleaseData = { action: "release", pageId: args.pageId!, env, released, httpStatus: status, recordKept };
       if (!released) {
         return failWithData(
           "PD_LOCK_RELEASE_FAILED",
-          `The server refused to release the lock on ${args.pageId} (held by another session, or already released).`,
+          recordKept
+            ? `The lock release on ${args.pageId} failed with HTTP ${status}; the lock may still be held — the local record is kept, retry later.`
+            : `The server refused to release the lock on ${args.pageId} (held by another session, or already released).`,
           out,
         );
       }

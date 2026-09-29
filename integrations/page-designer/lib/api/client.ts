@@ -307,12 +307,17 @@ export async function acquireLock(pageId: string): Promise<void> {
  * Never throws for an HTTP refusal — callers decide how to report it (PD-20).
  */
 export async function releaseLock(pageId: string): Promise<boolean> {
+  return (await releaseLockStatus(pageId)) < 300;
+}
+
+/** Release the lock and return the HTTP status (2xx = released; 4xx = refused; 5xx = unknown). */
+export async function releaseLockStatus(pageId: string): Promise<number> {
   const response = await apiFetch(
     `${PD_BASE}/pages/lock/${pageId}?pageLockAction=RELEASED`,
     { method: "PUT", authMode: "Bearer" },
   );
   if (!response.ok) await readBodySummary(response); // drain
-  return response.ok;
+  return response.status;
 }
 
 // Re-export entity-type helper used by draft-guard + resolver.

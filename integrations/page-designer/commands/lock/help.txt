@@ -2,8 +2,9 @@ Usage: belz pd lock <action> [pageId]
 
 Manage PD edit locks. Every write (`save`, `publish`, `history restore`)
 already acquires and releases the lock itself — this command is for holding
-the lock across several operations. While you hold a lock acquired here,
-those writes use it as-is and do NOT release it.
+the lock across several operations. For a page recorded here, those writes
+still re-acquire the server lock (the record may be stale: a 409 then fails
+with PD_LOCKED) but do NOT release it afterwards.
 
 Actions:
   acquire <pageId>    PUT /pages/lock/<pageId>?pageLockAction=ACQUIRED.
@@ -11,6 +12,8 @@ Actions:
   release <pageId>    PUT /pages/lock/<pageId>?pageLockAction=RELEASED.
                       ok:false (PD_LOCK_RELEASE_FAILED) when the server
                       refuses (someone else's lock, or already released).
+                      A 4xx refusal drops the local record; a 5xx keeps it
+                      (data.recordKept) since the lock may still be yours.
   status              List locks acquired with this command in the active
                       env (local record at ~/.belz/pd-locks/<env>.json).
 

@@ -94,4 +94,8 @@ export const pdApi = {
   releaseLock(pageId: string): Promise<boolean> {
     return client.releaseLock(pageId);
   },
+
+  releaseLockStatus(pageId: string): Promise<number> {
+    return client.releaseLockStatus(pageId);
+  },
 };

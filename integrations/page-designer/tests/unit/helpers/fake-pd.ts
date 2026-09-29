@@ -24,6 +24,8 @@ export interface FakePd {
   onAcquire?: (id: string) => void;
   /** Status the lock-release endpoint answers with (default 200). */
   releaseStatus: number;
+  /** Status the lock-acquire endpoint answers with (default 200; 409 = held by another session). */
+  acquireStatus: number;
   /** Status the save PUT answers with (default 200). */
   saveStatus: number;
   /** Hook that may rewrite the stored inner config after a PUT (simulate a server that stores something else). */
@@ -99,6 +101,7 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
     pages,
     versions,
     releaseStatus: 200,
+    acquireStatus: 200,
     saveStatus: 200,
     searchRows: [],
     searchStatus: 200,
@@ -118,6 +121,7 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
     let m: RegExpMatchArray | null;
     if ((m = path.match(/^\/pages\/lock\/(\w+)$/)) && req.method === "PUT") {
       if (u.searchParams.get("pageLockAction") === "ACQUIRED") {
+        if (state.acquireStatus !== 200) return json({ message: "locked by someone" }, state.acquireStatus);
         state.onAcquire?.(m[1]!);
         return json({});
       }

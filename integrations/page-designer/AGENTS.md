@@ -30,7 +30,7 @@ component name (component first, then page; several matches → `PD_NAME_AMBIGUO
 | `belz pd preflight <pageId> [--overlay <file>]` | Dry run of `save`: parse + validate + plan; never writes |
 | `belz pd save <pageId> --overlay <file> \| --config <file>` | Validated, locked save; `--dry-run` |
 | `belz pd publish <pageId>` | Draft-guard + validate + locked publish; `--landing`, `--host <id>` (repeatable) |
-| `belz pd lock <acquire\|release\|status>` | Manual lock control (`~/.belz/pd-locks/<env>.json`) |
+| `belz pd lock <acquire\|release\|status>` | Manual lock control (`~/.belz/pd-locks/<env>.json`, atomic 0600; a 5xx release keeps the record) |
 
 Write overrides (`lib/args/common.ts`, on save/publish/history restore): `--force-validation`
 (proceed despite validator errors; they land in `bypassedErrors`), `--allow-published` (write a
@@ -66,7 +66,9 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 
 ## Save pipeline (`save`, `preflight`, `history restore`)
 
-1. `resolveWriteTarget` → draft id. 2. `withLock(id)` (re-entrant with `belz pd lock acquire`).
+1. `resolveWriteTarget` → draft id. 2. `withLock(id)` (nested calls are re-entrant; a page
+recorded by `belz pd lock acquire` still re-acquires the server lock — a stale record fails closed
+as `PD_LOCKED` — but is not released).
 3. `fetchFresh` inside the lock; `versionDrift` reports a concurrent change. 4. `planSave`
 (`lib/serialize/index.ts`) applies the overlay to a **clone of the raw config** (nothing is
 rebuilt from parsed lists, so a full save is lossless apart from the edit). 5. `validateEdit`
