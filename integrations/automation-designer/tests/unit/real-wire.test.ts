@@ -333,12 +333,12 @@ describe("not-found (200 + empty body)", () => {
     expect(ff.requests[0]!.url).toBe(`https://t-dev.test/rest/api/automation/chain/v2/${uuid}?basicInfo=false`);
   });
 
-  // AD-11: the empty body reaches response.json() and surfaces as an unhandled SyntaxError.
-  test.todo("AD-11: V1 fetchRawMethod maps 200-empty-body to METHOD_NOT_FOUND", async () => {
+  // AD-11 (fixed; ADR-R10 flipped the todos): a 200 with an empty body is METHOD_NOT_FOUND.
+  test("AD-11: V1 fetchRawMethod maps 200-empty-body to METHOD_NOT_FOUND", async () => {
     serveEmpty();
     await expect(v1.fetchRawMethod(missing)).rejects.toMatchObject({ code: "METHOD_NOT_FOUND" });
   });
-  test.todo("AD-11: V2 fetchRawMethod maps 200-empty-body to METHOD_NOT_FOUND", async () => {
+  test("AD-11: V2 fetchRawMethod maps 200-empty-body to METHOD_NOT_FOUND", async () => {
     serveEmpty();
     await expect(v2.fetchRawMethod(missing)).rejects.toMatchObject({ code: "METHOD_NOT_FOUND" });
   });
