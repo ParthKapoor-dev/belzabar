@@ -1,7 +1,10 @@
 Usage: belz envs [flags]
 
-List all configured environments and show which one is active.
-Use --env <name> to switch environments for any command.
+List all configured environments (name, project, base URL) and show which
+one is active. Local only: no network call, and the envelope carries no
+meta.env. With several environments and no default, none is active
+(active: null) and env-aware commands fail with ENV_NOT_SELECTED until you
+pass --env. Use --env <name> to choose the environment for any command.
 
 Flags:
   --help, -h          Show this help message.
