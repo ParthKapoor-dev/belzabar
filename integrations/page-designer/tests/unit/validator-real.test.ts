@@ -1,4 +1,4 @@
-// PD-5: validator calibration against the 15 real sems-dev pages/components.
+// PD-5: validator calibration against the 15 real acme-dev pages/components.
 // Real editor output must produce 0 errors; the demoted rules still catch
 // their true positives, and validateEdit escalates them when an edit
 // introduces one. PD-26: duplicate ids reported once; INVALID_JSON exists.

@@ -1,5 +1,5 @@
 // lib/validate L4 (online): service contract lookup and the gated dry-run
-// compile, against fakeFetch + slim sems-dev captures
+// compile, against fakeFetch + slim acme-dev captures
 // (tests/fixtures/validate/online, read-only endpoints, see manifest.json).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
@@ -104,7 +104,7 @@ describe("L4 dry-run compile", () => {
       m.steps[0].properties.repeatStepExecution = { type: "LOOP_EXECUTION_ON_NUMBER", value: "3" };
     });
     const p = buildDryRunPayload(body as never, await contracts());
-    expect(p.category).toEqual({ id: 1135, name: "Test-Parth" });
+    expect(p.category).toEqual({ id: 1135, name: "Test-Tester" });
     const inner = JSON.parse(p.jsonDefinition as string);
     expect(inner.services.map((s: any) => [s.orderIndex, s.activeTab.id, s.conditionExpression, s.runAsync, s.repeatStepExecution])).toEqual([
       [1, "existingService", DRY_RUN_GATE, false, false],

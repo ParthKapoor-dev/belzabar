@@ -98,9 +98,9 @@ describe("ad categories --search", () => {
       "GET /rest/api/automation/chain/category?fetchSystemServices=false": fixture(`${FIX}/categories/chain-category.json`),
       "GET /rest/api/automation/chain/category?fetchSystemServices=true": fixture(`${FIX}/categories/chain-category-system.json`),
     }).install();
-    const r = await runCommand(categoriesCommand, ["--search", "TEST-PARTH"], { env: "t-dev" });
+    const r = await runCommand(categoriesCommand, ["--search", "TEST-TESTER"], { env: "t-dev" });
     const d = r.envelope?.data as any;
-    expect(d.categories.map((c: any) => c.name)).toEqual(["Test-Parth"]);
+    expect(d.categories.map((c: any) => c.name)).toEqual(["Test-Tester"]);
     expect(d.total).toBe(1);
     const byId = await runCommand(categoriesCommand, ["--search", "1135"], { env: "t-dev" });
     expect((byId.envelope?.data as any).categories.map((c: any) => c.id)).toEqual([1135]);

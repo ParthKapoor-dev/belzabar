@@ -29,7 +29,7 @@ Checks (nothing is sent when one fails):
   - AD_VALIDATION_FAILED: validator errors on a V2 record (diff-aware against
     the existing draft). V1 records (the export format) are shape-checked only.
   The platform documents neither whether import creates or overwrites nor
-  the state it lands in; on sems-dev the route answers 400 "Request method
+  the state it lands in; on the envs tried the route answers 400 "Request method
   'POST' is not supported" (2026-09-29).
 
 Prerequisites (from the AD API docs):

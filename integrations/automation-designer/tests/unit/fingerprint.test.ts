@@ -135,7 +135,7 @@ describe("fingerprintMethod over the wire body (ADW-R2)", () => {
     test(`ignores: ${what}`, () => expect(mutated(fn)).toBe(base));
   }
 
-  test("an unchanged draft matches its published copy (real sems-dev pairs, different step ids)", () => {
+  test("an unchanged draft matches its published copy (real acme-dev pairs, different step ids)", () => {
     const dir = join(FIX, "draft-published");
     const pubs = readdirSync(dir).filter((f) => f.endsWith(".published.v2.json"));
     expect(pubs.length).toBe(8);
@@ -193,15 +193,15 @@ describe("fingerprintMethod over the wire body (ADW-R2)", () => {
   });
 });
 
-// Real sems-dev / sems-qa history bodies of the same published logic
+// Real acme-dev / acme-qa history bodies of the same published logic
 // (captured read-only, tests/fixtures/cross-env). They differ only in
 // serialisation noise: `encodedBase64:false` present in qa only, and
 // `databaseRead.account` = the env-local numeric id ("149") vs "null".
 describe("fingerprint across environments (ADW-R2 regression)", () => {
   const hist = (f: string) => parseVersionBody(readJson(`cross-env/${f}`));
   const PAIRS: Array<[string, string, string]> = [
-    ["4bfc83c7 (dev v3 = qa v1)", "4bfc83c7fc3da12d7e639ee88a40ff27.sems-dev.history-v3.json", "4bfc83c7fc3da12d7e639ee88a40ff27.sems-qa.history-v1.json"],
-    ["4b0270f0 (dev v4 = qa v4)", "4b0270f001810b5babeb919d9dd48c46.sems-dev.history-v4.json", "4b0270f001810b5babeb919d9dd48c46.sems-qa.history-v4.json"],
+    ["4bfc83c7 (dev v3 = qa v1)", "4bfc83c7fc3da12d7e639ee88a40ff27.acme-dev.history-v3.json", "4bfc83c7fc3da12d7e639ee88a40ff27.acme-qa.history-v1.json"],
+    ["4b0270f0 (dev v4 = qa v4)", "4b0270f001810b5babeb919d9dd48c46.acme-dev.history-v4.json", "4b0270f001810b5babeb919d9dd48c46.acme-qa.history-v4.json"],
   ];
   for (const [what, dev, qa] of PAIRS) {
     test(`identical logic on two envs has one fingerprint: ${what}`, () => {
@@ -213,8 +213,8 @@ describe("fingerprint across environments (ADW-R2 regression)", () => {
   }
 
   test("a real change on the qa copy still differs (callee, account name, SQL, async)", () => {
-    const qa = readJson("cross-env/4b0270f001810b5babeb919d9dd48c46.sems-qa.history-v4.json");
-    const base = fingerprintMethod(hist("4b0270f001810b5babeb919d9dd48c46.sems-dev.history-v4.json"));
+    const qa = readJson("cross-env/4b0270f001810b5babeb919d9dd48c46.acme-qa.history-v4.json");
+    const base = fingerprintMethod(hist("4b0270f001810b5babeb919d9dd48c46.acme-dev.history-v4.json"));
     const withChange = (fn: (jd: Body) => void) => {
       const copy = structuredClone(qa);
       fn(copy.jsonDefinition);
@@ -230,8 +230,8 @@ describe("fingerprint across environments (ADW-R2 regression)", () => {
 
   test("the V2 GET of a published method matches its own history body (ADW-R8: fieldCode, service spelling)", () => {
     for (const [get, h] of [
-      ["real-v2/4bfc83c7fc3da12d7e639ee88a40ff27.v2.json", "4bfc83c7fc3da12d7e639ee88a40ff27.sems-dev.history-v3.json"],
-      ["real-v2/4b0270f001810b5babeb919d9dd48c46.v2.json", "4b0270f001810b5babeb919d9dd48c46.sems-dev.history-v4.json"],
+      ["real-v2/4bfc83c7fc3da12d7e639ee88a40ff27.v2.json", "4bfc83c7fc3da12d7e639ee88a40ff27.acme-dev.history-v3.json"],
+      ["real-v2/4b0270f001810b5babeb919d9dd48c46.v2.json", "4b0270f001810b5babeb919d9dd48c46.acme-dev.history-v4.json"],
     ] as const) {
       const a = parseV2Method(readJson(get));
       const b = hist(h);

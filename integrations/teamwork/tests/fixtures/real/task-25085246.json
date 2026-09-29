@@ -1,7 +1,7 @@
 {
   "task": {
     "id": 25085246,
-    "name": "Townhouse: 2024-07-10: Deployment of client migrations to be moved outside of normal deployments, before AD/PD migrations *",
+    "name": "Hotelhouse: 2024-07-10: Deployment of client migrations to be moved outside of normal deployments, before AD/PD migrations *",
     "description": "",
     "descriptionContentType": "TEXT",
     "priority": null,
@@ -125,7 +125,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": false,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_ace78233cd9fbe538a22cd3aacbfcc29.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/twia_ace78233cd9fbe538a22cd3aacbfcc29.png",
         "lengthOfDay": 8,
         "workingHoursId": 14357,
         "workingHour": {
@@ -168,7 +168,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": true,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_6917238787edf810128c0af194998a2f.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/twia_6917238787edf810128c0af194998a2f.png",
         "lengthOfDay": 8,
         "workingHoursId": 11121,
         "workingHour": {
@@ -372,7 +372,7 @@
           "id": 0,
           "type": "projects"
         },
-        "name": "DevOps: GauravR",
+        "name": "DevOps: leadone",
         "color": "#d84640"
       },
       "86067": {

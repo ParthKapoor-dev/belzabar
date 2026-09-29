@@ -12,10 +12,10 @@ describe("resolveMethodRef", () => {
     ["upper case", U.toUpperCase()],
     ["dashed", "4bf56e00-8eab-e401-0508-af439a15ecfb"],
     ["dashed upper", "4BF56E00-8EAB-E401-0508-AF439A15ECFB"],
-    ["AD URL", `https://sems-dev.qa.expertly.cloud/automation-designer/Test-Parth/${U}`],
-    ["AD URL, trailing slash", `https://sems-dev.qa.expertly.cloud/automation-designer/Test-Parth/${U}/`],
-    ["AD URL with query + hash", `https://sems-dev.qa.expertly.cloud/automation-designer/Test%20Cat/${U}?tab=1#step-3`],
-    ["AD URL without scheme", `sems-dev.qa.expertly.cloud/automation-designer/Test-Parth/${U}`],
+    ["AD URL", `https://acme-dev.qa.expertly.example/automation-designer/Test-Tester/${U}`],
+    ["AD URL, trailing slash", `https://acme-dev.qa.expertly.example/automation-designer/Test-Tester/${U}/`],
+    ["AD URL with query + hash", `https://acme-dev.qa.expertly.example/automation-designer/Test%20Cat/${U}?tab=1#step-3`],
+    ["AD URL without scheme", `acme-dev.qa.expertly.example/automation-designer/Test-Tester/${U}`],
     ["padded URL", `  https://x.test/automation-designer/Cat/${U.toUpperCase()}  `],
   ];
   for (const [name, input] of accepted) {
@@ -27,7 +27,7 @@ describe("resolveMethodRef", () => {
     ["31 hex", U.slice(1)],
     ["non-hex", "zzf56e008eabe4010508af439a15ecfb"],
     ["numeric chain id", "20037"],
-    ["URL without uuid", "https://sems-dev.qa.expertly.cloud/automation-designer/Test-Parth"],
+    ["URL without uuid", "https://acme-dev.qa.expertly.example/automation-designer/Test-Tester"],
     ["uuid with inner space", "4bf56e008eab e4010508af439a15ecfb"],
   ];
   for (const [name, input] of rejected) {

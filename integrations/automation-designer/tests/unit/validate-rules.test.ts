@@ -52,7 +52,7 @@ const loop = (rse: unknown, withIdx = true) =>
     if (withIdx) m.variables.push({ key: "idx", name: "idx", type: "TEXT", required: false, properties: [], encodingType: "NONE" });
     m.inputs.push({ key: "items", name: "items", type: "JSON", required: false, properties: [], encodingType: "NONE" });
   });
-const row = (fieldCode: string, op: string) => ({ item: { fieldCode, category: "Input" }, value: "Parth", operator: { value: op }, groupOp: null, ignoreCase: false });
+const row = (fieldCode: string, op: string) => ({ item: { fieldCode, category: "Input" }, value: "Tester", operator: { value: op }, groupOp: null, ignoreCase: false });
 
 const L2: Row[] = [
   // custom code
@@ -63,7 +63,7 @@ const L2: Row[] = [
   { rule: "CC4", severity: "error", why: "two outputs, no JSON.stringify", bad: () => cc("console.log(1)", [{ key: "a", fieldCode: "a", name: "a", type: "TEXT", elementToRetrieve: "a" }, { key: "b", fieldCode: "b", name: "b", type: "TEXT", elementToRetrieve: "b" }]), good: () => caseBody("v2_cc_multi_out_with_etr") },
   { rule: "CC5", severity: "warn", why: "NODEJS_LAMBDA deprecated", bad: () => mutate((m) => { m.steps[1].properties.customCode.executor = "NODEJS_LAMBDA"; }), good: golden },
   { rule: "CO1", severity: "error", why: "output without type (v2_cc_output_no_type)", bad: () => caseBody("v2_cc_output_no_type"), good: golden },
-  { rule: "CO1", severity: "error", why: "output type STRIING (seen on sems-dev)", bad: () => mutate((m) => { m.steps[1].outputs[0].type = "STRIING"; }), good: golden },
+  { rule: "CO1", severity: "error", why: "output type STRIING (seen on acme-dev)", bad: () => mutate((m) => { m.steps[1].outputs[0].type = "STRIING"; }), good: golden },
   { rule: "CO2", severity: "error", why: "output without name", bad: () => mutate((m) => { m.steps[1].outputs[0].name = ""; }), good: golden },
   { rule: "AD-CC-001", severity: "error", why: "JS syntax error (v2_cc_syntax_error: runtime SyntaxError)", bad: () => caseBody("v2_cc_syntax_error"), good: () => caseBody("v2_cc_hash_brace_literal") },
   { rule: "AD-CC-001", severity: "error", why: "syntax error inside base64 code", bad: () => cc(encodeBase64("const g = ;\nconsole.log(g)")), good: () => caseBody("v2_cc_inline_b64") },
@@ -95,8 +95,8 @@ const L2: Row[] = [
   { rule: "AD-SPEL-005", severity: "error", why: "unbalanced parentheses", bad: () => echo("#{name.substring(0, 1}"), good: () => echo("#{name.substring(0, 1)}") },
   { rule: "AD-SPEL-006", severity: "warn", why: "defaultValue SpEL (v2_default_value_spel)", bad: () => caseBody("v2_default_value_spel"), good: golden },
   // conditions
-  { rule: "AD-COND-001", severity: "error", why: "no #{} (v2_entry_cond_plain_text: silently skipped)", bad: () => caseBody("v2_entry_cond_plain_text"), good: () => entry("#{name} eq 'Parth'") },
-  { rule: "AD-COND-002", severity: "warn", why: "basic rows say eq, expression says ne (v1_condition_basic_mismatch)", bad: () => entry("#{name} ne 'Parth'", [row("name", "eq")]), good: () => entry("#{name} eq 'Parth'", [row("name", "eq")]) },
+  { rule: "AD-COND-001", severity: "error", why: "no #{} (v2_entry_cond_plain_text: silently skipped)", bad: () => caseBody("v2_entry_cond_plain_text"), good: () => entry("#{name} eq 'Tester'") },
+  { rule: "AD-COND-002", severity: "warn", why: "basic rows say eq, expression says ne (v1_condition_basic_mismatch)", bad: () => entry("#{name} ne 'Tester'", [row("name", "eq")]), good: () => entry("#{name} eq 'Tester'", [row("name", "eq")]) },
   { rule: "AD-COND-002", severity: "warn", why: "row field not in expression", bad: () => entry("#{greeting} eq 'x'", [row("name", "eq")]), good: () => entry("#{name} eq 'x'", [row("name", "eq")]) },
   // loops (team LP golden set is ported in validate-team.test.ts)
   { rule: "LP1", severity: "warn", why: "unknown loop type (v2_loop_bad_type: loop dropped)", bad: () => caseBody("v2_loop_bad_type"), good: () => loop({ type: "LOOP_EXECUTION_ON_NUMBER", value: "3", counter: "#{idx}" }) },

@@ -135,7 +135,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": false,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/tf_71481a33-b2fb-4c25-b24e-b6d2c0ab7c35.Screen_Shot_2021-07-30_at_10.58.25_AM.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/tf_71481a33-b2fb-4c25-b24e-b6d2c0ab7c35.Screen_Shot_2021-07-30_at_10.58.25_AM.png",
         "lengthOfDay": 8,
         "workingHoursId": 10568,
         "workingHour": {
@@ -178,7 +178,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": false,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_ace78233cd9fbe538a22cd3aacbfcc29.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/twia_ace78233cd9fbe538a22cd3aacbfcc29.png",
         "lengthOfDay": 8,
         "workingHoursId": 14357,
         "workingHour": {
@@ -221,7 +221,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": false,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_f10c27ebda2b96fd2856e273418ef45a.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/twia_f10c27ebda2b96fd2856e273418ef45a.png",
         "lengthOfDay": 8,
         "workingHoursId": 43571,
         "workingHour": {

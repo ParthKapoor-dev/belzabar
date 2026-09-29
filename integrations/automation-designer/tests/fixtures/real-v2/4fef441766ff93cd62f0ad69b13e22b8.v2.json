@@ -118,7 +118,7 @@
       ],
       "accountConfiguration": {
         "id": 2,
-        "name": "BCPS-RDS"
+        "name": "ZCPS-RDS"
       },
       "properties": {
         "runAsync": false,

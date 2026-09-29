@@ -18,7 +18,7 @@ Flags:
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment (default: defaultEnv, else nsm-dev).
+  --env <name>        Set active environment (default: BELZ_ENV, else defaultEnv, else the only env).
                       Any env from `belz envs` (configured in ~/.belz/config.json).
   --llm               Output structured JSON envelope for scripting/LLM use.
 
@@ -27,6 +27,6 @@ To list the methods in a category, use `belz ad find` with a category (see
 
 Examples:
   belz ad categories --user
-  belz ad categories --search test-parth --env sems-dev --llm
+  belz ad categories --search sandbox --env acme-dev --llm
   belz ad categories --fields name,systemUuid --llm
   belz ad categories --llm | jq '.data.categories[] | select(.type == "SYSTEM_GENERATED")'

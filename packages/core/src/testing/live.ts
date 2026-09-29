@@ -46,9 +46,8 @@ export function liveMethod(): string | null {
 
 function liveMode(): { read: boolean; write: boolean } {
   if (!LIVE_ENV) return { read: false, write: false };
-  const write = process.env.BELZ_LIVE_WRITE === "1";
-  if (write) liveCategory(); // fail fast: never write without an explicit category
-  return { read: true, write };
+  // Suites that write to an AD category call liveCategory(), which refuses to run without one.
+  return { read: true, write: process.env.BELZ_LIVE_WRITE === "1" };
 }
 
 /** The seeded home holds a copy of real credentials: drop it after each live block. */

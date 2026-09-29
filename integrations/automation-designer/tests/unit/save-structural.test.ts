@@ -1,6 +1,6 @@
 // Stage 7.2 — structural `ad save` ops (lib/serialize/ops.ts + compact.ts) on
-// real sems-dev V2 bodies, with callee contracts / db accounts from the slim
-// sems-dev captures (tests/fixtures/validate/online). Also verifyStructural,
+// real acme-dev V2 bodies, with callee contracts / db accounts from the slim
+// acme-dev captures (tests/fixtures/validate/online). Also verifyStructural,
 // the post-save check used for ops and creates.
 import { describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
@@ -147,13 +147,13 @@ describe("add-step: compact step → V2 wire", () => {
     expect(["SELECT 1", " with x as (select 1) select * from x", "INSERT INTO t VALUES (1)", "update t set a=1", "-- c\nDELETE FROM t", "create table t()"].map(dbMethodForSql)).toEqual([
       "data.read", "data.read", "data.add", "data.update", "data.delete", "schema.modify",
     ]);
-    const p = plan(live, [{ op: "add-step", after: 0, step: { sql: "SELECT '#{code}' AS c", account: "BCPS-RDS", outputs: { rows: "flatData[]" } } }]);
+    const p = plan(live, [{ op: "add-step", after: 0, step: { sql: "SELECT '#{code}' AS c", account: "ZCPS-RDS", outputs: { rows: "flatData[]" } } }]);
     const s = p.body.steps![0]!;
     expect(s).toMatchObject({
       automationAPIId: "15805db3-0a4f-4f2a-80d8-c433a1ffeced",
       serviceName: "db_service",
       methodName: "data.read",
-      accountConfiguration: { id: 2, name: "BCPS-RDS" },
+      accountConfiguration: { id: 2, name: "ZCPS-RDS" },
       inputs: [
         {
           uuid: "8d49cef8-1a21-4214-9ebd-20e7174fec0c",
@@ -197,7 +197,7 @@ describe("add-step: compact step → V2 wire", () => {
     ]);
     const props = p.body.steps!.at(-1)!.properties!;
     expect(props.entryCondition).toEqual({ expression: "#{code} ne null", expandedExpressions: null });
-    // One code/message pair per step, mirrored into both blocks by the server (live sems-dev); code is an integer.
+    // One code/message pair per step, mirrored into both blocks by the server (live acme-dev); code is an integer.
     expect(props.exitCondition).toEqual({
       exitOnFailure: { value: false, code: 400, message: "bad" },
       conditionalExit: { code: 400, message: "bad", expression: "#{greet} eq ''", expandedExpressions: null },
@@ -310,8 +310,8 @@ describe("update-step on existing steps", () => {
   test("account change also moves databaseRead.account (the server keeps them in step)", () => {
     const live = real(U);
     (live.steps![0]!.properties as unknown as Record<string, unknown>).databaseRead = { query: null, account: "2" };
-    const p = plan(live, [{ op: "update-step", step: 1, set: { account: "BCPS-Test-RDS" } }]);
-    expect(p.body.steps![0]!.accountConfiguration).toEqual({ id: 5, name: "BCPS-Test-RDS" });
+    const p = plan(live, [{ op: "update-step", step: 1, set: { account: "ZCPS-Test-RDS" } }]);
+    expect(p.body.steps![0]!.accountConfiguration).toEqual({ id: 5, name: "ZCPS-Test-RDS" });
     expect((p.body.steps![0]!.properties as Record<string, any>).databaseRead.account).toBe("5");
   });
 });

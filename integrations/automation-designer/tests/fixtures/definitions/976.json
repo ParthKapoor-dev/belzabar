@@ -985,14 +985,14 @@
   "triggerId": 13,
   "automationAuth": {
     "id": 3,
-    "nickname": "BCPS-Local-1",
+    "nickname": "ZCPS-Local-1",
     "authUsageType": "ALL",
     "ownerId": 2,
     "fields": [
       {
         "id": 171,
         "fieldName": "nickname",
-        "fieldValue": "BCPS-Local-1",
+        "fieldValue": "ZCPS-Local-1",
         "securedField": false,
         "hideInResponse": false,
         "automationAuthId": 3,

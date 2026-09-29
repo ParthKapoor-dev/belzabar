@@ -62,9 +62,9 @@ describe("adApi.fetchMethod (V1) resolves step services", () => {
 describe("V2 GET of a soft-deleted method (AD-40)", () => {
   test("the server's 400 NPE `automationAPI is null` → METHOD_NOT_FOUND", async () => {
     cfg = withTempEnvConfig({ envs: { "t-del": { url: "https://t-del.test" } }, activeEnv: "t-del" });
-    // Real sems-dev body for the soft-deleted belz_tst_ad_audit1 (2026-09-28).
+    // Real acme-dev body for the soft-deleted belz_tst_ad_audit1 (2026-09-28).
     const body = {
-      url: "http://sems-dev.qa.expertly.cloud/rest/api/automation/chain/v2/4bf56e008eabe4010508af439a15ecfb",
+      url: "http://acme-dev.qa.expertly.example/rest/api/automation/chain/v2/4bf56e008eabe4010508af439a15ecfb",
       errorMessage:
         'java.lang.NullPointerException: Cannot invoke "com.expertly.common.model.automation.AutomationAPI.getUuid()" because "automationAPI" is null',
       date: "Sun Sep 27 18:31:13 UTC 2026",

@@ -1,5 +1,5 @@
 // Stage 7.6: `ad callers` — reverse index over AD steps (method index refs +
-// V2 bodies for automationId-only steps) and PD httpRequests. Real sems-dev
+// V2 bodies for automationId-only steps) and PD httpRequests. Real acme-dev
 // "Example services" fixtures through fakeFetch.
 import { describe, expect, setSystemTime, test } from "bun:test";
 import { existsSync } from "fs";

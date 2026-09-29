@@ -14,7 +14,7 @@
       "id": 576,
       "uuid": "4a6a553383d1f68e3205a87d69c04ae7",
       "name": "Schools-Match",
-      "description": "Category for methods implemented for eSEMS Matching workflow",
+      "description": "Category for methods implemented for eACME Matching workflow",
       "systemService": false
     },
     "categories": null,
@@ -345,7 +345,7 @@
       ],
       "accountConfiguration": {
         "id": 2,
-        "name": "BCPS-RDS"
+        "name": "ZCPS-RDS"
       },
       "properties": {
         "runAsync": false,
@@ -670,7 +670,7 @@
       ],
       "accountConfiguration": {
         "id": 2,
-        "name": "BCPS-RDS"
+        "name": "ZCPS-RDS"
       },
       "properties": {
         "runAsync": false,

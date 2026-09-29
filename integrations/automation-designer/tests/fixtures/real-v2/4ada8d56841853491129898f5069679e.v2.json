@@ -3,7 +3,7 @@
   "automationApiId": "412ee9e8d18aaa55086aa467a3f8c5fa    ",
   "name": "etl.postProcessing.job",
   "summary": "Hourly ETL watchdog: check each ETL upload's state and notify/slack/skip accordingly.",
-  "description": "Scheduled watchdog for the SEMS nightly ETL uploads (IC/student and Address). Reads a run-state row per ETL type (did it run, delayed, failed, skipped, or no file today) with all decisions precomputed as flags, then per type: calls the existing notifier (etl.postParsing.execute) for completed/failed uploads to send the log email; sends the 'no file today' email when nothing arrived; Slacks the team on delay/failure; marks SHOULD-NOT-RUN records as SKIPPED. Replaces etl.address.scheduler.postProcess. Input: optional uploadId (v1 runs the scheduled all-types scan for today). Output: status.",
+  "description": "Scheduled watchdog for the ACME nightly ETL uploads (IC/student and Address). Reads a run-state row per ETL type (did it run, delayed, failed, skipped, or no file today) with all decisions precomputed as flags, then per type: calls the existing notifier (etl.postParsing.execute) for completed/failed uploads to send the log email; sends the 'no file today' email when nothing arrived; Slacks the team on delay/failure; marks SHOULD-NOT-RUN records as SKIPPED. Replaces etl.address.scheduler.postProcess. Input: optional uploadId (v1 runs the scheduled all-types scan for today). Output: status.",
   "metadata": {
     "version": {
       "uuid": "4ada8d56841853491129898f5069679e",
@@ -140,7 +140,7 @@
       ],
       "accountConfiguration": {
         "id": 2,
-        "name": "BCPS-RDS"
+        "name": "ZCPS-RDS"
       },
       "properties": {
         "runAsync": false,
@@ -148,11 +148,11 @@
           "exitOnFailure": {
             "value": true,
             "code": null,
-            "message": "Run-state query failed — check sems_etl_processes/sems_etl_master."
+            "message": "Run-state query failed — check acme_etl_processes/acme_etl_master."
           },
           "conditionalExit": {
             "code": null,
-            "message": "Run-state query failed — check sems_etl_processes/sems_etl_master.",
+            "message": "Run-state query failed — check acme_etl_processes/acme_etl_master.",
             "expression": null,
             "expandedExpressions": null
           }
@@ -324,7 +324,7 @@
       "inputs": [
         {
           "uuid": "41ad92bc8ca6b8d337328b7a18dc6210    ",
-          "value": "SEMS ETL watchdog: the #{etlStates.element.type} upload is #{etlStates.element.run_state} for #{etlStates.element.current_date}. Please check.",
+          "value": "ACME ETL watchdog: the #{etlStates.element.type} upload is #{etlStates.element.run_state} for #{etlStates.element.current_date}. Please check.",
           "key": "body",
           "name": "body",
           "type": "TEXT",
@@ -420,7 +420,7 @@
       ],
       "accountConfiguration": {
         "id": 2,
-        "name": "BCPS-RDS"
+        "name": "ZCPS-RDS"
       },
       "properties": {
         "runAsync": false,

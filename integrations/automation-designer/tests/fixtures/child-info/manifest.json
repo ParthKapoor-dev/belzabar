@@ -1,7 +1,7 @@
 [
   {
     "file": "auth-db_service.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:42.365Z",
     "bytes": 17975,
     "source": {},
@@ -11,7 +11,7 @@
   },
   {
     "file": "db_service__select.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:39.044Z",
     "bytes": 35411,
     "source": {},
@@ -20,7 +20,7 @@
   },
   {
     "file": "Example_services__array_output.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:41.130Z",
     "bytes": 3714,
     "source": {},
@@ -29,7 +29,7 @@
   },
   {
     "file": "Helpers.JSON__fetchKeyValue.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:40.070Z",
     "bytes": 4612,
     "source": {},

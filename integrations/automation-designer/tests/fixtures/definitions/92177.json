@@ -2250,14 +2250,14 @@
   "triggerId": 13,
   "automationAuth": {
     "id": 2,
-    "nickname": "BCPS-RDS",
+    "nickname": "ZCPS-RDS",
     "authUsageType": "ALL",
     "ownerId": 2,
     "fields": [
       {
         "id": 155,
         "fieldName": "nickname",
-        "fieldValue": "BCPS-RDS",
+        "fieldValue": "ZCPS-RDS",
         "securedField": false,
         "hideInResponse": false,
         "automationAuthId": 2,

@@ -1,4 +1,4 @@
-// One category identity (AD-09, AD-10, F9) over the real sems-dev listings.
+// One category identity (AD-09, AD-10, F9) over the real acme-dev listings.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { runCommand, withTempEnvConfig } from "@belzabar/core/testing";
 import { buildCategories, findCategory, requireChainCategory } from "../../lib/categories";
@@ -26,8 +26,8 @@ function stubListings() {
 describe("buildCategories", () => {
   const cats = buildCategories(chain, systems);
 
-  test("Test-Parth: chain category 1135/4e98…, system 1318/4037…", () => {
-    const tp = cats.find((c) => c.name === "Test-Parth")!;
+  test("Test-Tester: chain category 1135/4e98…, system 1318/4037…", () => {
+    const tp = cats.find((c) => c.name === "Test-Tester")!;
     expect(tp).toMatchObject({
       chainCategoryId: 1135,
       chainCategoryUuid: "4e98700b2524e2accd47b4addf95ceca",
@@ -59,7 +59,7 @@ describe("buildCategories", () => {
   });
 
   test("findCategory: id, system id, uuids (padded/upper), name", () => {
-    for (const ref of ["1135", "1318", "4e98700b2524e2accd47b4addf95ceca", "4037ADA88A1A3AC30A1C9E63B6B0EED6    ", "test-parth"]) {
+    for (const ref of ["1135", "1318", "4e98700b2524e2accd47b4addf95ceca", "4037ADA88A1A3AC30A1C9E63B6B0EED6    ", "test-tester"]) {
       expect(findCategory(cats, ref)?.chainCategoryId).toBe(1135);
     }
     expect(findCategory(cats, "nope")).toBeNull();
@@ -73,7 +73,7 @@ describe("ad categories / export-category", () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     stubListings();
     const r = await runCommand(categoriesCommand, ["--user"], { env: "t-dev" });
-    const tp = (r.envelope?.data as any).categories.find((c: any) => c.name === "Test-Parth");
+    const tp = (r.envelope?.data as any).categories.find((c: any) => c.name === "Test-Tester");
     expect(tp).toMatchObject({ id: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca", systemId: 1318 });
   });
 
@@ -83,7 +83,7 @@ describe("ad categories / export-category", () => {
     const all = await runCommand(categoriesCommand, [], { env: "t-dev" });
     expect((all.envelope?.data as any).total).toBe(140);
     expect(JSON.stringify(all.envelope?.meta.warnings)).toContain("--search");
-    const one = await runCommand(categoriesCommand, ["--search", "test-parth"], { env: "t-dev" });
+    const one = await runCommand(categoriesCommand, ["--search", "test-tester"], { env: "t-dev" });
     expect((one.envelope?.data as any).total).toBe(1);
     expect(JSON.stringify(one.envelope?.meta.warnings ?? [])).not.toContain("--search");
   });
@@ -93,7 +93,7 @@ describe("ad categories / export-category", () => {
     stubListings();
     const exp = spyOn(adApi, "exportCategory").mockResolvedValue({ chainDefinitions: [{}, {}] });
     spies.push(exp);
-    for (const ref of ["Test-Parth", "1318"]) {
+    for (const ref of ["Test-Tester", "1318"]) {
       const r = await runCommand(exportCategoryCommand, [ref], { env: "t-dev" });
       expect(r.envelope?.ok).toBe(true);
       expect((r.envelope?.data as any).id).toBe(1135);

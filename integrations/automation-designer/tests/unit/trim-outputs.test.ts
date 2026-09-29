@@ -1,6 +1,6 @@
 // Stage 7.9: compact default output (+ --fields / --full) for `categories`,
 // `changelog`, `export`, `export-category` and `history show`, on real
-// sems-dev fixtures.
+// acme-dev fixtures.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, readFileSync } from "fs";
 import { tmpdir } from "os";
@@ -38,10 +38,10 @@ describe("categories: compact rows, --fields", () => {
     using _cfg = withTempEnvConfig(ENVS);
     stub();
     const data = (await runCommand(categoriesCommand, ["--user"], { env: "t-dev" })).envelope?.data as any;
-    const tp = data.categories.find((c: any) => c.name === "Test-Parth");
-    expect(tp).toEqual({ id: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca", name: "Test-Parth", type: "USER_GENERATED", systemId: 1318 });
+    const tp = data.categories.find((c: any) => c.name === "Test-Tester");
+    expect(tp).toEqual({ id: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca", name: "Test-Tester", type: "USER_GENERATED", systemId: 1318 });
     const all = (await runCommand(categoriesCommand, ["--user", "--fields", "all"], { env: "t-dev" })).envelope?.data as any;
-    expect(all.categories.find((c: any) => c.name === "Test-Parth")).toMatchObject({ chainCategoryId: 1135, systemUuid: "4037ada88a1a3ac30a1c9e63b6b0eed6" });
+    expect(all.categories.find((c: any) => c.name === "Test-Tester")).toMatchObject({ chainCategoryId: 1135, systemUuid: "4037ada88a1a3ac30a1c9e63b6b0eed6" });
     expect(JSON.stringify(data).length).toBeLessThan(JSON.stringify(all).length * 0.75);
   });
 
@@ -54,12 +54,12 @@ describe("categories: compact rows, --fields", () => {
 });
 
 describe("changelog: plain-text entries", () => {
-  // real entries (rich-text comments, full user objects) as embedded in a sems-dev V2 body
+  // real entries (rich-text comments, full user objects) as embedded in a acme-dev V2 body
   const entries = load("real-v2/41f705aff6c768c033b4ad9840b69dde.v2.json").changelogs as ChangelogEntry[];
 
   test("htmlToText flattens the AD rich-text editor markup", () => {
-    expect(htmlToText("Developer =&gt; Zinat<br id=\"isPasted\">Doc version =&gt; 1.1<br>Reason =&gt; &nbsp;FAILED")).toBe(
-      "Developer => Zinat / Doc version => 1.1 / Reason => FAILED",
+    expect(htmlToText("Developer =&gt; person-tvsz<br id=\"isPasted\">Doc version =&gt; 1.1<br>Reason =&gt; &nbsp;FAILED")).toBe(
+      "Developer => person-tvsz / Doc version => 1.1 / Reason => FAILED",
     );
   });
 
@@ -116,7 +116,7 @@ describe("export / export-category: --out omits the body unless --full", () => {
       spyOn(adApi, "exportCategory").mockResolvedValue({ chainDefinitions: [body] }),
     );
     const out = join(mkdtempSync(join(tmpdir(), "s7a-expc-")), "c.json");
-    const d = (await runCommand(exportCategoryCommand, ["Test-Parth", "--out", out], { env: "t-dev" })).envelope?.data as any;
+    const d = (await runCommand(exportCategoryCommand, ["Test-Tester", "--out", out], { env: "t-dev" })).envelope?.data as any;
     expect(d.methodCount).toBe(1);
     expect(d.preview).toBeUndefined();
     expect(d.writtenTo).toBe(out);

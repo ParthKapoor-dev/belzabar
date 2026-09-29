@@ -1,7 +1,7 @@
 [
   {
     "file": "build-1904-console-0.txt",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:19:50.505Z",
     "bytes": 27234,
     "source": {
@@ -15,7 +15,7 @@
   },
   {
     "file": "build-1904.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:19:50.141Z",
     "bytes": 3112,
     "source": {
@@ -26,7 +26,7 @@
   },
   {
     "file": "job-parameters.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:19:48.039Z",
     "bytes": 10300,
     "source": {

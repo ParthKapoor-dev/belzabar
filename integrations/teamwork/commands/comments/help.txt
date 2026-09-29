@@ -13,5 +13,5 @@ Global Flags:
 
 Examples:
   belz tw comments 26917411
-  belz tw comments https://yourcompany.teamwork.com/app/tasks/26917411
+  belz tw comments https://<company>.teamwork.com/app/tasks/26917411
   belz tw comments 26917411 --llm

@@ -17,9 +17,9 @@ function touchAge(path: string, ageMs: number): void {
 describe("scanFlatCacheFiles", () => {
   test("flags a flat <namespace>/<key>.json file, leaves env-nested ones alone", () => {
     const cacheDir = scratchDir("prune-flat-");
-    mkdirSync(join(cacheDir, "methods", "nsm-dev"), { recursive: true });
+    mkdirSync(join(cacheDir, "methods", "orb-dev"), { recursive: true });
     writeFileSync(join(cacheDir, "methods", "legacy-uuid.json"), '{"a":1}');
-    writeFileSync(join(cacheDir, "methods", "nsm-dev", "current-uuid.json"), '{"a":1}');
+    writeFileSync(join(cacheDir, "methods", "orb-dev", "current-uuid.json"), '{"a":1}');
 
     const { items, skippedNamespaces } = scanFlatCacheFiles(cacheDir);
     expect(items.map(i => i.path)).toEqual(["methods/legacy-uuid.json"]);
@@ -30,8 +30,8 @@ describe("scanFlatCacheFiles", () => {
     const cacheDir = scratchDir("prune-unscoped-");
     mkdirSync(join(cacheDir, "method-finder"), { recursive: true });
     mkdirSync(join(cacheDir, "page-finder"), { recursive: true });
-    writeFileSync(join(cacheDir, "method-finder", "index-v1-nsm-dev.json"), "{}");
-    writeFileSync(join(cacheDir, "page-finder", "index-v1-nsm-dev.json"), "{}");
+    writeFileSync(join(cacheDir, "method-finder", "index-v1-orb-dev.json"), "{}");
+    writeFileSync(join(cacheDir, "page-finder", "index-v1-orb-dev.json"), "{}");
 
     const { items, skippedNamespaces } = scanFlatCacheFiles(cacheDir);
     expect(items).toEqual([]);
@@ -59,14 +59,14 @@ describe("scanFlatCacheFiles", () => {
 describe("scanStaleLocks", () => {
   test("flags .refresh/*.lock files older than the threshold, ignores fresh ones", () => {
     const cacheDir = scratchDir("prune-locks-");
-    const refreshDir = join(cacheDir, "pages", "nsm-dev", ".refresh");
+    const refreshDir = join(cacheDir, "pages", "orb-dev", ".refresh");
     mkdirSync(refreshDir, { recursive: true });
     writeFileSync(join(refreshDir, "stale.lock"), "123");
     touchAge(join(refreshDir, "stale.lock"), 15 * 60 * 1000);
     writeFileSync(join(refreshDir, "fresh.lock"), "456");
 
     const items = scanStaleLocks(cacheDir, 10 * 60 * 1000);
-    expect(items.map(i => i.path)).toEqual(["pages/nsm-dev/.refresh/stale.lock"]);
+    expect(items.map(i => i.path)).toEqual(["pages/orb-dev/.refresh/stale.lock"]);
   });
 
   test("also flags a legacy top-level .refresh dir (pre env-scoping)", () => {
@@ -101,7 +101,7 @@ describe("pruneLocalCache", () => {
     const flatFile = join(cacheDir, "definitions", "legacy.json");
     writeFileSync(flatFile, '{"hello":"world"}');
 
-    const refreshDir = join(cacheDir, "definitions", "nsm-dev", ".refresh");
+    const refreshDir = join(cacheDir, "definitions", "orb-dev", ".refresh");
     mkdirSync(refreshDir, { recursive: true });
     const lockFile = join(refreshDir, "stale.lock");
     writeFileSync(lockFile, "123456");

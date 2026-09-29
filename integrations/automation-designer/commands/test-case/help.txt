@@ -74,7 +74,7 @@ conflict (duplicate name on the server). Names are never released: DELETE is
 a soft delete, so a deleted case's name cannot be created again
 (AD_TESTCASE_NAME_RESERVED) — rename the file's case instead.
 
-run-suite without --wait (live sems-dev): /testsuite/execute returns at once
+run-suite without --wait (live): /testsuite/execute returns at once
 ("you will receive an email"); `ad test-report` is not per chain and stays all
 zeros; the suite's executionStatus stays PASS even when an assertion fails, and
 no case carries a result. Use --wait to see results: data {mode:"wait", total,
@@ -86,4 +86,4 @@ Examples:
   belz ad test-case create 4a1b... --name greet.ok.1 --input name=World --assert "greetingOut=Hello World" --env <env> --yes
   belz ad test-case run-suite 4a1b... --wait --env <env> --yes --llm
   belz ad test-case export 4a1b... --dir ./unit-tests/ad --env <env>
-  belz ad test-case sync ./unit-tests/ad/Test-Parth/greet --env <env> --apply --yes --llm
+  belz ad test-case sync ./unit-tests/ad/Sandbox/greet --env <env> --apply --yes --llm

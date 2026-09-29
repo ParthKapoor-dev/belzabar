@@ -1823,7 +1823,7 @@
   "triggerId": 13,
   "automationAuth": {
     "id": 149,
-    "nickname": "BCPS-RDS-READ-DB",
+    "nickname": "ZCPS-RDS-READ-DB",
     "authUsageType": "ALL",
     "ownerId": 2,
     "derivedAuthType": "BASIC",
@@ -1831,7 +1831,7 @@
       {
         "id": 327,
         "fieldName": "nickname",
-        "fieldValue": "BCPS-RDS-READ-DB",
+        "fieldValue": "ZCPS-RDS-READ-DB",
         "securedField": false,
         "hideInResponse": false,
         "automationAuthId": 149,

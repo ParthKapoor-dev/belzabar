@@ -53,12 +53,12 @@ async function err(fn: () => unknown): Promise<any> {
 }
 
 const ENVS = {
-  "nsm-dev": { url: "https://nsm-dev.test" },
-  "nsm-stage": { url: "https://nsm-stage.test" },
-  "sems-dev": { url: "https://sems-dev.test" },
-  "sems-stage": { url: "https://sems-stage.test" },
-  "sems-qa": { url: "https://sems-qa.test" },
-  "ys-qa": { url: "https://ys-qa.test" },
+  "orb-dev": { url: "https://orb-dev.test" },
+  "orb-stage": { url: "https://orb-stage.test" },
+  "acme-dev": { url: "https://acme-dev.test" },
+  "acme-stage": { url: "https://acme-stage.test" },
+  "acme-qa": { url: "https://acme-qa.test" },
+  "gm-qa": { url: "https://gm-qa.test" },
 };
 
 describe("RL-1: spec validated with zod, before any network", () => {
@@ -69,7 +69,7 @@ describe("RL-1: spec validated with zod, before any network", () => {
     ["missing included", { name: "r" }, "included"],
     ["empty included", { name: "r", included: [] }, "included: must list at least one ticket"],
     ["ticket of wrong type", { name: "r", included: [{ id: 1 }] }, "included.0"],
-    ["typo'd key", { name: "r", included: [1], stageenv: "sems-stage" }, "unknown key(s) 'stageenv'"],
+    ["typo'd key", { name: "r", included: [1], stageenv: "acme-stage" }, "unknown key(s) 'stageenv'"],
   ];
   for (const [label, body, fragment] of bad) {
     test(`${label} → BAD_SPEC (${fragment})`, async () => {
@@ -98,31 +98,31 @@ describe("RL-2: spine/stage envs derived from the project", () => {
     return Config.getAllEnvs();
   }
 
-  test("active SEMS env → sems-dev / sems-stage (was nsm-dev / nsm-stage)", () => {
+  test("active ACME env → acme-dev / acme-stage (was orb-dev / orb-stage)", () => {
     const all = envs();
-    expect(resolveReleaseEnvs({}, all["sems-qa"]!, all)).toEqual({ project: "SEMS", spineEnv: "sems-dev", stageEnv: "sems-stage" });
+    expect(resolveReleaseEnvs({}, all["acme-qa"]!, all)).toEqual({ project: "ACME", spineEnv: "acme-dev", stageEnv: "acme-stage" });
   });
 
-  test("active NSM env keeps the old defaults", () => {
+  test("active ORB env keeps the old defaults", () => {
     const all = envs();
-    expect(resolveReleaseEnvs({}, all["nsm-dev"]!, all)).toEqual({ project: "NSM", spineEnv: "nsm-dev", stageEnv: "nsm-stage" });
+    expect(resolveReleaseEnvs({}, all["orb-dev"]!, all)).toEqual({ project: "ORB", spineEnv: "orb-dev", stageEnv: "orb-stage" });
   });
 
   test("spec.project wins over the active env", () => {
     const all = envs();
-    expect(resolveReleaseEnvs({ project: "sems" }, all["nsm-dev"]!, all)).toMatchObject({ spineEnv: "sems-dev", stageEnv: "sems-stage" });
+    expect(resolveReleaseEnvs({ project: "acme" }, all["orb-dev"]!, all)).toMatchObject({ spineEnv: "acme-dev", stageEnv: "acme-stage" });
   });
 
   test("an explicit stageEnv sets the project for the missing spineEnv", () => {
     const all = envs();
-    expect(resolveReleaseEnvs({ stageEnv: "sems-stage" }, all["nsm-dev"]!, all)).toMatchObject({ project: "SEMS", spineEnv: "sems-dev" });
+    expect(resolveReleaseEnvs({ stageEnv: "acme-stage" }, all["orb-dev"]!, all)).toMatchObject({ project: "ACME", spineEnv: "acme-dev" });
   });
 
   test("underivable or unknown envs → BAD_SPEC", async () => {
     const all = envs();
-    expect((await err(() => resolveReleaseEnvs({}, all["ys-qa"]!, all))).message).toContain("no configured '*-dev' env for project YS");
-    expect((await err(() => resolveReleaseEnvs({ spineEnv: "nope-dev" }, all["nsm-dev"]!, all))).code).toBe("BAD_SPEC");
-    expect((await err(() => resolveReleaseEnvs({ project: "ZZ" }, all["nsm-dev"]!, all))).code).toBe("BAD_SPEC");
+    expect((await err(() => resolveReleaseEnvs({}, all["gm-qa"]!, all))).message).toContain("no configured '*-dev' env for project GM");
+    expect((await err(() => resolveReleaseEnvs({ spineEnv: "nope-dev" }, all["orb-dev"]!, all))).code).toBe("BAD_SPEC");
+    expect((await err(() => resolveReleaseEnvs({ project: "ZZ" }, all["orb-dev"]!, all))).code).toBe("BAD_SPEC");
   });
 });
 
@@ -130,8 +130,8 @@ describe("matrix end to end (real Teamwork fixture, faked transport)", () => {
   test("derives envs from the active env, writes the ledger atomically, refuses a slug collision", async () => {
     cfg = withTempEnvConfig({
       envs: ENVS,
-      activeEnv: "sems-qa",
-      teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "p", passwordEncoding: "plain" },
+      activeEnv: "acme-qa",
+      teamwork: { baseUrl: "https://tw.example.test", email: "user@example.com", password: "p", passwordEncoding: "plain" },
     });
     await saveTeamworkSession({ twAuth: "ok" });
     ff = fakeFetch([
@@ -145,9 +145,9 @@ describe("matrix end to end (real Teamwork fixture, faked transport)", () => {
     const c = ctx();
     const res = await matrix.execute({ specPath: specFile({ name: "Sep 28", included: [25807610], excluded: [1] }) }, c);
     const d = res.data as MatrixData;
-    expect(d.project).toBe("SEMS");
-    expect(d.spineEnv).toBe("sems-dev");
-    expect(d.stageEnv).toBe("sems-stage");
+    expect(d.project).toBe("ACME");
+    expect(d.spineEnv).toBe("acme-dev");
+    expect(d.stageEnv).toBe("acme-stage");
     expect(d.tickets.find((t) => t.id === 25807610)!.error).toBeUndefined();
     expect(d.tickets.find((t) => t.id === 1)!.error).toContain("not found");
     // OTH-R21: an unlinked ticket makes the audit incomplete — failed, nothing saved.
@@ -169,16 +169,16 @@ describe("matrix end to end (real Teamwork fixture, faked transport)", () => {
   });
 });
 
-function savedRelease(items: unknown[], stageEnv = "sems-stage") {
-  return { name: "rel", stageEnv, spineEnv: "sems-dev", items };
+function savedRelease(items: unknown[], stageEnv = "acme-stage") {
+  return { name: "rel", stageEnv, spineEnv: "acme-dev", items };
 }
 const cell = (env: string, status: string, spinePos: number, spineVersion: number | null) => ({ env, status, spinePos, spineVersion });
 
 describe("RL-3: freeze and missing stage data", () => {
   test("every item missing stage data → FREEZE_NO_STAGE_DATA, nothing written", async () => {
     saveRelease("rel", savedRelease([
-      { uuid: "u1", name: "m1", envs: [cell("sems-dev", "latest", 3, 7)] },
-      { uuid: "u2", name: "m2", envs: [cell("sems-stage", "error", -1, null)] },
+      { uuid: "u1", name: "m1", envs: [cell("acme-dev", "latest", 3, 7)] },
+      { uuid: "u2", name: "m2", envs: [cell("acme-stage", "error", -1, null)] },
     ]));
     const e = await err(() => freeze.execute({ name: "rel", force: false }, ctx()));
     expect(e.code).toBe("FREEZE_NO_STAGE_DATA");
@@ -192,8 +192,8 @@ describe("RL-3: freeze and missing stage data", () => {
 
   test("partial miss → recorded as unknown + warning; 'missing' stays a real 'not on stage'", async () => {
     saveRelease("rel", savedRelease([
-      { uuid: "u1", name: "m1", envs: [cell("sems-stage", "behind", 2, 5)] },
-      { uuid: "u2", name: "m2", envs: [cell("sems-stage", "missing", -1, null)] },
+      { uuid: "u1", name: "m1", envs: [cell("acme-stage", "behind", 2, 5)] },
+      { uuid: "u2", name: "m2", envs: [cell("acme-stage", "missing", -1, null)] },
       { uuid: "u3", name: "m3", envs: [] },
     ]));
     const c = ctx();
@@ -202,7 +202,7 @@ describe("RL-3: freeze and missing stage data", () => {
     expect(s.items.map((i) => i.stageStatus)).toEqual(["behind", "missing", "unknown"]);
     expect(s.items[0]).toMatchObject({ spinePos: 2, spineVersion: 5 });
     expect(s.warnings).toHaveLength(1);
-    expect(c.warnings[0]).toContain("m3 (u3): no sems-stage data");
+    expect(c.warnings[0]).toContain("m3 (u3): no acme-stage data");
   });
 });
 
@@ -224,7 +224,7 @@ describe("RL-4: ledger safety", () => {
   });
 
   test("re-freezing needs --force; --force replaces atomically", async () => {
-    saveRelease("rel", savedRelease([{ uuid: "u1", name: "m1", envs: [cell("sems-stage", "latest", 4, 9)] }]));
+    saveRelease("rel", savedRelease([{ uuid: "u1", name: "m1", envs: [cell("acme-stage", "latest", 4, 9)] }]));
     await freeze.execute({ name: "rel", force: false }, ctx());
     const e = await err(() => freeze.execute({ name: "rel", force: false }, ctx()));
     expect(e.code).toBe("SNAPSHOT_EXISTS");

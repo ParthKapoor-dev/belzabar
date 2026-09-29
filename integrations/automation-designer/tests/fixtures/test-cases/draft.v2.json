@@ -14,8 +14,8 @@
     "service": {
       "id": 1135,
       "uuid": "4e98700b2524e2accd47b4addf95ceca",
-      "name": "Test-Parth",
-      "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+      "name": "Test-Tester",
+      "description": "Scratch category for ZCPS-596 build probes (Tester). Safe to delete.",
       "systemService": false
     },
     "categories": null,
@@ -120,13 +120,13 @@
   "changelogs": [
     {
       "id": "48d7decfbb5781af0bf0877c4a781f7d",
-      "comment": "Method published by Admin SEMS",
+      "comment": "Method published by Admin ACME",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
         "email": "user@example.com",
         "firstName": "Admin",
-        "lastName": "SEMS",
+        "lastName": "ACME",
         "ssoUser": false,
         "boss": {
           "id": 1,
@@ -143,8 +143,8 @@
         "mfaEnabled": false,
         "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
         "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
-        "fullName": "Admin SEMS",
-        "title": "Admin SEMS",
+        "fullName": "Admin ACME",
+        "title": "Admin ACME",
         "lastLoginDate": 1790662037714
       },
       "createdAt": 1790662937390,
@@ -159,7 +159,7 @@
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
         "email": "user@example.com",
         "firstName": "Admin",
-        "lastName": "SEMS",
+        "lastName": "ACME",
         "ssoUser": false,
         "boss": {
           "id": 1,
@@ -176,8 +176,8 @@
         "mfaEnabled": false,
         "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
         "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
-        "fullName": "Admin SEMS",
-        "title": "Admin SEMS",
+        "fullName": "Admin ACME",
+        "title": "Admin ACME",
         "lastLoginDate": 1790662037714
       },
       "createdAt": 1790662940119,

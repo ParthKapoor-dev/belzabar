@@ -19,7 +19,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { EnvelopeSchema, describeLiveWrite, registerLiveResource, markLiveResourceCleaned, scratchDir, spawnLive, type SpawnResult } from "@belzabar/core/testing";
+import { EnvelopeSchema, LIVE_ENV, describeLiveWrite, registerLiveResource, markLiveResourceCleaned, scratchDir, spawnLive, type SpawnResult } from "@belzabar/core/testing";
 
 const PAGE = process.env.BELZ_LIVE_PD_PAGE ?? "";
 const T = 180_000;
@@ -64,7 +64,7 @@ suite(
       writeFileSync(join(dir, "original.config.json"), originalRaw);
       registerLiveResource({
         agent: "pd-live-suite",
-        kind: "PD page (existing scratch page, sems-dev)",
+        kind: `PD page (existing scratch page, ${LIVE_ENV})`,
         identifier: PAGE,
         purpose: "pd live write suite: edits, lock, publish (no host), history restore; restored in afterAll",
         cleaned: "no — pending afterAll restore",

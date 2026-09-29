@@ -5,14 +5,14 @@ Create a new DRAFT method from a spec through the V2 route
 
 Compact spec (belz expands it to the full V2 body with UI defaults):
   {
-    "name": "orders.list", "category": "Test-Parth",
+    "name": "orders.list", "category": "Sandbox",
     "summary": "…", "description": "…",
     "inputs":    ["id", {"key": "limit", "type": "INTEGER", "required": true,
                           "default": 10, "description": "…"}],
     "variables": ["rows"],
     "outputs":   ["rows", {"key": "count", "type": "INTEGER"}],
     "steps": [
-      {"sql": "SELECT … WHERE id = '#{id}'", "account": "BCPS-RDS",
+      {"sql": "SELECT … WHERE id = '#{id}'", "account": "APP-RDS",
        "outputs": {"rows": "flatData[]"}, "when": "#{id} ne null"},
        // flatData[] = the rows as an array of OBJECTS [{col: v}, …]
        // output keys cannot be indexed (flatData[0].col is refused): reduce
@@ -28,7 +28,7 @@ Compact spec (belz expands it to the full V2 body with UI defaults):
   exit {onFailure, code, message}, exitIf {when, code, message},
   loop {over} | {times} | {while} | {from, to, by} (+counter, parallel,
   threads), account (db_service: an id or nickname; it may be omitted only
-  when the service has exactly one account on the env — sems-dev has
+  when the service has exactly one account on the env — e.g. one env has
   several, and then AD_SPEC_INVALID lists them as id=nickname; see
   `belz ad child-info db_service select` lists them), description,
   language, async. `sql` alone picks db_service data.read/add/update/delete
@@ -80,5 +80,5 @@ layersRun}}.
 
 Examples:
   belz ad create --spec method.json --dry-run --env <env> --llm
-  belz ad create --category Test-Parth --spec method.json --env <env>
-  belz ad create --category 1135 --spec method.json --env <env> --yes --llm
+  belz ad create --category Sandbox --spec method.json --env <env>
+  belz ad create --category 42 --spec method.json --env <env> --yes --llm

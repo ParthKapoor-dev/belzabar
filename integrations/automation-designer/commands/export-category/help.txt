@@ -13,5 +13,5 @@ Flags:
   --llm           Emit a JSON envelope with {id, category, methodCount, writtenTo, bytes, preview}
 
 Examples:
-  belz ad export-category Test-Parth --out /tmp/test-parth.json
-  belz ad export-category 1135 --llm
+  belz ad export-category Sandbox --out /tmp/sandbox.json
+  belz ad export-category 42 --llm

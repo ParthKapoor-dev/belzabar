@@ -1,4 +1,4 @@
-// parseV1Method against a REAL sems-dev V1 body (AD-13: the old hand-written
+// parseV1Method against a REAL acme-dev V1 body (AD-13: the old hand-written
 // method-full.json used `lastUpdatedOn`/`lastUpdatedBy` and string
 // `automationId`s, which the wire never sends).
 //

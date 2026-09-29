@@ -13,7 +13,7 @@ Flags:
   --help, -h  Show this help message.
 
 Global Flags:
-  --env <name>  Set active environment (default: defaultEnv, else nsm-dev).
+  --env <name>  Set active environment (default: BELZ_ENV, else defaultEnv, else the only env).
   --llm    Emit a JSON envelope.
 
 Data: {uuid, name, sourceVersion, inputs[], variables[], outputs[],
@@ -26,4 +26,4 @@ output. Note: db_service `flatData[]` is an array of row OBJECTS
 
 Example:
   belz ad outputs 4a1b2c3d... --llm | jq '.data.inputs'
-  belz ad outputs 4a1b2c3d... --env sems-dev --llm | jq '.data.stepOutputs'
+  belz ad outputs 4a1b2c3d... --env acme-dev --llm | jq '.data.stepOutputs'

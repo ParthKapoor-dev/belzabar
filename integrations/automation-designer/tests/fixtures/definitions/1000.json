@@ -197,7 +197,7 @@
   "showError": false,
   "asyncAutomation": false,
   "dependentOnStep": 0,
-  "service": "Baltimore Schools - Utilities",
+  "service": "Springfield Schools - Utilities",
   "action": "find.missing.suffix",
   "describableAutomation": false,
   "massAutomation": false,

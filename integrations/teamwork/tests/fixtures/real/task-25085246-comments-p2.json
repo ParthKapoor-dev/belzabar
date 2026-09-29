@@ -7,8 +7,8 @@
         "id": 216133,
         "type": "installations"
       },
-      "htmlBody": "<div>\n  sure \n <span class=\"atwho-inserted\">@kartikj</span>&nbsp; \n</div> \n<div> \n <br> \n</div>",
-      "body": "sure @kartikj  \r\n ",
+      "htmlBody": "<div>\n  sure \n <span class=\"atwho-inserted\">@leadtwo</span>&nbsp; \n</div> \n<div> \n <br> \n</div>",
+      "body": "sure @leadtwo  \r\n ",
       "postedByUserId": 301769,
       "postedBy": 301769,
       "postedDateTime": "2025-03-21T07:14:08Z",
@@ -124,7 +124,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": true,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_6917238787edf810128c0af194998a2f.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/twia_6917238787edf810128c0af194998a2f.png",
         "lengthOfDay": 8,
         "workingHoursId": 11121,
         "workingHour": {
@@ -167,7 +167,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": true,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_f735316b66e66daf351ee863a96ffe37.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/twia_f735316b66e66daf351ee863a96ffe37.png",
         "lengthOfDay": 8,
         "workingHoursId": 49554,
         "workingHour": {

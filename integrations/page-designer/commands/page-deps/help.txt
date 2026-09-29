@@ -26,10 +26,10 @@ Flags:
   --force                     Bypass the config cache when resolving <input>.
   --full                      Also return the raw dependencyJSON (large).
   --llm                       Emit the JSON envelope.
-  --env <name>                Environment to resolve + query (default: defaultEnv, else nsm-dev).
+  --env <name>                Environment to resolve + query (default: BELZ_ENV, else defaultEnv, else the only env).
   --help, -h                  Show this help message.
 
 Examples:
-  belz pd page-deps 40d89f5f4b65e79c0856953d668ce67a --env nsm-prod
-  belz pd page-deps n_s_public_portal_login --env nsm-prod --llm
+  belz pd page-deps 40d89f5f4b65e79c0856953d668ce67a --env acme-prod
+  belz pd page-deps n_s_public_portal_login --env acme-prod --llm
   belz pd page-deps n_s_public_portal_login --full --llm | jq '.data.dependencyJSON | keys'

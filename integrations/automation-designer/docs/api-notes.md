@@ -139,7 +139,7 @@ go through `lib/save/pipeline.ts` (which calls `resolveDraftTarget` first).
    input `testValue`s are accepted and dropped.
 2. **Compiled-chain cache.** After a save the runtime may keep executing the
    old body until BOTH `/rest/api/cache/invalidate` and
-   `/rest/api/automations/cache/invalidate` are called (sems-dev).
+   `/rest/api/automations/cache/invalidate` are called (verified live).
 3. **Custom-code multi-output rule.** Every output on a `CUSTOM_CODE` step
    (beyond the first) must have `elementToRetrieve` set — a `lib/validate`
    rule now.

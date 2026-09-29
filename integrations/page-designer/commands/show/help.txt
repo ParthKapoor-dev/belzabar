@@ -69,7 +69,7 @@ Global Flags:
 
 Examples:
   belz pd show 48b75e11e166e6b19e5796d59a936228
-  belz pd show https://nsm-dev.nc.verifi.dev/ui-designer/page/48b75e11e166e6b19e5796d59a936228
+  belz pd show https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
   belz pd show n_s_staff_email_correspondence
   belz pd show 48b75e11e166e6b19e5796d59a936228 --vars
   belz pd show 48b75e11e166e6b19e5796d59a936228 --vars --fields name,spec

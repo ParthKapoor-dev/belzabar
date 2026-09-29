@@ -1,7 +1,7 @@
 [
   {
     "file": "40d0b1551dd9950a968cafe4c9cc6159.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:05.310Z",
     "bytes": 100642,
     "source": {
@@ -15,7 +15,7 @@
   },
   {
     "file": "43488abaf65c8efc95ad880a346f38af.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:02.041Z",
     "bytes": 91174,
     "source": {
@@ -29,7 +29,7 @@
   },
   {
     "file": "436e2f3848865e1f11cdbe393b1f6545.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:17:58.862Z",
     "bytes": 320661,
     "source": {
@@ -43,7 +43,7 @@
   },
   {
     "file": "438fe77cffb8f165a3df9eb2a74cab05.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:00.938Z",
     "bytes": 10616,
     "source": {
@@ -57,7 +57,7 @@
   },
   {
     "file": "4440a1a4628001dfb1b79aaec9dd55fe.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:17:48.226Z",
     "bytes": 11857,
     "source": {
@@ -71,7 +71,7 @@
   },
   {
     "file": "45f7671e3c51c7247e12a640e3fb6d85.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:17:52.097Z",
     "bytes": 40495,
     "source": {
@@ -85,7 +85,7 @@
   },
   {
     "file": "46de5a5b3a0c3cba83b5a1fde3a62e10.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:08.415Z",
     "bytes": 64755,
     "source": {
@@ -99,7 +99,7 @@
   },
   {
     "file": "48ac453ee33bbe32f0248075df59ec71.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:17:49.569Z",
     "bytes": 40499,
     "source": {
@@ -113,7 +113,7 @@
   },
   {
     "file": "48c75be5432ea37ab95ea2853033407e.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:09.889Z",
     "bytes": 280412,
     "source": {
@@ -127,7 +127,7 @@
   },
   {
     "file": "4b2e06047e30dc8a57b08d163775345f.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:06.328Z",
     "bytes": 49775,
     "source": {
@@ -141,7 +141,7 @@
   },
   {
     "file": "4bde22f76091a82364fda322eeeda597.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:17:46.160Z",
     "bytes": 11841,
     "source": {
@@ -155,7 +155,7 @@
   },
   {
     "file": "4cba8f39eb92d136694dadc4e7f2a811.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:17:54.914Z",
     "bytes": 598592,
     "source": {
@@ -169,7 +169,7 @@
   },
   {
     "file": "4ccf5f0bf66cc647f10aa47a0dc9d8c7.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:03.164Z",
     "bytes": 211428,
     "source": {
@@ -183,7 +183,7 @@
   },
   {
     "file": "4f4f9ce1b7affcccee14aa9b5b006427.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:00.023Z",
     "bytes": 8928,
     "source": {
@@ -197,7 +197,7 @@
   },
   {
     "file": "4fb404ac34e77082b2d6a28294caf951.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:07.319Z",
     "bytes": 1602,
     "source": {

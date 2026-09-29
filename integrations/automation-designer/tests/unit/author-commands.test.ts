@@ -1,4 +1,4 @@
-// Stage 7.2 / 7.3 end to end through the commands (fakeFetch, fake sems-dev
+// Stage 7.2 / 7.3 end to end through the commands (fakeFetch, fake acme-dev
 // that mints step ids and fills input types like the real server):
 //   ad save  — structural ops, --sql-file / --code-file, --dry-run, verify
 //   ad create --spec <compact> — contracts, codeFile/sqlFile, spec.category, --dry-run
@@ -222,7 +222,7 @@ function wireCreate() {
 
 const compactSpec = {
   name: "belz_tst_s7b_unit",
-  category: "Test-Parth",
+  category: "Test-Tester",
   inputs: [{ key: "name", required: true, default: "World" }],
   variables: ["greeting"],
   outputs: ["greeting", "len", { key: "rows", type: "ARRAY" }],
@@ -245,7 +245,7 @@ describe("ad create --spec (compact)", () => {
     const post = ff!.requests.find((q) => q.method === "POST")!.json() as V2MethodResponse;
     expect(post.steps!.map((s) => `${s.serviceName ?? "CC"}/${s.methodName ?? ""}`)).toEqual(["Helpers.Legacy/echo", "CC/", "db_service/data.read"]);
     expect(post.steps![1]!.properties!.customCode!.inlineCode).toBe("console.log('#{greeting}'.length)");
-    expect(post.steps![2]!.accountConfiguration).toEqual({ id: 2, name: "BCPS-RDS" });
+    expect(post.steps![2]!.accountConfiguration).toEqual({ id: 2, name: "ZCPS-RDS" });
     expect(post.inputs![0]).toMatchObject({ key: "name", required: true, defaultValue: "World" });
   });
 
@@ -287,7 +287,7 @@ describe("ad create --spec (compact)", () => {
 });
 
 describe("ad save — methods with test cases (testSuite)", () => {
-  // Live sems-dev 2026-09-29: a V2 POST carrying testSuite makes the server rebuild the
+  // Live acme-dev 2026-09-29: a V2 POST carrying testSuite makes the server rebuild the
   // suite (new assertion ids, createdOn/updatedOn, chainVersionId); without it the suite
   // is kept and only its updatedOn moves. Either way the re-read suite differs from the
   // body belz sent, which used to fail every save with AD_SAVE_VERIFY_FAILED.

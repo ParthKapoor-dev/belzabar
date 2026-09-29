@@ -1,7 +1,7 @@
 [
   {
     "file": "methods-example-services.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:44.115Z",
     "bytes": 49899,
     "source": {},

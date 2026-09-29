@@ -145,7 +145,7 @@ describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
     expect((await run(validate, [PAGE])).envelope?.error?.code).not.toBe("PD_VALIDATION_FAILED");
   });
 
-  test("analyze needs explicit roots (no hardcoded nsm ids) and reads no CWD files", async () => {
+  test("analyze needs explicit roots (no hardcoded orb ids) and reads no CWD files", async () => {
     expect((await run(analyze, [])).envelope?.error?.code).toBe("MISSING_INPUT");
     const r = await run(analyze, [PAGE]);
     expect(r.envelope?.data).toMatchObject({ targetIds: [PAGE], uniqueAdIds: ["ad1", "ad2"], compliance: null });

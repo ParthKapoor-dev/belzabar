@@ -23,7 +23,7 @@ import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
 const FIX = `${import.meta.dir}/../fixtures`;
 const CATS = buildCategories(require(`${FIX}/categories/chain-category.json`), require(`${FIX}/categories/chain-category-system.json`));
-const TEST_PARTH = requireChainCategory(CATS, "Test-Parth");
+const TEST_TESTER = requireChainCategory(CATS, "Test-Tester");
 const REAL_V2 = `${FIX}/real-v2`;
 const real = (u: string): V2MethodResponse => structuredClone(require(`${FIX}/real-v2/${u}.v2.json`));
 
@@ -61,7 +61,7 @@ describe("buildCreateBody", () => {
   test("ADW-R10: fields expand like save's set-input (refusals shared); real V2 method fields still work", () => {
     const code = (spec: unknown) => {
       try {
-        buildCreateBody(spec, TEST_PARTH);
+        buildCreateBody(spec, TEST_TESTER);
       } catch (e) {
         return (e as CliError).code;
       }
@@ -75,15 +75,15 @@ describe("buildCreateBody", () => {
       if (!f.endsWith(".v2.json")) continue;
       const real = JSON.parse(readFileSync(join(REAL_V2, f), "utf8"));
       const outputs = (real.outputs ?? []).filter((o: any) => typeof o.key === "string" && o.key); // OK1 bodies lack keys
-      const { body } = buildCreateBody({ name: "x", inputs: real.inputs ?? [], variables: real.variables ?? [], outputs }, TEST_PARTH);
+      const { body } = buildCreateBody({ name: "x", inputs: real.inputs ?? [], variables: real.variables ?? [], outputs }, TEST_TESTER);
       for (const o of body.outputs as any[]) expect(o.uuid ?? o.referenceUuid).toBeUndefined();
     }
   });
 
   test("fills UI defaults; category comes from the flag", () => {
-    const { body, dropped } = buildCreateBody(minimal, TEST_PARTH);
+    const { body, dropped } = buildCreateBody(minimal, TEST_TESTER);
     expect(dropped).toEqual([]);
-    expect(body.metadata).toEqual({ service: { id: 1135, uuid: TEST_PARTH.chainCategoryUuid, name: "Test-Parth" } });
+    expect(body.metadata).toEqual({ service: { id: 1135, uuid: TEST_TESTER.chainCategoryUuid, name: "Test-Tester" } });
     expect((body.inputs as any[])[0]).toEqual({ key: "name", name: "name", type: "STRING", required: false, properties: [], encodingType: "NONE" });
     expect((body.outputs as any[])[0]).toEqual({ key: "out", fieldCode: "out", name: "out", type: "STRING" });
     const [echo, cc] = body.steps as any[];
@@ -98,7 +98,7 @@ describe("buildCreateBody", () => {
 
   test("a fetched V2 body: server-owned keys dropped, method-level uuids and step ids removed", () => {
     const src = real("41bb1b438875bd8b994196db1f12b7c2");
-    const { body, dropped } = buildCreateBody(src, TEST_PARTH);
+    const { body, dropped } = buildCreateBody(src, TEST_TESTER);
     expect(dropped).toEqual(expect.arrayContaining(["uuid", "automationApiId", "changelogs", "permissions", "automationState", "metadata.service", "metadata.version", "metadata.state"]));
     for (const k of ["uuid", "automationApiId", "changelogs", "permissions", "automationState"]) expect(body).not.toHaveProperty(k);
     expect(Object.keys(body.metadata as object)).toEqual(["service"]);
@@ -115,7 +115,7 @@ describe("buildCreateBody", () => {
     [[], "AD_SPEC_INVALID"],
   ])("refuses %j → %s", (spec, codeExpected) => {
     try {
-      buildCreateBody(spec, TEST_PARTH);
+      buildCreateBody(spec, TEST_TESTER);
       throw new Error("no throw");
     } catch (e) {
       expect((e as CliError).code).toBe(codeExpected);
@@ -124,13 +124,13 @@ describe("buildCreateBody", () => {
 });
 
 describe("assertCreatableCategory (WSR-6)", () => {
-  const cat = (name: string, type = "USER_GENERATED"): Category => ({ ...TEST_PARTH, name, type });
+  const cat = (name: string, type = "USER_GENERATED"): Category => ({ ...TEST_TESTER, name, type });
   test.each(["Helpers.JSON", "Helpers.Legacy", "Database.SQL", "Cache.Redis", "Email", "Expertly.Notification", "Web Socket"])("%s is refused", (n) => {
     expect(() => assertCreatableCategory(cat(n))).toThrow(/core\/shared/);
   });
   test("system services are refused; project categories pass", () => {
     expect(() => assertCreatableCategory(cat("db_service", "SYSTEM_GENERATED"))).toThrow(/system service/);
-    expect(() => assertCreatableCategory(TEST_PARTH)).not.toThrow();
+    expect(() => assertCreatableCategory(TEST_TESTER)).not.toThrow();
     expect(() => assertCreatableCategory(cat("Schools-Notifications"))).not.toThrow();
   });
 });
@@ -161,10 +161,10 @@ const spec = { name: "belz_tst_s5a_unit", steps: [{ properties: { customCode: { 
 describe("ad create", () => {
   test("POSTs a create body (no uuid) and returns the verified uuid", async () => {
     wireCreate();
-    const r = await runCommand(createCommand, ["--category", "Test-Parth", "--spec", file(spec), "--yes"], { env: "t-dev" });
+    const r = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec), "--yes"], { env: "t-dev" });
     expect(r.envelope?.ok).toBe(true);
     const d = r.envelope!.data as any;
-    expect(d).toMatchObject({ uuid: NEW, name: "belz_tst_s5a_unit", state: "DRAFT", version: "1", stepCount: 1, category: { chainCategoryId: 1135, name: "Test-Parth" } });
+    expect(d).toMatchObject({ uuid: NEW, name: "belz_tst_s5a_unit", state: "DRAFT", version: "1", stepCount: 1, category: { chainCategoryId: 1135, name: "Test-Tester" } });
     const post = ff!.requests.find((q) => q.method === "POST")!.json();
     expect(post).not.toHaveProperty("uuid");
     expect(post.metadata.service.id).toBe(1135);
@@ -187,7 +187,7 @@ describe("ad create", () => {
 
   test("--llm without --yes → AD_CONFIRMATION_REQUIRED, nothing POSTed; flags required", async () => {
     wireCreate();
-    const r = await runCommand(createCommand, ["--category", "Test-Parth", "--spec", file(spec)], { env: "t-dev" });
+    const r = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec)], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
     expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
     // No --category and no spec.category (read from the spec file, Stage 7.3).
@@ -196,13 +196,13 @@ describe("ad create", () => {
   });
 });
 
-describe("ad create --dry-run needs an explicit --env (CLI trial: it silently read nsm-dev)", () => {
+describe("ad create --dry-run needs an explicit --env (CLI trial: it silently read orb-dev)", () => {
   test("no --env → ENV_REQUIRED_FOR_WRITE before any request; with --env it runs", async () => {
     wireCreate();
-    const r = await runCommand(createCommand, ["--category", "Test-Parth", "--spec", file(spec), "--dry-run"]);
+    const r = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec), "--dry-run"]);
     expect(r.envelope?.error?.code).toBe("ENV_REQUIRED_FOR_WRITE");
     expect(ff!.requests).toHaveLength(0);
-    const ok = await runCommand(createCommand, ["--category", "Test-Parth", "--spec", file(spec), "--dry-run"], { env: "t-dev" });
+    const ok = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec), "--dry-run"], { env: "t-dev" });
     expect(ok.envelope?.error?.code).not.toBe("ENV_REQUIRED_FOR_WRITE");
     expect(ok.envelope?.meta).toMatchObject({ env: "t-dev", envSource: "flag" });
   });

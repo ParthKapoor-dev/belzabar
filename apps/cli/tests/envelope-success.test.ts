@@ -1,5 +1,5 @@
 // Envelope contract, success paths: read commands run against the real
-// (sanitized) sems-dev wire captures in integrations/*/tests/fixtures/ through
+// (sanitized) acme-dev wire captures in integrations/*/tests/fixtures/ through
 // fakeFetch, and their `--llm` output must validate against EnvelopeSchema with
 // ok:true, exit 0, `<ns>.<cmd>` schema, and `meta.env` only when env-aware.
 // (Error/help paths: envelope-contract.test.ts.)
@@ -30,8 +30,8 @@ const PD = join(ROOT, "integrations/page-designer/tests/fixtures/real");
 const TW = join(ROOT, "integrations/teamwork/tests/fixtures/real");
 const MG = join(ROOT, "integrations/migrations/tests/fixtures/real");
 
-const ENV = "contract-sems";
-const HOST = "https://contract-sems.test";
+const ENV = "contract-acme";
+const HOST = "https://contract-acme.test";
 const JENKINS = "https://jenkins.example.com";
 const JOB = `${JENKINS}/job/Deployments/job/Database/job/db-migration`;
 
@@ -93,7 +93,7 @@ function lookup(req: RecordedRequest): Response | null {
   }
   if (u.origin === "https://tw.example.test") {
     if (path === "/launchpad/v1/login.json") {
-      return new Response("{}", { headers: { "content-type": "application/json", "set-cookie": "tw-auth=contract; Path=/" } });
+      return new Response("{}", { headers: { "content-type": "application/json", "set-cookie": "tw-auth=REDACTED; Path=/" } });
     }
     if ((m = path.match(/^\/projects\/api\/v3\/tasks\/(\d+)\.json$/))) return json(`${TW}/task-${m[1]}.json`);
     if ((m = path.match(/^\/projects\/api\/v3\/tasks\/(\d+)\/comments\.json$/))) {
@@ -157,7 +157,7 @@ beforeAll(() => {
   ]).install();
   cfg = withTempEnvConfig({
     envs: { [ENV]: { url: HOST } },
-    teamwork: { baseUrl: "https://tw.example.test", email: "t@contract.test", password: btoa("x") },
+    teamwork: { baseUrl: "https://tw.example.test", email: "user@example.com", password: btoa("x") },
     jenkins: { baseUrl: JENKINS, user: "u", password: btoa("x"), migrationJob: "Deployments/Database/db-migration" },
   });
   prevCwd = process.cwd();

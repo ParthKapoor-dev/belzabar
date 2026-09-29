@@ -1,4 +1,4 @@
-// CLI trial tr2 (sems-dev 2026-09-29): compact-format friction.
+// CLI trial tr2 (acme-dev 2026-09-29): compact-format friction.
 //  - An omitted db_service account defaults only when the service has exactly
 //    one account; otherwise the error says how many and lists id=nickname.
 //  - An indexed / pathed step output key (`flatData[0].greeting`) is refused

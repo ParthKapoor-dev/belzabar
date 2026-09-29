@@ -25,4 +25,4 @@ Global Flags:
 Examples:
   belz ad run-suites --env <env>
   belz ad run-suites --env <env> --llm
-  belz ad run-suites --env sems-dev --legacy-env sems-dev
+  belz ad run-suites --env acme-dev --legacy-env acme-dev

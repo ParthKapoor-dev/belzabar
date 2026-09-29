@@ -14,7 +14,7 @@
       "id": 24,
       "uuid": "4700658b809a62a86d4ab58da1ccbda6",
       "name": "Schools-Configure",
-      "description": "Configuration for Expertly SEMS",
+      "description": "Configuration for Expertly ACME",
       "systemService": false
     },
     "categories": null,
@@ -96,7 +96,7 @@
       ],
       "accountConfiguration": {
         "id": 2,
-        "name": "BCPS-RDS"
+        "name": "ZCPS-RDS"
       },
       "properties": {
         "runAsync": false,

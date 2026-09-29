@@ -142,7 +142,7 @@ function checkConditions(c: StepCtx): void {
         message: `${label} ${JSON.stringify(expr.slice(0, 60))} has no #{…}; it compares constants, so the step is silently skipped (or always runs).`,
         path,
         step: c.ref,
-        fix: "Reference the value as #{name}, e.g. #{name} eq 'Parth'.",
+        fix: "Reference the value as #{name}, e.g. #{name} eq 'Alex'.",
         evidence: "v2_entry_cond_plain_text: step skipped, run green",
       });
       continue;

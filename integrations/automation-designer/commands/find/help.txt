@@ -18,7 +18,7 @@ Flags:
                       method that does X?". Rows add `matched` words. Needs
                       index schema 2 (an older cached index is rebuilt once).
   --category <ref>    Only categories whose name starts with <ref>, or whose
-                      chain-category id / uuid is <ref> (e.g. Helpers, 1135).
+                      chain-category id / uuid is <ref> (e.g. Helpers, 42).
                       Without a query: lists that category's methods
                       (data.methods, totalMethods; capped at --limit). Also
                       scopes --raw, --describe and pick.
@@ -37,13 +37,13 @@ Flags:
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment (default: defaultEnv, else nsm-dev).
+  --env <name>        Set active environment (default: BELZ_ENV, else defaultEnv, else the only env).
                       Any env from `belz envs` (configured in ~/.belz/config.json).
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
   belz ad find list
-  belz ad find --category Test-Parth --env sems-dev --llm
+  belz ad find --category Sandbox --env acme-dev --llm
   belz ad find pick _lookupDCIN --open
   belz ad find "documents helper" --limit 30
   belz ad find --describe fetch value from json path --category Helpers --llm

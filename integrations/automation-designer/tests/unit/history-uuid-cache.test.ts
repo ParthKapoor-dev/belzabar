@@ -3,7 +3,7 @@ import { historyUuidCacheKey } from "../../lib/api/v1";
 
 describe("_historyUuidCache key (AD-24)", () => {
   test("is scoped by env", () => {
-    expect(historyUuidCacheKey("nsm-dev", "listAll")).toBe("nsm-dev:listAll");
-    expect(historyUuidCacheKey("nsm-qa", "listAll")).not.toBe(historyUuidCacheKey("nsm-dev", "listAll"));
+    expect(historyUuidCacheKey("orb-dev", "listAll")).toBe("orb-dev:listAll");
+    expect(historyUuidCacheKey("orb-qa", "listAll")).not.toBe(historyUuidCacheKey("orb-dev", "listAll"));
   });
 });

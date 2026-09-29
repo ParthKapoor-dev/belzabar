@@ -1,7 +1,7 @@
 [
   {
     "file": "v1-chain-missing.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:14:59.770Z",
     "bytes": 55,
     "source": {
@@ -13,7 +13,7 @@
   },
   {
     "file": "v2-chain-missing.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:15:00.447Z",
     "bytes": 55,
     "source": {

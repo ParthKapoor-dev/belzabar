@@ -1,7 +1,7 @@
 // `ad publish` + `ad changelog --note`.
 // AD-19: publish first, then the note (retried); a failed publish leaves no
 // note; the note id is found from the list (the POST answers {"success":true},
-// no id — live sems-dev). F39: an unknown uuid is a clean METHOD_NOT_FOUND.
+// no id — live acme-dev). F39: an unknown uuid is a clean METHOD_NOT_FOUND.
 // AD-32/33: `changelog --note` confirms and records on the draft chain.
 import { afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "fs";

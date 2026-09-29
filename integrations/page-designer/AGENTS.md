@@ -133,7 +133,7 @@ already turns that into a full save.
   `ESCALATE_WHEN_INTRODUCED` (warnings that become errors when an edit introduces them).
 - `recursive.ts`: `validateRecursive` + `symbolInterfaceIssues` (`SYMBOL_*` codes).
 - Calibration rule: real editor output has **0 errors** (`tests/unit/validator-real.test.ts`).
-  A rule that fires on real pages is a warning. Live check (2026-09-29, all 633 sems-dev
+  A rule that fires on real pages is a warning. Live check (2026-09-29, all 633
   drafts, read-only): 53 drafts still have errors, and they are genuine defects (dangling
   bindings such as `studentDob` vs `studentDOB`, duplicate node ids, hand-written or empty
   roots). `publish` gates diff-aware against the PUBLISHED version, so only 4 published pages
@@ -171,7 +171,7 @@ editor metadata; sorts keys; turns multi-line strings into `{"$lines": [...]}` (
 | `lib/page-dependencies.ts` | page-deps / translations entity resolution |
 | `lib/args/common.ts` | shared `defineArgs` fragments |
 
-Config facts (verified on real sems-dev pages): derived variables live in
+Config facts (verified on real pages): derived variables live in
 `variables.userDefined` (entries with `from`); `variables.derived` is empty; components carry
 `isComponent: true`, pages `relativeRoute` (root `isSymbol` is not decisive); legacy pages use
 `context.properties` and a flat `http` array; every real HTTP call is a POST to
@@ -189,7 +189,7 @@ Config facts (verified on real sems-dev pages): derived variables live in
 
 ## Tests
 
-- `tests/fixtures/real/` — 15 sanitized real sems-dev pages/components + `manifest.json`
+- `tests/fixtures/real/` — 15 sanitized real pages/components + `manifest.json`
   (includes both duplicate-name "Add Student" pairs and the ~585 KB "Student Application").
   Refresh from the repo root with `bun scripts/fixtures/capture.ts pd <id,id,…>` (read-only).
 - `tests/unit/fixtures/` — small hand-written node/page fixtures.

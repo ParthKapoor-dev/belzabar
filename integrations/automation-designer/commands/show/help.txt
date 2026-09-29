@@ -13,7 +13,7 @@ and the wire body only with --raw (emitted once, as `raw`).
 
 Arguments:
   <UUID|URL|FILE>         The UUID of the method, a full AD URL
-                          (e.g. https://nsm-dev.nc.verifi.dev/automation-designer/Category/426f97...),
+                          (e.g. https://dev.example.test/automation-designer/Category/426f97...),
                           or the path of a local method JSON file.
 
 Flags:
@@ -47,7 +47,7 @@ Flags:
   --help, -h              Show this help message.
 
 Global Flags:
-  --env <name>            Set active environment (default: defaultEnv, else nsm-dev).
+  --env <name>            Set active environment (default: BELZ_ENV, else defaultEnv, else the only env).
                           Any env from `belz envs` (configured in ~/.belz/config.json).
   --llm                   Output structured JSON envelope for scripting/LLM use.
 

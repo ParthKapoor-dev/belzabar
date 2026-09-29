@@ -14,7 +14,7 @@ const runCmd = { ...runCmdModule, envAware: false };
 const JOB_PARAMS = { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${import.meta.dir}/../fixtures/real/job-parameters.json`) };
 
 /** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */
-const PROFILE_ENVS = { devsems: "sems-dev", qasems: "sems-qa", stagesems: "sems-stage", qays: "ys-qa", stageys: "ys-stage", qancdns: "nsm-qa", stgncdns: "nsm-stage" };
+const PROFILE_ENVS = { devacme: "acme-dev", qaacme: "acme-qa", stageacme: "acme-stage", qagm: "gm-qa", stagegm: "gm-stage", qabravo: "orb-qa", stgbravo: "orb-stage" };
 
 let cfg: TempEnvConfig | null = null;
 let ff: FakeFetch | null = null;
@@ -31,24 +31,24 @@ function collect() {
 }
 
 describe("migrate pre-flight", () => {
-  test("SEMS profile whose source env is not configured → warns and skips (no request)", async () => {
-    cfg = withTempEnvConfig({ envs: { "nsm-qa": { url: "https://nsm-qa.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
+  test("ACME profile whose source env is not configured → warns and skips (no request)", async () => {
+    cfg = withTempEnvConfig({ envs: { "orb-qa": { url: "https://orb-qa.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([]).install();
     const w = collect();
-    const res = await resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "PD", ids: ["p1"], warn: w.warn });
+    const res = await resolveMigrationTargets({ profile: "devacme_qaacme", migrateType: "PD", ids: ["p1"], warn: w.warn });
     expect(res).toBeNull();
     expect(w.warnings).toHaveLength(1);
-    expect(w.warnings[0]).toContain("'sems-dev', which is not configured");
+    expect(w.warnings[0]).toContain("'acme-dev', which is not configured");
     expect(w.warnings[0]).toContain("PD draft id will fail");
     expect(ff.requests).toHaveLength(0);
   });
 
-  test("YS profile, AD module, env not configured → warns too", async () => {
+  test("GM profile, AD module, env not configured → warns too", async () => {
     cfg = withTempEnvConfig({ envs: {}, jenkins: { profileEnvs: PROFILE_ENVS } });
     const w = collect();
-    const res = await resolveMigrationTargets({ profile: "qays_stageys", migrateType: "AD_Method", ids: ["u1"], warn: w.warn });
+    const res = await resolveMigrationTargets({ profile: "qagm_stagegm", migrateType: "AD_Method", ids: ["u1"], warn: w.warn });
     expect(res).toBeNull();
-    expect(w.warnings[0]).toContain("'ys-qa', which is not configured");
+    expect(w.warnings[0]).toContain("'gm-qa', which is not configured");
   });
 
   test("unknown profile family without --source-env → warns (was a silent skip)", async () => {
@@ -66,15 +66,15 @@ describe("migrate pre-flight", () => {
     expect(w.warnings).toEqual([]);
   });
 
-  test("configured SEMS source env: PD draft swapped for its published id, env restored", async () => {
-    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" }, "nsm-dev": { url: "https://nsm-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
+  test("configured ACME source env: PD draft swapped for its published id, env restored", async () => {
+    cfg = withTempEnvConfig({ envs: { "acme-dev": { url: "https://acme-dev.test" }, "orb-dev": { url: "https://orb-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([
-      { method: "GET", url: "https://sems-dev.test/rest/api/pagedesigner/pages/draft1", response: { name: "Home", status: "DRAFT", referenceId: "pub1" } },
+      { method: "GET", url: "https://acme-dev.test/rest/api/pagedesigner/pages/draft1", response: { name: "Home", status: "DRAFT", referenceId: "pub1" } },
     ]).install();
     const before = Config.activeEnv.name;
     const w = collect();
-    const res = await resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "PD", ids: ["draft1"], warn: w.warn });
-    expect(res?.sourceEnv).toBe("sems-dev");
+    const res = await resolveMigrationTargets({ profile: "devacme_qaacme", migrateType: "PD", ids: ["draft1"], warn: w.warn });
+    expect(res?.sourceEnv).toBe("acme-dev");
     expect(res?.resolvedIds).toEqual(["pub1"]);
     expect(res?.targets[0]).toMatchObject({ inputId: "draft1", resolvedId: "pub1", swapped: true, name: "Home" });
     expect(w.warnings).toEqual([]);
@@ -83,26 +83,26 @@ describe("migrate pre-flight", () => {
   });
 
   test("a login failure on the source env says how to proceed and keeps its code", async () => {
-    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test", token: null } }, jenkins: { profileEnvs: PROFILE_ENVS } });
-    ff = fakeFetch([{ url: /sems-dev\.test/, response: respond({ status: 401, json: { message: "bad creds" } }) }]).install();
+    cfg = withTempEnvConfig({ envs: { "acme-dev": { url: "https://acme-dev.test", token: null } }, jenkins: { profileEnvs: PROFILE_ENVS } });
+    ff = fakeFetch([{ url: /acme-dev\.test/, response: respond({ status: 401, json: { message: "bad creds" } }) }]).install();
     let err: any;
     try {
-      await resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: ["4d075e621c93206fb95d84795fc05e00"] });
+      await resolveMigrationTargets({ profile: "devacme_qaacme", migrateType: "AD_Method", ids: ["4d075e621c93206fb95d84795fc05e00"] });
     } catch (e) {
       err = e;
     }
     expect(err).toBeDefined();
     expect(String(err.code)).not.toStartWith("MIGRATE_");
-    expect(err.message).toContain("Pre-flight id resolution on 'sems-dev' failed, so no build was triggered");
+    expect(err.message).toContain("Pre-flight id resolution on 'acme-dev' failed, so no build was triggered");
     expect(err.message).toContain("belz config edit");
-    expect(err.details.preflightEnv).toBe("sems-dev");
+    expect(err.details.preflightEnv).toBe("acme-dev");
   });
 
   test("a 404 keeps the specific MIGRATE_TARGET_NOT_FOUND", async () => {
-    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
+    cfg = withTempEnvConfig({ envs: { "acme-dev": { url: "https://acme-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([{ url: /chain\/abcdefabcdefabcdefabcdefabcdefab/, response: respond({ status: 404, json: {} }) }]).install();
     await expect(
-      resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: ["abcdefabcdefabcdefabcdefabcdefab"] }),
+      resolveMigrationTargets({ profile: "devacme_qaacme", migrateType: "AD_Method", ids: ["abcdefabcdefabcdefabcdefabcdefab"] }),
     ).rejects.toMatchObject({ code: "MIGRATE_TARGET_NOT_FOUND" });
   });
 });
@@ -124,11 +124,11 @@ describe("migrate run: skipped pre-flight surfaces in the envelope", () => {
     ]).install();
 
     const r = await runCommand(runCmd, [
-      "--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--dry-run", "--no-follow", "--yes",
+      "--profile", "devacme_qaacme", "--client", "ACME", "--module", "PD", "--ids", "p1", "--dry-run", "--no-follow", "--yes",
     ]);
     expect(r.envelope?.ok).toBe(true);
     const warnings = (r.envelope?.meta as any).warnings as string[];
-    expect(warnings.some((w) => w.includes("'sems-dev', which is not configured"))).toBe(true);
+    expect(warnings.some((w) => w.includes("'acme-dev', which is not configured"))).toBe(true);
     const trigger = ff.requests.find((q) => q.method === "POST")!;
     const form = new URLSearchParams(trigger.body ?? "");
     expect(form.get("DRY_RUN")).toBe("true");
@@ -145,10 +145,10 @@ describe("migrate run: confirmation gate", () => {
     ff = fakeFetch([JOB_PARAMS, { method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) }]).install();
     for (const extra of [[], ["--dry-run"]]) {
       const r = await runCommand(runCmd, [
-        "--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--no-follow", ...extra,
+        "--profile", "devacme_qaacme", "--client", "ACME", "--module", "PD", "--ids", "p1", "--no-follow", ...extra,
       ]);
       expect(r.envelope?.error?.code).toBe("MIGRATE_CONFIRMATION_REQUIRED");
-      expect((r.envelope?.error?.details as any).details).toMatchObject({ Profile: "devsems_qasems", Ids: "p1" });
+      expect((r.envelope?.error?.details as any).details).toMatchObject({ Profile: "devacme_qaacme", Ids: "p1" });
     }
     expect(ff.requests.some((q) => q.method === "POST")).toBe(false);
   });

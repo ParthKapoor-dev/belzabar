@@ -1,10 +1,10 @@
-// `ad test`, `ad run-suites`, `ad run` over a real sems-dev V1 body
+// `ad test`, `ad run-suites`, `ad run` over a real acme-dev V1 body
 // (fixtures/real-v1/4f6331f1…: 2 steps with NUMERIC automationId and no
 // automationApiId, 2 inputs).
 // AD-16: automationApiId injection works with numeric ids (one shared helper).
 // AD-17: trace rows carry the method's step descriptions / orderIndex.
 // AD-38 / F14: run-suites posts the same body as `test`, and surfaces the
-// server's message. AD-34: `run` on a DRAFT uuid warns (live sems-dev
+// server's message. AD-34: `run` on a DRAFT uuid warns (live acme-dev
 // 2026-09-29: it runs the draft's own saved body, not the published copy). Decision (main):
 // test/run/run-suites are writes (explicit --env).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
@@ -185,7 +185,7 @@ describe("ad run-suites (AD-38 / F14)", () => {
     legacySuite(dir);
     const f = wire(okTestResponse);
     spies.push(spyOn(process, "cwd").mockReturnValue(dir));
-    const other = await runCommand(runSuitesCommand, ["--legacy-env", "nsm-qa"], { env: "t-s4b-run" });
+    const other = await runCommand(runSuitesCommand, ["--legacy-env", "orb-qa"], { env: "t-s4b-run" });
     expect((other.envelope?.data as any).suites[0].reason).toContain("ENV_MISSING");
     expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
     const same = await runCommand(runSuitesCommand, ["--legacy-env", "t-s4b-run"], { env: "t-s4b-run" });
@@ -223,7 +223,7 @@ describe("ad run-suites (AD-38 / F14)", () => {
 
   test("ADW-R13: a suite saved on another env is not run (ENV_MISMATCH)", async () => {
     const dir = suitesDir();
-    writeFileSync(join(dir, "suites", "s1.spec.json"), JSON.stringify({ name: "s1", uuid: UUID, env: "nsm-qa", inputs: {} }));
+    writeFileSync(join(dir, "suites", "s1.spec.json"), JSON.stringify({ name: "s1", uuid: UUID, env: "orb-qa", inputs: {} }));
     const f = wire(okTestResponse);
     spies.push(spyOn(process, "cwd").mockReturnValue(dir));
     const r = await runCommand(runSuitesCommand, [], { env: "t-s4b-run" });

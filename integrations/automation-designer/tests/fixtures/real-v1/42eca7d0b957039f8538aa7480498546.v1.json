@@ -11,7 +11,7 @@
     "aliasName": [
       "Schools-Match"
     ],
-    "description": "Category for methods implemented for eSEMS Matching workflow",
+    "description": "Category for methods implemented for eACME Matching workflow",
     "authorizationFields": [],
     "automationAuths": [],
     "permissions": [
@@ -25,7 +25,7 @@
             "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
             "email": "user@example.com",
             "firstName": "Admin",
-            "lastName": "SEMS",
+            "lastName": "ACME",
             "ssoUser": false,
             "boss": {
               "id": 1,
@@ -33,8 +33,8 @@
               "mfaEnabled": false
             },
             "mfaEnabled": false,
-            "fullName": "Admin SEMS",
-            "title": "Admin SEMS"
+            "fullName": "Admin ACME",
+            "title": "Admin ACME"
           }
         ]
       }
@@ -44,7 +44,7 @@
       "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
       "email": "user@example.com",
       "firstName": "Admin",
-      "lastName": "SEMS",
+      "lastName": "ACME",
       "ssoUser": false,
       "boss": {
         "id": 1,
@@ -72,8 +72,8 @@
       },
       "joiningDate": 1514764800000,
       "mfaEnabled": false,
-      "fullName": "Admin SEMS",
-      "title": "Admin SEMS",
+      "fullName": "Admin ACME",
+      "title": "Admin ACME",
       "lastLoginDate": 1790524815956
     },
     "accessMode": "PUBLIC",

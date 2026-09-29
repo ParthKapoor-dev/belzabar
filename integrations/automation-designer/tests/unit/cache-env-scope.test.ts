@@ -24,8 +24,8 @@ beforeAll(() => {
 });
 beforeEach(() => {
   cfg = withTempEnvConfig({
-    envs: { "nsm-dev": { url: "https://nsm-dev.test" }, "nsm-qa": { url: "https://nsm-qa.test" }, e1: { url: "https://e1.test" } },
-    activeEnv: "nsm-dev",
+    envs: { "orb-dev": { url: "https://orb-dev.test" }, "orb-qa": { url: "https://orb-qa.test" }, e1: { url: "https://e1.test" } },
+    activeEnv: "orb-dev",
   });
   ff = fakeFetch([
     {
@@ -60,10 +60,10 @@ const fakeMethod = (tag: string) => ({ uuid: tag, sourceVersion: "v1" }) as any;
 
 describe("AD method cache", () => {
   test("is env-scoped (AD-04 / F4)", async () => {
-    await CacheManager.save("aaaa", fakeMethod("dev-body"), "nsm-dev");
-    expect((await CacheManager.load("aaaa", "nsm-dev"))?.uuid).toBe("dev-body");
-    expect(await CacheManager.load("aaaa", "nsm-qa")).toBeNull();
-    expect(existsSync(join(tmp, "cache", "methods", "nsm-dev", "aaaa.json"))).toBe(true);
+    await CacheManager.save("aaaa", fakeMethod("dev-body"), "orb-dev");
+    expect((await CacheManager.load("aaaa", "orb-dev"))?.uuid).toBe("dev-body");
+    expect(await CacheManager.load("aaaa", "orb-qa")).toBeNull();
+    expect(existsSync(join(tmp, "cache", "methods", "orb-dev", "aaaa.json"))).toBe(true);
   });
 
   test("padded / upper-case uuids map to one trimmed lower-case file", async () => {
@@ -73,14 +73,14 @@ describe("AD method cache", () => {
   });
 
   test("dir follows the active env", () => {
-    core.Config.setActiveEnv("nsm-qa");
-    expect(CacheManager.dir).toBe(join(tmp, "cache", "methods", "nsm-qa"));
-    core.Config.setActiveEnv("nsm-dev");
-    expect(CacheManager.dir).toBe(join(tmp, "cache", "methods", "nsm-dev"));
+    core.Config.setActiveEnv("orb-qa");
+    expect(CacheManager.dir).toBe(join(tmp, "cache", "methods", "orb-qa"));
+    core.Config.setActiveEnv("orb-dev");
+    expect(CacheManager.dir).toBe(join(tmp, "cache", "methods", "orb-dev"));
   });
 
   test("adApi.publishDraft invalidates touched uuids (AD-06)", async () => {
-    core.Config.setActiveEnv("nsm-dev");
+    core.Config.setActiveEnv("orb-dev");
     for (const id of ["draft1", "pub1"]) await CacheManager.save(id, fakeMethod(id));
     await adApi.publishDraft("draft1");
     expect(calls).toContain("publish:draft1");
@@ -91,19 +91,19 @@ describe("AD method cache", () => {
 
 describe("AD definition cache (hydrator)", () => {
   test("numeric automationId hits the cache (F5) and is env-scoped (AD-05)", async () => {
-    core.Config.setActiveEnv("nsm-dev");
+    core.Config.setActiveEnv("orb-dev");
     calls.length = 0;
     await ServiceHydrator.getDefinition(590 as unknown as string);
     await ServiceHydrator.getDefinition(590 as unknown as string);
     expect(calls).toEqual(["def:590"]); // second call served from cache
-    core.Config.setActiveEnv("nsm-qa");
+    core.Config.setActiveEnv("orb-qa");
     await ServiceHydrator.getDefinition("590");
     expect(calls).toEqual(["def:590", "def:590"]); // other env → miss
-    core.Config.setActiveEnv("nsm-dev");
+    core.Config.setActiveEnv("orb-dev");
   });
 
   test("hyphenated ids are not cached forever (AD-05)", async () => {
-    const file = join(tmp, "cache", "definitions", "nsm-dev", "a-b.json");
+    const file = join(tmp, "cache", "definitions", "orb-dev", "a-b.json");
     await Bun.write(file, JSON.stringify({ savedAt: Date.now() - 2 * 60 * 60 * 1000, data: { automationAPI: {} } }));
     calls.length = 0;
     await ServiceHydrator.getDefinition("a-b");

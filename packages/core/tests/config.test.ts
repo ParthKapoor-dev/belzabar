@@ -288,24 +288,24 @@ describe("default env (D6 / CORE-26)", () => {
 describe("dotenv guard (CORE-28)", () => {
   test("trustedBelzEnv: BELZ_* only; values injected from a cwd .env are ignored", () => {
     const dir = scratchDir("dotenv-");
-    writeFileSync(join(dir, ".env"), "BELZ_ENV=nsm-qa\nBELZ_JENKINS_URL='https://evil.test'\nNSM_QA_URL=https://x\n");
+    writeFileSync(join(dir, ".env"), "BELZ_ENV=orb-qa\nBELZ_JENKINS_URL='https://evil.test'\nNSM_QA_URL=https://x\n");
     const env = {
-      BELZ_ENV: "nsm-qa", // same as .env → injected
+      BELZ_ENV: "orb-qa", // same as .env → injected
       BELZ_JENKINS_URL: "https://evil.test", // same (quotes stripped) → injected
       BELZ_HTTP_TIMEOUT_MS: "5000", // not in .env → trusted
-      NSM_QA_URL: "https://x", // not BELZ_* → never read
+      ORB_QA_URL: "https://x", // not BELZ_* → never read
     };
     expect(trustedBelzEnv(env, dir)).toEqual({ BELZ_HTTP_TIMEOUT_MS: "5000" });
     // an explicitly exported value that differs from the file wins
-    expect(trustedBelzEnv({ BELZ_ENV: "sems-dev" }, dir)).toEqual({ BELZ_ENV: "sems-dev" });
+    expect(trustedBelzEnv({ BELZ_ENV: "acme-dev" }, dir)).toEqual({ BELZ_ENV: "acme-dev" });
   });
 
   test("CORE-R14: withoutDotenvInjected drops any cwd-.env value (not just BELZ_*), reports the keys", () => {
     const dir = scratchDir("dotenv-any-");
-    writeFileSync(join(dir, ".env"), "NSM_DEV_PASSWORD=evil\nBELZ_SRC_DIR=/tmp/evil\n");
-    const r = withoutDotenvInjected({ NSM_DEV_PASSWORD: "evil", BELZ_SRC_DIR: "/tmp/evil", NSM_QA_USER: "me" }, dir);
-    expect(r.values).toEqual({ NSM_QA_USER: "me" });
-    expect(r.dropped).toEqual(["BELZ_SRC_DIR", "NSM_DEV_PASSWORD"]);
+    writeFileSync(join(dir, ".env"), "ORB_DEV_PASSWORD=evil\nBELZ_SRC_DIR=/tmp/evil\n");
+    const r = withoutDotenvInjected({ ORB_DEV_PASSWORD: "evil", BELZ_SRC_DIR: "/tmp/evil", ORB_QA_USER: "me" }, dir);
+    expect(r.values).toEqual({ ORB_QA_USER: "me" });
+    expect(r.dropped).toEqual(["BELZ_SRC_DIR", "ORB_DEV_PASSWORD"]);
   });
 
   test("CORE-R14: a cwd .env BELZ_SRC_DIR does not pick the source dir for `belz update`", () => {

@@ -1,6 +1,6 @@
 // CLI trial tr2: `ad test-case run-suite` gave no way to observe completion and
 // `ad test-report` answered all zeros (read as "nothing happened").
-// Live sems-dev 2026-09-29 (belz_tst_fixt2_idx, one passing + one failing case):
+// Live acme-dev 2026-09-29 (belz_tst_fixt2_idx, one passing + one failing case):
 // /testsuite/execute returns at once ("you will receive an email"), the report
 // route stays {testsCompleted:0, testsRemaining:0, results:null}, and the
 // suite's executionStatus stays PASS with a failing assertion. So:

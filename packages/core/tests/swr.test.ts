@@ -10,12 +10,12 @@ afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 describe("buildRefreshCommand (CORE-4 / AD-07)", () => {
   test("dev shape: re-runs bun with the script path", () => {
     const cmd = buildRefreshCommand(
-      ["/usr/bin/bun", "/repo/cli/bin/cli.ts", "ad", "show", "X", "--env", "sems-dev"],
+      ["/usr/bin/bun", "/repo/cli/bin/cli.ts", "ad", "show", "X", "--env", "acme-dev"],
       "/usr/bin/bun",
     );
     expect(cmd).toEqual({
       bin: "/usr/bin/bun",
-      args: ["/repo/cli/bin/cli.ts", "ad", "show", "X", "--env", "sems-dev", "--force"],
+      args: ["/repo/cli/bin/cli.ts", "ad", "show", "X", "--env", "acme-dev", "--force"],
     });
   });
 

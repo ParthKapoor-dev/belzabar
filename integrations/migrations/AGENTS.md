@@ -14,7 +14,7 @@ REST client lives in `integrations/jenkins` (`@belzabar/jenkins`); `lib/index.ts
 | `belz migrate logs <n>` | read | ANSI-stripped console of a build |
 
 `migrate run` flags (see `commands/run/help.txt`): `--module`/`--module-name`, `--module-custom`,
-`--client`, `--profile`, `--source-env`/`--target-env` (derive the profile from an NCDNS env pair),
+`--client`, `--profile`, `--source-env`/`--target-env` (derive the profile from an env pair via `jenkins.profileEnvs`),
 `--ids`/`--ids-file` (exclusive), `--migration-id`, `--async Y|N`, `--migrate-dependents Y|N`,
 `--devops-tag`, `--out <dir>`, `--dry-run`, `--no-auto-approve`, `--quiet`, `--no-follow`, `--yes`/`-y`.
 

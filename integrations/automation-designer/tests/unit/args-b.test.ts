@@ -139,8 +139,8 @@ describe("other commands", () => {
   });
   test("trace --spine: no hard-coded default (the active env is used, AD-25); --envs splits", () => {
     expect(parse(traceCmd, ["u"]).spineEnv).toBeUndefined();
-    expect(parse(traceCmd, ["u", "--spine", "sems-dev"]).spineEnv).toBe("sems-dev");
-    expect(parse(traceCmd, ["u", "--envs", "sems-qa, sems-uat"]).envs).toEqual(["sems-qa", "sems-uat"]);
+    expect(parse(traceCmd, ["u", "--spine", "acme-dev"]).spineEnv).toBe("acme-dev");
+    expect(parse(traceCmd, ["u", "--envs", "acme-qa, acme-uat"]).envs).toEqual(["acme-qa", "acme-uat"]);
   });
   test("state rejects unknown flags", () => {
     expect(code(() => parse(stateCmd, ["u", "--bogus"]))).toBe("UNKNOWN_FLAG");

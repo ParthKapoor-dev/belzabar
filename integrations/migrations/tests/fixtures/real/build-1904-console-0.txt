@@ -1,5 +1,5 @@
 Started by user user-du8c
-Obtained wis.jenkins/deployments/expertly/database/expertly.db-migration/Jenkinsfile from git ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/infra.wis
+Obtained corp.jenkins/deployments/expertly/database/expertly.db-migration/Jenkinsfile from git ssh://git-codecommit.us-east-2.amazonaws.example/v1/repos/infra.corp
 [8mha:////4Nkf/lP8TTgj7U2gYYSVqMYNtapVG4t5cPyYgJ/fMX/oAAAAoh+LCAAAAAAAAP9tjTEOwjAQBM8BClpKHuFItIiK1krDC0x8GCfWnbEdkooX8TX+gCESFVvtrLSa5wtWKcKBo5UdUu8otU4GP9jS5Mixv3geZcdn2TIl9igbHBs2eJyx4YwwR1SwULBGaj0nRzbDRnX6rmuvydanHMu2V1A5c4MHCFXMWcf8hSnC9jqYxPTz/BXAFEIGsfuclm8zQVqFvQAAAA==[0m[Pipeline] Start of Pipeline
 [8mha:////4H3qa44dfM4pIFcNPogr+m2MSk8/M3JScfGOq3sUPQpqAAAApR+LCAAAAAAAAP9tjTEOwjAUQ3+KOrAycohUghExsUZZOEFIQkgb/d8mKe3EibgadyBQiQlLlmxL1nu+oE4RjhQdby12HpP2vA+jK4lPFLtroIm3dOGaMFGwXNpJkrGnpUrKFhaxClYC1hZ1oOTRZdiIVt1VExS65pxj2Q4CKm8GeAAThZxVzN8yR9jeRpMIf5y/AJj7DGxXvP/86jduZBmjwAAAAA==[0m[Pipeline] node
 Running on [8mha:////4CVa9ATA3lrCiH1R0uuGUDr6W7HbkrX3Z7Nkm+Yb7U8yAAAAoR+LCAAAAAAAAP9b85aBtbiIQTGjNKU4P08vOT+vOD8nVc83PyU1x6OyILUoJzMv2y+/JJUBAhiZGBgqihhk0NSjKDWzXb3RdlLBUSYGJk8GtpzUvPSSDB8G5tKinBIGIZ+sxLJE/ZzEvHT94JKizLx0a6BxUmjGOUNodHsLgAz2EgZR/eT83ILSktQifY2k0sycEt3MPE19AHHxbH3KAAAA[0mJenkins in /var/lib/jenkins/workspace/Deployments/Expertly/Database/expertly.db-migration
@@ -15,8 +15,8 @@ Running on [8mha:////4CVa9ATA3lrCiH1R0uuGUDr6W7HbkrX3Z7Nkm+Yb7U8yAAAAoR+LCAAAAA
 ============================================
   DB MIGRATION TOOL
 ============================================
-  Client:           SEMS
-  Profile:          devsems_qasems
+  Client:           ACME
+  Profile:          devacme_qaacme
   Operation:        AD_Method
   IDs:              1 item(s)
   Async:            N
@@ -38,7 +38,7 @@ Running on [8mha:////4CVa9ATA3lrCiH1R0uuGUDr6W7HbkrX3Z7Nkm+Yb7U8yAAAAoR+LCAAAAA
 + cd /var/lib/jenkins/workspace/Deployments/Expertly/Database/expertly.db-migration
 + [ -d .git ]
 + rm -rf /var/lib/jenkins/workspace/Deployments/Expertly/Database/expertly.db-migration/*
-+ git clone --depth=1 --branch develop --single-branch ssh://git-codecommit.us-east-2.amazonaws.com/v1/repos/infra.expertly /var/lib/jenkins/workspace/Deployments/Expertly/Database/expertly.db-migration
++ git clone --depth=1 --branch develop --single-branch ssh://git-codecommit.us-east-2.amazonaws.example/v1/repos/infra.expertly /var/lib/jenkins/workspace/Deployments/Expertly/Database/expertly.db-migration
 [8mha:////4EXNjr5bNem24Oz/HolSwZLtzOtsXzYVQOHMgfP1cHQIAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOKi0CFEldZKwwtMbIwT687YDknFi/gaf8AiEhVbrHa2mdcb1jHAiYPBXtNgKXYWvRtNXjhxGK6OJ+z5gh1TZKex1VPLSjcLtpw0LClKWAnYaOocR0smwVb08iErJ8lU5xTydxRQWnWHJxQim5MM6QtzgN1tVJHp5/krgNknKOtDrn3tP1ih7y++AAAA[0m[Pipeline] echo
 Checked out infra.expertly @ develop
 [8mha:////4BEeV7cHe6XLbrT/mYZmKx8eVIKY0q5ogOcABcyjBX8nAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPMIR6RCiSmul4QUmPowT687YDknFi/gaf8AiEhVbrHa2mdcb1jHAiYMRPdJgKXZWeDeavMTEYbg6nkTPF9ExRXYoWpxa1tgs2HJCWFKUsJKwQeocR0smwVb26qEqp8hU5xTyd5RQWn2HJxQym5MK6QtzgN1t1JHp5/krgNn7BGVd59ofPoukFhO+AAAA[0m[Pipeline] }
@@ -60,19 +60,19 @@ Running in /var/lib/jenkins/workspace/Deployments/Expertly/Database/expertly.db-
 [8mha:////4IF+Hg+dXcbqaX2wqO9p6FeGoWFc9CMm1hvGWd0b3ZElAAAApB+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOJSIGgQVVrLDS8wsTFOrDtjOyQVL+Jr/IFAJCq2WO1sM88XLFOEI0eLraHOUWocBt/baeHAsbt4HrDlMzZMib1BaQbJ2tQzSs4G5hQlLASsDDWekyObYS1adVeVV2SrU47TdxBQOn2DBxRiMmcV8xfGCJtrrxPTz/NXAGPIUG53n9qHN6Ew6eS+AAAA[0m[Pipeline] sh
 + mkdir -p logs
 [8mha:////4FH/eaalJaaMRi34Zu9uXHHkLUI6A+oRVxx2AysJMh6EAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOJSIESBqNJabniBiY1xYt0Z2yGpeBFf4w8EIlGxxWpnm3m+YJkiHDlabA11jlLjMPjeTgsHjt3F84Atn7FhSuwNSjNI1qaeUXI2MKcoYSFgZajxnBzZDGvRqruqvCJbnXKcvoOA0ukbPKAQkzmrmL8wRthce52Yfp6/AhhDhnK7+9Q+vAHgAfL9vgAAAA==[0m[Pipeline] echo
-Executing: python3 migration_script.py --profile_name 'devsems_qasems' --migrate 'AD_Method' --use_core_migration Y --interactive no --ids '4d075e621c93206fb95d84795fc05e00' --is_async_migration 'N' --migrate_dependent 'N'
+Executing: python3 migration_script.py --profile_name 'devacme_qaacme' --migrate 'AD_Method' --use_core_migration Y --interactive no --ids '4d075e621c93206fb95d84795fc05e00' --is_async_migration 'N' --migrate_dependent 'N'
 [8mha:////4PjY/2YbD6XHIy9ic2qryzptsfaBhFH3Dlisp3hgWiTsAAAAqB+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0QEhIiKlrlIUThCaEtNH/5SelnTgRV+MOtFRiwoNlW7Le6w1FZDgRO9FYbD3G2osu9G5KYiBur4EG0dBF1ISRghXKDoqMrZaqKFlYlOWwkrC2WAeKHl2CjWz0Q5dBoyvPiaftKCH35g5PyORETprTt4wM21tvIuGP8xcAY5cg3+1nO8zP4gM900zxwgAAAA==[0m[Pipeline] timeout
 Timeout set to expire in 1 hr 0 min
 [8mha:////4BW0serB4cu/z42VQHII/Mb9EQXRl3LSJdZTiME6yN5VAAAApx+LCAAAAAAAAP9tjTEOwjAUQ3+LOrAycoh0YAEhpq5RFk4QmhDSRv+Xn5R24kRcjTvQUokJD5ZtyXqvNxSR4UTsRGOx9RhrL7rQuymJgbi9BhpEQxdRE0YKVig7KDK2WqqiZGFRlsNKwtpiHSh6dAk2stEPXQaNrjwnnrajhNybOzwhkxM5aU7fMjJsb72JhD/OXwCMXYJ8t5/tMD+LD59NhPHCAAAA[0m[Pipeline] {
 [8mha:////4EEbjVtW3SZ9vwNFa+BkKboqIWpOKaYTj3p2b3DlLXOSAAAApR+LCAAAAAAAAP9tjTEOwjAQBC9BFLSUPOKCBA1CqWgtN7zAJMY4se6C7eBUvIiv8QcsIlGxxWpnm3m9YRk81OwNdpp6S6GxOLjR5IWJfX91nLDjCzZMgZ1GqZPkVp9mlBw1zClKWAhYaWocB0smwlp06qEqp8hU5+jzdxRQ2vYOTyhENkfl4xcmD5vb2Aamn+evAKYhQrk75Npvhw/W61xwvgAAAA==[0m[Pipeline] sh
-+ python3 migration_script.py --profile_name devsems_qasems --migrate AD_Method --use_core_migration Y --interactive no --ids 4d075e621c93206fb95d84795fc05e00 --is_async_migration N --migrate_dependent N
-[1m[95mProfile: devsems_qasems | Source: sems_ee4 | Target: semsqa_ee1[0m
++ python3 migration_script.py --profile_name devacme_qaacme --migrate AD_Method --use_core_migration Y --interactive no --ids 4d075e621c93206fb95d84795fc05e00 --is_async_migration N --migrate_dependent N
+[1m[95mProfile: devacme_qaacme | Source: acme_ee4 | Target: acmeqa_ee1[0m
 [94md3811d1f-0b74-445c-b60a-197a12387137 => AD_Method :: Starting migration (1 items, async=N)[0m
 [94md3811d1f-0b74-445c-b60a-197a12387137 => AD_Method :: Executing core CRUD migration (1 items)...[0m
 [94md3811d1f-0b74-445c-b60a-197a12387137 => AD_Method :: core CRUD migration (1 items) completed successfully[0m
 [94md3811d1f-0b74-445c-b60a-197a12387137 => AD :: Starting migration (async=False, migrate_dependent=False)[0m
 [94md3811d1f-0b74-445c-b60a-197a12387137 => AD :: Migrating IDs: ['4d075e621c93206fb95d84795fc05e00'][0m
-[94md3811d1f-0b74-445c-b60a-197a12387137 => AD :: Source: sems-dev.qa.expertly.cloud => Target: sems-qa.qa.expertly.cloud[0m
+[94md3811d1f-0b74-445c-b60a-197a12387137 => AD :: Source: acme-dev.qa.expertly.example => Target: acme-qa.qa.expertly.example[0m
 [94md3811d1f-0b74-445c-b60a-197a12387137 => AD :: ['4d075e621c93206fb95d84795fc05e00'] => Migration completed synchronously[0m
 [1m[32md3811d1f-0b74-445c-b60a-197a12387137 => AD :: Migration completed in 0:00:24.400451 (migration_id: 5949418a-ba33-401b-9347-54c26f4f54aa)[0m
 [94md3811d1f-0b74-445c-b60a-197a12387137 => AD :: Generating comparison report (migration_id: 5949418a-ba33-401b-9347-54c26f4f54aa)[0m
@@ -110,8 +110,8 @@ Running in /var/lib/jenkins/workspace/Deployments/Expertly/Database/expertly.db-
 ============================================
   MIGRATION COMPLETED SUCCESSFULLY
 ============================================
-  Client:     SEMS
-  Profile:    devsems_qasems
+  Client:     ACME
+  Profile:    devacme_qaacme
   Operation:  AD_Method
   Build:      1904
 ============================================

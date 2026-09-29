@@ -17,15 +17,18 @@
 //   jenkins                    job parameters (profiles), latest finished build, console chunk
 //   resanitize <dir>           offline: re-run sanitize() over every *.json (sanitizeText over *.txt) under <dir> (rewrites only changed files)
 //
-// Safety: sems-dev only (Config.setActiveEnv("sems-dev")), GET only, and every
-// body goes through sanitize() before touching disk. Each fixture dir gets a
-// manifest.json: { file, source, env, capturedAt, endpoint, status, bytes }.
+// Safety: one env only — BELZ_CAPTURE_ENV (required for captures, never built
+// in) — GET only, and every body goes through sanitize() before touching disk.
+// Project/tenant/person names are replaced when BELZ_SCRUB_TERMS names the
+// local term list (see sanitize.ts rule 10). Each fixture dir gets a
+// manifest.json: { file, source, env, capturedAt, endpoint, status, bytes }
+// (sanitized too).
 
 import { mkdirSync, readdirSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join, resolve } from "path";
 import { apiFetch, Config } from "@belzabar/core";
-import { assertCaptureEnv, assertReadOnly, CAPTURE_ENV } from "./guard";
-import { sanitize, sanitizeText } from "./sanitize";
+import { assertCaptureEnv, assertReadOnly, captureEnv } from "./guard";
+import { loadScrubTerms, sanitize, sanitizeText } from "./sanitize";
 
 const ROOT = resolve(import.meta.dir, "../..");
 const AD_FIX = join(ROOT, "integrations/automation-designer/tests/fixtures");
@@ -33,9 +36,21 @@ const PD_FIX = join(ROOT, "integrations/page-designer/tests/fixtures/real");
 const TW_FIX = join(ROOT, "integrations/teamwork/tests/fixtures/real");
 const MG_FIX = join(ROOT, "integrations/migrations/tests/fixtures/real");
 
-assertCaptureEnv(CAPTURE_ENV);
-Config.setActiveEnv(CAPTURE_ENV);
-assertCaptureEnv(Config.activeEnv.name);
+if (loadScrubTerms().length === 0) {
+  console.warn("warning: BELZ_SCRUB_TERMS is not set — project/tenant names will not be replaced (see scripts/fixtures/sanitize.ts)");
+}
+
+/** Select the capture env (lazily: `resanitize` needs no env). */
+let captureReady = false;
+function useCaptureEnv(): string {
+  const env = captureEnv();
+  if (!captureReady) {
+    Config.setActiveEnv(env);
+    captureReady = true;
+  }
+  assertCaptureEnv(Config.activeEnv.name, env);
+  return env;
+}
 
 // ── HTTP (GET only) ─────────────────────────────────────────────────────────
 
@@ -43,7 +58,7 @@ interface Captured { status: number; contentType: string; text: string; headers:
 
 async function expertlyGet(path: string): Promise<Captured> {
   assertReadOnly("GET");
-  assertCaptureEnv(Config.activeEnv.name);
+  useCaptureEnv();
   const res = await apiFetch(path, { method: "GET", authMode: "Bearer" });
   return { status: res.status, contentType: res.headers.get("content-type") ?? "", text: await res.text(), headers: res.headers };
 }
@@ -69,7 +84,7 @@ function writeFixture(dir: string, file: string, body: unknown, entry: Omit<Mani
   const manifestPath = join(dir, "manifest.json");
   const manifest: ManifestEntry[] = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf8")) : [];
   const bytes = Buffer.byteLength(clean);
-  const next: ManifestEntry = { file, env: CAPTURE_ENV, capturedAt: new Date().toISOString(), bytes, ...entry };
+  const next: ManifestEntry = sanitize({ file, env: useCaptureEnv(), capturedAt: new Date().toISOString(), bytes, ...entry });
   const i = manifest.findIndex((m) => m.file === file);
   if (i >= 0) manifest[i] = next; else manifest.push(next);
   manifest.sort((a, b) => a.file.localeCompare(b.file));
@@ -151,7 +166,7 @@ async function adNotFound() {
   }
 }
 
-/** One arbitrary AD GET (still GET-only, sems-dev-only, sanitized) — for small targeted fixtures. */
+/** One arbitrary AD GET (still GET-only, capture-env-only, sanitized) — for small targeted fixtures. */
 async function adRaw(subdir: string, file: string, endpoint: string) {
   if (!subdir || !file || !endpoint.startsWith("/rest/api/")) throw new Error("usage: ad-raw <subdir> <file> </rest/api/...>");
   const c = await expertlyGet(endpoint);
@@ -251,7 +266,6 @@ function resanitize(dir: string) {
       e.isDirectory() ? walkDir(join(d, e.name)) : /\.(json|txt)$/.test(e.name) ? [join(d, e.name)] : [],
     );
   for (const f of walkDir(resolve(dir))) {
-    if (f.endsWith("manifest.json")) continue;
     const text = readFileSync(f, "utf8");
     if (f.endsWith(".txt")) {
       // Console logs etc. (CORE-R13: Jenkins "Started by user X").

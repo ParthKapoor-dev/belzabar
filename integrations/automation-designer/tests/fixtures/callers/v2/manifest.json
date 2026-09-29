@@ -1,7 +1,7 @@
 [
   {
     "file": "40b270670686c47215d2b6ab839b276d.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:48.090Z",
     "bytes": 2920,
     "source": {},
@@ -10,7 +10,7 @@
   },
   {
     "file": "427ab0da214a7b5160d1b71efbd8fac8.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:50.442Z",
     "bytes": 6430,
     "source": {},
@@ -19,7 +19,7 @@
   },
   {
     "file": "44103b20007389433f10ab8a923796f2.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:51.614Z",
     "bytes": 2496,
     "source": {},
@@ -28,7 +28,7 @@
   },
   {
     "file": "45cbe76761a83a2dd62ba3e598bd28c7.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:52.668Z",
     "bytes": 2678,
     "source": {},
@@ -37,7 +37,7 @@
   },
   {
     "file": "4673b4353e6125c1df468df4a18bd82b.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:46.805Z",
     "bytes": 8519,
     "source": {},
@@ -46,7 +46,7 @@
   },
   {
     "file": "48e5d8bec3f5d7b5d689914d3b36aed8.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:49.174Z",
     "bytes": 3906,
     "source": {},
@@ -55,7 +55,7 @@
   },
   {
     "file": "4bb045fb74d8106362a19e3a90971e27.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:58.478Z",
     "bytes": 4828,
     "source": {},
@@ -64,7 +64,7 @@
   },
   {
     "file": "4bd3eedb07e1db50ff59a4709366d025.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:45.480Z",
     "bytes": 3313,
     "source": {},
@@ -73,7 +73,7 @@
   },
   {
     "file": "4c0cf55cde14d78482ce9ddb929c66f8.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:55.532Z",
     "bytes": 5250,
     "source": {},
@@ -82,7 +82,7 @@
   },
   {
     "file": "4ee56d848a9d35bf810ca5237fca3563.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:57.649Z",
     "bytes": 4035,
     "source": {},
@@ -91,7 +91,7 @@
   },
   {
     "file": "4f56b756fdf5ab50fb8c8c632f241e2a.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-29T06:28:59.672Z",
     "bytes": 8239,
     "source": {},

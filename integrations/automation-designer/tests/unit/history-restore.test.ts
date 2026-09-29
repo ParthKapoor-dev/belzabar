@@ -1,5 +1,5 @@
 // `ad history` against the real history wire (fixtures/history, captured from
-// belz_tst_s4b_hist1 on sems-dev).
+// belz_tst_s4b_hist1 on acme-dev).
 //
 // F7: history.get is addressed by category + method name; `includeDraft:"true"`
 // returns the DRAFT chain's version N, otherwise the PUBLISHED chain's. `list`
@@ -98,7 +98,7 @@ describe("ad history show/list version mapping (F7)", () => {
     const listed = (list.envelope?.data as any).versions.find((v: any) => v.version === 3);
     expect((show.envelope?.data as any).versionUUID).toBe(listed.versionUUID);
     expect((show.envelope?.data as any).side).toBe("DRAFT");
-    expect(getCalls(f)).toEqual([{ serviceName: "Test-Parth", methodName: "belz_tst_s4b_hist1", version: "3", includeDraft: "true" }]);
+    expect(getCalls(f)).toEqual([{ serviceName: "Test-Tester", methodName: "belz_tst_s4b_hist1", version: "3", includeDraft: "true" }]);
   });
 
   test("show on a PUBLISHED uuid reads the published chain's history (no includeDraft)", async () => {
@@ -140,7 +140,7 @@ describe("ad history restore (AD-23)", () => {
     expect(d.uuid).toBe(DRAFT);
     expect(d.resultingVersion).toBe(4); // fixture: the draft after restoring v1
     expect(d.contentMatches).toBe(true); // v4 carries v1's code
-    expect(restoreCalls(f)[0]!.json()).toEqual({ serviceName: "Test-Parth", methodName: "belz_tst_s4b_hist1", version: "1", includeDraft: "true" });
+    expect(restoreCalls(f)[0]!.json()).toEqual({ serviceName: "Test-Tester", methodName: "belz_tst_s4b_hist1", version: "1", includeDraft: "true" });
   });
 
   test("a PUBLISHED uuid is refused before any write (versions are per chain)", async () => {
@@ -209,13 +209,13 @@ describe("ad history restore (AD-23)", () => {
   });
 
   test("ADW-R8 regression: a real V2 GET vs its own history body (GET-only fieldCode, service spelling) -> success", async () => {
-    // Real sems-dev 4bfc83c7: the V2 GET spells the category "Schools-Utilities"
+    // Real acme-dev 4bfc83c7: the V2 GET spells the category "Schools-Utilities"
     // and adds method-output fieldCode; the history body of the same version
     // says "Schools - Utilities" and has no fieldCode.
     const XF = join(import.meta.dir, "../fixtures");
     const read = (f: string) => JSON.parse(readFileSync(join(XF, f), "utf8"));
     wire({
-      draftHistV1: { ...read("cross-env/4bfc83c7fc3da12d7e639ee88a40ff27.sems-dev.history-v3.json"), methodID: DRAFT, isPublished: false },
+      draftHistV1: { ...read("cross-env/4bfc83c7fc3da12d7e639ee88a40ff27.acme-dev.history-v3.json"), methodID: DRAFT, isPublished: false },
       draftV2: read("real-v2/4bfc83c7fc3da12d7e639ee88a40ff27.v2.json"),
     });
     const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });

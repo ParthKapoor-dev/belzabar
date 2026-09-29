@@ -7,12 +7,12 @@
         {
           "_class": "hudson.model.StringParameterValue",
           "name": "CLIENT",
-          "value": "SEMS"
+          "value": "ACME"
         },
         {
           "_class": "hudson.model.StringParameterValue",
           "name": "PROFILE_NAME",
-          "value": "devsems_qasems"
+          "value": "devacme_qaacme"
         },
         {
           "_class": "hudson.model.StringParameterValue",

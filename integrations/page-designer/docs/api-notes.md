@@ -6,7 +6,7 @@ have verified live, and how the PD module is structured inside belz.
 
 ---
 
-## Verified endpoints (nsm-dev probed during planning)
+## Verified endpoints (probed live during planning)
 
 All paths are relative to `/rest/api/pagedesigner`. Auth: `Authorization: Bearer {token}`.
 
@@ -16,8 +16,8 @@ All paths are relative to `/rest/api/pagedesigner`. Auth: `Authorization: Bearer
 |---|---|---|---|
 | GET | `/pages/{id}` | Full page body. `configuration` is a stringified JSON. | Used today. |
 | GET | `/pages?status=DRAFT|PUBLISHED&pageType=PAGE|COMPONENT&name=...` | List/search pages. | Used today. |
-| GET | `/pages/history?pageId={id}` | **Version history** — returns array of `{id (=versionId), pageId, status, partialUpdate, updatedAt, updatedBy, userName}`. **Observed behavior**: entries are only recorded for PUBLISHED-status pages. Pure DRAFT pages (no published sibling) return `[]` even after multiple saves (belz confirmed via live `save` that bumped versionId but produced 0 history entries). A page gets history once it has been published at least once; thereafter both the draft AND published variants may accumulate entries (all entries tagged `status: "PUBLISHED"` in the snapshots we've seen). | **Live-verified**: 538 entries on published `NCDMV NSM`; 0 entries on fresh draft even after belz-driven save. |
-| GET | `/pages/version/{versionId}` | Full page body at a specific version: `id` = the OWNING page (the published row), `referenceId` = its draft. Version ids are global — check ownership. | **Live-verified** (sems-dev 2026-09-27). |
+| GET | `/pages/history?pageId={id}` | **Version history** — returns array of `{id (=versionId), pageId, status, partialUpdate, updatedAt, updatedBy, userName}`. **Observed behavior**: entries are only recorded for PUBLISHED-status pages. Pure DRAFT pages (no published sibling) return `[]` even after multiple saves (belz confirmed via live `save` that bumped versionId but produced 0 history entries). A page gets history once it has been published at least once; thereafter both the draft AND published variants may accumulate entries (all entries tagged `status: "PUBLISHED"` in the snapshots we've seen). | **Live-verified**: 538 entries on published `Acme Portal`; 0 entries on fresh draft even after belz-driven save. |
+| GET | `/pages/version/{versionId}` | Full page body at a specific version: `id` = the OWNING page (the published row), `referenceId` = its draft. Version ids are global — check ownership. | **Live-verified** (2026-09-27). |
 | GET | `/pages/{id}?version={versionId}` | Same as above, alternate form. | **Live-verified**. |
 | GET | `/pages/{id}?includeVersions=true` | Full body variant (observed in JS but not needed — prefer `/pages/version/`). | Verified 200. |
 | GET | `/deployable/pages?domain=&path=` | App-URL → reference page ID. | Used today. |
@@ -163,7 +163,7 @@ These are the classes of corruption belz must either prevent (validator rule) or
 
 ### Warnings (validator: `warn`)
 
-Calibrated against 15 real sems-dev pages (PD-5): these fire on live, working pages. The first
+Calibrated against 15 real pages (PD-5): these fire on live, working pages. The first
 four become errors when an edit INTRODUCES them (`validateEdit`, `ESCALATE_WHEN_INTRODUCED`).
 
 | Failure | belz rule code |
@@ -235,14 +235,14 @@ Backed by three server endpoints. belz exposes them as:
 
 **History is server-side.** belz does **not** maintain local snapshots.
 
-Empty history on a draft id is normal: history is recorded on the PUBLISHED row (sems-dev
-"Add Student": draft 0 versions, published 104). `history list` exits 0 with an empty array.
+Empty history on a draft id is normal: history is recorded on the PUBLISHED row (one
+live page: draft 0 versions, published 104). `history list` exits 0 with an empty array.
 
 ---
 
 ## Test page
 
-`https://nsm-dev.nc.verifi.dev/ui-designer/page/4f126300499e4d83cd07a35b4d9af9e7`
+`https://dev.example.test/ui-designer/page/4f126300499e4d83cd07a35b4d9af9e7`
 
 - ID: `4f126300499e4d83cd07a35b4d9af9e7`
 - Name: `dummy-testing`

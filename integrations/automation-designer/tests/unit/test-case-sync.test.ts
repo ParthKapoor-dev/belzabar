@@ -1,5 +1,5 @@
 // 7.7 / 7.13: test cases as git-friendly files, fetch-back verified writes,
-// export and sync — over the real sems-dev suite of belz_tst_s7c_t1
+// export and sync — over the real acme-dev suite of belz_tst_s7c_t1
 // (fixtures/test-cases/suite.json) and an in-memory fake of the suite store
 // that mimics the live server: PUT keeps name/description, DELETE is soft and
 // reserves the name, jsonb values come back re-spaced.
@@ -42,7 +42,7 @@ interface StoredCase {
 /** jsonb round-trip: the server re-serialises `{"value":"x"}` as `{"value": "x"}`. */
 const jsonb = (v: unknown) => (typeof v === "string" ? JSON.stringify(JSON.parse(v), null, 1).replace(/\n\s*/g, " ").replace(/\{ /g, "{").replace(/ \}/g, "}") : v);
 
-/** `initial: null` = a method with no suite yet: the suite GET answers 200 + EMPTY body (live sems-dev). */
+/** `initial: null` = a method with no suite yet: the suite GET answers 200 + EMPTY body (live acme-dev). */
 function fakeServer(initial: any = load("suite.json")) {
   let n = 0;
   const cases: StoredCase[] = (initial?.testCases ?? []).map((c: any) => ({ ...c, active: true }));
@@ -315,10 +315,10 @@ describe("test-case export / sync (7.13)", () => {
     const r = await run(["export", DRAFT, "--dir", root]);
     expect(r.envelope?.ok).toBe(true);
     const d = r.envelope?.data as any;
-    expect(d.methodDir).toBe(join(root, "Test-Parth", "belz_tst_s7c_t1"));
+    expect(d.methodDir).toBe(join(root, "Test-Tester", "belz_tst_s7c_t1"));
     expect(JSON.parse(readFileSync(join(d.methodDir, "method.json"), "utf8"))).toEqual({
       name: "belz_tst_s7c_t1",
-      category: "Test-Parth",
+      category: "Test-Tester",
       uuids: { [ENV]: DRAFT },
       inputs: { name: "STRING" },
       outputs: ["greetingOut"],

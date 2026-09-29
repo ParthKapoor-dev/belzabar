@@ -7,9 +7,9 @@ const command = (findCommandModule as { default?: typeof findCommandModule }).de
 const context: CommandContext = {
   outputMode: "human",
   env: {
-    name: "nsm-dev",
-    project: "NSM",
-    baseUrl: "https://nsm-dev.nc.verifi.dev",
+    name: "orb-dev",
+    project: "ORB",
+    baseUrl: "https://orb-dev.nc.vendor.example",
     credentials: {
       loginId: "",
       password: "",
@@ -133,7 +133,7 @@ describe("find index rebuild (F29, AD-10)", () => {
   test("reports progress per category and keeps chain-category id + trimmed uuids", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-find": { url: "https://t-find.test" } }, activeEnv: "t-find" });
     const cats = [
-      { id: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca    ", automationSystemUuid: "4037ada88a1a3ac30a1c9e63b6b0eed6    ", name: "Test-Parth" },
+      { id: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca    ", automationSystemUuid: "4037ada88a1a3ac30a1c9e63b6b0eed6    ", name: "Test-Tester" },
       { id: 15, uuid: "4c1eb487ee7f4be7c4bfb246809bce25", name: "Schools" },
       { id: 7, uuid: "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", name: "Other" },
     ];
@@ -144,7 +144,7 @@ describe("find index rebuild (F29, AD-10)", () => {
     const seen: Array<[number, number]> = [];
     const { index } = await loadOrBuildMethodFinderIndex({ refresh: true, onProgress: (p) => seen.push([p.done, p.total]) });
     expect(seen).toEqual([[1, 3], [2, 3], [3, 3]]);
-    const tp = index.categories.find((c) => c.name === "Test-Parth")!;
+    const tp = index.categories.find((c) => c.name === "Test-Tester")!;
     expect(tp).toMatchObject({ chainCategoryId: 1135, uuid: "4e98700b2524e2accd47b4addf95ceca", systemUuid: "4037ada88a1a3ac30a1c9e63b6b0eed6" });
     expect(ff.requests.filter((r) => r.url.includes("/automation/methods")).length).toBe(3);
   });

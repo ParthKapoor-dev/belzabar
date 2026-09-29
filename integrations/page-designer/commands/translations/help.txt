@@ -31,10 +31,10 @@ Flags:
   --status <PUBLISHED|DRAFT>  Dependency status to query (default: PUBLISHED).
   --force                     Bypass the config cache when resolving <input>.
   --llm                       Emit the JSON envelope.
-  --env <name>                Environment to resolve + query (default: defaultEnv, else nsm-dev).
+  --env <name>                Environment to resolve + query (default: BELZ_ENV, else defaultEnv, else the only env).
   --help, -h                  Show this help message.
 
 Examples:
-  belz pd translations 40d89f5f4b65e79c0856953d668ce67a --env nsm-prod
-  belz pd translations n_s_public_portal_login --env nsm-prod --llm
-  belz pd translations "LT 262 Details" --env nsm-prod --expect-draft 49b18fee5127213b8a60bf8c2ca93cc5
+  belz pd translations 40d89f5f4b65e79c0856953d668ce67a --env acme-prod
+  belz pd translations n_s_public_portal_login --env acme-prod --llm
+  belz pd translations "LT 262 Details" --env acme-prod --expect-draft 49b18fee5127213b8a60bf8c2ca93cc5

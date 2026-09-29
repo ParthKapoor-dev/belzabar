@@ -1,4 +1,4 @@
-// Smoke UX (Stage 9): every `ad sql` statement took ~5-6 s on sems-dev because
+// Smoke UX (Stage 9): every `ad sql` statement took ~5-6 s on acme-dev because
 // the executable-category lookup (~2 s) ran only after the operation contract
 // and the template had loaded. It now starts first, in parallel.
 import { afterEach, expect, test } from "bun:test";

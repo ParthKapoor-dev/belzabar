@@ -54,8 +54,8 @@
         "id": 216133,
         "type": "installations"
       },
-      "htmlBody": "<div> \n <span class=\"atwho-inserted\">@dhanwanp</span> As discussed please pick and complete this as per the discussion we did to fetch client info from env.json file \n</div>",
-      "body": "@dhanwanp As discussed please pick and complete this as per the discussion we did to fetch client info from env.json file ",
+      "htmlBody": "<div> \n <span class=\"atwho-inserted\">@devthree</span> As discussed please pick and complete this as per the discussion we did to fetch client info from env.json file \n</div>",
+      "body": "@devthree As discussed please pick and complete this as per the discussion we did to fetch client info from env.json file ",
       "postedByUserId": 218900,
       "postedBy": 218900,
       "postedDateTime": "2025-03-20T15:58:41Z",
@@ -124,7 +124,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": false,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_ace78233cd9fbe538a22cd3aacbfcc29.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/twia_ace78233cd9fbe538a22cd3aacbfcc29.png",
         "lengthOfDay": 8,
         "workingHoursId": 14357,
         "workingHour": {
@@ -167,7 +167,7 @@
         "isServiceAccount": false,
         "type": "account",
         "deleted": true,
-        "avatarUrl": "https://s3.amazonaws.com/TWFiles/216133/userAvatar/twia_f735316b66e66daf351ee863a96ffe37.png",
+        "avatarUrl": "https://s3.amazonaws.example/TWFiles/1/userAvatar/twia_f735316b66e66daf351ee863a96ffe37.png",
         "lengthOfDay": 8,
         "workingHoursId": 49554,
         "workingHour": {

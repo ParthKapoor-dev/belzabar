@@ -19,7 +19,7 @@ belz pd show <input> --http-detail 1      # the Nth HTTP call in full
 belz pd find "notice"                     # fuzzy search pages/components (7-day cached index)
 belz pd find-ad-methods <input> -r        # AD method ids used, following components
 belz pd page-deps <input>                 # page-dependencies summary
-belz pd diff <input> --from nsm-dev --to nsm-qa
+belz pd diff <input> --from dev --to qa
 belz pd history list <pageId>             # server version history
 ```
 
@@ -40,8 +40,8 @@ Writes need an explicit `--env`, and `--yes` in `--llm` or non-interactive mode.
 
 ```bash
 belz pd preflight <pageId> --overlay edit.json           # dry run: plan + validate, no write
-belz pd save <pageId> --overlay edit.json --env nsm-dev  # validated, locked save of the draft
-belz pd publish <pageId> --env nsm-dev
+belz pd save <pageId> --overlay edit.json --env dev  # validated, locked save of the draft
+belz pd publish <pageId> --env dev
 ```
 
 An overlay edits the draft's raw config, e.g. `{"nodes":{"update":[{"id":"<nodeId>","props":{…}}]}}`;

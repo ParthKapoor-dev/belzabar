@@ -1,4 +1,4 @@
-// Property tests over real sems-dev PD pages/components (Stage 1).
+// Property tests over real acme-dev PD pages/components (Stage 1).
 //
 // Fixtures: tests/fixtures/real/<id>.json — raw GET /rest/api/pagedesigner/pages/{id}
 // bodies, sanitized, captured by scripts/fixtures/capture.ts (see manifest.json).
@@ -40,7 +40,7 @@ describe("real PD fixtures", () => {
     const manifest = JSON.parse(readFileSync(`${DIR}/manifest.json`, "utf8")) as Array<{ file: string; env: string; endpoint: string }>;
     expect(manifest.map((m) => m.file).sort()).toEqual(files);
     for (const m of manifest) {
-      expect(m.env).toBe("sems-dev");
+      expect(m.env).toBe("acme-dev");
       expect(m.endpoint).toBe(`/rest/api/pagedesigner/pages/${m.file.replace(/\.json$/, "")}`);
     }
   });

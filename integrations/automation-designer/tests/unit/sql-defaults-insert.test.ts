@@ -1,6 +1,6 @@
 // AD-36 / F26: per-env default SQL database (`environments.<env>.sqlDefaultDb`).
 // F25: `sql insert … RETURNING` returns the generated values. Wire shapes
-// below are from live sems-dev probes on belz_tst_s4b_t1 (testing_db):
+// below are from live acme-dev probes on belz_tst_s4b_t1 (testing_db):
 //   single row + RETURNING id → outputs [{88: "1"}, {89: "6"}]
 //   multi row  + RETURNING id → step failed "…contains multiple keys: [{id=17}, {id=18}]"
 //                               (rows committed)
@@ -14,7 +14,7 @@ import { insertOutputIds, parseMultipleKeysError, parseSqlInsertResult } from ".
 import { resolveSqlDatabase } from "../../lib/sql/selector";
 import type { NormalizedSqlDatabase } from "../../lib/sql/types";
 
-// The insert operation's outputs as sems-dev serves them (trimmed).
+// The insert operation's outputs as acme-dev serves them (trimmed).
 const INSERT_OP = {
   id: 58,
   automationAPIOutputs: [
@@ -35,38 +35,38 @@ afterEach(() => {
 });
 
 function configWithSqlDefault(value: string | undefined) {
-  cfg = withTempEnvConfig({ envs: { "sems-x": { url: "https://s.test" }, "nsm-x": { url: "https://n.test" } }, activeEnv: "sems-x" });
+  cfg = withTempEnvConfig({ envs: { "acme-x": { url: "https://s.test" }, "orb-x": { url: "https://n.test" } }, activeEnv: "acme-x" });
   const json = JSON.parse(readFileSync(cfg.configPath, "utf8"));
-  if (value !== undefined) json.environments["sems-x"].sqlDefaultDb = value;
+  if (value !== undefined) json.environments["acme-x"].sqlDefaultDb = value;
   writeFileSync(cfg.configPath, JSON.stringify(json));
 }
 
 const dbs: NormalizedSqlDatabase[] = [
   { id: 215, nickname: "testing_db", source: null, host: null, port: null, authUsageType: null, derivedAuthType: null },
-  { id: 2, nickname: "BCPS-RDS", source: null, host: null, port: null, authUsageType: null, derivedAuthType: null },
+  { id: 2, nickname: "ZCPS-RDS", source: null, host: null, port: null, authUsageType: null, derivedAuthType: null },
 ];
 
 describe("per-env SQL default DB (AD-36 / F26)", () => {
   test("config environments.<env>.sqlDefaultDb wins over BELZ_SQL_DEFAULT_DB, per env", () => {
     configWithSqlDefault("testing_db");
-    process.env.BELZ_SQL_DEFAULT_DB = "BCPS-RDS";
-    expect(sqlDefaultDb("sems-x")).toEqual({ value: "testing_db", source: "config" });
-    expect(sqlDefaultDb("nsm-x")).toEqual({ value: "BCPS-RDS", source: "env" });
+    process.env.BELZ_SQL_DEFAULT_DB = "ZCPS-RDS";
+    expect(sqlDefaultDb("acme-x")).toEqual({ value: "testing_db", source: "config" });
+    expect(sqlDefaultDb("orb-x")).toEqual({ value: "ZCPS-RDS", source: "env" });
     delete process.env.BELZ_SQL_DEFAULT_DB;
-    expect(sqlDefaultDb("nsm-x")).toBeUndefined();
+    expect(sqlDefaultDb("orb-x")).toBeUndefined();
   });
 
   test("resolution reports selectedBy config; a missing configured db is an error, not a silent fallback", () => {
-    const r = resolveSqlDatabase(dbs, { envDefault: "testing_db", envDefaultSource: "config", fallbackNickname: "NSM_Read_DB" });
+    const r = resolveSqlDatabase(dbs, { envDefault: "testing_db", envDefaultSource: "config", fallbackNickname: "ORB_Read_DB" });
     expect(r.selectedBy).toBe("config");
     expect(r.selected.id).toBe(215);
-    expect(() => resolveSqlDatabase(dbs, { envDefault: "nope", envDefaultSource: "config", fallbackNickname: "NSM_Read_DB" })).toThrow(
+    expect(() => resolveSqlDatabase(dbs, { envDefault: "nope", envDefaultSource: "config", fallbackNickname: "ORB_Read_DB" })).toThrow(
       /sqlDefaultDb 'nope' not found/,
     );
   });
 
-  test("no default on a non-NSM env: the error names --db and the config key", () => {
-    expect(() => resolveSqlDatabase(dbs, { fallbackNickname: "NSM_Read_DB" })).toThrow(/sqlDefaultDb/);
+  test("no default on a non-ORB env: the error names --db and the config key", () => {
+    expect(() => resolveSqlDatabase(dbs, { fallbackNickname: "ORB_Read_DB" })).toThrow(/sqlDefaultDb/);
   });
 });
 

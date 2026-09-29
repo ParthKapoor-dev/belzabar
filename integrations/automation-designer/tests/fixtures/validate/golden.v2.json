@@ -14,8 +14,8 @@
     "service": {
       "id": 1135,
       "uuid": "4e98700b2524e2accd47b4addf95ceca",
-      "name": "Test-Parth",
-      "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+      "name": "Test-Tester",
+      "description": "Scratch category for ZCPS-596 build probes (Tester). Safe to delete.",
       "systemService": false
     },
     "categories": null,
@@ -337,7 +337,7 @@
       ],
       "accountConfiguration": {
         "id": 2,
-        "name": "BCPS-RDS"
+        "name": "ZCPS-RDS"
       },
       "properties": {
         "runAsync": false,

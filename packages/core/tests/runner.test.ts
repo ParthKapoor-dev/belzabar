@@ -65,22 +65,22 @@ describe("runner output flushing (CORE-1 / F1)", () => {
 
 describe("parseGlobalFlags (CORE-2 / F3)", () => {
   test("--env <name>", () => {
-    const r = parseGlobalFlags(["ad", "show", "x", "--env", "sems-dev"]);
-    expect(r.envName).toBe("sems-dev");
+    const r = parseGlobalFlags(["ad", "show", "x", "--env", "acme-dev"]);
+    expect(r.envName).toBe("acme-dev");
     expect(r.args).toEqual(["ad", "show", "x"]);
     expect(r.error).toBeNull();
   });
 
   test("--env=<name>", () => {
-    const r = parseGlobalFlags(["ad", "show", "x", "--env=sems-dev", "--llm"]);
-    expect(r.envName).toBe("sems-dev");
+    const r = parseGlobalFlags(["ad", "show", "x", "--env=acme-dev", "--llm"]);
+    expect(r.envName).toBe("acme-dev");
     expect(r.outputMode).toBe("llm");
     expect(r.args).toEqual(["ad", "show", "x"]);
   });
 
   test("-e <name>", () => {
-    const r = parseGlobalFlags(["-e", "nsm-qa", "envs"]);
-    expect(r.envName).toBe("nsm-qa");
+    const r = parseGlobalFlags(["-e", "orb-qa", "envs"]);
+    expect(r.envName).toBe("orb-qa");
     expect(r.args).toEqual(["envs"]);
   });
 
@@ -97,7 +97,7 @@ describe("parseGlobalFlags (CORE-2 / F3)", () => {
   });
 
   test("conflicting --env is INVALID_ARGS", () => {
-    const r = parseGlobalFlags(["envs", "--env", "nsm-dev", "--env=sems-dev"]);
+    const r = parseGlobalFlags(["envs", "--env", "orb-dev", "--env=acme-dev"]);
     expect(r.error?.code).toBe("INVALID_ARGS");
     expect(r.error?.message.toLowerCase()).toContain("conflicting");
     expect(r.error?.message).not.toMatch(/^Error:/);

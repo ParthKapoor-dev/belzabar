@@ -1,6 +1,6 @@
 # Belzabar
 
-Developer toolset for engineers working on the **Expertly** low-code platform (NSM, SEMS, …).
+Developer toolset for engineers working on the **Expertly** low-code platform.
 It ships **`belz`** — one CLI for Automation Designer (AD) methods, Page Designer (PD) pages,
 Teamwork tickets, Jenkins DB migrations and release tracking. Every command has a
 human view and a structured `--llm` JSON envelope for scripts and AI agents.
@@ -82,9 +82,9 @@ boilerplate. `belz ad save --help` documents the overlay keys (`parsedSteps[]` l
 belz ad validate <uuid>                                  # validator L1–L3 (add --online for L4)
 belz ad lint <uuid>                                      # validator + SQL and anti-pattern review
 belz ad save edit.json --uuid <uuid> --dry-run           # plan + validate, write nothing
-belz ad save edit.json --uuid <uuid> --env sems-dev      # save to the draft (confirms first)
-belz ad save --uuid <uuid> --sql-file 3=step3.sql --env sems-dev   # replace one step's SQL
-belz ad publish <uuid> --note "TW-1234: fix totals" --env sems-dev
+belz ad save edit.json --uuid <uuid> --env dev      # save to the draft (confirms first)
+belz ad save --uuid <uuid> --sql-file 3=step3.sql --env dev   # replace one step's SQL
+belz ad publish <uuid> --note "TW-1234: fix totals" --env dev
 ```
 
 Save refuses to overwrite a draft someone changed since it was read, re-reads the draft
@@ -94,12 +94,12 @@ afterwards to verify every change landed, and evicts the server's compiled cache
 ### Test an AD method
 
 ```bash
-belz ad test <uuid> --env sems-dev --inputs inputs.json --expect total=42
-belz ad test <uuid> --env sems-dev --inputs inputs.json --compare-published
+belz ad test <uuid> --env dev --inputs inputs.json --expect total=42
+belz ad test <uuid> --env dev --inputs inputs.json --compare-published
 belz ad test-case list <uuid>
-belz ad test-case create <uuid> --name smoke --input id=1 --assert status=OK --env sems-dev
+belz ad test-case create <uuid> --name smoke --input id=1 --assert status=OK --env dev
 belz ad test-case export <uuid> --dir ./tests      # git-friendly case files
-belz ad test-case sync ./tests/<Category>/<method> --apply --env sems-dev
+belz ad test-case sync ./tests/<Category>/<method> --apply --env dev
 belz ad sql run "select 1"                          # read-only SQL (writes: `sql update`/`insert`)
 belz ad sql explain "select …" --analyze
 ```
@@ -176,7 +176,7 @@ bun apps/cli/bin/cli.ts ad show <uuid>     # run from source, no build
 bun run belz:build                         # compile the binary into apps/cli
 bun run check                              # typecheck + docs:check + all tests (run before committing)
 bun test integrations/automation-designer  # one module
-BELZ_LIVE=sems-dev bun test apps/cli/tests/live   # opt-in live suite (read-only)
+BELZ_LIVE=<env> bun test apps/cli/tests/live    # opt-in live suite (read-only)
 ```
 
 Adding a command: see "Adding a Command" in `AGENTS.md`. Never commit secrets:

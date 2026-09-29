@@ -1,5 +1,5 @@
 // lib/validate — diff-aware severity, strict mode, overlay paths, the
-// calibration over the 36 real sems-dev bodies, and the §4 catalogue map.
+// calibration over the 36 real acme-dev bodies, and the §4 catalogue map.
 
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "fs";
@@ -7,7 +7,7 @@ import { RULES, alignSteps, auditExistingRecord, validateMethodV2 } from "../../
 import { CASES, caseBody, golden, mutate, realV2 } from "./validate-fixtures";
 
 const PAIRS_DIR = `${import.meta.dir}/../fixtures/draft-published`;
-/** The 8 real sems-dev draft/published pairs (their step ids all differ). */
+/** The 8 real acme-dev draft/published pairs (their step ids all differ). */
 function draftPublishedPairs(): Array<{ name: string; draft: any; published: any }> {
   const read = (f: string) => JSON.parse(readFileSync(`${PAIRS_DIR}/${f}`, "utf8"));
   return readdirSync(PAIRS_DIR)
@@ -151,7 +151,7 @@ describe("diff-aware", () => {
   });
 });
 
-describe("calibration: 36 real sems-dev V2 bodies", () => {
+describe("calibration: 36 real acme-dev V2 bodies", () => {
   const bodies = realV2();
   test("36 fixtures", () => expect(bodies.length).toBe(36));
 
@@ -248,7 +248,7 @@ const CATALOGUE_4: Array<[string, string]> = [
   // 4.2 accepted and broken afterwards
   ["serializer re-encodes plain CC code", "N/A here: L0 round-trip invariant in the save pipeline (5A)"],
   ["overlay fields not persisted", "N/A here: L0 effect check in the save pipeline (5A)"],
-  ["overlay sql/expression no-op on sems-dev", "N/A here: L0 effect check (5A); classification by service identity (4A)"],
+  ["overlay sql/expression no-op on acme-dev", "N/A here: L0 effect check (5A); classification by service identity (4A)"],
   ["method output with no key", "OK1"],
   ["method output nothing writes", "M3"],
   ["input renamed while steps use #{name}", "AD-REF-001"],

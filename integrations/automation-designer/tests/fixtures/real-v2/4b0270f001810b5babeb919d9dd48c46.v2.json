@@ -149,7 +149,7 @@
       ],
       "accountConfiguration": {
         "id": 149,
-        "name": "BCPS-RDS-READ-DB"
+        "name": "ZCPS-RDS-READ-DB"
       },
       "properties": {
         "runAsync": false,
@@ -380,7 +380,7 @@
       ],
       "accountConfiguration": {
         "id": 2,
-        "name": "BCPS-RDS"
+        "name": "ZCPS-RDS"
       },
       "properties": {
         "runAsync": false,

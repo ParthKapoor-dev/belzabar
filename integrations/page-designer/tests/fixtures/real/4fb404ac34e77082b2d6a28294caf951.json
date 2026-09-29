@@ -18,7 +18,7 @@
     {
       "hostId": 22,
       "themeFileId": 0,
-      "themeFileLink": "https://sems-dev.qa.expertly.cloud/static/22/prod-parent-css-host-22.css.css?v=f168d5207954f7e4f74b990d878179bf",
+      "themeFileLink": "https://acme-dev.qa.expertly.example/static/22/prod-parent-css-host-22.css.css?v=f168d5207954f7e4f74b990d878179bf",
       "themeName": null,
       "themeFileContent": null,
       "etag": null,
@@ -27,7 +27,7 @@
     {
       "hostId": 99,
       "themeFileId": 0,
-      "themeFileLink": "https://sems-dev.qa.expertly.cloud/static/99/prod-admin-host-99.css.css?v=73a7860a756731d2542fe65434f5c7fc",
+      "themeFileLink": "https://acme-dev.qa.expertly.example/static/99/prod-admin-host-99.css.css?v=73a7860a756731d2542fe65434f5c7fc",
       "themeName": null,
       "themeFileContent": null,
       "etag": null,

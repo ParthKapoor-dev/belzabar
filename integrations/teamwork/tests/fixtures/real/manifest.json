@@ -1,7 +1,7 @@
 [
   {
     "file": "task-25085246-comments-p1.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:19:29.656Z",
     "bytes": 5487,
     "source": {
@@ -14,7 +14,7 @@
   },
   {
     "file": "task-25085246-comments-p2.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:19:29.986Z",
     "bytes": 5365,
     "source": {
@@ -27,7 +27,7 @@
   },
   {
     "file": "task-25085246.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:19:29.360Z",
     "bytes": 13657,
     "source": {
@@ -38,7 +38,7 @@
   },
   {
     "file": "task-25807610-comments-p1.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:29.426Z",
     "bytes": 8594,
     "source": {
@@ -51,7 +51,7 @@
   },
   {
     "file": "task-25807610.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:18:29.127Z",
     "bytes": 14453,
     "source": {

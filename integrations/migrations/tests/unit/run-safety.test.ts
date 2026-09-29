@@ -12,7 +12,7 @@ const runCmd = { ...runCmdModule, envAware: false };
 const profilesCmd = { ...profilesCmdModule, envAware: false };
 
 /** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */
-const PROFILE_ENVS = { devsems: "sems-dev", qasems: "sems-qa", stagesems: "sems-stage", qays: "ys-qa", stageys: "ys-stage", qancdns: "nsm-qa", stgncdns: "nsm-stage" };
+const PROFILE_ENVS = { devacme: "acme-dev", qaacme: "acme-qa", stageacme: "acme-stage", qagm: "gm-qa", stagegm: "gm-stage", qabravo: "orb-qa", stgbravo: "orb-stage" };
 
 let cfg: TempEnvConfig | null = null;
 let ff: FakeFetch | null = null;
@@ -38,25 +38,25 @@ async function code(p: Promise<unknown>): Promise<string> {
 }
 
 describe("OTH-R22/R27: AD pre-flight", () => {
-  function semsDev() {
-    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
+  function acmeDev() {
+    cfg = withTempEnvConfig({ envs: { "acme-dev": { url: "https://acme-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
   }
-  const resolve = (id: string) => resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: [id] });
+  const resolve = (id: string) => resolveMigrationTargets({ profile: "devacme_qaacme", migrateType: "AD_Method", ids: [id] });
 
-  test("unknown uuid: 200 with an empty body → MIGRATE_TARGET_NOT_FOUND (real sems-dev shape)", async () => {
-    semsDev();
+  test("unknown uuid: 200 with an empty body → MIGRATE_TARGET_NOT_FOUND (real acme-dev shape)", async () => {
+    acmeDev();
     ff = fakeFetch([{ url: /chain\//, response: respond({ status: 200, text: "" }) }]).install();
     expect(await code(resolve(UUID))).toBe("MIGRATE_TARGET_NOT_FOUND");
   });
 
   test("unknown uuid: 200 with `null` → MIGRATE_TARGET_NOT_FOUND (was UNHANDLED_EXCEPTION)", async () => {
-    semsDev();
+    acmeDev();
     ff = fakeFetch([{ url: /chain\//, response: respond({ status: 200, text: "null", headers: { "content-type": "application/json" } }) }]).install();
     expect(await code(resolve(UUID))).toBe("MIGRATE_TARGET_NOT_FOUND");
   });
 
   test("all-digit or non-uuid ids are refused before any request", async () => {
-    semsDev();
+    acmeDev();
     ff = fakeFetch([]).install();
     expect(await code(resolve("00000000000000000000000000000001"))).toBe("MIGRATE_TARGET_ID_INVALID");
     expect(await code(resolve("u1"))).toBe("MIGRATE_TARGET_ID_INVALID");
@@ -64,13 +64,13 @@ describe("OTH-R22/R27: AD pre-flight", () => {
   });
 
   test("a method that comes back with another uuid → MIGRATE_TARGET_ID_MISMATCH", async () => {
-    semsDev();
+    acmeDev();
     ff = fakeFetch([{ url: /chain\//, response: { uuid: "ffffffffffffffffffffffffffffffff", name: "Create activity" } }]).install();
     expect(await code(resolve(UUID))).toBe("MIGRATE_TARGET_ID_MISMATCH");
   });
 
   test("NEW-2: a body that stalls keeps HTTP_TIMEOUT (was swallowed into MIGRATE_TARGET_NOT_FOUND)", async () => {
-    semsDev();
+    acmeDev();
     const enc = new TextEncoder();
     ff = fakeFetch([{
       url: /chain\//,
@@ -87,7 +87,7 @@ describe("OTH-R22/R27: AD pre-flight", () => {
       }
       expect(err.code).toBe("HTTP_TIMEOUT");
       expect(err.message).toContain("Retry when");
-      expect(err.details?.preflightEnv).toBe("sems-dev");
+      expect(err.details?.preflightEnv).toBe("acme-dev");
     } finally {
       if (prev === undefined) delete process.env.BELZ_HTTP_TIMEOUT_MS;
       else process.env.BELZ_HTTP_TIMEOUT_MS = prev;
@@ -95,7 +95,7 @@ describe("OTH-R22/R27: AD pre-flight", () => {
   });
 
   test("a real method resolves with its name", async () => {
-    semsDev();
+    acmeDev();
     ff = fakeFetch([{ url: /chain\//, response: { uuid: UUID, name: "belz.thing" } }]).install();
     const r = await resolve(UUID);
     expect(r?.targets[0]).toMatchObject({ resolvedId: UUID, name: "belz.thing" });
@@ -103,15 +103,15 @@ describe("OTH-R22/R27: AD pre-flight", () => {
 });
 
 describe("OTH-R25: module and migration-id flags", () => {
-  const base = ["--profile", "devsems_qasems", "--ids", UUID];
+  const base = ["--profile", "devacme_qaacme", "--ids", UUID];
   test("--module with --module-custom → MIGRATE_MODULE_CONFLICT", async () => {
     expect(await code(parseMigrateRunArgs([...base, "--module", "PD", "--module-custom", "X"]))).toBe("MIGRATE_MODULE_CONFLICT");
   });
   test("report/status modules need --migration-id", async () => {
     for (const m of ["AD_COMPARISON_REPORT", "PD_MIGRATION_STATUS"]) {
-      expect(await code(parseMigrateRunArgs(["--profile", "devsems_qasems", "--module", m]))).toBe("MIGRATE_MIGRATION_ID_REQUIRED");
+      expect(await code(parseMigrateRunArgs(["--profile", "devacme_qaacme", "--module", m]))).toBe("MIGRATE_MIGRATION_ID_REQUIRED");
     }
-    const ok = await parseMigrateRunArgs(["--profile", "devsems_qasems", "--module", "AD_COMPARISON_REPORT", "--migration-id", "m-1"]);
+    const ok = await parseMigrateRunArgs(["--profile", "devacme_qaacme", "--module", "AD_COMPARISON_REPORT", "--migration-id", "m-1"]);
     expect(ok.migrationId).toBe("m-1");
   });
 });
@@ -121,25 +121,25 @@ describe("OTH-R26: --client vs profile", () => {
     cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([JOB_PARAMS]).install();
     const r = await runCommand(runCmd, [
-      "--profile", "devsems_qasems", "--client", "DNREC", "--module", "PD", "--ids", "p1", "--no-follow", "--yes",
+      "--profile", "devacme_qaacme", "--client", "DELTA", "--module", "PD", "--ids", "p1", "--no-follow", "--yes",
     ]);
     expect(r.envelope?.error?.code).toBe("MIGRATE_CLIENT_PROFILE_MISMATCH");
-    expect((r.envelope?.error?.details as { expected: string }).expected).toBe("SEMS");
+    expect((r.envelope?.error?.details as { expected: string }).expected).toBe("ACME");
     expect(ff.requests.some((q) => q.method === "POST")).toBe(false);
   });
   test("client names come from the Jenkins dividers (case-insensitive); unknown → MIGRATE_INVALID_CLIENT listing them", async () => {
     cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([JOB_PARAMS, JOB_PARAMS]).install();
-    const okRun = await runCommand(profilesCmd, ["--client", "sems", "--refresh"]);
-    expect((okRun.envelope?.data as { groups: Array<{ client: string }> }).groups.map((g) => g.client)).toEqual(["SEMS"]);
+    const okRun = await runCommand(profilesCmd, ["--client", "acme", "--refresh"]);
+    expect((okRun.envelope?.data as { groups: Array<{ client: string }> }).groups.map((g) => g.client)).toEqual(["ACME"]);
     const bad = await runCommand(profilesCmd, ["--client", "nope", "--refresh"]);
     expect(bad.envelope?.error?.code).toBe("MIGRATE_INVALID_CLIENT");
-    expect((bad.envelope?.error?.details as { known: string[] }).known).toContain("SEMS");
+    expect((bad.envelope?.error?.details as { known: string[] }).known).toContain("ACME");
   });
 });
 
 describe("OTH-R23: failures after the trigger carry the build reference", () => {
-  const argv = ["--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--no-follow", "--yes"];
+  const argv = ["--profile", "devacme_qaacme", "--client", "ACME", "--module", "PD", "--ids", "p1", "--no-follow", "--yes"];
   const trigger = [
     JOB_PARAMS,
     { method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) },

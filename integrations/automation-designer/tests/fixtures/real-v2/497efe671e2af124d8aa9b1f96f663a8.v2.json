@@ -196,7 +196,7 @@
       ],
       "accountConfiguration": {
         "id": 5,
-        "name": "BCPS-Test-RDS"
+        "name": "ZCPS-Test-RDS"
       },
       "properties": {
         "runAsync": false,
@@ -397,7 +397,7 @@
       ],
       "accountConfiguration": {
         "id": 5,
-        "name": "BCPS-Test-RDS"
+        "name": "ZCPS-Test-RDS"
       },
       "properties": {
         "runAsync": false,

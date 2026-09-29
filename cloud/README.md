@@ -56,18 +56,17 @@ It builds with the same Bun as CI (1.2.20 — it refuses any other version) and
 ### 3. Create the cloud environment (claude.ai/code → New cloud environment)
 - **Repository:** `belz-sandbox` (NOT belzabar).
 - **Network access:** **Custom** (Trusted alone can't reach your internal hosts).
-  Keep "include default list" on (for the GitHub clone/download), and add:
+  Keep "include default list" on (for the GitHub clone/download), and add the
+  hosts your config points at — every env URL, your Jenkins and your Teamwork
+  site, e.g.:
   ```
-  *.nc.verifi.dev
-  *.verifi-nc.com
-  *.expertly.cloud
-  *.expertly.com
-  ysmetrics.com
-  projects.webintensive.com
+  *.dev.example.test
+  *.qa.example.test
+  jenkins.example.test
+  <company>.teamwork.com
   ```
-  If a deeper host (e.g. `jenkins-asg.stg.expertly.cloud`,
-  `migration.services.qa.expertly.cloud`) isn't reached by the wildcard, add it
-  explicitly — or use **Full** if the allowlist gets unwieldy.
+  If a deeper host isn't reached by a wildcard, add it explicitly — or use
+  **Full** if the allowlist gets unwieldy.
 - **Setup script:** **leave empty.** Cloud env vars are NOT exported to the
   Setup-script phase — only to the running session. belz is instead installed +
   configured by a **SessionStart hook** (belz-sandbox's Claude settings file,
@@ -79,11 +78,11 @@ It builds with the same Bun as CI (1.2.20 — it refuses any other version) and
 There is **no secrets store** in cloud — env vars are visible to anyone who can
 edit the environment. So configure **non-prod only** unless you accept the
 exposure. Use the project-agnostic `BELZ_ENV_<NAME>_*` keys
-(`<NAME>` lowercases with `_`→`-`, e.g. `BELZ_ENV_YS_QA_URL` → env `ys-qa`).
+(`<NAME>` lowercases with `_`→`-`, e.g. `BELZ_ENV_ACME_QA_URL` → env `acme-qa`).
 
 > **Do NOT quote values.** The cloud .env field stores quotes literally
 > (`KEY='v$$'` → the value becomes `'v$$'`, quotes and all). Write bare values:
-> `BELZ_ENV_NSM_DEV_PASSWORD=p@ss$$word`.
+> `BELZ_ENV_ACME_DEV_PASSWORD=p@ss$$word`.
 
 ```dotenv
 # which repo holds the belz release (also derivable from the clone's origin)
@@ -91,27 +90,28 @@ BELZ_SANDBOX_REPO=your-org/belz-sandbox
 # set this so the SessionStart hook can download the (private) release binary
 BELZ_SANDBOX_TOKEN=<read-only PAT on belz-sandbox>
 
-# NSM (built-in names — URL is filled in automatically)
-BELZ_ENV_NSM_DEV_USER=...
-BELZ_ENV_NSM_DEV_PASSWORD=...
-BELZ_ENV_NSM_QA_USER=...
-BELZ_ENV_NSM_QA_PASSWORD=...
-
-# YieldSec (custom env — URL required)
-BELZ_ENV_YS_QA_URL=https://yieldsec.qa.expertly.cloud
-BELZ_ENV_YS_QA_USER=...
-BELZ_ENV_YS_QA_PASSWORD=...
-BELZ_ENV_YS_QA_PROJECT=YieldSec
+# one block per env (there are no built-in envs — URL is always required)
+BELZ_ENV_ACME_DEV_URL=https://acme.dev.example.test
+BELZ_ENV_ACME_DEV_USER=...
+BELZ_ENV_ACME_DEV_PASSWORD=...
+BELZ_ENV_ACME_QA_URL=https://acme.qa.example.test
+BELZ_ENV_ACME_QA_USER=...
+BELZ_ENV_ACME_QA_PASSWORD=...
+BELZ_ENV_ACME_QA_PROJECT=ACME
+# env used when --env is omitted (else config "defaultEnv"; with one env, that one)
+BELZ_ENV=acme-dev
 
 # optional (imported into config.json by `belz setup --from-env`)
 BELZ_JENKINS_URL=...
 BELZ_JENKINS_USER=...
 BELZ_JENKINS_PASSWORD=...
+BELZ_JENKINS_JOB=...
+TEAMWORK_URL=https://<company>.teamwork.com
 TEAMWORK_EMAIL=...
 TEAMWORK_PASSWORD=...
 ```
 
-> **Skip prod.** Don't put `BELZ_ENV_*_PROD_*` (or `staff-nss`/`yieldsec.expertly.com`)
+> **Skip prod.** Don't put `BELZ_ENV_*_PROD_*` (or any production host's)
 > creds here unless you really want a phone-driven session to be able to touch
 > production. The blast radius of plaintext env vars is the whole point of the
 > warning.

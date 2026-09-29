@@ -1,6 +1,6 @@
 // 7.4: `belz ad lint` — lib/validate/lint.ts review rules (positive + negative
 // per rule, on the research golden method), calibration over the 36 real
-// sems-dev bodies, and the command (grouping, exit code) via fakeFetch.
+// acme-dev bodies, and the command (grouping, exit code) via fakeFetch.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readFileSync, writeFileSync } from "fs";
 import { reloadConfig } from "@belzabar/core";
@@ -129,7 +129,7 @@ describe("anti-patterns and prose rules", () => {
   });
 });
 
-describe("calibration over the 36 real sems-dev bodies", () => {
+describe("calibration over the 36 real acme-dev bodies", () => {
   test("lint counts are pinned (docs off): few, specific findings", () => {
     const counts: Record<string, number> = {};
     for (const { body } of realV2()) for (const f of lintMethodV2(body, { resolverTables: RESOLVER_TABLES })) counts[f.rule] = (counts[f.rule] ?? 0) + 1;
@@ -213,13 +213,13 @@ describe("ad lint command", () => {
     ]).install();
     const dir = scratchDir("ad-lint");
     const file = join(dir, "greet.spec.json");
-    const spec = { name: "belz_tst_lint_spec", category: "Test-Parth", inputs: ["name"], outputs: ["greeting"], steps: [{ code: "const greeting = 'Hello, ' + name;", outputs: ["greeting"] }] };
+    const spec = { name: "belz_tst_lint_spec", category: "Test-Tester", inputs: ["name"], outputs: ["greeting"], steps: [{ code: "const greeting = 'Hello, ' + name;", outputs: ["greeting"] }] };
     writeFileSync(file, JSON.stringify(spec));
     for (const cmd of [lintCommand, validateCommand] as const) {
       const r = await runCommand(cmd as typeof lintCommand, [file], { env: "t-lint" });
       const d = r.envelope?.data as any;
       expect(JSON.stringify(r.envelope?.error ?? null)).not.toContain("Expected array");
-      expect(d.spec).toMatchObject({ expanded: true, category: { chainCategoryId: 1135, name: "Test-Parth" } });
+      expect(d.spec).toMatchObject({ expanded: true, category: { chainCategoryId: 1135, name: "Test-Tester" } });
       expect(d.name).toBe("belz_tst_lint_spec");
     }
     expect(ff.requests.every((q) => q.method === "GET")).toBe(true);

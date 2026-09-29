@@ -245,7 +245,7 @@ async function runEditTui(): Promise<ConfigEditData> {
     const tw = cfg.teamwork ?? {};
     const twUrl = await prompts.text({
       message: `Site URL${tw.baseUrl ? ` (current: ${tw.baseUrl})` : ""}`,
-      placeholder: tw.baseUrl ?? "https://yourcompany.teamwork.com",
+      placeholder: tw.baseUrl ?? "https://<company>.teamwork.com",
       defaultValue: tw.baseUrl ?? "",
     });
     const email = await prompts.text({

@@ -107,7 +107,7 @@ describe("pd-review §3c/§3d HTTP + accessibility", () => {
   });
 
   test("HTTP_HARDCODED_URL", () => {
-    expect(codes(page(call({ url: "https://sems.example.com/rest/api/x" })), "HTTP_HARDCODED_URL")).toHaveLength(1);
+    expect(codes(page(call({ url: "https://acme.example.com/rest/api/x" })), "HTTP_HARDCODED_URL")).toHaveLength(1);
     expect(codes(page(call()), "HTTP_HARDCODED_URL")).toHaveLength(0);
   });
 
@@ -126,7 +126,7 @@ describe("pd-review §3c/§3d HTTP + accessibility", () => {
 describe("figma-to-pd rules (codes kept)", () => {
   const table = (props: Record<string, unknown>) => [{ id: "tbl", name: "exp-data-table", props: { datasourceState: "initial", ...props } }];
 
-  test("V4: types outside the enum; the sems-dev editor's String/Boolean/Number are valid", () => {
+  test("V4: types outside the enum; the acme-dev editor's String/Boolean/Number are valid", () => {
     expect(codes(wrap(pageInner(vars({ name: "a", type: "List" }), [{ id: "x", name: "div", props: { innerHTML: "{%a%}" } }])), "V4")).toHaveLength(1);
     for (const t of ["String", "Boolean", "Number", "Any", "KeyValue", "PAGINATION_STORE", "boolean"]) {
       expect(codes(wrap(pageInner(vars({ name: "a", type: t }))), "V4")).toHaveLength(0);

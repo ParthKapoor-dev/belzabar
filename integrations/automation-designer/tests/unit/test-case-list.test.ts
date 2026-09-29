@@ -66,7 +66,7 @@ describe("test-case list == test-cases (F24)", () => {
     cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
     ff = fakeFetch({
       [`GET /rest/api/automation/chain/testsuite/service-chain/${UUID}`]: respond({ status: 200, text: "null" }),
-      // Real sems-dev answer for a missing uuid (fixtures/not-found): 200 + empty body.
+      // Real acme-dev answer for a missing uuid (fixtures/not-found): 200 + empty body.
       "GET /rest/api/automation/chain/v2/*": respond({ status: 200, text: "" }),
     }).install();
     for (const [cmd, argv] of [[testCasesCommand, [UUID]], [testCaseCommand, ["list", UUID]]] as const) {

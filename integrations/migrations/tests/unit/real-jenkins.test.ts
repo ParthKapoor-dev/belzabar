@@ -23,7 +23,7 @@ afterEach(() => {
 });
 
 describe("real Jenkins wire", () => {
-  test("getJobParameters → PROFILE_NAME choices group by client (SEMS has devsems_qasems)", async () => {
+  test("getJobParameters → PROFILE_NAME choices group by client (ACME has devacme_qaacme)", async () => {
     ff = fakeFetch([{ method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${FIX}/job-parameters.json`) }]).install();
     const params = await getJobParameters(auth);
     expect(ff.requests[0]!.url.startsWith(`${JOB}/api/json?tree=`)).toBe(true);
@@ -35,10 +35,10 @@ describe("real Jenkins wire", () => {
     const profiles = params.find((p) => p.name === "PROFILE_NAME")!.choices!;
     expect(profiles.length).toBeGreaterThan(50);
     const groups = groupProfiles(profiles);
-    expect(groups.find((g) => g.client === "SEMS")?.profiles).toContain("devsems_qasems");
+    expect(groups.find((g) => g.client === "ACME")?.profiles).toContain("devacme_qaacme");
     // Choices interleave "--- CLIENT ---" dividers; every other choice lands in a group.
     const dividers = profiles.filter((c) => /^\s*-{3,}.*-{3,}\s*$/.test(c));
-    expect(dividers).toContain("--- SEMS ---");
+    expect(dividers).toContain("--- ACME ---");
     expect(groups.flatMap((g) => g.profiles).length).toBe(profiles.length - dividers.length);
   });
 
@@ -49,7 +49,7 @@ describe("real Jenkins wire", () => {
     expect(b.result).toBe("SUCCESS");
     expect(b.building).toBe(false);
     const params = b.actions.find((a: any) => a.parameters).parameters;
-    expect(params.find((p: any) => p.name === "PROFILE_NAME").value).toBe("devsems_qasems");
+    expect(params.find((p: any) => p.name === "PROFILE_NAME").value).toBe("devacme_qaacme");
   });
 
   test("getConsoleChunk reads X-Text-Size / X-More-Data; parser extracts the run", async () => {
@@ -68,7 +68,7 @@ describe("real Jenkins wire", () => {
     expect(parsed.finishedResult).toBe("SUCCESS");
     expect(parsed.successDetected).toBe(true);
     expect(parsed.failureDetected).toBe(false);
-    expect(parsed.sourceProfile).toBe("devsems_qasems");
+    expect(parsed.sourceProfile).toBe("devacme_qaacme");
     expect(parsed.reportSummary).toMatchObject({ migrationStatus: "COMPLETED", entityCount: 2, failedCount: 0 });
   });
 });

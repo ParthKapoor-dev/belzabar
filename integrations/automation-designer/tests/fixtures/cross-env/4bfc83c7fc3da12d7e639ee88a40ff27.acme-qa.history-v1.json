@@ -322,7 +322,7 @@
         ],
         "accountConfiguration": {
           "id": 149,
-          "name": "BCPS-RDS-READ-DB"
+          "name": "ZCPS-RDS-READ-DB"
         },
         "properties": {
           "runAsync": false,
@@ -936,7 +936,7 @@
           "applicationId": "f11a3bba-ceb4-4864-b973-fe188e1246a1",
           "tenantId": "af3c457c-a0cd-4e1d-b508-3aa1ed0448e2",
           "fullName": "Test User-oc84",
-          "title": "Automation BCPS"
+          "title": "Automation ZCPS"
         },
         "createdAt": "2023-06-08 05:47:55.745"
       },
@@ -960,7 +960,7 @@
           "applicationId": "f11a3bba-ceb4-4864-b973-fe188e1246a1",
           "tenantId": "af3c457c-a0cd-4e1d-b508-3aa1ed0448e2",
           "fullName": "Test User-oc84",
-          "title": "Automation BCPS"
+          "title": "Automation ZCPS"
         },
         "createdAt": "2023-05-12 12:03:14.709"
       },
@@ -984,7 +984,7 @@
           "applicationId": "f11a3bba-ceb4-4864-b973-fe188e1246a1",
           "tenantId": "af3c457c-a0cd-4e1d-b508-3aa1ed0448e2",
           "fullName": "Test User-oc84",
-          "title": "Automation BCPS"
+          "title": "Automation ZCPS"
         },
         "createdAt": "2023-05-12 12:03:14.709"
       },
@@ -1008,7 +1008,7 @@
           "applicationId": "f11a3bba-ceb4-4864-b973-fe188e1246a1",
           "tenantId": "af3c457c-a0cd-4e1d-b508-3aa1ed0448e2",
           "fullName": "Test User-oc84",
-          "title": "Automation BCPS"
+          "title": "Automation ZCPS"
         },
         "createdAt": "2023-06-08 05:47:55.745"
       }

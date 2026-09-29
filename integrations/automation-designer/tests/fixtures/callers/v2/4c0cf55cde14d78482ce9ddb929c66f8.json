@@ -46,7 +46,7 @@
     {
       "id": "4d9f55349e00d2a757678db1471b90b8    ",
       "automationAPIId": "43bed9ac1646eba4e644a51a1c84c6f6    ",
-      "serviceName": "BCPS-MDT-Local",
+      "serviceName": "ZCPS-MDT-Local",
       "methodName": "enrollment_stage.Read.ByEpStageId",
       "coreMethod": false,
       "inputs": [

@@ -71,7 +71,7 @@ TUI meta commands:
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment (default: defaultEnv, else nsm-dev).
+  --env <name>        Set active environment (default: BELZ_ENV, else defaultEnv, else the only env).
                       use `belz envs` to list all available envs.
                       update/insert/modify/tui are writes: --env must be explicit.
   --llm               Output structured JSON envelope for scripting/LLM use.
@@ -79,11 +79,11 @@ Global Flags:
 Examples:
   belz ad sql dbs
   belz ad sql run "select * from users limit 1"
-  belz ad sql run "select * from users limit 1" --db NSM_QA_DB
-  belz ad sql explain "select * from users where email = 'x'" --analyze --db NSM_QA_DB
-  belz ad sql update "UPDATE users SET status = 'active' WHERE id = 1" --db NSM_Write_DB --env <env>
-  belz ad sql insert "INSERT INTO users (name) VALUES ('test') RETURNING id" --db NSM_Write_DB --env <env> --yes
-  belz ad sql modify "CREATE INDEX IF NOT EXISTS idx_name ON users(name)" --db NSM_Write_DB --env <env>
+  belz ad sql run "select * from users limit 1" --db QA_DB
+  belz ad sql explain "select * from users where email = 'x'" --analyze --db QA_DB
+  belz ad sql update "UPDATE users SET status = 'active' WHERE id = 1" --db WRITE_DB --env <env>
+  belz ad sql insert "INSERT INTO users (name) VALUES ('test') RETURNING id" --db WRITE_DB --env <env> --yes
+  belz ad sql modify "CREATE INDEX IF NOT EXISTS idx_name ON users(name)" --db WRITE_DB --env <env>
   belz ad sql tui --env <env>
-  belz ad sql tui --mode insert --db NSM_Write_DB --env <env>
-  BELZ_SQL_DEFAULT_DB=NSM_QA_DB belz ad sql run "select now()"
+  belz ad sql tui --mode insert --db WRITE_DB --env <env>
+  BELZ_SQL_DEFAULT_DB=QA_DB belz ad sql run "select now()"

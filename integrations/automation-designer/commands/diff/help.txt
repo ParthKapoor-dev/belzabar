@@ -73,13 +73,13 @@ Examples:
     # history diff, no pickers
 
   belz ad diff 4e55820ce5357ce4c1a4aa378f241f36 --cross-env \
-      --from-env nsm-dev --to-env nsm-uat
+      --from-env acme-dev --to-env acme-uat
     # cross-env diff
 
   belz ad diff 4e55820… --from 4 --to 5 --raw
     # keep all server metadata in the diff
 
-  belz ad diff 4e55820… --cross-env --from-env nsm-dev --to-env nsm-uat \
+  belz ad diff 4e55820… --cross-env --from-env acme-dev --to-env acme-uat \
       --no-editor --llm
     # headless: no editor spawned; read data.left.path / data.right.path
     # from the envelope and diff the two JSON files yourself

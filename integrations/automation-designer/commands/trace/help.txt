@@ -16,8 +16,8 @@ AD chain UUIDs are stable across environments, so one UUID resolves everywhere.
 A DRAFT uuid is mapped to its published chain (warning), since the spine is the
 published timeline.
 
-By default only the spine env's project family is traced (a sems-dev spine
-traces sems-*; nsm-* is never contacted). Use --envs to pick envs explicitly.
+By default only the spine env's project family is traced (an acme-dev spine
+traces acme-*; other projects are never contacted). Use --envs to pick envs explicitly.
 
 Arguments:
   <UUID>                AD chain UUID.
@@ -36,8 +36,8 @@ Global Flags:
 
 Examples:
   belz ad trace 4bbac4b95962448669dcaf518567e752
-  belz ad trace 4bbac4b95962448669dcaf518567e752 --env sems-dev
-  belz ad trace 4bbac4b95962448669dcaf518567e752 --spine nsm-dev --envs nsm-qa,nsm-uat --llm
+  belz ad trace 4bbac4b95962448669dcaf518567e752 --env acme-dev
+  belz ad trace 4bbac4b95962448669dcaf518567e752 --spine acme-dev --envs acme-qa,acme-uat --llm
 
 Status values per environment:
   latest               env content matches the newest spine entry

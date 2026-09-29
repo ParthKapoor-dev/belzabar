@@ -1,5 +1,5 @@
 // Stage 7.5 / 7.9: `child-info --shape`, `services --search` (fuzzy, compact
-// rows, --fields) and `find --describe` (index schema 2), on real sems-dev
+// rows, --fields) and `find --describe` (index schema 2), on real acme-dev
 // fixtures through fakeFetch.
 import { describe, expect, test } from "bun:test";
 import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig } from "@belzabar/core/testing";
@@ -11,7 +11,7 @@ import { describeSearch, loadOrBuildMethodFinderIndex, METHOD_FINDER_SCHEMA, ste
 
 const FIX = `${import.meta.dir}/../fixtures`;
 const CI = `${FIX}/child-info`;
-const EXAMPLE_CAT = "4423ad307059bc3fc6859804c9bd12e0"; // "Example services" on sems-dev
+const EXAMPLE_CAT = "4423ad307059bc3fc6859804c9bd12e0"; // "Example services" on acme-dev
 const ENVS = { envs: { "t-dev": { url: "https://t.test" } }, activeEnv: "t-dev" };
 
 describe("child-info --shape (7.5)", () => {
@@ -44,7 +44,7 @@ describe("child-info --shape (7.5)", () => {
 
   test("accounts are id + nickname + scope only", async () => {
     const lines = accountLines(await Bun.file(`${CI}/auth-db_service.json`).json());
-    expect(lines[0]).toBe("2 BCPS-RDS (ALL)");
+    expect(lines[0]).toBe("2 ZCPS-RDS (ALL)");
     expect(lines.join("\n")).not.toMatch(/postgres|password|REDACTED/i);
   });
 

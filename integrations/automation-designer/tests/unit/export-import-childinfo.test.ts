@@ -24,7 +24,7 @@ describe("ad export", () => {
     const raw = spyOn(adApi, "fetchRawMethod").mockResolvedValue({ id: 20037, uuid: U } as any);
     const exp = spyOn(adApi, "exportMethod").mockResolvedValue({ chainDefinition: {}, testSuite: null });
     spies.push(raw, exp);
-    for (const input of [U, `${U.toUpperCase()}    `, `https://t.test/automation-designer/Test-Parth/${U}`]) {
+    for (const input of [U, `${U.toUpperCase()}    `, `https://t.test/automation-designer/Test-Tester/${U}`]) {
       const r = await runCommand(exportCommand, [input], { env: "t-dev" });
       expect(r.envelope?.ok).toBe(true);
       expect(r.envelope?.data).toMatchObject({ id: 20037, uuid: U });
@@ -51,7 +51,7 @@ describe("ad export", () => {
 });
 
 const EXPORT = JSON.parse(readFileSync(join(import.meta.dir, "../fixtures/export/method-606.json"), "utf8"));
-/** The real `ad export` body (sems-dev chain 606) renamed; uuid dropped unless given. */
+/** The real `ad export` body (acme-dev chain 606) renamed; uuid dropped unless given. */
 function realDef(name: string, uuid?: string): any {
   const d = structuredClone(EXPORT);
   d.chainDefinition.name = name;

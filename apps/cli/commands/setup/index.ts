@@ -266,7 +266,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
       const addTeamwork = await prompts.confirm({ message: "Configure Teamwork credentials now?", initialValue: false });
       if (addTeamwork) {
         const twUrl = await prompts.text({
-          message: "Teamwork site URL (e.g. https://yourcompany.teamwork.com)",
+          message: "Teamwork site URL (e.g. https://<company>.teamwork.com)",
           validate: (v) => (/^https?:\/\/\S+$/.test(v.trim()) ? undefined : "Must be an http(s) URL."),
         });
         const email = await prompts.text({ message: "Teamwork email", validate: (v) => (v.includes("@") ? undefined : "Must be an email address.") });

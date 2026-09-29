@@ -48,10 +48,10 @@ describe("belz setup (CORE-15, D5)", () => {
       "BELZ_ENV_T_DEV_URL=https://t-dev.test",
       "BELZ_ENV_T_DEV_USER=nd",
       "BELZ_ENV_T_DEV_PASSWORD=bm90YmFzZTY0", // looks like base64 but is taken literally
-      "NSM_DEV_USER=legacy", // old per-project keys are no longer read
+      "ORB_DEV_USER=legacy", // old per-project keys are no longer read
       "BELZ_ENV_T_NOURL_USER=x", // an env without a URL is skipped
       "TEAMWORK_URL=https://tw.example.test",
-      "TEAMWORK_EMAIL=me@x.test",
+      "TEAMWORK_EMAIL=user@example.com",
       "TEAMWORK_PASSWORD=tw pw",
       "BELZ_JENKINS_PASSWORD=jk",
     ]);
@@ -62,7 +62,7 @@ describe("belz setup (CORE-15, D5)", () => {
     expect(written.environments.dev.url).toBe("https://dev.test"); // kept
     expect(written.environments["t-qa"]).toMatchObject({ password: "plain pass==", passwordEncoding: "plain" });
     expect(written.environments["t-dev"]).toMatchObject({ password: "bm90YmFzZTY0", passwordEncoding: "plain" });
-    expect(written.teamwork).toEqual({ baseUrl: "https://tw.example.test", email: "me@x.test", password: "tw pw", passwordEncoding: "plain" });
+    expect(written.teamwork).toEqual({ baseUrl: "https://tw.example.test", email: "user@example.com", password: "tw pw", passwordEncoding: "plain" });
     expect(written.jenkins).toMatchObject({ password: "jk", passwordEncoding: "plain" });
     expect(written.belz).toEqual({ sourceDir: "/src" });
     expect(written.defaultEnv).toBe("dev");

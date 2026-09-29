@@ -1,34 +1,34 @@
 [
- {
-  "id": 2,
-  "nickname": "BCPS-RDS"
- },
- {
-  "id": 5,
-  "nickname": "BCPS-Test-RDS"
- },
- {
-  "id": 3,
-  "nickname": "BCPS-Local-1"
- },
- {
-  "id": 44,
-  "nickname": "stagingDB"
- },
- {
-  "id": 47,
-  "nickname": "sems_ee4_psql"
- },
- {
-  "id": 50,
-  "nickname": "BCPS_OLD_RDS"
- },
- {
-  "id": 149,
-  "nickname": "BCPS-RDS-READ-DB"
- },
- {
-  "id": 215,
-  "nickname": "testing_db"
- }
+  {
+    "id": 2,
+    "nickname": "ZCPS-RDS"
+  },
+  {
+    "id": 5,
+    "nickname": "ZCPS-Test-RDS"
+  },
+  {
+    "id": 3,
+    "nickname": "ZCPS-Local-1"
+  },
+  {
+    "id": 44,
+    "nickname": "stagingDB"
+  },
+  {
+    "id": 47,
+    "nickname": "acme_ee4_psql"
+  },
+  {
+    "id": 50,
+    "nickname": "ZCPS_OLD_RDS"
+  },
+  {
+    "id": 149,
+    "nickname": "ZCPS-RDS-READ-DB"
+  },
+  {
+    "id": 215,
+    "nickname": "testing_db"
+  }
 ]

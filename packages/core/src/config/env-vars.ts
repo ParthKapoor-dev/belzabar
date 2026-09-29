@@ -5,7 +5,7 @@
 // that off). A stray `.env` in whatever directory the user happens to run
 // `belz` from must not be able to redirect an environment URL or inject
 // credentials. So:
-//   1. belz only reads its own `BELZ_*` variables (the legacy NSM_* /
+//   1. belz only reads its own `BELZ_*` variables (the legacy per-project /
 //      TEAMWORK_* / API_* variables are gone; `belz setup --from-env` still
 //      imports them explicitly into config.json), and
 //   2. a BELZ_* value that is identical to one in a cwd `.env*` file Bun would
@@ -63,7 +63,7 @@ function dotenvValues(cwd: string): Record<string, string> {
 /**
  * Every non-empty process env var except those a cwd `.env*` file injected
  * (same key, same value). `dropped` names the ignored keys. Used by
- * `belz setup --from-env`, which imports legacy NSM_* / TEAMWORK_* keys too
+ * `belz setup --from-env`, which imports TEAMWORK_* keys too
  * and must not persist a hostile cwd `.env` into config.json (CORE-R14).
  */
 export function withoutDotenvInjected(

@@ -85,7 +85,7 @@ describe("jenkins client", () => {
       { method: "POST", url: `${JOB}/buildWithParameters`, response: respond({ status: 500, headers: { "content-type": "text/html" }, text: HTML_404.replace("Error 404 Not Found", "Server Error") }) },
     ]).install();
     const e = await caught(
-      triggerBuild(other, { client: "SEMS", profile: "p", migrateType: "PD", ids: ["1"], asyncMigration: "N", migrateDependent: "N" }),
+      triggerBuild(other, { client: "ACME", profile: "p", migrateType: "PD", ids: ["1"], asyncMigration: "N", migrateDependent: "N" }),
     );
     expect(e.code).toBe("MIGRATE_JENKINS_TRIGGER_FAILED");
     expect(e.message).toBe("Failed to trigger Jenkins build (HTTP 500): HTML page: Server Error");

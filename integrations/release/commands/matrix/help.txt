@@ -26,9 +26,9 @@ release.json format:
     "name": "may-12-release",
     "included": [26917411, "https://.../tasks/26920000"],
     "excluded": [26918000],    (optional, default [])
-    "project": "SEMS",         (optional)
-    "spineEnv": "sems-dev",    (optional)
-    "stageEnv": "sems-stage"   (optional)
+    "project": "ACME",         (optional)
+    "spineEnv": "acme-dev",    (optional)
+    "stageEnv": "acme-stage"   (optional)
   }
 
 The spec is validated before any request (BAD_SPEC; shape problems are listed together):
@@ -38,7 +38,7 @@ spineEnv and stageEnv from different projects.
 
 spineEnv/stageEnv default to the project's "<project>-dev" / "<project>-stage"
 envs. The project is "project", else that of an explicit spineEnv/stageEnv,
-else that of the active env (--env / BELZ_ENV / defaultEnv; NSM by default).
+else that of the active env (--env / BELZ_ENV / defaultEnv).
 
 Arguments:
   <release.json>        Path to the release spec JSON file.
@@ -56,4 +56,4 @@ Notes:
 
 Examples:
   belz release matrix ./may-12.json
-  belz release matrix ./sems-release.json --env sems-dev --llm
+  belz release matrix ./release.json --env acme-dev --llm

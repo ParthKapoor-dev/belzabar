@@ -8,9 +8,9 @@ describe("sql tui meta command parser", () => {
   });
 
   test("parses \\use", () => {
-    const parsed = parseSqlTuiMetaCommand("\\use NSM_QA_DB");
+    const parsed = parseSqlTuiMetaCommand("\\use ORB_QA_DB");
     expect(parsed?.type).toBe("use");
-    expect(parsed?.args[0]).toBe("NSM_QA_DB");
+    expect(parsed?.args[0]).toBe("ORB_QA_DB");
   });
 
   test("parses \\format", () => {

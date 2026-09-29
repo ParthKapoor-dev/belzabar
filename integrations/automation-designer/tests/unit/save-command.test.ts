@@ -1,4 +1,4 @@
-// `ad save` — V2 pipeline end to end against a fake sems-dev (fakeFetch):
+// `ad save` — V2 pipeline end to end against a fake acme-dev (fakeFetch):
 // draft guard → overlay → validate → confirm → freshness re-GET (AD-08) →
 // POST /chain/v2 → post-save verify (AD-01) → compiled cache on both routes
 // (AD-20) → local cache.
@@ -236,7 +236,7 @@ describe("ad save (V2 pipeline)", () => {
   });
 
   test("a rejected save never echoes a bearer token (error body redacted)", async () => {
-    const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.c2lnbmF0dXJlLXZhbHVl";
+    const jwt = "REDACTED_JWT";
     wire({ onPost: () => respond({ status: 400, json: { errorMessage: "bad", headers: { Authorization: `Bearer ${jwt}` } } }) });
     const r = await run({ summary: "x" });
     expect(r.envelope?.error?.code).toBe("AD_SAVE_REJECTED");

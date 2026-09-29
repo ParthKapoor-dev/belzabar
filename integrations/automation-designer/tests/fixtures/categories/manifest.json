@@ -1,7 +1,7 @@
 [
   {
     "file": "automation-services.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:14:58.756Z",
     "bytes": 228108,
     "source": {},
@@ -10,7 +10,7 @@
   },
   {
     "file": "chain-category-system.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:14:57.453Z",
     "bytes": 184814,
     "source": {},
@@ -19,7 +19,7 @@
   },
   {
     "file": "chain-category.json",
-    "env": "sems-dev",
+    "env": "acme-dev",
     "capturedAt": "2026-09-27T17:14:56.043Z",
     "bytes": 261448,
     "source": {},

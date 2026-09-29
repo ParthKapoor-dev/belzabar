@@ -7,12 +7,12 @@
   "aliasName": "belz_tst_s4b_hist1",
   "category": {
     "id": 1135,
-    "name": "Test-Parth",
+    "name": "Test-Tester",
     "aliasName": [
       ""
     ],
-    "originalLabel": "Test-Parth",
-    "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+    "originalLabel": "Test-Tester",
+    "description": "Scratch category for ZCPS-596 build probes (Tester). Safe to delete.",
     "authorizationFields": [],
     "automationAuths": [],
     "permissions": [
@@ -26,7 +26,7 @@
             "externalUuid": "00000000-0000-0000-0000-000000000000",
             "email": "user@example.com",
             "firstName": "Admin",
-            "lastName": "SEMS",
+            "lastName": "ACME",
             "ssoUser": false,
             "boss": {
               "id": 1,
@@ -34,8 +34,8 @@
               "mfaEnabled": false
             },
             "mfaEnabled": false,
-            "fullName": "Admin SEMS",
-            "title": "Admin SEMS"
+            "fullName": "Admin ACME",
+            "title": "Admin ACME"
           }
         ]
       }
@@ -45,7 +45,7 @@
       "externalUuid": "00000000-0000-0000-0000-000000000000",
       "email": "user@example.com",
       "firstName": "Admin",
-      "lastName": "SEMS",
+      "lastName": "ACME",
       "ssoUser": false,
       "boss": {
         "id": 1,
@@ -73,8 +73,8 @@
       },
       "joiningDate": 1514764800000,
       "mfaEnabled": false,
-      "fullName": "Admin SEMS",
-      "title": "Admin SEMS",
+      "fullName": "Admin ACME",
+      "title": "Admin ACME",
       "lastLoginDate": 1790524815956
     },
     "accessMode": "PUBLIC",

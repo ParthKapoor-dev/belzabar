@@ -12,27 +12,27 @@ describe("Method finder", () => {
     const wrapped = {
       "74": {
         uuid: "403c868c260221961bb19a821139f1d6",
-        name: "NSM.Documents",
-        label: "NSM.Documents",
-        aliasName: ["NSM.Documents", "NSM-Docs"],
+        name: "ORB.Documents",
+        label: "ORB.Documents",
+        aliasName: ["ORB.Documents", "ORB-Docs"],
       },
     };
 
     const plain = {
       uuid: "460b1b91eeded4f733deba1ba6427702",
-      name: "NSM.Helpers",
-      label: "NSM.Helpers",
-      aliasName: ["NSM-Helpers"],
+      name: "ORB.Helpers",
+      label: "ORB.Helpers",
+      aliasName: ["ORB-Helpers"],
     };
 
     const first = normalizeCategoryRecord(wrapped);
     const second = normalizeCategoryRecord(plain);
 
     expect(first?.uuid).toBe("403c868c260221961bb19a821139f1d6");
-    expect(first?.aliasName).toEqual(["NSM.Documents", "NSM-Docs"]);
+    expect(first?.aliasName).toEqual(["ORB.Documents", "ORB-Docs"]);
 
     expect(second?.uuid).toBe("460b1b91eeded4f733deba1ba6427702");
-    expect(second?.name).toBe("NSM.Helpers");
+    expect(second?.name).toBe("ORB.Helpers");
   });
 
   test("normalizes wrapped method record and extracts methodName from jsonDefinition", () => {
@@ -53,19 +53,19 @@ describe("Method finder", () => {
 
     const method = normalizeMethodRecord(wrappedMethod, {
       uuid: "460b1b91eeded4f733deba1ba6427702",
-      name: "NSM.Helpers",
+      name: "ORB.Helpers",
     });
 
     expect(method?.methodName).toBe("_lookupDCIN");
     expect(method?.aliasName).toBe("staff.fetch.dcinDetails");
     expect(method?.state).toBe("PUBLISHED");
-    expect(method?.categoryName).toBe("NSM.Helpers");
-    expect(method?.url).toContain("/automation-designer/NSM.Helpers/");
+    expect(method?.categoryName).toBe("ORB.Helpers");
+    expect(method?.url).toContain("/automation-designer/ORB.Helpers/");
   });
 
   test("returns exact matches ahead of fuzzy matches", () => {
     const index: MethodFinderIndex = {
-      env: "nsm-dev",
+      env: "orb-dev",
       generatedAt: Date.now(),
       categoryCount: 2,
       methodCount: 3,
@@ -73,15 +73,15 @@ describe("Method finder", () => {
       categories: [
         {
           uuid: "cat-1",
-          name: "NSM.Helpers",
-          label: "NSM.Helpers",
-          aliasNames: ["NSM-Helpers"],
+          name: "ORB.Helpers",
+          label: "ORB.Helpers",
+          aliasNames: ["ORB-Helpers"],
           methodCount: 2,
         },
         {
           uuid: "cat-2",
-          name: "NSM.Documents",
-          label: "NSM.Documents",
+          name: "ORB.Documents",
+          label: "ORB.Documents",
           aliasNames: [],
           methodCount: 1,
         },
@@ -95,10 +95,10 @@ describe("Method finder", () => {
           state: "PUBLISHED",
           version: 1,
           categoryUuid: "cat-1",
-          categoryName: "NSM.Helpers",
+          categoryName: "ORB.Helpers",
           createdOn: 1,
           updatedOn: 1,
-          url: "https://example.dev/automation-designer/NSM.Helpers/method-1",
+          url: "https://example.example/automation-designer/ORB.Helpers/method-1",
         },
         {
           uuid: "method-2",
@@ -108,10 +108,10 @@ describe("Method finder", () => {
           state: "PUBLISHED",
           version: 1,
           categoryUuid: "cat-2",
-          categoryName: "NSM.Documents",
+          categoryName: "ORB.Documents",
           createdOn: 1,
           updatedOn: 1,
-          url: "https://example.dev/automation-designer/NSM.Documents/method-2",
+          url: "https://example.example/automation-designer/ORB.Documents/method-2",
         },
         {
           uuid: "method-3",
@@ -121,10 +121,10 @@ describe("Method finder", () => {
           state: "DRAFT",
           version: 3,
           categoryUuid: "cat-1",
-          categoryName: "NSM.Helpers",
+          categoryName: "ORB.Helpers",
           createdOn: 1,
           updatedOn: 1,
-          url: "https://example.dev/automation-designer/NSM.Helpers/method-3",
+          url: "https://example.example/automation-designer/ORB.Helpers/method-3",
         },
       ],
     };
@@ -145,7 +145,7 @@ describe("Method finder", () => {
 
   test("includes category matches and respects limit", () => {
     const index: MethodFinderIndex = {
-      env: "nsm-dev",
+      env: "orb-dev",
       generatedAt: Date.now(),
       categoryCount: 2,
       methodCount: 1,
@@ -153,16 +153,16 @@ describe("Method finder", () => {
       categories: [
         {
           uuid: "cat-1",
-          name: "NSM.Helpers",
-          label: "NSM.Helpers",
-          aliasNames: ["NSM-Helpers"],
+          name: "ORB.Helpers",
+          label: "ORB.Helpers",
+          aliasNames: ["ORB-Helpers"],
           methodCount: 1,
         },
         {
           uuid: "cat-2",
-          name: "NSM.Documents",
-          label: "NSM.Documents",
-          aliasNames: ["NSM-Docs"],
+          name: "ORB.Documents",
+          label: "ORB.Documents",
+          aliasNames: ["ORB-Docs"],
           methodCount: 0,
         },
       ],
@@ -175,10 +175,10 @@ describe("Method finder", () => {
           state: "PUBLISHED",
           version: 1,
           categoryUuid: "cat-1",
-          categoryName: "NSM.Helpers",
+          categoryName: "ORB.Helpers",
           createdOn: 1,
           updatedOn: 1,
-          url: "https://example.dev/automation-designer/NSM.Helpers/method-1",
+          url: "https://example.example/automation-designer/ORB.Helpers/method-1",
         },
       ],
     };
@@ -190,7 +190,7 @@ describe("Method finder", () => {
 
   test("sorts categories alphabetically", () => {
     const index: MethodFinderIndex = {
-      env: "nsm-dev",
+      env: "orb-dev",
       generatedAt: Date.now(),
       categoryCount: 2,
       methodCount: 0,
@@ -198,15 +198,15 @@ describe("Method finder", () => {
       categories: [
         {
           uuid: "cat-2",
-          name: "NSM.Helpers",
-          label: "NSM.Helpers",
+          name: "ORB.Helpers",
+          label: "ORB.Helpers",
           aliasNames: [],
           methodCount: 2,
         },
         {
           uuid: "cat-1",
-          name: "NSM.Documents",
-          label: "NSM.Documents",
+          name: "ORB.Documents",
+          label: "ORB.Documents",
           aliasNames: [],
           methodCount: 1,
         },
@@ -215,6 +215,6 @@ describe("Method finder", () => {
     };
 
     const categories = listMethodFinderCategories(index);
-    expect(categories.map(c => c.name)).toEqual(["NSM.Documents", "NSM.Helpers"]);
+    expect(categories.map(c => c.name)).toEqual(["ORB.Documents", "ORB.Helpers"]);
   });
 });

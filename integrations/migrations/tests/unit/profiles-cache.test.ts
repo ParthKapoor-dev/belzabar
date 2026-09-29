@@ -19,7 +19,7 @@ afterEach(() => {
 
 function writeCache(fetchedAt: string, profiles: string[]) {
   mkdirSync(dirname(MIGRATION_PROFILES_CACHE_PATH), { recursive: true });
-  writeFileSync(MIGRATION_PROFILES_CACHE_PATH, JSON.stringify({ fetchedAt, groups: [{ client: "SEMS", profiles }] }));
+  writeFileSync(MIGRATION_PROFILES_CACHE_PATH, JSON.stringify({ fetchedAt, groups: [{ client: "ACME", profiles }] }));
 }
 
 describe("profile cache", () => {
@@ -33,7 +33,7 @@ describe("profile cache", () => {
 
   test("an expired cache is re-fetched", async () => {
     writeCache("2026-07-13T00:00:00.000Z", ["old_one"]);
-    ff = fakeFetch([{ url: /api\/json\?tree=property/, response: params(["--- SEMS ---", "new_one"]) }]).install();
+    ff = fakeFetch([{ url: /api\/json\?tree=property/, response: params(["--- ACME ---", "new_one"]) }]).install();
     const r = await discoverProfiles(auth);
     expect(r.source).toBe("live");
     expect(r.flat).toEqual(["new_one"]);
@@ -41,9 +41,9 @@ describe("profile cache", () => {
 
   test("a profile missing from a fresh cache triggers one refresh", async () => {
     writeCache(new Date().toISOString(), ["a_b"]);
-    ff = fakeFetch([{ url: /api\/json\?tree=property/, response: params(["--- SEMS ---", "a_b", "added_later"]) }]).install();
+    ff = fakeFetch([{ url: /api\/json\?tree=property/, response: params(["--- ACME ---", "a_b", "added_later"]) }]).install();
     const { client, resolution } = await resolveClientForProfile(auth, "added_later");
-    expect(client).toBe("SEMS");
+    expect(client).toBe("ACME");
     expect(resolution.source).toBe("live");
     expect(ff.requests.length).toBe(1);
   });

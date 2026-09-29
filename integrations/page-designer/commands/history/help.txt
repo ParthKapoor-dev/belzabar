@@ -32,7 +32,7 @@ Flags:
   --help, -h            Show this help message.
 
 Global Flags:
-  --env <name>          Environment (default: defaultEnv, else nsm-dev). restore is
+  --env <name>          Environment (default: BELZ_ENV, else defaultEnv, else the only env). restore is
                         a write and needs it explicitly.
   --llm                 Output structured JSON envelope.
 

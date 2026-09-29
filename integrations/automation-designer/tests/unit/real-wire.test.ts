@@ -1,4 +1,4 @@
-// Property tests over the real sems-dev wire captures (Stage 1).
+// Property tests over the real acme-dev wire captures (Stage 1).
 //
 // Fixtures (captured by scripts/fixtures/capture.ts, sanitized, see each
 // dir's manifest.json):
@@ -50,12 +50,12 @@ describe("fixture inventory + manifests", () => {
   });
 
   for (const dir of ["real-v1", "real-v2", "definitions", "categories", "not-found"]) {
-    test(`${dir}/manifest.json lists every file, sems-dev, GET endpoint`, async () => {
+    test(`${dir}/manifest.json lists every file, acme-dev, GET endpoint`, async () => {
       const manifest = (await json(`${FIX}/${dir}/manifest.json`)) as Array<{ file: string; env: string; endpoint: string; capturedAt: string }>;
       const files = readdirSync(`${FIX}/${dir}`).filter((f) => f !== "manifest.json").sort();
       expect(manifest.map((m) => m.file).sort()).toEqual(files);
       for (const m of manifest) {
-        expect(m.env).toBe("sems-dev");
+        expect(m.env).toBe("acme-dev");
         expect(m.endpoint.startsWith("/rest/api/")).toBe(true);
         expect(Number.isNaN(Date.parse(m.capturedAt))).toBe(false);
       }
@@ -180,11 +180,11 @@ describe("AD-02 step classification by service identity", () => {
     expect(checked).toBeGreaterThanOrEqual(60);
   });
 
-  test("V1 step kinds match V2 on sems for all 36 methods; SQL/SpEL/Redis are found", async () => {
+  test("V1 step kinds match V2 on acme for all 36 methods; SQL/SpEL/Redis are found", async () => {
     const defs = await definitionTable();
     const counts: Record<string, number> = {};
     for (const p of await pairs()) {
-      const m1 = parseV1Method(p.raw1, { env: "sems-dev", resolveService: await resolverFor(p, defs) });
+      const m1 = parseV1Method(p.raw1, { env: "acme-dev", resolveService: await resolverFor(p, defs) });
       expect([p.uuid, m1.parsedSteps.map((s) => s.kind)]).toEqual([p.uuid, p.m2.parsedSteps.map((s) => s.kind)]);
       for (const s of m1.parsedSteps) counts[s.kind] = (counts[s.kind] ?? 0) + 1;
     }
@@ -193,11 +193,11 @@ describe("AD-02 step classification by service identity", () => {
     expect((counts.REDIS_GET ?? 0) + (counts.REDIS_SET ?? 0)).toBe(3);
   });
 
-  // ADR-R3: sems names the Redis inputs scope / expirationSeconds / canReplace.
+  // ADR-R3: acme names the Redis inputs scope / expirationSeconds / canReplace.
   test("Redis scope, TTL and canReplace parse on V1 and V2 and show in the compact line", async () => {
     const defs = await definitionTable();
     const p = (await pairs()).find((x) => x.uuid.startsWith("44297f3e"))!;
-    const m1 = parseV1Method(p.raw1, { env: "sems-dev", resolveService: await resolverFor(p, defs) });
+    const m1 = parseV1Method(p.raw1, { env: "acme-dev", resolveService: await resolverFor(p, defs) });
     for (const m of [m1, p.m2]) {
       expect(m.parsedSteps[0]).toMatchObject({ kind: "REDIS_SET", key: "#{lockKey}", value: "first-writer", store: "PERSISTENT", ttlSeconds: "60", overwrite: "true" });
       expect(m.parsedSteps[1]).toMatchObject({ overwrite: "false" });
@@ -213,7 +213,7 @@ describe("AD-02 step classification by service identity", () => {
     const defs = await definitionTable();
     let n = 0;
     for (const p of await pairs()) {
-      const m1 = parseV1Method(p.raw1, { env: "sems-dev", resolveService: await resolverFor(p, defs) });
+      const m1 = parseV1Method(p.raw1, { env: "acme-dev", resolveService: await resolverFor(p, defs) });
       m1.parsedSteps.forEach((s, i) => {
         const t = p.m2.parsedSteps[i]!;
         expect(s.serviceName).toBe(t.serviceName!);
@@ -231,7 +231,7 @@ describe("AD-02 step classification by service identity", () => {
 
   test("offline without a resolver, numeric apiIds never classify (ids are env-local; no built-in per-env tables)", async () => {
     const raw1 = (await json(`${FIX}/real-v1/486041dfd02d9fd45a27b608ad2dce0c.v1.json`)) as V1RawMethodResponse;
-    for (const opts of [undefined, { env: "sems-dev" }, { env: "other" }]) {
+    for (const opts of [undefined, { env: "acme-dev" }, { env: "other" }]) {
       const kinds = parseV1Method(raw1, opts).parsedSteps.map((s) => s.kind);
       expect(kinds.filter((k) => k === "SQL" || k === "SPEL_ECHO").length).toBe(0);
     }
@@ -249,7 +249,7 @@ describe("AD-02 step classification by service identity", () => {
     expect(new Set(asked).size).toBe(asked.length);
     expect(asked).toContain("1040");
     expect(unresolved).not.toContain("1040");
-    const m = parseV1Method(raw1, { env: "sems-dev", resolveService });
+    const m = parseV1Method(raw1, { env: "acme-dev", resolveService });
     const sql = m.parsedSteps.find((s) => s.kind === "SQL");
     expect(sql?.kind).toBe("SQL");
     if (sql?.kind === "SQL") {
@@ -348,10 +348,10 @@ describe("V2 method outputs without `key` (ADR-R8)", () => {
     const uuid = "4a49e392ca76084725c3839ff97007ae";
     const raw2 = (await json(`${FIX}/real-v2/${uuid}.v2.json`)) as V2MethodResponse;
     expect(raw2.outputs?.some((o) => !o.key)).toBe(true);
-    const m2 = parseV2Method(raw2, { env: "sems-dev" });
-    const m1 = parseV1Method((await json(`${FIX}/real-v1/${uuid}.v1.json`)) as V1RawMethodResponse, { env: "sems-dev" });
+    const m2 = parseV2Method(raw2, { env: "acme-dev" });
+    const m1 = parseV1Method((await json(`${FIX}/real-v1/${uuid}.v1.json`)) as V1RawMethodResponse, { env: "acme-dev" });
     for (const o of m2.outputs) expect(o.code).not.toBe("");
     expect(m2.outputs.map((o) => o.code)).toEqual(m1.outputs.map((o) => o.code));
-    expect(parseV2Method({ ...raw2, outputs: [{ name: "onlyName" } as never] }, { env: "sems-dev" }).outputs[0]!.code).toBe("onlyName");
+    expect(parseV2Method({ ...raw2, outputs: [{ name: "onlyName" } as never] }, { env: "acme-dev" }).outputs[0]!.code).toBe("onlyName");
   });
 });

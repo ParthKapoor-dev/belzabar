@@ -157,7 +157,7 @@
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
         "email": "user@example.com",
         "firstName": "Admin",
-        "lastName": "SEMS",
+        "lastName": "ACME",
         "ssoUser": false,
         "boss": {
           "id": 1,
@@ -174,8 +174,8 @@
         "mfaEnabled": false,
         "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
         "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
-        "fullName": "Admin SEMS",
-        "title": "Admin SEMS",
+        "fullName": "Admin ACME",
+        "title": "Admin ACME",
         "lastLoginDate": 1790524815956
       },
       "createdAt": 1676898850109

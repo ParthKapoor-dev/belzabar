@@ -13,9 +13,9 @@ describe("sql command parseArgs", () => {
   });
 
   test("parses run query with db and raw flags", () => {
-    const parsed = parse(["run", "select * from users", "--db", "NSM_QA_DB", "--raw"]) as any;
+    const parsed = parse(["run", "select * from users", "--db", "ORB_QA_DB", "--raw"]) as any;
     expect(parsed.action).toBe("run");
-    expect(parsed.db).toBe("NSM_QA_DB");
+    expect(parsed.db).toBe("ORB_QA_DB");
     expect(parsed.raw).toBe(true);
   });
 
@@ -29,7 +29,7 @@ describe("sql command parseArgs", () => {
     const parsed = parse([
       "tui",
       "--db",
-      "NSM_QA_DB",
+      "ORB_QA_DB",
       "--format",
       "json",
       "--timing",
@@ -39,7 +39,7 @@ describe("sql command parseArgs", () => {
     ]) as any;
 
     expect(parsed.action).toBe("tui");
-    expect(parsed.tui.db).toBe("NSM_QA_DB");
+    expect(parsed.tui.db).toBe("ORB_QA_DB");
     expect(parsed.tui.format).toBe("json");
     expect(parsed.tui.timing).toBe(true);
     expect(parsed.tui.pageSize).toBe(25);

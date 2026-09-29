@@ -109,7 +109,7 @@ describe("meta.env only for env-aware commands", () => {
     expect((await runCliInProcess(cli(), ["envs"])).envelope?.meta.env).toBeUndefined();
     expect((await runCliInProcess(cli(), ["config", "get"])).envelope?.meta.env).toBeUndefined();
     // a command's own meta.env is not trusted over the runner's decision
-    const liar: CommandModule = { envAware: false, execute: () => ok(1, { env: "nsm-dev" }) };
+    const liar: CommandModule = { envAware: false, execute: () => ok(1, { env: "orb-dev" }) };
     expect((await runCommand(liar)).envelope?.meta.env).toBeUndefined();
   });
 });

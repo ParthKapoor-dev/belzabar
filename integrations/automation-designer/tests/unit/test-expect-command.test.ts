@@ -1,5 +1,5 @@
 // 7.7 / 7.12: `ad test --expect`, `--case` and `--compare-published` over the
-// real sems-dev bodies of belz_tst_s7c_t1 (fixtures/test-cases: draft
+// real acme-dev bodies of belz_tst_s7c_t1 (fixtures/test-cases: draft
 // 4252b87e… whose echo was changed to "Hi #{name}", and its published copy
 // 4725bcfb… still saying "Hello #{name}") and the real /chain/test answers.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";

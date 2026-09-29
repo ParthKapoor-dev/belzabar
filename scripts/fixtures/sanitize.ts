@@ -1,3 +1,5 @@
+import { readFileSync } from "fs";
+
 // Fixture sanitizer + secret scanner.
 //
 // Used by `capture.ts` before anything is written to disk, and by
@@ -19,10 +21,16 @@
 //      person maps to the same pseudonym in every fixture:
 //      - objects with firstName/lastName/fullName (AD owner/createdBy, Teamwork
 //        users, …) → "Test" / "User-<code>" / "Test User-<code>"; the shared
-//        system accounts ("Admin SEMS", "Super User") are kept;
+//        system accounts ("Admin <Org>", "Super User") are kept;
 //      - Jenkins causes {userId, userName, shortDescription} → "user-<code>";
 //      - structured change-log notes ("Developer: X", "Reviewer: Y", "Dev: X",
 //        "Started by user X") → "person-<code>".
+//  10. project / tenant / person terms (never committed: the list is a local
+//      JSON file named by BELZ_SCRUB_TERMS, see loadScrubTerms) → their
+//      placeholders, case-preserving (INITECH → ACME, Initech → Acme);
+//  11. real hostnames (URL hosts and `www.` hosts, plus bare hosts with 3+
+//      labels) on public TLDs that are not generic infrastructure
+//      (GENERIC_HOSTS) → the same host on the reserved `.example` TLD.
 //   9. strings that hold JSON (PD `configuration`, AD `jsonDefinition`) are
 //      parsed, sanitized recursively and re-stringified — but ONLY when a rule
 //      fired inside them; untouched strings stay byte-identical so the
@@ -61,13 +69,13 @@ export function personCode(name: string): string {
   return h.toString(36).padStart(4, "0").slice(-4);
 }
 
-/** Shared system accounts, not people: kept as-is. */
-const SYSTEM_ACCOUNTS = new Set(["admin sems", "super user"]);
+/** Shared system accounts, not people: kept as-is ("Super User", "Admin <Org>"). */
+const SYSTEM_ACCOUNT_RE = /^(super user|admin [a-z0-9]+)$/i;
 const PSEUDO_LAST_RE = /^User-[0-9a-z]{4}$/;
 const PSEUDO_TEXT_RE = /^(person|user)-[0-9a-z]{4}$/;
 const NAME_KEYS = ["firstName", "lastName", "middleName", "fullName", "first-name", "last-name"] as const;
 
-/** Name-note labels in change logs / comments: `Developer: Vandana<br>…`, `Reviewer =&gt; X`. */
+/** Name-note labels in change logs / comments: `Developer: Jane<br>…`, `Reviewer =&gt; X`. */
 const NAME_NOTE_RE =
   /\b(Developer|Dev|Reviewer|Reveiwer|Author|Created by|Modified by|Updated by)(\s*(?::|=&gt;|=>)\s*)([A-Z][A-Za-z'-]+(?: [A-Z][A-Za-z'-]+)?)/g;
 /** Jenkins console: `Started by user <ha:// hyperlink note>name` (the note encodes /user/<name>). */
@@ -91,7 +99,7 @@ function personNameFields(obj: Record<string, unknown>): Record<string, string> 
   const full = str("fullName");
   if (first === undefined && last === undefined && full === undefined) return null;
   const seed = [first, last].filter(Boolean).join(" ").trim() || (full ?? "").trim();
-  if (!seed || SYSTEM_ACCOUNTS.has(seed.toLowerCase())) return null;
+  if (!seed || SYSTEM_ACCOUNT_RE.test(seed)) return null;
   if (last !== undefined && PSEUDO_LAST_RE.test(last)) return null;
   if (last === undefined && full !== undefined && /^Test User-[0-9a-z]{4}$/.test(full)) return null;
   const code = personCode(seed);
@@ -120,6 +128,107 @@ function jenkinsUserFields(obj: Record<string, unknown>): Record<string, string>
   return out;
 }
 
+// ── project terms + hostnames (rules 10, 11) ────────────────────────────────
+
+export type ScrubTerm = [pattern: RegExp, replacement: string];
+
+/**
+ * Load the local project-term list: a JSON file `{ "terms": [[regexSource, replacement], …] }`
+ * named by BELZ_SCRUB_TERMS (patterns are applied with flags `gi`, in order). The list names
+ * real projects and people, so it lives outside the repo; without it only the generic rules run.
+ */
+export function loadScrubTerms(path: string | undefined = process.env.BELZ_SCRUB_TERMS): ScrubTerm[] {
+  if (!path) return [];
+  const parsed = JSON.parse(readFileSync(path, "utf8")) as { terms?: Array<[string, string]> };
+  return (parsed.terms ?? []).map(([source, replacement]) => [new RegExp(source, "gi"), replacement]);
+}
+
+let TERMS: ScrubTerm[] = loadScrubTerms();
+
+/** Replace the active term list (tests). */
+export function setScrubTerms(terms: ScrubTerm[]): void {
+  TERMS = terms;
+}
+
+/** The replacement in the case of the match: ALL CAPS, Capitalized, lower — else as given. */
+function matchCase(match: string, replacement: string): string {
+  if (!/[a-z]/i.test(match)) return replacement;
+  if (match === match.toUpperCase()) return replacement.toUpperCase();
+  if (match === match.toLowerCase()) return replacement.toLowerCase();
+  if (match[0] === match[0]!.toUpperCase() && match.slice(1) === match.slice(1).toLowerCase()) {
+    return replacement.charAt(0).toUpperCase() + replacement.slice(1).toLowerCase();
+  }
+  return replacement;
+}
+
+export function applyTerms(s: string, terms: ScrubTerm[] = TERMS): string {
+  let out = s;
+  for (const [re, replacement] of terms) out = out.replace(re, (m) => matchCase(m, replacement));
+  return out;
+}
+
+/** Public TLDs whose hosts are checked (reserved ones — .test, .example, .invalid, .localhost — never are). */
+const PUBLIC_TLD = "(?:com|net|org|io|dev|cloud|app|ai|co|us|in|uk|info|biz|edu|gov|me|xyz|tech|site|online)";
+/** Hosts in URLs (`//host`) and `www.` hosts, any label count. */
+const URL_HOST_RE = new RegExp(`(?<=//)(?:[a-z0-9-]+\\.)+${PUBLIC_TLD}(?![\\w.-])|\\bwww\\.(?:[a-z0-9-]+\\.)+${PUBLIC_TLD}(?![\\w.-])`, "gi");
+/** Bare hosts with 3+ labels (`dev.corp.<tld>`); 2-label words like `ui.info` are code, not hosts. */
+const BARE_HOST_RE = new RegExp(`(?<![\\w.@/-])(?:[a-z0-9-]+\\.){2,}${PUBLIC_TLD}(?![\\w.-])`, "gi");
+
+/** Generic infrastructure hosts (exact or a subdomain of) that may stay. */
+export const GENERIC_HOSTS = [
+  "example.com", "example.org", "example.net", "w3.org", "schema.org", "github.com", "githubusercontent.com",
+  "bun.sh", "npmjs.com", "npmjs.org", "fonts.googleapis.com", "fonts.gstatic.com", "www.googleapis.com",
+  "claude.ai", "claude.com", "anthropic.com", "git-scm.com", "slack.com",
+];
+
+export function isGenericHost(host: string): boolean {
+  const h = host.toLowerCase();
+  return GENERIC_HOSTS.some((g) => h === g || h.endsWith(`.${g}`));
+}
+
+/** Every non-generic public-TLD host in `text` (URL hosts, www. hosts, bare 3+-label hosts). */
+export function findHosts(text: string): string[] {
+  const hosts = [...(text.match(URL_HOST_RE) ?? []), ...(text.match(BARE_HOST_RE) ?? [])];
+  return [...new Set(hosts.map((h) => h.toLowerCase()))].filter((h) => !isGenericHost(h));
+}
+
+function scrubHosts(s: string): string {
+  const swap = (h: string) => (isGenericHost(h) ? h : h.replace(/\.[a-z]+$/i, ".example"));
+  return s.replace(URL_HOST_RE, swap).replace(BARE_HOST_RE, swap);
+}
+
+/** Base64-looking runs (e.g. encoded custom code) that decode to text: never edited token-wise. */
+const B64_RUN_RE = /[A-Za-z0-9+/]{16,}={0,2}/g;
+
+function isBase64Text(run: string): boolean {
+  if (run.length % 4 !== 0) return false;
+  const bytes = Buffer.from(run, "base64");
+  if (bytes.length === 0 || bytes.toString("base64") !== run) return false;
+  let printable = 0;
+  for (const b of bytes) if (b === 9 || b === 10 || b === 13 || (b >= 32 && b < 127) || b >= 0xc2) printable++;
+  return printable / bytes.length >= 0.9;
+}
+
+/** `text` with base64-text runs blanked (what rules 10-11 and the tree guard look at). */
+export function withoutBase64(text: string): string {
+  return text.replace(B64_RUN_RE, (run) => (isBase64Text(run) ? "" : run));
+}
+
+/**
+ * Rules 10 + 11: plain token swaps, safe inside JSON text (bytes change only at
+ * the tokens). Base64 runs are left alone: a swapped letter would corrupt them.
+ */
+function scrubText(s: string): string {
+  let out = "";
+  let last = 0;
+  for (const m of s.matchAll(B64_RUN_RE)) {
+    if (!isBase64Text(m[0])) continue;
+    out += scrubHosts(applyTerms(s.slice(last, m.index))) + m[0];
+    last = m.index! + m[0].length;
+  }
+  return out + scrubHosts(applyTerms(s.slice(last)));
+}
+
 function scrubString(s: string): string {
   let out = scrubNames(s)
     .replace(JWT_RE, "REDACTED_JWT")
@@ -146,9 +255,15 @@ export function sanitize<T>(value: T, stats: SanitizeStats = { redactedKeys: 0, 
   return walk(value, stats) as T;
 }
 
-function walk(v: unknown, stats: SanitizeStats): unknown {
-  if (typeof v === "string") return sanitizeString(v, stats);
-  if (Array.isArray(v)) return v.map((x) => walk(x, stats));
+function walk(v: unknown, stats: SanitizeStats, textual = true): unknown {
+  if (typeof v === "string") {
+    const out = sanitizeString(v, stats);
+    if (!textual) return out;
+    const text = scrubText(out);
+    if (text !== out) stats.scrubbedStrings++;
+    return text;
+  }
+  if (Array.isArray(v)) return v.map((x) => walk(x, stats, textual));
   if (v && typeof v === "object") {
     const out: Record<string, unknown> = {};
     const obj = v as Record<string, unknown>;
@@ -174,16 +289,17 @@ function walk(v: unknown, stats: SanitizeStats): unknown {
         continue;
       }
       // Keys can carry PII too (e.g. test data keyed by e-mail address).
-      let key = scrubString(k);
+      const clean = (x: string) => (textual ? scrubText(scrubString(x)) : scrubString(x));
+      let key = clean(k);
       if (key !== k) {
         stats.scrubbedStrings++;
-        for (let n = 2; key in out; n++) key = scrubString(k).replace("user@", `user${n}@`);
+        for (let n = 2; key in out; n++) key = clean(k).replace("user@", `user${n}@`);
       }
       if (SECRET_KEY_RE.test(k) && typeof val === "string" && val !== "" && val !== "REDACTED") {
         out[key] = "REDACTED";
         stats.redactedKeys++;
       } else {
-        out[key] = walk(val, stats);
+        out[key] = walk(val, stats, textual);
       }
     }
     return out;
@@ -196,7 +312,8 @@ function sanitizeString(s: string, stats: SanitizeStats): string {
     try {
       const parsed = JSON.parse(s);
       const inner: SanitizeStats = { redactedKeys: 0, scrubbedStrings: 0, reencodedJsonStrings: 0 };
-      const cleaned = walk(parsed, inner);
+      // Secret/PII rules only: rules 10-11 run on the text afterwards (keeps the bytes).
+      const cleaned = walk(parsed, inner, false);
       const fired = inner.redactedKeys + inner.scrubbedStrings + inner.reencodedJsonStrings;
       if (fired === 0) return s; // untouched → keep exact bytes
       stats.redactedKeys += inner.redactedKeys;
@@ -214,7 +331,7 @@ function sanitizeString(s: string, stats: SanitizeStats): string {
 
 /** Plain-text sanitizer (console logs etc.). */
 export function sanitizeText(s: string): string {
-  return scrubString(s);
+  return scrubText(scrubString(s));
 }
 
 export interface SecretFinding {
@@ -239,7 +356,7 @@ export function findSecrets(text: string): SecretFinding[] {
     if (SECRET_FIELD_NAME_RE.test(m[1]!)) found.push({ kind: "secret-key", match: `${m[1]}=${m[2]!.slice(0, 8)}…` });
   }
   // Person names (CORE-R13): name fields must be pseudonyms, empty, or a system account part.
-  const allowedNamePart = /^(|Test|Admin|Super|SEMS|User|Admin SEMS|Super User|User-[0-9a-z]{4}|Test User-[0-9a-z]{4})$/;
+  const allowedNamePart = /^(|Test|Admin|Super|User|[A-Z][A-Z0-9]+|Admin [A-Za-z0-9]+|Super User|User-[0-9a-z]{4}|Test User-[0-9a-z]{4})$/;
   const nameRe = /\\?"(firstName|lastName|middleName|fullName|first-name|last-name)\\?"\s*:\s*\\?"([^"\\]*)/g;
   for (const m of text.matchAll(nameRe)) {
     if (!allowedNamePart.test(m[2]!)) found.push({ kind: "person-name", match: `${m[1]}=${m[2]!.slice(0, 3)}…` });

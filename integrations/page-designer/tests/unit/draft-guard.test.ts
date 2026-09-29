@@ -1,5 +1,5 @@
 // PD-1 / PD-7 regression: the draft/published sibling must be resolved via the
-// row's referenceId, never by page name. Fixture mirrors sems-dev, which has
+// row's referenceId, never by page name. Fixture mirrors acme-dev, which has
 // two unrelated "Add Student" pairs.
 import { describe, test, expect } from "bun:test";
 import { resolveDraftTarget, resolveLinkedPair, describeDraftGuardFailure } from "../../lib/draft-guard";
@@ -32,7 +32,7 @@ function depsFor(rows: RawPageResponse[]) {
   };
 }
 
-const SEMS = [
+const ACME = [
   row(DRAFT_B, "DRAFT", PUB_B),
   row(PUB_B, "PUBLISHED", DRAFT_B),
   row(DRAFT_A, "DRAFT", PUB_A),
@@ -41,7 +41,7 @@ const SEMS = [
 
 describe("resolveDraftTarget (referenceId link)", () => {
   test("duplicate names: PUBLISHED A switches to its own linked draft, not the other 'Add Student'", async () => {
-    const { deps, calls } = depsFor(SEMS);
+    const { deps, calls } = depsFor(ACME);
     const r = await resolveDraftTarget(PUB_A, deps);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -54,7 +54,7 @@ describe("resolveDraftTarget (referenceId link)", () => {
   });
 
   test("DRAFT input stays put and reports its linked published id", async () => {
-    const { deps } = depsFor(SEMS);
+    const { deps } = depsFor(ACME);
     const r = await resolveDraftTarget(DRAFT_A, deps);
     expect(r.ok && r.draftId).toBe(DRAFT_A);
     expect(r.ok && r.publishedId).toBe(PUB_A);
@@ -119,13 +119,13 @@ describe("resolveDraftTarget (referenceId link)", () => {
 
 describe("entityIdsFromRaw (pd translations / page-deps)", () => {
   test("duplicate names: draft input reports its own published sibling", async () => {
-    const { deps } = depsFor(SEMS);
+    const { deps } = depsFor(ACME);
     const ids = await entityIdsFromRaw(row(DRAFT_A, "DRAFT", PUB_A), "PAGE", deps);
     expect(ids).toEqual({ name: "Add Student", entityType: "PAGE", draftId: DRAFT_A, publishedId: PUB_A });
   });
 
   test("published input reports its own linked draft", async () => {
-    const { deps } = depsFor(SEMS);
+    const { deps } = depsFor(ACME);
     const ids = await entityIdsFromRaw(row(PUB_B, "PUBLISHED", DRAFT_B), "PAGE", deps);
     expect(ids.draftId).toBe(DRAFT_B);
     expect(ids.publishedId).toBe(PUB_B);
@@ -139,7 +139,7 @@ describe("entityIdsFromRaw (pd translations / page-deps)", () => {
   });
 
   test("resolveLinkedPair is name-agnostic (no name lookups at all)", async () => {
-    const { deps, calls } = depsFor(SEMS);
+    const { deps, calls } = depsFor(ACME);
     await resolveLinkedPair(row(PUB_A, "PUBLISHED", DRAFT_A), deps);
     expect(calls).toEqual([DRAFT_A]);
   });

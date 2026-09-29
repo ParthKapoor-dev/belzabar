@@ -164,17 +164,20 @@ Guards: `apps/cli/tests/registry.test.ts` (folders ⇔ registry), `apps/cli/test
   `@belzabar/core/testing` (`packages/core/src/testing/`), fed by sanitized real responses in each
   module's `tests/fixtures/`.
 - **Wire fixtures**: `scripts/fixtures/capture.ts` captures real API responses (with
-  `manifest.json`). It is **read-only** (GET only) and **sems-dev only**, and runs every body
-  through `scripts/fixtures/sanitize.ts` (secrets, e-mails, phones, and person names —
-  firstName/lastName/fullName records, Jenkins users, `Developer: X` notes — pseudonymized
-  deterministically as `Test User-<code>` / `person-<code>`). `scripts/fixtures/fixtures-secrets.test.ts`
-  fails on anything that looks like a secret or PII — re-run
-  `bun scripts/fixtures/capture.ts resanitize <dir>` if it trips (it imports `@belzabar/core`, so point
-  `BELZ_HOME` at a scratch dir with a `sems-dev` env).
-- **Live suites** are opt-in: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live` (read-only), plus
-  `BELZ_LIVE_WRITE=1` for write suites such as `apps/cli/tests/live/ad-lifecycle.live-write.test.ts`
-  (AD category Test-Parth only, `belz_tst_` names, soft-deleted afterwards). Any other
-  `BELZ_LIVE` value is refused. CI never sets it.
+  `manifest.json`). It is **read-only** (GET only), reads only the env named by `BELZ_CAPTURE_ENV`
+  (use a non-production env), and runs every body through `scripts/fixtures/sanitize.ts`
+  (secrets, e-mails, phones, and person names — firstName/lastName/fullName records, Jenkins
+  users, `Developer: X` notes — pseudonymized deterministically as `Test User-<code>` /
+  `person-<code>`; real hostnames → the reserved `.example` TLD; project/tenant/person terms from
+  the **local, never-committed** list named by `BELZ_SCRUB_TERMS` → placeholders).
+  `scripts/fixtures/fixtures-secrets.test.ts` fails on anything that looks like a secret or PII,
+  on any real hostname in a tracked file, and — when `BELZ_SCRUB_TERMS` is set — on any listed
+  term. Re-run `BELZ_SCRUB_TERMS=<list> bun scripts/fixtures/capture.ts resanitize <dir>` if it trips
+  (it imports `@belzabar/core`, so point `BELZ_HOME` at a scratch dir).
+- **Live suites** are opt-in: `BELZ_LIVE=<env> bun test apps/cli/tests/live` (read-only), plus
+  `BELZ_LIVE_WRITE=1 BELZ_LIVE_CATEGORY=<name> BELZ_LIVE_CATEGORY_ID=<id>` for write suites such as
+  `apps/cli/tests/live/ad-lifecycle.live-write.test.ts` (that AD category only, `belz_tst_` names,
+  soft-deleted afterwards). CI never sets them.
 
 ---
 

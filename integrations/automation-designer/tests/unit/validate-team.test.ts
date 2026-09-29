@@ -2,7 +2,7 @@
 // test_validate_{ci1,as1,lp,sp1,vb1,nc1_dup1,ok1_on1,g4g5g6}.py) with their inline
 // fixtures, so the shared rule codes keep the team's meaning.
 // Deliberate differences (catalogue.ts): CI1 and DUP1 are warnings (ADW-R15: they
-// fire on 58 / 5 spots of working real sems-dev methods); the rest keep their severity.
+// fire on 58 / 5 spots of working real acme-dev methods); the rest keep their severity.
 
 import { describe, expect, test } from "bun:test";
 import { validateMethodV2 } from "../../lib/validate/index";

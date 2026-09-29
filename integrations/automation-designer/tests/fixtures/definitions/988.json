@@ -169,7 +169,7 @@
   "showError": false,
   "asyncAutomation": false,
   "dependentOnStep": 0,
-  "service": "Baltimore Schools - Utilities",
+  "service": "Springfield Schools - Utilities",
   "action": "find.initials.from.string",
   "describableAutomation": false,
   "massAutomation": false,

@@ -11,13 +11,13 @@ URL, or a PD URL. It is resolved INDEPENDENTLY in each environment, because
 entity ids are env-local — pass a name or URL when the ids differ.
 
 Flags:
-  --from <env>   Environment to treat as the baseline (e.g. nsm-dev)
-  --to <env>     Environment to compare against (e.g. nsm-stage)
+  --from <env>   Environment to treat as the baseline (e.g. acme-dev)
+  --to <env>     Environment to compare against (e.g. acme-stage)
   --llm          Emit a JSON envelope
 
 Examples:
-  belz pd diff "Vehicle Search" --from nsm-dev --to nsm-stage
-  belz pd diff 49fa2576239ec5791c6ead4cf9408ce2 --from nsm-stage --to nsm-uat --llm
+  belz pd diff "Vehicle Search" --from acme-dev --to acme-stage
+  belz pd diff 49fa2576239ec5791c6ead4cf9408ce2 --from acme-stage --to acme-uat --llm
 
 Notes:
   - Both environments must have valid credentials configured in

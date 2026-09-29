@@ -1,6 +1,6 @@
-// Stage 5 (D1) — `ad save` overlay → V2 body, on real sems-dev V2 wire.
+// Stage 5 (D1) — `ad save` overlay → V2 body, on real acme-dev V2 wire.
 // Replaces the Stage-0 V1 guard tests (save-guard / save-payload-v1 /
-// sql-overlay-sems): AD-01 (fields dropped), AD-03 (SQL encoding), AD-22
+// sql-overlay-acme): AD-01 (fields dropped), AD-03 (SQL encoding), AD-22
 // (unedited steps rewritten), val-P0 (plain custom code corrupted).
 import { describe, expect, test } from "bun:test";
 import { readdirSync } from "fs";

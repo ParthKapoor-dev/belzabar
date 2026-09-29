@@ -1,6 +1,6 @@
 // `ad show`: canonical uuid from any spelling (AD-30/F11), identity is always
 // a string (F37), step inputs + basic conditions are rendered (AD-40), and SQL
-// on sems shows once the step is classified (AD-02).
+// on acme shows once the step is classified (AD-02).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { runCommand, withTempEnvConfig } from "@belzabar/core/testing";
 import showCommand, { flattenStepInputs, identityForStep } from "../../commands/show/index";
@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 async function v2Method() {
-  return parseV2Method((await Bun.file(`${FIX}/real-v2/${UUID}.v2.json`).json()) as V2MethodResponse, { env: "sems-dev" });
+  return parseV2Method((await Bun.file(`${FIX}/real-v2/${UUID}.v2.json`).json()) as V2MethodResponse, { env: "acme-dev" });
 }
 
 describe("identityForStep (F37)", () => {

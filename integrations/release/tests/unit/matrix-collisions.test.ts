@@ -14,10 +14,10 @@ import { resolveReleaseEnvs } from "../../lib/spec";
 
 const dir = mkdtempSync(join(tmpdir(), "belz-release-matrix-"));
 const ENVS = {
-  "sems-dev": { url: "https://sems-dev.test" },
-  "sems-stage": { url: "https://sems-stage.test" },
-  "nsm-dev": { url: "https://nsm-dev.test" },
-  "nsm-stage": { url: "https://nsm-stage.test" },
+  "acme-dev": { url: "https://acme-dev.test" },
+  "acme-stage": { url: "https://acme-stage.test" },
+  "orb-dev": { url: "https://orb-dev.test" },
+  "orb-stage": { url: "https://orb-stage.test" },
 };
 
 let cfg: TempEnvConfig | null = null;
@@ -45,7 +45,7 @@ function specFile(body: unknown): string {
 }
 
 const U = (c: string) => c.repeat(32);
-const adUrl = (uuid: string) => `https://sems-dev.test/automation-designer/Test-Parth/${uuid}`;
+const adUrl = (uuid: string) => `https://acme-dev.test/automation-designer/Test-Tester/${uuid}`;
 
 /** A ticket whose comments are the given bodies (oldest first). */
 function ticketRoutes(id: number, bodies: string[]) {
@@ -71,8 +71,8 @@ function ticketRoutes(id: number, bodies: string[]) {
 async function setup(routes: unknown[]) {
   cfg = withTempEnvConfig({
     envs: ENVS,
-    activeEnv: "sems-dev",
-    teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "p", passwordEncoding: "plain" },
+    activeEnv: "acme-dev",
+    teamwork: { baseUrl: "https://tw.example.test", email: "user@example.com", password: "p", passwordEncoding: "plain" },
   });
   await saveTeamworkSession({ twAuth: "ok" });
   ff = fakeFetch([
@@ -151,17 +151,17 @@ describe("OTH-R21: a ticket that fails to link", () => {
 describe("OTH-R30: leak classification", () => {
   const cell = (env: string, status: string, spinePos = 0) => ({ env, status, spinePos, spineVersion: null });
   const cases: Array<[string, Parameters<typeof classifyLeak>[0], string]> = [
-    ["stage at spine head", { envs: [cell("sems-stage", "latest", 3)] }, "leaked"],
-    ["stage behind", { envs: [cell("sems-stage", "behind", 1)] }, "clean"],
-    ["stage missing the method", { envs: [cell("sems-stage", "missing", -1)] }, "unknown"],
-    ["stage diverged", { envs: [cell("sems-stage", "ahead-or-diverged", -1)] }, "unknown"],
-    ["stage trace error", { envs: [cell("sems-stage", "error", -1)] }, "unknown"],
-    ["stage not traced", { envs: [cell("sems-dev", "latest", 3)] }, "unknown"],
-    ["whole trace failed", { envs: [cell("sems-stage", "latest", 3)], error: "boom" }, "unknown"],
+    ["stage at spine head", { envs: [cell("acme-stage", "latest", 3)] }, "leaked"],
+    ["stage behind", { envs: [cell("acme-stage", "behind", 1)] }, "clean"],
+    ["stage missing the method", { envs: [cell("acme-stage", "missing", -1)] }, "unknown"],
+    ["stage diverged", { envs: [cell("acme-stage", "ahead-or-diverged", -1)] }, "unknown"],
+    ["stage trace error", { envs: [cell("acme-stage", "error", -1)] }, "unknown"],
+    ["stage not traced", { envs: [cell("acme-dev", "latest", 3)] }, "unknown"],
+    ["whole trace failed", { envs: [cell("acme-stage", "latest", 3)], error: "boom" }, "unknown"],
   ];
   for (const [label, item, leak] of cases) {
     test(`${label} → ${leak}`, () => {
-      expect(classifyLeak(item, "sems-stage").leak).toBe(leak as never);
+      expect(classifyLeak(item, "acme-stage").leak).toBe(leak as never);
     });
   }
 });
@@ -172,11 +172,11 @@ describe("OTH-R24: spine and stage from different projects", () => {
     const all = Config.getAllEnvs();
     let code = "";
     try {
-      resolveReleaseEnvs({ spineEnv: "sems-dev", stageEnv: "nsm-stage" }, all["sems-dev"]!, all);
+      resolveReleaseEnvs({ spineEnv: "acme-dev", stageEnv: "orb-stage" }, all["acme-dev"]!, all);
     } catch (e) {
       code = (e as { code: string }).code;
     }
     expect(code).toBe("BAD_SPEC");
-    expect(resolveReleaseEnvs({ project: "sems" }, all["nsm-dev"]!, all).stageEnv).toBe("sems-stage");
+    expect(resolveReleaseEnvs({ project: "acme" }, all["orb-dev"]!, all).stageEnv).toBe("acme-stage");
   });
 });

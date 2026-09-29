@@ -66,7 +66,7 @@ lib/
   stream-parser.ts     application/stream+json (run --stream)
   error-parser.ts, input-collector.ts, base64.ts
 docs/api-notes.md      wire cheatsheet (routes, auth modes, platform facts)
-tests/unit/            bun tests; tests/fixtures/ = sanitized real sems-dev wire
+tests/unit/            bun tests; tests/fixtures/ = sanitized real wire
 ```
 
 ---
@@ -95,7 +95,7 @@ needs `--yes` instead.
 | `create --spec <file>` | **W** new DRAFT from a compact spec or a V2 body (`--dry-run` is not a write but still needs `--env`; with `--dry-run-compile` it is a write) |
 | `publish <uuid> --note "…"` | **W** validate, publish, record the note, evict the compiled cache |
 | `delete <uuid>` | **W** soft-delete a never-published DRAFT |
-| `import <file>`, `category create <name>` | **W**. import refuses an empty/invalid file (`AD_IMPORT_EMPTY`/`_INVALID`, `FILE_NOT_FOUND`), PUBLISHED records or targets (`AD_IMPORT_PUBLISHED`/`_TARGETS_PUBLISHED`), and validator errors on V2 records; the route 400s on sems-dev |
+| `import <file>`, `category create <name>` | **W**. import refuses an empty/invalid file (`AD_IMPORT_EMPTY`/`_INVALID`, `FILE_NOT_FOUND`), PUBLISHED records or targets (`AD_IMPORT_PUBLISHED`/`_TARGETS_PUBLISHED`), and validator errors on V2 records; the route 400s on the envs tried |
 | `changelog <uuid> [--note "…"]` | List notes; `--note` is **W** (draft-guarded) |
 | `history restore <draftUuid> --version N` | **W** draft-guarded restore; fails `RESTORE_UNCONFIRMED` unless the re-read draft matches the target content (fingerprint projection; `contentDiff` names differing paths); evicts the compiled cache; reports validator findings |
 | `test <uuid>` | **W** (really runs the chain). `--inputs <file|json>`, `--input k=v` (repeatable, typed; on top of --inputs/--case), `--case`, `--expect`, `--compare-published` (runs the published copy too: confirms, `--yes`). A FAILED execution exits 1 `AD_TEST_FAILED` |
@@ -291,7 +291,9 @@ meaning; belz rules are named `AD-<FAMILY>-nnn`. To add a rule:
 
 `lint.ts` defines the advisory `LINT_RULES`: Q2–Q4 and `AD-LINT-001`…`010`. They are
 always warnings, and save and publish never run them. Their counts are pinned in
-`tests/unit/lint.test.ts`.
+`tests/unit/lint.test.ts`. Q3 is project-specific and therefore config-driven: config.json
+`"lint": {"resolverTables": {"<table>": "<resolverFn>"}}` (read by `commands/lint`); with none
+configured Q3 never fires. Step classification never uses built-in per-env numeric API ids.
 
 ### Tests: `--expect` and test cases (`lib/test-cases/`)
 `--expect` syntax:
@@ -325,7 +327,7 @@ facts to keep in mind:
   assertion; no case carries a result. Hence `run-suite --wait` (`lib/test-cases/run-suite.ts`)
   runs the cases through `/chain/test` itself, like `ad test --case`.
 
-### Platform traps agents hit (CLI trial, sems-dev 2026-09-29)
+### Platform traps agents hit (CLI trial, 2026-09-29)
 Documented in `ad save --help` / `ad create --help` / `ad outputs --help`, where agents look:
 - db_service `flatData[]` is an array of row OBJECTS (`[{col: v}, …]`), not scalars, whatever
   the name suggests: `--expect 'out[0].col=v'`.
@@ -343,7 +345,7 @@ Documented in `ad save --help` / `ad create --help` / `ad outputs --help`, where
   `{"service":"Helpers.Legacy/echo","inputs":{"Input":"#{rows[0].col}"},"outputs":[{"key":"response","as":"col"}]}`
   (verified live; no method variable needed).
 - A db_service step's `account` defaults only when the service has exactly one account on the
-  env (sems-dev has 8). Otherwise AD_SPEC_INVALID / AD_OVERLAY_INVALID lists them as `id=nickname`.
+  env (one env has 8). Otherwise AD_SPEC_INVALID / AD_OVERLAY_INVALID lists them as `id=nickname`.
 
 ### SQL
 Default DB when `--db` is absent, in order:
@@ -406,8 +408,8 @@ Flags:
   --help, -h            Show this help message.
 
 Global Flags:
-  --env <name>          Set active environment. (default: nsm-dev)
-                        Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>          Set active environment. (default: BELZ_ENV, else defaultEnv,
+                        else the only env)
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
@@ -434,25 +436,25 @@ Rules:
   `respond`, `withTempEnvConfig` and `runCommand` / `runCliInProcess`. Use it to drive
   a command end to end without the network. See `save-command.test.ts` and
   `author-commands.test.ts`.
-- **Fixtures** in `tests/fixtures/` are real sems-dev wire, sanitized, and each
+- **Fixtures** in `tests/fixtures/` are real captured wire, sanitized, and each
   directory has a `manifest.json`:
   - `real-v1/` and `real-v2/`: the same 36 methods, one set per wire version.
   - `definitions/`, `categories/`, `child-info/`, `callers/`, `history/`,
     `test-cases/`, `not-found/`, `services/` (a service's automation-apis listing).
   - `validate/`: the validator golden set plus live case patches.
-  - `cross-env/`: published history bodies of the same logic on sems-dev and
-    sems-qa (read-only History.get), for the cross-env fingerprint tests.
+  - `cross-env/`: published history bodies of the same logic on a dev and a qa
+    env (read-only History.get), for the cross-env fingerprint tests.
   - `v1/step-*.json` are hand-written, but prefer real fixtures.
   - Refresh fixtures from the repo root with `bun scripts/fixtures/capture.ts <target>`.
-    It only issues GETs and only talks to sems-dev.
+    It only issues GETs and only talks to the env named by `BELZ_CAPTURE_ENV`.
 - Suites that pin real-data invariants:
   - `real-wire.test.ts`: V1↔V2 parse parity.
   - `save-v2-overlay.test.ts`: the overlay round-trip over the 36 bodies.
   - `validate-diff.test.ts`, `lint.test.ts`: calibration counts.
 - **Live suites** live in `apps/cli/tests/live/` and are opt-in:
-  - `BELZ_LIVE=sems-dev bun test apps/cli/tests/live` runs the read-only suite.
-  - Adding `BELZ_LIVE_WRITE=1` also runs the full lifecycle write suite in category
-    Test-Parth (create → validate → save → test → test-case → publish → state →
+  - `BELZ_LIVE=<env> bun test apps/cli/tests/live` runs the read-only suite.
+  - Adding `BELZ_LIVE_WRITE=1 BELZ_LIVE_CATEGORY=<name> BELZ_LIVE_CATEGORY_ID=<id>` also runs
+    the full lifecycle write suite in that category (create → validate → save → test → test-case → publish → state →
     history → delete).
   - CI never sets these variables.
 - Every bug fix gets a regression test. Run `bun run check` (typecheck + tests) before

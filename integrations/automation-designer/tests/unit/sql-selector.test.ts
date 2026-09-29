@@ -4,7 +4,7 @@ import { resolveSqlDatabase, normalizeSqlDatabases } from "../../lib/sql/selecto
 const rawDatabases = [
   {
     id: 55,
-    nickname: "NSM_Read_DB",
+    nickname: "ORB_Read_DB",
     authUsageType: "ALL",
     derivedAuthType: "BASIC",
     fields: [
@@ -15,7 +15,7 @@ const rawDatabases = [
   },
   {
     id: 18,
-    nickname: "NSM_QA_DB",
+    nickname: "ORB_QA_DB",
     authUsageType: "ALL",
     derivedAuthType: "BASIC",
     fields: [
@@ -36,11 +36,11 @@ describe("SQL database selector", () => {
   test("resolves explicit --db nickname", () => {
     const normalized = normalizeSqlDatabases(rawDatabases as any);
     const resolved = resolveSqlDatabase(normalized, {
-      requested: "nsm_qa_db",
-      fallbackNickname: "NSM_Read_DB",
+      requested: "orb_qa_db",
+      fallbackNickname: "ORB_Read_DB",
     });
 
-    expect(resolved.selected.nickname).toBe("NSM_QA_DB");
+    expect(resolved.selected.nickname).toBe("ORB_QA_DB");
     expect(resolved.selectedBy).toBe("--db");
   });
 
@@ -48,7 +48,7 @@ describe("SQL database selector", () => {
     const normalized = normalizeSqlDatabases(rawDatabases as any);
     const resolved = resolveSqlDatabase(normalized, {
       requested: "55",
-      fallbackNickname: "NSM_Read_DB",
+      fallbackNickname: "ORB_Read_DB",
     });
 
     expect(resolved.selected.id).toBe(55);
@@ -58,21 +58,21 @@ describe("SQL database selector", () => {
   test("resolves env default", () => {
     const normalized = normalizeSqlDatabases(rawDatabases as any);
     const resolved = resolveSqlDatabase(normalized, {
-      envDefault: "NSM_QA_DB",
-      fallbackNickname: "NSM_Read_DB",
+      envDefault: "ORB_QA_DB",
+      fallbackNickname: "ORB_Read_DB",
     });
 
-    expect(resolved.selected.nickname).toBe("NSM_QA_DB");
+    expect(resolved.selected.nickname).toBe("ORB_QA_DB");
     expect(resolved.selectedBy).toBe("env");
   });
 
-  test("falls back to NSM_Read_DB", () => {
+  test("falls back to ORB_Read_DB", () => {
     const normalized = normalizeSqlDatabases(rawDatabases as any);
     const resolved = resolveSqlDatabase(normalized, {
-      fallbackNickname: "NSM_Read_DB",
+      fallbackNickname: "ORB_Read_DB",
     });
 
-    expect(resolved.selected.nickname).toBe("NSM_Read_DB");
+    expect(resolved.selected.nickname).toBe("ORB_Read_DB");
     expect(resolved.selectedBy).toBe("fallback");
   });
 
@@ -82,7 +82,7 @@ describe("SQL database selector", () => {
     try {
       resolveSqlDatabase(normalized, {
         requested: "does-not-exist",
-        fallbackNickname: "NSM_Read_DB",
+        fallbackNickname: "ORB_Read_DB",
       });
       throw new Error("expected resolveSqlDatabase to throw");
     } catch (error: any) {

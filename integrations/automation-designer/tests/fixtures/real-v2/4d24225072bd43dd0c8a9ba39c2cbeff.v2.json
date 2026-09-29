@@ -158,7 +158,7 @@
       ],
       "accountConfiguration": {
         "id": 3,
-        "name": "BCPS-Local-1"
+        "name": "ZCPS-Local-1"
       },
       "properties": {
         "runAsync": false,

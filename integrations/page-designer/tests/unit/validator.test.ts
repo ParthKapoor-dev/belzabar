@@ -339,7 +339,7 @@ describe("validator — clean page produces no errors", () => {
   });
 });
 
-describe("OTH-R10/R11/R17 calibration (633 live sems-dev drafts)", () => {
+describe("OTH-R10/R11/R17 calibration (633 live acme-dev drafts)", () => {
   const orphanRoots = (page: ReturnType<typeof parsePage>) =>
     validateHydrated(page).filter((i) => i.code === "ORPHAN_BINDING" && i.severity === "error").map((i) => i.path);
 

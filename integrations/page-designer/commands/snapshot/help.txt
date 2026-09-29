@@ -43,6 +43,6 @@ Global Flags:
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz pd snapshot "Student Application" --out snapshots/student-application.json --env sems-dev
-  belz pd snapshot 4cba8f39eb92d136694dadc4e7f2a811 --compare snapshots/student-application.json --env sems-dev
-  belz pd snapshot check_permission --compare snapshots/check_permission.json --env sems-qa --llm | jq '.data.compare.changes'
+  belz pd snapshot "Student Application" --out snapshots/student-application.json --env acme-dev
+  belz pd snapshot 4cba8f39eb92d136694dadc4e7f2a811 --compare snapshots/student-application.json --env acme-dev
+  belz pd snapshot check_permission --compare snapshots/check_permission.json --env acme-qa --llm | jq '.data.compare.changes'

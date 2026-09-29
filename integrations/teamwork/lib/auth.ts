@@ -29,7 +29,7 @@ export function teamworkBase(): string {
   if (!baseUrl) {
     throw new CliError(
       'Teamwork site URL is not configured. Set "baseUrl" under "teamwork" in ~/.belz/config.json ' +
-        "(e.g. https://yourcompany.teamwork.com), or export BELZ_TEAMWORK_URL.",
+        "(e.g. https://<company>.teamwork.com), or export BELZ_TEAMWORK_URL.",
       { code: "TW_CONFIG_MISSING", details: { missing: ["baseUrl"] } },
     );
   }

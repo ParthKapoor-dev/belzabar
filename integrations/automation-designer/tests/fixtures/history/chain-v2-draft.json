@@ -14,8 +14,8 @@
     "service": {
       "id": 1135,
       "uuid": "4e98700b2524e2accd47b4addf95ceca",
-      "name": "Test-Parth",
-      "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+      "name": "Test-Tester",
+      "description": "Scratch category for ZCPS-596 build probes (Tester). Safe to delete.",
       "systemService": false
     },
     "categories": null,
@@ -86,13 +86,13 @@
   "changelogs": [
     {
       "id": "45e53ef169d880e101aebc18df3cb229",
-      "comment": "Method reverted to version 1 by Admin SEMS",
+      "comment": "Method reverted to version 1 by Admin ACME",
       "user": {
         "id": 2,
         "externalUuid": "00000000-0000-0000-0000-000000000000",
         "email": "user@example.com",
         "firstName": "Admin",
-        "lastName": "SEMS",
+        "lastName": "ACME",
         "ssoUser": false,
         "boss": {
           "id": 1,
@@ -109,8 +109,8 @@
         "mfaEnabled": false,
         "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
         "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
-        "fullName": "Admin SEMS",
-        "title": "Admin SEMS",
+        "fullName": "Admin ACME",
+        "title": "Admin ACME",
         "lastLoginDate": 1790524815956
       },
       "createdAt": 1790533744878,

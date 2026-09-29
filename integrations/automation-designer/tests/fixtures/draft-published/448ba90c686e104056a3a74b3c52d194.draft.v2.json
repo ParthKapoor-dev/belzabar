@@ -311,7 +311,7 @@
       ],
       "accountConfiguration": {
         "id": 149,
-        "name": "BCPS-RDS-READ-DB"
+        "name": "ZCPS-RDS-READ-DB"
       },
       "properties": {
         "runAsync": false,
@@ -904,7 +904,7 @@
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
         "email": "user@example.com",
         "firstName": "Admin",
-        "lastName": "SEMS",
+        "lastName": "ACME",
         "ssoUser": false,
         "boss": {
           "id": 1,
@@ -921,8 +921,8 @@
         "mfaEnabled": false,
         "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
         "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
-        "fullName": "Admin SEMS",
-        "title": "Admin SEMS",
+        "fullName": "Admin ACME",
+        "title": "Admin ACME",
         "lastLoginDate": 1790667026007
       },
       "createdAt": 1683892994709
@@ -935,7 +935,7 @@
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
         "email": "user@example.com",
         "firstName": "Admin",
-        "lastName": "SEMS",
+        "lastName": "ACME",
         "ssoUser": false,
         "boss": {
           "id": 1,
@@ -952,8 +952,8 @@
         "mfaEnabled": false,
         "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
         "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
-        "fullName": "Admin SEMS",
-        "title": "Admin SEMS",
+        "fullName": "Admin ACME",
+        "title": "Admin ACME",
         "lastLoginDate": 1790667026007
       },
       "createdAt": 1686203275745

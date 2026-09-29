@@ -57,7 +57,7 @@ Warnings that become errors when a save/restore INTRODUCES them:
   ORPHAN_HTTP_TRIGGER       HTTP call triggered by an undefined variable
   ORPHAN_EVENT_TARGET       event handler writes this.x, x undefined
   V4                        variable type outside the PD enum (String, Boolean,
-                            Number, Any, KeyValue… ARE valid on sems-dev)
+                            Number, Any, KeyValue… ARE valid on acme-dev)
   T2                        table rowData variable not {rows:[…]}
   T4                        {rows:[…]} table variable not typed Any
   T5                        {%$src.$row.X%} in plain HTML of a dict cellLayout
@@ -99,7 +99,7 @@ With --recursive (page <-> symbol, warnings):
 
 Codes V1, V3, V4, T1-T6, C5, R1, R2, H1, F1, U1 are the figma-to-pd
 validate-pd-config.py codes. Not ported: figma V4's "capitalized primitives
-are invalid" (the sems-dev editor writes them), V5, C6, B1, H2, S1.
+are invalid" (the acme-dev editor writes them), V5, C6, B1, H2, S1.
 
 Global Flags:
   --env <name>        Set active environment.
@@ -109,5 +109,5 @@ Global Flags:
 Examples:
   belz pd validate 48b75e11e166e6b19e5796d59a936228
   belz pd validate n_s_staff_email_correspondence --recursive
-  belz pd validate https://nsm-dev.nc.verifi.dev/ui-designer/page/48b75e11e166e6b19e5796d59a936228
+  belz pd validate https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
   belz pd validate 48b75e11e166e6b19e5796d59a936228 --llm | jq '.data.warnings'

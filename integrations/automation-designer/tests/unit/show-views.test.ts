@@ -1,5 +1,5 @@
 // Stage 7.1: `ad show --compact` / `--story` and the lean default envelope,
-// over the 36 real sems-dev V2 bodies (+ V1 with definition labels).
+// over the 36 real acme-dev V2 bodies (+ V1 with definition labels).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readdirSync } from "fs";
 import { runCommand, withTempEnvConfig } from "@belzabar/core/testing";
@@ -29,7 +29,7 @@ async function v2Raw(uuid: string): Promise<V2MethodResponse> {
   return (await Bun.file(`${FIX}/real-v2/${uuid}.v2.json`).json()) as V2MethodResponse;
 }
 async function v2(uuid: string): Promise<HydratedMethod> {
-  return parseV2Method(await v2Raw(uuid), { env: "sems-dev" });
+  return parseV2Method(await v2Raw(uuid), { env: "acme-dev" });
 }
 
 function stub(method: HydratedMethod) {
@@ -95,7 +95,7 @@ describe("ad show default envelope is lean (7.1)", () => {
 
   test("--raw emits the wire body exactly once", async () => {
     const raw = await v2Raw(SQL_UUID);
-    const data = (await show(parseV2Method(raw, { env: "sems-dev" }), ["--raw"])).envelope?.data as any;
+    const data = (await show(parseV2Method(raw, { env: "acme-dev" }), ["--raw"])).envelope?.data as any;
     expect(data.raw).toEqual(raw);
     const text = JSON.stringify(data);
     // the step's first uuid appears once (in raw) — the parsed view no longer repeats wire JSON
@@ -162,14 +162,14 @@ describe("ad show --compact (7.1)", () => {
     for (const f of V2_FILES) {
       const body = await Bun.file(`${FIX}/real-v2/${f}`).json();
       raw += JSON.stringify(body).length;
-      compact += JSON.stringify(pruneEmpty(compactMethod(parseV2Method(body, { env: "sems-dev" })))).length;
+      compact += JSON.stringify(pruneEmpty(compactMethod(parseV2Method(body, { env: "acme-dev" })))).length;
     }
     expect(compact / raw).toBeLessThan(0.15);
   });
 
   test("every real body renders without throwing and keeps one line per step", async () => {
     for (const f of V2_FILES) {
-      const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${f}`).json(), { env: "sems-dev" });
+      const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${f}`).json(), { env: "acme-dev" });
       for (const s of m.parsedSteps) expect(compactStepLine(s)).not.toContain("\n");
       expect(storyMarkdown(m)).toStartWith(`## ${m.name}`);
     }
@@ -212,7 +212,7 @@ describe("ad show --compact / --story read V2 (ADR-R4, R13)", () => {
 
   test("over every real V2 body, compact input names are wire keys, never `#<id>` labels", async () => {
     for (const f of V2_FILES) {
-      const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${f}`).json(), { env: "sems-dev" });
+      const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${f}`).json(), { env: "acme-dev" });
       for (const line of compactMethod(m).steps) expect(line).not.toMatch(/(^|[ ,|])#\d+\./);
     }
   });
@@ -280,7 +280,7 @@ describe("show human step table (smoke UX: HTML in cells)", () => {
 describe("HTML step descriptions (ADR-R5)", () => {
   const RICH = "42eca7d0b957039f8538aa7480498546.v2.json";
   test("compact and story show the text, not the markup; --full keeps it whole", async () => {
-    const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${RICH}`).json(), { env: "sems-dev" });
+    const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${RICH}`).json(), { env: "acme-dev" });
     const step = m.parsedSteps[4]!;
     expect(step.description).toStartWith("<ul");
     const short = compactStepLine(step);
@@ -297,7 +297,7 @@ describe("exit status codes (ADR-R9)", () => {
   test("V1 and V2 both render exit-on-fail and exit-if with the status code", async () => {
     const uuid = "4bfc83c74c3c3d2f60a5c7f6fa8bca3b";
     const files = readdirSync(`${FIX}/real-v2`).filter((f) => f.startsWith(uuid.slice(0, 8)));
-    const m2 = parseV2Method(await Bun.file(`${FIX}/real-v2/${files[0]}`).json(), { env: "sems-dev" });
+    const m2 = parseV2Method(await Bun.file(`${FIX}/real-v2/${files[0]}`).json(), { env: "acme-dev" });
     const m1 = parseV1Method(await Bun.file(`${FIX}/real-v1/${files[0]!.replace(".v2.", ".v1.")}`).json());
     for (const m of [m1, m2]) {
       const line = compactMethod(m).steps.find((l) => l.includes("Email OR phone"))!;

@@ -1,4 +1,4 @@
-// parseV2Method smoke tests against REAL sems-dev V2 bodies (AD-13: the old
+// parseV2Method smoke tests against REAL acme-dev V2 bodies (AD-13: the old
 // hand-written v2/method-smoke.json put `uuid` under `metadata`, which the
 // wire never does — the real body has a top-level `uuid`).
 //
