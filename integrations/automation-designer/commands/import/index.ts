@@ -1,8 +1,9 @@
 import { readFile } from "fs/promises";
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, currentCacheEnv, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
+import { dropMethodIndex } from "../../lib/method-finder";
 
 interface ImportArgs {
   filePath: string;
@@ -58,6 +59,7 @@ const command: CommandModule<ImportArgs, ImportData> = {
     logIntent("POST", "/rest/api/automation/chain/import", { file: filePath, methodCount: methodNames.length });
 
     const response = await adApi.importMethods(payload);
+    await dropMethodIndex(currentCacheEnv()); // ADR-R1: imported uuids are unknown, so rebuild the index
 
     return ok<ImportData>({ filePath, response });
   },

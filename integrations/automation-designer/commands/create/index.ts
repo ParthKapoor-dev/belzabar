@@ -1,11 +1,12 @@
 import { readFile } from "fs/promises";
 import { dirname } from "path";
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, currentCacheEnv, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { fetchCategories, requireChainCategory } from "../../lib/categories";
 import { normalizeUuid } from "../../lib/ids";
+import { invalidateMethodIndexEntry } from "../../lib/method-finder";
 import { postChainV2 } from "../../lib/save/api";
 import { assertCreatableCategory, buildCreateBody, compactSteps } from "../../lib/save/create";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
@@ -147,6 +148,7 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
       throw err;
     }
     const uuid = normalizeUuid(created.uuid);
+    await invalidateMethodIndexEntry(currentCacheEnv(), uuid); // ADR-R1: `ad callers` reads it before the next index build
     if (!uuid) {
       throw new CliError("Create answered without a uuid; check the category in the AD UI.", {
         code: "AD_SAVE_INVALID_RESPONSE",

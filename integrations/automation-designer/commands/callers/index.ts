@@ -7,7 +7,7 @@
 import { CliError, defineArgs, lifecycle, ok, type CommandModule } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { resolveMethodRef } from "../../lib/ids";
-import { loadOrBuildMethodFinderIndex, METHOD_FINDER_SCHEMA } from "../../lib/method-finder";
+import { loadDirtyMethods, loadOrBuildMethodFinderIndex, METHOD_FINDER_SCHEMA } from "../../lib/method-finder";
 import {
   findAdCallers,
   findPdCallers,
@@ -32,8 +32,22 @@ interface CallersData {
   total: number;
   callers: AdCaller[];
   pd?: { total: number; callers: PdCaller[]; source: "cache" | "fresh" };
-  coverage: AdCallersResult["coverage"] & { indexAgeMinutes: number };
+  coverage: AdCallersResult["coverage"] & {
+    indexAgeMinutes: number;
+    indexSource: "cache" | "fresh";
+    /** Categories whose method listing failed while the index was built: their methods were not scanned. */
+    skippedCategories?: string[];
+    /**
+     * True only for a fresh, complete index with every candidate resolved. A
+     * cached index misses methods created or edited outside belz since it was
+     * built (belz's own writes are re-read).
+     */
+    complete: boolean;
+  };
 }
+
+/** `callers` rebuilds an index older than this (find keeps the 7-day TTL). */
+export const CALLERS_INDEX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export const args = defineArgs({
   command: "belz ad callers",
@@ -66,11 +80,26 @@ const command: CommandModule<CallersArgs, CallersData> = {
     const { index, source } = await loadOrBuildMethodFinderIndex({
       refresh,
       minSchema: METHOD_FINDER_SCHEMA,
+      maxAgeMs: CALLERS_INDEX_MAX_AGE_MS,
       onProgress: ({ done, total, category }) => {
         if (done === 1 || done === total || done % 10 === 0) lifecycle.notice(`Indexing AD methods: ${done}/${total} categories (${category})`);
       },
     });
-    if (source === "cache") context.warn("Using the cached method index (new methods since then are missed). Use --refresh to rebuild it.");
+    const ageMinutes = Math.round((Date.now() - index.generatedAt) / 60000);
+    if (source === "cache") {
+      context.warn(
+        `Using the cached method index (${ageMinutes} min old): methods created or edited outside belz since then are missed ` +
+          "(belz's own writes are re-read). Use --refresh to rebuild it.",
+      );
+    }
+    const skipped = (index.skippedCategories ?? []).map((c) => c.categoryName);
+    if (skipped.length) {
+      context.warn(
+        `${skipped.length} categories could not be listed when the index was built (${skipped.slice(0, 5).join(", ")}${skipped.length > 5 ? ", …" : ""}); ` +
+          "their callers are missed. Use --refresh to retry.",
+      );
+    }
+    const dirty = await loadDirtyMethods(index);
 
     if (categories.length) {
       const known = new Set(index.categories.map((c) => c.name.toLowerCase()));
@@ -80,7 +109,7 @@ const command: CommandModule<CallersArgs, CallersData> = {
       }
     }
     const deep = all ? null : new Set([target.category, ...categories].filter(Boolean).map((c) => c.toLowerCase()));
-    const ad = await findAdCallers(index, target, { deep }, { retryFailed: refresh });
+    const ad = await findAdCallers(index, target, { deep, dirty }, { retryFailed: refresh });
     if (ad.coverage.unscannedMethods > 0) {
       context.warn(
         `${ad.coverage.unscannedMethods} methods in ${ad.coverage.unscannedCategories?.length ?? 0} other categories have steps the index cannot resolve; ` +
@@ -100,7 +129,13 @@ const command: CommandModule<CallersArgs, CallersData> = {
       },
       total: ad.callers.length,
       callers: ad.callers,
-      coverage: { ...ad.coverage, indexAgeMinutes: Math.round((Date.now() - index.generatedAt) / 60000) },
+      coverage: {
+        ...ad.coverage,
+        indexAgeMinutes: ageMinutes,
+        indexSource: source,
+        ...(skipped.length ? { skippedCategories: skipped } : {}),
+        complete: source === "fresh" && skipped.length === 0 && ad.coverage.unscannedMethods === 0 && !ad.coverage.errors?.length,
+      },
     };
 
     if (pd) {
@@ -114,7 +149,7 @@ const command: CommandModule<CallersArgs, CallersData> = {
     if (!envelope.ok) return;
     const d = envelope.data as CallersData;
     ui.section(`Callers of ${d.target.category}/${d.target.name} [${d.target.state}] ${d.target.uuid}`);
-    if (d.callers.length === 0) ui.text("No AD method calls it (in the scanned scope).");
+    if (d.callers.length === 0) ui.text(`No AD method calls it (in the scanned scope${d.coverage.complete ? "" : "; coverage is incomplete, see below"}).`);
     else ui.table(["Category", "Method", "State", "UUID", "Steps"], d.callers.map((c) => [c.category, c.name, c.state, c.uuid, c.steps.join("\n")]));
     const cov = d.coverage;
     ui.text(
@@ -123,6 +158,7 @@ const command: CommandModule<CallersArgs, CallersData> = {
       }.`,
     );
     if (cov.unscannedMethods) ui.warn(`${cov.unscannedMethods} methods outside the deep scope were not fully resolved (--all to include).`);
+    if (cov.skippedCategories?.length) ui.warn(`Not indexed (listing failed): ${cov.skippedCategories.join(", ")}.`);
     for (const e of cov.errors ?? []) ui.warn(e);
     if (d.pd) {
       ui.section(`PD pages / components (${d.pd.total}, ${d.pd.source})`);

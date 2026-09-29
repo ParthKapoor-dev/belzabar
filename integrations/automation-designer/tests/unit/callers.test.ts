@@ -1,7 +1,7 @@
 // Stage 7.6: `ad callers` — reverse index over AD steps (method index refs +
 // V2 bodies for automationId-only steps) and PD httpRequests. Real sems-dev
 // "Example services" fixtures through fakeFetch.
-import { describe, expect, test } from "bun:test";
+import { describe, expect, setSystemTime, test } from "bun:test";
 import { existsSync } from "fs";
 import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type RecordedRequest } from "@belzabar/core/testing";
 import callersCommand from "../../commands/callers/index";
@@ -171,5 +171,94 @@ describe("PD references", () => {
     const b = await loadOrBuildMethodFinderIndex({ refresh: false, minSchema: 2 });
     expect(b.source).toBe("cache");
     expect(b.index.generatedAt).toBe(a.index.generatedAt);
+  });
+});
+
+// ADR-R1 / ADR-R2: the index goes stale when belz writes a method, and a
+// partial index (a category listing failed) must not claim full coverage.
+describe("stale and partial method index", () => {
+  const target: CallTarget = {
+    uuid: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", name: "t", category: "Cat", state: "PUBLISHED",
+    apiUuids: ["45fe7e3d5d754cd67926a141c4faafe0"], apiIds: [2598], chainUuids: [],
+  };
+  const CHAINING = "40b270670686c47215d2b6ab839b276d"; // its V2 body calls the target's API uuid
+  const baseIndex = (methods: object[]) =>
+    ({ schemaVersion: 2, env: "t-dev", generatedAt: Date.now(), categories: [], skippedCategories: [], categoryCount: 1, methodCount: methods.length, methods }) as unknown as MethodFinderIndex;
+  const stale = { uuid: CHAINING, referenceId: "", aliasName: "chaining method", methodName: "chaining method", state: "DRAFT", version: 1, categoryUuid: "c", categoryName: "Far", createdOn: 0, updatedOn: 1, url: "", calls: [] };
+
+  test("a method belz changed since the build is re-read even outside the deep scope", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch({ "GET /rest/api/automation/chain/v2/*": v2Route }).install();
+    const index = baseIndex([stale]);
+    expect((await findAdCallers(index, target, { deep: new Set(["cat"]) })).callers).toEqual([]);
+    const res = await findAdCallers(index, target, { deep: new Set(["cat"]), dirty: new Map([[CHAINING, Date.now()]]) });
+    expect(res.callers.map((c) => c.name)).toEqual(["chaining method"]);
+    expect(res.coverage.rereadMethods).toBe(1);
+  });
+
+  test("marked uuids the index lacks are read (created); deleted ones drop out silently", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch({ "GET /rest/api/automation/chain/v2/*": v2Route }).install();
+    const gone = "dddddddddddddddddddddddddddddddd"; // 200 + empty body = METHOD_NOT_FOUND
+    const res = await findAdCallers(baseIndex([]), target, { deep: new Set(["cat"]), dirty: new Map([[CHAINING, 1], [gone, 1]]) });
+    expect(res.callers).toEqual([expect.objectContaining({ name: "chaining method", category: "Example services", state: "DRAFT", uuid: CHAINING })]);
+    expect(res.coverage.errors).toBeUndefined();
+  });
+
+  test("CacheManager.invalidate (every belz write) marks the index entry; a later build clears it", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes()).install();
+    const { CacheManager } = await import("../../lib/cache");
+    const { loadDirtyMethods } = await import("../../lib/method-finder");
+    const before = (await loadOrBuildMethodFinderIndex({ refresh: true })).index;
+    await CacheManager.invalidate(CHAINING.toUpperCase(), "t-dev");
+    expect([...(await loadDirtyMethods(before)).keys()]).toEqual([CHAINING]);
+    await Bun.sleep(2);
+    const after = (await loadOrBuildMethodFinderIndex({ refresh: true })).index;
+    expect((await loadDirtyMethods(after)).size).toBe(0);
+  });
+
+  test("a partial index is marked, callers reports it and never claims completeness; it is rebuilt after 15 min", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using ff = fakeFetch(routes({ [`GET /rest/api/automation/methods?categoryUuid=${CAT}*`]: respond({ status: 503, text: "" }) })).install();
+    const r = await runCommand(callersCommand, [ARRAY_OUTPUT, "--refresh"], { env: "t-dev" });
+    const d = r.envelope?.data as any;
+    expect(r.envelope?.ok).toBe(true);
+    expect(d.coverage.skippedCategories).toEqual(["Example services"]);
+    expect(d.coverage.complete).toBe(false);
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toMatch(/could not be listed/);
+    const built = await loadOrBuildMethodFinderIndex({ refresh: false });
+    expect(built).toMatchObject({ source: "cache", index: { partial: true } });
+    setSystemTime(new Date(Date.now() + 16 * 60 * 1000));
+    try {
+      const n = ff.requests.length;
+      expect((await loadOrBuildMethodFinderIndex({ refresh: false })).source).toBe("fresh");
+      expect(ff.requests.length).toBeGreaterThan(n);
+    } finally {
+      setSystemTime();
+    }
+  });
+
+  test("a fresh complete scan is complete; a cached one says edits outside belz are missed", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes({ "GET /rest/api/automation/chain/v2/*": v2Route })).install();
+    const fresh = (await runCommand(callersCommand, [CHAIN_FAILURE, "--refresh"], { env: "t-dev" })).envelope;
+    expect((fresh?.data as any).coverage).toMatchObject({ indexSource: "fresh" });
+    const cached = (await runCommand(callersCommand, [CHAIN_FAILURE], { env: "t-dev" })).envelope;
+    expect((cached?.data as any).coverage).toMatchObject({ indexSource: "cache", complete: false });
+    expect(((cached?.meta?.warnings ?? []) as string[]).join("\n")).toMatch(/created or edited outside belz/);
+  });
+
+  test("callers rebuilds an index older than 24 h (find keeps 7 days)", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes()).install();
+    await loadOrBuildMethodFinderIndex({ refresh: true });
+    setSystemTime(new Date(Date.now() + 25 * 60 * 60 * 1000));
+    try {
+      expect((await loadOrBuildMethodFinderIndex({ refresh: false })).source).toBe("cache");
+      expect((await loadOrBuildMethodFinderIndex({ refresh: false, maxAgeMs: 24 * 60 * 60 * 1000 })).source).toBe("fresh");
+    } finally {
+      setSystemTime();
+    }
   });
 });

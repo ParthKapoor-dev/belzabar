@@ -1,5 +1,6 @@
 import { join } from "path";
-import { Cache, BELZ_CONFIG_DIR, type CacheResult } from "@belzabar/core";
+import { Cache, BELZ_CONFIG_DIR, currentCacheEnv, type CacheResult } from "@belzabar/core";
+import { invalidateMethodIndexEntry } from "./method-finder";
 import type { HydratedMethod } from "./types/common";
 
 // Env-scoped by core `Cache`: `cache/methods/<env>/<uuid>.json`. Legacy
@@ -34,9 +35,14 @@ export class CacheManager {
     return methodCache.loadSwr(methodCacheKey(uuid), env);
   }
 
-  /** Drop a cached method (call after save/publish/restore). Never throws. */
+  /**
+   * Drop a cached method after belz wrote it (save/publish/delete/restore).
+   * Also marks its method-index entry stale so `ad callers` re-reads it
+   * (ADR-R1). Never throws.
+   */
   static async invalidate(uuid: string | null | undefined, env?: string): Promise<void> {
     if (!uuid) return;
+    await invalidateMethodIndexEntry(env ?? currentCacheEnv(), uuid);
     return methodCache.invalidate(methodCacheKey(uuid), env);
   }
 }

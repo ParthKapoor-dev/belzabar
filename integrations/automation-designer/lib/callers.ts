@@ -22,7 +22,7 @@
 //     the slim reference index is cached 1 h.
 
 import { join } from "path";
-import { apiFetch, BELZ_CONFIG_DIR, Cache, lifecycle } from "@belzabar/core";
+import { apiFetch, BELZ_CONFIG_DIR, Cache, CliError, lifecycle } from "@belzabar/core";
 import { parsePage } from "@belzabar/pd/lib/parser/index";
 import { pdApi } from "@belzabar/pd/lib/api/index";
 import type { RawPageResponse } from "@belzabar/pd/lib/types/wire";
@@ -150,8 +150,16 @@ export function stepRefsOf(body: unknown): StepRef[] {
   });
 }
 
-async function stepRefsFor(m: MethodFinderMethod): Promise<StepRef[]> {
-  const key = `${m.uuid}@${m.updatedOn || 0}`;
+/**
+ * Refs-cache key: the index's `updatedOn`, or — for a method belz changed
+ * after the index was built (ADR-R1) — the mark time, so the edit is re-read.
+ */
+function refsKey(m: MethodFinderMethod, dirty?: Map<string, number>): string {
+  const mark = dirty?.get(m.uuid.toLowerCase());
+  return mark !== undefined ? `${m.uuid}@dirty-${mark}` : `${m.uuid}@${m.updatedOn || 0}`;
+}
+
+async function stepRefsFor(m: MethodFinderMethod, key: string): Promise<StepRef[]> {
   const cached = await refsCache.load(key);
   if (cached) return cached;
   const failed = await refsErrorCache.load(key);
@@ -194,6 +202,12 @@ export interface AdCaller {
 export interface CallersScope {
   /** Lower-case category names whose opaque steps are resolved via V2 reads; null = all. */
   deep: Set<string> | null;
+  /**
+   * Methods belz wrote after the index was built (`loadDirtyMethods`): their
+   * index entry may be stale, so they are always re-read; marked uuids the
+   * index lacks (created since) are read too; deleted ones drop out.
+   */
+  dirty?: Map<string, number>;
 }
 
 export interface AdCallersResult {
@@ -206,8 +220,34 @@ export interface AdCallersResult {
     /** Methods outside the deep scope with opaque steps: callers may hide there. */
     unscannedMethods: number;
     unscannedCategories?: string[];
+    /** Methods belz changed since the index was built, re-read from their bodies. */
+    rereadMethods?: number;
     /** V2 reads that failed (method skipped). */
     errors?: string[];
+  };
+}
+
+function isNotFound(e: unknown): boolean {
+  return e instanceof CliError && e.code === "METHOD_NOT_FOUND";
+}
+
+/** An index-shaped record for a method the index does not list yet (from its V2 body). */
+function stubFromBody(uuid: string, body: unknown): MethodFinderMethod {
+  const b = isObj(body) ? body : {};
+  const meta = isObj(b.metadata) ? b.metadata : {};
+  const service = isObj(meta.service) ? meta.service : {};
+  return {
+    uuid,
+    referenceId: normalizeUuid(meta.referenceId)?.toLowerCase() ?? "",
+    aliasName: str(b.aliasName) ?? "",
+    methodName: str(b.name) ?? uuid,
+    state: (str(meta.state) ?? "UNKNOWN").toUpperCase(),
+    version: 0,
+    categoryUuid: "",
+    categoryName: str(service.name) ?? "",
+    createdOn: 0,
+    updatedOn: 0,
+    url: "",
   };
 }
 
@@ -240,9 +280,15 @@ export async function findAdCallers(
   const candidates = new Set<MethodFinderMethod>();
   const toRead: MethodFinderMethod[] = [];
   const unscanned = new Map<string, number>();
+  const dirty = scope.dirty ?? new Map<string, number>();
+  const listed = new Set<string>();
   for (const m of index.methods) {
-    if (self.has(m.uuid.toLowerCase())) continue;
-    if (indexCallsTarget(m, target)) candidates.add(m);
+    const id = m.uuid.toLowerCase();
+    listed.add(id);
+    if (self.has(id)) continue;
+    // Changed by belz since the listing: the indexed calls may be wrong either way.
+    if (dirty.has(id)) toRead.push(m);
+    else if (indexCallsTarget(m, target)) candidates.add(m);
     else if ((m.opaqueSteps ?? 0) > 0) {
       if (!scope.deep || scope.deep.has(m.categoryName.toLowerCase())) toRead.push(m);
       else unscanned.set(m.categoryName, (unscanned.get(m.categoryName) ?? 0) + 1);
@@ -251,14 +297,32 @@ export async function findAdCallers(
 
   const errors: string[] = [];
   const refsByUuid = new Map<string, StepRef[]>();
-  let done = 0;
-  const work = [...toRead, ...[...candidates].filter((m) => !toRead.includes(m))];
-  await pool(work, async (m) => {
+  const deleted = new Set<string>();
+
+  // Created by belz since the listing: not in the index at all.
+  const unlisted = [...dirty.keys()].filter((id) => !listed.has(id) && !self.has(id));
+  await pool(unlisted, async (id) => {
     try {
-      if (opts.retryFailed) await refsErrorCache.invalidate(`${m.uuid}@${m.updatedOn || 0}`);
-      refsByUuid.set(m.uuid, await stepRefsFor(m));
+      const body = await fetchRawMethod(id);
+      const m = stubFromBody(id, body);
+      if (m.referenceId && self.has(m.referenceId)) return;
+      refsByUuid.set(m.uuid, stepRefsOf(body));
+      toRead.push(m);
     } catch (e) {
-      errors.push(`${m.categoryName}/${m.methodName} (${m.uuid}): ${e instanceof Error ? e.message : String(e)}`);
+      if (!isNotFound(e)) errors.push(`(new) ${id}: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  });
+
+  let done = 0;
+  const work = [...toRead.filter((m) => !refsByUuid.has(m.uuid)), ...[...candidates].filter((m) => !toRead.includes(m))];
+  await pool(work, async (m) => {
+    const key = refsKey(m, dirty);
+    try {
+      if (opts.retryFailed) await refsErrorCache.invalidate(key);
+      refsByUuid.set(m.uuid, await stepRefsFor(m, key));
+    } catch (e) {
+      if (dirty.has(m.uuid.toLowerCase()) && isNotFound(e)) deleted.add(m.uuid); // deleted by belz
+      else errors.push(`${m.categoryName}/${m.methodName} (${m.uuid}): ${e instanceof Error ? e.message : String(e)}`);
     }
     done++;
     if (work.length > 20 && (done % 50 === 0 || done === work.length)) lifecycle.notice(`Reading method bodies: ${done}/${work.length}`);
@@ -266,6 +330,7 @@ export async function findAdCallers(
 
   const callers: AdCaller[] = [];
   for (const m of [...candidates, ...toRead]) {
+    if (deleted.has(m.uuid)) continue;
     const refs = refsByUuid.get(m.uuid);
     const steps = (refs ?? []).filter((s) => stepCallsTarget(s, target));
     if (steps.length === 0 && !(candidates.has(m) && !refs)) continue;
@@ -289,6 +354,7 @@ export async function findAdCallers(
       resolvedMethods: refsByUuid.size,
       unscannedMethods,
       ...(unscannedMethods ? { unscannedCategories: [...unscanned.keys()].sort() } : {}),
+      ...(dirty.size ? { rereadMethods: toRead.filter((m) => dirty.has(m.uuid.toLowerCase())).length } : {}),
       ...(errors.length ? { errors } : {}),
     },
   };

@@ -5,6 +5,11 @@ const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
 export const METHOD_FINDER_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 /**
+ * An index with skipped categories (a listing failed mid-build, e.g. a 503) is
+ * only reused this long, then rebuilt (ADR-R2).
+ */
+export const PARTIAL_INDEX_TTL_MS = 15 * 60 * 1000;
+/**
  * Bumped when index records gain fields. 2 (Stage 7): `summary`, `description`,
  * `automationApiUuid`, `calls`, `opaqueSteps` — used by `find --describe` and
  * `ad callers`, which rebuild an older cached index (plain `find` keeps using it).
@@ -18,6 +23,52 @@ const methodFinderCache = new Cache<MethodFinderIndex>({
   ttlMs: METHOD_FINDER_CACHE_TTL_MS,
   envScoped: false, // key already encodes the env (index-v1-<env>)
 });
+
+const indexKey = (env: string) => `index-v1-${env}`;
+
+/**
+ * Methods belz itself wrote since the index was built (ADR-R1): uuid → when
+ * it was marked. Kept beside the index (not in it) so a mark never rewrites
+ * the multi-MB index nor resets its age.
+ */
+const dirtyCache = new Cache<Record<string, number>>({
+  dir: join(BELZ_CONFIG_DIR, "cache", "method-finder"),
+  ttlMs: METHOD_FINDER_CACHE_TTL_MS,
+  envScoped: false,
+});
+const dirtyKey = (env: string) => `dirty-${env}`;
+
+/**
+ * Mark a method's index entry stale after belz changed it (save, create,
+ * publish, delete, restore). `ad callers` re-reads marked methods' bodies
+ * whatever the scope, and reads marked uuids the index does not list yet
+ * (new methods). Never throws.
+ */
+export async function invalidateMethodIndexEntry(env: string, uuid: string | null | undefined): Promise<void> {
+  const id = uuid?.trim().toLowerCase();
+  if (!id) return;
+  try {
+    const now = Date.now();
+    const marks = (await dirtyCache.load(dirtyKey(env))) ?? {};
+    for (const [k, at] of Object.entries(marks)) if (now - at > METHOD_FINDER_CACHE_TTL_MS) delete marks[k];
+    marks[id] = now;
+    await dirtyCache.save(dirtyKey(env), marks);
+  } catch {
+    /* best effort: a missed mark only means a stale index entry */
+  }
+}
+
+/** Drop the env's whole index (a write whose method uuids are unknown, e.g. `ad import`). Never throws. */
+export async function dropMethodIndex(env: string): Promise<void> {
+  await methodFinderCache.invalidate(indexKey(env));
+}
+
+/** Uuids belz marked after `index` was listed (lower-case uuid → mark time). */
+export async function loadDirtyMethods(index: MethodFinderIndex): Promise<Map<string, number>> {
+  const since = index.buildStartedAt ?? index.generatedAt;
+  const marks = (await dirtyCache.load(dirtyKey(index.env))) ?? {};
+  return new Map(Object.entries(marks).filter(([, at]) => at >= since));
+}
 
 export interface MethodFinderCategory {
   /** Chain-category uuid (trimmed) — the same identity as `ad categories` (AD-10). */
@@ -64,7 +115,11 @@ export interface MethodFinderIndex {
   /** Absent = schema 1. */
   schemaVersion?: number;
   env: string;
+  /** When the listing started; belz writes marked after it are re-read (absent in older caches). */
+  buildStartedAt?: number;
   generatedAt: number;
+  /** True when some category listings failed (`skippedCategories`): methods are missing (ADR-R2). */
+  partial?: boolean;
   categories: MethodFinderCategory[];
   methods: MethodFinderMethod[];
   skippedCategories: Array<{
@@ -129,12 +184,22 @@ export async function loadOrBuildMethodFinderIndex(options: {
   onProgress?: (p: IndexProgress) => void;
   /** Rebuild a cached index older than this schema (describe / callers need 2). */
   minSchema?: number;
+  /** Rebuild a cached index generated longer ago than this (default: the 7-day TTL). */
+  maxAgeMs?: number;
 }): Promise<MethodFinderCacheResult> {
-  const cacheKey = `index-v1-${Config.activeEnv.name}`;
+  const cacheKey = indexKey(Config.activeEnv.name);
 
   if (!options.refresh) {
     const cached = await methodFinderCache.load(cacheKey);
-    if (cached && cached.env === Config.activeEnv.name && (cached.schemaVersion ?? 1) >= (options.minSchema ?? 1)) {
+    const age = cached ? Date.now() - cached.generatedAt : 0;
+    const partial = !!cached && (!!cached.partial || (cached.skippedCategories?.length ?? 0) > 0);
+    if (
+      cached &&
+      cached.env === Config.activeEnv.name &&
+      (cached.schemaVersion ?? 1) >= (options.minSchema ?? 1) &&
+      age <= (options.maxAgeMs ?? METHOD_FINDER_CACHE_TTL_MS) &&
+      !(partial && age > PARTIAL_INDEX_TTL_MS)
+    ) {
       return { index: cached, source: "cache" };
     }
   }
@@ -293,6 +358,7 @@ export function buildMethodUrl(categoryName: string, methodUuid: string): string
 const CATEGORY_CONCURRENCY = 4;
 
 async function buildMethodFinderIndex(onProgress?: (p: IndexProgress) => void): Promise<MethodFinderIndex> {
+  const buildStartedAt = Date.now();
   const categories = await fetchAllCategories();
   const skippedCategories: MethodFinderIndex["skippedCategories"] = [];
   // Category order is kept (results land by index); fetches run a few at a time.
@@ -326,7 +392,9 @@ async function buildMethodFinderIndex(onProgress?: (p: IndexProgress) => void): 
   return {
     schemaVersion: METHOD_FINDER_SCHEMA,
     env: Config.activeEnv.name,
+    buildStartedAt,
     generatedAt: Date.now(),
+    partial: skippedCategories.length > 0,
     categories: uniqueCategories,
     methods: uniqueMethods,
     skippedCategories,
