@@ -2,7 +2,7 @@
 // messages), build 404 → "Build #n not found", queue deadline, crumb errors.
 import { afterEach, describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
-import { caughtCliError as caught, fakeFetch, type FakeFetch, respond } from "@belzabar/core/testing";
+import { caughtCliError as caught, fakeFetch, thrownCliError, type FakeFetch, respond } from "@belzabar/core/testing";
 import { assertJenkinsAuth, buildHeaders, fetchCrumb, getBuild, getConsoleChunk, resolveQueueItem, triggerBuild, type JenkinsAuth } from "../../lib/jenkins";
 
 const auth: JenkinsAuth = { baseUrl: "https://jenkins.test", user: "u", password: "p", job: "A/b" };
@@ -94,13 +94,8 @@ describe("jenkins client", () => {
     expect(assertJenkinsAuth({ baseUrl: "https://j.test/", user: "u", password: "p", migrationJob: "Jobs/db-migration" })).toEqual({
       baseUrl: "https://j.test", user: "u", password: "p", job: "Jobs/db-migration",
     });
-    try {
-      assertJenkinsAuth({ baseUrl: "https://j.test/", user: "u", password: "p" });
-      throw new Error("expected a throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(CliError);
-      expect((e as CliError).code).toBe("MIGRATE_JENKINS_CONFIG_MISSING");
-      expect((e as CliError).details).toEqual({ missing: ["migrationJob"] });
-    }
+    const e = thrownCliError(() => assertJenkinsAuth({ baseUrl: "https://j.test/", user: "u", password: "p" }));
+    expect(e.code).toBe("MIGRATE_JENKINS_CONFIG_MISSING");
+    expect(e.details).toEqual({ missing: ["migrationJob"] });
   });
 });

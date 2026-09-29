@@ -2,7 +2,7 @@
 // and every failure after the build was triggered carries its reference.
 // Jenkins and AD are fully faked; nothing leaves the process.
 import { afterEach, describe, expect, test } from "bun:test";
-import { fakeFetch, type FakeFetch, fixture, rejectionCode as code, respond, runCommand, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
+import { caughtCliError, fakeFetch, type FakeFetch, fixture, rejectionCode as code, respond, runCommand, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
 import { parseMigrateRunArgs, resolveMigrationTargets } from "../../lib";
 import runCmdModule from "../../commands/run/index";
 import profilesCmdModule from "../../commands/profiles/index";
@@ -70,15 +70,10 @@ describe("AD pre-flight", () => {
     const prev = process.env.BELZ_HTTP_TIMEOUT_MS;
     process.env.BELZ_HTTP_TIMEOUT_MS = "30";
     try {
-      let err: { code?: string; message?: string; details?: Record<string, unknown> } = {};
-      try {
-        await resolve(UUID);
-      } catch (e) {
-        err = e as typeof err;
-      }
+      const err = await caughtCliError(resolve(UUID));
       expect(err.code).toBe("HTTP_TIMEOUT");
       expect(err.message).toContain("Retry when");
-      expect(err.details?.preflightEnv).toBe("acme-dev");
+      expect(err.details).toMatchObject({ preflightEnv: "acme-dev" });
     } finally {
       if (prev === undefined) delete process.env.BELZ_HTTP_TIMEOUT_MS;
       else process.env.BELZ_HTTP_TIMEOUT_MS = prev;

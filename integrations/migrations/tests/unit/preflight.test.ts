@@ -3,7 +3,7 @@
 // published sibling; auth failures say what to do; the caller's env is restored.
 import { afterEach, describe, expect, test } from "bun:test";
 import { Config } from "@belzabar/core";
-import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { caughtCliError, fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import { resolveMigrationTargets } from "../../lib";
 import runCmdModule from "../../commands/run/index";
 
@@ -85,17 +85,13 @@ describe("migrate pre-flight", () => {
   test("a login failure on the source env says how to proceed and keeps its code", async () => {
     cfg = withTempEnvConfig({ envs: { "acme-dev": { url: "https://acme-dev.test", token: null } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([{ url: /acme-dev\.test/, response: respond({ status: 401, json: { message: "bad creds" } }) }]).install();
-    let err: any;
-    try {
-      await resolveMigrationTargets({ profile: "devacme_qaacme", migrateType: "AD_Method", ids: ["4d075e621c93206fb95d84795fc05e00"] });
-    } catch (e) {
-      err = e;
-    }
-    expect(err).toBeDefined();
+    const err = await caughtCliError(
+      resolveMigrationTargets({ profile: "devacme_qaacme", migrateType: "AD_Method", ids: ["4d075e621c93206fb95d84795fc05e00"] }),
+    );
     expect(String(err.code)).not.toStartWith("MIGRATE_");
     expect(err.message).toContain("Pre-flight id resolution on 'acme-dev' failed, so no build was triggered");
     expect(err.message).toContain("belz config edit");
-    expect(err.details.preflightEnv).toBe("acme-dev");
+    expect(err.details).toMatchObject({ preflightEnv: "acme-dev" });
   });
 
   test("a 404 keeps the specific MIGRATE_TARGET_NOT_FOUND", async () => {
