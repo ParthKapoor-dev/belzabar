@@ -35,6 +35,10 @@ MIGRATION IDS
   envs can't be derived), belz WARNS (meta.warnings) and sends the ids as given.
 
 SAFETY
+  - Every run is a real Jenkins build (a --dry-run too), so it is confirmed
+    first: a terminal is asked; with --llm or without a terminal --yes is
+    required (MIGRATE_CONFIRMATION_REQUIRED, nothing is triggered). The
+    prompt / error details list the profile, client, module and resolved ids.
   - --ids and --ids-file cannot be combined (MIGRATE_IDS_CONFLICT).
   - Unknown flags are errors (MIGRATE_UNKNOWN_FLAG, with a did-you-mean), as are
     stray positionals and values on switches (e.g. --dry-run=true).
@@ -61,6 +65,8 @@ OPTIONS
   --no-follow                  Trigger build and return without streaming logs.
   --out <path>                 Write summary.json + summary.console.log to dir.
   --quiet                      Suppress progress output.
+  --yes, -y                    Skip the confirmation prompt (required with --llm
+                               or without a terminal).
   --llm                        Emit structured JSON for agent consumption.
 
 CONFIG
@@ -79,7 +85,7 @@ CONFIG
 EXAMPLES
   # Dry run, NCDNS qa → stage (still triggers a Jenkins build, DRY_RUN=true)
   belz migrate run --source-env nsm-qa --target-env nsm-stage \\
-    --module AD_Method --ids "4e74cf38523553112e879308c4a03aef" --dry-run
+    --module AD_Method --ids "4e74cf38523553112e879308c4a03aef" --dry-run --yes
 
   # Real run, explicit profile
   belz migrate run --profile devncdns_qancdns --module AD_Method \\
@@ -87,4 +93,4 @@ EXAMPLES
 
   # SEMS qa → stage
   belz migrate run --profile qasems_stagesems --module AD_Method \\
-    --ids "<uuid>" --client SEMS
+    --ids "<uuid>" --client SEMS --yes --llm

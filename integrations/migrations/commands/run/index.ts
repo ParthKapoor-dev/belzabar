@@ -1,4 +1,4 @@
-import { CliError, Config, ok, type CommandModule } from "@belzabar/core";
+import { CliError, Config, lifecycle, ok, prompts, type CommandContext, type CommandModule } from "@belzabar/core";
 import {
   assertJenkinsAuth,
   buildUrl,
@@ -86,6 +86,15 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       dryRun: args.dryRun,
       autoApprove: args.autoApprove,
     };
+
+    // Every run is a real Jenkins build (a dry run too): confirm first.
+    await requireRunConfirmation(context, args.yes === true, `trigger a Jenkins migration build (${auth.job})`, [
+      ["Profile", profile],
+      ["Client", String(client)],
+      ["Module", String(args.migrateType)],
+      ["Ids", preflight ? preflight.targets.map((t) => `${t.name} ${t.resolvedId}`).join(", ") : effectiveIds.join(", ")],
+      ["Dry run", args.dryRun ? "yes (DRY_RUN=true, still a real build)" : "no"],
+    ]);
 
     if (showProgress) logProgress(args.quiet, `Triggering ${auth.job} (client=${client}, profile=${profile})…`);
     const trigger = await triggerBuild(auth, input);
@@ -228,3 +237,28 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
 };
 
 export default command;
+
+/**
+ * `migrate run` has no --env to gate it (the profile names the envs), so the
+ * build itself is confirmed: --yes proceeds, an interactive terminal is asked,
+ * --llm or a non-TTY without --yes is MIGRATE_CONFIRMATION_REQUIRED.
+ */
+async function requireRunConfirmation(
+  context: Pick<CommandContext, "outputMode">,
+  yes: boolean,
+  action: string,
+  details: Array<[string, string]>,
+): Promise<void> {
+  if (yes) return;
+  if (context.outputMode === "llm" || !process.stdin.isTTY) {
+    throw new CliError(`Confirmation required to ${action}. Pass --yes to proceed.`, {
+      code: "MIGRATE_CONFIRMATION_REQUIRED",
+      details: { action, details: Object.fromEntries(details) },
+    });
+  }
+  const pad = Math.max(0, ...details.map(([k]) => k.length));
+  lifecycle.note(`About to ${action}`, details.map(([k, v]) => `${k.padEnd(pad)}  ${v}`).join("\n"));
+  if (!(await prompts.confirm({ message: "Trigger the build?", initialValue: false }))) {
+    throw new CliError("Aborted by user.", { code: "MIGRATE_USER_ABORT", exitCode: 130 });
+  }
+}

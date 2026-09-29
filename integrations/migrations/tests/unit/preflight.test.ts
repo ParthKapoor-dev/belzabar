@@ -114,7 +114,7 @@ describe("migrate run: skipped pre-flight surfaces in the envelope", () => {
     ]).install();
 
     const r = await runCommand(runCmd, [
-      "--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--dry-run", "--no-follow",
+      "--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--dry-run", "--no-follow", "--yes",
     ], { env: "nsm-dev" }); // a bare module defaults to env-aware; the `migrate` namespace isn't
     expect(r.envelope?.ok).toBe(true);
     const warnings = (r.envelope?.meta as any).warnings as string[];
@@ -125,3 +125,22 @@ describe("migrate run: skipped pre-flight surfaces in the envelope", () => {
     expect(form.get("IDS")).toBe("p1");
   });
 });
+
+describe("migrate run: confirmation gate", () => {
+  test("without --yes (--llm) nothing is POSTed: MIGRATE_CONFIRMATION_REQUIRED, dry run included", async () => {
+    cfg = withTempEnvConfig({
+      envs: {},
+      jenkins: { baseUrl: "https://jk.test", user: "u", password: "p", passwordEncoding: "plain", migrationJob: "A/b" },
+    });
+    ff = fakeFetch([{ method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) }]).install();
+    for (const extra of [[], ["--dry-run"]]) {
+      const r = await runCommand(runCmd, [
+        "--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--no-follow", ...extra,
+      ], { env: "nsm-dev" });
+      expect(r.envelope?.error?.code).toBe("MIGRATE_CONFIRMATION_REQUIRED");
+      expect((r.envelope?.error?.details as any).details).toMatchObject({ Profile: "devsems_qasems", Ids: "p1" });
+    }
+    expect(ff.requests.some((q) => q.method === "POST")).toBe(false);
+  });
+});
+

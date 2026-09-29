@@ -95,6 +95,8 @@ export interface MigrateRunArgs {
   outPath?: string;
   quiet?: boolean;
   follow: boolean;
+  /** Skip the confirmation prompt (required with --llm or without a terminal). */
+  yes?: boolean;
 }
 
 export interface MigrateStatusArgs {
