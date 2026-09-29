@@ -12,8 +12,10 @@
 // NOTE: traceMethod switches the global active env while it runs (restored in
 // `finally`), so calls must not run concurrently.
 
-import { CliError, Config } from "@belzabar/core";
+import { join } from "path";
+import { BELZ_CONFIG_DIR, Cache, CliError, Config } from "@belzabar/core";
 import { adApi } from "./api/index";
+import type { MethodVersionFull } from "./api/v1";
 import { fingerprintMethod, parseVersionBody } from "./fingerprint";
 import { resolveMethodRef } from "./ids";
 
@@ -30,6 +32,30 @@ export interface TraceOptions {
 }
 
 /** Default env set for a trace: the spine env's project family, spine first. */
+/**
+ * Published history versions are immutable, and each `historyGet` is a chain
+ * execute: bodies are cached per env + methodVersionID (ADR-R14).
+ */
+const historyBodyCache = new Cache<MethodVersionFull>({
+  dir: join(BELZ_CONFIG_DIR, "cache", "history-versions"),
+  ttlMs: 30 * 24 * 60 * 60 * 1000,
+});
+
+async function publishedVersionBody(
+  env: string,
+  methodVersionID: string,
+  opts: { category: string; methodName: string; version: number },
+): Promise<MethodVersionFull> {
+  const id = methodVersionID.trim();
+  if (id) {
+    const hit = await historyBodyCache.load(id, env);
+    if (hit) return hit;
+  }
+  const full = await adApi.historyGet({ ...opts, includeDraft: false });
+  if (id && full) await historyBodyCache.save(id, full, env);
+  return full;
+}
+
 export function traceEnvFamily(spineEnv: string, all: Record<string, { project: string }> = Config.getAllEnvs()): string[] {
   const project = all[spineEnv]?.project;
   const family = Object.keys(all).filter((n) => n !== spineEnv && all[n]!.project === project);
@@ -141,12 +167,7 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
     versionList.sort((a, b) => a.methodVersion - b.methodVersion);
 
     const spine: SpineEntry[] = await mapLimit(versionList, 6, async (v) => {
-      const full = await adApi.historyGet({
-        category,
-        methodName,
-        version: v.methodVersion,
-        includeDraft: false,
-      });
+      const full = await publishedVersionBody(args.spineEnv, v.methodVersionID, { category, methodName, version: v.methodVersion });
       const parsed = parseVersionBody(full);
       return {
         index: 0, // assigned below
@@ -200,9 +221,7 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
           continue;
         }
 
-        const full = await adApi.historyGet({
-          category, methodName, version: head.methodVersion, includeDraft: false,
-        });
+        const full = await publishedVersionBody(envName, head.methodVersionID, { category, methodName, version: head.methodVersion });
         const hash = fingerprintMethod(parseVersionBody(full));
         const positions = hashIndex.get(hash) ?? [];
         const spinePos = positions.length ? positions[positions.length - 1]! : -1;

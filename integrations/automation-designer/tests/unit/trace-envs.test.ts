@@ -68,3 +68,27 @@ describe("ad trace env scope (AD-25)", () => {
     expect(bad.envelope?.error?.code).toBe("UNKNOWN_ENV");
   });
 });
+
+// ADR-R14: published history versions are immutable; a re-run reads them from cache.
+describe("trace caches published history bodies (ADR-R14)", () => {
+  test("second run makes no historyGet calls; cache is per env + methodVersionID", async () => {
+    using _cfg = withTempEnvConfig({ envs: ENVS });
+    const vid = `r14-${Date.now()}`;
+    spies.push(
+      spyOn(adApi, "fetchMethod").mockResolvedValue({ uuid: PUB, state: "PUBLISHED", name: "m", category: { name: "C" } } as any),
+      spyOn(adApi, "historyListAll").mockImplementation(async (uuid: string) => [
+        { methodVersion: 1, methodVersionID: vid, methodID: uuid, isPublished: true, isDeactivated: false, addedBy: 1, addedWhen: "2026-01-01" },
+      ]),
+    );
+    const get = spyOn(adApi, "historyGet").mockImplementation(async () =>
+      ({ methodVersion: 1, methodVersionID: vid, methodID: PUB, isPublished: true, isDeactivated: false, addedBy: 1, addedWhen: "2026-01-01", jsonDefinition: { name: "m", inputs: [], services: [] } }) as any,
+    );
+    spies.push(get);
+    const first = await runCommand(traceCommand, [PUB], { env: "sems-x" });
+    expect(first.envelope?.ok).toBe(true);
+    expect(get.mock.calls.length).toBe(2); // spine version on sems-x (the sems-x env row reuses it) + the sems-y head
+    const second = await runCommand(traceCommand, [PUB], { env: "sems-x" });
+    expect((second.envelope?.data as any).environments.map((e: any) => e.status)).toEqual(["latest", "latest"]);
+    expect(get.mock.calls.length).toBe(2);
+  });
+});
