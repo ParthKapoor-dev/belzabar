@@ -1,9 +1,8 @@
 // Item extraction from Teamwork ticket text.
 //
-// Codifies the three dev-note comment patterns (see commands/items/help.txt),
-// so the `belz tw items` linker no longer relies on an agent eyeballing
-// comments. All functions here are pure and operate on a single text blob — the
-// command layer (commands/items/index.ts) attaches comment provenance and merges.
+// Codifies the three dev-note comment patterns (see commands/items/help.txt).
+// All functions here are pure and operate on a single text blob; lib/items.ts
+// attaches comment provenance and merges.
 
 // ── ID shapes ────────────────────────────────────────────────────────────────
 // AD chain UUIDs and PD page IDs both appear as 32-hex or dashed-UUID strings.
@@ -19,25 +18,25 @@ export function normalizeHex(raw: string): string {
 export type ItemPattern = "ad-url" | "pd-page-url" | "pd-symbol-url" | "labeled-list";
 export type PdKind = "draft" | "published" | "symbol" | "unknown";
 
-export interface RawAdRef {
+interface RawAdRef {
   uuid: string; // normalized: lowercase, dashless
   category: string | null; // from URL when present
   pattern: ItemPattern;
 }
 
-export interface RawPdRef {
+interface RawPdRef {
   key: string; // normalized hex id, or symbol name
   kind: PdKind;
   versionRange: string | null; // "397233-402847" from compare?version=A-B
   pattern: ItemPattern;
 }
 
-export interface RawSqlRef {
+interface RawSqlRef {
   statement: string; // whitespace-collapsed, semicolon-terminated
   kind: "ddl" | "dml";
 }
 
-export interface RawExtraction {
+interface RawExtraction {
   ad: RawAdRef[];
   pd: RawPdRef[];
   sql: RawSqlRef[];

@@ -9,34 +9,34 @@ import { extractFromText, type ItemPattern, type PdKind } from "./extract";
 import type { TeamworkComment } from "./types";
 
 /** Where a reference was seen — so an agent can audit/override the recommendation. */
-export interface Occurrence {
+interface Occurrence {
   unit: string; // "description" | "comment #<id>" | "subtask <id> comment #<id>"
   date: string | null;
   author: string;
   pattern: ItemPattern;
 }
 
-export interface AdRef {
+interface AdRef {
   uuid: string;
   category: string | null;
   occurrences: Occurrence[];
 }
 
-export interface PdRef {
+interface PdRef {
   key: string; // hex id or symbol name
   kinds: PdKind[]; // every kind this key was seen as (draft/published/symbol)
   versionRanges: string[];
   occurrences: Occurrence[];
 }
 
-export interface SqlRef {
+interface SqlRef {
   statement: string;
   kind: "ddl" | "dml";
   unit: string;
   date: string | null;
 }
 
-export interface DevNoteBlock {
+interface DevNoteBlock {
   unit: string;
   date: string | null;
   author: string;
@@ -136,7 +136,7 @@ export async function extractTicketItems(taskId: number): Promise<ItemsData> {
   }
 
   // Task description first (treated as oldest).
-  ingest({ label: "description", date: task.createdAt, author: "", text: "" } as TextUnit, task.description);
+  ingest({ label: "description", date: task.createdAt, author: "" }, task.description);
 
   for (const c of parentComments) {
     ingest(commentUnit(`comment #${c.id}`, c), c.body);

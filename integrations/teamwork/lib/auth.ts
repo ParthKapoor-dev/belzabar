@@ -1,9 +1,9 @@
 // Teamwork cookie-session adapter over @belzabar/core/http.
 //
 // - Credentials come from Config.getTeamwork() (one secret-decode helper,
-//   explicit passwordEncoding; TW-8).
+//   explicit passwordEncoding).
 // - Login is single-flight: concurrent 401s during `release matrix` share one
-//   POST /launchpad/v1/login.json (TW-9).
+//   POST /launchpad/v1/login.json.
 // - The session file is written atomically with mode 0600.
 
 import { join } from "path";
@@ -40,13 +40,14 @@ export function teamworkBase(): string {
 export function teamworkTaskUrl(taskId: number | string): string {
   return `${teamworkBase()}/app/tasks/${taskId}`;
 }
+
 const SESSION_FILE = join(BELZ_CONFIG_DIR, "sessions", "teamwork.json");
 
 export async function saveTeamworkSession(session: TeamworkSession): Promise<void> {
   writeSecureJson(SESSION_FILE, session);
 }
 
-export async function loadTeamworkSession(): Promise<TeamworkSession | null> {
+async function loadTeamworkSession(): Promise<TeamworkSession | null> {
   try {
     const session = JSON.parse(readFileSync(SESSION_FILE, "utf8")) as TeamworkSession;
     return session && typeof session.twAuth === "string" && session.twAuth ? session : null;
@@ -107,7 +108,7 @@ async function doLogin(): Promise<TeamworkSession> {
 const loginFlight = singleFlight<TeamworkSession>();
 
 /** Log in (single-flight: concurrent callers share one request). */
-export async function teamworkLogin(): Promise<TeamworkSession> {
+async function teamworkLogin(): Promise<TeamworkSession> {
   return loginFlight("teamwork", doLogin);
 }
 

@@ -5,7 +5,7 @@ import type {
   TeamworkTaskSearchResult, AddCommentResult,
 } from "./types";
 
-// Teamwork adapter over @belzabar/core/http (TW-7/9/10):
+// Teamwork adapter over @belzabar/core/http:
 //   - shared transport (timeout, IPv4 pin + eviction, coded network errors);
 //   - tw-auth cookie session, 401 → one shared re-login + retry;
 //   - 429 → backoff honouring Retry-After (bounded);
@@ -68,7 +68,7 @@ export async function teamworkFetch(path: string, options: RequestInit = {}): Pr
 }
 
 /** Map a non-OK Teamwork response to TW_NOT_FOUND / TW_HTTP_<status>. */
-export async function teamworkError(response: Response, what: string): Promise<CliError> {
+async function teamworkError(response: Response, what: string): Promise<CliError> {
   return httpError(response, {
     message: what,
     codePrefix: "TW_HTTP",
@@ -182,8 +182,8 @@ export async function fetchTask(taskId: number): Promise<TeamworkTask> {
 
 // ── Subtasks ────────────────────────────────────────────────────────────────
 
-// TW-11: /tasks.json pages at pageSize (max 500); a parent with more subtasks
-// than one page used to lose the rest. Follow meta.page.hasMore like comments.
+// /tasks.json pages at pageSize (max 500): follow meta.page.hasMore like
+// comments, or a parent with more subtasks than one page loses the rest.
 const SUBTASKS_PAGE_SIZE = 500;
 const SUBTASKS_MAX_PAGES = 100; // runaway guard
 
@@ -293,7 +293,7 @@ export async function fetchComments(
 
 // ── Search ───────────────────────────────────────────────────────────────────
 
-export interface TaskSearchOptions {
+interface TaskSearchOptions {
   projectId?: number;
   limit?: number;
   includeCompleted?: boolean;
@@ -335,10 +335,10 @@ export async function searchTasks(query: string, opts: TaskSearchOptions = {}): 
 }
 
 // ── Posting a comment (WRITE) ─────────────────────────────────────────────────
-// Callers MUST confirm the exact body with the user before invoking this — see
-// commands/add-comment.
+// Callers MUST confirm the exact body with the user before invoking this (see
+// commands/add-comment).
 
-export interface AddCommentOptions {
+interface AddCommentOptions {
   contentType?: "TEXT" | "HTML";
 }
 

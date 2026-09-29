@@ -1,6 +1,6 @@
 import { defineArgs, ok } from "@belzabar/core";
 import { parseTaskId, TASK_ID_POSITIONAL } from "../../lib/task-id";
-import type { CommandModule, CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
+import type { CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
 import { fetchTask } from "../../lib/api";
 import { teamworkTaskUrl } from "../../lib/auth";
 import type { TeamworkTask } from "../../lib/types";
@@ -13,10 +13,6 @@ interface GetTaskData {
   task: TeamworkTask;
   url: string;
 }
-
-
-export const schema = "tw.task";
-export const version = "1.0";
 
 export const args = defineArgs({
   command: "belz tw task",

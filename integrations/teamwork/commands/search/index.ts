@@ -16,16 +16,13 @@ interface SearchData {
   total: number;
 }
 
-export const schema = "tw.search";
-export const version = "1.0";
-
 export const args = defineArgs({
   command: "belz tw search",
   positionals: [
     { name: "query", variadic: true }, // required: checked below (keeps the MISSING_QUERY code)
   ],
   flags: {
-    // TW-2: Teamwork rejects pageSize > 500 with a 400.
+    // Teamwork rejects pageSize > 500 with a 400.
     limit: { type: "number", integer: true, min: 1, max: 500, default: 25 },
     project: { type: "number", integer: true, min: 1 },
     all: { type: "boolean", alias: ["--include-completed"] },

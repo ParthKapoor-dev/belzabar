@@ -1,6 +1,6 @@
 import { defineArgs, ok } from "@belzabar/core";
 import { parseTaskId, TASK_ID_POSITIONAL } from "../../lib/task-id";
-import type { CommandModule, CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
+import type { CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
 import { fetchComments } from "../../lib/api";
 import type { TeamworkComment } from "../../lib/types";
 
@@ -13,10 +13,6 @@ interface GetCommentsData {
   comments: TeamworkComment[];
   total: number;
 }
-
-
-export const schema = "tw.comments";
-export const version = "1.0";
 
 export const args = defineArgs({
   command: "belz tw comments",

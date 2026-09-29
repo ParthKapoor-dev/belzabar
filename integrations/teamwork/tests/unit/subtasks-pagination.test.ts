@@ -1,5 +1,5 @@
-// TW-11 regression: subtasks were fetched with one pageSize=250 request, so a
-// parent with more subtasks lost the rest. They now follow meta.page.hasMore.
+// Subtasks are paged: a parent with more subtasks than one page must not lose
+// the rest, so fetchSubtasks follows meta.page.hasMore.
 import { describe, expect, test } from "bun:test";
 import { fetchSubtasks } from "../../lib/api";
 

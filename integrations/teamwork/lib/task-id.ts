@@ -1,7 +1,7 @@
-// One task-id validator for every `belz tw` command and `belz release matrix` (TW-6).
+// One task-id validator for every `belz tw` command and `belz release matrix`.
 //
-// Accepts a bare positive integer or a Teamwork task URL (`…/tasks/<id>`).
-// `parseInt` used to accept `123abc` and `-5`, which then 404'd as UNHANDLED.
+// Accepts a bare positive integer or a Teamwork task URL (`…/tasks/<id>`);
+// anything else (`123abc`, `-5`) is INVALID_TASK_ID before any request.
 
 import { CliError } from "@belzabar/core";
 

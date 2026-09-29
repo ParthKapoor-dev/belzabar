@@ -5,19 +5,12 @@ import { extractTicketItems, type ItemsData } from "../../lib/items";
 
 export type { ItemsData } from "../../lib/items";
 
-// `belz tw items` — the release "linker". Pulls a ticket (and its subtask
-// comments), parses every comment for AD/PD/SQL references, and emits a deduped
-// item set with provenance plus a recommended set drawn from the latest
-// dev-note block.
-// The extraction logic lives in lib/items.ts (shared with `belz release matrix`).
+// `belz tw items` — the release "linker". The extraction lives in lib/items.ts
+// (shared with `belz release matrix`); this file only parses args and presents.
 
 interface ItemsArgs {
   taskId: number;
 }
-
-
-export const schema = "tw.items";
-export const version = "1.0";
 
 export const args = defineArgs({
   command: "belz tw items",

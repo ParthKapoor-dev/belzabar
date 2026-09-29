@@ -1,4 +1,4 @@
-// TW-2/3/5/6: strict argument parsing for every `belz tw` command.
+// Strict argument parsing for every `belz tw` command.
 import { describe, expect, test } from "bun:test";
 import { parseTaskId } from "../../lib/task-id";
 import * as task from "../../commands/task/index";
@@ -8,7 +8,7 @@ import * as search from "../../commands/search/index";
 import * as addComment from "../../commands/add-comment/index";
 import { errorCode as code } from "@belzabar/core/testing";
 
-describe("TW-6: parseTaskId", () => {
+describe("parseTaskId", () => {
   test("accepts ids and task URLs", () => {
     expect(parseTaskId("26917411")).toBe(26917411);
     expect(parseTaskId(" 42 ")).toBe(42);
@@ -42,10 +42,10 @@ describe("search", () => {
     const r = search.parseArgs(["aging", "--project", "123456", "--limit", "10", "--include-completed"]);
     expect(r).toEqual({ query: "aging", limit: 10, projectId: 123456, includeCompleted: true });
   });
-  test("TW-3: a typo'd flag is an error, not part of the query", () => {
+  test("a typo'd flag is an error, not part of the query", () => {
     expect(code(() => search.parseArgs(["foo", "--limt", "5"]))).toBe("UNKNOWN_FLAG");
   });
-  test("TW-2: --limit is bounded to 1..500", () => {
+  test("--limit is bounded to 1..500", () => {
     expect(code(() => search.parseArgs(["a", "--limit", "1000"]))).toBe("INVALID_VALUE");
     expect(code(() => search.parseArgs(["a", "--limit", "0"]))).toBe("INVALID_VALUE");
     expect(code(() => search.parseArgs(["a", "--limit"]))).toBe("MISSING_VALUE");
@@ -63,7 +63,7 @@ describe("add-comment", () => {
     });
     expect(addComment.parseArgs(["1", "--body-file=x.md", "--html"]).contentType).toBe("HTML");
   });
-  test("TW-5: --body --yes is MISSING_VALUE", () => {
+  test("--body --yes is MISSING_VALUE", () => {
     expect(code(() => addComment.parseArgs(["1", "--body", "--yes"]))).toBe("MISSING_VALUE");
   });
   test("body and body-file: exactly one", () => {

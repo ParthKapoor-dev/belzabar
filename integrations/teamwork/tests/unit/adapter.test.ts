@@ -1,5 +1,5 @@
 // Teamwork adapter over core/http: cookie session, single-flight re-login,
-// 429 backoff, bounded concurrency, coded errors (TW-7/8/9/10).
+// 429 backoff, bounded concurrency, coded errors.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync, statSync } from "fs";
 import { join } from "path";

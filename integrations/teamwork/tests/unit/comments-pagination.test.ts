@@ -1,4 +1,4 @@
-// TW-1 regression: Teamwork ignores `limit` and caps at 50/page, so comments
+// Teamwork ignores `limit` and caps at 50/page, so comments
 // must be paginated with pageSize + page until meta.page.hasMore is false.
 import { describe, expect, test } from "bun:test";
 import { fetchComments } from "../../lib/api";

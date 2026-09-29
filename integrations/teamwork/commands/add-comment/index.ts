@@ -1,9 +1,8 @@
-import { CliError, defineArgs, ok } from "@belzabar/core";
+import { CliError, confirmWrite, defineArgs, logWriteIntent, ok } from "@belzabar/core";
 import { parseTaskId, TASK_ID_POSITIONAL } from "../../lib/task-id";
 import type { CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
 import { addComment, fetchTask } from "../../lib/api";
 import { teamworkTaskUrl } from "../../lib/auth";
-import { requireConfirmation, logIntent } from "../../lib/confirm";
 
 interface AddCommentArgs {
   taskId: number;
@@ -21,17 +20,13 @@ interface AddCommentData {
   url: string;
 }
 
-
-export const schema = "tw.add-comment";
-export const version = "1.0";
-
 export const args = defineArgs({
   command: "belz tw add-comment",
   positionals: [
     { ...TASK_ID_POSITIONAL, missingMessage: 'Missing <taskId|url>. Usage: belz tw add-comment <taskId|url> --body "<text>"' },
   ],
   flags: {
-    // TW-5: `--body --yes` is MISSING_VALUE, never a comment reading "--yes".
+    // `--body --yes` is MISSING_VALUE, never a comment reading "--yes".
     body: { type: "string" },
     "body-file": { type: "string" },
     html: { type: "boolean" },
@@ -44,8 +39,8 @@ export const args = defineArgs({
 /**
  * Posting a comment changes the ticket. Declared for the record only: `tw` is
  * not env-aware (NOT_ENV_AWARE_NAMESPACES), so the runner's explicit-`--env`
- * write gate does NOT apply here. The only guard is requireConfirmation below
- * (--yes / TTY prompt; --llm without --yes refuses) (OTH-R28).
+ * write gate does NOT apply here. The only guard is the confirmation in
+ * execute (--yes / TTY prompt; --llm without --yes refuses).
  */
 export const writes = true;
 
@@ -83,18 +78,25 @@ export async function execute(args: AddCommentArgs, context: CommandContext): Pr
     /* keep the bare id if the task lookup fails */
   }
 
-  await requireConfirmation({
+  // --yes is for an agent that has already shown the EXACT comment text to the
+  // user and had it approved in chat; a prior go-ahead never counts.
+  const action = `post a comment to Teamwork task ${taskName}`;
+  await confirmWrite({
     yes: args.yes,
     outputMode: context.outputMode,
-    action: `post a comment to Teamwork task ${taskName}`,
+    action,
     details: [
       ["Task", taskName],
       ["Format", args.contentType],
       ["Comment", body],
     ],
+    codePrefix: "TW",
+    requiredMessage: `Confirmation required to ${action}. Pass --yes to proceed — but only after the EXACT comment text has been validated by the user in chat.`,
+    promptMessage: "Post this comment?",
   });
 
-  logIntent("POST", `/projects/api/v3/tasks/${args.taskId}/comments.json`, { taskId: args.taskId });
+  const path = `/projects/api/v3/tasks/${args.taskId}/comments.json`;
+  logWriteIntent("tw", { method: "POST", path }, { taskId: args.taskId });
   const result = await addComment(args.taskId, body, { contentType: args.contentType });
 
   return ok({
