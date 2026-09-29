@@ -143,12 +143,24 @@ export function rawIndex(index: MethodFinderIndex, limit: number): RawIndexView 
   };
 }
 
+const FIND_FLAGS = {
+  refresh: { type: "boolean" },
+  raw: { type: "boolean" },
+  open: { type: "boolean" },
+  limit: { type: "number", integer: true, min: 1, max: 200, default: 20 },
+  describe: { type: "boolean" },
+  category: { type: "string" },
+  fields: { type: "string" },
+} as const satisfies FlagsSpec;
+
 const SUBCOMMANDS = new Set(["list", "pick", "search"]);
-const VALUE_FLAGS = new Set(["--limit", "--env", "--category", "--fields"]);
+/** Flags that consume the next argv token. */
+const VALUE_FLAGS = new Set(Object.entries(FIND_FLAGS).filter(([, f]) => f.type !== "boolean").map(([k]) => `--${k}`));
 
 /**
- * `ad find --refresh list` worked before defineSubcommands (s3-review): if
- * flags come first, move the first bare subcommand name to the front.
+ * Flags may come before the subcommand (`ad find --refresh list`), but
+ * defineSubcommands reads the subcommand from argv[0]: move the first bare
+ * subcommand name to the front.
  */
 export function subcommandFirst(argv: readonly string[]): string[] {
   if (argv.length === 0 || !argv[0]!.startsWith("-")) return [...argv];
@@ -164,16 +176,6 @@ export function subcommandFirst(argv: readonly string[]): string[] {
   }
   return [...argv];
 }
-
-const FIND_FLAGS = {
-  refresh: { type: "boolean" },
-  raw: { type: "boolean" },
-  open: { type: "boolean" },
-  limit: { type: "number", integer: true, min: 1, max: 200, default: 20 },
-  describe: { type: "boolean" },
-  category: { type: "string" },
-  fields: { type: "string" },
-} as const satisfies FlagsSpec;
 
 export const args = defineSubcommands(
   {

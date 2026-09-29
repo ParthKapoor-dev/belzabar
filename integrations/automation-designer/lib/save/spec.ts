@@ -82,7 +82,7 @@ export interface LoadedBody<T> {
  * A local file for `lint` / `validate`: a V2 body is used as-is; a compact
  * create spec is expanded first (needs the env: category + callee contracts).
  */
-export async function loadBodyOrSpec<T>(path: string, categoryFlag: string | null): Promise<LoadedBody<T>> {
+async function loadBodyOrSpec<T>(path: string, categoryFlag: string | null): Promise<LoadedBody<T>> {
   const raw = await readSpecFile(path);
   if (!isCompactSpec(raw)) {
     if (categoryFlag) throw new CliError("--category applies only to a compact spec file.", { code: "INVALID_ARGUMENT" });
