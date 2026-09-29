@@ -3,7 +3,7 @@
 //   export const args = defineArgs({
 //     command: "belz pd save",
 //     positionals: [{ name: "page-id", required: true }],
-//     flags: { ...PD_FORCE_FLAG, ...PD_YES_FLAG, ...PD_DRY_RUN_FLAG, overlay: { type: "string" } },
+//     flags: { ...PD_WRITE_OVERRIDE_FLAGS, ...PD_YES_FLAG, ...PD_DRY_RUN_FLAG, overlay: { type: "string" } },
 //   });
 //
 // Spread a fragment only where the flag means something: read commands do not
@@ -17,36 +17,19 @@ export const PD_FORCE_FLAG = {
 } as const satisfies FlagsSpec;
 
 /**
- * Write-command guard overrides (PD-6). They used to be one `--force` that
- * both skipped validation AND allowed writing to a PUBLISHED page.
+ * Write-command guard overrides:
  *   --force-validation   proceed despite validator ERRORS (listed in bypassedErrors)
- *   --allow-published    write/publish/restore a PUBLISHED page with no linked draft
- *   --force              deprecated alias of --force-validation ONLY (warns)
+ *   --allow-published    write/publish a PUBLISHED page with no linked draft
  */
 export const PD_WRITE_OVERRIDE_FLAGS = {
   "force-validation": { type: "boolean" },
   "allow-published": { type: "boolean" },
-  force: { type: "boolean" },
 } as const satisfies FlagsSpec;
 
 export interface WriteOverrides {
   forceValidation: boolean;
   allowPublished: boolean;
-  /** The deprecated `--force` was used (callers warn). */
-  deprecatedForce: boolean;
 }
-
-export function writeOverrides(flags: { forceValidation: boolean; allowPublished: boolean; force: boolean }): WriteOverrides {
-  return {
-    forceValidation: flags.forceValidation || flags.force,
-    allowPublished: flags.allowPublished,
-    deprecatedForce: flags.force,
-  };
-}
-
-export const DEPRECATED_FORCE_WARNING =
-  "--force is deprecated: it now means --force-validation only. Use --force-validation to bypass " +
-  "validator errors and --allow-published to write to a PUBLISHED page.";
 
 /** `--yes` / `-y`: skip the confirmation prompt (required in --llm mode on writes). */
 export const PD_YES_FLAG = {

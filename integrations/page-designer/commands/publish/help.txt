@@ -30,8 +30,6 @@ Flags:
                         without deploying.
   --force-validation    Publish despite validator ERRORS the draft introduces.
   --allow-published     Publish a PUBLISHED page that has no linked draft.
-  --force               DEPRECATED alias of --force-validation (it no longer
-                        bypasses the PUBLISHED-page guard). Prints a warning.
   --yes, -y             Confirm the publish (required with --llm or without a
                         terminal; otherwise belz asks).
   --help, -h            Show this help message.

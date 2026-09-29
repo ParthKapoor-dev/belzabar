@@ -89,10 +89,7 @@ describe("pd history (PD-15)", () => {
     expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes(`belz pd publish ${DRAFT}`))).toBe(true);
   });
 
-  test("OTH-R2/R8: --acknowledge-unverified is a deprecated no-op; --allow-published is not a restore flag", async () => {
-    const r = await run(history, ["restore", DRAFT, "--version", "100", "--acknowledge-unverified", "--yes"]);
-    expect(r.envelope?.ok).toBe(true);
-    expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes("--acknowledge-unverified is deprecated"))).toBe(true);
+  test("--allow-published is not a restore flag", async () => {
     const old = await run(history, ["restore", DRAFT, "--version", "100", "--allow-published", "--yes"]);
     expect(old.envelope?.error?.code).toBe("UNKNOWN_FLAG");
   });

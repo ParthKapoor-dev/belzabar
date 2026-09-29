@@ -21,11 +21,9 @@
 import { isDeepStrictEqual } from "node:util";
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import {
-  DEPRECATED_FORCE_WARNING,
   PD_DRY_RUN_FLAG,
   PD_WRITE_OVERRIDE_FLAGS,
   PD_YES_FLAG,
-  writeOverrides,
   type WriteOverrides,
 } from "../../lib/args/common";
 import { pdApi, type SaveResult } from "../../lib/api/index";
@@ -153,8 +151,6 @@ async function verifySaved(
 export { differingPaths };
 
 const command: CommandModule<SaveArgs, SaveData> = {
-  schema: "pd.save",
-
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
@@ -163,14 +159,13 @@ const command: CommandModule<SaveArgs, SaveData> = {
       overlayFile: flags.overlay ?? null,
       configFile: flags.config ?? null,
       dryRun: flags.dryRun,
-      overrides: writeOverrides(flags),
+      overrides: { forceValidation: flags.forceValidation, allowPublished: flags.allowPublished },
       yes: flags.yes,
     };
   },
 
   async execute(args, context) {
     const warn = (m: string) => context.warn(m);
-    if (args.overrides.deprecatedForce) warn(`⚠ ${DEPRECATED_FORCE_WARNING}`);
 
     const edit: Edit = args.overlayFile
       ? { kind: "overlay", overlay: assertOverlayShape(await readJsonFile(args.overlayFile, "INVALID_OVERLAY", "Overlay")) }

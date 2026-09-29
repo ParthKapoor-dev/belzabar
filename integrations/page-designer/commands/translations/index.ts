@@ -49,8 +49,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<TranslationsArgs, TranslationsData> = {
-  schema: "pd.translations",
-
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     return {

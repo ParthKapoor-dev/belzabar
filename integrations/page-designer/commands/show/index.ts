@@ -418,7 +418,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<ShowArgs, ShowData> = {
-  schema: "pd.show",
   parseArgs(argv) {
     const { positionals, flags: f } = args.parse(argv);
     const flags: ShowArgs["flags"] = {

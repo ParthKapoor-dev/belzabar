@@ -53,7 +53,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<SnapshotArgs, SnapshotData> = {
-  schema: "pd.snapshot",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     return { input: positionals.input, out: flags.out ?? null, compare: flags.compare ?? null };

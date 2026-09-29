@@ -28,9 +28,6 @@ Flags:
   --full              List every issue (warnings too) instead of grouping them.
   --summary           Warnings as counts per code only (no refs); errors still
                       listed in full. Cannot be combined with --full.
-  --force             Accepted for compatibility: validate always reads the
-                      page (and every --recursive symbol) fresh, never from
-                      the local cache.
 
 Errors (block `save` / `publish`):
   INVALID_JSON              configuration is not valid JSON

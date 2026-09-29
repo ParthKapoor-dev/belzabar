@@ -90,20 +90,17 @@ describe("pd save", () => {
     expect(locks()).toEqual([]);
   });
 
-  test("PD-6: --force-validation bypasses validation; --force is a deprecated alias of it", async () => {
+  test("--force-validation bypasses validation", async () => {
     const bad = { elements: { operations: [{ key: "layout.children[0].props.[innerHTML]", value: "{%typo%}", operation: "UPDATE", dataType: "STRING" }] } };
     const a = await run(save, [DRAFT, "--overlay", overlayFile(bad), "--force-validation", "--yes"]);
     expect(a.envelope?.ok).toBe(true);
     expect((a.envelope?.data as any).bypassedErrors.map((e: any) => e.code)).toEqual(["ORPHAN_BINDING"]);
-    const b = await run(save, [DRAFT, "--overlay", overlayFile(bad), "--force", "--yes"]);
-    expect(b.envelope?.ok).toBe(true);
-    expect(((b.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes("--force is deprecated"))).toBe(true);
   });
 
-  test("PD-6: a PUBLISHED page with no draft needs --allow-published; --force no longer allows it", async () => {
+  test("a PUBLISHED page with no draft needs --allow-published", async () => {
     const f = overlayFile(upd);
     expect((await run(save, [LONE_PUB, "--overlay", f, "--yes"])).envelope?.error?.code).toBe("PD_PUBLISHED_NO_DRAFT");
-    expect((await run(save, [LONE_PUB, "--overlay", f, "--force", "--yes"])).envelope?.error?.code).toBe("PD_PUBLISHED_NO_DRAFT");
+    expect((await run(save, [LONE_PUB, "--overlay", f, "--force-validation", "--yes"])).envelope?.error?.code).toBe("PD_PUBLISHED_NO_DRAFT");
     const ok = await run(save, [LONE_PUB, "--overlay", f, "--allow-published", "--yes"]);
     expect(ok.envelope?.ok).toBe(true);
     expect(saves()).toEqual([`PUT /pages/${LONE_PUB}`]);
@@ -252,7 +249,7 @@ describe("pd publish", () => {
     expect(existsSync(pubFile)).toBe(false);
   });
 
-  test("validates the draft: errors block unless --force-validation (--force = deprecated alias)", async () => {
+  test("validates the draft: errors block unless --force-validation", async () => {
     pd.pages.set(DRAFT, page(DRAFT, cleanInner({ layout: { id: "r", name: "div", children: [] } }), { referenceId: PUB }));
     expect((await run(publish, [DRAFT, "--yes"])).envelope?.error?.code).toBe("PD_VALIDATION_FAILED");
     expect(pd.log().some((l) => l.includes("/publish"))).toBe(false);
@@ -319,8 +316,8 @@ describe("pd publish", () => {
     expect(r.envelope?.data).toMatchObject({ versionDrift: { from: 1, to: 5 } });
   });
 
-  test("PD-6: a PUBLISHED page without a draft needs --allow-published", async () => {
-    expect((await run(publish, [LONE_PUB, "--force", "--yes"])).envelope?.error?.code).toBe("PD_PUBLISHED_NO_DRAFT");
+  test("a PUBLISHED page without a draft needs --allow-published", async () => {
+    expect((await run(publish, [LONE_PUB, "--force-validation", "--yes"])).envelope?.error?.code).toBe("PD_PUBLISHED_NO_DRAFT");
     expect((await run(publish, [LONE_PUB, "--allow-published", "--yes"])).envelope?.ok).toBe(true);
   });
 });

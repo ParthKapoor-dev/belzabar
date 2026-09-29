@@ -78,8 +78,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<DiffArgs, DiffData> = {
-  schema: "pd.diff",
-
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     return { input: positionals.input, from: flags.from, to: flags.to };

@@ -17,10 +17,8 @@
 
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import {
-  DEPRECATED_FORCE_WARNING,
   PD_WRITE_OVERRIDE_FLAGS,
   PD_YES_FLAG,
-  writeOverrides,
   type WriteOverrides,
 } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
@@ -68,8 +66,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<PublishArgs, PublishData> = {
-  schema: "pd.publish",
-
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
@@ -78,13 +74,12 @@ const command: CommandModule<PublishArgs, PublishData> = {
       landing: flags.landing,
       hostIds: flags.host,
       yes: flags.yes,
-      overrides: writeOverrides(flags),
+      overrides: { forceValidation: flags.forceValidation, allowPublished: flags.allowPublished },
     };
   },
 
   async execute(args, context) {
     const warn = (m: string) => context.warn(m);
-    if (args.overrides.deprecatedForce) warn(`⚠ ${DEPRECATED_FORCE_WARNING}`);
 
     const target = await resolveWriteTarget(args.pageId, args.overrides, warn, "publishing");
     const { targetId } = target;

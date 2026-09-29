@@ -104,7 +104,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<FindArgs, FindData> = {
-  schema: "pd.find",
   parseArgs(argv, context) {
     const { positionals, flags } = args.parse(argv);
     const { refresh, open, type, full } = flags;

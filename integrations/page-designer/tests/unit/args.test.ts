@@ -26,7 +26,7 @@ describe("pd publish (PD-16)", () => {
       landing: true,
       hostIds: ["1", "2"],
       yes: true,
-      overrides: { forceValidation: false, allowPublished: false, deprecatedForce: false },
+      overrides: { forceValidation: false, allowPublished: false },
     });
   });
 
@@ -109,23 +109,22 @@ describe("pd save / find", () => {
       overlayFile: "o.json",
       configFile: null,
       dryRun: true,
-      overrides: { forceValidation: false, allowPublished: false, deprecatedForce: false },
+      overrides: { forceValidation: false, allowPublished: false },
       yes: false,
     });
     expect(save.writes).toBe(true);
   });
 
-  test("PD-6: --force-validation and --allow-published are separate; --force aliases validation only", async () => {
+  test("--force-validation and --allow-published are separate; write commands take no --force", async () => {
     const o = async (...flags: string[]) => ((await save.parseArgs!(["p1", "--overlay", "o.json", ...flags], ctx)) as any).overrides;
-    expect(await o("--force-validation")).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: false });
-    expect(await o("--allow-published")).toEqual({ forceValidation: false, allowPublished: true, deprecatedForce: false });
-    expect(await o("--force")).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: true });
-    const p = (await publish.parseArgs!(["p1", "--force"], ctx)) as any;
-    expect(p.overrides).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: true });
-    // OTH-R8: --allow-published is not a restore flag; --acknowledge-unverified is a deprecated no-op (OTH-R2 verified).
+    expect(await o("--force-validation")).toEqual({ forceValidation: true, allowPublished: false });
+    expect(await o("--allow-published")).toEqual({ forceValidation: false, allowPublished: true });
+    expect(code(() => save.parseArgs!(["p1", "--overlay", "o.json", "--force"], ctx))).toBe("UNKNOWN_FLAG");
+    expect(code(() => publish.parseArgs!(["p1", "--force"], ctx))).toBe("UNKNOWN_FLAG");
+    // --allow-published is not a restore flag: restore only ever writes the draft.
     expect(code(() => history.parseArgs!(["restore", "p1", "--version", "1", "--allow-published"], ctx))).toBe("UNKNOWN_FLAG");
-    const r = (await history.parseArgs!(["restore", "p1", "--version", "1", "--acknowledge-unverified"], ctx)) as any;
-    expect(r.acknowledgeUnverified).toBe(true);
+    expect(code(() => history.parseArgs!(["restore", "p1", "--version", "1", "--acknowledge-unverified"], ctx))).toBe("UNKNOWN_FLAG");
+    expect(((await history.parseArgs!(["restore", "p1", "--version", "1", "--force-validation"], ctx)) as any).overrides).toEqual({ forceValidation: true, allowPublished: false });
     expect(code(() => history.parseArgs!(["show", "p1", "--version", "1", "--allow-published"], ctx))).toBe("UNKNOWN_FLAG");
   });
 

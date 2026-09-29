@@ -26,9 +26,6 @@ Flags:
   --yes, -y             Confirm the restore (required with --llm or without a
                         terminal; otherwise belz asks).
   --force-validation    Restore despite validator errors the version introduces.
-  --acknowledge-unverified
-                        DEPRECATED no-op (restore semantics are verified).
-  --force               DEPRECATED alias of --force-validation.
   --help, -h            Show this help message.
 
 Global Flags:

@@ -60,7 +60,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
-  schema: "pd.analyze",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     return { inputs: positionals.input, complianceFile: flags.compliance ?? null, force: flags.force };

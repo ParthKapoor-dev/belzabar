@@ -89,8 +89,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<PageDepsArgs, PageDepsData> = {
-  schema: "pd.page-deps",
-
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     return { input: positionals.input, status: flags.status, force: flags.force, full: flags.full };

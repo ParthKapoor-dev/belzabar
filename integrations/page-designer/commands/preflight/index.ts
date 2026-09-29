@@ -65,8 +65,6 @@ function stats(page: HydratedPage) {
 }
 
 const command: CommandModule<PreflightArgs, PreflightData> = {
-  schema: "pd.preflight",
-
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     return { pageId: positionals.pageId, overlayFile: flags.overlay ?? null };
@@ -75,7 +73,7 @@ const command: CommandModule<PreflightArgs, PreflightData> = {
   async execute({ pageId, overlayFile }, context) {
     const warn = (m: string) => context.warn(m);
     const overlay = overlayFile ? assertOverlayShape(await readJsonFile(overlayFile, "INVALID_OVERLAY", "Overlay")) : null;
-    const noOverrides = { forceValidation: false, allowPublished: false, deprecatedForce: false };
+    const noOverrides = { forceValidation: false, allowPublished: false };
     let target: WriteTarget;
     try {
       target = await resolveWriteTarget(pageId, noOverrides, warn, "checking");

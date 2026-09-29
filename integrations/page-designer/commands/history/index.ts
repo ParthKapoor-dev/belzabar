@@ -25,17 +25,11 @@
 // PD_PUBLISHED_NO_DRAFT) → diff-aware validation of the version against the
 // draft → --yes → withLock(draft): fresh read + re-validate (OTH-R5) → revert
 // → read back and compare with the version (PD_RESTORE_VERIFY_FAILED on a
-// mismatch). `--acknowledge-unverified` is a deprecated no-op.
+// mismatch).
 
 import { isDeepStrictEqual } from "node:util";
 import { CliError, defineSubcommands, failWithData, ok, type CommandModule } from "@belzabar/core";
-import {
-  DEPRECATED_FORCE_WARNING,
-  PD_WRITE_OVERRIDE_FLAGS,
-  PD_YES_FLAG,
-  writeOverrides,
-  type WriteOverrides,
-} from "../../lib/args/common";
+import { PD_WRITE_OVERRIDE_FLAGS, PD_YES_FLAG, type WriteOverrides } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { describeDraftGuardFailure, resolveLinkedPair } from "../../lib/draft-guard";
 import { gateValidation, logIntent, requireConfirmation, versionDrift } from "../../lib/edit";
@@ -55,8 +49,6 @@ interface HistoryArgs {
   to?: number;
   limit: number;
   overrides: WriteOverrides;
-  /** restore only: deprecated no-op (revert semantics are verified, OTH-R2). */
-  acknowledgeUnverified: boolean;
   yes: boolean;
 }
 
@@ -181,8 +173,6 @@ export const args = defineSubcommands(
         ...VERSION,
         ...PD_YES_FLAG,
         "force-validation": PD_WRITE_OVERRIDE_FLAGS["force-validation"],
-        force: PD_WRITE_OVERRIDE_FLAGS.force,
-        "acknowledge-unverified": { type: "boolean" },
       },
     },
   },
@@ -238,19 +228,13 @@ function toRow(e: RawHistoryEntry): VersionRow {
 // -------- command --------------------------------------------------------
 
 const command: CommandModule<HistoryArgs, HistoryData> = {
-  schema: "pd.history",
-
   writes: (a: HistoryArgs) => a.action === "restore",
   parseArgs(argv) {
     const r = args.parse(argv);
     const out: HistoryArgs = {
       action: r.subcommand,
       pageId: r.positionals.pageId,
-      overrides:
-        r.subcommand === "restore"
-          ? writeOverrides({ ...r.flags, allowPublished: false })
-          : { forceValidation: false, allowPublished: false, deprecatedForce: false },
-      acknowledgeUnverified: r.subcommand === "restore" ? r.flags.acknowledgeUnverified : false,
+      overrides: { forceValidation: r.subcommand === "restore" && r.flags.forceValidation, allowPublished: false },
       yes: r.subcommand === "restore" ? r.flags.yes : false,
       limit: r.subcommand === "list" ? r.flags.limit : 50,
     };
@@ -343,8 +327,6 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
 
     // restore
     const warn = (m: string) => context.warn(m);
-    if (args.overrides.deprecatedForce) warn(`⚠ ${DEPRECATED_FORCE_WARNING}`);
-    if (args.acknowledgeUnverified) warn("⚠ --acknowledge-unverified is deprecated and ignored: restore semantics are verified (it rewrites the draft only).");
     const vid = args.version!;
     const version = await fetchOwnedVersion(args.pageId, vid);
     const ownerId = version.id;

@@ -1,16 +1,14 @@
-// belz pd validate <input> [--recursive] [--full] — run every validator rule
-// over a page/component (and, with --recursive, every symbol it uses).
+// belz pd validate <input> [--recursive] [--full] [--summary] — run every
+// validator rule over a page/component (and, with --recursive, every symbol it
+// uses). Any ERROR makes the envelope ok:false (PD_VALIDATION_FAILED, exit 1)
+// with the full report still in `data`, so scripts can chain on the exit code.
 //
-// PD-8 / F18: when any rule reports an ERROR the envelope is ok:false
-// (PD_VALIDATION_FAILED, exit 1) with the full report in `data`. Rule
-// severities are calibrated against real editor output (PD-5, Stage 7).
-//
-// Output (Stage 7, 7.9): errors are listed in full; warnings are grouped by
-// code with one short ref per occurrence (variable name, callId, node id) —
-// `--full` restores the flat per-issue list.
+// Output: errors are listed in full; warnings are grouped by code with one
+// short ref per occurrence (variable name, callId, node id); `--full` gives the
+// flat per-issue list.
 
 import { defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
-import { PD_FORCE_FLAG, PD_INPUT_POSITIONAL } from "../../lib/args/common";
+import { PD_INPUT_POSITIONAL } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { cachedFetchPageConfig } from "../../lib/cache";
 import { parsePage } from "../../lib/parser/index";
@@ -21,10 +19,9 @@ import type { ValidationIssue } from "../../lib/types/common";
 
 interface ValidateArgs {
   input: string;
-  force: boolean;
   recursive: boolean;
   full: boolean;
-  /** --summary: warning counts per code, no refs (CLI trial: 61+ UNUSED_VARIABLE refs). */
+  /** --summary: warning counts per code, no refs (large pages carry dozens of refs per code). */
   summary: boolean;
 }
 
@@ -61,7 +58,6 @@ export const args = defineArgs({
   command: "belz pd validate",
   positionals: [PD_INPUT_POSITIONAL],
   flags: {
-    ...PD_FORCE_FLAG,
     recursive: { type: "boolean", alias: ["-r"] },
     full: { type: "boolean" },
     summary: { type: "boolean" },
@@ -104,31 +100,29 @@ export function countWarnings(issues: ValidationIssue[]): Record<string, Warning
   return out;
 }
 
-const draftSymbolFetcher = (force: boolean): SymbolFetcher => ({
+/** Symbols are read fresh too: a verdict must reflect the pages as they are now. */
+const freshSymbolFetcher: SymbolFetcher = {
   async byName(name) {
     const id = await pdApi.fetchComponentIdByName(name);
-    return id ? cachedFetchPageConfig(id, force) : null;
+    return id ? cachedFetchPageConfig(id, true) : null;
   },
-});
+};
 
 const command: CommandModule<ValidateArgs, ValidateData> = {
-  schema: "pd.validate",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    return { input: positionals.input, force: flags.force, recursive: flags.recursive, full: flags.full, summary: flags.summary };
+    return { input: positionals.input, recursive: flags.recursive, full: flags.full, summary: flags.summary };
   },
   async execute({ input, recursive, full, summary }, context) {
-    // OTH-R13: a verdict must reflect the page as it is now — validate always
-    // reads fresh (root and --recursive symbols); `--force` is kept as a no-op.
-    const force = true;
-    const resolved = await resolveInput(input, force);
+    // Never from the cache: a verdict must reflect the page as it is now.
+    const resolved = await resolveInput(input, true);
     const page = parsePage(resolved.response);
     const head = { name: page.name || resolved.resolvedId, id: resolved.resolvedId, entityType: resolved.entityType };
 
     let data: ValidateData;
     let totalErrors: number;
     if (recursive) {
-      const rep = await validateRecursive(resolved.response, draftSymbolFetcher(force));
+      const rep = await validateRecursive(resolved.response, freshSymbolFetcher);
       for (const e of rep.fetchErrors) context.warn(`⚠ recursive: ${e.name}: ${e.message}`);
       const [root, ...rest] = rep.entries;
       data = {

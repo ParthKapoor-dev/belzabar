@@ -45,7 +45,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<FindAdMethodsArgs, FindAdMethodsData> = {
-  schema: "pd.find-ad-methods",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     return { targetId: positionals.id, recursive: flags.recursive, component: flags.component, force: flags.force };

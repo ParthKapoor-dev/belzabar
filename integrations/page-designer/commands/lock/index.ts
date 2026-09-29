@@ -82,7 +82,6 @@ export const args = defineSubcommands(
 );
 
 const command: CommandModule<LockArgs, LockData> = {
-  schema: "pd.lock",
   writes: (a: LockArgs) => a.action !== "status",
 
   parseArgs(argv) {

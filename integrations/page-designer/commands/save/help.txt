@@ -33,8 +33,6 @@ Flags:
                         data.bypassedErrors). Warnings always just print.
   --allow-published     Allow writing directly to a PUBLISHED page that has
                         no linked draft.
-  --force               DEPRECATED alias of --force-validation (it no longer
-                        allows writing to a PUBLISHED page). Prints a warning.
   --yes, -y             Confirm the write (required with --llm or without a
                         terminal; otherwise belz asks).
   --help, -h            Show this help message.
