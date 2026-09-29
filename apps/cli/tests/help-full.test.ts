@@ -42,7 +42,7 @@ describe("belz --help-full", () => {
   });
 
   test("lists each section's commands in sorted order", () => {
-    const text = buildHelpFull();
+    const text = buildHelpFull()!;
     for (const registry of Object.values(REGISTRIES)) {
       const positions = Object.keys(registry)
         .sort()
@@ -60,12 +60,31 @@ describe("belz --help-full", () => {
       const env = EnvelopeSchema.parse(JSON.parse(r.out));
       expect(env.schema).toBe("belz.help");
       expect(env.ok).toBe(true);
-      expect((env.data as { text: string }).text).toBe(buildHelpFull());
+      expect((env.data as { text: string }).text).toBe(buildHelpFull()!);
     }
   }, 30_000);
 
   test("CORE-R11: --help-full after `--` belongs to the command, not the runner", () => {
     const r = runHelpFull({ BELZ_HOME: mkdtempSync(join(tmpdir(), "hf-dd-")) }, tmpdir(), ["ad", "show", "--", "--help-full", "--llm"]);
     expect(r.out).not.toContain("NOTE FOR LLM AGENTS");
+  }, 30_000);
+
+  test("CLI trial: --help-full <module> prints one section; --index one line per command", () => {
+    const full = buildHelpFull()!;
+    const ad = buildHelpFull({ namespace: "ad" })!;
+    expect(ad).toContain("belz ad <cmd>");
+    expect(ad).not.toContain("belz pd <cmd>");
+    expect(ad.length).toBeLessThan(full.length);
+    const index = buildHelpFull({ index: true })!;
+    expect(index.length).toBeLessThan(full.length / 3);
+    for (const name of Object.keys(REGISTRIES["integrations/automation-designer"]!)) expect(index).toContain(`belz ad ${name}  :->  `);
+    expect(buildHelpFull({ namespace: "nope" })).toBeNull();
+    const home = mkdtempSync(join(tmpdir(), "hf-ns-"));
+    const r = runHelpFull({ BELZ_HOME: home }, tmpdir(), ["--help-full", "pd", "--index"]);
+    expect(r.code).toBe(0);
+    expect(r.out).toBe(buildHelpFull({ namespace: "pd", index: true }) + "\n");
+    const bad = runHelpFull({ BELZ_HOME: home }, tmpdir(), ["--help-full", "nope", "--llm"]);
+    expect(bad.code).toBe(1);
+    expect(JSON.parse(bad.out).error.code).toBe("INVALID_ARGS");
   }, 30_000);
 });

@@ -54,7 +54,12 @@ export interface NamespacedCliOptions {
    * first argument after the global flags (never after a command name or
    * `--`); in `--llm` mode it is a `belz.help` envelope with `data.text` (CORE-R11).
    */
-  helpFull?: () => string;
+  /**
+   * `belz --help-full [<namespace>] [--index]`: the whole reference, one
+   * namespace's part, or a one-line-per-command index. Returns null for an
+   * unknown namespace.
+   */
+  helpFull?: (opts?: HelpFullOptions) => string | null;
 }
 
 // ── Shared internals ────────────────────────────────────────────────────────
@@ -612,6 +617,13 @@ export async function runNamespacedCli(
 }
 
 /** `belz 0.1.0 (abc1234)` */
+export interface HelpFullOptions {
+  /** Only this namespace (`ad`, `pd`, … or `top` for top-level commands). */
+  namespace?: string;
+  /** One line per command instead of every invocation variant. */
+  index?: boolean;
+}
+
 export function formatBuildInfo(binaryName: string, build: BuildInfo): string {
   const sha = build.sha + (build.dirty ? "-dirty" : "");
   return `${binaryName} ${build.version} (${sha}${build.builtAt ? `, built ${build.builtAt}` : ""})`;
@@ -660,6 +672,7 @@ export async function dispatchNamespaced(
     console.log(`  ${theme.accent("--llm")}           ${theme.faint("structured machine-readable output")}`);
     console.log(`  ${theme.accent("-e, --env <n>")}   ${theme.faint("run against a specific environment (required for writes)")}`);
     if (options.build) console.log(`  ${theme.accent("--version")}       ${theme.faint("print the version and build SHA")}`);
+    if (options.helpFull) console.log(`  ${theme.accent("--help-full")}     ${theme.faint("every command variant; [<module>] for one module, [--index] one line per command")}`);
     console.log();
     console.log(theme.faint(`${symbols.arrow} ${options.binaryName} <module> --help  for module commands`));
   };
@@ -682,7 +695,27 @@ export async function dispatchNamespaced(
   }
 
   if (token === "--help-full" && options.helpFull) {
-    const text = options.helpFull();
+    // `--help-full [<namespace>] [--index]` (CLI trial: the full text is ~35 KB).
+    const rest = args.slice(1);
+    const bad = rest.filter((a) => a.startsWith("-") && a !== "--index");
+    const words = rest.filter((a) => !a.startsWith("-"));
+    const namespace = words[0];
+    const text =
+      bad.length > 0 || words.length > 1 ? null : options.helpFull({ ...(namespace ? { namespace } : {}), index: rest.includes("--index") });
+    if (text === null) {
+      const message =
+        bad.length > 0 || words.length > 1
+          ? `Usage: ${options.binaryName} --help-full [<namespace>] [--index] (got: ${rest.join(" ")})`
+          : `Unknown namespace '${namespace}' for --help-full. Namespaces: ${[...Object.keys(options.namespaces), "top"].join(", ")}`;
+      if (outputMode === "llm") {
+        return envelopeOutcome(
+          outputMode,
+          runnerEnvelope(options.binaryName, "help", "help-full", startedAt, { ok: false, error: { code: "INVALID_ARGS", message } }),
+          1
+        );
+      }
+      return printOutcome(1, () => printErr(theme.err(message)));
+    }
     if (outputMode === "llm") {
       return envelopeOutcome(
         outputMode,

@@ -8,6 +8,7 @@ import {
   registryModules,
   registryNames,
   type CommandRegistry,
+  type HelpFullOptions,
   type NamespacedCliOptions,
 } from "@belzabar/core";
 import { registry as adRegistry } from "@belzabar/ad/registry";
@@ -87,26 +88,44 @@ export function buildCliOptions(): NamespacedCliOptions {
   };
 }
 
-/** `belz --help-full`: every command's desc.txt, sections in fixed order, commands sorted. */
-export function buildHelpFull(): string {
+/**
+ * `belz --help-full`: every command's desc.txt, sections in fixed order, commands sorted.
+ * `namespace` limits it to one section (`top` = top-level commands); `index`
+ * prints one line per command (its first desc line) — the full text is ~35 KB.
+ * Returns null for an unknown namespace.
+ */
+export function buildHelpFull(opts: HelpFullOptions = {}): string | null {
   const RULE = "─".repeat(77);
+  const all = [
+    ...NAMESPACES.map((ns) => ({ key: ns.key, header: ns.header, registry: ns.registry })),
+    { key: "top", header: "belz <cmd>  —  Top-level", registry: topRegistry },
+  ];
+  const sections = opts.namespace ? all.filter((s) => s.key === opts.namespace) : all;
+  if (sections.length === 0) return null;
   const lines = [
     "NOTE FOR LLM AGENTS: Always use the --llm flag for structured, parseable output.",
     "  Example: belz ad show <uuid> --llm",
+    "  stdout carries only the JSON envelope; stderr carries human notices (the",
+    "  `[belz ad write] {…}` audit line of a write, the default-env notice, progress).",
+    "  `belz --help-full <module>` prints one module; `--index` one line per command.",
     "",
     "belz — Belzabar CLI",
-  ];
-  const sections = [
-    ...NAMESPACES.map((ns) => ({ header: ns.header, registry: ns.registry })),
-    { header: "belz <cmd>  —  Top-level", registry: topRegistry },
   ];
   for (const { header, registry } of sections) {
     lines.push("", header, RULE);
     for (const name of registryNames(registry)) {
       const desc = registry[name]!.desc.trimEnd();
-      if (desc) lines.push(desc, "");
+      if (!desc) continue;
+      if (opts.index) {
+        const first = desc.split("\n")[0]!;
+        const [inv, what = ""] = first.split("  :->  ");
+        const words = inv!.split(" ");
+        const cmd = words.slice(0, words[1] && registry !== topRegistry ? 3 : 2).join(" ");
+        lines.push(`${cmd}  :->  ${what.length > 110 ? `${what.slice(0, 109)}…` : what}`);
+      } else lines.push(desc, "");
     }
   }
+  if (opts.index) lines.push("");
   lines.push("Use 'belz <namespace> <cmd> --help' for full flag documentation and examples.");
   return lines.join("\n");
 }

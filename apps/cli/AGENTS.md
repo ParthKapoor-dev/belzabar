@@ -53,7 +53,8 @@ belz --version | --help | --help-full        → runner / entry point
 - `envAware: false` for the `tw`, `migrate`, `release` namespaces and for
   `config`, `extension`, `envs`, `setup`, `onboard`, `update` — their envelopes carry no `meta.env`.
 - `belz update` (`planUpdate`) only fast-forwards the recorded `belz.sourceDir`; with something to pull it
-  refuses a dirty tree (`DIRTY_TREE`) or unpushed commits (`LOCAL_COMMITS`) — it never `git reset`s.
+  refuses a dirty tree (`DIRTY_TREE`: tracked edits / staged changes; untracked files don't count)
+  or unpushed commits (`LOCAL_COMMITS`) — it never `git reset`s.
   `--force` = rebuild even when up to date. The installer gets `--install-dir`/`-InstallDir` from the
   recorded `belz.installDir` (`installerCommand`) (CORE-R3, CORE-R4).
 - `belz setup` parses `--env-file` with core `parseDotEnv` (inline `# comments` stripped on unquoted
@@ -73,7 +74,10 @@ belz --version | --help | --help-full        → runner / entry point
   locale- or build-dependent content (`tests/help-full.test.ts` spawns it twice under different
   env/TZ/locale and requires byte-identical output). The runner handles it (`helpFull` option)
   only as the first argument after the global flags (not after a command or `--`); with `--llm`
-  it is a `belz.help` envelope with `data.text` (CORE-R11).
+  it is a `belz.help` envelope with `data.text` (CORE-R11). `belz --help-full <ns>` (`ad`, `pd`,
+  `tw`, `migrate`, `release`, `top`) prints one section and `--index` one line per command (the
+  first desc line) — the full text is ~35 KB (CLI trial). The header tells agents that stdout is
+  only the envelope and stderr carries notices.
 
 ---
 
