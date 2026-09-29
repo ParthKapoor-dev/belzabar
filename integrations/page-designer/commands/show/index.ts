@@ -61,7 +61,7 @@ const SHORT_VALUE = 80;
 
 type Row = Record<string, unknown>;
 
-export function parseFields(raw: string | undefined): string[] | null {
+function parseFields(raw: string | undefined): string[] | null {
   if (raw === undefined) return null;
   const list = raw.split(",").map((f) => f.trim()).filter(Boolean);
   if (list.includes("all")) return ["all"];

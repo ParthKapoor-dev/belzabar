@@ -4,7 +4,7 @@
 
 import type { PartialDataType } from "../types/common";
 
-export type PathSegment = string | number;
+type PathSegment = string | number;
 
 /**
  * `a.b[2].c` → ["a", "b", 2, "c"]. A dot-segment that is not `name[0][1]…`

@@ -23,7 +23,7 @@ export interface SetDiff {
   changed: string[];
 }
 
-export interface StyleDiff {
+interface StyleDiff {
   changed: boolean;
   linesAdded: number;
   linesRemoved: number;
@@ -85,7 +85,7 @@ function collectNodes(page: HydratedPage): Map<string, { kind: string; fp: strin
 }
 
 /** node id → parent id, and parent id → child ids in order. */
-export function treeShape(p: HydratedPage): { parent: Map<string, string>; kids: Map<string, string[]> } {
+function treeShape(p: HydratedPage): { parent: Map<string, string>; kids: Map<string, string[]> } {
   const parent = new Map<string, string>();
   const kids = new Map<string, string[]>();
   const visit = (n: HydratedPage["layout"]) => {

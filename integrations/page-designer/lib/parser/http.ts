@@ -2,13 +2,18 @@
 // and the legacy flat `http` array into a single PageHttpRequest[] list,
 // preserving order and tagging the source bucket for round-trip serialization.
 
-import { cleanAdId } from "./refs";
 import type {
   PageHttpInputBinding,
   PageHttpRequest,
   PageHttpSuccessMapping,
 } from "../types/common";
 import type { RawConfiguration, RawHttpRequestItem } from "../types/wire";
+
+/** The AD method id in an `/rest/api/automation/chain/execute/<id>` URL. */
+function cleanAdId(url: string): string | null {
+  const match = url.match(/\/rest\/api\/automation\/chain\/execute\/([a-zA-Z0-9-]+)/);
+  return match?.[1] ?? null;
+}
 
 function stripBindingWrapper(expr: string | null | undefined): string | null {
   if (!expr) return null;

@@ -10,13 +10,13 @@
 // dry-run, the first plan and the in-lock re-plan agree.
 
 import { createHash } from "node:crypto";
-import type { NodeInsert, NodesOverlay, NodeUpdate, PartialDataType, RawPartialUpdateOperation } from "../types/common";
+import type { NodesOverlay, NodeUpdate, PartialDataType, RawPartialUpdateOperation } from "../types/common";
 import type { RawConfiguration } from "../types/wire";
 import { encodeValue, guessDataType, hasPath } from "./paths";
 
 type RawNode = Record<string, unknown>;
 
-export interface LocatedNode {
+interface LocatedNode {
   node: RawNode;
   /** Key path in the inner config (`layout.children[1]`). */
   path: string;
@@ -43,7 +43,7 @@ const idOf = (n: RawNode) => (typeof n.id === "string" && n.id ? n.id : null);
 const elemOf = (n: RawNode) => (typeof n._elementId === "string" && n._elementId ? n._elementId : null);
 
 /** The node whose `id` is `ref` (else whose `_elementId` is). Error text when none / several. */
-export function locateNode(inner: RawConfiguration, ref: string): LocatedNode | string {
+function locateNode(inner: RawConfiguration, ref: string): LocatedNode | string {
   const all = rawNodes(inner);
   let hits = all.filter((l) => idOf(l.node) === ref);
   if (hits.length === 0) hits = all.filter((l) => elemOf(l.node) === ref);
@@ -54,7 +54,6 @@ export function locateNode(inner: RawConfiguration, ref: string): LocatedNode | 
 
 /** The mergeable maps of a node an update may touch. */
 const MAPS = ["props", "field", "attrs", "events"] as const;
-type MapKey = (typeof MAPS)[number];
 
 function hasRemoval(u: NodeUpdate): boolean {
   return MAPS.some((m) => Object.values(u[m] ?? {}).some((v) => v === null));
@@ -222,4 +221,3 @@ export function nodeUpdateOps(inner: RawConfiguration, updates: NodeUpdate[]): R
   return ops;
 }
 
-export type { NodeInsert, NodesOverlay, NodeUpdate, MapKey };

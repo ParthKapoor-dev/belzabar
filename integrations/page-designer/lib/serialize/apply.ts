@@ -38,12 +38,12 @@ function listAt(inner: RawConfiguration, list: string): unknown[] {
 const OVERLAY_SECTIONS = new Set(["variables", "derived", "httpRequests", "elements", "nodes", "styles"]);
 
 /** The value an element operation stores, as the server will decode it. */
-export function elementOpValue(op: ElementOperation): unknown {
+function elementOpValue(op: ElementOperation): unknown {
   return decodeValue(encodeValue(op.value, op.dataType), op.dataType);
 }
 
 /** Apply the overlay to a clone of `page.rawConfiguration`; returns the new inner config. */
-export function applyOverlayToConfig(page: HydratedPage, overlay: Overlay): RawConfiguration {
+function applyOverlayToConfig(page: HydratedPage, overlay: Overlay): RawConfiguration {
   assertOverlayShape(overlay);
   const inner = deepClone((page.rawConfiguration ?? {}) as RawConfiguration) ?? {};
   const problems: string[] = [];

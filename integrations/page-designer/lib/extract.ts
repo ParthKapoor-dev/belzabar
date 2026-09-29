@@ -31,13 +31,13 @@ export function childComponentNames(page: HydratedPage): string[] {
 
 // -------- `show` views -------------------------------------------------------
 
-export interface VariableView {
+interface VariableView {
   name: string;
   type: string | null;
   initialValue: unknown;
 }
 
-export interface DerivedView {
+interface DerivedView {
   name: string;
   from: string[];
   spec: string | null;
@@ -58,7 +58,7 @@ export function variablesView(page: HydratedPage): { userDefined: VariableView[]
   };
 }
 
-export interface HttpCallSummary {
+interface HttpCallSummary {
   index: number;
   label: string;
   adId: string | null;
@@ -225,7 +225,7 @@ export interface FoundNode {
 const stripTags = (s: string) => s.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
 /** The text an agent would recognise the node by (innerHTML, label, placeholder, binding, symbol name). */
-export function nodeLabel(node: ParsedNode): string | undefined {
+function nodeLabel(node: ParsedNode): string | undefined {
   const field = node.kind === "FORM_FIELD" ? node.field ?? {} : {};
   const candidates = [
     node.props.innerHTML,

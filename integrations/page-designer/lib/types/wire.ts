@@ -107,7 +107,7 @@ export interface RawHistoryEntry {
 // booleans are stringified, objects/arrays are JSON.stringify'd. See
 // docs/api-notes.md.
 
-export type PartialOperation = "CREATE" | "UPDATE";
+type PartialOperation = "CREATE" | "UPDATE";
 export type PartialDataType = "STRING" | "NUMBER" | "BOOLEAN" | "ARRAY" | "OBJECT";
 
 export interface RawPartialUpdateOperation {

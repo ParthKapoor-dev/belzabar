@@ -97,4 +97,3 @@ export function parsePage(raw: RawPageResponse): HydratedPage {
 }
 
 export { findNode, walkParsed } from "./nodes";
-export { cleanAdId, extractBindingReferences } from "./refs";

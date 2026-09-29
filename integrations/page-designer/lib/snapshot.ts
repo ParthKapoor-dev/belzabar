@@ -23,7 +23,7 @@ import { parsePage } from "./parser/index";
 import { editSummary, stableStringify, type EditSummary } from "./page-diff";
 import type { HydratedPage, RawPageResponse } from "./types/common";
 
-export const SNAPSHOT_VERSION = 1;
+const SNAPSHOT_VERSION = 1;
 
 export interface PageSnapshot {
   belzSnapshot: typeof SNAPSHOT_VERSION;

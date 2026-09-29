@@ -28,7 +28,7 @@ export interface AnalyzeError {
   message: string;
 }
 
-export interface AnalyzerDeps {
+interface AnalyzerDeps {
   fetchPage(id: string): Promise<RawPageResponse | null>;
   componentIdByName(name: string): Promise<string | null>;
 }
@@ -152,7 +152,7 @@ export function collectAllAdIds(nodes: ReportNode[]): string[] {
 
 // -------- compliance ----------------------------------------------------------
 
-export interface RogueIdInfo {
+interface RogueIdInfo {
   id: string;
   foundIn: string[];
 }
@@ -166,7 +166,7 @@ export interface ComplianceResult {
 }
 
 /** Parse a master AD-id list: ids separated by commas and/or whitespace. */
-export function parseMasterIds(text: string): Set<string> {
+function parseMasterIds(text: string): Set<string> {
   return new Set(text.split(/[\s,]+/).map((s) => s.trim()).filter((s) => s.length > 0));
 }
 

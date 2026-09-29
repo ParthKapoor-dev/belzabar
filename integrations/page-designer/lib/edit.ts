@@ -102,7 +102,7 @@ export async function fetchPublishedBaseline(publishedId: string, warn: (message
 
 const WARNING_PRINT_CAP = 10;
 
-export interface GateResult {
+interface GateResult {
   errors: ValidationIssue[];
   warnings: ValidationIssue[];
   bypassedErrors: ValidationIssue[];

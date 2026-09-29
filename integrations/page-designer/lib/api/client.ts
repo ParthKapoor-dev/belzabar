@@ -55,7 +55,7 @@ function pdBadJson(context: { method: string; path: string }): (text: string, re
  * SSO / maintenance HTML page served with 200) is PD_API_ERROR with a redacted
  * summary instead of a raw SyntaxError (UNHANDLED_EXCEPTION).
  */
-export async function readJson<T>(response: Response, context: { method: string; path: string }): Promise<T | null> {
+async function readJson<T>(response: Response, context: { method: string; path: string }): Promise<T | null> {
   return readJsonOrNull<T>(response, { badJson: pdBadJson(context) });
 }
 

@@ -303,7 +303,7 @@ function walk(raw: RawLayoutNode, ctx: WalkContext, isRoot: boolean, path: strin
   return parseGeneric(raw, nodeId, path, children);
 }
 
-export interface ParsedLayoutResult {
+interface ParsedLayoutResult {
   root: ParsedNode;
   warnings: string[];
   duplicateIds: string[];

@@ -148,8 +148,6 @@ async function verifySaved(
   return stored ? { status: "stale-read", versionId: stored.versionId, source: "get" } : { status: "skipped", versionId: null };
 }
 
-export { differingPaths };
-
 const command: CommandModule<SaveArgs, SaveData> = {
   writes: true,
   parseArgs(argv) {

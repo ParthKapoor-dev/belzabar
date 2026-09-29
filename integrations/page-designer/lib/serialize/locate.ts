@@ -16,7 +16,7 @@ export function usesLegacyHttp(inner: RawConfiguration): boolean {
   return Array.isArray(inner.http) && inner.http.length > 0;
 }
 
-export interface Located {
+interface Located {
   /** Dot-notation key of the containing array, e.g. `variables.userDefined`. */
   list: string;
   index: number;

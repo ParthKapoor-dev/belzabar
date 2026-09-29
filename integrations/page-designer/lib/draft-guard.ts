@@ -31,13 +31,13 @@ const defaultDeps: DraftGuardDeps = {
   fetchPage: (id) => pdApi.fetchPage(id),
 };
 
-export type LinkFailureReason =
+type LinkFailureReason =
   | "UNKNOWN_STATUS"
   | "LINK_NOT_FOUND"
   | "LINK_WRONG_STATUS"
   | "LINK_MISMATCH";
 
-export type LinkedPairResult =
+type LinkedPairResult =
   | {
       ok: true;
       draftId: string | null;
@@ -119,7 +119,7 @@ export async function resolveLinkedPair(
     : { ok: true, draftId: refId, publishedId: ownId, draftRaw: linked };
 }
 
-export type DraftGuardResult =
+type DraftGuardResult =
   | {
       ok: true;
       draft: HydratedPage;

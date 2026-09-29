@@ -74,7 +74,7 @@ export const PD_RULES = {
   SYMBOL_NESTING_DEPTH: { severity: "warn", source: "pd-review 3b", description: "symbol chain deeper than 3 levels" },
 } as const satisfies Record<string, PdRuleInfo>;
 
-export type PdRuleCode = keyof typeof PD_RULES;
+type PdRuleCode = keyof typeof PD_RULES;
 
 /** An issue with the catalogue's severity (`extra.severity` overrides it). */
 export function issue(code: PdRuleCode, message: string, extra: Partial<ValidationIssue> = {}): ValidationIssue {

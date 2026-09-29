@@ -25,7 +25,7 @@ interface PageDepsArgs {
 }
 
 /** One entity of the dependency graph (the queried one first). */
-export interface DepEntity {
+interface DepEntity {
   /** The dependencyJSON key: the published id for the queried entity, the component name for dependencies. */
   key: string;
   name: string | null;

@@ -38,12 +38,12 @@ export interface PageFinderIndex {
   componentCount: number;
 }
 
-export interface PageFinderPageMatch extends PageFinderPage {
+interface PageFinderPageMatch extends PageFinderPage {
   type: "page";
   score: number;
 }
 
-export interface PageFinderComponentMatch extends PageFinderComponent {
+interface PageFinderComponentMatch extends PageFinderComponent {
   type: "component";
   score: number;
 }

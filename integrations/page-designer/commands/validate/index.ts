@@ -26,13 +26,13 @@ interface ValidateArgs {
 }
 
 /** Warnings of one code: how many, and a short ref per occurrence. */
-export interface WarningGroup {
+interface WarningGroup {
   count: number;
   /** Omitted with --summary. */
   refs?: string[];
 }
 
-export interface EntityReport {
+interface EntityReport {
   name: string;
   id: string;
   entityType: "PAGE" | "COMPONENT";
@@ -65,7 +65,7 @@ export const args = defineArgs({
   exclusive: [["full", "summary"]],
 });
 
-export function groupWarnings(issues: ValidationIssue[]): Record<string, WarningGroup> {
+function groupWarnings(issues: ValidationIssue[]): Record<string, WarningGroup> {
   const out: Record<string, WarningGroup> = {};
   for (const i of issues) {
     if (i.severity !== "warn") continue;
@@ -94,7 +94,7 @@ export function entityReport(
 }
 
 /** --summary: warning counts per code only. */
-export function countWarnings(issues: ValidationIssue[]): Record<string, WarningGroup> {
+function countWarnings(issues: ValidationIssue[]): Record<string, WarningGroup> {
   const out: Record<string, WarningGroup> = {};
   for (const i of issues) if (i.severity === "warn") (out[i.code] ??= { count: 0 }).count++;
   return out;

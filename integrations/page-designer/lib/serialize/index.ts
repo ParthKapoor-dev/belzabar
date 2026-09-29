@@ -20,15 +20,15 @@ import { serializeFull } from "./full";
 import { fullSaveReason, partialOperationsFor } from "./operations";
 import { decodeValue, isVerifiedKeyShape, setPath } from "./paths";
 
-export type SerializeStrategy = "full" | "partial";
+type SerializeStrategy = "full" | "partial";
 
-export interface PartialPlan {
+interface PartialPlan {
   strategy: "partial";
   operations: RawPartialUpdateOperation[];
   patched: HydratedPage;
 }
 
-export interface FullPlan {
+interface FullPlan {
   strategy: "full";
   configurationString: string;
   patched: HydratedPage;
@@ -71,6 +71,6 @@ export function planSave(before: HydratedPage, overlay: Overlay, forced?: Serial
   return { strategy: "partial", operations, patched };
 }
 
-export { applyOverlay, applyOverlayToConfig, withConfiguration } from "./apply";
+export { applyOverlay, withConfiguration } from "./apply";
 export { serializeFull } from "./full";
 export { fullSaveReason, partialOperationsFor } from "./operations";

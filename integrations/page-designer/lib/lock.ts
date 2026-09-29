@@ -29,16 +29,16 @@ import { invalidatePageCache } from "./cache";
 
 // -------- local record of manually-held locks (`belz pd lock`) ------------
 
-export interface LockFile {
+interface LockFile {
   locks: Record<string, { acquiredAt: number }>;
 }
 
-export function activeEnvName(): string {
+function activeEnvName(): string {
   return Config.activeEnv?.name || "default";
 }
 
 /** Per-env lock file (PD-9). */
-export function lockFilePath(env = activeEnvName()): { dir: string; file: string; env: string } {
+function lockFilePath(env = activeEnvName()): { dir: string; file: string; env: string } {
   const dir = join(BELZ_CONFIG_DIR, "pd-locks");
   return { dir, file: join(dir, `${env}.json`), env };
 }
@@ -60,7 +60,7 @@ export async function saveLockFile(file: string, data: LockFile): Promise<void> 
 }
 
 /** True when `belz pd lock acquire` recorded this page in the active env. */
-export async function isManuallyLocked(pageId: string): Promise<boolean> {
+async function isManuallyLocked(pageId: string): Promise<boolean> {
   const { data } = await loadLockFile();
   return Object.prototype.hasOwnProperty.call(data.locks, pageId);
 }

@@ -12,7 +12,7 @@ const DATA_TYPES = new Set(["STRING", "NUMBER", "BOOLEAN", "ARRAY", "OBJECT"]);
 type Rec = Record<string, unknown>;
 
 /** Shape problems in `value` as an Overlay (empty = OK). */
-export function overlayShapeProblems(value: unknown): string[] {
+function overlayShapeProblems(value: unknown): string[] {
   const problems: string[] = [];
   if (!isObj(value)) return [`the overlay must be a JSON object, got ${value === null ? "null" : Array.isArray(value) ? "an array" : typeof value}`];
 

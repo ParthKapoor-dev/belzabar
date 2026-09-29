@@ -16,7 +16,7 @@ import { resolveLinkedPair, type DraftGuardDeps } from "./draft-guard";
 import { CliError } from "@belzabar/core";
 import type { RawPageDependencies, RawPageResponse } from "./types/wire";
 
-export interface EntityIds {
+interface EntityIds {
   name: string;
   entityType: "PAGE" | "COMPONENT";
   draftId: string | null;
@@ -52,9 +52,9 @@ export async function entityIdsFromRaw(
   return { name: page.name, entityType, draftId: link.draftId, publishedId: link.publishedId };
 }
 
-export type TranslationVerdict = "PASS" | "FAIL" | "N/A";
+type TranslationVerdict = "PASS" | "FAIL" | "N/A";
 
-export interface BadPhraseKey {
+interface BadPhraseKey {
   array: string; // the *__translated_phrases key it appeared in
   key: string;   // the malformed `.key` value
 }

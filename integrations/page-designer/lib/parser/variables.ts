@@ -14,7 +14,7 @@
 import type { PageDerivedVariable, PageVariable } from "../types/common";
 import type { RawConfiguration, RawDerivedVar, RawUserDefinedVar } from "../types/wire";
 
-export interface ParsedVariablesResult {
+interface ParsedVariablesResult {
   userDefined: PageVariable[];
   derived: PageDerivedVariable[];
   warnings: string[];

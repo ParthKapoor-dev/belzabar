@@ -1,8 +1,8 @@
 import { CliError } from "@belzabar/core";
 
-export type PdEntityType = "PAGE" | "COMPONENT";
+type PdEntityType = "PAGE" | "COMPONENT";
 
-export interface ParsedPdUrl {
+interface ParsedPdUrl {
   type: PdEntityType;
   token: string;
   host: string;

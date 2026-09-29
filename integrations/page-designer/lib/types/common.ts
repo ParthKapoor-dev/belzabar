@@ -20,7 +20,7 @@ export type { PdEntityType, PdStatus };
 // Variables
 // ============================================================================
 
-export type PdDataType = "String" | "Boolean" | "Number" | "Any" | "KeyValue" | "PAGINATION_STORE" | string;
+type PdDataType = "String" | "Boolean" | "Number" | "Any" | "KeyValue" | "PAGINATION_STORE" | string;
 
 export interface PageVariable {
   name: string;
@@ -97,7 +97,7 @@ export type NodeKind =
   | "LAYOUT_CONTAINER"
   | "GENERIC";
 
-export interface BaseNode {
+interface BaseNode {
   nodeId: string; // node.id ?? _elementId ?? synthetic
   elementId: string | null;
   /**
@@ -231,7 +231,7 @@ export interface ValidationIssue {
 // Overlay (the primary edit surface for `belz pd save`)
 // ============================================================================
 
-export interface VariableOverlay {
+interface VariableOverlay {
   add?: Array<{
     name: string;
     type?: PdDataType;
@@ -247,7 +247,7 @@ export interface VariableOverlay {
   remove?: string[];
 }
 
-export interface DerivedOverlay {
+interface DerivedOverlay {
   add?: Array<{
     name: string;
     from: string[];
@@ -265,7 +265,7 @@ export interface DerivedOverlay {
   remove?: string[];
 }
 
-export interface HttpOverlayEntry {
+interface HttpOverlayEntry {
   callId: string;
   request?: Partial<{ url: string; body: string; method: string }>;
   handler?: Partial<{
@@ -278,7 +278,7 @@ export interface HttpOverlayEntry {
   responseTransformSpec?: string;
 }
 
-export interface HttpOverlay {
+interface HttpOverlay {
   add?: unknown[];            // raw http request bodies (pass-through; rarely used)
   update?: HttpOverlayEntry[];
   remove?: string[];          // callIds to remove
@@ -305,7 +305,7 @@ export interface NodeUpdate {
   events?: Record<string, unknown>;
 }
 
-export interface NodeInsert {
+interface NodeInsert {
   /** id / _elementId of the parent node. */
   parentId: string;
   /** Position among the parent's children (default: append). */
