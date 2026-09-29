@@ -168,6 +168,20 @@ describe("pd save", () => {
     });
   });
 
+  test.each<[string, unknown, string]>([
+    ["null", null, "the overlay must be a JSON object, got null"],
+    ["update as an object", { variables: { update: { name: "greeting" } } }, "variables.update must be an array"],
+    ["an element op without dataType", { elements: { operations: [{ key: "styles", value: "x", operation: "UPDATE" }] } }, "elements.operations[0].dataType must be one of"],
+    ["a node update without id", { nodes: { update: [{ props: {} }] } }, "nodes.update[0].id must be a non-empty string"],
+  ])("OTH-R7: a malformed overlay (%s) is PD_OVERLAY_INVALID, not UNHANDLED_EXCEPTION", async (_label, overlay, problem) => {
+    for (const cmd of [save, preflight]) {
+      const r = await run(cmd, [DRAFT, "--overlay", overlayFile(overlay), "--yes"].slice(0, cmd === save ? 4 : 3));
+      expect(r.envelope?.error?.code).toBe("PD_OVERLAY_INVALID");
+      expect(String(r.envelope?.error?.message)).toContain(problem);
+    }
+    expect(locks()).toEqual([]);
+  });
+
   test("an edit that changes nothing performs no write", async () => {
     const r = await run(save, [DRAFT, "--overlay", overlayFile({ variables: { update: [{ name: "greeting", initialValue: "hi" }] } }), "--yes"]);
     expect(r.envelope?.ok).toBe(true);

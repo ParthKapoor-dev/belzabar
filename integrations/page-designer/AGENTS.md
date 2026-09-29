@@ -78,7 +78,10 @@ pages always save full; keys outside the verified shape force full. 7. Read back
 `match | mismatch | stale-read`; `mismatch` fails the save (`PD_SAVE_VERIFY_FAILED`),
 `stale-read` only warns.
 
-Overlay (`Overlay` in `lib/types/common.ts`; unknown sections → `PD_OVERLAY_INVALID`):
+Overlay (`Overlay` in `lib/types/common.ts`; unknown sections, and any shape problem — `null`, a
+section that is not an object, a list that is not an array, a missing `name`/`callId`/`id`/`key`,
+a bad `operation`/`dataType` — → `PD_OVERLAY_INVALID` listing every problem, from
+`lib/serialize/overlay-shape.ts`):
 
 ```json
 { "variables":    { "add": [], "update": [], "remove": [] },
@@ -137,7 +140,7 @@ editor metadata; sorts keys; turns multi-line strings into `{"$lines": [...]}` (
 | `lib/api/` | `pdApi` façade (`index.ts`) + raw HTTP client (`client.ts`) |
 | `lib/types/` | `common.ts` (HydratedPage, ParsedNode, Overlay, ValidationIssue), `wire.ts` (raw API shapes; commands never import it) |
 | `lib/parser/` | `parsePage` / `inferEntityType` (`index.ts`), node discriminator (`nodes.ts`, every node carries its key `path`), `variables.ts`, `http.ts`, `refs.ts` |
-| `lib/serialize/` | `apply.ts`, `nodes.ts`, `locate.ts`, `paths.ts`, `operations.ts`, `full.ts`, `index.ts` (`planSave`, `replayOperations`) |
+| `lib/serialize/` | `apply.ts`, `nodes.ts`, `locate.ts`, `paths.ts`, `operations.ts`, `full.ts`, `overlay-shape.ts` (structural overlay check), `index.ts` (`planSave`, `replayOperations`) |
 | `lib/validator/` | see above |
 | `lib/edit.ts` | write pipeline helpers: `resolveWriteTarget`, `gateValidation`, `versionDrift`, `fetchFresh`, `readJsonFile`, `requireConfirmation`, `logIntent` |
 | `lib/lock.ts` | `withLock` + per-env lock file helpers |

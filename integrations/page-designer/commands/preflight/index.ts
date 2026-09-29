@@ -13,6 +13,7 @@ import { pdApi } from "../../lib/api/index";
 import { readJsonFile } from "../../lib/edit";
 import { countNodes, editSummary, editSummaryLines, type EditSummary } from "../../lib/page-diff";
 import { parsePage } from "../../lib/parser/index";
+import { assertOverlayShape } from "../../lib/serialize/overlay-shape";
 import { planSave } from "../../lib/serialize/index";
 import { partitionBySeverity, validateEdit, validateHydrated } from "../../lib/validator/index";
 import type { HydratedPage, Overlay, ValidationIssue } from "../../lib/types/common";
@@ -69,7 +70,7 @@ const command: CommandModule<PreflightArgs, PreflightData> = {
   },
 
   async execute({ pageId, overlayFile }) {
-    const overlay = overlayFile ? ((await readJsonFile(overlayFile, "INVALID_OVERLAY", "Overlay")) as Overlay) : null;
+    const overlay = overlayFile ? assertOverlayShape(await readJsonFile(overlayFile, "INVALID_OVERLAY", "Overlay")) : null;
     const raw = await pdApi.fetchPage(pageId);
     if (!raw) throw new CliError(`Page ${pageId} not found.`, { code: "PD_NOT_FOUND" });
     const before = parsePage(raw);

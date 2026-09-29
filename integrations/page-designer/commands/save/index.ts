@@ -32,6 +32,7 @@ import { fetchFresh, gateValidation, logIntent, readJsonFile, requireConfirmatio
 import { withLock } from "../../lib/lock";
 import { editSummary, editSummaryLines, type EditSummary } from "../../lib/page-diff";
 import { parsePage } from "../../lib/parser/index";
+import { assertOverlayShape } from "../../lib/serialize/overlay-shape";
 import { planSave, withConfiguration, type SavePlan } from "../../lib/serialize/index";
 import { validateEdit } from "../../lib/validator/index";
 import type { HydratedPage, Overlay, RawPartialUpdateOperation, ValidationIssue } from "../../lib/types/common";
@@ -172,7 +173,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
     if (args.overrides.deprecatedForce) warn(`⚠ ${DEPRECATED_FORCE_WARNING}`);
 
     const edit: Edit = args.overlayFile
-      ? { kind: "overlay", overlay: (await readJsonFile(args.overlayFile, "INVALID_OVERLAY", "Overlay")) as Overlay }
+      ? { kind: "overlay", overlay: assertOverlayShape(await readJsonFile(args.overlayFile, "INVALID_OVERLAY", "Overlay")) }
       : { kind: "config", config: await readJsonFile(args.configFile!, "INVALID_CONFIG", "Config") };
     if (edit.kind === "config" && (!edit.config || typeof edit.config !== "object" || Array.isArray(edit.config))) {
       throw new CliError("Config file must hold the inner configuration OBJECT.", { code: "INVALID_CONFIG" });

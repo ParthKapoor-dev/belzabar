@@ -21,6 +21,7 @@ import type { ElementOperation, HydratedPage, Overlay } from "../types/common";
 import type { RawConfiguration, RawDerivedVar, RawHttpRequestItem, RawPageResponse, RawUserDefinedVar } from "../types/wire";
 import { locateDerived, locateHttp, locateVariable, usesLegacyVariables } from "./locate";
 import { applyNodeOps } from "./nodes";
+import { assertOverlayShape } from "./overlay-shape";
 import { decodeValue, encodeValue, setPath } from "./paths";
 
 function deepClone<T>(value: T): T {
@@ -43,6 +44,7 @@ export function elementOpValue(op: ElementOperation): unknown {
 
 /** Apply the overlay to a clone of `page.rawConfiguration`; returns the new inner config. */
 export function applyOverlayToConfig(page: HydratedPage, overlay: Overlay): RawConfiguration {
+  assertOverlayShape(overlay);
   const inner = deepClone((page.rawConfiguration ?? {}) as RawConfiguration) ?? {};
   const problems: string[] = [];
   const legacy = usesLegacyVariables(inner);
