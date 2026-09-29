@@ -1069,7 +1069,7 @@
   "changelogs": [
     {
       "id": "406303e9e5998eecf1178a7c7d139af8",
-      "comment": "Developer: Vandana<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Version: 1.2<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason: make changes for template_data_config",
+      "comment": "Developer: person-upt8<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Version: 1.2<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason: make changes for template_data_config",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -1100,7 +1100,7 @@
     },
     {
       "id": "4e14edbcaa3e610ed08cac6c7b6df85c",
-      "comment": "Developer =&gt; Parva<br id=\"isPasted\">Doc version =&gt; 1&nbsp;<br>Reason =&gt; fetch email information from user_correspondence_template table and other some changes<br>Reviewer =&gt; Krunal&nbsp;",
+      "comment": "Developer =&gt; person-ats1<br id=\"isPasted\">Doc version =&gt; 1&nbsp;<br>Reason =&gt; fetch email information from user_correspondence_template table and other some changes<br>Reviewer =&gt; person-tt2u&nbsp;",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -1131,7 +1131,7 @@
     },
     {
       "id": "491f0879d27759312ef680cb95d522ce",
-      "comment": "Developer: Vandana<br>Version: 1.1<br>Reason: make changes for placeholder_query",
+      "comment": "Developer: person-upt8<br>Version: 1.1<br>Reason: make changes for placeholder_query",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -1162,7 +1162,7 @@
     },
     {
       "id": "47cf6490c26f23b8c77a9b26cfc02c3f",
-      "comment": "Developer: Vandana<br>Version: 1.3<br>Reason: dont run recipient custom code(3.10) if recipientData null",
+      "comment": "Developer: person-upt8<br>Version: 1.3<br>Reason: dont run recipient custom code(3.10) if recipientData null",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -1193,7 +1193,7 @@
     },
     {
       "id": "46ff7cea1972ea2efa66a006d2db1f15",
-      "comment": "Developer =&gt; Dhiraj<br id=\"isPasted\">Doc version =&gt; 1.4<br>Reason =&gt; SP 19 remove hard cored email to dynamic in 3.7 and remove bcc email<br>Reviewer =&gt; Mayank",
+      "comment": "Developer =&gt; person-c6at<br id=\"isPasted\">Doc version =&gt; 1.4<br>Reason =&gt; SP 19 remove hard cored email to dynamic in 3.7 and remove bcc email<br>Reviewer =&gt; person-qhzi",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -1396,7 +1396,7 @@
             "createdOn": 1702386414237,
             "testCaseId": "42ac759a7858115e9fbd8ad6746fd708",
             "fieldCode": "placeholderData",
-            "value": "{\"value\":\"{\\\"user@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"Ghervara\\\"},\\\"user2@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"Patel\\\"}}\"}"
+            "value": "{\"value\":\"{\\\"user@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"User-aqn9\\\"},\\\"user2@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"User-r9w3\\\"}}\"}"
           },
           {
             "id": "428c3900864576b70cf0920ba5a77043",
@@ -1918,7 +1918,7 @@
             "createdOn": 1702386414316,
             "testCaseId": "4529a2e60393b1a44bd68c2ca8b2c7a1",
             "fieldCode": "placeholderData",
-            "value": "{\"value\":\"{\\\"user@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"Ghervara\\\"},\\\"user2@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"Patel\\\"}}\"}"
+            "value": "{\"value\":\"{\\\"user@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"User-aqn9\\\"},\\\"user2@example.com\\\":{\\\"name\\\":\\\"Avani\\\",\\\"lastName\\\":\\\"User-r9w3\\\"}}\"}"
           },
           {
             "id": "477cd47dd6b44cfa0545999fed630931",

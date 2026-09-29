@@ -15,7 +15,7 @@
 //   pd-list <PAGE|COMPONENT> [n]  list n DRAFT rows (prints only)
 //   tw <taskId> [pageSize=5]   Teamwork task + all comment pages (small pageSize → multi-page fixture)
 //   jenkins                    job parameters (profiles), latest finished build, console chunk
-//   resanitize <dir>           offline: re-run sanitize() over every *.json under <dir> (rewrites only changed files)
+//   resanitize <dir>           offline: re-run sanitize() over every *.json (sanitizeText over *.txt) under <dir> (rewrites only changed files)
 //
 // Safety: sems-dev only (Config.setActiveEnv("sems-dev")), GET only, and every
 // body goes through sanitize() before touching disk. Each fixture dir gets a
@@ -247,10 +247,21 @@ async function jenkins() {
 
 function resanitize(dir: string) {
   const walkDir = (d: string): string[] =>
-    readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walkDir(join(d, e.name)) : e.name.endsWith(".json") ? [join(d, e.name)] : []));
+    readdirSync(d, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walkDir(join(d, e.name)) : /\.(json|txt)$/.test(e.name) ? [join(d, e.name)] : [],
+    );
   for (const f of walkDir(resolve(dir))) {
     if (f.endsWith("manifest.json")) continue;
     const text = readFileSync(f, "utf8");
+    if (f.endsWith(".txt")) {
+      // Console logs etc. (CORE-R13: Jenkins "Started by user X").
+      const clean = sanitizeText(text);
+      if (clean !== text) {
+        writeFileSync(f, clean);
+        console.log(`  resanitized ${f.slice(ROOT.length + 1)} (text)`);
+      }
+      continue;
+    }
     let parsed: unknown;
     try { parsed = JSON.parse(text); } catch { continue; }
     const stats = { redactedKeys: 0, scrubbedStrings: 0, reencodedJsonStrings: 0 };

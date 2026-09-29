@@ -15,7 +15,15 @@
 //      auths) and {name|key, value} header pairs: the value → "REDACTED" when
 //      securedField is true or the name is secret-ish (password, username,
 //      host, token, key, …).
-//   8. strings that hold JSON (PD `configuration`, AD `jsonDefinition`) are
+//   8. person names (CORE-R13), deterministically pseudonymized so the same
+//      person maps to the same pseudonym in every fixture:
+//      - objects with firstName/lastName/fullName (AD owner/createdBy, Teamwork
+//        users, …) → "Test" / "User-<code>" / "Test User-<code>"; the shared
+//        system accounts ("Admin SEMS", "Super User") are kept;
+//      - Jenkins causes {userId, userName, shortDescription} → "user-<code>";
+//      - structured change-log notes ("Developer: X", "Reviewer: Y", "Dev: X",
+//        "Started by user X") → "person-<code>".
+//   9. strings that hold JSON (PD `configuration`, AD `jsonDefinition`) are
 //      parsed, sanitized recursively and re-stringified — but ONLY when a rule
 //      fired inside them; untouched strings stay byte-identical so the
 //      round-trip tests still see the real wire bytes.
@@ -41,8 +49,79 @@ export function isSafeEmail(e: string): boolean {
   return SAFE_EMAIL_DOMAINS.test(e);
 }
 
+// ── person names (CORE-R13) ──────────────────────────────────────────────
+
+/** Short, stable code for a person (FNV-1a over the normalized name, base36). */
+export function personCode(name: string): string {
+  let h = 0x811c9dc5;
+  for (const ch of name.trim().toLowerCase()) {
+    h ^= ch.codePointAt(0)!;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(36).padStart(4, "0").slice(-4);
+}
+
+/** Shared system accounts, not people: kept as-is. */
+const SYSTEM_ACCOUNTS = new Set(["admin sems", "super user"]);
+const PSEUDO_LAST_RE = /^User-[0-9a-z]{4}$/;
+const PSEUDO_TEXT_RE = /^(person|user)-[0-9a-z]{4}$/;
+const NAME_KEYS = ["firstName", "lastName", "middleName", "fullName", "first-name", "last-name"] as const;
+
+/** Name-note labels in change logs / comments: `Developer: Vandana<br>…`, `Reviewer =&gt; X`. */
+const NAME_NOTE_RE =
+  /\b(Developer|Dev|Reviewer|Reveiwer|Author|Created by|Modified by|Updated by)(\s*(?::|=&gt;|=>)\s*)([A-Z][A-Za-z'-]+(?: [A-Z][A-Za-z'-]+)?)/g;
+/** Jenkins console: `Started by user <ha:// hyperlink note>name` (the note encodes /user/<name>). */
+const STARTED_BY_RE = /Started by user (?:\x1b\[8mha:\/\/\/\/[A-Za-z0-9+/=]+\x1b\[0m)?(?!(?:person|user)-[0-9a-z]{4}\b)([^\s<"\\]+)/g;
+
+function scrubNames(s: string): string {
+  return s
+    .replace(NAME_NOTE_RE, (_m, label, sep, name) => `${label}${sep}person-${personCode(name)}`)
+    .replace(STARTED_BY_RE, (_m, name) => `Started by user user-${personCode(name)}`);
+}
+
+/**
+ * A person record ({firstName, lastName, fullName, …}): pseudonymize its name
+ * fields. Returns the replacement fields, or null when there is nothing to do
+ * (no names, a system account, or already pseudonymized).
+ */
+function personNameFields(obj: Record<string, unknown>): Record<string, string> | null {
+  const str = (k: string) => (typeof obj[k] === "string" ? (obj[k] as string) : undefined);
+  const first = str("firstName") ?? str("first-name");
+  const last = str("lastName") ?? str("last-name");
+  const full = str("fullName");
+  if (first === undefined && last === undefined && full === undefined) return null;
+  const seed = [first, last].filter(Boolean).join(" ").trim() || (full ?? "").trim();
+  if (!seed || SYSTEM_ACCOUNTS.has(seed.toLowerCase())) return null;
+  if (last !== undefined && PSEUDO_LAST_RE.test(last)) return null;
+  if (last === undefined && full !== undefined && /^Test User-[0-9a-z]{4}$/.test(full)) return null;
+  const code = personCode(seed);
+  const out: Record<string, string> = {};
+  for (const k of NAME_KEYS) {
+    const v = str(k);
+    if (v === undefined || v === "") continue;
+    out[k] = k === "fullName" ? `Test User-${code}` : k === "middleName" ? "" : k.startsWith("first") ? "Test" : `User-${code}`;
+  }
+  return out;
+}
+
+/** Jenkins build cause {userId, userName, shortDescription: "Started by user X"}. */
+function jenkinsUserFields(obj: Record<string, unknown>): Record<string, string> | null {
+  const id = typeof obj.userId === "string" ? obj.userId : undefined;
+  const name = typeof obj.userName === "string" ? obj.userName : undefined;
+  if (id === undefined || name === undefined) return null;
+  if (PSEUDO_TEXT_RE.test(id) && PSEUDO_TEXT_RE.test(name)) return null;
+  const out: Record<string, string> = {
+    userId: `user-${personCode(id)}`,
+    userName: `user-${personCode(id)}`,
+  };
+  if (typeof obj.shortDescription === "string") {
+    out.shortDescription = obj.shortDescription.split(name).join(out.userName!).split(id).join(out.userId!);
+  }
+  return out;
+}
+
 function scrubString(s: string): string {
-  let out = s
+  let out = scrubNames(s)
     .replace(JWT_RE, "REDACTED_JWT")
     .replace(BEARER_RE, (_m, kind) => `${kind} REDACTED`)
     .replace(COOKIE_RE, (_m, name) => `${name}=REDACTED`)
@@ -82,7 +161,13 @@ function walk(v: unknown, stats: SanitizeStats): unknown {
     const redactRecord = isAuthRecord
       ? obj.securedField === true || SECRET_FIELD_NAME_RE.test(obj.fieldName as string)
       : pairName !== null && SECRET_KEY_RE.test(pairName);
+    const names = personNameFields(obj) ?? jenkinsUserFields(obj);
     for (const [k, val] of Object.entries(obj)) {
+      if (names && Object.hasOwn(names, k) && val !== names[k]) {
+        out[k] = names[k];
+        stats.scrubbedStrings++;
+        continue;
+      }
       if (redactRecord && k === recValueKey && typeof val === "string" && val !== "" && val !== "REDACTED") {
         out[k] = "REDACTED";
         stats.redactedKeys++;
@@ -133,7 +218,7 @@ export function sanitizeText(s: string): string {
 }
 
 export interface SecretFinding {
-  kind: "jwt" | "bearer" | "cookie" | "email" | "phone" | "secret-key";
+  kind: "jwt" | "bearer" | "cookie" | "email" | "phone" | "secret-key" | "person-name";
   match: string;
 }
 
@@ -153,5 +238,17 @@ export function findSecrets(text: string): SecretFinding[] {
   for (const m of text.matchAll(recRe)) {
     if (SECRET_FIELD_NAME_RE.test(m[1]!)) found.push({ kind: "secret-key", match: `${m[1]}=${m[2]!.slice(0, 8)}…` });
   }
+  // Person names (CORE-R13): name fields must be pseudonyms, empty, or a system account part.
+  const allowedNamePart = /^(|Test|Admin|Super|SEMS|User|Admin SEMS|Super User|User-[0-9a-z]{4}|Test User-[0-9a-z]{4})$/;
+  const nameRe = /\\?"(firstName|lastName|middleName|fullName|first-name|last-name)\\?"\s*:\s*\\?"([^"\\]*)/g;
+  for (const m of text.matchAll(nameRe)) {
+    if (!allowedNamePart.test(m[2]!)) found.push({ kind: "person-name", match: `${m[1]}=${m[2]!.slice(0, 3)}…` });
+  }
+  const jenkinsRe = /\\?"(userId|userName)\\?"\s*:\s*\\?"([^"\\]*)/g;
+  for (const m of text.matchAll(jenkinsRe)) {
+    if (!/^user-[0-9a-z]{4}$/.test(m[2]!)) found.push({ kind: "person-name", match: `${m[1]}=${m[2]!.slice(0, 3)}…` });
+  }
+  for (const m of text.matchAll(NAME_NOTE_RE)) found.push({ kind: "person-name", match: `${m[1]}: ${m[3]!.slice(0, 3)}…` });
+  for (const m of text.matchAll(STARTED_BY_RE)) found.push({ kind: "person-name", match: `Started by user ${m[1]!.slice(0, 3)}…` });
   return found;
 }

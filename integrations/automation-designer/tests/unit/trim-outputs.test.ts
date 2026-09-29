@@ -66,7 +66,7 @@ describe("changelog: plain-text entries", () => {
   test("default rows: id, when, author, note (no user object / HTML); --fields all = raw entries", () => {
     const rows = entryRows(entries, undefined);
     expect(Object.keys(rows[0]!).sort()).toEqual(["author", "id", "note", "when"]);
-    expect(rows[0]!.note).toStartWith("Developer:Vandana / Ver:1.1 / Reason: change epid to uuid");
+    expect(rows[0]!.note).toStartWith("Developer:person-upt8 / Ver:1.1 / Reason: change epid to uuid");
     expect(rows[0]!.when).toMatch(/^\d{4}-\d\d-\d\dT/);
     expect(entryRows(entries, "all")).toBe(entries as any);
     expect(Object.keys(entryRows(entries, "note,html")[0]!).sort()).toEqual(["html", "note"]);

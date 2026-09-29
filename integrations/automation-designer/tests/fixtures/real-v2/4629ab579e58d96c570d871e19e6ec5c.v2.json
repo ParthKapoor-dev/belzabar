@@ -1885,7 +1885,7 @@
   "changelogs": [
     {
       "id": "4b6ba715a0409d50cb1c96790d272d2f",
-      "comment": "Developer: Vandana<br>Version: 1.1<br>Reason: replace DOLLAR with $ in jsonpathquery",
+      "comment": "Developer: person-upt8<br>Version: 1.1<br>Reason: replace DOLLAR with $ in jsonpathquery",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -1916,7 +1916,7 @@
     },
     {
       "id": "46db5201c628d9c2208783dd1d6e9c17",
-      "comment": "Developer: Vandana<br>Version: 1",
+      "comment": "Developer: person-upt8<br>Version: 1",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",

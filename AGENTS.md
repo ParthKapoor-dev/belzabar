@@ -168,9 +168,12 @@ Guards: `apps/cli/tests/registry.test.ts` (folders ⇔ registry), `apps/cli/test
   module's `tests/fixtures/`.
 - **Wire fixtures**: `scripts/fixtures/capture.ts` captures real API responses (with
   `manifest.json`). It is **read-only** (GET only) and **sems-dev only**, and runs every body
-  through `scripts/fixtures/sanitize.ts`. `scripts/fixtures/fixtures-secrets.test.ts` fails on
-  anything that looks like a secret or PII — re-run
-  `bun scripts/fixtures/capture.ts resanitize <dir>` if it trips.
+  through `scripts/fixtures/sanitize.ts` (secrets, e-mails, phones, and person names —
+  firstName/lastName/fullName records, Jenkins users, `Developer: X` notes — pseudonymized
+  deterministically as `Test User-<code>` / `person-<code>`). `scripts/fixtures/fixtures-secrets.test.ts`
+  fails on anything that looks like a secret or PII — re-run
+  `bun scripts/fixtures/capture.ts resanitize <dir>` if it trips (it imports `@belzabar/core`, so point
+  `BELZ_HOME` at a scratch dir with a `sems-dev` env).
 - **Live suites** are opt-in: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live` (read-only), plus
   `BELZ_LIVE_WRITE=1` for write suites such as `apps/cli/tests/live/ad-lifecycle.live-write.test.ts`
   (AD category Test-Parth only, `belz_tst_` names, soft-deleted afterwards). Any other

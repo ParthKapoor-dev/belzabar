@@ -61,9 +61,9 @@
       "causes": [
         {
           "_class": "hudson.model.Cause$UserIdCause",
-          "shortDescription": "Started by user praveen",
-          "userId": "praveen",
-          "userName": "praveen"
+          "shortDescription": "Started by user user-du8c",
+          "userId": "user-du8c",
+          "userName": "user-du8c"
         }
       ]
     },

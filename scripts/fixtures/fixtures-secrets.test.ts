@@ -1,11 +1,12 @@
 // Guards the committed wire fixtures: nothing that looks like a credential,
-// token, cookie, personal e-mail or phone number may be checked in. Also unit-
+// token, cookie, personal e-mail, phone number or person name (CORE-R13) may
+// be checked in. Also unit-
 // tests the sanitizer and the capture tool's read-only guard.
 
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "fs";
 import { join, resolve } from "path";
-import { findSecrets, sanitize, sanitizeText } from "./sanitize";
+import { findSecrets, personCode, sanitize, sanitizeText } from "./sanitize";
 import { assertCaptureEnv, assertReadOnly, CaptureRefused } from "./guard";
 
 const ROOT = resolve(import.meta.dir, "../..");
@@ -89,6 +90,50 @@ describe("sanitize()", () => {
     expect(sanitize(once)).toEqual(once);
     expect(findSecrets(JSON.stringify(once))).toEqual([]);
     expect(findSecrets(JSON.stringify({ s: "jane@corp.io", password: "p" })).map((f) => f.kind).sort()).toEqual(["email", "secret-key"]);
+  });
+});
+
+describe("person names (CORE-R13)", () => {
+  test("person records are pseudonymized deterministically; system accounts kept", () => {
+    const out = sanitize({
+      a: { id: 1, firstName: "Narender", lastName: "Mann", fullName: "Narender Mann", email: "n@corp.io" },
+      b: { firstName: "Narender", lastName: "Mann" },
+      sys: { firstName: "Admin", lastName: "SEMS", fullName: "Admin SEMS" },
+      tw: { "first-name": "Kartik", "last-name": "Jaiswal" },
+    }) as any;
+    const code = personCode("Narender Mann");
+    expect(out.a).toEqual({ id: 1, firstName: "Test", lastName: `User-${code}`, fullName: `Test User-${code}`, email: "user@example.com" });
+    expect(out.b.lastName).toBe(out.a.lastName); // same person, same pseudonym
+    expect(out.sys).toEqual({ firstName: "Admin", lastName: "SEMS", fullName: "Admin SEMS" });
+    expect(out.tw["first-name"]).toBe("Test");
+    expect(out.tw["last-name"]).toMatch(/^User-[0-9a-z]{4}$/);
+    expect(sanitize(out)).toEqual(out); // idempotent
+  });
+
+  test("Jenkins causes and change-log notes", () => {
+    const out = sanitize({
+      cause: { shortDescription: "Started by user praveen", userId: "praveen", userName: "praveen" },
+      comment: "Developer: Siva Medasani<br>Reveiwer: Ekta<br>Dev:Vandana",
+      html: "Developer =&gt; Ritik<br>Reviewer =&gt; Avani",
+    }) as any;
+    expect(out.cause.userId).toMatch(/^user-[0-9a-z]{4}$/);
+    expect(out.cause.shortDescription).toBe(`Started by user ${out.cause.userId}`);
+    expect(out.comment).toBe(
+      `Developer: person-${personCode("Siva Medasani")}<br>Reveiwer: person-${personCode("Ekta")}<br>Dev:person-${personCode("Vandana")}`,
+    );
+    expect(out.html).toBe(`Developer =&gt; person-${personCode("Ritik")}<br>Reviewer =&gt; person-${personCode("Avani")}`);
+    expect(sanitize(out)).toEqual(out);
+    const consoleLine = "Started by user \x1b[8mha:////4KxvQJWtZTvBnC+PMwTW+w==\x1b[0mpraveen\r\nnext";
+    expect(sanitizeText(consoleLine)).toBe(`Started by user user-${personCode("praveen")}\r\nnext`);
+    expect(findSecrets(JSON.stringify(out))).toEqual([]);
+  });
+
+  test("findSecrets flags real names left in name fields and notes", () => {
+    const kinds = findSecrets(
+      JSON.stringify({ firstName: "Narender", lastName: "Mann", note: "Developer: Vandana", userName: "praveen" }),
+    ).map((f) => f.kind);
+    expect(kinds.filter((k) => k === "person-name").length).toBe(4);
+    expect(findSecrets(JSON.stringify({ firstName: "Super", lastName: "User", fullName: "Super User" }))).toEqual([]);
   });
 });
 

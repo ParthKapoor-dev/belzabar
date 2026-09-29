@@ -2788,7 +2788,7 @@
   "changelogs": [
     {
       "id": "4cf66b3e0cd24f5dac12b6f31b30befb",
-      "comment": "Developer =&gt; Snehal&nbsp;<br id=\"isPasted\">Doc version =&gt; 1&nbsp;<br>Reason =&gt; UUID changes<br>Reviewer =&gt; Krunal&nbsp;<br><br><br>",
+      "comment": "Developer =&gt; person-xlno&nbsp;<br id=\"isPasted\">Doc version =&gt; 1&nbsp;<br>Reason =&gt; UUID changes<br>Reviewer =&gt; person-tt2u&nbsp;<br><br><br>",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -2819,7 +2819,7 @@
     },
     {
       "id": "40269e5a09334b66001d8b86e0be3860",
-      "comment": "Test case: student.isViewAllowed.success.new.01<br>Task: TW24943314<br>Change log: added hasOffer and hasApplication. and updated 3.21 and condition in 3.22 and 3.23. assigned fromRef to inputGrade<br style=\"box-sizing: inherit; color: rgb(29, 28, 29); font-family: Slack-Lato, Slack-Fractions, appleLogo, sans-serif; font-size: 15px; font-style: normal; font-variant-ligatures: common-ligatures; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(248, 248, 248); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Dev: Siva<br>Reviewer: Mayank",
+      "comment": "Test case: student.isViewAllowed.success.new.01<br>Task: TW24943314<br>Change log: added hasOffer and hasApplication. and updated 3.21 and condition in 3.22 and 3.23. assigned fromRef to inputGrade<br style=\"box-sizing: inherit; color: rgb(29, 28, 29); font-family: Slack-Lato, Slack-Fractions, appleLogo, sans-serif; font-size: 15px; font-style: normal; font-variant-ligatures: common-ligatures; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(248, 248, 248); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Dev: person-u8rw<br>Reviewer: person-qhzi",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -2850,7 +2850,7 @@
     },
     {
       "id": "48f7104f03f11a3e38d5bfb2b4b7230b",
-      "comment": "Developer =&gt; Dipsi<br>Doc version =&gt; 1&nbsp;<br>Reason =&gt; ​Doc update, and changes in inputs<br>Reviewer =&gt; Krunal&nbsp;",
+      "comment": "Developer =&gt; person-v09y<br>Doc version =&gt; 1&nbsp;<br>Reason =&gt; ​Doc update, and changes in inputs<br>Reviewer =&gt; person-tt2u&nbsp;",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -2912,7 +2912,7 @@
     },
     {
       "id": "46edaf31b7d7fcc46df684a1299c426f",
-      "comment": "Developer =&gt; Snehal&nbsp;<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Doc version =&gt; 1&nbsp;<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason =&gt; ​Update ​epId error message<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reviewer =&gt; Krunal&nbsp;",
+      "comment": "Developer =&gt; person-xlno&nbsp;<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Doc version =&gt; 1&nbsp;<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason =&gt; ​Update ​epId error message<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reviewer =&gt; person-tt2u&nbsp;",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -2943,7 +2943,7 @@
     },
     {
       "id": "4b9eec9a9732ed304febb7280456eb56",
-      "comment": "Admin SEMS Developer =&gt; Siva<br style=\"box-sizing: border-box; font-family: Inter, sans-serif;\" id=\"isPasted\">Doc version =&gt; 1&nbsp;<br style=\"box-sizing: border-box; font-family: Inter, sans-serif;\">Reason =&gt; Updated the method calling new method user.getLoggedInUser ​and ​some minor changes<br>Reviewer =&gt; ​Vandana",
+      "comment": "Admin SEMS Developer =&gt; person-u8rw<br style=\"box-sizing: border-box; font-family: Inter, sans-serif;\" id=\"isPasted\">Doc version =&gt; 1&nbsp;<br style=\"box-sizing: border-box; font-family: Inter, sans-serif;\">Reason =&gt; Updated the method calling new method user.getLoggedInUser ​and ​some minor changes<br>Reviewer =&gt; ​Vandana",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -2974,7 +2974,7 @@
     },
     {
       "id": "42eca967a1a6475c4347b9ed044ffb30",
-      "comment": "Developer =&gt; Ritik<br>Changes = added sprint 28 changes<br>Reviewer =&gt; Balaram",
+      "comment": "Developer =&gt; person-6ja8<br>Changes = added sprint 28 changes<br>Reviewer =&gt; person-tc0x",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3036,7 +3036,7 @@
     },
     {
       "id": "48b6e91800ebc967975695b6ac349c76",
-      "comment": "Developer =&gt; Ritik<br>Changes =&gt; in step 3.12 added condition on studentId != null and schoolId == null and accessType = R<br>Reviewer =&gt; Mayank",
+      "comment": "Developer =&gt; person-6ja8<br>Changes =&gt; in step 3.12 added condition on studentId != null and schoolId == null and accessType = R<br>Reviewer =&gt; person-qhzi",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3129,7 +3129,7 @@
     },
     {
       "id": "42febbc8b3d5eadeb61f8c8f6dd3461c",
-      "comment": "Testcase : student.isViewAllowed.change13Dec.success1<br id=\"isPasted\">Developer =&gt; Ritik<br id=\"isPasted\">Changes =&gt; in step 3.12 added condition on studentId != null and schoolId == null and accessType = R<br>Reviewer =&gt; Mayank",
+      "comment": "Testcase : student.isViewAllowed.change13Dec.success1<br id=\"isPasted\">Developer =&gt; person-6ja8<br id=\"isPasted\">Changes =&gt; in step 3.12 added condition on studentId != null and schoolId == null and accessType = R<br>Reviewer =&gt; person-qhzi",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3160,7 +3160,7 @@
     },
     {
       "id": "431279e6c64010d19d21a9add42cfb0f",
-      "comment": "Developer =&gt; Ritik<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Changes =&gt; in step 3.12 added condition on studentId != null and schoolId == null and ( accessType is null or accessType != R )<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reviewer =&gt; Mayank",
+      "comment": "Developer =&gt; person-6ja8<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Changes =&gt; in step 3.12 added condition on studentId != null and schoolId == null and ( accessType is null or accessType != R )<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reviewer =&gt; person-qhzi",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3191,7 +3191,7 @@
     },
     {
       "id": "467e8f7d6f6a4bbc8d82ac83d7406933",
-      "comment": "Developer =&gt; Mayank<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Doc version =&gt; 1.9<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason =&gt; Fix sentry issue raised in lambdaFn",
+      "comment": "Developer =&gt; person-qhzi<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Doc version =&gt; 1.9<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason =&gt; Fix sentry issue raised in lambdaFn",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3222,7 +3222,7 @@
     },
     {
       "id": "4e3a71874499cfc0e9dab35e68c2483c",
-      "comment": "Developer: Yugal<br>Change: Updated js code on step 3.14 and 3.21<br>Reveiwer: Ekta",
+      "comment": "Developer: person-l9dd<br>Change: Updated js code on step 3.14 and 3.21<br>Reveiwer: person-h0fu",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3253,7 +3253,7 @@
     },
     {
       "id": "4b8c1a11b5504a730678bebac568fa8f",
-      "comment": "Developer: Vandana<br>Version: 1.13<br>Reason: changes for allowedTabs/hiddenTabs",
+      "comment": "Developer: person-upt8<br>Version: 1.13<br>Reason: changes for allowedTabs/hiddenTabs",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3315,7 +3315,7 @@
     },
     {
       "id": "4cf6bad08fe7ea43a533b9ee3663d7ee",
-      "comment": "Test case: student.isViewAllowed.success.new.01<br style=\"box-sizing: inherit; color: rgb(29, 28, 29); font-family: Slack-Lato, Slack-Fractions, appleLogo, sans-serif; font-size: 15px; font-style: normal; font-variant-ligatures: common-ligatures; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(248, 248, 248); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Change log: Changes related to offering rules for schools<br>Task: TW24943314<br>Dev: Siva<br>Reviewer: Mayank",
+      "comment": "Test case: student.isViewAllowed.success.new.01<br style=\"box-sizing: inherit; color: rgb(29, 28, 29); font-family: Slack-Lato, Slack-Fractions, appleLogo, sans-serif; font-size: 15px; font-style: normal; font-variant-ligatures: common-ligatures; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(248, 248, 248); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Change log: Changes related to offering rules for schools<br>Task: TW24943314<br>Dev: person-u8rw<br>Reviewer: person-qhzi",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3346,7 +3346,7 @@
     },
     {
       "id": "4633ca5452a5cb441458b5e0310666b9",
-      "comment": "Developer =&gt; Aakash<br>Changes =&gt; Added offer_response table as well in&nbsp; in step 3.14",
+      "comment": "Developer =&gt; person-okac<br>Changes =&gt; Added offer_response table as well in&nbsp; in step 3.14",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
@@ -3377,7 +3377,7 @@
     },
     {
       "id": "4a71c03de5870964f48098736dc6cf2c",
-      "comment": "Developer: Vandana<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Version: 1.14<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason: remove default school addition to result TW24858660",
+      "comment": "Developer: person-upt8<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Version: 1.14<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason: remove default school addition to result TW24858660",
       "user": {
         "id": 2,
         "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
