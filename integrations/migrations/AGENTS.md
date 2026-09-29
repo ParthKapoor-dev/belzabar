@@ -24,13 +24,14 @@ REST client lives in `lib/jenkins/`; `lib/index.ts` re-exports it.
 migrations/
 ├── commands/{logs,profiles,run,status}/{index.ts,help.txt,desc.txt}
 ├── lib/
-│   ├── args.ts             RUN_ARGS (defineArgs, MG-1) + value checks; profileSegmentEnvs /
-│   │                       envPairFromProfile — profile ↔ env consistency (MG-2, config-driven);
-│   │                       normalizeClient / matchClient (clients = Jenkins divider groups)
+│   ├── args.ts             RUN_ARGS (defineArgs) + value checks; envPairFromProfile — profile ↔
+│   │                       env consistency (config-driven); normalizeClient / matchClient
+│   │                       (clients = Jenkins divider groups); buildNumberArgs / parseBuildNumber
+│   │                       (status, logs)
 │   ├── resolve-targets.ts  pre-flight: resolve ids on the profile's SOURCE env (PD draft →
 │   │                       published sibling, AD existence + name)
 │   ├── profiles.ts         discoverProfiles (24 h cache, ~/.belz/migrations/jenkins-profiles.json);
-│   │                       resolveClientForProfile re-fetches once on a miss (MG-4)
+│   │                       resolveClientForProfile re-fetches once on a miss
 │   ├── parser.ts           stripAnsi, parseJenkinsConsole (migration ids, REPORT JSON)
 │   ├── report.ts           summarizeReport (methodComparisonResult)
 │   ├── artifacts.ts        writeArtifacts → summary.json + summary.console.log (`--out`)

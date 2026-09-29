@@ -3,14 +3,14 @@ import type { JenkinsAuth } from "./auth";
 import { getBuild, getConsoleChunk } from "./client";
 import { CONSOLE_POLL_INTERVAL_MS, DEFAULT_TIMEOUT_MS } from "./constants";
 
-export interface StreamOptions {
+interface StreamOptions {
   pollMs?: number;
   timeoutMs?: number;
   signal?: AbortSignal;
   onChunk?: (chunk: string) => void;
 }
 
-export interface StreamResult {
+interface StreamResult {
   consoleText: string;
   result: "SUCCESS" | "FAILURE" | "UNSTABLE" | "ABORTED" | null;
   duration: number;

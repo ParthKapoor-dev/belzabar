@@ -15,7 +15,7 @@ import { envPairFromProfile } from "./args";
 import type { ResolvedTarget } from "./types";
 import { adChainPath, canonicalUuid, fetchRawEntity, isEntityId, pdPagePath } from "@belzabar/core/platform";
 
-export interface ResolveTargetsResult {
+interface ResolveTargetsResult {
   sourceEnv: string;
   targets: ResolvedTarget[];
   resolvedIds: string[];
@@ -39,7 +39,7 @@ async function getJson(path: string, env: string): Promise<Record<string, unknow
     });
   }
   // An unknown id is not always a 404: AD answers 200 with an empty body (or
-  // `null`) for a uuid it doesn't know (OTH-R22). Anything that isn't a
+  // `null`) for a uuid it doesn't know. Anything that isn't a
   // non-empty JSON object is "not found", never a crash on `.name`. A stalled
   // body read (HTTP_TIMEOUT from core) propagates, not as a misleading NOT_FOUND.
   if (!got.found || !isObj(got.body) || Object.keys(got.body).length === 0) {
@@ -78,8 +78,8 @@ async function resolvePd(id: string, env: string): Promise<ResolvedTarget> {
 }
 
 async function resolveAd(id: string, env: string): Promise<ResolvedTarget> {
-  // OTH-R27: AD also accepts a NUMERIC chain id on this endpoint, so an
-  // all-digit id silently resolves to some other method. Only a uuid is a
+  // AD also accepts a NUMERIC chain id on this endpoint, so an all-digit id
+  // silently resolves to some other method. Only a uuid is a
   // migration id, and the method that comes back must carry that uuid.
   if (!isEntityId(id) || /^[0-9-]+$/.test(id)) {
     throw new CliError(`'${id}' is not an AD method uuid (32 hex characters, not all digits).`, {
@@ -103,8 +103,8 @@ async function resolveAd(id: string, env: string): Promise<ResolvedTarget> {
  * nothing to resolve (a COMPARISON_REPORT / MIGRATION_STATUS / custom module),
  * or when the source env can't be used — the profile's source env isn't
  * configured locally, or the profile's segments are not mapped in
- * `jenkins.profileEnvs`. Those skips
- * are reported through `warn` (ids then go to Jenkins unresolved), never silent.
+ * `jenkins.profileEnvs`. Those skips are reported through `warn` (ids then go
+ * to Jenkins unresolved), never silent.
  */
 export async function resolveMigrationTargets(opts: {
   sourceEnv?: string;

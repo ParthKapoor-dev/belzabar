@@ -1,4 +1,4 @@
-// OTH-R22/R23/R25/R26/R27: `migrate run` refuses bad input before any build,
+// `migrate run` refuses bad input before any build,
 // and every failure after the build was triggered carries its reference.
 // Jenkins and AD are fully faked; nothing leaves the process.
 import { afterEach, describe, expect, test } from "bun:test";
@@ -28,7 +28,7 @@ const JOB = "https://jk.test/job/A/job/b";
 const JOB_PARAMS = { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${import.meta.dir}/../fixtures/real/job-parameters.json`) };
 const UUID = "4d075e621c93206fb95d84795fc05e00";
 
-describe("OTH-R22/R27: AD pre-flight", () => {
+describe("AD pre-flight", () => {
   function acmeDev() {
     cfg = withTempEnvConfig({ envs: { "acme-dev": { url: "https://acme-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
   }
@@ -60,7 +60,7 @@ describe("OTH-R22/R27: AD pre-flight", () => {
     expect(await code(resolve(UUID))).toBe("MIGRATE_TARGET_ID_MISMATCH");
   });
 
-  test("NEW-2: a body that stalls keeps HTTP_TIMEOUT (was swallowed into MIGRATE_TARGET_NOT_FOUND)", async () => {
+  test("a body that stalls keeps HTTP_TIMEOUT (was swallowed into MIGRATE_TARGET_NOT_FOUND)", async () => {
     acmeDev();
     const enc = new TextEncoder();
     ff = fakeFetch([{
@@ -93,7 +93,7 @@ describe("OTH-R22/R27: AD pre-flight", () => {
   });
 });
 
-describe("OTH-R25: module and migration-id flags", () => {
+describe("module and migration-id flags", () => {
   const base = ["--profile", "devacme_qaacme", "--ids", UUID];
   test("--module with --module-custom → MIGRATE_MODULE_CONFLICT", async () => {
     expect(await code(parseMigrateRunArgs([...base, "--module", "PD", "--module-custom", "X"]))).toBe("MIGRATE_MODULE_CONFLICT");
@@ -107,7 +107,7 @@ describe("OTH-R25: module and migration-id flags", () => {
   });
 });
 
-describe("OTH-R26: --client vs profile", () => {
+describe("--client vs profile", () => {
   test("a client that isn't the profile's group → MIGRATE_CLIENT_PROFILE_MISMATCH, nothing POSTed", async () => {
     cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([JOB_PARAMS]).install();
@@ -129,7 +129,7 @@ describe("OTH-R26: --client vs profile", () => {
   });
 });
 
-describe("OTH-R23: failures after the trigger carry the build reference", () => {
+describe("failures after the trigger carry the build reference", () => {
   const argv = ["--profile", "devacme_qaacme", "--client", "ACME", "--module", "PD", "--ids", "p1", "--no-follow", "--yes"];
   const trigger = [
     JOB_PARAMS,

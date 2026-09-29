@@ -1,6 +1,5 @@
 // Jenkins adapter over core/http: short coded errors (no HTML / crumb in
-// messages), build 404 → "Build #n not found", queue deadline, crumb errors
-// (MG-5/7/8, F28).
+// messages), build 404 → "Build #n not found", queue deadline, crumb errors.
 import { afterEach, describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
 import { caughtCliError as caught, fakeFetch, type FakeFetch, respond } from "@belzabar/core/testing";

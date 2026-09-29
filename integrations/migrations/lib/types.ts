@@ -1,9 +1,9 @@
 import type { JenkinsClient, MigrateType } from "./constants";
 import type { BuildInfo, TriggerBuildInput } from "./jenkins";
 
-export type YesNo = "Y" | "N";
+type YesNo = "Y" | "N";
 
-export type ProfileSource = "live" | "cache";
+type ProfileSource = "live" | "cache";
 
 export interface ProfilesByClient {
   client: JenkinsClient;
@@ -109,12 +109,6 @@ export interface MigrateLogsArgs {
   buildNumber: number;
 }
 
-export type MigrateArgs =
-  | MigrateProfilesArgs
-  | MigrateRunArgs
-  | MigrateStatusArgs
-  | MigrateLogsArgs;
-
 export interface MigrateProfilesData {
   action: "profiles";
   source: ProfileSource;
@@ -166,9 +160,3 @@ export interface MigrateLogsData {
   consoleText: string;
   truncated: boolean;
 }
-
-export type MigrateData =
-  | MigrateProfilesData
-  | MigrateRunData
-  | MigrateStatusData
-  | MigrateLogsData;

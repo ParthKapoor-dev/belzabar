@@ -1,4 +1,4 @@
-import { CliError, Config, acceptedFlags, defineArgs, suggest } from "@belzabar/core";
+import { CliError, Config, defineArgs } from "@belzabar/core";
 import { KNOWN_MIGRATE_TYPES, type JenkinsClient, type MigrateType } from "./constants";
 import type { MigrateRunArgs } from "./types";
 
@@ -19,12 +19,11 @@ export function matchClient(value: string, known: readonly string[]): JenkinsCli
 }
 
 /** Migration profile segment → belz env, from config `jenkins.profileEnvs` (lowercase keys). */
-export function profileSegmentEnvs(): Record<string, string> {
+function profileSegmentEnvs(): Record<string, string> {
   return Config.getJenkins().profileEnvs;
 }
 
 function normalizeMigrateType(value: string | undefined, custom: string | undefined): MigrateType | string {
-  // OTH-R25: --module-custom used to silently override --module.
   if (custom?.trim() && value?.trim()) {
     throw new CliError("Pass --module or --module-custom, not both.", {
       code: "MIGRATE_MODULE_CONFLICT",
@@ -85,13 +84,38 @@ function deriveProfileFromEnvPair(sourceEnv: string, targetEnv: string): string 
   return `${s}_${t}`;
 }
 
-// -------- run: argument spec (MG-1) ----------------------------------------
+// -------- status / logs: build number ---------------------------------------
+
+/** The `<build-number>` spec shared by `migrate status` and `migrate logs`. */
+export function buildNumberArgs(command: "status" | "logs") {
+  return defineArgs({
+    command: `belz migrate ${command}`,
+    positionals: [
+      {
+        name: "build-number",
+        required: true,
+        missingCode: "MIGRATE_BUILD_NUMBER_REQUIRED",
+        missingMessage: `belz migrate ${command} requires a build number.`,
+      },
+    ],
+  });
+}
+
+/** Digits only: `12abc` must not be read as build 12. */
+export function parseBuildNumber(input: string): number {
+  const n = /^\d+$/.test(input.trim()) ? Number(input.trim()) : NaN;
+  if (!Number.isSafeInteger(n) || n <= 0) {
+    throw new CliError(`Invalid build number '${input}'.`, { code: "MIGRATE_BUILD_NUMBER_INVALID", details: { input } });
+  }
+  return n;
+}
+
+// -------- run: argument spec ------------------------------------------------
 //
 // `migrate run` triggers a real Jenkins build, so a typo'd safety flag
 // (`--dryrun`, `--no-autoapprove`) must be an error, never silently ignored.
 // core `defineArgs` rejects unknown flags (with a did-you-mean), values on
-// switches (`--dry-run=true`) and stray positionals; the MIGRATE_* codes predate
-// it and are kept.
+// switches (`--dry-run=true`) and stray positionals, under MIGRATE_* codes.
 
 const YES_NO = ["Y", "N"] as const;
 
@@ -126,14 +150,7 @@ export const RUN_ARGS = defineArgs({
   },
 });
 
-const RUN_KNOWN_FLAGS: readonly string[] = [...acceptedFlags(RUN_ARGS)];
-
-/** Closest known `migrate run` flag to a typo (kept for callers of the old parser). */
-export function suggestFlag(flag: string, known: readonly string[] = RUN_KNOWN_FLAGS): string | undefined {
-  return suggest(flag, known);
-}
-
-// -------- run: profile ↔ env consistency (MG-2) -----------------------------
+// -------- run: profile ↔ env consistency ------------------------------------
 //
 // Jenkins migrates whatever the PROFILE says; --source-env only picks where
 // belz pre-resolves ids. They must agree, or ids get resolved on one env while
@@ -151,7 +168,7 @@ export function envPairFromProfile(profile: string): { sourceEnv: string; target
   return { sourceEnv, targetEnv };
 }
 
-export function assertProfileEnvConsistent(
+function assertProfileEnvConsistent(
   profile: string,
   sourceEnv: string | undefined,
   targetEnv: string | undefined,
@@ -201,7 +218,7 @@ export async function parseMigrateRunArgs(argv: string[]): Promise<MigrateRunArg
   if (!isReportType && ids.length === 0) {
     throw new CliError("Missing --ids or --ids-file.", { code: "MIGRATE_IDS_REQUIRED" });
   }
-  // OTH-R25: a report/status build without a migration id ran with MIGRATION_ID="".
+  // A report/status build without a migration id would run with MIGRATION_ID="".
   const migrationId = flags.migrationId?.trim() || undefined;
   if (isReportType && !migrationId) {
     throw new CliError(`--migration-id is required for --module ${migrateType}.`, {

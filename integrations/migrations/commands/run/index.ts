@@ -1,4 +1,4 @@
-import { CliError, type CommandContext, type CommandModule, Config, confirmWrite, ok } from "@belzabar/core";
+import { CliError, type CommandModule, Config, confirmWrite, isObj, ok } from "@belzabar/core";
 import {
   assertJenkinsAuth,
   buildUrl,
@@ -24,7 +24,6 @@ function logProgress(quiet: boolean | undefined, line: string): void {
 }
 
 const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
-  schema: "belz.migrate.run",
   /** Triggers a Jenkins migration build. */
   writes: true,
   async parseArgs(argv) {
@@ -39,9 +38,9 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
     const profile = args.profile as string;
     let client = args.client;
     if (client) {
-      // OTH-R26: an explicit --client must be the profile's Jenkins group, or
-      // the build runs with the wrong CLIENT. An unlisted profile is left to
-      // the explicit client (that is what --client is for).
+      // An explicit --client must be the profile's Jenkins group, or the build
+      // runs with the wrong CLIENT. An unlisted profile is left to the explicit
+      // client (that is what --client is for).
       const { client: expected } = await resolveClientForProfile(auth, profile);
       if (expected && expected.toLowerCase() === client.toLowerCase()) client = expected; // Jenkins' spelling
       else if (expected) {
@@ -51,7 +50,6 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         );
       }
     } else {
-      // A miss against the cached list re-fetches from Jenkins once (MG-4).
       ({ client } = await resolveClientForProfile(auth, profile));
       if (!client) {
         throw new CliError(
@@ -99,14 +97,30 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       autoApprove: args.autoApprove,
     };
 
-    // Every run is a real Jenkins build (a dry run too): confirm first.
-    await requireRunConfirmation(context, args.yes === true, `trigger a Jenkins migration build (${auth.job})`, [
-      ["Profile", profile],
-      ["Client", String(client)],
-      ["Module", String(args.migrateType)],
-      ["Ids", preflight ? preflight.targets.map((t) => `${t.name} ${t.resolvedId}`).join(", ") : effectiveIds.join(", ")],
-      ["Dry run", args.dryRun ? "yes (DRY_RUN=true, still a real build)" : "no"],
-    ]);
+    // Every run is a real Jenkins build (a dry run too), and `migrate` has no
+    // --env to gate it (the profile names the envs), so the build itself is
+    // confirmed: --yes proceeds, a terminal is asked, --llm or a non-TTY
+    // without --yes is MIGRATE_CONFIRMATION_REQUIRED.
+    const action = `trigger a Jenkins migration build (${auth.job})`;
+    await confirmWrite({
+      yes: args.yes === true,
+      outputMode: context.outputMode,
+      action,
+      details: [
+        ["Profile", profile],
+        ["Client", String(client)],
+        ["Module", String(args.migrateType)],
+        ["Ids", preflight ? preflight.targets.map((t) => `${t.name} ${t.resolvedId}`).join(", ") : effectiveIds.join(", ")],
+        ["Dry run", args.dryRun ? "yes (DRY_RUN=true, still a real build)" : "no"],
+      ],
+      codePrefix: "MIGRATE",
+      requiredMessage: `Confirmation required to ${action}. Pass --yes to proceed.`,
+      promptMessage: "Trigger the build?",
+      refuseWithoutTty: true,
+      abortExitCode: 130,
+      detailsShape: "object",
+      emptyBody: "",
+    });
 
     if (showProgress) logProgress(args.quiet, `Triggering ${auth.job} (client=${client}, profile=${profile})…`);
     let trigger: { queueUrl: string };
@@ -114,7 +128,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       trigger = await triggerBuild(auth, input);
     } catch (e) {
       // Jenkins accepted the POST (2xx) but sent no queue Location: a build IS
-      // queued, we just can't follow it (OTH-R23).
+      // queued, we just can't follow it.
       if (e instanceof CliError && e.code === "MIGRATE_JENKINS_NO_QUEUE_LOCATION") {
         throw withBuildRef(e, { jobUrl: jobUrl(auth) });
       }
@@ -122,7 +136,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
     }
 
     // From here on a build exists. Every failure carries its reference so an
-    // agent checks `migrate status` instead of re-running (OTH-R23).
+    // agent checks `migrate status` instead of re-running.
     let buildNumber: number | undefined;
     try {
       if (showProgress) logProgress(args.quiet, "Waiting for build assignment…");
@@ -273,36 +287,10 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
 export default command;
 
 /**
- * `migrate run` has no --env to gate it (the profile names the envs), so the
- * build itself is confirmed: --yes proceeds, an interactive terminal is asked,
- * --llm or a non-TTY without --yes is MIGRATE_CONFIRMATION_REQUIRED.
- */
-async function requireRunConfirmation(
-  context: Pick<CommandContext, "outputMode">,
-  yes: boolean,
-  action: string,
-  details: Array<[string, string]>,
-): Promise<void> {
-  await confirmWrite({
-    yes,
-    outputMode: context.outputMode,
-    action,
-    details,
-    codePrefix: "MIGRATE",
-    requiredMessage: `Confirmation required to ${action}. Pass --yes to proceed.`,
-    promptMessage: "Trigger the build?",
-    refuseWithoutTty: true,
-    abortExitCode: 130,
-    detailsShape: "object",
-    emptyBody: "",
-  });
-}
-
-/**
  * Re-throw a failure that happened AFTER the build was triggered with the
  * build's reference in `details` (buildTriggered, buildNumber, buildUrl,
  * queueUrl, jobUrl) and, unless the build itself failed, a do-not-retrigger
- * hint in the message. Keeps the original code and exit code (OTH-R23).
+ * hint in the message. Keeps the original code and exit code.
  */
 function withBuildRef(
   e: unknown,
@@ -315,8 +303,7 @@ function withBuildRef(
     ? `build #${ref.buildNumber} (${ref.buildUrl}); check it with 'belz migrate status ${ref.buildNumber}'`
     : ref.queueUrl ? `queue item ${ref.queueUrl}; find the build on ${ref.jobUrl}` : `a build on ${ref.jobUrl}`;
   const hint = code === "MIGRATE_RUN_FAILED" ? "" : ` A build WAS triggered — do NOT re-run 'migrate run'; ${where}.`;
-  const prior = cli && typeof cli.details === "object" && cli.details !== null && !Array.isArray(cli.details)
-    ? (cli.details as Record<string, unknown>) : {};
+  const prior = cli && isObj(cli.details) ? cli.details : {};
   const details: Record<string, unknown> = { ...prior, buildTriggered: true, jobUrl: ref.jobUrl };
   if (ref.queueUrl) details.queueUrl = ref.queueUrl;
   if (ref.buildNumber !== undefined) {

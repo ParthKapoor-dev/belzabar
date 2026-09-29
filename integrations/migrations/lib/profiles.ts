@@ -38,8 +38,8 @@ interface ProfilesCacheFile {
   groups: ProfilesByClient[];
 }
 
-/** Cached profile lists older than this are re-fetched from Jenkins (MG-4). */
-export const PROFILES_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+/** Cached profile lists older than this are re-fetched from Jenkins. */
+const PROFILES_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 function readCache(): ProfilesCacheFile | null {
   try {
@@ -100,7 +100,7 @@ export async function discoverProfiles(
   };
 }
 
-export function findClientForProfile(groups: ProfilesByClient[], profile: string): JenkinsClient | undefined {
+function findClientForProfile(groups: ProfilesByClient[], profile: string): JenkinsClient | undefined {
   for (const group of groups) {
     if (group.profiles.includes(profile)) return group.client;
   }
@@ -109,8 +109,8 @@ export function findClientForProfile(groups: ProfilesByClient[], profile: string
 
 /**
  * Resolve the Jenkins client group of `profile`. A miss against the cached
- * list re-fetches from Jenkins once before giving up (MG-4: a stale cache used
- * to send users to `migrate profiles`, which read the same stale cache).
+ * list re-fetches from Jenkins once before giving up: a profile added since the
+ * cache was written must not fail the run.
  */
 export async function resolveClientForProfile(
   auth: JenkinsAuth,

@@ -11,10 +11,8 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<MigrateProfilesArgs, MigrateProfilesData> = {
-  schema: "belz.migrate.profiles",
   parseArgs(argv) {
     const { flags } = args.parse(argv);
-    // MG-3: --client used to be hardcoded to undefined, so every client was listed.
     return { action: "profiles", refresh: flags.refresh, client: normalizeClient(flags.client) };
   },
   async execute(args) {

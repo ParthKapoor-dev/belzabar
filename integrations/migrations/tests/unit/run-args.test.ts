@@ -1,10 +1,9 @@
-// MG-1 / MG-2 regressions for `belz migrate run` argument parsing.
+// `belz migrate run` argument parsing: unknown flags and profile ↔ env consistency.
 import { afterEach, beforeEach, describe, test, expect } from "bun:test";
-import { withTempEnvConfig, type TempEnvConfig } from "@belzabar/core/testing";
+import { caughtCliError as codeOf, withTempEnvConfig, type TempEnvConfig } from "@belzabar/core/testing";
 import {
   parseMigrateRunArgs,
   envPairFromProfile,
-  suggestFlag,
   resolveMigrationTargets,
 } from "../../lib";
 import statusCmd from "../../commands/status/index";
@@ -27,16 +26,7 @@ afterEach(() => {
 
 const BASE = ["--profile", "devacme_qaacme", "--module", "PD", "--ids", "abc"];
 
-async function codeOf(p: Promise<unknown>): Promise<{ code?: string; details?: any; message: string }> {
-  try {
-    await p;
-  } catch (err) {
-    return err as any;
-  }
-  throw new Error("expected rejection");
-}
-
-describe("MG-1: unknown flags are rejected with a did-you-mean", () => {
+describe("unknown flags are rejected with a did-you-mean", () => {
   const typos: Array<[string[], string]> = [
     [["--dryrun"], "--dry-run"],
     [["--dry_run"], "--dry-run"],
@@ -53,7 +43,7 @@ describe("MG-1: unknown flags are rejected with a did-you-mean", () => {
     test(`${extra.join(" ")} → MIGRATE_UNKNOWN_FLAG (did you mean ${suggestion})`, async () => {
       const err = await codeOf(parseMigrateRunArgs([...BASE, ...extra]));
       expect(err.code).toBe("MIGRATE_UNKNOWN_FLAG");
-      expect(err.details.suggestion).toBe(suggestion);
+      expect((err.details as { suggestion?: string | null }).suggestion).toBe(suggestion);
       expect(err.message).toContain(`Did you mean '${suggestion}'`);
     });
   }
@@ -61,7 +51,7 @@ describe("MG-1: unknown flags are rejected with a did-you-mean", () => {
   test("a wildly unknown flag gets no suggestion", async () => {
     const err = await codeOf(parseMigrateRunArgs([...BASE, "--frobnicate"]));
     expect(err.code).toBe("MIGRATE_UNKNOWN_FLAG");
-    expect(err.details.suggestion).toBeNull();
+    expect((err.details as { suggestion?: string | null }).suggestion).toBeNull();
   });
 
   test("boolean flag with =value is rejected (--dry-run=true must not run for real)", async () => {
@@ -86,14 +76,9 @@ describe("MG-1: unknown flags are rejected with a did-you-mean", () => {
     expect(parsed.follow).toBe(false);
     expect(parsed.sourceEnv).toBe("acme-dev");
   });
-
-  test("suggestFlag helper", () => {
-    expect(suggestFlag("--dryrun")).toBe("--dry-run");
-    expect(suggestFlag("--zzzzzzzzzz")).toBeUndefined();
-  });
 });
 
-describe("MG-2: profile ↔ env consistency", () => {
+describe("profile ↔ env consistency", () => {
   test("envPairFromProfile derives the env family from config jenkins.profileEnvs", () => {
     expect(envPairFromProfile("devacme_qaacme")).toEqual({ sourceEnv: "acme-dev", targetEnv: "acme-qa" });
     expect(envPairFromProfile("QAbravo_stgbravo")).toEqual({ sourceEnv: "orb-qa", targetEnv: "orb-stage" });
@@ -154,8 +139,8 @@ describe("MG-2: profile ↔ env consistency", () => {
   });
 });
 
-describe("core defineArgs migration (Stage 3)", () => {
-  test("MG-9: the no-op --raw is gone", async () => {
+describe("defineArgs behaviour", () => {
+  test("the no-op --raw is gone", async () => {
     const err = await codeOf(parseMigrateRunArgs([...BASE, "--raw"]));
     expect(err.code).toBe("MIGRATE_UNKNOWN_FLAG");
   });
@@ -183,7 +168,7 @@ describe("core defineArgs migration (Stage 3)", () => {
 });
 
 describe("status / logs / profiles", () => {
-  test("MG-6: build numbers are digits only", async () => {
+  test("build numbers are digits only", async () => {
     for (const mod of [statusCmd, logsCmd]) {
       expect(mod.parseArgs!(["743"], {} as any)).toMatchObject({ buildNumber: 743 });
       for (const bad of ["12abc", "0", "-5", "1.5"]) {
@@ -197,7 +182,7 @@ describe("status / logs / profiles", () => {
     }
   });
 
-  test("MG-3: profiles --client is parsed (checked against the Jenkins groups at run time)", () => {
+  test("profiles --client is parsed (checked against the Jenkins groups at run time)", () => {
     expect(profilesCmd.parseArgs!(["--client", " acme "], {} as any)).toEqual({ action: "profiles", refresh: false, client: "acme" });
     expect(profilesCmd.parseArgs!(["--refresh"], {} as any)).toEqual({ action: "profiles", refresh: true, client: undefined });
   });

@@ -1,4 +1,4 @@
-// MG-4: the profile cache has a TTL, and a miss against the cache re-fetches once.
+// The profile cache has a TTL, and a miss against the cache re-fetches once.
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "fs";
 import { dirname } from "path";

@@ -2,7 +2,7 @@ import { CliError, httpRequest, readBodySummary } from "@belzabar/core";
 import type { JenkinsAuth } from "./auth";
 import { buildHeaders } from "./auth";
 
-export interface Crumb {
+interface Crumb {
   field: string;
   value: string;
   cookie?: string;

@@ -1,30 +1,10 @@
-import { CliError, Config, defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { assertJenkinsAuth, getBuild } from "../../lib";
+import { Config, ok, type CommandModule } from "@belzabar/core";
+import { assertJenkinsAuth, buildNumberArgs, parseBuildNumber, getBuild } from "../../lib";
 import type { MigrateStatusArgs, MigrateStatusData } from "../../lib";
 
-export const args = defineArgs({
-  command: "belz migrate status",
-  positionals: [
-    {
-      name: "build-number",
-      required: true,
-      missingCode: "MIGRATE_BUILD_NUMBER_REQUIRED",
-      missingMessage: "belz migrate status requires a build number.",
-    },
-  ],
-});
-
-/** MG-6: digits only — `12abc` used to be read as build 12. */
-function parseBuildNumber(input: string): number {
-  const n = /^\d+$/.test(input.trim()) ? Number(input.trim()) : NaN;
-  if (!Number.isSafeInteger(n) || n <= 0) {
-    throw new CliError(`Invalid build number '${input}'.`, { code: "MIGRATE_BUILD_NUMBER_INVALID", details: { input } });
-  }
-  return n;
-}
+export const args = buildNumberArgs("status");
 
 const command: CommandModule<MigrateStatusArgs, MigrateStatusData> = {
-  schema: "belz.migrate.status",
   parseArgs(argv) {
     return { action: "status", buildNumber: parseBuildNumber(args.parse(argv).positionals.buildNumber) };
   },

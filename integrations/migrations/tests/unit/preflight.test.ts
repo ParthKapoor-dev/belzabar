@@ -1,5 +1,5 @@
 // `migrate run` pre-flight (resolve-targets): a skipped pre-flight must warn,
-// never skip silently (s0-review carry-forward); PD drafts swap to their
+// never skip silently; PD drafts swap to their
 // published sibling; auth failures say what to do; the caller's env is restored.
 import { afterEach, describe, expect, test } from "bun:test";
 import { Config } from "@belzabar/core";
@@ -10,7 +10,7 @@ import runCmdModule from "../../commands/run/index";
 // The `migrate` namespace is not env-aware (targets come from the profile).
 const runCmd = { ...runCmdModule, envAware: false };
 
-// OTH-R26: an explicit --client is checked against the profile's Jenkins group.
+// An explicit --client is checked against the profile's Jenkins group.
 const JOB_PARAMS = { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${import.meta.dir}/../fixtures/real/job-parameters.json`) };
 
 /** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */

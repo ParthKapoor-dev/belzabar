@@ -10,13 +10,13 @@ import type {
 } from "./types";
 import { QUEUE_POLL_INTERVAL_MS, QUEUE_TIMEOUT_MS } from "./constants";
 
-// Jenkins adapter over @belzabar/core/http (MG-5/7/8, TW-10, F28): shared
-// transport (timeout, IPv4 pin + eviction), basic auth, and error messages that
-// never carry the HTML error page or the CSRF crumb — only the status and the
-// page title, truncated and redacted.
+// Jenkins REST client over @belzabar/core/http: shared transport (timeout,
+// IPv4 pin + eviction), basic auth, and error messages that never carry the
+// HTML error page or the CSRF crumb — only the status and the page title,
+// truncated and redacted.
 
 /** One Jenkins request through the shared transport. */
-export function jenkinsFetch(auth: JenkinsAuth, url: string, init: HttpInit = {}): Promise<Response> {
+function jenkinsFetch(auth: JenkinsAuth, url: string, init: HttpInit = {}): Promise<Response> {
   return httpRequest(url, {
     ...init,
     headers: { ...buildHeaders(auth), ...((init.headers as Record<string, string>) ?? {}) },
@@ -24,7 +24,7 @@ export function jenkinsFetch(auth: JenkinsAuth, url: string, init: HttpInit = {}
 }
 
 /** CliError for a non-OK Jenkins response: `${what} (HTTP n): <summary>`. */
-export async function jenkinsError(res: Response, what: string, code: string, details: Record<string, unknown> = {}): Promise<CliError> {
+async function jenkinsError(res: Response, what: string, code: string, details: Record<string, unknown> = {}): Promise<CliError> {
   const body = await readBodySummary(res, 200);
   return new CliError(`${what} (HTTP ${res.status})${body ? `: ${body}` : ""}`, {
     code,
