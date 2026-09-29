@@ -2,6 +2,9 @@ Usage: belz ad find [LIST|PICK|QUERY] [flags]
 
 Find Automation Designer methods and categories from a cached local index.
 With no query (or `LIST`), lists all categories with method counts.
+Rows are compact (name, alias, category, state, uuid, referenceId, apiUuid =
+the automationAPIId other methods' steps use, summary, score); empty fields
+are omitted.
 
 Arguments:
   [LIST|PICK|QUERY]   LIST shows category counts.
@@ -9,6 +12,17 @@ Arguments:
                       QUERY runs ranked search over methods and categories.
 
 Flags:
+  --describe          Search method summaries / descriptions (plus name, alias,
+                      category) for the QUERY words — "is there already a
+                      method that does X?". Rows add `matched` words. Needs
+                      index schema 2 (an older cached index is rebuilt once).
+  --category <prefix> Only categories whose name starts with <prefix>
+                      (e.g. Helpers).
+  --fields <a,b|all>  Pick row fields: type,name,alias,category,state,uuid,
+                      referenceId,apiUuid,summary,description,version,
+                      categoryUuid,createdOn,updatedOn,url,score,matched
+                      (categories: name,id,uuid,systemUuid,label,aliases,
+                      methods); `all` = every field.
   --refresh           Rebuild method index from API before searching (progress on stderr).
   --limit <N>         Maximum matches (and --raw index rows) to return, 1-200. (default: 20)
   --open              Open selected method URL in browser. (pick mode only)
@@ -25,4 +39,5 @@ Examples:
   belz ad find list
   belz ad find pick _lookupDCIN --open
   belz ad find "documents helper" --limit 30
+  belz ad find --describe fetch value from json path --category Helpers --llm
   belz ad find _lookupDCIN --refresh --llm

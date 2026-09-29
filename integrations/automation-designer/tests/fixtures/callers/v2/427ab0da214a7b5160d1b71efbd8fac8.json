@@ -1,0 +1,232 @@
+{
+  "uuid": "427ab0da214a7b5160d1b71efbd8fac8",
+  "automationApiId": "41855dd8b27522ebc46d82fbce3e5edd    ",
+  "name": "Iteration",
+  "description": "Iteration",
+  "metadata": {
+    "version": {
+      "uuid": "427ab0da214a7b5160d1b71efbd8fac8",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 57,
+      "uuid": "4423ad307059bc3fc6859804c9bd12e0",
+      "name": "Example services",
+      "description": "Example services",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1672730063338,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [
+    {
+      "uuid": "407b87368c4aae7fb8b6809822d2997b    ",
+      "key": "inputArray",
+      "name": "inputArray",
+      "type": "ARRAY",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "44294d416d5038b4317480620de8c313    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "[{\"fileName\":\"1001.pdf\",\"filePath\":\"fdafda\"},{\"fileName\":\"1002.pdf\",\"filePath\":\"fdafda\"}]",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "resArray",
+          "name": "resArray"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "41fb6f529e333c41f5e8b8a884dc265a    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "\"#{inputArray.element.fileName}\"",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "res",
+          "name": "res"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "testSuite": {
+    "id": "4172cdb24ba9442966a892889bafbf68",
+    "createdBy": 2,
+    "createdOn": 1672730193011,
+    "chainId": "427ab0da214a7b5160d1b71efbd8fac8",
+    "testCases": [
+      {
+        "id": "4d7eebb425bb07683eeca23b830d7a9f",
+        "createdBy": 2,
+        "createdOn": 1672730193011,
+        "name": "inputIteration",
+        "testSuiteId": "4172cdb24ba9442966a892889bafbf68",
+        "inputs": [
+          {
+            "id": "469e15092f4038fef2f483dcf753bde9",
+            "createdOn": 1672730193012,
+            "testCaseId": "4d7eebb425bb07683eeca23b830d7a9f",
+            "fieldCode": "inputArray",
+            "value": "{\"value\": \"[{\\\"fileName\\\":\\\"1001pdf\\\",\\\"filePath\\\":\\\"fdafda\\\"},{\\\"fileName\\\":\\\"1002pdf\\\",\\\"filePath\\\":\\\"fdafda\\\"}]\", \"properties\": [{\"value\": []}]}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

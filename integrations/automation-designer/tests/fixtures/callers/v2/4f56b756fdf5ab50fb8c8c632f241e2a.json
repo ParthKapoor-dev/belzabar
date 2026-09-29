@@ -1,0 +1,286 @@
+{
+  "uuid": "4f56b756fdf5ab50fb8c8c632f241e2a",
+  "automationApiId": "4f3b7cd2e0926f3f55ceb38f3c4448db    ",
+  "name": "fileMethod",
+  "description": "for File Method",
+  "metadata": {
+    "version": {
+      "uuid": "4f56b756fdf5ab50fb8c8c632f241e2a",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 57,
+      "uuid": "4423ad307059bc3fc6859804c9bd12e0",
+      "name": "Example services",
+      "description": "Example services",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1685082979326,
+      "lastPublishedAt": 1685083452564,
+      "createdBy": 2,
+      "migrationVersion": 1685082979323,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "PUBLISHED",
+    "referenceId": "4b14ca68b54832538350b6187824721a"
+  },
+  "inputs": [
+    {
+      "uuid": "4b50b2b0f77ba719a418bbe8e5188649    ",
+      "key": "file",
+      "name": "file",
+      "type": "FILE",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "45b3ce3aa42c7dbd48919c2fbcac7c76    ",
+      "key": "id",
+      "name": "id",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4a73f6d67262abd7f44488c7bff3f7a1    ",
+      "referenceUuid": "4d1a1e3dd65ab1a793399756e9ca163f    ",
+      "key": "res",
+      "fieldCode": "res",
+      "name": "res",
+      "type": "JSON"
+    },
+    {
+      "uuid": "46c5f2b910a222961f42bf5784c78cb6    ",
+      "referenceUuid": "41131c1926df663db369b6fef714eba2    ",
+      "key": "resId",
+      "fieldCode": "resId",
+      "name": "resId",
+      "type": "JSON"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "46d6ca32d332f9ccf3e08a7e9fc25347    ",
+      "automationAPIId": "466b2a9567d74333ecbab158353a0dd0    ",
+      "serviceName": "Expertly.DMS",
+      "methodName": "file.uploadMultiple",
+      "coreMethod": false,
+      "description": "",
+      "inputs": [
+        {
+          "uuid": "4f0132b3f59cef56b265acab9b75fc58    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4903b1d726fd94e99511b8b7c58fbaa8    ",
+              "key": "uploadDocuments",
+              "name": "document",
+              "type": "ARRAY",
+              "displayWidgetSuggestion": "ARRAY",
+              "combineInput": false,
+              "properties": [
+                {
+                  "uuid": "424c4f25210d19114c11aa10ca62a271    ",
+                  "key": "uploadDocuments.uploadDocuments",
+                  "name": "",
+                  "type": "OBJECT",
+                  "displayWidgetSuggestion": "OBJECT",
+                  "combineInput": false,
+                  "properties": [
+                    {
+                      "uuid": "4b178288b3da864aaf4eb8b9caf28634    ",
+                      "value": "testFile",
+                      "key": "displayName",
+                      "name": "displayName",
+                      "type": "STRING",
+                      "displayWidgetSuggestion": "CUSTOM",
+                      "combineInput": false,
+                      "properties": [],
+                      "encodingType": "NONE"
+                    },
+                    {
+                      "uuid": "4b90c91892cd0639de1489f32ae2bae2    ",
+                      "value": "/uploaded",
+                      "key": "folderPath",
+                      "name": "folderPath",
+                      "type": "STRING",
+                      "displayWidgetSuggestion": "CUSTOM",
+                      "combineInput": false,
+                      "properties": [],
+                      "encodingType": "NONE"
+                    },
+                    {
+                      "uuid": "4bff02c59e0a681c25c791a587b1cea2    ",
+                      "value": "#{file}",
+                      "key": "content",
+                      "name": "content",
+                      "type": "STRING",
+                      "displayWidgetSuggestion": "CUSTOM",
+                      "combineInput": false,
+                      "properties": [],
+                      "encodingType": "NONE"
+                    }
+                  ],
+                  "encodingType": "NONE"
+                }
+              ],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4d1a1e3dd65ab1a793399756e9ca163f    ",
+          "key": "response",
+          "fieldCode": "res",
+          "name": "res"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4e569254ca826fca593f9934a104ab4b    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{id}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "resId",
+          "name": "resId"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "PUBLISHED"
+}

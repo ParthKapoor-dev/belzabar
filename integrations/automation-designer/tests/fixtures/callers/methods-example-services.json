@@ -1,0 +1,806 @@
+{
+  "currentOffset": 12,
+  "methodList": [
+    {
+      "id": 2201,
+      "uuid": "4bd3eedb07e1db50ff59a4709366d025",
+      "jsonDefinition": "{\"name\": \"Blank method\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"id\", \"required\": false, \"fieldCode\": \"id\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"outputs\": [{\"type\": \"JSON\", \"fieldCode\": \"jsonList\", \"outputCode\": \"jsonList\", \"properties\": [], \"displayName\": \"jsonList\", \"automationId\": 7817, \"rawResponseContainer\": false, \"automationAPIOutputId\": 3865, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"outputs\": [{\"code\": \"jsonList\", \"properties\": [], \"displayName\": \"jsonList\", \"automationId\": 7817, \"rawResponseContainer\": false, \"automationAPIOutputId\": 3865, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"c6060a41-d22b-4f38-b728-e6f07989fb06\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 5827, \"automationUserInputUuid\": \"46d8503ebe98a52d5ca4a6cc498750fb    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"orderIndex\": 1, \"automationId\": 7817, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"Blank method\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "Blank method",
+      "methodDescription": "Blank method",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 20993,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1669618348710,
+      "referenceId": "4551d3fb248045a5e20ab399a6d0a606",
+      "state": "PUBLISHED",
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1669618348692,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4158f56973f8f6523c49b6b7b4983d75",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    },
+    {
+      "id": 2521,
+      "uuid": "4673b4353e6125c1df468df4a18bd82b",
+      "jsonDefinition": "{\"name\": \"Iteration logic\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"input\", \"required\": false, \"fieldCode\": \"input\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"ARRAY\", \"label\": \"array\", \"required\": false, \"fieldCode\": \"array\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"defaultValue\": \"[1,2,3,4]\"}], \"outputs\": [{\"code\": \"out3.3\", \"type\": \"ARRAY\", \"fieldCode\": \"out3.3\", \"outputCode\": \"out3.3\", \"properties\": [], \"displayName\": \"out3.3\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"finput\", \"properties\": [], \"displayName\": \"finput\", \"automationId\": 10044, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"\\\"fdadfa\\\"\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"43b639386056be721de5b547d79eaa34    \"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"440f578688fb588b7e52bd71809e5389    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 10044, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": false, \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"inputf\", \"properties\": [], \"displayName\": \"inputf\", \"automationId\": 10045, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"\\\"tesdfadsft\\\"\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"43b639386056be721de5b547d79eaa34    \"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"440f578688fb588b7e52bd71809e5389    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 2, \"automationId\": 10045, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"loopExecutionSource\": \"#{list}\", \"forceExitFromFailure\": false, \"useServiceAuthenticationStructure\": false}, {\"code\": \"var array= `#{array}`;\\nconsole.log(array);\", \"file\": \"\", \"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"out3.3\", \"type\": \"ARRAY\", \"properties\": [], \"displayName\": \"out3.3\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\"}, \"forceExist\": false, \"orderIndex\": 3, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": true, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"Iteration logic\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "Iteration logic",
+      "methodDescription": "Iteration logic",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 24941,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1671438189414,
+      "referenceId": "441ec9a554f8202fb13d861428550d36",
+      "state": "PUBLISHED",
+      "migrationVersion": 1671438189395,
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1671438189395,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4647c32c821edf22b3feadb8d96c25c6",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    },
+    {
+      "id": 2522,
+      "uuid": "40b270670686c47215d2b6ab839b276d",
+      "jsonDefinition": "{\"name\": \"chaining method\", \"inputs\": [], \"outputs\": [], \"services\": [{\"outputs\": [{\"code\": \"out\", \"displayName\": \"out\", \"automationId\": 10046, \"automationAPIOutputId\": 4424, \"hiddenAutomationAPIOutputIds\": []}, {\"code\": \"out3.1\", \"displayName\": \"out3.1\", \"automationId\": 10046, \"automationAPIOutputId\": 4426, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [], \"uiRepresentation\": \"ARRAY\", \"automationUserInputId\": 8506, \"automationUserInputUuid\": \"44364d81b84e362ae951a50809a53c89    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"fatFileType\": null, \"automationId\": 10046, \"loopExecutionSource\": null, \"automationUiSelector\": {}, \"forceExitFromFailure\": true}], \"buttonLabel\": \"\", \"methodDescription\": \"\"}",
+      "version": 2,
+      "aliasName": "chaining method",
+      "methodDescription": "",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 24946,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1671438233405,
+      "updatedBy": 2,
+      "updatedOn": 1671438570160,
+      "state": "DRAFT",
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4da8e43e2c058c5447509ac3abbc3cff",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "DRAFT"
+    },
+    {
+      "id": 2524,
+      "uuid": "48e5d8bec3f5d7b5d689914d3b36aed8",
+      "jsonDefinition": "{\"name\": \"array output\", \"inputs\": [{\"type\": \"ARRAY\", \"label\": \"array\", \"required\": false, \"fieldCode\": \"array\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [{\"type\": \"STRING\", \"label\": \"aElement\", \"required\": false, \"fieldCode\": \"array.aElement\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"defaultValue\": \"[1,2,3]\"}], \"outputs\": [{\"type\": \"ARRAY\", \"fieldCode\": \"out\", \"outputCode\": \"out\", \"properties\": [], \"displayName\": \"out\", \"automationId\": 10082, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"out\", \"properties\": [], \"displayName\": \"out\", \"automationId\": 10082, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{array}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"43b639386056be721de5b547d79eaa34    \"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"440f578688fb588b7e52bd71809e5389    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 10082, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": true, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "array output",
+      "methodDescription": "",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 25015,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1671438535238,
+      "updatedBy": 2,
+      "updatedOn": 1671445313373,
+      "referenceId": "484973cc177a1166d039a314a1d1d217",
+      "state": "PUBLISHED",
+      "migrationVersion": 1671438535222,
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1671445313347,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "45fe7e3d5d754cd67926a141c4faafe0",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    },
+    {
+      "id": 2737,
+      "uuid": "427ab0da214a7b5160d1b71efbd8fac8",
+      "jsonDefinition": "{\"name\": \"Iteration\", \"inputs\": [{\"type\": \"ARRAY\", \"label\": \"inputArray\", \"required\": false, \"fieldCode\": \"inputArray\", \"hideInput\": false, \"testValue\": null, \"properties\": [], \"defaultValue\": null}], \"outputs\": [], \"services\": [{\"outputs\": [{\"code\": \"resArray\", \"displayName\": \"resArray\", \"automationId\": 12469, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"[{\\\"fileName\\\":\\\"1001.pdf\\\",\\\"filePath\\\":\\\"fdafda\\\"},{\\\"fileName\\\":\\\"1002.pdf\\\",\\\"filePath\\\":\\\"fdafda\\\"}]\", \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"45a8c0cce63cda0c2504b8b6e44562e1    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"45fad19570baad3a549ab699a6cc1b7f    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"fatFileType\": null, \"automationId\": 12469, \"loopExecutionSource\": null, \"automationUiSelector\": {}, \"forceExitFromFailure\": true}, {\"outputs\": [{\"code\": \"res\", \"displayName\": \"res\", \"automationId\": 12470, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"\\\"#{inputArray.element.fileName}\\\"\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"45a8c0cce63cda0c2504b8b6e44562e1    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"45fad19570baad3a549ab699a6cc1b7f    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 2, \"fatFileType\": null, \"automationId\": 12470, \"loopExecutionSource\": \"#{inputArray}\", \"automationUiSelector\": {}, \"forceExitFromFailure\": true}], \"buttonLabel\": \"\", \"methodDescription\": \"Iteration\"}",
+      "version": 2,
+      "aliasName": "Iteration",
+      "methodDescription": "Iteration",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 29901,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1672730063338,
+      "updatedBy": 2,
+      "updatedOn": 1672730207110,
+      "state": "DRAFT",
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "41855dd8b27522ebc46d82fbce3e5edd",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "DRAFT"
+    },
+    {
+      "id": 2997,
+      "uuid": "44103b20007389433f10ab8a923796f2",
+      "jsonDefinition": "{\"name\": \"testChainFailure\", \"inputs\": [], \"outputs\": [{\"id\": 5227, \"code\": \"message\", \"type\": \"STRING\", \"fieldCode\": \"message\", \"outputCode\": \"message\", \"properties\": [], \"displayName\": \"message\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"code\": \"console.log(output);\", \"file\": \"\", \"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"message\", \"type\": \"STRING\", \"properties\": [], \"displayName\": \"message\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\"}, \"forceExist\": false, \"orderIndex\": 1, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"testChainFailure\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "testChainFailure",
+      "methodDescription": "testChainFailure",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 32171,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1673423363797,
+      "updatedBy": 2,
+      "updatedOn": 1673423554094,
+      "referenceId": "473e1302fa35abb4417398c2a2d47e4d",
+      "state": "PUBLISHED",
+      "migrationVersion": 1673423363571,
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1673423554013,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4854081654caf5df96fbae39d2ab2138",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    },
+    {
+      "id": 2998,
+      "uuid": "45cbe76761a83a2dd62ba3e598bd28c7",
+      "jsonDefinition": "{\"name\": \"chainParentMethod\", \"inputs\": [], \"outputs\": [{\"id\": 5229, \"type\": \"STRING\", \"fieldCode\": \"msg\", \"outputCode\": \"msg\", \"properties\": [], \"displayName\": \"msg\", \"automationId\": 14371, \"rawResponseContainer\": false, \"automationAPIOutputId\": 5227, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"outputs\": [{\"code\": \"msg\", \"displayName\": \"msg\", \"automationId\": 14371, \"automationAPIOutputId\": 5227, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"fatFileType\": null, \"automationId\": 14371, \"loopExecutionSource\": null, \"automationUiSelector\": {}, \"forceExitFromFailure\": true}], \"buttonLabel\": \"\", \"methodDescription\": \"chainParentMethod\"}",
+      "version": 2,
+      "aliasName": "chainParentMethod",
+      "methodDescription": "chainParentMethod",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 32168,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1673423468808,
+      "updatedBy": 2,
+      "updatedOn": 1673423481831,
+      "state": "DRAFT",
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4a1e137ce53640005d51abea74ede326",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "DRAFT"
+    },
+    {
+      "id": 3415,
+      "uuid": "4c0cf55cde14d78482ce9ddb929c66f8",
+      "jsonDefinition": "{\"name\": \"Test MDT method\", \"inputs\": [], \"outputs\": [{\"id\": 5952, \"type\": \"ARRAY\", \"fieldCode\": \"jv\", \"outputCode\": \"jv\", \"properties\": [], \"displayName\": \"jv\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 4250, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"rd\", \"properties\": [], \"displayName\": \"rd\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 982, \"hiddenAutomationAPIOutputIds\": []}, {\"code\": \"jv\", \"properties\": [], \"displayName\": \"jv\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 983, \"hiddenAutomationAPIOutputIds\": []}, {\"code\": \"rd\", \"properties\": [], \"displayName\": \"rd\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 4249, \"hiddenAutomationAPIOutputIds\": []}, {\"code\": \"jv\", \"properties\": [], \"displayName\": \"jv\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 4250, \"hiddenAutomationAPIOutputIds\": []}, {\"code\": \"rd\", \"properties\": [], \"displayName\": \"rd\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 5861, \"hiddenAutomationAPIOutputIds\": []}, {\"code\": \"jv\", \"properties\": [], \"displayName\": \"jv\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 5862, \"hiddenAutomationAPIOutputIds\": []}, {\"code\": \"rd\", \"properties\": [], \"displayName\": \"rd\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 5932, \"hiddenAutomationAPIOutputIds\": []}, {\"code\": \"jv\", \"properties\": [], \"displayName\": \"jv\", \"automationId\": 17606, \"rawResponseContainer\": false, \"automationAPIOutputId\": 5933, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"44\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8323, \"automationUserInputUuid\": \"4aaacd13267a98d7f9b380d4abde992b    \"}, {\"value\": \"false\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8324, \"automationUserInputUuid\": \"484df55f89fd478b9accb36ecc4bb697    \"}, {\"value\": \"true\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8325, \"automationUserInputUuid\": \"4ff41d7b9c749ea31b22ba5c5620a61a    \"}, {\"value\": \"false\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 8326, \"automationUserInputUuid\": \"46e1a7af1ba02453e201be5fea3e5c43    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 17606, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "Test MDT method",
+      "methodDescription": "",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 37119,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1675930683066,
+      "referenceId": "4fd5ae43b77750de6f6e8ace5e7582b4",
+      "state": "PUBLISHED",
+      "migrationVersion": 1675930682993,
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1675930682993,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4436d29b503cd27dd805b0009d2a5aa3",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    },
+    {
+      "id": 3429,
+      "uuid": "42bb1566043aee5600b4ad9e48b5e9f5",
+      "jsonDefinition": "{\"name\": \"Expertly Header\", \"inputs\": [{\"type\": \"STRING\", \"label\": \"authToken\", \"required\": false, \"fieldCode\": \"authToken\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"baseUrl\", \"required\": false, \"fieldCode\": \"baseUrl\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"outputs\": [{\"id\": 5996, \"type\": \"STRING\", \"fieldCode\": \"jsonData\", \"outputCode\": \"jsonData\", \"properties\": [], \"displayName\": \"jsonData\", \"automationId\": 18119, \"rawResponseContainer\": false, \"automationAPIOutputId\": 104, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"jsonData\", \"properties\": [], \"displayName\": \"jsonData\", \"automationId\": 18119, \"rawResponseContainer\": false, \"automationAPIOutputId\": 104, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{baseUrl}/rest/api/org-resources?flatStructure=false&orgType=HEADER_MENU&permissionType=VIEW\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 271, \"automationUserInputUuid\": \"431af734a1063f633029b3c9fe1591a9    \"}, {\"value\": \"\\\"authorization\\\": \\\"#{authToken}\\\"\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 272, \"automationUserInputUuid\": \"425e1f3c5cd19f6ea9888ec20fb00c2c    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 18119, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"get headers for expertly menu\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "Expertly Header",
+      "methodDescription": "get headers for expertly menu",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 37544,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1676028011109,
+      "updatedBy": 2,
+      "updatedOn": 1676033622766,
+      "referenceId": "4c96c880076c6a1b5256ad642b182e50",
+      "state": "PUBLISHED",
+      "migrationVersion": 1676028011092,
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1676033622727,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4674bb38f8bc8c8b0956a7aa9a95b855",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    },
+    {
+      "id": 3742,
+      "uuid": "4ee56d848a9d35bf810ca5237fca3563",
+      "jsonDefinition": "{\"name\": \"StringConcatination\", \"inputs\": [{\"type\": \"ARRAY\", \"label\": \"aValue\", \"required\": false, \"fieldCode\": \"aValue\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [{\"type\": \"STRING\", \"label\": \"e\", \"required\": false, \"fieldCode\": \"aValue.e\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"defaultValue\": \"[\\\"hi\\\",\\\"hello\\\",\\\"bye\\\"]\"}], \"outputs\": [{\"id\": 6511, \"type\": \"JSON\", \"fieldCode\": \"res\", \"outputCode\": \"res\", \"properties\": [], \"displayName\": \"res\", \"automationId\": 25387, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"res\", \"properties\": [], \"displayName\": \"res\", \"automationId\": 25387, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"\\\"select * from emp where name in ('#{T(org.apache.commons.lang3.StringUtils).joinWith(\\\"','\\\", aValue)}');\\\"\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"4eb62504a3b572e034a49e1a0666824a    \"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"44468153d05e9ae36f1daf87d92e7abf    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"automationId\": 25387, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"StringConcatination\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "StringConcatination",
+      "methodDescription": "StringConcatination",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 45228,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1679986221932,
+      "referenceId": "4a8ad3d613c10c61955aaf25da217766",
+      "state": "PUBLISHED",
+      "migrationVersion": 1679986221929,
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1679986221929,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "462bd60180c1591f32e387d40da9bafb",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    },
+    {
+      "id": 3812,
+      "uuid": "4bb045fb74d8106362a19e3a90971e27",
+      "jsonDefinition": "{\"name\": \"Loop Issue 1004\", \"inputs\": [{\"type\": \"ARRAY\", \"label\": \"input1\", \"required\": false, \"fieldCode\": \"input1\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": [], \"defaultValue\": \"[{\\\"newEpId\\\":\\\"a856e15e-144e-4442-bcfc-e8f6158e328d\\\",\\\"stageTypeCode\\\":\\\"CHOICE_APPLICATION\\\",\\\"openingTime\\\":\\\"2032-03-01 00:00:00+00\\\",\\\"closingTime\\\":\\\"2032-07-01 15:06:00+00\\\",\\\"displayName\\\":\\\"Private School\\\",\\\"details\\\":{\\\"maxChoices\\\":1},\\\"roundNo\\\":1}]\"}], \"outputs\": [], \"services\": [{\"code\": \"//Below custom code for create one common list from list of list.\\n\\nvar data = JSON.parse(\\\"#{input1}\\\");\\n\\n\\nconsole.log(JSON.stringify(data));\", \"file\": \"\", \"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"output1\", \"type\": \"ARRAY\", \"properties\": [], \"displayName\": \"output1\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"fileName\": \"\", \"language\": \"JAVASCRIPT\", \"mappings\": [], \"runAsync\": false, \"activeTab\": {\"id\": \"customCode\"}, \"forceExist\": false, \"orderIndex\": 1, \"customCodeEnv\": \"CODE_LAMBDA\", \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"output2\", \"properties\": [], \"displayName\": \"output2\", \"automationId\": 28434, \"rawResponseContainer\": false, \"automationAPIOutputId\": 384, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{output1.element.newEpId}\", \"mappings\": [], \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 932, \"automationUserInputUuid\": \"483b4e3b9975e957c5d39eb6d4bbc412    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 2, \"automationId\": 28434, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"loopConfiguration\": {\"type\": \"LOOP_EXECUTION_ON_INPUT_OUTPUT\", \"counter\": null, \"condition\": null, \"conditionMode\": null, \"numberOfTimes\": null, \"incrementalCount\": null, \"rangeEndExclusive\": null, \"conditionExpression\": null, \"rangeStartInclusive\": null, \"testConditionResult\": null}, \"loopExecutionSource\": \"#{output1}\", \"repeatStepExecution\": true, \"forceExitFromFailure\": false, \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"Loop Issue 1004\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "Loop Issue 1004",
+      "methodDescription": "Loop Issue 1004",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 47894,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1681129259820,
+      "referenceId": "4e498e66a317688e1ae4b954a93d4eaa",
+      "state": "PUBLISHED",
+      "migrationVersion": 1681129259818,
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1681129259818,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4d21bae4012d5b6ff6238b6abd7fe129",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    },
+    {
+      "id": 4150,
+      "uuid": "4f56b756fdf5ab50fb8c8c632f241e2a",
+      "jsonDefinition": "{\"name\": \"fileMethod\", \"inputs\": [{\"type\": \"FILE\", \"label\": \"file\", \"required\": false, \"fieldCode\": \"file\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}, {\"type\": \"STRING\", \"label\": \"id\", \"required\": false, \"fieldCode\": \"id\", \"hideInput\": false, \"orderIndex\": -1, \"properties\": []}], \"outputs\": [{\"id\": 9378, \"code\": \"res\", \"type\": \"JSON\", \"fieldCode\": \"res\", \"outputCode\": \"res\", \"properties\": [], \"displayName\": \"res\", \"automationId\": 34765, \"rawResponseContainer\": false, \"automationAPIOutputId\": 6024, \"hiddenAutomationAPIOutputIds\": []}, {\"id\": 9380, \"code\": \"resId\", \"type\": \"JSON\", \"fieldCode\": \"resId\", \"outputCode\": \"resId\", \"properties\": [], \"displayName\": \"resId\", \"automationId\": 34766, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"res\", \"properties\": [], \"displayName\": \"res\", \"automationId\": 34765, \"rawResponseContainer\": false, \"automationAPIOutputId\": 6024, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"mappings\": [{\"mappings\": [{\"value\": \"testFile\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 10750, \"automationUserInputUuid\": \"47f7c0283af0dfc201e681df9860bbe0    \"}, {\"value\": \"/uploaded\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 10751, \"automationUserInputUuid\": \"4385dcc2c35c36899530a8ef7b29034e    \"}, {\"value\": \"#{file}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 10752, \"automationUserInputUuid\": \"42b7edf4fb63e8730bdfadead1608ed4    \"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 10749, \"automationUserInputUuid\": \"442ba5bb19d980dddaa29daeb4b31e43    \"}], \"combineInputs\": false, \"uiRepresentation\": \"ARRAY\", \"automationUserInputId\": 10748, \"automationUserInputUuid\": \"465bad52da140089397d846785bcba75    \"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 10747, \"automationUserInputUuid\": \"48a9ea1856157e3d46f494203a9d3779    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"\", \"automationId\": 34765, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"resId\", \"properties\": [], \"displayName\": \"resId\", \"automationId\": 34766, \"rawResponseContainer\": false, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"#{id}\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"422b06939c63d736580cb867e2e5cc18    \"}, {\"value\": \"$\", \"mappings\": [], \"combineInputs\": false, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3474, \"automationUserInputUuid\": \"4e1535734ef64b2d01318643cf4d3461    \"}], \"combineInputs\": false, \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"4dd4275ee44544041c98b212063b253f    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"forceExist\": false, \"orderIndex\": 2, \"automationId\": 34766, \"executionStatus\": {\"failed\": false, \"executed\": false}, \"repeatStepExecution\": false, \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"buttonLabel\": \"\", \"internalMethod\": false, \"executionStatus\": {\"failed\": false, \"executed\": false, \"failingSteps\": [], \"failingStepsStatuses\": []}, \"methodDescription\": \"for File Method\", \"useServiceAuthenticationStructure\": false}",
+      "version": 1,
+      "aliasName": "fileMethod",
+      "methodDescription": "for File Method",
+      "changelog": [],
+      "permissions": [
+        {
+          "id": 63218,
+          "automationChainDefinitionId": null,
+          "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+          "groups": [],
+          "users": [
+            {
+              "id": 2,
+              "email": "user@example.com",
+              "firstName": "Admin",
+              "lastName": "SEMS",
+              "ssoUser": false,
+              "boss": {
+                "id": 1,
+                "ssoUser": false,
+                "mfaEnabled": false
+              },
+              "mfaEnabled": false,
+              "fullName": "Admin SEMS",
+              "title": "Admin SEMS"
+            }
+          ]
+        }
+      ],
+      "createdBy": 2,
+      "createdOn": 1685082979326,
+      "updatedBy": 2,
+      "updatedOn": 1685083452567,
+      "referenceId": "4b14ca68b54832538350b6187824721a",
+      "state": "PUBLISHED",
+      "migrationVersion": 1685082979323,
+      "methodDeprecated": false,
+      "securityTags": [],
+      "migration": false,
+      "lastPublishedAt": 1685083452564,
+      "lastPublishedBy": 2,
+      "methodType": "USER_GENERATED",
+      "automationApiUuid": "4f3b7cd2e0926f3f55ceb38f3c4448db",
+      "active": false,
+      "scope": "UNRESTRICTED",
+      "allowedCategoryUuids": [],
+      "allowedCategoryNames": [],
+      "permissionSet": [
+        "EDIT_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_IN_GUIDE",
+        "VIEW_AUTOMATION_METHOD",
+        "USE_AUTOMATION_METHOD_DIRECTLY",
+        "OWNER_METHOD"
+      ],
+      "securityTagsCommaSeparated": "",
+      "automationState": "PUBLISHED"
+    }
+  ],
+  "category": {
+    "id": 57,
+    "name": "Example services",
+    "aliasName": [
+      "Example services"
+    ],
+    "description": "Example services",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 72,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790662037714
+    },
+    "accessMode": "PUBLIC",
+    "createdOn": 1668087623262,
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4423ad307059bc3fc6859804c9bd12e0",
+    "automationSystemUuid": "42cdb625aa9e1af7767f8730e38f1f7e",
+    "migration": false,
+    "label": "Example services",
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  }
+}

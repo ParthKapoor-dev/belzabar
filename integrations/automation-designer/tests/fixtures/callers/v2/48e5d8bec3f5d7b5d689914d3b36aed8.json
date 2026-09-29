@@ -1,0 +1,151 @@
+{
+  "uuid": "48e5d8bec3f5d7b5d689914d3b36aed8",
+  "automationApiId": "45fe7e3d5d754cd67926a141c4faafe0    ",
+  "name": "array output",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "48e5d8bec3f5d7b5d689914d3b36aed8",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 57,
+      "uuid": "4423ad307059bc3fc6859804c9bd12e0",
+      "name": "Example services",
+      "description": "Example services",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1671438535238,
+      "lastPublishedAt": 1671445313347,
+      "createdBy": 2,
+      "migrationVersion": 1671438535222,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "PUBLISHED",
+    "referenceId": "484973cc177a1166d039a314a1d1d217"
+  },
+  "inputs": [
+    {
+      "uuid": "4aaea9c7657db555d44aba49cb3b24bd    ",
+      "key": "array",
+      "name": "array",
+      "type": "ARRAY",
+      "required": false,
+      "properties": [
+        {
+          "uuid": "4bb8b2bd70caa721f5cd9dbb71bee035    ",
+          "key": "array.aElement",
+          "name": "aElement",
+          "type": "STRING",
+          "required": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "encodingType": "NONE",
+      "defaultValue": "[1,2,3]"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4f47913818d03c769789ae6100039f66    ",
+      "referenceUuid": "41131c1926df663db369b6fef714eba2    ",
+      "fieldCode": "out",
+      "name": "out",
+      "type": "ARRAY"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "46f6dd7805155f976582b811a4bdcb19    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{array}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "out",
+          "name": "out"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "PUBLISHED"
+}

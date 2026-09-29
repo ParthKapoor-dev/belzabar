@@ -4,6 +4,14 @@ import { BELZ_CONFIG_DIR, Cache, Config, apiFetch } from "@belzabar/core";
 const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
 export const METHOD_FINDER_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/**
+ * Bumped when index records gain fields. 2 (Stage 7): `summary`, `description`,
+ * `automationApiUuid`, `calls`, `opaqueSteps` — used by `find --describe` and
+ * `ad callers`, which rebuild an older cached index (plain `find` keeps using it).
+ */
+export const METHOD_FINDER_SCHEMA = 2;
+/** Per-method text kept in the index (summary / description), to bound its size. */
+const TEXT_CAP = 400;
 
 const methodFinderCache = new Cache<MethodFinderIndex>({
   dir: join(BELZ_CONFIG_DIR, "cache", "method-finder"),
@@ -36,9 +44,25 @@ export interface MethodFinderMethod {
   createdOn: number;
   updatedOn: number;
   url: string;
+  /** Schema 2: the method's own automation-API uuid (what callers' steps reference). */
+  automationApiUuid?: string;
+  /** Schema 2: summary / description text (capped). */
+  summary?: string;
+  description?: string;
+  /**
+   * Schema 2: callee refs of the method's steps, from the listing's V1
+   * jsonDefinition: `u:<apiUuid>` (step carries automationApiUuid) or
+   * `n:<numericApiId>` (env-local numeric automationApiId). Custom-code steps
+   * have none.
+   */
+  calls?: string[];
+  /** Schema 2: steps identified only by their numeric automationId (callee unknown without a V2 read). */
+  opaqueSteps?: number;
 }
 
 export interface MethodFinderIndex {
+  /** Absent = schema 1. */
+  schemaVersion?: number;
   env: string;
   generatedAt: number;
   categories: MethodFinderCategory[];
@@ -103,12 +127,14 @@ export async function loadOrBuildMethodFinderIndex(options: {
   refresh: boolean;
   /** Called after each category is indexed (F29: a refresh takes minutes). */
   onProgress?: (p: IndexProgress) => void;
+  /** Rebuild a cached index older than this schema (describe / callers need 2). */
+  minSchema?: number;
 }): Promise<MethodFinderCacheResult> {
   const cacheKey = `index-v1-${Config.activeEnv.name}`;
 
   if (!options.refresh) {
     const cached = await methodFinderCache.load(cacheKey);
-    if (cached && cached.env === Config.activeEnv.name) {
+    if (cached && cached.env === Config.activeEnv.name && (cached.schemaVersion ?? 1) >= (options.minSchema ?? 1)) {
       return { index: cached, source: "cache" };
     }
   }
@@ -196,11 +222,12 @@ export function normalizeMethodRecord(
   // published row's `referenceId` points at the linked draft, if any.
   const draftUuid = state === "PUBLISHED" && raw.referenceId ? raw.referenceId : uuid;
 
-  return {
+  const def = parseDefinition(raw.jsonDefinition);
+  const method: MethodFinderMethod = {
     uuid,
     referenceId: raw.referenceId,
     aliasName: raw.aliasName,
-    methodName: extractMethodName(raw.jsonDefinition, fallbackName),
+    methodName: getString(def?.name) ?? fallbackName,
     state,
     version: raw.version,
     categoryUuid: category.uuid,
@@ -209,6 +236,54 @@ export function normalizeMethodRecord(
     updatedOn: raw.lastUpdatedOn || raw.updatedOn,
     url: buildMethodUrl(category.name, draftUuid),
   };
+  const apiUuid = getString(record.automationApiUuid);
+  if (apiUuid) method.automationApiUuid = apiUuid.toLowerCase();
+  const summary = capText(getString(def?.summary));
+  if (summary) method.summary = summary;
+  const description = capText(getString(record.methodDescription) ?? getString(def?.methodDescription) ?? getString(def?.description));
+  if (description && description !== summary) method.description = description;
+  if (def) {
+    const { calls, opaque } = stepCallRefs(def);
+    method.calls = calls;
+    if (opaque) method.opaqueSteps = opaque;
+  }
+  return method;
+}
+
+function capText(text: string | null): string | null {
+  if (!text) return null;
+  const flat = text.replace(/\s+/g, " ").trim();
+  return flat.length > TEXT_CAP ? `${flat.slice(0, TEXT_CAP)}…` : flat;
+}
+
+function parseDefinition(jsonDefinition: string): Record<string, unknown> | null {
+  if (!jsonDefinition) return null;
+  try {
+    return asObject(JSON.parse(jsonDefinition));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Callee refs of a V1 jsonDefinition's steps (`services[]`): `u:<apiUuid>` /
+ * `n:<numericApiId>`, de-duplicated; custom-code steps skipped; steps with
+ * only an `automationId` are counted as opaque.
+ */
+export function stepCallRefs(def: Record<string, unknown>): { calls: string[]; opaque: number } {
+  const calls = new Set<string>();
+  let opaque = 0;
+  for (const step of getArray(def.services)) {
+    const s = asObject(step);
+    if (!s) continue;
+    if (getString(s.language) || typeof s.code === "string") continue; // custom code
+    const apiUuid = getString(s.automationApiUuid);
+    const apiId = getNumber(s.automationApiId);
+    if (apiUuid) calls.add(`u:${apiUuid.toLowerCase()}`);
+    else if (apiId !== null) calls.add(`n:${apiId}`);
+    else if (s.automationId !== undefined && s.automationId !== null) opaque++;
+  }
+  return { calls: [...calls], opaque };
 }
 
 export function buildMethodUrl(categoryName: string, methodUuid: string): string {
@@ -249,6 +324,7 @@ async function buildMethodFinderIndex(onProgress?: (p: IndexProgress) => void): 
   const uniqueMethods = dedupeBy(methods, m => m.uuid);
 
   return {
+    schemaVersion: METHOD_FINDER_SCHEMA,
     env: Config.activeEnv.name,
     generatedAt: Date.now(),
     categories: uniqueCategories,
@@ -571,19 +647,6 @@ function getNumber(value: unknown): number | null {
   return null;
 }
 
-function extractMethodName(jsonDefinition: string, fallback: string): string {
-  if (jsonDefinition) {
-    try {
-      const parsed = JSON.parse(jsonDefinition) as { name?: unknown };
-      const name = getString(parsed.name);
-      if (name) return name;
-    } catch {
-      // Ignore malformed definition payloads.
-    }
-  }
-  return fallback;
-}
-
 function asObject(value: unknown): Record<string, unknown> | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   return value as Record<string, unknown>;
@@ -603,4 +666,69 @@ function asRawMethodRecord(value: Record<string, unknown>): RawMethodRecord {
     lastUpdatedOn: getNumber(value.lastUpdatedOn) ?? 0,
     updatedOn: getNumber(value.updatedOn) ?? 0,
   };
+}
+
+// ── Stage 7.5: fuzzy scoring for other catalogues, description search ──────
+
+/** The index's name scoring (exact > prefix > word start > substring > fuzzy), for other catalogues (`ad services --search`). */
+export function scoreFuzzy(query: string, value: string, weight = 1): number {
+  const q = normalize(query);
+  return q ? scoreText(q, value, weight) : 0;
+}
+
+const DESCRIBE_STOPWORDS = new Set(["a", "an", "the", "of", "to", "in", "on", "for", "and", "or", "by", "with", "is", "it", "from", "that", "this", "be", "as", "at", "into"]);
+
+export function describeTokens(text: string): string[] {
+  return [...new Set(tokenize(normalize(text)).filter((t) => t.length >= 2 && !DESCRIBE_STOPWORDS.has(t)))];
+}
+
+export interface DescribeMatch extends MethodFinderMethod {
+  score: number;
+  /** Query words that matched somewhere in name / alias / summary / description / category. */
+  matched: string[];
+}
+
+/**
+ * `ad find --describe <text>`: word search over method name, alias, summary,
+ * description and category (weights 3 / 2.5 / 2 / 1.5 / 1; a word-start hit
+ * counts full, a substring 0.8, a 1-edit typo on words ≥5 chars 0.5). A method
+ * must match at least half of the query words; ranked by words matched, then
+ * score. `category` narrows to categories whose name starts with it.
+ */
+export function describeSearch(index: MethodFinderIndex, text: string, limit: number, opts: { category?: string } = {}): DescribeMatch[] {
+  const tokens = describeTokens(text);
+  if (tokens.length === 0) return [];
+  const need = Math.max(1, Math.ceil(tokens.length / 2));
+  const cat = opts.category ? normalize(opts.category) : null;
+  const out: DescribeMatch[] = [];
+  for (const m of index.methods) {
+    if (cat && !normalize(m.categoryName).startsWith(cat)) continue;
+    const fields: Array<[string, number]> = [
+      [normalize(m.methodName), 3],
+      [normalize(m.aliasName), 2.5],
+      [normalize(m.summary ?? ""), 2],
+      [normalize(m.description ?? ""), 1.5],
+      [normalize(m.categoryName), 1],
+    ];
+    let score = 0;
+    const matched: string[] = [];
+    for (const t of tokens) {
+      let best = 0;
+      for (const [value, w] of fields) {
+        if (!value) continue;
+        let hit = 0;
+        if (containsWordStart(value, t) || tokenize(value).some((v) => v.startsWith(t))) hit = 1;
+        else if (value.includes(t)) hit = 0.8;
+        else if (t.length >= 5 && tokenize(value).some((v) => Math.abs(v.length - t.length) <= 1 && levenshtein(t, v) <= 1)) hit = 0.5;
+        best = Math.max(best, hit * w);
+      }
+      if (best > 0) {
+        score += best;
+        matched.push(t);
+      }
+    }
+    if (matched.length >= need) out.push({ ...m, score: Math.round(score * 100) / 100, matched });
+  }
+  out.sort((a, b) => b.matched.length - a.matched.length || b.score - a.score || a.methodName.localeCompare(b.methodName));
+  return out.slice(0, Math.max(1, limit));
 }

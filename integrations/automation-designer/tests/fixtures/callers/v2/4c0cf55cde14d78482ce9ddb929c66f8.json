@@ -1,0 +1,194 @@
+{
+  "uuid": "4c0cf55cde14d78482ce9ddb929c66f8",
+  "automationApiId": "4436d29b503cd27dd805b0009d2a5aa3    ",
+  "name": "Test MDT method",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "4c0cf55cde14d78482ce9ddb929c66f8",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 57,
+      "uuid": "4423ad307059bc3fc6859804c9bd12e0",
+      "name": "Example services",
+      "description": "Example services",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1675930683066,
+      "lastPublishedAt": 1675930682993,
+      "createdBy": 2,
+      "migrationVersion": 1675930682993,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "PUBLISHED",
+    "referenceId": "4fd5ae43b77750de6f6e8ace5e7582b4"
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "uuid": "433fa86b341a2aaf54d1b8ee72a85b27    ",
+      "referenceUuid": "4c2a084a36dc0767c8ccbfa398546d23    ",
+      "fieldCode": "jv",
+      "name": "jv",
+      "type": "ARRAY"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "4d9f55349e00d2a757678db1471b90b8    ",
+      "automationAPIId": "43bed9ac1646eba4e644a51a1c84c6f6    ",
+      "serviceName": "BCPS-MDT-Local",
+      "methodName": "enrollment_stage.Read.ByEpStageId",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4aaacd13267a98d7f9b380d4abde992b    ",
+          "value": "44",
+          "key": "filter_enrollment_stage.id_0",
+          "name": "id",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "484df55f89fd478b9accb36ecc4bb697    ",
+          "value": "false",
+          "key": "filter_enrollment_stage.closed_1",
+          "name": "closed",
+          "type": "BOOLEAN",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4ff41d7b9c749ea31b22ba5c5620a61a    ",
+          "value": "true",
+          "key": "filter_enrollment_stage.active_2",
+          "name": "active",
+          "type": "BOOLEAN",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "46e1a7af1ba02453e201be5fea3e5c43    ",
+          "value": "false",
+          "key": "filter_enrollment_stage.deleted_3",
+          "name": "deleted",
+          "type": "BOOLEAN",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "45ffd4b2986f30d81ea69b665325b2d5    ",
+          "key": "data",
+          "fieldCode": "rd",
+          "name": "rd"
+        },
+        {
+          "uuid": "45d7abccee3e33e8a5068f0a8a064685    ",
+          "key": "flatData",
+          "fieldCode": "jv",
+          "name": "jv"
+        },
+        {
+          "uuid": "4a917c5019dcd9f6ac8fb71b033753ff    ",
+          "key": "data",
+          "fieldCode": "rd",
+          "name": "rd"
+        },
+        {
+          "uuid": "4c2a084a36dc0767c8ccbfa398546d23    ",
+          "key": "flatData",
+          "fieldCode": "jv",
+          "name": "jv"
+        },
+        {
+          "uuid": "4ff7d2e996d54b4f6b2c9bfc03977ff7    ",
+          "key": "data",
+          "fieldCode": "rd",
+          "name": "rd"
+        },
+        {
+          "uuid": "4ac119e5d96e061e500bacf658082512    ",
+          "key": "flatData",
+          "fieldCode": "jv",
+          "name": "jv"
+        },
+        {
+          "uuid": "473459e466cf542dea8797cb266f35de    ",
+          "key": "data",
+          "fieldCode": "rd",
+          "name": "rd"
+        },
+        {
+          "uuid": "477036697ead219dd8fab96efc175466    ",
+          "key": "flatData",
+          "fieldCode": "jv",
+          "name": "jv"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "PUBLISHED"
+}

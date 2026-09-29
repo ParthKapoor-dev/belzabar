@@ -9,6 +9,7 @@
 //   ad-defs [n=10]             /automations/{id} for the automationIds used by n real-v1 methods
 //   ad-categories              /chain/category + /automation/services
 //   ad-notfound                V1 + V2 GET of a nonexistent uuid (200 empty body)
+//   ad-raw <subdir> <file> <endpoint>  one AD GET into tests/fixtures/<subdir>/<file> (JSON)
 //   pd <id,id,...>             PD pages/components by id
 //   pd-search <name>           list PD rows by name (prints only, writes nothing)
 //   pd-list <PAGE|COMPONENT> [n]  list n DRAFT rows (prints only)
@@ -150,6 +151,13 @@ async function adNotFound() {
   }
 }
 
+/** One arbitrary AD GET (still GET-only, sems-dev-only, sanitized) — for small targeted fixtures. */
+async function adRaw(subdir: string, file: string, endpoint: string) {
+  if (!subdir || !file || !endpoint.startsWith("/rest/api/")) throw new Error("usage: ad-raw <subdir> <file> </rest/api/...>");
+  const c = await expertlyGet(endpoint);
+  writeFixture(join(AD_FIX, subdir), file, parseJson(c, file), { source: {}, endpoint, status: c.status });
+}
+
 // ── PD ──────────────────────────────────────────────────────────────────────
 
 async function pdPages(ids: string[]) {
@@ -262,6 +270,7 @@ switch (target) {
   case "ad-defs": await adDefinitions(Number(arg ?? 10)); break;
   case "ad-categories": await adCategories(); break;
   case "ad-notfound": await adNotFound(); break;
+  case "ad-raw": await adRaw(arg ?? "", process.argv[4] ?? "", process.argv[5] ?? ""); break;
   case "pd": await pdPages((arg ?? "").split(",").filter(Boolean)); break;
   case "pd-search": await pdSearch(arg ?? ""); break;
   case "pd-list": await pdList(arg ?? "PAGE", Number(process.argv[4] ?? 40)); break;

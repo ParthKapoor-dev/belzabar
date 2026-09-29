@@ -1,0 +1,39 @@
+[
+  {
+    "file": "auth-db_service.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:28:42.365Z",
+    "bytes": 17975,
+    "source": {},
+    "endpoint": "/rest/api/automation-systems/db_service/auth",
+    "status": 200,
+    "note": "slimmed: id, nickname, authUsageType, field names + securedField (no values)"
+  },
+  {
+    "file": "db_service__select.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:28:39.044Z",
+    "bytes": 35411,
+    "source": {},
+    "endpoint": "/rest/api/automation-systems/db_service/automation-apis/select",
+    "status": 200
+  },
+  {
+    "file": "Example_services__array_output.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:28:41.130Z",
+    "bytes": 3714,
+    "source": {},
+    "endpoint": "/rest/api/automation-systems/Example%20services/automation-apis/array%20output",
+    "status": 200
+  },
+  {
+    "file": "Helpers.JSON__fetchKeyValue.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:28:40.070Z",
+    "bytes": 4612,
+    "source": {},
+    "endpoint": "/rest/api/automation-systems/Helpers.JSON/automation-apis/fetchKeyValue",
+    "status": 200
+  }
+]

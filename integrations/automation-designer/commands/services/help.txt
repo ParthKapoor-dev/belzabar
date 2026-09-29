@@ -2,14 +2,28 @@ Usage: belz ad services [flags]
 
 List all services from /rest/api/automation/services (the core service catalog
 used to build step identifiers). Both internal and external services are
-included by default.
+included by default. Rows are compact: label / aliases only when they differ
+from the name, description cut at 100 chars, empty fields omitted.
 
 Flags:
-  --internal          Only show services with internalService=true
-  --search <q>        Case-insensitive substring match on name / label / alias
-  --v2                Accepted for consistency; this command is V1-only (notice printed).
-  --llm               Emit a JSON envelope with {total, services[]}
+  --search <q>          Rank services for a free-text query (fuzzy: exact >
+                        prefix > word start > substring > typo) over name,
+                        label, aliases and description; adds `score`. Returns
+                        the top 20 unless --limit is given.
+  --internal            Only show services with internalService=true
+  --limit <N>           Return at most N rows.
+  --fields <a,b|all>    Pick row fields: name,id,uuid,systemUuid,label,type,
+                        internalService,aliasNames,description,score; `all` =
+                        full rows (untrimmed).
+  --v2                  Accepted for consistency; this command is V1-only (notice printed).
+  --help, -h            Show this help message.
 
-Example:
-  belz ad services --search redis
-  belz ad services --internal --llm
+Global Flags:
+  --env <name>          Set active environment. (default: nsm-dev)
+                        Available: nsm-dev | nsm-qa | nsm-uat
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz ad services --search "json path" --llm
+  belz ad services --internal --fields name,uuid
+  belz ad services --search redis --limit 3

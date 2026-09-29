@@ -1,9 +1,12 @@
 import { CliError, defineSubcommands, lifecycle, ok, openUrlInBrowser, type CommandModule, type FlagsSpec } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { abbreviate, parseFieldList, projectRow, type FieldSelection } from "../../lib/compact";
 import { spawn } from "node:child_process";
 import {
   type MethodFinderIndex,
   METHOD_FINDER_CACHE_TTL_MS,
+  METHOD_FINDER_SCHEMA,
+  describeSearch,
   listMethodFinderCategories,
   loadOrBuildMethodFinderIndex,
   searchMethodIndex,
@@ -13,57 +16,56 @@ import {
 } from "../../lib/method-finder";
 
 interface FindArgs {
-  mode: "browse" | "search" | "pick";
+  mode: "browse" | "search" | "pick" | "describe";
   query?: string;
   refresh: boolean;
   limit: number;
   open: boolean;
   raw: boolean;
+  /** `--category <prefix>`: only categories whose name starts with it. */
+  category?: string;
+  fields?: FieldSelection;
 }
 
+type Row = Record<string, unknown>;
+
+/** Index freshness (7.9: compact — no ttl/expiry arithmetic for the caller to do). */
 interface CacheMeta {
   source: "cache" | "fresh";
   generatedAt: number;
-  ageMs: number;
-  ttlMs: number;
-  expiresAt: number;
+  ageMinutes: number;
   categoryCount: number;
   methodCount: number;
-  skippedCategoryCount: number;
+  skippedCategoryCount?: number;
 }
 
 interface FindBrowseData {
   mode: "browse";
-  request: {
-    query: null;
-    refresh: boolean;
-    limit: number;
-  };
   cache: CacheMeta;
-  categories: MethodFinderCategory[];
+  categories: Row[];
   raw?: RawIndexView;
 }
 
 interface FindSearchData {
   mode: "search";
-  request: {
-    query: string;
-    refresh: boolean;
-    limit: number;
-  };
+  query: string;
   cache: CacheMeta;
   totalMatches: number;
-  matches: MethodFinderMatch[];
+  matches: Row[];
   raw?: RawIndexView;
+}
+
+interface FindDescribeData {
+  mode: "describe";
+  query: string;
+  cache: CacheMeta;
+  totalMatches: number;
+  matches: Row[];
 }
 
 interface FindPickData {
   mode: "pick";
-  request: {
-    query: string | null;
-    refresh: boolean;
-    limit: number;
-  };
+  query?: string;
   cache: CacheMeta;
   status: "selected" | "cancelled";
   selected: MethodFinderMethod | null;
@@ -71,7 +73,58 @@ interface FindPickData {
   raw?: RawIndexView;
 }
 
-type FindData = FindBrowseData | FindSearchData | FindPickData;
+type FindData = FindBrowseData | FindSearchData | FindDescribeData | FindPickData;
+
+// ── Compact rows (7.9) ──────────────────────────────────────────────────────
+// Default rows carry what picks the next command; `--fields a,b` picks
+// fields, `--fields all` returns the full index records. Empty values are omitted.
+
+export const METHOD_FIELDS = [
+  "type", "name", "alias", "category", "state", "uuid", "referenceId", "apiUuid", "summary", "description",
+  "version", "categoryUuid", "createdOn", "updatedOn", "url", "score", "matched",
+] as const;
+const DEFAULT_METHOD_FIELDS = ["type", "name", "alias", "category", "state", "uuid", "referenceId", "apiUuid", "summary", "score"];
+const DEFAULT_DESCRIBE_FIELDS = ["name", "category", "state", "uuid", "referenceId", "apiUuid", "summary", "matched", "score"];
+export const CATEGORY_FIELDS = ["type", "name", "id", "uuid", "systemUuid", "label", "aliases", "methods", "score"] as const;
+const DEFAULT_CATEGORY_FIELDS = ["type", "name", "id", "uuid", "methods", "score"];
+
+function methodRow(m: MethodFinderMethod & { score?: number; matched?: string[] }, sel: FieldSelection, defaults: string[], typed: boolean): Row {
+  const full: Row = {
+    ...(typed ? { type: "method" } : {}),
+    name: m.methodName,
+    alias: m.aliasName && m.aliasName !== m.methodName ? m.aliasName : undefined,
+    category: m.categoryName,
+    state: m.state,
+    uuid: m.uuid,
+    referenceId: m.referenceId,
+    apiUuid: m.automationApiUuid,
+    summary: sel.mode === "default" && m.summary ? abbreviate(m.summary, 120) : m.summary,
+    description: m.description,
+    version: m.version,
+    categoryUuid: m.categoryUuid,
+    createdOn: m.createdOn,
+    updatedOn: m.updatedOn,
+    url: m.url,
+    score: m.score,
+    matched: m.matched,
+  };
+  return projectRow(full, sel, defaults);
+}
+
+function categoryRow(c: MethodFinderCategory & { score?: number }, sel: FieldSelection, typed: boolean): Row {
+  const full: Row = {
+    ...(typed ? { type: "category" } : {}),
+    name: c.name,
+    id: c.chainCategoryId,
+    uuid: c.uuid,
+    systemUuid: c.systemUuid,
+    label: c.label !== c.name ? c.label : undefined,
+    aliases: c.aliasNames.filter((a) => a !== c.name),
+    methods: c.methodCount,
+    score: c.score,
+  };
+  return projectRow(full, sel, DEFAULT_CATEGORY_FIELDS);
+}
 
 /** `--raw` payload: the index capped at `--limit` methods and categories (F29: was 1.6 MB). */
 interface RawIndexView {
@@ -90,7 +143,7 @@ export function rawIndex(index: MethodFinderIndex, limit: number): RawIndexView 
 }
 
 const SUBCOMMANDS = new Set(["list", "pick", "search"]);
-const VALUE_FLAGS = new Set(["--limit", "--env"]);
+const VALUE_FLAGS = new Set(["--limit", "--env", "--category", "--fields"]);
 
 /**
  * `ad find --refresh list` worked before defineSubcommands (s3-review): if
@@ -117,6 +170,9 @@ const FIND_FLAGS = {
   raw: { type: "boolean" },
   open: { type: "boolean" },
   limit: { type: "number", integer: true, min: 1, max: 200, default: 20 },
+  describe: { type: "boolean" },
+  category: { type: "string" },
+  fields: { type: "string" },
 } as const satisfies FlagsSpec;
 
 export const args = defineSubcommands(
@@ -132,14 +188,20 @@ const command: CommandModule<FindArgs, FindData> = {
   schema: "ad.find",
   parseArgs(argv) {
     const parsed = args.parse(subcommandFirst(argv));
-    const { refresh, raw, open, limit } = parsed.flags;
+    const { refresh, raw, open, limit, describe, category } = parsed.flags;
     resolveAdCommon(parsed.flags, "list", "find");
     const query = parsed.subcommand === "list" ? "" : parsed.positionals.query.join(" ").trim();
+    if (describe && (parsed.subcommand !== "search" || !query)) {
+      throw new CliError("--describe needs search words: `belz ad find --describe <text>`.", { code: "MISSING_QUERY" });
+    }
     const mode: FindArgs["mode"] =
-      parsed.subcommand === "pick" ? "pick" : query ? "search" : "browse";
-    return { mode, query: query || undefined, refresh, limit, open, raw };
+      parsed.subcommand === "pick" ? "pick" : describe ? "describe" : query ? "search" : "browse";
+    const known: readonly string[] = mode === "browse" ? CATEGORY_FIELDS : [...new Set<string>([...METHOD_FIELDS, ...CATEGORY_FIELDS])];
+    const fields = parseFieldList(parsed.flags.fields, known);
+    return { mode, query: query || undefined, refresh, limit, open, raw, category: category?.trim() || undefined, fields };
   },
-  async execute({ mode, query, refresh, limit, open, raw }, context) {
+  async execute({ mode, query, refresh, limit, open, raw, category, fields }, context) {
+    const sel: FieldSelection = fields ?? { mode: "default" };
     if (open && mode !== "pick") {
       throw new CliError("--open is only supported with `belz ad find pick`.", {
         code: "OPEN_REQUIRES_PICK",
@@ -157,6 +219,8 @@ const command: CommandModule<FindArgs, FindData> = {
     // on stderr (human mode; lifecycle.notice is silent with --llm).
     const { index, source } = await loadOrBuildMethodFinderIndex({
       refresh,
+      // --describe needs summaries/descriptions (index schema 2); older caches are rebuilt.
+      minSchema: mode === "describe" ? METHOD_FINDER_SCHEMA : 1,
       onProgress: ({ done, total, category }) => {
         if (done === 1 || done === total || done % 10 === 0) {
           lifecycle.notice(`Indexing AD methods: ${done}/${total} categories (${category})`);
@@ -172,30 +236,25 @@ const command: CommandModule<FindArgs, FindData> = {
     const cacheMeta: CacheMeta = {
       source,
       generatedAt: index.generatedAt,
-      ageMs,
-      ttlMs: METHOD_FINDER_CACHE_TTL_MS,
-      expiresAt: index.generatedAt + METHOD_FINDER_CACHE_TTL_MS,
+      ageMinutes: Math.round(ageMs / 60000),
       categoryCount: index.categoryCount,
       methodCount: index.methodCount,
-      skippedCategoryCount: index.skippedCategories.length,
     };
-
-    if (cacheMeta.skippedCategoryCount > 0) {
+    if (index.skippedCategories.length > 0) {
+      cacheMeta.skippedCategoryCount = index.skippedCategories.length;
       context.warn(
-        `${cacheMeta.skippedCategoryCount} categories could not be fully indexed due to API access or fetch errors.`
+        `${index.skippedCategories.length} categories could not be fully indexed due to API access or fetch errors.`
       );
     }
+    if (ageMs > METHOD_FINDER_CACHE_TTL_MS) context.warn("Method index is older than its TTL — use --refresh.");
+
+    const inCategory = (name: string) => !category || name.toLowerCase().startsWith(category.toLowerCase());
 
     if (mode === "browse") {
-      const categories = listMethodFinderCategories(index);
+      const categories = listMethodFinderCategories(index).filter((c) => inCategory(c.name)).map((c) => categoryRow(c, sel, false));
 
       const data: FindBrowseData = {
         mode: "browse",
-        request: {
-          query: null,
-          refresh,
-          limit,
-        },
         cache: cacheMeta,
         categories,
       };
@@ -214,14 +273,10 @@ const command: CommandModule<FindArgs, FindData> = {
         });
       }
 
-      const selected = await runFzfPicker(index.methods, query);
+      const selected = await runFzfPicker(index.methods.filter((m) => inCategory(m.categoryName)), query);
       const data: FindPickData = {
         mode: "pick",
-        request: {
-          query: query ?? null,
-          refresh,
-          limit,
-        },
+        query,
         cache: cacheMeta,
         status: selected ? "selected" : "cancelled",
         selected,
@@ -241,21 +296,33 @@ const command: CommandModule<FindArgs, FindData> = {
     }
 
     const searchQuery = query ?? "";
-    const matches = searchMethodIndex(index, searchQuery, limit);
+    if (mode === "describe") {
+      const found = describeSearch(index, searchQuery, limit, { category });
+      if (found.length === 0) context.warn("No method summary/description matches found.");
+      const data: FindDescribeData = {
+        mode: "describe",
+        query: searchQuery,
+        cache: cacheMeta,
+        totalMatches: found.length,
+        matches: found.map((m) => methodRow(m, sel, DEFAULT_DESCRIBE_FIELDS, false)),
+      };
+      return ok(data);
+    }
+
+    const scoped = category
+      ? { ...index, methods: index.methods.filter((m) => inCategory(m.categoryName)), categories: index.categories.filter((c) => inCategory(c.name)) }
+      : index;
+    const matches: MethodFinderMatch[] = searchMethodIndex(scoped, searchQuery, limit);
     if (matches.length === 0) {
       context.warn("No method or category matches found.");
     }
 
     const data: FindSearchData = {
       mode: "search",
-      request: {
-        query: searchQuery,
-        refresh,
-        limit,
-      },
+      query: searchQuery,
       cache: cacheMeta,
       totalMatches: matches.length,
-      matches,
+      matches: matches.map((m) => (m.type === "method" ? methodRow(m, sel, DEFAULT_METHOD_FIELDS, true) : categoryRow(m, sel, true))),
     };
 
     if (raw) {
@@ -270,32 +337,13 @@ const command: CommandModule<FindArgs, FindData> = {
     const data = envelope.data as FindData;
 
     ui.success(
-      `Indexed ${data.cache.methodCount} methods across ${data.cache.categoryCount} categories (${data.cache.source}).`
+      `Indexed ${data.cache.methodCount} methods across ${data.cache.categoryCount} categories (${data.cache.source}, ${data.cache.ageMinutes} min old).`
     );
 
-    if (data.cache.skippedCategoryCount > 0) {
+    if (data.cache.skippedCategoryCount) {
       ui.warn(
         `${data.cache.skippedCategoryCount} categories could not be fully indexed due to API access or fetch errors.`
       );
-    }
-
-    if (data.mode === "browse") {
-      if (data.categories.length === 0) {
-        ui.info("No categories were found.");
-        return;
-      }
-
-      ui.table(
-        ["#", "Category", "ID", "Category UUID", "Methods"],
-        data.categories.map((category, index) => [
-          index + 1,
-          category.name,
-          category.chainCategoryId ?? "",
-          category.uuid,
-          category.methodCount,
-        ])
-      );
-      return;
     }
 
     if (data.mode === "pick") {
@@ -323,45 +371,16 @@ const command: CommandModule<FindArgs, FindData> = {
       return;
     }
 
-    if (data.matches.length === 0) {
-      ui.info(`No matches found for '${data.request.query}'.`);
+    const rows = data.mode === "browse" ? data.categories : data.matches;
+    if (rows.length === 0) {
+      ui.info(data.mode === "browse" ? "No categories were found." : `No matches found for '${data.query}'.`);
       return;
     }
-
-    ui.table(
-      ["#", "Type", "Name", "Alias", "UUID", "Ref ID", "State", "Category", "Methods", "Score"],
-      data.matches.map((match, index) => {
-        if (match.type === "method") {
-          return [
-            index + 1,
-            "method",
-            match.methodName,
-            match.aliasName,
-            match.uuid,
-            match.referenceId,
-            match.state,
-            match.categoryName,
-            "",
-            match.score,
-          ];
-        }
-
-        return [
-          index + 1,
-          "category",
-          match.name,
-          match.aliasNames.join(", "),
-          match.uuid,
-          "",
-          "",
-          match.name,
-          match.methodCount,
-          match.score,
-        ];
-      })
-    );
-
-    ui.text("Tip: run 'belz ad show <uuid>' to inspect a matched method.");
+    const columns: string[] = [];
+    for (const r of rows) for (const k of Object.keys(r)) if (!columns.includes(k)) columns.push(k);
+    const cell = (v: unknown) => (v === undefined ? "" : Array.isArray(v) ? v.join(", ") : typeof v === "object" && v !== null ? JSON.stringify(v) : String(v));
+    ui.table(["#", ...columns], rows.map((r, i) => [i + 1, ...columns.map((c) => cell(r[c]))]));
+    if (data.mode !== "browse") ui.text("Tip: run 'belz ad show <uuid> --compact' to inspect a matched method.");
   },
 };
 

@@ -1,0 +1,11 @@
+[
+  {
+    "file": "methods-example-services.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:28:44.115Z",
+    "bytes": 49899,
+    "source": {},
+    "endpoint": "/rest/api/automation/methods?categoryUuid=4423ad307059bc3fc6859804c9bd12e0&limit=100&offset=0",
+    "status": 200
+  }
+]

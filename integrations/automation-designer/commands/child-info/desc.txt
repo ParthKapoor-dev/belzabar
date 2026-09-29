@@ -1,1 +1,3 @@
-belz ad child-info <category> <method-name>  :->  Resolve a child method's inputs/outputs by category and method name
+belz ad child-info <category> <method-name>  :->  Resolve a child method's inputs/outputs by category and method name (raw contract)
+belz ad child-info <category> <method-name> --shape  :->  Compact contract: input key paths/types/enums/defaults, output keys, API ids, auth accounts (id nickname scope)
+belz ad child-info <category> <method-name> --shape --all  :->  Same, including inputs/outputs hidden in the UI

@@ -1,10 +1,13 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { apiShape, fetchAccountLines, type ApiShape } from "../../lib/api-shape";
 
 interface ChildInfoArgs {
   category: string;
   methodName: string;
+  shape: boolean;
+  all: boolean;
 }
 
 interface ChildInfoData {
@@ -13,23 +16,32 @@ interface ChildInfoData {
   body: unknown;
 }
 
+type ChildInfoPayload = ChildInfoData | ({ view: "shape" } & ApiShape);
+
 export const args = defineArgs({
   command: "belz ad child-info",
   positionals: [
     { name: "category", required: true, missingCode: "MISSING_CATEGORY", missingMessage: "Missing <category> argument." },
     { name: "method-name", required: true, missingCode: "MISSING_METHOD_NAME", missingMessage: "Missing <method-name> argument." },
   ],
-  flags: { ...AD_COMMON_FLAGS },
+  flags: {
+    ...AD_COMMON_FLAGS,
+    shape: { type: "boolean" },
+    all: { type: "boolean" },
+  },
 });
 
-const command: CommandModule<ChildInfoArgs, ChildInfoData> = {
+const command: CommandModule<ChildInfoArgs, ChildInfoPayload> = {
   schema: "ad.child-info",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "childInfo", "child-info");
-    return { category: positionals.category, methodName: positionals.methodName };
+    if (flags.all && !flags.shape) {
+      throw new CliError("--all only applies with --shape.", { code: "INVALID_ARGUMENT" });
+    }
+    return { category: positionals.category, methodName: positionals.methodName, shape: flags.shape, all: flags.all };
   },
-  async execute({ category, methodName }) {
+  async execute({ category, methodName, shape, all }) {
     const body = await adApi.fetchChildMethodInfo(category, methodName);
     // F23: the server answers an unknown (or draft-only) method with 200 + null.
     if (body == null || (typeof body === "object" && !Array.isArray(body) && Object.keys(body).length === 0)) {
@@ -38,11 +50,33 @@ const command: CommandModule<ChildInfoArgs, ChildInfoData> = {
         { code: "METHOD_NOT_FOUND", details: { category, methodName } },
       );
     }
-    return ok<ChildInfoData>({ category, methodName, body });
+    if (!shape) return ok<ChildInfoPayload>({ category, methodName, body });
+
+    // 7.5: only what wiring a step needs; accounts as id + nickname (never values).
+    const view = apiShape(body, category, methodName, { all });
+    const accounts = await fetchAccountLines(category).catch(() => []);
+    if (accounts.length) view.accounts = accounts;
+    return ok<ChildInfoPayload>({ view: "shape", ...view });
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
-    const data = envelope.data as ChildInfoData;
+    const data = envelope.data as ChildInfoPayload;
+    if ("view" in data) {
+      ui.section(`${data.service}/${data.method}${data.state ? ` [${data.state}]` : ""}`);
+      if (data.apiUuid) ui.kv("automationAPIId", data.apiUuid);
+      if (data.apiId !== undefined) ui.kv("API id", data.apiId);
+      if (data.methodUuid) ui.kv("Method uuid", data.methodUuid);
+      ui.section("Inputs (V2 step keys)");
+      ui.text(data.inputs.length ? data.inputs.map((l) => `  ${l}`).join("\n") : "  (none)");
+      if (data.hiddenInputs) ui.text(`  (+${data.hiddenInputs} hidden inputs — --all to list)`);
+      ui.section("Outputs");
+      ui.text(data.outputs.length ? data.outputs.map((l) => `  ${l}`).join("\n") : "  (none)");
+      if (data.accounts) {
+        ui.section("Accounts");
+        ui.text(data.accounts.map((l) => `  ${l}`).join("\n"));
+      }
+      return;
+    }
     ui.section(`${data.category}.${data.methodName}`);
     ui.object(data.body);
   },

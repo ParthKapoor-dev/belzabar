@@ -1,0 +1,129 @@
+{
+  "uuid": "4bd3eedb07e1db50ff59a4709366d025",
+  "automationApiId": "4158f56973f8f6523c49b6b7b4983d75    ",
+  "name": "Blank method",
+  "description": "Blank method",
+  "metadata": {
+    "version": {
+      "uuid": "4bd3eedb07e1db50ff59a4709366d025",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 57,
+      "uuid": "4423ad307059bc3fc6859804c9bd12e0",
+      "name": "Example services",
+      "description": "Example services",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1669618348710,
+      "lastPublishedAt": 1669618348692,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "PUBLISHED",
+    "referenceId": "4551d3fb248045a5e20ab399a6d0a606"
+  },
+  "inputs": [
+    {
+      "uuid": "4dd34ecaa39d9f94cc1da9d548e462a0    ",
+      "key": "id",
+      "name": "id",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4332fd1d1c89ee94fd47a43e2a08464d    ",
+      "referenceUuid": "47359cfdbb2e050fc049af394328683a    ",
+      "fieldCode": "jsonList",
+      "name": "jsonList",
+      "type": "JSON"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "48bccbb4c5633d3ac38d9a87da50dbf3    ",
+      "automationAPIId": "4f26b4a501b5f3270461a2b25475fc5d    ",
+      "serviceName": "Schools",
+      "methodName": "rule.getLevelsList",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "40f5af40beb16d14875993e8d42b84d6    ",
+          "value": "c6060a41-d22b-4f38-b728-e6f07989fb06",
+          "key": "ruleGroupId",
+          "name": "ruleGroupId",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "47359cfdbb2e050fc049af394328683a    ",
+          "key": "jsonList",
+          "fieldCode": "jsonList",
+          "name": "jsonList"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "PUBLISHED"
+}

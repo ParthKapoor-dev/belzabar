@@ -1,0 +1,314 @@
+[
+ {
+  "id": 2,
+  "nickname": "BCPS-RDS",
+  "authUsageType": "ALL",
+  "fields": [
+   {
+    "fieldName": "nickname",
+    "securedField": false
+   },
+   {
+    "fieldName": "username",
+    "securedField": true
+   },
+   {
+    "fieldName": "password",
+    "securedField": true
+   },
+   {
+    "fieldName": "source",
+    "securedField": false
+   },
+   {
+    "fieldName": "port",
+    "securedField": false
+   },
+   {
+    "fieldName": "refreshToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "accessToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "host",
+    "securedField": false
+   }
+  ]
+ },
+ {
+  "id": 5,
+  "nickname": "BCPS-Test-RDS",
+  "authUsageType": "ME",
+  "fields": [
+   {
+    "fieldName": "nickname",
+    "securedField": false
+   },
+   {
+    "fieldName": "username",
+    "securedField": true
+   },
+   {
+    "fieldName": "password",
+    "securedField": true
+   },
+   {
+    "fieldName": "source",
+    "securedField": false
+   },
+   {
+    "fieldName": "port",
+    "securedField": false
+   },
+   {
+    "fieldName": "refreshToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "accessToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "host",
+    "securedField": false
+   }
+  ]
+ },
+ {
+  "id": 3,
+  "nickname": "BCPS-Local-1",
+  "authUsageType": "ALL",
+  "fields": [
+   {
+    "fieldName": "nickname",
+    "securedField": false
+   },
+   {
+    "fieldName": "username",
+    "securedField": true
+   },
+   {
+    "fieldName": "password",
+    "securedField": true
+   },
+   {
+    "fieldName": "source",
+    "securedField": false
+   },
+   {
+    "fieldName": "port",
+    "securedField": false
+   },
+   {
+    "fieldName": "refreshToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "accessToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "host",
+    "securedField": false
+   }
+  ]
+ },
+ {
+  "id": 44,
+  "nickname": "stagingDB",
+  "authUsageType": "ME",
+  "fields": [
+   {
+    "fieldName": "nickname",
+    "securedField": false
+   },
+   {
+    "fieldName": "username",
+    "securedField": true
+   },
+   {
+    "fieldName": "password",
+    "securedField": true
+   },
+   {
+    "fieldName": "source",
+    "securedField": false
+   },
+   {
+    "fieldName": "port",
+    "securedField": false
+   },
+   {
+    "fieldName": "refreshToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "accessToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "host",
+    "securedField": false
+   }
+  ]
+ },
+ {
+  "id": 47,
+  "nickname": "sems_ee4_psql",
+  "authUsageType": "ME",
+  "fields": [
+   {
+    "fieldName": "nickname",
+    "securedField": false
+   },
+   {
+    "fieldName": "username",
+    "securedField": true
+   },
+   {
+    "fieldName": "password",
+    "securedField": true
+   },
+   {
+    "fieldName": "source",
+    "securedField": false
+   },
+   {
+    "fieldName": "port",
+    "securedField": false
+   },
+   {
+    "fieldName": "refreshToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "accessToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "host",
+    "securedField": false
+   }
+  ]
+ },
+ {
+  "id": 50,
+  "nickname": "BCPS_OLD_RDS",
+  "authUsageType": "ME",
+  "fields": [
+   {
+    "fieldName": "nickname",
+    "securedField": false
+   },
+   {
+    "fieldName": "username",
+    "securedField": true
+   },
+   {
+    "fieldName": "password",
+    "securedField": true
+   },
+   {
+    "fieldName": "source",
+    "securedField": false
+   },
+   {
+    "fieldName": "port",
+    "securedField": false
+   },
+   {
+    "fieldName": "refreshToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "accessToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "host",
+    "securedField": false
+   }
+  ]
+ },
+ {
+  "id": 149,
+  "nickname": "BCPS-RDS-READ-DB",
+  "authUsageType": "ALL",
+  "fields": [
+   {
+    "fieldName": "nickname",
+    "securedField": false
+   },
+   {
+    "fieldName": "username",
+    "securedField": true
+   },
+   {
+    "fieldName": "password",
+    "securedField": true
+   },
+   {
+    "fieldName": "source",
+    "securedField": false
+   },
+   {
+    "fieldName": "port",
+    "securedField": false
+   },
+   {
+    "fieldName": "refreshToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "accessToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "host",
+    "securedField": false
+   }
+  ]
+ },
+ {
+  "id": 215,
+  "nickname": "testing_db",
+  "authUsageType": "ME",
+  "fields": [
+   {
+    "fieldName": "nickname",
+    "securedField": false
+   },
+   {
+    "fieldName": "username",
+    "securedField": true
+   },
+   {
+    "fieldName": "password",
+    "securedField": true
+   },
+   {
+    "fieldName": "source",
+    "securedField": false
+   },
+   {
+    "fieldName": "port",
+    "securedField": false
+   },
+   {
+    "fieldName": "refreshToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "accessToken",
+    "securedField": false
+   },
+   {
+    "fieldName": "host",
+    "securedField": false
+   }
+  ]
+ }
+]

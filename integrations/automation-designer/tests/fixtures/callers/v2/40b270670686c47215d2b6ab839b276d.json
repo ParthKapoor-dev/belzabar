@@ -1,0 +1,116 @@
+{
+  "uuid": "40b270670686c47215d2b6ab839b276d",
+  "automationApiId": "4da8e43e2c058c5447509ac3abbc3cff    ",
+  "name": "chaining method",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "40b270670686c47215d2b6ab839b276d",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 57,
+      "uuid": "4423ad307059bc3fc6859804c9bd12e0",
+      "name": "Example services",
+      "description": "Example services",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1671438233405,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "49180b22e191bf6231ce9701ce40d358    ",
+      "automationAPIId": "45fe7e3d5d754cd67926a141c4faafe0    ",
+      "serviceName": "Example services",
+      "methodName": "array output",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4aaea9c7657db555d44aba49cb3b24bd    ",
+          "key": "array",
+          "name": "array",
+          "type": "ARRAY",
+          "displayWidgetSuggestion": "ARRAY",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "49f21791c50f21893ceb95abb093e151    ",
+          "key": "out3.3",
+          "fieldCode": "out",
+          "name": "out"
+        },
+        {
+          "uuid": "4f47913818d03c769789ae6100039f66    ",
+          "key": "out",
+          "fieldCode": "out3.1",
+          "name": "out3.1"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

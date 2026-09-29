@@ -1,0 +1,107 @@
+{
+  "uuid": "45cbe76761a83a2dd62ba3e598bd28c7",
+  "automationApiId": "4a1e137ce53640005d51abea74ede326    ",
+  "name": "chainParentMethod",
+  "description": "chainParentMethod",
+  "metadata": {
+    "version": {
+      "uuid": "45cbe76761a83a2dd62ba3e598bd28c7",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 57,
+      "uuid": "4423ad307059bc3fc6859804c9bd12e0",
+      "name": "Example services",
+      "description": "Example services",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1673423468808,
+      "lastPublishedAt": null,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": null,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": null
+  },
+  "inputs": [],
+  "outputs": [
+    {
+      "uuid": "437d5690dca9e2c39257bada75c7f110    ",
+      "referenceUuid": "48851781cb3f8b2c398986d7c8a2c16e    ",
+      "fieldCode": "msg",
+      "name": "msg",
+      "type": "STRING"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "4991b1d889dd4d6e9e97be9a60f02303    ",
+      "automationAPIId": "4854081654caf5df96fbae39d2ab2138    ",
+      "serviceName": "Example services",
+      "methodName": "testChainFailure",
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "uuid": "48851781cb3f8b2c398986d7c8a2c16e    ",
+          "key": "message",
+          "fieldCode": "msg",
+          "name": "msg"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

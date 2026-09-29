@@ -1,0 +1,108 @@
+{
+  "id": 2598,
+  "uuid": "45fe7e3d5d754cd67926a141c4faafe0    ",
+  "uri": "array output",
+  "httpMethod": "POST",
+  "label": "array output",
+  "originalLabel": "array output",
+  "active": true,
+  "automationSystem": {
+    "id": 74,
+    "active": true,
+    "authOptional": false,
+    "externalIntegration": false,
+    "accessMode": "PUBLIC",
+    "type": "SYSTEM_GENERATED",
+    "aliasName": [],
+    "permissions": [],
+    "remote": false,
+    "permissionSet": [],
+    "isAuthenticationStructureInherited": false
+  },
+  "automationUserInputs": [
+    {
+      "id": 8506,
+      "uuid": "4aaea9c7657db555d44aba49cb3b24bd    ",
+      "orderIndex": 0,
+      "label": "array",
+      "produces": "array",
+      "automationUserInputSources": [
+        {
+          "id": 10034,
+          "uri": "INPUTS_STEP_DATA_ARRAY",
+          "valueParam": "id",
+          "labelParam": "name",
+          "automationSourceInputs": [],
+          "httpMethod": "LOCAL",
+          "data": "\"[{ \\\"name\\\" : \\\"This exactly\\\", \\\"id\\\" : 1,  \\\"moduleProperty\\\" : \\\"\\\" }, { \\\"name\\\" : \\\"Step response\\\", \\\"id\\\" : 2, \\\"moduleProperty\\\" : \\\"answer\\\" }, { \\\"name\\\" : \\\"Response comments\\\",  \\\"id\\\" : 3 ,  \\\"moduleProperty\\\" : \\\"answerdescription\\\" }, { \\\"name\\\" : \\\"Activity title\\\", \\\"id\\\" : 4, \\\"moduleProperty\\\" : \\\"activitytitle\\\" }, { \\\"name\\\" : \\\"Activity description\\\", \\\"id\\\" : 5,  \\\"moduleProperty\\\" : \\\"activitydescription\\\" }, { \\\"name\\\" : \\\"Activity status\\\", \\\"id\\\" : 6, \\\"moduleProperty\\\" : \\\"activitystatus\\\" }, { \\\"name\\\" : \\\"Activity duedate\\\", \\\"id\\\" : 7, \\\"moduleProperty\\\" : \\\"activityduedate\\\"  }]\"",
+          "responseType": "JSON_ARRAY"
+        }
+      ],
+      "automationUserInputs": [
+        {
+          "id": 8516,
+          "uuid": "4bb8b2bd70caa721f5cd9dbb71bee035    ",
+          "orderIndex": 0,
+          "label": "aElement",
+          "produces": "array.aElement",
+          "automationUserInputSources": [],
+          "automationUserInputs": [],
+          "optional": true,
+          "showOnUi": true,
+          "showOnSDUi": true,
+          "disableStringReplacement": false,
+          "hideInput": false,
+          "encodedBase64": false,
+          "sensitive": false,
+          "encodingType": "NONE",
+          "parentId": 8506,
+          "sourceInput": false,
+          "dataType": "STRING",
+          "uiRepresentation": "CUSTOM"
+        }
+      ],
+      "optional": true,
+      "showOnUi": true,
+      "showOnSDUi": true,
+      "defaultUserInputvalue": "[1,2,3]",
+      "disableStringReplacement": false,
+      "hideInput": false,
+      "encodedBase64": false,
+      "sensitive": false,
+      "encodingType": "NONE",
+      "sourceInput": false,
+      "dataType": "ARRAY",
+      "uiRepresentation": "ARRAY"
+    }
+  ],
+  "automationAPIOutputs": [
+    {
+      "id": 4426,
+      "uuid": "4f47913818d03c769789ae6100039f66    ",
+      "optional": true,
+      "consumes": "out",
+      "displayName": "out",
+      "showOnUi": true,
+      "active": true,
+      "orderIndex": 999,
+      "sensitive": false,
+      "dataType": "ARRAY"
+    }
+  ],
+  "serviceChainId": 2524,
+  "serviceChainUID": "48e5d8bec3f5d7b5d689914d3b36aed8",
+  "methodUUID": "48e5d8bec3f5d7b5d689914d3b36aed8",
+  "hideOnUi": false,
+  "referenceId": "465edb927849071cccf79e64de619d0f    ",
+  "state": "PUBLISHED",
+  "lastPublishedAt": 1671445313347,
+  "lastPublishedBy": 2,
+  "methodType": "SYSTEM_GENERATED",
+  "updatedBy": 2,
+  "updatedOn": 1671445313441,
+  "aliasName": "array output",
+  "methodDeprecated": false,
+  "accountRequired": false,
+  "streamCapable": false,
+  "automationState": "PUBLISHED"
+}
