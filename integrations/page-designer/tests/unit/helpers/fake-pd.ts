@@ -1,9 +1,12 @@
 // An in-memory PD server behind fakeFetch, for command-level tests of the
 // write paths (save / publish / history / lock). Pages are stored as raw wire
-// bodies; PUT applies partial operations the way the server does (replayed
-// with the same path semantics) or replaces the configuration.
+// bodies; PUT replaces the configuration, or applies partial operations with
+// the fake's OWN key parser (`applyWireOps`), written from docs/api-notes.md
+// and deliberately independent of belz's serializer (OTH-R1: replaying with
+// belz's own `replayOperations` made the partial-save tests circular). It only
+// accepts the documented key shape — dot-joined identifiers with `[n]`
+// indices — and answers 400 for anything else.
 import { fakeFetch, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
-import { replayOperations } from "../../../lib/serialize/index";
 import type { RawConfiguration, RawPageResponse } from "../../../lib/types/wire";
 
 export const ENV = "t-pd";
@@ -49,6 +52,39 @@ export function page(
 
 export function innerOf(p: RawPageResponse): RawConfiguration {
   return JSON.parse(p.configuration ?? "{}") as RawConfiguration;
+}
+
+interface WireOp {
+  key: string;
+  value: string;
+  operation: string;
+  dataType: string;
+}
+
+/** The documented partial-update semantics (api-notes), independent of lib/serialize. */
+export function applyWireOps(inner: unknown, ops: WireOp[]): unknown | null {
+  const root = JSON.parse(JSON.stringify(inner ?? {})) as Record<string, unknown>;
+  for (const op of ops) {
+    const segs: Array<string | number> = [];
+    for (const part of op.key.split(".")) {
+      const m = /^([A-Za-z_$][A-Za-z0-9_$]*)((?:\[\d+\])*)$/.exec(part);
+      if (!m) return null; // undocumented key shape
+      segs.push(m[1]!);
+      for (const i of m[2]!.matchAll(/\[(\d+)\]/g)) segs.push(Number(i[1]));
+    }
+    let cur: unknown = root;
+    for (const seg of segs.slice(0, -1)) {
+      if (!cur || typeof cur !== "object") return null;
+      cur = (cur as Record<string | number, unknown>)[seg];
+    }
+    if (!cur || typeof cur !== "object") return null;
+    let value: unknown = op.value;
+    if (op.dataType === "NUMBER") value = Number(op.value);
+    else if (op.dataType === "BOOLEAN") value = op.value === "true";
+    else if (op.dataType === "ARRAY" || op.dataType === "OBJECT") value = JSON.parse(op.value);
+    (cur as Record<string | number, unknown>)[segs[segs.length - 1]!] = value;
+  }
+  return root;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -121,7 +157,7 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
         const body = req.json();
         let config: string;
         if (body.partialUpdate) {
-          const next = replayOperations(innerOf(p), body.pageElementOperations);
+          const next = applyWireOps(innerOf(p), body.pageElementOperations);
           if (!next) return json({ message: "bad key" }, 400);
           config = JSON.stringify(next);
         } else {

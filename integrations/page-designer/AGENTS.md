@@ -71,7 +71,8 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 rebuilt from parsed lists, so a full save is lossless apart from the edit). 5. `validateEdit`
 (before, after): pre-existing issues never block; introduced errors do. 6. PUT: partial ops only
 if replaying them reproduces the planned config exactly, else full (`fullSaveReason`); legacy
-pages always save full. 7. Read back: `verify` = `match | mismatch | stale-read`.
+pages always save full; keys outside the verified shape force full. 7. Read back: `verify` =
+`match | mismatch | stale-read`.
 
 Overlay (`Overlay` in `lib/types/common.ts`; unknown sections → `PD_OVERLAY_INVALID`):
 
@@ -88,8 +89,13 @@ Overlay (`Overlay` in `lib/types/common.ts`; unknown sections → `PD_OVERLAY_IN
 `elements.operations`. `nodes.update` merges props/field/attrs/events (a `null` value deletes and
 forces a full save); `insert` generates missing ids deterministically; insert/remove are full
 saves. `belz pd show <input> --find <text>` returns each node's `id` and key `path`. Partial-op
-keys use `key` (not `path`) with stringified values; a dot segment that is not `name[0]` is a
-literal key (`props.[innerHTML]`) — see `lib/serialize/paths.ts`.
+keys use `key` (not `path`) with stringified values. **Partial ops are limited to verified key
+shapes** (`isVerifiedKeyShape` in `lib/serialize/paths.ts`: dot-joined identifiers with `[n]`
+indices, as documented in api-notes). Any other key — Angular binding props such as
+`props.[innerHTML]` / `field.[(value)]`, `(click)`, `data-x` — makes the plan a full save
+(`fullSaveReason: "unverified partial-op key shape: <key>"`), since the server's parsing of them
+was never verified and PD live writes are out of bounds. In-memory, such a segment is a literal
+key.
 
 ## Validator (`lib/validator/`)
 
@@ -166,7 +172,8 @@ Config facts (verified on real sems-dev pages): derived variables live in
 
 1. What `PUT /pages/revert/<vid>` rewrites (owner vs draft) is not verified live; restore locks
    both and needs `--allow-published` for a PUBLISHED owner.
-2. Server parsing of bracketed partial-op keys (`props.[innerHTML]`) is not verified live.
+2. Server parsing of bracketed partial-op keys (`props.[innerHTML]`) is not verified live, so
+   belz never sends them: those edits are full saves (OTH-R1).
 3. `pd diff` across envs reports HTTP calls as changed when their env-local AD ids differ.
 4. App-URL resolution needs a registered deployment domain; the validator is static only.
 

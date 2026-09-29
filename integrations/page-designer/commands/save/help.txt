@@ -92,7 +92,9 @@ STRATEGY:
   array indices.
   Full save: variables.add/remove, derived.*, httpRequests.add/remove,
   nodes.insert/remove, a nodes.update that deletes a key (null), legacy-format
-  pages, or partial ops that would not cover the edit.
+  pages, partial ops that would not cover the edit, or any op key outside the
+  verified shape (identifiers + [n] only): binding props such as
+  props.[innerHTML] / field.[(value)] are always saved in full.
   A full save sends the page's own config with only the edit applied
   (nothing else is rewritten).
 

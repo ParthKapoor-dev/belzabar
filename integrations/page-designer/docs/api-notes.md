@@ -191,6 +191,10 @@ See `../AGENTS.md` (Directory Map, Safe-Edit Invariants). Adding a rule: put it 
   in `userDefined` and duplicate names count). `operation` is `UPDATE` when the key exists, else
   `CREATE`. The plan is only partial when the ops, replayed on the raw config, reproduce the
   edited config exactly.
+- **Verified key shapes only** — a partial op is only sent when every dot segment of its key is a
+  plain identifier with optional `[n]` indices (the shapes listed above). Binding-prop keys
+  (`props.[innerHTML]`, `field.[(value)]`, `(click)`) are unverified on the wire, so an edit that
+  needs one is saved in full (OTH-R1).
 - **Full** — `variables.add/remove`, `derived.*`, `httpRequests.add/remove`, legacy-format pages,
   or ops that would not cover the edit (e.g. a parent object that does not exist yet). The body is
   the page's own raw config with only the edit applied (lossless otherwise).

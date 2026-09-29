@@ -9,7 +9,8 @@
 // operations, replayed on the raw config the way the server applies them,
 // reproduce `patched` exactly (PD-3: an op the serializer cannot emit — or a
 // parent path that does not exist yet — forces a full save instead of a
-// silent partial no-op).
+// silent partial no-op). Ops are also limited to key shapes the server is
+// known to parse (`isVerifiedKeyShape`, OTH-R1); any other key → full save.
 
 import { isDeepStrictEqual } from "node:util";
 import type { HydratedPage, Overlay, RawPartialUpdateOperation } from "../types/common";
@@ -17,7 +18,7 @@ import type { RawConfiguration } from "../types/wire";
 import { applyOverlay } from "./apply";
 import { serializeFull } from "./full";
 import { fullSaveReason, partialOperationsFor } from "./operations";
-import { decodeValue, setPath } from "./paths";
+import { decodeValue, isVerifiedKeyShape, setPath } from "./paths";
 
 export type SerializeStrategy = "full" | "partial";
 
@@ -61,6 +62,8 @@ export function planSave(before: HydratedPage, overlay: Overlay, forced?: Serial
   if (reason) return full(reason);
 
   const operations = partialOperationsFor(inner, overlay) ?? [];
+  const unverified = operations.find((o) => !isVerifiedKeyShape(o.key));
+  if (unverified) return full(`unverified partial-op key shape: ${unverified.key}`);
   const replayed = replayOperations(inner, operations);
   if (!replayed || !isDeepStrictEqual(replayed, patched.rawConfiguration)) {
     return full("partial operations do not cover the overlay");

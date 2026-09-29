@@ -134,6 +134,27 @@ describe("pd save", () => {
     expect(call.responseTransformSpec).toBe("(d)=>d");
   });
 
+  test("OTH-R1: a binding-prop edit ([innerHTML]) is a FULL save — its partial key shape is unverified", async () => {
+    const edit = { nodes: { update: [{ id: "n1", props: { "[innerHTML]": "{%other%}" } }] } };
+    const r = await run(save, [DRAFT, "--overlay", overlayFile(edit), "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({
+      strategy: "full",
+      fullSaveReason: "unverified partial-op key shape: layout.children[0].props.[innerHTML]",
+      verify: { status: "match" },
+    });
+    const put = pd.ff.requests.find((q) => q.method === "PUT" && /\/pages\/d0+1$/.test(new URL(q.url).pathname))!;
+    expect(put.json()).toMatchObject({ partialUpdate: false });
+    expect((innerOf(pd.pages.get(DRAFT)!).layout as any).children[0].props["[innerHTML]"]).toBe("{%other%}");
+  });
+
+  test("OTH-R1: the fake server rejects undocumented partial keys (not circular with belz's replay)", async () => {
+    const { applyWireOps } = await import("./helpers/fake-pd");
+    const op = (key: string) => ({ key, value: "x", operation: "UPDATE", dataType: "STRING" });
+    expect(applyWireOps(cleanInner(), [op("layout.children[0].props.[innerHTML]")])).toBeNull();
+    expect((applyWireOps(cleanInner(), [op("layout.children[0].props.title")]) as any).layout.children[0].props.title).toBe("x");
+  });
+
   test("an edit that changes nothing performs no write", async () => {
     const r = await run(save, [DRAFT, "--overlay", overlayFile({ variables: { update: [{ name: "greeting", initialValue: "hi" }] } }), "--yes"]);
     expect(r.envelope?.ok).toBe(true);

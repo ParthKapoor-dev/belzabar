@@ -26,6 +26,23 @@ export function parsePath(key: string): PathSegment[] {
   return out;
 }
 
+/**
+ * Partial-op key shapes the server is KNOWN to parse (OTH-R1). Every key
+ * documented in docs/api-notes.md and seen on the wire is dot-joined plain
+ * identifiers with optional `[n]` indices (`layout.children[1].props.disabled`,
+ * `variables.userDefined[2].initialValue`, `styles`). How the server reads a
+ * segment holding `[`, `(`, `.`, `-` or anything else (Angular binding props
+ * such as `props.[innerHTML]` / `field.[(value)]`) has never been verified,
+ * and PD live writes are out of bounds, so such an edit is saved in full.
+ */
+const VERIFIED_SEGMENT = /^[A-Za-z_$][A-Za-z0-9_$]*(?:\[\d+\])*$/;
+
+/** True when every dot segment of `key` is a verified shape (see VERIFIED_SEGMENT). */
+export function isVerifiedKeyShape(key: string): boolean {
+  const parts = key.split(".");
+  return parts.length > 0 && parts.every((p) => VERIFIED_SEGMENT.test(p));
+}
+
 type Container = Record<string, unknown> | unknown[];
 
 function isContainer(v: unknown): v is Container {

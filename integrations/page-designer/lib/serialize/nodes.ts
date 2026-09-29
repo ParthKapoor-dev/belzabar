@@ -203,7 +203,8 @@ export function applyNodeOps(inner: RawConfiguration, nodes: NodesOverlay, seed:
  * Partial-save ops for `nodes.update` (keys set, none removed), keyed at the
  * node's path in the ORIGINAL config. Unknown ids are skipped (applyNodeOps
  * refuses them before this runs); planSave's replay check catches any key the
- * dot-path syntax cannot express (a prop name containing ".").
+ * dot-path syntax cannot express (a prop name containing "."), and its
+ * key-shape check turns binding props (`[innerHTML]`) into a full save.
  */
 export function nodeUpdateOps(inner: RawConfiguration, updates: NodeUpdate[]): RawPartialUpdateOperation[] {
   const ops: RawPartialUpdateOperation[] = [];

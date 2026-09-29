@@ -13,6 +13,7 @@ import {
 } from "../../lib/serialize/index";
 import type { HydratedPage, Overlay } from "../../lib/types/common";
 import type { RawConfiguration, RawPageResponse } from "../../lib/types/wire";
+import { isVerifiedKeyShape } from "../../lib/serialize/paths";
 
 function wrap(inner: unknown): RawPageResponse {
   return { id: "p1", name: "p1", status: "DRAFT", configuration: JSON.stringify(inner) };
@@ -267,6 +268,23 @@ describe("planSave strategy", () => {
       { key: "layout.props.className", value: "c", operation: "CREATE", dataType: "STRING" },
       { key: "styles", value: ".x{}", operation: "UPDATE", dataType: "STRING" },
     ]);
+  });
+
+  test.each([
+    "layout.props.[innerHTML]",
+    "layout.props.[(value)]",
+    "layout.props.(click)",
+    "layout.props.data-x",
+  ])("OTH-R1: an op keyed %s (unverified shape) falls back to a full save", (key) => {
+    const plan = planSave(page, { elements: { operations: [{ key, value: "v", operation: "CREATE", dataType: "STRING" }] } });
+    expect(plan).toMatchObject({ strategy: "full", fallbackReason: `unverified partial-op key shape: ${key}` });
+  });
+
+  test("OTH-R1: isVerifiedKeyShape accepts only the documented key shapes", () => {
+    for (const k of ["styles", "layout.props.className", "layout.children[1].children[0].props.disabled", "variables.userDefined[2].initialValue"]) {
+      expect(isVerifiedKeyShape(k)).toBe(true);
+    }
+    for (const k of ["props.[innerHTML]", "a..b", "a.b[x]", "", "a.1b"]) expect(isVerifiedKeyShape(k)).toBe(false);
   });
 
   test.each<[string, Overlay]>([
