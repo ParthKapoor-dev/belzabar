@@ -1,0 +1,842 @@
+{
+  "uuid": "49a7d492e7c8a2afc2be83c7e3d63b0d",
+  "automationApiId": "4d2bbb9b8bb84f44dd5ea1ed2d4b7c39    ",
+  "name": "configure.notification.template.upsert",
+  "description": "To insert the update the email/sms templates",
+  "metadata": {
+    "version": {
+      "uuid": "49a7d492e7c8a2afc2be83c7e3d63b0d",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1675148248419,
+      "lastPublishedAt": 1780583883917,
+      "createdBy": 2,
+      "migrationVersion": 1,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": "4567eb19c7bad64d88859e387b9d986f"
+  },
+  "inputs": [
+    {
+      "uuid": "4b176ebfda79249d0d449efdfb523a2d    ",
+      "key": "type",
+      "name": "type",
+      "description": "type(ENUM - EMAIL, SMS)",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4c93a06737d3ff367f54ac953ffb2ee0    ",
+      "key": "correspondenceType",
+      "name": "correspondenceType",
+      "description": "(ENUM -  ACCOUNT_VERIFICATION, STUDENT_ACCOUNT_DELINK,STUDENT_ACCOUNT_RELINK,",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4e8686141bc52a36d1fe80395b20168d    ",
+      "key": "body",
+      "name": "body",
+      "description": "body of the communication",
+      "type": "TEXT",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "48ad2782188606068ec089263ce646c5    ",
+      "key": "subject",
+      "name": "subject",
+      "description": "subject of the communication",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4ff8fc6fdd8ffbc07db484218faab846    ",
+      "key": "id",
+      "name": "id",
+      "description": "uuid incase an update needs to happen",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4d0f69e8eca9186e0487b25a23080d3a    ",
+      "key": "templateDataConfig",
+      "name": "templateDataConfig",
+      "description": "template configuration query ",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "433be438878c1d891dc6b85e2c8ae9a1    ",
+      "referenceUuid": "41131c1926df663db369b6fef714eba2    ",
+      "key": "uuid",
+      "fieldCode": "uuid",
+      "name": "id",
+      "type": "STRING"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "4814f2bc1efdf5098fb89fdb64736534    ",
+      "automationAPIId": "4e91af8fcf23dac5afb3ba4f6b7e0ca3    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "exception.raise",
+      "coreMethod": false,
+      "description": "Raise exception (HTTP 400) — TW 26428808 (replaces legacy JS throw)",
+      "inputs": [
+        {
+          "uuid": "4476b54ac44fe5780a4d8dae123c3574    ",
+          "value": "Please provide subject line for the email",
+          "key": "message",
+          "name": "message",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f39e20c44b7d5e2932ba81a416c7aea    ",
+          "value": "400",
+          "key": "status",
+          "name": "status",
+          "type": "INTEGER",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4c509fd11129161fff7fbe73a1fcabcb    ",
+          "key": "response",
+          "fieldCode": "errorMessage",
+          "name": "errorMessage"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{type} eq 'EMAIL' and #{subject} eq null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": null
+                },
+                "category": "Input",
+                "fieldCode": "type",
+                "nestedFieldCode": null
+              },
+              "value": "EMAIL",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            },
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": null
+                },
+                "category": "Input",
+                "fieldCode": "subject",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "481c78eb5787a6209cdc95f79d0d97f6    ",
+      "automationAPIId": "4dc2b292b68c703351eba414c9665021    ",
+      "serviceName": "Schools",
+      "methodName": "user.getLoggedInUser",
+      "coreMethod": false,
+      "description": "call user.getLoggedInUser and pass {\"query\":true}",
+      "inputs": [
+        {
+          "uuid": "4032e2f20ec55c05e5de9235d4935b9f    ",
+          "value": "{\"query\":true}",
+          "key": "filter",
+          "name": "filter",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4e91409a7bc0ea33536ea0eee126cd9f    ",
+          "key": "userData",
+          "fieldCode": "userData",
+          "name": "userData"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4fd88878d97ce9f4dbcda6be35b41644    ",
+      "automationAPIId": "3706a083-4647-4c2b-8391-1a80613b8bbc",
+      "serviceName": "db_service",
+      "methodName": "data.update",
+      "coreMethod": false,
+      "description": "insert if id is not&nbsp;given, the information for email type provided in the user_correspondence_template table",
+      "inputs": [
+        {
+          "uuid": "910cb0f4-1d44-4040-a708-0e35f747b82e",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "aef549b2-fe20-4859-a697-11175062fd8e",
+              "value": "insert into user_correspondence_template (id,type,correspondence_type,subject,body,template_data_config,updated_by,updated_at) values (${UUID_WITH_HYPHEN},'#{type}','#{correspondenceType}',NULLIF('#{subject}','null'), '#{body}',NULLIF('#{templateDataConfig}','null')::jsonb,(#{userData.query}),now()) returning id;",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodedBase64": false,
+              "encodingType": "NONE"
+            }
+          ],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "7550142c-9e5f-4c82-8e59-50b9738b5d8a",
+          "key": "rowsImpacted",
+          "fieldCode": "rowCount",
+          "name": "rowCount"
+        },
+        {
+          "uuid": "4ff54175-ea32-b77f-88ec-ba5a6e0d1287",
+          "key": "generatedKeyColumns",
+          "fieldCode": "templateIds",
+          "name": "templateIds"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{id} eq null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": null
+                },
+                "category": "Input",
+                "fieldCode": "id",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "2"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "471b3d8b835f8df191e59cf5c46d6d2d    ",
+      "automationAPIId": "3706a083-4647-4c2b-8391-1a80613b8bbc",
+      "serviceName": "db_service",
+      "methodName": "data.update",
+      "coreMethod": false,
+      "description": "update, if id is given, the information for email type provided in the user_correspondence_template table&nbsp;",
+      "inputs": [
+        {
+          "uuid": "910cb0f4-1d44-4040-a708-0e35f747b82e",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "aef549b2-fe20-4859-a697-11175062fd8e",
+              "value": "update user_correspondence_template set type = '#{type}', correspondence_type ='#{correspondenceType}'  ,subject=NULLIF('#{subject}','null'),body='#{body}',template_data_config = NULLIF('#{templateDataConfig}','null'),updated_by=(#{userData.query}), updated_at=now() where id='#{id}'  ;",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodedBase64": false,
+              "encodingType": "NONE"
+            }
+          ],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "7550142c-9e5f-4c82-8e59-50b9738b5d8a",
+          "key": "rowsImpacted",
+          "fieldCode": "rowCount",
+          "name": "rowCount"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{id} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": null
+                },
+                "category": "Input",
+                "fieldCode": "id",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "2"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "40f33e3b6e5a46a8bb878980ecd37866    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "description": "if insert, set the generated id to variable id, for output",
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "#{templateIds}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodedBase64": false,
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$.uuids[0]",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodedBase64": false,
+              "encodingType": "NONE"
+            }
+          ],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "uuid",
+          "name": "uuid"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{id} eq null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": null
+                },
+                "category": "Input",
+                "fieldCode": "id",
+                "nestedFieldCode": null
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "eq"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "4c8cc031cd7b336f3acc8485a80a4222",
+      "comment": "Developer =&gt; Parva<br id=\"isPasted\">Doc version =&gt; 1&nbsp;<br>Reason =&gt; loginUser changes only&nbsp;<br>Reviewer =&gt; Krunal&nbsp;",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790667026007
+      },
+      "createdAt": 1686829966310,
+      "changelogType": "USER_GENERATED"
+    },
+    {
+      "id": "4e78884b78df2080e378adf65acf6fcb",
+      "comment": "Method published by Admin SEMS",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790667026007
+      },
+      "createdAt": 1780583884184,
+      "changelogType": "EXPERTLY_SYSTEM"
+    }
+  ],
+  "testSuite": {
+    "id": "4773f8c2c9b9f5e0d7a7b86717c138b7",
+    "createdBy": 2,
+    "createdOn": 1680700184134,
+    "updatedBy": 2,
+    "updatedOn": 1780576915841,
+    "chainId": "49a7d492e7c8a2afc2be83c7e3d63b0d",
+    "chainVersionId": 2,
+    "testCases": [
+      {
+        "id": "4cf50058f02baad77e3a96e9b5cae079",
+        "createdBy": 2,
+        "createdOn": 1686829907281,
+        "updatedBy": 2,
+        "updatedOn": 1780576915841,
+        "name": "configure.notification.template.upsert.success01",
+        "testSuiteId": "4773f8c2c9b9f5e0d7a7b86717c138b7",
+        "inputs": [
+          {
+            "id": "42a9b8fe853d730937dcb9e7f9e75d19",
+            "createdOn": 1780576915842,
+            "testCaseId": "4cf50058f02baad77e3a96e9b5cae079",
+            "fieldCode": "type",
+            "value": "{\"value\": \"SMS\"}"
+          },
+          {
+            "id": "4d0e84167849a01c80cdaa1ab4dd4096",
+            "createdOn": 1780576915842,
+            "testCaseId": "4cf50058f02baad77e3a96e9b5cae079",
+            "fieldCode": "correspondenceType",
+            "value": "{\"value\": \"STUDENT_ACCOUNT_RELINK\"}"
+          },
+          {
+            "id": "471ecaedd178397d84b486e006729953",
+            "createdOn": 1780576915843,
+            "testCaseId": "4cf50058f02baad77e3a96e9b5cae079",
+            "fieldCode": "body",
+            "value": "{\"value\": \"Dear <User Full Name>,\\n\\nStudent <Student Name> from your Parestsite account with Username <old_username> has been moved to another parent-site account with Username <new_username>. The student personal info and any applications are moved to the updated account.\\nRegards,\\nTeam BCPS\"}"
+          },
+          {
+            "id": "4fe8efc15e818c39b4b396d7395dfffb",
+            "createdOn": 1780576915843,
+            "testCaseId": "4cf50058f02baad77e3a96e9b5cae079",
+            "fieldCode": "subject",
+            "value": "{\"value\": \"Delinking of a student\"}"
+          },
+          {
+            "id": "4925e793f6c1bea119b1a9f06dca6272",
+            "createdOn": 1780576915843,
+            "testCaseId": "4cf50058f02baad77e3a96e9b5cae079",
+            "fieldCode": "id",
+            "value": "{\"value\": \"\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "49e7fad87b6c9d50ca09873b9d8f3b15",
+        "createdBy": 2,
+        "createdOn": 1726639118827,
+        "updatedBy": 2,
+        "updatedOn": 1780576915844,
+        "name": "configure.notification.template.upsert.success.240918.SCHOOL_STUDENT_TRNSFR_APP_COMPLETED",
+        "testSuiteId": "4773f8c2c9b9f5e0d7a7b86717c138b7",
+        "inputs": [
+          {
+            "id": "4902f1bc93c8641b196abb46d274ffc8",
+            "createdOn": 1780576915844,
+            "testCaseId": "49e7fad87b6c9d50ca09873b9d8f3b15",
+            "fieldCode": "type",
+            "value": "{\"value\": \"EMAIL\"}"
+          },
+          {
+            "id": "4f826ae7347ea22be004bbe879560ac1",
+            "createdOn": 1780576915845,
+            "testCaseId": "49e7fad87b6c9d50ca09873b9d8f3b15",
+            "fieldCode": "correspondenceType",
+            "value": "{\"value\": \"SCHOOL_STUDENT_TRNSFR_APP_COMPLETED\"}"
+          },
+          {
+            "id": "4940b02b20548c2bc49597a0f764c953",
+            "createdOn": 1780576915845,
+            "testCaseId": "49e7fad87b6c9d50ca09873b9d8f3b15",
+            "fieldCode": "body",
+            "value": "{\"value\":\"<div><div style=\\\\\\\"width:85vw;padding-top:20px;padding-left:50px;border:2px dotted #dadada;margin:auto\\\\\\\"><div style=\\\\\\\"width:100%;height:125px;display:flex;flex-direction:row;align-items:center\\\\\\\"><div style=\\\\\\\"height:90%;width:35%\\\\\\\"><img src=\\\\\\\"https://assets-dev-sems.qa.expertly.cloud/parent-dashboard-student-enrollment_1.png\\\\\\\" style=\\\\\\\"width:100%;height:100%;object-fit:contain\\\\\\\"></div><div style=\\\\\\\"height:50%;border-right:2px solid #dadada;margin:0 50px 0 50px\\\\\\\"></div><div style=\\\\\\\"height:50%;width:25%\\\\\\\"><img src=\\\\\\\"https://assets-dev-sems.qa.expertly.cloud/baltimore-city-public-schools_1.png\\\\\\\" style=\\\\\\\"width:100%;height:100%;object-fit:contain\\\\\\\"></div></div><div style=\\\\\\\"width:90%;height:auto;margin-top:50px\\\\\\\"><p style=\\\\\\\"font-size:1.5rem;text-transform:capitalize\\\\\\\">Dear Enrollment Official,</p><p style=\\\\\\\"font-size:1.5rem\\\\\\\">The following student has been granted a transfer by the Office of Enrollment, Choice, and Transfers. This change is reflected in SEMS and will update in Infinite Campus on the next business day. </p><p style=\\\\\\\"font-size:1.5rem\\\\\\\">Student ID: {{studentId}}></p><p style=\\\\\\\"font-size:1.5rem\\\\\\\">Student Name: {{studentRef}}</p><p style=\\\\\\\"font-size:1.5rem\\\\\\\">Grade: {{studentGrade}}</p><p style=\\\\\\\"font-size:1.5rem\\\\\\\">Exiting School: {{currentSchoolCode}}</p><p style=\\\\\\\"font-size:1.5rem\\\\\\\">Entering School: {{newSchoolCode}}</p><p style=\\\\\\\"font-size:1.5rem\\\\\\\">\\nSincerely,</p><p style=\\\\\\\"font-size:1.5rem\\\\\\\">The SEMS Team</p><p style=\\\\\\\"font-size:1.2rem;color:#7d7779\\\\\\\">Student Enrollment Management System (SEMS) is a project of Baltimore City Public Schools. For information on SEMS, contact us at <a style=\\\\\\\"color:#487fa7;text-decoration:underline\\\\\\\" href=\\\\\\\"user@example.com.\\\\\\\">user@example.com.</a></p><p style=\\\\\\\"font-size:1.2rem;color:#7d7779\\\\\\\">&copy; 2023 Baltimore City Public Schools<br>200 East North Avenue, Baltimore, MD, 21202<br><a href=\\\\\\\"www.baltimorecityschools.org\\\\\\\" style=\\\\\\\"color:#487fa7;text-decoration:underline\\\\\\\">www.baltimorecityschools.org</a><br></p></div></div></div>\"}"
+          },
+          {
+            "id": "442194d978871c8710c4bce9ef48a0a5",
+            "createdOn": 1780576915845,
+            "testCaseId": "49e7fad87b6c9d50ca09873b9d8f3b15",
+            "fieldCode": "subject",
+            "value": "{\"value\": \"City Schools: Your Transfer Request Status\"}"
+          },
+          {
+            "id": "4035a9b8adca68179bf79d596acfbbfd",
+            "createdOn": 1780576915845,
+            "testCaseId": "49e7fad87b6c9d50ca09873b9d8f3b15",
+            "fieldCode": "id",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "40effa9ab3a45728c0fc85e383746175",
+            "createdOn": 1780576915846,
+            "testCaseId": "49e7fad87b6c9d50ca09873b9d8f3b15",
+            "fieldCode": "templateDataConfig",
+            "value": "{\"value\": \"{\\\"recipientsDataQuery\\\":\\\"WITH appr AS (SELECT sch.id AS ofr_sch FROM application a JOIN offer_response ofr ON a.id=ofr.application_id AND a.id={{applicationId}} AND ofr.is_displaying=true JOIN program p ON ofr.program_id=p.id JOIN school sch ON p.school_id=sch.id WHERE EXISTS (SELECT 1 FROM application a1 JOIN users u ON u.id=(a1.details->>''submittedBy'')::uuid AND u.user_type=''PUBLIC'' AND a1.id=a.id)) SELECT json_build_object(user_email, ''{}''::jsonb ) FROM (SELECT user_email, rs->>''code'' AS r_code, (rs->>''id'')::text AS r_id FROM (SELECT u.contact_info->''email''->''primary''->>''id'' user_email, jsonb_array_elements(user_access -> ''receivingSchools'') as rs FROM user_roles usr JOIN users u ON usr.user_id=u.id) AS ur1) AS ur2 WHERE r_code=''*'' OR r_id=(SELECT ofr_sch FROM appr)\\\",\\\"dataQueries\\\":\\\"SELECT cn.display_name AS \\\\\\\"studentGrade\\\\\\\", COALESCE(alternate_ids->''external''->>''id'', alternate_ids->''internal''->>''customId'') AS \\\\\\\"studentId\\\\\\\", concat_ws('' '', s.name->>''firstName'', s.name->>''middleName'', s.name->>''lastName'', s.name->>''suffix'') AS \\\\\\\"studentRef\\\\\\\", csch.code AS \\\\\\\"currentSchoolCode\\\\\\\", nsch.code AS \\\\\\\"newSchoolCode\\\\\\\" FROM application a JOIN account_student_mapping asm ON a.student_id=asm.student_id AND asm.user_permissions->''roles'' ? ''OWNER'' JOIN users u ON asm.account_id=u.id JOIN student s ON a.student_id=s.id JOIN number_code_name cn ON s.current_grade=cn.code AND cn.category=''GRADE'' JOIN school csch ON s.current_school_id=csch.id JOIN school nsch ON (s.details->''transferDetails''->>''schoolId'')::UUID=nsch.id WHERE a.id=''{{applicationId}}'' AND EXISTS (SELECT 1 FROM users u WHERE id=(a.details->>''submittedBy'')::uuid AND u.user_type=''PUBLIC'')\\\"}\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4d41bca6d5fcd2b08344a045a8625442",
+        "createdBy": 2,
+        "createdOn": 1680700184135,
+        "updatedBy": 2,
+        "updatedOn": 1780576915847,
+        "name": "configure.template.upsert.success.1",
+        "testSuiteId": "4773f8c2c9b9f5e0d7a7b86717c138b7",
+        "inputs": [
+          {
+            "id": "4427b62e95c5b3a62802becf311eab1f",
+            "createdOn": 1780576915847,
+            "testCaseId": "4d41bca6d5fcd2b08344a045a8625442",
+            "fieldCode": "type",
+            "value": "{\"value\": \"EMAIL\"}"
+          },
+          {
+            "id": "4b4be1b3f1427f89d8febdc81c9eda8e",
+            "createdOn": 1780576915848,
+            "testCaseId": "4d41bca6d5fcd2b08344a045a8625442",
+            "fieldCode": "correspondenceType",
+            "value": "{\"value\": \"STUDENT_ACCOUNT_DELINK\"}"
+          },
+          {
+            "id": "41f665add657a3894ffb9e2e4467c971",
+            "createdOn": 1780576915848,
+            "testCaseId": "4d41bca6d5fcd2b08344a045a8625442",
+            "fieldCode": "body",
+            "value": "{\"value\": \"Dear <User Full Name>,\\n\\nStudent <Student Name> from your Parestsite account with Username <old_username> has been moved to another parent-site account with Username <new_username>. The student personal info and any applications are moved to the updated account.\\nRegards,\\nTeam BCPS\"}"
+          },
+          {
+            "id": "44ff79cd1b0bb045b52a8217c52b3d5c",
+            "createdOn": 1780576915848,
+            "testCaseId": "4d41bca6d5fcd2b08344a045a8625442",
+            "fieldCode": "subject",
+            "value": "{\"value\": \"Delinking of a student\"}"
+          },
+          {
+            "id": "418ee4b5eb727d226af09522da82772e",
+            "createdOn": 1780576915848,
+            "testCaseId": "4d41bca6d5fcd2b08344a045a8625442",
+            "fieldCode": "id",
+            "value": "{\"value\": \"\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

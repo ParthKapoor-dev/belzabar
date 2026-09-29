@@ -1,0 +1,146 @@
+[
+  {
+    "file": "41f705aff6c768c033b4ad9840b69dde.published.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:53:06.364Z",
+    "bytes": 6334,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/41f705aff6c768c033b4ad9840b69dde?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4283bb05ec15bdc2f723a7a75551ed08.draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:52:45.434Z",
+    "bytes": 12355,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4283bb05ec15bdc2f723a7a75551ed08?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "438185931da72f5b89aaac3c6248a18e.published.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:53:14.559Z",
+    "bytes": 261310,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/438185931da72f5b89aaac3c6248a18e?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "438b502717b979a6a8539691d673fc39.draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:52:46.652Z",
+    "bytes": 6317,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/438b502717b979a6a8539691d673fc39?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "448ba90c686e104056a3a74b3c52d194.draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:52:48.384Z",
+    "bytes": 32041,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/448ba90c686e104056a3a74b3c52d194?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4540d7de58533f1b9545a9537368e546.published.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:53:11.807Z",
+    "bytes": 20811,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4540d7de58533f1b9545a9537368e546?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4567eb19c7bad64d88859e387b9d986f.published.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:53:09.505Z",
+    "bytes": 31680,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4567eb19c7bad64d88859e387b9d986f?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "49a7d492e7c8a2afc2be83c7e3d63b0d.draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:52:49.855Z",
+    "bytes": 30284,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/49a7d492e7c8a2afc2be83c7e3d63b0d?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4b0270f001810b5babeb919d9dd48c46.published.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:53:15.898Z",
+    "bytes": 15472,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4b0270f001810b5babeb919d9dd48c46?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4b108b0554b0daa963f4bd6985f0de52.published.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:53:10.783Z",
+    "bytes": 10981,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4b108b0554b0daa963f4bd6985f0de52?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4b6833766e141a259d50bfcd3d606c37.draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:52:50.758Z",
+    "bytes": 10964,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4b6833766e141a259d50bfcd3d606c37?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4bd7264bbbcc4f784085aa0c1d38faed.draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:52:51.924Z",
+    "bytes": 20795,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4bd7264bbbcc4f784085aa0c1d38faed?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4bfc83c7fc3da12d7e639ee88a40ff27.published.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:53:07.774Z",
+    "bytes": 32016,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4bfc83c7fc3da12d7e639ee88a40ff27?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4ec6d9821f97ab6809e092ca0e414c84.draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:52:55.067Z",
+    "bytes": 262076,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4ec6d9821f97ab6809e092ca0e414c84?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4f6331f11208e5ccc8ddaaad20727664.published.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:53:05.341Z",
+    "bytes": 12190,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4f6331f11208e5ccc8ddaaad20727664?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4f909e2c14473e43bfe8ac0b61c0be3c.draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T07:52:56.715Z",
+    "bytes": 15567,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4f909e2c14473e43bfe8ac0b61c0be3c?basicInfo=false",
+    "status": 200
+  }
+]

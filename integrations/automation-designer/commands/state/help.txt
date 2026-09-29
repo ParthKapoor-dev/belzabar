@@ -10,7 +10,9 @@ Flags:
 Notes:
   - Wraps lib/draft-guard.ts:resolveDraftTarget() and is the safe read-only
     way to inspect draft/published state before calling any write command.
-  - inSync compares the LOGIC fingerprints (lib/fingerprint.ts) of the draft
+  - inSync compares the behaviour fingerprints (lib/fingerprint.ts: the whole
+    body minus ids, versions, stamps, changelogs and testSuite — so outputs,
+    loops, exits, async, accounts, variables all count) of the draft
     and the published body: true = identical, false = the draft has
     unpublished changes, null = never published. The draft and published
     version counters are independent, so versions.draft > versions.published

@@ -1,0 +1,585 @@
+{
+  "uuid": "4bd7264bbbcc4f784085aa0c1d38faed",
+  "automationApiId": "4cab51e1e16f1cf6f5369122ec10ae81    ",
+  "name": "internal.document.generated.correctDocsAndDownload",
+  "summary": "Internal method of document.generated.correctDocsAndDownload\n\n- Upsert the generate document records\n- Returns the docList",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "4bd7264bbbcc4f784085aa0c1d38faed",
+      "name": "11",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1720162353668,
+      "lastPublishedAt": 1747910494864,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": "4540d7de58533f1b9545a9537368e546"
+  },
+  "inputs": [
+    {
+      "uuid": "433dfe970bf0a01ac1a8bf0ce08d4689    ",
+      "key": "epStageId",
+      "name": "epStageId",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "409b2128b01978a5f08b9e3e101508e7    ",
+      "key": "featureId",
+      "name": "featureId",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "41f4537dda5aba606f77a4c698814609    ",
+      "key": "placeholderMap",
+      "name": "placeholderMap",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4e3b235f55dd5eaed243b65ba6eab47f    ",
+      "key": "updateAllowed",
+      "name": "updateAllowed",
+      "type": "BOOLEAN",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4e10b997e3d93a65f9b596117b04f99b    ",
+      "key": "subquery",
+      "name": "subquery",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4d782b8d65ce302398d1bd7f78de8b0e    ",
+      "key": "docCodeId",
+      "fieldCode": "docCodeId",
+      "name": "docCodeId",
+      "type": "TEXT"
+    }
+  ],
+  "variables": [
+    {
+      "key": "varPlaceholderMap",
+      "name": "varPlaceholderMap",
+      "type": "JSON",
+      "required": false,
+      "properties": [],
+      "reference": "placeholderMap",
+      "encodingType": "NONE"
+    },
+    {
+      "key": "varQuery",
+      "name": "varQuery",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "",
+      "encodingType": "NONE"
+    },
+    {
+      "key": "docCodeId",
+      "name": "docCodeId",
+      "type": "TEXT",
+      "required": false,
+      "properties": [],
+      "reference": "featureId",
+      "encodingType": "NONE"
+    }
+  ],
+  "steps": [
+    {
+      "id": "4dcacd3e94cfad7d50e1bfc1a822f944    ",
+      "automationAPIId": "4642a0b63b3c94ed4a92825d52bbf1dd    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "insertElement",
+      "coreMethod": false,
+      "description": "merge epStageId to placeholder map<br><br>if subQuery is NULL return return&nbsp; docCodeId=featureId from method execution",
+      "inputs": [
+        {
+          "uuid": "472880668b3b4b78c928a1a8548299df    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "47645f956cf0fc0739609fdce38d3156    ",
+              "value": "#{placeholderMap}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4eebc2d2dd13bb5bf96c901d756e8f74    ",
+              "value": "epStageId",
+              "key": "key",
+              "name": "keyToInsert",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "47a6ec9bc25299158ddeb6fc6209377c    ",
+              "value": "#{epStageId}",
+              "key": "value",
+              "name": "valueToInsert",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "441f16cbfde8915f1db3adc4d6a3906c    ",
+          "key": "response",
+          "fieldCode": "updatedPlaceholder",
+          "name": "updatedPlaceholder",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "varPlaceholderMap"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": "#{subquery} eq null",
+            "expandedExpressions": [
+              {
+                "item": {
+                  "type": {
+                    "id": "STRING",
+                    "name": "String",
+                    "type": "STRING"
+                  },
+                  "category": "Input",
+                  "fieldCode": "subquery",
+                  "nestedFieldCode": "subquery"
+                },
+                "value": "null",
+                "groupOp": {
+                  "value": "AND"
+                },
+                "operator": {
+                  "value": "eq"
+                },
+                "ignoreCase": false
+              }
+            ]
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4c488ebe6dc69fe8f885805e30d8c5ca    ",
+      "automationAPIId": "492a440d34d8550c14a2bb803c7e351b    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "replacePlaceholdersInText",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "444bebe5823e6370adc992d0a566d0b5    ",
+          "value": "WITH logged_user AS( SELECT id FROM users where user_name = '#{LoggedInUser.Email}'   AND user_type=(CASE WHEN #{LoggedInUser.External} = true THEN 'PUBLIC' ELSE 'EXPERTLY' END::user_type)), #{subquery}, valid_recs AS ( SELECT DISTINCT all_docs.* FROM ( SELECT dcs.id, cds.doc_type_id, cds.code, unnest(cds.langs) AS lang FROM docs dcs JOIN codes cds ON dcs.code = cds.code ) AS all_docs JOIN data d ON all_docs.id = d.id AND ( all_docs.lang = 'EN' OR all_docs.lang = ANY(d.alternate_langs) ) ), del_docs AS ( UPDATE generated_document gd SET is_deleted = true, updated_by = lu.id, updated_at = now() FROM logged_user lu WHERE is_deleted = false AND EXISTS ( SELECT 1 FROM codes cd WHERE cd.doc_type_id = gd.doc_type_id ) AND EXISTS ( SELECT 1 FROM data d WHERE d.id = gd.{{tableKey}} ) AND NOT EXISTS ( SELECT 1 FROM valid_recs v WHERE v.doc_type_id = gd.doc_type_id AND v.lang = gd.language AND v.id = gd.{{tableKey}} ) ), reset_docs AS ( UPDATE generated_document gd SET is_deleted = false, updated_by = lu.id, updated_at = now() FROM logged_user lu, valid_recs v WHERE gd.{{tableKey}} = v.id AND gd.doc_type_id = v.doc_type_id AND gd.language = v.lang AND is_deleted = true RETURNING gd.{{tableKey}}, gd.doc_type_id, gd.language ) INSERT INTO generated_document ( id, {{tableKey}}, doc_type_id, language, is_being_generated, updated_by, updated_at ) ( SELECT gen_random_uuid(), v.id, v.doc_type_id, v.lang, false, lu.id, now() FROM logged_user lu, valid_recs AS v WHERE NOT EXISTS ( SELECT 1 FROM reset_docs upr WHERE upr.{{tableKey}} = v.id AND upr.doc_type_id = v.doc_type_id AND upr.language = v.lang ) AND NOT EXISTS ( SELECT 1 FROM generated_document g WHERE g.doc_type_id = v.doc_type_id AND language = v.lang AND g.{{tableKey}} = v.id ) ) ",
+          "key": "text",
+          "name": "text",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f607ba1a37b4ff6e77692802cf268ba    ",
+          "value": "#{varPlaceholderMap}",
+          "key": "placeholders",
+          "name": "placeholders",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4832e42217c0dd695c4da2e97ec848ac    ",
+          "key": "finalText",
+          "fieldCode": "replacedQuery",
+          "name": "replacedQuery",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "varQuery"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "482762049c0f0e270954b94c2a3ab852    ",
+      "automationAPIId": "f5164443-9f04-4391-b2d1-fe0b8e00f5a9",
+      "serviceName": "db_service",
+      "methodName": "data.add",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "e9d29329-058e-4974-b3d2-8dc6d575acce",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "227e3a22-2222-4208-86a5-76235585547b",
+              "value": "#{varQuery}",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "c48de553-1a14-413e-9ba1-49759c341ce0",
+          "key": "rowsImpacted",
+          "fieldCode": "insertionCount",
+          "name": "insertionCount"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "42bba9a3f9910594beef81275ae0f5c4    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "description": "set docCodeId if control comes here",
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": "#{docCodeId}",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "docCodesIdNull",
+          "name": "docCodesIdNull",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "docCodeId"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "4d4dfc5268c4c1d638a6b73d19cb5902",
+      "comment": "Developer: Vandana<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Changes: Version 1.1<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reviewer: add return docCodeId for Bulk download changes TW23741602",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790667026007
+      },
+      "createdAt": 1727688677019
+    }
+  ],
+  "testSuite": {
+    "id": "429aa12555f54551a3c88d1a4d3abb98",
+    "createdBy": 2,
+    "createdOn": 1732129612760,
+    "chainId": "4bd7264bbbcc4f784085aa0c1d38faed",
+    "testCases": [
+      {
+        "id": "4baa63304e897193453a9ddedb783133",
+        "createdBy": 2,
+        "createdOn": 1732129612761,
+        "name": "internal.document.generated.correctDocsAndDownload.success.241120",
+        "testSuiteId": "429aa12555f54551a3c88d1a4d3abb98",
+        "inputs": [
+          {
+            "id": "45d55593bce493d7bbada5d493844a1b",
+            "createdOn": 1732129612763,
+            "testCaseId": "4baa63304e897193453a9ddedb783133",
+            "fieldCode": "epStageId",
+            "value": "{\"value\": \"13c5c689-314e-42de-bf17-bb51a039cf20\"}"
+          },
+          {
+            "id": "4de4ccb5e523eb20fcab850d588967a2",
+            "createdOn": 1732129612764,
+            "testCaseId": "4baa63304e897193453a9ddedb783133",
+            "fieldCode": "featureId",
+            "value": "{\"value\": \"9ee0a5ce-ab3a-40e8-8a2e-6d6dc68ab6de\"}"
+          },
+          {
+            "id": "4fac11cad774349a3604bd899d30ce63",
+            "createdOn": 1732129612765,
+            "testCaseId": "4baa63304e897193453a9ddedb783133",
+            "fieldCode": "placeholderMap",
+            "value": "{\"value\": \"{\\\"epId\\\":\\\"42815c03-9758-4022-9f49-1f8a350b6a1f\\\",\\\"roundNo\\\":\\\"null\\\",\\\"tableKey\\\":\\\"student_id\\\",\\\"valuesOrSubquery\\\":\\\"SELECT s.id FROM student_w_zone s WHERE  current_grade IN ('8') and s.deleted=false\\\"}\"}"
+          },
+          {
+            "id": "4d37b7128ce25f32c59a80077f02db82",
+            "createdOn": 1732129612765,
+            "testCaseId": "4baa63304e897193453a9ddedb783133",
+            "fieldCode": "updateAllowed",
+            "value": "{\"value\": true}"
+          },
+          {
+            "id": "498ad61023456d843a99bebf30abda53",
+            "createdOn": 1732129612766,
+            "testCaseId": "4baa63304e897193453a9ddedb783133",
+            "fieldCode": "subquery",
+            "value": "{\"value\": \"data AS (SELECT id, ARRAY(SELECT preferred_lang) AS alternate_langs, is_active, deleted, current_grade, data_source FROM student WHERE id IN ({{valuesOrSubquery}})), codes AS (SELECT code, \\\"featureId\\\" AS doc_type_id, array_remove(ARRAY(SELECT JSONB_OBJECT_KEYS(COALESCE(details->'templates', '{\\\"EN\\\": \\\"\\\"}'))),'replacement') AS langs FROM features_getEnabledForLevel (NULLIF('{{epId}}','null')::varchar, NULLIF('{{roundNo}}', 'null')::varchar, NULLIF('{{epStageId}}' ,'null')::varchar, 'GENERATED_DOCUMENT'::features, '[\\\"DEFAULT_APP_FORM\\\" , \\\"STUDENT.APPLICATION.FORM_ATTENDING\\\"]'::jsonb, null, false, true)),docs AS (SELECT id, (CASE WHEN data_source='EXTERNAL' THEN 'STUDENT.APPLICATION.FORM_ATTENDING' ELSE 'DEFAULT_APP_FORM' END) AS code FROM data d JOIN (SELECT applicant_grades FROM enrollment_process WHERE code='CSMS') ep ON ep.applicant_grades @> to_jsonb(current_grade) WHERE d.is_active = true AND d.deleted=false)\\n\"}"
+          },
+          {
+            "id": "489920d992c85808b4f4bee4b81b2c9a",
+            "createdOn": 1732129612767,
+            "testCaseId": "4baa63304e897193453a9ddedb783133",
+            "fieldCode": "varPlaceholderMap",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4d1f7a9a47d749fae565aa6b84f1f83a",
+            "createdOn": 1732129612768,
+            "testCaseId": "4baa63304e897193453a9ddedb783133",
+            "fieldCode": "varQuery",
+            "value": "{\"value\": null}"
+          },
+          {
+            "id": "4ff9faa8eb4fe22663a09dcee8035217",
+            "createdOn": 1732129612768,
+            "testCaseId": "4baa63304e897193453a9ddedb783133",
+            "fieldCode": "docCodeId",
+            "value": "{\"value\": null}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

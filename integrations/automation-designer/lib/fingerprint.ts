@@ -11,13 +11,15 @@
 // hashing `raw` makes qa look "diverged" from dev. A (orderIndex, kind,
 // description) hash fails the first test — it collapses body edits.
 //
-// So we hash a SEMANTIC projection: step order/kind/description, the called
-// service+method NAMES (stable across envs), condition expressions, the
-// decoded code/SQL/expression bodies, and input mapping VALUES — everything
-// substantive, nothing env-local.
+// So we hash the wire body minus server bookkeeping and env-local ids (see
+// `fingerprintProjection`, ADW-R2). Methods without a wire body fall back to
+// a SEMANTIC step projection: step order/kind/description, the called
+// service+method NAMES, condition expressions, the decoded code/SQL/expression
+// bodies, and input mapping VALUES.
 
 import { createHash } from "crypto";
 import { parseV1Method, parseV2Method } from "./parser/index";
+import { decodeBase64Strict } from "./base64";
 import type { HydratedMethod, ParsedStep, StepInput } from "./types/common";
 import type { MethodVersionFull } from "./api/v1";
 import type { V1RawMethodResponse } from "./types/v1-wire";
@@ -67,8 +69,143 @@ function semanticStep(s: ParsedStep): unknown {
   return base;
 }
 
-/** Stable 12-hex structural fingerprint of a method's logic + input contract. */
+// ─── Wire projection (ADW-R2) ────────────────────────────────────────────
+//
+// The hydrated model is lossy: it has no step-output fieldCode /
+// elementToRetrieve, no conditional exit, no account name, … so a
+// fingerprint built from it called a draft whose only change was an output
+// binding, a loop, an exit rule or the DB account "in sync" with production.
+// When the wire body is available we therefore hash the WHOLE body minus a
+// deny-list of server bookkeeping and env-local ids. That is fail-safe: a
+// field nobody listed still changes the fingerprint.
+
+/**
+ * Keys dropped wherever they appear: row / wiring ids (env-local, and step
+ * ids differ between a draft and its published copy), state, versions,
+ * audit stamps, the change log, the test suite, the viewer's permissions.
+ */
+const BOOKKEEPING_KEYS = new Set([
+  "id",
+  "uuid",
+  "automationApiId",
+  "automationAPIId",
+  "automationId",
+  "automationAuthId",
+  "testAccountId",
+  "automationUserInputId",
+  "automationUserInputUuid",
+  "automationAPIOutputId",
+  "automationAPIOutputUuid",
+  "chainId",
+  "testSuiteId",
+  "testCaseId",
+  "referenceId",
+  "automationState",
+  "state",
+  "version",
+  "changelogs",
+  "testSuite",
+  "permissions",
+  "migration",
+  "createdOn",
+  "createdAt",
+  "createdBy",
+  "updatedOn",
+  "updatedBy",
+  "lastUpdatedOn",
+  "lastUpdatedBy",
+  "lastPublishedAt",
+  "lastPublishedBy",
+  "addedBy",
+  "addedWhen",
+]);
+
+/** The body to project: the V2 object, or V1's parsed jsonDefinition. */
+function wireBody(raw: unknown): Record<string, unknown> | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const obj = raw as Record<string, unknown>;
+  if (Array.isArray(obj.steps)) return obj;
+  if (typeof obj.jsonDefinition === "string") {
+    try {
+      const jd = JSON.parse(obj.jsonDefinition) as unknown;
+      return jd && typeof jd === "object" && !Array.isArray(jd) ? (jd as Record<string, unknown>) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+  if (obj.jsonDefinition && typeof obj.jsonDefinition === "object") return wireBody(obj.jsonDefinition);
+  return undefined;
+}
+
+/** A stored base64 body and the same body in plain text behave the same. */
+function decoded(v: unknown): unknown {
+  return typeof v === "string" ? (decodeBase64Strict(v) ?? v) : v;
+}
+
+function projectWire(value: unknown): unknown {
+  if (value === null || value === undefined) return undefined;
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return value.map(projectWire);
+  if (typeof value !== "object") return value;
+  const obj = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (BOOKKEEPING_KEYS.has(k)) continue;
+    if (k === "metadata") {
+      // Only the behavioural parts: where the method lives and its time limit.
+      const md = (v ?? {}) as Record<string, unknown>;
+      const svc = md.service as Record<string, unknown> | undefined;
+      const projected = projectWire({ service: svc?.name, executionTimeLimit: md.executionTimeLimit, categories: md.categories });
+      if (projected && Object.keys(projected as object).length > 0) out.metadata = projected;
+      continue;
+    }
+    let pv: unknown;
+    if (k === "inlineCode" || k === "code") pv = decoded(v);
+    else if (k === "value" && obj.encodingType === "BASE_64") pv = decoded(v);
+    else if (k === "encodingType" && v === "BASE_64" && typeof obj.value === "string" && decodeBase64Strict(obj.value) !== null) pv = "NONE";
+    else pv = projectWire(v);
+    if (pv !== undefined) out[k] = pv;
+  }
+  // V1 services carry their position in orderIndex, not array order.
+  return out;
+}
+
+function orderedV1(body: Record<string, unknown>): Record<string, unknown> {
+  if (!Array.isArray(body.services)) return body;
+  const services = [...(body.services as Array<Record<string, unknown>>)].sort(
+    (a, b) => Number(a?.orderIndex ?? 0) - Number(b?.orderIndex ?? 0),
+  );
+  return { ...body, services };
+}
+
+/**
+ * The exact projection `fingerprintMethod` hashes when the wire body is
+ * available (exported for tests and diagnostics); `undefined` otherwise.
+ */
+export function fingerprintProjection(m: HydratedMethod): unknown {
+  const body = wireBody(m.raw);
+  return body ? projectWire(orderedV1(body)) : undefined;
+}
+
+/**
+ * Stable 12-hex fingerprint of everything that changes a method's behaviour.
+ *
+ * With the wire body (every fetched / history-parsed method): the whole body
+ * minus bookkeeping (see BOOKKEEPING_KEYS) — steps' inputs, outputs, SQL,
+ * code, service, account (by name), conditions, exit, loop, async, and the
+ * method's inputs, outputs, variables and display fields. A draft and its
+ * published copy of the same content match. Without a body (hand-built
+ * methods) it falls back to the hydrated step projection.
+ *
+ * Only compare fingerprints computed from the same wire format (both V1 or
+ * both V2 / history): V1 has no account name, so a V1 fingerprint cannot see
+ * an account switch.
+ */
 export function fingerprintMethod(m: HydratedMethod): string {
+  const projection = fingerprintProjection(m);
+  if (projection !== undefined) {
+    return createHash("sha256").update(stableStringify(projection)).digest("hex").slice(0, 12);
+  }
   const steps = [...m.parsedSteps]
     .sort((a, b) => a.orderIndex - b.orderIndex)
     .map(semanticStep);

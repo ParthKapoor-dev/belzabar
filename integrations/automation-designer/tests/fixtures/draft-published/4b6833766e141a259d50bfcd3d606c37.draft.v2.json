@@ -1,0 +1,404 @@
+{
+  "uuid": "4b6833766e141a259d50bfcd3d606c37",
+  "automationApiId": "4a45dc4d323579991dbb9c774e2480a7    ",
+  "name": "internal.match.iteration.report.prepareRepeatedText",
+  "description": "",
+  "metadata": {
+    "version": {
+      "uuid": "4b6833766e141a259d50bfcd3d606c37",
+      "name": "4",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1706602639021,
+      "lastPublishedAt": 1706608437777,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": "4b108b0554b0daa963f4bd6985f0de52"
+  },
+  "inputs": [
+    {
+      "uuid": "41d5e897b828d8342d58bfaf18574834    ",
+      "key": "placeHolder",
+      "name": "placeHolder",
+      "type": "JSON",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "40460e4578b4cb5ec9d0901117a9af9f    ",
+      "key": "text",
+      "name": "text",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "49a6566c4f6a48ab6e1cb7e60a627078    ",
+      "key": "finaltext",
+      "name": "finaltext",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "48eb908f0e821edad1d386c5a8501d3e    ",
+      "referenceUuid": "45677c45b45559fb0466baa716ab9eb9    ",
+      "key": "nextPlaceHolder",
+      "fieldCode": "nextPlaceHolder",
+      "name": "nextPlaceHolder",
+      "type": "JSON"
+    },
+    {
+      "uuid": "486233977139acdc1297bc605aa84fb1    ",
+      "key": "finalTextRes",
+      "fieldCode": "finalTextRes",
+      "name": "finalTextRes",
+      "type": "STRING"
+    }
+  ],
+  "variables": [
+    {
+      "key": "finalRepeatText",
+      "name": "finalRepeatText",
+      "type": "STRING",
+      "required": false,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "steps": [
+    {
+      "id": "4437594ab7f1afd3bf9480a8d2b67f79    ",
+      "automationAPIId": "492a440d34d8550c14a2bb803c7e351b    ",
+      "serviceName": "Schools-Utilities",
+      "methodName": "replacePlaceholdersInText",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "444bebe5823e6370adc992d0a566d0b5    ",
+          "value": "#{text}",
+          "key": "text",
+          "name": "text",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        },
+        {
+          "uuid": "4f607ba1a37b4ff6e77692802cf268ba    ",
+          "value": "#{placeHolder}",
+          "key": "placeholders",
+          "name": "placeholders",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": false,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4832e42217c0dd695c4da2e97ec848ac    ",
+          "key": "finalText",
+          "fieldCode": "repeatText",
+          "name": "repeatText",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "finalRepeatText"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "432ac04d5bd9379c9b3e93a785acea00    ",
+      "automationAPIId": "45292a72b51351e86c55a9a05c9c9cee    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "object.toString",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4462c47dc2839ac0f98da4c13546b0bc    ",
+          "value": ",#{repeatText}",
+          "key": "object",
+          "name": "object",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4eac5a35a86922c465e29ff532fe90d5    ",
+          "key": "response",
+          "fieldCode": "repeatText1",
+          "name": "repeatText1",
+          "inputReference": {
+            "type": "method_input",
+            "reference": "finalRepeatText"
+          }
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "#{finaltext} ne null",
+          "expandedExpressions": [
+            {
+              "item": {
+                "type": {
+                  "id": "STRING",
+                  "name": "String",
+                  "type": null
+                },
+                "category": "Input",
+                "fieldCode": "finaltext",
+                "nestedFieldCode": "finaltext"
+              },
+              "value": "null",
+              "groupOp": {
+                "value": "AND"
+              },
+              "operator": {
+                "value": "ne"
+              },
+              "ignoreCase": false
+            }
+          ]
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4e124c557021603cfa2cbbf80e9a2037    ",
+      "automationAPIId": "468b8725600b661fb0088582684e8dd8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "setOrUpdateElement",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "454ec1382570fe66d6cdb79655b1f12c    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4015bc2afd384da3ac33a00d144c764c    ",
+              "value": "#{placeHolder}",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4e770cbbd4c306b77e5880aa60f88775    ",
+              "value": "i",
+              "key": "name",
+              "name": "fieldName",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4676b862adfc06d8b6b5a6407a0ec80d    ",
+              "value": "#{placeHolder.i + 1}",
+              "key": "value",
+              "name": "valueToInsert",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "45677c45b45559fb0466baa716ab9eb9    ",
+          "key": "response",
+          "fieldCode": "nextPlaceHolder",
+          "name": "nextPlaceHolder"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "coreMethod": false,
+      "inputs": [],
+      "outputs": [
+        {
+          "key": "finalTextRes",
+          "fieldCode": "finalTextRes",
+          "name": "finalTextRes",
+          "type": "STRING"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "CUSTOM_CODE",
+        "customCode": {
+          "inlineCode": "let finalText=\"#{finaltext}\";\nlet repeatText=\"#{finalRepeatText}\"\n\nfinalText=finalText == 'null' ? '':finalText;\n\nfinalText=finalText + repeatText;\n\nconsole.log(JSON.stringify(finalText))\n",
+          "language": "JAVASCRIPT",
+          "executor": "CODE_LAMBDA",
+          "fileName": "",
+          "file": ""
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

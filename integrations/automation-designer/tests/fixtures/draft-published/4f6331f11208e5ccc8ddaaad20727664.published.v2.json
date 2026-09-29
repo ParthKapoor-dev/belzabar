@@ -1,0 +1,358 @@
+{
+  "uuid": "4f6331f11208e5ccc8ddaaad20727664",
+  "automationApiId": "45d989ba9dba4a8588f88c20c7631994    ",
+  "name": "configure.address.city.add",
+  "description": "Adds new city to be list of cities available for address configurations in the system in city table",
+  "metadata": {
+    "version": {
+      "uuid": "4f6331f11208e5ccc8ddaaad20727664",
+      "name": "1",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 15,
+      "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+      "name": "Schools",
+      "description": "",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1665638689573,
+      "lastPublishedAt": 1686830062934,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "PUBLISHED",
+    "referenceId": "4283bb05ec15bdc2f723a7a75551ed08"
+  },
+  "inputs": [
+    {
+      "uuid": "458fada76bcab93da572a28d21b4536a    ",
+      "key": "cityCode",
+      "name": "cityCode",
+      "description": "a unique code of city",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    },
+    {
+      "uuid": "4377ce39fb5cd07014df9ce190f300c1    ",
+      "key": "displayName",
+      "name": "displayName",
+      "description": "this is city's name to be shown",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "464d700f5f697d1df8998b90ae22a1e9    ",
+      "automationAPIId": "4dc2b292b68c703351eba414c9665021    ",
+      "serviceName": "Schools",
+      "methodName": "user.getLoggedInUser",
+      "coreMethod": false,
+      "description": "Get the query to fetch loggedIn userId",
+      "inputs": [
+        {
+          "uuid": "4032e2f20ec55c05e5de9235d4935b9f    ",
+          "value": "{\"query\": true}",
+          "key": "filter",
+          "name": "filter",
+          "type": "JSON",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4e91409a7bc0ea33536ea0eee126cd9f    ",
+          "key": "userData",
+          "fieldCode": "userData",
+          "name": "userData"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4b647595739a342eb3f198333c869b20    ",
+      "automationAPIId": "f5164443-9f04-4391-b2d1-fe0b8e00f5a9",
+      "serviceName": "db_service",
+      "methodName": "data.add",
+      "coreMethod": false,
+      "description": "Add city in city table using MDT.&nbsp;",
+      "inputs": [
+        {
+          "uuid": "e9d29329-058e-4974-b3d2-8dc6d575acce",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "227e3a22-2222-4208-86a5-76235585547b",
+              "value": "INSERT INTO city(id,code, display_name, updated_at, updated_by) VALUES (${UUID_WITH_HYPHEN},'#{cityCode}', '#{displayName}', now(), (#{userData.query})) RETURNING id;",
+              "key": "queryString",
+              "name": "SQLQuery",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": true,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "46a59d29-0e7e-595a-9a5c-973167e31d58",
+          "key": "uuid",
+          "fieldCode": "id",
+          "name": "id"
+        }
+      ],
+      "accountConfiguration": {
+        "id": 2,
+        "name": "BCPS-RDS"
+      },
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "4be511d6e9e7c57f1f98b27fc494b0a7",
+      "comment": "Developer =&gt; Dipsi<br id=\"isPasted\">Doc version =&gt; 1<br>Reason =&gt; user.getLoggedInUser<br>Reviewer =&gt; Avani",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790667026007
+      },
+      "createdAt": 1686830062571
+    },
+    {
+      "id": "4f20407e39de8cef9b87b9b6d6240746",
+      "comment": "Developer =&gt; Dhiraj<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\" id=\"isPasted\">Doc version =&gt; 1&nbsp;<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">Reason =&gt; ​UUID change<br style=\"box-sizing: border-box; font-family: Inter, sans-serif; color: rgb(17, 17, 17); font-size: 14px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: left; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; background-color: rgb(255, 255, 255); text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial;\">reviewer =&gt; krunal&nbsp;",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790667026007
+      },
+      "createdAt": 1686830062571
+    }
+  ],
+  "testSuite": {
+    "id": "4164944f105e20e264a4971bc98b4d79",
+    "createdBy": 2,
+    "createdOn": 1686830068630,
+    "chainId": "4f6331f11208e5ccc8ddaaad20727664",
+    "testCases": [
+      {
+        "id": "4be27b1a9fff0e55f2a2b3d62818ee7a",
+        "createdBy": 2,
+        "createdOn": 1686830068631,
+        "name": "configure.address.city.add_1",
+        "testSuiteId": "4164944f105e20e264a4971bc98b4d79",
+        "inputs": [
+          {
+            "id": "45ff383d8c5a78ffacf184d3890799c6",
+            "createdOn": 1686830068631,
+            "testCaseId": "4be27b1a9fff0e55f2a2b3d62818ee7a",
+            "fieldCode": "cityCode",
+            "value": "{\"value\": \"abc\"}"
+          },
+          {
+            "id": "46a366fde878de3109eca617951e326f",
+            "createdOn": 1686830068632,
+            "testCaseId": "4be27b1a9fff0e55f2a2b3d62818ee7a",
+            "fieldCode": "displayName",
+            "value": "{\"value\": \"ABC\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "4359011658df307c232abecf97ce47d9",
+        "createdBy": 2,
+        "createdOn": 1686830068632,
+        "name": "configure.address.city.add_2",
+        "testSuiteId": "4164944f105e20e264a4971bc98b4d79",
+        "inputs": [
+          {
+            "id": "49b44b9a59fa7b6095b3bc5459b45592",
+            "createdOn": 1686830068633,
+            "testCaseId": "4359011658df307c232abecf97ce47d9",
+            "fieldCode": "cityCode",
+            "value": "{\"value\": \"alkapuris\"}"
+          },
+          {
+            "id": "445506babd5955abed2ab68ae19fe395",
+            "createdOn": 1686830068634,
+            "testCaseId": "4359011658df307c232abecf97ce47d9",
+            "fieldCode": "displayName",
+            "value": "{\"value\": \"Vadodaras\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      },
+      {
+        "id": "449061f47453bbc7298fb72eed7229fc",
+        "createdBy": 2,
+        "createdOn": 1686830068634,
+        "name": "configure.address.city.add_3",
+        "testSuiteId": "4164944f105e20e264a4971bc98b4d79",
+        "inputs": [
+          {
+            "id": "48cd69095d2c4b910c99b1e677b8b317",
+            "createdOn": 1686830068634,
+            "testCaseId": "449061f47453bbc7298fb72eed7229fc",
+            "fieldCode": "cityCode",
+            "value": "{\"value\": \"tapi\"}"
+          },
+          {
+            "id": "47ce0d18173554cd09aa9daa951a8865",
+            "createdOn": 1686830068635,
+            "testCaseId": "449061f47453bbc7298fb72eed7229fc",
+            "fieldCode": "displayName",
+            "value": "{\"value\": \"tapi\"}"
+          }
+        ],
+        "assertions": [],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "PUBLISHED"
+}
