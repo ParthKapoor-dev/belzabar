@@ -14,7 +14,7 @@ import {
   DEFAULT_HTTP_TIMEOUT_MS,
   DEFAULT_HTTP_WRITE_TIMEOUT_MS,
 } from "../src/http/transport";
-import { expectJson, expectOk, httpError, summarizeBody, expectFound } from "../src/http/errors";
+import { apiError, ensureApiOk, expectJson, expectOk, httpError, readJsonOrNull, summarizeBody, expectFound } from "../src/http/errors";
 import { redactSecrets, redactString, REDACTED } from "../src/http/redact";
 import { CliError } from "../src/command";
 import { setOutputMode } from "../src/ui";
@@ -551,5 +551,28 @@ describe("jwt helpers", () => {
     expect(isTokenExpired(fresh)).toBe(false);
     expect(isTokenExpired(old)).toBe(true);
     expect(isTokenExpired("not-a-jwt")).toBe(false);
+  });
+});
+
+describe("apiError / ensureApiOk / readJsonOrNull badJson", () => {
+  test("default message, code by status, details {path, status, body}", async () => {
+    const res = new Response(JSON.stringify({ message: "stale" }), { status: 409, statusText: "Conflict" });
+    const e = await apiError(res, { path: "/p", code: (s) => (s === 409 ? "X_CONFLICT" : "X_API_ERROR") });
+    expect(e.code).toBe("X_CONFLICT");
+    expect(e.message).toBe("409 Conflict on /p");
+    expect(e.details).toEqual({ path: "/p", status: 409, body: { message: "stale" } });
+  });
+
+  test("custom message; no path → no details.path; ok responses pass", async () => {
+    const e = await caught(ensureApiOk(new Response("<html><title>Down</title></html>", { status: 503 }), { code: "X", message: (r) => `failed (${r.status})` }));
+    expect(e.message).toBe("failed (503)");
+    expect(e.details).toEqual({ status: 503, body: "HTML page: Down" });
+    await ensureApiOk(new Response("{}", { status: 200 }), { code: "X" });
+  });
+
+  test("badJson overrides HTTP_BAD_JSON", async () => {
+    const e = await caught(readJsonOrNull(new Response("<html>", { status: 200 }), { badJson: (text) => new CliError(`bad: ${text}`, { code: "X_BAD" }) }));
+    expect(e.code).toBe("X_BAD");
+    expect(await readJsonOrNull(new Response(" null ", { status: 200 }), { badJson: () => new CliError("no") })).toBeNull();
   });
 });

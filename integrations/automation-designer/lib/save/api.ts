@@ -6,7 +6,7 @@
 //
 // Error bodies are summarised and redacted by core `readErrorBody`.
 
-import { apiFetch, CliError, readErrorBody } from "@belzabar/core";
+import { apiFetch, CliError, ensureApiOk, readErrorBody } from "@belzabar/core";
 import type { V2MethodResponse } from "../types/v2-wire";
 
 export const CHAIN_V2_PATH = "/rest/api/automation/chain/v2";
@@ -20,6 +20,12 @@ function serverMessage(body: unknown): string | null {
   return typeof body === "string" && body.trim() ? body.trim().slice(0, 300) : null;
 }
 
+/** `head`, plus `: <server message>` when the error body carries one. */
+function withServerMessage(head: string, body: unknown): string {
+  const msg = serverMessage(body);
+  return `${head}${msg ? `: ${msg}` : ""}`;
+}
+
 /**
  * POST a V2 method body. With `uuid` it updates that draft, without it creates.
  * Non-2xx → AD_SAVE_REJECTED carrying the server's message.
@@ -31,14 +37,11 @@ export async function postChainV2(body: V2MethodResponse | Record<string, unknow
     headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(body),
   });
-  if (!response.ok) {
-    const details = await readErrorBody(response);
-    const msg = serverMessage(details);
-    throw new CliError(`Server rejected the V2 save (${response.status})${msg ? `: ${msg}` : ""}`, {
-      code: "AD_SAVE_REJECTED",
-      details: { path: CHAIN_V2_PATH, status: response.status, body: details },
-    });
-  }
+  await ensureApiOk(response, {
+    path: CHAIN_V2_PATH,
+    code: "AD_SAVE_REJECTED",
+    message: (res, body) => withServerMessage(`Server rejected the V2 save (${res.status})`, body),
+  });
   const text = await response.text();
   try {
     return JSON.parse(text) as V2MethodResponse;
@@ -54,13 +57,10 @@ export async function postChainV2(body: V2MethodResponse | Record<string, unknow
 export async function deleteChainV2(uuid: string): Promise<number> {
   const path = `${CHAIN_V2_PATH}/${uuid}`;
   const response = await apiFetch(path, { method: "DELETE", authMode: "Bearer" });
-  if (!response.ok) {
-    const details = await readErrorBody(response);
-    const msg = serverMessage(details);
-    throw new CliError(`Delete failed (${response.status})${msg ? `: ${msg}` : ""}`, {
-      code: "AD_API_ERROR",
-      details: { path, status: response.status, body: details },
-    });
-  }
+  await ensureApiOk(response, {
+    path,
+    code: "AD_API_ERROR",
+    message: (res, body) => withServerMessage(`Delete failed (${res.status})`, body),
+  });
   return response.status;
 }

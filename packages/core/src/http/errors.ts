@@ -89,6 +89,8 @@ export interface HttpErrorOptions {
   message?: string;
   /** Extra fields for error.details (redacted). */
   details?: Record<string, unknown>;
+  /** Error for a 2xx body that is not JSON (readJsonOrNull / expectJson). Default HTTP_BAD_JSON. */
+  badJson?: (text: string, res: Response) => CliError;
 }
 
 /** Build the CliError for a non-OK response (consumes the body). */
@@ -113,6 +115,37 @@ export async function httpError(res: Response, opts: HttpErrorOptions = {}): Pro
 export async function expectOk(res: Response, opts: HttpErrorOptions = {}): Promise<Response> {
   if (res.ok) return res;
   throw await httpError(res, opts);
+}
+
+export interface ApiErrorOptions {
+  /** Error code, or a function of the HTTP status (e.g. 409 → a conflict code). */
+  code: string | ((status: number) => string);
+  /** Message, or a function of the response and its error body. Default `<status> <statusText> on <path>`. */
+  message?: string | ((res: Response, body: unknown) => string);
+  /** Request path; goes in the default message and in `details.path`. */
+  path?: string;
+}
+
+/**
+ * The integrations' non-OK CliError: a namespace code and message, with
+ * `details: { path?, status, body }` where body is `readErrorBody` (small JSON
+ * stays structured, anything else is summarised; redacted). Consumes the body.
+ */
+export async function apiError(res: Response, opts: ApiErrorOptions): Promise<CliError> {
+  const body = await readErrorBody(res);
+  const code = typeof opts.code === "function" ? opts.code(res.status) : opts.code;
+  const message =
+    typeof opts.message === "function"
+      ? opts.message(res, body)
+      : opts.message ?? `${res.status} ${res.statusText} on ${opts.path}`;
+  const details = opts.path === undefined ? { status: res.status, body } : { path: opts.path, status: res.status, body };
+  return new CliError(message, { code, details });
+}
+
+/** Throw `apiError` unless `res.ok`. */
+export async function ensureApiOk(res: Response, opts: ApiErrorOptions): Promise<void> {
+  if (res.ok) return;
+  throw await apiError(res, opts);
 }
 
 export interface ExpectJsonOptions extends HttpErrorOptions {
@@ -147,6 +180,7 @@ export async function readJsonOrNull<T>(res: Response, opts: HttpErrorOptions = 
   try {
     return JSON.parse(text) as T;
   } catch {
+    if (opts.badJson) throw opts.badJson(text, res);
     throw new CliError(
       `Expected JSON${opts.path ? ` from ${redactString(opts.path)}` : ""} but got: ${summarizeBody(text, res.headers.get("content-type"), 200)}`,
       { code: "HTTP_BAD_JSON", details: redactSecrets({ status: res.status, path: opts.path }) },

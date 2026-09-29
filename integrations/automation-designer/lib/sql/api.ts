@@ -1,4 +1,4 @@
-import { apiFetch, CliError, expectFound, readErrorBody, readJsonOrNull } from "@belzabar/core";
+import { apiFetch, ensureApiOk, expectFound, readJsonOrNull } from "@belzabar/core";
 import type { ExecutableCategoryRef, SqlDatabaseAuth, SqlSelectOperation, SqlUpdateOperation, SqlInsertOperation, SqlModifyOperation } from "./types";
 
 export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
@@ -7,12 +7,7 @@ export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
     authMode: "Bearer",
   });
 
-  if (!response.ok) {
-    throw new CliError(`Failed to fetch SQL databases (${response.status})`, {
-      code: "SQL_DATABASES_FETCH_FAILED",
-      details: { status: response.status, body: await readErrorBody(response) },
-    });
-  }
+  await ensureApiOk(response, { code: "SQL_DATABASES_FETCH_FAILED", message: (res) => `Failed to fetch SQL databases (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlDatabaseAuth[]>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
@@ -23,12 +18,7 @@ export async function fetchSqlSelectOperation(): Promise<SqlSelectOperation> {
     authMode: "Bearer",
   });
 
-  if (!response.ok) {
-    throw new CliError(`Failed to fetch SQL read operation metadata (${response.status})`, {
-      code: "SQL_SELECT_METADATA_FETCH_FAILED",
-      details: { status: response.status, body: await readErrorBody(response) },
-    });
-  }
+  await ensureApiOk(response, { code: "SQL_SELECT_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL read operation metadata (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlSelectOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
@@ -39,12 +29,7 @@ export async function fetchSqlUpdateOperation(): Promise<SqlUpdateOperation> {
     authMode: "Bearer",
   });
 
-  if (!response.ok) {
-    throw new CliError(`Failed to fetch SQL update operation metadata (${response.status})`, {
-      code: "SQL_UPDATE_METADATA_FETCH_FAILED",
-      details: { status: response.status, body: await readErrorBody(response) },
-    });
-  }
+  await ensureApiOk(response, { code: "SQL_UPDATE_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL update operation metadata (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlUpdateOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
@@ -55,12 +40,7 @@ export async function fetchSqlInsertOperation(): Promise<SqlInsertOperation> {
     authMode: "Bearer",
   });
 
-  if (!response.ok) {
-    throw new CliError(`Failed to fetch SQL insert operation metadata (${response.status})`, {
-      code: "SQL_INSERT_METADATA_FETCH_FAILED",
-      details: { status: response.status, body: await readErrorBody(response) },
-    });
-  }
+  await ensureApiOk(response, { code: "SQL_INSERT_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL insert operation metadata (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlInsertOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
@@ -71,12 +51,7 @@ export async function fetchSqlModifyOperation(): Promise<SqlModifyOperation> {
     authMode: "Bearer",
   });
 
-  if (!response.ok) {
-    throw new CliError(`Failed to fetch SQL modify operation metadata (${response.status})`, {
-      code: "SQL_MODIFY_METADATA_FETCH_FAILED",
-      details: { status: response.status, body: await readErrorBody(response) },
-    });
-  }
+  await ensureApiOk(response, { code: "SQL_MODIFY_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL modify operation metadata (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlModifyOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }

@@ -5,7 +5,7 @@
 // a V1 body parsed without it misclassifies SQL / echo steps. Prefer
 // lib/api/index.ts:adApi; a few callers need the raw wire directly.
 
-import { apiFetch, CliError, Config, expectJson, readErrorBody, readJsonOrNull, redactSecrets, redactString } from "@belzabar/core";
+import { apiFetch, CliError, Config, ensureApiOk, expectJson, readJsonOrNull, redactSecrets, redactString } from "@belzabar/core";
 import type { V1AutomationDefinition, V1RawMethodResponse } from "../types/v1-wire";
 
 /**
@@ -18,15 +18,8 @@ export const AD_LONG_OP_TIMEOUT_MS = 10 * 60_000;
 
 // ─── Error envelope used by every V1 request ────────────────────────────
 
-async function checkResponse(response: Response, path: string): Promise<void> {
-  if (response.ok) return;
-  // Small JSON stays structured; anything else is summarised (HTML → title). Redacted.
-  const details = await readErrorBody(response);
-  const code = response.status === 409 ? "AD_VERSION_CONFLICT" : "AD_API_ERROR";
-  throw new CliError(`${response.status} ${response.statusText} on ${path}`, {
-    code,
-    details: { path, status: response.status, body: details },
-  });
+function checkResponse(response: Response, path: string): Promise<void> {
+  return ensureApiOk(response, { path, code: (status) => (status === 409 ? "AD_VERSION_CONFLICT" : "AD_API_ERROR") });
 }
 
 /**

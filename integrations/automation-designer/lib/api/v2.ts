@@ -4,18 +4,12 @@
 // fetchRawMethod too. Writes live in lib/save/api.ts. Other operations are
 // V1-only; SUPPORTED_VERSIONS in api-version.ts gates `--v2`.
 
-import { apiFetch, CliError, currentCacheEnv, expectJson, readErrorBody } from "@belzabar/core";
+import { apiFetch, CliError, currentCacheEnv, ensureApiOk, expectJson } from "@belzabar/core";
 import { markMethodGone, unmarkMethodGone } from "../method-finder";
 import type { V2MethodResponse } from "../types/v2-wire";
 
-async function checkResponse(response: Response, path: string): Promise<void> {
-  if (response.ok) return;
-  // Small JSON stays structured; anything else is summarised (HTML → title). Redacted.
-  const details = await readErrorBody(response);
-  throw new CliError(`${response.status} ${response.statusText} on ${path}`, {
-    code: "AD_API_ERROR",
-    details: { path, status: response.status, body: details },
-  });
+function checkResponse(response: Response, path: string): Promise<void> {
+  return ensureApiOk(response, { path, code: "AD_API_ERROR" });
 }
 
 /**

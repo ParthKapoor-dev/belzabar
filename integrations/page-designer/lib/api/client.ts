@@ -7,7 +7,7 @@
 // All endpoints live under `/rest/api/pagedesigner`. Auth is Bearer via
 // @belzabar/core's apiFetch, which auto-refreshes on 401.
 
-import { apiFetch, CliError, httpError, readBodySummary, summarizeBody } from "@belzabar/core";
+import { apiFetch, CliError, httpError, readBodySummary, readJsonOrNull, summarizeBody } from "@belzabar/core";
 import type {
   RawPageResponse,
   RawPageDependencies,
@@ -41,17 +41,15 @@ async function ensureOk(response: Response, context: { method: string; path: str
  * summary instead of a raw SyntaxError (UNHANDLED_EXCEPTION).
  */
 export async function readJson<T>(response: Response, context: { method: string; path: string }): Promise<T | null> {
-  const text = await response.text();
-  if (text.trim() === "") return null;
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    const summary = await readBodySummary(new Response(text, { headers: response.headers }));
-    throw new CliError(`${context.method} ${context.path} returned a non-JSON body: ${summary}`, {
-      code: "PD_API_ERROR",
-      details: { status: response.status, body: summary },
-    });
-  }
+  return readJsonOrNull<T>(response, {
+    badJson: (text, res) => {
+      const summary = summarizeBody(text, res.headers.get("content-type"));
+      return new CliError(`${context.method} ${context.path} returned a non-JSON body: ${summary}`, {
+        code: "PD_API_ERROR",
+        details: { status: res.status, body: summary },
+      });
+    },
+  });
 }
 
 // -------- reads -----------------------------------------------------------
