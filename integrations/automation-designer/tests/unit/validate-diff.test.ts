@@ -191,7 +191,7 @@ const CATALOGUE_4: Array<[string, string]> = [
   ["variable key greet.ing", "VK1"],
   ["method name with a space", "M1"],
   ["inputReference ''", "AD-SCHEMA-001"],
-  ["bogus automationAPIId", "AD-SVC-002 / AD-COMPILE-001 (L4)"],
+  ["bogus automationAPIId", "AD-SVC-002 / AD-COMPILE-002 (L4)"],
   ["wrong serviceName/methodName", "AD-SVC-001 (L4)"],
   ["CC language / executor not in enum", "CC1 / CC5"],
   ["method/input output type FOO", "AD-SCHEMA-002"],

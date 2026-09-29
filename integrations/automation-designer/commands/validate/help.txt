@@ -13,7 +13,9 @@ Flags:
                         automationAPIId, account ids (L4).
   --dry-run-compile     Also compile the method on the server with every step
                         switched off (implies --online). Nothing executes; POSTs
-                        /chain/test, so --env must be given explicitly.
+                        /chain/test, so --env must be given explicitly. A compile
+                        error is AD-COMPILE-001, any other refusal (non-2xx) is
+                        AD-COMPILE-002; both are errors.
   --strict              Treat warnings as errors.
   --help, -h            Show this help message.
 

@@ -106,6 +106,7 @@ export const RULES = {
   "AD-SVC-005": { severity: "error", layer: "L4", description: "accountConfiguration.id is not an account of the step's service (500 on save)" },
   "AD-SVC-006": { severity: "warn", layer: "L4", description: "Online lookup failed; the step's contract was not checked" },
   "AD-COMPILE-001": { severity: "error", layer: "L4", description: "Server dry-run compile rejected the method (400 'Error while compiling automation')" },
+  "AD-COMPILE-002": { severity: "error", layer: "L4", description: "Server dry-run compile answered another non-2xx (500 'automationAPI is null', bad account, 400 'Invalid state'): the method was refused" },
 } as const satisfies Record<string, RuleInfo>;
 
 export type RuleCode = keyof typeof RULES;

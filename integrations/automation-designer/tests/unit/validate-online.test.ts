@@ -139,12 +139,20 @@ describe("L4 dry-run compile", () => {
     }
   });
 
-  test("another failure → AD-SVC-006 (not compile-checked)", async () => {
-    testResponse = () => respond({ status: 502, text: "bad gateway" });
-    try {
-      expect(l4(await run(golden(), { dryRunCompile: true }))).toEqual(["AD-SVC-006:warn:"]);
-    } finally {
-      testResponse = () => ({ debugResult: { services: [] } });
+  test("ADW-R11: any other non-2xx is a blocking AD-COMPILE-002 (was an AD-SVC-006 warning)", async () => {
+    for (const resp of [
+      () => respond({ status: 500, json: { errorMessage: "automationAPI is null" } }),
+      () => respond({ status: 400, json: { message: "Invalid state, provided state does not match." } }),
+      () => respond({ status: 502, text: "bad gateway" }),
+    ]) {
+      testResponse = resp;
+      try {
+        const r = await run(golden(), { dryRunCompile: true });
+        expect(l4(r)).toEqual(["AD-COMPILE-002:error:"]);
+        expect(r.errors.map((e) => e.rule)).toContain("AD-COMPILE-002");
+      } finally {
+        testResponse = () => ({ debugResult: { services: [] } });
+      }
     }
   });
 
