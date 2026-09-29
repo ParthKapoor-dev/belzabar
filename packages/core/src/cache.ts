@@ -5,6 +5,13 @@ import { Config } from "./config";
 
 type TtlSpec = number | null | ((key: string) => number | null);
 
+/** Entity (AD method / PD page) cache: past the soft TTL serve stale and refresh in the background. */
+export const ENTITY_CACHE_STALE_MS = 5 * 60 * 1000;
+/** Entity cache hard TTL: past this, block on a fresh fetch. */
+export const ENTITY_CACHE_TTL_MS = 60 * 60 * 1000;
+/** Finder index (AD method finder, PD page finder) lifetime. */
+export const FINDER_INDEX_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
 export interface CacheOptions<T> {
   dir: string;
   /** Hard TTL — past this an entry is expired and discarded. */

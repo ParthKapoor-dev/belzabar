@@ -1,9 +1,9 @@
 import { join } from "path";
-import { apiFetch, asObj, BELZ_CONFIG_DIR, Cache, CliError, Config, containsWordStart, dedupeBy, levenshtein, normalizeSearchText, numLike, readJsonOrNull, scoreText, strOrNull, tokenize } from "@belzabar/core";
+import { apiFetch, asObj, BELZ_CONFIG_DIR, Cache, CliError, Config, containsWordStart, dedupeBy, FINDER_INDEX_TTL_MS, levenshtein, normalizeSearchText, numLike, readJsonOrNull, scoreText, strOrNull, tokenize } from "@belzabar/core";
 
 const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
-export const METHOD_FINDER_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const METHOD_FINDER_CACHE_TTL_MS = FINDER_INDEX_TTL_MS;
 /**
  * An index with skipped categories (a listing failed mid-build, e.g. a 503) is
  * only reused this long, then rebuilt (ADR-R2).

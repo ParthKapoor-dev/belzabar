@@ -1,8 +1,8 @@
 import { join } from "path";
-import { BELZ_CONFIG_DIR, Cache, Config, dedupeBy, normalizeSearchText, numLike, scoreText, strOrNull } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, Cache, Config, dedupeBy, FINDER_INDEX_TTL_MS, normalizeSearchText, numLike, scoreText, strOrNull } from "@belzabar/core";
 import { pdApi, type RawPageListItem } from "./api/index";
 
-export const PAGE_FINDER_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const PAGE_FINDER_CACHE_TTL_MS = FINDER_INDEX_TTL_MS;
 
 const pageFinderCache = new Cache<PageFinderIndex>({
   dir: join(BELZ_CONFIG_DIR, "cache", "page-finder"),

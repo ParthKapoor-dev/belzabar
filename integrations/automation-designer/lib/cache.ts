@@ -1,5 +1,5 @@
 import { join } from "path";
-import { Cache, BELZ_CONFIG_DIR, currentCacheEnv, type CacheResult } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, Cache, type CacheResult, currentCacheEnv, ENTITY_CACHE_STALE_MS, ENTITY_CACHE_TTL_MS } from "@belzabar/core";
 import { invalidateMethodIndexEntry } from "./method-finder";
 import type { HydratedMethod } from "./types/common";
 
@@ -7,8 +7,8 @@ import type { HydratedMethod } from "./types/common";
 // unscoped `cache/methods/<uuid>.json` files are simply never read again.
 const methodCache = new Cache<HydratedMethod>({
   dir: join(BELZ_CONFIG_DIR, "cache", "methods"),
-  staleMs: 5 * 60 * 1000, // soft TTL — past this, serve stale + refresh in background
-  ttlMs: 60 * 60 * 1000, // hard TTL — past this, block on a fresh fetch
+  staleMs: ENTITY_CACHE_STALE_MS,
+  ttlMs: ENTITY_CACHE_TTL_MS,
 });
 
 /** Method uuids are case-insensitive hex; padded/mixed-case input must hit the same entry. */

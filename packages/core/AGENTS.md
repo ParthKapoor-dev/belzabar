@@ -17,7 +17,7 @@ every `integrations/*` package and by `apps/cli`. Package exports: `.` → `src/
 | `src/command.ts` | `CommandModule`, `CommandContext`, `ok` / `fail` / `failWithData`, `CliError` |
 | `src/envelope.ts` | `EnvelopeSchema` — the `--llm` wire contract |
 | `src/registry.ts` | `CommandRegistry` types, `registryNames` (sorted), `registryModules`, `registryHelpResolver` |
-| `src/cache.ts` | `Cache<T>` — env-scoped JSON file cache with hard/soft TTL |
+| `src/cache.ts` | `Cache<T>` — env-scoped JSON file cache with hard/soft TTL; shared lifetimes `ENTITY_CACHE_STALE_MS` (5 min), `ENTITY_CACHE_TTL_MS` (1 h), `FINDER_INDEX_TTL_MS` (7 days) |
 | `src/swr.ts` | Stale-while-revalidate: refresh locks + detached `--force` re-run |
 | `src/ui.ts` / `src/theme/` | Human/LLM rendering, `lifecycle`, `prompts`; palette (`theme/tokens.ts`), truecolor styling + glyphs (`theme/terminal.ts`) |
 | `src/confirm.ts` | `confirmWrite` (the one write gate: `--yes` / --llm refusal / prompt, per-namespace codes, wording and details shape) and `logWriteIntent` (`[belz <ns> write] {...}` stderr audit line) |

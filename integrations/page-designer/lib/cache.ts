@@ -1,5 +1,5 @@
 import { join } from "path";
-import { Cache, BELZ_CONFIG_DIR } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, Cache, ENTITY_CACHE_STALE_MS, ENTITY_CACHE_TTL_MS } from "@belzabar/core";
 import { pdApi } from "./api/index";
 import type { RawPageResponse } from "./types/wire";
 
@@ -8,8 +8,8 @@ import type { RawPageResponse } from "./types/wire";
 // components share one endpoint (GET /pages/{id}) and one cache.
 const pdCache = new Cache<RawPageResponse>({
   dir: join(BELZ_CONFIG_DIR, "cache", "pages"),
-  staleMs: 5 * 60 * 1000, // soft TTL — past this, serve stale + refresh in background
-  ttlMs: 60 * 60 * 1000, // hard TTL — past this, block on a fresh fetch
+  staleMs: ENTITY_CACHE_STALE_MS,
+  ttlMs: ENTITY_CACHE_TTL_MS,
 });
 
 /**
