@@ -66,6 +66,7 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
   // ADW-R6: --dry-run-compile POSTs the executing /chain/test route (steps gated
   // off), so even a dry run with it must name --env explicitly.
   writes: (a) => !a.dryRun || a.dryRunCompile,
+  requiresEnv: true, // --dry-run reads the target env (category, callee contracts): never the default silently
   parseArgs(argv) {
     const { flags } = args.parse(argv);
     resolveAdCommon(flags, "save", "create");

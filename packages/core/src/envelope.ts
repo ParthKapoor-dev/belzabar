@@ -19,7 +19,9 @@ import { z } from "zod";
  *              prefix; `details` is always an object.
  * - `meta`     `durationMs` always; `env` only for env-aware commands (AD/PD,
  *              cache…), never for tw/migrate/release/config/envs or runner-level
- *              envelopes; `warnings` when any were raised.
+ *              envelopes, and with it `envSource` (`flag` | `BELZ_ENV` |
+ *              `default`: config.json `defaultEnv` or the built-in nsm-dev);
+ *              `warnings` when any were raised.
  *
  * Invariants beyond the field types:
  * - `ok: true`  ⇒ `error === null`
@@ -41,6 +43,7 @@ export const EnvelopeErrorSchema = z
 export const EnvelopeMetaSchema = z
   .object({
     env: z.string().min(1).optional(),
+    envSource: z.enum(["flag", "BELZ_ENV", "default"]).optional(),
     durationMs: z.number().nonnegative(),
     warnings: z.array(z.string()).optional(),
   })

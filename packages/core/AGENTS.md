@@ -88,7 +88,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 | `parseGlobalFlags(argv)` | Pure global-flag parser: `--llm`, `-v/--verbose`, `-e/--env <n>`, `--env=<n>`. Stops at `--` (everything after it, even `--llm`/`-v`, is the command's). Duplicate/conflicting `--env` → `INVALID_ARGS`. Records each `-v/--verbose` position: a `-v` **after** the command name goes to the command when it declares it (`declaresFlag(module.args, "--verbose")` or `ownsFlags`); otherwise it switches on runner debug logging (`ctx.verbose`) |
 | `--help-full` | `options.helpFull()` text, only as the first token after the global flags; `--llm` → `belz.help` envelope `{data: {text}}` (CORE-R11) |
 | `--version` | `belz --version` / `--version --llm` (`belz.version` envelope). `options.build` = `{version, sha, dirty, builtAt}` from `apps/cli/bin/build-info.ts`, a Bun macro evaluated at build time |
-| Default env (D6) | Without `--env`, the runner selects the default env (`Config.resetActiveEnv`: BELZ_ENV > config.json `defaultEnv` > nsm-dev); an unknown default fails env-aware commands with `INVALID_ENV`. `ctx.envExplicit` says whether `--env` was given. An env-aware command with `writes` (bool or `(args) => bool`) refuses to run without an explicit `--env` → `ENV_REQUIRED_FOR_WRITE`, and in human mode prints `→ target env: <name> (<url>)` on stderr. `writesLocal` (local files only) needs no `--env` |
+| Default env (D6) | Without `--env`, the runner selects the default env (`Config.resetActiveEnv`: BELZ_ENV > config.json `defaultEnv` > nsm-dev); an unknown default fails env-aware commands with `INVALID_ENV`. `ctx.envExplicit` says whether `--env` was given. An env-aware command with `writes` (bool or `(args) => bool`) refuses to run without an explicit `--env` → `ENV_REQUIRED_FOR_WRITE`, and in human mode prints `→ target env: <name> (<url>)` on stderr. `requiresEnv` (bool or fn) is the same guard for a *preview* of a write that reads the target env (`ad save/create --dry-run`, `test-case sync` without `--apply`; `details.dryRun: true`, no target-env header). `writesLocal` (local files only) needs no `--env`. Every other env-aware command run on the default env prints `→ env: <name> (<source>; pass --env to choose)` on stderr in human mode, and the envelope carries `meta.envSource` |
 | `hasHelpFlag(args)` | `-h`/`--help` anywhere before `--`. The runner shows help for the command instead of executing it (so `config token --help` never runs `token`) |
 | `dispatchNamespaced(argv, options)` / `dispatchCommand(...)` | In-process routing: return a `RunOutcome` (`{kind:"envelope", envelope, exitCode}` or `{kind:"print", print, exitCode}`) and **never exit**. `runNamespacedCli` = `installStdioGuard` + `dispatchNamespaced` + `renderOutcome` + `flushAndExit`. Used by `core/testing` |
 | `resolveGlobalFlags(argv)` | `parseGlobalFlags` + apply them (output mode, verbose, `Config.setActiveEnv`); no stdio side effects |
@@ -98,7 +98,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 ### Command Interface
 | Export | Description |
 |--------|-------------|
-| `CommandModule` | Interface: `{ parseArgs, execute, presentHuman?, envAware?, writes?, writesLocal?, ownsFlags? }`. `schema`/`version` are deprecated and ignored |
+| `CommandModule` | Interface: `{ parseArgs, execute, presentHuman?, envAware?, writes?, requiresEnv?, writesLocal?, ownsFlags? }`. `schema`/`version` are deprecated and ignored |
 | `ok(data)` | Returns a successful command result |
 | `fail(code, message, {details?, data?})` | Returns a failed command result |
 | `failWithData(code, message, data)` | Failure that still carries its result (validator found errors, preflight failed, lookup found nothing): `ok:false`, exit 1, `data` set; the human presenter still runs, then the error is printed |
@@ -118,7 +118,8 @@ command that cannot run at all. Do not "simplify" this back into a throw.
   (USER_ABORT → 130).
 - `meta`: `durationMs` always; `env` only for env-aware commands (`envAware` defaults true;
   tw/migrate/release namespaces, config/extension/envs/setup/onboard/update are not) and never on
-  runner-level envelopes; `warnings` when raised.
+  runner-level envelopes, always with `envSource`: `flag` | `BELZ_ENV` | `default` (config.json
+  `defaultEnv` or the built-in nsm-dev); `warnings` when raised.
 
 `apps/cli/tests/envelope-contract.test.ts` (help/error paths of every command) and
 `envelope-success.test.ts` (read commands over the real fixtures) check it. Change the schema and

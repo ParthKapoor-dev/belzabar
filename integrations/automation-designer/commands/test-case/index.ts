@@ -199,6 +199,7 @@ async function fetchContract(uuid: string): Promise<HydratedMethod> {
 const command: CommandModule<TestCaseArgs, TestCaseData> = {
   schema: "ad.test-case",
   writes: (a) => !["list", "export", "sync"].includes(a.action) || (a.action === "sync" && !!a.apply),
+  requiresEnv: (a) => a.action === "sync", // the sync plan previews writes on the target env
   parseArgs(argv) {
     const p = args.parse(argv);
     resolveAdCommon(p.flags, "testCase", "test-case");

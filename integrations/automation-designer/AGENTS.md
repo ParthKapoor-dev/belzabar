@@ -83,15 +83,15 @@ needs `--yes` instead.
 | `lint <uuid\|file>` | Validator + advisory review rules (`--online`, `--docs`, `--strict`) |
 | `sql dbs\|run\|explain` | Read-only SQL. `run`/`explain` accept one read statement (`SQL_NOT_READ_ONLY`) |
 | `sql update\|insert\|modify\|tui` | **W** SQL writes (tui can switch into write modes) |
-| `save [file] --uuid <uuid>` | **W** overlay / structural ops onto the DRAFT (`--dry-run` is not a write; `--dry-run --dry-run-compile` is, since it POSTs `/chain/test`) |
-| `create --spec <file>` | **W** new DRAFT from a compact spec or a V2 body (`--dry-run` is not a write; with `--dry-run-compile` it is) |
+| `save [file] --uuid <uuid>` | **W** overlay / structural ops onto the DRAFT (`--dry-run` is not a write but still needs `--env` — `requiresEnv`, it reads the target draft; `--dry-run --dry-run-compile` is a write, since it POSTs `/chain/test`) |
+| `create --spec <file>` | **W** new DRAFT from a compact spec or a V2 body (`--dry-run` is not a write but still needs `--env`; with `--dry-run-compile` it is a write) |
 | `publish <uuid> --note "…"` | **W** validate, publish, record the note, evict the compiled cache |
 | `delete <uuid>` | **W** soft-delete a never-published DRAFT |
 | `import <file>`, `category create <name>` | **W**. import refuses an empty/invalid file (`AD_IMPORT_EMPTY`/`_INVALID`, `FILE_NOT_FOUND`), PUBLISHED records or targets (`AD_IMPORT_PUBLISHED`/`_TARGETS_PUBLISHED`), and validator errors on V2 records; the route 400s on sems-dev |
 | `changelog <uuid> [--note "…"]` | List notes; `--note` is **W** (draft-guarded) |
 | `history restore <draftUuid> --version N` | **W** draft-guarded restore; fails `RESTORE_UNCONFIRMED` unless the re-read draft matches the target content; evicts the compiled cache; reports validator findings |
 | `test <uuid>` | **W** (really runs the chain). `--inputs`, `--case`, `--expect`, `--compare-published` (runs the published copy too: confirms, `--yes`). A FAILED execution exits 1 `AD_TEST_FAILED` |
-| `test-case <action>` | `list`, `export` and `sync` (dry run) are reads. `create`, `update`, `delete`, `bulk`, `run-suite`, `delete-suite` and `sync --apply` are **W** |
+| `test-case <action>` | `list`, `export` and `sync` (dry run; needs `--env`) are reads. `create`, `update`, `delete`, `bulk`, `run-suite`, `delete-suite` and `sync --apply` are **W** |
 | `run <publishedId>`, `run-suites`, `save-suite` | **W** live execute of the uuid's own saved body — a draft uuid runs the draft; `data.publishedUuid` names the published copy (`--stream`); **W** run local `suites/*.spec.json` (a malformed file fails alone as INVALID_JSON; a suite saved on another env is ENV_MISMATCH, not run); save a local suite (records `env`) |
 
 `desc.txt` for each command lists every invocation variant. `belz --help-full` prints

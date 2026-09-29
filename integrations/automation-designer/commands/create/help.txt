@@ -50,13 +50,14 @@ Flags:
   --strict              Validator warnings block the create too.
   --dry-run-compile     Also run the online checks (server compile dry run:
                         POSTs the executing /chain/test route with every step
-                        gated off, so --env is required even with --dry-run).
+                        gated off, so --dry-run then counts as a write).
   --v2                  Accepted for consistency (create always uses V2).
   --help, -h            Show this help message.
 
 Global Flags:
-  --env <name>          Set active environment. Required: create is a write
-                        (not with --dry-run, unless --dry-run-compile).
+  --env <name>          Target environment. Always required, --dry-run too:
+                        the dry run reads the target env, so it never falls
+                        back to the default env (ENV_REQUIRED_FOR_WRITE).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Errors: MISSING_CATEGORY, AD_SPEC_UNKNOWN_KEY, AD_SPEC_INVALID,

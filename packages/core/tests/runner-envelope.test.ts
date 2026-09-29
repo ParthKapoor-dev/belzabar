@@ -208,6 +208,7 @@ describe("human output streams (F31, CORE-6, F32)", () => {
 
   test("spinner writes no frames or escape codes when stdout is not a TTY", async () => {
     const spinning: CommandModule = {
+      envAware: false, // no default-env notice on stderr: this test is about the spinner
       execute: async () => {
         const s = lifecycle.spinner("working");
         s.start();
@@ -344,6 +345,40 @@ describe("default env + explicit env on writes (D6, CORE-26)", () => {
     expect((r.envelope?.data as any).envExplicit).toBe(false);
     // explicit --env still wins
     expect((await runCliInProcess(cli(), ["ad", "show", "--env", "t-dev"])).envelope?.meta.env).toBe("t-dev");
+  });
+
+  test("requiresEnv (the dry run of a write reads the target env) needs --env too (CLI trial)", async () => {
+    const dry: CommandModule<string[], unknown> = { ...probe, writes: false, requiresEnv: (a) => a[0] === "--dry-run" };
+    const opts = cli();
+    opts.namespaces.ad!.commands!.save = dry;
+    const r = await runCliInProcess(opts, ["ad", "save", "--dry-run"]);
+    expect(r.envelope?.error?.code).toBe("ENV_REQUIRED_FOR_WRITE");
+    expect(r.envelope?.error?.details).toMatchObject({ dryRun: true });
+    expect((await runCliInProcess(opts, ["ad", "save", "--dry-run", "--env", "t-qa"])).envelope?.ok).toBe(true);
+    expect((await runCliInProcess(opts, ["ad", "save", "other"])).envelope?.ok).toBe(true);
+    // a preview is not a write: no "target env" header
+    const h = await runCliInProcess(opts, ["ad", "save", "--dry-run", "--env", "t-qa"], { llm: false });
+    expect(h.stderr).not.toContain("target env");
+  });
+
+  test("meta.envSource says where the env came from; human reads on the default say so on stderr", async () => {
+    const flag = await runCliInProcess(cli(), ["ad", "show", "--env", "t-dev"]);
+    expect(flag.envelope?.meta).toMatchObject({ env: "t-dev", envSource: "flag" });
+    const dflt = await runCliInProcess(cli(), ["ad", "show"]);
+    expect(dflt.envelope?.meta.envSource).toBe("default");
+    expect(EnvelopeSchema.safeParse(dflt.envelope).success).toBe(true);
+    const h = await runCliInProcess(cli(), ["ad", "show"], { llm: false });
+    expect(h.stderr).toContain(`env: ${Config.activeEnv.name} (`);
+    expect(h.stderr).toContain("pass --env to choose");
+    expect(h.stdout).not.toContain("pass --env");
+    const hx = await runCliInProcess(cli(), ["ad", "show", "--env", "t-dev"], { llm: false });
+    expect(hx.stderr).not.toContain("pass --env");
+    // not env-aware: no env, no envSource
+    const tw = await runCliInProcess(cli(), ["tw", "run"]);
+    expect(tw.envelope?.meta.env).toBeUndefined();
+    expect(tw.envelope?.meta.envSource).toBeUndefined();
+    setBelzEnv("t-qa");
+    expect((await runCliInProcess(cli(), ["ad", "show"])).envelope?.meta).toMatchObject({ env: "t-qa", envSource: "BELZ_ENV" });
   });
 
   test("an unknown default env fails env-aware commands only", async () => {

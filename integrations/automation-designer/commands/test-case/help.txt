@@ -45,7 +45,8 @@ Flags:
 
 Global Flags:
   --env <name>          Target environment. Required explicitly for every action
-                        except list, export and a dry-run sync (they write).
+                        except list and export (they write; a dry-run sync
+                        reads the env it would write to, so it needs it too).
   --llm                 Emit a JSON envelope; --yes is required for writes in this mode.
 
 Case file (one per test case; stable key order; no ids, so it can live in a

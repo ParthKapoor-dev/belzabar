@@ -10,7 +10,7 @@ belz ad test-case run-suite <uuid> --env <env> [--yes]  :->  Execute the method'
 belz ad test-case delete-suite <testSuiteId> --env <env> [--yes]  :->  Delete a test suite
 belz ad test-case export <uuid> --dir <root>  :->  Write the suite as git-friendly files: <root>/<Category>/<method>/{method.json,cases/*.json}; read-only
 belz ad test-case export <uuid> --dir <root> --prune  :->  Also delete case files whose case is no longer on the server
-belz ad test-case sync <methodDir>  :->  Dry run: plan create/update/drift/extra of the case files against the suite (method.json uuids[env])
-belz ad test-case sync <methodDir> --uuid <uuid>  :->  Sync to this chain instead of method.json's uuid for the env
+belz ad test-case sync <methodDir> --env <env>  :->  Dry run (--env required: it picks method.json uuids[env]): plan create/update/drift/extra of the case files against the suite (method.json uuids[env])
+belz ad test-case sync <methodDir> --uuid <uuid> --env <env>  :->  Sync to this chain instead of method.json's uuid for the env
 belz ad test-case sync <methodDir> --apply --env <env> [--yes]  :->  Apply the plan and verify every case on read-back
 belz ad test-case sync <methodDir> --apply --prune --env <env>  :->  Also delete server cases that have no file

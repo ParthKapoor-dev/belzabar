@@ -226,6 +226,18 @@ function applyDefaultEnv(): { code: string; message: string } | null {
   return Config.getAllEnvs()[name] ? null : unknownDefault(name, source);
 }
 
+/** `meta.envSource`: where the env came from. `default` = config.json `defaultEnv` or the built-in nsm-dev. */
+export type MetaEnvSource = "flag" | "BELZ_ENV" | "default";
+
+function metaEnvSource(envExplicit: boolean): MetaEnvSource {
+  if (envExplicit) return "flag";
+  return Config.envSource === "BELZ_ENV" ? "BELZ_ENV" : "default";
+}
+
+function envSourceLabel(): string {
+  return Config.envSource === "BELZ_ENV" ? "from BELZ_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "built-in default";
+}
+
 function unknownDefault(name: string, source: string): { code: string; message: string } {
   return {
     code: "INVALID_ENV",
@@ -510,6 +522,7 @@ export async function dispatchCommand(
   const activeEnv = Config.activeEnv;
   const envExplicit = globals?.envExplicit ?? false;
   const envForMeta = envAware ? activeEnv.name : null;
+  const envSourceForMeta = envAware ? metaEnvSource(envExplicit) : null;
   const schema = `${schemaNamespace(binaryName)}.${commandName}`;
 
   const commandContext: CommandContext = {
@@ -538,26 +551,32 @@ export async function dispatchCommand(
 
     // Only env-aware commands take their target from --env; others (migrate run:
     // profile → envs) name their target through their own arguments.
-    const writes =
-      envAware && (typeof command.writes === "function" ? command.writes(parsedArgs) : command.writes === true);
-    if (writes && !envExplicit) {
+    const flag = (v: boolean | ((a: unknown) => boolean) | undefined) =>
+      typeof v === "function" ? v(parsedArgs) : v === true;
+    const writes = envAware && flag(command.writes as never);
+    const previewsWrite = envAware && !writes && flag(command.requiresEnv as never);
+    if ((writes || previewsWrite) && !envExplicit) {
+      const what = writes ? "writes to an environment" : "previews a write by reading the target environment";
       throw new CliError(
-        `'${binaryName} ${commandName}' writes to an environment, so --env is required ` +
+        `'${binaryName} ${commandName}' ${what}, so --env is required ` +
           `(the default env is '${activeEnv.name}'; to target it, add --env ${activeEnv.name}).`,
-        { code: "ENV_REQUIRED_FOR_WRITE", details: { defaultEnv: activeEnv.name } }
+        { code: "ENV_REQUIRED_FOR_WRITE", details: { defaultEnv: activeEnv.name, dryRun: previewsWrite } }
       );
     }
     if (writes && outputMode === "human") {
       printErr(theme.faint(`${symbols.arrow} target env: ${activeEnv.name} (${activeEnv.baseUrl})`));
+    } else if (envAware && !envExplicit && outputMode === "human") {
+      // D6: reads may use the default env, but never silently (CLI trial).
+      printErr(theme.faint(`${symbols.arrow} env: ${activeEnv.name} (${envSourceLabel()}; pass --env to choose)`));
     }
 
     const result = await command.execute(parsedArgs, commandContext);
-    const envelope = toEnvelope(schema, commandName, result, startedAt, envForMeta, warnings);
+    const envelope = toEnvelope(schema, commandName, result, startedAt, envForMeta, warnings, envSourceForMeta);
     return envelopeOutcome(outputMode, envelope, envelope.ok ? 0 : 1, command.presentHuman);
   } catch (error: unknown) {
     const normalizedError = normalizeError(error);
     const failureResult: CommandResult = { ok: false, error: normalizedError };
-    const envelope = toEnvelope(schema, commandName, failureResult, startedAt, envForMeta, warnings);
+    const envelope = toEnvelope(schema, commandName, failureResult, startedAt, envForMeta, warnings, envSourceForMeta);
     const exitCode = error instanceof CliError && error.exitCode > 0 ? error.exitCode : 1;
     return envelopeOutcome(outputMode, envelope, exitCode, command.presentHuman);
   }
@@ -789,11 +808,14 @@ export function toEnvelope(
   result: CommandResult,
   startedAt: number,
   envName: string | null,
-  warnings: string[]
+  warnings: string[],
+  envSource: MetaEnvSource | null = null
 ): CommandEnvelope {
   const meta: Record<string, unknown> = { ...(result.meta ?? {}) };
   delete meta.env;
+  delete meta.envSource;
   if (envName !== null) meta.env = envName;
+  if (envName !== null && envSource !== null) meta.envSource = envSource;
   meta.durationMs = Date.now() - startedAt;
   const allWarnings = [
     ...(Array.isArray(meta.warnings) ? (meta.warnings as unknown[]).map(String) : []),

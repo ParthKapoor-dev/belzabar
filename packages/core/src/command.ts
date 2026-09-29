@@ -86,6 +86,14 @@ export interface CommandModule<TArgs = unknown, TData = unknown> {
    */
   writes?: boolean | ((args: TArgs) => boolean);
   /**
+   * The command does not write here, but it reads the target env for a write it
+   * previews (the `--dry-run` of save/create, `test-case sync` without
+   * `--apply`). Like `writes`, it refuses to run on the default env (D6), so a
+   * preview can never silently read a different project than the write would
+   * hit. `ENV_REQUIRED_FOR_WRITE`. Enforced only for env-aware commands.
+   */
+  requiresEnv?: boolean | ((args: TArgs) => boolean);
+  /**
    * The command writes local state only (files, ledgers, ~/.belz). Informational:
    * unlike `writes`, it does not require an explicit `--env`.
    */

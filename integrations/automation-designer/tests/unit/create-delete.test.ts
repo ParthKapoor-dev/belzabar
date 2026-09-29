@@ -196,6 +196,18 @@ describe("ad create", () => {
   });
 });
 
+describe("ad create --dry-run needs an explicit --env (CLI trial: it silently read nsm-dev)", () => {
+  test("no --env → ENV_REQUIRED_FOR_WRITE before any request; with --env it runs", async () => {
+    wireCreate();
+    const r = await runCommand(createCommand, ["--category", "Test-Parth", "--spec", file(spec), "--dry-run"]);
+    expect(r.envelope?.error?.code).toBe("ENV_REQUIRED_FOR_WRITE");
+    expect(ff!.requests).toHaveLength(0);
+    const ok = await runCommand(createCommand, ["--category", "Test-Parth", "--spec", file(spec), "--dry-run"], { env: "t-dev" });
+    expect(ok.envelope?.error?.code).not.toBe("ENV_REQUIRED_FOR_WRITE");
+    expect(ok.envelope?.meta).toMatchObject({ env: "t-dev", envSource: "flag" });
+  });
+});
+
 describe("ad delete", () => {
   const D = "40b7959fb1dd8b4cf2ee9f5e54630ea8"; // DRAFT, referenceId null
   function wireDelete(mutate: (b: V2MethodResponse) => void = () => {}) {

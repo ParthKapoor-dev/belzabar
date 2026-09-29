@@ -1,7 +1,7 @@
 belz ad save <file> --uuid <uuid> --env <env>  :->  Save a JSON overlay onto the method's draft via V2: name/summary/description, parsedSteps[] leaf edits, and ops[] (add-step/remove-step/move-step/update-step with compact steps, set-/remove-input|variable|output); step numbers = fetched positions; validated, freshness-checked, verified on re-read, compiled cache evicted
 belz ad save [file] --uuid <uuid> --env <env> --sql-file <N=path>  :->  Replace step N's SQL with the file's text (repeatable; stored in the step's encoding)
 belz ad save [file] --uuid <uuid> --env <env> --code-file <N=path>  :->  Replace step N's custom code with the file's text (repeatable; stored in the step's encoding)
-belz ad save <file> --uuid <uuid> --dry-run  :->  Plan + validate only, write nothing: applied ops, new step order, valid, validator errors/warnings
+belz ad save <file> --uuid <uuid> --env <env> --dry-run  :->  Plan + validate only, write nothing (--env still required: it reads the target draft): applied ops, new step order, valid, validator errors/warnings
 belz ad save <file> --uuid <uuid> --env <env> --yes --llm  :->  Non-interactive save (--yes is required in --llm mode)
 belz ad save <file> --uuid <uuid> --env <env> --strict  :->  Validator warnings block the save too
 belz ad save <file> --uuid <uuid> --env <env> --dry-run-compile  :->  Also run the online validator checks (server compile dry run)
