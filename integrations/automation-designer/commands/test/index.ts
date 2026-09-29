@@ -110,11 +110,17 @@ function block(results: ExpectationResult[], unevaluated: string[] = []): Expect
 }
 
 async function loadCase(path: string): Promise<{ values: Record<string, unknown>; expectations: Expectation[]; unevaluated: string[] }> {
+  let text: string;
+  try {
+    text = await readFile(path, "utf-8");
+  } catch (err) {
+    throw new CliError(`Cannot read test case ${path}: ${(err as Error).message}`, { code: "FILE_NOT_FOUND", details: { path } });
+  }
   let json: unknown;
   try {
-    json = JSON.parse(await readFile(path, "utf-8"));
+    json = JSON.parse(text);
   } catch (err) {
-    throw new CliError(`Cannot read test case ${path}: ${String(err)}`, { code: "AD_TESTCASE_INVALID" });
+    throw new CliError(`Test case ${path} is not valid JSON: ${(err as Error).message}`, { code: "INVALID_JSON", details: { path } });
   }
   const c = parseCaseInput(json, path);
   const expectations: Expectation[] = [];

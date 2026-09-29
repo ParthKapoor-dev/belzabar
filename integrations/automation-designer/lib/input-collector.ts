@@ -15,21 +15,44 @@ export class InputCollector {
     const collected: Record<string, unknown> = {};
 
     if (filePath) {
+      // Stable codes (not UNHANDLED_EXCEPTION): FILE_NOT_FOUND, INVALID_JSON, INVALID_INPUTS, MISSING_INPUT.
+      let content: string;
       try {
-        const content = await readFile(filePath, "utf-8");
-        const fileData = JSON.parse(content);
-
-        for (const input of inputs) {
-          if (fileData[input.code] !== undefined) {
-            collected[input.code] = fileData[input.code];
-          } else if (input.required) {
-            throw new Error(`Missing required input '${input.code}' in input file.`);
-          }
-        }
-        return collected;
-      } catch (error: any) {
-        throw new Error(`Failed to load inputs from file: ${error.message}`);
+        content = await readFile(filePath, "utf-8");
+      } catch (error) {
+        throw new CliError(`Cannot read inputs file ${filePath}: ${(error as Error).message}`, {
+          code: "FILE_NOT_FOUND",
+          details: { path: filePath },
+        });
       }
+      let fileData: unknown;
+      try {
+        fileData = JSON.parse(content);
+      } catch (error) {
+        throw new CliError(`Inputs file ${filePath} is not valid JSON: ${(error as Error).message}`, {
+          code: "INVALID_JSON",
+          details: { path: filePath },
+        });
+      }
+      if (!fileData || typeof fileData !== "object" || Array.isArray(fileData)) {
+        throw new CliError(`Inputs file ${filePath} must hold a JSON object {inputKey: value}.`, {
+          code: "INVALID_INPUTS",
+          details: { path: filePath },
+        });
+      }
+      const values = fileData as Record<string, unknown>;
+      const missing: string[] = [];
+      for (const input of inputs) {
+        if (values[input.code] !== undefined) collected[input.code] = values[input.code];
+        else if (input.required) missing.push(input.code);
+      }
+      if (missing.length > 0) {
+        throw new CliError(`Inputs file ${filePath} is missing required input(s): ${missing.join(", ")}.`, {
+          code: "MISSING_INPUT",
+          details: { path: filePath, missing },
+        });
+      }
+      return collected;
     }
 
     if (getOutputMode() === "llm") {

@@ -112,6 +112,31 @@ describe("ad test --expect (7.7)", () => {
   });
 });
 
+describe("ad test input files: stable error codes (was UNHANDLED_EXCEPTION)", () => {
+  test.each([
+    ["missing file", null, "FILE_NOT_FOUND"],
+    ["invalid JSON", "{nope", "INVALID_JSON"],
+    ["not an object", "[1]", "INVALID_INPUTS"],
+    ["missing required input", "{}", "MISSING_INPUT"],
+  ])("--inputs: %s → %s", async (_label, content, errCode) => {
+    wire();
+    const file = join(scratchDir("ad-test-inputs"), "in.json");
+    if (content !== null) writeFileSync(file, content);
+    const r = await runCommand(testCommand, [DRAFT, "--inputs", content === null ? `${file}.missing` : file], { env: ENV });
+    expect(r.envelope?.error?.code).toBe(errCode);
+    expect(ff!.requests.filter((q) => q.url.endsWith("/chain/test"))).toEqual([]);
+  });
+
+  test("--case: missing file / invalid JSON", async () => {
+    wire();
+    const dir = scratchDir("ad-test-case-err");
+    const bad = join(dir, "bad.json");
+    writeFileSync(bad, "{nope");
+    expect((await runCommand(testCommand, [DRAFT, "--case", join(dir, "none.json")], { env: ENV })).envelope?.error?.code).toBe("FILE_NOT_FOUND");
+    expect((await runCommand(testCommand, [DRAFT, "--case", bad], { env: ENV })).envelope?.error?.code).toBe("INVALID_JSON");
+  });
+});
+
 describe("ad test --compare-published (7.12)", () => {
   test("draft uuid: runs both, diffs the outputs", async () => {
     const inputs = wire();
