@@ -226,17 +226,10 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
     const tag = body.kind === "SQL" ? "sql: " : body.kind === "CODE" ? "code: " : "= ";
     parts.push(`${tag}${abbreviate(body.text, bodyChars)}`);
   }
-  if (step.kind === "REDIS_GET" || step.kind === "REDIS_SET" || step.kind === "REDIS_REMOVE") {
-    const r = [
-      step.key ? `key=${abbreviate(step.key, valueChars)}` : "",
-      step.value ? `value=${abbreviate(step.value, valueChars)}` : "",
-      step.ttlSeconds ? `ttl=${step.ttlSeconds}` : "",
-    ].filter(Boolean);
-    if (r.length) parts.push(r.join(", "));
-  } else {
-    const inputs = inputPairs(step, opts.labels?.get(step.orderIndex));
-    if (inputs.length) parts.push(inputs.map((i) => `${i.input}=${abbreviate(i.value, valueChars)}`).join(", "));
-  }
+  // Every set input, Redis included (ADR-R3: scope / expirationSeconds /
+  // canReplace are what a lock step is about).
+  const inputs = inputPairs(step, opts.labels?.get(step.orderIndex));
+  if (inputs.length) parts.push(inputs.map((i) => `${i.input}=${abbreviate(i.value, valueChars)}`).join(", "));
 
   const outs = outputSpecs(step);
   if (outs.length) parts.push(`-> ${outs.join(", ")}`);

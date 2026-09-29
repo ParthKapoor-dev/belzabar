@@ -297,14 +297,15 @@ function buildRedis(
     const label = labels[trimUuid(m.automationUserInputUuid) ?? ""] ?? labels[String(m.automationUserInputId ?? "")];
     if (label && typeof m.value === "string") byLabel.set(label.trim().toLowerCase(), m.value);
   }
+  // sems names them scope / expirationSeconds / canReplace (ADR-R3).
   const LABEL_FOR: Record<number, string[]> = {
     [getKeyChildId]: ["key"],
-    [getKeyId + 2]: ["store", "cache store"],
+    [getKeyId + 2]: ["store", "cache store", "scope"],
     [setKeyChildId]: ["key"],
     [setValueChildId]: ["value"],
-    [setStoreChildId]: ["store", "cache store"],
-    [setTtlChildId]: ["ttl", "expiry", "ttl (seconds)"],
-    [setOverwriteChildId]: ["overwrite"],
+    [setStoreChildId]: ["store", "cache store", "scope"],
+    [setTtlChildId]: ["ttl", "expiry", "ttl (seconds)", "expirationseconds"],
+    [setOverwriteChildId]: ["overwrite", "canreplace"],
   };
   const findValue = (id: number): string | undefined => {
     const m = findMappingByInputId(raw.mappings, id);

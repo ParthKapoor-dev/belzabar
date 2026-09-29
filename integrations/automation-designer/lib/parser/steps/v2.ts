@@ -104,9 +104,10 @@ export function parseV2Step(raw: V2Step, orderIndex: number, warn: (msg: string)
       kind: family.kind,
       key: byKey("key"),
       value: byKey("value"),
-      ttlSeconds: byKey("expiry", "ttl"),
-      store: byKey("store"),
-      overwrite: byKey("overwrite"),
+      // sems keys: expirationSeconds / scope / canReplace (ADR-R3).
+      ttlSeconds: byKey("expiry", "ttl", "expirationseconds"),
+      store: byKey("store", "scope"),
+      overwrite: byKey("overwrite", "canreplace"),
     };
     return step;
   }

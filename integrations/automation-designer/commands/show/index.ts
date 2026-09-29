@@ -243,7 +243,7 @@ async function buildStepDetailView(
       ...(step.conditionRows ? { rows: step.conditionRows } : {}),
     };
   }
-  if (step.kind === "EXISTING_SERVICE" || step.kind === "UNKNOWN") {
+  if (step.kind === "EXISTING_SERVICE" || step.kind === "UNKNOWN" || step.kind.startsWith("REDIS_")) {
     const inputs = flattenStepInputs(step.inputs, labelFor);
     if (inputs.length > 0) base.inputs = inputs;
   }

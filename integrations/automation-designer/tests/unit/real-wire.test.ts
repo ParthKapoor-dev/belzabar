@@ -21,6 +21,7 @@ import * as v2 from "../../lib/api/v2";
 import type { HydratedMethod } from "../../lib/types/common";
 import type { V1AutomationDefinition, V1RawMethodResponse } from "../../lib/types/v1-wire";
 import { buildServiceResolver, identityFromDefinition, resolverFromTable } from "../../lib/hydrator";
+import { compactStepLine } from "../../lib/method-view";
 import type { ServiceIdentity, ServiceResolver } from "../../lib/parser/steps/classify";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
@@ -190,6 +191,22 @@ describe("AD-02 step classification by service identity", () => {
     expect(counts.SQL).toBe(41);
     expect(counts.SPEL_ECHO).toBe(4);
     expect((counts.REDIS_GET ?? 0) + (counts.REDIS_SET ?? 0)).toBe(3);
+  });
+
+  // ADR-R3: sems names the Redis inputs scope / expirationSeconds / canReplace.
+  test("Redis scope, TTL and canReplace parse on V1 and V2 and show in the compact line", async () => {
+    const defs = await definitionTable();
+    const p = (await pairs()).find((x) => x.uuid.startsWith("44297f3e"))!;
+    const m1 = parseV1Method(p.raw1, { env: "sems-dev", resolveService: await resolverFor(p, defs) });
+    for (const m of [m1, p.m2]) {
+      expect(m.parsedSteps[0]).toMatchObject({ kind: "REDIS_SET", key: "#{lockKey}", value: "first-writer", store: "PERSISTENT", ttlSeconds: "60", overwrite: "true" });
+      expect(m.parsedSteps[1]).toMatchObject({ overwrite: "false" });
+      expect(m.parsedSteps[2]).toMatchObject({ kind: "REDIS_GET", store: "PERSISTENT" });
+    }
+    const line = compactStepLine(p.m2.parsedSteps[1]!);
+    expect(line).toContain("body.expirationSeconds=60");
+    expect(line).toContain("body.canReplace=false");
+    expect(line).toContain("body.scope=PERSISTENT");
   });
 
   test("SQL text, operation and service names agree between V1 and V2", async () => {
