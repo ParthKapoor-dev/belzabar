@@ -2,7 +2,7 @@
 // and every failure after the build was triggered carries its reference.
 // Jenkins and AD are fully faked; nothing leaves the process.
 import { afterEach, describe, expect, test } from "bun:test";
-import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { fakeFetch, type FakeFetch, fixture, rejectionCode as code, respond, runCommand, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
 import { parseMigrateRunArgs, resolveMigrationTargets } from "../../lib";
 import runCmdModule from "../../commands/run/index";
 import profilesCmdModule from "../../commands/profiles/index";
@@ -27,15 +27,6 @@ const JENKINS = { baseUrl: "https://jk.test", user: "u", password: "p", password
 const JOB = "https://jk.test/job/A/job/b";
 const JOB_PARAMS = { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${import.meta.dir}/../fixtures/real/job-parameters.json`) };
 const UUID = "4d075e621c93206fb95d84795fc05e00";
-
-async function code(p: Promise<unknown>): Promise<string> {
-  try {
-    await p;
-  } catch (e) {
-    return (e as { code: string }).code;
-  }
-  return "(no error)";
-}
 
 describe("OTH-R22/R27: AD pre-flight", () => {
   function acmeDev() {

@@ -23,6 +23,7 @@ import { getSourceDir } from "../src/belz-meta";
 import { withTempEnvConfig, type TempEnvConfig } from "../src/testing/env-config";
 import { scratchDir } from "../src/testing/scratch";
 import { spawnCli } from "../src/testing/spawn-cli";
+import { errorCode as codeOf, thrownCliError as errOf } from "../src/testing/errors";
 
 let cfg: TempEnvConfig | null = null;
 const savedEnv = process.env.BELZ_ENV;
@@ -33,24 +34,6 @@ afterEach(() => {
   else process.env.BELZ_ENV = savedEnv;
   reloadConfig();
 });
-
-function codeOf(fn: () => unknown): string {
-  try {
-    fn();
-  } catch (e) {
-    return (e as CliError).code;
-  }
-  return "(no error)";
-}
-
-function errOf(fn: () => unknown): CliError {
-  try {
-    fn();
-  } catch (e) {
-    return e as CliError;
-  }
-  throw new Error("expected throw");
-}
 
 /** Write a raw config.json inside a temp-config scope (so it gets restored). */
 function rawConfig(value: unknown) {

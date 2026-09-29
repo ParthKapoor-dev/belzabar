@@ -255,3 +255,30 @@ describe("live-resources ledger", () => {
     expect(rows[1]).toMatch(/\| def \| p2 \| no \|$/);
   });
 });
+
+describe("error and fixture helpers", () => {
+  test("errorCode / thrownCliError / caughtCliError / rejectionCode", async () => {
+    const { CliError } = await import("../src/command");
+    const { caughtCliError, errorCode, rejectionCode, thrownCliError } = await import("../src/testing/errors");
+    const boom = () => {
+      throw new CliError("x", { code: "X_CODE" });
+    };
+    expect(errorCode(boom)).toBe("X_CODE");
+    expect(thrownCliError(boom).message).toBe("x");
+    expect(() => errorCode(() => 1)).toThrow("expected a CliError");
+    expect(() => errorCode(() => { throw new TypeError("t"); })).toThrow("t");
+    expect(await rejectionCode(Promise.reject(new CliError("y", { code: "Y" })))).toBe("Y");
+    await expect(caughtCliError(Promise.resolve(1))).rejects.toThrow("expected a CliError");
+  });
+
+  test("jsonFixtures reads JSON from a dir, with an optional suffix", async () => {
+    const { jsonFixtures } = await import("../src/testing/errors");
+    const { mkdtempSync, writeFileSync } = await import("fs");
+    const { join } = await import("path");
+    const { tmpdir } = await import("os");
+    const dir = mkdtempSync(join(tmpdir(), "belz-fixtures-"));
+    writeFileSync(join(dir, "a.v2.json"), '{"n":1}');
+    expect(jsonFixtures(dir)<{ n: number }>("a.v2.json").n).toBe(1);
+    expect(jsonFixtures(dir, ".v2.json")<{ n: number }>("a")).toEqual({ n: 1 });
+  });
+});

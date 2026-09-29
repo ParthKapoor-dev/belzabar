@@ -6,3 +6,5 @@ export * from "./spawn-cli";
 export * from "./live";
 export { EnvelopeSchema } from "../envelope";
 export * from "./scratch";
+export * from "./doc-check";
+export * from "./errors";

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, readFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { fakeFetch, runCommand, withTempEnvConfig, type RecordedRequest } from "@belzabar/core/testing";
+import { fakeFetch, jsonFixtures, type RecordedRequest, runCommand, withTempEnvConfig } from "@belzabar/core/testing";
 import categoriesCommand from "../../commands/categories/index";
 import changelogCommand, { entryRows } from "../../commands/changelog/index";
 import exportCommand from "../../commands/export/index";
@@ -17,7 +17,7 @@ import { parseV1Method } from "../../lib/parser/v1";
 import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
 
 const FIX = `${import.meta.dir}/../fixtures`;
-const load = (p: string) => JSON.parse(readFileSync(join(FIX, p), "utf8"));
+const load = jsonFixtures(FIX);
 const ENVS = { envs: { "t-dev": { url: "https://t.test" } }, activeEnv: "t-dev" };
 
 const spies: Array<{ mockRestore(): void }> = [];

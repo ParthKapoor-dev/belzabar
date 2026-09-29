@@ -9,6 +9,7 @@ import { dbMethodForSql, emptyCatalog, type ServiceCatalog } from "../../lib/ser
 import { structuralRemovals, verifyStructural } from "../../lib/save/pipeline";
 import { decodeBase64Strict } from "../../lib/base64";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
+import { errorCode as code } from "@belzabar/core/testing";
 
 const FIX = `${import.meta.dir}/../fixtures`;
 const ON = `${FIX}/validate/online`;
@@ -29,15 +30,6 @@ export function catalog(): ServiceCatalog {
 
 const plan = (live: V2MethodResponse, ops: unknown[], extra: Record<string, unknown> = {}) =>
   planV2Overlay(live, { ...extra, ops }, { catalog: catalog() });
-const code = (fn: () => unknown): string => {
-  try {
-    fn();
-  } catch (e) {
-    if (e instanceof CliError) return e.code;
-    throw e;
-  }
-  throw new Error("expected a CliError");
-};
 const ids = (b: V2MethodResponse) => (b.steps ?? []).map((s) => s.id ?? "no-id");
 const echo = { service: "Helpers.Legacy/echo", inputs: { Input: "Hi #{code}" }, outputs: [{ key: "response", as: "greet" }] };
 

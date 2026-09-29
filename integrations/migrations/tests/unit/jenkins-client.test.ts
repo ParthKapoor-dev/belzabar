@@ -3,7 +3,7 @@
 // (MG-5/7/8, F28).
 import { afterEach, describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
-import { fakeFetch, respond, type FakeFetch } from "@belzabar/core/testing";
+import { caughtCliError as caught, fakeFetch, type FakeFetch, respond } from "@belzabar/core/testing";
 import { assertJenkinsAuth, buildHeaders, fetchCrumb, getBuild, getConsoleChunk, resolveQueueItem, triggerBuild, type JenkinsAuth } from "../../lib/jenkins";
 
 const auth: JenkinsAuth = { baseUrl: "https://jenkins.test", user: "u", password: "p", job: "A/b" };
@@ -16,15 +16,6 @@ afterEach(() => {
   ff?.restore();
   ff = null;
 });
-
-async function caught(p: Promise<unknown>): Promise<CliError> {
-  try {
-    await p;
-  } catch (e) {
-    return e as CliError;
-  }
-  throw new Error("expected rejection");
-}
 
 describe("jenkins client", () => {
   test("build 404 → 'Build #n not found', no HTML or crumb anywhere", async () => {

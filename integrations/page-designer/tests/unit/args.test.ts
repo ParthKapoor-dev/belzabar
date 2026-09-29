@@ -9,17 +9,9 @@ import history from "../../commands/history/index";
 import lock from "../../commands/lock/index";
 import save from "../../commands/save/index";
 import find from "../../commands/find/index";
+import { errorCode as code } from "@belzabar/core/testing";
 
 const ctx = { outputMode: "llm" } as unknown as CommandContext;
-
-function code(fn: () => unknown): string {
-  try {
-    fn();
-  } catch (e) {
-    return (e as { code: string }).code;
-  }
-  throw new Error("expected a throw");
-}
 
 describe("pd publish (PD-16)", () => {
   test("--host without a value is MISSING_VALUE, not a silent publish-without-deploy", () => {

@@ -6,15 +6,7 @@ import * as comments from "../../commands/comments/index";
 import * as items from "../../commands/items/index";
 import * as search from "../../commands/search/index";
 import * as addComment from "../../commands/add-comment/index";
-
-function code(fn: () => unknown): string {
-  try {
-    fn();
-  } catch (e: any) {
-    return e.code;
-  }
-  throw new Error("expected a throw");
-}
+import { errorCode as code } from "@belzabar/core/testing";
 
 describe("TW-6: parseTaskId", () => {
   test("accepts ids and task URLs", () => {

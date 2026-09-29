@@ -1,15 +1,6 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { CliError, confirmWrite, logWriteIntent } from "../src";
-
-async function caught(p: Promise<unknown>): Promise<CliError> {
-  try {
-    await p;
-  } catch (e) {
-    if (e instanceof CliError) return e;
-    throw e;
-  }
-  throw new Error("expected a CliError");
-}
+import { caughtCliError as caught } from "../src/testing/errors";
 
 const base = { outputMode: "llm" as const, action: "delete X", details: [["Method", "X"]] as Array<[string, string]>, requiredMessage: "need --yes" };
 

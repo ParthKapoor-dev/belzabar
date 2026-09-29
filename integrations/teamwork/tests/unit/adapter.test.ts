@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync, statSync } from "fs";
 import { join } from "path";
 import { BELZ_CONFIG_DIR, CliError, getOutputMode, setOutputMode } from "@belzabar/core";
-import { fakeFetch, respond, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
+import { caughtCliError as caught, fakeFetch, type FakeFetch, type RecordedRequest, respond, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
 import { fetchTask, searchTasks, setTeamworkBackoffForTesting, teamworkFetch, TEAMWORK_CONCURRENCY } from "../../lib/api";
 import { saveTeamworkSession } from "../../lib/auth";
 
@@ -38,15 +38,6 @@ afterEach(() => {
 
 function loginOk(cookie = "fresh") {
   return respond({ status: 200, headers: { "set-cookie": `tw-auth=${cookie}; Path=/; HttpOnly` }, json: {} });
-}
-
-async function caught(p: Promise<unknown>): Promise<CliError> {
-  try {
-    await p;
-  } catch (e) {
-    return e as CliError;
-  }
-  throw new Error("expected rejection");
 }
 
 describe("teamwork adapter", () => {

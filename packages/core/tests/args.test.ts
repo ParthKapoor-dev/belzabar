@@ -1,23 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import {
-  checkCommandDocs,
-  declaresFlag,
-  defineArgs,
-  defineSubcommands,
-  flagsMentioned,
-  suggest,
-} from "../src/args";
+import { declaresFlag, defineArgs, defineSubcommands, suggest } from "../src/args";
+import { checkCommandDocs, flagsMentioned } from "../src/testing/doc-check";
 import { CliError } from "../src/command";
-
-function err(fn: () => unknown): CliError {
-  try {
-    fn();
-  } catch (e) {
-    expect(e).toBeInstanceOf(CliError);
-    return e as CliError;
-  }
-  throw new Error("expected a CliError");
-}
+import { thrownCliError as err } from "../src/testing/errors";
 
 const show = defineArgs({
   command: "belz ad show",

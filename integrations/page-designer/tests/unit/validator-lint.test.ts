@@ -10,10 +10,11 @@ import { PD_RULES } from "../../lib/validator/catalogue";
 import { cssSelectors } from "../../lib/validator/rules/lint";
 import { symbolInterfaceIssues, validateRecursive } from "../../lib/validator/recursive";
 import type { RawPageResponse } from "../../lib/types/wire";
+import { jsonFixtures } from "@belzabar/core/testing";
 
 const REAL = `${import.meta.dir}/../fixtures/real`;
 const realFiles = readdirSync(REAL).filter((f) => f.endsWith(".json") && f !== "manifest.json").sort();
-const loadReal = (id: string) => JSON.parse(readFileSync(`${REAL}/${id}.json`, "utf8")) as RawPageResponse;
+const loadReal = (id: string) => jsonFixtures(REAL, ".json")<RawPageResponse>(id);
 
 function wrap(inner: unknown, over: Partial<RawPageResponse> = {}): RawPageResponse {
   return { id: "t1", name: "t", status: "DRAFT", relativeRoute: "t", configuration: JSON.stringify(inner), ...over };

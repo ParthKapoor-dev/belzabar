@@ -20,6 +20,7 @@ import { CliError } from "../src/command";
 import { setOutputMode } from "../src/ui";
 import { fakeFetch, respond, type FakeFetch, type RecordedRequest } from "../src/testing/fake-fetch";
 import { withTempEnvConfig, type TempEnvConfig } from "../src/testing/env-config";
+import { caughtCliError as caught } from "../src/testing/errors";
 
 let ff: FakeFetch | null = null;
 let cfg: TempEnvConfig | null = null;
@@ -34,15 +35,6 @@ afterEach(() => {
 function jwt(payload: Record<string, unknown>): string {
   const b64 = (o: unknown) => btoa(JSON.stringify(o)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
   return `${b64({ alg: "HS256" })}.${b64(payload)}.c2lnbmF0dXJlc2ln`;
-}
-
-async function caught(p: Promise<unknown>): Promise<CliError> {
-  try {
-    await p;
-  } catch (e) {
-    return e as CliError;
-  }
-  throw new Error("expected a rejection");
 }
 
 describe("transport", () => {

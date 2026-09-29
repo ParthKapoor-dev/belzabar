@@ -11,19 +11,20 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import {
   fakeFetch,
+  type FakeFetch,
+  jsonFixtures,
+  type RecordedRequest,
   respond,
   runCommand,
-  withTempEnvConfig,
-  type FakeFetch,
-  type RecordedRequest,
   type TempEnvConfig,
+  withTempEnvConfig,
 } from "@belzabar/core/testing";
 import historyCommand from "../../commands/history/index";
 import { interpretRestoreResponse } from "../../lib/api/v1";
 import { logIntent } from "../../lib/args/confirm";
 
 const FIX = join(import.meta.dir, "../fixtures/history");
-const load = (f: string) => JSON.parse(readFileSync(join(FIX, f), "utf8"));
+const load = jsonFixtures(FIX);
 const DRAFT = "4bdea25c480a8e9dbc1cae830cb89b68";
 const PUB = "0000000000000000000000000000beef";
 

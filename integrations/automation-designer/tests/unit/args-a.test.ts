@@ -13,19 +13,10 @@ import importCmd from "../../commands/import/index";
 import publish from "../../commands/publish/index";
 import save from "../../commands/save/index";
 import create from "../../commands/create/index";
+import { errorCode as code } from "@belzabar/core/testing";
 
 const ctx = {} as any;
 const parse = (cmd: any, argv: string[]) => cmd.parseArgs(argv, ctx);
-
-function code(fn: () => unknown): string {
-  try {
-    fn();
-  } catch (e) {
-    expect(e).toBeInstanceOf(CliError);
-    return (e as CliError).code;
-  }
-  throw new Error("expected a CliError");
-}
 
 describe("strict flags (AD-29)", () => {
   test("unknown flags are rejected", () => {

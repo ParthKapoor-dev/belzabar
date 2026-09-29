@@ -1,8 +1,8 @@
 // Check a command's help.txt / desc.txt against its args spec, so the docs the
 // agents read (`belz … --help`, `belz --help-full`) never drift from the parser.
 
-import { acceptedFlags, specsOf } from "./parse";
-import { GLOBAL_FLAGS, type AnyArgsDef } from "./spec";
+import { acceptedFlags, specsOf } from "../args/parse";
+import { GLOBAL_FLAGS, type AnyArgsDef } from "../args/spec";
 
 /** `--flag` tokens mentioned in a text (long flags only). */
 export function flagsMentioned(text: string): string[] {

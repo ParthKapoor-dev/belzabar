@@ -26,4 +26,3 @@ export {
   camelCase,
   flagSpellings,
 } from "./parse";
-export { checkCommandDocs, flagsMentioned, type DocCheckInput } from "./doc-check";

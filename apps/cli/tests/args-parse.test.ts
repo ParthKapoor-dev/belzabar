@@ -7,17 +7,9 @@ import envs from "../commands/envs/index";
 import onboard from "../commands/onboard/index";
 import update from "../commands/update/index";
 import { parseConfigArgs } from "../commands/config/args";
+import { errorCode as code } from "@belzabar/core/testing";
 
 const ctx = { outputMode: "llm", env: { name: "t" }, warn: () => {} } as any;
-
-function code(fn: () => unknown): string {
-  try {
-    fn();
-  } catch (e: any) {
-    return e.code;
-  }
-  throw new Error("expected a throw");
-}
 
 describe("config", () => {
   test("subcommands", () => {

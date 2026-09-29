@@ -12,13 +12,13 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { fakeFetch, respond, runCommand, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
+import { fakeFetch, type FakeFetch, jsonFixtures, type RecordedRequest, respond, runCommand, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
 import testCaseCommand from "../../commands/test-case/index";
 import testReportCommand, { reportFound } from "../../commands/test-report/index";
 
 const FIX = join(import.meta.dir, "../fixtures");
 const DRAFT = "4252b87e4d77d2a6e8f59325550558ae";
-const load = (f: string) => JSON.parse(readFileSync(join(FIX, "test-cases", f), "utf8"));
+const load = jsonFixtures(join(FIX, "test-cases"));
 const ENV = "t-tr2-suite";
 
 let ff: FakeFetch | null = null;

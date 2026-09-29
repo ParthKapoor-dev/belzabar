@@ -9,9 +9,10 @@
 import { describe, expect, test, beforeAll } from "bun:test";
 import { parseV2Method, parseMethod } from "../../lib/parser/index";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
+import { jsonFixtures } from "@belzabar/core/testing";
 
 const FIX = `${import.meta.dir}/../fixtures/real-v2`;
-const load = async (uuid: string) => (await Bun.file(`${FIX}/${uuid}.v2.json`).json()) as V2MethodResponse & Record<string, any>;
+const load = (uuid: string) => jsonFixtures(FIX, ".v2.json")<V2MethodResponse & Record<string, any>>(uuid);
 
 describe("parseV2Method (real wire)", () => {
   let echoRaw: V2MethodResponse & Record<string, any>;

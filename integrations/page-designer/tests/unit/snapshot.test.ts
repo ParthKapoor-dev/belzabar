@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { BELZ_CONFIG_DIR } from "@belzabar/core";
-import { runCommand, scratchDir } from "@belzabar/core/testing";
+import { jsonFixtures, runCommand, scratchDir } from "@belzabar/core/testing";
 import snapshot from "../../commands/snapshot/index";
 import { parsePage } from "../../lib/parser/index";
 import { applyOverlay, withConfiguration } from "../../lib/serialize/index";
@@ -22,7 +22,7 @@ import { ENV, startFakePd, type FakePd } from "./helpers/fake-pd";
 import type { RawPageResponse } from "../../lib/types/wire";
 
 const REAL = `${import.meta.dir}/../fixtures/real`;
-const loadReal = (id: string) => JSON.parse(readFileSync(`${REAL}/${id}.json`, "utf8")) as RawPageResponse;
+const loadReal = (id: string) => jsonFixtures(REAL, ".json")<RawPageResponse>(id);
 const STUDENT_APP = "4cba8f39eb92d136694dadc4e7f2a811";
 const DRAFT_ADD = "4440a1a4628001dfb1b79aaec9dd55fe";
 

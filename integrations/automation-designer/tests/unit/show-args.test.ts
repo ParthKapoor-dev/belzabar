@@ -1,18 +1,10 @@
 // AD-14 / F6 / F34: `ad show` flags are declared, `--service-detail` works, bad input errors.
 import { describe, expect, test } from "bun:test";
 import command, { args } from "../../commands/show/index";
+import { errorCode as codeOf } from "@belzabar/core/testing";
 
 const parse = (argv: string[]) => command.parseArgs!(argv, {} as any) as any;
 const UUID = "4bf56e0012345678901234567890abcd";
-
-function codeOf(fn: () => unknown): string | undefined {
-  try {
-    fn();
-  } catch (e: any) {
-    return e.code;
-  }
-  return undefined;
-}
 
 describe("ad show args", () => {
   test("--service-detail N is an alias of --step N (AD-14)", () => {

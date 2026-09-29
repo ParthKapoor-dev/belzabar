@@ -16,10 +16,11 @@ import { planSave } from "../../lib/serialize/index";
 import { inferEntityType } from "../../lib/parser/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import type { RawPageResponse } from "../../lib/types/wire";
+import { jsonFixtures } from "@belzabar/core/testing";
 
 const DIR = `${import.meta.dir}/../fixtures/real`;
 const files = readdirSync(DIR).filter((f) => f.endsWith(".json") && f !== "manifest.json").sort();
-const load = (f: string) => JSON.parse(readFileSync(`${DIR}/${f}`, "utf8")) as RawPageResponse & Record<string, any>;
+const load = (f: string) => jsonFixtures(DIR)<RawPageResponse & Record<string, any>>(f);
 
 /** Leaf-level structural diff; returns "path: before -> after" strings. */
 function diffPaths(a: unknown, b: unknown, path = "", out: string[] = []): string[] {

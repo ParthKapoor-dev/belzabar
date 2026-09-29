@@ -10,7 +10,7 @@ every `integrations/*` package and by `apps/cli`. Package exports: `.` → `src/
 
 | Path | Role |
 |------|------|
-| `src/args/` | `defineArgs` / `defineSubcommands` (`spec.ts` types, `parse.ts` parser), `doc-check.ts` (help.txt/desc.txt drift check) |
+| `src/args/` | `defineArgs` / `defineSubcommands` (`spec.ts` types, `parse.ts` parser) |
 | `src/config/` | `index.ts` (`Config`, env table, default env), `schema.ts` (zod: `environments`, `defaultEnv`, `teamwork` {baseUrl,…}, `jenkins` {…, migrationJob, profileEnvs}, `lint` {resolverTables}, `belz`), `secrets.ts`, `fs.ts` (atomic 0600 writes), `env-vars.ts` (trusted `BELZ_*` vars) |
 | `src/http/` | `transport.ts` (`httpRequest`, timeouts, limiter), `auth.ts` (sessions/login), `api.ts` (`apiFetch`), `errors.ts`, `redact.ts`, `dns.ts` (IPv4 pinning) |
 | `src/runner.ts` | `runNamespacedCli` / `dispatchNamespaced`: global flags, routing, help, env + write guard, envelope, exit |
@@ -84,7 +84,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 |--------|-------------|
 | `defineArgs(spec)` | Declarative positionals + flags (boolean/string/number/enum, repeatable, aliases, exclusive/requireOneOf groups) → typed `parse(argv)`; CliError codes `UNKNOWN_FLAG` (did-you-mean), `MISSING_VALUE`, `INVALID_VALUE`, `MISSING_FLAG`, `MISSING_ARGUMENT`, `UNEXPECTED_ARGUMENT`, `CONFLICTING_FLAGS`, `DUPLICATE_FLAG`. A string value that starts with `-` is `MISSING_VALUE` whose message hints `--flag=<value>` (`details.hint`); UNKNOWN_FLAG mentions `--flag=<value>` / `--`; tokens in messages are truncated (`shownToken`). `DUPLICATE_FLAG` names both values (`details.values`) |
 | `defineSubcommands(map, opts)` | argv[0] selects a sub-spec (`UNKNOWN_SUBCOMMAND`, `MISSING_SUBCOMMAND`); optional `default` |
-| `checkCommandDocs`, `declaresFlag`, `acceptedFlags` | help.txt/desc.txt drift check; lets the runner leave command-declared flags (`-v`) alone |
+| `declaresFlag`, `acceptedFlags` | Lets the runner leave command-declared flags (`-v`) alone (the help.txt/desc.txt drift check `checkCommandDocs` is in `@belzabar/core/testing`) |
 
 ### CLI Runners
 | Export | Description |
@@ -183,6 +183,9 @@ preload has pointed `BELZ_HOME` at a tmp dir; helpers refuse to write otherwise.
 | `repoRoot()` / `cliDir()` / `cliEntry()` / `cliBuildEntry()` / `loadDevCliOptions()` | CLI paths for tests (never hardcode them) and the dev entry's `NamespacedCliOptions` |
 | `describeLive` / `describeLiveWrite` / `spawnLive` / `liveCategory` / `liveMethod` / `registerLiveResource` / `markLiveResourceCleaned` | Opt-in live suites against the env named by `BELZ_LIVE` (+ `BELZ_LIVE_WRITE=1`, which requires `BELZ_LIVE_CATEGORY` + `BELZ_LIVE_CATEGORY_ID`; `BELZ_LIVE_METHOD` optional). Nothing tenant-specific is hard-coded. `spawnLive` refuses any other `--env` and uses a tmp copy of `~/.belz/config.json` + that env's session (real `~/.belz` is never written). `registerLiveResource` appends to `$BELZ_LIVE_RESOURCES`, or to the maintainer workspace's live-resources log when that sibling directory exists. `markLiveResourceCleaned(identifier, note)` rewrites that row's cleaned cell in place. Write suites: the `BELZ_LIVE_CATEGORY` only, `belz_tst_` prefix, `afterAll` cleanup |
 | `scratchDir(prefix)` | tmp dir under the run's `BELZ_TEST_TMP` (auto-removed) |
+| `errorCode(fn)` / `thrownCliError(fn)` / `caughtCliError(p)` / `rejectionCode(p)` | The CliError (or its code) a call throws / a promise rejects with; fail the test on no error or a non-CliError |
+| `jsonFixtures(dir, suffix?)` | Sync JSON fixture reader: `const load = jsonFixtures(FIX); load<T>("x.json")` |
+| `checkCommandDocs({invocation, def, help, desc})` / `flagsMentioned` | help.txt/desc.txt drift check against the args spec (`src/testing/doc-check.ts`, used by `apps/cli/tests/args-docs.test.ts`) |
 
 The preload (`tests/preload-belz-home.ts`) **always** replaces `BELZ_HOME` with a fresh dir under `BELZ_TEST_TMP`, even when one is exported, and seeds it with a config holding one neutral env `test` (so in-process commands have a default — belz has no built-in env); `assertSafeBelzHome()` (used by `withTempEnvConfig`) refuses any home outside `BELZ_TEST_TMP` (CORE-R15).
 

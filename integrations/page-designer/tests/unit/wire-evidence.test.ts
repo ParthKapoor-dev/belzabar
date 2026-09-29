@@ -3,10 +3,9 @@
 // the server accepts (OTH-R1), the lock answers (NEW-5), and the revert form
 // (OTH-R2). If the server changes, re-capture and these fail loudly.
 import { afterEach, describe, expect, test } from "bun:test";
-import { readFileSync } from "fs";
 import { join } from "path";
 import { CliError } from "@belzabar/core";
-import { fakeFetch, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { fakeFetch, type FakeFetch, jsonFixtures, respond, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
 import { acquireLock, historyRestore, releaseLock } from "../../lib/api/client";
 import { replayOperations } from "../../lib/serialize/index";
 import { isVerifiedKeyShape } from "../../lib/serialize/paths";
@@ -14,7 +13,7 @@ import type { RawConfiguration, RawPartialUpdateOperation } from "../../lib/type
 import { applyWireOps } from "./helpers/fake-pd";
 
 const WIRE = join(import.meta.dir, "../fixtures/wire");
-const load = <T>(f: string): T => JSON.parse(readFileSync(join(WIRE, f), "utf8")) as T;
+const load = jsonFixtures(WIRE);
 
 interface KeyCase {
   what: string;

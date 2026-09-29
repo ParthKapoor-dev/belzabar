@@ -4,10 +4,10 @@
 // find list rows).
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { isDeepStrictEqual } from "node:util";
-import { readFileSync, rmSync, writeFileSync } from "fs";
+import { rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { BELZ_CONFIG_DIR } from "@belzabar/core";
-import { runCommand, scratchDir } from "@belzabar/core/testing";
+import { jsonFixtures, runCommand, scratchDir } from "@belzabar/core/testing";
 import show from "../../commands/show/index";
 import save from "../../commands/save/index";
 import pageDeps, { summarizeDependencies } from "../../commands/page-deps/index";
@@ -23,7 +23,7 @@ import type { Overlay } from "../../lib/types/common";
 import type { RawPageResponse } from "../../lib/types/wire";
 
 const REAL = `${import.meta.dir}/../fixtures/real`;
-const loadReal = (id: string) => JSON.parse(readFileSync(`${REAL}/${id}.json`, "utf8")) as RawPageResponse;
+const loadReal = (id: string) => jsonFixtures(REAL, ".json")<RawPageResponse>(id);
 const STUDENT_APP = "4cba8f39eb92d136694dadc4e7f2a811";
 const ADD_STUDENT = "4440a1a4628001dfb1b79aaec9dd55fe";
 

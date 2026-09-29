@@ -5,16 +5,9 @@ import { describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
 import sqlCommand, { readPlan } from "../../commands/sql/index";
 import { buildExplainSql, splitExplain } from "../../lib/sql/read-only";
+import { errorCode as code } from "@belzabar/core/testing";
 
 const parse = (argv: string[]) => sqlCommand.parseArgs!(argv, {} as any) as any;
-const code = (fn: () => unknown) => {
-  try {
-    fn();
-  } catch (err) {
-    return (err as CliError).code;
-  }
-  return "no error";
-};
 
 const TEXT_ROWS = [
   { "QUERY PLAN": "Index Scan using pg_class_relname_nsp_index on pg_class  (cost=0.28..8.29 rows=1 width=273) (actual time=0.004..0.004 rows=0 loops=1)" },

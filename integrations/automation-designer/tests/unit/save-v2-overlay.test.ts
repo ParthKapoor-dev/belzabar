@@ -9,21 +9,12 @@ import { planV2Overlay } from "../../lib/serialize/v2";
 import { diffPaths, getAtPath } from "../../lib/serialize/diff";
 import { decodeBase64Strict, encodeBase64 } from "../../lib/base64";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
+import { errorCode as code, jsonFixtures } from "@belzabar/core/testing";
 
 const DIR = `${import.meta.dir}/../fixtures/real-v2`;
 const files = readdirSync(DIR).filter((f) => f.endsWith(".v2.json")).sort();
-const load = (uuid: string): V2MethodResponse => require(`${DIR}/${uuid}.v2.json`);
+const load = (uuid: string) => jsonFixtures(DIR, ".v2.json")<V2MethodResponse>(uuid);
 const fresh = (uuid: string): V2MethodResponse => structuredClone(load(uuid));
-
-function code(fn: () => unknown): string {
-  try {
-    fn();
-  } catch (e) {
-    expect(e).toBeInstanceOf(CliError);
-    return (e as CliError).code;
-  }
-  throw new Error("expected a CliError");
-}
 
 const SQL_NONE = "41bb1b438875bd8b994196db1f12b7c2"; // 1: SQL read (NONE), 2: CC plain
 const SQL_B64 = "4ada8d56841853491129898f5069679e"; // 1: SQL read BASE_64

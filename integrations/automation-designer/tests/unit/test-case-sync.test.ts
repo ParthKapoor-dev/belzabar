@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
-import { fakeFetch, respond, runCommand, scratchDir, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
+import { fakeFetch, type FakeFetch, jsonFixtures, type RecordedRequest, respond, runCommand, scratchDir, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
 import testCaseCommand from "../../commands/test-case/index";
 import { caseFromWire, caseToWire, diffCases, parseCaseInput, serializeCaseFile } from "../../lib/test-cases/case-file";
 import { planSync, type SuiteSnapshot } from "../../lib/test-cases/suite";
@@ -14,7 +14,7 @@ import { writeMethodDir, readCaseFiles } from "../../lib/test-cases/files";
 
 const FIX = join(import.meta.dir, "../fixtures/test-cases");
 const DRAFT = "4252b87e4d77d2a6e8f59325550558ae";
-const load = (f: string) => JSON.parse(readFileSync(join(FIX, f), "utf8"));
+const load = jsonFixtures(FIX);
 const ENV = "t-s7c";
 
 let ff: FakeFetch | null = null;

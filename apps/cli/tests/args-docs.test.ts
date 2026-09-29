@@ -4,7 +4,8 @@
 // help.txt starts with `Usage: belz …`, and every desc.txt line reads
 // `belz <ns> <cmd> …  :->  …` (it is what `belz --help-full` prints).
 import { describe, expect, test } from "bun:test";
-import { checkCommandDocs, type AnyArgsDef } from "@belzabar/core";
+import { type AnyArgsDef } from "@belzabar/core";
+import { checkCommandDocs } from "@belzabar/core/testing";
 import { REGISTRIES } from "../bin/options";
 
 const NAMESPACE: Record<string, string> = {

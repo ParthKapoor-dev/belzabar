@@ -2,7 +2,7 @@
 // ad-validation §1.7: debug-mode test responses echo the bearer token → redacted.
 import { afterEach, describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
-import { fakeFetch, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { caughtCliError as caught, fakeFetch, type FakeFetch, respond, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
 import * as v1 from "../../lib/api/v1";
 import * as v2 from "../../lib/api/v2";
 
@@ -17,15 +17,6 @@ afterEach(() => {
 
 const UUID = "0000000000000000000000000000dead";
 const JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjo5OTk5OTk5OTk5fQ.c2lnbmF0dXJlLXNpZw";
-
-async function caught(p: Promise<unknown>): Promise<CliError> {
-  try {
-    await p;
-  } catch (e) {
-    return e as CliError;
-  }
-  throw new Error("expected rejection");
-}
 
 function setup(routes: Parameters<typeof fakeFetch>[0]) {
   cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", token: JWT } }, activeEnv: "t-dev" });

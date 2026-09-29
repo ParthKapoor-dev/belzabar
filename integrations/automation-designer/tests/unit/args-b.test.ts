@@ -12,19 +12,10 @@ import servicesCmd from "../../commands/services";
 import showCodeCmd from "../../commands/show-code";
 import traceCmd from "../../commands/trace";
 import stateCmd from "../../commands/state";
+import { errorCode as code } from "@belzabar/core/testing";
 
 const ctx = {} as any;
 const parse = (cmd: any, argv: string[]) => cmd.parseArgs(argv, ctx);
-
-function code(fn: () => unknown): string {
-  try {
-    fn();
-  } catch (e) {
-    expect(e).toBeInstanceOf(CliError);
-    return (e as CliError).code;
-  }
-  throw new Error("expected a CliError");
-}
 
 describe("save (AD-29)", () => {
   test("--uuid followed by a flag is MISSING_VALUE, not uuid='--yes'", () => {

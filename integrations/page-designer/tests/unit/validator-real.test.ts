@@ -3,15 +3,16 @@
 // their true positives, and validateEdit escalates them when an edit
 // introduces one. PD-26: duplicate ids reported once; INVALID_JSON exists.
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "fs";
+import { readdirSync } from "fs";
 import { parsePage } from "../../lib/parser/index";
 import { applyOverlay } from "../../lib/serialize/index";
 import { partitionBySeverity, validateEdit, validateHydrated } from "../../lib/validator/index";
 import type { RawPageResponse } from "../../lib/types/wire";
+import { jsonFixtures } from "@belzabar/core/testing";
 
 const DIR = `${import.meta.dir}/../fixtures/real`;
 const files = readdirSync(DIR).filter((f) => f.endsWith(".json") && f !== "manifest.json").sort();
-const load = (f: string) => JSON.parse(readFileSync(`${DIR}/${f}`, "utf8")) as RawPageResponse;
+const load = (f: string) => jsonFixtures(DIR)<RawPageResponse>(f);
 
 function wrap(inner: unknown, over: Partial<RawPageResponse> = {}): RawPageResponse {
   return { id: "t1", name: "t", status: "DRAFT", relativeRoute: "t", configuration: JSON.stringify(inner), ...over };

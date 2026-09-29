@@ -1,17 +1,9 @@
 // `belz setup` argument parsing (core defineArgs). Parse only — setup is never run here.
 import { describe, expect, test } from "bun:test";
 import setup from "../commands/setup/index";
+import { errorCode as code } from "@belzabar/core/testing";
 
 const ctx = { outputMode: "llm", env: { name: "t" }, warn: () => {} } as any;
-
-function code(fn: () => unknown): string {
-  try {
-    fn();
-  } catch (e: any) {
-    return e.code;
-  }
-  throw new Error("expected a throw");
-}
 
 describe("setup args", () => {
   test("setup", () => {
