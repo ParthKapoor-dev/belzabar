@@ -25,4 +25,45 @@ describeLive("read-only smoke", () => {
   test("spawnLive refuses other envs", async () => {
     await expect(spawnLive(["envs", "--env", "nsm-dev"])).rejects.toThrow(/refused/);
   });
+
+  // Stage 9: smoke-matrix regressions that need the real server (research/smoke-test.md).
+  // A long-lived published sems-dev method (parent.children.linkSiblings.execute, 13 steps).
+  const MID = "4ba4858f7804ad038c26a82cd5a1cf22";
+
+  test("F1: a >64 KB --llm envelope arrives whole through a pipe", async () => {
+    const r = await spawnLive(["ad", "history", "show", MID, "--version", "8", "--full", "--llm"], { timeoutMs: 90_000 });
+    expect(r.stdout.length).toBeGreaterThan(65_536);
+    expect(r.envelope?.ok).toBe(true);
+  }, 100_000);
+
+  test("F3: --env=<name> is honoured", async () => {
+    const r = await spawnLive(["ad", "show", MID, `--env=${LIVE_ENV}`, "--llm"], { timeoutMs: 60_000 });
+    expect(r.envelope?.meta.env).toBe(LIVE_ENV);
+  }, 70_000);
+
+  test("F9: Test-Parth is chain category 1135", async () => {
+    const r = await spawnLive(["ad", "categories", "--llm"], { timeoutMs: 60_000 });
+    const rows = (r.envelope?.data as { categories: Array<{ id: number; name: string }> }).categories;
+    expect(rows.find((c) => c.name === "Test-Parth")?.id).toBe(1135);
+  }, 70_000);
+
+  test("F10 / smoke envelope #5: unknown uuids fail METHOD_NOT_FOUND", async () => {
+    const missing = "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    for (const argv of [["ad", "show", missing], ["ad", "state", missing], ["ad", "test-cases", missing]]) {
+      const r = await spawnLive([...argv, "--llm"], { timeoutMs: 60_000 });
+      expect(r.envelope?.error?.code).toBe("METHOD_NOT_FOUND");
+    }
+  }, 190_000);
+
+  test("F2: sql run refuses writes client-side", async () => {
+    const r = await spawnLive(["ad", "sql", "run", "delete from belz_tst_nothing where 1=0", "--db", "testing_db", "--llm"], { timeoutMs: 30_000 });
+    expect(r.envelope?.error?.code).toBe("SQL_NOT_READ_ONLY");
+  }, 40_000);
+
+  test("find: totalMatches counts beyond --limit", async () => {
+    const r = await spawnLive(["ad", "find", "enrollment", "--limit", "1", "--llm"], { timeoutMs: 300_000 });
+    const d = r.envelope?.data as { totalMatches: number; matches: unknown[] };
+    expect(d.matches.length).toBe(1);
+    expect(d.totalMatches).toBeGreaterThan(1);
+  }, 310_000);
 });
