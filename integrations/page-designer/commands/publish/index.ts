@@ -2,10 +2,18 @@
 //              [--force-validation] [--allow-published]
 //
 // POST /pages/<draftId>/publish?landingPage=&hostIds=. The draft is resolved
-// via referenceId (a PUBLISHED input publishes its linked draft), validated
-// (errors block unless --force-validation), then published inside withLock.
-// Afterwards the local cache entries of BOTH the draft and the published page
-// are dropped (s0-review: the published sibling used to stay stale).
+// via referenceId (a PUBLISHED input publishes its linked draft) and
+// validated, then published inside withLock. Afterwards the local cache
+// entries of BOTH the draft and the published page are dropped (s0-review:
+// the published sibling used to stay stale).
+//
+// Validation is diff-aware against the currently PUBLISHED version
+// (OTH-R10): only errors the draft introduces since the last publish block;
+// issues the live page already has are reported as pre-existing warnings. A
+// never-published draft (or --allow-published on a lone PUBLISHED page) is
+// gated on every error. The gate runs once on the pre-lock snapshot (fail
+// fast, before --yes) and again on a FRESH fetch inside the lock (OTH-R5:
+// what is POSTed is what was validated; data.versionDrift reports a change).
 
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import {
@@ -17,10 +25,11 @@ import {
 } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { invalidatePageCache } from "../../lib/cache";
-import { gateValidation, logIntent, requireConfirmation, resolveWriteTarget } from "../../lib/edit";
+import { fetchFresh, gateValidation, logIntent, requireConfirmation, resolveWriteTarget, versionDrift } from "../../lib/edit";
 import { withLock } from "../../lib/lock";
-import { validateHydrated } from "../../lib/validator/index";
-import type { ValidationIssue } from "../../lib/types/common";
+import { parsePage } from "../../lib/parser/index";
+import { validateEdit, validateHydrated } from "../../lib/validator/index";
+import type { HydratedPage, ValidationIssue } from "../../lib/types/common";
 
 interface PublishArgs {
   pageId: string;
@@ -39,7 +48,10 @@ interface PublishData {
   hostIds: string[];
   preVersionId: number | null;
   postPublishVersionId: number | null;
-  validation: { errorCount: number; warnCount: number };
+  /** What validation was relative to: the PUBLISHED version (diff-aware) or nothing (full). */
+  validation: { baseline: "published" | "none"; errorCount: number; warnCount: number; preExistingCount: number };
+  /** The draft changed between the first read and the in-lock fetch (OTH-R5). */
+  versionDrift: { from: number | null; to: number | null } | null;
   bypassedErrors: ValidationIssue[];
 }
 
@@ -78,7 +90,15 @@ const command: CommandModule<PublishArgs, PublishData> = {
     const target = await resolveWriteTarget(args.pageId, args.overrides, warn, "publishing");
     const { targetId } = target;
     const before = target.snapshot;
-    const gate = gateValidation(validateHydrated(before), args.overrides.forceValidation, warn);
+
+    // Baseline: the live PUBLISHED sibling (not when publishing a PUBLISHED page itself).
+    let baseline: HydratedPage | null = null;
+    if (target.publishedId && target.publishedId !== targetId) {
+      const raw = await pdApi.fetchPage(target.publishedId);
+      if (raw) baseline = parsePage(raw);
+    }
+    const check = (page: HydratedPage) => (baseline ? validateEdit(baseline, page) : validateHydrated(page));
+    gateValidation(check(before), args.overrides.forceValidation, warn);
 
     await requireConfirmation(context, args.yes, "publish", [
       ["Page", `${before.name} (${targetId})`],
@@ -89,9 +109,15 @@ const command: CommandModule<PublishArgs, PublishData> = {
 
     // The POST /pages/<draftId>/publish response body IS the freshly-published
     // page — it carries the authoritative post-publish versionId.
-    const publishResponse = await withLock(targetId, () =>
-      pdApi.publishPage(targetId, { landingPage: args.landing, hostIds: args.hostIds }),
-    );
+    const { publishResponse, gate, issues, drift } = await withLock(targetId, async () => {
+      // OTH-R5: validate what will actually be published — a fresh read inside the lock.
+      const fresh = await fetchFresh(targetId);
+      const drift = versionDrift(before, fresh, warn);
+      const issues = check(fresh);
+      const gate = gateValidation(issues, args.overrides.forceValidation, warn, drift !== null);
+      const publishResponse = await pdApi.publishPage(targetId, { landingPage: args.landing, hostIds: args.hostIds });
+      return { publishResponse, gate, issues, drift };
+    });
 
     // Verify from that response — NOT by re-reading GET /pages/<publishedId>.
     // The single-page GET is served from a stale server-side cache that keeps
@@ -117,7 +143,13 @@ const command: CommandModule<PublishArgs, PublishData> = {
       hostIds: args.hostIds,
       preVersionId: before.versionId,
       postPublishVersionId,
-      validation: { errorCount: gate.errors.length, warnCount: gate.warnings.length },
+      validation: {
+        baseline: baseline ? "published" : "none",
+        errorCount: gate.errors.length,
+        warnCount: gate.warnings.length,
+        preExistingCount: issues.filter((i) => i.preExisting).length,
+      },
+      versionDrift: drift,
       bypassedErrors: gate.bypassedErrors,
     });
   },

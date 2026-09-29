@@ -2,8 +2,13 @@ Usage: belz pd publish <pageId> [--landing] [--host <id> ...] [--yes]
 
 Publish a PD draft page to its deployable sibling. Wraps POST
 /pages/<draftId>/publish?landingPage=&hostIds= in an acquire/release lock
-cycle. The draft is validated first: validator errors block the publish
-unless --force-validation.
+cycle. The draft is validated against the currently PUBLISHED version
+(diff-aware): only errors the draft introduces since the last publish block
+(unless --force-validation); errors the live page already has are reported
+as pre-existing warnings. A never-published draft is gated on every error.
+The draft is re-fetched and re-validated inside the lock, so what is
+published is what was validated (data.versionDrift reports a concurrent
+change).
 
 IMPORTANT: passing --host is what makes the page go LIVE. Without --host the
 draft is published to its PUBLISHED sibling record, but the page is NOT
@@ -21,7 +26,7 @@ Flags:
   --host <id>           Publish AND deploy to a specific host. Repeatable —
                         `--host a --host b` sends ?hostIds=a,b. Omit to publish
                         without deploying.
-  --force-validation    Publish despite validator ERRORS on the draft.
+  --force-validation    Publish despite validator ERRORS the draft introduces.
   --allow-published     Publish a PUBLISHED page that has no linked draft.
   --force               DEPRECATED alias of --force-validation (it no longer
                         bypasses the PUBLISHED-page guard). Prints a warning.

@@ -227,6 +227,52 @@ describe("pd publish", () => {
     expect((r.envelope?.data as any).bypassedErrors.map((e: any) => e.code)).toEqual(["ROOT_LAYOUT_MALFORMED"]);
   });
 
+  const orphanInner = (extra: string) => {
+    const inner = cleanInner();
+    (inner.layout.children as any[]).push({ id: `o-${extra}`, name: "span", props: { "[innerHTML]": `{%${extra}%}` } });
+    return inner;
+  };
+
+  test("OTH-R10: the gate is diff-aware vs the PUBLISHED version — errors the live page already has do not block", async () => {
+    pd.pages.set(DRAFT, page(DRAFT, orphanInner("gone"), { referenceId: PUB }));
+    pd.pages.set(PUB, page(PUB, orphanInner("gone"), { status: "PUBLISHED", referenceId: DRAFT }));
+    const r = await run(publish, [DRAFT, "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ validation: { baseline: "published", errorCount: 0 }, bypassedErrors: [] });
+    expect((r.envelope?.data as any).validation.preExistingCount).toBeGreaterThan(0);
+  });
+
+  test("OTH-R10: an error the draft introduces since the last publish still blocks", async () => {
+    pd.pages.set(DRAFT, page(DRAFT, orphanInner("typo"), { referenceId: PUB }));
+    const r = await run(publish, [DRAFT, "--yes"]);
+    expect(r.envelope?.error).toMatchObject({ code: "PD_VALIDATION_FAILED", details: { issues: [{ code: "ORPHAN_BINDING", introduced: true }] } });
+    expect(pd.log().some((l) => l.includes("/publish"))).toBe(false);
+  });
+
+  test("OTH-R5: the draft is re-fetched and re-validated INSIDE the lock; a bad concurrent edit is not published", async () => {
+    pd.onAcquire = (id) => {
+      const p = pd.pages.get(id)!;
+      pd.pages.set(id, { ...p, configuration: JSON.stringify(orphanInner("sneaky")), versionId: 5 });
+    };
+    const r = await run(publish, [DRAFT, "--yes"]);
+    expect(r.envelope?.error?.code).toBe("PD_VALIDATION_FAILED");
+    expect(pd.log().some((l) => l.includes("/publish"))).toBe(false);
+    const log = pd.log();
+    const acquire = log.indexOf(`PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`);
+    expect(log.slice(acquire + 1)).toContain(`GET /pages/${DRAFT}`);
+    expect(log[log.length - 1]).toBe(`PUT /pages/lock/${DRAFT}?pageLockAction=RELEASED`);
+  });
+
+  test("OTH-R5: a clean concurrent edit is published and reported as versionDrift", async () => {
+    pd.onAcquire = (id) => {
+      const p = pd.pages.get(id)!;
+      pd.pages.set(id, { ...p, versionId: 5 });
+    };
+    const r = await run(publish, [DRAFT, "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ versionDrift: { from: 1, to: 5 } });
+  });
+
   test("PD-6: a PUBLISHED page without a draft needs --allow-published", async () => {
     expect((await run(publish, [LONE_PUB, "--force", "--yes"])).envelope?.error?.code).toBe("PD_PUBLISHED_NO_DRAFT");
     expect((await run(publish, [LONE_PUB, "--allow-published", "--yes"])).envelope?.ok).toBe(true);

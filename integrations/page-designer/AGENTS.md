@@ -29,7 +29,7 @@ component name (component first, then page; several matches → `PD_NAME_AMBIGUO
 | `belz pd history <list\|show\|diff\|restore> <pageId>` | Server version history (lives on the PUBLISHED id: `list` on a draft with no versions adds `publishedId` + `hint` and a warning); `restore` writes |
 | `belz pd preflight <pageId> [--overlay <file>]` | Dry run of `save`: parse + validate + plan; never writes |
 | `belz pd save <pageId> --overlay <file> \| --config <file>` | Validated, locked save; `--dry-run` |
-| `belz pd publish <pageId>` | Draft-guard + validate + locked publish; `--landing`, `--host <id>` (repeatable) |
+| `belz pd publish <pageId>` | Draft-guard + diff-aware validate (vs the PUBLISHED version) + locked publish, re-validated on a fresh read inside the lock; `--landing`, `--host <id>` (repeatable) |
 | `belz pd lock <acquire\|release\|status>` | Manual lock control (`~/.belz/pd-locks/<env>.json`, atomic 0600; a 5xx release keeps the record) |
 
 Write overrides (`lib/args/common.ts`, on save/publish/history restore): `--force-validation`
@@ -111,7 +111,14 @@ key.
   `ESCALATE_WHEN_INTRODUCED` (warnings that become errors when an edit introduces them).
 - `recursive.ts`: `validateRecursive` + `symbolInterfaceIssues` (`SYMBOL_*` codes).
 - Calibration rule: real editor output has **0 errors** (`tests/unit/validator-real.test.ts`).
-  A rule that fires on real pages is a warning. Messages must not embed shifting positions (name
+  A rule that fires on real pages is a warning. Live check (2026-09-29, all 633 sems-dev
+  drafts, read-only): 53 drafts still have errors, and they are genuine defects (dangling
+  bindings such as `studentDob` vs `studentDOB`, duplicate node ids, hand-written or empty
+  roots). `publish` gates diff-aware against the PUBLISHED version, so only 4 published pages
+  (each with errors introduced since its last publish) plus 19 never-published drafts would
+  block. Bindings inside JS comments of multi-line code bodies are ignored (`stripCodeComments`),
+  `ref` is a runtime root (`{%ref.Popover_ref_1%}`), and a layout-less component with
+  non-empty `styles` is a style-only symbol. Messages must not embed shifting positions (name
   HTTP calls by callId, nodes by id), or `validateEdit` mistakes old issues for new ones.
 - Output: `data.issues` = errors; `data.warnings` = `{CODE: {count, refs}}`; `--full` = flat list.
 
