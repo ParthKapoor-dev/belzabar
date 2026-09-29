@@ -102,6 +102,33 @@ describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
     expect(rec.envelope?.data).toMatchObject({ adIds: ["ad1", "ad2"], errors: [{ name: "ghost" }] });
   });
 
+  test("OTH-R19/R13: --force re-reads child components too; cached reads are counted and warned about", async () => {
+    // Warm the cache, then change the child on the server.
+    await run(findAdMethods, [PAGE, "-r"]);
+    const comp = pd.pages.get(COMP)!;
+    pd.pages.set(COMP, { ...comp, configuration: comp.configuration!.replace("/execute/ad2", "/execute/ad3") });
+
+    const cached = await run(findAdMethods, [PAGE, "-r"]);
+    expect(cached.envelope?.data).toMatchObject({ adIds: ["ad1", "ad2"] });
+    expect((cached.envelope?.data as any).cache.cache).toBeGreaterThan(0);
+    expect(((cached.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes("pass --force"))).toBe(true);
+
+    const forced = await run(findAdMethods, [PAGE, "-r", "--force"]);
+    expect(forced.envelope?.data).toMatchObject({ adIds: ["ad1", "ad3"], cache: { cache: 0, stale: 0 } });
+    const a = await run(analyze, [PAGE, "--force"]);
+    expect(a.envelope?.data).toMatchObject({ uniqueAdIds: ["ad1", "ad3"], cache: { cache: 0, stale: 0 } });
+  });
+
+  test("OTH-R13: validate always reads fresh — a cached old config never decides the verdict", async () => {
+    const validate = (await import("../../commands/validate/index")).default;
+    const broken = page(PAGE, cleanInner({ layout: { id: "r", name: "div", children: [] } }), { name: "Add Student" });
+    const good = pd.pages.get(PAGE)!;
+    pd.pages.set(PAGE, broken);
+    expect((await run(validate, [PAGE])).exitCode).toBe(1); // (would now be cached if validate used the cache)
+    pd.pages.set(PAGE, good); // fixed in the UI
+    expect((await run(validate, [PAGE])).envelope?.error?.code).not.toBe("PD_VALIDATION_FAILED");
+  });
+
   test("analyze needs explicit roots (no hardcoded nsm ids) and reads no CWD files", async () => {
     expect((await run(analyze, [])).envelope?.error?.code).toBe("MISSING_INPUT");
     const r = await run(analyze, [PAGE]);

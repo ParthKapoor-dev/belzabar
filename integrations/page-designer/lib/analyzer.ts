@@ -9,7 +9,7 @@
 
 import { CliError } from "@belzabar/core";
 import { pdApi } from "./api/index";
-import { cachedFetchPageConfig } from "./cache";
+import { cachedFetchPageConfigSwr, type ConfigSource } from "./cache";
 import { adIdsOf, childComponentNames } from "./extract";
 import { inferEntityType, parsePage } from "./parser/index";
 import type { RawPageResponse } from "./types/wire";
@@ -33,10 +33,37 @@ export interface AnalyzerDeps {
   componentIdByName(name: string): Promise<string | null>;
 }
 
-const defaultDeps: AnalyzerDeps = {
-  fetchPage: (id) => cachedFetchPageConfig(id),
-  componentIdByName: (name) => pdApi.fetchComponentIdByName(name),
-};
+/** How many configs came from the cache (in TTL / stale) vs a fresh fetch. */
+export type SourceCounts = Record<ConfigSource, number>;
+
+export function emptySourceCounts(): SourceCounts {
+  return { cache: 0, stale: 0, fresh: 0 };
+}
+
+/**
+ * Cache-backed deps. `force` re-reads every config (OTH-R19: it used to
+ * refresh the root only); `sources` counts where each config came from so the
+ * command can say how much of the walk used cached data (OTH-R13).
+ */
+export function cacheDeps(force = false, sources?: SourceCounts): AnalyzerDeps {
+  return {
+    fetchPage: async (id) => {
+      const r = await cachedFetchPageConfigSwr(id, force);
+      if (sources) sources[r.source]++;
+      return r.data;
+    },
+    componentIdByName: (name) => pdApi.fetchComponentIdByName(name),
+  };
+}
+
+/** The warning for a walk that used cached configs, or null when all were fresh. */
+export function cacheUseWarning(sources: SourceCounts): string | null {
+  const cached = sources.cache + sources.stale;
+  if (cached === 0) return null;
+  return `ℹ ${cached} of ${cached + sources.fresh} config(s) came from the local cache (up to 1 h old); pass --force to re-read them.`;
+}
+
+const defaultDeps: AnalyzerDeps = cacheDeps(false);
 
 function message(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
@@ -52,13 +79,15 @@ export async function analyzeItem(
   visited: Set<string>,
   errors: AnalyzeError[],
   deps: AnalyzerDeps = defaultDeps,
+  /** The already-fetched config of `id` (the caller resolved it), so it is not read twice. */
+  preloaded?: RawPageResponse,
 ): Promise<ReportNode> {
   visited.add(id);
   const node: ReportNode = { type: "PAGE", name, id, adIds: [], children: [] };
 
   let raw: RawPageResponse | null;
   try {
-    raw = await deps.fetchPage(id);
+    raw = preloaded ?? (await deps.fetchPage(id));
   } catch (err) {
     errors.push({ id, name, message: message(err) });
     return node;

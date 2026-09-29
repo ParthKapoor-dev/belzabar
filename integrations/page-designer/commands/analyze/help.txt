@@ -11,6 +11,8 @@ Flags:
   --compliance <file> Check the discovered AD ids against a master list file
                       (ids separated by commas and/or whitespace): rogue ids
                       (not in the list), missing ids, common ids.
+  --force             Re-read every page/component config (roots and every
+                      referenced component) instead of the local cache.
   --help, -h          Show this help message.
 
 Global Flags:
@@ -20,6 +22,9 @@ Global Flags:
 Notes:
   Components that cannot be fetched or resolved are reported in `errors`
   (and warned about); the rest of the tree is still returned.
+  Configs are read from the local cache (up to 1 h old) unless --force;
+  data.cache counts cached vs fresh reads, and a warning says when any
+  cached config was used.
 
 Examples:
   belz pd analyze 49fa2576239ec5791c6ead4cf9408ce2

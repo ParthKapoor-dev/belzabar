@@ -104,7 +104,10 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
     const { positionals, flags } = args.parse(argv);
     return { input: positionals.input, force: flags.force, recursive: flags.recursive, full: flags.full };
   },
-  async execute({ input, force, recursive, full }, context) {
+  async execute({ input, recursive, full }, context) {
+    // OTH-R13: a verdict must reflect the page as it is now — validate always
+    // reads fresh (root and --recursive symbols); `--force` is kept as a no-op.
+    const force = true;
     const resolved = await resolveInput(input, force);
     const page = parsePage(resolved.response);
     const head = { name: page.name || resolved.resolvedId, id: resolved.resolvedId, entityType: resolved.entityType };

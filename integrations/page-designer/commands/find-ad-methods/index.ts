@@ -7,7 +7,7 @@
 
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { PD_FORCE_FLAG } from "../../lib/args/common";
-import { analyzeItem, collectAllAdIds, type AnalyzeError } from "../../lib/analyzer";
+import { analyzeItem, cacheDeps, cacheUseWarning, collectAllAdIds, emptySourceCounts, type AnalyzeError, type SourceCounts } from "../../lib/analyzer";
 import { adIdsOf } from "../../lib/extract";
 import { parsePage } from "../../lib/parser/index";
 import { resolveInput, resolveNameToId } from "../../lib/resolver";
@@ -27,6 +27,8 @@ interface FindAdMethodsData {
   recursive: boolean;
   adIds: string[];
   errors: AnalyzeError[];
+  /** Where the configs came from (OTH-R13: cached data is up to 1 h old). */
+  cache: SourceCounts;
 }
 
 export const args = defineArgs({
@@ -55,13 +57,18 @@ const command: CommandModule<FindAdMethodsArgs, FindAdMethodsData> = {
 
     let adIds: string[];
     const errors: AnalyzeError[] = [];
+    const cache = emptySourceCounts();
+    cache[resolved.source]++;
     if (recursive) {
-      const report = await analyzeItem(resolved.resolvedId, page.name, new Set<string>(), errors);
+      const visited = new Set<string>([resolved.resolvedId]);
+      const report = await analyzeItem(resolved.resolvedId, page.name, visited, errors, cacheDeps(force, cache), resolved.response);
       adIds = collectAllAdIds([report]);
       for (const e of errors) context.warn(`⚠ ${e.name}${e.id ? ` (${e.id})` : ""}: ${e.message}`);
     } else {
       adIds = adIdsOf(page);
     }
+    const note = cacheUseWarning(cache);
+    if (note) context.warn(note);
 
     return ok({
       targetId,
@@ -71,6 +78,7 @@ const command: CommandModule<FindAdMethodsArgs, FindAdMethodsData> = {
       recursive,
       adIds,
       errors,
+      cache,
     });
   },
   presentHuman(envelope, ui) {

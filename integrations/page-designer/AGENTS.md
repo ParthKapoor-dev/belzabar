@@ -18,11 +18,11 @@ component name (component first, then page; several matches → `PD_NAME_AMBIGUO
 | Command | What it does |
 |---|---|
 | `belz pd show <input>` | Overview; sections `--vars --http --components --tree --node <id> --var-graph --var-detail <name> --http-detail <N> --find <text\|id\|component>`; `--fields a,b\|all`, `--full`, `--recursive`, `--raw`, `--open`, `--force` |
-| `belz pd validate <input>` | Every validator rule; `--recursive` (each used symbol + page↔symbol interfaces), `--full`, `--force` |
+| `belz pd validate <input>` | Every validator rule on a fresh read; `--recursive` (each used symbol + page↔symbol interfaces), `--full`, `--force` (no-op, kept) |
 | `belz pd snapshot <input>` | Normalized snapshot (`data.snapshot`), `--out <file>`, or `--compare <file>` |
 | `belz pd find [query]` | Fuzzy search over a 7-day cached index; `--components`, `--type page\|component`, `--limit`, `--refresh`, `--open`, `--full` |
 | `belz pd find-ad-methods <input>` | AD method ids a page calls; `--recursive`, `--component`, `--force` |
-| `belz pd analyze <input...>` | Recursive dependency tree from explicit roots; `--compliance <file>` |
+| `belz pd analyze <input...>` | Recursive dependency tree from explicit roots; `--compliance <file>`, `--force` |
 | `belz pd page-deps <input>` | page-dependencies summary; `--status PUBLISHED\|DRAFT`, `--full` (raw graph) |
 | `belz pd translations <input>` | Release check of phrase keys; `--status`, `--expect-draft <id>`, `--force` |
 | `belz pd diff <input> --from <envA> --to <envB>` | Cross-env structural diff (flips `Config.activeEnv` per side, then restores it) |
@@ -58,8 +58,11 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
   writes one JSON intent line to stderr (`logIntent` in `lib/edit.ts`) and runs inside `withLock`.
 - **Cache** (`lib/cache.ts`): env-scoped core `Cache` at `~/.belz/cache/pages/<env>/<id>.json`,
   shared by pages and components; SWR with 5-min soft / 1-h hard TTL. `withLock` invalidates the
-  page after every write; `publish` also drops the published id. `snapshot` and all write paths
-  always read fresh.
+  page after every write; `publish` also drops the published id. `snapshot`, `validate` (root and
+  `--recursive` symbols, OTH-R13) and all write paths always read fresh. The recursive walk
+  (`analyze`, `find-ad-methods -r`, `show -r`) threads `--force` to every component
+  (`cacheDeps` in `lib/analyzer.ts`) and reports `data.cache` `{cache, stale, fresh}` with a
+  warning when cached configs were used.
 - **Draft/published pairing** (`lib/draft-guard.ts`): the sibling is resolved only through
   `referenceId` (`resolveLinkedPair`), never by name. `resolveWriteTarget` (`lib/edit.ts`) is the
   only way to a writable id.

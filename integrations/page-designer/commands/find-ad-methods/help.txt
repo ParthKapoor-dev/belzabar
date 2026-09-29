@@ -12,7 +12,9 @@ Flags:
   --recursive, -r     Also scan every component the layout references,
                       recursively. Components that cannot be resolved are
                       listed in `errors` (and warned about).
-  --force             Bypass the local config cache.
+  --force             Bypass the local config cache (the root and, with
+                      --recursive, every referenced component). data.cache
+                      counts cached vs fresh reads.
   --help, -h          Show this help message.
 
 Global Flags:

@@ -1,4 +1,4 @@
 belz pd validate <input>  :->  Validate a page/component (platform + pd-review + figma rules); errors in full, warnings grouped by code; exit 1 on any error
 belz pd validate <input> --recursive  :->  Also validate every symbol the page uses and the page <-> symbol inputs/events/nesting
 belz pd validate <input> --full  :->  List every issue individually instead of grouping warnings
-belz pd validate <input> --force  :->  Same, bypassing the local config cache
+belz pd validate <input> --force  :->  Same (validate always reads fresh; --force is kept for compatibility)

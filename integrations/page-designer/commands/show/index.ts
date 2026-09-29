@@ -1,6 +1,6 @@
 import { CliError, Config, defineArgs, ok, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
 import { PD_FORCE_FLAG } from "../../lib/args/common";
-import { analyzeItem, collectAllAdIds, formatTreeLines, type AnalyzeError } from "../../lib/analyzer";
+import { analyzeItem, cacheDeps, collectAllAdIds, formatTreeLines, type AnalyzeError } from "../../lib/analyzer";
 import {
   adIdsOf,
   childComponentNames,
@@ -557,7 +557,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
 
     if (flags.recursive) {
       const errors: AnalyzeError[] = [];
-      const tree = await analyzeItem(resolvedId, resolvedName, new Set<string>(), errors);
+      const tree = await analyzeItem(resolvedId, resolvedName, new Set<string>(), errors, cacheDeps(flags.force), resolved.response);
       for (const e of errors) context.warn(`⚠ recursive: ${e.name}${e.id ? ` (${e.id})` : ""}: ${e.message}`);
       data.recursive = {
         treeLines: formatTreeLines(tree),

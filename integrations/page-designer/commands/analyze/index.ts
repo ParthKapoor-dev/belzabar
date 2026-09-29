@@ -9,19 +9,25 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import {
   analyzeItem,
+  cacheDeps,
+  cacheUseWarning,
   collectAllAdIds,
+  emptySourceCounts,
   formatTreeLines,
   loadMasterIds,
   verifyCompliance,
   type AnalyzeError,
   type ComplianceResult,
   type ReportNode,
+  type SourceCounts,
 } from "../../lib/analyzer";
+import { PD_FORCE_FLAG } from "../../lib/args/common";
 import { resolveInput } from "../../lib/resolver";
 
 interface AnalyzeArgs {
   inputs: string[];
   complianceFile: string | null;
+  force: boolean;
 }
 
 interface AnalyzeData {
@@ -30,6 +36,8 @@ interface AnalyzeData {
   compliance: ComplianceResult | null;
   treeByRoot: Array<{ rootId: string; lines: string[] }>;
   errors: AnalyzeError[];
+  /** Where the configs came from (OTH-R13: cached data is up to 1 h old). */
+  cache: SourceCounts;
 }
 
 export const args = defineArgs({
@@ -45,6 +53,7 @@ export const args = defineArgs({
   ],
   flags: {
     compliance: { type: "string" },
+    ...PD_FORCE_FLAG,
   },
 });
 
@@ -52,23 +61,28 @@ const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
   schema: "pd.analyze",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    return { inputs: positionals.input, complianceFile: flags.compliance ?? null };
+    return { inputs: positionals.input, complianceFile: flags.compliance ?? null, force: flags.force };
   },
-  async execute({ inputs, complianceFile }, context) {
+  async execute({ inputs, complianceFile, force }, context) {
     const masterIds = complianceFile ? await loadMasterIds(complianceFile) : null;
 
     const reports: ReportNode[] = [];
     const treeByRoot: Array<{ rootId: string; lines: string[] }> = [];
     const targetIds: string[] = [];
     const errors: AnalyzeError[] = [];
+    const cache = emptySourceCounts();
+    const deps = cacheDeps(force, cache);
     for (const input of inputs) {
-      const resolved = await resolveInput(input);
+      const resolved = await resolveInput(input, force);
+      cache[resolved.source]++;
       targetIds.push(resolved.resolvedId);
-      const report = await analyzeItem(resolved.resolvedId, resolved.response.name ?? input, new Set<string>(), errors);
+      const report = await analyzeItem(resolved.resolvedId, resolved.response.name ?? input, new Set<string>(), errors, deps, resolved.response);
       reports.push(report);
       treeByRoot.push({ rootId: resolved.resolvedId, lines: formatTreeLines(report) });
     }
     for (const e of errors) context.warn(`⚠ ${e.name}${e.id ? ` (${e.id})` : ""}: ${e.message}`);
+    const note = cacheUseWarning(cache);
+    if (note) context.warn(note);
 
     return ok({
       targetIds,
@@ -76,6 +90,7 @@ const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
       compliance: masterIds ? verifyCompliance(reports, masterIds) : null,
       treeByRoot,
       errors,
+      cache,
     });
   },
   presentHuman(envelope, ui) {

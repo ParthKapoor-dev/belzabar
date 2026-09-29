@@ -26,7 +26,9 @@ Flags:
                       and check page <-> symbol interfaces. Output is grouped
                       per entity in data.recursive.entities (depth, uses).
   --full              List every issue (warnings too) instead of grouping them.
-  --force             Bypass the local config cache (fetch fresh).
+  --force             Accepted for compatibility: validate always reads the
+                      page (and every --recursive symbol) fresh, never from
+                      the local cache.
 
 Errors (block `save` / `publish`):
   INVALID_JSON              configuration is not valid JSON
