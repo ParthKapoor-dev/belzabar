@@ -150,7 +150,14 @@ describe("matrix end to end (real Teamwork fixture, faked transport)", () => {
     expect(d.stageEnv).toBe("sems-stage");
     expect(d.tickets.find((t) => t.id === 25807610)!.error).toBeUndefined();
     expect(d.tickets.find((t) => t.id === 1)!.error).toContain("not found");
-    const path = String(res.meta!.ledgerPath);
+    // OTH-R21: an unlinked ticket makes the audit incomplete — failed, nothing saved.
+    if (res.ok) throw new Error("expected a failure");
+    expect(res.error.code).toBe("RELEASE_MATRIX_INCOMPLETE");
+    expect(existsSync(join(RELEASES_DIR, "sep-28.json"))).toBe(false);
+
+    const good = await matrix.execute({ specPath: specFile({ name: "Sep 28", included: [25807610] }) }, ctx());
+    expect(good.ok).toBe(true);
+    const path = String(good.meta!.ledgerPath);
     expect(path).toBe(join(RELEASES_DIR, "sep-28.json"));
     expect(JSON.parse(readFileSync(path, "utf8")).name).toBe("Sep 28");
     expect(readdirSync(RELEASES_DIR).filter((f) => f.endsWith(".tmp"))).toEqual([]);

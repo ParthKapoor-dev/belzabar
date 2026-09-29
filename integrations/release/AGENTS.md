@@ -23,13 +23,22 @@ belz release freeze <release-name>  → release/commands/freeze/
   It calls these lib functions, never another command's `execute()`.
   It detects COLLISIONS (an AD item shared by an included and an excluded
   ticket) and, per collision, a LEAK status (has the excluded change reached
-  stage). Result is persisted to the ledger (overwriting that release's
-  previous audit).
+  stage; `classifyLeak`, table-tested). Result is persisted to the ledger
+  (overwriting that release's previous audit).
+  **Item selection (OTH-R20):** an excluded ticket contributes EVERY AD ref
+  (`d.ad`, so a lone plain AD URL counts — a missed collision is the dangerous
+  error); an included ticket uses `recommended.ad` (latest dev-note block),
+  falling back to every ref when that is empty. `TicketRow.adSource` says which.
+  The linker's warnings are passed on as `Ticket #<id>: …`.
+  **Incomplete input (OTH-R21):** if any ticket fails to link, the command
+  returns `RELEASE_MATRIX_INCOMPLETE` (ok:false, `data.collisionsComplete:false`)
+  and writes NO ledger record, so `freeze` can't snapshot a partial audit.
   Everything about the spec is checked **before any network call**
   (`lib/spec.ts`): zod shape (`.strict()`: unknown keys are errors; `excluded`
   defaults to `[]`; `included` non-empty; name must slug to something) (RL-1),
   ticket refs via teamwork's `parseTaskId` and included/excluded overlap
-  (TW-6/RL-5), env resolution (RL-2), and the ledger slot (name collision) —
+  (TW-6/RL-5), env resolution (RL-2; spine and stage must share a project —
+  the tracer only walks the spine's project family, OTH-R24), and the ledger slot (name collision) —
   all `BAD_SPEC` / `LEDGER_NAME_COLLISION`.
   **Env resolution (RL-2):** explicit `spineEnv`/`stageEnv` must be configured;
   missing ones are `<project>-dev` / `<project>-stage`, where project =
@@ -60,7 +69,9 @@ release/
 │   └── spec.ts      ReleaseSpecSchema (zod), loadReleaseSpec, resolveReleaseEnvs
 ├── registry.ts      Static, sorted command registry (@belzabar/release/registry)
 ├── tests/unit/      bun test — args.test.ts (parsing, BAD_SPEC checks), spec-ledger.test.ts
-│                    (RL-1..4; matrix end to end over the real Teamwork fixture via fakeFetch)
+│                    (RL-1..4; matrix end to end over the real Teamwork fixture via fakeFetch),
+│                    matrix-collisions.test.ts (item selection, collisions, leak table, R21/R24)
+├── bunfig.toml      BELZ_HOME test preload (so `bun test` works inside the package)
 ├── package.json     @belzabar/release — depends on @belzabar/core, /ad, /teamwork, zod
 └── AGENTS.md        This file
 ```

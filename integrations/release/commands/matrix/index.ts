@@ -1,5 +1,5 @@
 import {
-  CliError, defineArgs, ok,
+  CliError, defineArgs, failWithData, ok,
   type CommandModule, type CommandResult, type CommandContext,
   type CommandEnvelope, type HumanPresenterHelpers,
 } from "@belzabar/core";
@@ -35,6 +35,12 @@ interface TicketRow {
   name: string;
   kind: TicketKind;
   ad: string[];
+  /**
+   * Where `ad` came from (OTH-R20): the latest dev-note block, or every AD
+   * reference on the ticket (excluded tickets always; included tickets when
+   * no dev-note block lists AD items).
+   */
+  adSource: "dev-note" | "all-refs";
   pd: string[];
   error?: string;
 }
@@ -76,6 +82,12 @@ export interface MatrixData {
   tickets: TicketRow[];
   items: ItemRow[];
   collisions: Collision[];
+  /**
+   * False when a ticket could not be linked (OTH-R21): its items are unknown,
+   * so `collisions` may be missing entries. The command then fails with
+   * RELEASE_MATRIX_INCOMPLETE and writes no ledger record.
+   */
+  collisionsComplete: boolean;
   pdNote: string;
   warnings: string[];
 }
@@ -125,6 +137,30 @@ function ticketIds(spec: ReleaseSpec): { id: number; kind: TicketKind }[] {
   ];
 }
 
+/**
+ * Leak status of a colliding item: has the excluded ticket's change reached
+ * stage? Only a traced stage cell at the spine head is "leaked", only one
+ * strictly behind it is "clean"; everything else is "unknown".
+ */
+export function classifyLeak(
+  item: Pick<ItemRow, "envs" | "error">,
+  stageEnv: string,
+): { leak: Collision["leak"]; detail: string } {
+  const stage = item.envs.find((e) => e.env === stageEnv);
+  if (item.error) return { leak: "unknown", detail: `Trace failed — leak status unknown (${item.error}).` };
+  if (!stage) return { leak: "unknown", detail: `No '${stageEnv}' environment configured — cannot check leak.` };
+  if (stage.status === "latest") {
+    return {
+      leak: "leaked",
+      detail: `${stageEnv} holds the newest spine content — the excluded ticket's edits to this item have reached stage.`,
+    };
+  }
+  if (stage.status === "behind") {
+    return { leak: "clean", detail: `${stageEnv} is behind dev (spine #${stage.spinePos}) — excluded edits not yet on stage.` };
+  }
+  return { leak: "unknown", detail: `${stageEnv} status is '${stage.status}' — inspect manually.` };
+}
+
 async function execute(args: MatrixArgs, context: CommandContext): Promise<CommandResult<MatrixData>> {
   // Everything that can be wrong with the spec fails here, before any network
   // work (RL-1): shape (zod), ticket refs + overlap (TW-6/RL-5), envs (RL-2),
@@ -137,13 +173,26 @@ async function execute(args: MatrixArgs, context: CommandContext): Promise<Comma
 
   // ── 1. Link every ticket → its items (parallel; teamwork auth, no Config). ──
 
+  //    Item selection (OTH-R20): a missed collision is the dangerous error,
+  //    so an EXCLUDED ticket contributes every AD reference it mentions (a
+  //    single plain AD URL forms no dev-note block). An INCLUDED ticket uses
+  //    its latest dev-note block, falling back to every reference when that
+  //    block lists no AD items. The linker's warnings are passed on.
   const tickets: TicketRow[] = await Promise.all(
     ticketSpecs.map(async ({ id, kind }): Promise<TicketRow> => {
       try {
         const d = await extractTicketItems(id);
-        return { id, kind, name: d.taskName, ad: d.recommended.ad, pd: d.recommended.pd };
+        const allRefs = [...new Set(d.ad.map((r) => r.uuid))].sort();
+        const useAll = kind === "excluded" || d.recommended.ad.length === 0;
+        for (const w of d.warnings) warnings.push(`Ticket #${id}: ${w}`);
+        return {
+          id, kind, name: d.taskName,
+          ad: useAll ? allRefs : d.recommended.ad,
+          adSource: useAll ? "all-refs" : "dev-note",
+          pd: d.recommended.pd.length > 0 ? d.recommended.pd : [...new Set(d.pd.map((r) => r.key))].sort(),
+        };
       } catch (e) {
-        return { id, kind, name: "(error)", ad: [], pd: [], error: e instanceof Error ? e.message : String(e) };
+        return { id, kind, name: "(error)", ad: [], adSource: "all-refs", pd: [], error: e instanceof Error ? e.message : String(e) };
       }
     }),
   );
@@ -192,24 +241,7 @@ async function execute(args: MatrixArgs, context: CommandContext): Promise<Comma
   for (const item of items) {
     if (item.kind !== "both") continue;
     const refs = itemTickets.get(item.uuid)!;
-    const stage = item.envs.find((e) => e.env === stageEnv);
-
-    let leak: Collision["leak"] = "unknown";
-    let detail: string;
-    if (item.error) {
-      detail = `Trace failed — leak status unknown (${item.error}).`;
-    } else if (!stage) {
-      detail = `No '${stageEnv}' environment configured — cannot check leak.`;
-    } else if (stage.status === "latest") {
-      leak = "leaked";
-      detail = `${stageEnv} holds the newest spine content — the excluded ticket's edits to this item have reached stage.`;
-    } else if (stage.status === "behind") {
-      leak = "clean";
-      detail = `${stageEnv} is behind dev (spine #${stage.spinePos}) — excluded edits not yet on stage.`;
-    } else {
-      detail = `${stageEnv} status is '${stage.status}' — inspect manually.`;
-    }
-
+    const { leak, detail } = classifyLeak(item, stageEnv);
     collisions.push({
       uuid: item.uuid,
       name: item.name,
@@ -230,7 +262,9 @@ async function execute(args: MatrixArgs, context: CommandContext): Promise<Comma
   if (collisions.some((c) => c.leak === "leaked")) {
     warnings.push("LEAKED collision(s) detected — an excluded ticket's change is already on stage.");
   }
-  for (const t of tickets) if (t.error) warnings.push(`Ticket #${t.id} could not be linked: ${t.error}`);
+  const failed = tickets.filter((t) => t.error);
+  for (const t of failed) warnings.push(`Ticket #${t.id} could not be linked: ${t.error}`);
+  const collisionsComplete = failed.length === 0;
 
   const data: MatrixData = {
     name: spec.name,
@@ -241,9 +275,22 @@ async function execute(args: MatrixArgs, context: CommandContext): Promise<Comma
     tickets,
     items,
     collisions,
+    collisionsComplete,
     pdNote,
     warnings,
   };
+
+  // OTH-R21: an unlinked ticket's items were never traced, so "no collisions"
+  // would be a guess. Fail and write no ledger record — `freeze` must never
+  // snapshot an incomplete audit.
+  if (!collisionsComplete) {
+    return failWithData(
+      "RELEASE_MATRIX_INCOMPLETE",
+      `${failed.length} ticket(s) could not be linked (${failed.map((t) => `#${t.id}`).join(", ")}); collisions are unknown and no ledger record was written. Fix the ticket ref(s) or retry.`,
+      data,
+      { details: { failedTickets: failed.map((t) => ({ id: t.id, kind: t.kind, error: t.error })) } },
+    );
+  }
 
   const path = saveRelease(spec.name, data);
   return ok(data, { ledgerPath: path });
@@ -285,9 +332,15 @@ function presentHuman(envelope: CommandEnvelope<MatrixData>, ui: HumanPresenterH
       ]),
     );
     for (const c of d.collisions) ui.text(`  ${c.name}: ${c.detail}`);
+  } else if (d.collisionsComplete === false) {
+    ui.section("Collisions");
+    ui.warn("UNKNOWN — some tickets could not be linked, so their AD items were never compared.");
   } else {
     ui.section("Collisions");
     ui.text("None — no AD item is shared by an included and an excluded ticket.");
+  }
+  if (d.collisions.length > 0 && d.collisionsComplete === false) {
+    ui.warn("Collision list is INCOMPLETE — some tickets could not be linked.");
   }
 
   ui.section(`AD items (${d.items.length})`);

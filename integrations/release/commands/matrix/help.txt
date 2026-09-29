@@ -9,6 +9,13 @@ ticket — shipping the included ticket would drag the excluded ticket's edits
 along. For each collision it reports a LEAK status: whether the excluded
 change has already reached the stage environment.
 
+Items per ticket: an EXCLUDED ticket contributes every AD reference in its
+comments (a single plain AD URL counts). An INCLUDED ticket uses its latest
+dev-note block, or every AD reference when no block lists AD items.
+
+If any ticket cannot be linked (Teamwork error, not found), the audit fails
+with RELEASE_MATRIX_INCOMPLETE: collisions are unknown and nothing is saved.
+
 WRITES LOCAL STATE: the result is saved to the promotion ledger
 (~/.belz/promotion/releases/<name>.json, atomic write), replacing the previous
 audit of the same release. A different release name that maps to the same
@@ -26,7 +33,8 @@ release.json format:
 
 The spec is validated before any request (BAD_SPEC; shape problems are listed together):
 unknown keys, a name without letters/digits, an empty "included", junk
-ticket refs, a ticket both included and excluded, unconfigured envs.
+ticket refs, a ticket both included and excluded, unconfigured envs,
+spineEnv and stageEnv from different projects.
 
 spineEnv/stageEnv default to the project's "<project>-dev" / "<project>-stage"
 envs. The project is "project", else that of an explicit spineEnv/stageEnv,

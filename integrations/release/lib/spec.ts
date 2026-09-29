@@ -117,9 +117,18 @@ export function resolveReleaseEnvs(
       details: { project: spec.project },
     });
   }
-  return {
-    project: project.toUpperCase(),
-    spineEnv: spec.spineEnv ?? findProjectEnv(envs, project, "spine"),
-    stageEnv: spec.stageEnv ?? findProjectEnv(envs, project, "stage"),
-  };
+  const spineEnv = spec.spineEnv ?? findProjectEnv(envs, project, "spine");
+  const stageEnv = spec.stageEnv ?? findProjectEnv(envs, project, "stage");
+  // OTH-R24: the tracer only locates a method on the spine env's project
+  // family, so a stage env from another project would never be traced and
+  // every collision would come out `leak: "unknown"`.
+  const spineProject = envs[spineEnv]!.project.toUpperCase();
+  const stageProject = envs[stageEnv]!.project.toUpperCase();
+  if (spineProject !== stageProject) {
+    throw new CliError(
+      `Release spec: spineEnv '${spineEnv}' (${spineProject}) and stageEnv '${stageEnv}' (${stageProject}) belong to different projects.`,
+      { code: "BAD_SPEC", details: { spineEnv, stageEnv, spineProject, stageProject } },
+    );
+  }
+  return { project: project.toUpperCase(), spineEnv, stageEnv };
 }
