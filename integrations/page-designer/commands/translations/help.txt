@@ -30,7 +30,7 @@ Flags:
   --status <PUBLISHED|DRAFT>  Dependency status to query (default: PUBLISHED).
   --force                     Bypass the config cache when resolving <input>.
   --llm                       Emit the JSON envelope.
-  --env <name>                Environment to resolve + query (default: nsm-dev).
+  --env <name>                Environment to resolve + query (default: defaultEnv, else nsm-dev).
   --help, -h                  Show this help message.
 
 Examples:

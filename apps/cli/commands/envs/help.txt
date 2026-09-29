@@ -7,11 +7,11 @@ Flags:
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment. (default: nsm-dev)
-                      Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>        Mark this environment as active in the listing.
+                      (default: BELZ_ENV, else config defaultEnv, else nsm-dev)
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
   belz envs
   belz envs --env nsm-qa
-  belz ad get <UUID> --env nsm-qa
+  belz ad show <uuid> --env nsm-qa

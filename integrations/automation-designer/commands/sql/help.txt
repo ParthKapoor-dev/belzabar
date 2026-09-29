@@ -69,7 +69,7 @@ TUI meta commands:
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment. (default: nsm-dev)
+  --env <name>        Set active environment (default: defaultEnv, else nsm-dev).
                       use `belz envs` to list all available envs.
                       update/insert/modify/tui are writes: --env must be explicit.
   --llm               Output structured JSON envelope for scripting/LLM use.

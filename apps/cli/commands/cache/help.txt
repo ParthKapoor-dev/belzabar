@@ -1,9 +1,12 @@
-Usage: belz cache [flags] <uuid...>
-       belz cache --all --yes [--type <TYPE>]
+Usage: belz cache --env <name> [flags] <uuid...>
+       belz cache --env <name> --all --yes [--type <TYPE>]
        belz cache prune-local [--yes]
 
-Invalidate server-side cache entries for the active environment, or clean up
-stale local cache artifacts under ~/.belz/cache.
+Invalidate server-side cache entries on an environment, or clean up stale
+local cache artifacts under ~/.belz/cache.
+
+Invalidating is a remote write, so it requires an explicit --env (the default
+env is never used). prune-local touches local files only and needs no --env.
 
 Server-side invalidate (default subcommand): every call is POSTed to BOTH
 /rest/api/cache/invalidate and /rest/api/automations/cache/invalidate with
@@ -14,7 +17,7 @@ An invalidate with no UUIDs flushes the ENTIRE cache of that type for the whole
 organisation, so it is refused unless both --all and --yes are passed.
 
 Subcommands:
-  prune-local        Remove stale LOCAL cache artifacts left from before caches
+  prune-local         Remove stale LOCAL cache artifacts left from before caches
                       became env-scoped: flat <namespace>/<key>.json files
                       (current layout is <namespace>/<env>/<key>.json) and
                       abandoned .refresh/*.lock files older than 10 minutes.
@@ -33,23 +36,23 @@ Flags:
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Environment to operate on. (default: nsm-dev)
+  --env <name>        Environment to operate on. Required for invalidation.
                       Also accepts --env=<name> or -e <name>.
   --llm               Output structured JSON envelope for scripting/LLM use.
   -v, --verbose       Verbose request logging.
 
 Examples:
-  # Invalidate three automation cache entries on the active env
-  belz cache 44014c3707d6b6d8ae848839a1c8d1e7 47425344e088690ff89aa8f1e092c867 4a1d686b87f93b1519f2b61393d4ed7a
+  # Invalidate three automation cache entries on nsm-dev
+  belz cache --env nsm-dev 44014c3707d6b6d8ae848839a1c8d1e7 47425344e088690ff89aa8f1e092c867 4a1d686b87f93b1519f2b61393d4ed7a
 
-  # Same, against nsm-qa
+  # Two entries on nsm-qa
   belz cache --env nsm-qa <uuid> <uuid>
 
   # Wipe the entire AUTOMATION cache on nsm-uat (org-wide; use with care)
   belz cache --env nsm-uat --all --yes
 
   # Invalidate by a non-default type
-  belz cache --type PAGE <uuid>
+  belz cache --env nsm-dev --type PAGE <uuid>
 
   # See what local cache cleanup would remove (dry run)
   belz cache prune-local
