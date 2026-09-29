@@ -22,7 +22,7 @@
 //     the slim reference index is cached 1 h.
 
 import { join } from "path";
-import { apiFetch, BELZ_CONFIG_DIR, Cache, CliError, lifecycle } from "@belzabar/core";
+import { apiFetch, BELZ_CONFIG_DIR, Cache, CliError, lifecycle, readJsonOrNull } from "@belzabar/core";
 import { parsePage } from "@belzabar/pd/lib/parser/index";
 import { pdApi } from "@belzabar/pd/lib/api/index";
 import type { RawPageResponse } from "@belzabar/pd/lib/types/wire";
@@ -400,7 +400,7 @@ async function fetchPagesWithConfig(): Promise<RawPageResponse[]> {
       details: { path: "/rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM", status: res.status },
     });
   }
-  const body = (await res.json()) as unknown;
+  const body = await readJsonOrNull<unknown>(res);
   return Array.isArray(body) ? (body as RawPageResponse[]) : [];
 }
 

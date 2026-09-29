@@ -5,7 +5,7 @@
 // a V1 body parsed without it misclassifies SQL / echo steps. Prefer
 // lib/api/index.ts:adApi; a few callers need the raw wire directly.
 
-import { apiFetch, CliError, Config, expectJson, readErrorBody, redactSecrets, redactString } from "@belzabar/core";
+import { apiFetch, CliError, Config, expectJson, readErrorBody, readJsonOrNull, redactSecrets, redactString } from "@belzabar/core";
 import type { V1AutomationDefinition, V1RawMethodResponse } from "../types/v1-wire";
 
 /**
@@ -27,6 +27,17 @@ async function checkResponse(response: Response, path: string): Promise<void> {
     code,
     details: { path, status: response.status, body: details },
   });
+}
+
+/**
+ * Check the status, then parse the body. A 2xx with an empty (or `null`) body
+ * resolves to `null` instead of throwing a raw `JSON Parse error` (the suite
+ * GET answers a method with no test suite with 200 + empty body); a non-JSON
+ * body is HTTP_BAD_JSON. Every V1 read/write goes through this.
+ */
+async function readJson<T = unknown>(response: Response, path: string): Promise<T | null> {
+  await checkResponse(response, path);
+  return readJsonOrNull<T>(response, { path });
 }
 
 /**
@@ -60,15 +71,14 @@ export async function fetchAutomationDefinition(
   const path = `/rest/api/automations/${automationId}?basicinfo=false`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
   if (!response.ok) return null;
-  return (await response.json()) as V1AutomationDefinition;
+  return readJsonOrNull<V1AutomationDefinition>(response, { path });
 }
 
 export async function listCategories(opts: { includeSystem?: boolean } = {}): Promise<unknown> {
   const flag = opts.includeSystem ? "true" : "false";
   const path = `/rest/api/automation/chain/category?fetchSystemServices=${flag}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function listServices(opts: { limit?: number; offset?: number } = {}): Promise<unknown> {
@@ -76,8 +86,7 @@ export async function listServices(opts: { limit?: number; offset?: number } = {
   const offset = opts.offset ?? 0;
   const path = `/rest/api/automation/services?limit=${limit}&offset=${offset}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function fetchChildMethodInfo(
@@ -86,36 +95,31 @@ export async function fetchChildMethodInfo(
 ): Promise<unknown> {
   const path = `/rest/api/automation-systems/${encodeURIComponent(category)}/automation-apis/${encodeURIComponent(methodName)}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function exportMethod(methodId: string | number): Promise<unknown> {
   const path = `/rest/api/automation/chain/export/${methodId}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function exportCategory(categoryId: string | number): Promise<unknown> {
   const path = `/rest/api/automation/chain/export/category/${categoryId}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function listTestCases(chainUuid: string): Promise<unknown> {
   const path = `/rest/api/automation/chain/testsuite/service-chain/${chainUuid}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function getTestSuiteReport(): Promise<unknown> {
   const path = `/rest/api/automation/chain/testsuite/report`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 // ─── WRITES ──────────────────────────────────────────────────────────────
@@ -128,9 +132,8 @@ export async function publishDraft(draftUuid: string): Promise<{ publishedUuid: 
     authMode: "Bearer",
     headers: { "Content-Type": "application/json" },
   });
-  await checkResponse(response, path);
-  const body = (await response.json()) as { referenceId?: string };
-  if (!body.referenceId) {
+  const body = await readJson<{ referenceId?: string }>(response, path);
+  if (!body?.referenceId) {
     throw new CliError("Publish response missing referenceId", {
       code: "AD_PUBLISH_INVALID_RESPONSE",
       details: { path, body },
@@ -147,8 +150,7 @@ export async function createCategory(body: Record<string, unknown>): Promise<unk
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function importMethods(payload: unknown): Promise<unknown> {
@@ -159,8 +161,7 @@ export async function importMethods(payload: unknown): Promise<unknown> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function createTestCase(chainUuid: string, body: unknown): Promise<unknown> {
@@ -171,8 +172,7 @@ export async function createTestCase(chainUuid: string, body: unknown): Promise<
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function updateTestCase(
@@ -187,8 +187,7 @@ export async function updateTestCase(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function deleteTestCase(testCaseId: string): Promise<void> {
@@ -208,8 +207,7 @@ export async function bulkCreateTestCases(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(cases),
   });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function runTestSuite(chainUuid: string): Promise<unknown> {
@@ -221,8 +219,7 @@ export async function runTestSuite(chainUuid: string): Promise<unknown> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chainUuid }),
   });
-  await checkResponse(response, path);
-  return await response.json();
+  return readJson(response, path);
 }
 
 export async function deleteTestSuite(testSuiteId: string): Promise<void> {
@@ -292,7 +289,7 @@ async function resolveHistoryMethodUuid(methodName: string): Promise<string> {
   if (_historyUuidCache[cacheKey]) return _historyUuidCache[cacheKey]!;
 
   const info = await fetchChildMethodInfo(HISTORY_SERVICE_CATEGORY, methodName);
-  const body = info as Record<string, unknown>;
+  const body = (info ?? {}) as Record<string, unknown>;
   const uid =
     (typeof body.serviceChainUID === "string" && body.serviceChainUID) ||
     (typeof body.methodUUID === "string" && body.methodUUID);
@@ -341,7 +338,8 @@ export async function historyListAll(
 
   if (!response.ok) await throwHistoryError(response, "listAll");
 
-  const body = (await response.json()) as Record<string, unknown>;
+  const body = await readJsonOrNull<Record<string, unknown>>(response, { path });
+  if (!body) return [];
   const items = extractHistoryResponse(body);
   if (!Array.isArray(items)) return [];
 
@@ -384,7 +382,13 @@ export async function historyGet(opts: {
 
   if (!response.ok) await throwHistoryError(response, "get", opts.version);
 
-  const body = (await response.json()) as Record<string, unknown>;
+  const body = await readJsonOrNull<Record<string, unknown>>(response, { path });
+  if (!body) {
+    throw new CliError(`History version ${opts.version} returned an empty body.`, {
+      code: "HISTORY_VERSION_NOT_FOUND",
+      details: { version: opts.version, methodName: opts.methodName },
+    });
+  }
   const inner = extractHistoryResponseSingle(body);
 
   return {
@@ -430,7 +434,7 @@ export async function historyRestore(opts: {
 
   if (!response.ok) await throwHistoryError(response, "restore", opts.version);
 
-  const body = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+  const body = await readJsonOrNull<Record<string, unknown>>(response, { path }).catch(() => null);
   return interpretRestoreResponse(body);
 }
 

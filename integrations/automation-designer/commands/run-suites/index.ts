@@ -1,6 +1,6 @@
 import { existsSync, readdirSync } from "fs";
 import { join } from "path";
-import { CliError, defineArgs, fail, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, fail, ok, readJsonOrNull, type CommandModule } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { fetchRawMethod, testMethodMultipart } from "../../lib/api/v1";
 import { buildV1TestPayload, describeTestFailure, v1TestFormData } from "../../lib/payload-builder";
@@ -103,7 +103,7 @@ const command: CommandModule<undefined, RunSuitesData> = {
           continue;
         }
 
-        const result = (await resultRes.json()) as TestExecutionResponse;
+        const result = ((await readJsonOrNull<TestExecutionResponse>(resultRes, { path: "/rest/api/automation/chain/test" })) ?? {}) as TestExecutionResponse;
         if (result.executionStatus?.failed) {
           suites.push({
             name: suite.name,

@@ -1,4 +1,4 @@
-import { CliError, apiFetch, readErrorBody } from "@belzabar/core";
+import { apiFetch, CliError, expectFound, readErrorBody, readJsonOrNull } from "@belzabar/core";
 import type { ExecutableCategoryRef, SqlDatabaseAuth, SqlSelectOperation, SqlUpdateOperation, SqlInsertOperation, SqlModifyOperation } from "./types";
 
 export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
@@ -14,7 +14,7 @@ export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
     });
   }
 
-  return (await response.json()) as SqlDatabaseAuth[];
+  return expectFound(await readJsonOrNull<SqlDatabaseAuth[]>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
 
 export async function fetchSqlSelectOperation(): Promise<SqlSelectOperation> {
@@ -30,7 +30,7 @@ export async function fetchSqlSelectOperation(): Promise<SqlSelectOperation> {
     });
   }
 
-  return (await response.json()) as SqlSelectOperation;
+  return expectFound(await readJsonOrNull<SqlSelectOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
 
 export async function fetchSqlUpdateOperation(): Promise<SqlUpdateOperation> {
@@ -46,7 +46,7 @@ export async function fetchSqlUpdateOperation(): Promise<SqlUpdateOperation> {
     });
   }
 
-  return (await response.json()) as SqlUpdateOperation;
+  return expectFound(await readJsonOrNull<SqlUpdateOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
 
 export async function fetchSqlInsertOperation(): Promise<SqlInsertOperation> {
@@ -62,7 +62,7 @@ export async function fetchSqlInsertOperation(): Promise<SqlInsertOperation> {
     });
   }
 
-  return (await response.json()) as SqlInsertOperation;
+  return expectFound(await readJsonOrNull<SqlInsertOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
 
 export async function fetchSqlModifyOperation(): Promise<SqlModifyOperation> {
@@ -78,7 +78,7 @@ export async function fetchSqlModifyOperation(): Promise<SqlModifyOperation> {
     });
   }
 
-  return (await response.json()) as SqlModifyOperation;
+  return expectFound(await readJsonOrNull<SqlModifyOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
 
 let executableCategoryCache: Promise<ExecutableCategoryRef | null> | null = null;
@@ -111,7 +111,7 @@ export async function fetchExecutableCategory(): Promise<ExecutableCategoryRef |
 
     if (!response.ok) return null;
 
-    const body = (await response.json()) as unknown;
+    const body = await readJsonOrNull<unknown>(response);
     const list: any[] = Array.isArray(body)
       ? body
       : ((body as any)?.content ?? (body as any)?.data ?? []);

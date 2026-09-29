@@ -56,6 +56,9 @@ const command: CommandModule<ExportArgs, ExportData> = {
       id = (raw as { id: number }).id;
     }
     const body = await adApi.exportMethod(id);
+    if (body === null) {
+      throw new CliError(`Method ${uuid ?? id} exported nothing (empty response).`, { code: "METHOD_NOT_FOUND", details: { id, uuid } });
+    }
     const serialised = JSON.stringify(body, null, 2);
     let written: string | null = null;
     if (outPath) {

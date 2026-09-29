@@ -6,7 +6,7 @@
 //
 // No command imports this file directly — use lib/api/index.ts:adApi.
 
-import { apiFetch, CliError, readErrorBody } from "@belzabar/core";
+import { apiFetch, CliError, readErrorBody, readJsonOrNull } from "@belzabar/core";
 
 const ENTITY_TYPE = "AUTOMATION_CHAIN_DEFINITION";
 const CHANGELOG_TYPE = "USER_GENERATED";
@@ -36,8 +36,8 @@ export async function fetchCurrentUser(): Promise<Record<string, unknown>> {
   const path = "/rest/api/users/me";
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
   await checkResponse(response, path);
-  const body = (await response.json()) as { user?: Record<string, unknown> };
-  if (!body.user) {
+  const body = await readJsonOrNull<{ user?: Record<string, unknown> }>(response, { path });
+  if (!body?.user) {
     throw new CliError("Could not resolve the current user from /rest/api/users/me.", {
       code: "AD_CURRENT_USER_UNAVAILABLE",
       details: { path },
@@ -51,7 +51,7 @@ export async function listChangelog(chainId: number): Promise<ChangelogEntry[]> 
   const path = `/rest/api/automation/chain/changelog/${chainId}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
   await checkResponse(response, path);
-  const body = await response.json();
+  const body = await readJsonOrNull<unknown>(response, { path });
   return Array.isArray(body) ? (body as ChangelogEntry[]) : [];
 }
 
@@ -82,7 +82,7 @@ export async function addChangelog(chainId: number, comment: string): Promise<st
     body: JSON.stringify(payload),
   });
   await checkResponse(response, path);
-  const body = (await response.json().catch(() => ({}))) as { id?: unknown; success?: unknown };
+  const body = ((await readJsonOrNull<{ id?: unknown; success?: unknown }>(response, { path }).catch(() => null)) ?? {}) as { id?: unknown; success?: unknown };
   if (body.success === false) {
     throw new CliError(`The server refused the change note on chain ${chainId}.`, {
       code: "AD_CHANGELOG_ERROR",

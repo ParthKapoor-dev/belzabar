@@ -42,9 +42,10 @@ interface StoredCase {
 /** jsonb round-trip: the server re-serialises `{"value":"x"}` as `{"value": "x"}`. */
 const jsonb = (v: unknown) => (typeof v === "string" ? JSON.stringify(JSON.parse(v), null, 1).replace(/\n\s*/g, " ").replace(/\{ /g, "{").replace(/ \}/g, "}") : v);
 
-function fakeServer(initial = load("suite.json")) {
+/** `initial: null` = a method with no suite yet: the suite GET answers 200 + EMPTY body (live sems-dev). */
+function fakeServer(initial: any = load("suite.json")) {
   let n = 0;
-  const cases: StoredCase[] = initial.testCases.map((c: any) => ({ ...c, active: true }));
+  const cases: StoredCase[] = (initial?.testCases ?? []).map((c: any) => ({ ...c, active: true }));
   const store = (body: any, id: string): Pick<StoredCase, "inputs" | "assertions"> => ({
     inputs: (body.inputs ?? []).map((i: any) => ({ id: `in${++n}`, testCaseId: id, fieldCode: i.fieldCode, value: jsonb(i.value), defaultValue: jsonb(i.defaultValue) })),
     assertions: (body.assertions ?? []).map((a: any) => ({ id: `as${++n}`, testCaseId: id, mode: a.mode, conditionExpression: a.conditionExpression })),
@@ -53,7 +54,10 @@ function fakeServer(initial = load("suite.json")) {
     {
       method: "GET",
       url: `/rest/api/automation/chain/testsuite/service-chain/${DRAFT}`,
-      response: () => ({ ...initial, testCases: cases.filter((c) => c.active) }),
+      response: () =>
+        initial === null && cases.length === 0
+          ? respond({ status: 200, text: "" })
+          : { ...(initial ?? { id: "suite-new", active: true }), testCases: cases.filter((c) => c.active) },
     },
     { method: "GET", url: `/rest/api/automation/chain/v2/${DRAFT}`, response: load("draft.v2.json") },
     {
@@ -417,5 +421,28 @@ describe("files", () => {
     writeFileSync(join(dir, "cases", "1.json"), JSON.stringify({ name: "same" }));
     writeFileSync(join(dir, "cases", "2.json"), JSON.stringify({ name: "same" }));
     expect(() => readCaseFiles(dir)).toThrow(expect.objectContaining({ code: "AD_TESTCASE_DUPLICATE_NAME" }));
+  });
+});
+
+// ── a method with no suite yet (CLI trial: 200 + empty body crashed every action) ──
+
+describe("no suite yet: the suite GET answers 200 with an empty body", () => {
+  test("list and export are empty, not UNHANDLED_EXCEPTION", async () => {
+    wire(fakeServer(null));
+    const list = await run(["list", DRAFT]);
+    expect(list.envelope?.ok).toBe(true);
+    expect(list.envelope?.data).toMatchObject({ action: "list", testSuiteId: null, total: 0, testCases: [] });
+    const dir = scratchDir("tc-empty");
+    const exp = await run(["export", DRAFT, "--dir", dir]);
+    expect(exp.envelope?.ok).toBe(true);
+    expect((exp.envelope?.data as any).total).toBe(0);
+  });
+
+  test("create makes the first case (the POST creates the suite) and verifies it", async () => {
+    const server = wire(fakeServer(null));
+    const r = await run(["create", DRAFT, "--name", "t.first.1", "--input", "name=x", "--assert", "greetingOut=Hello x", "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ action: "create", verified: true });
+    expect(server.cases.map((c) => c.name)).toEqual(["t.first.1"]);
   });
 });

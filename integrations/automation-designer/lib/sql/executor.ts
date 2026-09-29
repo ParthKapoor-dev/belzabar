@@ -1,4 +1,4 @@
-import { CliError, Config, loadConfigFileRaw, trustedBelzEnv } from "@belzabar/core";
+import { CliError, Config, loadConfigFileRaw, readJsonOrNull, trustedBelzEnv } from "@belzabar/core";
 import { assertReadOnlySql } from "./read-only";
 import { ErrorParser } from "../error-parser";
 import { fetchRawMethod, testMethodMultipart } from "../api/v1";
@@ -188,7 +188,7 @@ export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<
     });
   }
 
-  const executionResult = (await response.json()) as any;
+  const executionResult = (await readJsonOrNull<any>(response, { path: "/rest/api/automation/chain/test" })) ?? {};
   const parsed = parseSqlUpdateResult(executionResult);
 
   if (!parsed.success) {
@@ -322,7 +322,7 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
     });
   }
 
-  const executionResult = (await response.json()) as any;
+  const executionResult = (await readJsonOrNull<any>(response, { path: "/rest/api/automation/chain/test" })) ?? {};
   const parsed = parseSqlInsertResult(executionResult, insertOutputIds(options.context.operation));
   let generatedKeys: Array<Record<string, string>> | undefined;
 
@@ -424,7 +424,7 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
     });
   }
 
-  const executionResult = (await response.json()) as any;
+  const executionResult = (await readJsonOrNull<any>(response, { path: "/rest/api/automation/chain/test" })) ?? {};
   const parsed = parseSqlModifyResult(executionResult);
 
   if (!parsed.success) {
@@ -483,7 +483,7 @@ export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promi
     });
   }
 
-  const executionResult = (await response.json()) as any;
+  const executionResult = (await readJsonOrNull<any>(response, { path: "/rest/api/automation/chain/test" })) ?? {};
   const parsed = parseSqlRunResult(executionResult);
 
   if (!parsed.success) {

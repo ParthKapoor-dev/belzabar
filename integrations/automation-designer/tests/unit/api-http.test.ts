@@ -82,3 +82,25 @@ describe("test responses are redacted", () => {
     expect(ff!.requests[0]!.headers["expertly-auth-token"]).toBe(JWT);
   });
 });
+
+// CLI trial: every V1 read did `response.json()`, so a 200 + empty body was a raw
+// "JSON Parse error: Unexpected EOF" (UNHANDLED_EXCEPTION). Now empty → null,
+// non-JSON → HTTP_BAD_JSON.
+describe("V1 reads/writes: empty and non-JSON 200 bodies", () => {
+  test("empty body → null (suite, report, exports, listings, test-case writes)", async () => {
+    setup([{ url: /\/rest\/api\//, response: respond({ status: 200, text: "" }) }]);
+    expect(await v1.listTestCases(UUID)).toBeNull();
+    expect(await v1.getTestSuiteReport()).toBeNull();
+    expect(await v1.exportMethod(1)).toBeNull();
+    expect(await v1.listCategories()).toBeNull();
+    expect(await v1.createTestCase(UUID, {})).toBeNull();
+    expect(await v1.historyListAll(UUID).catch((e) => e.code)).toBe("HISTORY_SERVICE_NOT_FOUND");
+  });
+
+  test("a non-JSON 200 body → HTTP_BAD_JSON, not a SyntaxError", async () => {
+    setup([{ url: /\/rest\/api\//, response: respond({ status: 200, text: "<html><title>SSO</title></html>" }) }]);
+    const e = await caught(v1.listTestCases(UUID));
+    expect(e).toBeInstanceOf(CliError);
+    expect(e.code).toBe("HTTP_BAD_JSON");
+  });
+});

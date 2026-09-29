@@ -5,7 +5,7 @@
 // The body is the method as fetched (test-before-save), so the same function
 // runs a DRAFT and its PUBLISHED copy with identical inputs (7.12).
 
-import { CliError } from "@belzabar/core";
+import { CliError, readJsonOrNull } from "@belzabar/core";
 import { testMethodMultipart } from "./api/v1";
 import { ErrorParser, detectJavaException, type ParsedError } from "./error-parser";
 import { ServiceHydrator } from "./hydrator";
@@ -114,7 +114,7 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
       details: { status: resultRes.status, body: failure.body },
     });
   }
-  const result = (await resultRes.json()) as Record<string, unknown>;
+  const result = (await readJsonOrNull<Record<string, unknown>>(resultRes, { path: "/rest/api/automation/chain/test" })) ?? {};
 
   // Java exception body — the backend answers 200 with a thrown exception
   // object when a chain fails to compile.

@@ -123,6 +123,12 @@ all of them together.
   prints a one-line notice on stderr. To flip a default, edit one cell of
   `DEFAULT_VERSION`. `save`, `create` and `delete` always use V2.
 - Any command that takes a method uuid parses it with `resolveMethodRef`.
+- Never call `response.json()` on a server response. V1 routes go through
+  `lib/api/v1.ts:readJson` (status check + core `readJsonOrNull`): a 2xx with an
+  empty or `null` body is `null`, a non-JSON body is `HTTP_BAD_JSON`. Everything
+  else uses core `readJsonOrNull` / `expectJson` directly. (CLI trial: the suite
+  GET answers a method without a suite with 200 + empty body, and a raw
+  `.json()` crashed every `test-case` action with UNHANDLED_EXCEPTION.)
 - Long server operations pass `AD_LONG_OP_TIMEOUT_MS` (10 min): test, execute,
   publish, suites and restore.
 
@@ -288,6 +294,8 @@ applies it only with `--apply`.
 
 Test-case writes are contract-checked and verified by re-reading the suite. Platform
 facts to keep in mind:
+- A method with no suite: the suite GET answers 200 + empty body (belz: no suite,
+  0 cases). The first `POST /chain/testcases/{uuid}` creates the suite.
 - `PUT` persists only inputs and assertions.
 - `DELETE` is soft and never frees the name (`AD_TESTCASE_NAME_RESERVED`).
 - `bulk` posts one case at a time.

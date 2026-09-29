@@ -1,5 +1,5 @@
 import { join } from "path";
-import { BELZ_CONFIG_DIR, Cache, CliError, Config, apiFetch } from "@belzabar/core";
+import { apiFetch, BELZ_CONFIG_DIR, Cache, CliError, Config, readJsonOrNull } from "@belzabar/core";
 
 const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
@@ -425,7 +425,7 @@ async function fetchAllCategories(): Promise<MethodFinderCategory[]> {
       });
     }
 
-    const payload = await response.json();
+    const payload = (await readJsonOrNull<unknown>(response, { path })) ?? {};
     const result = getArray((payload as { result?: unknown }).result);
 
     if (result.length === 0) {
@@ -487,7 +487,7 @@ async function fetchMethodsForCategory(category: MethodFinderCategory): Promise<
         };
       }
 
-      const payload = await response.json();
+      const payload = (await readJsonOrNull<unknown>(response, { path })) ?? {};
       const methodList = getArray((payload as { methodList?: unknown }).methodList);
 
       if (methodList.length === 0) {
