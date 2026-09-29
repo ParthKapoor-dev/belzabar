@@ -12,6 +12,8 @@ location of the checkout is read from "belz.sourceDir" in
 belz update never discards local work: when there is something to pull and
 the checkout has uncommitted/staged changes (DIRTY_TREE) or local commits not
 on origin (LOCAL_COMMITS), it refuses and tells you how to resolve it.
+Untracked files do not block (git's fast-forward refuses by itself if the
+update would overwrite one).
 
 Flags:
   --check       Report whether an update is available, without changing anything.

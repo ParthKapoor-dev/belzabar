@@ -8,7 +8,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { CONFIG_FILE_PATH, reloadConfig } from "@belzabar/core";
 import { runCommand, scratchDir, withTempEnvConfig } from "@belzabar/core/testing";
-import update, { installerCommand, installScriptDir, planUpdate } from "../commands/update/index";
+import update, { installerCommand, installScriptDir, planUpdate, worktreeDirty } from "../commands/update/index";
 
 const dirs: string[] = [];
 afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
@@ -49,6 +49,31 @@ describe("planUpdate (CORE-R4)", () => {
       expect(planUpdate(behind, { check: false, force }).action).toBe("fast-forward");
     }
     expect(planUpdate({ ...behind, dirty: true }, { check: true, force: false }).action).toBe("check-only");
+  });
+});
+
+describe("worktreeDirty (NEW-4)", () => {
+  test("untracked files do not count; tracked edits and staged changes do", () => {
+    const dir = mkdtempSync(join(tmpdir(), "belz-update-dirty-"));
+    try {
+      const g = (...a: string[]) => spawnSync("git", ["-C", dir, "-c", "user.email=t@t", "-c", "user.name=t", ...a], { encoding: "utf8" });
+      g("init", "-q");
+      writeFileSync(join(dir, "tracked.txt"), "a\n");
+      g("add", "tracked.txt");
+      g("commit", "-q", "-m", "init");
+      expect(worktreeDirty(dir)).toBe(false);
+      mkdirSync(join(dir, ".claude"));
+      writeFileSync(join(dir, ".claude", "x.json"), "{}");
+      writeFileSync(join(dir, "scratch.md"), "notes");
+      expect(worktreeDirty(dir)).toBe(false);
+      writeFileSync(join(dir, "tracked.txt"), "b\n");
+      expect(worktreeDirty(dir)).toBe(true);
+      g("checkout", "--", "tracked.txt");
+      g("add", "scratch.md");
+      expect(worktreeDirty(dir)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

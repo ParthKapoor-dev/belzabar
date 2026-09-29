@@ -42,6 +42,16 @@ function git(sourceDir: string, args: string[]): { ok: boolean; out: string; err
   return { ok: r.status === 0, out: (r.stdout ?? "").trim(), err: (r.stderr ?? "").trim() };
 }
 
+/**
+ * Does the checkout have local work a fast-forward could clobber? Tracked
+ * modifications and staged changes only (NEW-4): untracked files (a dev
+ * checkout's `.claude/`, scratch files) never block — `merge --ff-only`
+ * itself refuses if the update would overwrite one.
+ */
+export function worktreeDirty(sourceDir: string): boolean {
+  return git(sourceDir, ["status", "--porcelain", "--untracked-files=no"]).out.length > 0;
+}
+
 function requireGit(sourceDir: string, args: string[], failCode: string): string {
   const r = git(sourceDir, args);
   if (!r.ok) {
@@ -162,7 +172,7 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
 
     const fromSha = requireGit(sourceDir, ["rev-parse", "--short", "HEAD"], "GIT_REV_FAILED");
     const remoteSha = requireGit(sourceDir, ["rev-parse", "--short", upstream], "GIT_REV_FAILED");
-    const dirty = git(sourceDir, ["status", "--porcelain"]).out.length > 0;
+    const dirty = worktreeDirty(sourceDir);
     const counts = requireGit(sourceDir, ["rev-list", "--left-right", "--count", `HEAD...${upstream}`], "GIT_REV_FAILED");
     const [ahead = 0, behind = 0] = counts.split(/\s+/).map((n) => Number(n) || 0);
 
