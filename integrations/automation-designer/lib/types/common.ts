@@ -152,6 +152,19 @@ interface BaseStep {
   forceExitErrorMessage?: string;
   /** HTTP status the step exits with (V1 `forceExitStatusCode`, V2 `exitOnFailure.code`). */
   forceExitStatusCode?: number | string;
+  /**
+   * Conditional exit ("force return"): when this expression is true the method
+   * returns right after the step. V1 `forceReturnConditionExpression` (+ mode and
+   * basic rows `forceReturnCondition[]`; V1 shares the exit's status code and
+   * message), V2 `properties.exitCondition.conditionalExit`.
+   */
+  forceReturnExpression?: string;
+  forceReturnMode?: "advance" | "basic";
+  forceReturnRows?: ConditionRow[];
+  forceReturnStatusCode?: number | string;
+  forceReturnMessage?: string;
+  /** Account the step runs with. V1 `automationAuthId` + `accountName`, V2 `accountConfiguration {id, name}`. */
+  account?: { id?: number | string; name?: string };
   outputs: MethodOutput[];
   inputs: StepInput[];
   /** Original wire JSON of this step — mandatory for round-trip saves. */
@@ -241,6 +254,12 @@ export interface HydratedMethod {
   description?: string;
   buttonLabel?: string;
   internalMethod?: boolean;
+  /** `methodDeprecated` on both wires. */
+  deprecated?: boolean;
+  /** Who may call it: V1 `scope`, V2 `permissions.methodScope` (e.g. UNRESTRICTED). */
+  scope?: string;
+  /** Run-time limit: V2 `metadata.executionTimeLimit.timeoutInSecond`. */
+  timeoutSeconds?: number;
 
   category: MethodCategory | null;
 

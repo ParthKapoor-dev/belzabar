@@ -90,6 +90,12 @@ interface BaseFields {
   forceExitFromFailure?: boolean;
   forceExitErrorMessage?: string;
   forceExitStatusCode?: number | string;
+  forceReturnExpression?: string;
+  forceReturnMode?: "advance" | "basic";
+  forceReturnRows?: ConditionRow[];
+  forceReturnStatusCode?: number | string;
+  forceReturnMessage?: string;
+  account?: { id?: number | string; name?: string };
   outputs: MethodOutput[];
   inputs: StepInput[];
   raw: unknown;
@@ -113,6 +119,8 @@ function buildBase(raw: V1ServiceStep, orderIndex: number): BaseFields {
     forceExitFromFailure: raw.forceExitFromFailure,
     forceExitErrorMessage: raw.forceExitErrorMessage,
     forceExitStatusCode: raw.forceExitStatusCode ?? undefined,
+    ...parseForceReturn(raw),
+    ...(parseAccount(raw) ?? {}),
     outputs: (raw.outputs ?? []).map(mapOutput),
     inputs: (raw.mappings ?? []).map(mapMapping),
     raw,
@@ -377,4 +385,31 @@ function parseConditionRows(rows: unknown[] | undefined): ConditionRow[] | undef
     });
   }
   return out.length > 0 ? out : undefined;
+}
+
+/**
+ * V1 conditional exit. V1 has one status code / message pair
+ * (`forceExitStatusCode` / `forceExitErrorMessage`) shared with exit-on-failure.
+ */
+function parseForceReturn(raw: V1ServiceStep): Partial<BaseFields> {
+  const expr = typeof raw.forceReturnConditionExpression === "string" ? raw.forceReturnConditionExpression.trim() : "";
+  const rows = parseConditionRows(raw.forceReturnCondition);
+  if (!expr && !rows) return {};
+  const code = raw.forceExitStatusCode ?? undefined;
+  const message = typeof raw.forceExitErrorMessage === "string" && raw.forceExitErrorMessage ? raw.forceExitErrorMessage : undefined;
+  return {
+    ...(expr ? { forceReturnExpression: expr } : {}),
+    ...(raw.forceReturnConditionMode ? { forceReturnMode: raw.forceReturnConditionMode } : {}),
+    ...(rows ? { forceReturnRows: rows } : {}),
+    ...(code != null && code !== "" ? { forceReturnStatusCode: code } : {}),
+    ...(message ? { forceReturnMessage: message } : {}),
+  };
+}
+
+/** V1 step account: `automationAuthId` (+ `accountName` on newer bodies). */
+function parseAccount(raw: V1ServiceStep): { account: { id?: number | string; name?: string } } | undefined {
+  const id = typeof raw.automationAuthId === "number" ? raw.automationAuthId : undefined;
+  const name = typeof raw.accountName === "string" && raw.accountName.trim() ? raw.accountName.trim() : undefined;
+  if (id === undefined && name === undefined) return undefined;
+  return { account: { ...(id !== undefined ? { id } : {}), ...(name ? { name } : {}) } };
 }

@@ -56,6 +56,8 @@ export function parseV1Method(raw: V1RawMethodResponse, opts?: ParseOptions): Hy
     description: inner.description ?? inner.methodDescription,
     buttonLabel: inner.buttonLabel,
     internalMethod: inner.internalMethod,
+    ...(raw.methodDeprecated === true ? { deprecated: true } : {}),
+    ...(typeof raw.scope === "string" && raw.scope ? { scope: raw.scope } : {}),
     category: raw.category
       ? { id: raw.category.id, name: raw.category.name }
       : null,
@@ -102,6 +104,7 @@ function mapOutput(o: V1OutputField): MethodOutput {
     code: o.code ?? o.outputCode ?? o.fieldCode ?? "",
     displayName: o.displayName,
     type: o.type,
+    description: typeof o.description === "string" && o.description ? o.description : undefined,
     automationAPIOutputId: o.automationAPIOutputId,
     internalVarRef: o.internalVarRef,
     rawResponseContainer: o.rawResponseContainer,

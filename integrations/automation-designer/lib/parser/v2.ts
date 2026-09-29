@@ -10,7 +10,7 @@ import type {
 } from "../types/common";
 import { parseV2Step } from "./steps/v2";
 import { firstId, firstNumber, normaliseState } from "./v1";
-import { strOrNull } from "@belzabar/core";
+import { isObj, strOrNull } from "@belzabar/core";
 import type { ParseOptions } from "./steps/classify";
 
 export function parseV2Method(raw: V2MethodResponse, opts?: ParseOptions): HydratedMethod {
@@ -45,6 +45,13 @@ export function parseV2Method(raw: V2MethodResponse, opts?: ParseOptions): Hydra
     description: raw.description,
     buttonLabel: raw.buttonLabel,
     internalMethod: raw.internalMethod,
+    ...(raw.methodDeprecated === true ? { deprecated: true } : {}),
+    ...(isObj(raw.permissions) && typeof raw.permissions.methodScope === "string" && raw.permissions.methodScope
+      ? { scope: raw.permissions.methodScope }
+      : {}),
+    ...(typeof metadata?.executionTimeLimit?.timeoutInSecond === "number"
+      ? { timeoutSeconds: metadata.executionTimeLimit.timeoutInSecond }
+      : {}),
     category: metadata?.service
       ? { id: metadata.service.id, uuid: metadata.service.uuid, name: metadata.service.name }
       : null,

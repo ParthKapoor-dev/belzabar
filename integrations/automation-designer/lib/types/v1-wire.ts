@@ -51,6 +51,7 @@ export interface V1OutputField {
   fieldCode?: string;
   outputCode?: string;
   displayName?: string;
+  description?: string;
   properties?: unknown[];
   rawResponseContainer?: boolean;
   automationAPIOutputId?: number;
@@ -104,7 +105,12 @@ export interface V1ServiceStep {
   forceExitErrorMessage?: string;
   /** HTTP status for both exit-on-failure and the conditional exit. */
   forceExitStatusCode?: number | string | null;
+  /** Conditional exit ("force return"): expression, mode, basic-mode rows. */
+  forceReturnConditionExpression?: string | null;
+  forceReturnConditionMode?: "advance" | "basic";
+  forceReturnCondition?: unknown[];
   automationAuthId?: number;
+  accountName?: string | null;
   testAccountId?: number;
   [extra: string]: unknown;
 }

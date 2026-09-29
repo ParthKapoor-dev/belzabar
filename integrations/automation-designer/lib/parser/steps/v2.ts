@@ -166,6 +166,30 @@ export function parseV2Loop(rse: V2StepProperties["repeatStepExecution"]): {
   return { repeatStepExecution: true, ...(source ? { loopExecutionSource: source } : {}), loopConfiguration: config };
 }
 
+/** V2 `exitCondition.conditionalExit` → the force-return fields; no expression → none. */
+function parseV2ConditionalExit(ce: NonNullable<V2StepProperties["exitCondition"]>["conditionalExit"] | undefined): {
+  forceReturnExpression?: string;
+  forceReturnStatusCode?: number | string;
+  forceReturnMessage?: string;
+} {
+  const expr = nonBlank(ce?.expression);
+  if (!ce || !expr) return {};
+  const code = ce.code ?? undefined;
+  return {
+    forceReturnExpression: expr,
+    ...(code != null && code !== "" ? { forceReturnStatusCode: code } : {}),
+    ...(typeof ce.message === "string" && ce.message ? { forceReturnMessage: ce.message } : {}),
+  };
+}
+
+function parseV2Account(a: V2Step["accountConfiguration"]): { account?: { id?: number | string; name?: string } } {
+  if (!a || typeof a !== "object") return {};
+  const id = typeof a.id === "number" || (typeof a.id === "string" && a.id.trim()) ? a.id : undefined;
+  const name = nonBlank(a.name);
+  if (id === undefined && name === undefined) return {};
+  return { account: { ...(id !== undefined ? { id } : {}), ...(name ? { name } : {}) } };
+}
+
 function buildBase(raw: V2Step, orderIndex: number) {
   return {
     orderIndex,
@@ -183,6 +207,8 @@ function buildBase(raw: V2Step, orderIndex: number) {
     forceExitFromFailure: raw.properties?.exitCondition?.exitOnFailure?.value,
     forceExitErrorMessage: raw.properties?.exitCondition?.exitOnFailure?.message,
     forceExitStatusCode: raw.properties?.exitCondition?.exitOnFailure?.code ?? undefined,
+    ...parseV2ConditionalExit(raw.properties?.exitCondition?.conditionalExit),
+    ...parseV2Account(raw.accountConfiguration),
     outputs: (raw.outputs ?? []).map(mapOutput),
     inputs: (raw.inputs ?? []).map(mapInput),
     raw,
