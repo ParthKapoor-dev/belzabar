@@ -225,3 +225,36 @@ describe("lib/test-run helpers", () => {
     expect(counterpart({ state: "DRAFT", uuid: DRAFT, referenceId: null } as any)).toBeNull();
   });
 });
+
+// CLI trial: `ad test` took only `--inputs <file>` (in --llm), while
+// `test-case create` takes `--input k=v` and `ad run` inline JSON.
+describe("ad test --input k=v and inline --inputs JSON", () => {
+  const posted = () => ff!.requests.find((q) => q.method === "POST")!.body ?? "";
+
+  test("--input name=World runs with that value", async () => {
+    wire();
+    const r = await runCommand(testCommand, [DRAFT, "--input", "name=World", "--expect", "greetingOut=Hi World"], { env: ENV });
+    expect(r.envelope?.ok).toBe(true);
+    expect(posted()).toContain("World");
+  });
+
+  test("inline JSON --inputs, with --input on top", async () => {
+    wire();
+    const r = await runCommand(testCommand, [DRAFT, "--inputs", '{"name":"Mars"}', "--input", "name=World"], { env: ENV });
+    expect(r.envelope?.ok).toBe(true);
+    expect(posted()).toContain("World");
+    expect(posted()).not.toContain("Mars");
+  });
+
+  test("an unknown key is INVALID_INPUT; nothing given in --llm names --input", async () => {
+    wire();
+    const bad = await runCommand(testCommand, [DRAFT, "--input", "nope=1"], { env: ENV });
+    expect(bad.envelope?.error?.code).toBe("INVALID_INPUT");
+    expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
+    const none = await runCommand(testCommand, [DRAFT], { env: ENV });
+    expect(none.envelope?.error?.code).toBe("INTERACTIVE_NOT_SUPPORTED");
+    expect(none.envelope?.error?.message).toContain("--input");
+    const badJson = await runCommand(testCommand, [DRAFT, "--inputs", "{nope"], { env: ENV });
+    expect(badJson.envelope?.error?.code).toBe("INVALID_JSON");
+  });
+});

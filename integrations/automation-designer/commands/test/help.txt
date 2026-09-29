@@ -8,8 +8,13 @@ Arguments:
   <UUID>                The UUID of the method to test (usually the draft).
 
 Flags:
-  --inputs <FILE>       Path to a JSON file of input values. Prompts interactively if omitted
-                        (required with --llm unless --case is given).
+  --inputs <FILE|JSON>  Input values: a JSON file, or an inline JSON object
+                        ('{"name":"World"}'), as `ad run` takes its payload.
+  --input <KEY=VALUE>   One input value (repeatable), applied on top of --inputs
+                        or --case. Typed by the method's input type (non-text
+                        types parse as JSON). An unknown key is INVALID_INPUT.
+                        Without --inputs/--input/--case the values are prompted
+                        for (refused with --llm).
   --case <FILE>         Take the inputs AND the expectations from a test-case file
                         (`belz ad test-case export` format, or a UI test-case body):
                         every `{output, op, expected}` assertion is checked locally.
@@ -50,5 +55,6 @@ Notes:
 
 Examples:
   belz ad test 4a1b2c3d... --env <env> --inputs ./in.json --expect greetingOut='Hello World'
+  belz ad test 4a1b2c3d... --env <env> --input name=World --expect 'greeting=Hello, World' --llm
   belz ad test 4a1b2c3d... --env <env> --case ./cases/greet.ok.1.json --compare-published --yes --llm
   belz ad test 4a1b2c3d... --env <env> --inputs ./test-data.json --verbose --raw

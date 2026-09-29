@@ -26,6 +26,7 @@ import {
   type SyncItem,
   WRITE_ACTIONS,
 } from "../../lib/test-cases/suite";
+import { splitInputPair } from "../../lib/input-collector";
 import type { HydratedMethod } from "../../lib/types/common";
 
 type Action = "list" | "create" | "update" | "delete" | "bulk" | "run-suite" | "delete-suite" | "export" | "sync";
@@ -158,12 +159,6 @@ async function readJson(path: string): Promise<unknown> {
   }
 }
 
-function splitInput(s: string): [string, string] {
-  const i = s.indexOf("=");
-  if (i <= 0) throw new CliError(`Invalid --input '${s}': use --input <fieldCode>=<value>.`, { code: "INVALID_INPUT" });
-  return [s.slice(0, i).trim(), s.slice(i + 1)];
-}
-
 /** The case a create/update describes: --file, then --name/--description/--input/--assert on top. */
 async function buildCase(f: CaseFlags, method: HydratedMethod, base?: CaseFile): Promise<CaseFile> {
   let c: CaseFile = base ? structuredClone(base) : { name: "", description: "", inputs: {}, assertions: [] };
@@ -172,7 +167,7 @@ async function buildCase(f: CaseFlags, method: HydratedMethod, base?: CaseFile):
   if (f.description !== undefined) c.description = f.description;
   const types = new Map(method.inputs.map((i) => [i.code, String(i.type ?? "")]));
   for (const s of f.inputs ?? []) {
-    const [k, v] = splitInput(s);
+    const [k, v] = splitInputPair(s);
     c.inputs[k] = coerceInputValue(v, types.get(k));
     if (c.inputExtras?.[k]) delete c.inputExtras[k];
   }

@@ -31,6 +31,7 @@ export { matchStep } from "../../lib/test-run";
 interface TestMethodArgs {
   uuid: string;
   inputsFile?: string;
+  inputPairs: string[];
   caseFile?: string;
   expect: string[];
   comparePublished: boolean;
@@ -92,6 +93,7 @@ export const args = defineArgs({
     ...AD_COMMON_FLAGS,
     ...AD_YES_FLAG,
     inputs: { type: "string" },
+    input: { type: "string", repeatable: true },
     case: { type: "string" },
     expect: { type: "string", repeatable: true },
     "compare-published": { type: "boolean" },
@@ -154,6 +156,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
     return {
       uuid: positionals.uuid,
       inputsFile: flags.inputs,
+      inputPairs: flags.input,
       caseFile: flags.case,
       expect: flags.expect,
       comparePublished: flags.comparePublished,
@@ -190,12 +193,12 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
     let unevaluated: string[] = [];
     if (a.caseFile) {
       const c = await loadCase(a.caseFile);
-      values = c.values;
+      values = a.inputPairs.length > 0 ? { ...c.values, ...(await InputCollector.collect(draft.inputs.map((i) => ({ ...i, required: false })), undefined, a.inputPairs)) } : c.values;
       requireInputs(draft, values, a.caseFile);
       expectations = [...c.expectations, ...expectations];
       unevaluated = c.unevaluated;
     } else {
-      values = await InputCollector.collect(draft.inputs, a.inputsFile);
+      values = await InputCollector.collect(draft.inputs, a.inputsFile, a.inputPairs);
     }
 
     if (published && pair) {

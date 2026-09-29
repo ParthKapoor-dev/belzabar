@@ -78,19 +78,7 @@ export function contractError(problems: ContractProblem[], methodName: string): 
   });
 }
 
-/**
- * String inputs keep the typed text; other types parse as JSON when they can
- * (`--input count=5` → 5, `--input zip=02134` stays "02134").
- */
-export function coerceInputValue(raw: string, type: string | undefined): unknown {
-  const t = (type ?? "").toUpperCase();
-  if (t === "STRING" || t === "TEXT" || t === "") return raw;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return raw;
-  }
-}
+export { coerceInputValue } from "../input-collector";
 
 // ── verified writes ───────────────────────────────────────────────────────
 
