@@ -11,7 +11,7 @@ belz ad show <UUID|URL|FILE> [flags]
 
 ## Views
 
-- default: summary table + step list. The `--llm` payload is lean (Stage 7.1):
+- default: summary table + step list. The `--llm` payload is lean:
   no request echo, empty/null fields pruned (`lib/compact.ts:pruneEmpty`),
   SQL/code bodies only with `--sql` / `--code` / `--full` / `--service-detail`,
   the wire body only with `--raw` (once, as `data.raw`).

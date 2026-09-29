@@ -31,7 +31,7 @@ lib/
   categories.ts        one category identity (chain category ⨝ automation system)
   draft-guard.ts       resolveDraftTarget: the ONLY way to pick a save target
   cache.ts             method cache (CacheManager)
-  method-finder.ts     cached method index behind `find`, `callers`; invalidateMethodIndexEntry
+  method-finder.ts     cached method index behind `find`, `callers` (core finderIndexStore); invalidateMethodIndexEntry
                        (called by CacheManager.invalidate after each write, and by create)
   method-view.ts       show --compact / --story renderers
   view-fetch.ts        fetchViewMethod: fresh V2 read (V1 fallback) for show --compact/--story, outputs
@@ -275,7 +275,7 @@ same SQL/code body keeps its old findings pre-existing (so publish's
 `--allow-preexisting` can clear them). A second finding of a fixed-message rule
 (Q5, CC3) in a body that already had one is treated as pre-existing.
 
-Calibration is pinned in `tests/unit/validate-diff.test.ts` WITHOUT self-diffing (ADW-R15): the 36
+Calibration is pinned in `tests/unit/validate-diff.test.ts` WITHOUT self-diffing: the 36
 real bodies audited as stored (`auditExistingRecord`, what `ad validate <uuid>`
 reports: no AD-META-001 on PUBLISHED records, M1 on an existing name is a warning)
 leave only 21 documented real defects on 7 bodies. CI1 and DUP1 are warnings (they
@@ -432,8 +432,12 @@ Rules:
   `BELZ_HOME` at a temp dir.
 - **fakeFetch** comes from `@belzabar/core/testing`, along with `fixture(path)`,
   `respond`, `withTempEnvConfig` and `runCommand` / `runCliInProcess`. Use it to drive
-  a command end to end without the network. See `save-command.test.ts` and
-  `author-commands.test.ts`.
+  a command end to end without the network. Command suites that talk to a fake
+  server use `tests/unit/helpers/fake-ad.ts`: `fakeAdEnv()` (temp env + quiet
+  stderr + fakeFetch, `restore()` in afterEach) and the shared routes
+  (`definitionRoute`, `categoryRoutes`, `historyServiceRoute`,
+  `compiledCacheRoutes`, `v2Store` for a GET/POST `/chain/v2` method). See
+  `save-command.test.ts` and `author-commands.test.ts`.
 - **Fixtures** in `tests/fixtures/` are real captured wire, sanitized, and each
   directory has a `manifest.json`:
   - `real-v1/` and `real-v2/`: the same 36 methods, one set per wire version.

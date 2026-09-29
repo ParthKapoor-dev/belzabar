@@ -51,7 +51,7 @@ Arguments:
                         step of another kind. Code and SQL are plain text; they
                         are stored in the step's existing encoding (new steps:
                         plain, base64 only if the text itself is base64).
-                        Platform traps (CLI trial): custom code takes no inputs
+                        Platform traps: custom code takes no inputs
                         — #{name} is spliced into the source as text, so
                         splice scalars only: an indexed expression
                         (#{rows[0].x}) fails with "Mismatch in input and
