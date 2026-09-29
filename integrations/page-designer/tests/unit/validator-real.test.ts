@@ -3,16 +3,12 @@
 // their true positives, and validateEdit escalates them when an edit
 // introduces one. PD-26: duplicate ids reported once; INVALID_JSON exists.
 import { describe, expect, test } from "bun:test";
-import { readdirSync } from "fs";
 import { parsePage } from "../../lib/parser/index";
 import { applyOverlay } from "../../lib/serialize/index";
 import { partitionBySeverity, validateEdit, validateHydrated } from "../../lib/validator/index";
 import type { RawPageResponse } from "../../lib/types/wire";
-import { jsonFixtures } from "@belzabar/core/testing";
+import { REAL_FILES, loadReal } from "./helpers/real";
 
-const DIR = `${import.meta.dir}/../fixtures/real`;
-const files = readdirSync(DIR).filter((f) => f.endsWith(".json") && f !== "manifest.json").sort();
-const load = (f: string) => jsonFixtures(DIR)<RawPageResponse>(f);
 
 function wrap(inner: unknown, over: Partial<RawPageResponse> = {}): RawPageResponse {
   return { id: "t1", name: "t", status: "DRAFT", relativeRoute: "t", configuration: JSON.stringify(inner), ...over };
@@ -33,9 +29,9 @@ const codesOf = (issues: Array<{ code: string; severity: string }>, severity?: s
   issues.filter((i) => !severity || i.severity === severity).map((i) => i.code);
 
 describe("calibration: real editor output has 0 validator errors", () => {
-  expect(files.length).toBe(15);
-  for (const f of files) {
-    const raw = load(f);
+  expect(REAL_FILES.length).toBe(15);
+  for (const f of REAL_FILES) {
+    const raw = loadReal(f);
     test(`${raw.id.slice(0, 10)} ${raw.name}`, () => {
       const { errors } = partitionBySeverity(validateHydrated(parsePage(raw)));
       expect(errors).toEqual([]);
@@ -43,8 +39,8 @@ describe("calibration: real editor output has 0 validator errors", () => {
   }
 
   test("an unedited real page passes the edit gate too", () => {
-    for (const f of files) {
-      const page = parsePage(load(f));
+    for (const f of REAL_FILES) {
+      const page = parsePage(loadReal(f));
       expect(partitionBySeverity(validateEdit(page, page)).errors).toEqual([]);
     }
   });

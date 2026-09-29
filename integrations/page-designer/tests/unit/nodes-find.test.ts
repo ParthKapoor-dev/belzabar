@@ -7,7 +7,7 @@ import { isDeepStrictEqual } from "node:util";
 import { rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { BELZ_CONFIG_DIR } from "@belzabar/core";
-import { jsonFixtures, runCommand, scratchDir } from "@belzabar/core/testing";
+import { scratchDir } from "@belzabar/core/testing";
 import show from "../../commands/show/index";
 import save from "../../commands/save/index";
 import pageDeps, { summarizeDependencies } from "../../commands/page-deps/index";
@@ -18,12 +18,11 @@ import { applyOverlay, planSave, replayOperations } from "../../lib/serialize/in
 import { rawNodes } from "../../lib/serialize/nodes";
 import { getPathForTest } from "./helpers/paths";
 import { validateEdit, partitionBySeverity } from "../../lib/validator/index";
-import { ENV, innerOf, page, startFakePd, type FakePd } from "./helpers/fake-pd";
+import { ENV, innerOf, page, startFakePd, type FakePd, run } from "./helpers/fake-pd";
 import type { Overlay } from "../../lib/types/common";
 import type { RawPageResponse } from "../../lib/types/wire";
+import { loadReal } from "./helpers/real";
 
-const REAL = `${import.meta.dir}/../fixtures/real`;
-const loadReal = (id: string) => jsonFixtures(REAL, ".json")<RawPageResponse>(id);
 const STUDENT_APP = "4cba8f39eb92d136694dadc4e7f2a811";
 const ADD_STUDENT = "4440a1a4628001dfb1b79aaec9dd55fe";
 
@@ -136,7 +135,6 @@ describe("node-id overlay ops (real Student Application, 546 KB)", () => {
 describe("commands over the fake PD server", () => {
   let pd: FakePd;
   const dir = scratchDir("belz-pd-nodes-");
-  const run = (cmd: Parameters<typeof runCommand>[0], argv: string[]) => runCommand(cmd, argv, { env: ENV });
   beforeEach(() => {
     rmSync(join(BELZ_CONFIG_DIR, "cache", "pages", ENV), { recursive: true, force: true });
     rmSync(join(BELZ_CONFIG_DIR, "cache", "page-finder"), { recursive: true, force: true });

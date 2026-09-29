@@ -37,13 +37,15 @@ interface DiffData {
   diff: PageDiff;
 }
 
+/**
+ * Resolve `<input>` in `env` and parse it. The active env is restored
+ * afterwards, so the envelope's meta.env stays the caller's.
+ */
+function resolveInEnv(env: string, input: string): Promise<{ side: SideInfo; page: HydratedPage }> {
+  return Config.withEnv(env, () => resolveAndParse(env, input));
+}
 
-/** Resolve `<input>` in a specific environment and parse it. Caller restores env. */
-async function resolveInEnv(
-  env: string,
-  input: string,
-): Promise<{ side: SideInfo; page: HydratedPage }> {
-  Config.setActiveEnv(env);
+async function resolveAndParse(env: string, input: string): Promise<{ side: SideInfo; page: HydratedPage }> {
   let resolved;
   try {
     resolved = await resolveInput(input, true);
@@ -99,19 +101,9 @@ const command: CommandModule<DiffArgs, DiffData> = {
       });
     }
 
-    const restoreEnv = Config.captureActiveEnv();
-    let fromResult: { side: SideInfo; page: HydratedPage };
-    let toResult: { side: SideInfo; page: HydratedPage };
-    try {
-      fromResult = await resolveInEnv(from, input);
-      toResult = await resolveInEnv(to, input);
-    } finally {
-      // Restore the original active env so the command envelope's meta.env is sane.
-      restoreEnv();
-    }
-
+    const fromResult = await resolveInEnv(from, input);
+    const toResult = await resolveInEnv(to, input);
     const diff = diffPages(fromResult.page, toResult.page);
-
     const identical = isIdentical(diff);
 
     return ok<DiffData>({

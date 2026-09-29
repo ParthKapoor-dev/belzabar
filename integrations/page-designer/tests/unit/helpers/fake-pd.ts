@@ -5,12 +5,15 @@
 // evidence and deliberately independent of belz's serializer (OTH-R1:
 // replaying with belz's own `replayOperations` made the partial-save tests
 // circular).
-import { fakeFetch, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
+import { fakeFetch, runCommand, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
 import type { RawConfiguration, RawPageResponse } from "../../../lib/types/wire";
 
 export const ENV = "t-pd";
 export const HOST = "https://t-pd.test";
 const BASE = "/rest/api/pagedesigner";
+
+/** Run a command in-process against the fake env. */
+export const run = (cmd: Parameters<typeof runCommand>[0], argv: string[]) => runCommand(cmd, argv, { env: ENV });
 
 export interface FakePd {
   pages: Map<string, RawPageResponse>;

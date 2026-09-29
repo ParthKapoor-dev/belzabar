@@ -9,18 +9,15 @@
 // a full save of an edited page differs from the original ONLY at the edit.
 
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync, statSync } from "fs";
+import { readFileSync, statSync } from "fs";
 import { parsePage } from "../../lib/parser/index";
 import { serializeFull } from "../../lib/serialize/full";
 import { planSave } from "../../lib/serialize/index";
 import { inferEntityType } from "../../lib/parser/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import type { RawPageResponse } from "../../lib/types/wire";
-import { jsonFixtures } from "@belzabar/core/testing";
+import { REAL_DIR, REAL_FILES, loadReal } from "./helpers/real";
 
-const DIR = `${import.meta.dir}/../fixtures/real`;
-const files = readdirSync(DIR).filter((f) => f.endsWith(".json") && f !== "manifest.json").sort();
-const load = (f: string) => jsonFixtures(DIR)<RawPageResponse & Record<string, any>>(f);
 
 /** Leaf-level structural diff; returns "path: before -> after" strings. */
 function diffPaths(a: unknown, b: unknown, path = "", out: string[] = []): string[] {
@@ -37,9 +34,9 @@ function diffPaths(a: unknown, b: unknown, path = "", out: string[] = []): strin
 
 describe("real PD fixtures", () => {
   test("inventory: ~15 pages/components, manifest covers every file", () => {
-    expect(files.length).toBe(15);
-    const manifest = JSON.parse(readFileSync(`${DIR}/manifest.json`, "utf8")) as Array<{ file: string; env: string; endpoint: string }>;
-    expect(manifest.map((m) => m.file).sort()).toEqual(files);
+    expect(REAL_FILES.length).toBe(15);
+    const manifest = JSON.parse(readFileSync(`${REAL_DIR}/manifest.json`, "utf8")) as Array<{ file: string; env: string; endpoint: string }>;
+    expect(manifest.map((m) => m.file).sort()).toEqual(REAL_FILES);
     for (const m of manifest) {
       expect(m.env).toBe("acme-dev");
       expect(m.endpoint).toBe(`/rest/api/pagedesigner/pages/${m.file.replace(/\.json$/, "")}`);
@@ -47,13 +44,13 @@ describe("real PD fixtures", () => {
   });
 
   test("no fixture is over 1 MB (largest is Student Application)", () => {
-    for (const f of files) expect(statSync(`${DIR}/${f}`).size).toBeLessThan(1024 * 1024);
+    for (const f of REAL_FILES) expect(statSync(`${REAL_DIR}/${f}`).size).toBeLessThan(1024 * 1024);
   });
 });
 
 describe("parsePage on every real page", () => {
-  for (const f of files) {
-    const raw = load(f);
+  for (const f of REAL_FILES) {
+    const raw = loadReal(f);
     test(`${raw.id.slice(0, 10)} ${raw.name}: parses with no warnings, identity intact`, () => {
       const page = parsePage(raw);
       expect(page.id).toBe(raw.id);
@@ -70,7 +67,7 @@ describe("parsePage on every real page", () => {
   }
 
   test("Student Application is the large one: 475 userDefined entries (287 vars + 188 derived), 39 HTTP calls", () => {
-    const page = parsePage(load("4cba8f39eb92d136694dadc4e7f2a811.json"));
+    const page = parsePage(loadReal("4cba8f39eb92d136694dadc4e7f2a811.json"));
     expect(page.variables.length).toBe(287);
     expect(page.derived.length).toBe(188);
     expect(page.httpRequests.length).toBe(39);
@@ -79,8 +76,8 @@ describe("parsePage on every real page", () => {
 
 describe("entity type comes from the server (PD-10 / F17)", () => {
   test("isComponent rows are COMPONENT; routed pages are PAGE even with an isSymbol root", () => {
-    for (const f of files) {
-      const raw = load(f);
+    for (const f of REAL_FILES) {
+      const raw = loadReal(f);
       const inner = JSON.parse(raw.configuration!);
       const expected = raw.isComponent === true ? "COMPONENT" : "PAGE";
       expect(`${raw.name}:${parsePage(raw).entityType}`).toBe(`${raw.name}:${expected}`);
@@ -93,16 +90,16 @@ describe("entity type comes from the server (PD-10 / F17)", () => {
   });
 
   test("a history version body (no isComponent) is typed by its route", () => {
-    const { isComponent: _c, ...page } = load("4bde22f76091a82364fda322eeeda597.json");
+    const { isComponent: _c, ...page } = loadReal("4bde22f76091a82364fda322eeeda597.json");
     expect(inferEntityType(page as RawPageResponse)).toBe("PAGE");
-    const { isComponent: _d, ...comp } = load("43488abaf65c8efc95ad880a346f38af.json");
+    const { isComponent: _d, ...comp } = loadReal("43488abaf65c8efc95ad880a346f38af.json");
     expect(inferEntityType(comp as RawPageResponse, JSON.parse(comp.configuration!))).toBe("COMPONENT");
   });
 });
 
 describe("full-save serialization (PD-22)", () => {
-  for (const f of files) {
-    const raw = load(f);
+  for (const f of REAL_FILES) {
+    const raw = loadReal(f);
     const label = `${raw.id.slice(0, 10)} ${raw.name}`;
     test(`${label}: unedited full save is lossless`, () => {
       expect(diffPaths(JSON.parse(raw.configuration!), JSON.parse(serializeFull(parsePage(raw))))).toEqual([]);
@@ -110,8 +107,8 @@ describe("full-save serialization (PD-22)", () => {
   }
 
   test("an edited full save differs from the original only at the edit (every page)", () => {
-    for (const f of files) {
-      const raw = load(f);
+    for (const f of REAL_FILES) {
+      const raw = loadReal(f);
       const page = parsePage(raw);
       const plan = planSave(page, { variables: { add: [{ name: "__belz_probe", type: "String", initialValue: "x" }] }, styles: { replace: "/*probe*/" } });
       expect(plan.strategy).toBe("full");
@@ -130,14 +127,14 @@ describe("duplicate-name 'Add Student' pairs on the real wire (PD-1/PD-7)", () =
   const DRAFT_A = "4440a1a4628001dfb1b79aaec9dd55fe";
   const PUB_B = "48ac453ee33bbe32f0248075df59ec71";
   const DRAFT_B = "45f7671e3c51c7247e12a640e3fb6d85";
-  const deps = { fetchPage: async (id: string) => (files.includes(`${id}.json`) ? load(`${id}.json`) : null) };
+  const deps = { fetchPage: async (id: string) => (REAL_FILES.includes(`${id}.json`) ? loadReal(`${id}.json`) : null) };
 
   test("all four rows share the name; referenceIds cross-link each pair", () => {
-    for (const id of [PUB_A, DRAFT_A, PUB_B, DRAFT_B]) expect(load(`${id}.json`).name).toBe("Add Student");
-    expect(load(`${PUB_A}.json`).referenceId).toBe(DRAFT_A);
-    expect(load(`${DRAFT_A}.json`).referenceId).toBe(PUB_A);
-    expect(load(`${PUB_B}.json`).referenceId).toBe(DRAFT_B);
-    expect(load(`${DRAFT_B}.json`).referenceId).toBe(PUB_B);
+    for (const id of [PUB_A, DRAFT_A, PUB_B, DRAFT_B]) expect(loadReal(`${id}.json`).name).toBe("Add Student");
+    expect(loadReal(`${PUB_A}.json`).referenceId).toBe(DRAFT_A);
+    expect(loadReal(`${DRAFT_A}.json`).referenceId).toBe(PUB_A);
+    expect(loadReal(`${PUB_B}.json`).referenceId).toBe(DRAFT_B);
+    expect(loadReal(`${DRAFT_B}.json`).referenceId).toBe(PUB_B);
   });
 
   test("resolveDraftTarget follows referenceId for both published rows", async () => {

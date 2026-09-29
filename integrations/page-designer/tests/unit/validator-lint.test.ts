@@ -3,18 +3,15 @@
 // pages have regression tests; every emitted code is catalogued and listed in
 // help.txt; validate --recursive checks page ↔ symbol interfaces.
 import { describe, expect, test } from "bun:test";
-import { readdirSync, readFileSync } from "fs";
+import { readFileSync } from "fs";
 import { parsePage } from "../../lib/parser/index";
 import { validateEdit, validateHydrated } from "../../lib/validator/index";
 import { PD_RULES } from "../../lib/validator/catalogue";
 import { cssSelectors } from "../../lib/validator/rules/lint";
 import { symbolInterfaceIssues, validateRecursive } from "../../lib/validator/recursive";
 import type { RawPageResponse } from "../../lib/types/wire";
-import { jsonFixtures } from "@belzabar/core/testing";
+import { REAL_FILES, loadReal } from "./helpers/real";
 
-const REAL = `${import.meta.dir}/../fixtures/real`;
-const realFiles = readdirSync(REAL).filter((f) => f.endsWith(".json") && f !== "manifest.json").sort();
-const loadReal = (id: string) => jsonFixtures(REAL, ".json")<RawPageResponse>(id);
 
 function wrap(inner: unknown, over: Partial<RawPageResponse> = {}): RawPageResponse {
   return { id: "t1", name: "t", status: "DRAFT", relativeRoute: "t", configuration: JSON.stringify(inner), ...over };
@@ -239,8 +236,8 @@ describe("calibration + catalogue", () => {
   test("every code emitted on the real fixtures is catalogued and documented in help.txt", () => {
     const help = readFileSync(`${import.meta.dir}/../../commands/validate/help.txt`, "utf8");
     for (const code of Object.keys(PD_RULES)) expect(help).toContain(code);
-    for (const f of realFiles) {
-      const raw = JSON.parse(readFileSync(`${REAL}/${f}`, "utf8")) as RawPageResponse;
+    for (const f of REAL_FILES) {
+      const raw = loadReal(f);
       for (const i of issuesOf(raw)) expect((PD_RULES as Record<string, unknown>)[i.code], i.code).toBeDefined();
     }
   });

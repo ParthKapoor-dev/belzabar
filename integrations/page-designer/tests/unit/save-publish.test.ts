@@ -5,12 +5,12 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
 import { BELZ_CONFIG_DIR } from "@belzabar/core";
-import { runCommand, scratchDir } from "@belzabar/core/testing";
+import { scratchDir } from "@belzabar/core/testing";
 import save from "../../commands/save/index";
 import publish from "../../commands/publish/index";
 import preflight from "../../commands/preflight/index";
 import validate from "../../commands/validate/index";
-import { cleanInner, ENV, innerOf, page, startFakePd, type FakePd } from "./helpers/fake-pd";
+import { cleanInner, ENV, innerOf, page, startFakePd, type FakePd, run } from "./helpers/fake-pd";
 
 const DRAFT = "d0000000000000000000000000000001";
 const PUB = "p0000000000000000000000000000001";
@@ -24,7 +24,6 @@ function overlayFile(overlay: unknown): string {
   writeFileSync(p, JSON.stringify(overlay));
   return p;
 }
-const run = (cmd: Parameters<typeof runCommand>[0], argv: string[]) => runCommand(cmd, argv, { env: ENV });
 
 beforeEach(() => {
   rmSync(join(BELZ_CONFIG_DIR, "cache", "pages", ENV), { recursive: true, force: true });

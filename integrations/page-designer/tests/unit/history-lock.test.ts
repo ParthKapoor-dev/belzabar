@@ -4,18 +4,17 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
 import { BELZ_CONFIG_DIR } from "@belzabar/core";
-import { runCommand, scratchDir } from "@belzabar/core/testing";
+import { scratchDir } from "@belzabar/core/testing";
 import history from "../../commands/history/index";
 import lock from "../../commands/lock/index";
 import save from "../../commands/save/index";
-import { cleanInner, ENV, innerOf, page, startFakePd, type FakePd } from "./helpers/fake-pd";
+import { cleanInner, ENV, innerOf, page, startFakePd, type FakePd, run } from "./helpers/fake-pd";
 
 const DRAFT = "d0000000000000000000000000000001";
 const PUB = "p0000000000000000000000000000001";
 const OTHER_PUB = "p0000000000000000000000000000009";
 
 let pd: FakePd;
-const run = (cmd: Parameters<typeof runCommand>[0], argv: string[]) => runCommand(cmd, argv, { env: ENV });
 const dir = scratchDir("belz-pd-hist-");
 
 beforeEach(() => {

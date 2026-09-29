@@ -6,7 +6,6 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync } from "fs";
 import { join } from "path";
 import { BELZ_CONFIG_DIR } from "@belzabar/core";
-import { runCommand } from "@belzabar/core/testing";
 import findAdMethods from "../../commands/find-ad-methods/index";
 import analyze from "../../commands/analyze/index";
 import show from "../../commands/show/index";
@@ -17,7 +16,7 @@ import { collapsePairs, searchPageIndex, type PageFinderIndex } from "../../lib/
 import { parsePage } from "../../lib/parser/index";
 import { applyOverlay } from "../../lib/serialize/index";
 import { detectInputKind, resolveInput } from "../../lib/resolver";
-import { cleanInner, ENV, page, startFakePd, type FakePd } from "./helpers/fake-pd";
+import { cleanInner, ENV, page, startFakePd, type FakePd, run } from "./helpers/fake-pd";
 
 const PAGE = "a0000000000000000000000000000001";
 const COMP = "c0000000000000000000000000000001";
@@ -49,7 +48,6 @@ beforeEach(() => {
   ];
 });
 afterEach(() => pd.restore());
-const run = (cmd: Parameters<typeof runCommand>[0], argv: string[]) => runCommand(cmd, argv, { env: ENV });
 
 describe("resolveInput", () => {
   test("PD-10: entity type is the server's, whatever the input kind", async () => {
