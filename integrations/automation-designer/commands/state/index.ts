@@ -49,8 +49,11 @@ const command: CommandModule<StateArgs, StateData> = {
     const common = resolveAdCommon(flags, "fetch", "state");
     return { uuid: positionals.uuid, apiVersion: common.apiVersion.version };
   },
-  async execute({ uuid: uuidArg, apiVersion }) {
+  async execute({ uuid: uuidArg }) {
     const uuid = resolveMethodRef(uuidArg);
+    // Both sides are read on V2 whatever --v2 says: the sync fingerprint must
+    // compare V2 bodies (V1 serialisation noise differs draft vs published).
+    const apiVersion = "v2" as const;
     // One fetch per side (AD-39): the guard hands back the input method too.
     const guard = await resolveDraftTarget(uuid, apiVersion);
     const initial = guard.initial;

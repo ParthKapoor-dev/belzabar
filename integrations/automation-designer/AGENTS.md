@@ -49,8 +49,9 @@ lib/
   test-suite.ts        summarizeTestSuite (test-cases, test-case list)
   sql/                 executor, payload builder, DB selector, read-only gate, tui/
   history.ts           getVersionOf / listAll (history, diff)
-  fingerprint.ts       fingerprintMethod (behaviour hash: wire body minus bookkeeping/env-local
-                       ids; state/publish inSync, restore, trace) + methodDiffView
+  fingerprint.ts       fingerprintMethod (behaviour hash: wire body minus bookkeeping and numeric
+                       …Ids, other …Uuids normalised; compare V2/history bodies only — state and
+                       publish read both sides on V2; restore, trace) + methodDiffView
   trace.ts             traceMethod (ad trace, release matrix)
   callers.ts           reverse index (ad callers); reads PD via @belzabar/pd/lib/*
   api-shape.ts         child-info --shape

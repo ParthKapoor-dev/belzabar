@@ -128,7 +128,7 @@ describe("fingerprintMethod over the wire body (ADW-R2)", () => {
     ["testSuite", (b) => delete b.testSuite],
     ["permissions", (b) => (b.permissions = { permissionSet: [] })],
     ["method uuid", (b) => (b.uuid = "ffffffffffffffffffffffffffffffff")],
-    ["any other …Id / …Uuid field (padding differs after a restore, live)", (b) => ((b.steps[0].outputs[0].automationUuid = "4f11484a706062c55fafb7dde8ae3fd2    "), (b.steps[0].outputs[0].referenceUuid = "x"))],
+    ["env-local numeric …Id fields", (b) => ((b.steps[0].outputs[0].automationAPIOutputId = 12908), (b.steps[0].accountId = "42"))],
     ["base64 vs plain custom code", (b) => (b.steps[1].properties.customCode.inlineCode = encodeBase64(b.steps[1].properties.customCode.inlineCode))],
   ];
   for (const [what, fn] of BOOKKEEPING) {
@@ -161,5 +161,34 @@ describe("fingerprintMethod over the wire body (ADW-R2)", () => {
     expect(fingerprintMethod(parseV1Method({ ...raw, jsonDefinition: JSON.stringify(jd) }))).toBe(fp);
     jd.services[0].description = "changed";
     expect(fingerprintMethod(parseV1Method({ ...raw, jsonDefinition: JSON.stringify(jd) }))).not.toBe(fp);
+  });
+
+  test("a step that calls a different method / service / account changes it (V2)", () => {
+    const base = fpOf(readJson(BASE));
+    expect(mutated((b) => (b.steps[2].methodName = "other.method"))).not.toBe(base); // child method
+    expect(mutated((b) => (b.steps[2].serviceName = "OtherCategory"))).not.toBe(base); // its category / service
+    expect(mutated((b) => (b.steps[0].accountConfiguration = { id: 3, name: "Other-Account" }))).not.toBe(base);
+  });
+
+  test("V1: a step bound to a different API (automationApiUuid) changes it; padding / case / dashes do not", () => {
+    const raw = readJson("real-v1/4567eb19c7bad64d88859e387b9d986f.v1.json");
+    const fp = (mut: (jd: Body) => void) => {
+      const jd = JSON.parse(raw.jsonDefinition);
+      mut(jd);
+      return fingerprintMethod(parseV1Method({ ...raw, jsonDefinition: JSON.stringify(jd) }));
+    };
+    const base = fp(() => {});
+    const svc = (jd: Body, n: number) => jd.services.find((s: Body) => s.orderIndex === n);
+    expect(fp((jd) => (svc(jd, 1).automationApiUuid = "4ffffffffffffffffffffffffffffff0"))).not.toBe(base);
+    expect(fp((jd) => (svc(jd, 1).automationApiUuid = svc(jd, 1).automationApiUuid.trim().toUpperCase()))).toBe(base);
+    expect(fp((jd) => (svc(jd, 3).automationApiUuid = svc(jd, 3).automationApiUuid.replace(/-/g, "")))).toBe(base);
+  });
+
+  test("a padded uuid (live: V1 automationUuid read back padded after a restore) matches the unpadded one", () => {
+    const withUuid = (v: string) => mutated((b) => (b.steps[0].outputs[0].automationUuid = v));
+    const bare = withUuid("4f11484a706062c55fafb7dde8ae3fd2");
+    expect(withUuid("4f11484a706062c55fafb7dde8ae3fd2    ")).toBe(bare);
+    expect(withUuid("4F11484A-7060-62C5-5FAF-B7DDE8AE3FD2")).toBe(bare);
+    expect(withUuid("4f11484a706062c55fafb7dde8ae3fd3")).not.toBe(bare);
   });
 });

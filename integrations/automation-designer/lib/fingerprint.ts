@@ -121,13 +121,36 @@ export const BOOKKEEPING_KEYS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * A bookkeeping key: one of BOOKKEEPING_KEYS, or any other id / uuid field
- * (`…Id`, `…Uuid`, `…Ids`, `…Uuids`) — row and wiring ids are env-local and
- * their space padding differs between copies (a V1 `automationUuid` read back
- * padded after a history restore, live sems-dev).
+ * A key whose value never identifies a finding or a removal: one of
+ * BOOKKEEPING_KEYS, or any other id / uuid field (`…Id(s)`, `…Uuid(s)`).
+ * Used by the validator's finding identity and the post-save removal check.
+ * The fingerprint is stricter (see `projectIdField`): a uuid can name WHICH
+ * API / method a step calls, so it stays in the hash, normalised.
  */
 export function isBookkeepingKey(k: string): boolean {
   return BOOKKEEPING_KEYS.has(k) || /(Id|Uuid)s?$/.test(k);
+}
+
+const NUMERIC_ID = /^\s*\d+\s*$/;
+/** Canonical uuid spelling: space padding, case and dashes differ between copies (live: padded after a restore). */
+function normaliseUuid(v: string): string {
+  return v.trim().toLowerCase().replace(/-/g, "");
+}
+
+/**
+ * An `…Id(s)` / `…Uuid(s)` field outside BOOKKEEPING_KEYS, for the fingerprint:
+ * env-local NUMERIC ids are dropped (undefined); anything else (a V1
+ * automationApiUuid naming the called API, a child-method uuid) is kept,
+ * normalised, so re-binding a step to another callee changes the hash.
+ */
+function projectIdField(v: unknown): unknown {
+  if (typeof v === "number" || (typeof v === "string" && NUMERIC_ID.test(v))) return undefined;
+  if (typeof v === "string") return normaliseUuid(v);
+  if (Array.isArray(v)) {
+    const kept = v.map(projectIdField).filter((x) => x !== undefined);
+    return kept.length > 0 ? kept : undefined;
+  }
+  return projectWire(v);
 }
 
 /** The body to project: the V2 object, or V1's parsed jsonDefinition. */
@@ -160,7 +183,12 @@ function projectWire(value: unknown): unknown {
   const obj = value as Record<string, unknown>;
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (isBookkeepingKey(k)) continue;
+    if (BOOKKEEPING_KEYS.has(k)) continue;
+    if (/(Id|Uuid)s?$/.test(k)) {
+      const pv = projectIdField(v);
+      if (pv !== undefined) out[k] = pv;
+      continue;
+    }
     if (k === "metadata") {
       // Only the behavioural parts: where the method lives and its time limit.
       const md = (v ?? {}) as Record<string, unknown>;
@@ -201,15 +229,17 @@ export function fingerprintProjection(m: HydratedMethod): unknown {
  * Stable 12-hex fingerprint of everything that changes a method's behaviour.
  *
  * With the wire body (every fetched / history-parsed method): the whole body
- * minus bookkeeping (see isBookkeepingKey) — steps' inputs, outputs, SQL,
+ * minus bookkeeping (BOOKKEEPING_KEYS, numeric …Ids; other …Uuids normalised) — steps' inputs, outputs, SQL,
  * code, service, account (by name), conditions, exit, loop, async, and the
  * method's inputs, outputs, variables and display fields. A draft and its
  * published copy of the same content match. Without a body (hand-built
  * methods) it falls back to the hydrated step projection.
  *
- * Only compare fingerprints computed from the same wire format (both V1 or
- * both V2 / history): V1 has no account name, so a V1 fingerprint cannot see
- * an account switch.
+ * Compare fingerprints of V2 (or history) bodies. V1 jsonDefinitions carry UI
+ * serialisation noise that differs between a UI-saved draft and its
+ * server-built published copy (activeTab text, automationUiSelector,
+ * executionStatus, orderIndex -1 defaults — live sems-dev), and have no
+ * account name; `ad state` / `ad publish` therefore read both sides on V2.
  */
 export function fingerprintMethod(m: HydratedMethod): string {
   const projection = fingerprintProjection(m);

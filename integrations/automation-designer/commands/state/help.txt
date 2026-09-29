@@ -13,7 +13,9 @@ Notes:
   - inSync compares the behaviour fingerprints (lib/fingerprint.ts: the whole
     body minus ids, versions, stamps, changelogs and testSuite — so outputs,
     loops, exits, async, accounts, variables all count) of the draft
-    and the published body: true = identical, false = the draft has
+    and the published body, both read on V2 (--v2 changes nothing here; V1
+    bodies carry UI noise that differs between the two copies; uuids count
+    normalised, numeric ids not): true = identical, false = the draft has
     unpublished changes, null = never published. The draft and published
     version counters are independent, so versions.draft > versions.published
     does not mean out of sync.

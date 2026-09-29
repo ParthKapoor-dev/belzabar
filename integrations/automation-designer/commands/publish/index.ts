@@ -157,11 +157,12 @@ const command: CommandModule<PublishArgs, PublishData> = {
     }
 
     // Re-fetch both sides: sync is a logic-fingerprint comparison (AD-18).
-    const freshDraft = await adApi.fetchMethod(draft.uuid, "v1");
+    // V2 on both sides: the sync fingerprint compares V2 bodies (see lib/fingerprint).
+    const freshDraft = await adApi.fetchMethod(draft.uuid, "v2");
     let publishedVersion: number | string | null = null;
     let inSync: boolean | null = null;
     try {
-      const pub = await adApi.fetchMethod(publishedUuid, "v1");
+      const pub = await adApi.fetchMethod(publishedUuid, "v2");
       publishedVersion = pub.version;
       inSync = fingerprintMethod(pub) === fingerprintMethod(freshDraft);
     } catch {

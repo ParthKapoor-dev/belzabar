@@ -9,7 +9,10 @@ import stateCommand from "../../commands/state/index";
 const FIX = join(import.meta.dir, "../fixtures/history");
 const DRAFT = "4bdea25c480a8e9dbc1cae830cb89b68";
 const PUB = "0000000000000000000000000000beef";
-const draftBody = () => JSON.parse(readFileSync(join(FIX, "chain-v1-draft.json"), "utf8"));
+// State reads both sides on V2 (the sync fingerprint compares V2 bodies).
+const draftBody = () => JSON.parse(readFileSync(join(FIX, "chain-v2-draft.json"), "utf8"));
+const V2 = (u: string) => `GET /rest/api/automation/chain/v2/${u}?basicInfo=false`;
+const withMeta = (b: any, meta: Record<string, unknown>) => ({ ...b, metadata: { ...b.metadata, ...meta } });
 
 let ff: FakeFetch | null = null;
 let cfg: TempEnvConfig | null = null;
@@ -22,18 +25,12 @@ afterEach(() => {
 
 /** A published sibling of the real draft: same logic, independent version counter. */
 function pair(opts: { draftCode?: string } = {}) {
-  const draft = { ...draftBody(), referenceId: PUB, version: 12 };
-  if (opts.draftCode) {
-    const inner = JSON.parse(draft.jsonDefinition);
-    inner.services[0].code = opts.draftCode;
-    draft.jsonDefinition = JSON.stringify(inner);
-  }
-  const pub = { ...draftBody(), uuid: PUB, automationState: "PUBLISHED", referenceId: DRAFT, version: 8 };
+  const draft = withMeta(draftBody(), { referenceId: PUB, version: { ...draftBody().metadata.version, name: "12" } });
+  if (opts.draftCode) draft.steps[0].properties.customCode.inlineCode = opts.draftCode;
+  const pub = withMeta({ ...draftBody(), uuid: PUB }, { state: "PUBLISHED", referenceId: DRAFT, version: { ...draftBody().metadata.version, uuid: PUB, name: "8" } });
+  pub.steps = pub.steps.map((st: any, i: number) => ({ ...st, id: `4${String(i).padStart(31, "0")}` })); // published copies get new step ids
   cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-  ff = fakeFetch({
-    [`GET /rest/api/automation/chain/${DRAFT}`]: draft,
-    [`GET /rest/api/automation/chain/${PUB}`]: pub,
-  }).install();
+  ff = fakeFetch({ [V2(DRAFT)]: draft, [V2(PUB)]: pub }).install();
   return ff;
 }
 
@@ -61,7 +58,7 @@ describe("ad state", () => {
   test("one GET per side (AD-39)", async () => {
     const f = pair();
     await runCommand(stateCommand, [PUB], { env: "t-dev" });
-    const gets = f.requests.filter((q) => q.method === "GET").map((q) => q.url.split("/").pop());
+    const gets = f.requests.filter((q) => q.method === "GET").map((q) => q.url.split("/").pop()!.split("?")[0]);
     expect(gets.sort()).toEqual([PUB, DRAFT].sort());
     f.requests.length = 0;
     await runCommand(stateCommand, [DRAFT], { env: "t-dev" });
@@ -70,7 +67,7 @@ describe("ad state", () => {
 
   test("never-published draft -> inSync:null", async () => {
     cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-    ff = fakeFetch({ [`GET /rest/api/automation/chain/${DRAFT}`]: draftBody() }).install();
+    ff = fakeFetch({ [V2(DRAFT)]: draftBody() }).install();
     const r = await runCommand(stateCommand, [DRAFT], { env: "t-dev" });
     const d = r.envelope?.data as any;
     expect(d.inSync).toBeNull();
