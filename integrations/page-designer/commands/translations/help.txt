@@ -16,6 +16,7 @@ Checks performed:
 Verdict (in --llm mode: data.check.verdict):
   PASS  all phrase keys well-formed and the main draft id matches.
   FAIL  malformed keys, a missing/empty main array, or a draft-id mismatch.
+        ok:false with PD_TRANSLATIONS_FAILED (exit 1), report in data.
   N/A   the entity has no __translated_phrases arrays at all — a style / font /
         image component with no translatable text. This is expected, not a
         failure.

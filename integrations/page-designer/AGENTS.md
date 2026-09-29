@@ -43,7 +43,8 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
   are `pd.<cmd>`. Report-style failures use `failWithData` so the report stays in `data`:
   `PD_VALIDATION_FAILED` (validate), `PD_PREFLIGHT_FAILED`, `PD_SNAPSHOT_DIFFERS`,
   `PD_LOCK_RELEASE_FAILED`, `PD_SAVE_VERIFY_FAILED` (save read-back differs from the plan;
-  `details.differingPaths`) — all exit 1. A write refused by the validator gate
+  `details.differingPaths`), `PD_TRANSLATIONS_FAILED` (verdict FAIL), `PD_COMPLIANCE_FAILED`
+  (rogue AD ids) / `PD_COMPLIANCE_INCOMPLETE` (walk errors → `isCompliant: null`) — all exit 1. A write refused by the validator gate
   (`gateValidation`) is a `CliError` `PD_VALIDATION_FAILED` with the errors in `details.issues`.
 - **Error codes** (grep `code: "PD_` for the full set): `PD_NOT_FOUND`, `PD_NAME_AMBIGUOUS`,
   `PD_API_ERROR` / `PD_LOCKED` (409) from `lib/api/client.ts` (non-OK bodies summarised by core

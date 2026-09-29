@@ -332,3 +332,16 @@ describe("preflight / validate exit codes (PD-8 / F18)", () => {
     expect(r.envelope?.data).toMatchObject({ overlayStrategy: "full", fullSaveReason: "variables.add", diffSummary: { variablesAdded: ["arr"] } });
   });
 });
+
+describe("pd translations exit code (OTH-R18)", () => {
+  test("verdict FAIL is ok:false PD_TRANSLATIONS_FAILED (exit 1); PASS stays ok:true", async () => {
+    const translations = (await import("../../commands/translations/index")).default;
+    pd.deps[PUB] = { [`${PUB}__translated_phrases`]: [{ key: "garbage" }] };
+    const bad = await run(translations, [DRAFT]);
+    expect(bad.exitCode).toBe(1);
+    expect(bad.envelope).toMatchObject({ ok: false, error: { code: "PD_TRANSLATIONS_FAILED" }, data: { check: { verdict: "FAIL" } } });
+    pd.deps[PUB] = { [`${PUB}__translated_phrases`]: [{ key: `page.${DRAFT}` }] };
+    const good = await run(translations, [DRAFT]);
+    expect(good.envelope).toMatchObject({ ok: true, data: { check: { verdict: "PASS" } } });
+  });
+});

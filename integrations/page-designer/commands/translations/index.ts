@@ -8,7 +8,7 @@
 // page./symbol.<id>, and the main entity's phrase keys embed its draft id.
 // Style/asset components with no translatable text return verdict N/A.
 
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import { PD_DEP_STATUS_FLAG, PD_FORCE_FLAG, PD_INPUT_POSITIONAL } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import {
@@ -73,7 +73,7 @@ const command: CommandModule<TranslationsArgs, TranslationsData> = {
     const expectedDraftId = expectDraft ?? entity.draftId;
     const check = validateTranslationPhrases(deps, entity.publishedId, expectedDraftId);
 
-    return ok<TranslationsData>({
+    const data: TranslationsData = {
       input,
       entity: {
         name: entity.name,
@@ -83,11 +83,16 @@ const command: CommandModule<TranslationsArgs, TranslationsData> = {
       },
       status,
       check,
-    });
+    };
+    // OTH-R18: a post-release check must fail the exit code on FAIL.
+    if (check.verdict === "FAIL") {
+      return failWithData("PD_TRANSLATIONS_FAILED", `Translation check FAILED: ${check.reason}`, data);
+    }
+    return ok(data);
   },
 
   presentHuman(envelope, ui) {
-    if (!envelope.ok) return;
+    if (!envelope.data) return;
     const data = envelope.data as TranslationsData;
     const { check } = data;
 
