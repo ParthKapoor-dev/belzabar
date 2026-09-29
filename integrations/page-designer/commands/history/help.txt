@@ -9,14 +9,14 @@ Actions:
   diff <pageId> --from A --to B        Structural diff between two versions
                                        (variables, derived, http, layout
                                        nodes, styles, other config keys).
-  restore <pageId> --version <vid> --acknowledge-unverified
-                                       Revert the version's page to it
-                                       (UNVERIFIED semantics, see Notes).
-                                       Locks the page and its linked draft,
-                                       validates the version against a fresh
-                                       read (diff-aware), reads BOTH rows
-                                       back and reports which one changed
-                                       (data.changed).
+  restore <pageId> --version <vid>     Copy the version into the page's
+                                       DRAFT (PUT /pages/revert/<draftId>
+                                       ?versionId=<vid>). The published page
+                                       is untouched: publish to make it live.
+                                       Locks the draft, validates the version
+                                       against a fresh read (diff-aware) and
+                                       reads the draft back (data.verify;
+                                       PD_RESTORE_VERIFY_FAILED on mismatch).
 
 Flags:
   --version <vid>       Version id (for show / restore).
@@ -27,10 +27,7 @@ Flags:
                         terminal; otherwise belz asks).
   --force-validation    Restore despite validator errors the version introduces.
   --acknowledge-unverified
-                        Required for restore: accept that which page PUT
-                        /pages/revert rewrites (the PUBLISHED owner or its
-                        draft) is unverified — it may change the live page
-                        without a publish. Without it: PD_RESTORE_UNVERIFIED.
+                        DEPRECATED no-op (restore semantics are verified).
   --force               DEPRECATED alias of --force-validation.
   --help, -h            Show this help message.
 
@@ -46,13 +43,14 @@ Notes:
     versions — list the published id (`belz pd show <draftId>` names it).
   • list returns metadata only — use show for full config.
   • diff compares structure, not line-by-line JSON.
-  • restore is unverified on the wire. The safe route is to copy a version into
-    the draft: `history show … --llm`, write its config to a file, then
-    `belz pd save <draftId>` with that file as the raw config, and publish.
+  • restore rewrites the DRAFT only (verified live); a page with no linked
+    draft is refused (PD_PUBLISHED_NO_DRAFT). belz never reverts the
+    PUBLISHED row: the server would overwrite the live page without a
+    publish or history entry, and flip that row to DRAFT.
 
 Examples:
   belz pd history list 4bde22f76091a82364fda322eeeda597
   belz pd history show 4bde22f76091a82364fda322eeeda597 --version 378840
   belz pd history diff 4bde22f76091a82364fda322eeeda597 --from 375333 --to 378840
-  belz pd history restore 4bde22f76091a82364fda322eeeda597 --version 375333 --acknowledge-unverified --yes
+  belz pd history restore 4bde22f76091a82364fda322eeeda597 --version 375333 --yes
   belz pd history list 4bde22f76091a82364fda322eeeda597 --limit 10 --llm | jq '.data.versions'

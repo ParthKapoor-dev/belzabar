@@ -1,11 +1,10 @@
 // An in-memory PD server behind fakeFetch, for command-level tests of the
 // write paths (save / publish / history / lock). Pages are stored as raw wire
 // bodies; PUT replaces the configuration, or applies partial operations with
-// the fake's OWN key parser (`applyWireOps`), written from docs/api-notes.md
-// and deliberately independent of belz's serializer (OTH-R1: replaying with
-// belz's own `replayOperations` made the partial-save tests circular). It only
-// accepts the documented key shape — dot-joined identifiers with `[n]`
-// indices — and answers 400 for anything else.
+// the fake's OWN key parser (`applyWireOps`), written from the live wire
+// evidence and deliberately independent of belz's serializer (OTH-R1:
+// replaying with belz's own `replayOperations` made the partial-save tests
+// circular).
 import { fakeFetch, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
 import type { RawConfiguration, RawPageResponse } from "../../../lib/types/wire";
 
@@ -22,16 +21,20 @@ export interface FakePd {
   log(): string[];
   /** Hook run when a lock is acquired (simulate a concurrent editor). */
   onAcquire?: (id: string) => void;
-  /** Status the lock-release endpoint answers with (default 200). */
+  /**
+   * Server-side locks: "me" = held by the signed-in user, otherwise the
+   * holder's name. Modelled on the wire (2026-09-29): acquire of a free page →
+   * 200 true; of my own lock → 400 duplicate key; of another user's → 409;
+   * release → 200 true (mine) / 200 false (nothing of mine); a locked page's
+   * GET carries pageLockDetails.
+   */
+  locks: Map<string, "me" | string>;
+  /** Status the lock-release endpoint answers with (default 200 = the modelled behaviour; 5xx simulates an outage). */
   releaseStatus: number;
-  /** Status the lock-acquire endpoint answers with (default 200; 409 = held by another session). */
-  acquireStatus: number;
-  /** Body of a non-200 acquire answer (default {message:"locked by someone"}). */
-  acquireBody?: unknown;
-  /** GET /rest/api/users/me → {user: currentUser}. */
-  currentUser?: Record<string, unknown>;
   /** Status the save PUT answers with (default 200). */
   saveStatus: number;
+  /** Hook that may answer a GET /pages/<id> instead of the store (simulate a lagging read). */
+  getOverride?: (id: string) => RawPageResponse | undefined;
   /** Hook that may rewrite the stored inner config after a PUT (simulate a server that stores something else). */
   onSave?: (inner: Record<string, unknown>) => void;
   searchRows: Array<Record<string, unknown>>;
@@ -69,23 +72,36 @@ interface WireOp {
   dataType: string;
 }
 
-/** The documented partial-update semantics (api-notes), independent of lib/serialize. */
+/**
+ * The server's partial-update semantics as observed on the wire (2026-09-29,
+ * tests/fixtures/wire/partial-keys.json), written independently of
+ * lib/serialize: the key is split on EVERY `.`; a trailing `[n]` run is array
+ * indices, any other segment is a literal key (`[innerHTML]`, `(click)`,
+ * `foo[bar]`); a segment with unbalanced brackets (from a dotted name such as
+ * `[attr.title]`) is HTTP 500 and nothing is stored (the batch is atomic); an
+ * op whose parent does not exist is silently skipped (200).
+ * Returns the new config, or null for the 500 case.
+ */
 export function applyWireOps(inner: unknown, ops: WireOp[]): unknown | null {
   const root = JSON.parse(JSON.stringify(inner ?? {})) as Record<string, unknown>;
   for (const op of ops) {
     const segs: Array<string | number> = [];
     for (const part of op.key.split(".")) {
-      const m = /^([A-Za-z_$][A-Za-z0-9_$]*)((?:\[\d+\])*)$/.exec(part);
-      if (!m) return null; // undocumented key shape
+      if ((part.match(/\[/g) ?? []).length !== (part.match(/\]/g) ?? []).length) return null;
+      const m = /^(.+?)((?:\[\d+\])+)$/.exec(part);
+      if (!m) {
+        segs.push(part);
+        continue;
+      }
       segs.push(m[1]!);
       for (const i of m[2]!.matchAll(/\[(\d+)\]/g)) segs.push(Number(i[1]));
     }
     let cur: unknown = root;
     for (const seg of segs.slice(0, -1)) {
-      if (!cur || typeof cur !== "object") return null;
+      if (!cur || typeof cur !== "object") break;
       cur = (cur as Record<string | number, unknown>)[seg];
     }
-    if (!cur || typeof cur !== "object") return null;
+    if (!cur || typeof cur !== "object") continue; // missing parent: 200, nothing stored
     let value: unknown = op.value;
     if (op.dataType === "NUMBER") value = Number(op.value);
     else if (op.dataType === "BOOLEAN") value = op.value === "true";
@@ -104,8 +120,8 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
   const state: FakePd = {
     pages,
     versions,
+    locks: new Map(),
     releaseStatus: 200,
-    acquireStatus: 200,
     saveStatus: 200,
     searchRows: [],
     searchStatus: 200,
@@ -123,25 +139,38 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
     const u = new URL(req.url);
     const path = u.pathname.replace(BASE, "");
     let m: RegExpMatchArray | null;
-    if (u.pathname === "/rest/api/users/me") return state.currentUser ? json({ user: state.currentUser }) : json({ message: "no" }, 404);
     if ((m = path.match(/^\/pages\/lock\/(\w+)$/)) && req.method === "PUT") {
+      const id = m[1]!;
+      const holder = state.locks.get(id);
       if (u.searchParams.get("pageLockAction") === "ACQUIRED") {
-        if (state.acquireStatus !== 200) return json(state.acquireBody ?? { message: "locked by someone" }, state.acquireStatus);
-        state.onAcquire?.(m[1]!);
-        return json({});
+        if (holder === "me") return json({ errorMessage: "duplicate key value violates unique constraint \"uq_lock_key_status_type\"" }, 400);
+        if (holder) return json({ errorMessage: `Page is locked by ${holder}` }, 409);
+        state.locks.set(id, "me");
+        state.onAcquire?.(id);
+        return json(true);
       }
-      return json({}, state.releaseStatus);
+      if (state.releaseStatus !== 200) return json({ errorMessage: "boom" }, state.releaseStatus);
+      if (holder === "me") {
+        state.locks.delete(id);
+        return json(true);
+      }
+      return json(false);
     }
     if ((m = path.match(/^\/pages\/version\/(\d+)$/))) {
       const v = versions.get(Number(m[1]));
       return v ? json(v) : json({ message: "nope" }, 404);
     }
-    if ((m = path.match(/^\/pages\/revert\/(\d+)$/)) && req.method === "PUT") {
-      const v = versions.get(Number(m[1]));
-      const owner = v && pages.get(v.id);
-      if (!v || !owner) return json({}, 404);
-      pages.set(owner.id, { ...owner, configuration: v.configuration, versionId: (owner.versionId ?? 0) + 1 });
-      return json({});
+    if ((m = path.match(/^\/pages\/revert\/(\w+)$/)) && req.method === "PUT") {
+      // Wire (2026-09-29): /pages/revert/<pageId>?versionId=<vid> copies the
+      // version's config into THAT row; without versionId it is a 400.
+      const vid = u.searchParams.get("versionId");
+      if (!vid) return json({ errorMessage: "Required request parameter 'versionId' for method parameter type Integer is not present" }, 400);
+      const v = versions.get(Number(vid));
+      const target = pages.get(m[1]!);
+      if (!v || !target) return json({}, 404);
+      const next = { ...target, configuration: v.configuration, versionId: (target.versionId ?? 0) + 1 };
+      pages.set(target.id, next);
+      return json({ id: next.id, versionId: next.versionId, configuration: next.configuration, status: next.status, referenceId: next.referenceId });
     }
     if ((m = path.match(/^\/pages\/(\w+)\/publish$/)) && req.method === "POST") {
       const draft = pages.get(m[1]!);
@@ -162,14 +191,29 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
     if ((m = path.match(/^\/pages\/(\w+)$/))) {
       const p = pages.get(m[1]!);
       if (!p) return json({ message: "not found" }, 404);
-      if (req.method === "GET") return json(p);
+      if (req.method === "GET") {
+        const over = state.getOverride?.(p.id);
+        if (over) return json(over);
+        const holder = state.locks.get(p.id);
+        if (!holder) return json(p);
+        return json({
+          ...p,
+          pageLockDetails: {
+            status: "ACQUIRED",
+            userName: holder === "me" ? "Me" : holder,
+            createdBy: holder === "me" ? 7 : 8,
+            validTill: "2099-01-01 00:00:00",
+            lockedByCurrentUser: holder === "me",
+          },
+        });
+      }
       if (req.method === "PUT") {
         if (state.saveStatus !== 200) return json({ message: "boom" }, state.saveStatus);
         const body = req.json();
         let config: string;
         if (body.partialUpdate) {
           const next = applyWireOps(innerOf(p), body.pageElementOperations);
-          if (!next) return json({ message: "bad key" }, 400);
+          if (!next) return json({ errorMessage: "An error has occurred at server side, please try again later." }, 500);
           config = JSON.stringify(next);
         } else {
           config = body.configuration;
@@ -181,7 +225,7 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
         }
         const saved = { ...p, configuration: config, versionId: (p.versionId ?? 0) + 1 };
         pages.set(p.id, saved);
-        return json({ versionId: saved.versionId });
+        return json(saved); // the PUT answers with the full stored page
       }
     }
     if (path === "/pages/page-dependencies") {

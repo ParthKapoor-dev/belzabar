@@ -27,20 +27,30 @@ export function parsePath(key: string): PathSegment[] {
 }
 
 /**
- * Partial-op key shapes the server is KNOWN to parse (OTH-R1). Every key
- * documented in docs/api-notes.md and seen on the wire is dot-joined plain
- * identifiers with optional `[n]` indices (`layout.children[1].props.disabled`,
- * `variables.userDefined[2].initialValue`, `styles`). How the server reads a
- * segment holding `[`, `(`, `.`, `-` or anything else (Angular binding props
- * such as `props.[innerHTML]` / `field.[(value)]`) has never been verified,
- * and PD live writes are out of bounds, so such an edit is saved in full.
+ * Partial-op key shapes the server is KNOWN to parse (OTH-R1, verified live
+ * 2026-09-29 on a scratch page; wire evidence in
+ * tests/fixtures/wire/partial-keys.json). The server splits the key on EVERY
+ * `.`, reads a trailing `[n]` run as array indices, and takes any other
+ * segment as a literal property name:
+ *   - plain names, with `[n]` indices: `className`, `children[1]`, `data-x`,
+ *     `my key`, `2col`, `(click)` (an event-binding prop);
+ *   - bracketed binding props as one literal key: `[innerHTML]`, `[(value)]`,
+ *     `[student-id]`, and `name[non-digit]` (`foo[bar]`) — the same way
+ *     belz's `parsePath` reads them.
+ * NOT sendable: a key whose property name itself contains a `.` (Angular
+ * `[attr.title]`, `[class.x]`): the server splits it, the half-bracketed
+ * segments answer HTTP 500 and nothing is stored. Those edits are full saves.
+ * (A missing parent object is not a shape problem: the server answers 200
+ * and silently stores nothing, so planSave's replay check already makes such
+ * an edit a full save.)
  */
-const VERIFIED_SEGMENT = /^[A-Za-z_$][A-Za-z0-9_$]*(?:\[\d+\])*$/;
+const PLAIN_SEGMENT = /^[^.[\]]+(?:\[\d+\])*$/;
+const BINDING_SEGMENT = /^[^.[\]]*\[[^.[\]]*[^.[\]\d][^.[\]]*\]$/;
 
-/** True when every dot segment of `key` is a verified shape (see VERIFIED_SEGMENT). */
+/** True when every dot segment of `key` is a verified shape (see PLAIN_SEGMENT / BINDING_SEGMENT). */
 export function isVerifiedKeyShape(key: string): boolean {
   const parts = key.split(".");
-  return parts.length > 0 && parts.every((p) => VERIFIED_SEGMENT.test(p));
+  return parts.length > 0 && parts.every((p) => PLAIN_SEGMENT.test(p) || BINDING_SEGMENT.test(p));
 }
 
 type Container = Record<string, unknown> | unknown[];

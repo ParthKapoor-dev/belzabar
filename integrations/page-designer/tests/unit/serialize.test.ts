@@ -275,16 +275,37 @@ describe("planSave strategy", () => {
     "layout.props.[(value)]",
     "layout.props.(click)",
     "layout.props.data-x",
-  ])("OTH-R1: an op keyed %s (unverified shape) falls back to a full save", (key) => {
+  ])("OTH-R1: an op keyed %s (verified live) stays a partial save", (key) => {
     const plan = planSave(page, { elements: { operations: [{ key, value: "v", operation: "CREATE", dataType: "STRING" }] } });
-    expect(plan).toMatchObject({ strategy: "full", fallbackReason: `unverified partial-op key shape: ${key}` });
+    expect(plan.strategy).toBe("partial");
   });
 
-  test("OTH-R1: isVerifiedKeyShape accepts only the documented key shapes", () => {
-    for (const k of ["styles", "layout.props.className", "layout.children[1].children[0].props.disabled", "variables.userDefined[2].initialValue"]) {
+  test("OTH-R1: a raw elements op on a dotted prop name ([attr.title]) is refused — like the server, belz splits it on the dot", () => {
+    const key = "layout.props.[attr.title]";
+    expect(() => planSave(page, { elements: { operations: [{ key, value: "v", operation: "CREATE", dataType: "STRING" }] } })).toThrow(
+      /does not resolve/,
+    );
+    // nodes.update addresses the prop by name, so it can still be saved (in full): see save-publish.test.ts.
+  });
+
+  test("OTH-R1: isVerifiedKeyShape = the shapes proven on the wire (tests/fixtures/wire/partial-keys.json)", () => {
+    for (const k of [
+      "styles",
+      "layout.props.className",
+      "layout.children[1].children[0].props.disabled",
+      "variables.userDefined[2].initialValue",
+      "props.[innerHTML]",
+      "field.[(value)]",
+      "props.[student-id]",
+      "props.(click)",
+      "props.data-x",
+      "props.my key",
+      "props.2col",
+      "props.foo[bar]",
+    ]) {
       expect(isVerifiedKeyShape(k)).toBe(true);
     }
-    for (const k of ["props.[innerHTML]", "a..b", "a.b[x]", "", "a.1b"]) expect(isVerifiedKeyShape(k)).toBe(false);
+    for (const k of ["a..b", "", "props.[attr.title]", "props.[attr", "title]", "props.[0]", "props.[options][0]"]) expect(isVerifiedKeyShape(k)).toBe(false);
   });
 
   test.each<[string, Overlay]>([

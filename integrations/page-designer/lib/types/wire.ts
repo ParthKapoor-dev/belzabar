@@ -35,6 +35,21 @@ export interface RawPageResponse {
   updatedBy?: number;
   // configuration is a STRINGIFIED JSON blob. Parse before consuming.
   configuration?: string;
+  /** Present while the page is locked (verified live 2026-09-29; absent/null when free). */
+  pageLockDetails?: RawPageLockDetails | null;
+  [key: string]: unknown;
+}
+
+/** `pageLockDetails` of a locked page's GET body. */
+export interface RawPageLockDetails {
+  status?: string;
+  userName?: string | null;
+  createdBy?: number | null;
+  /** Server-local time, `YYYY-MM-DD HH:MM:SS` (a lock lasts ~24 h). */
+  validTill?: string | null;
+  createdAt?: string | null;
+  /** True when the signed-in user holds the lock. */
+  lockedByCurrentUser?: boolean;
   [key: string]: unknown;
 }
 

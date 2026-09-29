@@ -134,25 +134,45 @@ describe("pd save", () => {
     expect(call.responseTransformSpec).toBe("(d)=>d");
   });
 
-  test("OTH-R1: a binding-prop edit ([innerHTML]) is a FULL save — its partial key shape is unverified", async () => {
+  test("OTH-R1: a binding-prop edit ([innerHTML], verified live) is a PARTIAL save keyed at the literal prop", async () => {
     const edit = { nodes: { update: [{ id: "n1", props: { "[innerHTML]": "{%other%}" } }] } };
     const r = await run(save, [DRAFT, "--overlay", overlayFile(edit), "--yes"]);
     expect(r.envelope?.ok).toBe(true);
-    expect(r.envelope?.data).toMatchObject({
-      strategy: "full",
-      fullSaveReason: "unverified partial-op key shape: layout.children[0].props.[innerHTML]",
-      verify: { status: "match" },
-    });
+    expect(r.envelope?.data).toMatchObject({ strategy: "partial", fullSaveReason: null, verify: { status: "match", source: "get" } });
     const put = pd.ff.requests.find((q) => q.method === "PUT" && /\/pages\/d0+1$/.test(new URL(q.url).pathname))!;
-    expect(put.json()).toMatchObject({ partialUpdate: false });
+    expect(put.json()).toMatchObject({
+      partialUpdate: true,
+      pageElementOperations: [{ key: "layout.children[0].props.[innerHTML]", value: "{%other%}", operation: "UPDATE", dataType: "STRING" }],
+    });
     expect((innerOf(pd.pages.get(DRAFT)!).layout as any).children[0].props["[innerHTML]"]).toBe("{%other%}");
   });
 
-  test("OTH-R1: the fake server rejects undocumented partial keys (not circular with belz's replay)", async () => {
+  test("OTH-R1: a dotted binding prop ([attr.title]) is still a FULL save (the server 500s on it)", async () => {
+    const edit = { nodes: { update: [{ id: "n1", props: { "[attr.title]": "t" } }] } };
+    const r = await run(save, [DRAFT, "--overlay", overlayFile(edit), "--yes"]);
+    expect(r.envelope?.data).toMatchObject({ strategy: "full", fullSaveReason: "unverified partial-op key shape: layout.children[0].props.[attr.title]", verify: { status: "match" } });
+  });
+
+  test("OTH-R1: the fake server follows the wire, not belz's replay (dotted names 500, missing parents are dropped)", async () => {
     const { applyWireOps } = await import("./helpers/fake-pd");
     const op = (key: string) => ({ key, value: "x", operation: "UPDATE", dataType: "STRING" });
-    expect(applyWireOps(cleanInner(), [op("layout.children[0].props.[innerHTML]")])).toBeNull();
-    expect((applyWireOps(cleanInner(), [op("layout.children[0].props.title")]) as any).layout.children[0].props.title).toBe("x");
+    expect(applyWireOps(cleanInner(), [op("layout.children[0].props.[attr.title]")])).toBeNull();
+    expect(applyWireOps(cleanInner(), [op("layout.children[0].nope.title")])).toEqual(cleanInner());
+    expect((applyWireOps(cleanInner(), [op("layout.children[0].props.[innerHTML]")]) as any).layout.children[0].props["[innerHTML]"]).toBe("x");
+  });
+
+  test("OTH-R6: when the read-back GET returns an older version, the PUT's own answer decides (no blind stale-read)", async () => {
+    const edit = { variables: { update: [{ name: "greeting", initialValue: "changed" }] } };
+    const stale = pd.pages.get(DRAFT)!;
+    let saved = false;
+    pd.onSave = () => {
+      saved = true;
+    };
+    pd.getOverride = (id) => (id === DRAFT && saved ? stale : undefined);
+    const r = await run(save, [DRAFT, "--overlay", overlayFile(edit), "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ verify: { status: "match", source: "put-response" } });
+    expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes("verified against the save's own answer"))).toBe(true);
   });
 
   test("OTH-R3: a read-back that differs from the plan is ok:false PD_SAVE_VERIFY_FAILED (was a warning with ok:true)", async () => {

@@ -89,6 +89,15 @@ describe("resolveDraftTarget (referenceId link)", () => {
     expect(!r.ok && r.reason).toBe("LINK_WRONG_STATUS");
   });
 
+  test("a draft whose published sibling is soft-DELETED is a never-published draft (no LINK_WRONG_STATUS)", async () => {
+    const { deps } = depsFor([row(DRAFT_A, "DRAFT", PUB_A), row(PUB_A, "DELETED", DRAFT_A)]);
+    const r = await resolveDraftTarget(DRAFT_A, deps);
+    expect(r).toMatchObject({ ok: true, draftId: DRAFT_A, publishedId: null, switchedFromPublished: false });
+    // …but a DRAFT pointing at a DRAFT is still refused.
+    const bad = depsFor([row(DRAFT_A, "DRAFT", PUB_A), row(PUB_A, "DRAFT", DRAFT_A)]);
+    expect((await resolveDraftTarget(DRAFT_A, bad.deps)) as any).toMatchObject({ ok: false, reason: "LINK_WRONG_STATUS" });
+  });
+
   test("dangling link → refuse (LINK_NOT_FOUND)", async () => {
     const { deps } = depsFor([row(PUB_A, "PUBLISHED", DRAFT_A)]);
     const r = await resolveDraftTarget(PUB_A, deps);

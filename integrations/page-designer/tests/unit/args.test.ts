@@ -101,7 +101,8 @@ describe("pd history / lock subcommands", () => {
     expect((lock.writes as (x: any) => boolean)(a)).toBe(true);
     expect((lock.writes as (x: any) => boolean)({ action: "status", pageId: null })).toBe(false);
     expect(code(() => lock.parseArgs!(["release"], ctx))).toBe("MISSING_INPUT");
-    expect(code(() => lock.parseArgs!(["status", "p1"], ctx))).toBe("UNEXPECTED_ARGUMENT");
+    expect(await lock.parseArgs!(["status", "p1"], ctx)).toEqual({ action: "status", pageId: "p1" });
+    expect(code(() => lock.parseArgs!(["status", "p1", "p2"], ctx))).toBe("UNEXPECTED_ARGUMENT");
   });
 });
 
@@ -129,7 +130,7 @@ describe("pd save / find", () => {
     expect(await o("--force")).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: true });
     const p = (await publish.parseArgs!(["p1", "--force"], ctx)) as any;
     expect(p.overrides).toEqual({ forceValidation: true, allowPublished: false, deprecatedForce: true });
-    // OTH-R8: restore has its own acknowledgement flag; --allow-published is not a restore flag.
+    // OTH-R8: --allow-published is not a restore flag; --acknowledge-unverified is a deprecated no-op (OTH-R2 verified).
     expect(code(() => history.parseArgs!(["restore", "p1", "--version", "1", "--allow-published"], ctx))).toBe("UNKNOWN_FLAG");
     const r = (await history.parseArgs!(["restore", "p1", "--version", "1", "--acknowledge-unverified"], ctx)) as any;
     expect(r.acknowledgeUnverified).toBe(true);

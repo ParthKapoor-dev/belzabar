@@ -11,6 +11,11 @@
 //   3. PUBLISHED → follow referenceId to the linked DRAFT. No link → refuse
 //      (caller can pass --allow-published). A link that resolves to a non-DRAFT,
 //      a missing row, or a row whose back-link points elsewhere → refuse.
+//   4. A linked row whose status is DELETED is treated as no link at all: a
+//      draft whose published sibling was deleted is a never-published draft
+//      again (verified live 2026-09-29: the server keeps the draft's
+//      referenceId pointing at the soft-deleted row, and a publish rewrites that
+//      row's config without ever restoring its status).
 
 import { CliError } from "@belzabar/core";
 import { pdApi } from "./api/index";
@@ -39,6 +44,8 @@ export type LinkedPairResult =
       publishedId: string | null;
       /** The DRAFT row's raw response (the input itself when it is a draft). */
       draftRaw: RawPageResponse | null;
+      /** The referenced sibling exists but is soft-DELETED (treated as no sibling). */
+      deletedSiblingId?: string;
     }
   | { ok: false; reason: LinkFailureReason; message: string };
 
@@ -79,6 +86,11 @@ export async function resolveLinkedPair(
   }
 
   const linked = await deps.fetchPage(refId);
+  if (linked && typeof linked.status === "string" && linked.status.toUpperCase() === "DELETED") {
+    return status === "DRAFT"
+      ? { ok: true, draftId: ownId, publishedId: null, draftRaw: raw, deletedSiblingId: refId }
+      : { ok: true, draftId: null, publishedId: ownId, draftRaw: null, deletedSiblingId: refId };
+  }
   if (!linked) {
     return {
       ok: false,

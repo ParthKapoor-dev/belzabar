@@ -33,8 +33,8 @@ beforeAll(async () => {
   lockCmd = (await import("../../commands/lock/index")).default;
   origLock.acquireLock = pdApi.acquireLock;
   origLock.releaseLock = pdApi.releaseLock;
-  (pdApi as any).acquireLock = async () => {};
-  (pdApi as any).releaseLock = async () => true;
+  (pdApi as any).acquireLock = async () => ({ acquired: true });
+  (pdApi as any).releaseLock = async () => ({ status: 200, released: true });
 });
 afterEach(() => core.Config.setActiveEnv("t-dev"));
 afterAll(() => {

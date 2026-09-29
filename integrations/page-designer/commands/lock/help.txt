@@ -3,21 +3,28 @@ Usage: belz pd lock <action> [pageId]
 Manage PD edit locks. Every write (`save`, `publish`, `history restore`)
 already acquires and releases the lock itself — this command is for holding
 the lock across several operations. For a page recorded here, those writes
-still re-acquire the server lock but do NOT release it afterwards. A 409 on
-that re-acquire counts as your held lock only when the server's answer names
-you (the signed-in user); otherwise the record is treated as stale and the
-write fails with PD_LOCKED (details.staleLocalRecord).
+still re-acquire the server lock but do NOT release it afterwards. The server
+answers a re-acquire of a lock you already hold with HTTP 400; belz reads the
+page's lock details (lockedByCurrentUser) and writes inside your lock. A lock
+held by anyone else fails with PD_LOCKED naming the holder
+(details.holder: userName, userId, validTill), and with
+details.staleLocalRecord when this command had recorded the page.
 
 Actions:
   acquire <pageId>    PUT /pages/lock/<pageId>?pageLockAction=ACQUIRED.
-                      Fails with PD_LOCKED (409) if another editor holds it.
+                      A lock you already hold (another belz run, or the page
+                      open in your PD editor) is ok with data.alreadyHeld.
+                      PD_LOCKED if another user holds it.
   release <pageId>    PUT /pages/lock/<pageId>?pageLockAction=RELEASED.
                       ok:false (PD_LOCK_RELEASE_FAILED) when the server
-                      refuses (someone else's lock, or already released).
-                      A 4xx refusal drops the local record; a 5xx keeps it
-                      (data.recordKept) since the lock may still be yours.
-  status              List locks acquired with this command in the active
+                      released nothing (the answer is 200 false: not your
+                      lock, or already released/expired) — the local record
+                      is dropped; a 5xx keeps it (data.recordKept,
+                      data.released null) since the lock may still be yours.
+  status [pageId]     List locks acquired with this command in the active
                       env (local record at ~/.belz/pd-locks/<env>.json).
+                      With a page id, also the server's lock on that page
+                      (data.server: locked, byMe, userName, validTill).
 
 Global Flags:
   --env <name>        Environment (write actions need it explicitly).
@@ -27,9 +34,10 @@ Examples:
   belz pd lock acquire 4f126300499e4d83cd07a35b4d9af9e7
   belz pd lock release 4f126300499e4d83cd07a35b4d9af9e7
   belz pd lock status
+  belz pd lock status 4f126300499e4d83cd07a35b4d9af9e7 --env <name>
 
 Notes:
   • Both acquire and release send pageLockAction as a query parameter (a
     JSON body is rejected by the server).
-  • The PD editor auto-acquires on page open. If acquire returns 409, close
-    the editor or have the current holder release first.
+  • The PD editor auto-acquires on page open (a lock lasts about 24 h). If
+    another user holds it, have them close the editor or release first.

@@ -14,16 +14,21 @@
 // `referenceId` the linked sibling — history is recorded on the PUBLISHED
 // row).
 //
-// Restore is UNVERIFIED (OTH-R2): which row PUT /pages/revert/<vid> rewrites
-// (the PUBLISHED owner, or its draft) has never been checked on the wire, and
-// PD live writes are out of bounds. So restore refuses unless
-// --acknowledge-unverified (PD_RESTORE_UNVERIFIED); that flag also stands in
-// for the old --allow-published requirement (OTH-R8). With it, restore locks
-// the owner AND its linked draft, re-fetches the owner inside the lock and
-// validates the version against it (diff-aware, OTH-R5), reverts, then reads
-// back BOTH rows and reports which one changed (data.changed).
+// Restore (OTH-R2, verified live 2026-09-29): `PUT
+// /pages/revert/<draftId>?versionId=<vid>` copies the version's configuration
+// into the DRAFT row (new draft versionId) and leaves the PUBLISHED row and
+// the history alone — so restore is a draft edit, made live by `belz pd
+// publish`. (The endpoint given the PUBLISHED id rewrites the live row with no
+// publish and no history entry; belz never sends that. The old
+// `/pages/revert/<vid>` form was a 400, so restore never worked before.)
+// Flow: ownership check (PD-15) → the draft of the version's page (none →
+// PD_PUBLISHED_NO_DRAFT) → diff-aware validation of the version against the
+// draft → --yes → withLock(draft): fresh read + re-validate (OTH-R5) → revert
+// → read back and compare with the version (PD_RESTORE_VERIFY_FAILED on a
+// mismatch). `--acknowledge-unverified` is a deprecated no-op.
 
-import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
+import { isDeepStrictEqual } from "node:util";
+import { CliError, defineSubcommands, failWithData, ok, type CommandModule } from "@belzabar/core";
 import {
   DEPRECATED_FORCE_WARNING,
   PD_WRITE_OVERRIDE_FLAGS,
@@ -37,7 +42,7 @@ import { gateValidation, logIntent, requireConfirmation, versionDrift } from "..
 import { parsePage } from "../../lib/parser/index";
 import { partitionBySeverity, validateEdit, validateHydrated } from "../../lib/validator/index";
 import { withLock } from "../../lib/lock";
-import { countNodes, diffPages, type SetDiff } from "../../lib/page-diff";
+import { countNodes, diffPages, differingPaths, type SetDiff } from "../../lib/page-diff";
 import type { RawHistoryEntry, RawPageResponse, ValidationIssue } from "../../lib/types/common";
 
 type Action = "list" | "show" | "diff" | "restore";
@@ -50,7 +55,7 @@ interface HistoryArgs {
   to?: number;
   limit: number;
   overrides: WriteOverrides;
-  /** restore only: the operator accepts that PUT /pages/revert semantics are unverified (OTH-R2). */
+  /** restore only: deprecated no-op (revert semantics are verified, OTH-R2). */
   acknowledgeUnverified: boolean;
   yes: boolean;
 }
@@ -117,18 +122,22 @@ interface HistoryDiffData {
 interface HistoryRestoreData {
   action: "restore";
   pageId: string;
-  /** The page PUT /pages/revert rewrote (the version's owner). */
+  /** The page the version belongs to (history lives on the PUBLISHED row). */
   ownerId: string;
-  draftId: string | null;
+  /** The draft the revert rewrote (the only row it touches). */
+  draftId: string;
   restoredVersionId: number;
-  /** The owner's versionId after the revert when it changed, else null. */
+  /** The draft's versionId before and after the revert. */
+  oldVersionId: number | null;
   newVersionId: number | null;
-  /** Read-back of BOTH rows after the revert (OTH-R2): which one did the server rewrite? */
-  changed: { owner: boolean; draft: boolean | null };
-  /** The owner changed between the first read and the in-lock fetch. */
+  /** Read-back of the draft: does it now hold the version's configuration? */
+  verify: { status: "match" | "mismatch"; versionId: number | null; differingPaths?: string[] };
+  /** The draft changed between the first read and the in-lock fetch. */
   versionDrift: { from: number | null; to: number | null } | null;
   validation: { errorCount: number; warnCount: number };
   bypassedErrors: ValidationIssue[];
+  /** The PUBLISHED page is untouched; `belz pd publish <draftId>` makes the restore live. */
+  published: false;
 }
 
 type HistoryData =
@@ -182,6 +191,21 @@ export const args = defineSubcommands(
     codes: { MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "UNKNOWN_ACTION" },
   },
 );
+
+/**
+ * The draft a restore writes: the owner's linked draft. A soft-DELETED owner
+ * (its draft lives on) is followed through its referenceId, as long as that
+ * draft points back at it.
+ */
+async function restoreDraftOf(ownerRaw: RawPageResponse): ReturnType<typeof resolveLinkedPair> {
+  if (String(ownerRaw.status).toUpperCase() !== "DELETED") return resolveLinkedPair(ownerRaw);
+  const ref = typeof ownerRaw.referenceId === "string" ? ownerRaw.referenceId.trim() : "";
+  const draftRaw = ref ? await pdApi.fetchPage(ref) : null;
+  if (!draftRaw || String(draftRaw.status).toUpperCase() !== "DRAFT" || draftRaw.referenceId !== ownerRaw.id) {
+    return { ok: true, draftId: null, publishedId: ownerRaw.id, draftRaw: null };
+  }
+  return { ok: true, draftId: draftRaw.id, publishedId: null, draftRaw, deletedSiblingId: ownerRaw.id };
+}
 
 /** Fetch version `vid` and check it belongs to `pageId` (PD-15). */
 async function fetchOwnedVersion(pageId: string, vid: number): Promise<RawPageResponse> {
@@ -320,88 +344,81 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
     // restore
     const warn = (m: string) => context.warn(m);
     if (args.overrides.deprecatedForce) warn(`⚠ ${DEPRECATED_FORCE_WARNING}`);
+    if (args.acknowledgeUnverified) warn("⚠ --acknowledge-unverified is deprecated and ignored: restore semantics are verified (it rewrites the draft only).");
     const vid = args.version!;
     const version = await fetchOwnedVersion(args.pageId, vid);
     const ownerId = version.id;
     const ownerRaw = await pdApi.fetchPage(ownerId);
     if (!ownerRaw) throw new CliError(`Page ${ownerId} (owner of version ${vid}) not found.`, { code: "PD_NOT_FOUND" });
-    const link = await resolveLinkedPair(ownerRaw);
+    const link = await restoreDraftOf(ownerRaw);
     if (!link.ok) {
       throw describeDraftGuardFailure({ ok: false, reason: link.reason, publishedId: null, inputId: ownerId, message: link.message });
     }
-    const owner = parsePage(ownerRaw);
-    if (!args.acknowledgeUnverified) {
+    if (!link.draftId || !link.draftRaw) {
       throw new CliError(
-        `history restore is unverified: which page PUT /pages/revert/${vid} rewrites (the ${owner.status} owner ${ownerId}, ` +
-          `or its draft ${link.draftId ?? "(none)"}) has never been checked, so it may change the LIVE page without a publish. ` +
-          `Safer: \`belz pd history show ${ownerId} --version ${vid} --llm\` and save that config to the draft with ` +
-          `\`belz pd save <draftId> --config <file>\`. Or pass --acknowledge-unverified to revert anyway.`,
-        { code: "PD_RESTORE_UNVERIFIED", details: { ownerId, ownerStatus: owner.status, draftId: link.draftId, versionId: vid } },
+        `Page ${ownerId} has no linked draft. history restore rewrites the draft (never the live page), so there is nothing to restore into.`,
+        { code: "PD_PUBLISHED_NO_DRAFT", details: { ownerId, versionId: vid } },
       );
     }
-    warn(`⚠ --acknowledge-unverified: restore semantics are unverified; belz reads back both ${ownerId} and ${link.draftId ?? "(no draft)"} afterwards.`);
-    const check = (current: typeof owner) =>
-      validateEdit(current, parsePage({ ...ownerRaw, configuration: version.configuration }));
-    gateValidation(check(owner), args.overrides.forceValidation, warn);
+    const draftId = link.draftId;
+    const draft = parsePage(link.draftRaw);
+    const target = (current: RawPageResponse) => parsePage({ ...current, configuration: version.configuration });
+    const check = (currentRaw: RawPageResponse) => validateEdit(parsePage(currentRaw), target(currentRaw));
+    gateValidation(check(link.draftRaw), args.overrides.forceValidation, warn);
 
     await requireConfirmation(context, args.yes, "restore", [
-      ["Page", `${owner.name} (${ownerId}, ${owner.status})`],
-      ["Linked draft", link.draftId ?? "none"],
-      ["Restore to version", String(vid)],
-      ["Semantics", "UNVERIFIED — may rewrite the published page"],
+      ["Page", `${draft.name} (draft ${draftId})`],
+      ["Restore to version", `${vid} (of ${ownerId})`],
+      ["Effect", "rewrites the DRAFT only; publish to make it live"],
     ]);
-    logIntent("history-restore", ownerId, { versionId: vid, draftId: link.draftId });
+    logIntent("history-restore", draftId, { versionId: vid, ownerId });
 
-    const draftId = link.draftId && link.draftId !== ownerId ? link.draftId : null;
-    const lockIds = [...new Set([ownerId, draftId].filter((x): x is string => !!x))];
-    const runLocked = <T>(ids: string[], fn: () => Promise<T>): Promise<T> =>
-      ids.length === 0 ? fn() : withLock(ids[0]!, () => runLocked(ids.slice(1), fn));
-
-    const res = await runLocked(lockIds, async () => {
-      // OTH-R5: validate against the owner as it is now, inside the lock.
-      const freshRaw = await pdApi.fetchPage(ownerId);
-      if (!freshRaw) throw new CliError(`Page ${ownerId} disappeared before the restore.`, { code: "PD_NOT_FOUND" });
+    const res = await withLock(draftId, async () => {
+      // OTH-R5: validate against the draft as it is now, inside the lock.
+      const freshRaw = await pdApi.fetchPage(draftId);
+      if (!freshRaw) throw new CliError(`Page ${draftId} disappeared before the restore.`, { code: "PD_NOT_FOUND" });
       const fresh = parsePage(freshRaw);
-      const drift = versionDrift(owner, fresh, warn);
-      const gate = gateValidation(check(fresh), args.overrides.forceValidation, warn, drift !== null);
-      const draftBefore = draftId ? await pdApi.fetchPage(draftId) : null;
-      await pdApi.historyRestore(vid);
-      const [ownerAfter, draftAfter] = await Promise.all([
-        pdApi.fetchPage(ownerId),
-        draftId ? pdApi.fetchPage(draftId) : Promise.resolve(null),
-      ]);
-      const rowChanged = (b: RawPageResponse | null, a: RawPageResponse | null) =>
-        !!a && !!b && (a.versionId !== b.versionId || a.configuration !== b.configuration);
-      return {
-        gate,
-        drift,
-        ownerAfter,
-        changed: {
-          owner: rowChanged(freshRaw, ownerAfter),
-          draft: draftId ? rowChanged(draftBefore, draftAfter) : null,
-        },
-      };
+      const drift = versionDrift(draft, fresh, warn);
+      const gate = gateValidation(check(freshRaw), args.overrides.forceValidation, warn, drift !== null);
+      const answer = await pdApi.historyRestore(draftId, vid);
+      const after = await pdApi.fetchPage(draftId);
+      return { gate, drift, fresh, freshRaw, answer, after };
     });
 
+    const expected = target(res.freshRaw).rawConfiguration;
+    const stored = res.after ? parsePage(res.after) : res.answer ? parsePage(res.answer) : null;
     const newVersionId =
-      res.ownerAfter && typeof res.ownerAfter.versionId === "number" && res.changed.owner ? res.ownerAfter.versionId : null;
-    if (res.changed.draft) warn(`⚠ The revert changed the DRAFT ${draftId}${res.changed.owner ? " and the owner" : ""} — review before publishing.`);
-    if (!res.changed.owner && !res.changed.draft) {
-      warn(`⚠ Neither ${ownerId} nor its draft reads back changed (the server read may lag) — check with \`belz pd show <id> --force\`.`);
-    }
+      typeof res.answer?.versionId === "number" ? res.answer.versionId : typeof res.after?.versionId === "number" ? res.after.versionId : null;
+    const verify: HistoryRestoreData["verify"] =
+      stored && isDeepStrictEqual(stored.rawConfiguration, expected)
+        ? { status: "match", versionId: stored.versionId }
+        : { status: "mismatch", versionId: stored?.versionId ?? null, differingPaths: differingPaths(expected, stored?.rawConfiguration ?? null) };
 
-    return ok<HistoryRestoreData>({
+    const data: HistoryRestoreData = {
       action: "restore",
       pageId: args.pageId,
       ownerId,
-      draftId: link.draftId,
+      draftId,
       restoredVersionId: vid,
+      oldVersionId: res.fresh.versionId,
       newVersionId,
-      changed: res.changed,
+      verify,
       versionDrift: res.drift,
       validation: { errorCount: res.gate.errors.length, warnCount: res.gate.warnings.length },
       bypassedErrors: res.gate.bypassedErrors,
-    });
+      published: false,
+    };
+    if (verify.status === "mismatch") {
+      return failWithData(
+        "PD_RESTORE_VERIFY_FAILED",
+        `Reverted draft ${draftId} to version ${vid}, but the read-back does not hold that version's config ` +
+          `(${verify.differingPaths?.length ?? 0} differing path(s)). Inspect with \`belz pd show ${draftId} --force\`.`,
+        data,
+        { details: { draftId, versionId: vid, differingPaths: verify.differingPaths ?? [] } },
+      );
+    }
+    warn(`ℹ Draft ${draftId} now holds version ${vid}; the published page is unchanged — \`belz pd publish ${draftId}\` makes it live.`);
+    return ok<HistoryRestoreData>(data);
   },
 
   presentHuman(envelope, ui) {
@@ -493,9 +510,9 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
     }
 
     // restore
-    ui.success(`Restored page ${data.ownerId} to version ${data.restoredVersionId}.`);
-    if (data.newVersionId) ui.kv("New version", data.newVersionId);
-    ui.kv("Rewrote", [data.changed.owner ? `owner ${data.ownerId}` : null, data.changed.draft ? `draft ${data.draftId}` : null].filter(Boolean).join(", ") || "nothing visible yet");
+    ui.success(`Restored draft ${data.draftId} to version ${data.restoredVersionId}.`);
+    ui.kv("Draft version", `${data.oldVersionId ?? "?"} → ${data.newVersionId ?? "?"}`);
+    ui.info(`The published page is unchanged. Publish with \`belz pd publish ${data.draftId}\`.`);
   },
 };
 

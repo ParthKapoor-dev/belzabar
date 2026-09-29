@@ -26,15 +26,15 @@ component name (component first, then page; several matches → `PD_NAME_AMBIGUO
 | `belz pd page-deps <input>` | page-dependencies summary; `--status PUBLISHED\|DRAFT`, `--full` (raw graph) |
 | `belz pd translations <input>` | Release check of phrase keys; `--status`, `--expect-draft <id>`, `--force` |
 | `belz pd diff <input> --from <envA> --to <envB>` | Cross-env structural diff (flips `Config.activeEnv` per side, then restores it) |
-| `belz pd history <list\|show\|diff\|restore> <pageId>` | Server version history (lives on the PUBLISHED id: `list` on a draft with no versions adds `publishedId` + `hint` and a warning); `restore` writes and is refused (`PD_RESTORE_UNVERIFIED`) without `--acknowledge-unverified` |
+| `belz pd history <list\|show\|diff\|restore> <pageId>` | Server version history (lives on the PUBLISHED id: `list` on a draft with no versions adds `publishedId` + `hint` and a warning); `restore` copies a version into the DRAFT (`PUT /pages/revert/<draftId>?versionId=`; published page untouched), read back (`PD_RESTORE_VERIFY_FAILED`) |
 | `belz pd preflight <pageId> [--overlay <file>]` | Dry run of `save` on the same draft-guarded target (`data.targetId`): parse + validate + plan; never writes |
 | `belz pd save <pageId> --overlay <file> \| --config <file>` | Validated, locked save; `--dry-run` |
 | `belz pd publish <pageId>` | Draft-guard + diff-aware validate (vs the PUBLISHED version) + locked publish, re-validated on a fresh read inside the lock; `--landing`, `--host <id>` (repeatable) |
-| `belz pd lock <acquire\|release\|status>` | Manual lock control (`~/.belz/pd-locks/<env>.json`, atomic 0600; a 5xx release keeps the record) |
+| `belz pd lock <acquire\|release\|status [id]>` | Manual lock control (`~/.belz/pd-locks/<env>.json`, atomic 0600; `acquire` of your own lock → `alreadyHeld`; a release answered 200 `false` is `PD_LOCK_RELEASE_FAILED`; a 5xx keeps the record; `status <id>` adds the server's holder) |
 
 Write overrides (`lib/args/common.ts`, on save/publish/history restore): `--force-validation`
 (proceed despite validator errors; they land in `bypassedErrors`), `--allow-published` (save /
-publish only: write a PUBLISHED page with no linked draft; restore uses `--acknowledge-unverified`), `--force` (deprecated alias of `--force-validation` only;
+publish only: write a PUBLISHED page with no linked draft; restore never writes a published row, and its old `--acknowledge-unverified` is a deprecated no-op), `--force` (deprecated alias of `--force-validation` only;
 warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 
 ## Contracts
@@ -49,7 +49,7 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 - **Error codes** (grep `code: "PD_` for the full set): `PD_NOT_FOUND`, `PD_NAME_AMBIGUOUS`,
   `PD_API_ERROR` / `PD_LOCKED` (409) from `lib/api/client.ts` (non-OK bodies, and non-JSON 2xx bodies via `readJson`, summarised by core
   `httpError`), `PD_DRAFT_LINK_UNRESOLVED`, `PD_PUBLISHED_NO_DRAFT`, `PD_NOT_PUBLISHED`,
-  `PD_OVERLAY_INVALID`, `PD_VERSION_NOT_FOUND`, `PD_VERSION_PAGE_MISMATCH`, `PD_RESTORE_UNVERIFIED`, `PD_FILE_NOT_FOUND`,
+  `PD_OVERLAY_INVALID`, `PD_VERSION_NOT_FOUND`, `PD_VERSION_PAGE_MISMATCH`, `PD_RESTORE_VERIFY_FAILED`, `PD_FILE_NOT_FOUND`,
   `PD_FILE_UNREADABLE`, `PD_FILE_UNWRITABLE`, `PD_DIFF_SAME_ENV`, `PD_UNKNOWN_ENV`. Arg errors
   come from core `defineArgs` (`MISSING_INPUT`, `INVALID_FLAGS`, `MISSING_ENV_RANGE`,
   `MISSING_VERSION_RANGE`, `MISSING_ACTION`, …).
@@ -70,22 +70,28 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 
 ## Save pipeline (`save`, `preflight`; `publish` / `history restore` share steps 1–3 and 5)
 
-1. `resolveWriteTarget` → draft id. 2. `withLock(id)` (nested calls are re-entrant; a page
-recorded by `belz pd lock acquire` still re-acquires the server lock but is not released; a 409
-on such a page is reused as the held lock only when its body names the signed-in user
-(`lockHolderFields` vs `/rest/api/users/me`), otherwise it fails closed as `PD_LOCKED`
-with `staleLocalRecord`).
+1. `resolveWriteTarget` → draft id (a sibling whose status is `DELETED` counts as no sibling).
+2. `withLock(id)` (nested calls are re-entrant; a page recorded by `belz pd lock acquire` still
+re-acquires the server lock but is not released). The server answers a re-acquire of a lock
+the signed-in user already holds with **HTTP 400** (duplicate key), not 409; `acquireLock` then
+reads the page's `pageLockDetails` and returns `heldByMe` when `lockedByCurrentUser` — belz
+writes inside that lock and never releases it (manual lock, another belz run, or the user's
+own PD editor). Anyone else's lock → `PD_LOCKED` with `details.holder` `{userName, userId,
+validTill}` (plus `staleLocalRecord` when a manual record exists).
 3. `fetchFresh` inside the lock; `versionDrift` reports a concurrent change. 4. `planSave`
 (`lib/serialize/index.ts`) applies the overlay to a **clone of the raw config** (nothing is
 rebuilt from parsed lists, so a full save is lossless apart from the edit). 5. `validateEdit`
 (before, after): pre-existing issues never block; introduced errors do. 6. PUT: partial ops only
 if replaying them reproduces the planned config exactly, else full (`fullSaveReason`); legacy
 pages always save full; keys outside the verified shape force full. 7. Read back: `verify` =
-`match | mismatch | stale-read`; `mismatch` fails the save (`PD_SAVE_VERIFY_FAILED`),
-`stale-read` only warns. The write's own answer is read by `writeAnswer`: an empty/non-JSON
+`match | mismatch | stale-read` with `source: get | put-response` — the draft GET right after a
+PUT is fresh (verified live) and decides; if it ever returns an older version, the PUT's own
+answer (the full stored page) decides; `mismatch` fails the save (`PD_SAVE_VERIFY_FAILED`),
+`stale-read` (no answer to compare) only warns. The write's own answer is read by `writeAnswer`: an empty/non-JSON
 body is `{}`, but a body read that stalls keeps `HTTP_TIMEOUT` (`mayHaveCompleted`) — re-read
 before retrying. `publish` validates against `fetchPublishedBaseline` (the GET, superseded by a
-newer history version when the server-cached GET lags a recent publish).
+newer history version: after a publish without `--host` the published GET keeps serving the
+last DEPLOYED version — verified live).
 
 Overlay (`Overlay` in `lib/types/common.ts`; unknown sections, and any shape problem — `null`, a
 section that is not an object, a list that is not an array, a missing `name`/`callId`/`id`/`key`,
@@ -105,13 +111,17 @@ a bad `operation`/`dataType` — → `PD_OVERLAY_INVALID` listing every problem,
 `elements.operations`. `nodes.update` merges props/field/attrs/events (a `null` value deletes and
 forces a full save); `insert` generates missing ids deterministically; insert/remove are full
 saves. `belz pd show <input> --find <text>` returns each node's `id` and key `path`. Partial-op
-keys use `key` (not `path`) with stringified values. **Partial ops are limited to verified key
-shapes** (`isVerifiedKeyShape` in `lib/serialize/paths.ts`: dot-joined identifiers with `[n]`
-indices, as documented in api-notes). Any other key — Angular binding props such as
-`props.[innerHTML]` / `field.[(value)]`, `(click)`, `data-x` — makes the plan a full save
-(`fullSaveReason: "unverified partial-op key shape: <key>"`), since the server's parsing of them
-was never verified and PD live writes are out of bounds. In-memory, such a segment is a literal
-key.
+keys use `key` (not `path`) with stringified values. **Partial ops are limited to the key shapes
+verified live** (`isVerifiedKeyShape` in `lib/serialize/paths.ts`, evidence in
+`tests/fixtures/wire/partial-keys.json`, pinned by `tests/unit/wire-evidence.test.ts`): the
+server splits a key on every `.`, reads a trailing `[n]` run as indices and any other segment
+as a literal name — `className`, `data-x`, `my key`, `(click)`, `[innerHTML]`, `[(value)]`,
+`[student-id]`, `foo[bar]` all work, exactly as belz's `parsePath` reads them. A prop name that
+itself contains a dot (`[attr.title]`, `[class.x]`) is a 500 on the wire (the batch is atomic),
+so such a `nodes.update` is a full save (`fullSaveReason: "unverified partial-op key shape:
+<key>"`) and a raw `elements.operations` key of that shape is refused as not resolving. An op
+whose parent object is missing is a silent 200 no-op on the wire; planSave's replay check
+already turns that into a full save.
 
 ## Validator (`lib/validator/`)
 
@@ -188,24 +198,26 @@ Config facts (verified on real sems-dev pages): derived variables live in
   `runCommand` in `save-publish`, `history-lock`, `read-paths`, `snapshot` tests.
 - Key suites: `real-pages.test.ts` (parse + lossless full save on every real page),
   `validator-real.test.ts` (calibration), `serialize.test.ts`, `nodes-find.test.ts`.
-- There is no PD live suite: no safe throwaway page exists on sems-dev (a page needs hosts and a
-  route), so write paths are covered by the fake server only.
+- `tests/fixtures/wire/` — sanitized live wire evidence (2026-09-29, scratch page; ids, hosts
+  and names replaced): `partial-keys.json`, `lock.json`, `revert.json`, `publish.json`. Pinned by
+  `tests/unit/wire-evidence.test.ts`; `fake-pd.ts` models the same behaviour (key parsing, lock
+  400/409/`pageLockDetails`, release `true`/`false`, revert on the draft, PUT answers the page).
+- Live write suite (opt-in): `apps/cli/tests/live/pd-page.live-write.test.ts` —
+  `BELZ_LIVE=<env> BELZ_LIVE_WRITE=1 BELZ_LIVE_PD_PAGE=<draftId> bun test apps/cli/tests/live/pd-page.live-write.test.ts`
+  (plus whatever `describeLiveWrite` requires). Use a dedicated scratch page: it saves, locks,
+  publishes WITHOUT a host and restores a version, then puts the original raw config back,
+  re-publishes, and checks `snapshot --compare`.
 
 ## Known gaps
 
-1. What `PUT /pages/revert/<vid>` rewrites (owner vs draft) is not verified live (OTH-R2). So
-   `history restore` refuses unless `--acknowledge-unverified`; then it locks both rows,
-   validates against a fresh in-lock read of the owner, and reads both back
-   (`data.changed: {owner, draft}`). The safe route is `history show` + `save --config` on the draft.
-2. Server parsing of bracketed partial-op keys (`props.[innerHTML]`) is not verified live, so
-   belz never sends them: those edits are full saves (OTH-R1).
-3. `pd diff` across envs reports HTTP calls as changed when their env-local AD ids differ.
-4. App-URL resolution needs a registered deployment domain; the validator is static only.
-5. Whether the server answers 200 or 409 when a session re-acquires its OWN lock is not
-   verified live (NEW-5; no live PD writes). belz proceeds inside a manual lock on a 200, or on
-   a 409 whose body names the signed-in user; any other 409 fails closed (`PD_LOCKED`,
-   `staleLocalRecord`). If the real 409 body names nobody, a save inside a manual lock needs
-   `belz pd lock release <id>` first.
+1. `pd diff` across envs reports HTTP calls as changed when their env-local AD ids differ.
+2. App-URL resolution needs a registered deployment domain; the validator is static only.
+3. The 409 body for a lock held by ANOTHER user was never captured (one account); belz names
+   the holder from the page's `pageLockDetails`, not from that body.
+4. `PUT /pages/revert/<publishedId>?versionId=` (which belz never sends) rewrites the live row
+   AND flips its status to DRAFT (self-referencing). No API was found that sets a row back to
+   PUBLISHED (publish, full PUT and `metaDataUpdate` keep the status); a sibling left `DELETED`
+   is treated as absent by the draft guard.
 
 ## Maintainer rule
 

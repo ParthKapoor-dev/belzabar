@@ -12,11 +12,12 @@ import type {
   RawPageListItem,
   RawHistoryEntry,
   RawPartialUpdateOperation,
+  RawPageLockDetails,
   PdStatus,
 } from "../types/wire";
-import type { SaveResult } from "./client";
+import type { AcquireOutcome, ReleaseOutcome, SaveResult } from "./client";
 
-export type { SaveResult };
+export type { AcquireOutcome, ReleaseOutcome, SaveResult };
 export type { RawPageListItem };
 
 
@@ -62,8 +63,8 @@ export const pdApi = {
     return client.historyGet(versionId);
   },
 
-  historyRestore(versionId: number | string): Promise<void> {
-    return client.historyRestore(versionId);
+  historyRestore(draftId: string, versionId: number): Promise<RawPageResponse | null> {
+    return client.historyRestore(draftId, versionId);
   },
 
   // -------- writes --------------------------------------------------------
@@ -87,19 +88,15 @@ export const pdApi = {
   },
 
   // -------- lock ----------------------------------------------------------
-  acquireLock(pageId: string): Promise<void> {
+  acquireLock(pageId: string): Promise<AcquireOutcome> {
     return client.acquireLock(pageId);
   },
 
-  currentUserIdentity(): Promise<string[] | null> {
-    return client.fetchCurrentUserIdentity();
-  },
-
-  releaseLock(pageId: string): Promise<boolean> {
+  releaseLock(pageId: string): Promise<ReleaseOutcome> {
     return client.releaseLock(pageId);
   },
 
-  releaseLockStatus(pageId: string): Promise<number> {
-    return client.releaseLockStatus(pageId);
+  fetchLockDetails(pageId: string): Promise<RawPageLockDetails | null> {
+    return client.fetchLockDetails(pageId);
   },
 };

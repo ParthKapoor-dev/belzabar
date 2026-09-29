@@ -1,0 +1,87 @@
+{
+  "note": "PD lock lifecycle on a scratch page (one account, 2026-09-29).",
+  "steps": [
+    {
+      "step": "lock-acq1",
+      "method": "PUT",
+      "path": "/rest/api/pagedesigner/pages/lock/0000000000000000000000000000d001?pageLockAction=ACQUIRED",
+      "status": 200,
+      "body": true
+    },
+    {
+      "step": "lock-acq2-reentrant",
+      "method": "PUT",
+      "path": "/rest/api/pagedesigner/pages/lock/0000000000000000000000000000d001?pageLockAction=ACQUIRED",
+      "status": 400,
+      "body": {
+        "url": "https://dev.example.test/rest/api/pagedesigner/pages/lock/0000000000000000000000000000d001",
+        "errorMessage": "### Error updating database. Cause: ...PSQLException: ERROR: duplicate key value violates unique constraint \"uq_lock_key_status_type\" (key, type, status)=(<tenant>_<host>_<pageId>, PD, ACQUIRED) already exists.",
+        "date": "Tue Sep 29 12:35:33 UTC 2026"
+      }
+    },
+    {
+      "step": "lock-rel1",
+      "method": "PUT",
+      "path": "/rest/api/pagedesigner/pages/lock/0000000000000000000000000000d001?pageLockAction=RELEASED",
+      "status": 200,
+      "body": true
+    },
+    {
+      "step": "lock-rel2-notheld",
+      "method": "PUT",
+      "path": "/rest/api/pagedesigner/pages/lock/0000000000000000000000000000d001?pageLockAction=RELEASED",
+      "status": 200,
+      "body": false
+    }
+  ],
+  "getWhileLocked": {
+    "id": "0000000000000000000000000000d001",
+    "versionId": 100018,
+    "relativeRoute": "fixture-page",
+    "ownerId": 2,
+    "name": "fixture page",
+    "status": "DRAFT",
+    "createdBy": 2,
+    "updatedBy": 2,
+    "publishedAt": 1790684996316,
+    "createdAt": 1790684983693,
+    "updatedAt": 1790685001885,
+    "authenticated": true,
+    "referenceId": "0000000000000000000000000000b001",
+    "hostIds": "99",
+    "pageLockDetails": {
+      "id": "00000000000000000000000000001001",
+      "type": "PD",
+      "key": "4_dev.example.test_0000000000000000000000000000d001",
+      "value": null,
+      "status": "ACQUIRED",
+      "validTill": "2026-09-30 12:35:33",
+      "createdBy": 2,
+      "createdAt": "2026-09-29 08:35:33",
+      "updatedBy": null,
+      "updatedAt": null,
+      "userName": "user-0001",
+      "lockedByCurrentUser": true
+    },
+    "aliasName": "",
+    "alias_name": ""
+  },
+  "getAfterRelease": {
+    "id": "0000000000000000000000000000d001",
+    "versionId": 100018,
+    "relativeRoute": "fixture-page",
+    "ownerId": 2,
+    "name": "fixture page",
+    "status": "DRAFT",
+    "createdBy": 2,
+    "updatedBy": 2,
+    "publishedAt": 1790684996316,
+    "createdAt": 1790684983693,
+    "updatedAt": 1790685001885,
+    "authenticated": true,
+    "referenceId": "0000000000000000000000000000b001",
+    "hostIds": "99",
+    "aliasName": "",
+    "alias_name": ""
+  }
+}

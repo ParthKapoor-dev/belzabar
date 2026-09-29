@@ -119,10 +119,12 @@ const command: CommandModule<PublishArgs, PublishData> = {
     });
 
     // Verify from that response — NOT by re-reading GET /pages/<publishedId>.
-    // The single-page GET is served from a stale server-side cache that keeps
-    // returning the PRE-publish version for some time after a publish; trusting
-    // it makes every successful publish look like a silent no-op (and fooled
-    // every prior "PD publish doesn't work" investigation).
+    // Verified live (2026-09-29, tests/fixtures/wire/publish.json): after a
+    // publish WITHOUT a host the published GET keeps returning the last
+    // DEPLOYED version (minutes later, still the old one), while the history
+    // and /pages/version/<vid> already hold the new one; a publish WITH a host
+    // is visible to the GET at once. Trusting the GET made successful
+    // publishes look like silent no-ops.
     const published = (publishResponse ?? {}) as {
       id?: unknown;
       versionId?: unknown;
@@ -170,7 +172,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
     );
     ui.info(
       "Published version is read from the publish response. Note: `belz pd show " +
-        "<publishedId>` may lag — GET /pages/<id> is server-side cached.",
+        "<publishedId>` shows the last DEPLOYED version until a publish with --host.",
     );
   },
 };

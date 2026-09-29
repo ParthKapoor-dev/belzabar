@@ -57,48 +57,69 @@ describe("pd history (PD-15)", () => {
   });
 
   test("restore of another page's version never touches this page", async () => {
-    const r = await run(history, ["restore", PUB, "--version", "200", "--acknowledge-unverified", "--yes"]);
+    const r = await run(history, ["restore", PUB, "--version", "200", "--yes"]);
     expect(r.envelope?.error?.code).toBe("PD_VERSION_PAGE_MISMATCH");
     expect(pd.log().some((l) => l.startsWith("PUT"))).toBe(false);
   });
 
-  test("OTH-R2/R8: restore refuses by default (PD_RESTORE_UNVERIFIED), and no longer takes --allow-published", async () => {
-    const r = await run(history, ["restore", DRAFT, "--version", "100", "--yes"]);
-    expect(r.envelope?.error).toMatchObject({ code: "PD_RESTORE_UNVERIFIED", details: { ownerId: PUB, ownerStatus: "PUBLISHED", draftId: DRAFT } });
-    expect(String(r.envelope?.error?.message)).toContain("belz pd save <draftId> --config");
-    expect(pd.log().some((l) => l.startsWith("PUT"))).toBe(false);
-    const old = await run(history, ["restore", DRAFT, "--version", "100", "--allow-published", "--yes"]);
-    expect(old.envelope?.error?.code).toBe("UNKNOWN_FLAG");
-  });
-
-  test("with --acknowledge-unverified: locks owner + draft, re-reads the owner inside the lock, reports which row changed", async () => {
-    const r = await run(history, ["restore", DRAFT, "--version", "100", "--acknowledge-unverified", "--yes"]);
+  test("OTH-R2 (verified live): restore rewrites the DRAFT via /pages/revert/<draftId>?versionId=, never the published row", async () => {
+    const pubBefore = pd.pages.get(PUB)!.configuration;
+    const r = await run(history, ["restore", PUB, "--version", "100", "--yes"]);
     expect(r.envelope?.ok).toBe(true);
     expect(r.envelope?.data).toMatchObject({
       ownerId: PUB,
       draftId: DRAFT,
       restoredVersionId: 100,
+      oldVersionId: 1,
       newVersionId: 2,
-      changed: { owner: true, draft: false },
+      verify: { status: "match" },
       versionDrift: null,
+      published: false,
     });
-    const puts = pd.log().filter((l) => l.startsWith("PUT"));
-    expect(puts).toEqual([
-      `PUT /pages/lock/${PUB}?pageLockAction=ACQUIRED`,
+    expect(pd.log().filter((l) => l.startsWith("PUT"))).toEqual([
       `PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`,
-      "PUT /pages/revert/100",
+      `PUT /pages/revert/${DRAFT}?versionId=100`,
       `PUT /pages/lock/${DRAFT}?pageLockAction=RELEASED`,
-      `PUT /pages/lock/${PUB}?pageLockAction=RELEASED`,
     ]);
+    // validated on a fresh read of the draft inside the lock
     const log = pd.log();
-    const lastAcquire = log.indexOf(`PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`);
-    expect(log.slice(lastAcquire + 1, log.indexOf("PUT /pages/revert/100"))).toContain(`GET /pages/${PUB}`);
-    expect(innerOf(pd.pages.get(PUB)!).variables!.userDefined![0]!.initialValue).toBe("old");
+    expect(log.slice(log.indexOf(`PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`) + 1, log.indexOf(`PUT /pages/revert/${DRAFT}?versionId=100`))).toContain(`GET /pages/${DRAFT}`);
+    expect(innerOf(pd.pages.get(DRAFT)!).variables!.userDefined![0]!.initialValue).toBe("old");
+    expect(pd.pages.get(PUB)!.configuration).toBe(pubBefore);
+    expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes(`belz pd publish ${DRAFT}`))).toBe(true);
+  });
+
+  test("OTH-R2/R8: --acknowledge-unverified is a deprecated no-op; --allow-published is not a restore flag", async () => {
+    const r = await run(history, ["restore", DRAFT, "--version", "100", "--acknowledge-unverified", "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes("--acknowledge-unverified is deprecated"))).toBe(true);
+    const old = await run(history, ["restore", DRAFT, "--version", "100", "--allow-published", "--yes"]);
+    expect(old.envelope?.error?.code).toBe("UNKNOWN_FLAG");
+  });
+
+  test("restore without --yes (llm) writes nothing; a published page with no draft is refused", async () => {
+    expect((await run(history, ["restore", PUB, "--version", "100"])).envelope?.error?.code).toBe("CONFIRMATION_REQUIRED");
+    pd.versions.set(300, page(OTHER_PUB, cleanInner(), { status: "PUBLISHED", name: "other", versionId: 300 }));
+    expect((await run(history, ["restore", OTHER_PUB, "--version", "300", "--yes"])).envelope?.error?.code).toBe("PD_PUBLISHED_NO_DRAFT");
+    expect(pd.log().some((l) => l.startsWith("PUT"))).toBe(false);
+  });
+
+  test("a soft-DELETED published owner still restores into its draft (the draft points back at it)", async () => {
+    pd.pages.set(PUB, { ...pd.pages.get(PUB)!, status: "DELETED" as never });
+    const r = await run(history, ["restore", DRAFT, "--version", "100", "--yes"]);
+    expect(r.envelope?.data).toMatchObject({ ownerId: PUB, draftId: DRAFT, verify: { status: "match" } });
+    expect(pd.log().filter((l) => l.startsWith("PUT /pages/revert/"))).toEqual([`PUT /pages/revert/${DRAFT}?versionId=100`]);
+  });
+
+  test("a revert whose read-back is not the version is ok:false PD_RESTORE_VERIFY_FAILED", async () => {
+    pd.getOverride = (id) => (id === DRAFT && pd.log().some((l) => l.startsWith("PUT /pages/revert/")) ? page(DRAFT, cleanInner(), { referenceId: PUB, versionId: 2 }) : undefined);
+    const r = await run(history, ["restore", PUB, "--version", "100", "--yes"]);
+    expect(r.envelope).toMatchObject({ ok: false, error: { code: "PD_RESTORE_VERIFY_FAILED" }, data: { verify: { status: "mismatch" } } });
   });
 
   test("restore validates the version (diff-aware): a version that introduces an error is blocked", async () => {
     pd.versions.set(101, page(PUB, cleanInner({ layout: { id: "r", name: "span", unSelectable: true, children: [] } }), { status: "PUBLISHED", referenceId: DRAFT }));
-    const r = await run(history, ["restore", PUB, "--version", "101", "--acknowledge-unverified", "--yes"]);
+    const r = await run(history, ["restore", PUB, "--version", "101", "--yes"]);
     expect(r.envelope?.error?.code).toBe("PD_VALIDATION_FAILED");
     expect(pd.log().some((l) => l.startsWith("PUT"))).toBe(false);
   });
@@ -111,59 +132,59 @@ describe("pd lock (PD-20)", () => {
     return f;
   };
 
-  test("a save inside a manual lock re-acquires the server lock (OTH-R4) but never releases it (PD-20)", async () => {
+  test("NEW-5 (verified live): a save inside a manual lock — the re-acquire is a 400, pageLockDetails says it is mine — proceeds and never releases", async () => {
     expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
     const before = pd.log().length;
     const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
     expect(r.envelope?.ok).toBe(true);
     expect(pd.log().slice(before).filter((l) => l.includes("/lock/"))).toEqual([`PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`]);
+    expect(pd.locks.get(DRAFT)).toBe("me");
     const status = await run(lock, ["status"]);
     expect((status.envelope?.data as any).locks.map((l: any) => l.pageId)).toEqual([DRAFT]);
   });
 
-  test("OTH-R4: a stale local record never skips the server lock — a 409 fails closed with a hint", async () => {
-    expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
-    pd.acquireStatus = 409; // someone else took it since
+  test("NEW-5: a lock I hold WITHOUT a manual record (another run / my PD editor) is reused and left held, with a note", async () => {
+    pd.locks.set(DRAFT, "me");
     const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
-    expect(r.envelope?.error).toMatchObject({ code: "PD_LOCKED", details: { staleLocalRecord: true } });
+    expect(r.envelope?.ok).toBe(true);
+    expect(pd.log().filter((l) => l.includes("RELEASED"))).toEqual([]);
+    expect(pd.locks.get(DRAFT)).toBe("me");
+  });
+
+  test("OTH-R4: a stale local record never skips the server lock — someone else's lock fails closed with a hint", async () => {
+    expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
+    pd.locks.set(DRAFT, "user-0002"); // someone else took it since
+    const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
+    expect(r.envelope?.error).toMatchObject({ code: "PD_LOCKED", details: { staleLocalRecord: true, holder: { userName: "user-0002" } } });
     expect(String(r.envelope?.error?.message)).toContain(`belz pd lock release ${DRAFT}`);
     expect(pd.log().filter((l) => /^PUT \/pages\/\w+$/.test(l))).toEqual([]);
   });
 
-  test("NEW-5: a 409 that names the signed-in user reuses the manual lock (no release); another holder fails closed", async () => {
-    expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
-    pd.acquireStatus = 409;
-    pd.currentUser = { id: 7, email: "Me@Example.com", fullName: "Me" };
-    pd.acquireBody = { message: "Page is locked", lockedBy: { id: 7, email: "me@example.com" }, lockedAt: 7 };
-    const before = pd.log().length;
-    const mine = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
-    expect(mine.envelope?.ok).toBe(true);
-    expect(pd.log().slice(before).filter((l) => l.includes("/lock/"))).toEqual([`PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`]);
-
-    pd.acquireBody = { message: "Page is locked", lockedBy: { id: 8, email: "other@example.com" }, lockedAt: 7 };
-    const theirs = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
-    expect(theirs.envelope?.error).toMatchObject({ code: "PD_LOCKED", details: { staleLocalRecord: true } });
-
-    pd.acquireBody = { message: "locked", lockedAt: 7 }; // names nobody (only a timestamp that equals my id)
-    const nobody = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
-    expect(nobody.envelope?.error?.code).toBe("PD_LOCKED");
-  });
-
-  test("NEW-5: without a manual record a 409 naming me still fails (belz never takes over an unrecorded lock)", async () => {
-    pd.acquireStatus = 409;
-    pd.currentUser = { id: 7 };
-    pd.acquireBody = { lockedBy: 7 };
+  test("someone else's lock without a manual record: PD_LOCKED naming the holder, nothing written", async () => {
+    pd.locks.set(DRAFT, "user-0002");
     const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
-    expect(r.envelope?.error?.code).toBe("PD_LOCKED");
+    expect(r.envelope?.error).toMatchObject({ code: "PD_LOCKED", details: { status: 409, holder: { userName: "user-0002", validTill: "2099-01-01 00:00:00" } } });
+    expect(String(r.envelope?.error?.message)).toContain("user-0002");
   });
 
-  test("a refused release is ok:false PD_LOCK_RELEASE_FAILED (it used to always succeed)", async () => {
-    pd.releaseStatus = 409;
+  test("lock acquire on a lock I already hold is ok (alreadyHeld); status <id> shows the server's view", async () => {
+    pd.locks.set(DRAFT, "me");
+    expect((await run(lock, ["acquire", DRAFT])).envelope?.data).toMatchObject({ alreadyHeld: true });
+    expect((await run(lock, ["status", DRAFT])).envelope?.data).toMatchObject({ server: { pageId: DRAFT, locked: true, byMe: true, userName: "Me" } });
+    pd.locks.set(DRAFT, "user-0002");
+    expect((await run(lock, ["status", DRAFT])).envelope?.data).toMatchObject({ server: { locked: true, byMe: false, userName: "user-0002" } });
+    pd.locks.delete(DRAFT);
+    expect((await run(lock, ["status", DRAFT])).envelope?.data).toMatchObject({ server: { locked: false, byMe: null } });
+  });
+
+  test("a release that releases nothing (200 false) is ok:false PD_LOCK_RELEASE_FAILED; a real release is ok", async () => {
     const r = await run(lock, ["release", DRAFT]);
     expect(r.exitCode).toBe(1);
-    expect(r.envelope).toMatchObject({ ok: false, error: { code: "PD_LOCK_RELEASE_FAILED" }, data: { released: false, recordKept: false } });
-    pd.releaseStatus = 200;
+    expect(r.envelope).toMatchObject({ ok: false, error: { code: "PD_LOCK_RELEASE_FAILED" }, data: { released: false, httpStatus: 200, recordKept: false } });
+    expect(String(r.envelope?.error?.message)).toContain("you do not hold its lock");
+    expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
     expect((await run(lock, ["release", DRAFT])).envelope?.data).toMatchObject({ released: true });
+    expect(pd.locks.has(DRAFT)).toBe(false);
   });
 
   test("OTH-R9: a 5xx release keeps the local record; the lock file is written atomically with mode 0600", async () => {
@@ -172,10 +193,10 @@ describe("pd lock (PD-20)", () => {
     expect(statSync(file).mode & 0o777).toBe(0o600);
     pd.releaseStatus = 503;
     const r = await run(lock, ["release", DRAFT]);
-    expect(r.envelope).toMatchObject({ ok: false, error: { code: "PD_LOCK_RELEASE_FAILED" }, data: { released: false, recordKept: true, httpStatus: 503 } });
+    expect(r.envelope).toMatchObject({ ok: false, error: { code: "PD_LOCK_RELEASE_FAILED" }, data: { released: null, recordKept: true, httpStatus: 503 } });
     expect(((await run(lock, ["status"])).envelope?.data as any).locks.map((l: any) => l.pageId)).toEqual([DRAFT]);
-    pd.releaseStatus = 404;
-    expect((await run(lock, ["release", DRAFT])).envelope?.data).toMatchObject({ recordKept: false });
+    pd.releaseStatus = 200; // the lock is still mine: a real release drops the record
+    expect((await run(lock, ["release", DRAFT])).envelope?.data).toMatchObject({ released: true, recordKept: false });
     expect(((await run(lock, ["status"])).envelope?.data as any).locks).toEqual([]);
   });
 });

@@ -14,6 +14,7 @@ import type {
   RawPartialUpdateOperation,
   RawHistoryEntry,
   RawPageListItem,
+  RawPageLockDetails,
   PdStatus,
   PdEntityType,
 } from "../types/wire";
@@ -209,23 +210,35 @@ export async function historyGet(versionId: number | string): Promise<RawPageRes
   return readJson<RawPageResponse>(response, { method: "GET", path: `/pages/version/${versionId}` });
 }
 
-export async function historyRestore(versionId: number | string): Promise<void> {
-  const response = await apiFetch(
-    `${PD_BASE}/pages/revert/${encodeURIComponent(String(versionId))}`,
-    {
-      method: "PUT",
-      authMode: "Bearer",
-      body: JSON.stringify({}),
-      headers: { "Content-Type": "application/json" },
-    },
-  );
-  await ensureOk(response, { method: "PUT", path: `/pages/revert/${versionId}` });
+/**
+ * Revert the DRAFT `draftId` to version `versionId`: `PUT
+ * /pages/revert/<draftId>?versionId=<vid>` (verified live 2026-09-29,
+ * tests/fixtures/wire/revert.json). The server copies the version's
+ * configuration into that draft row, bumps its versionId and answers with the
+ * draft `{id, versionId, configuration, status, …}`; the PUBLISHED row and the
+ * history are untouched. (Given the PUBLISHED id instead, it rewrites the live
+ * row directly, with no publish and no history entry — belz never does that.
+ * The old `PUT /pages/revert/<vid>` form is a 400.)
+ */
+export async function historyRestore(draftId: string, versionId: number): Promise<RawPageResponse | null> {
+  const path = `/pages/revert/${draftId}?versionId=${versionId}`;
+  const response = await apiFetch(`${PD_BASE}/pages/revert/${encodeURIComponent(draftId)}?versionId=${encodeURIComponent(String(versionId))}`, {
+    method: "PUT",
+    authMode: "Bearer",
+    body: JSON.stringify({}),
+    headers: { "Content-Type": "application/json" },
+  });
+  await ensureOk(response, { method: "PUT", path });
+  const raw = await writeAnswer(response, `PD revert of ${draftId}`);
+  return raw && typeof raw === "object" && typeof (raw as RawPageResponse).id === "string" ? (raw as RawPageResponse) : null;
 }
 
 // -------- writes ---------------------------------------------------------
 
 export interface SaveResult {
   newVersionId: number | null;
+  /** The stored configuration string the PUT answered with (the full page body, verified live), or null. */
+  configuration: string | null;
   raw: unknown;
 }
 
@@ -272,6 +285,7 @@ export async function savePageFull(
   const raw = ((await writeAnswer(response, `PD save of ${pageId}`)) ?? {}) as Record<string, unknown>;
   return {
     newVersionId: typeof raw.versionId === "number" ? raw.versionId : null,
+    configuration: typeof raw.configuration === "string" ? raw.configuration : null,
     raw,
   };
 }
@@ -296,6 +310,7 @@ export async function savePagePartial(
   const raw = ((await writeAnswer(response, `PD save of ${pageId}`)) ?? {}) as Record<string, unknown>;
   return {
     newVersionId: typeof raw.versionId === "number" ? raw.versionId : null,
+    configuration: typeof raw.configuration === "string" ? raw.configuration : null,
     raw,
   };
 }
@@ -324,96 +339,94 @@ export async function publishPage(
 }
 
 // -------- lock -----------------------------------------------------------
+//
+// Wire behaviour (verified live 2026-09-29, tests/fixtures/wire/lock.json):
+//   - ACQUIRED on a free page → 200 `true`.
+//   - ACQUIRED on a page the signed-in user already holds (a manual
+//     `belz pd lock acquire`, another belz run, or the user's own open PD
+//     editor tab) → HTTP 400 with a database duplicate-key message — NOT 409.
+//   - A locked page's GET carries `pageLockDetails` {status, userName,
+//     createdBy, validTill, lockedByCurrentUser}; that, not the error body,
+//     tells whose lock it is.
+//   - RELEASED → 200 `true` when a lock was released, 200 `false` when there
+//     was nothing (of ours) to release.
+// A 409 for a lock held by ANOTHER user could not be produced (one account);
+// its body is summarised as-is and the holder comes from pageLockDetails.
 
-export async function acquireLock(pageId: string): Promise<void> {
-  // Both acquire and release use the SAME query-param shape. The server
-  // explicitly rejects body-as-JSON with "Required request parameter
-  // 'pageLockAction' ... is not present". See expertly figma-to-pd/SKILL.md
-  // §"Edit lock" and the common-errors table.
+export type AcquireOutcome =
+  | { acquired: true }
+  /** The signed-in user already holds the lock; nothing changed server-side. */
+  | { acquired: false; heldByMe: true; lock: RawPageLockDetails };
+
+/** The lock details of a page (null when it is not locked or unreadable). */
+export async function fetchLockDetails(pageId: string): Promise<RawPageLockDetails | null> {
+  const page = await fetchPage(pageId);
+  const d = page?.pageLockDetails;
+  return d && typeof d === "object" ? d : null;
+}
+
+/** The holder fields worth showing: user name, user id, valid-till. */
+export function lockHolder(d: RawPageLockDetails): { userName: string | null; userId: number | null; validTill: string | null } {
+  return {
+    userName: typeof d.userName === "string" ? d.userName : null,
+    userId: typeof d.createdBy === "number" ? d.createdBy : null,
+    validTill: typeof d.validTill === "string" ? d.validTill : null,
+  };
+}
+
+export async function acquireLock(pageId: string): Promise<AcquireOutcome> {
+  // Both acquire and release use the SAME query-param shape; a JSON body is
+  // rejected with "Required request parameter 'pageLockAction' ... is not present".
+  const path = `/pages/lock/${pageId} (acquire)`;
   const response = await apiFetch(
     `${PD_BASE}/pages/lock/${pageId}?pageLockAction=ACQUIRED`,
     { method: "PUT", authMode: "Bearer" },
   );
-  if (response.status === 409) {
-    let text = "";
-    try {
-      text = await response.text();
-    } catch {
-      text = "";
-    }
+  let text = "";
+  if (response.ok) {
+    text = await response.text().catch(() => "");
+    if (text.trim() !== "false") return { acquired: true };
+  } else if (response.status !== 400 && response.status !== 409) {
+    await ensureOk(response, { method: "PUT", path });
+  } else {
+    text = await response.text().catch(() => "");
+  }
+  // Refused (400 / 409 / 200 false): whose lock is it?
+  const lock = await fetchLockDetails(pageId).catch(() => null);
+  const body = summarizeBody(text, response.headers.get("content-type"), 500);
+  if (lock?.lockedByCurrentUser === true) return { acquired: false, heldByMe: true, lock };
+  if (lock || response.status === 409) {
+    const holder = lock ? lockHolder(lock) : null;
     throw new CliError(
-      `Page ${pageId} is locked by another session.`,
-      {
-        code: "PD_LOCKED",
-        details: { status: 409, body: summarizeBody(text, response.headers.get("content-type"), 500), holder: lockHolderFields(text) },
-      },
+      `Page ${pageId} is locked by ${holder?.userName ?? "another user"}` +
+        (holder?.validTill ? ` (until ${holder.validTill}, server time)` : "") + ".",
+      { code: "PD_LOCKED", details: { status: response.status, body, holder } },
     );
   }
-  await ensureOk(response, { method: "PUT", path: `/pages/lock/${pageId} (acquire)` });
+  throw new CliError(`PUT /pages/lock/${pageId} (acquire) failed: HTTP ${response.status}`, {
+    code: "PD_API_ERROR",
+    details: { status: response.status, body },
+  });
 }
 
-/**
- * Who holds the lock, as far as a 409 body says: every scalar field (at any
- * depth) whose key names a user / owner / lock holder / email. Empty when
- * the body is not JSON or names nobody.
- */
-export function lockHolderFields(text: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    return out;
-  }
-  const walk = (v: unknown, path: string, depth: number) => {
-    if (depth > 4 || v === null || v === undefined) return;
-    if (typeof v === "object") {
-      for (const [k, x] of Object.entries(v as Record<string, unknown>)) walk(x, path ? `${path}.${k}` : k, depth + 1);
-      return;
-    }
-    const leaf = path.split(".").pop() ?? "";
-    if (/(At|Time|Date|On)$/.test(leaf)) return; // lockedAt, createdOn: timestamps, not holders
-    if (/user|owner|locked|holder|by$|email/i.test(path) && (typeof v === "string" || typeof v === "number")) out[path] = String(v);
-  };
-  walk(parsed, "", 0);
-  return out;
+export interface ReleaseOutcome {
+  status: number;
+  /** true = released; false = nothing of ours was held (200 false) or refused (4xx); null = unknown (5xx). */
+  released: boolean | null;
 }
 
-/** The signed-in user (`GET /rest/api/users/me` → `{user}`): id, email, user name. Null when unreadable. */
-export async function fetchCurrentUserIdentity(): Promise<string[] | null> {
-  const response = await apiFetch("/rest/api/users/me", { method: "GET", authMode: "Bearer" });
-  if (!response.ok) {
-    await readBodySummary(response);
-    return null;
-  }
-  const body = (await response.json().catch((e: unknown) => {
-    if (e instanceof SyntaxError) return null;
-    throw e;
-  })) as { user?: Record<string, unknown> } | null;
-  const u = body?.user;
-  if (!u) return null;
-  return [u.id, u.email, u.userName, u.username, u.loginId]
-    .filter((x): x is string | number => (typeof x === "string" && x.trim() !== "") || typeof x === "number")
-    .map((x) => String(x).trim().toLowerCase());
-}
-
-/**
- * Release the lock. Returns true when the server accepted the release, false
- * when it refused (e.g. the lock is held by someone else, or already gone).
- * Never throws for an HTTP refusal — callers decide how to report it (PD-20).
- */
-export async function releaseLock(pageId: string): Promise<boolean> {
-  return (await releaseLockStatus(pageId)) < 300;
-}
-
-/** Release the lock and return the HTTP status (2xx = released; 4xx = refused; 5xx = unknown). */
-export async function releaseLockStatus(pageId: string): Promise<number> {
+/** Release the lock. Never throws for an HTTP refusal — callers decide how to report it (PD-20). */
+export async function releaseLock(pageId: string): Promise<ReleaseOutcome> {
   const response = await apiFetch(
     `${PD_BASE}/pages/lock/${pageId}?pageLockAction=RELEASED`,
     { method: "PUT", authMode: "Bearer" },
   );
-  if (!response.ok) await readBodySummary(response); // drain
-  return response.status;
+  if (!response.ok) {
+    await readBodySummary(response); // drain
+    return { status: response.status, released: response.status >= 500 ? null : false };
+  }
+  const text = await response.text().catch(() => "");
+  return { status: response.status, released: text.trim() !== "false" };
 }
 
 // Re-export entity-type helper used by draft-guard + resolver.

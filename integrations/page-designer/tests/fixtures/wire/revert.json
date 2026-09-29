@@ -1,0 +1,156 @@
+{
+  "note": "PUT /pages/revert forms (2026-09-29). Versions: 100017 = original, 100036 = the edited publish.",
+  "legacyVersionPath": {
+    "path": "/rest/api/pagedesigner/pages/revert/100017",
+    "status": 400,
+    "body": {
+      "url": "https://dev.example.test/rest/api/pagedesigner/pages/revert/100017",
+      "errorMessage": "Required request parameter 'versionId' for method parameter type Integer is not present",
+      "date": "Tue Sep 29 12:39:03 UTC 2026"
+    }
+  },
+  "draftForm": {
+    "path": "/rest/api/pagedesigner/pages/revert/0000000000000000000000000000d001?versionId=100017",
+    "status": 200,
+    "answer": {
+      "id": "0000000000000000000000000000d001",
+      "versionId": 100038,
+      "status": "DRAFT",
+      "updatedBy": 2,
+      "updatedAt": 1790685637699,
+      "referenceId": "0000000000000000000000000000b001"
+    },
+    "answerConfig": {
+      "layout": {
+        "id": "__node_id_2_603483_531606_128965",
+        "name": "div",
+        "props": {
+          "layout": {
+            "gap": "16px",
+            "type": "flex",
+            "direction": "column"
+          }
+        },
+        "_elementId": "__element_id_3_666257_775040_347770",
+        "componentId": null,
+        "unSelectable": true,
+        "__LAYOUT_CONFIG_METADATA": {
+          "displayName": "Root Node"
+        }
+      },
+      "styles": "",
+      "__version": 5,
+      "variables": {
+        "generated": [],
+        "userDefined": [
+          {
+            "name": "onInit",
+            "type": "Boolean",
+            "initialValue": false,
+            "translateInitialValue": false,
+            "__LAYOUT_CONFIG_METADATA": {}
+          },
+          {
+            "name": "routeParams",
+            "type": "KeyValue",
+            "initialValue": {},
+            "translateInitialValue": false,
+            "__LAYOUT_CONFIG_METADATA": {}
+          }
+        ]
+      },
+      "httpRequests": {
+        "generated": [],
+        "userDefined": []
+      }
+    },
+    "draftAfter": {
+      "id": "0000000000000000000000000000d001",
+      "versionId": 100038,
+      "relativeRoute": "fixture-page",
+      "ownerId": 2,
+      "name": "fixture page",
+      "status": "DRAFT",
+      "createdBy": 2,
+      "updatedBy": 2,
+      "publishedAt": 1790685519952,
+      "createdAt": 1790684983693,
+      "updatedAt": 1790685637699,
+      "authenticated": true,
+      "referenceId": "0000000000000000000000000000b001",
+      "hostIds": "99",
+      "aliasName": "",
+      "alias_name": ""
+    },
+    "historyAfter": [
+      {
+        "id": 100036,
+        "pageId": "0000000000000000000000000000b001",
+        "status": "PUBLISHED",
+        "updatedBy": 2,
+        "partialUpdate": false,
+        "updatedAt": 1790685519952,
+        "userName": "user-0001"
+      },
+      {
+        "id": 100017,
+        "pageId": "0000000000000000000000000000b001",
+        "status": "PUBLISHED",
+        "updatedBy": 2,
+        "partialUpdate": false,
+        "updatedAt": 1790684996316,
+        "userName": "user-0001"
+      }
+    ]
+  },
+  "publishedForm": {
+    "path": "/rest/api/pagedesigner/pages/revert/0000000000000000000000000000b001?versionId=100036",
+    "status": 200,
+    "answer": {
+      "id": "0000000000000000000000000000b001",
+      "versionId": 100039,
+      "status": "DRAFT",
+      "updatedBy": 2,
+      "updatedAt": 1790685648984,
+      "referenceId": "0000000000000000000000000000b001"
+    },
+    "historyAfter": [
+      {
+        "id": 100036,
+        "pageId": "0000000000000000000000000000b001",
+        "status": "PUBLISHED",
+        "updatedBy": 2,
+        "partialUpdate": false,
+        "updatedAt": 1790685519952,
+        "userName": "user-0001"
+      },
+      {
+        "id": 100017,
+        "pageId": "0000000000000000000000000000b001",
+        "status": "PUBLISHED",
+        "updatedBy": 2,
+        "partialUpdate": false,
+        "updatedAt": 1790684996316,
+        "userName": "user-0001"
+      }
+    ],
+    "draftAfter": {
+      "id": "0000000000000000000000000000d001",
+      "versionId": 100038,
+      "relativeRoute": "fixture-page",
+      "ownerId": 2,
+      "name": "fixture page",
+      "status": "DRAFT",
+      "createdBy": 2,
+      "updatedBy": 2,
+      "publishedAt": 1790685519952,
+      "createdAt": 1790684983693,
+      "updatedAt": 1790685637699,
+      "authenticated": true,
+      "referenceId": "0000000000000000000000000000b001",
+      "hostIds": "99",
+      "aliasName": "",
+      "alias_name": ""
+    }
+  }
+}

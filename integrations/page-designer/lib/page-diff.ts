@@ -13,6 +13,7 @@
 //   - styles:    changed + line counts
 //   - everything else in the config (inputs, events, helpText, __version, …)
 
+import { isDeepStrictEqual } from "node:util";
 import { walkParsed } from "./parser/index";
 import type { HydratedPage, ParsedNode } from "./types/common";
 
@@ -312,4 +313,25 @@ export function editSummaryLines(s: EditSummary): string[] {
   if (s.stylesChanged) lines.push("~ styles changed");
   add("~", "config", s.otherChanged);
   return lines;
+}
+
+const DIFF_PATH_CAP = 20;
+
+/** Config paths where `a` and `b` differ (leaf-most, capped at DIFF_PATH_CAP). */
+export function differingPaths(a: unknown, b: unknown, path = "", out: string[] = []): string[] {
+  if (out.length >= DIFF_PATH_CAP || isDeepStrictEqual(a, b)) return out;
+  const objA = !!a && typeof a === "object";
+  const objB = !!b && typeof b === "object";
+  if (!objA || !objB || Array.isArray(a) !== Array.isArray(b)) {
+    out.push(path || "(root)");
+    return out;
+  }
+  const ra = a as Record<string, unknown>;
+  const rb = b as Record<string, unknown>;
+  for (const k of new Set([...Object.keys(ra), ...Object.keys(rb)])) {
+    const sub = Array.isArray(a) ? `${path}[${k}]` : path ? `${path}.${k}` : k;
+    differingPaths(ra[k], rb[k], sub, out);
+    if (out.length >= DIFF_PATH_CAP) break;
+  }
+  return out;
 }

@@ -27,9 +27,9 @@ All paths are relative to `/rest/api/pagedesigner`. Auth: `Authorization: Bearer
 | Verb | Path | Body | Notes |
 |---|---|---|---|
 | PUT | `/pages/{id}` | Full: `{status, partialUpdate:false, configuration:"<stringified JSON>"}`<br>Partial: `{status, partialUpdate:true, pageElementOperations:[...]}` | `partialUpdate` is **required** — omitting it returns 400. |
-| PUT | `/pages/lock/{id}?pageLockAction=ACQUIRED\|RELEASED` | none | Query parameter only; a body-only `pageLockAction` is rejected with 400. 409 = locked by another session. |
-| POST | `/pages/{id}/publish?landingPage=&hostIds=id1,id2` | none | Parameters go in the QUERY STRING (a JSON body is ignored: the page is published but not deployed). The response body is the published page with the authoritative post-publish versionId. |
-| PUT | `/pages/revert/{versionId}` | Body `{}` (empty) | From JS: `restoreVersion(u, I={})`. |
+| PUT | `/pages/lock/{id}?pageLockAction=ACQUIRED\|RELEASED` | none | Query parameter only; a body-only `pageLockAction` is rejected with 400. See "Lock protocol" for the answers (verified live 2026-09-29). |
+| POST | `/pages/{id}/publish?landingPage=&hostIds=id1,id2` | none | Parameters go in the QUERY STRING (a JSON body is ignored: the page is published but not deployed). The response body is the published page with the authoritative post-publish versionId. Live-verified 2026-09-29 (`tests/fixtures/wire/publish.json`): each publish adds one history entry on the published id; without `hostIds` the published GET keeps serving the last DEPLOYED version (history and `/pages/version/<vid>` have the new one); with `hostIds` the GET shows it at once. |
+| PUT | `/pages/revert/{draftId}?versionId={vid}` | Body `{}` | **Live-verified 2026-09-29** (`tests/fixtures/wire/revert.json`). Copies the version's config into the DRAFT row (new draft versionId) and answers `{id, versionId, configuration, status, referenceId}`; the PUBLISHED row and history are untouched. The PD UI sends the same (`status === PUBLISHED ? referenceId : id`). `/pages/revert/{vid}` is a 400 ("Required request parameter 'versionId'"). Given the PUBLISHED id it rewrites the live row with no publish and no history entry and flips it to `status: DRAFT` (self-referencing) — never send that. |
 | PUT | `/pages/phrases/{id}` | Translation partial-update. Same shape as partial. | **Out of scope for this phase.** |
 
 ### Partial-update operation shape
@@ -44,6 +44,15 @@ All paths are relative to `/rest/api/pagedesigner`. Auth: `Authorization: Bearer
 ```
 
 - **Field is `key`**, not `path`.
+- **Key parsing (live-verified 2026-09-29, `tests/fixtures/wire/partial-keys.json`)**: the server
+  splits the key on EVERY `.`; a trailing `[n]` run is array indices; any other segment is a
+  literal property name — `[innerHTML]`, `[(value)]`, `[student-id]`, `(click)`, `data-x`,
+  `my key`, `2col`, `foo[bar]` all store under exactly that name. A prop name containing a dot
+  (`[attr.title]`) is split and answers **HTTP 500**; a batch is atomic (nothing stored). An op
+  whose parent object does not exist answers **200 and stores nothing** (silent no-op; the
+  versionId still bumps). `UPDATE` on a missing key creates it. `NUMBER`/`BOOLEAN` values are
+  stored typed. The PUT answer is the full stored page (`configuration` included), and an
+  immediate GET of the draft returns the same config and versionId.
 - `value` is **always a string**: numbers stringified, booleans stringified, arrays/objects JSON.stringified.
 - `operation`: `"CREATE"` (new field) or `"UPDATE"` (existing).
 - `dataType`: `"STRING" | "NUMBER" | "BOOLEAN" | "ARRAY" | "OBJECT"`.
@@ -70,9 +79,17 @@ Authorization: Bearer ...
 
 - **Both** verbs use the query string. Do not put `pageLockAction` in the body — server returns
   400 "Required request parameter 'pageLockAction' is not present".
-- The PD editor auto-acquires when open — if acquire returns 409, either ask the user to close
-  the editor or (belz:) read the owner info from the response and abort gracefully.
-- Lock owner info is returned in the 409 body — surface it to the user.
+- Answers (live-verified 2026-09-29, `tests/fixtures/wire/lock.json`): ACQUIRED on a free page →
+  200 `true`; ACQUIRED on a page the signed-in user already holds → **HTTP 400** (database
+  duplicate key on `(key, type, status)`), not 409; RELEASED → 200 `true` when released, 200
+  `false` when nothing of yours was held. A lock lasts ~24 h.
+- A locked page's GET carries `pageLockDetails` `{status: "ACQUIRED", userName, createdBy,
+  validTill, lockedByCurrentUser}` — belz uses it to tell "mine" (reuse, never release) from
+  "someone else's" (`PD_LOCKED`, holder named). The 409 body for another user's lock was not
+  captured (one account).
+- Writes do not require the lock server-side (a partial PUT without it succeeds); belz takes it
+  anyway so concurrent editors are detected.
+- The PD editor auto-acquires when open.
 
 ### Save → refresh behaviour
 
@@ -191,10 +208,11 @@ See `../AGENTS.md` (Directory Map, Safe-Edit Invariants). Adding a rule: put it 
   in `userDefined` and duplicate names count). `operation` is `UPDATE` when the key exists, else
   `CREATE`. The plan is only partial when the ops, replayed on the raw config, reproduce the
   edited config exactly.
-- **Verified key shapes only** — a partial op is only sent when every dot segment of its key is a
-  plain identifier with optional `[n]` indices (the shapes listed above). Binding-prop keys
-  (`props.[innerHTML]`, `field.[(value)]`, `(click)`) are unverified on the wire, so an edit that
-  needs one is saved in full (OTH-R1).
+- **Verified key shapes only** — a partial op is only sent when every dot segment of its key is
+  a shape verified live (see "Key parsing" above): plain names with `[n]` indices, and literal
+  binding props (`[innerHTML]`, `[(value)]`, `(click)`, `data-x`, …). A prop name that itself
+  contains a dot (`[attr.title]`) cannot be addressed (500), so such an edit is saved in full
+  (OTH-R1).
 - **Full** — `variables.add/remove`, `derived.*`, `httpRequests.add/remove`, legacy-format pages,
   or ops that would not cover the edit (e.g. a parent object that does not exist yet). The body is
   the page's own raw config with only the edit applied (lossless otherwise).
@@ -209,11 +227,11 @@ Backed by three server endpoints. belz exposes them as:
 - `belz pd history diff <pageId> --from A --to B` → fetches both, parses both, diffs structure
   (variables added/removed, nodes added/removed/kind-changed, HTTP calls added/removed, root-level
   counts). Not a textual diff of the JSON.
-- `belz pd history restore <pageId> --version <vid> --acknowledge-unverified` → checks ownership,
-  locks the owning page and its linked draft, re-fetches the owner and validates the version
-  against it (diff-aware), `PUT /pages/revert/<vid>`, then reads back BOTH rows and reports which
-  changed (`data.changed`). Which row the revert rewrites is **unverified** (no PD live writes), so
-  without `--acknowledge-unverified` it is refused with `PD_RESTORE_UNVERIFIED`.
+- `belz pd history restore <pageId> --version <vid>` → checks ownership, resolves the owner's
+  linked DRAFT, validates the version against it (diff-aware), locks the draft, re-validates on a
+  fresh read, `PUT /pages/revert/<draftId>?versionId=<vid>`, reads the draft back
+  (`data.verify`; `PD_RESTORE_VERIFY_FAILED` on a mismatch). The published page is untouched —
+  `belz pd publish <draftId>` makes the restore live.
 
 **History is server-side.** belz does **not** maintain local snapshots.
 

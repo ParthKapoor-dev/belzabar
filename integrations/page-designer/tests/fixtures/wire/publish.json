@@ -1,0 +1,76 @@
+{
+  "note": "Publish without --host, then with a host (2026-09-29). The published GET kept the last DEPLOYED version until a host deploy.",
+  "publishedGetAfterPublishNoHost": {
+    "id": "0000000000000000000000000000b001",
+    "versionId": 100017,
+    "relativeRoute": "fixture-page",
+    "ownerId": 2,
+    "name": "fixture page",
+    "status": "PUBLISHED",
+    "createdBy": 2,
+    "updatedBy": 2,
+    "publishedAt": 1790684996316,
+    "createdAt": 1790684996316,
+    "updatedAt": 1790684996316,
+    "authenticated": true,
+    "referenceId": "0000000000000000000000000000d001",
+    "hostIds": "99",
+    "aliasName": "",
+    "alias_name": ""
+  },
+  "historyAfterPublishNoHost": [
+    {
+      "id": 100036,
+      "pageId": "0000000000000000000000000000b001",
+      "status": "PUBLISHED",
+      "updatedBy": 2,
+      "partialUpdate": false,
+      "updatedAt": 1790685519952,
+      "userName": "user-0001"
+    },
+    {
+      "id": 100017,
+      "pageId": "0000000000000000000000000000b001",
+      "status": "PUBLISHED",
+      "updatedBy": 2,
+      "partialUpdate": false,
+      "updatedAt": 1790684996316,
+      "userName": "user-0001"
+    }
+  ],
+  "versionBodyOfNewPublish": {
+    "id": "0000000000000000000000000000b001",
+    "versionId": 100036,
+    "relativeRoute": "fixture-page",
+    "ownerId": 2,
+    "name": "fixture page",
+    "status": "PUBLISHED",
+    "createdBy": 2,
+    "updatedBy": 2,
+    "createdAt": 1790684996316,
+    "updatedAt": 1790685519952,
+    "authenticated": true,
+    "referenceId": "0000000000000000000000000000d001",
+    "hostIds": "99",
+    "aliasName": "",
+    "alias_name": ""
+  },
+  "publishedGetAfterPublishWithHost": {
+    "id": "0000000000000000000000000000b001",
+    "versionId": 100040,
+    "relativeRoute": "fixture-page",
+    "ownerId": 2,
+    "name": "fixture page",
+    "status": "DRAFT",
+    "createdBy": 2,
+    "updatedBy": 2,
+    "publishedAt": 1790685692494,
+    "createdAt": 1790684996316,
+    "updatedAt": 1790685692494,
+    "authenticated": true,
+    "referenceId": "0000000000000000000000000000d001",
+    "hostIds": "99",
+    "aliasName": "",
+    "alias_name": ""
+  }
+}

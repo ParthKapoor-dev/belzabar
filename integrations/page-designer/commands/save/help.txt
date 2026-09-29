@@ -17,9 +17,11 @@ Flow:
      re-fetch the page INSIDE the lock, re-apply + re-validate on the latest
      version (data.versionDrift reports a concurrent change), PUT, release.
   5. Read back the page and compare it with the planned config (data.verify:
-     match | mismatch | stale-read). A mismatch is ok:false
-     PD_SAVE_VERIFY_FAILED (error.details.differingPaths); a lagging read
-     (stale-read) only warns.
+     match | mismatch | stale-read; data.verify.source get | put-response).
+     A mismatch is ok:false PD_SAVE_VERIFY_FAILED
+     (error.details.differingPaths). If the GET ever returns an older version
+     the save's own answer (the stored page) decides; only without one is it
+     stale-read (a warning).
 
 Flags:
   --overlay <file>      Targeted JSON overlay (see OVERLAY SHAPE). Preferred.
@@ -94,9 +96,10 @@ STRATEGY:
   array indices.
   Full save: variables.add/remove, derived.*, httpRequests.add/remove,
   nodes.insert/remove, a nodes.update that deletes a key (null), legacy-format
-  pages, partial ops that would not cover the edit, or any op key outside the
-  verified shape (identifiers + [n] only): binding props such as
-  props.[innerHTML] / field.[(value)] are always saved in full.
+  pages, partial ops that would not cover the edit, or an op key whose prop
+  name contains a dot (e.g. [attr.title]: the server splits keys on every
+  dot). Binding props such as props.[innerHTML], field.[(value)] and
+  (click) are partial ops (verified live).
   A full save sends the page's own config with only the edit applied
   (nothing else is rewritten).
 

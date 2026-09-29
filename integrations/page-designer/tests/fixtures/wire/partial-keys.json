@@ -1,0 +1,450 @@
+{
+  "note": "Live partial-update key probes on a scratch PD draft (2026-09-29). Each case: the op sent, the HTTP answer, and what the next GET held at that node's map.",
+  "cases": [
+    {
+      "what": "plain prop name",
+      "op": {
+        "key": "layout.children[0].props.className",
+        "value": "b",
+        "operation": "UPDATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100020,
+      "errorMessage": null,
+      "readBackVersionId": 100020,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "className",
+        "container": {
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%onInit%}",
+          "[student-id]": "x"
+        }
+      }
+    },
+    {
+      "what": "[binding] prop",
+      "op": {
+        "key": "layout.children[0].props.[innerHTML]",
+        "value": "{%routeParams%}",
+        "operation": "UPDATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100021,
+      "errorMessage": null,
+      "readBackVersionId": 100021,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "[innerHTML]",
+        "container": {
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[student-id]": "x"
+        }
+      }
+    },
+    {
+      "what": "[(two-way)] prop",
+      "op": {
+        "key": "layout.children[1].field.[(value)]",
+        "value": "{%onInit%}",
+        "operation": "UPDATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100022,
+      "errorMessage": null,
+      "readBackVersionId": 100022,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "field",
+        "prop": "[(value)]",
+        "container": {
+          "name": "f1",
+          "type": "text",
+          "label": "L",
+          "[(value)]": "{%onInit%}",
+          "[disabled]": "false"
+        }
+      }
+    },
+    {
+      "what": "[name-with-dash] prop",
+      "op": {
+        "key": "layout.children[0].props.[student-id]",
+        "value": "y",
+        "operation": "UPDATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100023,
+      "errorMessage": null,
+      "readBackVersionId": 100023,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "[student-id]",
+        "container": {
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[student-id]": "y"
+        }
+      }
+    },
+    {
+      "what": "(event) prop",
+      "op": {
+        "key": "layout.children[2].props.(click)",
+        "value": "z",
+        "operation": "UPDATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100024,
+      "errorMessage": null,
+      "readBackVersionId": 100024,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "(click)",
+        "container": {
+          "(click)": "z",
+          "innerHTML": "Go"
+        }
+      }
+    },
+    {
+      "what": "events map key",
+      "op": {
+        "key": "layout.children[2].events.click",
+        "value": "function(){return 1}",
+        "operation": "UPDATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100025,
+      "errorMessage": null,
+      "readBackVersionId": 100025,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "events",
+        "prop": "click",
+        "container": {
+          "click": "function(){return 1}"
+        }
+      }
+    },
+    {
+      "what": "CREATE of a new [binding] prop",
+      "op": {
+        "key": "layout.children[0].props.[isVisible]",
+        "value": "true",
+        "operation": "CREATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100026,
+      "errorMessage": null,
+      "readBackVersionId": 100026,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "[isVisible]",
+        "container": {
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[isVisible]": "true",
+          "[student-id]": "y"
+        }
+      }
+    },
+    {
+      "what": "[attr.x]: a dot inside the prop name",
+      "op": {
+        "key": "layout.children[0].props.[attr.title]",
+        "value": "T",
+        "operation": "CREATE",
+        "dataType": "STRING"
+      },
+      "status": 500,
+      "responseVersionId": null,
+      "errorMessage": "An error has occurred at server side, please try again later.",
+      "readBackVersionId": 100026,
+      "readBackEqualsPutAnswer": null,
+      "storedUnder": {
+        "map": "props",
+        "prop": "[attr.title]",
+        "container": {
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[isVisible]": "true",
+          "[student-id]": "y"
+        }
+      }
+    },
+    {
+      "what": "plain name with a dash",
+      "op": {
+        "key": "layout.children[0].props.data-x",
+        "value": "D",
+        "operation": "CREATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100027,
+      "errorMessage": null,
+      "readBackVersionId": 100027,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "data-x",
+        "container": {
+          "data-x": "D",
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[isVisible]": "true",
+          "[student-id]": "y"
+        }
+      }
+    },
+    {
+      "what": "UPDATE of a key that does not exist yet",
+      "op": {
+        "key": "layout.children[0].props.brandNew",
+        "value": "N",
+        "operation": "UPDATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100028,
+      "errorMessage": null,
+      "readBackVersionId": 100028,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "brandNew",
+        "container": {
+          "data-x": "D",
+          "brandNew": "N",
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[isVisible]": "true",
+          "[student-id]": "y"
+        }
+      }
+    },
+    {
+      "what": "CREATE under a parent that does not exist",
+      "op": {
+        "key": "layout.children[0].attrs.title",
+        "value": "T",
+        "operation": "CREATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100029,
+      "errorMessage": null,
+      "readBackVersionId": 100029,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "attrs",
+        "prop": "title",
+        "container": null
+      }
+    },
+    {
+      "what": "CREATE at index == array length",
+      "op": {
+        "key": "layout.children[0].children[0]",
+        "value": "{\"id\":\"belz_tst_pdlive_new\",\"name\":\"span\",\"props\":{\"innerHTML\":\"hi\"}}",
+        "operation": "CREATE",
+        "dataType": "OBJECT"
+      },
+      "status": 200,
+      "responseVersionId": 100030,
+      "errorMessage": null,
+      "readBackVersionId": 100030,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "children[0]",
+        "prop": null,
+        "container": [
+          {
+            "id": "belz_tst_pdlive_new",
+            "name": "span",
+            "props": {
+              "innerHTML": "hi"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "what": "BOOLEAN value",
+      "op": {
+        "key": "layout.children[1].field.[disabled]",
+        "value": "true",
+        "operation": "UPDATE",
+        "dataType": "BOOLEAN"
+      },
+      "status": 200,
+      "responseVersionId": 100031,
+      "errorMessage": null,
+      "readBackVersionId": 100031,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "field",
+        "prop": "[disabled]",
+        "container": {
+          "name": "f1",
+          "type": "text",
+          "label": "L",
+          "[(value)]": "{%onInit%}",
+          "[disabled]": true
+        }
+      }
+    },
+    {
+      "what": "NUMBER value",
+      "op": {
+        "key": "layout.children[1].field.maxLength",
+        "value": "12",
+        "operation": "CREATE",
+        "dataType": "NUMBER"
+      },
+      "status": 200,
+      "responseVersionId": 100032,
+      "errorMessage": null,
+      "readBackVersionId": 100032,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "field",
+        "prop": "maxLength",
+        "container": {
+          "name": "f1",
+          "type": "text",
+          "label": "L",
+          "[(value)]": "{%onInit%}",
+          "maxLength": 12,
+          "[disabled]": true
+        }
+      }
+    },
+    {
+      "what": "name with a space",
+      "op": {
+        "key": "layout.children[0].props.my key",
+        "value": "S",
+        "operation": "CREATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100033,
+      "errorMessage": null,
+      "readBackVersionId": 100033,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "my key",
+        "container": {
+          "data-x": "D",
+          "my key": "S",
+          "brandNew": "N",
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[isVisible]": "true",
+          "[student-id]": "y"
+        }
+      }
+    },
+    {
+      "what": "name[non-digit]",
+      "op": {
+        "key": "layout.children[0].props.foo[bar]",
+        "value": "W",
+        "operation": "CREATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100034,
+      "errorMessage": null,
+      "readBackVersionId": 100034,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "foo[bar]",
+        "container": {
+          "data-x": "D",
+          "my key": "S",
+          "brandNew": "N",
+          "foo[bar]": "W",
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[isVisible]": "true",
+          "[student-id]": "y"
+        }
+      }
+    },
+    {
+      "what": "digit-leading name",
+      "op": {
+        "key": "layout.children[0].props.2col",
+        "value": "W",
+        "operation": "CREATE",
+        "dataType": "STRING"
+      },
+      "status": 200,
+      "responseVersionId": 100035,
+      "errorMessage": null,
+      "readBackVersionId": 100035,
+      "readBackEqualsPutAnswer": true,
+      "storedUnder": {
+        "map": "props",
+        "prop": "2col",
+        "container": {
+          "2col": "W",
+          "data-x": "D",
+          "my key": "S",
+          "brandNew": "N",
+          "foo[bar]": "W",
+          "className": "b",
+          "innerHTML": "plain",
+          "[innerHTML]": "{%routeParams%}",
+          "[isVisible]": "true",
+          "[student-id]": "y"
+        }
+      }
+    }
+  ],
+  "atomicBatch": {
+    "ops": [
+      {
+        "key": "layout.children[0].props.className",
+        "value": "atomic",
+        "operation": "UPDATE",
+        "dataType": "STRING"
+      },
+      {
+        "key": "layout.children[0].props.[class.x]",
+        "value": "1",
+        "operation": "CREATE",
+        "dataType": "STRING"
+      }
+    ],
+    "status": 500,
+    "storedNothing": true
+  }
+}

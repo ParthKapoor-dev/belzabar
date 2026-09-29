@@ -14,8 +14,9 @@
 //   5. --yes required
 //   6. withLock(draft): FRESH fetch → re-plan + re-validate on it (PD-4;
 //      versionId drift is reported) → PUT partial/full
-//   7. verify: re-fetch and compare the stored config with the planned one;
-//      a mismatch is ok:false PD_SAVE_VERIFY_FAILED (a lagging read is only a warning)
+//   7. verify: re-fetch and compare the stored config with the planned one
+//      (the PUT's answer decides if the GET lags); a mismatch is ok:false
+//      PD_SAVE_VERIFY_FAILED
 
 import { isDeepStrictEqual } from "node:util";
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
@@ -27,10 +28,10 @@ import {
   writeOverrides,
   type WriteOverrides,
 } from "../../lib/args/common";
-import { pdApi } from "../../lib/api/index";
+import { pdApi, type SaveResult } from "../../lib/api/index";
 import { fetchFresh, gateValidation, logIntent, readJsonFile, requireConfirmation, resolveWriteTarget, versionDrift } from "../../lib/edit";
 import { withLock } from "../../lib/lock";
-import { editSummary, editSummaryLines, type EditSummary } from "../../lib/page-diff";
+import { differingPaths, editSummary, editSummaryLines, type EditSummary } from "../../lib/page-diff";
 import { parsePage } from "../../lib/parser/index";
 import { assertOverlayShape } from "../../lib/serialize/overlay-shape";
 import { planSave, withConfiguration, type SavePlan } from "../../lib/serialize/index";
@@ -71,6 +72,8 @@ interface SaveData {
   verify: {
     status: "match" | "mismatch" | "stale-read" | "skipped";
     versionId: number | null;
+    /** What was compared: the GET read-back, or the PUT's own answer when the GET returned an older version. */
+    source?: "get" | "put-response";
     /** On mismatch: the config paths where the stored page differs from the plan (capped). */
     differingPaths?: string[];
   } | null;
@@ -114,43 +117,40 @@ function prepare(before: HydratedPage, edit: Edit): Prepared {
   };
 }
 
+/**
+ * Read-back (OTH-R6, verified live 2026-09-29): the draft GET right after a
+ * PUT returns the new versionId and exactly the stored config, and the PUT's
+ * own answer is the full stored page. So the GET decides; if it ever returns
+ * an older versionId, the PUT answer's configuration decides instead
+ * (`source: "put-response"`), and only without one is it `stale-read`.
+ */
 async function verifySaved(
   targetId: string,
   expected: HydratedPage,
-  newVersionId: number | null,
+  saved: SaveResult,
 ): Promise<NonNullable<SaveData["verify"]>> {
+  const compare = (config: unknown, versionId: number | null, source: "get" | "put-response"): NonNullable<SaveData["verify"]> =>
+    isDeepStrictEqual(config, expected.rawConfiguration)
+      ? { status: "match", versionId, source }
+      : { status: "mismatch", versionId, source, differingPaths: differingPaths(expected.rawConfiguration, config) };
   const raw = await pdApi.fetchPage(targetId);
-  if (!raw) return { status: "skipped", versionId: null };
-  const stored = parsePage(raw);
-  if (newVersionId !== null && stored.versionId !== newVersionId) {
-    return { status: "stale-read", versionId: stored.versionId };
+  const stored = raw ? parsePage(raw) : null;
+  if (stored && (saved.newVersionId === null || stored.versionId === saved.newVersionId)) {
+    return compare(stored.rawConfiguration, stored.versionId, "get");
   }
-  if (isDeepStrictEqual(stored.rawConfiguration, expected.rawConfiguration)) {
-    return { status: "match", versionId: stored.versionId };
+  if (saved.configuration !== null) {
+    let answered: unknown;
+    try {
+      answered = JSON.parse(saved.configuration);
+    } catch {
+      answered = saved.configuration;
+    }
+    return compare(answered, saved.newVersionId, "put-response");
   }
-  return { status: "mismatch", versionId: stored.versionId, differingPaths: differingPaths(expected.rawConfiguration, stored.rawConfiguration) };
+  return stored ? { status: "stale-read", versionId: stored.versionId, source: "get" } : { status: "skipped", versionId: null };
 }
 
-const DIFF_PATH_CAP = 20;
-
-/** Config paths where `a` and `b` differ (leaf-most, capped at DIFF_PATH_CAP). */
-export function differingPaths(a: unknown, b: unknown, path = "", out: string[] = []): string[] {
-  if (out.length >= DIFF_PATH_CAP || isDeepStrictEqual(a, b)) return out;
-  const objA = !!a && typeof a === "object";
-  const objB = !!b && typeof b === "object";
-  if (!objA || !objB || Array.isArray(a) !== Array.isArray(b)) {
-    out.push(path || "(root)");
-    return out;
-  }
-  const ra = a as Record<string, unknown>;
-  const rb = b as Record<string, unknown>;
-  for (const k of new Set([...Object.keys(ra), ...Object.keys(rb)])) {
-    const sub = Array.isArray(a) ? `${path}[${k}]` : path ? `${path}.${k}` : k;
-    differingPaths(ra[k], rb[k], sub, out);
-    if (out.length >= DIFF_PATH_CAP) break;
-  }
-  return out;
-}
+export { differingPaths };
 
 const command: CommandModule<SaveArgs, SaveData> = {
   schema: "pd.save",
@@ -241,9 +241,11 @@ const command: CommandModule<SaveArgs, SaveData> = {
           ? await pdApi.savePagePartial(targetId, fresh.status, p.plan.operations)
           : await pdApi.savePageFull(targetId, fresh.status, p.plan.configurationString);
 
-      const verify = await verifySaved(targetId, p.after, saved.newVersionId);
+      const verify = await verifySaved(targetId, p.after, saved);
       if (verify.status === "stale-read") {
         warn(`ℹ Read-back returned versionId ${verify.versionId ?? "?"} (saved ${saved.newVersionId}); the server read may lag.`);
+      } else if (verify.source === "put-response") {
+        warn(`ℹ The read-back GET returned an older version; verified against the save's own answer (versionId ${saved.newVersionId}).`);
       }
 
       const data = build(fresh, p, gate, {
