@@ -66,6 +66,19 @@ describe("child-info --shape (7.5)", () => {
     ]);
   });
 
+  test("command: plain body has the server's uuid padding trimmed (smoke envelope #8)", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch({
+      "GET /rest/api/automation-systems/Example%20services/automation-apis/array%20output": fixture(`${CI}/Example_services__array_output.json`),
+    }).install();
+    const raw = JSON.stringify(await Bun.file(`${CI}/Example_services__array_output.json`).json());
+    expect(raw).toMatch(/[0-9a-f]{32} +"/); // the wire pads
+    const r = await runCommand(childInfoCommand, ["Example services", "array output"], { env: "t-dev" });
+    const body = JSON.stringify((r.envelope?.data as any).body);
+    expect(body).not.toMatch(/[0-9a-f]{32} +"/);
+    expect(body).toContain("48e5d8bec3f5d7b5d689914d3b36aed8");
+  });
+
   test("--all without --shape is refused", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     const r = await runCommand(childInfoCommand, ["db_service", "select", "--all"], { env: "t-dev" });

@@ -26,9 +26,8 @@ interface FetchMethodData {
     sourceVersion: "v1" | "v2";
   };
   hydratedServiceIds: string[];
-  raw?: {
-    method: HydratedMethod;
-  };
+  /** --raw: the wire body exactly as the API returned it (once; not the parsed method). */
+  raw?: HydratedMethod["raw"];
 }
 
 export const args = defineArgs({
@@ -83,7 +82,7 @@ const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
     };
 
     if (raw) {
-      data.raw = { method };
+      data.raw = method.raw;
     }
 
     return ok(data);

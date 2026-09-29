@@ -2,6 +2,7 @@ import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { apiShape, fetchAccountLines, type ApiShape } from "../../lib/api-shape";
+import { trimUuidPadding } from "../../lib/ids";
 
 interface ChildInfoArgs {
   category: string;
@@ -50,7 +51,7 @@ const command: CommandModule<ChildInfoArgs, ChildInfoPayload> = {
         { code: "METHOD_NOT_FOUND", details: { category, methodName } },
       );
     }
-    if (!shape) return ok<ChildInfoPayload>({ category, methodName, body });
+    if (!shape) return ok<ChildInfoPayload>({ category, methodName, body: trimUuidPadding(body) });
 
     // 7.5: only what wiring a step needs; accounts as id + nickname (never values).
     const view = apiShape(body, category, methodName, { all });
@@ -79,6 +80,7 @@ const command: CommandModule<ChildInfoArgs, ChildInfoPayload> = {
     }
     ui.section(`${data.category}.${data.methodName}`);
     ui.object(data.body);
+    ui.info("Tip: --shape prints only the inputs/outputs/accounts a step needs.");
   },
 };
 

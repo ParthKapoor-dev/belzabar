@@ -88,7 +88,7 @@ const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"'
 /** Rich-text (AD UI) → plain text: `<br>` / block ends become " / ", tags dropped, common entities decoded. */
 export function htmlToText(html: string): string {
   return html
-    .replace(/<br\b[^>]*>|<\/(p|div|li)>/gi, " / ")
+    .replace(/<br\b[^>]*>|<\/?(p|div|li|ul|ol)\b[^>]*>/gi, " / ")
     .replace(/<[^>]+>/g, "")
     .replace(/&(#39|[a-z]+);/gi, (m, name: string) => ENTITIES[name.toLowerCase()] ?? m)
     .replace(/\s*\/\s*(\/\s*)+/g, " / ")

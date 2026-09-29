@@ -5,7 +5,7 @@ import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { resolveMethodRef } from "../../lib/ids";
-import { pruneEmpty } from "../../lib/compact";
+import { abbreviate, htmlToText, pruneEmpty } from "../../lib/compact";
 import { parseV1Method, parseV2Method } from "../../lib/parser/index";
 import {
   compactMethod,
@@ -374,6 +374,15 @@ export const args = defineArgs({
   exclusive: [["compact", "story"], ["story", "raw"], ["compact", "raw"]],
 });
 
+/**
+ * Human "Service Chain" rows: the AD UI's rich-text step descriptions as plain
+ * text cut to 100 chars (smoke UX: raw `<ul><li>` / `&lt;` in table cells).
+ * The `--llm` data keeps the description as stored.
+ */
+export function stepTableRows(steps: Array<{ orderIndex: number; kind: ParsedStep["kind"]; description?: string; identity?: string }>): Array<Array<string | number>> {
+  return steps.map(s => [s.orderIndex, `[${badgeForKind(s.kind)}]`, abbreviate(htmlToText(s.description ?? ""), 100), s.identity ?? ""]);
+}
+
 const command: CommandModule<ShowMethodArgs, ShowData> = {
   schema: "ad.show",
   parseArgs(argv) {
@@ -574,7 +583,7 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
     } else {
       ui.table(
         ["#", "Kind", "Description", "Identity"],
-        data.steps.map(s => [s.orderIndex, `[${badgeForKind(s.kind)}]`, s.description ?? "", s.identity ?? ""]),
+        stepTableRows(data.steps),
       );
     }
 

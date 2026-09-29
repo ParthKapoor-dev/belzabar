@@ -7,7 +7,7 @@ Arguments:
                       (e.g. https://nsm-dev.nc.verifi.dev/automation-designer/Category/426f97...).
 
 Flags:
-  --raw               Include raw method payload in output.
+  --raw               Include the raw API response (wire body, once) as data.raw.
   --v2                Fetch through the V2 API.
   --help, -h          Show this help message.
 

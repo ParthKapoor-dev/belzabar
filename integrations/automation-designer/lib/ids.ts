@@ -47,6 +47,24 @@ export function normalizeUuid(value: unknown): string | null {
   return t.length > 0 ? t : null;
 }
 
+/**
+ * Deep copy with the server's space padding trimmed from every uuid-shaped
+ * string (`"4a1b…    "` → `"4a1b…"`; smoke --llm envelope #8). Other strings
+ * are left exactly as they are.
+ */
+export function trimUuidPadding<T>(value: T): T {
+  if (typeof value === "string") {
+    return (/^[0-9a-f]{32}\s+$/i.test(value) ? value.trim() : value) as T;
+  }
+  if (Array.isArray(value)) return value.map((v) => trimUuidPadding(v)) as T;
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = trimUuidPadding(v);
+    return out as T;
+  }
+  return value;
+}
+
 function looksLikeUrl(s: string): boolean {
   return /^https?:\/\//i.test(s) || /\/automation-designer\//i.test(s);
 }

@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readdirSync } from "fs";
 import { runCommand, withTempEnvConfig } from "@belzabar/core/testing";
-import showCommand, { parseMethodFile } from "../../commands/show/index";
+import showCommand, { parseMethodFile, stepTableRows } from "../../commands/show/index";
 import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
@@ -219,5 +219,17 @@ describe("ad show <file> (local body before save)", () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     const r = await runCommand(showCommand, [`${FIX}/categories/manifest.json`], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("INVALID_FILE");
+  });
+});
+
+describe("show human step table (smoke UX: HTML in cells)", () => {
+  test("rich-text descriptions become plain text, cut to 100 chars", () => {
+    const rows = stepTableRows([
+      { orderIndex: 2, kind: "EXISTING_SERVICE", description: 'If it returns false<ul><li>Return false with message "Operation not allowed"</li></ul>', identity: "Helpers.Legacy.exception.raise" },
+      { orderIndex: 13, kind: "EXISTING_SERVICE", description: `Check &lt;epStageId&gt; ${"w".repeat(200)}` },
+    ]);
+    expect(rows[0]).toEqual([2, "[EXISTING]", 'If it returns false / Return false with message "Operation not allowed"', "Helpers.Legacy.exception.raise"]);
+    expect(String(rows[1]![2]).startsWith("Check <epStageId> www")).toBe(true);
+    expect(String(rows[1]![2])).toMatch(/…\(\+\d+\)$/);
   });
 });
