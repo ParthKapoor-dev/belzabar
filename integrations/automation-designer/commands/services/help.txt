@@ -1,16 +1,31 @@
-Usage: belz ad services [flags]
+Usage: belz ad services [SERVICE] [flags]
 
 List all services from /rest/api/automation/services (the core service catalog
 used to build step identifiers). Both internal and external services are
 included by default. Rows are compact: label / aliases only when they differ
 from the name, description cut at 100 chars, empty fields omitted.
 
+With a SERVICE, lists that service's methods instead (GET
+/automation-systems/{svc}/automation-apis): `method` is the name compact steps
+("Svc/method") and `ad child-info` take; `label` when it differs (db_service
+labels such as data.read are accepted too); `apiUuid` = automationAPIId.
+Only published methods are listed; for every method of a user category
+(drafts too) use `belz ad find` with a category.
+
+Arguments:
+  [SERVICE]             A service name (e.g. Helpers.String, db_service). Data:
+                        {service, total, methods[{method, label?, apiUuid,
+                        state?, hidden?, inactive?, deprecated?}]}.
+
 Flags:
-  --search <q>          Rank services for a free-text query (fuzzy: exact >
+  --all                 With SERVICE: also hidden (hideOnUi), inactive and
+                        deprecated methods.
+  --search <q>          With SERVICE: rank its methods by name/label.
+                        Otherwise: rank services for a free-text query (fuzzy: exact >
                         prefix > word start > substring > typo) over name,
                         label, aliases and description; adds `score`. Returns
                         the top 20 unless --limit is given.
-  --internal            Only show services with internalService=true
+  --internal            Only show services with internalService=true (not with SERVICE)
   --limit <N>           Return at most N rows.
   --fields <a,b|all>    Pick row fields: name,id,uuid,systemUuid,label,type,
                         internalService,aliasNames,description,score; `all` =
@@ -27,3 +42,5 @@ Examples:
   belz ad services --search "json path" --llm
   belz ad services --internal --fields name,uuid
   belz ad services --search redis --limit 3
+  belz ad services Helpers.String --env sems-dev --llm
+  belz ad services Helpers.Legacy --search sort --llm

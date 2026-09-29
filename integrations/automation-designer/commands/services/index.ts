@@ -1,4 +1,4 @@
-import { defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { normalizeUuid } from "../../lib/ids";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
@@ -6,6 +6,9 @@ import { abbreviate, parseFieldList, projectRow, type FieldSelection } from "../
 import { scoreFuzzy } from "../../lib/method-finder";
 
 interface ServicesArgs {
+  /** `ad services <SERVICE>`: list that service's methods instead. */
+  service?: string;
+  all: boolean;
   internal: boolean;
   search?: string;
   limit?: number;
@@ -34,6 +37,53 @@ interface ServicesData {
   services: Array<Record<string, unknown>>;
 }
 
+/** One method of a service (CLI trial: agents guessed method names and hit 404s). */
+export interface ServiceMethodRow {
+  /** The name `Svc/method` compact steps and `ad child-info` take (the API uri). */
+  method: string;
+  /** UI label, when it differs (db_service: data.read …; compact steps accept it too). */
+  label?: string;
+  /** automationAPIId other methods' steps reference. */
+  apiUuid: string | null;
+  state?: string;
+  hidden?: true;
+  inactive?: true;
+  deprecated?: true;
+  score?: number;
+}
+
+interface ServiceMethodsData {
+  service: string;
+  total: number;
+  methods: ServiceMethodRow[];
+}
+
+/** Rows from `GET /automation-systems/{svc}/automation-apis` (hidden / inactive / deprecated dropped unless `all`). */
+export function serviceMethodRows(body: unknown, all: boolean): ServiceMethodRow[] {
+  const rows: ServiceMethodRow[] = [];
+  for (const a of Array.isArray(body) ? body : []) {
+    if (!a || typeof a !== "object") continue;
+    const r = a as Record<string, unknown>;
+    const method = typeof r.uri === "string" ? r.uri : "";
+    if (!method) continue;
+    const hidden = r.hideOnUi === true;
+    const inactive = r.active === false;
+    const deprecated = r.methodDeprecated === true;
+    if (!all && (hidden || inactive || deprecated)) continue;
+    const label = typeof r.label === "string" && r.label !== method ? r.label : undefined;
+    rows.push({
+      method,
+      ...(label ? { label } : {}),
+      apiUuid: normalizeUuid(r.uuid),
+      ...(typeof r.state === "string" && r.state ? { state: r.state } : {}),
+      ...(hidden ? { hidden: true as const } : {}),
+      ...(inactive ? { inactive: true as const } : {}),
+      ...(deprecated ? { deprecated: true as const } : {}),
+    });
+  }
+  return rows.sort((a, b) => a.method.localeCompare(b.method));
+}
+
 // 7.9: compact rows by default (label / aliases only when they differ from the
 // name, description cut at 100 chars, empties dropped); --fields picks, --fields all = full rows.
 export const SERVICE_FIELDS = ["name", "id", "uuid", "systemUuid", "label", "type", "internalService", "aliasNames", "description", "score"] as const;
@@ -41,7 +91,9 @@ const DEFAULT_FIELDS = ["name", "id", "type", "internalService", "label", "alias
 
 export const args = defineArgs({
   command: "belz ad services",
+  positionals: [{ name: "service" }],
   flags: {
+    all: { type: "boolean" },
     ...AD_COMMON_FLAGS,
     internal: { type: "boolean" },
     search: { type: "string" },
@@ -78,14 +130,35 @@ export function rankServices<T extends { name: string; label: string; aliasNames
   return out.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
 }
 
-const command: CommandModule<ServicesArgs, ServicesData> = {
+const command: CommandModule<ServicesArgs, ServicesData | ServiceMethodsData> = {
   schema: "ad.services",
   parseArgs(argv) {
-    const { flags } = args.parse(argv);
+    const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "list", "services");
-    return { internal: flags.internal, search: flags.search, limit: flags.limit, fields: parseFieldList(flags.fields, SERVICE_FIELDS) };
+    const service = positionals.service?.trim() || undefined;
+    if (service && (flags.internal || flags.fields !== undefined)) {
+      throw new CliError("--internal and --fields apply to the service list, not to one service's methods.", { code: "INVALID_ARGUMENT" });
+    }
+    if (flags.all && !service) throw new CliError("--all applies with a <SERVICE> (its hidden / inactive methods).", { code: "INVALID_ARGUMENT" });
+    return { ...(service ? { service } : {}), all: flags.all, internal: flags.internal, search: flags.search, limit: flags.limit, fields: parseFieldList(flags.fields, SERVICE_FIELDS) };
   },
-  async execute({ internal, search, limit, fields }) {
+  async execute({ service, all, internal, search, limit, fields }, context) {
+    if (service) {
+      let methods = serviceMethodRows(await adApi.listServiceMethods(service), all);
+      if (methods.length === 0) {
+        context.warn(
+          `No ${all ? "" : "visible "}methods for service '${service}': an unknown service name (see \`belz ad services --search\`), or a user category whose methods are not published (see \`belz ad find\` with a category).`,
+        );
+      }
+      if (search) {
+        methods = methods
+          .map((m) => ({ ...m, score: Math.max(scoreFuzzy(search, m.method, 1), m.label ? scoreFuzzy(search, m.label, 0.95) : 0) }))
+          .filter((m) => m.score > 0)
+          .sort((a, b) => b.score - a.score || a.method.localeCompare(b.method));
+      }
+      const total = methods.length;
+      return ok<ServiceMethodsData>({ service, total, methods: limit ? methods.slice(0, limit) : methods });
+    }
     const raw = (await adApi.listServices({ limit: 2000, offset: 0 })) as unknown;
     const result = Array.isArray(raw)
       ? raw
@@ -148,6 +221,14 @@ const command: CommandModule<ServicesArgs, ServicesData> = {
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
+    if (envelope.data && "methods" in (envelope.data as object)) {
+      const d = envelope.data as ServiceMethodsData;
+      ui.section(`${d.service} methods (${d.methods.length}${d.methods.length < d.total ? ` of ${d.total}` : ""})`);
+      if (d.methods.length === 0) ui.text("(none)");
+      else ui.table(["method", "label", "apiUuid", "flags"], d.methods.map((m) => [m.method, m.label ?? "", m.apiUuid ?? "", [m.state, m.hidden && "hidden", m.inactive && "inactive", m.deprecated && "deprecated"].filter(Boolean).join(" ")]));
+      ui.text(`Tip: belz ad child-info ${d.service} <method> --shape  (inputs/outputs to wire a step)`);
+      return;
+    }
     const data = envelope.data as ServicesData;
     ui.section(`Services (${data.services.length}${data.services.length < data.total ? ` of ${data.total}` : ""})`);
     if (data.services.length === 0) {

@@ -98,6 +98,13 @@ export async function fetchChildMethodInfo(
   return readJson(response, path);
 }
 
+/** A service's (automation system's) methods: `GET /automation-systems/{svc}/automation-apis`. Unknown service → []. */
+export async function listServiceMethods(service: string): Promise<unknown> {
+  const path = `/rest/api/automation-systems/${encodeURIComponent(service)}/automation-apis`;
+  const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
+  return readJson(response, path);
+}
+
 export async function exportMethod(methodId: string | number): Promise<unknown> {
   const path = `/rest/api/automation/chain/export/${methodId}`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });

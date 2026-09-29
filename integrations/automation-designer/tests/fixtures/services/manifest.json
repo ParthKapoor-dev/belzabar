@@ -1,0 +1,4 @@
+[
+  { "file": "helpers-string.automation-apis.json", "env": "sems-dev", "capturedAt": "2026-09-29T09:05:33.000Z", "endpoint": "/rest/api/automation-systems/Helpers.String/automation-apis", "status": 200 },
+  { "file": "db-service.automation-apis.json", "env": "sems-dev", "capturedAt": "2026-09-29T09:05:33.000Z", "endpoint": "/rest/api/automation-systems/db_service/automation-apis", "status": 200 }
+]

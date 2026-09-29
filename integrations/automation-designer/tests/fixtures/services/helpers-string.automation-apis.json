@@ -1,0 +1,174 @@
+[
+  {
+    "id": 6879,
+    "uuid": "4b4f455947f1085c1d128d86143f8a16    ",
+    "uri": "echo",
+    "httpMethod": "POST",
+    "label": "echo",
+    "originalLabel": "echo",
+    "active": true,
+    "automationSystem": {
+      "id": 751,
+      "active": true,
+      "authOptional": false,
+      "externalIntegration": false,
+      "accessMode": "PUBLIC",
+      "type": "SYSTEM_GENERATED",
+      "aliasName": [],
+      "permissions": [],
+      "remote": false,
+      "permissionSet": [
+        "VIEW_AUTOMATION_SERVICE",
+        "USE_AUTOMATION_SERVICE_DIRECTLY",
+        "EDIT_AUTOMATION_SERVICE",
+        "USE_AUTOMATION_SERVICE_IN_GUIDE"
+      ],
+      "isAuthenticationStructureInherited": false
+    },
+    "serviceChainId": 6753,
+    "hideOnUi": false,
+    "permissionSet": [
+      "USE_AUTOMATION_METHOD_IN_GUIDE",
+      "VIEW_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_DIRECTLY"
+    ],
+    "referenceId": "4f8dca555ba2895bab88bf12c08c1309    ",
+    "state": "PUBLISHED",
+    "methodType": "SYSTEM_GENERATED",
+    "aliasName": "echo",
+    "methodDeprecated": false,
+    "operationId": "sd.Helpers.String.echo",
+    "accountRequired": false,
+    "streamCapable": false,
+    "automationState": "PUBLISHED"
+  },
+  {
+    "id": 6881,
+    "uuid": "435d3e7f1b437f9e3fa2b3156ddc4582    ",
+    "uri": "unescapeSpecialCharacters",
+    "httpMethod": "POST",
+    "label": "unescapeSpecialCharacters",
+    "originalLabel": "unescapeSpecialCharacters",
+    "active": true,
+    "automationSystem": {
+      "id": 751,
+      "active": true,
+      "authOptional": false,
+      "externalIntegration": false,
+      "accessMode": "PUBLIC",
+      "type": "SYSTEM_GENERATED",
+      "aliasName": [],
+      "permissions": [],
+      "remote": false,
+      "permissionSet": [
+        "VIEW_AUTOMATION_SERVICE",
+        "USE_AUTOMATION_SERVICE_DIRECTLY",
+        "EDIT_AUTOMATION_SERVICE",
+        "USE_AUTOMATION_SERVICE_IN_GUIDE"
+      ],
+      "isAuthenticationStructureInherited": false
+    },
+    "serviceChainId": 6755,
+    "hideOnUi": false,
+    "permissionSet": [
+      "USE_AUTOMATION_METHOD_IN_GUIDE",
+      "VIEW_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_DIRECTLY"
+    ],
+    "referenceId": "43acb546d98ef9504db8af77df0e3782    ",
+    "state": "PUBLISHED",
+    "methodType": "SYSTEM_GENERATED",
+    "aliasName": "unescapeSpecialCharacters",
+    "methodDeprecated": false,
+    "operationId": "sd.Helpers.String.unescapeSpecialCharacters",
+    "accountRequired": false,
+    "streamCapable": false,
+    "automationState": "PUBLISHED"
+  },
+  {
+    "id": 7012,
+    "uuid": "4c05b51f684141fd273699dda1e46081    ",
+    "uri": "asJSON",
+    "httpMethod": "POST",
+    "label": "asJSON",
+    "originalLabel": "asJSON",
+    "active": true,
+    "automationSystem": {
+      "id": 751,
+      "active": true,
+      "authOptional": false,
+      "externalIntegration": false,
+      "accessMode": "PUBLIC",
+      "type": "SYSTEM_GENERATED",
+      "aliasName": [],
+      "permissions": [],
+      "remote": false,
+      "permissionSet": [
+        "VIEW_AUTOMATION_SERVICE",
+        "USE_AUTOMATION_SERVICE_DIRECTLY",
+        "EDIT_AUTOMATION_SERVICE",
+        "USE_AUTOMATION_SERVICE_IN_GUIDE"
+      ],
+      "isAuthenticationStructureInherited": false
+    },
+    "serviceChainId": 6885,
+    "hideOnUi": false,
+    "permissionSet": [
+      "USE_AUTOMATION_METHOD_IN_GUIDE",
+      "VIEW_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_DIRECTLY"
+    ],
+    "referenceId": "4d2619bb12bb7aac4ba5b20c716e55fb    ",
+    "state": "PUBLISHED",
+    "methodType": "SYSTEM_GENERATED",
+    "aliasName": "asJSON",
+    "methodDeprecated": false,
+    "operationId": "sd.Helpers.String.asJSON",
+    "accountRequired": false,
+    "streamCapable": false,
+    "automationState": "PUBLISHED"
+  },
+  {
+    "id": 6880,
+    "uuid": "4c5c85873872d8246d9a9edc8000d2cc    ",
+    "uri": "escapeSpecialCharacters",
+    "httpMethod": "POST",
+    "label": "escapeSpecialCharacters",
+    "originalLabel": "escapeSpecialCharacters",
+    "active": true,
+    "automationSystem": {
+      "id": 751,
+      "active": true,
+      "authOptional": false,
+      "externalIntegration": false,
+      "accessMode": "PUBLIC",
+      "type": "SYSTEM_GENERATED",
+      "aliasName": [],
+      "permissions": [],
+      "remote": false,
+      "permissionSet": [
+        "VIEW_AUTOMATION_SERVICE",
+        "USE_AUTOMATION_SERVICE_DIRECTLY",
+        "EDIT_AUTOMATION_SERVICE",
+        "USE_AUTOMATION_SERVICE_IN_GUIDE"
+      ],
+      "isAuthenticationStructureInherited": false
+    },
+    "serviceChainId": 6754,
+    "hideOnUi": false,
+    "permissionSet": [
+      "USE_AUTOMATION_METHOD_IN_GUIDE",
+      "VIEW_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_DIRECTLY"
+    ],
+    "referenceId": "471f3e23635d46c9dd82a048de75d487    ",
+    "state": "PUBLISHED",
+    "methodType": "SYSTEM_GENERATED",
+    "aliasName": "escapeSpecialCharacters",
+    "methodDeprecated": false,
+    "operationId": "sd.Helpers.String.escapeSpecialCharacters",
+    "accountRequired": false,
+    "streamCapable": false,
+    "automationState": "PUBLISHED"
+  }
+]

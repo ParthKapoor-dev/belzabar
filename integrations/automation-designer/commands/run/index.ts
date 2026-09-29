@@ -44,7 +44,11 @@ async function resolvePayload(payloadArg?: string): Promise<unknown> {
 
   const file = Bun.file(payloadArg);
   if (await file.exists()) {
-    return await file.json();
+    try {
+      return await file.json();
+    } catch (err) {
+      throw new CliError(`Payload file ${payloadArg} is not valid JSON: ${(err as Error).message}`, { code: "INVALID_PAYLOAD", details: { path: payloadArg } });
+    }
   }
 
   try {

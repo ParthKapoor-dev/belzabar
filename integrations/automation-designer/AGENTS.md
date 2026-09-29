@@ -81,7 +81,7 @@ needs `--yes` instead.
 | `fetch <uuid\|url>` | Fetch + cache + hydrate (`--v2`; `--raw` adds the wire body as `data.raw`) |
 | `show <uuid\|url\|file>` | Method view. Lean `--llm` payload; `--compact` (one line per step), `--story` (approval Markdown), `--sql`/`--code`/`--full`, `--service-detail N` (alias `--step`), `--raw`, `--open`. `--compact`/`--story` always read V2 fresh (keys match save ops / create specs; V1 fallback with a warning) and carry `source`/`fetchedAt`. A local V1/V2 JSON file is shown without a fetch |
 | `show-code`, `outputs`, `state` | Decoded custom code; the I/O contract only; draft/published linkage + `inSync` |
-| `categories`, `services`, `child-info` | Categories (`--search`); the service catalog (`--search`); a callee's contract (`--shape`) |
+| `categories`, `services`, `child-info` | Categories (`--search`); the service catalog (`--search`), or `services <SERVICE>` = its methods (the names compact steps take; `--all`, `--search`); a callee's contract (`--shape`) |
 | `callers <uuid>` | AD methods (and PD pages/components with `--pd`) that call the method. `coverage.complete` only for a fresh, full index with nothing unresolved; `coverage.skippedCategories` for failed listings |
 | `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases (`METHOD_NOT_FOUND` for an unknown/soft-deleted uuid, since the suite route answers it like "no suite"); the latest suite report |
 | `history list\|show\|diff`, `diff`, `trace` | Version history, history or cross-env semantic diff (`diff` opens an editor only in human mode or with `--editor`; a failed spawn is a warning), where a method is on every env |
@@ -403,7 +403,7 @@ Rules:
   directory has a `manifest.json`:
   - `real-v1/` and `real-v2/`: the same 36 methods, one set per wire version.
   - `definitions/`, `categories/`, `child-info/`, `callers/`, `history/`,
-    `test-cases/`, `not-found/`.
+    `test-cases/`, `not-found/`, `services/` (a service's automation-apis listing).
   - `validate/`: the validator golden set plus live case patches.
   - `cross-env/`: published history bodies of the same logic on sems-dev and
     sems-qa (read-only History.get), for the cross-env fingerprint tests.

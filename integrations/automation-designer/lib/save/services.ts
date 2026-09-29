@@ -3,7 +3,7 @@
 //   GET /rest/api/automation-systems/{svc}/automation-apis/{uri}   (lib/validate/online fetchContract)
 //   GET /rest/api/automation-systems/{svc}/auth                    (db_service accounts: id + nickname)
 
-import { apiFetch, CliError } from "@belzabar/core";
+import { apiFetch, CliError, readJsonOrNull } from "@belzabar/core";
 import { fetchContract } from "../validate/online";
 import { compactService, emptyCatalog, isObj, splitService, type DbAccount, type ServiceCatalog } from "../serialize/compact";
 import { stepService } from "../serialize/ops";
@@ -42,8 +42,7 @@ async function fetchAccounts(service: string): Promise<DbAccount[]> {
   if (!res.ok) {
     throw new CliError(`Could not list the accounts of ${service} (${res.status}).`, { code: "AD_API_ERROR", details: { path, status: res.status } });
   }
-  const text = await res.text();
-  const body: unknown = text.trim() ? JSON.parse(text) : [];
+  const body: unknown = (await readJsonOrNull<unknown>(res, { path })) ?? [];
   return (Array.isArray(body) ? body : [])
     .filter(isObj)
     .filter((a) => typeof a.id === "number" || typeof a.id === "string")

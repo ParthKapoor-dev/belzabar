@@ -131,7 +131,7 @@ describe("other commands", () => {
   });
   test("services --search requires a value (F34)", () => {
     expect(code(() => parse(servicesCmd, ["--search"]))).toBe("MISSING_VALUE");
-    expect(parse(servicesCmd, ["--search", "redis", "--internal"])).toEqual({ internal: true, search: "redis", fields: { mode: "default" } });
+    expect(parse(servicesCmd, ["--search", "redis", "--internal"])).toEqual({ all: false, internal: true, search: "redis", fields: { mode: "default" } });
   });
   test("show-code --step validates; --service-detail alias", () => {
     expect(code(() => parse(showCodeCmd, ["4bf56e008eabe4010508af439a15ecfb", "--step", "x"]))).toBe("INVALID_VALUE");

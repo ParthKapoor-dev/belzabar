@@ -75,6 +75,10 @@ export const adApi = {
     return v1.fetchChildMethodInfo(category, methodName);
   },
 
+  async listServiceMethods(service: string): Promise<unknown> {
+    return v1.listServiceMethods(service);
+  },
+
   async exportMethod(methodId: string | number): Promise<unknown> {
     return v1.exportMethod(methodId);
   },
