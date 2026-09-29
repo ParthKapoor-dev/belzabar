@@ -125,12 +125,14 @@ already turns that into a full save.
 
 ## Validator (`lib/validator/`)
 
-- `catalogue.ts` `PD_RULES`: every code with default severity and source (platform, pd-review
-  §3a–3d, figma-to-pd V/T/C/R/H/F/U codes). `commands/validate/help.txt` lists the same codes;
-  `tests/unit/validator-lint.test.ts` keeps catalogue, help and emitted codes in sync.
+- `catalogue.ts` `PD_RULES`: every code with its severity, source (platform, pd-review
+  §3a–3d, figma-to-pd V/T/C/R/H/F/U codes) and `escalate` flag (a warning that becomes an
+  error when an edit introduces it). Rules build issues with `issue(code, …)`, so the catalogue
+  is the only place severities live and an uncatalogued code does not compile.
+  `commands/validate/help.txt` lists the same codes; `tests/unit/validator-lint.test.ts` keeps
+  catalogue and help in sync.
 - `rules/existing.ts`, `rules/invariants.ts`, `rules/lint.ts`; `context.ts` builds binding refs,
-  defined names and usage. `index.ts`: `validateHydrated`, diff-aware `validateEdit`,
-  `ESCALATE_WHEN_INTRODUCED` (warnings that become errors when an edit introduces them).
+  defined names and usage. `index.ts`: `validateHydrated`, diff-aware `validateEdit`.
 - `recursive.ts`: `validateRecursive` + `symbolInterfaceIssues` (`SYMBOL_*` codes).
 - Calibration rule: real editor output has **0 errors** (`tests/unit/validator-real.test.ts`).
   A rule that fires on real pages is a warning. Live check (2026-09-29, all 633

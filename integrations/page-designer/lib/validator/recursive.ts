@@ -14,16 +14,17 @@ import { walkParsed } from "../parser/nodes";
 import { parsePage } from "../parser/index";
 import type { HydratedPage, SymbolNode, ValidationIssue } from "../types/common";
 import type { RawPageResponse } from "../types/wire";
+import { issue } from "./catalogue";
 import { validateHydrated } from "./index";
 
-export const MAX_SYMBOL_DEPTH = 3;
+const MAX_SYMBOL_DEPTH = 3;
 
 export interface SymbolFetcher {
   /** The DRAFT component named `name`, or null when there is none. */
   byName(name: string): Promise<RawPageResponse | null>;
 }
 
-export interface RecursiveEntry {
+interface RecursiveEntry {
   name: string;
   id: string;
   entityType: "PAGE" | "COMPONENT";
@@ -36,7 +37,7 @@ export interface RecursiveEntry {
   warnCount: number;
 }
 
-export interface RecursiveReport {
+interface RecursiveReport {
   entries: RecursiveEntry[];
   /** Longest symbol chain from the root (names, root first). */
   longestChain: string[];
@@ -69,22 +70,22 @@ export function symbolInterfaceIssues(page: HydratedPage, symbols: Map<string, H
     const unknownIn = inst.inputBindings.map((b) => b.prop.trim()).filter((p) => !inputs.has(p));
     const unknownEv = inst.eventWires.map((e) => e.trim()).filter((e) => !events.has(e));
     if (unknownIn.length) {
-      out.push({
-        code: "SYMBOL_UNKNOWN_INPUT",
-        severity: "warn",
-        message: `Instance ${inst.nodeId} of "${name}" binds input(s) ${unknownIn.join(", ")} that "${name}" does not declare (declared: ${[...inputs].join(", ") || "none"})`,
-        nodeId: inst.nodeId,
-        nodeName: name,
-      });
+      out.push(
+        issue(
+          "SYMBOL_UNKNOWN_INPUT",
+          `Instance ${inst.nodeId} of "${name}" binds input(s) ${unknownIn.join(", ")} that "${name}" does not declare (declared: ${[...inputs].join(", ") || "none"})`,
+          { nodeId: inst.nodeId, nodeName: name },
+        ),
+      );
     }
     if (unknownEv.length) {
-      out.push({
-        code: "SYMBOL_UNKNOWN_EVENT",
-        severity: "warn",
-        message: `Instance ${inst.nodeId} of "${name}" handles event(s) ${unknownEv.join(", ")} that "${name}" does not emit (declared: ${[...events].join(", ") || "none"})`,
-        nodeId: inst.nodeId,
-        nodeName: name,
-      });
+      out.push(
+        issue(
+          "SYMBOL_UNKNOWN_EVENT",
+          `Instance ${inst.nodeId} of "${name}" handles event(s) ${unknownEv.join(", ")} that "${name}" does not emit (declared: ${[...events].join(", ") || "none"})`,
+          { nodeId: inst.nodeId, nodeName: name },
+        ),
+      );
     }
   }
   return out;
@@ -171,18 +172,11 @@ export async function validateRecursive(rootRaw: RawPageResponse, fetcher: Symbo
   const missingIssues = (page: HydratedPage): ValidationIssue[] =>
     usedNames(page)
       .filter((n) => pages.has(n) && pages.get(n) === null)
-      .map((n) => ({
-        code: "SYMBOL_NOT_FOUND",
-        severity: "warn" as const,
-        message: `Symbol "${n}" is used but no component with that name exists in this environment`,
-        nodeName: n,
-      }));
+      .map((n) => issue("SYMBOL_NOT_FOUND", `Symbol "${n}" is used but no component with that name exists in this environment`, { nodeName: n }));
   if (longestChain.length - 1 > MAX_SYMBOL_DEPTH) {
-    rootExtra.push({
-      code: "SYMBOL_NESTING_DEPTH",
-      severity: "warn",
-      message: `Symbol chain is ${longestChain.length - 1} levels deep (max ${MAX_SYMBOL_DEPTH}): ${longestChain.join(" → ")}`,
-    });
+    rootExtra.push(
+      issue("SYMBOL_NESTING_DEPTH", `Symbol chain is ${longestChain.length - 1} levels deep (max ${MAX_SYMBOL_DEPTH}): ${longestChain.join(" → ")}`),
+    );
   }
 
   const entries: RecursiveEntry[] = [entryFor(root, 0, [...missingIssues(root), ...rootExtra])];

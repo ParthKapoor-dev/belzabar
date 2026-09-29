@@ -163,8 +163,8 @@ These are the classes of corruption belz must either prevent (validator rule) or
 
 ### Warnings (validator: `warn`)
 
-Calibrated against 15 real pages (PD-5): these fire on live, working pages. The first
-four become errors when an edit INTRODUCES them (`validateEdit`, `ESCALATE_WHEN_INTRODUCED`).
+Calibrated against real pages: these fire on live, working pages. The first four become
+errors when an edit INTRODUCES them (`validateEdit`; `escalate` in `lib/validator/catalogue.ts`).
 
 | Failure | belz rule code |
 |---|---|
@@ -195,7 +195,8 @@ saves, because they depend on deployed state.
 ## Belz module architecture
 
 See `../AGENTS.md` (Directory Map, Safe-Edit Invariants). Adding a rule: put it in
-`lib/validator/rules/invariants.ts`, cite the failure mode here, add a true-positive test in
+`lib/validator/rules/invariants.ts`, catalogue its code in `lib/validator/catalogue.ts`, cite
+the failure mode here, add a true-positive test in
 `tests/unit/validator-real.test.ts`, and keep the real-page calibration at 0 errors.
 
 ## Save strategy (partial vs full)

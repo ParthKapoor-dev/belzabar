@@ -5,7 +5,7 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "fs";
 import { parsePage } from "../../lib/parser/index";
-import { ESCALATE_WHEN_INTRODUCED, validateEdit, validateHydrated } from "../../lib/validator/index";
+import { validateEdit, validateHydrated } from "../../lib/validator/index";
 import { PD_RULES } from "../../lib/validator/catalogue";
 import { cssSelectors } from "../../lib/validator/rules/lint";
 import { symbolInterfaceIssues, validateRecursive } from "../../lib/validator/recursive";
@@ -241,13 +241,13 @@ describe("calibration + catalogue", () => {
     for (const code of Object.keys(PD_RULES)) expect(help).toContain(code);
     for (const f of realFiles) {
       const raw = JSON.parse(readFileSync(`${REAL}/${f}`, "utf8")) as RawPageResponse;
-      for (const i of issuesOf(raw)) expect(PD_RULES[i.code], i.code).toBeDefined();
+      for (const i of issuesOf(raw)) expect((PD_RULES as Record<string, unknown>)[i.code], i.code).toBeDefined();
     }
   });
 
   test("escalated codes are warn by default and block only when an edit introduces them", () => {
     // ORPHAN_BINDING is already an error in author config; it is escalated from its generated-config warn.
-    for (const code of ESCALATE_WHEN_INTRODUCED) if (code !== "ORPHAN_BINDING") expect(PD_RULES[code]?.severity).toBe("warn");
+    for (const [code, rule] of Object.entries(PD_RULES)) if ("escalate" in rule && code !== "ORPHAN_BINDING") expect(rule.severity).toBe("warn");
     const before = parsePage(wrap(pageInner(vars(...baseVars), withUse())));
     const after = parsePage(wrap(pageInner(vars(...baseVars), withUse([{ id: "d", name: "exp-layout-dialog", props: { "[visible]": "{%go%}" } }]))));
     const issue = validateEdit(before, after).find((i) => i.code === "DIALOG_VISIBILITY");

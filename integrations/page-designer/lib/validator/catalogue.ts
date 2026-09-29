@@ -1,22 +1,29 @@
-// Every code the PD validator can emit: default severity, where the rule
-// comes from, and the figma-to-pd / pd-review equivalent when it has another
-// name. `commands/validate/help.txt` lists the same codes; a unit test keeps
-// the two in sync with what the rules actually emit.
+// Every code the PD validator can emit: its default severity, where the rule
+// comes from (the figma-to-pd / pd-review name when it has another one), and
+// whether an edit that introduces it is blocked. Rules build their issues with
+// `issue()`, so the severities here are the ones the validator reports.
+// `commands/validate/help.txt` lists the same codes; a unit test keeps the two
+// in sync.
 
-import type { ValidationSeverity } from "../types/common";
+import type { ValidationIssue, ValidationSeverity } from "../types/common";
 
-export interface PdRuleInfo {
+interface PdRuleInfo {
   severity: ValidationSeverity;
   /** figma-to-pd validate-pd-config.py code, pd-review section, or "belz". */
   source: string;
   description: string;
+  /**
+   * A warning on an existing page (real pages carry it and render) that is an
+   * error when an edit introduces it (validateEdit).
+   */
+  escalate?: true;
 }
 
-export const PD_RULES: Record<string, PdRuleInfo> = {
+export const PD_RULES = {
   // ── structural errors ───────────────────────────────────────────────────
   INVALID_JSON: { severity: "error", source: "belz", description: "configuration is not valid JSON" },
   ROOT_LAYOUT_MALFORMED: { severity: "error", source: "figma L1", description: "root is not a div; page root lacks unSelectable:true; component root lacks isSymbol:true" },
-  ORPHAN_BINDING: { severity: "error", source: "pd-review 3a", description: "{%var%} whose root variable is not defined (warn inside editor-generated form configs)" },
+  ORPHAN_BINDING: { severity: "error", source: "pd-review 3a", description: "{%var%} whose root variable is not defined (warn inside editor-generated form configs)", escalate: true },
   FORM_FIELD_PROPS: { severity: "error", source: "page-designer", description: "exp-form-field with props instead of field (blank page)" },
   CHILDREN_NOT_ARRAY: { severity: "error", source: "page-designer", description: "children is an object instead of an array" },
   INVALID_SLIDE_TOGGLE: { severity: "error", source: "page-designer", description: "mat-slide-toggle has no runtime declaration" },
@@ -25,21 +32,21 @@ export const PD_RULES: Record<string, PdRuleInfo> = {
   DUPLICATE_ELEMENT_IDS: { severity: "error", source: "pd-review 3a", description: "two nodes share an id / _elementId" },
   V1: { severity: "error", source: "figma V1", description: "variables / variables.userDefined / .generated is not the bucket-of-arrays shape" },
   HTTP_NOT_ARRAY: { severity: "error", source: "page-designer", description: "httpRequests.userDefined / .generated is not an array" },
-  // ── warnings (escalated to errors when an edit introduces them) ──────────
-  DERIVED_IN_INNERHTML: { severity: "warn", source: "page-designer", description: "derived var bound to innerHTML / textContent renders empty" },
-  ARRAY_INITIAL_VALUE: { severity: "warn", source: "figma V3", description: "variable with an array initialValue (ArrayNode cannot be cast)" },
-  BUTTON_DYNAMIC_CLASSNAME: { severity: "warn", source: "figma R2", description: "button with a [className] binding renders invisible" },
-  MISSING_NODE_ID: { severity: "warn", source: "pd-review 3a", description: "node without an id" },
-  ORPHAN_HTTP_TRIGGER: { severity: "warn", source: "pd-review 3a", description: "HTTP call triggered by an undefined variable (never fires)" },
-  ORPHAN_EVENT_TARGET: { severity: "warn", source: "pd-review 3a", description: "event handler writes this.x where x is undefined" },
-  V4: { severity: "warn", source: "figma V4", description: "variable type outside the PD type enum (String/Boolean/Number/Any/KeyValue/… are valid in the PD editor)" },
-  T2: { severity: "warn", source: "figma T2", description: "table rowData variable is not {rows:[…]} (or a raw array bound directly)" },
-  T4: { severity: "warn", source: "figma T4", description: "{rows:[…]} table variable not typed Any" },
-  T5: { severity: "warn", source: "figma T5", description: "{%$src.$row.X%} in plain HTML inside a dict cellLayout" },
-  R1: { severity: "warn", source: "figma R1", description: "static isVisible next to [isVisible]" },
-  DIALOG_VISIBILITY: { severity: "warn", source: "page-designer", description: "exp-layout-dialog toggled with [visible]/[isVisible] instead of [show]" },
-  ITEM_DIRECT_ACCESS: { severity: "warn", source: "page-designer", description: "{%$item.field%} instead of {%$item.value%}?.field" },
-  HTTP_HARDCODED_URL: { severity: "warn", source: "pd-review 3c", description: "HTTP call with an absolute URL" },
+  // ── warnings (escalate: errors when an edit introduces them) ─────────────
+  DERIVED_IN_INNERHTML: { severity: "warn", source: "page-designer", description: "derived var bound to innerHTML / textContent renders empty", escalate: true },
+  ARRAY_INITIAL_VALUE: { severity: "warn", source: "figma V3", description: "variable with an array initialValue (ArrayNode cannot be cast)", escalate: true },
+  BUTTON_DYNAMIC_CLASSNAME: { severity: "warn", source: "figma R2", description: "button with a [className] binding renders invisible", escalate: true },
+  MISSING_NODE_ID: { severity: "warn", source: "pd-review 3a", description: "node without an id", escalate: true },
+  ORPHAN_HTTP_TRIGGER: { severity: "warn", source: "pd-review 3a", description: "HTTP call triggered by an undefined variable (never fires)", escalate: true },
+  ORPHAN_EVENT_TARGET: { severity: "warn", source: "pd-review 3a", description: "event handler writes this.x where x is undefined", escalate: true },
+  V4: { severity: "warn", source: "figma V4", description: "variable type outside the PD type enum (String/Boolean/Number/Any/KeyValue/… are valid in the PD editor)", escalate: true },
+  T2: { severity: "warn", source: "figma T2", description: "table rowData variable is not {rows:[…]} (or a raw array bound directly)", escalate: true },
+  T4: { severity: "warn", source: "figma T4", description: "{rows:[…]} table variable not typed Any", escalate: true },
+  T5: { severity: "warn", source: "figma T5", description: "{%$src.$row.X%} in plain HTML inside a dict cellLayout", escalate: true },
+  R1: { severity: "warn", source: "figma R1", description: "static isVisible next to [isVisible]", escalate: true },
+  DIALOG_VISIBILITY: { severity: "warn", source: "page-designer", description: "exp-layout-dialog toggled with [visible]/[isVisible] instead of [show]", escalate: true },
+  ITEM_DIRECT_ACCESS: { severity: "warn", source: "page-designer", description: "{%$item.field%} instead of {%$item.value%}?.field", escalate: true },
+  HTTP_HARDCODED_URL: { severity: "warn", source: "pd-review 3c", description: "HTTP call with an absolute URL", escalate: true },
   // ── warnings ────────────────────────────────────────────────────────────
   UNUSED_VARIABLE: { severity: "warn", source: "pd-review 3a", description: "variable nothing reads or writes (side-effect derived vars, onInit/routeParams and names used via $api.get/setVariableValue are not reported)" },
   UNUSED_HTTP_REQUEST: { severity: "warn", source: "pd-review 3a", description: "HTTP call with no trigger" },
@@ -65,4 +72,17 @@ export const PD_RULES: Record<string, PdRuleInfo> = {
   SYMBOL_UNKNOWN_INPUT: { severity: "warn", source: "pd-review 3b", description: "symbol instance binds an input the symbol does not declare" },
   SYMBOL_UNKNOWN_EVENT: { severity: "warn", source: "pd-review 3b", description: "symbol instance handles an event the symbol does not declare" },
   SYMBOL_NESTING_DEPTH: { severity: "warn", source: "pd-review 3b", description: "symbol chain deeper than 3 levels" },
-};
+} as const satisfies Record<string, PdRuleInfo>;
+
+export type PdRuleCode = keyof typeof PD_RULES;
+
+/** An issue with the catalogue's severity (`extra.severity` overrides it). */
+export function issue(code: PdRuleCode, message: string, extra: Partial<ValidationIssue> = {}): ValidationIssue {
+  return { code, severity: PD_RULES[code].severity, message, ...extra };
+}
+
+/** True when an edit that introduces `code` is blocked (see PdRuleInfo.escalate). */
+export function escalatesWhenIntroduced(code: string): boolean {
+  const rule: PdRuleInfo | undefined = (PD_RULES as Record<string, PdRuleInfo>)[code];
+  return rule?.escalate === true;
+}

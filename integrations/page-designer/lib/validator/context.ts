@@ -1,6 +1,6 @@
 // Shared, once-per-page facts every rule reads (built by validateHydrated).
 //
-// Calibrated against the real dev-tenant fixtures (tests/fixtures/real, PD-5):
+// Calibrated against real editor output (tests/fixtures/real):
 //   - a binding `{%a.b[0].c%}` refers to the variable `a` (root segment);
 //   - variables come from userDefined, derived, variables.generated (editor-
 //     owned: form configs, `$$navigation*`, `requestEvent*`), and a component's
@@ -10,7 +10,7 @@
 //   - bindings that only occur inside `variables.generated` are editor-owned
 //     (form-builder configs) and are reported separately (warn, not error).
 
-import type { HydratedPage } from "../types/common";
+import type { HydratedPage, ValidationIssue } from "../types/common";
 import type { RawConfiguration } from "../types/wire";
 
 export interface RuleContext {
@@ -24,23 +24,26 @@ export interface RuleContext {
   usedRoots: Set<string>;
 }
 
+/** A validator rule: a pure function of the page and its shared facts. */
+export type Rule = (page: HydratedPage, ctx: RuleContext) => ValidationIssue[];
+
 const BINDING_RE = /\{%([^%]+)%\}/g;
 
 /**
  * Runtime-scope roots that are never declared as page variables. `ref` is the
- * element-reference scope (`[expPopoverTriggerFor]: "{%ref.Popover_ref_1%}"`,
- * 3 live dev-tenant pages, never declared — OTH-R10 calibration).
+ * element-reference scope (`[expPopoverTriggerFor]: "{%ref.Popover_ref_1%}"`),
+ * which real pages use without declaring it.
  */
 const BUILTIN_ROOTS = new Set(["pageContext", "null", "true", "false", "undefined", "this", "ref"]);
 
 /**
  * Drop JS comments from a multi-line code body (handlers, specs, filterFns),
- * so a `{%x%}` inside a comment is not a binding (OTH-R11: live "Enrollment"
- * failed ORPHAN_BINDING on a commented-out line). Single-line values (the
+ * so a `{%x%}` inside a comment is not a binding (a commented-out line must
+ * not fail ORPHAN_BINDING). Single-line values (the
  * bindings themselves, URLs) are returned as-is; a `//` preceded by `:`
  * (`https://`) or inside a quote-free URL is kept.
  */
-export function stripCodeComments(text: string): string {
+function stripCodeComments(text: string): string {
   if (!text.includes("\n")) return text;
   return text
     .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -52,7 +55,7 @@ function authorJson(value: unknown): string {
   return JSON.stringify(value, (_k, v: unknown) => (typeof v === "string" ? stripCodeComments(v) : v)) ?? "";
 }
 
-export function collectBindingRefs(text: string, into = new Set<string>()): Set<string> {
+function collectBindingRefs(text: string, into = new Set<string>()): Set<string> {
   BINDING_RE.lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = BINDING_RE.exec(text)) !== null) {
@@ -94,7 +97,7 @@ export function buildRuleContext(page: HydratedPage): RuleContext {
   const generated = Array.isArray(inner.variables?.generated) ? inner.variables!.generated! : [];
 
   // Author scope = the whole config minus variables.generated; code comments
-  // never hold bindings (OTH-R11).
+  // never hold bindings.
   let authorText: string;
   let generatedText = "";
   if (generated.length > 0) {
@@ -108,8 +111,8 @@ export function buildRuleContext(page: HydratedPage): RuleContext {
   const generatedBindingRefs = new Set<string>();
   for (const ref of collectBindingRefs(generatedText)) if (!bindingRefs.has(ref)) generatedBindingRefs.add(ref);
 
-  // Trimmed too: the editor keeps names verbatim (dev-tenant "Student
-  // Information" has a derived var " loaderTextNull" bound as {% loaderTextNull%}).
+  // Trimmed too: the editor keeps names verbatim (a derived var " x" is
+  // bound as {% x%}).
   const definedVarNames = new Set<string>();
   for (const n of [
     ...page.variables.map((v) => v.name),
@@ -143,8 +146,7 @@ export function buildRuleContext(page: HydratedPage): RuleContext {
   while ((m = memberRe.exec(text)) !== null) if (m[1]) usedRoots.add(m[1]);
   const templateRe = /\$\{\s*!?\s*([A-Za-z_$][\w$-]*)/g;
   while ((m = templateRe.exec(text)) !== null) if (m[1]) usedRoots.add(m[1]);
-  // Custom code reads/writes variables by NAME (calibrated on "Student
-  // Application" / address-lookup, Stage 7): `$api.getVariableValue('x')`,
+  // Custom code reads/writes variables by NAME: `$api.getVariableValue('x')`,
   // `$api.setVariableValue('x', …)`, local `get('x')` helpers, and the scope
   // object handed to specs / filterFns / handlers (`data.x`, `params['x']`).
   // The text is the JSON-encoded config, so quotes may be escaped (`\"x\"`).
