@@ -60,6 +60,12 @@ const REFUSED: Array<[string, string]> = [
   ["merge into t using s on true when matched then delete", "starts with 'merge'"],
   ["do $$ begin delete from t; end $$", "starts with 'do'"],
   ["call proc()", "starts with 'call'"],
+  // ADW-R1: SpEL is evaluated server-side before the DB runs the query, even inside literals.
+  ["select 1 as x #{'; delete from t'}", "SpEL"],
+  ["select '#{1+1}' as x", "SpEL"],
+  ["select #{'current_database()'} as x", "SpEL"],
+  ["select 1 -- #{T(java.lang.Runtime).getRuntime()}", "SpEL"],
+  ["select $$ #{x} $$", "SpEL"],
 ];
 
 describe("checkReadOnlySql (F2)", () => {
@@ -80,6 +86,17 @@ describe("checkReadOnlySql (F2)", () => {
 });
 
 describe("sql run parseArgs gate", () => {
+  test("ADW-R1: refuses SpEL in run and explain before any network call", () => {
+    for (const argv of [["run", "select 1 as x #{'; delete from t'}"], ["explain", "select '#{1+1}'"]]) {
+      try {
+        sqlCommand.parseArgs?.(argv, {} as any);
+        throw new Error("expected refusal");
+      } catch (err) {
+        expect((err as CliError).code).toBe("SQL_NOT_READ_ONLY");
+      }
+    }
+  });
+
   test("refuses DML with SQL_NOT_READ_ONLY before any network call", () => {
     try {
       sqlCommand.parseArgs?.(["run", "delete from t returning id"], {} as any);

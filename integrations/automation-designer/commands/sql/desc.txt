@@ -1,5 +1,5 @@
 belz ad sql dbs  :->  List available SQL database configurations and auth types (and the default-DB resolution)
-belz ad sql run "<query>"  :->  Execute one read statement (SELECT/WITH/VALUES/EXPLAIN [ANALYZE] of a read) on the env's default DB (config sqlDefaultDb → BELZ_SQL_DEFAULT_DB → NSM_Read_DB); writes are refused
+belz ad sql run "<query>"  :->  Execute one read statement (SELECT/WITH/VALUES/EXPLAIN [ANALYZE] of a read) on the env's default DB (config sqlDefaultDb → BELZ_SQL_DEFAULT_DB → NSM_Read_DB); writes and SpEL #{…} are refused
 belz ad sql run "<query>" --db <name|id>  :->  Execute SELECT against a specific database
 belz ad sql explain "<query>"  :->  Query plan (EXPLAIN) of one read statement; the statement must pass the read-only gate; plan = lines
 belz ad sql explain "<query>" --analyze [--buffers]  :->  EXPLAIN ANALYZE: executes the (read-only) statement; adds timing {planningMs, executionMs}

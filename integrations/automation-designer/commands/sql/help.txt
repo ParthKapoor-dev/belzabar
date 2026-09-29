@@ -6,7 +6,8 @@ Subcommands:
   dbs                 List available database auth configurations.
   run <QUERY>         Execute ONE read statement (SELECT / WITH … SELECT / VALUES /
                       EXPLAIN [ANALYZE] of a read). Anything else — DML, DDL, multiple
-                      statements, SELECT INTO, FOR UPDATE — is refused client-side
+                      statements, SELECT INTO, FOR UPDATE, any SpEL '#{…}' (the
+                      server evaluates it into the SQL text) — is refused client-side
                       (SQL_NOT_READ_ONLY); use update/insert/modify for writes.
   explain <QUERY>     Show the query plan of ONE read statement (pass it without
                       EXPLAIN). The statement must pass the same read-only gate as

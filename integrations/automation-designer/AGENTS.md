@@ -284,7 +284,9 @@ Default DB when `--db` is absent, in order:
 `selectedBy` reports which one was used.
 
 `run` and `explain` accept one read statement only; comments and literals are
-stripped before the check. `EXPLAIN` is judged by its inner statement, so
+stripped before the check. Any `#{` is refused outright (ADW-R1): the query is
+sent with `combineInputs:true`, so the server evaluates SpEL — even inside
+literals — and splices the result into the SQL before the DB runs it. `EXPLAIN` is judged by its inner statement, so
 `EXPLAIN ANALYZE DELETE …` is refused.
 
 `insert … RETURNING <col>` returns the generated values.

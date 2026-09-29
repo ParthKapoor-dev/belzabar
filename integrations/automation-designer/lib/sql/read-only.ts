@@ -160,6 +160,16 @@ export function stripSqlLiterals(sql: string): { text: string; unterminated: boo
 export function checkReadOnlySql(sql: string): ReadOnlyVerdict {
   const { text, unterminated } = stripSqlLiterals(sql);
   const normalized = text.trim().replace(/[;\s]+$/, "").trim();
+  // ADW-R1: the query travels with combineInputs:true, so the server evaluates
+  // every `#{…}` (inside literals and comments too) and splices the result into
+  // the SQL text before the DB sees it. Nothing after that can be checked here.
+  if (sql.includes("#{")) {
+    return {
+      ok: false,
+      reason: "contains SpEL '#{' (the server evaluates it into the SQL text before the DB runs it)",
+      normalized,
+    };
+  }
   if (unterminated) {
     return { ok: false, reason: "unterminated string, identifier or comment", normalized };
   }
