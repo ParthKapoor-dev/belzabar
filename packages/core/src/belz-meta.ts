@@ -37,23 +37,6 @@ export function getInstallDir(): string {
   return loadConfigFileRaw().belz?.installDir ?? defaultInstallDir();
 }
 
-/** Absolute path to the installed belz binary itself. */
-export function getBinaryPath(): string {
-  return join(getInstallDir(), isWindows ? "belz.exe" : "belz");
-}
-
-/** Recorded install metadata, with defaults filled in. */
-export function getBelzMeta(): Required<NonNullable<BelzConfigFile["belz"]>> {
-  const belz = loadConfigFileRaw().belz ?? {};
-  return {
-    sourceDir: belz.sourceDir ?? defaultSourceDir(),
-    installDir: belz.installDir ?? defaultInstallDir(),
-    repoUrl: belz.repoUrl ?? "",
-    installedAt: belz.installedAt ?? "",
-    version: belz.version ?? "",
-  };
-}
-
 /** Merge a partial update into the `belz` section of config.json. */
 export function recordBelzMeta(partial: Partial<NonNullable<BelzConfigFile["belz"]>>): void {
   const config = loadConfigFileRaw();

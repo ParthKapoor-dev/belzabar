@@ -14,7 +14,7 @@ import {
   DEFAULT_HTTP_TIMEOUT_MS,
   DEFAULT_HTTP_WRITE_TIMEOUT_MS,
 } from "../src/http/transport";
-import { apiError, ensureApiOk, expectJson, expectOk, httpError, readJsonOrNull, summarizeBody, expectFound } from "../src/http/errors";
+import { apiError, ensureApiOk, expectJson, httpError, readJsonOrNull, summarizeBody, expectFound } from "../src/http/errors";
 import { redactSecrets, redactString, REDACTED } from "../src/http/redact";
 import { CliError } from "../src/command";
 import { setOutputMode } from "../src/ui";
@@ -461,12 +461,10 @@ describe("error mapping", () => {
     expect(bad.code).toBe("HTTP_BAD_JSON");
   });
 
-  test("expectOk / expectFound / codePrefix", async () => {
-    const r = new Response("x", { status: 200 });
-    expect(await expectOk(r)).toBe(r);
-    const e = await caught(expectOk(new Response("x", { status: 429 }), { codePrefix: "TW" }));
+  test("httpError codePrefix / expectFound", async () => {
+    const e = await httpError(new Response("x", { status: 429 }), { codePrefix: "TW" });
     expect(e.code).toBe("TW_429");
-    const nf = await caught(expectOk(new Response("x", { status: 404 }), { codePrefix: "TW" }));
+    const nf = await httpError(new Response("x", { status: 404 }), { codePrefix: "TW" });
     expect(nf.code).toBe("TW_NOT_FOUND");
     expect(() => expectFound(null, { notFoundCode: "X_NOT_FOUND" })).toThrow(CliError);
     expect(expectFound(0)).toBe(0);

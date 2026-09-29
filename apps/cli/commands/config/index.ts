@@ -21,14 +21,6 @@ import { parseConfigArgs } from "./args";
 
 export { args } from "./args";
 
-// Picocolors-shaped alias over the unified belz theme.
-const pc = {
-  dim: term.dim,
-  bold: term.bold,
-  green: term.success,
-  red: term.danger,
-  cyan: term.accent,
-};
 
 interface ConfigGetArgs   { action: "get" }
 interface ConfigTokenArgs { action: "token"; refresh?: boolean }
@@ -72,38 +64,38 @@ function buildSummaryBody(cfg: BelzConfigFile): string {
 
   const envNames = Object.keys(envs);
   if (envNames.length === 0) {
-    lines.push(pc.dim("No environments configured."));
+    lines.push(term.dim("No environments configured."));
   } else {
-    lines.push(`${pc.bold("Environments")}  ${pc.dim(`default: ${cfg.defaultEnv ?? "(none)"}`)}`);
+    lines.push(`${term.bold("Environments")}  ${term.dim(`default: ${cfg.defaultEnv ?? "(none)"}`)}`);
     for (const name of envNames) {
       const e = envs[name]!;
-      const url = e.url ?? pc.red("(no url)");
-      const user = e.user ?? pc.dim("(not set)");
-      const pwd = e.password ? pc.green("set") : pc.red("unset");
-      lines.push(`  ${pc.cyan(name)}  ${url}  ${user}  password:${pwd}`);
+      const url = e.url ?? term.danger("(no url)");
+      const user = e.user ?? term.dim("(not set)");
+      const pwd = e.password ? term.success("set") : term.danger("unset");
+      lines.push(`  ${term.accent(name)}  ${url}  ${user}  password:${pwd}`);
     }
   }
 
   lines.push("");
-  lines.push(pc.bold("Teamwork"));
+  lines.push(term.bold("Teamwork"));
   if (tw?.email || tw?.baseUrl) {
-    lines.push(`  Site:     ${tw.baseUrl ?? pc.red("(not set)")}`);
-    lines.push(`  Email:    ${tw.email ?? pc.dim("(not set)")}`);
-    lines.push(`  Password: ${tw.password ? pc.green("set") : pc.red("unset")}`);
+    lines.push(`  Site:     ${tw.baseUrl ?? term.danger("(not set)")}`);
+    lines.push(`  Email:    ${tw.email ?? term.dim("(not set)")}`);
+    lines.push(`  Password: ${tw.password ? term.success("set") : term.danger("unset")}`);
   } else {
-    lines.push(`  ${pc.dim("Not configured.")}`);
+    lines.push(`  ${term.dim("Not configured.")}`);
   }
 
   lines.push("");
-  lines.push(pc.bold("Jenkins"));
+  lines.push(term.bold("Jenkins"));
   const jk = cfg.jenkins;
   if (jk?.baseUrl || jk?.user) {
-    lines.push(`  URL:      ${jk.baseUrl ?? pc.dim("(not set)")}`);
-    lines.push(`  User:     ${jk.user ?? pc.dim("(not set)")}`);
-    lines.push(`  Password: ${jk.password ? pc.green("set") : pc.red("unset")}`);
-    lines.push(`  Job:      ${jk.migrationJob ?? pc.red("(not set — required by 'belz migrate')")}`);
+    lines.push(`  URL:      ${jk.baseUrl ?? term.dim("(not set)")}`);
+    lines.push(`  User:     ${jk.user ?? term.dim("(not set)")}`);
+    lines.push(`  Password: ${jk.password ? term.success("set") : term.danger("unset")}`);
+    lines.push(`  Job:      ${jk.migrationJob ?? term.danger("(not set — required by 'belz migrate')")}`);
   } else {
-    lines.push(`  ${pc.dim("Not configured.")}`);
+    lines.push(`  ${term.dim("Not configured.")}`);
   }
 
   return lines.join("\n");

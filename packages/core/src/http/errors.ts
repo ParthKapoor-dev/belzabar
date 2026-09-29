@@ -111,12 +111,6 @@ export async function httpError(res: Response, opts: HttpErrorOptions = {}): Pro
   return new CliError(`${head}${tail}${body ? `: ${body}` : ""}`, { code, details });
 }
 
-/** Throw the mapped CliError unless `res.ok`. */
-export async function expectOk(res: Response, opts: HttpErrorOptions = {}): Promise<Response> {
-  if (res.ok) return res;
-  throw await httpError(res, opts);
-}
-
 export interface ApiErrorOptions {
   /** Error code, or a function of the HTTP status (e.g. 409 → a conflict code). */
   code: string | ((status: number) => string);

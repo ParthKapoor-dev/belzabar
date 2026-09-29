@@ -1,5 +1,5 @@
 // apiFetch — the Expertly (AD/PD) client. Public API unchanged: resolves with
-// the Response (callers map non-OK with errors.ts expectOk/expectJson).
+// the Response (callers map non-OK with errors.ts httpError/expectJson).
 //
 // On top of the transport (timeout, IPv4 pin + eviction, coded network errors):
 //   - Bearer/Raw auth from the env's session, single-flight login;

@@ -16,14 +16,6 @@ import {
   type CommandModule,
 } from "@belzabar/core";
 
-// Picocolors-shaped alias over the unified belz theme.
-const pc = {
-  dim: term.dim,
-  bold: term.bold,
-  green: term.success,
-  red: term.danger,
-  cyan: term.accent,
-};
 
 interface SetupArgs {
   envFile?: string;
@@ -131,26 +123,26 @@ function buildSummaryBody(
   tw: BelzConfigFile["teamwork"],
   jenkins?: BelzConfigFile["jenkins"],
 ): string {
-  const lines: string[] = [pc.bold("Environments")];
+  const lines: string[] = [term.bold("Environments")];
   const names = Object.keys(envs ?? {});
   if (names.length === 0) {
-    lines.push(`  ${pc.dim("(none)")}`);
+    lines.push(`  ${term.dim("(none)")}`);
   } else {
     for (const name of names) {
       const entry = envs?.[name];
-      const user = entry?.user ? entry.user : pc.dim("(not set)");
-      const pwd = entry?.password ? pc.green("set") : pc.red("unset");
-      lines.push(`  ${pc.cyan(name.padEnd(10))} user: ${user}   password: ${pwd}`);
+      const user = entry?.user ? entry.user : term.dim("(not set)");
+      const pwd = entry?.password ? term.success("set") : term.danger("unset");
+      lines.push(`  ${term.accent(name.padEnd(10))} user: ${user}   password: ${pwd}`);
     }
   }
   lines.push("");
-  lines.push(pc.bold("Teamwork"));
-  lines.push(tw?.email ? `  Email: ${tw.email}   Password: ${tw.password ? pc.green("set") : pc.red("unset")}` : `  ${pc.dim("Not configured.")}`);
+  lines.push(term.bold("Teamwork"));
+  lines.push(tw?.email ? `  Email: ${tw.email}   Password: ${tw.password ? term.success("set") : term.danger("unset")}` : `  ${term.dim("Not configured.")}`);
   lines.push("");
-  lines.push(pc.bold("Jenkins"));
+  lines.push(term.bold("Jenkins"));
   lines.push(jenkins?.baseUrl || jenkins?.user
-    ? `  URL: ${jenkins.baseUrl ?? pc.dim("(not set)")}   User: ${jenkins.user ?? pc.dim("(not set)")}   Password: ${jenkins.password ? pc.green("set") : pc.red("unset")}`
-    : `  ${pc.dim("Not configured.")}`);
+    ? `  URL: ${jenkins.baseUrl ?? term.dim("(not set)")}   User: ${jenkins.user ?? term.dim("(not set)")}   Password: ${jenkins.password ? term.success("set") : term.danger("unset")}`
+    : `  ${term.dim("Not configured.")}`);
   return lines.join("\n");
 }
 

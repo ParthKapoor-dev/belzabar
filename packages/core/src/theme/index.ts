@@ -1,13 +1,11 @@
 // belz CLI theme — palette, glyphs, line helpers, and the wordmark.
 //
-// Backed by ./tokens (via ./terminal) so the terminal renders the EXACT hex values of
-// the design tokens. This is the single place CLI styling is
-// defined; commands and the runner consume `ui` / `term` / `symbols` — never
-// raw ANSI or picocolors.
+// The single place CLI styling is defined; commands and the runner consume
+// `ui` / `term` / `symbols`, never raw ANSI.
 
-import { term, symbols, supportsColor } from "./terminal";
+import { term, symbols } from "./terminal";
 
-export { term, symbols, supportsColor };
+export { term, symbols };
 
 /** belz wordmark — printed by the bare `belz` command, help, and intros. */
 export const wordmark: string =
@@ -29,18 +27,11 @@ export const ui = {
   info: (s: string): string => `${term.faint(symbols.info)} ${term.muted(s)}`,
   /** `│ message` — a step inside a flow. */
   step: (s: string): string => `${term.faint(symbols.bar)} ${term.muted(s)}`,
-  /** `❯ message` — a prompt / call to action. */
-  prompt: (s: string): string => `${term.accent(symbols.arrow)} ${s}`,
   /** A section heading — uppercased, accent. */
   heading: (s: string): string => term.bold(term.accent(s.toUpperCase())),
-  /** A dim horizontal rule of the given width. */
-  rule: (width = 48): string => term.faint(symbols.rule.repeat(width)),
   // Raw colour passthroughs.
   key: (s: string): string => term.muted(s),
   accent: term.accent,
-  fg: term.fg,
-  muted: term.muted,
   faint: term.faint,
   bold: term.bold,
-  dim: term.dim,
 } as const;

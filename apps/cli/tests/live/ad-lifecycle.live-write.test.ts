@@ -1,5 +1,5 @@
 // Opt-in live WRITE suite: the full AD method lifecycle on the BELZ_LIVE env, in
-// the BELZ_LIVE_CATEGORY category only, names `belz_tst_s9_*`.
+// the BELZ_LIVE_CATEGORY category only, names `belz_tst_life_*` / `belz_tst_del_*`.
 //
 //   BELZ_LIVE=<env> BELZ_LIVE_WRITE=1 BELZ_LIVE_CATEGORY=<name> BELZ_LIVE_CATEGORY_ID=<id> \
 //     bun test apps/cli/tests/live
@@ -16,6 +16,7 @@ import { join } from "path";
 import {
   EnvelopeSchema,
   LIVE_ENV,
+  LIVE_WRITE_PREFIX,
   describeLiveWrite,
   liveCategory,
   liveBelzHome,
@@ -28,8 +29,8 @@ import {
 
 const AGENT = "live-suite";
 const STAMP = new Date().toISOString().replace(/\D/g, "").slice(2, 12);
-const NAME = `belz_tst_s9_life_${STAMP}`;
-const NAME_DEL = `belz_tst_s9_del_${STAMP}`;
+const NAME = `${LIVE_WRITE_PREFIX}life_${STAMP}`;
+const NAME_DEL = `${LIVE_WRITE_PREFIX}del_${STAMP}`;
 const T = 240_000;
 
 // Resolved lazily: the suite is skipped (and needs no category) when BELZ_LIVE_WRITE is off.

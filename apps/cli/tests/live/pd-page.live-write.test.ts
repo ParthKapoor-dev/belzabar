@@ -19,12 +19,12 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { EnvelopeSchema, LIVE_ENV, describeLiveWrite, registerLiveResource, markLiveResourceCleaned, scratchDir, spawnLive, type SpawnResult } from "@belzabar/core/testing";
+import { EnvelopeSchema, LIVE_ENV, LIVE_WRITE_PREFIX, describeLiveWrite, registerLiveResource, markLiveResourceCleaned, scratchDir, spawnLive, type SpawnResult } from "@belzabar/core/testing";
 
 const PAGE = process.env.BELZ_LIVE_PD_PAGE ?? "";
 const T = 180_000;
-const VAR = "belz_tst_pd_live_var";
-const NODE = "belz_tst_pd_live_node";
+const VAR = `${LIVE_WRITE_PREFIX}pd_live_var`;
+const NODE = `${LIVE_WRITE_PREFIX}pd_live_node`;
 
 async function belz(argv: string[]): Promise<SpawnResult> {
   return spawnLive([...argv, "--llm"], { timeoutMs: T - 10_000 });
@@ -124,7 +124,7 @@ suite(
     }, T);
 
     test("publish is gated on an introduced error, then publishes (no host) and lands in the published history", async () => {
-      const orphan = file("orphan.json", { nodes: { update: [{ id: NODE, props: { "[innerHTML]": "{%belz_tst_pd_live_missing%}" } }] } });
+      const orphan = file("orphan.json", { nodes: { update: [{ id: NODE, props: { "[innerHTML]": `{%${LIVE_WRITE_PREFIX}pd_live_missing%}` } }] } });
       expect(okData(await belz(["pd", "save", PAGE, "--overlay", orphan, "--force-validation", "--yes"]))).toMatchObject({ verify: { status: "match" } });
       const blocked = await belz(["pd", "publish", PAGE, "--yes"]);
       expect(errCode(blocked)).toBe("PD_VALIDATION_FAILED");

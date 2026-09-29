@@ -69,5 +69,3 @@ export const EnvelopeSchema = z
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["error"], message: "ok:false envelope must carry an error" });
     }
   });
-
-export type EnvelopeShape = z.infer<typeof EnvelopeSchema>;

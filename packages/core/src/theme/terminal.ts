@@ -1,4 +1,4 @@
-// Terminal palette — the CLI's view of the design tokens.
+// Terminal styling over the palette in ./tokens.
 //
 // Truecolor ANSI (\x1b[38;2;r;g;bm) reproduces the EXACT hex values in
 // tokens.ts. Terminals without truecolor fall back to the xterm-256 cube.
@@ -51,11 +51,9 @@ function rgbTo256(r: number, g: number, b: number): number {
   return 16 + 36 * q(r) + 6 * q(g) + q(b);
 }
 
-function code(hex: string, layer: 38 | 48): string {
+function fgCode(hex: string): string {
   const [r, g, b] = hexToRgb(hex);
-  return truecolor
-    ? `\x1b[${layer};2;${r};${g};${b}m`
-    : `\x1b[${layer};5;${rgbTo256(r, g, b)}m`;
+  return truecolor ? `\x1b[38;2;${r};${g};${b}m` : `\x1b[38;5;${rgbTo256(r, g, b)}m`;
 }
 
 // ── styling primitives ───────────────────────────────────────────────────
@@ -63,34 +61,22 @@ function code(hex: string, layer: 38 | 48): string {
 type Style = (s: string) => string;
 
 /** Foreground colour from a hex string. */
-export function fg(hex: string): Style {
+function fg(hex: string): Style {
   if (!colorEnabled) return (s) => s;
-  const open = code(hex, 38);
+  const open = fgCode(hex);
   return (s) => `${open}${s}\x1b[39m`;
-}
-
-/** Background colour from a hex string. */
-export function bg(hex: string): Style {
-  if (!colorEnabled) return (s) => s;
-  const open = code(hex, 48);
-  return (s) => `${open}${s}\x1b[49m`;
 }
 
 function attr(open: string, close: string): Style {
   return colorEnabled ? (s) => `${open}${s}${close}` : (s) => s;
 }
 
-export const bold: Style = attr("\x1b[1m", "\x1b[22m");
-export const dim: Style = attr("\x1b[2m", "\x1b[22m");
-export const italic: Style = attr("\x1b[3m", "\x1b[23m");
-export const underline: Style = attr("\x1b[4m", "\x1b[24m");
-
-/** True when colour output is active (TTY, not NO_COLOR'd). */
-export const supportsColor = colorEnabled;
+const bold: Style = attr("\x1b[1m", "\x1b[22m");
+const dim: Style = attr("\x1b[2m", "\x1b[22m");
 
 // ── pre-bound theme ──────────────────────────────────────────────────────
 
-/** The CLI palette — semantic, pre-bound to the design tokens. */
+/** The CLI palette — semantic, pre-bound to ./tokens. */
 export const term = {
   fg: fg(palette.fg),
   muted: fg(palette.fgMuted),
@@ -99,11 +85,8 @@ export const term = {
   success: fg(palette.success),
   warning: fg(palette.warning),
   danger: fg(palette.danger),
-  onAccent: bg(palette.accent),
   bold,
   dim,
-  italic,
-  underline,
 } as const;
 
 /** Glyph set — restrained, skills.sh-style. */
@@ -114,7 +97,5 @@ export const symbols = {
   info: "◆",
   arrow: "❯",
   bar: "│",
-  rule: "─",
   dot: "·",
-  bullet: "–",
 } as const;
