@@ -1,138 +1,34 @@
-# Migrations (`@belzabar/migrations`) — Maintainer Guide
+# Migrations — agent rules
 
-`belz migrate …` drives a Jenkins migration job — config `jenkins.migrationJob` (or
-`BELZ_JENKINS_JOB`); there is no default, a missing job fails with `MIGRATE_JENKINS_CONFIG_MISSING`. The Jenkins
-REST client lives in `lib/jenkins/`; `lib/index.ts` re-exports it.
+Documentation: [`README.md`](README.md) (package, config, `migrate run` behaviour),
+[`lib/README.md`](lib/README.md), [`lib/jenkins/README.md`](lib/jenkins/README.md),
+[`commands/README.md`](commands/README.md), [`tests/README.md`](tests/README.md).
+Flag reference: each command's `help.txt` / `belz --help-full`.
 
-## Commands
+## Standing instructions
 
-| Invocation | Kind | Notes |
-|---|---|---|
-| `belz migrate profiles [--refresh] [--client <name>]` | read | PROFILE_NAME choices by client, cached 24 h |
-| `belz migrate run --profile <p> --module <type> --ids <csv>` | **write** | triggers a real Jenkins build, follows its console, parses the REPORT |
-| `belz migrate status <n>` | read | build status, result, parameters |
-| `belz migrate logs <n>` | read | ANSI-stripped console of a build |
+- A change to behaviour, files or error codes updates the README at that level in the same
+  commit; a flag change updates `help.txt` and `desc.txt` (`apps/cli/tests/args-docs.test.ts`
+  fails on drift).
+- Imports: `@belzabar/migrations` from outside the package, relative paths inside it.
 
-`migrate run` flags (see `commands/run/help.txt`): `--module`/`--module-name`, `--module-custom`,
-`--client`, `--profile`, `--source-env`/`--target-env` (derive the profile from an env pair via `jenkins.profileEnvs`),
-`--ids`/`--ids-file` (exclusive), `--migration-id`, `--async Y|N`, `--migrate-dependents Y|N`,
-`--devops-tag`, `--out <dir>`, `--dry-run`, `--no-auto-approve`, `--quiet`, `--no-follow`, `--yes`/`-y`.
+## Do not break
 
-## Layout
-
-```
-migrations/
-├── commands/{logs,profiles,run,status}/{index.ts,help.txt,desc.txt}
-├── lib/
-│   ├── args.ts             RUN_ARGS (defineArgs) + value checks; envPairFromProfile — profile ↔
-│   │                       env consistency (config-driven); normalizeClient / matchClient
-│   │                       (clients = Jenkins divider groups); buildNumberArgs / parseBuildNumber
-│   │                       (status, logs)
-│   ├── resolve-targets.ts  pre-flight: resolve ids on the profile's SOURCE env (PD draft →
-│   │                       published sibling, AD existence + name)
-│   ├── profiles.ts         discoverProfiles (24 h cache, ~/.belz/migrations/jenkins-profiles.json);
-│   │                       resolveClientForProfile re-fetches once on a miss
-│   ├── parser.ts           stripAnsi, parseJenkinsConsole (migration ids, REPORT JSON)
-│   ├── report.ts           summarizeReport (methodComparisonResult)
-│   ├── artifacts.ts        writeArtifacts → summary.json + summary.console.log (`--out`)
-│   ├── constants.ts        KNOWN_MIGRATE_TYPES, JenkinsClient (= string), cache path
-│   ├── types.ts
-│   ├── jenkins/            Jenkins REST client (see "Jenkins client" below)
-│   └── index.ts            barrel (package `.` export; also re-exports lib/jenkins)
-├── registry.ts             static, sorted registry (`@belzabar/migrations/registry`)
-└── tests/                  unit/*.test.ts, fixtures/real/
-```
-
-Package exports: `./registry`, `.` (the lib barrel), `./lib/*`. From outside, import
-`@belzabar/migrations` (never a relative path); inside, use relative paths.
-
-## Contracts
-
-- **Not env-aware.** `migrate` is in `NOT_ENV_AWARE_NAMESPACES` (`apps/cli/bin/options.ts`):
-  the Jenkins target comes from the profile, so envelopes carry no `meta.env` and the runner's
-  explicit-`--env` rule for `writes` does not apply. `migrate run` still declares `writes: true`.
-- **What guards `run` instead:**
-  - MG-1 — strict parsing: unknown flags `MIGRATE_UNKNOWN_FLAG` (with did-you-mean), bad values
-    `MIGRATE_INVALID_FLAG_VALUE`, stray positionals `MIGRATE_UNEXPECTED_ARG`; plus
-    `MIGRATE_MODULE_REQUIRED`, `MIGRATE_IDS_REQUIRED`, `MIGRATE_IDS_CONFLICT`, …
-  - MG-2 — `--source-env`/`--target-env` must match the profile's segments
-    (`MIGRATE_ENV_PROFILE_MISMATCH`); for a profile whose segments are not mapped both must be
-    given explicitly (`MIGRATE_ENV_PROFILE_UNVERIFIED`). Segment → env comes only from config
-    `jenkins.profileEnvs` (e.g. `{ "devacme": "dev" }`, keys case-insensitive); belz has no
-    built-in project knowledge. An env pair derives `--profile` only when each env maps to
-    exactly one segment (else `MIGRATE_INVALID_ENV_PAIR`).
-  - Clients are the Jenkins job's `--- <client> ---` divider groups, never a hard-coded list:
-    `--client` is matched case-insensitively against them (`profiles --client` unknown →
-    `MIGRATE_INVALID_CLIENT` listing the known groups).
-  - Confirmation — every `run` (including `--dry-run`) is confirmed before any Jenkins
-    request: `--yes`/`-y` proceeds, a TTY is prompted, `--llm` or a non-TTY without `--yes`
-    fails `MIGRATE_CONFIRMATION_REQUIRED` (details: profile, client, module, resolved ids, dry run).
-  - Pre-flight — ids are resolved on the source env before the build: missing ids fail
-    (`MIGRATE_TARGET_NOT_FOUND`, `MIGRATE_TARGET_DRAFT_UNPUBLISHED`); a PD draft id is swapped
-    for its published id. A skipped pre-flight (source env not configured, or underivable)
-    is a warning in `meta.warnings`, never silent. The caller's active env is restored after.
-    AD ids must be uuids, not all digits (`MIGRATE_TARGET_ID_INVALID`; AD also accepts
-    numeric chain ids, OTH-R27); a 200 with an empty/`null` body is `MIGRATE_TARGET_NOT_FOUND`
-    (OTH-R22); a method whose `uuid` differs from the input is `MIGRATE_TARGET_ID_MISMATCH`.
-    Only an unparseable body counts as not found: a stalled body read keeps core's
-    `HTTP_TIMEOUT` (with `details.preflightEnv`, "retry" hint) — no build is triggered.
-  - Flags (OTH-R25/R26): `--module` + `--module-custom` → `MIGRATE_MODULE_CONFLICT`;
-    `*_COMPARISON_REPORT`/`*_MIGRATION_STATUS` without `--migration-id` →
-    `MIGRATE_MIGRATION_ID_REQUIRED`; an explicit `--client` that isn't the profile's Jenkins
-    group → `MIGRATE_CLIENT_PROFILE_MISMATCH` (an unlisted profile keeps the explicit client).
-  - After the trigger (OTH-R23): every failure (queue, getBuild, console stream, timeout,
-    artifacts, the build's own failure) keeps its code and gets `details.buildTriggered: true`,
-    `jobUrl`, and `queueUrl` / `buildNumber` / `buildUrl` when known; except for
-    `MIGRATE_RUN_FAILED` the message says "do NOT re-run" and names `belz migrate status <n>`
-    (`withBuildRef` in `commands/run/index.ts`). A 2xx trigger with no queue Location is
-    treated the same.
-- `--dry-run` only sends `DRY_RUN=true` to the job: it is still a real Jenkins build, not a
-  local validation.
-- **Config.** `Config.getJenkins()` from `~/.belz/config.json` → `jenkins` (`baseUrl`, `user`,
-  `password` + `passwordEncoding`, `migrationJob` (required, no default), optional
-  `profileEnvs`), falling back to trusted `BELZ_JENKINS_URL`,
-  `BELZ_JENKINS_USER`, `BELZ_JENKINS_PASSWORD`, `BELZ_JENKINS_JOB`. The config file wins.
-  Missing → `MIGRATE_JENKINS_CONFIG_MISSING`.
-- Jenkins errors keep their `MIGRATE_JENKINS_*` codes (see "Jenkins client" below).
-
-## Jenkins client (`lib/jenkins/`)
-
-Basic auth, CSRF crumbs, build trigger, queue resolution, build info, progressive console
-streaming. Credentials come from core `Config.getJenkins()`.
-
-- `auth.ts` `JenkinsAuth`, `buildHeaders` (UTF-8 basic auth), `assertJenkinsAuth` (the migration
-  job is required, no default); `crumb.ts` crumb fetch + per-process cache; `client.ts`
-  `jenkinsFetch`, `jenkinsError`, `getJobParameters`, `triggerBuild`, `resolveQueueItem`,
-  `getBuild`, `getConsoleChunk`, `getFullConsole`, `buildUrl`, `jobUrl`; `stream.ts`
-  `streamConsole`; `types.ts` wire types; `constants.ts` poll intervals, queue deadline (10 min),
-  default stream timeout; `index.ts` barrel.
-- Every request goes through core `httpRequest` via `jenkinsFetch`. Errors never include the HTML
-  error page or the crumb: `jenkinsError` keeps the status + page `<title>` only. A build 404 is
-  `Build #n not found` (`MIGRATE_JENKINS_BUILD_NOT_FOUND`); a crumb failure is
-  `MIGRATE_JENKINS_CRUMB_FAILED`; `resolveQueueItem` gives up after `timeoutMs` (default
-  `QUEUE_TIMEOUT_MS`) with `JENKINS_QUEUE_TIMEOUT`.
-- Codes keep their historical `MIGRATE_JENKINS_*` names: `CONFIG_MISSING`, `CRUMB_FAILED`,
-  `PARAMS_FAILED`, `TRIGGER_FAILED`, `NO_QUEUE_LOCATION`, `QUEUE_READ_FAILED`, `QUEUE_CANCELLED`,
-  `BUILD_NOT_FOUND`, `BUILD_READ_FAILED`, `CONSOLE_READ_FAILED`, `TIMEOUT`, plus the unprefixed
-  `JENKINS_QUEUE_TIMEOUT`.
-- New endpoint: a function in `client.ts` on `jenkinsFetch` + `jenkinsError`, a wire type in
-  `types.ts`, and a `fakeFetch` test in `tests/unit/jenkins-client.test.ts` (sanitized captures:
-  `tests/unit/real-jenkins.test.ts`).
+- `migrate run` never sends a Jenkins request before `confirmWrite`; `--dry-run` is not exempt,
+  because it is still a real build.
+- No hard-coded clients, profiles, env names or job names. Clients come from the job's divider
+  groups; profile ↔ env only from `jenkins.profileEnvs`; the job only from config.
+- A skipped pre-flight must warn (`context.warn`); the caller's active env must be restored.
+- Once a build is triggered, every thrown error goes through `withBuildRef` so the caller can
+  find the build instead of re-triggering it.
+- Jenkins error messages never include response HTML or the crumb; keep the historical
+  `MIGRATE_JENKINS_*` codes (callers match on them).
+- `migrate` stays in `NOT_ENV_AWARE_NAMESPACES`; `run` keeps `writes: true`.
 
 ## Adding a command
 
-1. `commands/<cmd>/index.ts` exporting a default `CommandModule` and `args` (core
-   `defineArgs`), plus `help.txt` and `desc.txt`.
-2. Add it to `registry.ts` (sorted); `apps/cli/tests/registry.test.ts` and
-   `apps/cli/tests/args-docs.test.ts` enforce registration and help/desc ↔ spec.
-3. Update this file.
-
-## Testing
-
-- `tests/fixtures/real/` — sanitized Jenkins captures (host rewritten to `jenkins.example.com`):
-  job parameters, build 1904 status and console chunk, `manifest.json`. Refresh read-only with
-  `bun scripts/fixtures/capture.ts jenkins`.
-- `tests/unit/real-jenkins.test.ts` replays them through the client via `fakeFetch`
-  (`@belzabar/core/testing`); `preflight.test.ts` covers the pre-flight and a faked end-to-end
-  `run`; `run-args.test.ts` (MG-1/MG-2); `profiles-cache.test.ts` (TTL, MG-4);
-  `run-safety.test.ts` (OTH-R22/R23/R25/R26/R27). `bunfig.toml` preloads a temp `BELZ_HOME`.
+1. `commands/<cmd>/index.ts` (default `CommandModule`, exported `args` from core `defineArgs`),
+   `help.txt`, `desc.txt`.
+2. Register it in `registry.ts`, sorted (`apps/cli/tests/registry.test.ts` checks it).
+3. Add its row to `commands/README.md` and the command table in `README.md`.
+4. Tests in `tests/unit/` over `fakeFetch`; never against a live Jenkins.
