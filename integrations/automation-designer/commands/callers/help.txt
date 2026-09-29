@@ -1,0 +1,36 @@
+Usage: belz ad callers <UUID> [flags]
+
+List the AD methods (and with --pd the PD pages / components) that call a
+method — the backward-compatibility check before changing its contract.
+Read-only.
+
+AD methods are matched env-wide through the cached method index (step refs by
+automation-API uuid / numeric id). Steps the index only knows by their numeric
+automationId are resolved by reading method bodies (cached per method version)
+for the target's own category, the --category list, or every category with
+--all; `coverage.unscannedMethods` counts methods left unresolved elsewhere.
+A draft and its published copy are both reported when both call it.
+
+Arguments:
+  <UUID>                The target method's uuid (draft or published) or AD URL.
+
+Flags:
+  --category <a,b>      Also resolve every step in these categories (names).
+  --all                 Resolve every step in every category (slow the first
+                        time: one read per method; cached afterwards).
+  --pd                  Also scan PD pages (drafts) and components for
+                        httpRequests executing the method (2 large list reads,
+                        cached 1 h).
+  --refresh             Rebuild the method index (and the PD reference index).
+  --v2                  Accepted for consistency; ignored.
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Set active environment. (default: nsm-dev)
+                        Available: nsm-dev | nsm-qa | nsm-uat
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Examples:
+  belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8
+  belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --category Schools --pd --llm
+  belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --all --refresh

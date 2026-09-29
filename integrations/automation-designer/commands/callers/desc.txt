@@ -1,0 +1,5 @@
+belz ad callers <uuid>  :->  AD methods that call this method (index env-wide; unresolved steps read in its own category)
+belz ad callers <uuid> --category <a,b>  :->  Also resolve every step in these categories
+belz ad callers <uuid> --all  :->  Resolve every step in every category (one cached read per method)
+belz ad callers <uuid> --pd  :->  Also list PD pages/components whose httpRequests execute it
+belz ad callers <uuid> --refresh  :->  Rebuild the method index (and PD reference index) first

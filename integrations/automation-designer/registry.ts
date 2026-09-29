@@ -6,6 +6,9 @@
 
 import type { CommandRegistry } from "@belzabar/core";
 
+import * as callersCmd from "./commands/callers/index";
+import callersHelp from "./commands/callers/help.txt" with { type: "text" };
+import callersDesc from "./commands/callers/desc.txt" with { type: "text" };
 import * as categoriesCmd from "./commands/categories/index";
 import categoriesHelp from "./commands/categories/help.txt" with { type: "text" };
 import categoriesDesc from "./commands/categories/desc.txt" with { type: "text" };
@@ -101,6 +104,7 @@ import validateHelp from "./commands/validate/help.txt" with { type: "text" };
 import validateDesc from "./commands/validate/desc.txt" with { type: "text" };
 
 export const registry = {
+  callers: { module: callersCmd, help: callersHelp, desc: callersDesc },
   categories: { module: categoriesCmd, help: categoriesHelp, desc: categoriesDesc },
   category: { module: categoryCmd, help: categoryHelp, desc: categoryDesc },
   changelog: { module: changelogCmd, help: changelogHelp, desc: changelogDesc },

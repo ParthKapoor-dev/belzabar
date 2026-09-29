@@ -12,7 +12,7 @@ This directory is the `@belzabar/ad` workspace package. The unified `belz` binar
 ## Command Routing
 
 ```
-belz ad <cmd>   → find, fetch, show, show-code, outputs, state, categories,
+belz ad <cmd>   → find, fetch, show, show-code, outputs, state, callers, categories,
                   services, export, export-category, test-cases, test-report,
                   child-info, test, run, save-suite, run-suites, sql,
                   save, publish, create, delete, changelog, import,
@@ -353,6 +353,21 @@ fails if a folder is missing from the registry.
     `--spine`), envs = the spine's project family (or `--envs a,b`), a
     draft uuid is traced via its published chain (AD-25); `diff` — history
     or cross-env (in-process, AD-26), reports `changed` + `differences`
+
+20. `callers <uuid>` (7.6, `lib/callers.ts`) — reverse index: AD methods
+    whose steps call the method, and with `--pd` PD pages/components whose
+    httpRequests execute it. Target identity = own + counterpart V2
+    `automationApiId`, child-info API uuid / numeric id / published chain uuid.
+    Every indexed method is matched on its `calls` refs (instant, env-wide);
+    steps known only by numeric `automationId` are resolved from the V2 body
+    (cached `~/.belz/cache/callers/<env>/<uuid>@<updatedOn>.json`; failed
+    reads 1 day in `callers-errors/`) for the target's category, `--category
+    a,b`, or everything with `--all` (sems-dev: first --all ≈ 8 min / 1569
+    reads, then seconds). `coverage.unscannedMethods` counts methods left
+    unresolved outside that scope. `--pd`: PAGE drafts listed with
+    `apiInfoLevel=MEDIUM` (includes configuration) + `pdApi.fetchAllComponents`,
+    parsed with `@belzabar/pd/lib/parser`, slim index cached 1 h
+    (`pd-ad-refs/`). Read-only; `--refresh` rebuilds the index + PD refs.
 
 ### Write (`belz ad <cmd>`) — all draft-guarded
 
