@@ -22,7 +22,17 @@ Over every README.md and AGENTS.md (skipping `node_modules`, `fixtures/` dirs an
 2. **Commands.** Every `belz <ns> <cmd> [<sub>]` in code must be a registered command (and
    subcommand, where the command declares `defineSubcommands` without a default).
 
-A line containing `docs-check:ignore` is skipped.
+A line containing `docs-check:ignore` is skipped by checks 1 and 2.
+
+Structural checks, over the tracked and untracked (not ignored) files:
+
+3. **README coverage.** Every workspace root, `scripts/`, and every directory below them that
+   holds files has a README.md. Exempt: command folders (anything below `commands/<name>/`;
+   `help.txt` is their doc), fixture directories (`fixtures/` inside a `tests/` dir;
+   `manifest.json` documents them), `node_modules` and build output.
+4. **No README.md inside a command folder.**
+5. **Thin AGENTS.md.** At most 120 lines (`AGENTS_MAX_LINES`), and no run of 3 consecutive
+   content lines (non-blank, not just punctuation) that also appears in any README.md.
 
 `bun run check` = typecheck + docs:check + dead-code + all tests; CI runs the same.
 

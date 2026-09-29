@@ -16,8 +16,21 @@
 //      blocks) must be a registered command; a subcommand word is checked when the
 //      command declares `defineSubcommands` without a default.
 //
-// A line containing `docs-check:ignore` is skipped.
+// A line containing `docs-check:ignore` is skipped (checks 1 and 2 only).
+//
+// Three structural checks over the tracked (and untracked, not ignored) files:
+//
+//   3. README coverage. Every workspace root (packages/*, apps/*, integrations/*
+//      with a package.json), `scripts/`, and every directory below them that
+//      holds files needs a README.md — except command folders (anything below
+//      `commands/<name>/`, whose help.txt is the doc), fixture directories
+//      (`fixtures/` below a `tests/` dir, documented by manifest.json),
+//      node_modules and build output.
+//   4. No README.md inside a command folder.
+//   5. AGENTS.md stays thin: at most AGENTS_MAX_LINES lines, and no run of
+//      DUPLICATE_RUN consecutive content lines copied from a README.md.
 
+import { spawnSync } from "child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { dirname, join, relative, resolve } from "path";
 
@@ -218,6 +231,124 @@ export function workspacePackages(root: string): Map<string, string> {
   return out;
 }
 
+// ── Structural checks: README coverage, command folders, thin AGENTS.md ──────
+
+/** Max lines of an AGENTS.md (they hold agent rules and links, not docs). */
+export const AGENTS_MAX_LINES = 120;
+/** Consecutive content lines shared with a README that count as duplication. */
+const DUPLICATE_RUN = 3;
+
+const WORKSPACE_GROUPS = ["packages", "apps", "integrations"];
+/** Directories never documented or required to be (build output, deps, VCS). */
+const STRUCTURE_SKIP = new Set(["node_modules", "dist", "build", "dist-pack", "coverage", ".turbo", ".next", ".git"]);
+
+/** True for a directory inside a command folder (`…/commands/<name>/…`). */
+export function isInCommandFolder(dir: string): boolean {
+  const segs = dir.split("/");
+  const i = segs.lastIndexOf("commands");
+  return i >= 0 && i < segs.length - 1;
+}
+
+/** True for a fixture directory: `fixtures/` (or below) inside a `tests/` dir. */
+export function isFixtureDir(dir: string): boolean {
+  const segs = dir.split("/");
+  const t = segs.indexOf("tests");
+  return t >= 0 && segs.indexOf("fixtures", t + 1) > t;
+}
+
+/**
+ * Directories that must hold a README.md, from repo-relative file paths.
+ * `workspaceRoots` are the dirs of the workspace package.json files.
+ */
+export function requiredReadmeDirs(files: readonly string[], workspaceRoots: readonly string[]): string[] {
+  const scopes = [...workspaceRoots, "scripts"];
+  const out = new Set<string>(workspaceRoots);
+  for (const file of files) {
+    const scope = scopes.find((s) => file.startsWith(s + "/"));
+    if (!scope) continue;
+    let dir = dirname(file);
+    while (dir.length >= scope.length) {
+      const segs = dir.split("/");
+      if (!segs.some((seg) => STRUCTURE_SKIP.has(seg)) && !isInCommandFolder(dir) && !isFixtureDir(dir)) out.add(dir);
+      if (dir === scope) break;
+      dir = dirname(dir);
+    }
+  }
+  return [...out].sort();
+}
+
+/** Workspace roots (dirs with a package.json under packages/, apps/, integrations/). */
+function workspaceRoots(root: string): string[] {
+  return [...workspacePackages(root).values()].sort();
+}
+
+/** Tracked plus untracked-but-not-ignored files (repo-relative); falls back to [] outside git. */
+function repoFiles(root: string): string[] {
+  const r = spawnSync("git", ["ls-files", "--cached", "--others", "--exclude-standard"], { cwd: root, encoding: "utf8" });
+  if (r.status !== 0) return [];
+  return r.stdout.split("\n").filter((f) => f && existsSync(join(root, f)));
+}
+
+/** Missing READMEs and READMEs inside command folders. */
+export function checkStructure(root: string, files: readonly string[], roots: readonly string[]): Problem[] {
+  const problems: Problem[] = [];
+  for (const dir of requiredReadmeDirs(files, roots)) {
+    if (!existsSync(join(root, dir, "README.md"))) {
+      problems.push({ file: `${dir}/README.md`, line: 0, message: "missing README.md (every workspace, source, test and script directory has one)" });
+    }
+  }
+  for (const f of files) {
+    if (f.endsWith("/README.md") && isInCommandFolder(dirname(f))) {
+      problems.push({ file: f, line: 0, message: "README.md inside a command folder: fold it into help.txt (or the lib README) and delete it" });
+    }
+  }
+  return problems;
+}
+
+/** Lines that carry content: non-blank and with a letter or digit (not fences, rules, table separators). */
+function contentLines(markdown: string): Array<{ text: string; line: number }> {
+  return markdown
+    .split("\n")
+    .map((raw, i) => ({ text: raw.trim(), line: i + 1 }))
+    .filter((l) => /[\p{L}\p{N}]/u.test(l.text));
+}
+
+const runKey = (lines: Array<{ text: string }>, i: number) =>
+  lines.slice(i, i + DUPLICATE_RUN).map((l) => l.text).join("\n");
+
+/**
+ * AGENTS.md problems: longer than AGENTS_MAX_LINES, or sharing a run of
+ * DUPLICATE_RUN consecutive content lines with any README.md. `docs` are
+ * repo-relative AGENTS.md / README.md paths.
+ */
+export function checkAgentsDocs(root: string, docs: readonly string[]): Problem[] {
+  const problems: Problem[] = [];
+  const readmeRuns = new Map<string, string>();
+  for (const doc of docs.filter((d) => d.endsWith("README.md"))) {
+    const lines = contentLines(readFileSync(join(root, doc), "utf8"));
+    for (let i = 0; i + DUPLICATE_RUN <= lines.length; i++) {
+      const key = runKey(lines, i);
+      if (!readmeRuns.has(key)) readmeRuns.set(key, doc);
+    }
+  }
+  for (const doc of docs.filter((d) => d.endsWith("AGENTS.md"))) {
+    const text = readFileSync(join(root, doc), "utf8");
+    const total = text.replace(/\n$/, "").split("\n").length;
+    if (total > AGENTS_MAX_LINES) {
+      problems.push({ file: doc, line: 0, message: `${total} lines (max ${AGENTS_MAX_LINES}): AGENTS.md holds agent rules and links; move documentation to a README.md` });
+    }
+    const lines = contentLines(text);
+    for (let i = 0; i + DUPLICATE_RUN <= lines.length; i++) {
+      const readme = readmeRuns.get(runKey(lines, i));
+      if (readme) {
+        problems.push({ file: doc, line: lines[i]!.line, message: `${DUPLICATE_RUN}+ lines duplicated from ${readme}: link to it instead` });
+        i += DUPLICATE_RUN - 1;
+      }
+    }
+  }
+  return problems;
+}
+
 async function main(): Promise<void> {
   const root = resolve(import.meta.dir, "..");
   const { REGISTRIES } = await import("../apps/cli/bin/options");
@@ -232,8 +363,12 @@ async function main(): Promise<void> {
     REGISTRIES["apps/cli"]!,
   );
   const docs = findDocs(root);
-  const problems = checkDocs(root, docs, index, workspacePackages(root));
-  for (const p of problems) console.error(`${p.file}:${p.line}: ${p.message}`);
+  const problems = [
+    ...checkDocs(root, docs, index, workspacePackages(root)),
+    ...checkStructure(root, repoFiles(root), workspaceRoots(root)),
+    ...checkAgentsDocs(root, docs),
+  ];
+  for (const p of problems) console.error(p.line > 0 ? `${p.file}:${p.line}: ${p.message}` : `${p.file}: ${p.message}`);
   if (problems.length > 0) {
     console.error(`docs:check: ${problems.length} problem(s) in ${docs.length} docs`);
     process.exit(1);

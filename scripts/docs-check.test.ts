@@ -5,13 +5,19 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import {
+  AGENTS_MAX_LINES,
   buildIndex,
+  checkAgentsDocs,
   checkCommand,
   checkDocs,
+  checkStructure,
   commandCandidates,
   extractSnippets,
   findDocs,
+  isFixtureDir,
+  isInCommandFolder,
   pathCandidates,
+  requiredReadmeDirs,
   workspacePackages,
 } from "./docs-check";
 
@@ -117,5 +123,79 @@ describe("checkDocs on a temp repo", () => {
       "integrations/ad/AGENTS.md:5: unknown command `belz frobnicate`",
       "integrations/ad/AGENTS.md:6: missing path ../ad/lib/gone.ts",
     ]);
+  });
+});
+
+describe("README coverage", () => {
+  const FILES = [
+    "integrations/ad/package.json",
+    "integrations/ad/registry.ts",
+    "integrations/ad/lib/save/verify.ts",
+    "integrations/ad/commands/registry.ts",
+    "integrations/ad/commands/show/index.ts",
+    "integrations/ad/commands/sql/tui/view.ts",
+    "integrations/ad/tests/unit/a.test.ts",
+    "integrations/ad/tests/fixtures/real-v1/x.json",
+    "integrations/ad/node_modules/x/index.js",
+    "scripts/fixtures/capture.ts",
+    "cloud/setup.sh",
+    "README.md",
+  ];
+
+  test("command folders and test fixture dirs are recognised", () => {
+    expect(isInCommandFolder("integrations/ad/commands")).toBe(false);
+    expect(isInCommandFolder("integrations/ad/commands/show")).toBe(true);
+    expect(isInCommandFolder("integrations/ad/commands/sql/tui")).toBe(true);
+    expect(isFixtureDir("integrations/ad/tests/fixtures/real-v1")).toBe(true);
+    expect(isFixtureDir("scripts/fixtures")).toBe(false);
+  });
+
+  test("workspace roots, scripts/ and every dir below them, minus command folders, fixtures and deps", () => {
+    expect(requiredReadmeDirs(FILES, ["integrations/ad"])).toEqual([
+      "integrations/ad",
+      "integrations/ad/commands",
+      "integrations/ad/lib",
+      "integrations/ad/lib/save",
+      "integrations/ad/tests",
+      "integrations/ad/tests/unit",
+      "scripts",
+      "scripts/fixtures",
+    ]);
+  });
+
+  test("checkStructure reports missing READMEs and READMEs in command folders", () => {
+    const root = mkdtempSync(join(tmpdir(), "docs-check-structure-"));
+    try {
+      const files = ["integrations/ad/package.json", "integrations/ad/lib/a.ts", "integrations/ad/commands/show/index.ts", "integrations/ad/commands/show/README.md", "integrations/ad/commands/README.md", "integrations/ad/README.md"];
+      for (const f of files) {
+        mkdirSync(join(root, f, ".."), { recursive: true });
+        writeFileSync(join(root, f), "");
+      }
+      const problems = checkStructure(root, files, ["integrations/ad"]).map((p) => p.file);
+      expect(problems).toEqual(["integrations/ad/lib/README.md", "integrations/ad/commands/show/README.md"]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("thin AGENTS.md", () => {
+  let root: string;
+  beforeAll(() => {
+    root = mkdtempSync(join(tmpdir(), "docs-check-agents-"));
+    mkdirSync(join(root, "a"), { recursive: true });
+    mkdirSync(join(root, "b"), { recursive: true });
+    writeFileSync(join(root, "a/README.md"), ["# A", "", "Line one of the doc.", "Line two of the doc.", "", "Line three of the doc.", "Other."].join("\n"));
+    // Blank lines and punctuation-only lines (fences, rules) do not break or make a run.
+    writeFileSync(join(root, "a/AGENTS.md"), ["# Rules", "Line one of the doc.", "", "Line two of the doc.", "---", "Line three of the doc.", "```", "```", "```"].join("\n"));
+    writeFileSync(join(root, "b/AGENTS.md"), Array.from({ length: AGENTS_MAX_LINES + 1 }, (_, i) => `rule ${i}`).join("\n") + "\n");
+  });
+  afterAll(() => rmSync(root, { recursive: true, force: true }));
+
+  test("flags duplicated runs and over-long files", () => {
+    const problems = checkAgentsDocs(root, ["a/AGENTS.md", "a/README.md", "b/AGENTS.md"]);
+    expect(problems.map((p) => `${p.file}:${p.line}`)).toEqual(["a/AGENTS.md:2", "b/AGENTS.md:0"]);
+    expect(problems[0]!.message).toContain("a/README.md");
+    expect(problems[1]!.message).toContain(`${AGENTS_MAX_LINES + 1} lines`);
   });
 });
