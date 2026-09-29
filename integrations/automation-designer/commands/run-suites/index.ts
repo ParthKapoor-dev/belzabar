@@ -4,7 +4,7 @@ import { CliError, defineArgs, fail, ok, readJsonOrNull, type CommandModule } fr
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { fetchRawMethod, testMethodMultipart } from "../../lib/api/v1";
 import { buildV1TestPayload, describeTestFailure, v1TestFormData } from "../../lib/payload-builder";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 
 interface SuiteResult {
   name: string;

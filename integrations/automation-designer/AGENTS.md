@@ -29,7 +29,6 @@ lib/
   parser/              v1.ts / v2.ts → HydratedMethod; steps/classify.ts classifies a step
                        by service identity (SQL / SPEL_ECHO / REDIS_* / CUSTOM_CODE / EXISTING_SERVICE)
   hydrator.ts          V1 service-definition lookup + cache (buildServiceResolver)
-  ids.ts               resolveMethodRef: any uuid spelling / AD URL → 32-hex (INVALID_UUID)
   categories.ts        one category identity (chain category ⨝ automation system)
   draft-guard.ts       resolveDraftTarget: the ONLY way to pick a save target
   cache.ts             method cache (CacheManager)
@@ -466,3 +465,5 @@ Rules:
 When you change this module (commands, flags, behaviour, lib files, output shapes),
 update this file, the command's `help.txt` / `desc.txt`, and `registry.ts` in the same
 commit. Keep `--llm` envelopes stable, because agents parse them.
+
+Method uuids go through `resolveMethodRef` from `@belzabar/core/platform` (any uuid spelling or AD URL → 32-hex, else `INVALID_UUID`).

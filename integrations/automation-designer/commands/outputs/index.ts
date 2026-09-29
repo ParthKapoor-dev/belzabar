@@ -1,7 +1,7 @@
 import { type CommandModule, defineArgs, isObj, ok, str } from "@belzabar/core";
 import { fetchViewMethod } from "../../lib/view-fetch";
 import type { ParsedStep } from "../../lib/types/common";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 
 interface OutputsArgs {

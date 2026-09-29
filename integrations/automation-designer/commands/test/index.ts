@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { requireConfirmation } from "../../lib/args/confirm";
 import {

@@ -28,7 +28,7 @@ import { pdApi } from "@belzabar/pd/lib/api/index";
 import type { RawPageResponse } from "@belzabar/pd/lib/types/wire";
 import { fetchRawMethod } from "./api/v2";
 import { adApi } from "./api/index";
-import { normalizeUuid } from "./ids";
+import { normalizeUuid } from "@belzabar/core/platform";
 import type { MethodFinderIndex, MethodFinderMethod } from "./method-finder";
 
 type Obj = Record<string, unknown>;

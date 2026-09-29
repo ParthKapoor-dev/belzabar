@@ -4,7 +4,7 @@ import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { abbreviate, htmlToText, pruneEmpty } from "../../lib/compact";
 import { parseV1Method, parseV2Method } from "../../lib/parser/index";
 import {

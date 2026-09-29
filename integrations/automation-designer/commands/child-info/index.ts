@@ -2,7 +2,7 @@ import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { apiShape, fetchAccountLines, type ApiShape } from "../../lib/api-shape";
-import { trimUuidPadding } from "../../lib/ids";
+import { trimUuidPadding } from "@belzabar/core/platform";
 
 interface ChildInfoArgs {
   category: string;

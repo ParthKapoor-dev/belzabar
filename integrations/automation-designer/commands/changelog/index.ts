@@ -1,7 +1,7 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi, type ChangelogEntry } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { AD_COMMON_FLAGS, AD_NOTE_FLAG, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import type { HydratedMethod } from "../../lib/types/common";

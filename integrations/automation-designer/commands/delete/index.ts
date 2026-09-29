@@ -3,7 +3,7 @@ import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { CacheManager } from "../../lib/cache";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { deleteChainV2 } from "../../lib/save/api";
 import { invalidateCompiledCache } from "../../lib/save/compiled-cache";
 import * as v2 from "../../lib/api/v2";

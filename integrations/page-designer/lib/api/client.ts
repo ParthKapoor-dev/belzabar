@@ -18,6 +18,7 @@ import type {
   PdStatus,
   PdEntityType,
 } from "../types/wire";
+import { fetchRawPage } from "@belzabar/core/platform";
 
 const PD_BASE = "/rest/api/pagedesigner";
 
@@ -26,13 +27,27 @@ const PD_BASE = "/rest/api/pagedesigner";
 // Non-OK → CliError via core's HTTP error mapping (body summarised: HTML →
 // <title>, truncated, secret-redacted). PD keeps its stable codes:
 // PD_LOCKED (409) / PD_API_ERROR (everything else).
-async function ensureOk(response: Response, context: { method: string; path: string }): Promise<void> {
-  if (response.ok) return;
+async function pdError(response: Response, context: { method: string; path: string }): Promise<CliError> {
   const mapped = await httpError(response, { method: context.method, path: context.path });
-  throw new CliError(`${context.method} ${context.path} failed: HTTP ${response.status}`, {
+  return new CliError(`${context.method} ${context.path} failed: HTTP ${response.status}`, {
     code: response.status === 409 ? "PD_LOCKED" : "PD_API_ERROR",
     details: mapped.details,
   });
+}
+
+async function ensureOk(response: Response, context: { method: string; path: string }): Promise<void> {
+  if (!response.ok) throw await pdError(response, context);
+}
+
+/** PD_API_ERROR for a non-JSON 2xx body (an SSO / maintenance HTML page served with 200). */
+function pdBadJson(context: { method: string; path: string }): (text: string, res: Response) => CliError {
+  return (text, res) => {
+    const summary = summarizeBody(text, res.headers.get("content-type"));
+    return new CliError(`${context.method} ${context.path} returned a non-JSON body: ${summary}`, {
+      code: "PD_API_ERROR",
+      details: { status: res.status, body: summary },
+    });
+  };
 }
 
 /**
@@ -41,27 +56,15 @@ async function ensureOk(response: Response, context: { method: string; path: str
  * summary instead of a raw SyntaxError (UNHANDLED_EXCEPTION).
  */
 export async function readJson<T>(response: Response, context: { method: string; path: string }): Promise<T | null> {
-  return readJsonOrNull<T>(response, {
-    badJson: (text, res) => {
-      const summary = summarizeBody(text, res.headers.get("content-type"));
-      return new CliError(`${context.method} ${context.path} returned a non-JSON body: ${summary}`, {
-        code: "PD_API_ERROR",
-        details: { status: res.status, body: summary },
-      });
-    },
-  });
+  return readJsonOrNull<T>(response, { badJson: pdBadJson(context) });
 }
 
 // -------- reads -----------------------------------------------------------
 
 export async function fetchPage(pageId: string): Promise<RawPageResponse | null> {
-  const response = await apiFetch(`${PD_BASE}/pages/${pageId}`, {
-    method: "GET",
-    authMode: "Bearer",
-  });
-  if (response.status === 404) return null;
-  await ensureOk(response, { method: "GET", path: `/pages/${pageId}` });
-  return readJson<RawPageResponse>(response, { method: "GET", path: `/pages/${pageId}` });
+  const context = { method: "GET", path: `/pages/${pageId}` };
+  const got = await fetchRawPage<RawPageResponse>(pageId, { onError: (res) => pdError(res, context), badJson: pdBadJson(context) });
+  return got.found ? got.body : null;
 }
 
 /** A list row is a component (symbol) when the server marks it so. */

@@ -9,7 +9,7 @@
 
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { auditExistingRecord, validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
 import type { V2MethodBody } from "../../lib/types/v2-wire";
 import { loadBodyOrSpec, type LoadedBody } from "../../lib/save/spec";

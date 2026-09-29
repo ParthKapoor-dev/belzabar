@@ -1,6 +1,6 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { CustomCodeStep } from "../../lib/types/common";
 

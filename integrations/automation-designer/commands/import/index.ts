@@ -8,6 +8,7 @@ import { CacheManager } from "../../lib/cache";
 import { runValidationGate, type ValidationSummary } from "../../lib/save/validation";
 import type { HydratedMethod } from "../../lib/types/common";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
+import { isHex32 } from "@belzabar/core/platform";
 
 interface ImportArgs {
   filePath: string;
@@ -156,7 +157,7 @@ function recordState(r: Obj): string | null {
  * whose entries carry activeTab (the server NPEs otherwise); V2 needs steps[].
  */
 function checkRecordShape(name: string, r: Obj): ImportMethodCheck {
-  const uuid = typeof r.uuid === "string" && /^[0-9a-f]{32}$/i.test(r.uuid.trim()) ? r.uuid.trim().toLowerCase() : null;
+  const uuid = typeof r.uuid === "string" && isHex32(r.uuid.trim()) ? r.uuid.trim().toLowerCase() : null;
   const bad = (why: string): never => {
     throw new CliError(`'${name}' cannot be imported: ${why}. Nothing was sent.`, { code: "AD_IMPORT_INVALID", details: { name, reason: why } });
   };

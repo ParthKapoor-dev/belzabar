@@ -8,7 +8,7 @@
 // (what `ad child-info` fetches); accounts are GET /automation-systems/{service}/auth.
 
 import { apiFetch, isObj, str } from "@belzabar/core";
-import { normalizeUuid } from "./ids";
+import { normalizeUuid } from "@belzabar/core/platform";
 
 type Obj = Record<string, unknown>;
 

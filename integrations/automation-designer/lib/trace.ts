@@ -17,7 +17,7 @@ import { BELZ_CONFIG_DIR, Cache, CliError, Config } from "@belzabar/core";
 import { adApi } from "./api/index";
 import type { MethodVersionFull } from "./api/v1";
 import { fingerprintMethod, parseVersionBody } from "./fingerprint";
-import { resolveMethodRef } from "./ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 
 export interface TraceOptions {
   uuid: string;

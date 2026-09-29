@@ -1,7 +1,7 @@
 import { readFile } from "fs/promises";
 import { dirname } from "path";
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { requireConfirmation } from "../../lib/args/confirm";
 import { saveOverlayV2, type SaveDryRunData, type SaveV2Data } from "../../lib/save/pipeline";

@@ -5,8 +5,9 @@
 // a V1 body parsed without it misclassifies SQL / echo steps. Prefer
 // lib/api/index.ts:adApi; a few callers need the raw wire directly.
 
-import { apiFetch, CliError, Config, ensureApiOk, expectJson, readJsonOrNull, redactSecrets, redactString } from "@belzabar/core";
+import { apiError, apiFetch, badJsonError, CliError, Config, ensureApiOk, expectFound, httpError, readJsonOrNull, redactSecrets, redactString } from "@belzabar/core";
 import type { V1AutomationDefinition, V1RawMethodResponse } from "../types/v1-wire";
+import { adChainPath, fetchRawChain } from "@belzabar/core/platform";
 
 /**
  * Per-call timeout for long server-side operations (`/chain/test`, execute,
@@ -18,8 +19,10 @@ export const AD_LONG_OP_TIMEOUT_MS = 10 * 60_000;
 
 // ─── Error envelope used by every V1 request ────────────────────────────
 
+const adErrorCode = (status: number) => (status === 409 ? "AD_VERSION_CONFLICT" : "AD_API_ERROR");
+
 function checkResponse(response: Response, path: string): Promise<void> {
-  return ensureApiOk(response, { path, code: (status) => (status === 409 ? "AD_VERSION_CONFLICT" : "AD_API_ERROR") });
+  return ensureApiOk(response, { path, code: adErrorCode });
 }
 
 /**
@@ -33,29 +36,22 @@ async function readJson<T = unknown>(response: Response, path: string): Promise<
   return readJsonOrNull<T>(response, { path });
 }
 
-/**
- * Parse a chain GET. 404 — and 200 with an empty/`null` body, which is how
- * the server answers an unknown uuid (AD-11 / F10) — are METHOD_NOT_FOUND.
- */
-async function fetchChainJson<T>(response: Response, path: string, uuid: string): Promise<T> {
-  if (response.ok || response.status === 404) {
-    return expectJson<T>(response, {
-      path,
-      notFoundCode: "METHOD_NOT_FOUND",
-      notFoundMessage: `Method not found: ${uuid}`,
-      details: { uuid },
-    });
-  }
-  await checkResponse(response, path);
-  throw new Error("unreachable");
-}
-
 // ─── READS ───────────────────────────────────────────────────────────────
 
+/**
+ * The raw V1 chain. 404 — and 200 with an empty/`null` body, which is how the
+ * server answers an unknown uuid (AD-11 / F10) — are METHOD_NOT_FOUND.
+ */
 export async function fetchRawMethod(uuid: string): Promise<V1RawMethodResponse> {
-  const path = `/rest/api/automation/chain/${uuid}`;
-  const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  return fetchChainJson<V1RawMethodResponse>(response, path, uuid);
+  const path = adChainPath(uuid);
+  const notFound = { path, notFoundCode: "METHOD_NOT_FOUND", notFoundMessage: `Method not found: ${uuid}`, details: { uuid } };
+  const got = await fetchRawChain<V1RawMethodResponse>(uuid, {
+    onError: (res) => apiError(res, { path, code: adErrorCode }),
+    badJson: (text, res) => badJsonError(text, res, path),
+  });
+  if (got.found) return got.body;
+  if (got.reason === "http-404") throw await httpError(got.res, notFound);
+  return expectFound<V1RawMethodResponse>(null, notFound);
 }
 
 export async function fetchAutomationDefinition(

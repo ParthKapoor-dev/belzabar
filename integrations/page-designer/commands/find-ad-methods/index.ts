@@ -11,6 +11,7 @@ import { analyzeItem, cacheDeps, cacheUseWarning, collectAllAdIds, emptySourceCo
 import { adIdsOf } from "../../lib/extract";
 import { parsePage } from "../../lib/parser/index";
 import { resolveInput, resolveNameToId } from "../../lib/resolver";
+import { isHex32 } from "@belzabar/core/platform";
 
 interface FindAdMethodsArgs {
   targetId: string;
@@ -51,7 +52,7 @@ const command: CommandModule<FindAdMethodsArgs, FindAdMethodsData> = {
   },
   async execute({ targetId, recursive, component, force }, context) {
     // --component: <input> is a component NAME (only components are considered).
-    const input = component && !/^[0-9a-f]{32}$/i.test(targetId) ? await resolveNameToId(targetId, true) : targetId;
+    const input = component && !isHex32(targetId) ? await resolveNameToId(targetId, true) : targetId;
     const resolved = await resolveInput(input, force);
     const page = parsePage(resolved.response);
 

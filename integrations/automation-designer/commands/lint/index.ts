@@ -7,7 +7,7 @@
 
 import { CliError, defineArgs, failWithData, loadConfigFileRaw, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
 import { lintMethodV2 } from "../../lib/validate/lint";
 import type { V2MethodBody } from "../../lib/types/v2-wire";

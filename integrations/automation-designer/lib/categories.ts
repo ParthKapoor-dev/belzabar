@@ -14,7 +14,7 @@
 // Uuids come padded with 4 spaces; every uuid here is trimmed, never padded.
 
 import { CliError, num, strOrNull } from "@belzabar/core";
-import { normalizeUuid } from "./ids";
+import { normalizeUuid } from "@belzabar/core/platform";
 import { adApi } from "./api/index";
 
 export interface Category {

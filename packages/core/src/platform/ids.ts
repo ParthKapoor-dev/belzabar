@@ -1,4 +1,5 @@
-// Identifier normalisation for AD (AD-30, F11, AD-09).
+// Expertly entity ids (AD method uuids, PD page/component ids) and their
+// normalisation.
 //
 // The platform hands out uuids in several spellings: 32 hex characters padded
 // with 4 trailing spaces (most V1/V2 records), dashed 36-character uuids
@@ -7,10 +8,27 @@
 // method uuid must go through `resolveMethodRef`, so the path it builds, the
 // cache key it uses and the value it echoes back are the same canonical form.
 
-import { CliError } from "@belzabar/core";
+import { CliError } from "../command";
 
-const HEX32 = /^[0-9a-f]{32}$/;
-const DASHED = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+/** 32 hex characters (the AD/PD id form), any case. */
+export const HEX32_RE = /^[0-9a-f]{32}$/i;
+/** A dashed 36-character uuid, any case. */
+export const DASHED_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Exactly 32 hex characters (no trimming). */
+export function isHex32(s: string): boolean {
+  return HEX32_RE.test(s);
+}
+
+/** A 32-hex or dashed uuid (no trimming). */
+export function isEntityId(s: string): boolean {
+  return HEX32_RE.test(s) || DASHED_UUID_RE.test(s);
+}
+
+/** Lower-case, dashes removed (for comparing ids spelled differently). */
+export function canonicalUuid(s: string): string {
+  return s.replace(/-/g, "").toLowerCase();
+}
 
 /**
  * Canonical method uuid: trimmed, lower-case, 32 hex characters, no dashes.
@@ -28,8 +46,8 @@ export function resolveMethodRef(input: string): string {
   const raw = typeof input === "string" ? input.trim() : "";
   const candidate = looksLikeUrl(raw) ? lastUrlSegment(raw) : raw;
   const lowered = candidate.toLowerCase();
-  if (HEX32.test(lowered)) return lowered;
-  if (DASHED.test(lowered)) return lowered.replace(/-/g, "");
+  if (HEX32_RE.test(lowered)) return lowered;
+  if (DASHED_UUID_RE.test(lowered)) return lowered.replace(/-/g, "");
   throw new CliError(
     `Not a method uuid or AD URL: '${raw}'. Expected 32 hex characters (dashes and surrounding spaces are ignored) ` +
       "or an Automation Designer URL ending in the uuid.",

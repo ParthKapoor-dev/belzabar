@@ -2,7 +2,7 @@ import { CliError, currentCacheEnv, defineArgs, ok, type CommandModule } from "@
 import * as v2 from "../../lib/api/v2";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
-import { normalizeUuid } from "../../lib/ids";
+import { normalizeUuid } from "@belzabar/core/platform";
 import { addMethodToIndex, invalidateMethodIndexEntry } from "../../lib/method-finder";
 import { postChainV2 } from "../../lib/save/api";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";

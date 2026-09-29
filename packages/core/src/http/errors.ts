@@ -180,12 +180,16 @@ export async function readJsonOrNull<T>(res: Response, opts: HttpErrorOptions = 
   try {
     return JSON.parse(text) as T;
   } catch {
-    if (opts.badJson) throw opts.badJson(text, res);
-    throw new CliError(
-      `Expected JSON${opts.path ? ` from ${redactString(opts.path)}` : ""} but got: ${summarizeBody(text, res.headers.get("content-type"), 200)}`,
-      { code: "HTTP_BAD_JSON", details: redactSecrets({ status: res.status, path: opts.path }) },
-    );
+    throw opts.badJson ? opts.badJson(text, res) : badJsonError(text, res, opts.path);
   }
+}
+
+/** HTTP_BAD_JSON for a 2xx body that did not parse (summarised, redacted). */
+export function badJsonError(text: string, res: Response, path?: string): CliError {
+  return new CliError(
+    `Expected JSON${path ? ` from ${redactString(path)}` : ""} but got: ${summarizeBody(text, res.headers.get("content-type"), 200)}`,
+    { code: "HTTP_BAD_JSON", details: redactSecrets({ status: res.status, path }) },
+  );
 }
 
 function notFoundError(opts: HttpErrorOptions): CliError {

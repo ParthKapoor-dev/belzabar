@@ -3,8 +3,8 @@
 ## Purpose
 
 `packages/core/` is the **`@belzabar/core`** workspace package — the shared CLI framework used by
-every `integrations/*` package and by `apps/cli`. Package exports: `.` → `src/index.ts` (barrel)
-and `./testing` → `src/testing/index.ts` (test helpers only; never import from runtime code).
+every `integrations/*` package and by `apps/cli`. Package exports: `.` → `src/index.ts` (barrel),
+`./platform` → `src/platform/index.ts`, and `./testing` → `src/testing/index.ts` (test helpers only; never import from runtime code).
 
 ## Module map (`src/`)
 
@@ -27,6 +27,7 @@ and `./testing` → `src/testing/index.ts` (test helpers only; never import from
 | `src/belz-meta.ts` | Install metadata (source checkout, install dir, binary path) used by `belz update` |
 | `src/open.ts` | `openUrlInBrowser` |
 | `src/types.ts` | Shared domain types (`Environment`, `AuthSession`, …) |
+| `src/platform/` | `@belzabar/core/platform` — Expertly-specific shared code: `ids.ts` (`resolveMethodRef`, `normalizeUuid`, `trimUuidPadding`, `isHex32`, `isEntityId`, `canonicalUuid`, `HEX32_RE`, `DASHED_UUID_RE`), `entities.ts` (`fetchRawChain` / `fetchRawPage` / `fetchRawEntity`: not found = 404 or an empty/`null` 2xx; callers map `onError` / `badJson` to their own codes; `adChainPath`, `pdPagePath`, `EntityStatus`) |
 | `src/testing/` | `@belzabar/core/testing` (see Testing) |
 
 ---

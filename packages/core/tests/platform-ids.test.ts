@@ -1,6 +1,6 @@
-// lib/ids.ts — one canonical method uuid for every AD command (AD-30, F11).
+// platform/ids.ts — one canonical method uuid for every command, plus the shared id guards.
 import { describe, expect, test } from "bun:test";
-import { normalizeUuid, resolveMethodRef } from "../../lib/ids";
+import { normalizeUuid, resolveMethodRef } from "../src/platform";
 
 const U = "4bf56e008eabe4010508af439a15ecfb";
 
@@ -43,5 +43,16 @@ describe("normalizeUuid", () => {
     expect(normalizeUuid("cbde649a-7385-4c1b-a57a-41f7f023590b")).toBe("cbde649a-7385-4c1b-a57a-41f7f023590b");
     expect(normalizeUuid("   ")).toBeNull();
     expect(normalizeUuid(null)).toBeNull();
+  });
+});
+
+describe("id guards", () => {
+  test("isHex32 / isEntityId / canonicalUuid", async () => {
+    const { canonicalUuid, isEntityId, isHex32 } = await import("../src/platform");
+    expect(isHex32(U.toUpperCase())).toBe(true);
+    expect(isHex32(`${U} `)).toBe(false);
+    expect(isEntityId("4bf56e00-8eab-e401-0508-af439a15ecfb")).toBe(true);
+    expect(isEntityId("123")).toBe(false);
+    expect(canonicalUuid("4BF56E00-8eab-e401-0508-af439a15ecfb")).toBe(U);
   });
 });

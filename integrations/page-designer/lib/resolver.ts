@@ -14,6 +14,7 @@ import { cachedFetchPageConfigSwr, type ConfigSource, type SwrConfigResult } fro
 import { inferEntityType } from "./parser/index";
 import { parsePdUrl, tryParseUrl } from "./url-parser";
 import type { RawPageResponse } from "./types/wire";
+import { isHex32 } from "@belzabar/core/platform";
 
 export type InputKind = "app-url" | "pd-url" | "id" | "name";
 
@@ -57,7 +58,7 @@ export function detectInputKind(input: string): DetectedInput {
     );
   }
 
-  if (/^[0-9a-f]{32}$/i.test(input)) return { kind: "id" };
+  if (isHex32(input)) return { kind: "id" };
   return { kind: "name" };
 }
 

@@ -3,7 +3,7 @@ import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { readStream } from "../../lib/stream-parser";
 import { adApi } from "../../lib/api/index";
 import { AD_LONG_OP_TIMEOUT_MS } from "../../lib/api/v1";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import type { MethodState } from "../../lib/types/common";
 
 interface RunMethodArgs {

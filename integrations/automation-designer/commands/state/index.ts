@@ -3,7 +3,7 @@ import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { fingerprintMethod } from "../../lib/fingerprint";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import type { HydratedMethod } from "../../lib/types/common";
 
 interface StateArgs {

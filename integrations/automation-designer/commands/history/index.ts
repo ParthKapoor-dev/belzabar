@@ -5,7 +5,7 @@ import { requireConfirmation, logIntent } from "../../lib/args/confirm";
 import { diffPaths, fingerprintMethod, fingerprintProjection, parseVersionBody } from "../../lib/fingerprint";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { getVersionOf, sideOf, type HistorySide } from "../../lib/history";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import type { HydratedMethod } from "../../lib/types/common";
 import { CacheManager } from "../../lib/cache";
 import * as v2api from "../../lib/api/v2";

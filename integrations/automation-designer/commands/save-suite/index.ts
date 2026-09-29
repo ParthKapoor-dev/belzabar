@@ -3,7 +3,7 @@ import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 
 interface SaveSuiteArgs {
   uuid: string;

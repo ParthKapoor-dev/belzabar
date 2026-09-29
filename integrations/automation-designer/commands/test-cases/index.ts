@@ -1,6 +1,6 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { loadTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
 
 interface TestCasesArgs {

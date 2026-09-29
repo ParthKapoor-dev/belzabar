@@ -10,7 +10,7 @@ import {
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { diffPaths, methodDiffView, parseVersionBody } from "../../lib/fingerprint";
 import { getVersionOf } from "../../lib/history";
-import { resolveMethodRef } from "../../lib/ids";
+import { resolveMethodRef } from "@belzabar/core/platform";
 import { traceEnvFamily } from "../../lib/trace";
 import type { HydratedMethod } from "../../lib/types/common";
 import {

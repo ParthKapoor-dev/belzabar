@@ -10,9 +10,10 @@
 // show the operator, so a doomed build (or a silent wrong-entity migration) is
 // caught here instead of 7s into Jenkins.
 
-import { apiFetch, CliError, Config, isObj } from "@belzabar/core";
+import { CliError, Config, isObj } from "@belzabar/core";
 import { envPairFromProfile } from "./args";
 import type { ResolvedTarget } from "./types";
+import { adChainPath, canonicalUuid, fetchRawEntity, isEntityId, pdPagePath } from "@belzabar/core/platform";
 
 export interface ResolveTargetsResult {
   sourceEnv: string;
@@ -24,39 +25,34 @@ const PD_MODULE = /^PD$/i;
 const AD_MODULE = /^AD_(Method|Service)$/i;
 
 async function getJson(path: string, env: string): Promise<Record<string, unknown>> {
-  const res = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  if (res.status === 404) {
+  const got = await fetchRawEntity<unknown>(path, {
+    onError: (res) =>
+      new CliError(`Could not resolve migration target on '${env}' (HTTP ${res.status}): ${path}`, {
+        code: "MIGRATE_TARGET_RESOLVE_FAILED",
+        details: { env, path, status: res.status },
+      }),
+  });
+  if (!got.found && got.reason === "http-404") {
     throw new CliError(`Migration target not found on '${env}': ${path}`, {
       code: "MIGRATE_TARGET_NOT_FOUND",
       details: { env, path },
     });
   }
-  if (!res.ok) {
-    throw new CliError(
-      `Could not resolve migration target on '${env}' (HTTP ${res.status}): ${path}`,
-      { code: "MIGRATE_TARGET_RESOLVE_FAILED", details: { env, path, status: res.status } },
-    );
-  }
   // An unknown id is not always a 404: AD answers 200 with an empty body (or
   // `null`) for a uuid it doesn't know (OTH-R22). Anything that isn't a
-  // non-empty JSON object is "not found", never a crash on `.name`.
-  // Only an unparseable body means "not found"; a stalled body read
-  // (HTTP_TIMEOUT from core) propagates, not as a misleading NOT_FOUND.
-  const body: unknown = await res.json().catch((e: unknown) => {
-    if (e instanceof SyntaxError) return null;
-    throw e;
-  });
-  if (!isObj(body) || Object.keys(body).length === 0) {
+  // non-empty JSON object is "not found", never a crash on `.name`. A stalled
+  // body read (HTTP_TIMEOUT from core) propagates, not as a misleading NOT_FOUND.
+  if (!got.found || !isObj(got.body) || Object.keys(got.body).length === 0) {
     throw new CliError(`Migration target not found on '${env}' (empty response): ${path}`, {
       code: "MIGRATE_TARGET_NOT_FOUND",
       details: { env, path },
     });
   }
-  return body;
+  return got.body;
 }
 
 async function resolvePd(id: string, env: string): Promise<ResolvedTarget> {
-  const page = await getJson(`/rest/api/pagedesigner/pages/${id}`, env);
+  const page = await getJson(pdPagePath(id), env);
   const name = typeof page.name === "string" && page.name ? page.name : "(unnamed)";
   const status = typeof page.status === "string" ? page.status.toUpperCase() : "";
 
@@ -81,21 +77,18 @@ async function resolvePd(id: string, env: string): Promise<ResolvedTarget> {
   };
 }
 
-const AD_UUID = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
-const normUuid = (s: string) => s.replace(/-/g, "").toLowerCase();
-
 async function resolveAd(id: string, env: string): Promise<ResolvedTarget> {
   // OTH-R27: AD also accepts a NUMERIC chain id on this endpoint, so an
   // all-digit id silently resolves to some other method. Only a uuid is a
   // migration id, and the method that comes back must carry that uuid.
-  if (!AD_UUID.test(id) || /^[0-9-]+$/.test(id)) {
+  if (!isEntityId(id) || /^[0-9-]+$/.test(id)) {
     throw new CliError(`'${id}' is not an AD method uuid (32 hex characters, not all digits).`, {
       code: "MIGRATE_TARGET_ID_INVALID",
       details: { id, env },
     });
   }
-  const method = await getJson(`/rest/api/automation/chain/${id}`, env);
-  if (typeof method.uuid === "string" && normUuid(method.uuid) !== normUuid(id)) {
+  const method = await getJson(adChainPath(id), env);
+  if (typeof method.uuid === "string" && canonicalUuid(method.uuid) !== canonicalUuid(id)) {
     throw new CliError(`AD id '${id}' resolved to a different method (${method.uuid}) on '${env}'.`, {
       code: "MIGRATE_TARGET_ID_MISMATCH",
       details: { id, env, resolvedUuid: method.uuid },

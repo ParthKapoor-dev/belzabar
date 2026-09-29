@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./platform": "./src/platform/index.ts",
     "./testing": "./src/testing/index.ts"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
-import { normalizeUuid } from "../../lib/ids";
+import { normalizeUuid } from "@belzabar/core/platform";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { abbreviate, parseFieldList, projectRow, type FieldSelection } from "../../lib/compact";
 import { scoreFuzzy } from "../../lib/method-finder";

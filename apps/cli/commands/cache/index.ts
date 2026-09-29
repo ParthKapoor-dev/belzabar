@@ -14,6 +14,7 @@ import {
   type HumanPresenterHelpers,
   type CommandModule,
 } from "@belzabar/core";
+import { isEntityId } from "@belzabar/core/platform";
 
 /**
  * Both routes are POSTed on every invalidate. On a tenant routed through micro-AD the
@@ -112,16 +113,13 @@ function parseUuids(rest: string[]): string[] {
   return rest.map(u => u.trim()).filter(u => u.length > 0);
 }
 
-/** A cache entry id: 32 hex chars (AD/PD ids), or the dashed 8-4-4-4-12 form. */
-const CACHE_UUID_RE = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
-
 /**
- * Refuse anything that is not a uuid (CORE-R12): `invalidate` is the default
+ * Refuse anything that is not a uuid (32 hex chars, or the dashed 8-4-4-4-12 form; CORE-R12): `invalidate` is the default
  * subcommand, so a mistyped subcommand (`belz cache prune`) used to be POSTed
  * as the uuid "prune" and reported as a successful invalidation.
  */
 export function assertCacheUuids(uuids: string[]): void {
-  const bad = uuids.filter(u => !CACHE_UUID_RE.test(u));
+  const bad = uuids.filter(u => !isEntityId(u));
   if (bad.length === 0) return;
   const known = ["invalidate", "prune-local"];
   const looksLikeSubcommand = bad.length === 1 && uuids.length === 1 && /^[a-z][a-z-]*$/.test(bad[0]!);
