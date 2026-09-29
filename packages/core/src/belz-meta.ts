@@ -8,13 +8,14 @@
 
 import { join } from "path";
 import { homedir } from "os";
-import { loadConfigFileRaw, writeConfigFile, type BelzConfigFile } from "./config";
+import { loadConfigFileRaw, trustedBelzEnv, writeConfigFile, type BelzConfigFile } from "./config";
 
 const isWindows = process.platform === "win32";
 
 /** Default source-checkout location when nothing is recorded. */
 function defaultSourceDir(): string {
-  return process.env.BELZ_SRC_DIR ?? join(homedir(), ".belz", "src");
+  // Via trustedBelzEnv: a cwd `.env` must not choose which install.sh `belz update` runs (CORE-R14).
+  return trustedBelzEnv().BELZ_SRC_DIR || join(homedir(), ".belz", "src");
 }
 
 /** Default binary-install directory when nothing is recorded. */

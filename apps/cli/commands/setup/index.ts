@@ -4,6 +4,8 @@ import {
   CONFIG_FILE_PATH,
   encodeSecret,
   defineArgs,
+  parseDotEnv,
+  withoutDotenvInjected,
   ok,
   writeConfigFile,
   loadConfigFileRaw,
@@ -61,22 +63,6 @@ const GENERIC_ENV_RE = /^BELZ_ENV_(.+)_(URL|USER|PASSWORD|PROJECT)$/;
 
 type EnvEntry = { url?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; project?: string };
 type SecretFields = { password: string; passwordEncoding: "plain" | "base64" };
-
-function parseDotEnv(content: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const rawLine of content.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const m = line.match(/^(?:export\s+)?([A-Z0-9_]+)\s*=\s*(.*)$/i);
-    if (!m || !m[1]) continue;
-    let value = m[2] ?? "";
-    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1);
-    }
-    out[m[1]] = value;
-  }
-  return out;
-}
 
 // Every password setup reads (env file, process env, prompts) is plain text,
 // and is stored plain with an explicit `passwordEncoding: "plain"` in the 0600
@@ -249,8 +235,18 @@ const command: CommandModule<SetupArgs, SetupData> = {
 
     // Non-interactive source: process.env (--from-env) or a .env file.
     let values: Record<string, string> | null = null;
+    let ignoredDotenvKeys: string[] = [];
     if (args.fromEnv) {
-      values = { ...process.env } as Record<string, string>;
+      // Bun auto-loads a cwd `.env` into process.env; never persist those values (CORE-R14).
+      const trusted = withoutDotenvInjected();
+      values = trusted.values;
+      ignoredDotenvKeys = trusted.dropped.filter((k) => /^(NSM_|TEAMWORK_|JENKINS_|BELZ_)/.test(k));
+      if (ignoredDotenvKeys.length > 0 && context.outputMode === "human") {
+        lifecycle.notice(
+          `Ignored ${ignoredDotenvKeys.length} value(s) loaded from a .env file in ${process.cwd()}: ${ignoredDotenvKeys.join(", ")}. ` +
+            "Export them in your shell, or pass --env-file, to use them.",
+        );
+      }
     } else if (args.envFile) {
       if (!existsSync(args.envFile)) {
         throw new CliError(`Env file not found: ${args.envFile}`, { code: "ENV_FILE_NOT_FOUND" });
@@ -329,7 +325,12 @@ const command: CommandModule<SetupArgs, SetupData> = {
       lifecycle.outro(`Config written to ${summary.configPath}`);
     }
 
-    return ok(summary);
+    return ok(
+      summary,
+      ignoredDotenvKeys.length > 0
+        ? { warnings: [`Ignored values injected from a cwd .env file: ${ignoredDotenvKeys.join(", ")}`] }
+        : {},
+    );
   },
 
   presentHuman(envelope, ui) {

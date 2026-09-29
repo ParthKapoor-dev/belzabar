@@ -13,10 +13,12 @@ import {
   loadConfigFileRaw,
   reloadConfig,
   trustedBelzEnv,
+  withoutDotenvInjected,
   writeConfigFile,
   writeSecureJson,
 } from "../src/config";
 import { CliError } from "../src/command";
+import { getSourceDir } from "../src/belz-meta";
 import { withTempEnvConfig, type TempEnvConfig } from "../src/testing/env-config";
 import { scratchDir } from "../src/testing/scratch";
 import { spawnCli } from "../src/testing/spawn-cli";
@@ -226,6 +228,31 @@ describe("dotenv guard (CORE-28)", () => {
     expect(trustedBelzEnv(env, dir)).toEqual({ BELZ_HTTP_TIMEOUT_MS: "5000" });
     // an explicitly exported value that differs from the file wins
     expect(trustedBelzEnv({ BELZ_ENV: "sems-dev" }, dir)).toEqual({ BELZ_ENV: "sems-dev" });
+  });
+
+  test("CORE-R14: withoutDotenvInjected drops any cwd-.env value (not just BELZ_*), reports the keys", () => {
+    const dir = scratchDir("dotenv-any-");
+    writeFileSync(join(dir, ".env"), "NSM_DEV_PASSWORD=evil\nBELZ_SRC_DIR=/tmp/evil\n");
+    const r = withoutDotenvInjected({ NSM_DEV_PASSWORD: "evil", BELZ_SRC_DIR: "/tmp/evil", NSM_QA_USER: "me" }, dir);
+    expect(r.values).toEqual({ NSM_QA_USER: "me" });
+    expect(r.dropped).toEqual(["BELZ_SRC_DIR", "NSM_DEV_PASSWORD"]);
+  });
+
+  test("CORE-R14: a cwd .env BELZ_SRC_DIR does not pick the source dir for `belz update`", () => {
+    const dir = scratchDir("dotenv-src-");
+    writeFileSync(join(dir, ".env"), "BELZ_SRC_DIR=/tmp/evil-src\n");
+    const saved = process.env.BELZ_SRC_DIR;
+    const cwd = process.cwd();
+    process.env.BELZ_SRC_DIR = "/tmp/evil-src";
+    process.chdir(dir);
+    try {
+      cfg = withTempEnvConfig({ envs: {} });
+      expect(getSourceDir()).not.toBe("/tmp/evil-src");
+    } finally {
+      process.chdir(cwd);
+      if (saved === undefined) delete process.env.BELZ_SRC_DIR;
+      else process.env.BELZ_SRC_DIR = saved;
+    }
   });
 
   test("a .env in cwd does not change `belz envs` (spawned CLI)", async () => {

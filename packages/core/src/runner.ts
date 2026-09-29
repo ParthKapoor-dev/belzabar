@@ -219,17 +219,9 @@ export interface GlobalContext {
  * when the default names an env that is not configured.
  */
 function applyDefaultEnv(): { code: string; message: string } | null {
-  const cfg = Config as typeof Config & { resetActiveEnv?: () => void; envSource?: string };
-  let source = "default";
-  if (typeof cfg.resetActiveEnv === "function") {
-    cfg.resetActiveEnv();
-    source = cfg.envSource === "BELZ_ENV" ? "BELZ_ENV" : cfg.envSource === "config" ? "config.json defaultEnv" : "default";
-  } else {
-    // Pre-D6 config module: honour BELZ_ENV here.
-    const fromEnv = process.env.BELZ_ENV?.trim();
-    if (fromEnv && Config.getAllEnvs()[fromEnv]) Config.setActiveEnv(fromEnv);
-    else if (fromEnv) return unknownDefault(fromEnv, "BELZ_ENV");
-  }
+  Config.resetActiveEnv();
+  const source =
+    Config.envSource === "BELZ_ENV" ? "BELZ_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "default";
   const name = Config.activeEnv.name;
   return Config.getAllEnvs()[name] ? null : unknownDefault(name, source);
 }

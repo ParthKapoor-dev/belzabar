@@ -11,6 +11,8 @@ Flags:
   --env-file <path>  Load credentials from a .env file instead of prompting.
   --from-env         Load credentials from the current process environment
                      (no prompts, no file) — e.g. inside a CI or cloud session.
+                     Values Bun auto-loaded from a .env in the current directory
+                     are ignored (and listed as a warning).
   --force            Overwrite an existing config without asking.
   --replace          Drop every configured environment not given in this run
                      (default: merge into the existing config). Needs --force.

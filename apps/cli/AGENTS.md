@@ -52,6 +52,9 @@ belz --version | --help | --help-full        → runner / entry point
 
 - `envAware: false` for the `tw`, `migrate`, `release` namespaces and for
   `config`, `extension`, `envs`, `setup`, `onboard`, `update` — their envelopes carry no `meta.env`.
+- `belz setup` parses `--env-file` with core `parseDotEnv` (inline `# comments` stripped on unquoted
+  values, CORE-R16); `--from-env` reads `withoutDotenvInjected()`, so values Bun auto-loaded from a cwd
+  `.env` are ignored and listed in `meta.warnings` (CORE-R14).
 - `belz onboard` returns `failWithData("ONBOARD_INCOMPLETE")` when any step failed (so `install.sh`'s
   `if ! belz onboard` sees it) and re-throws `USER_ABORT` from a step (CORE-R8).
 - `belz cache` self-routes with `defineSubcommands` (default `invalidate`): `belz cache --env <e> <uuid>…`

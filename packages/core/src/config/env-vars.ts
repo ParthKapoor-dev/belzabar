@@ -61,17 +61,36 @@ function dotenvValues(cwd: string): Record<string, string> {
 }
 
 /**
+ * Every non-empty process env var except those a cwd `.env*` file injected
+ * (same key, same value). `dropped` names the ignored keys. Used by
+ * `belz setup --from-env`, which imports legacy NSM_* / TEAMWORK_* keys too
+ * and must not persist a hostile cwd `.env` into config.json (CORE-R14).
+ */
+export function withoutDotenvInjected(
+  env: NodeJS.ProcessEnv = process.env,
+  cwd = process.cwd(),
+): { values: Record<string, string>; dropped: string[] } {
+  let dotenv: Record<string, string> | null = null;
+  const values: Record<string, string> = {};
+  const dropped: string[] = [];
+  for (const [key, value] of Object.entries(env)) {
+    if (value === undefined || value === "") continue;
+    dotenv ??= dotenvValues(cwd);
+    if (Object.hasOwn(dotenv, key) && dotenv[key] === value) {
+      dropped.push(key);
+      continue;
+    }
+    values[key] = value;
+  }
+  return { values, dropped: dropped.sort() };
+}
+
+/**
  * The BELZ_* env vars belz honours: explicitly exported ones only. A value
  * that equals what a cwd `.env*` file defines for the same key is dropped.
  */
 export function trustedBelzEnv(env: NodeJS.ProcessEnv = process.env, cwd = process.cwd()): Record<string, string> {
-  let dotenv: Record<string, string> | null = null;
-  const out: Record<string, string> = {};
-  for (const [key, value] of Object.entries(env)) {
-    if (!key.startsWith("BELZ_") || value === undefined || value === "") continue;
-    dotenv ??= dotenvValues(cwd);
-    if (key in dotenv && dotenv[key] === value) continue;
-    out[key] = value;
-  }
-  return out;
+  const belzOnly: NodeJS.ProcessEnv = {};
+  for (const [key, value] of Object.entries(env)) if (key.startsWith("BELZ_")) belzOnly[key] = value;
+  return withoutDotenvInjected(belzOnly, cwd).values;
 }

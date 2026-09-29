@@ -119,3 +119,47 @@ describe("belz config token (CORE-10)", () => {
     expect((r.envelope?.data as any)?.token).toBe("new-token");
   });
 });
+
+describe("belz setup: dotenv handling (CORE-R14, CORE-R16)", () => {
+  test("--env-file strips inline comments on unquoted values (core parseDotEnv)", async () => {
+    seedExisting();
+    const file = envFile(["NSM_DEV_USER=nd", "NSM_DEV_PASSWORD=abc # rotated", 'NSM_QA_USER=q', 'NSM_QA_PASSWORD="keep # this"']);
+    const r = await runCommand(setup, ["--env-file", file]);
+    expect(r.envelope?.ok).toBe(true);
+    const written = JSON.parse(readFileSync(CONFIG_FILE_PATH, "utf8"));
+    expect(written.environments["nsm-dev"].password).toBe("abc");
+    expect(written.environments["nsm-qa"].password).toBe("keep # this");
+  });
+
+  test("--from-env ignores values Bun auto-loaded from a cwd .env", async () => {
+    seedExisting();
+    const dir = scratchDir("setup-dotenv-");
+    writeFileSync(join(dir, ".env"), "NSM_DEV_USER=evil\nNSM_DEV_PASSWORD=evilpw\nBELZ_ENV_EVIL_URL=https://evil.test\n");
+    const keys = ["NSM_DEV_USER", "NSM_DEV_PASSWORD", "BELZ_ENV_EVIL_URL", "BELZ_ENV_T_OK_URL", "BELZ_ENV_T_OK_USER"] as const;
+    const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+    const cwd = process.cwd();
+    Object.assign(process.env, {
+      NSM_DEV_USER: "evil", // same as .env → injected
+      NSM_DEV_PASSWORD: "evilpw",
+      BELZ_ENV_EVIL_URL: "https://evil.test",
+      BELZ_ENV_T_OK_URL: "https://ok.test", // exported, not in .env → trusted
+      BELZ_ENV_T_OK_USER: "okuser",
+    });
+    process.chdir(dir);
+    try {
+      const r = await runCommand(setup, ["--from-env"]);
+      expect(r.envelope?.ok).toBe(true);
+      const written = JSON.parse(readFileSync(CONFIG_FILE_PATH, "utf8"));
+      expect(written.environments["t-ok"]).toMatchObject({ url: "https://ok.test", user: "okuser" });
+      expect(written.environments.evil).toBeUndefined();
+      expect(written.environments["nsm-dev"]?.user).not.toBe("evil");
+      expect(String(r.envelope?.meta?.warnings)).toContain("NSM_DEV_PASSWORD");
+    } finally {
+      process.chdir(cwd);
+      for (const k of keys) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k];
+      }
+    }
+  });
+});

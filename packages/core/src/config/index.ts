@@ -22,7 +22,7 @@ import { validateConfigFile, envEntryProblem, type BelzConfigFile } from "./sche
 export * from "./schema";
 export * from "./secrets";
 export * from "./fs";
-export { trustedBelzEnv, parseDotEnv } from "./env-vars";
+export { trustedBelzEnv, parseDotEnv, withoutDotenvInjected } from "./env-vars";
 
 /**
  * Root of all belz runtime data. `BELZ_HOME` overrides `~/.belz` (used by tests
