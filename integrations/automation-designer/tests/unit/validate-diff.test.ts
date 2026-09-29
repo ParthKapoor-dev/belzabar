@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "fs";
-import { RULES, alignSteps, validateMethodV2 } from "../../lib/validate/index";
+import { RULES, alignSteps, auditExistingRecord, validateMethodV2 } from "../../lib/validate/index";
 import { CASES, caseBody, golden, mutate, realV2 } from "./validate-fixtures";
 
 const PAIRS_DIR = `${import.meta.dir}/../fixtures/draft-published`;
@@ -144,8 +144,7 @@ describe("calibration: 36 real sems-dev V2 bodies", () => {
     }
   });
 
-  // Raw findings (no `before`) — every one was reviewed against the body (2026-09-28):
-  // real problems or rules the team treats as errors on authored methods. The count is
+  // Raw findings (no `before`) — every one was reviewed against the body. The count is
   // pinned so a rule change that adds false positives shows up here.
   test("documented raw finding count", () => {
     const counts: Record<string, number> = {};
@@ -164,15 +163,36 @@ describe("calibration: 36 real sems-dev V2 bodies", () => {
       "AD-SPEL-001:error": 3, // 43818593: entry conditions with an unclosed #{
       "AD-SQL-004:warn": 37, // #{…} spliced into SQL (common style)
       "CC3:warn": 4, // custom code that never prints
-      "CI1:error": 58, // SpEL with combineInput:false (team rule; UI cannot run these)
+      "CI1:warn": 58, // SpEL with combineInput:false: runs via the API, not from the UI runner (ADW-R15: warn)
       "CO1:error": 3, // STRIING
       "CO2:error": 3,
-      "DUP1:error": 5, // duplicate output names/fieldCodes (3 methods)
-      "M1:error": 5, // method names with spaces ("Copy of …")
+      "DUP1:warn": 5, // duplicate output names/fieldCodes (3 methods; ADW-R15: warn)
+      "M1:error": 5, // method names with spaces ("Copy of …"): refused on create/rename; audit → warn
       "OK1:error": 2, // method outputs with fieldCode but no key
       "Q5:error": 1, // 422a34a9: ’CHOICE_APPLICATION’ curly quotes in SQL
       "SP1:warn": 1,
       "SV1:error": 2, // inputReference to an undeclared variable
+    });
+  });
+
+  // ADW-R15: calibration WITHOUT self-diffing. Auditing each real record as it is stored
+  // (auditExistingRecord, what `ad validate <uuid>` reports), every remaining error is a
+  // real defect of that method (reviewed 2026-09-29). Before R15: 97 errors on 25 bodies
+  // (CI1 58, AD-META-001 8, M1 5, DUP1 5 were not defects); after: 21 on 7.
+  test("audited without `before`: 0 false errors — only these documented defects", () => {
+    const perBody: Record<string, string[]> = {};
+    for (const { file, body } of bodies) {
+      const a = auditExistingRecord(validateMethodV2({ after: body }), body);
+      if (a.errors.length) perBody[file.slice(0, 8)] = a.errors.map((e) => e.rule);
+    }
+    expect(perBody).toEqual({
+      "43818593": ["AD-SPEL-001", "AD-SPEL-001", "AD-SPEL-001"], // entry conditions "#{x.size() gt 0" never close
+      "422a34a9": ["Q5", "AD-REF-001"], // ’curly quotes’ in SQL; #{epStartDate} defined nowhere
+      "43d76d32": ["SV1"], // writes variable cfgOut that is not declared: the write is lost
+      "4648ea35": ["SV1"], // same for testOut
+      "472f8572": ["AD-OUT-001", "AD-OUT-002", "AD-OUT-001", "AD-OUT-002", "AD-OUT-001", "AD-OUT-002", "CO1", "CO2", "CO1", "CO2", "CO1", "CO2"], // 3 CC outputs with no key/fieldCode/name, type STRIING
+      "497efe67": ["OK1"], // method output without key: every run NPEs
+      "4a49e392": ["OK1"],
     });
   });
 });

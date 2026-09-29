@@ -69,6 +69,20 @@ describe("ad validate", () => {
     expect(d.notes[0]).toContain("AD-META-001");
   });
 
+  test("ADW-R15: an existing record's legacy spaced name is a warning; the same body as a file (a new body) is an error", async () => {
+    env();
+    const real = realV2().find((f) => f.file.startsWith("48eb3b02"))!.body; // "Copy of email.send", DRAFT
+    const uuid = String(real.uuid).trim();
+    ff = fakeFetch({ [`GET /rest/api/automation/chain/v2/${uuid}?basicInfo=false`]: real }).install();
+    const r = await runCommand(validateCommand, [uuid], { env: "t-dev" });
+    expect(r.envelope!.ok).toBe(true);
+    const d = r.envelope!.data as any;
+    expect(d.errors).toEqual([]);
+    expect(d.warnings.find((w: any) => w.rule === "M1")?.message).toContain("refuses it on create and rename");
+    const asFile = await runCommand(validateCommand, [file("spaced.json", real)], { env: "t-dev" });
+    expect((asFile.envelope!.data as any).errors.map((e: any) => e.rule)).toContain("M1");
+  });
+
   test("unreadable / invalid JSON file → typed errors", async () => {
     env();
     const missing = await runCommand(validateCommand, [join(dir, "nope.json")], { env: "t-dev" });

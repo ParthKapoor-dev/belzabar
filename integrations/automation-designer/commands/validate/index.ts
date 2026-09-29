@@ -11,7 +11,7 @@ import { readFile } from "fs/promises";
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
 import { resolveMethodRef } from "../../lib/ids";
-import { validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
+import { auditExistingRecord, validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
 import type { V2MethodBody } from "../../lib/types/v2-wire";
 
 interface ValidateArgs {
@@ -74,10 +74,14 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
 
     const state = typeof body.metadata?.state === "string" ? body.metadata.state : null;
     let errors = result.errors;
-    if (a.kind === "uuid" && state === "PUBLISHED") {
-      // Auditing a published record: "a save body must be a draft" is not a finding about the logic.
-      errors = errors.filter((e) => e.rule !== "AD-META-001");
-      notes.push("PUBLISHED record: AD-META-001 (save bodies must be drafts) is not reported; validate the draft before saving.");
+    let warnings = result.warnings;
+    if (a.kind === "uuid") {
+      // Auditing an existing record (ADW-R15): how it is stored (a PUBLISHED
+      // record, a legacy name) is not a finding about its logic.
+      const audit = auditExistingRecord(result, body);
+      errors = audit.errors;
+      warnings = audit.warnings;
+      notes.push(...audit.notes);
     }
     const data: ValidateData = {
       source: { kind: a.kind, ref: a.target },
@@ -85,15 +89,15 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
       name: typeof body.name === "string" ? body.name : null,
       state,
       valid: errors.length === 0,
-      counts: { errors: errors.length, warnings: result.warnings.length },
+      counts: { errors: errors.length, warnings: warnings.length },
       errors,
-      warnings: result.warnings,
+      warnings,
       layersRun: result.layersRun,
       notes,
     };
     if (errors.length > 0) {
-      return failWithData("AD_VALIDATION_FAILED", `${errors.length} error(s), ${result.warnings.length} warning(s) in ${data.name ?? a.target}.`, data, {
-        details: { errors, warnings: result.warnings, layersRun: result.layersRun },
+      return failWithData("AD_VALIDATION_FAILED", `${errors.length} error(s), ${warnings.length} warning(s) in ${data.name ?? a.target}.`, data, {
+        details: { errors, warnings, layersRun: result.layersRun },
       });
     }
     return ok(data);

@@ -1,7 +1,8 @@
 // Ports of the team validator's tests (expertly.coding.agents …/ad/scripts/tests/
 // test_validate_{ci1,as1,lp,sp1,vb1,nc1_dup1,ok1_on1,g4g5g6}.py) with their inline
 // fixtures, so the shared rule codes keep the team's meaning.
-// Deliberate differences (catalogue.ts): none of these rules changed severity.
+// Deliberate differences (catalogue.ts): CI1 and DUP1 are warnings (ADW-R15: they
+// fire on 58 / 5 spots of working real sems-dev methods); the rest keep their severity.
 
 import { describe, expect, test } from "bun:test";
 import { validateMethodV2 } from "../../lib/validate/index";
@@ -11,6 +12,7 @@ const run = (m: M) => validateMethodV2({ after: m as never });
 const errs = (m: M, code: string) => run(m).errors.filter((e) => e.rule === code);
 const warns = (m: M, code: string) => run(m).warnings.filter((w) => w.rule === code);
 const fires = (m: M, code: string) => errs(m, code).length > 0;
+const firesAny = (m: M, code: string) => fires(m, code) || warns(m, code).length > 0;
 
 const SIMPLE_ECHO: M = {
   name: "SimpleEcho",
@@ -49,12 +51,12 @@ describe("CI1 (test_validate_ci1.py)", () => {
     ["SpEL with flag absent", flat("#{msg}", null), false],
     ["nested SpEL with flag absent", nested("#{msg}", null), false],
   ];
-  for (const [label, inp, want] of cases) test(`${want ? "fires" : "silent"}: ${label}`, () => expect(fires(method([inp]), "CI1")).toBe(want));
-  test("is an error naming combineInput and the UI", () => {
-    const e = errs(method([flat("#{msg}", false)]), "CI1")[0]!;
-    expect(e.message).toContain("combineInput");
-    expect(e.message).toContain("UI");
-    expect(warns(method([flat("#{msg}", false)]), "CI1")).toEqual([]);
+  for (const [label, inp, want] of cases) test(`${want ? "fires" : "silent"}: ${label}`, () => expect(firesAny(method([inp]), "CI1")).toBe(want));
+  test("is a warning (ADW-R15) naming combineInput and the UI", () => {
+    const w = warns(method([flat("#{msg}", false)]), "CI1")[0]!;
+    expect(w.message).toContain("combineInput");
+    expect(w.message).toContain("UI");
+    expect(errs(method([flat("#{msg}", false)]), "CI1")).toEqual([]);
   });
 });
 
@@ -166,7 +168,7 @@ describe("NC1 / DUP1 (test_validate_nc1_dup1.py)", () => {
     ["dup fieldCode", [out("nameA", "dupCode"), out("nameB", "dupCode")], "DUP1", true],
     ["distinct", [out("nameA", "codeA"), out("nameB", "codeB")], "DUP1", false],
   ];
-  for (const [label, outputs, code, want] of t) test(`${code} ${want ? "fires" : "silent"}: ${label}`, () => expect(fires(method(outputs), code)).toBe(want));
+  for (const [label, outputs, code, want] of t) test(`${code} ${want ? "fires" : "silent"}: ${label}`, () => expect(firesAny(method(outputs), code)).toBe(want));
   test("pipeline: same variable, distinct fieldCodes → no DUP1", () => {
     const m: M = {
       ...method([]),
@@ -176,7 +178,7 @@ describe("NC1 / DUP1 (test_validate_nc1_dup1.py)", () => {
         { serviceName: "Helpers.Legacy", methodName: "echo", properties: { type: "EXISTING_SERVICE" }, inputs: [], outputs: [{ key: "response", fieldCode: "loweredName", name: "loweredName", inputReference: { type: "method_input", reference: "currentName" } }] },
       ],
     };
-    expect(fires(m, "DUP1")).toBe(false);
+    expect(firesAny(m, "DUP1")).toBe(false);
   });
 });
 

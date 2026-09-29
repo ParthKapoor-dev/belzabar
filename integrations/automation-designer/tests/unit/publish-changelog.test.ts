@@ -285,17 +285,28 @@ describe("ad publish — freshness and real draft/published pairs", () => {
     expect(reads).toBeGreaterThanOrEqual(2);
   });
 
-  test("ADW-R4: an unchanged real draft (different step ids from its published copy) publishes with --allow-preexisting", async () => {
+  test("ADW-R4: an unchanged real draft (different step ids from its published copy) publishes", async () => {
     const draft = pair("438b502717b979a6a8539691d673fc39.draft.v2.json");
     const published = pair("41f705aff6c768c033b4ad9840b69dde.published.v2.json");
     wire({ published: true, draftV2: () => structuredClone(draft), publishedV2: () => structuredClone(published) });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope?.data as any).validation.warnings.every((w: any) => w.preexisting)).toBe(true);
+  });
+
+  test("ADW-R4: pre-existing errors matched across different step ids block only until --allow-preexisting", async () => {
+    const draft = pair("4ec6d9821f97ab6809e092ca0e414c84.draft.v2.json");
+    const published = pair("438185931da72f5b89aaac3c6248a18e.published.v2.json");
+    wire({ published: true, draftV2: () => structuredClone(draft), publishedV2: () => structuredClone(published) });
     const blocked = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
-    // pre-existing errors still block by default — but only pre-existing ones
     expect(blocked.envelope?.error?.code).toBe("AD_VALIDATION_FAILED");
     const d = blocked.envelope?.error?.details as any;
     expect(d.errors).toEqual([]);
-    expect(d.blocking.length).toBeGreaterThan(0);
-    expect(d.blocking.every((f: any) => f.preexisting)).toBe(true);
+    expect(d.blocking.map((f: any) => [f.rule, f.preexisting])).toEqual([
+      ["AD-SPEL-001", true],
+      ["AD-SPEL-001", true],
+      ["AD-SPEL-001", true],
+    ]);
     const ok = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes", "--allow-preexisting"], { env: "t-dev" });
     expect(ok.envelope?.ok).toBe(true);
   });

@@ -248,9 +248,13 @@ identity (ADW-R3/R4) is rule + path with the step index replaced by the aligned
 `before` step (same id, else an in-order match on service/type — `alignSteps`,
 which is how a draft lines up with its published copy), other array indices
 replaced by the element's `key`, plus the leaf value at the path. A different
-broken value at the same path, or a new output on an old output's index, is new. Calibration is
-pinned in `tests/unit/validate-diff.test.ts`: the 36 real bodies validated against
-themselves produce 0 errors.
+broken value at the same path, or a new output on an old output's index, is new.
+
+Calibration is pinned in `tests/unit/validate-diff.test.ts` WITHOUT self-diffing (ADW-R15): the 36
+real bodies audited as stored (`auditExistingRecord`, what `ad validate <uuid>`
+reports: no AD-META-001 on PUBLISHED records, M1 on an existing name is a warning)
+leave only 21 documented real defects on 7 bodies. CI1 and DUP1 are warnings (they
+fire on working production methods); `--strict` blocks new ones.
 
 Rule codes live in `catalogue.ts`. The team's codes (M1, CI1, LP3, …) keep their
 meaning; belz rules are named `AD-<FAMILY>-nnn`. To add a rule:

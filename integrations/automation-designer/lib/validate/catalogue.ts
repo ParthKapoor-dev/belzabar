@@ -13,6 +13,11 @@
 //     the server rejects them with 400 (v2_cc_executor_bad / _language_bad);
 //   - CR1 (entry condition reads an undefined name) is an error: the step is
 //     silently skipped and the run stays green (v2_entry_cond_undeclared).
+//   - CI1 and DUP1 are warnings (ADW-R15): 58 CI1 and 5 DUP1 hits on the 36
+//     real sems-dev bodies, 8 of them PUBLISHED and running. SpEL with
+//     combineInput:false runs via the API (only the UI runner cannot run it),
+//     and a fieldCode written by two steps is often an intentional overwrite
+//     (research §4.2: "warn: some real methods do this"). --strict blocks new ones.
 
 import type { Severity } from "./types";
 
@@ -66,7 +71,7 @@ export const RULES = {
   "AD-SQL-004": { severity: "warn", layer: "L2", description: "#{…} spliced into queryString; use :param + body.queryParams" },
   Q1: { severity: "error", layer: "L2", description: "Bare '?' (jsonb ?/?|/?&) in platform-executed SQL fails with 'given N parameters but expected 0'; use @> / jsonb_exists" },
   Q5: { severity: "error", layer: "L2", description: "Autoformat damage in SQL: curly quotes or '-»' outside a string literal (error); en/em dash (warn)" },
-  CI1: { severity: "error", layer: "L2", description: "Step input holds SpEL with combineInput:false ('This Exactly'); runs via API but not from the AD UI" },
+  CI1: { severity: "warn", layer: "L2", description: "Step input holds SpEL with combineInput:false ('This Exactly'); runs via API but not from the AD UI" },
   SP1: { severity: "warn", layer: "L2", description: "Step-input SpEL with ≥2 ternaries, >4 chained operators or >200 chars; move branching to an entryCondition" },
   "AD-SPEL-001": { severity: "error", layer: "L2", description: "Unclosed #{ (the literal text becomes the value)" },
   "AD-SPEL-002": { severity: "error", layer: "L2", description: "Nested #{ #{…} } is not supported (the literal propagates)" },
@@ -91,7 +96,7 @@ export const RULES = {
   VB1: { severity: "error", layer: "L3", description: "A variable-writing output has an empty name or fieldCode" },
   M3: { severity: "error", layer: "L3", description: "Method output is not written by any step output, variable or input (returns null)" },
   S3: { severity: "error", layer: "L3", description: "Duplicate step id (the earlier step runs with its outputs dropped)" },
-  DUP1: { severity: "error", layer: "L3", description: "Two step outputs share a name or fieldCode (last write wins; the UI de-dups one)" },
+  DUP1: { severity: "warn", layer: "L3", description: "Two step outputs share a name or fieldCode (last write wins; the UI de-dups one)" },
   "AD-GRAPH-001": { severity: "error", layer: "L3", description: "Duplicate method input key" },
   "AD-GRAPH-002": { severity: "error", layer: "L3", description: "Variable key equals a method input key (ambiguous binding)" },
   "AD-GRAPH-003": { severity: "error", layer: "L3", description: "outputRef.referenceStepIndex out of range (500 'Index n out of bounds')" },

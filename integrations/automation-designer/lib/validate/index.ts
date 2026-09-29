@@ -83,6 +83,33 @@ export async function validateOnline(input: ValidateOnlineInput): Promise<Valida
   return finish(dedupe(findings), input, layers, beforeExtra);
 }
 
+/**
+ * Findings for AUDITING an existing record (`ad validate <uuid>`, the real-body
+ * calibration) rather than a body about to be saved: AD-META-001 on a
+ * PUBLISHED record and M1 on its existing name describe how the record was
+ * stored, not its logic, so they become notes/warnings (ADW-R15). The server
+ * refuses such names on create and rename (live 400 on V1 and V2), so M1
+ * stays an error for new bodies and renames.
+ */
+export function auditExistingRecord(result: ValidationResult, body: unknown): { errors: ValidationFinding[]; warnings: ValidationFinding[]; notes: string[] } {
+  const state = isObj(body) && isObj(body.metadata) ? str(body.metadata.state) : undefined;
+  const notes: string[] = [];
+  const errors: ValidationFinding[] = [];
+  const warnings = [...result.warnings];
+  for (const e of result.errors) {
+    if (e.rule === "AD-META-001" && state === "PUBLISHED") continue;
+    if (e.rule === "M1" && e.path === "name") {
+      warnings.push({ ...e, severity: "warn", message: `${e.message} The record already has this name; the server refuses it on create and rename.` });
+      continue;
+    }
+    errors.push(e);
+  }
+  if (state === "PUBLISHED" && result.errors.some((e) => e.rule === "AD-META-001")) {
+    notes.push("PUBLISHED record: AD-META-001 (save bodies must be drafts) is not reported; validate the draft before saving.");
+  }
+  return { errors, warnings, notes };
+}
+
 // ── internals ─────────────────────────────────────────────────────────────
 
 function finish(findings: RawFinding[], input: ValidateInput, layersRun: string[], beforeExtra: RawFinding[] = []): ValidationResult {

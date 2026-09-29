@@ -29,7 +29,9 @@ Notes:
     conditions), L3 reference graph, L4 online. Rule codes are listed in
     integrations/automation-designer/lib/validate/catalogue.ts.
   - Errors exit 1 with AD_VALIDATION_FAILED; data carries {errors, warnings,
-    layersRun}. `ad save` / `ad publish` run the same validator and only block
+    layersRun, notes}. A <uuid> is audited as the stored record: AD-META-001 is
+    dropped for a PUBLISHED record and M1 on its existing name is a warning
+    (a file is judged as a new body). `ad save` / `ad publish` run the same validator and only block
     on NEW errors (findings already in the fetched draft are warnings).
 
 Examples:
