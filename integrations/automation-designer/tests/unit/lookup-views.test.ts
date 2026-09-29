@@ -188,6 +188,20 @@ describe("method index schema 2 + find --describe (7.5)", () => {
     expect(bad.envelope?.error?.code).toBe("MISSING_QUERY");
   });
 
+  test("totalMatches counts every match; --limit caps only the rows (smoke envelope #9)", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes()).install();
+    const all = (await runCommand(findCommand, ["method", "--refresh", "--limit", "200"], { env: "t-dev" })).envelope?.data as any;
+    expect(all.matches.length).toBeGreaterThan(2);
+    expect(all.totalMatches).toBe(all.matches.length);
+    const one = (await runCommand(findCommand, ["method", "--limit", "1"], { env: "t-dev" })).envelope?.data as any;
+    expect(one.matches.length).toBe(1);
+    expect(one.totalMatches).toBe(all.totalMatches);
+    const d = (await runCommand(findCommand, ["--describe", "method", "--limit", "1"], { env: "t-dev" })).envelope?.data as any;
+    expect(d.matches.length).toBe(1);
+    expect(d.totalMatches).toBeGreaterThan(1);
+  });
+
   test("command: plain search rows are compact and typed; --fields all keeps url", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch(routes()).install();

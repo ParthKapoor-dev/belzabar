@@ -4,6 +4,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { fakeFetch, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import testCaseCommand from "../../commands/test-case/index";
 import testCasesCommand from "../../commands/test-cases/index";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 const UUID = "4bdea25c480a8e9dbc1cae830cb89b68";
 let ff: FakeFetch | null = null;
@@ -20,8 +22,14 @@ function wire(body: unknown) {
   ff = fakeFetch({
     [`GET /rest/api/automation/chain/testsuite/service-chain/${UUID}`]:
       body === null ? respond({ status: 200, text: "null" }) : body,
+    // The method exists (only read when the suite is empty).
+    "GET /rest/api/automation/chain/v2/*": REAL_V2,
   }).install();
 }
+
+const REAL_V2 = JSON.parse(
+  readFileSync(join(import.meta.dir, "..", "fixtures", "real-v2", "4b108b0554b0daa963f4bd6985f0de52.v2.json"), "utf8"),
+);
 
 const SUITE = {
   id: "suite-1",
@@ -52,5 +60,19 @@ describe("test-case list == test-cases (F24)", () => {
       total: 1,
       testCases: [{ id: "tc1", name: "happy", active: true, inputCount: 2, assertionCount: 1 }],
     });
+  });
+
+  test("an unknown uuid is METHOD_NOT_FOUND, not an empty ok suite (smoke: ok on failure)", async () => {
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
+    ff = fakeFetch({
+      [`GET /rest/api/automation/chain/testsuite/service-chain/${UUID}`]: respond({ status: 200, text: "null" }),
+      // Real sems-dev answer for a missing uuid (fixtures/not-found): 200 + empty body.
+      "GET /rest/api/automation/chain/v2/*": respond({ status: 200, text: "" }),
+    }).install();
+    for (const [cmd, argv] of [[testCasesCommand, [UUID]], [testCaseCommand, ["list", UUID]]] as const) {
+      const r = await runCommand(cmd, [...argv], { env: "t-dev" });
+      expect(r.envelope?.ok).toBe(false);
+      expect(r.envelope?.error?.code).toBe("METHOD_NOT_FOUND");
+    }
   });
 });

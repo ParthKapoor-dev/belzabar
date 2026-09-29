@@ -10,7 +10,7 @@ import categoriesCommand from "../../commands/categories/index";
 import changelogCommand, { entryRows } from "../../commands/changelog/index";
 import exportCommand from "../../commands/export/index";
 import exportCategoryCommand from "../../commands/export-category/index";
-import historyCommand from "../../commands/history/index";
+import historyCommand, { diffTableRows } from "../../commands/history/index";
 import { adApi, type ChangelogEntry } from "../../lib/api/index";
 import { htmlToText } from "../../lib/compact";
 import { parseV1Method } from "../../lib/parser/v1";
@@ -150,5 +150,22 @@ describe("history show: compact view by default, --full adds the parse", () => {
     const full = (await runCommand(historyCommand, ["show", DRAFT, "--version", "3", "--full"], { env: "t-dev" })).envelope?.data as any;
     expect(full.method.parsedSteps.length).toBe(lean.stepCount);
     expect(JSON.stringify(lean).length).toBeLessThan(JSON.stringify(full).length / 3);
+  });
+});
+
+describe("history diff human table (F36)", () => {
+  test("rich-text descriptions become plain text cut to 60 chars", () => {
+    const long = `[EXISTING_SERVICE] If &lt;insCnt&gt; &gt; 0<ul><li>Set queryToExecute = 'WITH' + ${"x".repeat(400)}</li></ul>`;
+    const rows = diffTableRows([
+      { orderIndex: 8, kind: "EXISTING_SERVICE", v1Desc: "(absent)", v2Desc: long, changed: true, detail: "Added" },
+    ]);
+    expect(rows[0]!.slice(0, 4)).toEqual([8, "EXISTING_SERVICE", "YES", "(absent)"]);
+    const cell = String(rows[0]![4]);
+    expect(cell.startsWith("[EXISTING_SERVICE] If <insCnt> > 0")).toBe(true);
+    expect(cell).toContain("Set queryToExecute");
+    expect(cell).not.toContain("<li>");
+    expect(cell).toMatch(/…\(\+\d+\)$/);
+    expect(cell.length).toBeLessThan(75);
+    expect(rows[0]![5]).toBe("Added");
   });
 });

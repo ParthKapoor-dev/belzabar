@@ -7,6 +7,6 @@ belz ad find <query>  :->  Search methods and categories by name, alias, UUID, a
 belz ad find --describe <words>  :->  Search method summaries/descriptions for the words ("does a method for X exist?")
 belz ad find <query> --category <prefix>  :->  Only search categories whose name starts with <prefix>
 belz ad find <query> --fields <a,b|all>  :->  Pick row fields, or all for every index field
-belz ad find <query> --limit <N>  :->  Return only the top N ranked matches
+belz ad find <query> --limit <N>  :->  Return only the top N ranked matches (totalMatches = all matches)
 belz ad find <query> --refresh  :->  Rebuild the index from AD APIs before searching
 belz ad find <query> --raw  :->  Include the raw cached index (capped at --limit rows) in the command output

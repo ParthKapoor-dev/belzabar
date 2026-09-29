@@ -5,7 +5,7 @@ import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { resolveMethodRef } from "../../lib/ids";
-import { summarizeTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
+import { loadTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
 import { caseFromWire, parseCaseInput, type CaseFile } from "../../lib/test-cases/case-file";
 import { assertionFromExpectation, parseExpectation } from "../../lib/test-cases/expect";
 import { methodDirFor, readCaseFiles, readMethodMeta, writeMethodDir, type MethodMeta, type WriteResult } from "../../lib/test-cases/files";
@@ -261,7 +261,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
     switch (args.action) {
       case "list": {
         const uuid = args.chainUuid!;
-        return ok<TestCaseData>({ action: "list", ...summarizeTestSuite(uuid, await adApi.listTestCases(uuid)) });
+        return ok<TestCaseData>({ action: "list", ...(await loadTestSuite(uuid)) });
       }
 
       case "create": {

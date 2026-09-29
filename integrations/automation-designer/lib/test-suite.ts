@@ -2,6 +2,9 @@
 // and `ad test-case list` (F24: `test-case list` returned the raw body —
 // `null` when the method has no suite — while `test-cases` was structured).
 
+import { adApi } from "./api/index";
+import * as v2 from "./api/v2";
+
 export interface TestCaseRow {
   id: string;
   name: string;
@@ -45,4 +48,16 @@ export function summarizeTestSuite(uuid: string, body: unknown): TestSuiteSummar
     total: testCases.length,
     testCases,
   };
+}
+
+/**
+ * Fetch + summarise a method's suite. The suite route answers an unknown (or
+ * soft-deleted) uuid exactly like a method without a suite, so when there is
+ * no suite the method itself is read on V2: a missing method throws
+ * METHOD_NOT_FOUND instead of an ok envelope with 0 cases.
+ */
+export async function loadTestSuite(uuid: string): Promise<TestSuiteSummary> {
+  const summary = summarizeTestSuite(uuid, await adApi.listTestCases(uuid));
+  if (summary.testSuiteId === null && summary.total === 0) await v2.fetchRawMethod(uuid);
+  return summary;
 }

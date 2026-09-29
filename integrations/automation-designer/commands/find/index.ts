@@ -297,13 +297,15 @@ const command: CommandModule<FindArgs, FindData> = {
 
     const searchQuery = query ?? "";
     if (mode === "describe") {
-      const found = describeSearch(index, searchQuery, limit, { category });
+      // totalMatches = every match; `matches` is capped at --limit.
+      const all = describeSearch(index, searchQuery, Number.MAX_SAFE_INTEGER, { category });
+      const found = all.slice(0, Math.max(1, limit));
       if (found.length === 0) context.warn("No method summary/description matches found.");
       const data: FindDescribeData = {
         mode: "describe",
         query: searchQuery,
         cache: cacheMeta,
-        totalMatches: found.length,
+        totalMatches: all.length,
         matches: found.map((m) => methodRow(m, sel, DEFAULT_DESCRIBE_FIELDS, false)),
       };
       return ok(data);
@@ -312,7 +314,8 @@ const command: CommandModule<FindArgs, FindData> = {
     const scoped = category
       ? { ...index, methods: index.methods.filter((m) => inCategory(m.categoryName)), categories: index.categories.filter((c) => inCategory(c.name)) }
       : index;
-    const matches: MethodFinderMatch[] = searchMethodIndex(scoped, searchQuery, limit);
+    const allMatches: MethodFinderMatch[] = searchMethodIndex(scoped, searchQuery, Number.MAX_SAFE_INTEGER);
+    const matches = allMatches.slice(0, Math.max(1, limit));
     if (matches.length === 0) {
       context.warn("No method or category matches found.");
     }
@@ -321,7 +324,7 @@ const command: CommandModule<FindArgs, FindData> = {
       mode: "search",
       query: searchQuery,
       cache: cacheMeta,
-      totalMatches: matches.length,
+      totalMatches: allMatches.length,
       matches: matches.map((m) => (m.type === "method" ? methodRow(m, sel, DEFAULT_METHOD_FIELDS, true) : categoryRow(m, sel, true))),
     };
 

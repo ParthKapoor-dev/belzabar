@@ -1,8 +1,7 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { resolveMethodRef } from "../../lib/ids";
-import { summarizeTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
+import { loadTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
 
 interface TestCasesArgs {
   uuid: string;
@@ -25,7 +24,7 @@ const command: CommandModule<TestCasesArgs, TestCasesData> = {
   },
   async execute({ uuid: uuidArg }) {
     const uuid = resolveMethodRef(uuidArg);
-    return ok<TestCasesData>(summarizeTestSuite(uuid, await adApi.listTestCases(uuid)));
+    return ok<TestCasesData>(await loadTestSuite(uuid));
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;

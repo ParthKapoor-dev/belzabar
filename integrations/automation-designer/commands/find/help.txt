@@ -24,7 +24,8 @@ Flags:
                       (categories: name,id,uuid,systemUuid,label,aliases,
                       methods); `all` = every field.
   --refresh           Rebuild method index from API before searching (progress on stderr).
-  --limit <N>         Maximum matches (and --raw index rows) to return, 1-200. (default: 20)
+  --limit <N>         Maximum matches (and --raw index rows) to return, 1-200;
+                      totalMatches still counts every match. (default: 20)
   --open              Open selected method URL in browser. (pick mode only)
   --raw               Include the raw cached index, capped at --limit methods/categories.
   --v2                Accepted for consistency; the index is V1-only (a notice is printed).
@@ -32,7 +33,7 @@ Flags:
 
 Global Flags:
   --env <name>        Set active environment (default: defaultEnv, else nsm-dev).
-                      Available: nsm-dev | nsm-qa | nsm-uat
+                      Any env from `belz envs` (configured in ~/.belz/config.json).
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:

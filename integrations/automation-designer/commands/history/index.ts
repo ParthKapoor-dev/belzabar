@@ -9,7 +9,7 @@ import { resolveMethodRef } from "../../lib/ids";
 import type { HydratedMethod } from "../../lib/types/common";
 import { CacheManager } from "../../lib/cache";
 import { compactMethod } from "../../lib/method-view";
-import { pruneEmpty } from "../../lib/compact";
+import { abbreviate, htmlToText, pruneEmpty } from "../../lib/compact";
 
 type Action = "list" | "show" | "diff" | "restore";
 
@@ -73,6 +73,19 @@ interface DiffStepRow {
   v2Desc: string;
   changed: boolean;
   detail?: string;
+}
+
+/** Width a diff description cell is cut to in human mode. */
+const DIFF_CELL_MAX = 60;
+
+/**
+ * Human `history diff` table rows (F36): the AD UI's rich-text descriptions
+ * become plain text cut to DIFF_CELL_MAX, so the table fits a terminal. The
+ * `--llm` data keeps the full descriptions.
+ */
+export function diffTableRows(steps: DiffStepRow[], max = DIFF_CELL_MAX): Array<Array<string | number>> {
+  const cell = (t: string) => abbreviate(htmlToText(t), max);
+  return steps.map(s => [s.orderIndex, s.kind, s.changed ? "YES" : "", cell(s.v1Desc), cell(s.v2Desc), cell(s.detail ?? "")]);
 }
 
 interface HistoryDiffData {
@@ -269,14 +282,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
           ui.section("Step-by-step");
           ui.table(
             ["#", "Kind", "Changed", "v" + data.v1, "v" + data.v2, "Detail"],
-            data.steps.map(s => [
-              s.orderIndex,
-              s.kind,
-              s.changed ? "YES" : "",
-              s.v1Desc,
-              s.v2Desc,
-              s.detail ?? "",
-            ]),
+            diffTableRows(data.steps),
           );
         }
         break;
