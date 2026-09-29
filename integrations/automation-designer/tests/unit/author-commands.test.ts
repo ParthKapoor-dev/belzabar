@@ -277,7 +277,11 @@ describe("ad create --spec (compact)", () => {
     expect((await run(compactSpec, "--category", "Schools")).envelope?.error?.code).toBe("AD_SPEC_INVALID");
     expect((await run({ ...compactSpec, steps: [{ service: "Helpers.Legacy/echo", colour: 1 }] })).envelope?.error?.code).toBe("AD_SPEC_UNKNOWN_KEY");
     expect((await run({ ...compactSpec, steps: [{ service: "Helpers.Legacy/echo", inputs: { input: "x" } }] })).envelope?.error?.code).toBe("AD_SPEC_NOT_APPLIED");
-    expect((await run({ ...compactSpec, inputs: [{ key: "a", testValue: "x" }] })).envelope?.error?.code).toBe("AD_SPEC_INVALID");
+    // ADW-R10: method fields go through save's expandField — the server drops these, so they are refused
+    expect((await run({ ...compactSpec, inputs: [{ key: "a", testValue: "x" }] })).envelope?.error?.code).toBe("AD_SPEC_NOT_APPLIED");
+    expect((await run({ ...compactSpec, variables: [{ key: "v", encodingType: "BASE_64" }] })).envelope?.error?.code).toBe("AD_SPEC_NOT_APPLIED");
+    expect((await run({ ...compactSpec, inputs: [{ key: "a", requierd: true }] })).envelope?.error?.code).toBe("AD_SPEC_UNKNOWN_KEY");
+    expect((await run({ ...compactSpec, outputs: [{ key: "o", fooBar: 1 }] })).envelope?.error?.code).toBe("AD_SPEC_UNKNOWN_KEY");
     expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
   });
 });

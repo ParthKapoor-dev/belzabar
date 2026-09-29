@@ -60,7 +60,9 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Errors: MISSING_CATEGORY, AD_SPEC_UNKNOWN_KEY, AD_SPEC_INVALID,
-AD_SPEC_NOT_APPLIED (key/service/account the server would drop or reject),
+AD_SPEC_NOT_APPLIED (key/service/account the server would drop or reject;
+method inputs/outputs/variables get the same checks as `ad save` set-input:
+testValue and a variable's BASE_64 encodingType are refused, unknown keys too),
 CATEGORY_NOT_FOUND, AD_CATEGORY_PROTECTED, AD_VALIDATION_FAILED,
 AD_METHOD_EXISTS (name taken in the category), AD_SAVE_REJECTED (server
 message), AD_SAVE_VERIFY_FAILED (a value sent does not read back).

@@ -1,7 +1,7 @@
 // `ad create` (spec → V2 create body, WSR-6 category guard, verify) and
 // `ad delete` (soft delete of never-published drafts only).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { writeFileSync } from "fs";
+import { readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { CliError } from "@belzabar/core";
 import {
@@ -24,6 +24,7 @@ import type { V2MethodResponse } from "../../lib/types/v2-wire";
 const FIX = `${import.meta.dir}/../fixtures`;
 const CATS = buildCategories(require(`${FIX}/categories/chain-category.json`), require(`${FIX}/categories/chain-category-system.json`));
 const TEST_PARTH = requireChainCategory(CATS, "Test-Parth");
+const REAL_V2 = `${FIX}/real-v2`;
 const real = (u: string): V2MethodResponse => structuredClone(require(`${FIX}/real-v2/${u}.v2.json`));
 
 let ff: FakeFetch | null = null;
@@ -56,6 +57,28 @@ describe("buildCreateBody", () => {
       { properties: { customCode: { inlineCode: "console.log(1)" } }, outputs: [{ key: "ccOut" }] },
     ],
   };
+
+  test("ADW-R10: fields expand like save's set-input (refusals shared); real V2 method fields still work", () => {
+    const code = (spec: unknown) => {
+      try {
+        buildCreateBody(spec, TEST_PARTH);
+      } catch (e) {
+        return (e as CliError).code;
+      }
+      return "ok";
+    };
+    expect(code({ ...minimal, variables: [{ key: "v", encodingType: "BASE_64" }] })).toBe("AD_SPEC_NOT_APPLIED");
+    expect(code({ ...minimal, inputs: [{ key: "a", bogusKey: 1 }] })).toBe("AD_SPEC_UNKNOWN_KEY");
+    expect(code({ ...minimal, outputs: [{ type: "TEXT" }] })).toBe("AD_SPEC_INVALID"); // no key
+    // every method field of the 36 real bodies (uuid / referenceUuid are server-minted and dropped)
+    for (const f of readdirSync(REAL_V2)) {
+      if (!f.endsWith(".v2.json")) continue;
+      const real = JSON.parse(readFileSync(join(REAL_V2, f), "utf8"));
+      const outputs = (real.outputs ?? []).filter((o: any) => typeof o.key === "string" && o.key); // OK1 bodies lack keys
+      const { body } = buildCreateBody({ name: "x", inputs: real.inputs ?? [], variables: real.variables ?? [], outputs }, TEST_PARTH);
+      for (const o of body.outputs as any[]) expect(o.uuid ?? o.referenceUuid).toBeUndefined();
+    }
+  });
 
   test("fills UI defaults; category comes from the flag", () => {
     const { body, dropped } = buildCreateBody(minimal, TEST_PARTH);

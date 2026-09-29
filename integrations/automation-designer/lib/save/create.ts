@@ -19,7 +19,7 @@
 
 import { CliError } from "@belzabar/core";
 import type { Category } from "../categories";
-import { emptyCatalog, expandCompactStep, isRawV2Step, Problems, type ServiceCatalog } from "../serialize/compact";
+import { emptyCatalog, expandCompactStep, expandField, isRawV2Step, Problems, type FieldKind, type ServiceCatalog } from "../serialize/compact";
 
 /** WSR-6: core/shared categories are never written from belz. */
 const PROTECTED_CATEGORY = /^(helpers|database|cache|email|expertly)(\.|$)/i;
@@ -70,37 +70,6 @@ function withDefaults(defaults: Obj, given: unknown): Obj {
   for (const [k, v] of Object.entries(given)) {
     out[k] = isObj(v) && isObj(out[k]) ? withDefaults(out[k] as Obj, v) : structuredClone(v);
   }
-  return out;
-}
-
-/** A compact method field: a key string, or an object using `default` for defaultValue. */
-function compactField(given: unknown, where: string): unknown {
-  if (typeof given === "string") return { key: given };
-  if (!isObj(given)) return given;
-  if ("testValue" in given) {
-    throw new CliError(`${where}.testValue is dropped by every save; pass inputs to \`ad test\` instead.`, {
-      code: "AD_SPEC_INVALID",
-      details: { path: `${where}.testValue` },
-    });
-  }
-  if (!("default" in given)) return given;
-  const { default: dv, ...rest } = given;
-  return { ...rest, defaultValue: dv };
-}
-
-// Method-level inputs/outputs/variables get fresh uuids from the server: a
-// uuid copied from another method's body is dropped, never re-used.
-function field(given: unknown): Obj {
-  const key = isObj(given) && typeof given.key === "string" ? given.key : undefined;
-  const out = withDefaults({ key, name: key, type: "STRING", required: false, properties: [], encodingType: "NONE" }, given);
-  delete out.uuid;
-  return out;
-}
-
-function methodOutput(given: unknown): Obj {
-  const key = isObj(given) && typeof given.key === "string" ? given.key : undefined;
-  const out = withDefaults({ key, fieldCode: key, name: key, type: "STRING" }, given);
-  delete out.uuid;
   return out;
 }
 
@@ -195,14 +164,43 @@ export function buildCreateBody(
       service: { id: category.chainCategoryId, uuid: category.chainCategoryUuid, name: category.name },
       ...(isObj(meta.executionTimeLimit) ? { executionTimeLimit: meta.executionTimeLimit } : {}),
     },
-    inputs: ((spec.inputs as unknown[]) ?? []).map((f, i) => field(compactField(f, `inputs[${i}]`))),
-    outputs: ((spec.outputs as unknown[]) ?? []).map((f, i) => methodOutput(compactField(f, `outputs[${i}]`))),
-    variables: ((spec.variables as unknown[]) ?? []).map((f, i) => field(compactField(f, `variables[${i}]`))),
+    ...expandFields(spec),
     steps: expandSteps((spec.steps as unknown[]) ?? [], catalog),
     ...(Array.isArray(spec.securityFields) ? { securityFields: spec.securityFields } : {}),
     ...(Array.isArray(spec.assertions) ? { assertions: spec.assertions } : {}),
   };
   return { body, dropped };
+}
+
+/**
+ * Method inputs / outputs / variables through the same `expandField` as
+ * `save`'s set-input/-output/-variable (ADW-R10): unknown keys, testValue
+ * and a variable's BASE_64 encoding are refused instead of sent (the server
+ * drops them, and the post-create verify would fail AFTER the method exists).
+ */
+function expandFields(spec: Obj): { inputs: Obj[]; outputs: Obj[]; variables: Obj[] } {
+  const p = new Problems();
+  const list = (k: "inputs" | "outputs" | "variables", kind: FieldKind) =>
+    ((spec[k] as unknown[] | undefined) ?? []).map((f, i) => expandField(f, kind, `${k}[${i}]`, p)).filter((f): f is Obj => f !== null);
+  const out = { inputs: list("inputs", "input"), outputs: list("outputs", "output"), variables: list("variables", "variable") };
+  throwProblems(p);
+  return out;
+}
+
+function throwProblems(p: Problems): void {
+  if (p.unknown.length > 0) {
+    throw new CliError(`Unknown spec key(s): ${p.unknown.join(", ")}. See \`belz ad create --help\` for the compact keys.`, {
+      code: "AD_SPEC_UNKNOWN_KEY",
+      details: { unknown: p.unknown },
+    });
+  }
+  const problems = [...p.invalid, ...p.notApplied];
+  if (problems.length > 0) {
+    throw new CliError(`Spec has problems: ${problems.map((x) => `${x.key} (${x.reason})`).join("; ")}`, {
+      code: p.invalid.length > 0 ? "AD_SPEC_INVALID" : "AD_SPEC_NOT_APPLIED",
+      details: { invalid: p.invalid, notApplied: p.notApplied },
+    });
+  }
 }
 
 /** Raw V2 steps get UI defaults; compact steps are expanded (problems → AD_SPEC_*). */

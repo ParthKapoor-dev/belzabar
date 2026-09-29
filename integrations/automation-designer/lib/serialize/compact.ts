@@ -143,7 +143,7 @@ export function expandField(given: unknown, kind: FieldKind, where: string, p: P
   const allowed = kind === "output" ? OUTPUT_KEYS : FIELD_KEYS;
   for (const k of Object.keys(g)) {
     if (k === "testValue") p.drop(`${where}.testValue`, "stored testValues are dropped by every save; pass inputs to `ad test`");
-    else if (k === "uuid") continue; // server-minted; a copied uuid is dropped
+    else if (k === "uuid" || k === "referenceUuid") continue; // server-minted; a copied uuid is dropped
     else if (!allowed.has(k)) p.unknown.push(`${where}.${k}`);
   }
   const key = typeof g.key === "string" ? g.key.trim() : "";
