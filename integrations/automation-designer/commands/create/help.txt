@@ -14,6 +14,7 @@ Compact spec (belz expands it to the full V2 body with UI defaults):
     "steps": [
       {"sql": "SELECT … WHERE id = '#{id}'", "account": "BCPS-RDS",
        "outputs": {"rows": "flatData[]"}, "when": "#{id} ne null"},
+       // flatData[] = the rows as an array of OBJECTS [{col: v}, …]
       {"service": "Helpers.Legacy/echo", "inputs": {"Input": "#{rows.size()}"},
        "outputs": [{"key": "response", "as": "count"}]},
       {"codeFile": "step3.js", "outputs": ["a", "b"], "exit": {"onFailure": false}}

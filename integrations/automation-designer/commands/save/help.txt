@@ -49,6 +49,14 @@ Arguments:
                         step of another kind. Code and SQL are plain text; they
                         are stored in the step's existing encoding (new steps:
                         plain, base64 only if the text itself is base64).
+                        Platform traps (CLI trial): custom code takes no inputs
+                        — #{name} is spliced into the source as text, so
+                        splice scalars only: an indexed expression
+                        (#{rows[0].x}) fails with "Mismatch in input and
+                        query", and a list/object (#{rows}) arrives with broken
+                        quoting (JS SyntaxError). Reduce it to a scalar first
+                        (an echo step, or SQL). db_service flatData[] is an
+                        array of row objects, not scalars.
 
 Flags:
   --uuid <UUID>         Target draft uuid (or its PUBLISHED uuid, or an AD URL). (required)

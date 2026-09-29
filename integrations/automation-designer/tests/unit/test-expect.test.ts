@@ -90,6 +90,16 @@ describe("assertions ↔ SpEL (UI encoding)", () => {
     for (const bad of ["a.b=1", "n>=1", "o={\"a\":1}"]) {
       expect(() => assertionFromExpectation(parseExpectation(bad))).toThrow(expect.objectContaining({ code: "INVALID_ASSERTION" }));
     }
+    // CLI trial: the hint must not suggest the out.path form the error just refused
+    let msg = "";
+    try {
+      assertionFromExpectation(parseExpectation("a.b=1"));
+    } catch (e) {
+      msg = (e as Error).message;
+    }
+    expect(msg).toContain("Invalid assertion");
+    expect(msg).toContain("belz ad test --expect");
+    expect(msg).not.toMatch(/\(out\.path\[0\]=value for JSON outputs\)/);
   });
 
   test("read back: structured when parseable, raw otherwise", () => {

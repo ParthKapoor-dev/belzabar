@@ -253,6 +253,16 @@ describe("ad run-suites (AD-38 / F14)", () => {
   });
 });
 
+describe("ad run payload file", () => {
+  test("a payload file that is not JSON is INVALID_PAYLOAD, not a raw SyntaxError", async () => {
+    wire(okTestResponse);
+    const f = join(scratchDir("ad-run-payload"), "bad.json");
+    writeFileSync(f, "{nope");
+    const r = await runCommand(runCommandModule, [UUID, f], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.code).toBe("INVALID_PAYLOAD");
+  });
+});
+
 describe("ad run (AD-34)", () => {
   test("a DRAFT uuid warns that the draft's saved body runs and names the published copy", async () => {
     const draft = { ...rawBody(), automationState: "DRAFT", referenceId: "0000000000000000000000000000beef" };

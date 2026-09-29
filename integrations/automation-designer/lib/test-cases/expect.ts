@@ -57,7 +57,14 @@ const OP_SYMBOL: Record<ExpectOp, string> = { eq: "=", neq: "!=", contains: "~="
 const LHS_RE = /^\s*([A-Za-z_][A-Za-z0-9_]*)((?:\.[A-Za-z0-9_$-]+|\[\d+\])*)\s*/;
 
 function invalid(source: string, why: string, code = "INVALID_EXPECTATION"): CliError {
-  return new CliError(`Invalid expectation '${source}': ${why}. Use out=value, out!=value, out~=value, out>n, out<n (out.path[0]=value for JSON outputs).`, { code });
+  // A persisted assertion (`test-case --assert`) is the UI's SpEL: whole outputs only,
+  // so it must not suggest `out.path` (CLI trial: the hint contradicted the error).
+  const hint =
+    code === "INVALID_ASSERTION"
+      ? "Use out=value, out!=value, out~=value, out>n, out<n on a whole output (to look inside a JSON output, use `belz ad test --expect out.path[0]=value`, which is checked locally)."
+      : "Use out=value, out!=value, out~=value, out>n, out<n (out.path[0]=value for JSON outputs).";
+  const label = code === "INVALID_ASSERTION" ? "assertion" : "expectation";
+  return new CliError(`Invalid ${label} '${source}': ${why}. ${hint}`, { code });
 }
 
 /** Parse the right-hand side: quoted → string; JSON → value; else the text. */

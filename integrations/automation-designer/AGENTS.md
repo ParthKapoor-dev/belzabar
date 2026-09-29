@@ -316,6 +316,17 @@ facts to keep in mind:
 - `DELETE` is soft and never frees the name (`AD_TESTCASE_NAME_RESERVED`).
 - `bulk` posts one case at a time.
 
+### Platform traps agents hit (CLI trial, sems-dev 2026-09-29)
+Documented in `ad save --help` / `ad create --help` / `ad outputs --help`, where agents look:
+- db_service `flatData[]` is an array of row OBJECTS (`[{col: v}, …]`), not scalars, whatever
+  the name suggests: `--expect 'out[0].col=v'`.
+- Custom-code steps take no inputs: `#{x}` is spliced into the JS as text. An indexed
+  expression (`#{rows[0].x}`) fails with `Mismatch in input and query`; a list/object
+  (`#{rows}`) arrives with broken quoting (SyntaxError). Splice scalars only (reduce first with an
+  echo or SQL step).
+- A step output whose `as` is not declared on the method is not returned (`ad outputs`
+  `stepOutputs[].declaredAs: null`).
+
 ### SQL
 Default DB when `--db` is absent, in order:
 1. `environments.<env>.sqlDefaultDb` in `~/.belz/config.json`
