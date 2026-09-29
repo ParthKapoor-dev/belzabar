@@ -12,7 +12,7 @@ Credentials come from core `Config.getJenkins()` (see `integrations/migrations/A
 jenkins/
 ├── lib/
 │   ├── auth.ts        JenkinsAuth, buildHeaders (UTF-8 basic auth), assertJenkinsAuth (from
-│   │                  Config.getJenkins(); job defaults to core DEFAULT_JENKINS_JOB)
+│   │                  Config.getJenkins(); the migration job is required — no default)
 │   ├── crumb.ts       CSRF crumb fetch + per-process cache
 │   ├── client.ts      jenkinsFetch, jenkinsError, getJobParameters, triggerBuild,
 │   │                  resolveQueueItem, getBuild, getConsoleChunk, getFullConsole, buildUrl, jobUrl

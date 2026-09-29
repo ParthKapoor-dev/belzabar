@@ -1,13 +1,19 @@
 // F16: `--help` anywhere must show help instead of running the command.
 // Spawns the dev CLI in an isolated HOME/cwd so no real ~/.belz or .env is read.
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
 const CLI = join(import.meta.dir, "..", "bin", "cli.ts");
 const home = mkdtempSync(join(tmpdir(), "belz-help-test-"));
 afterAll(() => rmSync(home, { recursive: true, force: true }));
+// belz has no built-in envs: give the spawned CLI two to pick from.
+mkdirSync(join(home, ".belz"), { recursive: true });
+writeFileSync(
+  join(home, ".belz", "config.json"),
+  JSON.stringify({ environments: { dev: { url: "https://dev.example.test" }, qa: { url: "https://qa.example.test" } } }),
+);
 
 async function belz(...args: string[]) {
   const proc = Bun.spawn([process.execPath, CLI, ...args], {
@@ -44,13 +50,13 @@ describe("runner-level --help (F16)", () => {
 
 describe("global --env forms (F3)", () => {
   test("--env=<name> is honoured", async () => {
-    const r = await belz("envs", "--env=nsm-qa", "--llm");
+    const r = await belz("envs", "--env=qa", "--llm");
     // `envs` is not env-aware (no meta.env); it reports the selected env as data.active.
-    expect(JSON.parse(r.stdout).data.active).toBe("nsm-qa");
+    expect(JSON.parse(r.stdout).data.active).toBe("qa");
   }, 30_000);
 
   test("conflicting --env is rejected with INVALID_ARGS", async () => {
-    const r = await belz("envs", "--env", "nsm-dev", "--env=nsm-qa", "--llm");
+    const r = await belz("envs", "--env", "dev", "--env=qa", "--llm");
     expect(r.exitCode).toBe(1);
     expect(JSON.parse(r.stdout).error.code).toBe("INVALID_ARGS");
   }, 30_000);

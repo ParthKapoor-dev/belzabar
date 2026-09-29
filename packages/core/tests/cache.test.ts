@@ -4,6 +4,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { Cache, normalizeCacheKey } from "../src/cache";
 import { Config } from "../src/config";
+import { withTempEnvConfig } from "../src/testing";
 
 const tmp = mkdtempSync(join(tmpdir(), "belz-cache-test-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
@@ -24,31 +25,32 @@ describe("core Cache — env scoping (CORE-3)", () => {
 
   test("defaults to Config.activeEnv and dir follows the active env", async () => {
     const c = makeCache("active");
+    using _cfg = withTempEnvConfig({ envs: { "t-qa": { url: "https://q.test" }, "t-uat": { url: "https://u.test" } } });
     const prev = Config.activeEnv?.name;
     try {
-      Config.setActiveEnv("nsm-qa");
-      expect(c.dir).toBe(join(tmp, "active", "nsm-qa"));
+      Config.setActiveEnv("t-qa");
+      expect(c.dir).toBe(join(tmp, "active", "t-qa"));
       await c.save("k", { v: "qa" });
-      Config.setActiveEnv("nsm-uat");
-      expect(c.dir).toBe(join(tmp, "active", "nsm-uat"));
+      Config.setActiveEnv("t-uat");
+      expect(c.dir).toBe(join(tmp, "active", "t-uat"));
       expect(await c.load("k")).toBeNull();
-      expect(await c.load("k", "nsm-qa")).toEqual({ v: "qa" });
+      expect(await c.load("k", "t-qa")).toEqual({ v: "qa" });
     } finally {
-      if (prev) Config.setActiveEnv(prev);
+      if (prev && Config.getAllEnvs()[prev]) Config.setActiveEnv(prev);
     }
   });
 
   test("legacy unscoped files are ignored (treated as a miss)", async () => {
     const c = makeCache("legacy");
     await Bun.write(join(tmp, "legacy", "old.json"), JSON.stringify({ savedAt: Date.now(), data: { v: "x" } }));
-    expect(await c.load("old", "nsm-dev")).toBeNull();
+    expect(await c.load("old", "t-dev")).toBeNull();
   });
 
   test("envScoped:false keeps the flat layout", async () => {
     const c = makeCache("flat", { envScoped: false });
-    await c.save("index-v1-nsm-dev", { v: "i" }, "whatever");
-    expect(existsSync(join(tmp, "flat", "index-v1-nsm-dev.json"))).toBe(true);
-    expect(await c.load("index-v1-nsm-dev")).toEqual({ v: "i" });
+    await c.save("index-v1-t-dev", { v: "i" }, "whatever");
+    expect(existsSync(join(tmp, "flat", "index-v1-t-dev.json"))).toBe(true);
+    expect(await c.load("index-v1-t-dev")).toEqual({ v: "i" });
   });
 
   test("invalidate drops the entry for that env only", async () => {

@@ -2,7 +2,7 @@
 // messages), build 404 → "Build #n not found", queue deadline, crumb errors
 // (MG-5/7/8, F28).
 import { afterEach, describe, expect, test } from "bun:test";
-import { CliError, DEFAULT_JENKINS_JOB } from "@belzabar/core";
+import { CliError } from "@belzabar/core";
 import { fakeFetch, respond, type FakeFetch } from "@belzabar/core/testing";
 import { assertJenkinsAuth, buildHeaders, fetchCrumb, getBuild, getConsoleChunk, resolveQueueItem, triggerBuild, type JenkinsAuth } from "../lib";
 
@@ -100,9 +100,17 @@ describe("jenkins client", () => {
     expect(buildHeaders(auth).Authorization).toBe(`Basic ${btoa("u:p")}`);
   });
 
-  test("assertJenkinsAuth defaults the job to core's DEFAULT_JENKINS_JOB", () => {
-    expect(assertJenkinsAuth({ baseUrl: "https://j.test/", user: "u", password: "p" })).toEqual({
-      baseUrl: "https://j.test", user: "u", password: "p", job: DEFAULT_JENKINS_JOB,
+  test("assertJenkinsAuth requires the migration job (no built-in default)", () => {
+    expect(assertJenkinsAuth({ baseUrl: "https://j.test/", user: "u", password: "p", migrationJob: "Jobs/db-migration" })).toEqual({
+      baseUrl: "https://j.test", user: "u", password: "p", job: "Jobs/db-migration",
     });
+    try {
+      assertJenkinsAuth({ baseUrl: "https://j.test/", user: "u", password: "p" });
+      throw new Error("expected a throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(CliError);
+      expect((e as CliError).code).toBe("MIGRATE_JENKINS_CONFIG_MISSING");
+      expect((e as CliError).details).toEqual({ missing: ["migrationJob"] });
+    }
   });
 });

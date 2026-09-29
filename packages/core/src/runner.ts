@@ -1,4 +1,4 @@
-import { Config } from "./config";
+import { Config, NO_ENV, noEnvSelectedError } from "./config";
 import {
   CliError,
   type CommandContext,
@@ -183,7 +183,7 @@ export function parseGlobalFlags(argv: string[]): GlobalFlags {
     if (a === "--env" || a === "-e") {
       const next = argv[i + 1];
       if (next === undefined || next === "--" || next.startsWith("-")) {
-        setError("MISSING_ENV_ARG", "--env requires an environment name (e.g. --env nsm-dev).");
+        setError("MISSING_ENV_ARG", "--env requires an environment name (e.g. --env dev).");
         continue;
       }
       setEnv(next, a);
@@ -194,7 +194,7 @@ export function parseGlobalFlags(argv: string[]): GlobalFlags {
     if (eq) {
       const value = a.slice(eq.length);
       if (!value) {
-        setError("MISSING_ENV_ARG", "--env requires an environment name (e.g. --env nsm-dev).");
+        setError("MISSING_ENV_ARG", "--env requires an environment name (e.g. --env dev).");
         continue;
       }
       setEnv(value, "--env");
@@ -213,25 +213,30 @@ export interface GlobalContext {
   verboseTokens: VerboseToken[];
   /** BELZ_VERBOSE as it was before the global flags were applied. */
   verboseEnvBefore: string | undefined;
-  /** The default env (BELZ_ENV / config.json `defaultEnv`) is not configured. */
+  /** No usable default env: the default (BELZ_ENV / config.json `defaultEnv`) is not configured, or none is selected. */
   defaultEnvError: { code: string; message: string } | null;
   startedAt: number;
 }
 
 /**
  * Select the default env for a run without `--env` (D6): BELZ_ENV > config.json
- * `defaultEnv` > nsm-dev (core/config owns the precedence). Returns an error
- * when the default names an env that is not configured.
+ * `defaultEnv` > the only configured env (core/config owns the precedence).
+ * Returns an error when the default names an env that is not configured
+ * (INVALID_ENV) or when nothing selects an env (ENV_NOT_SELECTED).
  */
 function applyDefaultEnv(): { code: string; message: string } | null {
   Config.resetActiveEnv();
+  if (Config.envSource === "none") {
+    const e = noEnvSelectedError();
+    return { code: e.code, message: e.message };
+  }
   const source =
     Config.envSource === "BELZ_ENV" ? "BELZ_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "default";
   const name = Config.activeEnv.name;
   return Config.getAllEnvs()[name] ? null : unknownDefault(name, source);
 }
 
-/** `meta.envSource`: where the env came from. `default` = config.json `defaultEnv` or the built-in nsm-dev. */
+/** `meta.envSource`: where the env came from. `default` = config.json `defaultEnv` or the only configured env. */
 export type MetaEnvSource = "flag" | "BELZ_ENV" | "default";
 
 function metaEnvSource(envExplicit: boolean): MetaEnvSource {
@@ -240,7 +245,7 @@ function metaEnvSource(envExplicit: boolean): MetaEnvSource {
 }
 
 function envSourceLabel(): string {
-  return Config.envSource === "BELZ_ENV" ? "from BELZ_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "built-in default";
+  return Config.envSource === "BELZ_ENV" ? "from BELZ_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "the only configured env";
 }
 
 function unknownDefault(name: string, source: string): { code: string; message: string } {
@@ -545,8 +550,9 @@ export async function dispatchCommand(
   const envAware = command.envAware ?? opts.envAware ?? true;
   const activeEnv = Config.activeEnv;
   const envExplicit = globals?.envExplicit ?? false;
-  const envForMeta = envAware ? activeEnv.name : null;
-  const envSourceForMeta = envAware ? metaEnvSource(envExplicit) : null;
+  // No env selected (ENV_NOT_SELECTED): the envelope carries no meta.env.
+  const envForMeta = envAware && activeEnv.name !== NO_ENV ? activeEnv.name : null;
+  const envSourceForMeta = envForMeta !== null ? metaEnvSource(envExplicit) : null;
   const schema = `${schemaNamespace(binaryName)}.${commandName}`;
 
   const commandContext: CommandContext = {

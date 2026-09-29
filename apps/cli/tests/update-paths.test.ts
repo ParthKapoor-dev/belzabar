@@ -8,7 +8,10 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { CONFIG_FILE_PATH, reloadConfig } from "@belzabar/core";
 import { runCommand, scratchDir, withTempEnvConfig } from "@belzabar/core/testing";
-import update, { installerCommand, installScriptDir, planUpdate, worktreeDirty } from "../commands/update/index";
+import updateModule, { installerCommand, installScriptDir, planUpdate, worktreeDirty } from "../commands/update/index";
+
+// `update` is registered with envAware: false (apps/cli/bin/options.ts).
+const update = { ...updateModule, envAware: false };
 
 const dirs: string[] = [];
 afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });

@@ -47,17 +47,9 @@ interface SetupData {
   jenkinsConfigured: boolean;
 }
 
-// Built-in NSM envs have known URLs and a legacy NSM_*_USER/PASSWORD key shape.
-const BUILTIN_ENVS: Array<{ name: string; url: string; userKey: string; passKey: string }> = [
-  { name: "nsm-dev", url: "https://nsm-dev.nc.verifi.dev", userKey: "NSM_DEV_USER", passKey: "NSM_DEV_PASSWORD" },
-  { name: "nsm-qa",  url: "https://nsm-qa.nc.verifi.dev",  userKey: "NSM_QA_USER",  passKey: "NSM_QA_PASSWORD" },
-  { name: "nsm-uat", url: "https://nsm-uat.nc.verifi.dev", userKey: "NSM_UAT_USER", passKey: "NSM_UAT_PASSWORD" },
-];
-const BUILTIN_URLS: Record<string, string> = Object.fromEntries(BUILTIN_ENVS.map((e) => [e.name, e.url]));
-
-// Generic, project-agnostic env keys: BELZ_ENV_<NAME>_{URL,USER,PASSWORD,PROJECT}
-// where <NAME> maps to an env name lowercased with `_`→`-` (BELZ_ENV_YS_QA_URL
-// → "ys-qa"). This is how non-NSM projects (and nsm-stage/prod) are configured
+// Env keys: BELZ_ENV_<NAME>_{URL,USER,PASSWORD,PROJECT} where <NAME> maps to an
+// env name lowercased with `_`→`-` (BELZ_ENV_ACME_QA_URL → "acme-qa"). There are
+// no built-in envs: every env names its own URL. This is how envs are configured
 // non-interactively — e.g. from a cloud environment's variables.
 const GENERIC_ENV_RE = /^BELZ_ENV_(.+)_(URL|USER|PASSWORD|PROJECT)$/;
 
@@ -99,27 +91,13 @@ function buildConfigFromValues(values: Record<string, string>): {
 } {
   const envs: Record<string, EnvEntry> = {};
 
-  // 1. Built-in NSM envs via the legacy NSM_*_USER/PASSWORD keys.
-  for (const { name, url, userKey, passKey } of BUILTIN_ENVS) {
-    const user = values[userKey] ?? "";
-    const pass = values[passKey] ?? "";
-    if (user || pass) {
-      const entry: EnvEntry = { url };
-      if (user) entry.user = user;
-      if (pass) Object.assign(entry, plainSecret(pass));
-      envs[name] = entry;
-    }
-  }
-
-  // 2. Generic BELZ_ENV_<NAME>_* envs (any project). Falls back to a built-in
-  //    URL when the name is a known built-in and no URL was supplied.
+  // 1. BELZ_ENV_<NAME>_* envs.
   for (const [name, g] of Object.entries(collectGenericEnvs(values))) {
-    const url = g.url ?? BUILTIN_URLS[name];
-    if (!url) continue; // an env without a URL isn't usable — skip it
-    envs[name] = { ...envs[name], ...g, url };
+    if (!g.url) continue; // an env without a URL isn't usable — skip it
+    envs[name] = g;
   }
 
-  // 3. Jenkins.
+  // 2. Jenkins.
   let jenkins: { baseUrl?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; migrationJob?: string } | undefined;
   const jkUrl = values["BELZ_JENKINS_URL"];
   const jkUser = values["BELZ_JENKINS_USER"];
@@ -133,7 +111,7 @@ function buildConfigFromValues(values: Record<string, string>): {
     if (jkJob) jenkins.migrationJob = jkJob;
   }
 
-  // 4. Teamwork.
+  // 3. Teamwork.
   let tw: { email?: string; password?: string; passwordEncoding?: "plain" | "base64" } | undefined;
   const email = values["TEAMWORK_EMAIL"];
   const twPass = values["TEAMWORK_PASSWORD"];
@@ -240,7 +218,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
       // Bun auto-loads a cwd `.env` into process.env; never persist those values (CORE-R14).
       const trusted = withoutDotenvInjected();
       values = trusted.values;
-      ignoredDotenvKeys = trusted.dropped.filter((k) => /^(NSM_|TEAMWORK_|JENKINS_|BELZ_)/.test(k));
+      ignoredDotenvKeys = trusted.dropped.filter((k) => /^(TEAMWORK_|JENKINS_|BELZ_)/.test(k));
       if (ignoredDotenvKeys.length > 0 && context.outputMode === "human") {
         lifecycle.notice(
           `Ignored ${ignoredDotenvKeys.length} value(s) loaded from a .env file in ${process.cwd()}: ${ignoredDotenvKeys.join(", ")}. ` +
@@ -264,15 +242,24 @@ const command: CommandModule<SetupArgs, SetupData> = {
     if (values) {
       ({ envs, tw, jenkins } = buildConfigFromValues(values));
     } else {
-      // Interactive prompts for the built-in NSM envs + Teamwork.
-      for (const { name, url } of BUILTIN_ENVS) {
-        lifecycle.note(name, `URL: ${url}\nLeave blank to skip this environment.`);
+      // Interactive prompts: one env at a time (name, URL, credentials) + Teamwork.
+      lifecycle.note("Environments", "Add each environment you work with. Leave the name blank to finish.");
+      for (;;) {
+        const name = (await prompts.text({
+          message: "Environment name (e.g. dev, qa) — blank to finish",
+          validate: (v) => (!v.trim() || /^[A-Za-z0-9._-]+$/.test(v.trim()) ? undefined : "Use letters, digits, '.', '_' or '-'."),
+        })).trim();
+        if (!name) break;
+        const url = (await prompts.text({
+          message: `Base URL for ${name}`,
+          validate: (v) => (/^https?:\/\/\S+$/.test(v.trim()) ? undefined : "Must be an http(s) URL."),
+        })).trim();
         const user = await prompts.text({ message: `Username for ${name}` });
         const pass = user ? await prompts.password({ message: `Password for ${name}` }) : "";
         const entry: EnvEntry = { url };
         if (user) entry.user = user;
         if (pass) Object.assign(entry, plainSecret(pass));
-        if (user || pass) envs[name] = entry;
+        envs[name] = entry;
       }
       const addTeamwork = await prompts.confirm({ message: "Configure Teamwork credentials now?", initialValue: false });
       if (addTeamwork) {
@@ -286,7 +273,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
 
     if (Object.keys(envs).length === 0) {
       throw new CliError(
-        "No environments resolved. Provide NSM_*_USER/PASSWORD or BELZ_ENV_<NAME>_{URL,USER,PASSWORD} values.",
+        "No environments resolved. Provide BELZ_ENV_<NAME>_{URL,USER,PASSWORD} values (a URL is required per env).",
         { code: "SETUP_NO_ENVS" },
       );
     }

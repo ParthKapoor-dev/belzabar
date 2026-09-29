@@ -1,8 +1,8 @@
 Usage: belz setup [flags]
 
-Interactive first-time setup. Walks you through credential entry for the
-built-in environments (nsm-dev, nsm-qa, nsm-uat) and optional Teamwork creds,
-then writes ~/.belz/config.json.
+Interactive first-time setup. Walks you through adding environments (name,
+base URL, credentials) and optional Teamwork creds, then writes
+~/.belz/config.json. There are no built-in environments.
 
 Passwords are base64-encoded before being stored. The config file is the
 source of truth: it overrides any matching environment variables.
@@ -21,13 +21,11 @@ Flags:
 --env-file and --from-env cannot be combined.
 
 NON-INTERACTIVE KEYS (--env-file / --from-env)
-  Built-in NSM envs:  NSM_DEV_USER, NSM_DEV_PASSWORD, NSM_QA_USER,
-                      NSM_QA_PASSWORD, NSM_UAT_USER, NSM_UAT_PASSWORD
-  Any project's env:  BELZ_ENV_<NAME>_URL, BELZ_ENV_<NAME>_USER,
+  Environments:       BELZ_ENV_<NAME>_URL, BELZ_ENV_<NAME>_USER,
                       BELZ_ENV_<NAME>_PASSWORD, BELZ_ENV_<NAME>_PROJECT
                       where <NAME> lowercases with `_`→`-`
-                      (BELZ_ENV_YS_QA_URL → env "ys-qa"). URL is required for
-                      a new env; for built-in names it is filled in for you.
+                      (BELZ_ENV_ACME_QA_URL → env "acme-qa"). URL is required
+                      for every env.
   Jenkins:            BELZ_JENKINS_URL, BELZ_JENKINS_USER,
                       BELZ_JENKINS_PASSWORD, BELZ_JENKINS_JOB
   Teamwork:           TEAMWORK_EMAIL, TEAMWORK_PASSWORD

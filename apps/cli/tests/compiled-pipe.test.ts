@@ -52,7 +52,7 @@ describe("compiled binary", () => {
     expect(stdout.length).toBeGreaterThan(64 * 1024);
     const env = JSON.parse(stdout);
     expect(env.ok).toBe(true);
-    expect(env.data.envs.length).toBe(ENV_COUNT + 3); // + built-in nsm-dev/qa/uat
+    expect(env.data.envs.length).toBe(ENV_COUNT); // no built-in envs
   }, 30_000);
 
   test("--help-full arrives complete through a slow pipe", async () => {

@@ -35,7 +35,7 @@ Everything is exported from `src/index.ts`. Grouped by concern:
 ### Config and Credentials (`src/config/`)
 | Export | Description |
 |--------|-------------|
-| `Config` | Active env + credentials. `setActiveEnv(name)` (explicit, throws `INVALID_ENV`), `resetActiveEnv()`, `activeEnv` (never throws), `defaultEnvName` (BELZ_ENV > config `defaultEnv` > `nsm-dev`), `envSource` (`flag`/`BELZ_ENV`/`config`/`builtin`), `envWasExplicit`, `configError`, `assertUsable()`, `cleanBaseUrl`/`loginId`/`password` (throw `CONFIG_INVALID`/`INVALID_ENV` when the env is unusable), `getJenkins()`, `getTeamwork()` |
+| `Config` | Active env + credentials. `setActiveEnv(name)` (explicit, throws `INVALID_ENV`), `resetActiveEnv()`, `activeEnv` (never throws), `defaultEnvName` (BELZ_ENV > config `defaultEnv` > the only configured env > `NO_ENV` = ""), `envSource` (`flag`/`BELZ_ENV`/`config`/`only`/`none`), `noEnvSelectedError()`, `envWasExplicit`, `configError`, `assertUsable()`, `cleanBaseUrl`/`loginId`/`password` (throw `CONFIG_INVALID`/`INVALID_ENV`/`ENV_NOT_SELECTED` when the env is unusable), `getJenkins()`, `getTeamwork()` |
 | `BELZ_CONFIG_DIR` / `CONFIG_FILE_PATH` | `~/.belz/` (or `BELZ_HOME`) and its `config.json` |
 | `loadConfigFileRaw()` / `writeConfigFile(cfg)` | Raw read (unvalidated, for read-modify-write) / atomic 0600 write |
 | `ConfigFileSchema`, `validateConfigFile` | zod schema (passthrough: unknown keys survive). Violations → `CONFIG_INVALID` naming the path |
@@ -89,7 +89,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 | `--help-full` | `options.helpFull({namespace?, index?})` text, only as the first token after the global flags: `--help-full [<namespace>] [--index]` (one section; one line per command); unknown namespace / extra args → `INVALID_ARGS`; `--llm` → `belz.help` envelope `{data: {text}}` (CORE-R11) |
 | Help is plain off a TTY | `renderOutcome` strips ANSI from every print outcome (`--help`, `<ns> --help`, `<cmd> --help`, `--help-full`, `--version`) when the stream is not a TTY or NO_COLOR is set — even under FORCE_COLOR, which agent harnesses export (`stripAnsi`) |
 | `--version` | `belz --version` / `--version --llm` (`belz.version` envelope). `options.build` = `{version, sha, dirty, builtAt}` from `apps/cli/bin/build-info.ts`, a Bun macro evaluated at build time |
-| Default env (D6) | Without `--env`, the runner selects the default env (`Config.resetActiveEnv`: BELZ_ENV > config.json `defaultEnv` > nsm-dev); an unknown default fails env-aware commands with `INVALID_ENV`. `ctx.envExplicit` says whether `--env` was given. An env-aware command with `writes` (bool or `(args) => bool`) refuses to run without an explicit `--env` → `ENV_REQUIRED_FOR_WRITE`, and in human mode prints `→ target env: <name> (<url>)` on stderr. `requiresEnv` (bool or fn) is the same guard for a *preview* of a write that reads the target env (`ad save/create --dry-run`, `test-case sync` without `--apply`; `details.dryRun: true`, no target-env header). `writesLocal` (local files only) needs no `--env`. Every other env-aware command run on the default env prints `→ env: <name> (<source>; pass --env to choose)` on stderr in human mode, and the envelope carries `meta.envSource` |
+| Default env (D6) | Without `--env`, the runner selects the default env (`Config.resetActiveEnv`: BELZ_ENV > config.json `defaultEnv` > the only configured env). There is no built-in env: an unknown default fails env-aware commands with `INVALID_ENV`, and no default with several (or zero) envs fails them with `ENV_NOT_SELECTED` (listing the configured envs; the envelope then has no `meta.env`). Commands that are not env-aware (`config edit`, `envs`, `setup`, tw/migrate/release) still run; `envs` reports `active: null`. `ctx.envExplicit` says whether `--env` was given. An env-aware command with `writes` (bool or `(args) => bool`) refuses to run without an explicit `--env` → `ENV_REQUIRED_FOR_WRITE`, and in human mode prints `→ target env: <name> (<url>)` on stderr. `requiresEnv` (bool or fn) is the same guard for a *preview* of a write that reads the target env (`ad save/create --dry-run`, `test-case sync` without `--apply`; `details.dryRun: true`, no target-env header). `writesLocal` (local files only) needs no `--env`. Every other env-aware command run on the default env prints `→ env: <name> (<source>; pass --env to choose)` on stderr in human mode, and the envelope carries `meta.envSource` |
 | `hasHelpFlag(args)` | `-h`/`--help` anywhere before `--`. The runner shows help for the command instead of executing it (so `config token --help` never runs `token`) |
 | `dispatchNamespaced(argv, options)` / `dispatchCommand(...)` | In-process routing: return a `RunOutcome` (`{kind:"envelope", envelope, exitCode}` or `{kind:"print", print, exitCode}`) and **never exit**. `runNamespacedCli` = `installStdioGuard` + `dispatchNamespaced` + `renderOutcome` + `flushAndExit`. Used by `core/testing` |
 | `resolveGlobalFlags(argv)` | `parseGlobalFlags` + apply them (output mode, verbose, `Config.setActiveEnv`); no stdio side effects |
@@ -120,7 +120,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 - `meta`: `durationMs` always; `env` only for env-aware commands (`envAware` defaults true;
   tw/migrate/release namespaces, config/envs/setup/onboard/update are not) and never on
   runner-level envelopes, always with `envSource`: `flag` | `BELZ_ENV` | `default` (config.json
-  `defaultEnv` or the built-in nsm-dev); `warnings` when raised.
+  `defaultEnv` or the only configured env); `warnings` when raised.
 
 `apps/cli/tests/envelope-contract.test.ts` (help/error paths of every command) and
 `envelope-success.test.ts` (read commands over the real fixtures) check it. Change the schema and
@@ -139,7 +139,7 @@ removes pre-env-scope flat entries and abandoned refresh locks.
 ### Stable error codes raised by core
 - Args: `UNKNOWN_FLAG`, `MISSING_VALUE`, `INVALID_VALUE`, `MISSING_FLAG`, `MISSING_ARGUMENT`,
   `UNEXPECTED_ARGUMENT`, `CONFLICTING_FLAGS`, `DUPLICATE_FLAG`, `UNKNOWN_SUBCOMMAND`, `MISSING_SUBCOMMAND`.
-- Runner: `UNKNOWN_COMMAND`, `INVALID_ARGS` (global flags), `MISSING_ENV_ARG`, `INVALID_ENV`,
+- Runner: `UNKNOWN_COMMAND`, `INVALID_ARGS` (global flags), `MISSING_ENV_ARG`, `INVALID_ENV`, `ENV_NOT_SELECTED`,
   `ENV_REQUIRED_FOR_WRITE`, `INVALID_COMMAND_MODULE`, `UNHANDLED_EXCEPTION`, `USER_ABORT` (exit 130).
 - Config/auth: `CONFIG_INVALID`, `AUTH_MISSING_CREDENTIALS`, `AUTH_FAILED`, `AUTH_NO_TOKEN`, `AUTH_EXPIRED`.
 - HTTP: `HTTP_TIMEOUT`, `HTTP_NETWORK_ERROR`, `HTTP_ABORTED`, `HTTP_BAD_JSON`, `NOT_FOUND`, `HTTP_<status>`.
@@ -177,7 +177,7 @@ preload has pointed `BELZ_HOME` at a tmp dir; helpers refuse to write otherwise.
 | `describeLive` / `describeLiveWrite` / `spawnLive` / `registerLiveResource` / `markLiveResourceCleaned` | Opt-in live suites: run only with `BELZ_LIVE=sems-dev` (+ `BELZ_LIVE_WRITE=1`); any other `BELZ_LIVE` or `--env` is refused. `spawnLive` uses a tmp copy of `~/.belz/config.json` + the sems-dev session (real `~/.belz` is never written). `registerLiveResource` appends to `$BELZ_LIVE_RESOURCES`, or to the maintainer workspace's live-resources log when that sibling directory exists. `markLiveResourceCleaned(identifier, note)` rewrites that row's cleaned cell in place. Write suites: Test-Parth, `belz_tst_` prefix, `afterAll` cleanup |
 | `scratchDir(prefix)` | tmp dir under the run's `BELZ_TEST_TMP` (auto-removed) |
 
-The preload (`tests/preload-belz-home.ts`) **always** replaces `BELZ_HOME` with a fresh dir under `BELZ_TEST_TMP`, even when one is exported, and `assertSafeBelzHome()` (used by `withTempEnvConfig`) refuses any home outside `BELZ_TEST_TMP` (CORE-R15).
+The preload (`tests/preload-belz-home.ts`) **always** replaces `BELZ_HOME` with a fresh dir under `BELZ_TEST_TMP`, even when one is exported, and seeds it with a config holding one neutral env `test` (so in-process commands have a default — belz has no built-in env); `assertSafeBelzHome()` (used by `withTempEnvConfig`) refuses any home outside `BELZ_TEST_TMP` (CORE-R15).
 
 Test seams in runtime code (test-only; do not use elsewhere): `reloadConfig()` (config/index.ts),
 `setIpv4ResolverForTesting()` (http/dns.ts). Hanging-request tests: a fakeFetch handler that

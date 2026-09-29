@@ -6,8 +6,10 @@
 //   config/env-vars.ts  trustedBelzEnv — BELZ_* only, cwd .env injection ignored
 //
 // Env selection (D6): `--env` (runner → Config.setActiveEnv) > BELZ_ENV >
-// config.json `defaultEnv` > "nsm-dev". `Config.envSource` / `envWasExplicit`
-// tell the runner whether the user named the env explicitly.
+// config.json `defaultEnv` > the only configured env. There is no built-in env:
+// with several envs and no default, env-aware commands fail with
+// ENV_NOT_SELECTED. `Config.envSource` / `envWasExplicit` tell the runner
+// whether the user named the env explicitly.
 
 import { join } from "path";
 import { homedir } from "os";
@@ -32,15 +34,8 @@ export const BELZ_CONFIG_DIR = trustedBelzEnv().BELZ_HOME || join(homedir(), ".b
 
 export const CONFIG_FILE_PATH = join(BELZ_CONFIG_DIR, "config.json");
 
-export const DEFAULT_JENKINS_JOB = "Deployments/Expertly/Database/expertly.db-migration";
-
-export const BUILTIN_ENV_URLS: Readonly<Record<string, string>> = {
-  "nsm-dev": "https://nsm-dev.nc.verifi.dev",
-  "nsm-qa": "https://nsm-qa.nc.verifi.dev",
-  "nsm-uat": "https://nsm-uat.nc.verifi.dev",
-};
-
-const FALLBACK_ENV = "nsm-dev";
+/** Active-env name used when nothing selects an env (see `ENV_NOT_SELECTED`). */
+export const NO_ENV = "";
 
 export interface JenkinsConfig {
   baseUrl: string;
@@ -54,8 +49,11 @@ export interface TeamworkCredentials {
   password: string;
 }
 
-/** Where the active env came from. "flag" = chosen explicitly (--env / setActiveEnv). */
-export type EnvSource = "flag" | "BELZ_ENV" | "config" | "builtin";
+/**
+ * Where the active env came from. "flag" = chosen explicitly (--env / setActiveEnv),
+ * "only" = the single configured env, "none" = nothing selected an env.
+ */
+export type EnvSource = "flag" | "BELZ_ENV" | "config" | "only" | "none";
 
 interface LoadedConfig {
   /** Parsed JSON as-is (for read-modify-write by setup / config edit). */
@@ -101,7 +99,7 @@ export function writeConfigFile(config: BelzConfigFile): void {
   writeSecureJson(CONFIG_FILE_PATH, config, { pretty: true });
 }
 
-/** Derive a project label from an env name (`ys-qa` → "YS", `nsm-dev` → "NSM"). */
+/** Derive a project label from an env name (`acme-qa` → "ACME"). */
 function deriveProject(name: string): string {
   const prefix = name.split(/[-_]/)[0] ?? name;
   return prefix.toUpperCase();
@@ -116,18 +114,13 @@ function buildEnvironments(config: BelzConfigFile): Record<string, Environment> 
   const fileEnvs = config.environments ?? {};
   // Null prototype: `environments[name]` is safe for any user-supplied name.
   const environments: Record<string, Environment> = Object.create(null);
-  const names = [
-    ...Object.keys(BUILTIN_ENV_URLS),
-    ...Object.keys(fileEnvs).filter((n) => !Object.hasOwn(BUILTIN_ENV_URLS, n)),
-  ];
-  for (const name of names) {
+  for (const name of Object.keys(fileEnvs)) {
     const entry = ownEntry(fileEnvs, name);
-    const builtinUrl = ownEntry(BUILTIN_ENV_URLS, name);
-    const problem = envEntryProblem(entry, builtinUrl);
+    const problem = envEntryProblem(entry);
     environments[name] = {
       name,
-      project: entry?.project ?? (builtinUrl ? "NSM" : deriveProject(name)),
-      baseUrl: (entry?.url ?? builtinUrl ?? "").replace(/\/+$/, ""),
+      project: entry?.project ?? deriveProject(name),
+      baseUrl: (entry?.url ?? "").replace(/\/+$/, ""),
       credentials: {
         loginId: entry?.user ?? "",
         password: entry?.password ?? "",
@@ -149,7 +142,9 @@ let environments = buildEnvironments(loaded.config);
 function resolveDefault(): { name: string; source: EnvSource } {
   if (trusted.BELZ_ENV) return { name: trusted.BELZ_ENV, source: "BELZ_ENV" };
   if (loaded.config.defaultEnv) return { name: loaded.config.defaultEnv, source: "config" };
-  return { name: FALLBACK_ENV, source: "builtin" };
+  const names = Object.keys(environments);
+  if (names.length === 1) return { name: names[0]!, source: "only" };
+  return { name: NO_ENV, source: "none" };
 }
 
 let defaultEnv = resolveDefault();
@@ -173,6 +168,16 @@ export function reloadConfig(): void {
   }
 }
 
+/** ENV_NOT_SELECTED: no --env, no BELZ_ENV, no `defaultEnv`, and not exactly one configured env. */
+export function noEnvSelectedError(): CliError {
+  const names = Object.keys(environments);
+  const message = names.length === 0
+    ? `No environments configured. Add one with 'belz config' (or 'belz setup'), then pass --env <name>.`
+    : `No environment selected. Pass --env <name>, set BELZ_ENV, or set "defaultEnv" in ${CONFIG_FILE_PATH}. ` +
+      `Configured: ${names.join(", ")}`;
+  return new CliError(message, { code: "ENV_NOT_SELECTED", details: { available: names } });
+}
+
 function unknownEnvError(name: string, source: EnvSource): CliError {
   const where =
     source === "BELZ_ENV" ? " (from BELZ_ENV)" : source === "config" ? ` (from "defaultEnv" in ${CONFIG_FILE_PATH})` : "";
@@ -185,6 +190,7 @@ function unknownEnvError(name: string, source: EnvSource): CliError {
 /** The active env, throwing the coded error if it is unusable (bad file, unknown default, no url). */
 function usableEnv(): Environment {
   if (loaded.error) throw loaded.error;
+  if (envSource === "none") throw noEnvSelectedError();
   const env = environments[activeEnvName];
   if (!env) throw unknownEnvError(activeEnvName, envSource);
   if (env.problem) {
@@ -212,21 +218,22 @@ export const Config = {
     envSource = "flag";
   },
 
-  /** Drop an explicit selection: back to the default env (BELZ_ENV > defaultEnv > nsm-dev). */
+  /** Drop an explicit selection: back to the default env (BELZ_ENV > defaultEnv > the only env, else none). */
   resetActiveEnv(): void {
     activeEnvName = defaultEnv.name;
     envSource = defaultEnv.source;
   },
 
   /**
-   * The active env. Never throws: an unknown default env yields a placeholder
-   * (empty url) — the coded error surfaces on first use (baseUrl / credentials / assertUsable).
+   * The active env. Never throws: an unknown or missing default env yields a placeholder
+   * (empty url; name `NO_ENV` when none is selected) — the coded error surfaces on
+   * first use (baseUrl / credentials / assertUsable).
    */
   get activeEnv(): Environment {
     return (
       environments[activeEnvName] ?? {
         name: activeEnvName,
-        project: deriveProject(activeEnvName),
+        project: activeEnvName === NO_ENV ? "" : deriveProject(activeEnvName),
         baseUrl: "",
         credentials: { loginId: "", password: "" },
         problem: "is not configured",
@@ -234,7 +241,7 @@ export const Config = {
     );
   },
 
-  /** Name of the env used when no `--env` is given: BELZ_ENV > config `defaultEnv` > "nsm-dev". */
+  /** Name of the env used when no `--env` is given: BELZ_ENV > config `defaultEnv` > the only env > `NO_ENV`. */
   get defaultEnvName(): string {
     return defaultEnv.name;
   },
@@ -284,7 +291,7 @@ export const Config = {
       baseUrl: (file.baseUrl ?? trusted.BELZ_JENKINS_URL ?? "").replace(/\/$/, ""),
       user: file.user ?? trusted.BELZ_JENKINS_USER ?? "",
       password: filePassword || trusted.BELZ_JENKINS_PASSWORD || "",
-      migrationJob: file.migrationJob ?? trusted.BELZ_JENKINS_JOB ?? DEFAULT_JENKINS_JOB,
+      migrationJob: file.migrationJob ?? trusted.BELZ_JENKINS_JOB ?? "",
     };
   },
 

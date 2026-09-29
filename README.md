@@ -41,9 +41,10 @@ bun run belz:reinstall      # wipe ~/.belz and the binary, then install fresh
   `~/.belz/config.json` (mode 0600). It merges; `--replace --force` starts over.
 - `belz envs` lists the configured environments and checks their auth; `belz config get`
   shows one env (never the token).
-- Built-in environments: `nsm-dev`, `nsm-qa`, `nsm-uat`; others (e.g. `sems-dev`) come from
-  your config. Pick one per command with `--env <name>`. When omitted, belz uses `BELZ_ENV`,
-  then `"defaultEnv"` in config.json, then `nsm-dev`.
+- There are no built-in environments: each env (name, base URL, credentials) comes from your
+  config. Pick one per command with `--env <name>`. When omitted, belz uses `BELZ_ENV`, then
+  `"defaultEnv"` in config.json (set it with `belz config edit`), then the only configured env.
+  With several envs and no default, env-aware commands fail with `ENV_NOT_SELECTED`.
 - **Commands that write to an environment require an explicit `--env`**, even for the default
   env, and ask for confirmation (pass `--yes` in scripts / `--llm` mode).
 - belz reads only `BELZ_*` environment variables (`BELZ_ENV`, `BELZ_HOME`,

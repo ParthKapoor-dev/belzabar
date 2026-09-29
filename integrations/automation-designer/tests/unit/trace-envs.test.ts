@@ -35,26 +35,25 @@ function fake() {
   return listed;
 }
 
-const ENVS = { "sems-x": { url: "https://sx.test" }, "sems-y": { url: "https://sy.test" }, "ys-x": { url: "https://y.test" } };
+const ENVS = { "alpha-x": { url: "https://sx.test" }, "alpha-y": { url: "https://sy.test" }, "beta-x": { url: "https://y.test" } };
 
 describe("ad trace env scope (AD-25)", () => {
   test("traceEnvFamily: spine first, same project only", () => {
     using _cfg = withTempEnvConfig({ envs: ENVS });
-    expect(traceEnvFamily("sems-x")).toEqual(["sems-x", "sems-y"]);
-    expect(traceEnvFamily("nsm-dev")).toEqual(["nsm-dev", "nsm-qa", "nsm-uat"]);
+    expect(traceEnvFamily("alpha-x")).toEqual(["alpha-x", "alpha-y"]);
   });
 
   test("default spine = active env; only its project is visited; draft uuid -> published chain", async () => {
     using _cfg = withTempEnvConfig({ envs: ENVS });
     const listed = fake();
-    const r = await runCommand(traceCommand, [DRAFT], { env: "sems-x" });
+    const r = await runCommand(traceCommand, [DRAFT], { env: "alpha-x" });
     expect(r.envelope?.ok).toBe(true);
     const d = r.envelope?.data as any;
-    expect(d.spineEnv).toBe("sems-x");
-    expect(d.envs).toEqual(["sems-x", "sems-y"]);
+    expect(d.spineEnv).toBe("alpha-x");
+    expect(d.envs).toEqual(["alpha-x", "alpha-y"]);
     expect(d.uuid).toBe(PUB);
     expect(d.inputUuid).toBe(DRAFT);
-    expect(new Set(listed.map(([env]) => env))).toEqual(new Set(["sems-x", "sems-y"]));
+    expect(new Set(listed.map(([env]) => env))).toEqual(new Set(["alpha-x", "alpha-y"]));
     expect(listed.every(([, uuid]) => uuid === PUB)).toBe(true);
     expect(d.environments.map((e: any) => e.status)).toEqual(["latest", "latest"]);
   });
@@ -62,9 +61,9 @@ describe("ad trace env scope (AD-25)", () => {
   test("--envs picks envs explicitly; unknown env is refused", async () => {
     using _cfg = withTempEnvConfig({ envs: ENVS });
     fake();
-    const r = await runCommand(traceCommand, [PUB, "--envs", "ys-x"], { env: "sems-x" });
-    expect((r.envelope?.data as any).envs).toEqual(["sems-x", "ys-x"]);
-    const bad = await runCommand(traceCommand, [PUB, "--envs", "nope"], { env: "sems-x" });
+    const r = await runCommand(traceCommand, [PUB, "--envs", "beta-x"], { env: "alpha-x" });
+    expect((r.envelope?.data as any).envs).toEqual(["alpha-x", "beta-x"]);
+    const bad = await runCommand(traceCommand, [PUB, "--envs", "nope"], { env: "alpha-x" });
     expect(bad.envelope?.error?.code).toBe("UNKNOWN_ENV");
   });
 });
@@ -84,10 +83,10 @@ describe("trace caches published history bodies (ADR-R14)", () => {
       ({ methodVersion: 1, methodVersionID: vid, methodID: PUB, isPublished: true, isDeactivated: false, addedBy: 1, addedWhen: "2026-01-01", jsonDefinition: { name: "m", inputs: [], services: [] } }) as any,
     );
     spies.push(get);
-    const first = await runCommand(traceCommand, [PUB], { env: "sems-x" });
+    const first = await runCommand(traceCommand, [PUB], { env: "alpha-x" });
     expect(first.envelope?.ok).toBe(true);
-    expect(get.mock.calls.length).toBe(2); // spine version on sems-x (the sems-x env row reuses it) + the sems-y head
-    const second = await runCommand(traceCommand, [PUB], { env: "sems-x" });
+    expect(get.mock.calls.length).toBe(2); // spine version on alpha-x (the alpha-x env row reuses it) + the alpha-y head
+    const second = await runCommand(traceCommand, [PUB], { env: "alpha-x" });
     expect((second.envelope?.data as any).environments.map((e: any) => e.status)).toEqual(["latest", "latest"]);
     expect(get.mock.calls.length).toBe(2);
   });

@@ -1,2 +1,2 @@
 belz envs  :->  List all configured environments and show which is currently active
-belz envs --env nsm-qa  :->  List environments with nsm-qa marked as the active one
+belz envs --env qa  :->  List environments with qa marked as the active one

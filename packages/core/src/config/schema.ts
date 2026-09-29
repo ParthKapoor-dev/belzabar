@@ -82,8 +82,8 @@ export function validateConfigFile(raw: unknown, file: string): { config: BelzCo
 }
 
 /** Per-env checks beyond the shape: a usable http(s) url. Returns an error message or null. */
-export function envEntryProblem(entry: EnvEntry | undefined, builtinUrl: string | undefined): string | null {
-  const url = entry?.url ?? builtinUrl;
+export function envEntryProblem(entry: EnvEntry | undefined): string | null {
+  const url = entry?.url;
   if (!url) return "has no url";
   try {
     const u = new URL(url);

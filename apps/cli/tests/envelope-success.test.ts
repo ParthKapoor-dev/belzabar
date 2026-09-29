@@ -33,7 +33,7 @@ const MG = join(ROOT, "integrations/migrations/tests/fixtures/real");
 const ENV = "contract-sems";
 const HOST = "https://contract-sems.test";
 const JENKINS = "https://jenkins.example.com";
-const JOB = `${JENKINS}/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration`;
+const JOB = `${JENKINS}/job/Deployments/job/Database/job/db-migration`;
 
 const METHOD = "40b7959fb1dd8b4cf2ee9f5e54630ea8"; // real-v1 + real-v2 capture
 const PAGE = "40d0b1551dd9950a968cafe4c9cc6159"; // "search-student"
@@ -158,7 +158,7 @@ beforeAll(() => {
   cfg = withTempEnvConfig({
     envs: { [ENV]: { url: HOST } },
     teamwork: { email: "t@contract.test", password: btoa("x") },
-    jenkins: { baseUrl: JENKINS, user: "u", password: btoa("x") },
+    jenkins: { baseUrl: JENKINS, user: "u", password: btoa("x"), migrationJob: "Deployments/Database/db-migration" },
   });
   prevCwd = process.cwd();
   cwd = mkdtempSync(join(tmpdir(), "belz-success-cwd-"));

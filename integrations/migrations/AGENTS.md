@@ -1,7 +1,7 @@
 # Migrations (`@belzabar/migrations`) — Maintainer Guide
 
-`belz migrate …` drives the team's Jenkins migration job (default
-`Deployments/Expertly/Database/expertly.db-migration`, core `DEFAULT_JENKINS_JOB`). The Jenkins
+`belz migrate …` drives a Jenkins migration job — config `jenkins.migrationJob` (or
+`BELZ_JENKINS_JOB`); there is no default, a missing job fails with `MIGRATE_JENKINS_CONFIG_MISSING`. The Jenkins
 REST client lives in `integrations/jenkins` (`@belzabar/jenkins`); `lib/index.ts` re-exports it.
 
 ## Commands

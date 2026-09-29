@@ -75,7 +75,7 @@ test("NEW-2: a PD save/publish whose answer stalls keeps HTTP_TIMEOUT (mayHaveCo
       expect(err?.message).toContain("was accepted (HTTP 200)");
       expect((err?.details as any).mayHaveCompleted).toBe(true);
     }
-    expect(await savePageFull("empty1", "DRAFT", "{}")).toEqual({ newVersionId: null, raw: {} });
+    expect(await savePageFull("empty1", "DRAFT", "{}")).toEqual({ newVersionId: null, configuration: null, raw: {} });
   } finally {
     if (prev === undefined) delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
     else process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = prev;

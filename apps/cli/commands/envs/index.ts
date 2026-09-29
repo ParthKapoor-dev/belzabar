@@ -9,9 +9,10 @@ interface EnvRow {
 }
 
 interface EnvsData {
-  /** Project of the active env (kept for back-compat with existing consumers). */
-  project: string;
-  active: string;
+  /** Project of the active env (kept for back-compat with existing consumers); null when none is selected. */
+  project: string | null;
+  /** Active env name; null when no env is selected (no --env / BELZ_ENV / defaultEnv, several envs). */
+  active: string | null;
   envs: EnvRow[];
 }
 
@@ -24,18 +25,19 @@ const command: CommandModule<undefined, EnvsData> = {
     return undefined;
   },
   async execute() {
-  const envs = Config.getAllEnvs();
-  const active = Config.activeEnv;
+    const envs = Config.getAllEnvs();
+    const selected = Config.envSource !== "none";
+    const active = Config.activeEnv;
     const rows = Object.values(envs).map((env) => ({
       name: env.name,
       project: env.project,
       baseUrl: env.baseUrl,
-      active: env.name === active.name,
+      active: selected && env.name === active.name,
     }));
 
     return ok({
-      project: active.project,
-      active: active.name,
+      project: selected ? active.project : null,
+      active: selected ? active.name : null,
       envs: rows,
     });
   },
@@ -47,6 +49,9 @@ const command: CommandModule<undefined, EnvsData> = {
       ["Environment", "Project", "Base URL", "Status"],
       data.envs.map((env) => [env.name, env.project, env.baseUrl, env.active ? "Active" : ""])
     );
+    if (data.active === null && data.envs.length > 0) {
+      ui.text("No active environment: pass --env <name>, set BELZ_ENV, or set \"defaultEnv\" in config.json.");
+    }
   },
 };
 

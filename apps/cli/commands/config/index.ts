@@ -10,6 +10,7 @@ import {
   jwtExpiry,
   encodeSecret,
   keepSecret,
+  noEnvSelectedError,
   term,
   lifecycle,
   prompts,
@@ -62,7 +63,7 @@ interface ConfigEditData {
 
 type ConfigData = ConfigGetData | ConfigTokenData | ConfigEditData;
 
-type EditChoice = "edit" | "add" | "remove" | "teamwork" | "jenkins" | "exit";
+type EditChoice = "edit" | "add" | "remove" | "default" | "teamwork" | "jenkins" | "exit";
 
 function buildSummaryBody(cfg: BelzConfigFile): string {
   const envs = cfg.environments ?? {};
@@ -73,10 +74,10 @@ function buildSummaryBody(cfg: BelzConfigFile): string {
   if (envNames.length === 0) {
     lines.push(pc.dim("No environments configured."));
   } else {
-    lines.push(pc.bold("Environments"));
+    lines.push(`${pc.bold("Environments")}  ${pc.dim(`default: ${cfg.defaultEnv ?? "(none)"}`)}`);
     for (const name of envNames) {
       const e = envs[name]!;
-      const url = e.url ?? pc.dim("(default)");
+      const url = e.url ?? pc.red("(no url)");
       const user = e.user ?? pc.dim("(not set)");
       const pwd = e.password ? pc.green("set") : pc.red("unset");
       lines.push(`  ${pc.cyan(name)}  ${url}  ${user}  password:${pwd}`);
@@ -99,7 +100,7 @@ function buildSummaryBody(cfg: BelzConfigFile): string {
     lines.push(`  URL:      ${jk.baseUrl ?? pc.dim("(not set)")}`);
     lines.push(`  User:     ${jk.user ?? pc.dim("(not set)")}`);
     lines.push(`  Password: ${jk.password ? pc.green("set") : pc.red("unset")}`);
-    lines.push(`  Job:      ${jk.migrationJob ?? pc.dim("Deployments/Expertly/Database/expertly.db-migration (default)")}`);
+    lines.push(`  Job:      ${jk.migrationJob ?? pc.red("(not set — required by 'belz migrate')")}`);
   } else {
     lines.push(`  ${pc.dim("Not configured.")}`);
   }
@@ -118,6 +119,7 @@ async function runEditTui(): Promise<ConfigEditData> {
       { label: "Edit an environment",        value: "edit" },
       { label: "Add new environment",        value: "add" },
       { label: "Remove an environment",      value: "remove" },
+      { label: "Set default environment",    value: "default" },
       { label: "Edit Teamwork credentials",  value: "teamwork" },
       { label: "Edit Jenkins credentials",   value: "jenkins" },
       { label: "Exit",                        value: "exit" },
@@ -174,7 +176,7 @@ async function runEditTui(): Promise<ConfigEditData> {
 
   if (choice === "add") {
     const name = await prompts.text({
-      message: "Environment name (e.g. nsm-staging)",
+      message: "Environment name (e.g. dev, qa)",
       validate: (v) => (v.trim() ? undefined : "Name cannot be empty."),
     });
     const url = await prompts.text({ message: "Base URL", placeholder: "https://…" });
@@ -216,6 +218,28 @@ async function runEditTui(): Promise<ConfigEditData> {
     return { action: "edit", saved: true, env: envName };
   }
 
+  if (choice === "default") {
+    if (envNames.length === 0) {
+      lifecycle.outro("No environments configured. Add one first.");
+      return { action: "edit", saved: false };
+    }
+    const NONE = "\u0000none";
+    const picked = await prompts.select<string>({
+      message: `Default environment (used when --env is omitted)${cfg.defaultEnv ? ` — current: ${cfg.defaultEnv}` : ""}`,
+      options: [
+        ...envNames.map((name) => ({ label: name, value: name })),
+        { label: "(none — always pass --env)", value: NONE },
+      ],
+      ...(cfg.defaultEnv && envNames.includes(cfg.defaultEnv) ? { initialValue: cfg.defaultEnv } : {}),
+    });
+    const updated: BelzConfigFile = { ...cfg };
+    if (picked === NONE) delete updated.defaultEnv;
+    else updated.defaultEnv = picked;
+    writeConfigFile(updated);
+    lifecycle.outro(picked === NONE ? "Cleared the default environment." : `Default environment: '${picked}'.`);
+    return { action: "edit", saved: true, ...(picked === NONE ? {} : { env: picked }) };
+  }
+
   if (choice === "teamwork") {
     const tw = cfg.teamwork ?? {};
     const email = await prompts.text({
@@ -242,7 +266,7 @@ async function runEditTui(): Promise<ConfigEditData> {
   const jk = cfg.jenkins ?? {};
   const baseUrl = await prompts.text({
     message: `Base URL${jk.baseUrl ? ` (current: ${jk.baseUrl})` : ""}`,
-    placeholder: jk.baseUrl ?? "https://jenkins-asg.stg.expertly.cloud",
+    placeholder: jk.baseUrl ?? "https://jenkins.example.test",
     defaultValue: jk.baseUrl ?? "",
   });
   const jkUser = await prompts.text({
@@ -254,8 +278,8 @@ async function runEditTui(): Promise<ConfigEditData> {
   });
   const job = await prompts.text({
     message: `Migration job${jk.migrationJob ? ` (current: ${jk.migrationJob})` : ""}`,
-    placeholder: "Deployments/Expertly/Database/expertly.db-migration",
-    defaultValue: jk.migrationJob ?? "Deployments/Expertly/Database/expertly.db-migration",
+    placeholder: "Folder/db-migration",
+    defaultValue: jk.migrationJob ?? "",
   });
 
   const { password: _jp, passwordEncoding: _je, ...jkRest } = jk;
@@ -286,6 +310,10 @@ const command: CommandModule<ConfigArgs, ConfigData> = {
   },
 
   async execute(args) {
+    // config is not env-aware (edit needs no env), so get/token check the selection themselves.
+    if ((args.action === "get" || args.action === "token") && Config.envSource === "none") {
+      throw noEnvSelectedError();
+    }
     const env = Config.activeEnv;
 
     if (args.action === "get") {

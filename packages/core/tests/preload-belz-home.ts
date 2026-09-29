@@ -9,7 +9,7 @@
 // Cleanup uses a global afterAll (hooks registered in a preload run once, after
 // all files): bun test does not fire process "exit" handlers.
 import { afterAll } from "bun:test";
-import { mkdirSync, mkdtempSync, rmSync } from "fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -20,6 +20,14 @@ import { join } from "path";
   const root = mkdtempSync(join(tmpdir(), "belz-home-test-"));
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });
+  // belz has no built-in env: seed one neutral env so commands run in-process
+  // have a default (the only configured env). Tests that need other envs use
+  // core/testing withTempEnvConfig, which replaces and restores this file.
+  writeFileSync(
+    join(home, "config.json"),
+    JSON.stringify({ environments: { test: { url: "https://test.example.test", user: "test-user", password: "test-password", passwordEncoding: "plain" } } }),
+    { mode: 0o600 },
+  );
   process.env.BELZ_HOME = home;
   process.env.BELZ_TEST_TMP = root;
   const cleanup = () => {

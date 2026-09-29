@@ -4,7 +4,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import { parseMigrateRunArgs, resolveMigrationTargets } from "../../lib";
-import runCmd from "../../commands/run/index";
+import runCmdModule from "../../commands/run/index";
+
+// The `migrate` namespace is not env-aware (targets come from the profile).
+const runCmd = { ...runCmdModule, envAware: false };
 
 let cfg: TempEnvConfig | null = null;
 let ff: FakeFetch | null = null;
@@ -114,7 +117,7 @@ describe("OTH-R26: --client vs profile", () => {
     ff = fakeFetch([JOB_PARAMS]).install();
     const r = await runCommand(runCmd, [
       "--profile", "devsems_qasems", "--client", "DNREC", "--module", "PD", "--ids", "p1", "--no-follow", "--yes",
-    ], { env: "nsm-dev" });
+    ]);
     expect(r.envelope?.error?.code).toBe("MIGRATE_CLIENT_PROFILE_MISMATCH");
     expect((r.envelope?.error?.details as { expected: string }).expected).toBe("SEMS");
     expect(ff.requests.some((q) => q.method === "POST")).toBe(false);
@@ -136,7 +139,7 @@ describe("OTH-R23: failures after the trigger carry the build reference", () => 
       { method: "GET", url: "https://jk.test/queue/item/7/api/json", response: { id: 7, executable: { number: 42, url: `${JOB}/42/` } } },
       { method: "GET", url: `${JOB}/42/api/json`, response: respond({ status: 502, text: "bad gateway" }) },
     ]).install();
-    const r = await runCommand(runCmd, argv, { env: "nsm-dev" });
+    const r = await runCommand(runCmd, argv);
     const err = r.envelope?.error;
     expect(err?.code).toStartWith("MIGRATE_JENKINS");
     expect(err?.message).toContain("do NOT re-run");
@@ -152,7 +155,7 @@ describe("OTH-R23: failures after the trigger carry the build reference", () => 
       ...trigger,
       { method: "GET", url: "https://jk.test/queue/item/7/api/json", response: { id: 7, cancelled: true, why: "x" } },
     ]).install();
-    const r = await runCommand(runCmd, argv, { env: "nsm-dev" });
+    const r = await runCommand(runCmd, argv);
     expect(r.envelope?.error?.code).toBe("MIGRATE_JENKINS_QUEUE_CANCELLED");
     expect(r.envelope?.error?.details).toMatchObject({ buildTriggered: true, queueUrl: "https://jk.test/queue/item/7/" });
   });
@@ -164,7 +167,7 @@ describe("OTH-R23: failures after the trigger carry the build reference", () => 
       { method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) },
       { method: "POST", url: `${JOB}/buildWithParameters`, response: respond({ status: 201 }) },
     ]).install();
-    const r = await runCommand(runCmd, argv, { env: "nsm-dev" });
+    const r = await runCommand(runCmd, argv);
     expect(r.envelope?.error?.code).toBe("MIGRATE_JENKINS_NO_QUEUE_LOCATION");
     expect(r.envelope?.error?.details).toMatchObject({ buildTriggered: true, jobUrl: `${JOB}/` });
   });

@@ -30,10 +30,10 @@ function envFile(lines: string[]): string {
 }
 
 function seedExisting() {
-  cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems.test", user: "s", password: "sp" } } });
+  cfg = withTempEnvConfig({ envs: { dev: { url: "https://dev.test", user: "s", password: "sp" } } });
   const raw = JSON.parse(readFileSync(cfg.configPath, "utf8"));
   raw.belz = { sourceDir: "/src" };
-  raw.defaultEnv = "sems-dev";
+  raw.defaultEnv = "dev";
   writeFileSync(cfg.configPath, JSON.stringify(raw));
   reloadConfig();
 }
@@ -45,8 +45,11 @@ describe("belz setup (CORE-15, D5)", () => {
       "BELZ_ENV_T_QA_URL=https://t-qa.test",
       "BELZ_ENV_T_QA_USER=tq",
       "BELZ_ENV_T_QA_PASSWORD=plain pass==",
-      "NSM_DEV_USER=nd",
-      "NSM_DEV_PASSWORD=bm90YmFzZTY0", // looks like base64 but is taken literally
+      "BELZ_ENV_T_DEV_URL=https://t-dev.test",
+      "BELZ_ENV_T_DEV_USER=nd",
+      "BELZ_ENV_T_DEV_PASSWORD=bm90YmFzZTY0", // looks like base64 but is taken literally
+      "NSM_DEV_USER=legacy", // old per-project keys are no longer read
+      "BELZ_ENV_T_NOURL_USER=x", // an env without a URL is skipped
       "TEAMWORK_EMAIL=me@x.test",
       "TEAMWORK_PASSWORD=tw pw",
       "BELZ_JENKINS_PASSWORD=jk",
@@ -54,14 +57,14 @@ describe("belz setup (CORE-15, D5)", () => {
     const r = await runCommand(setup, ["--env-file", file]);
     expect(r.envelope?.ok).toBe(true);
     const written = JSON.parse(readFileSync(CONFIG_FILE_PATH, "utf8"));
-    expect(Object.keys(written.environments).sort()).toEqual(["nsm-dev", "sems-dev", "t-qa"]);
-    expect(written.environments["sems-dev"].url).toBe("https://sems.test"); // kept
+    expect(Object.keys(written.environments).sort()).toEqual(["dev", "t-dev", "t-qa"]);
+    expect(written.environments.dev.url).toBe("https://dev.test"); // kept
     expect(written.environments["t-qa"]).toMatchObject({ password: "plain pass==", passwordEncoding: "plain" });
-    expect(written.environments["nsm-dev"]).toMatchObject({ password: "bm90YmFzZTY0", passwordEncoding: "plain" });
+    expect(written.environments["t-dev"]).toMatchObject({ password: "bm90YmFzZTY0", passwordEncoding: "plain" });
     expect(written.teamwork).toEqual({ email: "me@x.test", password: "tw pw", passwordEncoding: "plain" });
     expect(written.jenkins).toMatchObject({ password: "jk", passwordEncoding: "plain" });
     expect(written.belz).toEqual({ sourceDir: "/src" });
-    expect(written.defaultEnv).toBe("sems-dev");
+    expect(written.defaultEnv).toBe("dev");
     expect(statSync(CONFIG_FILE_PATH).mode & 0o777).toBe(0o600);
     expect((r.envelope!.data as any).configPath).toBe(CONFIG_FILE_PATH);
   });
@@ -123,24 +126,28 @@ describe("belz config token (CORE-10)", () => {
 describe("belz setup: dotenv handling (CORE-R14, CORE-R16)", () => {
   test("--env-file strips inline comments on unquoted values (core parseDotEnv)", async () => {
     seedExisting();
-    const file = envFile(["NSM_DEV_USER=nd", "NSM_DEV_PASSWORD=abc # rotated", 'NSM_QA_USER=q', 'NSM_QA_PASSWORD="keep # this"']);
+    const file = envFile([
+      "BELZ_ENV_T_DEV_URL=https://t-dev.test",
+      "BELZ_ENV_T_DEV_PASSWORD=abc # rotated",
+      "BELZ_ENV_T_QA_URL=https://t-qa.test",
+      'BELZ_ENV_T_QA_PASSWORD="keep # this"',
+    ]);
     const r = await runCommand(setup, ["--env-file", file]);
     expect(r.envelope?.ok).toBe(true);
     const written = JSON.parse(readFileSync(CONFIG_FILE_PATH, "utf8"));
-    expect(written.environments["nsm-dev"].password).toBe("abc");
-    expect(written.environments["nsm-qa"].password).toBe("keep # this");
+    expect(written.environments["t-dev"].password).toBe("abc");
+    expect(written.environments["t-qa"].password).toBe("keep # this");
   });
 
   test("--from-env ignores values Bun auto-loaded from a cwd .env", async () => {
     seedExisting();
     const dir = scratchDir("setup-dotenv-");
-    writeFileSync(join(dir, ".env"), "NSM_DEV_USER=evil\nNSM_DEV_PASSWORD=evilpw\nBELZ_ENV_EVIL_URL=https://evil.test\n");
-    const keys = ["NSM_DEV_USER", "NSM_DEV_PASSWORD", "BELZ_ENV_EVIL_URL", "BELZ_ENV_T_OK_URL", "BELZ_ENV_T_OK_USER"] as const;
+    writeFileSync(join(dir, ".env"), "BELZ_ENV_T_OK_PASSWORD=evilpw\nBELZ_ENV_EVIL_URL=https://evil.test\n");
+    const keys = ["BELZ_ENV_T_OK_PASSWORD", "BELZ_ENV_EVIL_URL", "BELZ_ENV_T_OK_URL", "BELZ_ENV_T_OK_USER"] as const;
     const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
     const cwd = process.cwd();
     Object.assign(process.env, {
-      NSM_DEV_USER: "evil", // same as .env → injected
-      NSM_DEV_PASSWORD: "evilpw",
+      BELZ_ENV_T_OK_PASSWORD: "evilpw", // same as .env → injected
       BELZ_ENV_EVIL_URL: "https://evil.test",
       BELZ_ENV_T_OK_URL: "https://ok.test", // exported, not in .env → trusted
       BELZ_ENV_T_OK_USER: "okuser",
@@ -152,8 +159,8 @@ describe("belz setup: dotenv handling (CORE-R14, CORE-R16)", () => {
       const written = JSON.parse(readFileSync(CONFIG_FILE_PATH, "utf8"));
       expect(written.environments["t-ok"]).toMatchObject({ url: "https://ok.test", user: "okuser" });
       expect(written.environments.evil).toBeUndefined();
-      expect(written.environments["nsm-dev"]?.user).not.toBe("evil");
-      expect(String(r.envelope?.meta?.warnings)).toContain("NSM_DEV_PASSWORD");
+      expect(written.environments["t-ok"].password).toBeUndefined();
+      expect(String(r.envelope?.meta?.warnings)).toContain("BELZ_ENV_T_OK_PASSWORD");
     } finally {
       process.chdir(cwd);
       for (const k of keys) {

@@ -1,4 +1,4 @@
-import { CliError, DEFAULT_JENKINS_JOB } from "@belzabar/core";
+import { CliError } from "@belzabar/core";
 
 export interface JenkinsAuth {
   baseUrl: string;
@@ -22,9 +22,10 @@ export function assertJenkinsAuth(auth: { baseUrl?: string; user?: string; passw
   if (!auth.baseUrl) missing.push("baseUrl");
   if (!auth.user) missing.push("user");
   if (!auth.password) missing.push("password");
+  if (!auth.migrationJob) missing.push("migrationJob");
   if (missing.length > 0) {
     throw new CliError(
-      `Jenkins configuration missing: ${missing.join(", ")}. Set them in ~/.belz/config.json under "jenkins" or via BELZ_JENKINS_URL/USER/PASSWORD env vars.`,
+      `Jenkins configuration missing: ${missing.join(", ")}. Set them in ~/.belz/config.json under "jenkins" or via BELZ_JENKINS_URL/USER/PASSWORD/JOB env vars.`,
       { code: "MIGRATE_JENKINS_CONFIG_MISSING", details: { missing } }
     );
   }
@@ -32,6 +33,6 @@ export function assertJenkinsAuth(auth: { baseUrl?: string; user?: string; passw
     baseUrl: (auth.baseUrl as string).replace(/\/$/, ""),
     user: auth.user as string,
     password: auth.password as string,
-    job: auth.migrationJob || DEFAULT_JENKINS_JOB,
+    job: auth.migrationJob as string,
   };
 }

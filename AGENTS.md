@@ -92,8 +92,11 @@ options and `belz --help-full` (fixed namespace order, commands sorted, byte-det
 `apps/cli/bin/cli.ts` is the single entry point (dev and compiled). Routing itself is
 `packages/core/src/runner.ts` (`runNamespacedCli`).
 
-**Environments:** built in are `nsm-dev`, `nsm-qa`, `nsm-uat`; more come from `~/.belz/config.json`
-(e.g. `sems-dev`). The default env is `BELZ_ENV` > config `defaultEnv` > `nsm-dev`.
+**Environments:** there are no built-in environments — every env (name + URL) comes from
+`~/.belz/config.json`. The default env is `BELZ_ENV` > config `defaultEnv` > the only configured
+env; with several envs and no default, env-aware commands fail with `ENV_NOT_SELECTED` until
+`--env` is given. The repo is project-agnostic: never commit client/project names, hostnames or
+env URLs (docs, tests and fixtures use placeholders such as `dev`, `qa`, `https://dev.example.test`).
 
 ---
 

@@ -8,10 +8,11 @@ Flags:
 
 Global Flags:
   --env <name>        Mark this environment as active in the listing.
-                      (default: BELZ_ENV, else config defaultEnv, else nsm-dev)
+                      (default: BELZ_ENV, else config defaultEnv, else the
+                      only configured env; otherwise none is active)
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
   belz envs
-  belz envs --env nsm-qa
-  belz ad show <uuid> --env nsm-qa
+  belz envs --env qa
+  belz ad show <uuid> --env qa

@@ -5,7 +5,10 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { Config } from "@belzabar/core";
 import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import { resolveMigrationTargets } from "../../lib";
-import runCmd from "../../commands/run/index";
+import runCmdModule from "../../commands/run/index";
+
+// The `migrate` namespace is not env-aware (targets come from the profile).
+const runCmd = { ...runCmdModule, envAware: false };
 
 // OTH-R26: an explicit --client is checked against the profile's Jenkins group.
 const JOB_PARAMS = { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${import.meta.dir}/../fixtures/real/job-parameters.json`) };
@@ -119,7 +122,7 @@ describe("migrate run: skipped pre-flight surfaces in the envelope", () => {
 
     const r = await runCommand(runCmd, [
       "--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--dry-run", "--no-follow", "--yes",
-    ], { env: "nsm-dev" }); // a bare module defaults to env-aware; the `migrate` namespace isn't
+    ]);
     expect(r.envelope?.ok).toBe(true);
     const warnings = (r.envelope?.meta as any).warnings as string[];
     expect(warnings.some((w) => w.includes("'sems-dev', which is not configured"))).toBe(true);
@@ -140,7 +143,7 @@ describe("migrate run: confirmation gate", () => {
     for (const extra of [[], ["--dry-run"]]) {
       const r = await runCommand(runCmd, [
         "--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--no-follow", ...extra,
-      ], { env: "nsm-dev" });
+      ]);
       expect(r.envelope?.error?.code).toBe("MIGRATE_CONFIRMATION_REQUIRED");
       expect((r.envelope?.error?.details as any).details).toMatchObject({ Profile: "devsems_qasems", Ids: "p1" });
     }

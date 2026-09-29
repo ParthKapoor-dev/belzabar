@@ -7,20 +7,22 @@ Subcommands:
   token           Print the raw Bearer token to stdout (for scripting/clipboard).
                   Re-logs in when there is no session or the token has expired.
     --refresh     Force a fresh login before printing the token.
-  edit            Interactively add, edit, or remove credentials in ~/.belz/config.json.
+  edit            Interactively add, edit, or remove credentials in ~/.belz/config.json,
+                  or set the default environment ("defaultEnv").
 
 Flags:
   --help, -h      Show this help message.
 
 Global Flags:
-  --env <name>    Set active environment (default: defaultEnv, else nsm-dev).
+  --env <name>    Set active environment (default: BELZ_ENV, else config defaultEnv,
+                  else the only configured env).
                   Any env from `belz envs` (configured in ~/.belz/config.json).
   --llm           Output structured JSON envelope for scripting/LLM use.
 
 Examples:
   belz config get
-  belz config get --env nsm-qa
+  belz config get --env qa
   belz config token
-  belz config token --env nsm-qa --llm
+  belz config token --env qa --llm
   belz config token --refresh
   belz config edit

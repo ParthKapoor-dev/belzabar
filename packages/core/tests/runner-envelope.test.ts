@@ -20,7 +20,8 @@ import { runCliInProcess, runCommand, withTempEnvConfig, type TempEnvConfig } fr
 
 let cfg: TempEnvConfig | null = null;
 const savedBelzEnv = process.env.BELZ_ENV;
-const envConfig = () => withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" }, "t-qa": { url: "https://q.test" } } });
+const envConfig = () =>
+  withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" }, "t-qa": { url: "https://q.test" } }, defaultEnv: "t-dev" });
 /** Set BELZ_ENV and reload config (it is read at load time). */
 function setBelzEnv(value: string) {
   process.env.BELZ_ENV = value;
@@ -412,5 +413,37 @@ describe("default env + explicit env on writes (D6, CORE-26)", () => {
     expect(r.envelope?.error?.message).toContain("BELZ_ENV");
     expect((await runCliInProcess(cli(), ["envs"])).envelope?.ok).toBe(true);
     expect((await runCliInProcess(cli(), ["ad", "show", "--env", "t-dev"])).envelope?.ok).toBe(true);
+  });
+
+  test("no built-in env: several envs and no default → ENV_NOT_SELECTED listing them; --env still works", async () => {
+    cfg?.restore();
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" }, "t-qa": { url: "https://q.test" } } });
+    expect(Config.envSource).toBe("none");
+    const r = await runCliInProcess(cli(), ["ad", "show"]);
+    expect(r.exitCode).toBe(1);
+    expect(r.envelope?.error?.code).toBe("ENV_NOT_SELECTED");
+    expect(r.envelope?.error?.message).toContain("t-dev, t-qa");
+    expect(r.envelope?.error?.message).toContain("--env");
+    expect(EnvelopeSchema.safeParse(r.envelope).success).toBe(true);
+    expect((await runCliInProcess(cli(), ["ad", "show", "--env", "t-qa"])).envelope?.meta.env).toBe("t-qa");
+    // not env-aware commands are unaffected
+    const twr = await runCliInProcess(cli(), ["tw", "task"]); expect(twr.envelope?.error ?? null).toBeNull();
+  });
+
+  test("a single configured env is the default without defaultEnv", async () => {
+    cfg?.restore();
+    cfg = withTempEnvConfig({ envs: { solo: { url: "https://solo.test" } } });
+    const r = await runCliInProcess(cli(), ["ad", "show"]);
+    expect(r.envelope?.meta).toMatchObject({ env: "solo", envSource: "default" });
+    const h = await runCliInProcess(cli(), ["ad", "show"], { llm: false });
+    expect(h.stderr).toContain("env: solo (the only configured env; pass --env to choose)");
+  });
+
+  test("no envs configured → ENV_NOT_SELECTED pointing at setup", async () => {
+    cfg?.restore();
+    cfg = withTempEnvConfig({ envs: {} });
+    const r = await runCliInProcess(cli(), ["ad", "show"]);
+    expect(r.envelope?.error?.code).toBe("ENV_NOT_SELECTED");
+    expect(r.envelope?.error?.message).toContain("No environments configured");
   });
 });

@@ -111,7 +111,7 @@ describe("schema validation (CORE-18)", () => {
     const e = errOf(() => Config.cleanBaseUrl);
     expect(e.code).toBe("CONFIG_INVALID");
     // listing envs still works (so `belz envs` / `belz config edit` can run)
-    expect(Config.getAllEnvs()["nsm-dev"]).toBeDefined();
+    expect(() => Config.getAllEnvs()).not.toThrow();
   });
 
   test("environments.<env>.sqlDefaultDb (AD-36): a string is accepted; a non-string is CONFIG_INVALID", () => {
@@ -238,7 +238,27 @@ describe("default env (D6 / CORE-26)", () => {
     expect(Config.envSource).toBe("BELZ_ENV");
   });
 
-  test("an unknown default env fails on use with INVALID_ENV (never silently nsm-dev)", () => {
+  test("no built-in env: several envs without a default → nothing active, ENV_NOT_SELECTED on use", () => {
+    cfg = withTempEnvConfig({ envs: { "t-a": { url: "https://a.test" }, "t-b": { url: "https://b.test" } } });
+    expect(Config.envSource).toBe("none");
+    expect(Config.activeEnv.name).toBe("");
+    const e = errOf(() => Config.cleanBaseUrl);
+    expect(e.code).toBe("ENV_NOT_SELECTED");
+    expect(e.message).toContain("t-a, t-b");
+    expect(e.details).toEqual({ available: ["t-a", "t-b"] });
+    Config.setActiveEnv("t-b");
+    expect(Config.cleanBaseUrl).toBe("https://b.test");
+  });
+
+  test("the only configured env is the default without defaultEnv", () => {
+    cfg = withTempEnvConfig({ envs: { solo: { url: "https://solo.test" } } });
+    expect(Config.envSource).toBe("only");
+    expect(Config.defaultEnvName).toBe("solo");
+    expect(Config.cleanBaseUrl).toBe("https://solo.test");
+    expect(Config.envWasExplicit).toBe(false);
+  });
+
+  test("an unknown default env fails on use with INVALID_ENV (never silently another env)", () => {
     cfg = withTempEnvConfig({ envs: { "t-a": { url: "https://a.test" } }, defaultEnv: "t-typo" });
     expect(Config.activeEnv.name).toBe("t-typo");
     const e = errOf(() => Config.cleanBaseUrl);
@@ -308,13 +328,18 @@ describe("dotenv guard (CORE-28)", () => {
     mkdirSync(home, { recursive: true });
     writeFileSync(
       join(home, "config.json"),
-      JSON.stringify({ environments: { "t-real": { url: "https://real.test", user: "u", password: btoa("p") } } }),
+      JSON.stringify({
+        environments: {
+          "t-real": { url: "https://real.test", user: "u", password: btoa("p") },
+          "t-other": { url: "https://other.test", user: "u", password: btoa("p") },
+        },
+      }),
     );
     const cwd = scratchDir("dotenv-cwd-");
     writeFileSync(
       join(cwd, ".env"),
       [
-        "NSM_QA_URL=https://dotenv-injected.invalid",
+        "BELZ_ENV_T_OTHER_URL=https://dotenv-injected.invalid",
         "BELZ_ENV=t-real",
         `BELZ_HOME=${join(cwd, "evil-home")}`,
         "API_USER=evil",
@@ -324,9 +349,10 @@ describe("dotenv guard (CORE-28)", () => {
     const env = r.envelope as any;
     expect(env?.ok).toBe(true);
     const byName = Object.fromEntries(env.data.envs.map((e: any) => [e.name, e]));
-    expect(byName["nsm-qa"].baseUrl).toBe("https://nsm-qa.nc.verifi.dev");
+    expect(byName["t-other"].baseUrl).toBe("https://other.test");
     expect(byName["t-real"].baseUrl).toBe("https://real.test");
-    expect(env.data.active).toBe("nsm-dev");
+    // the .env's BELZ_ENV is ignored: two envs, no default → none active
+    expect(env.data.active).toBeNull();
   }, 30_000);
 });
 

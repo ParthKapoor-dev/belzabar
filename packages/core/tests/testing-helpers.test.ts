@@ -113,14 +113,16 @@ describe("apiFetch via fakeFetch + withTempEnvConfig", () => {
     expect(JSON.parse(readFileSync(cfg.sessionPath("t-dev"), "utf8")).token).toBe("fresh");
   });
 
-  test("restore() removes the temp config and env", () => {
+  test("restore() puts the previous config back and drops the temp env", () => {
     cfg = withTempEnvConfig({ envs: { "t-gone": { url: "https://g.test" } } });
     expect(Config.getAllEnvs()["t-gone"]).toBeDefined();
     const { configPath } = cfg;
     cfg.restore();
     cfg = null;
     expect(Config.getAllEnvs()["t-gone"]).toBeUndefined();
-    expect(existsSync(configPath)).toBe(false);
+    // the preload's seed config (single `test` env) is back
+    expect(existsSync(configPath)).toBe(true);
+    expect(Object.keys(Config.getAllEnvs())).toEqual(["test"]);
   });
 });
 
@@ -160,7 +162,7 @@ describe("runCommand", () => {
     const probe: CommandModule = { execute: (_a, ctx) => ok({ env: ctx.env.name }) };
     const r = await runCommand(probe, [], { env: "t-env" });
     expect(r.envelope?.data).toEqual({ env: "t-env" });
-    expect(Config.activeEnv.name).toBe("nsm-dev"); // restored
+    expect(Config.activeEnv.name).toBe("t-env"); // back to the default: the only configured env
 
     const bad = await runCommand(probe, [], { env: "no-such-env" });
     expect(bad.exitCode).toBe(1);

@@ -20,7 +20,8 @@ import { z } from "zod";
  * - `meta`     `durationMs` always; `env` only for env-aware commands (AD/PD,
  *              cache…), never for tw/migrate/release/config/envs or runner-level
  *              envelopes, and with it `envSource` (`flag` | `BELZ_ENV` |
- *              `default`: config.json `defaultEnv` or the built-in nsm-dev);
+ *              `default`: config.json `defaultEnv` or the only configured env;
+ *              absent when no env is selected — ENV_NOT_SELECTED);
  *              `warnings` when any were raised.
  *
  * Invariants beyond the field types:

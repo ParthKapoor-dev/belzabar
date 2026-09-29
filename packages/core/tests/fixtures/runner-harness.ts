@@ -6,6 +6,7 @@ const size = Number(process.env.HARNESS_BYTES ?? 300_000);
 
 const big = {
   schema: "harness.big",
+  envAware: false, // the harness has no config (belz has no built-in env)
   parseArgs: (a: string[]) => a,
   async execute() {
     // A pending timer + network-ish await mimic real commands; the exit must not cut output.
@@ -21,6 +22,7 @@ const big = {
 
 const secret = {
   schema: "harness.secret",
+  envAware: false,
   parseArgs: (a: string[]) => a,
   async execute(args: string[]) {
     return ok({ token: "SECRET-TOKEN-VALUE", args });
