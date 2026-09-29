@@ -1,4 +1,4 @@
-import { CliError, ok, apiFetch, defineArgs, type CommandModule } from "@belzabar/core";
+import { CliError, ok, apiFetch, defineArgs, readErrorBody, type CommandModule } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { readStream } from "../../lib/stream-parser";
 import { adApi } from "../../lib/api/index";
@@ -15,10 +15,15 @@ interface RunMethodArgs {
 
 interface RunMethodData {
   publishedId: string;
-  /** State of the uuid passed (DRAFT uuids execute the PUBLISHED body — AD-34). null if it could not be read. */
+  /** State of the uuid passed. null if it could not be read. */
   inputState: MethodState | null;
-  /** When a DRAFT uuid was passed: the published uuid whose body actually ran (null: never published). */
-  executesPublishedUuid?: string | null;
+  /**
+   * When a DRAFT uuid was passed: its published copy (null: never published).
+   * The execute endpoint runs the uuid's OWN saved body, so a draft uuid runs
+   * the draft (unpublished changes included), not this copy — live sems-dev
+   * 2026-09-29 (AD-34's "runs the published body" did not reproduce).
+   */
+  publishedUuid?: string | null;
   path: string;
   payloadType: string;
   response: unknown;
@@ -82,18 +87,19 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
     const publishedId = resolveMethodRef(idArg);
     const payload = await resolvePayload(payloadArg);
 
-    // AD-34: executing a DRAFT uuid silently runs the PUBLISHED body.
+    // A DRAFT uuid executes the draft's own saved body (unpublished changes
+    // included), not the published copy: say so, and name the published copy.
     let inputState: MethodState | null = null;
-    let executesPublishedUuid: string | null | undefined;
+    let publishedUuid: string | null | undefined;
     try {
       const m = await adApi.fetchMethod(publishedId, "v1");
       inputState = m.state;
       if (m.state === "DRAFT") {
-        executesPublishedUuid = (m.referenceId ?? "").trim() || null;
+        publishedUuid = (m.referenceId ?? "").trim() || null;
         context.warn(
-          executesPublishedUuid
-            ? `${publishedId} is a DRAFT: the execute endpoint runs the PUBLISHED body (${executesPublishedUuid}), not the draft. Use 'belz ad test ${publishedId} --env ${context.env.name}' to run the draft.`
-            : `${publishedId} is a DRAFT that was never published: the execute endpoint does not run draft bodies. Use 'belz ad test' to run the draft.`,
+          publishedUuid
+            ? `${publishedId} is a DRAFT: this runs the draft's saved body (unpublished changes included), not the published copy ${publishedUuid}. Pass ${publishedUuid} to run what is published.`
+            : `${publishedId} is a DRAFT that was never published: this runs the draft's saved body.`,
         );
       }
     } catch (e) {
@@ -115,10 +121,11 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
     });
 
     if (!response.ok) {
-      const errText = await response.text();
+      // F38: details is an object (parsed + redacted body), never a raw string.
+      const body = await readErrorBody(response);
       throw new CliError(`Execution failed (${response.status})`, {
         code: "EXECUTION_FAILED",
-        details: errText,
+        details: { path, status: response.status, body },
       });
     }
 
@@ -137,7 +144,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       const data: RunMethodData = {
         publishedId,
         inputState,
-        ...(executesPublishedUuid !== undefined ? { executesPublishedUuid } : {}),
+        ...(publishedUuid !== undefined ? { publishedUuid } : {}),
         path,
         payloadType,
         response: result.final,
@@ -155,7 +162,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       const data: RunMethodData = {
         publishedId,
         inputState,
-        ...(executesPublishedUuid !== undefined ? { executesPublishedUuid } : {}),
+        ...(publishedUuid !== undefined ? { publishedUuid } : {}),
         path,
         payloadType,
         response: json,
@@ -167,7 +174,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       const data: RunMethodData = {
         publishedId,
         inputState,
-        ...(executesPublishedUuid !== undefined ? { executesPublishedUuid } : {}),
+        ...(publishedUuid !== undefined ? { publishedUuid } : {}),
         path,
         payloadType,
         response: text,

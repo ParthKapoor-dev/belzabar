@@ -4,7 +4,8 @@
 // AD-16: automationApiId injection works with numeric ids (one shared helper).
 // AD-17: trace rows carry the method's step descriptions / orderIndex.
 // AD-38 / F14: run-suites posts the same body as `test`, and surfaces the
-// server's message. AD-34: `run` on a DRAFT uuid warns. Decision (main):
+// server's message. AD-34: `run` on a DRAFT uuid warns (live sems-dev
+// 2026-09-29: it runs the draft's own saved body, not the published copy). Decision (main):
 // test/run/run-suites are writes (explicit --env).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
@@ -41,7 +42,11 @@ afterEach(() => {
   while (spies.length) spies.pop()!.mockRestore();
 });
 
-function wire(testResponse: (req: RecordedRequest) => unknown, body = rawBody()) {
+function wire(
+  testResponse: (req: RecordedRequest) => unknown,
+  body = rawBody(),
+  execute: unknown = () => ({ response: { ok: 1 }, executionStatus: { failed: false } }),
+) {
   cfg = withTempEnvConfig({ envs: { "t-s4b-run": { url: "https://t-dev.test" } }, activeEnv: "t-s4b-run" });
   spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
   ff = fakeFetch([
@@ -61,7 +66,7 @@ function wire(testResponse: (req: RecordedRequest) => unknown, body = rawBody())
     {
       method: "POST",
       url: /\/chain\/execute\//,
-      response: () => ({ response: { ok: 1 }, executionStatus: { failed: false } }),
+      response: execute as never,
     },
   ]).install();
   return ff;
@@ -183,15 +188,25 @@ describe("ad run-suites (AD-38 / F14)", () => {
 });
 
 describe("ad run (AD-34)", () => {
-  test("a DRAFT uuid warns that the published body runs", async () => {
+  test("a DRAFT uuid warns that the draft's saved body runs and names the published copy", async () => {
     const draft = { ...rawBody(), automationState: "DRAFT", referenceId: "0000000000000000000000000000beef" };
     wire(okTestResponse, draft);
     const r = await runCommand(runCommandModule, [UUID, "{}"], { env: "t-s4b-run" });
     expect(r.envelope?.ok).toBe(true);
     const d = r.envelope?.data as any;
     expect(d.inputState).toBe("DRAFT");
-    expect(d.executesPublishedUuid).toBe("0000000000000000000000000000beef");
-    expect(JSON.stringify(r.envelope?.meta ?? {}) + r.stderr).toContain("PUBLISHED body");
+    expect(d.publishedUuid).toBe("0000000000000000000000000000beef");
+    expect(d.executesPublishedUuid).toBeUndefined();
+    expect(JSON.stringify(r.envelope?.meta ?? {}) + r.stderr).toContain("runs the draft's saved body");
+  });
+
+  test("a failed execute reports details as an object (F38)", async () => {
+    wire(okTestResponse, rawBody(), respond({ status: 500, json: { errorMessage: "boom" } }));
+    const r = await runCommand(runCommandModule, [UUID, "{}"], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.code).toBe("EXECUTION_FAILED");
+    const details = r.envelope?.error?.details as any;
+    expect(typeof details).toBe("object");
+    expect(details).toMatchObject({ status: 500, body: { errorMessage: "boom" } });
   });
 
   test("a PUBLISHED uuid runs without the warning", async () => {
@@ -199,6 +214,6 @@ describe("ad run (AD-34)", () => {
     const r = await runCommand(runCommandModule, [UUID, "{}"], { env: "t-s4b-run" });
     const d = r.envelope?.data as any;
     expect(d.inputState).toBe("PUBLISHED");
-    expect(d.executesPublishedUuid).toBeUndefined();
+    expect(d.publishedUuid).toBeUndefined();
   });
 });

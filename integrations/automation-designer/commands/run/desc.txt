@@ -1,4 +1,4 @@
-belz ad run <published-id> --env <env>  :->  Execute a published method with empty payload (real side effects: needs --env; a DRAFT uuid runs its PUBLISHED body, with a warning)
+belz ad run <published-id> --env <env>  :->  Execute a published method with empty payload (real side effects: needs --env; a DRAFT uuid runs the draft's saved body, with a warning naming the published copy)
 belz ad run <published-id> '<json>' --env <env>  :->  Execute with an inline JSON payload string
 belz ad run <published-id> <file.json> --env <env>  :->  Execute with payload read from a JSON file
 belz ad run <published-id> '<json>' --env <env> --raw  :->  Include raw execution payload in output

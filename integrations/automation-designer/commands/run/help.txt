@@ -3,9 +3,9 @@ Usage: belz ad run <PUBLISHED_ID> [PAYLOAD] [flags]
 Execute a published Automation Designer method. This has real side effects,
 so an explicit --env is required.
 
-A DRAFT uuid is accepted but the platform runs the PUBLISHED body linked to
-it (not the draft): belz warns and reports inputState/executesPublishedUuid.
-Use `belz ad test` to execute a draft.
+A uuid runs its OWN saved body: a DRAFT uuid runs the draft (unpublished
+changes included), not its published copy. belz warns and reports
+inputState/publishedUuid; pass the published uuid to run what is published.
 
 Arguments:
   <PUBLISHED_ID>      The unique ID of the published method version.
@@ -22,8 +22,8 @@ Flags:
   --help, -h          Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment (default: defaultEnv, else nsm-dev).
-                      Available: nsm-dev | nsm-qa | nsm-uat
+  --env <name>        Set active environment. Required explicitly: this
+                      really executes the chain. Any env from `belz envs`.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
