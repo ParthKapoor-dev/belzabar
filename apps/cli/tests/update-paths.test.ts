@@ -1,6 +1,4 @@
-// `belz update` must find the install scripts in both the current layout
-// (apps/cli/scripts) and the pre-restructure one (cli/scripts); it never
-// discards local work (CORE-R4) and installs to the recorded dir (CORE-R3).
+// `belz update` never discards local work and installs to the recorded dir.
 import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
@@ -8,33 +6,13 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { CONFIG_FILE_PATH, reloadConfig } from "@belzabar/core";
 import { runCommand, scratchDir, withTempEnvConfig } from "@belzabar/core/testing";
-import updateModule, { installerCommand, installScriptDir, planUpdate, worktreeDirty } from "../commands/update/index";
+import updateModule, { installerCommand, planUpdate, worktreeDirty } from "../commands/update/index";
 
 // `update` is registered with envAware: false (apps/cli/bin/options.ts).
 const update = { ...updateModule, envAware: false };
 
 const dirs: string[] = [];
 afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
-
-function checkout(...scriptDirs: string[]): string {
-  const root = mkdtempSync(join(tmpdir(), "belz-update-"));
-  dirs.push(root);
-  for (const d of scriptDirs) mkdirSync(join(root, d), { recursive: true });
-  return root;
-}
-
-describe("installScriptDir", () => {
-  test("prefers apps/cli/scripts", () => {
-    const root = checkout("apps/cli/scripts", "cli/scripts");
-    expect(installScriptDir(root)).toBe(join(root, "apps", "cli", "scripts"));
-  });
-
-  test("falls back to the old cli/scripts layout", () => {
-    const root = checkout("cli/scripts");
-    expect(installScriptDir(root)).toBe(join(root, "cli", "scripts"));
-  });
-});
-
 
 describe("planUpdate (CORE-R4)", () => {
   const clean = { ahead: 0, behind: 0, dirty: false };

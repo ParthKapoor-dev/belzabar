@@ -1,5 +1,4 @@
-// Locate the repo / CLI entry points (layout-agnostic: `apps/cli/`, or the
-// pre-restructure `cli/`) and spawn the CLI as a real process.
+// Locate the repo / CLI entry points and spawn the CLI as a real process.
 
 import { existsSync, readFileSync } from "fs";
 import { dirname, join } from "path";
@@ -26,14 +25,9 @@ export function repoRoot(): string {
   }
 }
 
-/** The CLI workspace dir (`apps/cli` or `cli`). */
+/** The CLI workspace dir. */
 export function cliDir(): string {
-  const root = repoRoot();
-  for (const rel of ["apps/cli", "cli"]) {
-    const dir = join(root, rel);
-    if (existsSync(join(dir, "bin", "cli.ts"))) return dir;
-  }
-  throw new Error("core/testing: could not find the CLI workspace (apps/cli or cli)");
+  return join(repoRoot(), "apps", "cli");
 }
 
 /** Dev entry point (`bun <this> ad show …`). */

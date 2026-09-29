@@ -115,7 +115,7 @@ bun run belz:reinstall                   # scripts/reinstall.sh
   decided before record-install creates config.json (`FIRST_RUN`, CORE-R2). `scripts/install.ps1` is the Windows equivalent.
 - `scripts/reinstall.sh` — wipes `~/.belz/` and the binary, then delegates to `install.sh`.
 - The repo-root one-liners (`install.sh`, `install.ps1`) and `belz update` call
-  `apps/cli/scripts/`, falling back to the pre-restructure `cli/scripts/` path.
+  `apps/cli/scripts/`.
 
 ---
 

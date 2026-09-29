@@ -82,12 +82,7 @@ ok "Workspaces ready"
 
 # ── Build + install binary + first-run setup ──────────────────────────────────
 log "Building and installing the belz binary"
-# apps/cli/scripts is the current layout; cli/scripts is the pre-restructure one.
-if [[ -f "$SRC_DIR/apps/cli/scripts/install.sh" ]]; then
-  bash "$SRC_DIR/apps/cli/scripts/install.sh" "$@"
-else
-  bash "$SRC_DIR/cli/scripts/install.sh" "$@"
-fi
+bash "$SRC_DIR/apps/cli/scripts/install.sh" "$@"
 
 # ── Friendly tail ─────────────────────────────────────────────────────────────
 echo

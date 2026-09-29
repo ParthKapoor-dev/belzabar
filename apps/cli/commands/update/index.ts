@@ -62,18 +62,6 @@ function requireGit(sourceDir: string, args: string[], failCode: string): string
   return r.out;
 }
 
-/**
- * Where the platform install scripts live in the (just updated) checkout:
- * `apps/cli/scripts` since the Stage 2 restructure, `cli/scripts` before it.
- * The fallback keeps `belz update` working across that move; drop it after one
- * release.
- */
-export function installScriptDir(sourceDir: string): string {
-  const current = join(sourceDir, "apps", "cli", "scripts");
-  if (existsSync(current)) return current;
-  return join(sourceDir, "cli", "scripts");
-}
-
 export interface UpdateState {
   /** Commits on origin/<branch> not in HEAD. */
   behind: number;
@@ -214,7 +202,7 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     // before it installs, and aborts on a build failure (`set -euo pipefail` /
     // `$ErrorActionPreference`), so a broken build never replaces the binary.
     const installDir = getInstallDir();
-    const installer = installerCommand(installScriptDir(sourceDir), installDir);
+    const installer = installerCommand(join(sourceDir, "apps", "cli", "scripts"), installDir);
 
     lifecycle.note(
       "Rebuilding belz",

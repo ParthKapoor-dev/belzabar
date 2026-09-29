@@ -35,14 +35,14 @@ Push-Location $RepoRoot
 bun install --ignore-scripts
 Pop-Location
 
-# ── 4. Build the binary ───────────────────────────────────────────────────────
+# ── 3. Build the binary ───────────────────────────────────────────────────────
 Write-Host "Building belz binary..."
 Push-Location (Join-Path $RepoRoot "apps\cli")
 bun build --compile --minify --sourcemap .\bin\cli.ts --outfile belz.exe
 Pop-Location
 $BuiltExe = Join-Path $RepoRoot "apps\cli\belz.exe"
 
-# ── 5. Install the binary ─────────────────────────────────────────────────────
+# ── 4. Install the binary ─────────────────────────────────────────────────────
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
 $Target = Join-Path $InstallDir "belz.exe"
 if (Test-Path $Target) {
@@ -65,20 +65,20 @@ if (Test-Path $Target) {
   Write-Host "belz installed to $Target"
 }
 
-# ── 6. Record install metadata ────────────────────────────────────────────────
+# ── 5. Record install metadata ────────────────────────────────────────────────
 $RepoUrl = (git -C $RepoRoot remote get-url origin 2>$null)
 $RepoVersion = (git -C $RepoRoot rev-parse --short HEAD 2>$null)
 bun (Join-Path $ScriptDir "record-install.mjs") `
   "$RepoRoot" "$InstallDir" "$RepoUrl" "$RepoVersion"
 
-# ── 7. PATH (per-user) ────────────────────────────────────────────────────────
+# ── 6. PATH (per-user) ────────────────────────────────────────────────────────
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($userPath -notlike "*$InstallDir*") {
   [Environment]::SetEnvironmentVariable("Path", "$userPath;$InstallDir", "User")
   Write-Host "Added $InstallDir to your user PATH (restart your shell to pick it up)."
 }
 
-# ── 8. First-time setup ───────────────────────────────────────────────────────
+# ── 7. First-time setup ───────────────────────────────────────────────────────
 if ($FirstRun) {
   if ($EnvFile) {
     Write-Host "No config found - running 'belz setup --env-file'..."

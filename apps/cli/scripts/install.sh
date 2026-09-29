@@ -59,35 +59,25 @@ if [[ -f "$INSTALL_DIR/belz" ]]; then
   echo "   Updating binary — your credentials and sessions in ~/.belz/ are untouched."
 fi
 
-# ── 3. Migrate legacy sessions (non-destructive copy only) ───────────────────
-OLD_SESSIONS="${HOME}/.belzabar-cli/sessions"
-NEW_SESSIONS="${BELZ_CONFIG_DIR}/sessions"
-if [[ -d "$OLD_SESSIONS" && ! -d "$NEW_SESSIONS" ]]; then
-  echo "📦 Migrating sessions from $OLD_SESSIONS → $NEW_SESSIONS"
-  mkdir -p "$NEW_SESSIONS"
-  cp -n "$OLD_SESSIONS"/*.json "$NEW_SESSIONS/" 2>/dev/null || true
-  echo "   (old directory preserved at $OLD_SESSIONS)"
-fi
-
-# ── 4. Install dependencies ───────────────────────────────────────────────────
+# ── 3. Install dependencies ───────────────────────────────────────────────────
 echo ""
 echo "📦 Installing dependencies..."
 cd "$REPO_ROOT"
 bun install --ignore-scripts
 
-# ── 5. Build the binary ───────────────────────────────────────────────────────
+# ── 4. Build the binary ───────────────────────────────────────────────────────
 echo ""
 echo "🔨 Building belz binary..."
 cd "$REPO_ROOT/apps/cli"
 bun build --compile --minify --sourcemap ./bin/cli.ts --outfile belz
 
-# ── 6. Install the binary ─────────────────────────────────────────────────────
+# ── 5. Install the binary ─────────────────────────────────────────────────────
 mkdir -p "$INSTALL_DIR"
 mv belz "$INSTALL_DIR/belz"
 echo ""
 echo "✅ belz installed to $INSTALL_DIR/belz"
 
-# ── 6b. Record install metadata (source path, etc.) for `belz update` ─────────
+# ── 6. Record install metadata (source path, etc.) for `belz update` ─────────
 REPO_URL="$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null || echo "")"
 REPO_VERSION="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo "")"
 bun "$SCRIPT_DIR/record-install.mjs" \

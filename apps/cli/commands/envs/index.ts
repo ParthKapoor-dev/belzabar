@@ -9,8 +9,6 @@ interface EnvRow {
 }
 
 interface EnvsData {
-  /** Project of the active env (kept for back-compat with existing consumers); null when none is selected. */
-  project: string | null;
   /** Active env name; null when no env is selected (no --env / BELZ_ENV / defaultEnv, several envs). */
   active: string | null;
   envs: EnvRow[];
@@ -36,7 +34,6 @@ const command: CommandModule<undefined, EnvsData> = {
     }));
 
     return ok({
-      project: selected ? active.project : null,
       active: selected ? active.name : null,
       envs: rows,
     });
