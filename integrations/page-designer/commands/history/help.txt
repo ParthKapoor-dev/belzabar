@@ -26,6 +26,11 @@ Flags:
   --force               DEPRECATED alias of --force-validation.
   --help, -h            Show this help message.
 
+Global Flags:
+  --env <name>          Environment (default: defaultEnv, else nsm-dev). restore is
+                        a write and needs it explicitly.
+  --llm                 Output structured JSON envelope.
+
 Notes:
   • Version ids are global. show / diff / restore refuse a version that does
     not belong to <pageId> or its linked sibling (PD_VERSION_PAGE_MISMATCH).
