@@ -65,6 +65,8 @@ Package exports: `./registry`, `.` (the lib barrel), `./lib/*`. From outside, im
     AD ids must be uuids, not all digits (`MIGRATE_TARGET_ID_INVALID`; AD also accepts
     numeric chain ids, OTH-R27); a 200 with an empty/`null` body is `MIGRATE_TARGET_NOT_FOUND`
     (OTH-R22); a method whose `uuid` differs from the input is `MIGRATE_TARGET_ID_MISMATCH`.
+    Only an unparseable body counts as not found: a stalled body read keeps core's
+    `HTTP_TIMEOUT` (with `details.preflightEnv`, "retry" hint) — no build is triggered.
   - Flags (OTH-R25/R26): `--module` + `--module-custom` → `MIGRATE_MODULE_CONFLICT`;
     `*_COMPARISON_REPORT`/`*_MIGRATION_STATUS` without `--migration-id` →
     `MIGRATE_MIGRATION_ID_REQUIRED`; an explicit `--client` that isn't the profile's Jenkins

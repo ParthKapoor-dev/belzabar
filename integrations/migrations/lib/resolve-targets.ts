@@ -40,7 +40,12 @@ async function getJson(path: string, env: string): Promise<Record<string, unknow
   // An unknown id is not always a 404: AD answers 200 with an empty body (or
   // `null`) for a uuid it doesn't know (OTH-R22). Anything that isn't a
   // non-empty JSON object is "not found", never a crash on `.name`.
-  const body: unknown = await res.json().catch(() => null);
+  // Only an unparseable body means "not found"; a stalled body read
+  // (HTTP_TIMEOUT from core) propagates, not as a misleading NOT_FOUND.
+  const body: unknown = await res.json().catch((e: unknown) => {
+    if (e instanceof SyntaxError) return null;
+    throw e;
+  });
   if (!isRecord(body) || Object.keys(body).length === 0) {
     throw new CliError(`Migration target not found on '${env}' (empty response): ${path}`, {
       code: "MIGRATE_TARGET_NOT_FOUND",
@@ -171,9 +176,10 @@ export async function resolveMigrationTargets(opts: {
     // A MIGRATE_* error is already specific. Anything else (login failure,
     // expired creds, network) gets told what to do: the build is not triggered.
     if (e instanceof CliError && !String(e.code ?? "").startsWith("MIGRATE_")) {
+      const transport = e.code === "HTTP_TIMEOUT" || e.code === "HTTP_NETWORK_ERROR";
       throw new CliError(
         `Pre-flight id resolution on '${sourceEnv}' failed, so no build was triggered: ${e.message} ` +
-          `Fix the '${sourceEnv}' credentials ('belz config edit') and retry.`,
+          (transport ? `Retry when '${sourceEnv}' responds.` : `Fix the '${sourceEnv}' credentials ('belz config edit') and retry.`),
         {
           code: e.code,
           exitCode: e.exitCode,

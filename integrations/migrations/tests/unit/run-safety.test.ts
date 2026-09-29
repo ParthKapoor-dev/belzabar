@@ -61,6 +61,31 @@ describe("OTH-R22/R27: AD pre-flight", () => {
     expect(await code(resolve(UUID))).toBe("MIGRATE_TARGET_ID_MISMATCH");
   });
 
+  test("NEW-2: a body that stalls keeps HTTP_TIMEOUT (was swallowed into MIGRATE_TARGET_NOT_FOUND)", async () => {
+    semsDev();
+    const enc = new TextEncoder();
+    ff = fakeFetch([{
+      url: /chain\//,
+      response: () => new Response(new ReadableStream({ start(c) { c.enqueue(enc.encode('{"uuid":')); } }), { status: 200, headers: { "content-type": "application/json" } }),
+    }]).install();
+    const prev = process.env.BELZ_HTTP_TIMEOUT_MS;
+    process.env.BELZ_HTTP_TIMEOUT_MS = "30";
+    try {
+      let err: { code?: string; message?: string; details?: Record<string, unknown> } = {};
+      try {
+        await resolve(UUID);
+      } catch (e) {
+        err = e as typeof err;
+      }
+      expect(err.code).toBe("HTTP_TIMEOUT");
+      expect(err.message).toContain("Retry when");
+      expect(err.details?.preflightEnv).toBe("sems-dev");
+    } finally {
+      if (prev === undefined) delete process.env.BELZ_HTTP_TIMEOUT_MS;
+      else process.env.BELZ_HTTP_TIMEOUT_MS = prev;
+    }
+  });
+
   test("a real method resolves with its name", async () => {
     semsDev();
     ff = fakeFetch([{ url: /chain\//, response: { uuid: UUID, name: "belz.thing" } }]).install();

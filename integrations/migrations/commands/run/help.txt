@@ -53,10 +53,22 @@ SAFETY
     (MIGRATE_CLIENT_PROFILE_MISMATCH).
   - AD ids must be method uuids (32 hex, not all digits:
     MIGRATE_TARGET_ID_INVALID); an unknown one is MIGRATE_TARGET_NOT_FOUND.
+    One the source env answers with a DIFFERENT method's uuid is refused
+    (MIGRATE_TARGET_ID_MISMATCH, details.resolvedUuid).
+  - A PD draft with no published version aborts (MIGRATE_TARGET_DRAFT_UNPUBLISHED);
+    any other non-2xx lookup is MIGRATE_TARGET_RESOLVE_FAILED; an unconfigured
+    --source-env is MIGRATE_SOURCE_ENV_UNKNOWN. A lookup that times out keeps
+    HTTP_TIMEOUT (details.preflightEnv). None of these triggers a build.
+  - Input errors: MIGRATE_PROFILE_REQUIRED / MIGRATE_PROFILE_NOT_FOUND,
+    MIGRATE_MODULE_REQUIRED / MIGRATE_INVALID_MODULE, MIGRATE_IDS_REQUIRED /
+    MIGRATE_IDS_FILE_NOT_FOUND / MIGRATE_IDS_EMPTY, MIGRATE_INVALID_CLIENT,
+    MIGRATE_INVALID_ENV_PAIR, MIGRATE_INVALID_FLAG_VALUE, MIGRATE_UNEXPECTED_ARG.
+    A declined prompt is MIGRATE_USER_ABORT.
   - Any failure AFTER the build was triggered (queue, console stream,
     timeout) keeps its code and carries details.buildTriggered=true plus
     buildNumber / buildUrl / queueUrl: check it with 'belz migrate status <n>'
-    and do NOT re-run.
+    and do NOT re-run (a failed build is MIGRATE_RUN_FAILED; anything else
+    after the trigger without its own code is MIGRATE_RUN_INTERRUPTED).
 
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by
