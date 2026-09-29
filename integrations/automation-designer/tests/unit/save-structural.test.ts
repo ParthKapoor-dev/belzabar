@@ -290,6 +290,23 @@ describe("update-step on existing steps", () => {
     expect(code(() => plan(live, [{ op: "update-step", step: 1, set: { removeOutputs: ["nope"] } }]))).toBe("AD_OVERLAY_NOT_APPLIED");
   });
 
+  test("update-step outputs MERGE; replaceOutputs REPLACES the list (CLI trial)", () => {
+    const live = real(U);
+    const fcs = (b: typeof live, i: number) => (b.steps![i]!.outputs ?? []).map((o) => o.fieldCode);
+    expect([...fcs(live, 0)].sort()).toEqual(["enrollment_stage_type_count", "enrollment_stage_type_info"]);
+    const info = live.steps![0]!.outputs!.find((o) => o.fieldCode === "enrollment_stage_type_info")!;
+    // replace: only the listed fieldCode stays, keeping its uuid/fields
+    const r = plan(live, [{ op: "update-step", step: 1, set: { replaceOutputs: [{ key: info.key, as: "enrollment_stage_type_info" }] } }]);
+    expect(fcs(r.body, 0)).toEqual(["enrollment_stage_type_info"]);
+    expect(r.body.steps![0]!.outputs![0]).toEqual(info);
+    // merge (outputs) keeps both
+    const m = plan(live, [{ op: "update-step", step: 1, set: { outputs: [{ key: info.key, as: "enrollment_stage_type_info", type: "JSON" }] } }]);
+    expect(fcs(m.body, 0)).toEqual(fcs(live, 0));
+    // replaceOutputs is the whole list: not with outputs / removeOutputs; not an add-step key
+    expect(code(() => plan(live, [{ op: "update-step", step: 1, set: { replaceOutputs: [], removeOutputs: ["x"] } }]))).toBe("AD_OVERLAY_INVALID");
+    expect(code(() => plan(live, [{ op: "add-step", step: { sql: "SELECT 1", replaceOutputs: [] } }]))).toBe("AD_OVERLAY_UNKNOWN_KEY");
+  });
+
   test("account change also moves databaseRead.account (the server keeps them in step)", () => {
     const live = real(U);
     (live.steps![0]!.properties as unknown as Record<string, unknown>).databaseRead = { query: null, account: "2" };

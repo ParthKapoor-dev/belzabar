@@ -115,7 +115,7 @@ export const COMPACT_STEP_KEYS = new Set([
   "inputs", "outputs", "when", "exit", "exitIf", "loop", "async",
 ]);
 /** update-step `set` keys: the compact step minus `service`, plus output removal. */
-export const STEP_SET_KEYS = new Set([...COMPACT_STEP_KEYS].filter((k) => k !== "service").concat(["removeOutputs"]));
+export const STEP_SET_KEYS = new Set([...COMPACT_STEP_KEYS].filter((k) => k !== "service").concat(["removeOutputs", "replaceOutputs"]));
 
 /** A raw V2 step (fetched body) rather than a compact one. */
 export function isRawV2Step(s: unknown): boolean {
@@ -533,6 +533,28 @@ export function applyStepFields(
         if (v === undefined) continue;
         if (setStepInput(step.inputs, k, v, contract, `${at("inputs")}.${k}`, p)) changed.push(`inputs.${k}`);
       }
+    }
+  }
+  // Output semantics (CLI trial: agents expected `outputs` to replace):
+  //   outputs         MERGE — upsert by fieldCode (the `as` name); others stay
+  //   removeOutputs   drop these fieldCodes
+  //   replaceOutputs  REPLACE — the step's outputs become exactly this list
+  //                   (a listed fieldCode keeps its uuid; the rest are removed)
+  if ("replaceOutputs" in set) {
+    if ("outputs" in set || "removeOutputs" in set) {
+      p.bad(at("replaceOutputs"), "replaceOutputs is the whole new list; do not combine it with outputs / removeOutputs");
+    } else {
+      const specs = normaliseOutputs(set.replaceOutputs, at("replaceOutputs"), p);
+      const keep = new Set(specs.map((o) => o.as));
+      const outs = (step.outputs ??= []) as Obj[];
+      for (let i = outs.length - 1; i >= 0; i--) {
+        if (!keep.has(outs[i]!.fieldCode as string)) {
+          changed.push(`-output ${String(outs[i]!.fieldCode)}`);
+          outs.splice(i, 1);
+        }
+      }
+      set = { ...set, outputs: set.replaceOutputs };
+      delete set.replaceOutputs;
     }
   }
   if ("outputs" in set || "removeOutputs" in set) {

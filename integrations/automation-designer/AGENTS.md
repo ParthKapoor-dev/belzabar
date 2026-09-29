@@ -211,6 +211,7 @@ Ops are applied in order. Step numbers are **always positions in the fetched dra
 {"op":"remove-step", "step":3}
 {"op":"move-step", "step":4, "before":1}
 {"op":"update-step", "step":2, "set":{"when":"#{x} ne null", "removeOutputs":["y"]}}
+// set.outputs MERGES (upsert by fieldCode); set.replaceOutputs REPLACES the list (listed fieldCodes keep their uuid)
 {"op":"set-input" | "set-variable" | "set-output", "key":"k", "type":"TEXT", "required":true, "default":"…"}
 {"op":"remove-input" | "remove-variable" | "remove-output", "key":"k"}
 ```

@@ -16,6 +16,10 @@ Arguments:
                             {"op":"move-step", "step":N, "after":M | "before":M}
                             {"op":"update-step", "step":N, "set":{STEP fields,
                                                   "removeOutputs":["fieldCode"]}}
+                              set.outputs MERGES: it upserts by fieldCode (the
+                              `as` name) and keeps every other output; use
+                              "replaceOutputs":[…] (same format) to make the
+                              step's outputs exactly that list, or removeOutputs.
                             {"op":"set-input"|"set-variable"|"set-output", "key":K,
                              type?, required?, description?, default?}   (upsert)
                             {"op":"remove-input"|"remove-variable"|"remove-output", "key":K}
