@@ -25,6 +25,6 @@ Global Flags:
 
 Examples:
   belz tw add-comment 26917411 --body "Deployed to QA, ready for verification."
-  belz tw add-comment https://projects.webintensive.com/app/tasks/26917411 \
+  belz tw add-comment https://yourcompany.teamwork.com/app/tasks/26917411 \
     --body-file ./NCNSS-488/dev-note.md
   belz tw add-comment 26917411 --body "Done." --llm --yes

@@ -86,7 +86,7 @@ function collectGenericEnvs(values: Record<string, string>): Record<string, EnvE
 /** Build the full config from a flat key/value map (env file or process.env). */
 function buildConfigFromValues(values: Record<string, string>): {
   envs: Record<string, EnvEntry>;
-  tw?: { email?: string; password?: string; passwordEncoding?: "plain" | "base64" };
+  tw?: { baseUrl?: string; email?: string; password?: string; passwordEncoding?: "plain" | "base64" };
   jenkins?: { baseUrl?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; migrationJob?: string };
 } {
   const envs: Record<string, EnvEntry> = {};
@@ -112,11 +112,13 @@ function buildConfigFromValues(values: Record<string, string>): {
   }
 
   // 3. Teamwork.
-  let tw: { email?: string; password?: string; passwordEncoding?: "plain" | "base64" } | undefined;
+  let tw: { baseUrl?: string; email?: string; password?: string; passwordEncoding?: "plain" | "base64" } | undefined;
+  const twUrl = values["TEAMWORK_URL"];
   const email = values["TEAMWORK_EMAIL"];
   const twPass = values["TEAMWORK_PASSWORD"];
-  if (email || twPass) {
+  if (twUrl || email || twPass) {
     tw = {};
+    if (twUrl) tw.baseUrl = twUrl;
     if (email) tw.email = email;
     if (twPass) Object.assign(tw, plainSecret(twPass));
   }
@@ -208,7 +210,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
     }
 
     let envs: Record<string, EnvEntry> = {};
-    let tw: { email?: string; password?: string; passwordEncoding?: "plain" | "base64" } | undefined;
+    let tw: { baseUrl?: string; email?: string; password?: string; passwordEncoding?: "plain" | "base64" } | undefined;
     let jenkins: { baseUrl?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; migrationJob?: string } | undefined;
 
     // Non-interactive source: process.env (--from-env) or a .env file.
@@ -263,9 +265,14 @@ const command: CommandModule<SetupArgs, SetupData> = {
       }
       const addTeamwork = await prompts.confirm({ message: "Configure Teamwork credentials now?", initialValue: false });
       if (addTeamwork) {
+        const twUrl = await prompts.text({
+          message: "Teamwork site URL (e.g. https://yourcompany.teamwork.com)",
+          validate: (v) => (/^https?:\/\/\S+$/.test(v.trim()) ? undefined : "Must be an http(s) URL."),
+        });
         const email = await prompts.text({ message: "Teamwork email", validate: (v) => (v.includes("@") ? undefined : "Must be an email address.") });
         const password = await prompts.password({ message: "Teamwork password" });
         tw = {};
+        if (twUrl.trim()) tw.baseUrl = twUrl.trim();
         if (email) tw.email = email;
         if (password) Object.assign(tw, plainSecret(password));
       }

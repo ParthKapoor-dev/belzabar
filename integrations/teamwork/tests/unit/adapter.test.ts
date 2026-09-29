@@ -9,7 +9,7 @@ import { fetchTask, searchTasks, setTeamworkBackoffForTesting, teamworkFetch, TE
 import { saveTeamworkSession } from "../../lib/auth";
 
 const SESSION = join(BELZ_CONFIG_DIR, "sessions", "teamwork.json");
-const LOGIN = "https://projects.webintensive.com/launchpad/v1/login.json";
+const LOGIN = "https://tw.example.test/launchpad/v1/login.json";
 
 let ff: FakeFetch | null = null;
 let cfg: TempEnvConfig | null = null;
@@ -51,7 +51,7 @@ async function caught(p: Promise<unknown>): Promise<CliError> {
 
 describe("teamwork adapter", () => {
   test("logs in with the plain-encoded password, stores the cookie 0600, sends it", async () => {
-    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "pw plain", passwordEncoding: "plain" } });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "pw plain", passwordEncoding: "plain" } });
     ff = fakeFetch([
       { method: "POST", url: LOGIN, response: loginOk("c1") },
       { method: "GET", url: "/projects/api/v3/x.json", response: { ok: 1 } },
@@ -65,7 +65,7 @@ describe("teamwork adapter", () => {
   });
 
   test("legacy base64 password still decodes", async () => {
-    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: btoa("old") } });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: btoa("old") } });
     ff = fakeFetch([
       { method: "POST", url: LOGIN, response: loginOk() },
       { method: "GET", url: "/y", response: {} },
@@ -75,7 +75,7 @@ describe("teamwork adapter", () => {
   });
 
   test("concurrent 401s share one re-login", async () => {
-    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "p", passwordEncoding: "plain" } });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "p", passwordEncoding: "plain" } });
     await saveTeamworkSession({ twAuth: "stale" });
     ff = fakeFetch([
       { method: "POST", url: LOGIN, response: async () => { await Bun.sleep(10); return loginOk("fresh"); } },
@@ -91,7 +91,7 @@ describe("teamwork adapter", () => {
   });
 
   test("429 → backoff (Retry-After) then success", async () => {
-    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "p", passwordEncoding: "plain" } });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "p", passwordEncoding: "plain" } });
     await saveTeamworkSession({ twAuth: "ok" });
     const waits: number[] = [];
     setTeamworkBackoffForTesting(async (ms) => { waits.push(ms); });
@@ -105,7 +105,7 @@ describe("teamwork adapter", () => {
   });
 
   test("at most TEAMWORK_CONCURRENCY requests in flight", async () => {
-    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "p", passwordEncoding: "plain" } });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "p", passwordEncoding: "plain" } });
     await saveTeamworkSession({ twAuth: "ok" });
     let active = 0;
     let peak = 0;
@@ -120,7 +120,7 @@ describe("teamwork adapter", () => {
   });
 
   test("404 → TW_NOT_FOUND; 5xx HTML → TW_HTTP_502 with only the page title", async () => {
-    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "p", passwordEncoding: "plain" } });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "p", passwordEncoding: "plain" } });
     await saveTeamworkSession({ twAuth: "ok" });
     ff = fakeFetch([
       { url: /\/tasks\/1\.json/, response: respond({ status: 404, json: { errors: [] } }) },
@@ -137,14 +137,23 @@ describe("teamwork adapter", () => {
   });
 
   test("missing credentials → TW_AUTH_MISSING_CREDENTIALS", async () => {
-    cfg = withTempEnvConfig({ envs: {} });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test" } });
     ff = fakeFetch([]).install();
     const e = await caught(teamworkFetch("/x"));
     expect(e.code).toBe("TW_AUTH_MISSING_CREDENTIALS");
   });
 
+  test("no Teamwork site configured → TW_CONFIG_MISSING (there is no built-in site), nothing sent", async () => {
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "p", passwordEncoding: "plain" } });
+    ff = fakeFetch([]).install();
+    const e = await caught(teamworkFetch("/x"));
+    expect(e.code).toBe("TW_CONFIG_MISSING");
+    expect(e.message).toContain("BELZ_TEAMWORK_URL");
+    expect(ff.requests).toHaveLength(0);
+  });
+
   test("login failure → TW_AUTH_FAILED without echoing the password", async () => {
-    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "s3cret", passwordEncoding: "plain" } });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "s3cret", passwordEncoding: "plain" } });
     ff = fakeFetch([{ method: "POST", url: LOGIN, response: respond({ status: 401, json: { password: "s3cret", error: "bad" } }) }]).install();
     const e = await caught(teamworkFetch("/x"));
     expect(e.code).toBe("TW_AUTH_FAILED");
@@ -152,7 +161,7 @@ describe("teamwork adapter", () => {
   });
 
   test("auth notices go through lifecycle.notice: shown in human mode, silent with --llm", async () => {
-    cfg = withTempEnvConfig({ envs: {}, teamwork: { email: "me@x.test", password: "p", passwordEncoding: "plain" } });
+    cfg = withTempEnvConfig({ envs: {}, teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "p", passwordEncoding: "plain" } });
     ff = fakeFetch([
       { method: "POST", url: LOGIN, response: loginOk() },
       { method: "GET", url: "/n", response: {} },

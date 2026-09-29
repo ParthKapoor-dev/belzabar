@@ -28,7 +28,7 @@ NON-INTERACTIVE KEYS (--env-file / --from-env)
                       for every env.
   Jenkins:            BELZ_JENKINS_URL, BELZ_JENKINS_USER,
                       BELZ_JENKINS_PASSWORD, BELZ_JENKINS_JOB
-  Teamwork:           TEAMWORK_EMAIL, TEAMWORK_PASSWORD
+  Teamwork:           TEAMWORK_URL, TEAMWORK_EMAIL, TEAMWORK_PASSWORD
   All *_PASSWORD values are plain text (not base64); they are stored with
   "passwordEncoding": "plain" in ~/.belz/config.json (mode 600). Envs you
   don't list are kept; add --replace --force to drop them.

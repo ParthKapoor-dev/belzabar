@@ -20,7 +20,26 @@ import {
 } from "@belzabar/core";
 import type { TeamworkSession } from "./types";
 
-export const TEAMWORK_BASE = "https://projects.webintensive.com";
+/**
+ * The Teamwork site root from config `teamwork.baseUrl` / BELZ_TEAMWORK_URL.
+ * There is no default: every team runs its own Teamwork site.
+ */
+export function teamworkBase(): string {
+  const { baseUrl } = Config.getTeamwork();
+  if (!baseUrl) {
+    throw new CliError(
+      'Teamwork site URL is not configured. Set "baseUrl" under "teamwork" in ~/.belz/config.json ' +
+        "(e.g. https://yourcompany.teamwork.com), or export BELZ_TEAMWORK_URL.",
+      { code: "TW_CONFIG_MISSING", details: { missing: ["baseUrl"] } },
+    );
+  }
+  return baseUrl;
+}
+
+/** Browser URL of a task. */
+export function teamworkTaskUrl(taskId: number | string): string {
+  return `${teamworkBase()}/app/tasks/${taskId}`;
+}
 const SESSION_FILE = join(BELZ_CONFIG_DIR, "sessions", "teamwork.json");
 
 export async function saveTeamworkSession(session: TeamworkSession): Promise<void> {
@@ -56,7 +75,7 @@ async function doLogin(): Promise<TeamworkSession> {
   }
 
   lifecycle.notice(`[Teamwork] Authenticating as ${email}…`);
-  const response = await httpRequest(`${TEAMWORK_BASE}/launchpad/v1/login.json`, {
+  const response = await httpRequest(`${teamworkBase()}/launchpad/v1/login.json`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json;charset=utf-8",

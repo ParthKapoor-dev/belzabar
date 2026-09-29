@@ -86,8 +86,9 @@ function buildSummaryBody(cfg: BelzConfigFile): string {
 
   lines.push("");
   lines.push(pc.bold("Teamwork"));
-  if (tw?.email) {
-    lines.push(`  Email:    ${tw.email}`);
+  if (tw?.email || tw?.baseUrl) {
+    lines.push(`  Site:     ${tw.baseUrl ?? pc.red("(not set)")}`);
+    lines.push(`  Email:    ${tw.email ?? pc.dim("(not set)")}`);
     lines.push(`  Password: ${tw.password ? pc.green("set") : pc.red("unset")}`);
   } else {
     lines.push(`  ${pc.dim("Not configured.")}`);
@@ -242,6 +243,11 @@ async function runEditTui(): Promise<ConfigEditData> {
 
   if (choice === "teamwork") {
     const tw = cfg.teamwork ?? {};
+    const twUrl = await prompts.text({
+      message: `Site URL${tw.baseUrl ? ` (current: ${tw.baseUrl})` : ""}`,
+      placeholder: tw.baseUrl ?? "https://yourcompany.teamwork.com",
+      defaultValue: tw.baseUrl ?? "",
+    });
     const email = await prompts.text({
       message: `Email${tw.email ? ` (current: ${tw.email})` : ""}`,
       defaultValue: tw.email ?? "",
@@ -253,6 +259,7 @@ async function runEditTui(): Promise<ConfigEditData> {
     const { password: _tp, passwordEncoding: _te, ...twRest } = tw;
     const teamwork = {
       ...twRest,
+      ...(twUrl ? { baseUrl: twUrl } : {}),
       ...(email ? { email } : {}),
       ...(passRaw ? encodeSecret(passRaw) : keepSecret(tw)),
     };

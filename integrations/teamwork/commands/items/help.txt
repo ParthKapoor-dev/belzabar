@@ -29,7 +29,7 @@ Global Flags:
 
 Examples:
   belz tw items 26917411
-  belz tw items https://projects.webintensive.com/app/tasks/26917411
+  belz tw items https://yourcompany.teamwork.com/app/tasks/26917411
   belz tw items 26917411 --llm
 
 Notes:

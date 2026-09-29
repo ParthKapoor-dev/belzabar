@@ -47,6 +47,8 @@ export interface JenkinsConfig {
 }
 
 export interface TeamworkCredentials {
+  /** Site root without a trailing slash; "" when not configured. */
+  baseUrl: string;
   email: string;
   password: string;
 }
@@ -300,13 +302,17 @@ export const Config = {
     };
   },
 
-  /** Teamwork credentials: config `teamwork` section, else BELZ_TEAMWORK_EMAIL / BELZ_TEAMWORK_PASSWORD (plain). */
+  /** Teamwork site + credentials: config `teamwork` section, else BELZ_TEAMWORK_URL / _EMAIL / _PASSWORD (plain). */
   getTeamwork(): TeamworkCredentials {
     if (loaded.error) throw loaded.error;
     const tw = loaded.config.teamwork ?? {};
     const password = tw.password
       ? decodeSecret(tw.password, tw.passwordEncoding, "teamwork.password")
       : trusted.BELZ_TEAMWORK_PASSWORD ?? "";
-    return { email: tw.email ?? trusted.BELZ_TEAMWORK_EMAIL ?? "", password };
+    return {
+      baseUrl: (tw.baseUrl ?? trusted.BELZ_TEAMWORK_URL ?? "").replace(/\/+$/, ""),
+      email: tw.email ?? trusted.BELZ_TEAMWORK_EMAIL ?? "",
+      password,
+    };
   },
 };

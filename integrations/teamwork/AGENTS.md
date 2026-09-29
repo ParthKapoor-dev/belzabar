@@ -1,7 +1,7 @@
 # Teamwork (`@belzabar/teamwork`) — Maintainer Guide
 
-`belz tw …`: read tickets, comments and release items from Teamwork
-(`projects.webintensive.com`), plus one confirmation-gated write (`add-comment`).
+`belz tw …`: read tickets, comments and release items from your Teamwork site
+(config `teamwork.baseUrl` / `BELZ_TEAMWORK_URL`; no default), plus one confirmation-gated write (`add-comment`).
 The lib is also used by `@belzabar/release` (`extractTicketItems`, `parseTaskId`).
 
 ## Commands
@@ -44,9 +44,10 @@ Package exports: `./registry`, `./lib/*`.
   `--llm` it refuses (`TW_CONFIRMATION_REQUIRED`) unless `--yes`. Declining is
   `TW_USER_ABORT`. The intent is logged to stderr (`logIntent`) before the POST. An agent
   passes `--yes` only after the user approved the exact text.
-- **Auth.** Credentials from `Config.getTeamwork()` (`~/.belz/config.json` → `teamwork`:
-  `email`, `password`, `passwordEncoding`), falling back to trusted `BELZ_TEAMWORK_EMAIL` /
-  `BELZ_TEAMWORK_PASSWORD`. Session cookie in `~/.belz/sessions/teamwork.json` (0600, atomic).
+- **Auth.** Site + credentials from `Config.getTeamwork()` (`~/.belz/config.json` → `teamwork`:
+  `baseUrl`, `email`, `password`, `passwordEncoding`), falling back to trusted `BELZ_TEAMWORK_URL` /
+  `BELZ_TEAMWORK_EMAIL` / `BELZ_TEAMWORK_PASSWORD`. `lib/auth.ts` `teamworkBase()` /
+  `teamworkTaskUrl()` are the only source of Teamwork URLs; no site configured → `TW_CONFIG_MISSING`. Session cookie in `~/.belz/sessions/teamwork.json` (0600, atomic).
   Codes: `TW_AUTH_MISSING_CREDENTIALS`, `TW_AUTH_FAILED`, `TW_AUTH_NO_COOKIE`.
 - **HTTP.** `teamworkFetch` runs on core `httpRequest` (timeout, IPv4 pin): single-flight
   login, one shared re-login on 401, bounded 429 backoff (Retry-After), ≤6 requests in

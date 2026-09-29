@@ -143,7 +143,7 @@ describe("schema validation (CORE-18)", () => {
         dev: { url: "https://dev.test", user: "u", password: btoa("p") },
         "acme-demo": { url: "https://acme.test", user: "u", password: btoa("p"), project: "ACME" },
       },
-      teamwork: { email: "a@b.c", password: btoa("tw") },
+      teamwork: { baseUrl: "https://tw.example.test/", email: "a@b.c", password: btoa("tw") },
       belz: { sourceDir: "/s", installDir: "/i", repoUrl: "r", version: "v", installedAt: "t" },
       jenkins: { baseUrl: "https://j.test/", user: "j", password: btoa("jp"), migrationJob: "a/b", profileEnvs: { DevAcme: "acme-dev" } },
     });
@@ -154,7 +154,7 @@ describe("schema validation (CORE-18)", () => {
     expect(Config.getJenkins()).toEqual({
       baseUrl: "https://j.test", user: "j", password: "jp", migrationJob: "a/b", profileEnvs: { devacme: "acme-dev" },
     });
-    expect(Config.getTeamwork()).toEqual({ email: "a@b.c", password: "tw" });
+    expect(Config.getTeamwork()).toEqual({ baseUrl: "https://tw.example.test", email: "a@b.c", password: "tw" });
   });
 
   test("an old config with the removed extension/dashboard sections still loads (they are ignored)", () => {

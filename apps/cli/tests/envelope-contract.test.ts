@@ -109,7 +109,7 @@ beforeAll(() => {
   ff = fakeFetch([]).install();
   cfg = withTempEnvConfig({
     envs: { [FAKE_ENV]: { url: "https://contract.test" } },
-    teamwork: { email: "t@contract.test", password: btoa("x") },
+    teamwork: { baseUrl: "https://tw.example.test", email: "t@contract.test", password: btoa("x") },
     jenkins: { baseUrl: "https://jenkins.contract.test", user: "u", password: btoa("x") },
   });
   prevCwd = process.cwd();

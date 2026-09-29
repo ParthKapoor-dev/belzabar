@@ -14,5 +14,5 @@ Global Flags:
 
 Examples:
   belz tw task 26917411
-  belz tw task https://projects.webintensive.com/app/tasks/26917411
+  belz tw task https://yourcompany.teamwork.com/app/tasks/26917411
   belz tw task 26917411 --llm

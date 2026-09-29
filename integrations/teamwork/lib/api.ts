@@ -1,5 +1,5 @@
 import { CliError, createLimiter, httpError, httpRequest, isReplayableBody, lifecycle, sleep } from "@belzabar/core";
-import { ensureTeamworkAuth, refreshTeamworkAuth, TEAMWORK_BASE } from "./auth";
+import { ensureTeamworkAuth, refreshTeamworkAuth, teamworkBase, teamworkTaskUrl } from "./auth";
 import type {
   TeamworkTask, TeamworkTaskAssignee, TeamworkTag, TeamworkSubtask, TeamworkComment,
   TeamworkTaskSearchResult, AddCommentResult,
@@ -31,7 +31,7 @@ function retryAfterMs(res: Response, attempt: number): number {
 
 export async function teamworkFetch(path: string, options: RequestInit = {}): Promise<Response> {
   return limit(async () => {
-    const url = path.startsWith("http") ? path : `${TEAMWORK_BASE}${path}`;
+    const url = path.startsWith("http") ? path : `${teamworkBase()}${path}`;
     let twAuth = await ensureTeamworkAuth();
     const send = () =>
       httpRequest(url, {
@@ -329,7 +329,7 @@ export async function searchTasks(query: string, opts: TaskSearchOptions = {}): 
       progress: t.progress ?? 0,
       projectName,
       tasklistName: tasklist?.name ?? null,
-      url: `${TEAMWORK_BASE}/app/tasks/${t.id}`,
+      url: teamworkTaskUrl(t.id),
     };
   });
 }

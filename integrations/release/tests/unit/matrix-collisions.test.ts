@@ -72,7 +72,7 @@ async function setup(routes: unknown[]) {
   cfg = withTempEnvConfig({
     envs: ENVS,
     activeEnv: "sems-dev",
-    teamwork: { email: "me@x.test", password: "p", passwordEncoding: "plain" },
+    teamwork: { baseUrl: "https://tw.example.test", email: "me@x.test", password: "p", passwordEncoding: "plain" },
   });
   await saveTeamworkSession({ twAuth: "ok" });
   ff = fakeFetch([

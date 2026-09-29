@@ -20,9 +20,9 @@ describe("TW-6: parseTaskId", () => {
   test("accepts ids and task URLs", () => {
     expect(parseTaskId("26917411")).toBe(26917411);
     expect(parseTaskId(" 42 ")).toBe(42);
-    expect(parseTaskId("https://projects.webintensive.com/app/tasks/26917411")).toBe(26917411);
-    expect(parseTaskId("https://projects.webintensive.com/app/tasks/26917411?c=1")).toBe(26917411);
-    expect(parseTaskId("https://projects.webintensive.com/#/tasks/123/comments")).toBe(123);
+    expect(parseTaskId("https://tw.example.test/app/tasks/26917411")).toBe(26917411);
+    expect(parseTaskId("https://tw.example.test/app/tasks/26917411?c=1")).toBe(26917411);
+    expect(parseTaskId("https://tw.example.test/#/tasks/123/comments")).toBe(123);
   });
   test("rejects junk", () => {
     for (const bad of ["123abc", "-5", "0", "abc", "1.5", "", "https://x/tasks/12ab"]) {

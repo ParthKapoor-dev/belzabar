@@ -2,6 +2,7 @@ import { CliError, defineArgs, ok } from "@belzabar/core";
 import { parseTaskId, TASK_ID_POSITIONAL } from "../../lib/task-id";
 import type { CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
 import { addComment, fetchTask } from "../../lib/api";
+import { teamworkTaskUrl } from "../../lib/auth";
 import { requireConfirmation, logIntent } from "../../lib/confirm";
 
 interface AddCommentArgs {
@@ -101,7 +102,7 @@ export async function execute(args: AddCommentArgs, context: CommandContext): Pr
     commentId: result.id,
     body,
     contentType: args.contentType,
-    url: `https://projects.webintensive.com/app/tasks/${args.taskId}`,
+    url: teamworkTaskUrl(args.taskId),
   });
 }
 

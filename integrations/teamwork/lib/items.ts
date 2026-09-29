@@ -4,6 +4,7 @@
 // Used by `belz tw items` and `belz release matrix`.
 
 import { fetchTask, fetchComments } from "./api";
+import { teamworkTaskUrl } from "./auth";
 import { extractFromText, type ItemPattern, type PdKind } from "./extract";
 import type { TeamworkComment } from "./types";
 
@@ -172,7 +173,7 @@ export async function extractTicketItems(taskId: number): Promise<ItemsData> {
   const data: ItemsData = {
     taskId: taskId,
     taskName: task.name,
-    url: `https://projects.webintensive.com/app/tasks/${taskId}`,
+    url: teamworkTaskUrl(taskId),
     scanned: {
       comments: parentComments.length,
       subtasks: task.subtasks.length,

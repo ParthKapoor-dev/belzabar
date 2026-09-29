@@ -2,6 +2,7 @@ import { defineArgs, ok } from "@belzabar/core";
 import { parseTaskId, TASK_ID_POSITIONAL } from "../../lib/task-id";
 import type { CommandModule, CommandContext, CommandResult, CommandEnvelope, HumanPresenterHelpers } from "@belzabar/core";
 import { fetchTask } from "../../lib/api";
+import { teamworkTaskUrl } from "../../lib/auth";
 import type { TeamworkTask } from "../../lib/types";
 
 interface GetTaskArgs {
@@ -31,7 +32,7 @@ export async function execute(args: GetTaskArgs, _context: CommandContext): Prom
   const task = await fetchTask(args.taskId);
   return ok({
     task,
-    url: `https://projects.webintensive.com/app/tasks/${args.taskId}`,
+    url: teamworkTaskUrl(args.taskId),
   });
 }
 

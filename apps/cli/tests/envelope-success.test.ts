@@ -91,7 +91,7 @@ function lookup(req: RecordedRequest): Response | null {
     if (path === "/rest/api/automation/services") return json(`${AD}/categories/automation-services.json`);
     if ((m = path.match(/^\/rest\/api\/pagedesigner\/pages\/([0-9a-f]{32})$/))) return json(`${PD}/${m[1]}.json`);
   }
-  if (u.origin === "https://projects.webintensive.com") {
+  if (u.origin === "https://tw.example.test") {
     if (path === "/launchpad/v1/login.json") {
       return new Response("{}", { headers: { "content-type": "application/json", "set-cookie": "tw-auth=contract; Path=/" } });
     }
@@ -157,7 +157,7 @@ beforeAll(() => {
   ]).install();
   cfg = withTempEnvConfig({
     envs: { [ENV]: { url: HOST } },
-    teamwork: { email: "t@contract.test", password: btoa("x") },
+    teamwork: { baseUrl: "https://tw.example.test", email: "t@contract.test", password: btoa("x") },
     jenkins: { baseUrl: JENKINS, user: "u", password: btoa("x"), migrationJob: "Deployments/Database/db-migration" },
   });
   prevCwd = process.cwd();

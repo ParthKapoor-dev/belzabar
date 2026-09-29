@@ -33,6 +33,8 @@ export const ConfigFileSchema = z
     environments: z.record(EnvEntrySchema).optional(),
     teamwork: z
       .object({
+        /** Teamwork site root, e.g. https://yourcompany.teamwork.com (no default). */
+        baseUrl: z.string().optional(),
         email: z.string().optional(),
         ...secretFields,
       })
