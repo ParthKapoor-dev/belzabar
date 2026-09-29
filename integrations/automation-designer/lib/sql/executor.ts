@@ -109,7 +109,18 @@ export async function resolveSqlDbContext(options: {
   };
 }
 
+/**
+ * Start the executable-category lookup (cached per process) while the
+ * operation contract and template load: it is needed only at execute time and
+ * was a serial ~2 s on sems-dev (smoke UX: ~5 s per statement). Marked
+ * handled here; the execute path awaits the same promise and sees any error.
+ */
+function prefetchExecutableCategory(): void {
+  fetchExecutableCategory().catch(() => null);
+}
+
 export async function loadSqlExecutionContext(): Promise<SqlExecutionContext> {
+  prefetchExecutableCategory();
   const operation = await fetchSqlSelectOperation();
   if (!operation?.methodUUID) {
     throw new CliError("SQL read operation metadata is missing methodUUID.", {
@@ -142,6 +153,7 @@ export interface ExecuteSqlUpdateResult {
 }
 
 export async function loadSqlUpdateContext(): Promise<SqlExecutionContext> {
+  prefetchExecutableCategory();
   const operation = await fetchSqlUpdateOperation();
   if (!operation?.methodUUID) {
     throw new CliError("SQL update operation metadata is missing methodUUID.", {
@@ -237,6 +249,7 @@ export interface ExecuteSqlInsertResult {
 }
 
 export async function loadSqlInsertContext(): Promise<SqlExecutionContext> {
+  prefetchExecutableCategory();
   const operation = await fetchSqlInsertOperation();
   if (!operation?.methodUUID) {
     throw new CliError("SQL insert operation metadata is missing methodUUID.", {
@@ -376,6 +389,7 @@ export interface ExecuteSqlModifyResult {
 }
 
 export async function loadSqlModifyContext(): Promise<SqlExecutionContext> {
+  prefetchExecutableCategory();
   const operation = await fetchSqlModifyOperation();
   if (!operation?.methodUUID) {
     throw new CliError("SQL modify operation metadata is missing methodUUID.", {
