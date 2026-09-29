@@ -67,7 +67,7 @@ export function normalizeUuid(value: unknown): string | null {
 
 /**
  * Deep copy with the server's space padding trimmed from every uuid-shaped
- * string (`"4a1b…    "` → `"4a1b…"`; smoke --llm envelope #8). Other strings
+ * string (`"4a1b…    "` → `"4a1b…"`). Other strings
  * are left exactly as they are.
  */
 export function trimUuidPadding<T>(value: T): T {
