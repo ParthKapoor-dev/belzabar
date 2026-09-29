@@ -5,9 +5,14 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import { parseMigrateRunArgs, resolveMigrationTargets } from "../../lib";
 import runCmdModule from "../../commands/run/index";
+import profilesCmdModule from "../../commands/profiles/index";
 
 // The `migrate` namespace is not env-aware (targets come from the profile).
 const runCmd = { ...runCmdModule, envAware: false };
+const profilesCmd = { ...profilesCmdModule, envAware: false };
+
+/** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */
+const PROFILE_ENVS = { devsems: "sems-dev", qasems: "sems-qa", stagesems: "sems-stage", qays: "ys-qa", stageys: "ys-stage", qancdns: "nsm-qa", stgncdns: "nsm-stage" };
 
 let cfg: TempEnvConfig | null = null;
 let ff: FakeFetch | null = null;
@@ -34,7 +39,7 @@ async function code(p: Promise<unknown>): Promise<string> {
 
 describe("OTH-R22/R27: AD pre-flight", () => {
   function semsDev() {
-    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" } } });
+    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
   }
   const resolve = (id: string) => resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: [id] });
 
@@ -113,7 +118,7 @@ describe("OTH-R25: module and migration-id flags", () => {
 
 describe("OTH-R26: --client vs profile", () => {
   test("a client that isn't the profile's group → MIGRATE_CLIENT_PROFILE_MISMATCH, nothing POSTed", async () => {
-    cfg = withTempEnvConfig({ envs: {}, jenkins: JENKINS });
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([JOB_PARAMS]).install();
     const r = await runCommand(runCmd, [
       "--profile", "devsems_qasems", "--client", "DNREC", "--module", "PD", "--ids", "p1", "--no-follow", "--yes",
@@ -121,6 +126,15 @@ describe("OTH-R26: --client vs profile", () => {
     expect(r.envelope?.error?.code).toBe("MIGRATE_CLIENT_PROFILE_MISMATCH");
     expect((r.envelope?.error?.details as { expected: string }).expected).toBe("SEMS");
     expect(ff.requests.some((q) => q.method === "POST")).toBe(false);
+  });
+  test("client names come from the Jenkins dividers (case-insensitive); unknown → MIGRATE_INVALID_CLIENT listing them", async () => {
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: PROFILE_ENVS } });
+    ff = fakeFetch([JOB_PARAMS, JOB_PARAMS]).install();
+    const okRun = await runCommand(profilesCmd, ["--client", "sems", "--refresh"]);
+    expect((okRun.envelope?.data as { groups: Array<{ client: string }> }).groups.map((g) => g.client)).toEqual(["SEMS"]);
+    const bad = await runCommand(profilesCmd, ["--client", "nope", "--refresh"]);
+    expect(bad.envelope?.error?.code).toBe("MIGRATE_INVALID_CLIENT");
+    expect((bad.envelope?.error?.details as { known: string[] }).known).toContain("SEMS");
   });
 });
 
@@ -133,7 +147,7 @@ describe("OTH-R23: failures after the trigger carry the build reference", () => 
   ];
 
   test("getBuild transport error → same code, details.buildNumber/buildUrl, do-not-rerun hint", async () => {
-    cfg = withTempEnvConfig({ envs: {}, jenkins: JENKINS });
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([
       ...trigger,
       { method: "GET", url: "https://jk.test/queue/item/7/api/json", response: { id: 7, executable: { number: 42, url: `${JOB}/42/` } } },
@@ -150,7 +164,7 @@ describe("OTH-R23: failures after the trigger carry the build reference", () => 
   });
 
   test("queue cancelled before a build number → details.queueUrl", async () => {
-    cfg = withTempEnvConfig({ envs: {}, jenkins: JENKINS });
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([
       ...trigger,
       { method: "GET", url: "https://jk.test/queue/item/7/api/json", response: { id: 7, cancelled: true, why: "x" } },
@@ -161,7 +175,7 @@ describe("OTH-R23: failures after the trigger carry the build reference", () => 
   });
 
   test("2xx trigger without a queue Location still says a build was triggered", async () => {
-    cfg = withTempEnvConfig({ envs: {}, jenkins: JENKINS });
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([
       JOB_PARAMS,
       { method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) },

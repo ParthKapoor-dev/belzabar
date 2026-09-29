@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { CliError, writeSecureJson } from "@belzabar/core";
-import { JENKINS_CLIENTS, MIGRATION_PROFILES_CACHE_PATH, type JenkinsClient } from "./constants";
+import { MIGRATION_PROFILES_CACHE_PATH, type JenkinsClient } from "./constants";
 import type { JenkinsAuth } from "@belzabar/jenkins";
 import { getJobParameters } from "@belzabar/jenkins";
 import type { ProfileResolution, ProfilesByClient } from "./types";
@@ -13,7 +13,7 @@ function dividerClient(choice: string): JenkinsClient | undefined {
   const match = choice.match(DIVIDER_RE);
   if (!match) return undefined;
   const name = match[1]?.trim();
-  return JENKINS_CLIENTS.find((c) => c === name);
+  return name ? name : undefined;
 }
 
 export function groupProfiles(choices: string[]): ProfilesByClient[] {

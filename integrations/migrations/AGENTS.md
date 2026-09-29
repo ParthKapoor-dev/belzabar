@@ -24,8 +24,9 @@ REST client lives in `integrations/jenkins` (`@belzabar/jenkins`); `lib/index.ts
 migrations/
 ├── commands/{logs,profiles,run,status}/{index.ts,help.txt,desc.txt}
 ├── lib/
-│   ├── args.ts             RUN_ARGS (defineArgs, MG-1) + value checks; PROFILE_SEGMENT_TO_ENV /
-│   │                       envPairFromProfile — profile ↔ env consistency (MG-2)
+│   ├── args.ts             RUN_ARGS (defineArgs, MG-1) + value checks; profileSegmentEnvs /
+│   │                       envPairFromProfile — profile ↔ env consistency (MG-2, config-driven);
+│   │                       normalizeClient / matchClient (clients = Jenkins divider groups)
 │   ├── resolve-targets.ts  pre-flight: resolve ids on the profile's SOURCE env (PD draft →
 │   │                       published sibling, AD existence + name)
 │   ├── profiles.ts         discoverProfiles (24 h cache, ~/.belz/migrations/jenkins-profiles.json);
@@ -33,7 +34,7 @@ migrations/
 │   ├── parser.ts           stripAnsi, parseJenkinsConsole (migration ids, REPORT JSON)
 │   ├── report.ts           summarizeReport (methodComparisonResult)
 │   ├── artifacts.ts        writeArtifacts → summary.json + summary.console.log (`--out`)
-│   ├── constants.ts        JENKINS_CLIENTS, KNOWN_MIGRATE_TYPES, ENV_TO_PROFILE_SEGMENT, cache path
+│   ├── constants.ts        KNOWN_MIGRATE_TYPES, JenkinsClient (= string), cache path
 │   ├── types.ts
 │   └── index.ts            barrel (package `.` export; also re-exports @belzabar/jenkins)
 ├── registry.ts             static, sorted registry (`@belzabar/migrations/registry`)
@@ -53,8 +54,14 @@ Package exports: `./registry`, `.` (the lib barrel), `./lib/*`. From outside, im
     `MIGRATE_INVALID_FLAG_VALUE`, stray positionals `MIGRATE_UNEXPECTED_ARG`; plus
     `MIGRATE_MODULE_REQUIRED`, `MIGRATE_IDS_REQUIRED`, `MIGRATE_IDS_CONFLICT`, …
   - MG-2 — `--source-env`/`--target-env` must match the profile's segments
-    (`MIGRATE_ENV_PROFILE_MISMATCH`); for an unknown profile family both must be given
-    explicitly (`MIGRATE_ENV_PROFILE_UNVERIFIED`).
+    (`MIGRATE_ENV_PROFILE_MISMATCH`); for a profile whose segments are not mapped both must be
+    given explicitly (`MIGRATE_ENV_PROFILE_UNVERIFIED`). Segment → env comes only from config
+    `jenkins.profileEnvs` (e.g. `{ "devacme": "dev" }`, keys case-insensitive); belz has no
+    built-in project knowledge. An env pair derives `--profile` only when each env maps to
+    exactly one segment (else `MIGRATE_INVALID_ENV_PAIR`).
+  - Clients are the Jenkins job's `--- <client> ---` divider groups, never a hard-coded list:
+    `--client` is matched case-insensitively against them (`profiles --client` unknown →
+    `MIGRATE_INVALID_CLIENT` listing the known groups).
   - Confirmation — every `run` (including `--dry-run`) is confirmed before any Jenkins
     request: `--yes`/`-y` proceeds, a TTY is prompted, `--llm` or a non-TTY without `--yes`
     fails `MIGRATE_CONFIRMATION_REQUIRED` (details: profile, client, module, resolved ids, dry run).
@@ -80,7 +87,8 @@ Package exports: `./registry`, `.` (the lib barrel), `./lib/*`. From outside, im
 - `--dry-run` only sends `DRY_RUN=true` to the job: it is still a real Jenkins build, not a
   local validation.
 - **Config.** `Config.getJenkins()` from `~/.belz/config.json` → `jenkins` (`baseUrl`, `user`,
-  `password` + `passwordEncoding`, `migrationJob`), falling back to trusted `BELZ_JENKINS_URL`,
+  `password` + `passwordEncoding`, `migrationJob` (required, no default), optional
+  `profileEnvs`), falling back to trusted `BELZ_JENKINS_URL`,
   `BELZ_JENKINS_USER`, `BELZ_JENKINS_PASSWORD`, `BELZ_JENKINS_JOB`. The config file wins.
   Missing → `MIGRATE_JENKINS_CONFIG_MISSING`.
 - Jenkins errors keep their `MIGRATE_JENKINS_*` codes (see `integrations/jenkins/AGENTS.md`).

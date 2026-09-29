@@ -3,20 +3,22 @@ Usage: belz migrate profiles [--refresh] [--client <name>] [flags]
 List available Jenkins migration profiles.
 
 DESCRIPTION
-  Fetches the PROFILE_NAME parameter choices from the Jenkins
-  `expertly.db-migration` job, groups them by client, and prints them.
+  Fetches the PROFILE_NAME parameter choices from the configured Jenkins
+  migration job (jenkins.migrationJob), groups them by client (the job's
+  `--- <client> ---` dividers), and prints them.
 
   The first invocation hits Jenkins live; subsequent calls read a local cache
   at ~/.belz/migrations/jenkins-profiles.json. Pass --refresh to force-fetch.
 
 FLAGS
   --refresh           Bypass the local cache and re-fetch from Jenkins.
-  --client <name>     Only list one client's profiles (case-insensitive), e.g.
-                      SEMS, "NCDNS (NSS)", "YS (YieldSec)".
+  --client <name>     Only list one client's profiles (case-insensitive; an
+                      unknown name is MIGRATE_INVALID_CLIENT, listing the
+                      clients Jenkins has).
   --llm               Emit structured JSON for agent consumption.
   --help, -h          Show this help message.
 
 EXAMPLES
   belz migrate profiles
   belz migrate profiles --refresh
-  belz migrate profiles --client SEMS --llm
+  belz migrate profiles --client ACME --llm

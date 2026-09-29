@@ -13,6 +13,9 @@ const runCmd = { ...runCmdModule, envAware: false };
 // OTH-R26: an explicit --client is checked against the profile's Jenkins group.
 const JOB_PARAMS = { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${import.meta.dir}/../fixtures/real/job-parameters.json`) };
 
+/** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */
+const PROFILE_ENVS = { devsems: "sems-dev", qasems: "sems-qa", stagesems: "sems-stage", qays: "ys-qa", stageys: "ys-stage", qancdns: "nsm-qa", stgncdns: "nsm-stage" };
+
 let cfg: TempEnvConfig | null = null;
 let ff: FakeFetch | null = null;
 afterEach(() => {
@@ -29,7 +32,7 @@ function collect() {
 
 describe("migrate pre-flight", () => {
   test("SEMS profile whose source env is not configured → warns and skips (no request)", async () => {
-    cfg = withTempEnvConfig({ envs: { "nsm-qa": { url: "https://nsm-qa.test" } } });
+    cfg = withTempEnvConfig({ envs: { "nsm-qa": { url: "https://nsm-qa.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([]).install();
     const w = collect();
     const res = await resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "PD", ids: ["p1"], warn: w.warn });
@@ -41,7 +44,7 @@ describe("migrate pre-flight", () => {
   });
 
   test("YS profile, AD module, env not configured → warns too", async () => {
-    cfg = withTempEnvConfig({ envs: {} });
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { profileEnvs: PROFILE_ENVS } });
     const w = collect();
     const res = await resolveMigrationTargets({ profile: "qays_stageys", migrateType: "AD_Method", ids: ["u1"], warn: w.warn });
     expect(res).toBeNull();
@@ -49,7 +52,7 @@ describe("migrate pre-flight", () => {
   });
 
   test("unknown profile family without --source-env → warns (was a silent skip)", async () => {
-    cfg = withTempEnvConfig({ envs: {} });
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { profileEnvs: PROFILE_ENVS } });
     const w = collect();
     const res = await resolveMigrationTargets({ profile: "foo_bar", migrateType: "PD", ids: ["x"], warn: w.warn });
     expect(res).toBeNull();
@@ -57,14 +60,14 @@ describe("migrate pre-flight", () => {
   });
 
   test("comparison-report modules need no pre-flight and raise no warning", async () => {
-    cfg = withTempEnvConfig({ envs: {} });
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { profileEnvs: PROFILE_ENVS } });
     const w = collect();
     expect(await resolveMigrationTargets({ profile: "foo_bar", migrateType: "AD_COMPARISON_REPORT", ids: ["x"], warn: w.warn })).toBeNull();
     expect(w.warnings).toEqual([]);
   });
 
   test("configured SEMS source env: PD draft swapped for its published id, env restored", async () => {
-    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" }, "nsm-dev": { url: "https://nsm-dev.test" } } });
+    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" }, "nsm-dev": { url: "https://nsm-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([
       { method: "GET", url: "https://sems-dev.test/rest/api/pagedesigner/pages/draft1", response: { name: "Home", status: "DRAFT", referenceId: "pub1" } },
     ]).install();
@@ -80,7 +83,7 @@ describe("migrate pre-flight", () => {
   });
 
   test("a login failure on the source env says how to proceed and keeps its code", async () => {
-    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test", token: null } } });
+    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test", token: null } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([{ url: /sems-dev\.test/, response: respond({ status: 401, json: { message: "bad creds" } }) }]).install();
     let err: any;
     try {
@@ -96,7 +99,7 @@ describe("migrate pre-flight", () => {
   });
 
   test("a 404 keeps the specific MIGRATE_TARGET_NOT_FOUND", async () => {
-    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" } } });
+    cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([{ url: /chain\/abcdefabcdefabcdefabcdefabcdefab/, response: respond({ status: 404, json: {} }) }]).install();
     await expect(
       resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: ["abcdefabcdefabcdefabcdefabcdefab"] }),
@@ -109,7 +112,7 @@ describe("migrate run: skipped pre-flight surfaces in the envelope", () => {
   test("meta.warnings carries the skip; --dry-run still triggers a build with DRY_RUN=true", async () => {
     cfg = withTempEnvConfig({
       envs: {},
-      jenkins: { baseUrl: "https://jk.test", user: "u", password: "p", passwordEncoding: "plain", migrationJob: "A/b" },
+      jenkins: { profileEnvs: PROFILE_ENVS,  baseUrl: "https://jk.test", user: "u", password: "p", passwordEncoding: "plain", migrationJob: "A/b" },
     });
     const JOB = "https://jk.test/job/A/job/b";
     ff = fakeFetch([
@@ -137,7 +140,7 @@ describe("migrate run: confirmation gate", () => {
   test("without --yes (--llm) nothing is POSTed: MIGRATE_CONFIRMATION_REQUIRED, dry run included", async () => {
     cfg = withTempEnvConfig({
       envs: {},
-      jenkins: { baseUrl: "https://jk.test", user: "u", password: "p", passwordEncoding: "plain", migrationJob: "A/b" },
+      jenkins: { profileEnvs: PROFILE_ENVS,  baseUrl: "https://jk.test", user: "u", password: "p", passwordEncoding: "plain", migrationJob: "A/b" },
     });
     ff = fakeFetch([JOB_PARAMS, { method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) }]).install();
     for (const extra of [[], ["--dry-run"]]) {

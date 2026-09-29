@@ -4,7 +4,7 @@ Trigger a migration build on Jenkins, follow its console, and parse the report.
 
 USAGE
   belz migrate run --profile <profile> --module <type> --ids "<csv>" [options]
-  belz migrate run --source-env nsm-qa --target-env nsm-stage --module AD_Method --ids "<csv>"
+  belz migrate run --source-env qa --target-env stage --module AD_Method --ids "<csv>"
 
 REQUIRED
   --module <type>              One of: AD_Method, PD, AD_COMPARISON_REPORT,
@@ -13,10 +13,12 @@ REQUIRED
                                Use --module-custom for arbitrary values.
                                --module-name is accepted as an alias.
 
-  --profile <name>             A profile name (e.g. devncdns_qancdns).
+  --profile <name>             A profile name (e.g. devacme_qaacme): a Jenkins
+                               PROFILE_NAME choice, <source>_<target>.
   OR
-  --source-env / --target-env  NCDNS-only: derives the profile (e.g. nsm-qa →
-                               qancdns, nsm-stage → stgncdns).
+  --source-env / --target-env  Derives the profile through config
+                               jenkins.profileEnvs (profile segment → env, e.g.
+                               "qaacme": "qa", "stageacme": "stage").
 
   --ids "<csv>"                Comma-separated UUIDs.
   OR
@@ -27,12 +29,12 @@ MIGRATION IDS
   resolves every id against the SOURCE environment and automatically swaps a
   PD draft for its published sibling (showing the name of each entity being
   migrated) — the migration service itself only accepts published ids, so belz
-  does that translation for you. Resolution needs --source-env (or an NCDNS /
-  SEMS / YS profile it can derive the source env from) plus configured
-  credentials for that env. If an id is a draft with no published version, belz
-  aborts before the build so nothing is wasted. When resolution can't run (the
-  profile's source env, e.g. sems-dev, isn't in your config, or the profile's
-  envs can't be derived), belz WARNS (meta.warnings) and sends the ids as given.
+  does that translation for you. Resolution needs --source-env (or a profile
+  whose segments are mapped in jenkins.profileEnvs) plus configured credentials
+  for that env. If an id is a draft with no published version, belz aborts
+  before the build so nothing is wasted. When resolution can't run (the
+  profile's source env isn't in your config, or the profile's envs can't be
+  derived), belz WARNS (meta.warnings) and sends the ids as given.
 
 SAFETY
   - Every run is a real Jenkins build (a --dry-run too), so it is confirmed
@@ -43,7 +45,7 @@ SAFETY
   - Unknown flags are errors (MIGRATE_UNKNOWN_FLAG, with a did-you-mean), as are
     stray positionals and values on switches (e.g. --dry-run=true).
   - --source-env / --target-env must match the --profile's envs (e.g.
-    devsems_qasems = sems-dev → sems-qa); a contradiction aborts with
+    devacme_qaacme = dev → qa via jenkins.profileEnvs); a contradiction aborts with
     MIGRATE_ENV_PROFILE_MISMATCH. For a profile whose envs belz can't derive,
     pass both env flags or neither (MIGRATE_ENV_PROFILE_UNVERIFIED).
   - --module and --module-custom cannot be combined (MIGRATE_MODULE_CONFLICT).
@@ -72,13 +74,14 @@ SAFETY
 
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by
-                               default). Names: SEMS, "Exp AI", "YS (YieldSec)",
-                               "TH (TownHouse)", "NCDNS (NSS)", DNREC,
-                               "AHS (NC AHS)", "Core/Other".
+                               default). Names are the Jenkins job's client
+                               groups (see 'belz migrate profiles'),
+                               case-insensitive.
   --migration-id <uuid>        Required for COMPARISON_REPORT / MIGRATION_STATUS.
   --async Y|N                  Run asynchronously. Default: N.
   --migrate-dependents Y|N     Migrate dependent methods/pages. Default: N.
-  --devops-tag <ref>           Branch/tag of infra.expertly. Default: develop.
+  --devops-tag <ref>           DEVOPS_TAG build parameter (infra branch/tag).
+                               Default: develop.
   --dry-run                    NOT a local validation: a real Jenkins build is
                                still triggered, with DRY_RUN=true; the job itself
                                decides what a dry run skips. Argument and id
@@ -96,24 +99,27 @@ CONFIG
   Reads Jenkins credentials from ~/.belz/config.json:
     {
       "jenkins": {
-        "baseUrl": "https://jenkins-asg.stg.expertly.cloud",
+        "baseUrl": "https://jenkins.example.test",
         "user": "<your jenkins user>",
         "password": "<password or API token>",
         "passwordEncoding": "plain",
-        "migrationJob": "Deployments/Expertly/Database/expertly.db-migration"
+        "migrationJob": "Folder/db-migration",
+        "profileEnvs": { "devacme": "dev", "qaacme": "qa", "stageacme": "stage" }
       }
     }
-  Or env vars: BELZ_JENKINS_URL, BELZ_JENKINS_USER, BELZ_JENKINS_PASSWORD.
+  Or env vars: BELZ_JENKINS_URL, BELZ_JENKINS_USER, BELZ_JENKINS_PASSWORD,
+  BELZ_JENKINS_JOB. migrationJob is required (MIGRATE_JENKINS_CONFIG_MISSING);
+  profileEnvs is optional.
 
 EXAMPLES
-  # Dry run, NCDNS qa → stage (still triggers a Jenkins build, DRY_RUN=true)
-  belz migrate run --source-env nsm-qa --target-env nsm-stage \\
-    --module AD_Method --ids "4e74cf38523553112e879308c4a03aef" --dry-run --yes
+  # Dry run, qa → stage via jenkins.profileEnvs (still triggers a Jenkins build, DRY_RUN=true)
+  belz migrate run --source-env qa --target-env stage \\
+    --module AD_Method --ids "<uuid>" --dry-run --yes
 
   # Real run, explicit profile
-  belz migrate run --profile devncdns_qancdns --module AD_Method \\
+  belz migrate run --profile devacme_qaacme --module AD_Method \\
     --ids-file ./ids.txt --async Y --out /tmp/m1
 
-  # SEMS qa → stage
-  belz migrate run --profile qasems_stagesems --module AD_Method \\
-    --ids "<uuid>" --client SEMS --yes --llm
+  # Explicit client
+  belz migrate run --profile qaacme_stageacme --module AD_Method \\
+    --ids "<uuid>" --client ACME --yes --llm

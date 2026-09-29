@@ -127,7 +127,7 @@ export function withTempEnvConfig(options: TempEnvConfigOptions): TempEnvConfig 
       if (previousActive) Config.setActiveEnv(previousActive);
       else Config.resetActiveEnv();
     } catch {
-      /* env no longer exists: reloadConfig already fell back to nsm-dev */
+      /* env no longer exists: reloadConfig already fell back to the default */
     }
   };
 

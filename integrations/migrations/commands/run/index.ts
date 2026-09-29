@@ -43,7 +43,8 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       // the build runs with the wrong CLIENT. An unlisted profile is left to
       // the explicit client (that is what --client is for).
       const { client: expected } = await resolveClientForProfile(auth, profile);
-      if (expected && expected !== client) {
+      if (expected && expected.toLowerCase() === client.toLowerCase()) client = expected; // Jenkins' spelling
+      else if (expected) {
         throw new CliError(
           `--client '${client}' does not match profile '${profile}', which belongs to Jenkins client '${expected}'.`,
           { code: "MIGRATE_CLIENT_PROFILE_MISMATCH", details: { profile, client, expected } },

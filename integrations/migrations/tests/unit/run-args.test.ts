@@ -1,5 +1,6 @@
 // MG-1 / MG-2 regressions for `belz migrate run` argument parsing.
-import { describe, test, expect } from "bun:test";
+import { afterEach, beforeEach, describe, test, expect } from "bun:test";
+import { withTempEnvConfig, type TempEnvConfig } from "@belzabar/core/testing";
 import {
   parseMigrateRunArgs,
   envPairFromProfile,
@@ -10,6 +11,19 @@ import statusCmd from "../../commands/status/index";
 import logsCmd from "../../commands/logs/index";
 import profilesCmd from "../../commands/profiles/index";
 import runCmd from "../../commands/run/index";
+
+/** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */
+const PROFILE_ENVS = { devsems: "sems-dev", qasems: "sems-qa", stagesems: "sems-stage", qays: "ys-qa", stageys: "ys-stage", qancdns: "nsm-qa", stgncdns: "nsm-stage" };
+
+// Every test sees the mapping (parseMigrateRunArgs reads it from config).
+let cfg: TempEnvConfig | null = null;
+beforeEach(() => {
+  cfg = withTempEnvConfig({ envs: { t: { url: "https://t.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
+});
+afterEach(() => {
+  cfg?.restore();
+  cfg = null;
+});
 
 const BASE = ["--profile", "devsems_qasems", "--module", "PD", "--ids", "abc"];
 
@@ -80,10 +94,22 @@ describe("MG-1: unknown flags are rejected with a did-you-mean", () => {
 });
 
 describe("MG-2: profile ↔ env consistency", () => {
-  test("envPairFromProfile derives the env family", () => {
+  test("envPairFromProfile derives the env family from config jenkins.profileEnvs", () => {
     expect(envPairFromProfile("devsems_qasems")).toEqual({ sourceEnv: "sems-dev", targetEnv: "sems-qa" });
-    expect(envPairFromProfile("qancdns_stgncdns")).toEqual({ sourceEnv: "nsm-qa", targetEnv: "nsm-stage" });
+    expect(envPairFromProfile("QAncdns_stgncdns")).toEqual({ sourceEnv: "nsm-qa", targetEnv: "nsm-stage" });
     expect(envPairFromProfile("qa1cdnrec_qa2cdnrec")).toBeNull();
+    // no mapping configured → nothing is derivable (no built-in project knowledge)
+    cfg?.restore();
+    cfg = withTempEnvConfig({ envs: { t: { url: "https://t.test" } } });
+    expect(envPairFromProfile("devsems_qasems")).toBeNull();
+  });
+
+  test("--source-env/--target-env derive the profile through the mapping; unmapped → MIGRATE_INVALID_ENV_PAIR", async () => {
+    const parsed = await parseMigrateRunArgs(["--module", "PD", "--ids", "a", "--source-env", "sems-dev", "--target-env", "sems-qa"]);
+    expect(parsed.profile).toBe("devsems_qasems");
+    const err = await codeOf(parseMigrateRunArgs(["--module", "PD", "--ids", "a", "--source-env", "x-dev", "--target-env", "sems-qa"]));
+    expect(err.code).toBe("MIGRATE_INVALID_ENV_PAIR");
+    expect(err.message).toContain("jenkins.profileEnvs");
   });
 
   test("--source-env contradicting the profile → MIGRATE_ENV_PROFILE_MISMATCH", async () => {
@@ -171,10 +197,9 @@ describe("status / logs / profiles", () => {
     }
   });
 
-  test("MG-3: profiles --client is parsed and normalized", () => {
-    expect(profilesCmd.parseArgs!(["--client", "sems"], {} as any)).toEqual({ action: "profiles", refresh: false, client: "SEMS" });
+  test("MG-3: profiles --client is parsed (checked against the Jenkins groups at run time)", () => {
+    expect(profilesCmd.parseArgs!(["--client", " sems "], {} as any)).toEqual({ action: "profiles", refresh: false, client: "sems" });
     expect(profilesCmd.parseArgs!(["--refresh"], {} as any)).toEqual({ action: "profiles", refresh: true, client: undefined });
-    expect(() => profilesCmd.parseArgs!(["--client", "nope"], {} as any)).toThrow(/Unknown client/);
   });
 
   test("migrate run is a write", () => {

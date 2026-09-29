@@ -1,5 +1,5 @@
-import { Config, defineArgs, ok, type CommandModule } from "@belzabar/core";
-import { assertJenkinsAuth, discoverProfiles, normalizeClient } from "../../lib";
+import { CliError, Config, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { assertJenkinsAuth, discoverProfiles, matchClient, normalizeClient } from "../../lib";
 import type { MigrateProfilesArgs, MigrateProfilesData } from "../../lib";
 
 export const args = defineArgs({
@@ -20,9 +20,18 @@ const command: CommandModule<MigrateProfilesArgs, MigrateProfilesData> = {
   async execute(args) {
     const auth = assertJenkinsAuth(Config.getJenkins());
     const resolution = await discoverProfiles(auth, { refresh: args.refresh });
-    const groups = args.client
-      ? resolution.groups.filter((g) => g.client === args.client)
-      : resolution.groups;
+    let groups = resolution.groups;
+    if (args.client) {
+      const known = resolution.groups.map((g) => g.client);
+      const client = matchClient(args.client, known);
+      if (!client) {
+        throw new CliError(`Unknown client '${args.client}'. Known (from Jenkins): ${known.join(", ") || "(none)"}.`, {
+          code: "MIGRATE_INVALID_CLIENT",
+          details: { value: args.client, known },
+        });
+      }
+      groups = resolution.groups.filter((g) => g.client === client);
+    }
     return ok<MigrateProfilesData>({
       action: "profiles",
       source: resolution.source,

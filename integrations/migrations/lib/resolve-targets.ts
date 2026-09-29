@@ -109,7 +109,8 @@ async function resolveAd(id: string, env: string): Promise<ResolvedTarget> {
  * Resolve every id against the source environment. Returns null when there is
  * nothing to resolve (a COMPARISON_REPORT / MIGRATION_STATUS / custom module),
  * or when the source env can't be used — the profile's source env isn't
- * configured locally, or a non-NCDNS/SEMS/YS profile gives no env. Those skips
+ * configured locally, or the profile's segments are not mapped in
+ * `jenkins.profileEnvs`. Those skips
  * are reported through `warn` (ids then go to Jenkins unresolved), never silent.
  */
 export async function resolveMigrationTargets(opts: {
@@ -139,7 +140,7 @@ export async function resolveMigrationTargets(opts: {
     if (!derived) {
       opts.warn?.(
         `Pre-flight id resolution skipped: can't derive the source env from profile '${opts.profile}'. ${unresolved} ` +
-          `Pass --source-env and --target-env to enable it.`,
+          `Pass --source-env and --target-env (or map the profile's segments in jenkins.profileEnvs) to enable it.`,
       );
       return null;
     }

@@ -42,6 +42,8 @@ export interface JenkinsConfig {
   user: string;
   password: string;
   migrationJob: string;
+  /** Migration profile segment (lowercase) → belz env name; {} when not configured. */
+  profileEnvs: Record<string, string>;
 }
 
 export interface TeamworkCredentials {
@@ -292,6 +294,9 @@ export const Config = {
       user: file.user ?? trusted.BELZ_JENKINS_USER ?? "",
       password: filePassword || trusted.BELZ_JENKINS_PASSWORD || "",
       migrationJob: file.migrationJob ?? trusted.BELZ_JENKINS_JOB ?? "",
+      profileEnvs: Object.fromEntries(
+        Object.entries(file.profileEnvs ?? {}).map(([segment, env]) => [segment.toLowerCase(), env]),
+      ),
     };
   },
 

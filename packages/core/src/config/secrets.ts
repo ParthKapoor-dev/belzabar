@@ -19,7 +19,7 @@ const BASE64_RE = /^[A-Za-z0-9+/]*={0,2}$/;
 
 /**
  * Decode a stored secret. `encoding` undefined means legacy base64.
- * `path` names the config location for error messages (e.g. "environments.sems-dev.password").
+ * `path` names the config location for error messages (e.g. "environments.dev.password").
  */
 export function decodeSecret(value: string | undefined | null, encoding: SecretEncoding | undefined, path: string): string {
   if (!value) return "";

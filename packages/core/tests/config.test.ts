@@ -140,18 +140,20 @@ describe("schema validation (CORE-18)", () => {
   test("the real-world shape (base64 passwords, project, belz, jenkins, teamwork) validates unchanged", () => {
     rawConfig({
       environments: {
-        "nsm-dev": { url: "https://nsm-dev.test", user: "u", password: btoa("p") },
-        "edi-demo": { url: "https://edi.test", user: "u", password: btoa("p"), project: "EDI" },
+        dev: { url: "https://dev.test", user: "u", password: btoa("p") },
+        "acme-demo": { url: "https://acme.test", user: "u", password: btoa("p"), project: "ACME" },
       },
       teamwork: { email: "a@b.c", password: btoa("tw") },
       belz: { sourceDir: "/s", installDir: "/i", repoUrl: "r", version: "v", installedAt: "t" },
-      jenkins: { baseUrl: "https://j.test/", user: "j", password: btoa("jp"), migrationJob: "a/b" },
+      jenkins: { baseUrl: "https://j.test/", user: "j", password: btoa("jp"), migrationJob: "a/b", profileEnvs: { DevAcme: "acme-dev" } },
     });
     expect(Config.configError).toBeNull();
-    expect(Config.getAllEnvs()["edi-demo"]!.project).toBe("EDI");
-    Config.setActiveEnv("nsm-dev");
+    expect(Config.getAllEnvs()["acme-demo"]!.project).toBe("ACME");
+    Config.setActiveEnv("dev");
     expect(Config.password).toBe("p");
-    expect(Config.getJenkins()).toEqual({ baseUrl: "https://j.test", user: "j", password: "jp", migrationJob: "a/b" });
+    expect(Config.getJenkins()).toEqual({
+      baseUrl: "https://j.test", user: "j", password: "jp", migrationJob: "a/b", profileEnvs: { devacme: "acme-dev" },
+    });
     expect(Config.getTeamwork()).toEqual({ email: "a@b.c", password: "tw" });
   });
 

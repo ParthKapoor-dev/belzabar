@@ -1,24 +1,26 @@
-import { CliError, acceptedFlags, defineArgs, suggest } from "@belzabar/core";
-import {
-  JENKINS_CLIENTS,
-  KNOWN_MIGRATE_TYPES,
-  ENV_TO_PROFILE_SEGMENT,
-  type JenkinsClient,
-  type MigrateType,
-} from "./constants";
+import { CliError, Config, acceptedFlags, defineArgs, suggest } from "@belzabar/core";
+import { KNOWN_MIGRATE_TYPES, type JenkinsClient, type MigrateType } from "./constants";
 import type { MigrateRunArgs } from "./types";
 
+/**
+ * Trim a `--client` value. Client names are not known statically: they are the
+ * Jenkins job's divider groups, so they are checked against the discovered
+ * profiles (`matchClient`) once Jenkins has been read.
+ */
 export function normalizeClient(value: string | undefined): JenkinsClient | undefined {
-  if (!value) return undefined;
-  const trimmed = value.trim();
-  const match = JENKINS_CLIENTS.find((c) => c.toLowerCase() === trimmed.toLowerCase());
-  if (!match) {
-    throw new CliError(
-      `Unknown client '${value}'. Known: ${JENKINS_CLIENTS.join(", ")}.`,
-      { code: "MIGRATE_INVALID_CLIENT", details: { value, known: JENKINS_CLIENTS } }
-    );
-  }
-  return match;
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+/** Case-insensitive lookup of a client among the discovered groups (their spelling wins). */
+export function matchClient(value: string, known: readonly string[]): JenkinsClient | undefined {
+  const wanted = value.trim().toLowerCase();
+  return known.find((c) => c.toLowerCase() === wanted);
+}
+
+/** Migration profile segment → belz env, from config `jenkins.profileEnvs` (lowercase keys). */
+export function profileSegmentEnvs(): Record<string, string> {
+  return Config.getJenkins().profileEnvs;
 }
 
 function normalizeMigrateType(value: string | undefined, custom: string | undefined): MigrateType | string {
@@ -64,13 +66,21 @@ async function parseIdsFromFile(path: string): Promise<string[]> {
 }
 
 function deriveProfileFromEnvPair(sourceEnv: string, targetEnv: string): string {
-  const s = ENV_TO_PROFILE_SEGMENT[sourceEnv];
-  const t = ENV_TO_PROFILE_SEGMENT[targetEnv];
+  const segmentOf = (env: string): string | undefined => {
+    const matches = Object.entries(profileSegmentEnvs()).filter(([, e]) => e === env).map(([segment]) => segment);
+    return matches.length === 1 ? matches[0] : undefined; // ambiguous or unmapped → not derivable
+  };
+  const s = segmentOf(sourceEnv);
+  const t = segmentOf(targetEnv);
   if (!s || !t) {
-    throw new CliError("Could not derive profile from env pair. Pass --profile, or use a supported source/target env (NCDNS only).", {
-      code: "MIGRATE_INVALID_ENV_PAIR",
-      details: { sourceEnv, targetEnv, supportedEnvs: Object.keys(ENV_TO_PROFILE_SEGMENT) },
-    });
+    throw new CliError(
+      "Could not derive a profile from the env pair. Pass --profile, or map each env to one profile segment " +
+        'in ~/.belz/config.json under "jenkins.profileEnvs".',
+      {
+        code: "MIGRATE_INVALID_ENV_PAIR",
+        details: { sourceEnv, targetEnv, supportedEnvs: [...new Set(Object.values(profileSegmentEnvs()))] },
+      },
+    );
   }
   return `${s}_${t}`;
 }
@@ -127,29 +137,16 @@ export function suggestFlag(flag: string, known: readonly string[] = RUN_KNOWN_F
 //
 // Jenkins migrates whatever the PROFILE says; --source-env only picks where
 // belz pre-resolves ids. They must agree, or ids get resolved on one env while
-// Jenkins migrates another. Profile segment → belz env, where known.
+// Jenkins migrates another. Profile segment → belz env comes from config
+// `jenkins.profileEnvs` (profiles are `<source segment>_<target segment>`).
 
-export const PROFILE_SEGMENT_TO_ENV: Record<string, string> = {
-  devncdns: "nsm-dev",
-  qancdns: "nsm-qa",
-  uatncdns: "nsm-uat",
-  stgncdns: "nsm-stage",
-  stg2ncdns: "nsm-stage2",
-  devsems: "sems-dev",
-  qasems: "sems-qa",
-  uatsems: "sems-uat",
-  stagesems: "sems-stage",
-  stage2sems: "sems-stage2",
-  qays: "ys-qa",
-  stageys: "ys-stage",
-};
-
-/** Derive {sourceEnv, targetEnv} from a profile like `devsems_qasems`; null when unknown. */
+/** Derive {sourceEnv, targetEnv} from a profile like `devacme_qaacme`; null when a segment is unmapped. */
 export function envPairFromProfile(profile: string): { sourceEnv: string; targetEnv: string } | null {
   const parts = profile.trim().toLowerCase().split("_");
   if (parts.length !== 2) return null;
-  const sourceEnv = PROFILE_SEGMENT_TO_ENV[parts[0]!];
-  const targetEnv = PROFILE_SEGMENT_TO_ENV[parts[1]!];
+  const map = profileSegmentEnvs();
+  const sourceEnv = Object.hasOwn(map, parts[0]!) ? map[parts[0]!] : undefined;
+  const targetEnv = Object.hasOwn(map, parts[1]!) ? map[parts[1]!] : undefined;
   if (!sourceEnv || !targetEnv) return null;
   return { sourceEnv, targetEnv };
 }

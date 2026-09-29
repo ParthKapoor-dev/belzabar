@@ -19,7 +19,7 @@ export const EnvEntrySchema = z
     url: z.string().optional(),
     user: z.string().optional(),
     ...secretFields,
-    /** Project this env belongs to (e.g. "NSM", "YieldSec"). Defaults to the env-name prefix. */
+    /** Project this env belongs to (e.g. "ACME"). Defaults to the env-name prefix. */
     project: z.string().optional(),
     /** `belz ad sql`: default database (nickname or id) for this env when --db is not given (AD-36). */
     sqlDefaultDb: z.string().min(1).optional(),
@@ -44,6 +44,12 @@ export const ConfigFileSchema = z
         user: z.string().optional(),
         ...secretFields, // raw password or API token
         migrationJob: z.string().optional(),
+        /**
+         * Migration profile segment → belz env name, e.g. `{ "devacme": "acme-dev" }`
+         * so profile `devacme_qaacme` migrates acme-dev → acme-qa. Optional: without
+         * it `migrate run` cannot derive envs from a profile.
+         */
+        profileEnvs: z.record(z.string().min(1)).optional(),
       })
       .passthrough()
       .optional(),
