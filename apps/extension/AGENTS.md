@@ -13,14 +13,22 @@ parts:
    - **AD Network** (`panel.html`, `src/devtools/panel.js`): a Network-tab-style list of AD chain
      requests with the method name. Standalone: names are learned from definition responses in
      the recorded traffic; execute-only uuids show the raw uuid. (It no longer calls a local
-     belz web dashboard, which was removed; there are no localhost permissions.)
+     belz web dashboard, which was removed; there are no localhost permissions.) The Env row
+     comes from a static host → belz-env table (`envFromHost`: NSM, SEMS, EDI, YS); an unmapped
+     host shows `unknown` / `env: null`, never a guessed env.
    - **PD Inspector** (`panel-pd.html`, `src/devtools/panel-pd.js`): component tree + on-page
      highlight for published `/pages/*`, talking to the `src/pd-inspector.js` content script
      through the `src/background.js` relay (Firefox panels have no `chrome.tabs`).
 3. **Background relay** `src/background.js` (service worker on Chromium, script on Firefox).
 
-Hosts: `manifest.json` lists the NSM (dev/qa/uat, staff-nss), YieldSec and Expertly hosts; keep
-`host_permissions` and every `content_scripts.matches` list aligned.
+Hosts: `manifest.json` lists the NSM (dev/qa/uat, staff-nss), YieldSec, Expertly (EDI) and SEMS
+(`sems-{dev,qa}.qa.expertly.cloud`, `staff[-stage].bcps-sems.com`) hosts; keep
+`host_permissions`, every `content_scripts.matches` list and `envFromHost` in
+`src/devtools/panel.js` aligned. There are no API `permissions` (host permissions cover the
+relay's `chrome.tabs.sendMessage`).
+
+DevTools pages (`panel.html`, `panel-pd.html`) bound their height with `body { height: 100vh;
+overflow: hidden }` — never a `height: 100%` chain, which collapses in Firefox/Zen panel iframes.
 
 ## Features (AD unless noted)
 
@@ -32,7 +40,6 @@ Hosts: `manifest.json` lists the NSM (dev/qa/uat, staff-nss), YieldSec and Exper
 | Output copy (AD+PD) | `src/features/output-copy/index.js` | hover copy icon per `.output-container` |
 | Textarea editor (AD+PD) | `src/features/textarea-editor/` | Open/Copy overlay on native textareas; CodeMirror 6 modal (Auto/SQL/SpEL/JS/JSON/plain, wrap, font) |
 | Settings (AD+PD) | `src/features/settings/`, `src/core/settings.js` | `⚙` button near `.header_banner`, `Ctrl+,` |
-| Curl autofill | `src/features/curl-autofill/index.js` | AD only; fills test inputs from the `_belz_autofill` URL param |
 | PD inspector | `src/features/pd-inspector/` (see its `HOW-IT-WORKS.md`), `src/pd-inspector.js` | published pages only |
 
 Shared: `src/config/constants.js` (selectors), `src/core/` (bootstrap, state, logger, observer,

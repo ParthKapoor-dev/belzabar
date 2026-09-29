@@ -3,9 +3,6 @@
   "name": "Belzabar: DevTools",
   "version": "1.0.1",
   "description": "AD Network DevTools panel plus Automation/Page Designer helpers",
-  "permissions": [
-    "activeTab"
-  ],
   "host_permissions": [
     "https://nsm-dev.nc.verifi.dev/*",
     "https://nsm-qa.nc.verifi.dev/*",
@@ -20,7 +17,11 @@
     "https://public-yieldsec.stage.expertly.cloud/*",
     "https://ysmetrics.com/*",
     "https://demo.expertly.cloud/*",
-    "https://inside.expertly.com/*"
+    "https://inside.expertly.com/*",
+    "https://sems-dev.qa.expertly.cloud/*",
+    "https://sems-qa.qa.expertly.cloud/*",
+    "https://staff-stage.bcps-sems.com/*",
+    "https://staff.bcps-sems.com/*"
   ],
   "devtools_page": "devtools.html",
   "background": {
@@ -40,7 +41,11 @@
         "https://yieldsec.stage.expertly.cloud/automation-designer/*",
         "https://yieldsec.expertly.com/automation-designer/*",
         "https://demo.expertly.cloud/automation-designer/*",
-        "https://inside.expertly.com/automation-designer/*"
+        "https://inside.expertly.com/automation-designer/*",
+        "https://sems-dev.qa.expertly.cloud/automation-designer/*",
+        "https://sems-qa.qa.expertly.cloud/automation-designer/*",
+        "https://staff-stage.bcps-sems.com/automation-designer/*",
+        "https://staff.bcps-sems.com/automation-designer/*"
       ],
       "js": ["dist/ad-content.js"],
       "run_at": "document_idle"
@@ -57,7 +62,11 @@
         "https://yieldsec.stage.expertly.cloud/ui-designer/*",
         "https://yieldsec.expertly.com/ui-designer/*",
         "https://demo.expertly.cloud/ui-designer/*",
-        "https://inside.expertly.com/ui-designer/*"
+        "https://inside.expertly.com/ui-designer/*",
+        "https://sems-dev.qa.expertly.cloud/ui-designer/*",
+        "https://sems-qa.qa.expertly.cloud/ui-designer/*",
+        "https://staff-stage.bcps-sems.com/ui-designer/*",
+        "https://staff.bcps-sems.com/ui-designer/*"
       ],
       "js": ["dist/pd-content.js"],
       "run_at": "document_idle"
@@ -77,7 +86,11 @@
         "https://public-yieldsec.stage.expertly.cloud/pages/*",
         "https://ysmetrics.com/pages/*",
         "https://demo.expertly.cloud/pages/*",
-        "https://inside.expertly.com/pages/*"
+        "https://inside.expertly.com/pages/*",
+        "https://sems-dev.qa.expertly.cloud/pages/*",
+        "https://sems-qa.qa.expertly.cloud/pages/*",
+        "https://staff-stage.bcps-sems.com/pages/*",
+        "https://staff.bcps-sems.com/pages/*"
       ],
       "js": ["dist/pd-inspector.js"],
       "run_at": "document_idle"

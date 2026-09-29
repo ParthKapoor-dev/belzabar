@@ -15,6 +15,5 @@ bootstrap(
     runTestShortcut: startRunTestShortcutFeature,
     outputCopy: startOutputCopyFeature,
     textareaEditor: startTextareaEditorFeature
-  },
-  { curlAutofill: false }
+  }
 );

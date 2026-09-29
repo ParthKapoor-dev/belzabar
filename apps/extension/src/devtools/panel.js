@@ -41,25 +41,34 @@ let preserveLog = false;
 let filterText = '';
 let selectedId = null;
 let activeTab = 'headers';
-let currentEnv = 'nsm-dev';
+let currentEnv = null; // belz env name of the inspected host, or null when unknown
 let currentCopyText = '';
 
 // ---- env detection --------------------------------------------------------
 // Maps the inspected window's hostname to a belz env name. Public-portal hosts
 // collapse to the same env as their staff portal — the AD method behind them is
 // the same entity, and the designer only lives on the staff portal.
+// An unknown host is null (shown as "unknown"), never a guessed env: a wrong
+// env pasted into a belz command targets the wrong system (OTH-R32).
+const HOST_ENVS = {
+  'staff-nss-stage.verifi-nc.com': 'nsm-stage',
+  'staff-nss.verifi-nc.com': 'nsm-prod',
+  'yieldsec.qa.expertly.cloud': 'ys-qa',
+  'yieldsec.stage.expertly.cloud': 'ys-stage',
+  'yieldsec.expertly.com': 'ys-prod',
+  'sems-dev.qa.expertly.cloud': 'sems-dev',
+  'sems-qa.qa.expertly.cloud': 'sems-qa',
+  'staff-stage.bcps-sems.com': 'sems-stage',
+  'staff.bcps-sems.com': 'sems-prod',
+  'demo.expertly.cloud': 'edi-demo',
+  'inside.expertly.com': 'edi-prod'
+};
 function envFromHost(host) {
-  if (typeof host !== 'string') return currentEnv || 'nsm-dev';
+  if (typeof host !== 'string') return currentEnv;
   const h = host.toLowerCase();
   const nsm = h.match(/^(nsm-(?:dev|qa|uat))(?:-public)?\./);
   if (nsm) return nsm[1];
-  if (h === 'staff-nss-stage.verifi-nc.com') return 'nsm-stage';
-  if (h === 'staff-nss.verifi-nc.com') return 'nsm-prod';
-  if (h === 'yieldsec.expertly.cloud') return 'ys-demo';
-  if (h === 'yieldsec.qa.expertly.cloud') return 'ys-qa';
-  if (h === 'yieldsec.stage.expertly.cloud') return 'ys-stage';
-  if (h === 'yieldsec.expertly.com') return 'ys-prod';
-  return currentEnv || 'nsm-dev';
+  return HOST_ENVS[h] || null;
 }
 
 function detectEnv() {
@@ -408,7 +417,7 @@ function renderDetail() {
         ['Request URL', entry.url],
         ['HTTP method', entry.httpMethod],
         ['Status', entry.status || '—'],
-        ['Env', currentEnv]
+        ['Env', currentEnv || 'unknown']
       ]),
       el('h4', null, 'Request headers'),
       kvGrid(headerRows(har.request && har.request.headers)),

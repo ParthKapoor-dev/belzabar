@@ -14,6 +14,5 @@ bootstrap(
     jsonEditor: startJSONFeature,
     outputCopy: startOutputCopyFeature,
     textareaEditor: startTextareaEditorFeature
-  },
-  { curlAutofill: true }
+  }
 );

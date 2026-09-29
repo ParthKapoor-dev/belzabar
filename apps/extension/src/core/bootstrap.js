@@ -6,17 +6,14 @@
 // general/published pages at all.
 
 import { startSettingsFeature } from '../features/settings/index.js';
-import { startCurlAutofillFeature } from '../features/curl-autofill/index.js';
 import { loadSettings, setSetting, subscribeSettings } from './settings.js';
 
 /**
  * Wire up a designer content script.
  *
  * @param {Record<string, () => (void | (() => void))>} featureStarters
- * @param {{ curlAutofill?: boolean }} [options]
  */
-export function bootstrap(featureStarters, options) {
-  const opts = options || {};
+export function bootstrap(featureStarters) {
   const activeFeatureStops = new Map();
 
   function startFeature(key) {
@@ -71,10 +68,6 @@ export function bootstrap(featureStarters, options) {
       getSettings: loadSettings,
       setSetting
     });
-
-    if (opts.curlAutofill) {
-      startCurlAutofillFeature();
-    }
 
     console.log('Extension initialized successfully');
   }
