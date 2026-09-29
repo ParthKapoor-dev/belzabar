@@ -1,6 +1,7 @@
 import {
   CliError,
   defineArgs,
+  failWithData,
   ok,
   lifecycle,
   prompts,
@@ -27,8 +28,12 @@ interface OnboardData {
   steps: OnboardStep[];
 }
 
-/** Run a sub-command's execute() and reduce it to a step result. */
-async function runStep(
+/**
+ * Run a sub-command's execute() and reduce it to a step result. A Ctrl-C
+ * (USER_ABORT) is re-thrown: it ends onboarding (exit 130) instead of being
+ * recorded as a failed step and carrying on to the next prompt (CORE-R8).
+ */
+export async function runStep(
   name: string,
   fn: () => Promise<unknown>
 ): Promise<OnboardStep> {
@@ -36,9 +41,28 @@ async function runStep(
     await fn();
     return { name, status: "done" };
   } catch (err) {
+    if (err instanceof CliError && err.code === "USER_ABORT") throw err;
     const message = err instanceof CliError ? err.message : String((err as Error)?.message ?? err);
     return { name, status: "failed", detail: message };
   }
+}
+
+/**
+ * The command result: ok only when no step failed. A failed step used to be
+ * reported with exit 0, so install.sh's `if ! belz onboard` treated a broken
+ * setup as success (CORE-R8).
+ */
+export function finishOnboard(steps: OnboardStep[]) {
+  const failed = steps.filter((s) => s.status === "failed");
+  if (failed.length > 0) {
+    return failWithData<OnboardData>(
+      "ONBOARD_INCOMPLETE",
+      `Onboarding incomplete: ${failed.map((s) => s.name).join(", ")} failed.`,
+      { steps },
+    );
+  }
+  lifecycle.outro("Onboarding complete.");
+  return ok<OnboardData>({ steps });
 }
 
 export const args = defineArgs({ command: "belz onboard" });
@@ -108,12 +132,11 @@ const command: CommandModule<Record<string, never>, OnboardData> = {
       steps.push({ name: "Browser extension", status: "skipped" });
     }
 
-    lifecycle.outro("Onboarding complete.");
-    return ok<OnboardData>({ steps });
+    return finishOnboard(steps);
   },
 
   presentHuman(envelope, ui) {
-    if (!envelope.ok) return;
+    if (!envelope.data) return;
     const data = envelope.data as OnboardData;
     const icon = (s: StepStatus) => (s === "done" ? "✓" : s === "skipped" ? "–" : "✗");
     ui.section("Onboarding summary");

@@ -52,6 +52,8 @@ belz --version | --help | --help-full        → runner / entry point
 
 - `envAware: false` for the `tw`, `migrate`, `release` namespaces and for
   `config`, `extension`, `envs`, `setup`, `onboard`, `update` — their envelopes carry no `meta.env`.
+- `belz onboard` returns `failWithData("ONBOARD_INCOMPLETE")` when any step failed (so `install.sh`'s
+  `if ! belz onboard` sees it) and re-throws `USER_ABORT` from a step (CORE-R8).
 - `belz cache` self-routes with `defineSubcommands` (default `invalidate`): `belz cache --env <e> <uuid>…`
   (remote write → explicit `--env` required; every uuid must be 32 hex or dashed, else `INVALID_UUID` —
   so a mistyped subcommand is never POSTed (CORE-R12); `--all --yes` for an org-wide flush) and
@@ -122,6 +124,7 @@ Run from the repo root: `bun run check` = typecheck + `bun run docs:check` + all
 | `help-flags.test.ts` | `--help` anywhere shows help instead of running |
 | `compiled-pipe.test.ts` | compiles to a tmp dir; a >64 KiB `--llm` envelope survives a slow pipe |
 | `entry.test.ts` | `--version`, registry load-failure report |
+| `onboard.test.ts` | a failed step → `ONBOARD_INCOMPLETE` (exit 1); Ctrl-C (`USER_ABORT`) ends the flow |
 | `cache-command.test.ts`, `cache-prune-local.test.ts` | `belz cache` invalidate body/guards, prune-local |
 | `setup-config-exec.test.ts`, `update-paths.test.ts` | setup merge + password encoding, config token refresh; update script paths |
 | `live/` | opt-in: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live` (read-only); add `BELZ_LIVE_WRITE=1` for the AD lifecycle write suite (Test-Parth, `belz_tst_` names, soft-deleted in `afterAll` by `live/support/soft-delete.ts`, published copies included) |
