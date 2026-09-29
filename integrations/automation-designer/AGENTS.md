@@ -87,7 +87,7 @@ needs `--yes` instead.
 | `delete <uuid>` | **W** soft-delete a never-published DRAFT |
 | `import <file>`, `category create <name>` | **W** |
 | `changelog <uuid> [--note "…"]` | List notes; `--note` is **W** (draft-guarded) |
-| `history restore <draftUuid> --version N` | **W** draft-guarded restore |
+| `history restore <draftUuid> --version N` | **W** draft-guarded restore; fails `RESTORE_UNCONFIRMED` unless the re-read draft matches the target content; evicts the compiled cache; reports validator findings |
 | `test <uuid>` | **W** (really runs the chain). `--inputs`, `--case`, `--expect`, `--compare-published` |
 | `test-case <action>` | `list`, `export` and `sync` (dry run) are reads. `create`, `update`, `delete`, `bulk`, `run-suite`, `delete-suite` and `sync --apply` are **W** |
 | `run <publishedId>`, `run-suites`, `save-suite` | **W** live execute of the uuid's own saved body — a draft uuid runs the draft; `data.publishedUuid` names the published copy (`--stream`); **W** run local `suites/*.spec.json`; save a local suite |

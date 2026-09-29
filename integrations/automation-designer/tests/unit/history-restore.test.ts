@@ -74,6 +74,7 @@ function wire(opts: WireOpts = {}) {
         return respond({ status: 500, json: load("get-not-found-500.json") });
       },
     },
+    { method: "POST", url: /\/cache\/invalidate$/, response: "success" },
     {
       method: "POST",
       url: /chain\/execute\/hist-restore/,
@@ -191,6 +192,33 @@ describe("ad history restore (AD-23)", () => {
     const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
     expect(r.envelope?.ok).toBe(true);
     expect((r.envelope?.data as any).contentMatches).toBe(true);
+  });
+
+  test("ADW-R8: platform true but the draft does not carry the target content -> ok:false RESTORE_UNCONFIRMED", async () => {
+    const v2 = load("chain-v2-draft.json");
+    const step = v2.steps[0].properties.customCode;
+    step.inlineCode = step.inlineCode.replace("v1-content", "v3-content");
+    wire({ draftV2: v2 }); // default restore answer: true
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(false);
+    expect(r.envelope?.error?.code).toBe("RESTORE_UNCONFIRMED");
+    const d = r.envelope?.data as any;
+    expect([d.platformResponse, d.contentMatches, d.success]).toEqual([true, false, false]);
+  });
+
+  test("ADW-R8: the compiled cache of the draft is evicted on both routes; the restored body is validated", async () => {
+    const f = wire();
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const inv = f.requests.filter((q) => q.url.endsWith("cache/invalidate"));
+    expect(inv.map((q) => q.url.replace("https://t-dev.test", ""))).toEqual([
+      "/rest/api/cache/invalidate",
+      "/rest/api/automations/cache/invalidate",
+    ]);
+    expect(inv[0]!.json()).toEqual({ uuids: [DRAFT], type: "AUTOMATION" });
+    const d = r.envelope?.data as any;
+    expect(d.compiledCache.ok).toBe(true);
+    expect(Array.isArray(d.validation.errors)).toBe(true);
   });
 
   test("--llm without --yes -> AD_CONFIRMATION_REQUIRED, no write", async () => {

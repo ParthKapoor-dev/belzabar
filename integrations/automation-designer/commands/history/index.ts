@@ -8,6 +8,9 @@ import { getVersionOf, sideOf, type HistorySide } from "../../lib/history";
 import { resolveMethodRef } from "../../lib/ids";
 import type { HydratedMethod } from "../../lib/types/common";
 import { CacheManager } from "../../lib/cache";
+import * as v2api from "../../lib/api/v2";
+import { invalidateCompiledCache, type CompiledCacheResult } from "../../lib/save/compiled-cache";
+import { validateMethodV2, type ValidationFinding } from "../../lib/validate/index";
 import { compactMethod } from "../../lib/method-view";
 import { abbreviate, htmlToText, pruneEmpty } from "../../lib/compact";
 
@@ -117,6 +120,10 @@ interface HistoryRestoreData {
   resultingVersion: number | null;
   /** Whether the re-fetched draft's logic fingerprint equals the target version's. */
   contentMatches: boolean | null;
+  /** Compiled-chain cache eviction for the draft (both routes). */
+  compiledCache: CompiledCacheResult;
+  /** Validator findings on the restored body (the restore already happened: reported, not blocking). */
+  validation: { errors: ValidationFinding[]; warnings: ValidationFinding[] } | null;
 }
 
 type HistoryData = HistoryListData | HistoryShowData | HistoryDiffData | HistoryRestoreData;
@@ -456,7 +463,7 @@ async function executeDiff(
 
 async function executeRestore(
   args: HistoryArgs,
-  context: { outputMode: "human" | "llm" },
+  context: { outputMode: "human" | "llm"; env: { name: string }; warn: (message: string) => void },
 ): Promise<CommandResult<HistoryRestoreData>> {
   if (args.version == null || Number.isNaN(args.version)) {
     throw new CliError("--version <N> is required for 'history restore'.", { code: "MISSING_VERSION" });
@@ -510,6 +517,7 @@ async function executeRestore(
   });
 
   let platformResponse: boolean | null;
+  let compiledCache: CompiledCacheResult = { ok: false, uuids: [], routes: [] };
   try {
     platformResponse = await adApi.historyRestore({
       category,
@@ -519,6 +527,13 @@ async function executeRestore(
     });
   } finally {
     for (const id of new Set([args.uuid, draft.uuid, draft.referenceId])) await CacheManager.invalidate(id);
+    // ADW-R8: like save/publish/delete — otherwise `ad test` keeps running the old compiled body.
+    compiledCache = await invalidateCompiledCache([draft.uuid]);
+  }
+  if (!compiledCache.ok) {
+    context.warn(
+      `Compiled-cache eviction failed on every route; tests may run the previous body. Retry with: belz cache ${draft.uuid} --env ${context.env.name} --yes`,
+    );
   }
 
   // Re-fetch and verify: report the resulting version and whether the draft
@@ -533,8 +548,21 @@ async function executeRestore(
     // leave as null — reported below
   }
 
+  // The restored body skipped the validator: report its findings (not blocking — it is already saved).
+  let validation: HistoryRestoreData["validation"] = null;
+  try {
+    const r = validateMethodV2({ after: await v2api.fetchRawMethod(draft.uuid) });
+    validation = { errors: r.errors, warnings: r.warnings };
+    for (const f of r.errors) context.warn(`Restored body: ${f.rule} ${f.path}: ${f.message}`);
+  } catch {
+    // unreadable: contentMatches already says whether the restore is verified
+  }
+
   const previousVersion = typeof draft.version === "number" ? draft.version : null;
-  const success = platformResponse === true || (platformResponse === null && contentMatches === true);
+  // ADW-R8: success means the re-fetched draft verifiably carries the target
+  // content. The restore is addressed by category + name, so a `true` answer
+  // alone does not prove the right chain/version was restored.
+  const success = platformResponse !== false && contentMatches === true;
   const data: HistoryRestoreData = {
     action: "restore",
     uuid: draft.uuid,
@@ -545,18 +573,22 @@ async function executeRestore(
     previousVersion,
     resultingVersion,
     contentMatches,
+    compiledCache,
+    validation,
   };
   // The platform answers `false` when it did not restore: that is a failed
   // operation, so the envelope must be ok:false (exit 1), not ok:true.
   if (platformResponse === false) {
     return failWithData("RESTORE_FAILED", `Restore of "${methodName}" to version ${args.version} returned false.`, data);
   }
-  // Fail closed (AD-23): an unrecognised answer is only a success when the
-  // re-fetched draft verifiably carries the target content.
-  if (platformResponse === null && !success) {
+  // Fail closed (AD-23, ADW-R8): whatever the platform answered, the restore
+  // is only a success when the re-fetched draft matches the target content.
+  if (!success) {
     return failWithData(
       "RESTORE_UNCONFIRMED",
-      `Restore of "${methodName}" to version ${args.version} returned an unrecognised response and the draft could not be verified. Check the method before retrying.`,
+      contentMatches === false
+        ? `Restore of "${methodName}" to version ${args.version} answered ${platformResponse === true ? "true" : "with an unrecognised response"}, but the draft does not carry version ${args.version}'s content. Check the method (belz ad history diff) before retrying.`
+        : `Restore of "${methodName}" to version ${args.version} could not be verified (the draft could not be re-read). Check the method before retrying.`,
       data,
     );
   }
