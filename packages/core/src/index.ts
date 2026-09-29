@@ -17,3 +17,4 @@ export * from "./search";
 export * from "./confirm";
 export * from "./output/fields";
 export * from "./json-input";
+export * from "./finder-index";

@@ -1,14 +1,9 @@
-import { join } from "path";
-import { BELZ_CONFIG_DIR, Cache, Config, dedupeBy, FINDER_INDEX_TTL_MS, normalizeSearchText, numLike, scoreText, strOrNull } from "@belzabar/core";
+import { Config, dedupeBy, FINDER_INDEX_TTL_MS, finderIndexStore, normalizeSearchText, numLike, scoreText, strOrNull } from "@belzabar/core";
 import { pdApi, type RawPageListItem } from "./api/index";
 
 export const PAGE_FINDER_CACHE_TTL_MS = FINDER_INDEX_TTL_MS;
 
-const pageFinderCache = new Cache<PageFinderIndex>({
-  dir: join(BELZ_CONFIG_DIR, "cache", "page-finder"),
-  ttlMs: PAGE_FINDER_CACHE_TTL_MS,
-  envScoped: false, // key already encodes the env (index-v1-<env>)
-});
+const indexStore = finderIndexStore<PageFinderIndex>("page-finder");
 
 export interface PageFinderPage {
   id: string;
@@ -53,16 +48,7 @@ export type PageFinderMatch = PageFinderPageMatch | PageFinderComponentMatch;
 export async function loadOrBuildPageFinderIndex(
   options: { refresh: boolean }
 ): Promise<{ index: PageFinderIndex; source: "cache" | "fresh" }> {
-  const cacheKey = `index-v1-${Config.activeEnv.name}`;
-  if (!options.refresh) {
-    const cached = await pageFinderCache.load(cacheKey);
-    if (cached && cached.env === Config.activeEnv.name) {
-      return { index: cached, source: "cache" };
-    }
-  }
-  const index = await buildPageFinderIndex();
-  await pageFinderCache.save(cacheKey, index);
-  return { index, source: "fresh" };
+  return indexStore.loadOrBuild({ refresh: options.refresh, build: buildPageFinderIndex });
 }
 
 async function buildPageFinderIndex(): Promise<PageFinderIndex> {

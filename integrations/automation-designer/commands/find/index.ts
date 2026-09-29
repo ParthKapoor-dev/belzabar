@@ -1,9 +1,8 @@
-import { CliError, type CommandModule, defineSubcommands, type FieldSelection, type FlagsSpec, lifecycle, ok, openUrlInBrowser, parseFieldList, projectRow } from "@belzabar/core";
+import { CliError, type CommandModule, defineSubcommands, type FieldSelection, FINDER_INDEX_TTL_MS, type FlagsSpec, lifecycle, ok, openUrlInBrowser, parseFieldList, projectRow } from "@belzabar/core";
 import { abbreviate } from "../../lib/compact";
 import { spawn } from "node:child_process";
 import {
   type MethodFinderIndex,
-  METHOD_FINDER_CACHE_TTL_MS,
   METHOD_FINDER_SCHEMA,
   describeSearch,
   listMethodFinderCategories,
@@ -245,7 +244,7 @@ const command: CommandModule<FindArgs, FindData> = {
         `${index.skippedCategories.length} categories could not be fully indexed due to API access or fetch errors.`
       );
     }
-    if (ageMs > METHOD_FINDER_CACHE_TTL_MS) context.warn("Method index is older than its TTL — use --refresh.");
+    if (ageMs > FINDER_INDEX_TTL_MS) context.warn("Method index is older than its TTL — use --refresh.");
 
     // --category: a name prefix, a chain-category id or a category uuid.
     const catRef = category?.toLowerCase();

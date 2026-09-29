@@ -1,9 +1,7 @@
-import { join } from "path";
-import { apiFetch, asObj, BELZ_CONFIG_DIR, Cache, CliError, Config, containsWordStart, dedupeBy, FINDER_INDEX_TTL_MS, levenshtein, normalizeSearchText, numLike, readJsonOrNull, scoreText, strOrNull, tokenize } from "@belzabar/core";
+import { apiFetch, asObj, Cache, CliError, Config, containsWordStart, dedupeBy, FINDER_INDEX_TTL_MS, finderIndexStore, levenshtein, normalizeSearchText, numLike, readJsonOrNull, scoreText, strOrNull, tokenize } from "@belzabar/core";
 
 const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
-export const METHOD_FINDER_CACHE_TTL_MS = FINDER_INDEX_TTL_MS;
 /**
  * An index with skipped categories (a listing failed mid-build, e.g. a 503) is
  * only reused this long, then rebuilt (ADR-R2).
@@ -18,13 +16,7 @@ export const METHOD_FINDER_SCHEMA = 2;
 /** Per-method text kept in the index (summary / description), to bound its size. */
 const TEXT_CAP = 400;
 
-const methodFinderCache = new Cache<MethodFinderIndex>({
-  dir: join(BELZ_CONFIG_DIR, "cache", "method-finder"),
-  ttlMs: METHOD_FINDER_CACHE_TTL_MS,
-  envScoped: false, // key already encodes the env (index-v1-<env>)
-});
-
-const indexKey = (env: string) => `index-v1-${env}`;
+const indexStore = finderIndexStore<MethodFinderIndex>("method-finder");
 
 /**
  * Methods belz itself wrote since the index was built (ADR-R1): uuid → when
@@ -32,8 +24,8 @@ const indexKey = (env: string) => `index-v1-${env}`;
  * the multi-MB index nor resets its age.
  */
 const dirtyCache = new Cache<Record<string, number>>({
-  dir: join(BELZ_CONFIG_DIR, "cache", "method-finder"),
-  ttlMs: METHOD_FINDER_CACHE_TTL_MS,
+  dir: indexStore.dir,
+  ttlMs: FINDER_INDEX_TTL_MS,
   envScoped: false,
 });
 const dirtyKey = (env: string) => `dirty-${env}`;
@@ -50,7 +42,7 @@ export async function invalidateMethodIndexEntry(env: string, uuid: string | nul
   try {
     const now = Date.now();
     const marks = (await dirtyCache.load(dirtyKey(env))) ?? {};
-    for (const [k, at] of Object.entries(marks)) if (now - at > METHOD_FINDER_CACHE_TTL_MS) delete marks[k];
+    for (const [k, at] of Object.entries(marks)) if (now - at > FINDER_INDEX_TTL_MS) delete marks[k];
     marks[id] = now;
     await dirtyCache.save(dirtyKey(env), marks);
   } catch {
@@ -123,8 +115,7 @@ export async function addMethodToIndex(
   m: { uuid: string; name: string; categoryUuid: string; categoryName: string; summary?: string },
 ): Promise<void> {
   try {
-    const key = indexKey(env);
-    const index = await methodFinderCache.load(key);
+    const index = await indexStore.load(env);
     const uuid = m.uuid.trim().toLowerCase();
     if (!index || index.methods.some((x) => x.uuid.toLowerCase() === uuid)) return;
     const now = Date.now();
@@ -145,7 +136,7 @@ export async function addMethodToIndex(
     index.methodCount = index.methods.length;
     const cat = index.categories.find((c) => c.uuid === m.categoryUuid);
     if (cat) cat.methodCount += 1;
-    await methodFinderCache.save(key, index);
+    await indexStore.save(index);
   } catch {
     /* best effort: a rebuild lists it anyway */
   }
@@ -153,7 +144,7 @@ export async function addMethodToIndex(
 
 /** Drop the env's whole index (a write whose method uuids are unknown, e.g. `ad import`). Never throws. */
 export async function dropMethodIndex(env: string): Promise<void> {
-  await methodFinderCache.invalidate(indexKey(env));
+  await indexStore.drop(env);
 }
 
 /** Uuids belz marked after `index` was listed (lower-case uuid → mark time). */
@@ -280,27 +271,23 @@ export async function loadOrBuildMethodFinderIndex(options: {
   /** Rebuild a cached index generated longer ago than this (default: the 7-day TTL). */
   maxAgeMs?: number;
 }): Promise<MethodFinderCacheResult> {
-  const cacheKey = indexKey(Config.activeEnv.name);
-
-  if (!options.refresh) {
-    const cached = await methodFinderCache.load(cacheKey);
-    const age = cached ? Date.now() - cached.generatedAt : 0;
-    const partial = !!cached && (!!cached.partial || (cached.skippedCategories?.length ?? 0) > 0);
-    if (
-      cached &&
-      cached.env === Config.activeEnv.name &&
-      (cached.schemaVersion ?? 1) >= (options.minSchema ?? 1) &&
-      age <= (options.maxAgeMs ?? METHOD_FINDER_CACHE_TTL_MS) &&
-      !(partial && age > PARTIAL_INDEX_TTL_MS)
-    ) {
-      return { index: await withoutGone(cached), source: "cache" };
-    }
-  }
-
-  const index = await buildMethodFinderIndex(options.onProgress);
-  await methodFinderCache.save(cacheKey, index);
-  await dirtyCache.invalidate(goneKey(index.env));
-  return { index, source: "fresh" };
+  const loaded = await indexStore.loadOrBuild({
+    refresh: options.refresh,
+    build: () => buildMethodFinderIndex(options.onProgress),
+    reuse: (cached) => {
+      const age = Date.now() - cached.generatedAt;
+      const partial = !!cached.partial || (cached.skippedCategories?.length ?? 0) > 0;
+      return (
+        (cached.schemaVersion ?? 1) >= (options.minSchema ?? 1) &&
+        age <= (options.maxAgeMs ?? FINDER_INDEX_TTL_MS) &&
+        !(partial && age > PARTIAL_INDEX_TTL_MS)
+      );
+    },
+  });
+  if (loaded.source === "cache") return { index: await withoutGone(loaded.index), source: "cache" };
+  // A fresh listing supersedes the "gone" marks.
+  await dirtyCache.invalidate(goneKey(loaded.index.env));
+  return loaded;
 }
 
 export function listMethodFinderCategories(index: MethodFinderIndex): MethodFinderCategory[] {
