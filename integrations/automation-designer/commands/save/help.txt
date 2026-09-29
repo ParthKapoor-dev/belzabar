@@ -55,13 +55,15 @@ Flags:
   --yes, -y             Skip the confirmation prompt (required with --llm).
   --no-validate         Skip the validator. Logged loudly; not recommended.
   --strict              Validator warnings block the save too.
-  --dry-run-compile     Also run the online checks (server compile dry run).
+  --dry-run-compile     Also run the online checks (server compile dry run:
+                        POSTs the executing /chain/test route with every step
+                        gated off, so --env is required even with --dry-run).
   --v2                  Accepted for consistency (save always uses V2).
   --help, -h            Show this help message.
 
 Global Flags:
   --env <name>          Set active environment. Required: save is a write
-                        (not with --dry-run).
+                        (not with --dry-run, unless --dry-run-compile).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Pipeline and error codes:

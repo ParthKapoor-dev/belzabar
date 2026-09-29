@@ -41,7 +41,9 @@ export const args = defineArgs({
 
 const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
   schema: "ad.save",
-  writes: (a) => !a.dryRun,
+  // ADW-R6: --dry-run-compile POSTs the executing /chain/test route (steps gated
+  // off), so even a dry run with it must name --env explicitly.
+  writes: (a) => !a.dryRun || a.dryRunCompile,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "save", "save");

@@ -81,8 +81,8 @@ needs `--yes` instead.
 | `lint <uuid\|file>` | Validator + advisory review rules (`--online`, `--docs`, `--strict`) |
 | `sql dbs\|run\|explain` | Read-only SQL. `run`/`explain` accept one read statement (`SQL_NOT_READ_ONLY`) |
 | `sql update\|insert\|modify\|tui` | **W** SQL writes (tui can switch into write modes) |
-| `save [file] --uuid <uuid>` | **W** overlay / structural ops onto the DRAFT (`--dry-run` is not a write) |
-| `create --spec <file>` | **W** new DRAFT from a compact spec or a V2 body (`--dry-run` is not a write) |
+| `save [file] --uuid <uuid>` | **W** overlay / structural ops onto the DRAFT (`--dry-run` is not a write; `--dry-run --dry-run-compile` is, since it POSTs `/chain/test`) |
+| `create --spec <file>` | **W** new DRAFT from a compact spec or a V2 body (`--dry-run` is not a write; with `--dry-run-compile` it is) |
 | `publish <uuid> --note "…"` | **W** validate, publish, record the note, evict the compiled cache |
 | `delete <uuid>` | **W** soft-delete a never-published DRAFT |
 | `import <file>`, `category create <name>` | **W** |

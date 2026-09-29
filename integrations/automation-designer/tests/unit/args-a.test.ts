@@ -11,6 +11,8 @@ import find from "../../commands/find/index";
 import history from "../../commands/history/index";
 import importCmd from "../../commands/import/index";
 import publish from "../../commands/publish/index";
+import save from "../../commands/save/index";
+import create from "../../commands/create/index";
 
 const ctx = {} as any;
 const parse = (cmd: any, argv: string[]) => cmd.parseArgs(argv, ctx);
@@ -91,6 +93,15 @@ describe("history", () => {
 });
 
 describe("other writes", () => {
+  test("ADW-R6: save/create --dry-run is a read, but --dry-run-compile (executing /chain/test) is a write", () => {
+    const w = (cmd: any, argv: string[]) => cmd.writes(parse(cmd, argv));
+    expect(w(save, ["ov.json", "--uuid", "u", "--dry-run"])).toBe(false);
+    expect(w(save, ["ov.json", "--uuid", "u", "--dry-run", "--dry-run-compile"])).toBe(true);
+    expect(w(save, ["ov.json", "--uuid", "u"])).toBe(true);
+    expect(w(create, ["--spec", "s.json", "--dry-run"])).toBe(false);
+    expect(w(create, ["--spec", "s.json", "--dry-run", "--dry-run-compile"])).toBe(true);
+  });
+
   test("category create / import / publish are writes", () => {
     expect((category as any).writes).toBe(true);
     expect((importCmd as any).writes).toBe(true);
