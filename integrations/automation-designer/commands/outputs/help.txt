@@ -1,10 +1,29 @@
 Usage: belz ad outputs <uuid> [flags]
 
-Print a method's input/variable/output contract without any step internals.
+Print a method's input/variable/output contract, plus every value its steps
+write (stepOutputs), without other step internals. Reads the method fresh on
+V2 — the same read as the compact `belz ad show` view, so the names agree (V1 parse
+only when the V2 route refuses the method, with a warning).
+
+Arguments:
+  <uuid>   Method uuid (any spelling or AD URL).
 
 Flags:
-  --v2     Parse the method via the V2 API (falls back to V1 if unsupported)
-  --llm    Emit a JSON envelope with {inputs[], variables[], outputs[]}
+  --v2     Accepted for consistency (outputs always reads V2 first).
+  --help, -h  Show this help message.
+
+Global Flags:
+  --env <name>  Set active environment (default: defaultEnv, else nsm-dev).
+  --llm    Emit a JSON envelope.
+
+Data: {uuid, name, sourceVersion, inputs[], variables[], outputs[],
+stepOutputs[{step, key (callee output), as (the name the method sees), var?,
+declaredAs: output|variable|input|null}], notes?}. A step output whose `as`
+is not declared on the method (declaredAs null; listed in notes) is not
+returned by the method — e.g. a SQL step's `flatData[]→json` with no `json`
+output. Note: db_service `flatData[]` is an array of row OBJECTS
+([{col: value}, …]), not a list of scalars.
 
 Example:
   belz ad outputs 4a1b2c3d... --llm | jq '.data.inputs'
+  belz ad outputs 4a1b2c3d... --env sems-dev --llm | jq '.data.stepOutputs'

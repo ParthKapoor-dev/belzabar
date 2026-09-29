@@ -31,6 +31,7 @@ import type {
 } from "../../lib/types/common";
 import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
+import { fetchViewMethod } from "../../lib/view-fetch";
 
 // Moved to lib/method-view.ts (shared with --compact / --story); re-exported for callers/tests.
 export { flattenStepInputs, identityForStep };
@@ -343,20 +344,6 @@ export function parseMethodFile(path: string): HydratedMethod {
   });
 }
 
-/**
- * The `--compact` / `--story` read: V2, fresh (never the V1-shaped cache).
- * Falls back to the V1 parse only when the V2 route refuses the method (some
- * old bodies fail the server's V2 conversion); an unknown uuid still fails.
- */
-async function fetchViewMethod(uuid: string, warn: (m: string) => void): Promise<HydratedMethod> {
-  try {
-    return await adApi.fetchMethod(uuid, "v2");
-  } catch (err) {
-    if (err instanceof CliError && err.code === "METHOD_NOT_FOUND") throw err;
-    warn(`V2 read failed (${(err as Error).message}); showing the V1 parse, whose input names are UI labels, not save keys.`);
-    return adApi.fetchMethod(uuid, "v1");
-  }
-}
 
 function looksLikeFile(input: string): boolean {
   try {

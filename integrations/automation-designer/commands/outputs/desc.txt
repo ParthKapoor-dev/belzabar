@@ -1,2 +1,2 @@
-belz ad outputs <uuid>  :->  Print a method's inputs / variables / outputs contract only
-belz ad outputs <uuid> --v2  :->  Same, parsed through the V2 API
+belz ad outputs <uuid>  :->  Print a method's inputs / variables / outputs contract plus stepOutputs (what each step writes, and whether the method declares it); fresh V2 read, names agree with the compact show view
+belz ad outputs <uuid> --v2  :->  Same (outputs always reads V2 first)

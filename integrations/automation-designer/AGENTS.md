@@ -36,6 +36,7 @@ lib/
   method-finder.ts     cached method index behind `find`, `callers`; invalidateMethodIndexEntry
                        (called by CacheManager.invalidate after each write, and by create)
   method-view.ts       show --compact / --story renderers
+  view-fetch.ts        fetchViewMethod: fresh V2 read (V1 fallback) for show --compact/--story, outputs
   compact.ts           pruneEmpty, --fields a,b|all projection (parseFieldList/projectRow)
   serialize/           v2.ts planV2Overlay (leaf overlay), ops.ts applyStructuralOps,
                        compact.ts compact step format + expansion, diff.ts path diffing
@@ -80,7 +81,7 @@ needs `--yes` instead.
 | `find [list\|pick\|<query>]` | Cached method index: category counts, fzf picker, ranked search (`totalMatches` counts every match, before `--limit`); `--describe`, `--category` (name prefix / id / uuid; without a query it lists that category's methods: `data.methods`, `totalMethods`; also scopes `--raw`), `--fields`, `--refresh` |
 | `fetch <uuid\|url>` | Fetch + cache + hydrate (`--v2`; `--raw` adds the wire body as `data.raw`) |
 | `show <uuid\|url\|file>` | Method view. Lean `--llm` payload; `--compact` (one line per step), `--story` (approval Markdown), `--sql`/`--code`/`--full`, `--service-detail N` (alias `--step`), `--raw`, `--open`. `--compact`/`--story` always read V2 fresh (keys match save ops / create specs; V1 fallback with a warning) and carry `source`/`fetchedAt`. A local V1/V2 JSON file is shown without a fetch |
-| `show-code`, `outputs`, `state` | Decoded custom code; the I/O contract only; draft/published linkage + `inSync` |
+| `show-code`, `outputs`, `state` | Decoded custom code; the I/O contract plus `stepOutputs` (what each step writes, `declaredAs` output/variable/input/null) from the same fresh V2 read as `show --compact` (`lib/view-fetch.ts`); draft/published linkage + `inSync` |
 | `categories`, `services`, `child-info` | Categories (`--search`); the service catalog (`--search`), or `services <SERVICE>` = its methods (the names compact steps take; `--all`, `--search`); a callee's contract (`--shape`) |
 | `callers <uuid>` | AD methods (and PD pages/components with `--pd`) that call the method. `coverage.complete` only for a fresh, full index with nothing unresolved; `coverage.skippedCategories` for failed listings |
 | `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases (`METHOD_NOT_FOUND` for an unknown/soft-deleted uuid, since the suite route answers it like "no suite"); the latest suite report |
@@ -188,7 +189,9 @@ still block unless `--allow-preexisting`. After the confirmation it re-reads the
 draft (`assertDraftUnchanged`, shared with save) and refuses with
 `AD_VERSION_CONFLICT` if it moved since it was validated (ADW-R5). The publish runs BEFORE the note is
 recorded: the note gets three attempts, and if it still fails the result reports
-`noteRecorded:false` and the publish stays. Afterwards the compiled cache of both
+`noteRecorded:false` and the publish stays. A note POST that may have reached the
+server (core `mayHaveCompleted` / `retryable:false`) is never re-sent: the
+changelog list is checked for it instead (NEW-1, no duplicate notes). Afterwards the compiled cache of both
 draft and published is evicted.
 
 `create`:
