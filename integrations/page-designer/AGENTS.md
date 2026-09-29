@@ -18,7 +18,7 @@ component name (component first, then page; several matches → `PD_NAME_AMBIGUO
 | Command | What it does |
 |---|---|
 | `belz pd show <input>` | Overview; sections `--vars --http --components --tree --node <id> --var-graph --var-detail <name> --http-detail <N> --find <text\|id\|component>`; `--fields a,b\|all`, `--full`, `--recursive`, `--raw`, `--open`, `--force` |
-| `belz pd validate <input>` | Every validator rule on a fresh read; `--recursive` (each used symbol + page↔symbol interfaces), `--full`, `--force` (no-op, kept) |
+| `belz pd validate <input>` | Every validator rule on a fresh read; `--recursive` (each used symbol + page↔symbol interfaces), `--full`, `--summary` (warning counts per code, no refs), `--force` (no-op, kept) |
 | `belz pd snapshot <input>` | Normalized snapshot (`data.snapshot`), `--out <file>`, or `--compare <file>` |
 | `belz pd find [query]` | Fuzzy search over a 7-day cached index; `--components`, `--type page\|component`, `--limit`, `--refresh`, `--open`, `--full` |
 | `belz pd find-ad-methods <input>` | AD method ids a page calls; `--recursive`, `--component`, `--force` |

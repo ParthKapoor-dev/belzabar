@@ -24,12 +24,15 @@ interface ValidateArgs {
   force: boolean;
   recursive: boolean;
   full: boolean;
+  /** --summary: warning counts per code, no refs (CLI trial: 61+ UNUSED_VARIABLE refs). */
+  summary: boolean;
 }
 
 /** Warnings of one code: how many, and a short ref per occurrence. */
 export interface WarningGroup {
   count: number;
-  refs: string[];
+  /** Omitted with --summary. */
+  refs?: string[];
 }
 
 export interface EntityReport {
@@ -61,7 +64,9 @@ export const args = defineArgs({
     ...PD_FORCE_FLAG,
     recursive: { type: "boolean", alias: ["-r"] },
     full: { type: "boolean" },
+    summary: { type: "boolean" },
   },
+  exclusive: [["full", "summary"]],
 });
 
 export function groupWarnings(issues: ValidationIssue[]): Record<string, WarningGroup> {
@@ -71,7 +76,7 @@ export function groupWarnings(issues: ValidationIssue[]): Record<string, Warning
     const g = (out[i.code] ??= { count: 0, refs: [] });
     g.count++;
     // One-per-page codes (CSS_NOT_SCOPED, SYMBOL_NESTING_DEPTH…) keep their message.
-    g.refs.push(i.path && i.path !== "styles" ? i.path : i.nodeId ?? i.message);
+    (g.refs ??= []).push(i.path && i.path !== "styles" ? i.path : i.nodeId ?? i.message);
   }
   return out;
 }
@@ -80,6 +85,7 @@ export function entityReport(
   head: { name: string; id: string; entityType: "PAGE" | "COMPONENT" },
   issues: ValidationIssue[],
   full: boolean,
+  summary = false,
 ): EntityReport {
   const { errors, warnings } = partitionBySeverity(issues);
   return {
@@ -87,8 +93,15 @@ export function entityReport(
     errorCount: errors.length,
     warnCount: warnings.length,
     issues: full ? issues : errors,
-    ...(full ? {} : { warnings: groupWarnings(issues) }),
+    ...(full ? {} : { warnings: summary ? countWarnings(issues) : groupWarnings(issues) }),
   };
+}
+
+/** --summary: warning counts per code only. */
+export function countWarnings(issues: ValidationIssue[]): Record<string, WarningGroup> {
+  const out: Record<string, WarningGroup> = {};
+  for (const i of issues) if (i.severity === "warn") (out[i.code] ??= { count: 0 }).count++;
+  return out;
 }
 
 const draftSymbolFetcher = (force: boolean): SymbolFetcher => ({
@@ -102,9 +115,9 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
   schema: "pd.validate",
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    return { input: positionals.input, force: flags.force, recursive: flags.recursive, full: flags.full };
+    return { input: positionals.input, force: flags.force, recursive: flags.recursive, full: flags.full, summary: flags.summary };
   },
-  async execute({ input, recursive, full }, context) {
+  async execute({ input, recursive, full, summary }, context) {
     // OTH-R13: a verdict must reflect the page as it is now — validate always
     // reads fresh (root and --recursive symbols); `--force` is kept as a no-op.
     const force = true;
@@ -119,10 +132,10 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
       for (const e of rep.fetchErrors) context.warn(`⚠ recursive: ${e.name}: ${e.message}`);
       const [root, ...rest] = rep.entries;
       data = {
-        ...entityReport(head, root!.issues, full),
+        ...entityReport(head, root!.issues, full, summary),
         recursive: {
           entities: rest.map((e) => ({
-            ...entityReport({ name: e.name, id: e.id, entityType: e.entityType }, e.issues, full),
+            ...entityReport({ name: e.name, id: e.id, entityType: e.entityType }, e.issues, full, summary),
             depth: e.depth,
             uses: e.uses,
           })),
@@ -134,7 +147,7 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
       };
       totalErrors = rep.errorCount;
     } else {
-      data = entityReport(head, validateHydrated(page), full);
+      data = entityReport(head, validateHydrated(page), full, summary);
       totalErrors = data.errorCount;
     }
 
@@ -162,7 +175,7 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
         const rows = Object.entries(e.warnings).map(([code, g]) => [
           code,
           g.count,
-          g.refs.slice(0, 4).join(", ").slice(0, 100) + (g.refs.length > 4 ? ", …" : ""),
+          (g.refs ?? []).slice(0, 4).join(", ").slice(0, 100) + ((g.refs?.length ?? 0) > 4 ? ", …" : ""),
         ]);
         if (rows.length) ui.table(["Warning", "#", "Where"], rows);
       } else {
