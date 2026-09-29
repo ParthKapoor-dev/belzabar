@@ -29,7 +29,7 @@ every `integrations/*` package and by `apps/cli`. Package exports: `.` → `src/
 | `src/belz-meta.ts` | Install metadata (source checkout, install dir, binary path) used by `belz update` |
 | `src/open.ts` | `openUrlInBrowser` |
 | `src/types.ts` | Shared domain types (`Environment`, `AuthSession`, …) |
-| `src/platform/` | `@belzabar/core/platform` — Expertly-specific shared code: `ids.ts` (`resolveMethodRef`, `normalizeUuid`, `trimUuidPadding`, `isHex32`, `isEntityId`, `canonicalUuid`, `HEX32_RE`, `DASHED_UUID_RE`), `entities.ts` (`fetchRawChain` / `fetchRawPage` / `fetchRawEntity`: not found = 404 or an empty/`null` 2xx; callers map `onError` / `badJson` to their own codes; `adChainPath`, `pdPagePath`, `EntityStatus`) |
+| `src/platform/` | `@belzabar/core/platform` — Expertly-specific shared code: `ids.ts` (`resolveMethodRef`, `normalizeUuid`, `trimUuidPadding`, `isHex32`, `isEntityId`, `canonicalUuid`), `entities.ts` (`fetchRawChain` / `fetchRawPage` / `fetchRawEntity`: not found = 404 or an empty/`null` 2xx; callers map `onError` / `badJson` to their own codes; `adChainPath`, `pdPagePath`) |
 | `src/testing/` | `@belzabar/core/testing` (see Testing) |
 
 ---

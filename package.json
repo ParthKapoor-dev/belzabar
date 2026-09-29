@@ -14,9 +14,11 @@
     "test": "bun test",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "docs:check": "bun scripts/docs-check.ts",
-    "check": "bun run typecheck && bun run docs:check && bun run test"
+    "check": "bun run typecheck && bun run docs:check && bun run dead-code && bun run test",
+    "dead-code": "bun scripts/dead-code.ts --summary"
   },
   "devDependencies": {
+    "@belzabar/core": "workspace:*",
     "@types/bun": "1.3.14",
     "typescript": "^5"
   }

@@ -39,6 +39,12 @@ jobs:
       - name: Docs check
         run: bun run docs:check
 
+      # Unused exports / unreachable files / undeclared or unused deps
+      # (scripts/dead-code.ts). Report only for now: it prints counts and
+      # never fails; it becomes `--check` once the backlog is at zero.
+      - name: Dead code (report only)
+        run: bun run dead-code
+
       # Unit + contract + compiled-binary pipe tests. Live suites are skipped
       # unless BELZ_LIVE is set, which CI never does.
       - name: Test

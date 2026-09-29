@@ -63,9 +63,10 @@ Root scripts:
 
 | Script | Does |
 |--------|------|
-| `bun run check` | `typecheck` + `docs:check` + `test` — must be green before every commit |
+| `bun run check` | `typecheck` + `docs:check` + `dead-code` + `test` — must be green before every commit |
 | `bun run typecheck` | `tsc --noEmit` over every workspace |
 | `bun run docs:check` | `scripts/docs-check.ts`: every repo path and `belz <cmd>` named in an `AGENTS.md`/`README.md` must exist |
+| `bun run dead-code` | `scripts/dead-code.ts --summary`: counts of unused exports, unreachable files and dependency problems. Report only for now (never fails); `bun scripts/dead-code.ts` lists every finding, `--json` / `--check` for tooling |
 | `bun run test` | `bun test` (unit, contract, compiled-binary pipe tests; live suites skipped) |
 | `bun run build` | `bun run --filter '*' build` |
 | `bun run belz:build` / `belz:install` / `belz:reinstall` | Build / install / wipe-and-reinstall the binary (`apps/cli/scripts/`) |

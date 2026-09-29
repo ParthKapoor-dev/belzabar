@@ -11,9 +11,9 @@
 import { CliError } from "../command";
 
 /** 32 hex characters (the AD/PD id form), any case. */
-export const HEX32_RE = /^[0-9a-f]{32}$/i;
+const HEX32_RE = /^[0-9a-f]{32}$/i;
 /** A dashed 36-character uuid, any case. */
-export const DASHED_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DASHED_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Exactly 32 hex characters (no trimming). */
 export function isHex32(s: string): boolean {

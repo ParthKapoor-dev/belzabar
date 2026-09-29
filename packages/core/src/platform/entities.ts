@@ -9,9 +9,6 @@ import { apiFetch } from "../http/api";
 export const adChainPath = (uuid: string): string => `/rest/api/automation/chain/${uuid}`;
 export const pdPagePath = (id: string): string => `/rest/api/pagedesigner/pages/${id}`;
 
-/** Lifecycle state on AD chains and PD pages. */
-export type EntityStatus = "DRAFT" | "PUBLISHED";
-
 export type RawEntityResult<T> =
   | { found: true; body: T }
   | { found: false; reason: "http-404"; res: Response }
