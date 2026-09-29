@@ -89,6 +89,7 @@ interface BaseFields {
   conditionRows?: ConditionRow[];
   forceExitFromFailure?: boolean;
   forceExitErrorMessage?: string;
+  forceExitStatusCode?: number | string;
   outputs: MethodOutput[];
   inputs: StepInput[];
   raw: unknown;
@@ -111,6 +112,7 @@ function buildBase(raw: V1ServiceStep, orderIndex: number): BaseFields {
     conditionRows: parseConditionRows(raw.condition),
     forceExitFromFailure: raw.forceExitFromFailure,
     forceExitErrorMessage: raw.forceExitErrorMessage,
+    forceExitStatusCode: raw.forceExitStatusCode ?? undefined,
     outputs: (raw.outputs ?? []).map(mapOutput),
     inputs: (raw.mappings ?? []).map(mapMapping),
     raw,

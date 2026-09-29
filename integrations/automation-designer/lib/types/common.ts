@@ -159,6 +159,8 @@ interface BaseStep {
   conditionRows?: ConditionRow[];
   forceExitFromFailure?: boolean;
   forceExitErrorMessage?: string;
+  /** HTTP status the step exits with (V1 `forceExitStatusCode`, V2 `exitOnFailure.code`). */
+  forceExitStatusCode?: number | string;
   outputs: MethodOutput[];
   inputs: StepInput[];
   /** Original wire JSON of this step — mandatory for round-trip saves. */

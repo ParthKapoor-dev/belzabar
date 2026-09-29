@@ -181,6 +181,7 @@ function buildBase(raw: V2Step, orderIndex: number) {
     conditionConfiguration: undefined,
     forceExitFromFailure: raw.properties?.exitCondition?.exitOnFailure?.value,
     forceExitErrorMessage: raw.properties?.exitCondition?.exitOnFailure?.message,
+    forceExitStatusCode: raw.properties?.exitCondition?.exitOnFailure?.code ?? undefined,
     outputs: (raw.outputs ?? []).map(mapOutput),
     inputs: (raw.inputs ?? []).map(mapInput),
     raw,

@@ -291,3 +291,21 @@ describe("HTML step descriptions (ADR-R5)", () => {
     expect(storyMarkdown(m)).not.toMatch(/<ul|<li|&nbsp;/);
   });
 });
+
+// ADR-R9: the exit status code is part of the error contract.
+describe("exit status codes (ADR-R9)", () => {
+  test("V1 and V2 both render exit-on-fail and exit-if with the status code", async () => {
+    const uuid = "4bfc83c74c3c3d2f60a5c7f6fa8bca3b";
+    const files = readdirSync(`${FIX}/real-v2`).filter((f) => f.startsWith(uuid.slice(0, 8)));
+    const m2 = parseV2Method(await Bun.file(`${FIX}/real-v2/${files[0]}`).json(), { env: "sems-dev" });
+    const m1 = parseV1Method(await Bun.file(`${FIX}/real-v1/${files[0]!.replace(".v2.", ".v1.")}`).json());
+    for (const m of [m1, m2]) {
+      const line = compactMethod(m).steps.find((l) => l.includes("Email OR phone"))!;
+      expect(line).toContain('exit-on-fail 400 "Email OR phone not provided"');
+      expect(line).toContain('exit-if #{email} eq null and #{phone} eq null → 400 "Email OR phone not provided"');
+    }
+    const s = m2.parsedSteps.find((p) => p.forceExitStatusCode !== undefined)!;
+    expect(String(s.forceExitStatusCode)).toBe("400");
+    expect(storyMarkdown(m2)).toContain("stops the method on failure (400)");
+  });
+});

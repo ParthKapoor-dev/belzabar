@@ -102,6 +102,8 @@ export interface V1ServiceStep {
   condition?: unknown[];
   forceExitFromFailure?: boolean;
   forceExitErrorMessage?: string;
+  /** HTTP status for both exit-on-failure and the conditional exit. */
+  forceExitStatusCode?: number | string | null;
   automationAuthId?: number;
   testAccountId?: number;
   [extra: string]: unknown;

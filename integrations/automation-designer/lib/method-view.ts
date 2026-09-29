@@ -64,7 +64,11 @@ export interface StepFacts {
   loop?: { type?: string; over?: string; counter?: string; parallel?: boolean };
   exitOnFailure?: boolean;
   exitMessage?: string;
+  /** HTTP status of the exit (ADR-R9). */
+  exitCode?: string;
   exitIf?: string;
+  exitIfCode?: string;
+  exitIfMessage?: string;
   async?: boolean;
 }
 
@@ -91,17 +95,31 @@ export function stepFacts(step: ParsedStep): StepFacts {
       parallel: cfg.executeParallel === true || undefined,
     };
   }
+  const code = statusCode(step.forceExitStatusCode);
   if (step.forceExitFromFailure) {
     facts.exitOnFailure = true;
     facts.exitMessage = nonBlank(step.forceExitErrorMessage);
+    if (code) facts.exitCode = code;
   }
-  // Conditional exit is not on ParsedStep: V2 `exitCondition.conditionalExit`, V1 `forceReturnConditionExpression`.
+  // Conditional exit is not on ParsedStep: V2 `exitCondition.conditionalExit`, V1
+  // `forceReturnConditionExpression` (V1 shares the exit's status code and message).
   const props = isObj(raw.properties) ? raw.properties : null;
   const exit = props && isObj(props.exitCondition) ? props.exitCondition : null;
-  const cond = exit && isObj(exit.conditionalExit) ? nonBlank(exit.conditionalExit.expression) : undefined;
+  const ce = exit && isObj(exit.conditionalExit) ? exit.conditionalExit : null;
+  const cond = ce ? nonBlank(ce.expression) : undefined;
   const exitIf = cond ?? nonBlank(raw.forceReturnConditionExpression);
-  if (exitIf) facts.exitIf = oneLine(exitIf);
+  if (exitIf) {
+    facts.exitIf = oneLine(exitIf);
+    const ifCode = ce ? statusCode(ce.code) : code;
+    const ifMessage = ce ? nonBlank(ce.message) : nonBlank(step.forceExitErrorMessage);
+    if (ifCode) facts.exitIfCode = ifCode;
+    if (ifMessage) facts.exitIfMessage = ifMessage;
+  }
   return facts;
+}
+
+function statusCode(v: unknown): string | undefined {
+  return typeof v === "number" ? String(v) : nonBlank(v);
 }
 
 // ── Step pieces ─────────────────────────────────────────────────────────────
@@ -238,8 +256,11 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
   if (outs.length) parts.push(`-> ${outs.join(", ")}`);
   const flags: string[] = [];
   if (f.async) flags.push("async");
-  if (f.exitOnFailure) flags.push(f.exitMessage ? `exit-on-fail "${abbreviate(f.exitMessage, 60)}"` : "exit-on-fail");
-  if (f.exitIf) flags.push(`exit-if ${f.exitIf}`);
+  if (f.exitOnFailure) flags.push(["exit-on-fail", f.exitCode, f.exitMessage && `"${abbreviate(f.exitMessage, 60)}"`].filter(Boolean).join(" "));
+  if (f.exitIf) {
+    const then = [f.exitIfCode, f.exitIfMessage && `"${abbreviate(f.exitIfMessage, 60)}"`].filter(Boolean).join(" ");
+    flags.push(`exit-if ${f.exitIf}${then ? ` → ${then}` : ""}`);
+  }
   if (step.kind === "UNKNOWN") flags.push(`unparsed: ${step.reason}`);
   if (flags.length) parts.push(flags.join(", "));
   return parts.join(" | ");
@@ -328,7 +349,8 @@ function storyStepWhat(step: ParsedStep): string {
     return nonBlank(raw.fieldCode) ?? o.code;
   }).filter(Boolean);
   if (outs.length) bits.push(`gives ${outs.map((o) => `\`${o}\``).join(", ")}`);
-  if (f.exitOnFailure) bits.push("stops the method on failure");
+  if (f.exitOnFailure) bits.push(`stops the method on failure${f.exitCode ? ` (${f.exitCode})` : ""}`);
+  if (f.exitIf) bits.push(`exits when ${f.exitIf}${f.exitIfCode ? ` (${f.exitIfCode})` : ""}`);
   return bits.join("; ");
 }
 
