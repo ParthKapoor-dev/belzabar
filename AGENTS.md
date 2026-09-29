@@ -39,7 +39,6 @@ promotion tracking. It ships one product: the **`belz` CLI**, one binary for all
 | `integrations/teamwork/` | `@belzabar/teamwork` | `belz tw` commands + lib | `integrations/teamwork/AGENTS.md` |
 | `integrations/migrations/` | `@belzabar/migrations` | `belz migrate` commands + lib (Jenkins-backed) | `integrations/migrations/AGENTS.md` |
 | `integrations/release/` | `@belzabar/release` | `belz release` commands (uses the AD/TW libs) | `integrations/release/AGENTS.md` |
-| `integrations/jenkins/` | `@belzabar/jenkins` | Jenkins REST client used by migrations | `integrations/jenkins/AGENTS.md` |
 | `scripts/` | — | `docs-check.ts` (docs gate) and `fixtures/` (read-only wire-fixture capture + sanitizer) | — |
 | `cloud/` | — | Claude Code cloud-session bootstrap (publish + sandbox files) | `cloud/README.md` |
 | `.github/workflows/` | — | `ci.yml` (typecheck, docs check, tests), `belz-cloud-release.yml` | — |
@@ -187,6 +186,6 @@ Guards: `apps/cli/tests/registry.test.ts` (folders ⇔ registry), `apps/cli/test
 - PD command? `integrations/page-designer/AGENTS.md`
 - CLI entry point, build, install, top-level commands? `apps/cli/AGENTS.md`
 - Framework (runner, args, envelope, http, cache, testing)? `packages/core/AGENTS.md`
-- Teamwork / migrations / release / Jenkins? `integrations/teamwork/AGENTS.md`,
-  `integrations/migrations/AGENTS.md`, `integrations/release/AGENTS.md`, `integrations/jenkins/AGENTS.md`
+- Teamwork / migrations (incl. the Jenkins client) / release? `integrations/teamwork/AGENTS.md`,
+  `integrations/migrations/AGENTS.md`, `integrations/release/AGENTS.md`
 - Human-facing overview and workflows: `README.md`

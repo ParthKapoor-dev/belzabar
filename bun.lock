@@ -33,19 +33,11 @@
         "zod": "^3.22.4",
       },
     },
-    "integrations/jenkins": {
-      "name": "@belzabar/jenkins",
-      "version": "0.1.0",
-      "dependencies": {
-        "@belzabar/core": "workspace:*",
-      },
-    },
     "integrations/migrations": {
       "name": "@belzabar/migrations",
       "version": "0.1.0",
       "dependencies": {
         "@belzabar/core": "workspace:*",
-        "@belzabar/jenkins": "workspace:*",
       },
     },
     "integrations/page-designer": {
@@ -93,8 +85,6 @@
     "@belzabar/core": ["@belzabar/core@workspace:packages/core"],
 
     "@belzabar/design": ["@belzabar/design@workspace:packages/design"],
-
-    "@belzabar/jenkins": ["@belzabar/jenkins@workspace:integrations/jenkins"],
 
     "@belzabar/migrations": ["@belzabar/migrations@workspace:integrations/migrations"],
 

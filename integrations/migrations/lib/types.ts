@@ -1,5 +1,5 @@
 import type { JenkinsClient, MigrateType } from "./constants";
-import type { BuildInfo, TriggerBuildInput } from "@belzabar/jenkins";
+import type { BuildInfo, TriggerBuildInput } from "./jenkins";
 
 export type YesNo = "Y" | "N";
 

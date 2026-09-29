@@ -10,7 +10,6 @@
     "./lib/*": "./lib/*.ts"
   },
   "dependencies": {
-    "@belzabar/core": "workspace:*",
-    "@belzabar/jenkins": "workspace:*"
+    "@belzabar/core": "workspace:*"
   }
 }

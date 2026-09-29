@@ -2,7 +2,7 @@
 
 `belz migrate …` drives a Jenkins migration job — config `jenkins.migrationJob` (or
 `BELZ_JENKINS_JOB`); there is no default, a missing job fails with `MIGRATE_JENKINS_CONFIG_MISSING`. The Jenkins
-REST client lives in `integrations/jenkins` (`@belzabar/jenkins`); `lib/index.ts` re-exports it.
+REST client lives in `lib/jenkins/`; `lib/index.ts` re-exports it.
 
 ## Commands
 
@@ -36,7 +36,8 @@ migrations/
 │   ├── artifacts.ts        writeArtifacts → summary.json + summary.console.log (`--out`)
 │   ├── constants.ts        KNOWN_MIGRATE_TYPES, JenkinsClient (= string), cache path
 │   ├── types.ts
-│   └── index.ts            barrel (package `.` export; also re-exports @belzabar/jenkins)
+│   ├── jenkins/            Jenkins REST client (see "Jenkins client" below)
+│   └── index.ts            barrel (package `.` export; also re-exports lib/jenkins)
 ├── registry.ts             static, sorted registry (`@belzabar/migrations/registry`)
 └── tests/                  unit/*.test.ts, fixtures/real/
 ```
@@ -91,7 +92,31 @@ Package exports: `./registry`, `.` (the lib barrel), `./lib/*`. From outside, im
   `profileEnvs`), falling back to trusted `BELZ_JENKINS_URL`,
   `BELZ_JENKINS_USER`, `BELZ_JENKINS_PASSWORD`, `BELZ_JENKINS_JOB`. The config file wins.
   Missing → `MIGRATE_JENKINS_CONFIG_MISSING`.
-- Jenkins errors keep their `MIGRATE_JENKINS_*` codes (see `integrations/jenkins/AGENTS.md`).
+- Jenkins errors keep their `MIGRATE_JENKINS_*` codes (see "Jenkins client" below).
+
+## Jenkins client (`lib/jenkins/`)
+
+Basic auth, CSRF crumbs, build trigger, queue resolution, build info, progressive console
+streaming. Credentials come from core `Config.getJenkins()`.
+
+- `auth.ts` `JenkinsAuth`, `buildHeaders` (UTF-8 basic auth), `assertJenkinsAuth` (the migration
+  job is required, no default); `crumb.ts` crumb fetch + per-process cache; `client.ts`
+  `jenkinsFetch`, `jenkinsError`, `getJobParameters`, `triggerBuild`, `resolveQueueItem`,
+  `getBuild`, `getConsoleChunk`, `getFullConsole`, `buildUrl`, `jobUrl`; `stream.ts`
+  `streamConsole`; `types.ts` wire types; `constants.ts` poll intervals, queue deadline (10 min),
+  default stream timeout; `index.ts` barrel.
+- Every request goes through core `httpRequest` via `jenkinsFetch`. Errors never include the HTML
+  error page or the crumb: `jenkinsError` keeps the status + page `<title>` only. A build 404 is
+  `Build #n not found` (`MIGRATE_JENKINS_BUILD_NOT_FOUND`); a crumb failure is
+  `MIGRATE_JENKINS_CRUMB_FAILED`; `resolveQueueItem` gives up after `timeoutMs` (default
+  `QUEUE_TIMEOUT_MS`) with `JENKINS_QUEUE_TIMEOUT`.
+- Codes keep their historical `MIGRATE_JENKINS_*` names: `CONFIG_MISSING`, `CRUMB_FAILED`,
+  `PARAMS_FAILED`, `TRIGGER_FAILED`, `NO_QUEUE_LOCATION`, `QUEUE_READ_FAILED`, `QUEUE_CANCELLED`,
+  `BUILD_NOT_FOUND`, `BUILD_READ_FAILED`, `CONSOLE_READ_FAILED`, `TIMEOUT`, plus the unprefixed
+  `JENKINS_QUEUE_TIMEOUT`.
+- New endpoint: a function in `client.ts` on `jenkinsFetch` + `jenkinsError`, a wire type in
+  `types.ts`, and a `fakeFetch` test in `tests/unit/jenkins-client.test.ts` (sanitized captures:
+  `tests/unit/real-jenkins.test.ts`).
 
 ## Adding a command
 

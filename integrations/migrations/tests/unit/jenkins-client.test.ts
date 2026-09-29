@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
 import { fakeFetch, respond, type FakeFetch } from "@belzabar/core/testing";
-import { assertJenkinsAuth, buildHeaders, fetchCrumb, getBuild, getConsoleChunk, resolveQueueItem, triggerBuild, type JenkinsAuth } from "../lib";
+import { assertJenkinsAuth, buildHeaders, fetchCrumb, getBuild, getConsoleChunk, resolveQueueItem, triggerBuild, type JenkinsAuth } from "../../lib/jenkins";
 
 const auth: JenkinsAuth = { baseUrl: "https://jenkins.test", user: "u", password: "p", job: "A/b" };
 const JOB = "https://jenkins.test/job/A/job/b";
