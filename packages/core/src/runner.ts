@@ -325,7 +325,21 @@ function printOutcome(exitCode: number, print: () => void): RunOutcome {
 /** Write an outcome to stdout/stderr (no exit). Human errors and warnings go to stderr. */
 export function renderOutcome(outcome: RunOutcome): void {
   if (outcome.kind === "print") {
-    outcome.print();
+    // Help / --help-full / --version are reference text that agents read from a
+    // pipe: plain whenever the stream is not a TTY or NO_COLOR is set — even
+    // under FORCE_COLOR, which agent harnesses export (CLI trial).
+    const plain = (tty: boolean | undefined) => !tty || process.env.NO_COLOR !== undefined;
+    const [log, error] = [console.log, console.error];
+    const strip = (write: (...a: unknown[]) => void, on: boolean) =>
+      on ? (...a: unknown[]) => write(...a.map((x) => (typeof x === "string" ? stripAnsi(x) : x))) : write;
+    console.log = strip(log, plain(process.stdout.isTTY));
+    console.error = strip(error, plain(process.stderr.isTTY));
+    try {
+      outcome.print();
+    } finally {
+      console.log = log;
+      console.error = error;
+    }
     return;
   }
   const { outputMode, envelope, presenter } = outcome;
@@ -334,6 +348,11 @@ export function renderOutcome(outcome: RunOutcome): void {
   } else {
     renderHuman(envelope, presenter);
   }
+}
+
+const ANSI_RE = /\x1b\[[0-9;?]*[A-Za-z]/g;
+export function stripAnsi(s: string): string {
+  return s.replace(ANSI_RE, "");
 }
 
 async function finishOutcome(outcome: RunOutcome): Promise<never> {

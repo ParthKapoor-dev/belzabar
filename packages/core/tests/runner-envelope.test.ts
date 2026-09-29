@@ -228,6 +228,29 @@ describe("human output streams (F31, CORE-6, F32)", () => {
   });
 });
 
+describe("help is plain text off a TTY, even with FORCE_COLOR (CLI trial)", () => {
+  test("--help, <module> --help, <cmd> --help, --help-full: no escape codes when stdout is a pipe", async () => {
+    const saved = { force: process.env.FORCE_COLOR, tty: Object.getOwnPropertyDescriptor(process.stdout, "isTTY") };
+    process.env.FORCE_COLOR = "3";
+    Object.defineProperty(process.stdout, "isTTY", { value: false, configurable: true });
+    try {
+      const opts = cli({ helpFull: () => "\x1b[1mFULL\x1b[22m" });
+      opts.namespaces.ad!.helpResolver = async () => "\x1b[31mUsage: belz ad show\x1b[39m";
+      for (const argv of [["--help"], ["ad", "--help"], ["ad", "show", "--help"], ["--help-full"]]) {
+        const r = await runCliInProcess(opts, argv, { llm: false });
+        expect(r.stdout.length).toBeGreaterThan(0);
+        // eslint-disable-next-line no-control-regex
+        expect(/\x1b\[/.test(r.stdout)).toBe(false);
+      }
+    } finally {
+      if (saved.force === undefined) delete process.env.FORCE_COLOR;
+      else process.env.FORCE_COLOR = saved.force;
+      if (saved.tty) Object.defineProperty(process.stdout, "isTTY", saved.tty);
+      else delete (process.stdout as { isTTY?: boolean }).isTTY;
+    }
+  });
+});
+
 describe("printErr (F32)", () => {
   test("strips ANSI when stderr is not a TTY, unless FORCE_COLOR", () => {
     const saved = { error: console.error, force: process.env.FORCE_COLOR };
@@ -374,7 +397,8 @@ describe("default env + explicit env on writes (D6, CORE-26)", () => {
     const hx = await runCliInProcess(cli(), ["ad", "show", "--env", "t-dev"], { llm: false });
     expect(hx.stderr).not.toContain("pass --env");
     // not env-aware: no env, no envSource
-    const tw = await runCliInProcess(cli(), ["tw", "run"]);
+    const tw = await runCliInProcess(cli(), ["tw", "task"]);
+    expect(tw.envelope?.ok).toBe(true);
     expect(tw.envelope?.meta.env).toBeUndefined();
     expect(tw.envelope?.meta.envSource).toBeUndefined();
     setBelzEnv("t-qa");
