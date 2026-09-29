@@ -204,9 +204,11 @@ describe("add-step: compact step → V2 wire", () => {
     });
     expect(props.repeatStepExecution).toEqual({ type: "LOOP_EXECUTION_ON_INPUT_OUTPUT", counter: "#{i}", executeParallel: true, numberOfConcurrentThread: 4, value: "#{list}" });
     const loop = (l: unknown) => plan(live, [{ op: "add-step", step: { ...echo, loop: l } }]).body.steps!.at(-1)!.properties!.repeatStepExecution;
-    expect(loop({ times: 3 })).toMatchObject({ type: "LOOP_EXECUTION_ON_NUMBER", value: 3 });
+    // numbers go out as strings: the server stores them so (live), and verify compares the read-back
+    expect(loop({ times: 3 })).toMatchObject({ type: "LOOP_EXECUTION_ON_NUMBER", value: "3" });
+    expect(loop({ from: 1, to: 3, by: 1 })).toMatchObject({ type: "LOOP_EXECUTION_ON_RANGE", rangeStartInclusive: "1", rangeEndExclusive: "3", incrementalCount: "1" });
     expect(loop({ while: "#{n} lt 3" })).toMatchObject({ type: "LOOP_EXECUTION_ON_CONDITION", value: "#{n} lt 3" });
-    expect(loop({ from: 0, to: 5, by: 2 })).toMatchObject({ type: "LOOP_EXECUTION_ON_RANGE", rangeStartInclusive: 0, rangeEndExclusive: 5, incrementalCount: 2 });
+    expect(loop({ from: 0, to: 5, by: 2 })).toMatchObject({ type: "LOOP_EXECUTION_ON_RANGE", rangeStartInclusive: "0", rangeEndExclusive: "5", incrementalCount: "2" });
     for (const bad of [{ times: 1, while: "x" }, { from: 1 }, "x"]) {
       expect(code(() => plan(live, [{ op: "add-step", step: { ...echo, loop: bad } }]))).toBe("AD_OVERLAY_INVALID");
     }

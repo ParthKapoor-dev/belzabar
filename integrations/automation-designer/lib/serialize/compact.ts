@@ -382,7 +382,9 @@ export function expandLoop(given: unknown, where: string, p: Problems): Obj | nu
     return null;
   }
   if ("over" in given) return { type: "LOOP_EXECUTION_ON_INPUT_OUTPUT", ...common(), value: stringValue(given.over) };
-  if ("times" in given) return { type: "LOOP_EXECUTION_ON_NUMBER", ...common(), value: given.times };
+  // The server stores loop numbers as strings (live sems-dev: 2 → "2"); send them
+  // that way so the post-save verify compares like with like.
+  if ("times" in given) return { type: "LOOP_EXECUTION_ON_NUMBER", ...common(), value: stringValue(given.times) };
   if ("while" in given) return { type: "LOOP_EXECUTION_ON_CONDITION", ...common(), value: stringValue(given.while) };
   if (!("to" in given)) {
     p.bad(where, "a range loop needs from and to");
@@ -391,9 +393,9 @@ export function expandLoop(given: unknown, where: string, p: Problems): Obj | nu
   return {
     type: "LOOP_EXECUTION_ON_RANGE",
     ...common(),
-    rangeStartInclusive: given.from,
-    rangeEndExclusive: given.to,
-    ...(given.by !== undefined ? { incrementalCount: given.by } : {}),
+    rangeStartInclusive: stringValue(given.from),
+    rangeEndExclusive: stringValue(given.to),
+    ...(given.by !== undefined ? { incrementalCount: stringValue(given.by) } : {}),
   };
 }
 
