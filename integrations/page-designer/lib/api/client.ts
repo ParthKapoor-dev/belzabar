@@ -34,6 +34,25 @@ async function ensureOk(response: Response, context: { method: string; path: str
   });
 }
 
+/**
+ * Parse a 2xx JSON body (OTH-R16). An empty body is null; a non-JSON body (an
+ * SSO / maintenance HTML page served with 200) is PD_API_ERROR with a redacted
+ * summary instead of a raw SyntaxError (UNHANDLED_EXCEPTION).
+ */
+export async function readJson<T>(response: Response, context: { method: string; path: string }): Promise<T | null> {
+  const text = await response.text();
+  if (text.trim() === "") return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    const summary = await readBodySummary(new Response(text, { headers: response.headers }));
+    throw new CliError(`${context.method} ${context.path} returned a non-JSON body: ${summary}`, {
+      code: "PD_API_ERROR",
+      details: { status: response.status, body: summary },
+    });
+  }
+}
+
 // -------- reads -----------------------------------------------------------
 
 export async function fetchPage(pageId: string): Promise<RawPageResponse | null> {
@@ -43,7 +62,7 @@ export async function fetchPage(pageId: string): Promise<RawPageResponse | null>
   });
   if (response.status === 404) return null;
   await ensureOk(response, { method: "GET", path: `/pages/${pageId}` });
-  return (await response.json()) as RawPageResponse;
+  return readJson<RawPageResponse>(response, { method: "GET", path: `/pages/${pageId}` });
 }
 
 /** A list row is a component (symbol) when the server marks it so. */
@@ -82,7 +101,7 @@ export async function searchPagesByName(
   if (response.status === 404) return [];
   // PD-18: a 401/5xx is an API error, not "no such page".
   await ensureOk(response, { method: "GET", path: "/pages?name=" });
-  const data = (await response.json()) as unknown;
+  const data = await readJson<unknown>(response, { method: "GET", path: "/pages?name=" });
   return Array.isArray(data) ? (data as RawPageListItem[]) : [];
 }
 
@@ -97,10 +116,11 @@ export async function fetchDeployablePageByAppUrl(
   );
   if (response.status === 404) return null;
   await ensureOk(response, { method: "GET", path: "/deployable/pages" });
-  const data = (await response.json()) as {
-    deployedPages?: Array<{ referencePageId: string }>;
-  };
-  return data.deployedPages?.[0]?.referencePageId ?? null;
+  const data = await readJson<{ deployedPages?: Array<{ referencePageId: string }> }>(response, {
+    method: "GET",
+    path: "/deployable/pages",
+  });
+  return data?.deployedPages?.[0]?.referencePageId ?? null;
 }
 
 const PAGE_LIST_LIMIT = 2000;
@@ -120,7 +140,7 @@ export async function fetchAllPages(): Promise<RawPageListItem[]> {
       authMode: "Bearer",
     });
     await ensureOk(response, { method: "GET", path: "/pages (all)" });
-    const data = (await response.json()) as unknown[];
+    const data = await readJson<unknown[]>(response, { method: "GET", path: "/pages (all)" });
     const items = Array.isArray(data) ? data : [];
     results.push(...(items as RawPageListItem[]));
     if (items.length < PAGE_LIST_LIMIT) break;
@@ -145,7 +165,7 @@ export async function fetchAllComponents(): Promise<RawPageListItem[]> {
       authMode: "Bearer",
     });
     await ensureOk(response, { method: "GET", path: "/pages (components)" });
-    const data = (await response.json()) as unknown[];
+    const data = await readJson<unknown[]>(response, { method: "GET", path: "/pages (components)" });
     const items = Array.isArray(data) ? data : [];
     results.push(...(items as RawPageListItem[]));
     if (items.length < PAGE_LIST_LIMIT) break;
@@ -164,7 +184,7 @@ export async function fetchPageDependencies(
     { method: "GET", authMode: "Bearer" },
   );
   await ensureOk(response, { method: "GET", path: "/pages/page-dependencies" });
-  return (await response.json()) as RawPageDependencies;
+  return (await readJson<RawPageDependencies>(response, { method: "GET", path: "/pages/page-dependencies" })) ?? ({} as RawPageDependencies);
 }
 
 // -------- history --------------------------------------------------------
@@ -175,7 +195,7 @@ export async function historyList(pageId: string): Promise<RawHistoryEntry[]> {
     { method: "GET", authMode: "Bearer" },
   );
   await ensureOk(response, { method: "GET", path: "/pages/history" });
-  const data = (await response.json()) as unknown;
+  const data = await readJson<unknown>(response, { method: "GET", path: "/pages/history" });
   return Array.isArray(data) ? (data as RawHistoryEntry[]) : [];
 }
 
@@ -186,7 +206,7 @@ export async function historyGet(versionId: number | string): Promise<RawPageRes
   );
   if (response.status === 404) return null;
   await ensureOk(response, { method: "GET", path: `/pages/version/${versionId}` });
-  return (await response.json()) as RawPageResponse;
+  return readJson<RawPageResponse>(response, { method: "GET", path: `/pages/version/${versionId}` });
 }
 
 export async function historyRestore(versionId: number | string): Promise<void> {

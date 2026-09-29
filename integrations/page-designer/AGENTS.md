@@ -47,7 +47,7 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
   (rogue AD ids) / `PD_COMPLIANCE_INCOMPLETE` (walk errors → `isCompliant: null`) — all exit 1. A write refused by the validator gate
   (`gateValidation`) is a `CliError` `PD_VALIDATION_FAILED` with the errors in `details.issues`.
 - **Error codes** (grep `code: "PD_` for the full set): `PD_NOT_FOUND`, `PD_NAME_AMBIGUOUS`,
-  `PD_API_ERROR` / `PD_LOCKED` (409) from `lib/api/client.ts` (non-OK bodies summarised by core
+  `PD_API_ERROR` / `PD_LOCKED` (409) from `lib/api/client.ts` (non-OK bodies, and non-JSON 2xx bodies via `readJson`, summarised by core
   `httpError`), `PD_DRAFT_LINK_UNRESOLVED`, `PD_PUBLISHED_NO_DRAFT`, `PD_NOT_PUBLISHED`,
   `PD_OVERLAY_INVALID`, `PD_VERSION_NOT_FOUND`, `PD_VERSION_PAGE_MISMATCH`, `PD_RESTORE_UNVERIFIED`, `PD_FILE_NOT_FOUND`,
   `PD_FILE_UNREADABLE`, `PD_FILE_UNWRITABLE`, `PD_DIFF_SAME_ENV`, `PD_UNKNOWN_ENV`. Arg errors
