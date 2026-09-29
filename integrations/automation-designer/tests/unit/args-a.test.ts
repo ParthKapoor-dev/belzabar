@@ -123,6 +123,6 @@ describe("find / diff", () => {
 
   test("diff: --from-env implies cross-env; --raw disables clean", () => {
     const a = parse(diff, ["u", "--from-env", "a", "--to-env", "b", "--raw"]);
-    expect(a).toMatchObject({ mode: "cross-env", clean: false, editor: "zed", noEditor: false });
+    expect(a).toMatchObject({ mode: "cross-env", clean: false, editor: null, noEditor: false });
   });
 });
