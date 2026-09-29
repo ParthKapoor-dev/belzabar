@@ -1,4 +1,4 @@
-import { CliError, Config, lifecycle, ok, prompts, type CommandContext, type CommandModule } from "@belzabar/core";
+import { CliError, type CommandContext, type CommandModule, Config, confirmWrite, ok } from "@belzabar/core";
 import {
   assertJenkinsAuth,
   buildUrl,
@@ -283,18 +283,19 @@ async function requireRunConfirmation(
   action: string,
   details: Array<[string, string]>,
 ): Promise<void> {
-  if (yes) return;
-  if (context.outputMode === "llm" || !process.stdin.isTTY) {
-    throw new CliError(`Confirmation required to ${action}. Pass --yes to proceed.`, {
-      code: "MIGRATE_CONFIRMATION_REQUIRED",
-      details: { action, details: Object.fromEntries(details) },
-    });
-  }
-  const pad = Math.max(0, ...details.map(([k]) => k.length));
-  lifecycle.note(`About to ${action}`, details.map(([k, v]) => `${k.padEnd(pad)}  ${v}`).join("\n"));
-  if (!(await prompts.confirm({ message: "Trigger the build?", initialValue: false }))) {
-    throw new CliError("Aborted by user.", { code: "MIGRATE_USER_ABORT", exitCode: 130 });
-  }
+  await confirmWrite({
+    yes,
+    outputMode: context.outputMode,
+    action,
+    details,
+    codePrefix: "MIGRATE",
+    requiredMessage: `Confirmation required to ${action}. Pass --yes to proceed.`,
+    promptMessage: "Trigger the build?",
+    refuseWithoutTty: true,
+    abortExitCode: 130,
+    detailsShape: "object",
+    emptyBody: "",
+  });
 }
 
 /**

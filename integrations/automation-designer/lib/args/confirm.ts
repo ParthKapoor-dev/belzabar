@@ -1,4 +1,4 @@
-import { CliError, Config, lifecycle, prompts } from "@belzabar/core";
+import { confirmWrite, logWriteIntent } from "@belzabar/core";
 
 export interface ConfirmOpts {
   yes: boolean;
@@ -7,43 +7,16 @@ export interface ConfirmOpts {
   details: Array<[string, string]>;
 }
 
+/** AD write gate: `AD_CONFIRMATION_REQUIRED` in --llm without --yes, else a "Proceed?" prompt. */
 export async function requireConfirmation(opts: ConfirmOpts): Promise<void> {
-  if (opts.yes) return;
-
-  if (opts.outputMode === "llm") {
-    throw new CliError(
-      `Confirmation required for ${opts.action}. Pass --yes in --llm mode to bypass.`,
-      { code: "AD_CONFIRMATION_REQUIRED", details: { action: opts.action, details: opts.details } },
-    );
-  }
-
-  const pad = opts.details.length ? Math.max(...opts.details.map(([k]) => k.length)) : 0;
-  const body = opts.details.map(([k, v]) => `${k.padEnd(pad)}  ${v}`).join("\n") || "(no details)";
-  lifecycle.note(`About to ${opts.action}`, body);
-
-  const confirmed = await prompts.confirm({
-    message: "Proceed?",
-    initialValue: false,
+  await confirmWrite({
+    ...opts,
+    codePrefix: "AD",
+    requiredMessage: `Confirmation required for ${opts.action}. Pass --yes in --llm mode to bypass.`,
   });
-
-  if (!confirmed) {
-    throw new CliError("Aborted by user.", { code: "AD_USER_ABORT" });
-  }
 }
 
-export function logIntent(
-  method: string,
-  path: string,
-  meta: Record<string, unknown> = {},
-): void {
-  // The env the write actually targets (`--env`, else the default env). Not
-  // BELZ_ENV: that only names the *default* env since D6 (AD-27).
-  let envName: string;
-  try {
-    envName = Config.activeEnv.name;
-  } catch {
-    envName = "unknown";
-  }
-  const payload = JSON.stringify({ ts: new Date().toISOString(), method, path, env: envName, ...meta });
-  process.stderr.write(`[belz ad write] ${payload}\n`);
+/** `[belz ad write] {...}` on stderr, naming the env the write actually targets. */
+export function logIntent(method: string, path: string, meta: Record<string, unknown> = {}): void {
+  logWriteIntent("ad", { method, path }, meta, { withEnv: true });
 }

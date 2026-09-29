@@ -20,6 +20,7 @@ and `./testing` → `src/testing/index.ts` (test helpers only; never import from
 | `src/cache.ts` | `Cache<T>` — env-scoped JSON file cache with hard/soft TTL |
 | `src/swr.ts` | Stale-while-revalidate: refresh locks + detached `--force` re-run |
 | `src/ui.ts` / `src/theme/` | Human/LLM rendering, `lifecycle`, `prompts`; palette (`theme/tokens.ts`), truecolor styling + glyphs (`theme/terminal.ts`) |
+| `src/confirm.ts` | `confirmWrite` (the one write gate: `--yes` / --llm refusal / prompt, per-namespace codes, wording and details shape) and `logWriteIntent` (`[belz <ns> write] {...}` stderr audit line) |
 | `src/guards.ts` | Wire-JSON value guards: `isObj`, `asObj`, `str` (trimmed or undefined), `strOrNull`, `num` (finite), `numLike` (also numeric strings), `Obj` |
 | `src/search.ts` | Fuzzy scoring for the AD/PD finders: `scoreText`, `normalizeSearchText`, `tokenize`, `containsWordStart`, `levenshtein` (also the arg parser's "did you mean"), `dedupeBy` |
 | `src/verbose.ts` | `vlog` / `vtime` — redacted stderr debug lines when `BELZ_VERBOSE=1` (`-v`) |

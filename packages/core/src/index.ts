@@ -14,3 +14,4 @@ export * from "./registry";
 export * from "./args";
 export * from "./guards";
 export * from "./search";
+export * from "./confirm";

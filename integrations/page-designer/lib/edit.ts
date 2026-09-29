@@ -10,7 +10,7 @@
 // Validation errors block unless --force-validation; bypassed errors are
 // reported in `bypassedErrors`.
 
-import { CliError, Config, lifecycle, prompts, type CommandContext } from "@belzabar/core";
+import { CliError, type CommandContext, confirmWrite, logWriteIntent } from "@belzabar/core";
 import { readFile } from "node:fs/promises";
 import { pdApi } from "./api/index";
 import { describeDraftGuardFailure, resolveDraftTarget } from "./draft-guard";
@@ -177,27 +177,19 @@ export async function requireConfirmation(
   action: string,
   details: Array<[string, string]>,
 ): Promise<void> {
-  if (yes) return;
-  if (context.outputMode === "llm" || !process.stdin.isTTY) {
-    throw new CliError(`"${action}" is a write operation. Pass --yes to confirm.`, {
-      code: "CONFIRMATION_REQUIRED",
-      details: { action, details: Object.fromEntries(details) },
-    });
-  }
-  const pad = Math.max(0, ...details.map(([k]) => k.length));
-  lifecycle.note(`About to ${action}`, details.map(([k, v]) => `${k.padEnd(pad)}  ${v}`).join("\n") || "(no details)");
-  if (!(await prompts.confirm({ message: "Proceed?", initialValue: false }))) {
-    throw new CliError("Aborted by user.", { code: "USER_ABORT", exitCode: 130 });
-  }
+  await confirmWrite({
+    yes,
+    outputMode: context.outputMode,
+    action,
+    details,
+    requiredMessage: `"${action}" is a write operation. Pass --yes to confirm.`,
+    refuseWithoutTty: true,
+    abortExitCode: 130,
+    detailsShape: "object",
+  });
 }
 
 /** One stderr audit line per PD write, naming the env it really targets. */
 export function logIntent(action: string, pageId: string, meta: Record<string, unknown> = {}): void {
-  let env: string;
-  try {
-    env = Config.activeEnv.name;
-  } catch {
-    env = "unknown";
-  }
-  process.stderr.write(`[belz pd write] ${JSON.stringify({ ts: new Date().toISOString(), action, pageId, env, ...meta })}\n`);
+  logWriteIntent("pd", { action, pageId }, meta, { withEnv: true });
 }
