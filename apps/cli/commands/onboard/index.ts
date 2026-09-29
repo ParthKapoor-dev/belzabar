@@ -10,10 +10,9 @@ import {
   type CommandContext,
 } from "@belzabar/core";
 import setupCommand from "../setup/index";
-import extensionCommand from "../extension/index";
 
 // belz onboard — the guided first-run flow. It chains the focused commands
-// (setup, extension load) behind confirm prompts, so it is safe to
+// (currently `belz setup`) behind confirm prompts, so it is safe to
 // re-run: every step detects what is already done and offers to skip it.
 
 type StepStatus = "done" | "skipped" | "failed";
@@ -70,7 +69,7 @@ export const args = defineArgs({ command: "belz onboard" });
 const command: CommandModule<Record<string, never>, OnboardData> = {
   schema: "belz.onboard",
 
-  /** Writes ~/.belz/config.json and browser policy files (via setup / extension load). */
+  /** Writes ~/.belz/config.json (via setup). */
   writesLocal: true,
   parseArgs(argv) {
     args.parse(argv);
@@ -80,15 +79,14 @@ const command: CommandModule<Record<string, never>, OnboardData> = {
   async execute(_args, context: CommandContext) {
     if (context.outputMode === "llm") {
       throw new CliError(
-        "`belz onboard` is interactive. Use `belz setup --env-file` and `belz extension load` " +
-          "individually for non-interactive setup.",
+        "`belz onboard` is interactive. Use `belz setup --env-file` for non-interactive setup.",
         { code: "INTERACTIVE_NOT_SUPPORTED" }
       );
     }
 
     lifecycle.note(
       "Welcome to belz",
-      "This will walk through credentials and the browser extension.\n" +
+      "This will walk through environment credentials.\n" +
         "It is safe to re-run any time — completed steps can be skipped."
     );
 
@@ -111,25 +109,6 @@ const command: CommandModule<Record<string, never>, OnboardData> = {
       );
     } else {
       steps.push({ name: "Credentials", status: "skipped", detail: "already configured" });
-    }
-
-    // ── 2. Browser extension (optional — still being finished) ───────────────
-    const doExtension = await prompts.confirm({
-      message: "Install the Belzabar browser extension now? (optional, experimental)",
-      initialValue: false,
-    });
-    if (doExtension) {
-      steps.push(
-        await runStep("Browser extension", async () => {
-          const res = await extensionCommand.execute(
-            { action: "load", browsers: [], all: false },
-            context
-          );
-          if (!res.ok) throw new CliError(res.error?.message ?? "extension load failed", { code: "EXT_FAILED" });
-        })
-      );
-    } else {
-      steps.push({ name: "Browser extension", status: "skipped" });
     }
 
     return finishOnboard(steps);

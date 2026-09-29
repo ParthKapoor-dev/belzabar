@@ -6,7 +6,7 @@
 
 - the entry point `bin/cli.ts` (the same file runs in dev and is compiled into the release binary),
 - the wiring of every integration's static command registry (`bin/options.ts`),
-- the top-level commands `cache`, `config`, `envs`, `extension`, `onboard`, `setup`, `update`,
+- the top-level commands `cache`, `config`, `envs`, `onboard`, `setup`, `update`,
 - the install / reinstall scripts.
 
 `ad`, `pd`, `tw`, `migrate` and `release` commands live in the `integrations/*` packages
@@ -26,7 +26,7 @@ apps/cli/
 │   └── build-info.ts   Bun macro: {version, sha, dirty, builtAt} for `belz --version`
 ├── commands/
 │   ├── registry.ts     Static, sorted registry of the top-level commands
-│   └── cache/ config/ envs/ extension/ onboard/ setup/ update/
+│   └── cache/ config/ envs/ onboard/ setup/ update/
 │                       each: index.ts (exports `args` + default CommandModule), help.txt, desc.txt
 │                       (config keeps its arg spec in config/args.ts)
 ├── scripts/            install.sh, install.ps1, reinstall.sh, record-install.mjs, swap-binary.ps1
@@ -45,13 +45,13 @@ The compiled binary is written to `apps/cli` as `belz` (gitignored, with `belz.m
 
 ```
 belz ad | pd | tw | migrate | release <cmd>  → namespace commands (one registry each)
-belz config | extension <sub>                → passthrough namespaces (the module self-routes)
+belz config <sub>                            → passthrough namespace (the module self-routes)
 belz cache | envs | onboard | setup | update → top-level commands
 belz --version | --help | --help-full        → runner / entry point
 ```
 
 - `envAware: false` for the `tw`, `migrate`, `release` namespaces and for
-  `config`, `extension`, `envs`, `setup`, `onboard`, `update` — their envelopes carry no `meta.env`.
+  `config`, `envs`, `setup`, `onboard`, `update` — their envelopes carry no `meta.env`.
 - `belz update` (`planUpdate`) only fast-forwards the recorded `belz.sourceDir`; with something to pull it
   refuses a dirty tree (`DIRTY_TREE`: tracked edits / staged changes; untracked files don't count)
   or unpushed commits (`LOCAL_COMMITS`) — it never `git reset`s.
@@ -60,7 +60,7 @@ belz --version | --help | --help-full        → runner / entry point
 - `belz setup` parses `--env-file` with core `parseDotEnv` (inline `# comments` stripped on unquoted
   values, CORE-R16); `--from-env` reads `withoutDotenvInjected()`, so values Bun auto-loaded from a cwd
   `.env` are ignored and listed in `meta.warnings` (CORE-R14).
-- `belz onboard` returns `failWithData("ONBOARD_INCOMPLETE")` when any step failed (so `install.sh`'s
+- `belz onboard` walks the credentials step (`belz setup`) only. It returns `failWithData("ONBOARD_INCOMPLETE")` when any step failed (so `install.sh`'s
   `if ! belz onboard` sees it) and re-throws `USER_ABORT` from a step (CORE-R8).
 - `belz cache` self-routes with `defineSubcommands` (default `invalidate`): `belz cache --env <e> <uuid>…`
   (remote write → explicit `--env` required; every uuid must be 32 hex or dashed, else `INVALID_UUID` —

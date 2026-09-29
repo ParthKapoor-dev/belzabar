@@ -300,7 +300,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
     }
 
     // Merge over the existing config: other sections (install metadata,
-    // extension state, defaultEnv) survive; envs are merged per name (an
+    // defaultEnv, unknown keys) survive; envs are merged per name (an
     // entry given here replaces that env's entry) unless --replace --force.
     const environments = args.replace ? envs : { ...(existing.environments ?? {}), ...envs };
     const newConfig: BelzConfigFile = { ...existing, environments };

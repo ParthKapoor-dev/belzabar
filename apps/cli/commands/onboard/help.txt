@@ -1,17 +1,15 @@
 Usage: belz onboard
 
-Guided first-run setup for belz. Walks through, in order:
+Guided first-run setup for belz. Walks through:
 
   1. Credentials  — environment usernames/passwords (via `belz setup`)
-  2. Extension    — force-install the browser extension (via `belz extension load`)
 
 Each step is confirmed before it runs and is safe to skip. `belz onboard` is
 idempotent — re-run it any time; steps that are already done are detected and
 offered for skipping.
 
 This command is interactive and takes no flags. For non-interactive /
-scripted setup, run the underlying commands directly (see `belz setup --help`
-and `belz extension --help`).
+scripted setup, run the underlying command directly (see `belz setup --help`).
 
 Examples:
   belz onboard            Run the guided setup

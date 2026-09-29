@@ -31,7 +31,7 @@ describe("runner-level --help (F16)", () => {
     expect(r.stdout).not.toMatch(/"token"\s*:/);
   }, 30_000);
 
-  for (const args of [["config", "edit", "--help"], ["extension", "list", "--help"], ["config", "get", "-h"]]) {
+  for (const args of [["config", "edit", "--help"], ["config", "get", "-h"]]) {
     test(`${args.join(" ")} shows help`, async () => {
       const r = await belz(...args);
       expect(r.exitCode).toBe(0);

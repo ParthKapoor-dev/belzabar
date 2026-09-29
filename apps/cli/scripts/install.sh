@@ -103,7 +103,7 @@ fi
 
 # ── 8. First-time setup ──────────────────────────────────────────────────────
 # With --env-file, run `belz setup` non-interactively. Otherwise run the guided
-# `belz onboard` flow (credentials + extension).
+# `belz onboard` flow (credentials).
 if [[ "$FIRST_RUN" == 1 ]]; then
   echo ""
   if [[ -n "$ENV_FILE" ]]; then

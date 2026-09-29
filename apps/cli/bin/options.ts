@@ -27,7 +27,6 @@ const topRegistry: CommandRegistry = topCommands;
 /** Top-level commands that own a namespace and do their own sub-routing. */
 const PASSTHROUGH = {
   config: { name: "Config", description: "Manage belz credentials and environments.", envAware: false },
-  extension: { name: "Extension", description: "Install and manage the Belzabar browser extension.", envAware: false },
 } as const;
 
 /**

@@ -23,10 +23,7 @@ Belzabar is an internal developer toolset for the **Expertly** low-code platform
 - **Page Designer (PD)** — frontend pages/components as JSON configurations
 
 plus **Teamwork** (ticket tracker), Jenkins-backed DB **migrations**, and **release**
-promotion tracking. It ships two products:
-
-1. **`belz` CLI** — one binary for all of the above
-2. **Browser extension** — content scripts + a DevTools panel that enhance the AD/PD web UIs
+promotion tracking. It ships one product: the **`belz` CLI**, one binary for all of the above.
 
 ---
 
@@ -35,9 +32,8 @@ promotion tracking. It ships two products:
 | Directory | Package | Role | Docs |
 |-----------|---------|------|------|
 | `apps/cli/` | `belzabar.cli` | The `belz` binary: entry point, top-level commands, install scripts | `apps/cli/AGENTS.md` |
-| `apps/extension/` | `belzabar-extension` | Browser extension (MV3, JavaScript) | `apps/extension/AGENTS.md` |
 | `packages/core/` | `@belzabar/core` | Shared CLI framework (args, runner, envelope, config, http/auth, cache, ui, testing) | `packages/core/AGENTS.md` |
-| `packages/design/` | `@belzabar/design` | Design tokens shared by the CLI and the extension | — |
+| `packages/design/` | `@belzabar/design` | Design tokens + truecolor terminal styling used by the CLI (`packages/core` theme) | — |
 | `integrations/automation-designer/` | `@belzabar/ad` | `belz ad` commands + lib | `integrations/automation-designer/AGENTS.md` |
 | `integrations/page-designer/` | `@belzabar/pd` | `belz pd` commands + lib | `integrations/page-designer/AGENTS.md` |
 | `integrations/teamwork/` | `@belzabar/teamwork` | `belz tw` commands + lib | `integrations/teamwork/AGENTS.md` |
@@ -47,7 +43,7 @@ promotion tracking. It ships two products:
 | `scripts/` | — | `docs-check.ts` (docs gate) and `fixtures/` (read-only wire-fixture capture + sanitizer) | — |
 | `cloud/` | — | Claude Code cloud-session bootstrap (publish + sandbox files) | `cloud/README.md` |
 | `agents/` | — | Runtime agent skills (published to cloud sessions); not part of the build | — |
-| `.github/workflows/` | — | `ci.yml` (typecheck, docs check, tests), `belz-cloud-release.yml`, `extension-release.yml` | — |
+| `.github/workflows/` | — | `ci.yml` (typecheck, docs check, tests), `belz-cloud-release.yml` | — |
 
 `expertly.coding.agents/`, if present locally, is a separate git checkout ignored by
 `.gitignore`; it is not part of this repo.
@@ -88,7 +84,6 @@ belz tw <cmd>      → integrations/teamwork/commands/<cmd>/
 belz migrate <cmd> → integrations/migrations/commands/<cmd>/
 belz release <cmd> → integrations/release/commands/<cmd>/
 belz config …      → apps/cli/commands/config/     (passthrough: does its own sub-routing)
-belz extension …   → apps/cli/commands/extension/  (passthrough)
 belz cache | envs | setup | onboard | update → apps/cli/commands/<cmd>/
 ```
 
@@ -189,5 +184,4 @@ Guards: `apps/cli/tests/registry.test.ts` (folders ⇔ registry), `apps/cli/test
 - Framework (runner, args, envelope, http, cache, testing)? `packages/core/AGENTS.md`
 - Teamwork / migrations / release / Jenkins? `integrations/teamwork/AGENTS.md`,
   `integrations/migrations/AGENTS.md`, `integrations/release/AGENTS.md`, `integrations/jenkins/AGENTS.md`
-- Browser extension? `apps/extension/AGENTS.md`
 - Human-facing overview and workflows: `README.md`

@@ -29,8 +29,8 @@ import type { NamespacedCliOptions } from "@belzabar/core";
 
 const options: NamespacedCliOptions = await loadDevCliOptions();
 
-/** Commands whose bare invocation must never run, even offline (installers, config writers, browser/OS side effects). */
-const NO_BARE_RUN = new Set(["update", "setup", "onboard", "cache", "extension"]);
+/** Commands whose bare invocation must never run, even offline (installers, config writers, OS side effects). */
+const NO_BARE_RUN = new Set(["update", "setup", "onboard", "cache"]);
 
 /** argv (joined by spaces) → why it currently violates the contract. */
 const KNOWN_VIOLATIONS: Record<string, string> = {};

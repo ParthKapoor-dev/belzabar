@@ -1,12 +1,9 @@
 # Belzabar
 
 Developer toolset for engineers working on the **Expertly** low-code platform (NSM, SEMS, …).
-It ships:
-
-- **`belz`** — one CLI for Automation Designer (AD) methods, Page Designer (PD) pages,
-  Teamwork tickets, Jenkins DB migrations and release tracking. Every command has a
-  human view and a structured `--llm` JSON envelope for scripts and AI agents.
-- **A browser extension** that enhances the AD/PD web UIs.
+It ships **`belz`** — one CLI for Automation Designer (AD) methods, Page Designer (PD) pages,
+Teamwork tickets, Jenkins DB migrations and release tracking. Every command has a
+human view and a structured `--llm` JSON envelope for scripts and AI agents.
 
 ---
 
@@ -137,17 +134,6 @@ belz release matrix …    belz release freeze …   # see `belz release <cmd> -
 
 ---
 
-## Browser extension
-
-```bash
-belz extension load        # force-install into supported browsers (auto-updates)
-```
-
-Or build and load it unpacked: `cd apps/extension && bun run build`, then Load unpacked in
-`chrome://extensions` (Developer Mode). See `apps/extension/README.md` for features and shortcuts.
-
----
-
 ## Claude Code cloud sessions
 
 The `belz-cloud-release` workflow publishes the belz binary and the `agents/` skills to a
@@ -160,7 +146,6 @@ this repo. Setup and the network allowlist: [`cloud/README.md`](./cloud/README.m
 
 ```
 apps/cli/                   CLI binary (belz): entry point, top-level commands, install scripts
-apps/extension/             browser extension (MV3)
 packages/core/              @belzabar/core — shared CLI framework
 packages/design/            @belzabar/design — design tokens
 integrations/automation-designer/   belz ad …

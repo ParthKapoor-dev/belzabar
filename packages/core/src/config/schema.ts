@@ -1,7 +1,10 @@
 // zod schema for ~/.belz/config.json, validated at load (CORE-18).
 //
 // Unknown keys are kept (passthrough) so sections owned by other tools or
-// older/newer belz versions survive a read-modify-write.
+// older/newer belz versions survive a read-modify-write. Sections from
+// features that no longer live in this repo (the browser extension's
+// `extension`, the old dashboard's `web`) are not modelled: they fall under
+// passthrough, so an old config.json that still carries them loads unchanged.
 
 import { z } from "zod";
 import { CliError } from "../command";
@@ -52,13 +55,6 @@ export const ConfigFileSchema = z
         repoUrl: z.string().optional(),
         installedAt: z.string().optional(),
         version: z.string().optional(),
-      })
-      .passthrough()
-      .optional(),
-    /** Browser extension lifecycle state. */
-    extension: z
-      .object({
-        loadedBrowsers: z.array(z.string()).optional(),
       })
       .passthrough()
       .optional(),

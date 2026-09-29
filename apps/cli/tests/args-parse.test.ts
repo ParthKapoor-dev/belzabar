@@ -4,7 +4,6 @@
 import { describe, expect, test } from "bun:test";
 import cache from "../commands/cache/index";
 import envs from "../commands/envs/index";
-import extension from "../commands/extension/index";
 import onboard from "../commands/onboard/index";
 import update from "../commands/update/index";
 import { parseConfigArgs } from "../commands/config/args";
@@ -33,21 +32,6 @@ describe("config", () => {
     expect(() => parseConfigArgs(["envs"])).toThrow(/belz envs/);
     expect(code(() => parseConfigArgs(["get", "--refresh"]))).toBe("UNKNOWN_FLAG");
     expect(code(() => parseConfigArgs(["token", "extra"]))).toBe("UNEXPECTED_ARGUMENT");
-  });
-});
-
-describe("extension", () => {
-  const parse = (a: string[]) => extension.parseArgs!(a, ctx);
-  test("subcommands and browsers", () => {
-    expect(parse([])).toEqual({ action: "list", browsers: [], all: false });
-    expect(parse(["status"])).toEqual({ action: "status", browsers: [], all: false });
-    expect(parse(["load", "chrome", "zen"])).toEqual({ action: "load", browsers: ["chrome", "zen"], all: false });
-    expect(parse(["remove", "--all"])).toEqual({ action: "remove", browsers: [], all: true });
-  });
-  test("errors", () => {
-    expect(code(() => parse(["load", "--bogus"]))).toBe("UNKNOWN_FLAG");
-    expect(code(() => parse(["list", "chrome"]))).toBe("UNEXPECTED_ARGUMENT");
-    expect(code(() => parse(["chrome"]))).toBe("UNEXPECTED_ARGUMENT");
   });
 });
 

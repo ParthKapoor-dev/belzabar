@@ -22,7 +22,7 @@ and `./testing` → `src/testing/index.ts` (test helpers only; never import from
 | `src/ui.ts` / `src/theme.ts` | Human/LLM rendering, `lifecycle`, `prompts`; palette + glyphs from `@belzabar/design` |
 | `src/verbose.ts` | `vlog` / `vtime` — redacted stderr debug lines when `BELZ_VERBOSE=1` (`-v`) |
 | `src/belz-meta.ts` | Install metadata (source checkout, install dir, binary path) used by `belz update` |
-| `src/browsers.ts` / `src/open.ts` | Browser detection + policy locations (`belz extension load`); `openUrlInBrowser` |
+| `src/open.ts` | `openUrlInBrowser` |
 | `src/types.ts` | Shared domain types (`Environment`, `AuthSession`, …) |
 | `src/testing/` | `@belzabar/core/testing` (see Testing) |
 
@@ -118,7 +118,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
   `{items}`, scalars → `{value}`; stack as `{stack}` only with `-v`). Exit code = `CliError.exitCode`
   (USER_ABORT → 130).
 - `meta`: `durationMs` always; `env` only for env-aware commands (`envAware` defaults true;
-  tw/migrate/release namespaces, config/extension/envs/setup/onboard/update are not) and never on
+  tw/migrate/release namespaces, config/envs/setup/onboard/update are not) and never on
   runner-level envelopes, always with `envSource`: `flag` | `BELZ_ENV` | `default` (config.json
   `defaultEnv` or the built-in nsm-dev); `warnings` when raised.
 
@@ -199,7 +199,7 @@ belz <token> [args]
 
 A **namespace** has `commands: Record<string, CommandModule>` (multiple subcommands).
 A **passthrough module** has `command: CommandModule` (a single command that routes its own
-subcommands — `config` and `extension`).
+subcommands — `config`).
 
 Help text comes from a `helpResolver` built from the static registry (`registryHelpResolver`), so
 dev mode and the compiled binary print identical help. (`helpDir` still exists on the type but no

@@ -128,16 +128,16 @@ describe("schema validation (CORE-18)", () => {
   });
 
   test("unknown keys survive a read-modify-write", () => {
-    rawConfig({ web: { autostartEnabled: true }, environments: { a: { url: "https://a.test", extra: 1 } } });
+    rawConfig({ otherTool: { enabled: true }, environments: { a: { url: "https://a.test", extra: 1 } } });
     const raw = loadConfigFileRaw();
     writeConfigFile({ ...raw, defaultEnv: "a" });
     const back = JSON.parse(readFileSync(CONFIG_FILE_PATH, "utf8"));
-    expect(back.web).toEqual({ autostartEnabled: true });
+    expect(back.otherTool).toEqual({ enabled: true });
     expect(back.environments.a.extra).toBe(1);
     expect(back.defaultEnv).toBe("a");
   });
 
-  test("the real-world shape (base64 passwords, project, belz, web, jenkins, teamwork) validates unchanged", () => {
+  test("the real-world shape (base64 passwords, project, belz, jenkins, teamwork) validates unchanged", () => {
     rawConfig({
       environments: {
         "nsm-dev": { url: "https://nsm-dev.test", user: "u", password: btoa("p") },
@@ -145,7 +145,6 @@ describe("schema validation (CORE-18)", () => {
       },
       teamwork: { email: "a@b.c", password: btoa("tw") },
       belz: { sourceDir: "/s", installDir: "/i", repoUrl: "r", version: "v", installedAt: "t" },
-      web: { autostartEnabled: false },
       jenkins: { baseUrl: "https://j.test/", user: "j", password: btoa("jp"), migrationJob: "a/b" },
     });
     expect(Config.configError).toBeNull();
@@ -154,6 +153,17 @@ describe("schema validation (CORE-18)", () => {
     expect(Config.password).toBe("p");
     expect(Config.getJenkins()).toEqual({ baseUrl: "https://j.test", user: "j", password: "jp", migrationJob: "a/b" });
     expect(Config.getTeamwork()).toEqual({ email: "a@b.c", password: "tw" });
+  });
+
+  test("an old config with the removed extension/dashboard sections still loads (they are ignored)", () => {
+    rawConfig({
+      environments: { "t-dev": { url: "https://t.test", user: "u", password: btoa("p") } },
+      extension: { loadedBrowsers: "chrome" }, // even a shape the old schema rejected
+      web: { autostartEnabled: true },
+    });
+    expect(Config.configError).toBeNull();
+    Config.setActiveEnv("t-dev");
+    expect(Config.cleanBaseUrl).toBe("https://t.test");
   });
 });
 

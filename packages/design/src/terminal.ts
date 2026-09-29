@@ -1,8 +1,7 @@
 // Terminal palette — the CLI's view of the design tokens.
 //
-// Truecolor ANSI (\x1b[38;2;r;g;bm) reproduces the EXACT same hex values the
-// web app and extension use, so all three surfaces are literally the same
-// colours. Terminals without truecolor fall back to the xterm-256 cube.
+// Truecolor ANSI (\x1b[38;2;r;g;bm) reproduces the EXACT hex values in
+// tokens.ts. Terminals without truecolor fall back to the xterm-256 cube.
 // NO_COLOR / FORCE_COLOR / non-TTY are all respected.
 
 import { palette } from "./tokens";

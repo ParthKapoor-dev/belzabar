@@ -20,7 +20,7 @@ describe("belz onboard (CORE-R8)", () => {
   test("a failed step makes the result ok:false (ONBOARD_INCOMPLETE) with the steps as data", () => {
     const res = finishOnboard([
       { name: "Credentials", status: "failed", detail: "boom" },
-      { name: "Browser extension", status: "skipped" },
+      { name: "Other step", status: "skipped" },
     ]);
     if (res.ok) throw new Error("expected a failure");
     expect(res.error.code).toBe("ONBOARD_INCOMPLETE");
@@ -30,7 +30,7 @@ describe("belz onboard (CORE-R8)", () => {
   test("all steps done or skipped → ok", () => {
     const res = finishOnboard([
       { name: "Credentials", status: "done" },
-      { name: "Browser extension", status: "skipped" },
+      { name: "Other step", status: "skipped" },
     ]);
     expect(res.ok).toBe(true);
   });

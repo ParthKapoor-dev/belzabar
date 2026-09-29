@@ -1,4 +1,0 @@
-belz extension list  :->  Show detected browsers and whether the extension is loaded (default; alias: status)
-belz extension load [browser…]  :->  Force-install the extension into the given browsers (interactive picker if none)
-belz extension load --all  :->  Force-install into every detected browser
-belz extension remove [browser…|--all]  :->  Remove the force-install policy

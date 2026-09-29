@@ -3,14 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "belz unified design system — single source of truth for tokens across the extension and CLI.",
+  "description": "belz unified design system — design tokens and terminal styling for the belz CLI.",
   "exports": {
     ".": "./src/index.ts",
     "./tokens": "./src/tokens.ts",
-    "./terminal": "./src/terminal.ts",
-    "./theme.css": "./dist/theme.css"
-  },
-  "scripts": {
-    "build": "bun run scripts/build-css.ts"
+    "./terminal": "./src/terminal.ts"
   }
 }

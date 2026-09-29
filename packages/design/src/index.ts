@@ -1,22 +1,10 @@
-// @belzabar/design — belz unified design system.
+// @belzabar/design — belz design tokens.
 //
-// One source of truth (tokens.ts) → two surfaces:
-//   - extension consumes ./theme.css + components.css
-//   - CLI      consumes ./terminal (truecolor ANSI bound to the same hex)
+// One source of truth (tokens.ts) consumed by the CLI through ./terminal
+// (truecolor ANSI bound to the same hex values).
 
-export {
-  palette,
-  radius,
-  space,
-  fontSize,
-  fontFamily,
-  fontFile,
-  motion,
-} from "./tokens";
+export { palette } from "./tokens";
 export type { Palette, ColorToken } from "./tokens";
-
-export { role } from "./color";
-export type { Role } from "./color";
 
 export {
   term,
@@ -29,5 +17,3 @@ export {
   underline,
   supportsColor,
 } from "./terminal";
-
-export { generateThemeCss } from "./css";
