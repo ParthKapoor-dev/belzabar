@@ -52,6 +52,10 @@ belz --version | --help | --help-full        → runner / entry point
 
 - `envAware: false` for the `tw`, `migrate`, `release` namespaces and for
   `config`, `extension`, `envs`, `setup`, `onboard`, `update` — their envelopes carry no `meta.env`.
+- `belz update` (`planUpdate`) only fast-forwards the recorded `belz.sourceDir`; with something to pull it
+  refuses a dirty tree (`DIRTY_TREE`) or unpushed commits (`LOCAL_COMMITS`) — it never `git reset`s.
+  `--force` = rebuild even when up to date. The installer gets `--install-dir`/`-InstallDir` from the
+  recorded `belz.installDir` (`installerCommand`) (CORE-R3, CORE-R4).
 - `belz setup` parses `--env-file` with core `parseDotEnv` (inline `# comments` stripped on unquoted
   values, CORE-R16); `--from-env` reads `withoutDotenvInjected()`, so values Bun auto-loaded from a cwd
   `.env` are ignored and listed in `meta.warnings` (CORE-R14).

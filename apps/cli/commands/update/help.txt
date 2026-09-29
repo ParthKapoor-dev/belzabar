@@ -5,19 +5,24 @@ binary, and install it.
 
 belz is a compiled binary built from a git checkout. `belz update` fetches
 that checkout's tracking branch, fast-forwards it, and re-runs the install
-script. The location of the checkout is read from "belz.sourceDir" in
+script, installing to the recorded install dir ("belz.installDir"). The
+location of the checkout is read from "belz.sourceDir" in
 ~/.belz/config.json (recorded by the installer; defaults to ~/.belz/src).
+
+belz update never discards local work: when there is something to pull and
+the checkout has uncommitted/staged changes (DIRTY_TREE) or local commits not
+on origin (LOCAL_COMMITS), it refuses and tells you how to resolve it.
 
 Flags:
   --check       Report whether an update is available, without changing anything.
-  -f, --force   Update even with no new commits, and discard uncommitted changes
-                in the source checkout (hard reset to the remote branch).
+  -f, --force   Rebuild and reinstall even when already up to date. Never
+                resets or discards anything in the source checkout.
   --help, -h    Show this help message.
 
 Examples:
   belz update --check     See if a newer version exists
   belz update             Pull, rebuild, and install the latest version
-  belz update --force     Force a rebuild / discard local source changes
+  belz update --force     Rebuild the current checkout even with no new commits
 
 Notes:
   - A broken build never replaces your working binary — the install script

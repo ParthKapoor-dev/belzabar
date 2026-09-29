@@ -1,3 +1,3 @@
-belz update  :->  Update belz: pull source, rebuild, reinstall
+belz update  :->  Update belz: fast-forward the source checkout, rebuild, reinstall to the recorded install dir (refuses if the checkout has uncommitted changes or local commits)
 belz update --check  :->  Check whether an update is available
-belz update --force  :->  Force rebuild / discard local source changes (-f)
+belz update --force  :->  Rebuild/reinstall even when up to date (-f); never resets or discards local source changes

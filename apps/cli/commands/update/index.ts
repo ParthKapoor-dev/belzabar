@@ -6,6 +6,7 @@ import {
   defineArgs,
   ok,
   lifecycle,
+  getInstallDir,
   getSourceDir,
   recordBelzMeta,
   type CommandModule,
@@ -23,9 +24,10 @@ interface UpdateData {
   fromSha: string;
   toSha: string;
   branch: string;
-  status: "up-to-date" | "updated" | "check-only";
+  status: "up-to-date" | "updated" | "rebuilt" | "check-only";
   dirty: boolean;
   rebuilt: boolean;
+  installDir?: string;
 }
 
 // ── git helpers ────────────────────────────────────────────────────────────────
@@ -60,6 +62,59 @@ export function installScriptDir(sourceDir: string): string {
   const current = join(sourceDir, "apps", "cli", "scripts");
   if (existsSync(current)) return current;
   return join(sourceDir, "cli", "scripts");
+}
+
+export interface UpdateState {
+  /** Commits on origin/<branch> not in HEAD. */
+  behind: number;
+  /** Local commits not on origin/<branch>. */
+  ahead: number;
+  /** Uncommitted (staged, unstaged or untracked) changes. */
+  dirty: boolean;
+}
+
+export type UpdatePlan =
+  | { action: "up-to-date" }
+  | { action: "check-only" }
+  | { action: "rebuild" }
+  | { action: "fast-forward" }
+  | { action: "refuse"; code: "DIRTY_TREE" | "LOCAL_COMMITS"; reason: string };
+
+/**
+ * What `belz update` does for a checkout state (CORE-R4). It never discards
+ * work: the checkout only moves by fast-forward, and a tree with uncommitted
+ * changes or local commits is refused when there is something to pull.
+ * `--force` only means "rebuild even when already up to date" — it no longer
+ * hard-resets (the recorded sourceDir can be a developer's own checkout).
+ */
+export function planUpdate(state: UpdateState, opts: { check: boolean; force: boolean }): UpdatePlan {
+  if (state.behind === 0) return { action: opts.force && !opts.check ? "rebuild" : "up-to-date" };
+  if (opts.check) return { action: "check-only" };
+  if (state.dirty) {
+    return { action: "refuse", code: "DIRTY_TREE", reason: "it has uncommitted or staged changes" };
+  }
+  if (state.ahead > 0) {
+    return {
+      action: "refuse",
+      code: "LOCAL_COMMITS",
+      reason: `it has ${state.ahead} local commit${state.ahead === 1 ? "" : "s"} not on origin`,
+    };
+  }
+  return { action: "fast-forward" };
+}
+
+/** The platform install script invocation, installing to the recorded install dir (CORE-R3). */
+export function installerCommand(
+  scriptDir: string,
+  installDir: string,
+  windows: boolean = isWindows,
+): { cmd: string; args: string[] } {
+  return windows
+    ? {
+        cmd: "powershell",
+        args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(scriptDir, "install.ps1"), "-InstallDir", installDir],
+      }
+    : { cmd: "bash", args: [join(scriptDir, "install.sh"), "--install-dir", installDir] };
 }
 
 // ── command ─────────────────────────────────────────────────────────────────────
@@ -108,66 +163,48 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     const fromSha = requireGit(sourceDir, ["rev-parse", "--short", "HEAD"], "GIT_REV_FAILED");
     const remoteSha = requireGit(sourceDir, ["rev-parse", "--short", upstream], "GIT_REV_FAILED");
     const dirty = git(sourceDir, ["status", "--porcelain"]).out.length > 0;
+    const counts = requireGit(sourceDir, ["rev-list", "--left-right", "--count", `HEAD...${upstream}`], "GIT_REV_FAILED");
+    const [ahead = 0, behind = 0] = counts.split(/\s+/).map((n) => Number(n) || 0);
 
-    if (fromSha === remoteSha && !args.force) {
+    const plan = planUpdate({ ahead, behind, dirty }, args);
+    const base = { sourceDir, fromSha, toSha: remoteSha, branch, dirty };
+
+    if (plan.action === "up-to-date") {
       spin.stop("Already up to date.");
-      return ok<UpdateData>({
-        sourceDir,
-        fromSha,
-        toSha: remoteSha,
-        branch,
-        status: "up-to-date",
-        dirty,
-        rebuilt: false,
-      });
+      return ok<UpdateData>({ ...base, status: "up-to-date", rebuilt: false });
     }
-
-    if (args.check) {
+    if (plan.action === "check-only") {
       spin.stop("Update available.");
-      return ok<UpdateData>({
-        sourceDir,
-        fromSha,
-        toSha: remoteSha,
-        branch,
-        status: "check-only",
-        dirty,
-        rebuilt: false,
-      });
+      return ok<UpdateData>({ ...base, status: "check-only", rebuilt: false });
     }
-
-    if (dirty && !args.force) {
-      spin.error("Working tree has uncommitted changes.");
+    if (plan.action === "refuse") {
+      spin.error("Source checkout has local work.");
       throw new CliError(
-        `The belz source checkout at ${sourceDir} has uncommitted changes.\n` +
-          `Commit/stash them, or re-run with --force to discard and overwrite.`,
-        { code: "DIRTY_TREE" }
+        `Not updating the belz source checkout at ${sourceDir}: ${plan.reason}.\n` +
+          `belz update never discards local work. Commit/push or stash it, or reset the checkout yourself ` +
+          `(git -C ${sourceDir} reset --hard ${upstream}), then re-run.`,
+        { code: plan.code, details: { sourceDir, branch, ahead, behind, dirty } },
       );
     }
-
-    // Advance the checkout to the upstream commit.
-    spin.message(`Updating ${fromSha} → ${remoteSha}…`);
-    if (args.force) {
-      requireGit(sourceDir, ["reset", "--hard", upstream], "GIT_RESET_FAILED");
-    } else {
+    if (plan.action === "fast-forward") {
+      spin.message(`Updating ${fromSha} → ${remoteSha}…`);
       const merged = git(sourceDir, ["merge", "--ff-only", upstream]);
       if (!merged.ok) {
         spin.error("Fast-forward merge failed.");
-        throw new CliError(
-          `Could not fast-forward to ${upstream}: ${merged.err || "diverged history"}.\n` +
-            `Re-run with --force to discard local commits and reset to ${upstream}.`,
-          { code: "GIT_MERGE_FAILED" }
-        );
+        throw new CliError(`Could not fast-forward to ${upstream}: ${merged.err || "diverged history"}.`, {
+          code: "GIT_MERGE_FAILED",
+        });
       }
+      spin.stop(`Source updated to ${remoteSha}.`);
+    } else {
+      spin.stop(`Rebuilding ${fromSha} (no source change).`);
     }
-    spin.stop(`Source updated to ${remoteSha}.`);
 
     // Rebuild + reinstall via the platform install script. The script builds
     // before it installs, and aborts on a build failure (`set -euo pipefail` /
     // `$ErrorActionPreference`), so a broken build never replaces the binary.
-    const scriptDir = installScriptDir(sourceDir);
-    const installer = isWindows
-      ? { cmd: "powershell", args: ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(scriptDir, "install.ps1")] }
-      : { cmd: "bash", args: [join(scriptDir, "install.sh")] };
+    const installDir = getInstallDir();
+    const installer = installerCommand(installScriptDir(sourceDir), installDir);
 
     lifecycle.note(
       "Rebuilding belz",
@@ -181,16 +218,15 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
       );
     }
 
-    recordBelzMeta({ version: remoteSha, installedAt: new Date().toISOString() });
+    const toSha = plan.action === "fast-forward" ? remoteSha : fromSha;
+    recordBelzMeta({ version: toSha, installDir, installedAt: new Date().toISOString() });
 
     return ok<UpdateData>({
-      sourceDir,
-      fromSha,
-      toSha: remoteSha,
-      branch,
-      status: "updated",
-      dirty,
+      ...base,
+      toSha,
+      status: plan.action === "fast-forward" ? "updated" : "rebuilt",
       rebuilt: true,
+      installDir,
     });
   },
 
@@ -206,13 +242,14 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     if (data.status === "check-only") {
       ui.warn(`An update is available: ${data.fromSha} → ${data.toSha} (${data.branch}).`);
       if (data.dirty) {
-        ui.text("Note: the source checkout has uncommitted changes — `belz update` will need --force.");
+        ui.text("Note: the source checkout has uncommitted changes — commit or stash them first; `belz update` never discards them.");
       }
       ui.text("Run `belz update` to install it.");
       return;
     }
 
-    ui.success(`belz updated: ${data.fromSha} → ${data.toSha} (${data.branch}).`);
+    if (data.status === "rebuilt") ui.success(`belz rebuilt at ${data.fromSha} (${data.branch}).`);
+    else ui.success(`belz updated: ${data.fromSha} → ${data.toSha} (${data.branch}).`);
     ui.text("The new binary takes effect on your next `belz` invocation.");
   },
 };
