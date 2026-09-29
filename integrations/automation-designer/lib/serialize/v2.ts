@@ -40,7 +40,7 @@ const STEP_KEYS = new Set(["orderIndex", "source", "sql", "expression", "descrip
 /** Fields the V2 save route accepts with 200 and then drops (verified live). */
 const DROPPED_BY_V2 = new Set(["buttonLabel", "internalMethod"]);
 
-export interface NotAppliedEntry {
+interface NotAppliedEntry {
   key: string;
   reason: string;
 }
@@ -68,7 +68,7 @@ export interface V2OverlayPlan {
   structural?: { touched: string[]; order: Array<number | null> };
 }
 
-export interface PlanOptions extends ParseOptions {
+interface PlanOptions extends ParseOptions {
   /** Callee contracts + db accounts for ops (lib/save/services.ts loadServiceCatalog). */
   catalog?: ServiceCatalog;
 }
@@ -317,7 +317,7 @@ function structuralDrift(
  * plain. The runtime content-sniffs, so a plain source that happens to be
  * canonical base64 is stored encoded (otherwise it would be decoded to garbage).
  */
-export function encodeSource(current: unknown, source: string): string {
+function encodeSource(current: unknown, source: string): string {
   const wasB64 = typeof current === "string" && current.length > 0 && decodeBase64Strict(current) !== null;
   if (wasB64 || decodeBase64Strict(source) !== null) return encodeBase64(source);
   return source;

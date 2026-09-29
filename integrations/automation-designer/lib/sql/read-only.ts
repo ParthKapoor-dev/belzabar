@@ -50,7 +50,7 @@ const WRITE_WORDS = new Set([
   "analyse",
 ]);
 
-export interface ReadOnlyVerdict {
+interface ReadOnlyVerdict {
   ok: boolean;
   reason?: string;
   /** Query with comments removed and literals blanked (for diagnostics/tests). */
@@ -206,7 +206,7 @@ const EXPLAIN_OPTIONS = new Set([
 ]);
 const EXPLAIN_VALUES = new Set(["true", "false", "on", "off", "1", "0", "text", "json", "xml", "yaml", "none", "binary"]);
 
-export interface ExplainParts {
+interface ExplainParts {
   analyze: boolean;
   /** The explained statement (literals already blanked). */
   inner: string;

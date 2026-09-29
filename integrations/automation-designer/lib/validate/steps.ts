@@ -56,7 +56,7 @@ const SPEL_ISSUE_RULE: Record<SpelIssue["kind"], string> = {
   syntax: "AD-SPEL-005",
 };
 
-export function reportSpelIssues(text: string, path: string, where: string, ref: StepRef, report: Report): void {
+function reportSpelIssues(text: string, path: string, where: string, ref: StepRef, report: Report): void {
   for (const issue of scanSpel(text).issues) {
     const rule = SPEL_ISSUE_RULE[issue.kind];
     const what =
@@ -169,7 +169,7 @@ const OPS: Record<string, RegExp> = {
 };
 
 /** A row's field must appear as #{field…} and its operator in the expression. */
-export function basicRowsMismatch(rows: Array<Record<string, unknown>>, expr: string): string | undefined {
+function basicRowsMismatch(rows: Array<Record<string, unknown>>, expr: string): string | undefined {
   for (const row of rows) {
     const item = isObj(row.item) ? row.item : undefined;
     const field = nonBlank(item?.fieldCode);
@@ -243,7 +243,7 @@ export function customCodeSource(code: string): string {
 const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor as new (...args: string[]) => unknown;
 
 /** Compile-only JS check (the function is never called). */
-export function jsSyntaxError(source: string): string | undefined {
+function jsSyntaxError(source: string): string | undefined {
   const src = replaceSpelBlocks(source, "__belz_spel__");
   try {
     new AsyncFunction(src);

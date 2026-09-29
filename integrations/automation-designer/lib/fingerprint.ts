@@ -84,7 +84,7 @@ function semanticStep(s: ParsedStep): unknown {
  * ids differ between a draft and its published copy), state, versions,
  * audit stamps, the change log, the test suite, the viewer's permissions.
  */
-export const BOOKKEEPING_KEYS: ReadonlySet<string> = new Set([
+const BOOKKEEPING_KEYS: ReadonlySet<string> = new Set([
   "id",
   "uuid",
   "automationApiId",

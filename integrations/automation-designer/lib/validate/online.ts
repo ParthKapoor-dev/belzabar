@@ -23,7 +23,7 @@ import { testMethodMultipart } from "../api/v1";
 import { jsonPath, stepKind, stepRef } from "./schema";
 import { arr, str, type FindingInput } from "./types";
 
-export interface OnlineOptions {
+interface OnlineOptions {
   env: string;
   dryRunCompile: boolean;
 }
@@ -112,7 +112,7 @@ function slimContract(c: ApiContract): ApiContract {
   };
 }
 
-export async function fetchAccountIds(service: string): Promise<Array<string | number>> {
+async function fetchAccountIds(service: string): Promise<Array<string | number>> {
   const key = service.replace(/[^\w.-]/g, "_");
   const cached = await accountCache.load(key);
   if (cached) return cached;

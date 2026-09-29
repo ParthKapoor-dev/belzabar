@@ -1,6 +1,6 @@
 import { confirmWrite, logWriteIntent } from "@belzabar/core";
 
-export interface ConfirmOpts {
+interface ConfirmOpts {
   yes: boolean;
   outputMode: "human" | "llm";
   action: string;

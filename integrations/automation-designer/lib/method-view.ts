@@ -58,7 +58,7 @@ export function identityForStep(step: ParsedStep): string {
 
 type Obj = Record<string, unknown>;
 
-export interface StepFacts {
+interface StepFacts {
   when?: string;
   loop?: { type?: string; over?: string; counter?: string; parallel?: boolean };
   exitOnFailure?: boolean;
@@ -123,7 +123,7 @@ function statusCode(v: unknown): string | undefined {
 
 // ── Step pieces ─────────────────────────────────────────────────────────────
 
-export function kindLabel(step: ParsedStep): string {
+function kindLabel(step: ParsedStep): string {
   switch (step.kind) {
     case "SQL":
       return `SQL(${step.operation || "?"})`;
@@ -145,7 +145,7 @@ export function kindLabel(step: ParsedStep): string {
 }
 
 /** The step's body text (decoded SQL / source / SpEL expression), if it has one. */
-export function stepBody(step: ParsedStep): { kind: "SQL" | "CODE" | "SPEL"; text: string; language?: string } | null {
+function stepBody(step: ParsedStep): { kind: "SQL" | "CODE" | "SPEL"; text: string; language?: string } | null {
   if (step.kind === "SQL" && step.sql) return { kind: "SQL", text: step.sql };
   if (step.kind === "CUSTOM_CODE" && step.source) return { kind: "CODE", text: step.source, language: step.language ?? undefined };
   if (step.kind === "SPEL_ECHO" && step.expression) return { kind: "SPEL", text: step.expression };
@@ -153,7 +153,7 @@ export function stepBody(step: ParsedStep): { kind: "SQL" | "CODE" | "SPEL"; tex
 }
 
 /** `key[→fieldCode][ ⇒ $var]` per output; V2 outputs carry the exposed name as `fieldCode`. */
-export function outputSpecs(step: ParsedStep): string[] {
+function outputSpecs(step: ParsedStep): string[] {
   return (step.outputs ?? []).map((o) => {
     const raw = isObj(o.raw) ? o.raw : {};
     const exposed = str(raw.fieldCode) ?? str(raw.name);
@@ -166,14 +166,14 @@ export function outputSpecs(step: ParsedStep): string[] {
 }
 
 /** Step inputs minus the body slot (the SQL query / SpEL expression is shown as the body). */
-export function inputPairs(step: ParsedStep, labelFor?: InputLabeler): Array<{ input: string; value: string }> {
+function inputPairs(step: ParsedStep, labelFor?: InputLabeler): Array<{ input: string; value: string }> {
   const body = stepBody(step);
   return flattenStepInputs(step.inputs ?? [], labelFor).filter((r) => !(body && r.value === body.text));
 }
 
 // ── Compact view ────────────────────────────────────────────────────────────
 
-export interface CompactOptions {
+interface CompactOptions {
   /** Max chars for an abbreviated body (SQL/code/SpEL) on the step line. 0 = no limit. */
   bodyChars?: number;
   /** Max chars per input value. */
@@ -186,7 +186,7 @@ export interface CompactOptions {
   step?: number | null;
 }
 
-export interface CompactBlock {
+interface CompactBlock {
   step: number;
   kind: "SQL" | "CODE" | "SPEL";
   language?: string;

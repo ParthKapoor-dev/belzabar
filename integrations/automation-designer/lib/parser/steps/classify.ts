@@ -48,7 +48,7 @@ export interface ParseOptions {
   resolveService?: ServiceResolver;
 }
 
-export type StepFamily =
+type StepFamily =
   | { kind: "SQL"; operation: string }
   | { kind: "SPEL_ECHO" }
   | { kind: "REDIS_GET" | "REDIS_SET" | "REDIS_REMOVE" }

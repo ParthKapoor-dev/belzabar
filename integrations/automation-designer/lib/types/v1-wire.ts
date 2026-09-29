@@ -142,7 +142,7 @@ export interface V1AutomationUserInput {
   [extra: string]: unknown;
 }
 
-export interface V1AutomationAPIOutput {
+interface V1AutomationAPIOutput {
   id: string;
   displayName: string;
   showOnUi?: boolean;

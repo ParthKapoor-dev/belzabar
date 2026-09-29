@@ -27,7 +27,7 @@ function checkResponse(response: Response, path: string): Promise<void> {
  * The current authenticated user, in the shape the changelog payload expects.
  * Backed by GET /rest/api/users/me, which wraps the user under a `user` key.
  */
-export async function fetchCurrentUser(): Promise<Record<string, unknown>> {
+async function fetchCurrentUser(): Promise<Record<string, unknown>> {
   const path = "/rest/api/users/me";
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
   await checkResponse(response, path);

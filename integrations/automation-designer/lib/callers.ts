@@ -100,7 +100,7 @@ export async function resolveCallTarget(uuid: string): Promise<CallTarget> {
 // ── AD side ─────────────────────────────────────────────────────────────────
 
 /** One step of a V2 body, reduced to what caller matching / reporting needs. */
-export interface StepRef {
+interface StepRef {
   i: number;
   api?: string;
   service?: string;
@@ -172,7 +172,7 @@ async function stepRefsFor(m: MethodFinderMethod, key: string): Promise<StepRef[
   return refs;
 }
 
-export function stepCallsTarget(step: StepRef, t: CallTarget): boolean {
+function stepCallsTarget(step: StepRef, t: CallTarget): boolean {
   if (step.api && t.apiUuids.includes(step.api)) return true;
   return !!step.service && !!step.method && step.service === t.category && step.method === t.name;
 }
@@ -195,7 +195,7 @@ export interface AdCaller {
   steps: string[];
 }
 
-export interface CallersScope {
+interface CallersScope {
   /** Lower-case category names whose opaque steps are resolved via V2 reads; null = all. */
   deep: Set<string> | null;
   /**

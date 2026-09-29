@@ -22,7 +22,7 @@ import { caseFromWire, caseToWire, diffCases, type CaseFile } from "./case-file"
 import { isStructured } from "./expect";
 import type { HydratedMethod } from "../types/common";
 
-export interface ServerCase {
+interface ServerCase {
   id: string;
   file: CaseFile;
 }
@@ -129,7 +129,7 @@ export async function updateCase(chainUuid: string, id: string, c: CaseFile): Pr
 
 // ── sync plan ─────────────────────────────────────────────────────────────
 
-export type SyncAction = "create" | "update" | "delete" | "unchanged" | "drift" | "extra" | "conflict";
+type SyncAction = "create" | "update" | "delete" | "unchanged" | "drift" | "extra" | "conflict";
 
 export interface SyncItem {
   action: SyncAction;

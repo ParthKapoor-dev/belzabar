@@ -12,11 +12,11 @@ import { arr, str, type Report, type StepRef } from "./types";
 import { isObj, str as nonBlank } from "@belzabar/core";
 
 /** Roots the platform provides in every SpEL context (LoggedInUser: seen on a dev env). */
-export const PLATFORM_ROOTS = new Set(["util", "QUOTE", "ESCAPE", "JSON", "Math", "T", "LoggedInUser"]);
+const PLATFORM_ROOTS = new Set(["util", "QUOTE", "ESCAPE", "JSON", "Math", "T", "LoggedInUser"]);
 /** Per-step success flags the engine sets: serviceSuccess<step>[_<sub>] (seen on a dev env). */
 const PLATFORM_ROOT_RE = /^serviceSuccess\d+(?:_\d+)*$/;
 
-export function isPlatformRoot(name: string): boolean {
+function isPlatformRoot(name: string): boolean {
   return PLATFORM_ROOTS.has(name) || PLATFORM_ROOT_RE.test(name);
 }
 

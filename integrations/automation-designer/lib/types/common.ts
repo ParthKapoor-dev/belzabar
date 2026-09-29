@@ -19,7 +19,7 @@ export type ApiVersion = "v1" | "v2";
  */
 export type MethodState = "DRAFT" | "PUBLISHED" | "UNKNOWN";
 
-export type DataType =
+type DataType =
   | "STRING"
   | "TEXT"
   | "NUMBER"
@@ -37,7 +37,7 @@ export type DataType =
 
 // Lenient type alias so we keep strings the server sometimes sends (e.g.
 // TEXT variants) but still get autocomplete for the common set.
-export type LooseDataType = DataType | (string & {});
+type LooseDataType = DataType | (string & {});
 
 /**
  * Unified method-level field (input / variable / output contract).
@@ -83,16 +83,6 @@ export interface MethodOutput {
 }
 
 // ─── Step parsing ─────────────────────────────────────────────────────────
-
-export type StepKind =
-  | "CUSTOM_CODE"
-  | "SPEL_ECHO" // Helpers.Legacy.echo
-  | "SQL"       // db_service / Database.SQL (data.read / update / add / delete / schema.modify)
-  | "REDIS_GET"
-  | "REDIS_SET"
-  | "REDIS_REMOVE"
-  | "EXISTING_SERVICE"
-  | "UNKNOWN";
 
 /**
  * A single input (mapping) supplied to a step. Works for both V1 (mapping
@@ -225,7 +215,7 @@ export type ParsedStep =
 
 // ─── Method ──────────────────────────────────────────────────────────────
 
-export interface MethodCategory {
+interface MethodCategory {
   id?: number;
   uuid?: string;
   name: string;

@@ -35,27 +35,27 @@ import { arr, str, type FindingInput, type Report, type ValidationFinding, type 
 import { isObj, str as nonBlank } from "@belzabar/core";
 
 export type { ValidationFinding, ValidationResult, StepRef, Severity } from "./types";
-export { RULES, ruleInfo, type RuleCode, type RuleInfo } from "./catalogue";
+export { RULES, ruleInfo } from "./catalogue";
 
-export interface ValidateInput {
+interface ValidateInput {
   after: V2MethodBody;
   before?: V2MethodBody;
   overlayPaths?: string[];
   strict?: boolean;
 }
 
-export interface ValidateOnlineInput extends ValidateInput {
+interface ValidateOnlineInput extends ValidateInput {
   env: string;
   dryRunCompile?: boolean;
 }
 
-export const OFFLINE_LAYERS = ["L1", "L2", "L3"] as const;
+const OFFLINE_LAYERS = ["L1", "L2", "L3"] as const;
 
 /** A finding plus the raw path it was reported at (identity is computed in `finish`). */
 type RawFinding = ValidationFinding;
 
 /** Run L1–L3 on one body and return every finding at its catalogue severity. */
-export function collectOffline(body: unknown): RawFinding[] {
+function collectOffline(body: unknown): RawFinding[] {
   const out: RawFinding[] = [];
   const report: Report = (f: FindingInput) => out.push(toFinding(f));
   const usable = checkStructure(body, report);

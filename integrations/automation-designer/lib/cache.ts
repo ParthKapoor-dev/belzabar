@@ -12,7 +12,7 @@ const methodCache = new Cache<HydratedMethod>({
 });
 
 /** Method uuids are case-insensitive hex; padded/mixed-case input must hit the same entry. */
-export function methodCacheKey(uuid: string): string {
+function methodCacheKey(uuid: string): string {
   return uuid.trim().toLowerCase();
 }
 

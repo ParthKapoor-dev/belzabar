@@ -1,6 +1,6 @@
 import type { V1RawMethodResponse as RawMethodResponse } from "../types/v1-wire";
 
-export interface SqlDatabaseField {
+interface SqlDatabaseField {
   id?: number;
   fieldName: string;
   fieldValue: string;

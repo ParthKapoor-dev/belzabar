@@ -51,7 +51,7 @@ export interface TestRun {
   executionResult: Record<string, unknown>;
 }
 
-export function parseOutput(testResult: unknown): unknown {
+function parseOutput(testResult: unknown): unknown {
   if (typeof testResult !== "string") return testResult;
   const trimmed = testResult.trim();
   if (trimmed.startsWith("{") || trimmed.startsWith("[")) {

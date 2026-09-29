@@ -17,7 +17,7 @@ export const COMPILED_CACHE_ROUTES = [
   "/rest/api/automations/cache/invalidate",
 ] as const;
 
-export interface CacheRouteResult {
+interface CacheRouteResult {
   path: string;
   ok: boolean;
   status: number | null;

@@ -5,7 +5,7 @@
 import { adApi } from "./api/index";
 import * as v2 from "./api/v2";
 
-export interface TestCaseRow {
+interface TestCaseRow {
   id: string;
   name: string;
   active: boolean;
@@ -23,7 +23,7 @@ export interface TestSuiteSummary {
 }
 
 /** Summarise a `/chain/testsuite/service-chain/{uuid}` body (suite object, bare array, or null). */
-export function summarizeTestSuite(uuid: string, body: unknown): TestSuiteSummary {
+function summarizeTestSuite(uuid: string, body: unknown): TestSuiteSummary {
   const suite: Record<string, unknown> =
     body && typeof body === "object" && !Array.isArray(body)
       ? (body as Record<string, unknown>)

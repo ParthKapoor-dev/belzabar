@@ -26,17 +26,17 @@ export interface V2Output {
   [extra: string]: unknown;
 }
 
-export interface V2AccountConfiguration {
+interface V2AccountConfiguration {
   id: string | number | null;
   name: string | null;
 }
 
-export interface V2EntryCondition {
+interface V2EntryCondition {
   expression: string | null;
   expandedExpressions?: unknown | null;
 }
 
-export interface V2ExitCondition {
+interface V2ExitCondition {
   /** code: the HTTP status (an integer on the wire). */
   exitOnFailure: { value: boolean; code: number | string | null; message: string };
   conditionalExit: {
@@ -47,7 +47,7 @@ export interface V2ExitCondition {
   };
 }
 
-export interface V2CustomCodeProperties {
+interface V2CustomCodeProperties {
   inlineCode: string | null;
   language: "JAVASCRIPT" | "PYTHON" | "JAVA" | "COBOL" | "PERL" | null;
   executor: string | null;
@@ -105,7 +105,7 @@ export interface V2Step {
   [extra: string]: unknown;
 }
 
-export interface V2Metadata {
+interface V2Metadata {
   id?: string | number;
   /** Not on the real wire (AD-35) — the uuid is `V2MethodResponse.uuid`. */
   uuid?: string;

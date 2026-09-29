@@ -11,7 +11,7 @@ import { CliError, readErrorBody } from "@belzabar/core";
 import { ServiceHydrator } from "./hydrator";
 import type { V1AutomationDefinition, V1RawMethodResponse } from "./types/v1-wire";
 
-export interface V1TestPayload {
+interface V1TestPayload {
   category: V1RawMethodResponse["category"];
   jsonDefinition: string;
   id: V1RawMethodResponse["id"];
@@ -19,7 +19,7 @@ export interface V1TestPayload {
   version: V1RawMethodResponse["version"];
 }
 
-export interface BuildTestPayloadDeps {
+interface BuildTestPayloadDeps {
   /** Service definition by step `automationId` (default: env-scoped definition cache). */
   getDefinition: (automationId: string) => Promise<V1AutomationDefinition | null>;
 }

@@ -32,7 +32,7 @@ export function coerceInputValue(raw: string, type: string | undefined): unknown
  * `--inputs <file|json>` (same convention as `ad run`'s payload): an existing
  * file is read, otherwise the argument must be an inline JSON object.
  */
-export async function readInputsArg(arg: string): Promise<Record<string, unknown>> {
+async function readInputsArg(arg: string): Promise<Record<string, unknown>> {
   // Stable codes (not UNHANDLED_EXCEPTION): FILE_NOT_FOUND, INVALID_JSON, INVALID_INPUTS.
   const inline = arg.trimStart().startsWith("{");
   let content: string;

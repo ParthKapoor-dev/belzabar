@@ -8,7 +8,7 @@ export const METHOD_FINDER_CACHE_TTL_MS = FINDER_INDEX_TTL_MS;
  * An index with skipped categories (a listing failed mid-build, e.g. a 503) is
  * only reused this long, then rebuilt (ADR-R2).
  */
-export const PARTIAL_INDEX_TTL_MS = 15 * 60 * 1000;
+const PARTIAL_INDEX_TTL_MS = 15 * 60 * 1000;
 /**
  * Bumped when index records gain fields. 2 (Stage 7): `summary`, `description`,
  * `automationApiUuid`, `calls`, `opaqueSteps` — used by `find --describe` and
@@ -225,12 +225,12 @@ export interface MethodFinderIndex {
   methodCount: number;
 }
 
-export interface MethodFinderMethodMatch extends MethodFinderMethod {
+interface MethodFinderMethodMatch extends MethodFinderMethod {
   type: "method";
   score: number;
 }
 
-export interface MethodFinderCategoryMatch extends MethodFinderCategory {
+interface MethodFinderCategoryMatch extends MethodFinderCategory {
   type: "category";
   score: number;
 }
@@ -265,7 +265,7 @@ interface RawMethodRecord {
   updatedOn: number;
 }
 
-export interface IndexProgress {
+interface IndexProgress {
   done: number;
   total: number;
   category: string;
@@ -445,7 +445,7 @@ export function stepCallRefs(def: Record<string, unknown>): { calls: string[]; o
   return { calls: [...calls], opaque };
 }
 
-export function buildMethodUrl(categoryName: string, methodUuid: string): string {
+function buildMethodUrl(categoryName: string, methodUuid: string): string {
   return `${Config.cleanBaseUrl}/automation-designer/${encodeURIComponent(categoryName)}/${methodUuid}`;
 }
 
@@ -716,11 +716,11 @@ export function scoreFuzzy(query: string, value: string, weight = 1): number {
 
 const DESCRIBE_STOPWORDS = new Set(["a", "an", "the", "of", "to", "in", "on", "for", "and", "or", "by", "with", "is", "it", "from", "that", "this", "be", "as", "at", "into"]);
 
-export function describeTokens(text: string): string[] {
+function describeTokens(text: string): string[] {
   return [...new Set(tokenize(normalizeSearchText(text)).filter((t) => t.length >= 2 && !DESCRIBE_STOPWORDS.has(t)))];
 }
 
-export interface DescribeMatch extends MethodFinderMethod {
+interface DescribeMatch extends MethodFinderMethod {
   score: number;
   /** Query words that matched somewhere in name / alias / summary / description / category. */
   matched: string[];

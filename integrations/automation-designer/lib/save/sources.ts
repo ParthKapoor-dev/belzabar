@@ -47,7 +47,7 @@ export async function resolveOverlaySources(overlay: unknown, baseDir: string): 
 }
 
 /** `N=path` → [N, path]; the step number is the fetched position (as `ad show` prints it). */
-export function parseStepFile(v: string, flag: string): { step: number; path: string } {
+function parseStepFile(v: string, flag: string): { step: number; path: string } {
   const m = /^(\d+)=(.+)$/.exec(v);
   if (!m || Number(m[1]) < 1) {
     throw new CliError(`${flag} expects <step>=<file> (e.g. ${flag} 3=query.sql), got '${v}'.`, { code: "INVALID_VALUE", details: { flag, value: v } });

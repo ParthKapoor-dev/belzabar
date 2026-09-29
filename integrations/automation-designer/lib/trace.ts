@@ -19,7 +19,7 @@ import type { MethodVersionFull } from "./api/v1";
 import { fingerprintMethod, parseVersionBody } from "./fingerprint";
 import { resolveMethodRef } from "@belzabar/core/platform";
 
-export interface TraceOptions {
+interface TraceOptions {
   uuid: string;
   /** Env whose version history forms the spine. */
   spineEnv: string;
@@ -62,7 +62,7 @@ export function traceEnvFamily(spineEnv: string, all: Record<string, { project: 
   return [spineEnv, ...family];
 }
 
-export interface SpineEntry {
+interface SpineEntry {
   index: number;
   version: number;
   methodVersionID: string;
@@ -73,7 +73,7 @@ export interface SpineEntry {
   hash: string;
 }
 
-export interface EnvRow {
+interface EnvRow {
   env: string;
   ok: boolean;
   /** Latest published version number on this env (env-local; not comparable across envs). */

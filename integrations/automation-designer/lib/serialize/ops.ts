@@ -54,7 +54,7 @@ const OP_KEYS: Record<string, Set<string>> = {
 const FIELD_OP = /^(set|remove)-(input|variable|output)$/;
 const LIST_OF: Record<string, "inputs" | "variables" | "outputs"> = { input: "inputs", variable: "variables", output: "outputs" };
 
-export interface StructuralResult {
+interface StructuralResult {
   body: V2MethodResponse;
   /** Paths in `body` that were written (new/updated steps and fields). */
   touched: string[];
@@ -79,7 +79,7 @@ export function stepService(s: V2Step): string | null {
 }
 
 /** Step kind the way the save overlay treats it (CUSTOM_CODE / SQL / SPEL_ECHO / …). */
-export function stepKind(s: V2Step, pos: number, opts: ParseOptions): string {
+function stepKind(s: V2Step, pos: number, opts: ParseOptions): string {
   return parseV2Step(s, pos, () => {}, opts).kind;
 }
 

@@ -17,9 +17,9 @@ import type { SuiteSnapshot } from "./suite";
 import { runInlineTest, type FailedStep } from "../test-run";
 import type { HydratedMethod } from "../types/common";
 
-export type CaseStatus = "PASS" | "FAIL" | "ERROR";
+type CaseStatus = "PASS" | "FAIL" | "ERROR";
 
-export interface CaseRunResult {
+interface CaseRunResult {
   id: string;
   name: string;
   /** PASS: ran and every evaluated assertion held. FAIL: an assertion failed. ERROR: the execution failed (or could not start). */

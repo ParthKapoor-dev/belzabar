@@ -22,11 +22,11 @@ export interface MethodMeta {
   outputs: string[];
 }
 
-export const METHOD_FILE = "method.json";
-export const CASES_DIR = "cases";
+const METHOD_FILE = "method.json";
+const CASES_DIR = "cases";
 
 /** A directory-name segment: path separators and control characters replaced. */
-export function safeSegment(s: string): string {
+function safeSegment(s: string): string {
   const out = s.replace(/[\\/:*?"<>|\x00-\x1f]+/g, "_").replace(/^\.+/, "_").trim();
   return out || "_";
 }
@@ -35,7 +35,7 @@ export function methodDirFor(root: string, category: string | null, name: string
   return join(root, safeSegment(category ?? "_uncategorized"), safeSegment(name));
 }
 
-export function serializeMethodMeta(m: MethodMeta): string {
+function serializeMethodMeta(m: MethodMeta): string {
   const uuids: Record<string, string> = {};
   for (const k of Object.keys(m.uuids).sort()) uuids[k] = m.uuids[k]!;
   const inputs: Record<string, string> = {};
@@ -63,7 +63,7 @@ export function readMethodMeta(dir: string): MethodMeta | null {
   };
 }
 
-export interface LoadedCase {
+interface LoadedCase {
   path: string;
   file: CaseFile;
 }

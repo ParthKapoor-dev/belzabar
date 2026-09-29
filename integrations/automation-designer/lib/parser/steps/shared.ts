@@ -32,9 +32,3 @@ export function findMappingByInputId<T extends { automationUserInputId?: number;
   }
   return null;
 }
-
-/** Convenience string-getter that tolerates `undefined` and whitespace-only. */
-export function str(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  return value;
-}

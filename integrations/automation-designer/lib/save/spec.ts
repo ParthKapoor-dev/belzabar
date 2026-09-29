@@ -34,7 +34,7 @@ export function isCompactSpec(v: unknown): boolean {
   return "category" in v && !isObj(v.metadata);
 }
 
-export interface ExpandedSpec {
+interface ExpandedSpec {
   body: Record<string, unknown>;
   /** Server-owned spec keys that were dropped. */
   dropped: string[];

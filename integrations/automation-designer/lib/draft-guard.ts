@@ -17,7 +17,7 @@ import type { ApiVersion, HydratedMethod, MethodState } from "./types/common";
  * Every result also carries `initial`: the method exactly as fetched for the
  * input uuid, so callers (e.g. `ad state`) need not fetch it again (AD-39).
  */
-export type DraftGuardResult = DraftGuardOutcome & { initial: HydratedMethod };
+type DraftGuardResult = DraftGuardOutcome & { initial: HydratedMethod };
 
 type DraftGuardOutcome =
   | {

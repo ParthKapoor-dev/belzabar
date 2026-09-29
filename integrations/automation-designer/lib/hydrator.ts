@@ -145,7 +145,7 @@ export function resolverFromTable(table: ReadonlyMap<string, ServiceIdentity>): 
   return (ref: StepServiceRef) => (ref.automationId == null ? null : table.get(String(ref.automationId).trim()) ?? null);
 }
 
-export interface ServiceResolution {
+interface ServiceResolution {
   resolveService: ServiceResolver;
   /** automationIds whose definition could not be fetched (their steps stay EXISTING_SERVICE). */
   unresolved: string[];

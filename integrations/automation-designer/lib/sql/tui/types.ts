@@ -30,7 +30,7 @@ export interface SqlTuiSessionState {
   historyToPersist: string[];
 }
 
-export type SqlTuiMetaCommandType =
+type SqlTuiMetaCommandType =
   | "quit"
   | "help"
   | "status"

@@ -22,7 +22,7 @@ import {
   type ServiceIdentity,
 } from "./classify";
 
-export interface Warn {
+interface Warn {
   (msg: string): void;
 }
 
@@ -166,7 +166,7 @@ function buildCustomCode(raw: V1ServiceStep, base: BaseFields, warn: Warn): Cust
  * Shared with the serializer so "was this step edited?" compares against the
  * exact same decoding.
  */
-export function decodeCustomCode(code: string): { source: string; encoding: "BASE_64" | "NONE" } {
+function decodeCustomCode(code: string): { source: string; encoding: "BASE_64" | "NONE" } {
   if (code.length === 0) return { source: "", encoding: "NONE" };
   const decoded = decodeBase64Strict(code);
   return decoded === null ? { source: code, encoding: "NONE" } : { source: decoded, encoding: "BASE_64" };
@@ -215,7 +215,7 @@ function buildSql(raw: V1ServiceStep, base: BaseFields, operation: string, ident
   };
 }
 
-export interface SqlMappingLocation {
+interface SqlMappingLocation {
   mapping: V1Mapping;
   sql: string;
   encoding: "BASE_64" | "NONE";
@@ -234,7 +234,7 @@ export interface SqlMappingLocation {
  *
  * `hint.inputUuids` (step 0) takes precedence when one of them is present.
  */
-export function locateSqlMapping(
+function locateSqlMapping(
   mappings: V1Mapping[] | undefined,
   hint: { inputUuids?: readonly string[] } = {},
 ): SqlMappingLocation | null {
@@ -378,6 +378,3 @@ function parseConditionRows(rows: unknown[] | undefined): ConditionRow[] | undef
   }
   return out.length > 0 ? out : undefined;
 }
-
-// Re-export for fixture-building convenience in tests.
-export const __testExports = { mapOutput, mapMapping };

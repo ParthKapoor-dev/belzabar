@@ -51,7 +51,7 @@ function safeActiveEnvName(): string | undefined {
   }
 }
 
-export interface SqlDbContext {
+interface SqlDbContext {
   databases: NormalizedSqlDatabase[];
   resolution: SqlDbResolutionResult;
 }
@@ -61,14 +61,14 @@ export interface SqlExecutionContext {
   template: V1RawMethodResponse;
 }
 
-export interface ExecuteSqlReadOptions {
+interface ExecuteSqlReadOptions {
   query: string;
   database: NormalizedSqlDatabase;
   context: SqlExecutionContext;
   raw?: boolean;
 }
 
-export interface ExecuteSqlReadResult {
+interface ExecuteSqlReadResult {
   database: NormalizedSqlDatabase;
   query: string;
   statusCode?: number;
@@ -134,7 +134,7 @@ export async function loadSqlExecutionContext(): Promise<SqlExecutionContext> {
   };
 }
 
-export interface ExecuteSqlUpdateResult {
+interface ExecuteSqlUpdateResult {
   database: NormalizedSqlDatabase;
   query: string;
   statusCode?: number;
@@ -226,7 +226,7 @@ export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<
   return data;
 }
 
-export interface ExecuteSqlInsertResult {
+interface ExecuteSqlInsertResult {
   database: NormalizedSqlDatabase;
   query: string;
   statusCode?: number;
@@ -371,7 +371,7 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
   return data;
 }
 
-export interface ExecuteSqlModifyResult {
+interface ExecuteSqlModifyResult {
   database: NormalizedSqlDatabase;
   query: string;
   statusCode?: number;

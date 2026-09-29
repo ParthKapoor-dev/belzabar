@@ -23,7 +23,7 @@ import { replaceSpelBlocks, scanSpel, spelRoots } from "./spel";
 import { decodeBase64Strict } from "../base64";
 import { isObj, str as nonBlank } from "@belzabar/core";
 
-export interface LintRuleInfo {
+interface LintRuleInfo {
   description: string;
 }
 
@@ -43,9 +43,10 @@ export const LINT_RULES = {
   "AD-LINT-010": { description: "Missing description (method, summary, inputs, outputs, steps) — the team's design principle #6 (lint --docs)" },
 } as const satisfies Record<string, LintRuleInfo>;
 
-export type LintRuleCode = keyof typeof LINT_RULES;
+/** Every lint finding names a rule of the catalogue above. */
+type Report = (f: Omit<ValidationFinding, "severity"> & { rule: keyof typeof LINT_RULES }) => void;
 
-export interface LintOptions {
+interface LintOptions {
   /** Also report missing descriptions (AD-LINT-010). */
   docs?: boolean;
   /**
@@ -71,7 +72,7 @@ const NUMERIC_TYPES = new Set(["NUMBER", "INTEGER", "FLOAT", "DOUBLE", "LONG", "
 export function lintMethodV2(body: unknown, opts: LintOptions = {}): ValidationFinding[] {
   if (!isObj(body)) return [];
   const out: ValidationFinding[] = [];
-  const report = (f: Omit<ValidationFinding, "severity">) => out.push({ severity: "warn", ...f });
+  const report: Report = (f) => void out.push({ severity: "warn", ...f });
   const steps = arr(body.steps);
   const resolvers = resolvedTables(opts.resolverTables);
 
@@ -162,7 +163,7 @@ function lintSql(
   ref: ValidationFinding["step"],
   at: (...rest: Array<string | number>) => string,
   placeholderOutputs: Map<string, number>,
-  report: (f: Omit<ValidationFinding, "severity">) => void,
+  report: Report,
   resolvers: Array<{ table: RegExp; resolver: string }>,
 ): void {
   const q = findSqlInput(s);
@@ -282,7 +283,7 @@ function significantDigits(v: string): number {
   return /^\d+$/.test(d) ? d.length : 0;
 }
 
-function docs(body: Obj, report: (f: Omit<ValidationFinding, "severity">) => void): void {
+function docs(body: Obj, report: Report): void {
   const missing: string[] = [];
   if (!nonBlank(body.description)) missing.push("description");
   if (!nonBlank(body.summary)) missing.push("summary");

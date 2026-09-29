@@ -66,7 +66,7 @@ export class ErrorParser {
   }
 }
 
-export interface DetectedJavaException {
+interface DetectedJavaException {
   message: string;
   causeMessage: string | null;
   /** The bad automationApiId extracted from a "Invalid Automation API Id - NNN" message, if present. */

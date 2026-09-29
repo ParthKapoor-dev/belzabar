@@ -6,7 +6,7 @@
 // cases v2_spel_*). This module finds the blocks, the malformed ones, and the
 // root identifiers a block reads, for the reference graph (graph.ts).
 
-export interface SpelBlock {
+interface SpelBlock {
   /** Index of `#` in the source. */
   start: number;
   /** Index just past the closing `}`. */
@@ -15,7 +15,7 @@ export interface SpelBlock {
   body: string;
 }
 
-export type SpelIssueKind = "unclosed" | "nested" | "hashVar" | "braceLiteral" | "syntax";
+type SpelIssueKind = "unclosed" | "nested" | "hashVar" | "braceLiteral" | "syntax";
 
 export interface SpelIssue {
   kind: SpelIssueKind;
@@ -24,7 +24,7 @@ export interface SpelIssue {
   detail?: string;
 }
 
-export interface SpelScan {
+interface SpelScan {
   blocks: SpelBlock[];
   issues: SpelIssue[];
 }
@@ -88,7 +88,7 @@ const TRAILING_OPERATOR_RE =
 const LEADING_OPERATOR_RE = /^(?:[*/%^=,)]|&&|\|\||\b(?:and|or|eq|ne|lt|gt|le|ge|div|mod)\b)/i;
 
 /** Cheap structural lint of one block body (not a full SpEL parser). */
-export function syntaxProblem(body: string): string | undefined {
+function syntaxProblem(body: string): string | undefined {
   if (!body) return "empty expression";
   const stripped = stripStrings(body);
   if (stripped === null) return "unterminated string literal";

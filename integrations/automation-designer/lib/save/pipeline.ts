@@ -41,17 +41,17 @@ import { runValidationGate, type ValidationFinding, type ValidationFlags, type V
  * the suite intact (live 2026-09-29). So the save never sends it
  * (`postBody`) and the freshness check and the verify ignore it.
  */
-export const SERVER_OWNED_ON_SAVE = ["metadata.version", "metadata.internal", "changelogs", "testSuite"];
+const SERVER_OWNED_ON_SAVE = ["metadata.version", "metadata.internal", "changelogs", "testSuite"];
 /** Freshness: any content change is a conflict; changelog / test-suite bookkeeping is not. */
 const IGNORED_FOR_FRESHNESS = ["changelogs", "testSuite"];
 
 /** The body actually POSTed: everything but `testSuite` (see SERVER_OWNED_ON_SAVE). */
-export function postBody(body: V2MethodResponse): V2MethodResponse {
+function postBody(body: V2MethodResponse): V2MethodResponse {
   const { testSuite: _suite, ...rest } = body;
   return rest as V2MethodResponse;
 }
 
-export interface SaveV2Input {
+interface SaveV2Input {
   uuid: string;
   overlay: unknown;
   env: string;
@@ -223,7 +223,7 @@ export async function assertDraftUnchanged(draftUuid: string, seen: V2MethodResp
   return fresh;
 }
 
-export function verifyPlan(uuid: string, before: V2MethodResponse, after: V2MethodResponse, plan: V2OverlayPlan): void {
+function verifyPlan(uuid: string, before: V2MethodResponse, after: V2MethodResponse, plan: V2OverlayPlan): void {
   if (plan.structural) {
     const removals = structuralRemovals(before, plan.body, plan.structural.order);
     verifyStructural(uuid, plan.body, after, plan.structural.touched, removals);
@@ -286,7 +286,7 @@ export function verifyStructural(uuid: string, expected: unknown, after: unknown
 }
 
 /** Something the structural ops removed: an object key (`key` undefined) or a keyed array element. */
-export interface Removal {
+interface Removal {
   path: string;
   key?: string;
 }
@@ -350,7 +350,7 @@ export function structuralRemovals(live: unknown, expected: unknown, order: Arra
  * Post-save verify: every target landed with the requested value, and nothing
  * else changed except server-owned bookkeeping. Throws AD_SAVE_VERIFY_FAILED.
  */
-export function verifySaved(uuid: string, before: V2MethodResponse, after: V2MethodResponse, targets: OverlayTarget[]): void {
+function verifySaved(uuid: string, before: V2MethodResponse, after: V2MethodResponse, targets: OverlayTarget[]): void {
   const notLanded = targets
     .filter((t) => !jsonEqual(getAtPath(after, t.path), t.value))
     .map((t) => ({ key: t.key, path: t.path, expected: t.value, actual: getAtPath(after, t.path) }));

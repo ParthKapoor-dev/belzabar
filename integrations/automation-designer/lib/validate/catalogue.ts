@@ -21,9 +21,9 @@
 
 import type { Severity } from "./types";
 
-export type Layer = "L1" | "L2" | "L3" | "L4";
+type Layer = "L1" | "L2" | "L3" | "L4";
 
-export interface RuleInfo {
+interface RuleInfo {
   severity: Severity;
   layer: Layer;
   description: string;
@@ -113,8 +113,6 @@ export const RULES = {
   "AD-COMPILE-001": { severity: "error", layer: "L4", description: "Server dry-run compile rejected the method (400 'Error while compiling automation')" },
   "AD-COMPILE-002": { severity: "error", layer: "L4", description: "Server dry-run compile answered another non-2xx (500 'automationAPI is null', bad account, 400 'Invalid state'): the method was refused" },
 } as const satisfies Record<string, RuleInfo>;
-
-export type RuleCode = keyof typeof RULES;
 
 export function ruleInfo(code: string): RuleInfo | undefined {
   return (RULES as Record<string, RuleInfo>)[code];

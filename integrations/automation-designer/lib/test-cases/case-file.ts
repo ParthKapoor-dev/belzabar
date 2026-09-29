@@ -19,7 +19,7 @@
 import { CliError, isObj } from "@belzabar/core";
 import { assertionFromWire, assertionToWire, isStructured, type CaseAssertion } from "./expect";
 
-export interface InputExtra {
+interface InputExtra {
   /** Stored defaultValue, when it differs from the value. */
   defaultValue?: unknown;
   /** Extra wrapper keys besides `value` (e.g. `properties`). */
@@ -39,7 +39,7 @@ export interface CaseFile {
 type Obj = Record<string, unknown>;
 
 /** Recursively sort object keys (stable files, order-insensitive compare). */
-export function sortKeys(v: unknown): unknown {
+function sortKeys(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(sortKeys);
   if (!isObj(v)) return v;
   const out: Obj = {};
@@ -61,7 +61,7 @@ function decodeWrapper(stored: unknown): { value: unknown; wrapper?: Obj } | nul
   return Object.keys(rest).length > 0 ? { value, wrapper: rest } : { value };
 }
 
-export function encodeWrapper(value: unknown, wrapper?: Obj): string {
+function encodeWrapper(value: unknown, wrapper?: Obj): string {
   return JSON.stringify({ value, ...(wrapper ?? {}) });
 }
 

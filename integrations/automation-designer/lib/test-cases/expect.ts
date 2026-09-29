@@ -16,7 +16,7 @@
 
 import { CliError } from "@belzabar/core";
 
-export type ExpectOp = "eq" | "neq" | "contains" | "gt" | "lt" | "ge" | "le";
+type ExpectOp = "eq" | "neq" | "contains" | "gt" | "lt" | "ge" | "le";
 
 export interface Expectation {
   /** The text as given (`greetingOut=Hello`). */
@@ -68,7 +68,7 @@ function invalid(source: string, why: string, code = "INVALID_EXPECTATION"): Cli
 }
 
 /** Parse the right-hand side: quoted → string; JSON → value; else the text. */
-export function parseLiteral(raw: string): { value: unknown; text: string; quoted: boolean } {
+function parseLiteral(raw: string): { value: unknown; text: string; quoted: boolean } {
   const t = raw.trim();
   if (t.length >= 2 && ((t.startsWith("'") && t.endsWith("'")) || (t.startsWith('"') && t.endsWith('"')))) {
     const inner = t.slice(1, -1);
@@ -104,7 +104,7 @@ function pathText(path: Array<string | number>): string {
   return path.map((p) => (typeof p === "number" ? `[${p}]` : `.${p}`)).join("");
 }
 
-export function formatExpectation(e: Pick<Expectation, "output" | "path" | "op" | "expected">): string {
+function formatExpectation(e: Pick<Expectation, "output" | "path" | "op" | "expected">): string {
   const path = pathText(e.path);
   const rhs = typeof e.expected === "string" ? e.expected : JSON.stringify(e.expected);
   return `${e.output}${path}${OP_SYMBOL[e.op]}${rhs}`;
@@ -142,7 +142,7 @@ function isScalar(v: unknown): boolean {
 }
 
 /** Wire-tolerant equality: exact, text form, or the JSON a string output holds. */
-export function looseEqual(actual: unknown, e: Pick<Expectation, "expected" | "text" | "quoted">): boolean {
+function looseEqual(actual: unknown, e: Pick<Expectation, "expected" | "text" | "quoted">): boolean {
   if (e.quoted) return isScalar(actual) && actual !== null && String(actual) === e.text;
   if (deepEqual(actual, e.expected)) return true;
   if (actual === undefined) return false;
@@ -217,18 +217,18 @@ export function evaluateExpectations(outputs: Record<string, unknown>, list: Exp
 
 // ── test-case assertions (advance-mode SpEL) ──────────────────────────────
 
-export const ASSERT_OPS = ["eq", "neq", "gt", "lt", "contains"] as const;
-export type AssertOp = (typeof ASSERT_OPS)[number];
+const ASSERT_OPS = ["eq", "neq", "gt", "lt", "contains"] as const;
+type AssertOp = (typeof ASSERT_OPS)[number];
 
 /** A test-case assertion in the git-friendly case-file form. */
-export interface StructuredAssertion {
+interface StructuredAssertion {
   output: string;
   op: AssertOp;
   expected: string | number | boolean | null;
 }
 
 /** An assertion belz cannot read back structurally: kept verbatim. */
-export interface RawAssertion {
+interface RawAssertion {
   expression: string | null;
   mode?: string;
   conditions?: unknown;
@@ -253,7 +253,7 @@ export function assertionFromExpectation(e: Expectation): StructuredAssertion {
 }
 
 /** SpEL literal: strings single-quoted ('' escapes), numbers/booleans/null bare. */
-export function spelLiteral(v: StructuredAssertion["expected"]): string {
+function spelLiteral(v: StructuredAssertion["expected"]): string {
   if (v === null) return "null";
   if (typeof v === "boolean" || typeof v === "number") return String(v);
   return `'${v.replace(/'/g, "''")}'`;

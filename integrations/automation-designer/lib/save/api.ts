@@ -9,7 +9,7 @@
 import { apiFetch, CliError, ensureApiOk, readErrorBody } from "@belzabar/core";
 import type { V2MethodResponse } from "../types/v2-wire";
 
-export const CHAIN_V2_PATH = "/rest/api/automation/chain/v2";
+const CHAIN_V2_PATH = "/rest/api/automation/chain/v2";
 
 /** Server `errorMessage` from a (redacted) error body, if any. */
 function serverMessage(body: unknown): string | null {

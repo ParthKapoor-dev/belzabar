@@ -111,7 +111,7 @@ export function parseSqlUpdateResult(result: any): SqlUpdateRunParseResult {
 }
 
 /** Output ids of the insert operation, by what they consume (from its `automationAPIOutputs`). */
-export interface SqlInsertOutputIds {
+interface SqlInsertOutputIds {
   rows: number[];
   generated: number[];
 }

@@ -35,7 +35,7 @@ export interface ValidationSummary {
   layersRun: string[];
 }
 
-export interface GateInput {
+interface GateInput {
   after: V2MethodResponse;
   before?: V2MethodResponse;
   overlayPaths?: string[];

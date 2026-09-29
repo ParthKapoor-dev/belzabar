@@ -45,7 +45,7 @@ type Obj = Record<string, unknown>;
 
 // ── problems ────────────────────────────────────────────────────────────────
 
-export interface Problem {
+interface Problem {
   key: string;
   reason: string;
 }
@@ -111,7 +111,7 @@ export function compactService(step: Obj): string | null {
 
 // ── keys ──────────────────────────────────────────────────────────────────
 
-export const COMPACT_STEP_KEYS = new Set([
+const COMPACT_STEP_KEYS = new Set([
   "service", "code", "language", "executor", "sql", "account", "description",
   "inputs", "outputs", "when", "exit", "exitIf", "loop", "async",
 ]);
@@ -197,12 +197,12 @@ export function mergeField(existing: Obj, given: Obj, kind: FieldKind, where: st
 
 const SPEL = /#\{/;
 
-export function stringValue(v: unknown): string {
+function stringValue(v: unknown): string {
   return typeof v === "string" ? v : JSON.stringify(v);
 }
 
 /** New custom code: plain unless the source is itself valid base64 (the runtime sniffs). */
-export function encodeNewSource(source: string): string {
+function encodeNewSource(source: string): string {
   return decodeBase64Strict(source) !== null ? encodeBase64(source) : source;
 }
 
@@ -218,7 +218,7 @@ interface OutputSpec {
 const COMPACT_OUTPUT_KEYS = new Set(["key", "as", "var", "type", "elementToRetrieve", "description"]);
 
 /** Normalise the three `outputs` spellings to a list. */
-export function normaliseOutputs(given: unknown, where: string, p: Problems): OutputSpec[] {
+function normaliseOutputs(given: unknown, where: string, p: Problems): OutputSpec[] {
   const one = (o: unknown, w: string, fieldCode?: string): OutputSpec | null => {
     if (typeof o === "string") return { key: o, as: fieldCode ?? o };
     if (!isObj(o)) {
@@ -331,7 +331,7 @@ function newInputNode(c: ContractInput | undefined, key: string, leaf: boolean):
  * callee contract), or remove it (value null). Existing nodes keep their
  * uuid/type/name. SpEL values get combineInput true (CI1).
  */
-export function setStepInput(
+function setStepInput(
   inputs: V2StepInput[],
   dotted: string,
   value: unknown,
@@ -391,7 +391,7 @@ export function setStepInput(
 
 const LOOP_KEYS = new Set(["over", "times", "while", "from", "to", "by", "counter", "parallel", "threads", "type", "value", "executeParallel", "numberOfConcurrentThread", "rangeStartInclusive", "rangeEndExclusive", "incrementalCount", "expandedExpression"]);
 
-export function expandLoop(given: unknown, where: string, p: Problems): Obj | null {
+function expandLoop(given: unknown, where: string, p: Problems): Obj | null {
   if (!isObj(given)) {
     p.bad(where, "must be an object ({over}|{times}|{while}|{from,to}) or null");
     return null;
@@ -431,7 +431,7 @@ export function expandLoop(given: unknown, where: string, p: Problems): Obj | nu
 
 // ── whole steps ──────────────────────────────────────────────────────────
 
-export function stepSkeleton(type: "EXISTING_SERVICE" | "CUSTOM_CODE"): V2Step {
+function stepSkeleton(type: "EXISTING_SERVICE" | "CUSTOM_CODE"): V2Step {
   const cc = type === "CUSTOM_CODE";
   return {
     coreMethod: false,

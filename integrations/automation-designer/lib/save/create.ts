@@ -119,7 +119,7 @@ function step(given: unknown, i: number): Obj {
   return out;
 }
 
-export interface CreateBody {
+interface CreateBody {
   body: Obj;
   /** Spec keys dropped because the server owns them. */
   dropped: string[];

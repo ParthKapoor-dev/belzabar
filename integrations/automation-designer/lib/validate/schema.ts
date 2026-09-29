@@ -12,16 +12,16 @@ import { arr, str, type Report, type StepRef } from "./types";
 import { isObj, str as nonBlank } from "@belzabar/core";
 
 /** ^\w+$ — input, variable and output keys; step output name/fieldCode (live-verified). */
-export const KEY_RE = /^[A-Za-z0-9_]+$/;
+const KEY_RE = /^[A-Za-z0-9_]+$/;
 /** Method names also allow `. ~ -`, but not a leading/trailing `.` (live-verified). */
-export const METHOD_NAME_RE = /^[A-Za-z0-9_.~-]+$/;
+const METHOD_NAME_RE = /^[A-Za-z0-9_.~-]+$/;
 /** 32 hex (the server pads with spaces) or a dashed uuid (db_service). */
-export const UUID_RE = /^(?:[0-9a-fA-F]{32}\s*|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
+const UUID_RE = /^(?:[0-9a-fA-F]{32}\s*|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
 
-export const STEP_TYPES = ["EXISTING_SERVICE", "CUSTOM_CODE"] as const;
+const STEP_TYPES = ["EXISTING_SERVICE", "CUSTOM_CODE"] as const;
 /** Server enum (400 on anything else). */
-export const CC_LANGUAGES = ["JAVA", "COBOL", "PYTHON", "JAVASCRIPT", "PERL"] as const;
-export const CC_EXECUTORS = ["CODE_LAMBDA", "NODEJS_LAMBDA", "INTERNAL_SERVER"] as const;
+const CC_LANGUAGES = ["JAVA", "COBOL", "PYTHON", "JAVASCRIPT", "PERL"] as const;
+const CC_EXECUTORS = ["CODE_LAMBDA", "NODEJS_LAMBDA", "INTERNAL_SERVER"] as const;
 /** Data types: the team's documented set plus CUSTOM and ENUM (both seen live on a dev env). */
 export const DATA_TYPES = new Set([
   "STRING", "TEXT", "NUMBER", "INTEGER", "FLOAT", "BOOLEAN", "OBJECT", "ARRAY", "JSON", "DATE", "TIMESTAMP", "CUSTOM", "ENUM",
@@ -136,7 +136,7 @@ const metadata = z
   })
   .passthrough();
 
-export const methodSchema = z
+const methodSchema = z
   .object({
     uuid: nStr,
     name: z.string().nullable().optional(),

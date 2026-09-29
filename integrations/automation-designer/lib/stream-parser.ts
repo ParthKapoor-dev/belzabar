@@ -8,7 +8,7 @@
 // parseStreamText is pure and unit-testable; readStream wraps it around a live
 // Response body and can forward lines as they arrive.
 
-export interface StreamParseResult {
+interface StreamParseResult {
   /** Progressive chunks emitted before the final envelope. */
   chunks: string[];
   /** The final response — parsed JSON when the last line was JSON, else raw text. */
