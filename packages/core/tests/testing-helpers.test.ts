@@ -11,8 +11,11 @@ import { setOutputMode } from "../src/ui";
 import {
   fakeFetch,
   fixture,
+  markLiveResourceCleaned,
+  registerLiveResource,
   respond,
   runCommand,
+  scratchDir,
   withTempEnvConfig,
   type FakeFetch,
   type TempEnvConfig,
@@ -222,5 +225,27 @@ describe("EnvelopeSchema", () => {
     expect(err({ details: ["x"] })).toBe(false);
     expect(err({ details: { text: "ok" } })).toBe(true);
     expect(err({ message: "Error: boom" })).toBe(false);
+  });
+});
+
+describe("live-resources ledger", () => {
+  let saved: string | undefined;
+  afterEach(() => {
+    if (saved === undefined) delete process.env.BELZ_LIVE_RESOURCES;
+    else process.env.BELZ_LIVE_RESOURCES = saved;
+  });
+
+  test("register appends a row; markLiveResourceCleaned rewrites its last cell in place", () => {
+    saved = process.env.BELZ_LIVE_RESOURCES;
+    const path = join(scratchDir("ledger-"), "live-resources.md");
+    writeFileSync(path, "| when | agent | kind | identifier | purpose | cleaned? |\n|---|---|---|---|---|---|\n");
+    process.env.BELZ_LIVE_RESOURCES = path;
+    expect(registerLiveResource({ kind: "method", identifier: "abc", purpose: "p | q", agent: "t" })).toBe(true);
+    expect(registerLiveResource({ kind: "method", identifier: "def", purpose: "p2", agent: "t" })).toBe(true);
+    expect(markLiveResourceCleaned("abc", "yes — soft-deleted")).toBe(true);
+    expect(markLiveResourceCleaned("zzz", "yes")).toBe(false);
+    const rows = readFileSync(path, "utf8").trim().split("\n").slice(2);
+    expect(rows[0]).toMatch(/\| t \| method \| abc \| p \\\| q \| yes — soft-deleted \|$/);
+    expect(rows[1]).toMatch(/\| def \| p2 \| no \|$/);
   });
 });

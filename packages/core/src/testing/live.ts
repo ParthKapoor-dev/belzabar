@@ -10,7 +10,7 @@
 // afterAll, and call registerLiveResource() for everything created.
 
 import { afterAll, describe } from "bun:test";
-import { appendFileSync, copyFileSync, existsSync, mkdirSync, rmSync } from "fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { parseGlobalFlags } from "../runner";
@@ -99,11 +99,33 @@ export function registerLiveResource(r: LiveResource): boolean {
   const path = liveResourcesPath();
   if (!existsSync(path)) return false;
   const now = new Date();
-  const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  // bun test runs with TZ=UTC, so say so rather than print a misleading local time.
+  const hhmm = `${String(now.getUTCHours()).padStart(2, "0")}:${String(now.getUTCMinutes()).padStart(2, "0")} UTC`;
   const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
   appendFileSync(
     path,
     `| ${hhmm} | ${cell(r.agent ?? "live-test")} | ${cell(r.kind)} | ${cell(r.identifier)} | ${cell(r.purpose)} | ${cell(r.cleaned ?? "no")} |\n`
   );
   return true;
+}
+
+/**
+ * Mark a ledger row cleaned in place: rewrites the last cell of the last row
+ * whose identifier cell equals `identifier`. Returns whether a row was updated.
+ */
+export function markLiveResourceCleaned(identifier: string, note: string): boolean {
+  const path = liveResourcesPath();
+  if (!existsSync(path)) return false;
+  const lines = readFileSync(path, "utf8").split("\n");
+  const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\n/g, " ");
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const cells = lines[i]!.split(/(?<!\\)\|/);
+    // "| a | b | c | d | e | f |" → ["", a, b, c, d, e, f, ""]
+    if (cells.length !== 8 || cells[4]!.trim() !== identifier) continue;
+    cells[6] = ` ${cell(note)} `;
+    lines[i] = cells.join("|");
+    writeFileSync(path, lines.join("\n"));
+    return true;
+  }
+  return false;
 }
