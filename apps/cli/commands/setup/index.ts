@@ -11,11 +11,10 @@ import {
   loadConfigFileRaw,
   lifecycle,
   prompts,
-  term,
   type BelzConfigFile,
   type CommandModule,
 } from "@belzabar/core";
-
+import { configSummary } from "../config/summary";
 
 interface SetupArgs {
   envFile?: string;
@@ -46,15 +45,6 @@ interface SetupData {
 const GENERIC_ENV_RE = /^BELZ_ENV_(.+)_(URL|USER|PASSWORD|PROJECT)$/;
 
 type EnvEntry = { url?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; project?: string };
-type SecretFields = { password: string; passwordEncoding: "plain" | "base64" };
-
-// Every password setup reads (env file, process env, prompts) is plain text,
-// and is stored plain with an explicit `passwordEncoding: "plain"` in the 0600
-// config. The old "already base64?" guess is gone: it silently kept a
-// plain password that happened to decode to printable ASCII.
-function plainSecret(value: string): SecretFields {
-  return encodeSecret(value);
-}
 
 /** Group BELZ_ENV_<NAME>_* keys into per-env entries (passwords are plain text). */
 function collectGenericEnvs(values: Record<string, string>): Record<string, EnvEntry> {
@@ -69,7 +59,7 @@ function collectGenericEnvs(values: Record<string, string>): Record<string, EnvE
     grouped[name] = entry;
     if (field === "URL") entry.url = val;
     else if (field === "USER") entry.user = val;
-    else if (field === "PASSWORD") Object.assign(entry, plainSecret(val));
+    else if (field === "PASSWORD") Object.assign(entry, encodeSecret(val));
     else if (field === "PROJECT") entry.project = val;
   }
   return grouped;
@@ -99,7 +89,7 @@ function buildConfigFromValues(values: Record<string, string>): {
     jenkins = {};
     if (jkUrl) jenkins.baseUrl = jkUrl;
     if (jkUser) jenkins.user = jkUser;
-    if (jkPass) Object.assign(jenkins, plainSecret(jkPass));
+    if (jkPass) Object.assign(jenkins, encodeSecret(jkPass));
     if (jkJob) jenkins.migrationJob = jkJob;
   }
 
@@ -112,38 +102,10 @@ function buildConfigFromValues(values: Record<string, string>): {
     tw = {};
     if (twUrl) tw.baseUrl = twUrl;
     if (email) tw.email = email;
-    if (twPass) Object.assign(tw, plainSecret(twPass));
+    if (twPass) Object.assign(tw, encodeSecret(twPass));
   }
 
   return { envs, tw, jenkins };
-}
-
-function buildSummaryBody(
-  envs: BelzConfigFile["environments"],
-  tw: BelzConfigFile["teamwork"],
-  jenkins?: BelzConfigFile["jenkins"],
-): string {
-  const lines: string[] = [term.bold("Environments")];
-  const names = Object.keys(envs ?? {});
-  if (names.length === 0) {
-    lines.push(`  ${term.dim("(none)")}`);
-  } else {
-    for (const name of names) {
-      const entry = envs?.[name];
-      const user = entry?.user ? entry.user : term.dim("(not set)");
-      const pwd = entry?.password ? term.success("set") : term.danger("unset");
-      lines.push(`  ${term.accent(name.padEnd(10))} user: ${user}   password: ${pwd}`);
-    }
-  }
-  lines.push("");
-  lines.push(term.bold("Teamwork"));
-  lines.push(tw?.email ? `  Email: ${tw.email}   Password: ${tw.password ? term.success("set") : term.danger("unset")}` : `  ${term.dim("Not configured.")}`);
-  lines.push("");
-  lines.push(term.bold("Jenkins"));
-  lines.push(jenkins?.baseUrl || jenkins?.user
-    ? `  URL: ${jenkins.baseUrl ?? term.dim("(not set)")}   User: ${jenkins.user ?? term.dim("(not set)")}   Password: ${jenkins.password ? term.success("set") : term.danger("unset")}`
-    : `  ${term.dim("Not configured.")}`);
-  return lines.join("\n");
 }
 
 export const args = defineArgs({
@@ -189,7 +151,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
     if (existingHasEnvs && !args.force && context.outputMode === "human") {
       lifecycle.note(
         "Existing Configuration",
-        buildSummaryBody(existing.environments, (existing as any).teamwork, existing.jenkins),
+        configSummary(existing),
       );
       const proceed = await prompts.confirm({
         message: "Update the existing config? (environments you don't re-enter are kept)",
@@ -251,7 +213,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
         const pass = user ? await prompts.password({ message: `Password for ${name}` }) : "";
         const entry: EnvEntry = { url };
         if (user) entry.user = user;
-        if (pass) Object.assign(entry, plainSecret(pass));
+        if (pass) Object.assign(entry, encodeSecret(pass));
         envs[name] = entry;
       }
       const addTeamwork = await prompts.confirm({ message: "Configure Teamwork credentials now?", initialValue: false });
@@ -265,7 +227,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
         tw = {};
         if (twUrl.trim()) tw.baseUrl = twUrl.trim();
         if (email) tw.email = email;
-        if (password) Object.assign(tw, plainSecret(password));
+        if (password) Object.assign(tw, encodeSecret(password));
       }
     }
 
@@ -277,7 +239,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
     }
 
     if (context.outputMode === "human" && !nonInteractive) {
-      lifecycle.note("Review", buildSummaryBody(envs, tw, jenkins));
+      lifecycle.note("Review", configSummary({ environments: envs, teamwork: tw, jenkins }));
       const confirmed = await prompts.confirm({ message: "Write this configuration to ~/.belz/config.json?", initialValue: true });
       if (!confirmed) {
         throw new CliError("Aborted: config was not written.", { code: "SETUP_ABORTED" });

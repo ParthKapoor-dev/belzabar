@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { CliError, isEmptyValue, parseFieldList, pickFields, projectRow } from "../src";
+import { isEmptyValue, parseFieldList, pickFields, projectRow } from "../src";
+import { thrownCliError } from "../src/testing/errors";
 
 describe("--fields helpers", () => {
   test("isEmptyValue keeps false and 0", () => {
@@ -11,14 +12,9 @@ describe("--fields helpers", () => {
     expect(parseFieldList(undefined, ["a"])).toEqual({ mode: "default" });
     expect(parseFieldList("a,all", ["a"])).toEqual({ mode: "all" });
     expect(parseFieldList(" a ,b", ["a", "b"])).toEqual({ mode: "pick", fields: ["a", "b"] });
-    try {
-      parseFieldList("x", ["a"]);
-      throw new Error("expected throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(CliError);
-      expect((e as CliError).code).toBe("INVALID_VALUE");
-      expect((e as CliError).details).toEqual({ flag: "--fields", unknown: ["x"], known: ["a"] });
-    }
+    const e = thrownCliError(() => parseFieldList("x", ["a"]));
+    expect(e.code).toBe("INVALID_VALUE");
+    expect(e.details).toEqual({ flag: "--fields", unknown: ["x"], known: ["a"] });
   });
 
   test("pickFields / projectRow drop empties; all returns the row itself", () => {

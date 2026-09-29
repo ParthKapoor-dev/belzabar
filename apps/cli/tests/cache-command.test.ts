@@ -1,7 +1,7 @@
 // `belz cache` must send {"uuids":[…]} to BOTH invalidate routes and refuse an
 // org-wide flush unless --all --yes is passed. No network: the fetcher is mocked.
 import { describe, expect, test } from "bun:test";
-import type { CliError } from "@belzabar/core";
+import { errorCode } from "@belzabar/core/testing";
 import command, {
   buildInvalidateBody,
   CACHE_INVALIDATE_PATHS,
@@ -76,14 +76,7 @@ describe("cache arg guard", () => {
   });
 
   test("a mistyped subcommand or non-uuid is INVALID_UUID, never POSTed", async () => {
-    const codeOf = (a: string[]) => {
-      try {
-        parse(a);
-      } catch (e) {
-        return (e as CliError).code;
-      }
-      return "none";
-    };
+    const codeOf = (a: string[]) => errorCode(() => parse(a));
     expect(codeOf(["prune"])).toBe("INVALID_UUID");
     expect(() => parse(["prune"])).toThrow(/prune-local/);
     expect(codeOf(["44014c3707d6b6d8ae848839a1c8d1e7", "not-a-uuid"])).toBe("INVALID_UUID");
