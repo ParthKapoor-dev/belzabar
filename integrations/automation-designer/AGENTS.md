@@ -33,7 +33,8 @@ lib/
   categories.ts        one category identity (chain category ⨝ automation system)
   draft-guard.ts       resolveDraftTarget: the ONLY way to pick a save target
   cache.ts             method cache (CacheManager)
-  method-finder.ts     cached method index behind `find`, `callers`
+  method-finder.ts     cached method index behind `find`, `callers`; invalidateMethodIndexEntry
+                       (called by CacheManager.invalidate after each write, and by create)
   method-view.ts       show --compact / --story renderers
   compact.ts           pruneEmpty, --fields a,b|all projection (parseFieldList/projectRow)
   serialize/           v2.ts planV2Overlay (leaf overlay), ops.ts applyStructuralOps,
@@ -54,7 +55,7 @@ lib/
   callers.ts           reverse index (ad callers); reads PD via @belzabar/pd/lib/*
   api-shape.ts         child-info --shape
   stream-parser.ts     application/stream+json (run --stream)
-  error-parser.ts, input-collector.ts, base64.ts, xml.ts
+  error-parser.ts, input-collector.ts, base64.ts
 docs/api-notes.md      wire cheatsheet (routes, auth modes, platform facts)
 tests/unit/            bun tests; tests/fixtures/ = sanitized real sems-dev wire
 ```
@@ -71,12 +72,12 @@ needs `--yes` instead.
 |---|---|
 | `find [list\|pick\|<query>]` | Cached method index: category counts, fzf picker, ranked search (`totalMatches` counts every match, before `--limit`); `--describe`, `--category`, `--fields`, `--refresh` |
 | `fetch <uuid\|url>` | Fetch + cache + hydrate (`--v2`; `--raw` adds the wire body as `data.raw`) |
-| `show <uuid\|url\|file>` | Method view. Lean `--llm` payload; `--compact` (one line per step), `--story` (approval Markdown), `--sql`/`--code`/`--full`, `--service-detail N` (alias `--step`), `--raw`, `--open`. A local V1/V2 JSON file is shown without a fetch |
+| `show <uuid\|url\|file>` | Method view. Lean `--llm` payload; `--compact` (one line per step), `--story` (approval Markdown), `--sql`/`--code`/`--full`, `--service-detail N` (alias `--step`), `--raw`, `--open`. `--compact`/`--story` always read V2 fresh (keys match save ops / create specs; V1 fallback with a warning) and carry `source`/`fetchedAt`. A local V1/V2 JSON file is shown without a fetch |
 | `show-code`, `outputs`, `state` | Decoded custom code; the I/O contract only; draft/published linkage + `inSync` |
 | `categories`, `services`, `child-info` | Categories; the service catalog (`--search`); a callee's contract (`--shape`) |
-| `callers <uuid>` | AD methods (and PD pages/components with `--pd`) that call the method |
+| `callers <uuid>` | AD methods (and PD pages/components with `--pd`) that call the method. `coverage.complete` only for a fresh, full index with nothing unresolved; `coverage.skippedCategories` for failed listings |
 | `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases (`METHOD_NOT_FOUND` for an unknown/soft-deleted uuid, since the suite route answers it like "no suite"); the latest suite report |
-| `history list\|show\|diff`, `diff`, `trace` | Version history, history or cross-env semantic diff, where a method is on every env |
+| `history list\|show\|diff`, `diff`, `trace` | Version history, history or cross-env semantic diff (`diff` opens an editor only in human mode or with `--editor`; a failed spawn is a warning), where a method is on every env |
 | `validate <uuid\|file>` | Validator L1–L3 (`--online` L4, `--dry-run-compile` = **W**, `--strict`) |
 | `lint <uuid\|file>` | Validator + advisory review rules (`--online`, `--docs`, `--strict`) |
 | `sql dbs\|run\|explain` | Read-only SQL. `run`/`explain` accept one read statement (`SQL_NOT_READ_ONLY`) |
@@ -305,10 +306,11 @@ literals — and splices the result into the SQL before the DB runs it. `EXPLAIN
 ### Caching (core `Cache`, env-scoped)
 | Cache | Location under `~/.belz/cache/` | TTL | Evicted by |
 |---|---|---|---|
-| Methods | `methods/<env>/<uuid>.json` | 5 min soft (SWR) / 1 h hard | save, publish, delete, history restore; `show --force` bypasses |
+| Methods | `methods/<env>/<uuid>.json` | 5 min soft (SWR) / 1 h hard | save, publish, delete, history restore; `show --force` bypasses. A V1 parse with failed definition lookups (`unresolvedServices`) is never cached |
 | Service definitions | `definitions/<env>/<automationId>.json` | 1 h | — |
-| Method index | `method-finder/index-v1-<env>.json` | 7 days | `find --refresh` |
+| Method index | `method-finder/index-v1-<env>.json` (+ `dirty-<env>.json`) | 7 days (`callers`: 24 h; partial index: 15 min) | `find --refresh`, `callers --refresh`; `ad import` drops it. belz writes mark the uuid dirty, and `callers` re-reads dirty methods |
 | Callers | `callers/`, `callers-errors/` (1 day), `pd-ad-refs/` (1 h) | — | `callers --refresh` |
+| Published history bodies | `history-versions/<env>/<methodVersionID>.json` | 30 days (immutable) | — |
 | Validator L4 | `api-contracts/`, `service-accounts/` | 1 h | — |
 
 ---
