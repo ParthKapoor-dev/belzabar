@@ -33,7 +33,6 @@ promotion tracking. It ships one product: the **`belz` CLI**, one binary for all
 |-----------|---------|------|------|
 | `apps/cli/` | `belzabar.cli` | The `belz` binary: entry point, top-level commands, install scripts | `apps/cli/AGENTS.md` |
 | `packages/core/` | `@belzabar/core` | Shared CLI framework (args, runner, envelope, config, http/auth, cache, ui, testing) | `packages/core/AGENTS.md` |
-| `packages/design/` | `@belzabar/design` | Design tokens + truecolor terminal styling used by the CLI (`packages/core` theme) | — |
 | `integrations/automation-designer/` | `@belzabar/ad` | `belz ad` commands + lib | `integrations/automation-designer/AGENTS.md` |
 | `integrations/page-designer/` | `@belzabar/pd` | `belz pd` commands + lib | `integrations/page-designer/AGENTS.md` |
 | `integrations/teamwork/` | `@belzabar/teamwork` | `belz tw` commands + lib | `integrations/teamwork/AGENTS.md` |

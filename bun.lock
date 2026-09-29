@@ -68,23 +68,16 @@
       "name": "@belzabar/core",
       "version": "0.1.0",
       "dependencies": {
-        "@belzabar/design": "workspace:*",
         "@clack/prompts": "^1.2.0",
         "cli-table3": "^0.6.3",
         "zod": "^3.22.4",
       },
-    },
-    "packages/design": {
-      "name": "@belzabar/design",
-      "version": "0.0.0",
     },
   },
   "packages": {
     "@belzabar/ad": ["@belzabar/ad@workspace:integrations/automation-designer"],
 
     "@belzabar/core": ["@belzabar/core@workspace:packages/core"],
-
-    "@belzabar/design": ["@belzabar/design@workspace:packages/design"],
 
     "@belzabar/migrations": ["@belzabar/migrations@workspace:integrations/migrations"],
 

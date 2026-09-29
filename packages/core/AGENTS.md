@@ -19,7 +19,7 @@ and `./testing` → `src/testing/index.ts` (test helpers only; never import from
 | `src/registry.ts` | `CommandRegistry` types, `registryNames` (sorted), `registryModules`, `registryHelpResolver` |
 | `src/cache.ts` | `Cache<T>` — env-scoped JSON file cache with hard/soft TTL |
 | `src/swr.ts` | Stale-while-revalidate: refresh locks + detached `--force` re-run |
-| `src/ui.ts` / `src/theme.ts` | Human/LLM rendering, `lifecycle`, `prompts`; palette + glyphs from `@belzabar/design` |
+| `src/ui.ts` / `src/theme/` | Human/LLM rendering, `lifecycle`, `prompts`; palette (`theme/tokens.ts`), truecolor styling + glyphs (`theme/terminal.ts`) |
 | `src/verbose.ts` | `vlog` / `vtime` — redacted stderr debug lines when `BELZ_VERBOSE=1` (`-v`) |
 | `src/belz-meta.ts` | Install metadata (source checkout, install dir, binary path) used by `belz update` |
 | `src/open.ts` | `openUrlInBrowser` |
@@ -154,7 +154,7 @@ public contract: renaming one is a breaking change.
 | `renderHuman(envelope, presenter?)` | Render a command envelope to humans: presenter (or default table/object renderer) on stdout; on failure the presenter runs only if `data` is set, and the error goes to **stderr**; `meta.warnings` follow on stderr. `ui.warn`/`ui.error` write to stderr |
 | `renderLLM(envelope)` | Emits a single-line JSON envelope to stdout — byte-stable for agents |
 | `HumanPresenterHelpers` | Interface passed to `presentHuman()`: `section/text/success/info/warn/error/step/note/kv/table/object` |
-| `lifecycle` | `{ intro, outro, cancel, note, step, spinner, notice }` — scaffolding that no-ops in `--llm` mode. `notice(msg)` is for library code without a ctx (e.g. the 401 refresh): a faint stderr line in human mode, only `vlog` in `--llm`. When stdout is not a TTY the spinner draws nothing (final `stop`/`error` messages go to stderr as plain lines); colours follow NO_COLOR / FORCE_COLOR / TTY (`@belzabar/design/terminal`) |
+| `lifecycle` | `{ intro, outro, cancel, note, step, spinner, notice }` — scaffolding that no-ops in `--llm` mode. `notice(msg)` is for library code without a ctx (e.g. the 401 refresh): a faint stderr line in human mode, only `vlog` in `--llm`. When stdout is not a TTY the spinner draws nothing (final `stop`/`error` messages go to stderr as plain lines); colours follow NO_COLOR / FORCE_COLOR / TTY (`src/theme/terminal.ts`) |
 | `prompts` | `{ confirm, text, password, select, multiselect }` — throws `INTERACTIVE_NOT_SUPPORTED` in `--llm` mode and `NO_TTY` when stdin isn't a TTY |
 | `setOutputMode(mode)` / `getOutputMode()` | Module-level mode used by helpers that don't hold a `CommandContext` |
 | `colors` | Re-export of `picocolors` for commands that want custom inline styling |

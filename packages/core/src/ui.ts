@@ -37,7 +37,7 @@ const ANSI = /\x1b\[[0-9;?]*[A-Za-z]/g;
 
 /**
  * Print a line on stderr. Colours are decided from stdout's TTY state
- * (@belzabar/design/terminal), so when stderr alone is redirected
+ * (theme/terminal.ts), so when stderr alone is redirected
  * (`2>log`) the escape codes are stripped — unless FORCE_COLOR asks for them.
  */
 export function printErr(line: string): void {

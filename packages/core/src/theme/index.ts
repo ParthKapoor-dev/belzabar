@@ -1,11 +1,11 @@
 // belz CLI theme — palette, glyphs, line helpers, and the wordmark.
 //
-// Backed by @belzabar/design so the terminal renders the EXACT hex values of
+// Backed by ./tokens (via ./terminal) so the terminal renders the EXACT hex values of
 // the design tokens. This is the single place CLI styling is
 // defined; commands and the runner consume `ui` / `term` / `symbols` — never
 // raw ANSI or picocolors.
 
-import { term, symbols, supportsColor } from "@belzabar/design/terminal";
+import { term, symbols, supportsColor } from "./terminal";
 
 export { term, symbols, supportsColor };
 
