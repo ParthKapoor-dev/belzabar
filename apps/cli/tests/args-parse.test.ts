@@ -62,8 +62,10 @@ describe("cache", () => {
     expect(code(() => parse(["u1", "--type", "--all"]))).toBe("MISSING_VALUE");
     expect(code(() => parse(["u1", "--bogus"]))).toBe("UNKNOWN_FLAG");
   });
-  test("is a remote write", () => {
-    expect(cache.writes).toBe(true);
+  test("invalidate is a remote write, prune-local is not", () => {
+    const writes = cache.writes as (args: any) => boolean;
+    expect(writes(parse(["u1"]))).toBe(true);
+    expect(writes(parse(["prune-local"]))).toBe(false);
   });
 });
 
