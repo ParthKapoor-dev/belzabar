@@ -155,6 +155,19 @@ describe("pd save", () => {
     expect((applyWireOps(cleanInner(), [op("layout.children[0].props.title")]) as any).layout.children[0].props.title).toBe("x");
   });
 
+  test("OTH-R3: a read-back that differs from the plan is ok:false PD_SAVE_VERIFY_FAILED (was a warning with ok:true)", async () => {
+    pd.onSave = (inner) => {
+      (inner as any).variables.userDefined[1].initialValue = "server-rewrote";
+    };
+    const r = await run(save, [DRAFT, "--overlay", overlayFile(upd), "--yes"]);
+    expect(r.exitCode).toBe(1);
+    expect(r.envelope).toMatchObject({
+      ok: false,
+      error: { code: "PD_SAVE_VERIFY_FAILED", details: { pageId: DRAFT, differingPaths: ["variables.userDefined[1].initialValue"] } },
+      data: { verify: { status: "mismatch" }, result: { newVersionId: 2 } },
+    });
+  });
+
   test("an edit that changes nothing performs no write", async () => {
     const r = await run(save, [DRAFT, "--overlay", overlayFile({ variables: { update: [{ name: "greeting", initialValue: "hi" }] } }), "--yes"]);
     expect(r.envelope?.ok).toBe(true);

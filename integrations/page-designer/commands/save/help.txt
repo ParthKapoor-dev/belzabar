@@ -17,7 +17,9 @@ Flow:
      re-fetch the page INSIDE the lock, re-apply + re-validate on the latest
      version (data.versionDrift reports a concurrent change), PUT, release.
   5. Read back the page and compare it with the planned config (data.verify:
-     match | mismatch | stale-read).
+     match | mismatch | stale-read). A mismatch is ok:false
+     PD_SAVE_VERIFY_FAILED (error.details.differingPaths); a lagging read
+     (stale-read) only warns.
 
 Flags:
   --overlay <file>      Targeted JSON overlay (see OVERLAY SHAPE). Preferred.

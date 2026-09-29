@@ -14,10 +14,11 @@
 //   5. --yes required
 //   6. withLock(draft): FRESH fetch → re-plan + re-validate on it (PD-4;
 //      versionId drift is reported) → PUT partial/full
-//   7. verify: re-fetch and compare the stored config with the planned one
+//   7. verify: re-fetch and compare the stored config with the planned one;
+//      a mismatch is ok:false PD_SAVE_VERIFY_FAILED (a lagging read is only a warning)
 
 import { isDeepStrictEqual } from "node:util";
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import {
   DEPRECATED_FORCE_WARNING,
   PD_DRY_RUN_FLAG,
@@ -66,7 +67,12 @@ interface SaveData {
     newVersionId: number | null;
   } | null;
   /** Post-save read-back: does the stored config equal the planned one? */
-  verify: { status: "match" | "mismatch" | "stale-read" | "skipped"; versionId: number | null } | null;
+  verify: {
+    status: "match" | "mismatch" | "stale-read" | "skipped";
+    versionId: number | null;
+    /** On mismatch: the config paths where the stored page differs from the plan (capped). */
+    differingPaths?: string[];
+  } | null;
   bypassedErrors: ValidationIssue[];
 }
 
@@ -118,10 +124,31 @@ async function verifySaved(
   if (newVersionId !== null && stored.versionId !== newVersionId) {
     return { status: "stale-read", versionId: stored.versionId };
   }
-  return {
-    status: isDeepStrictEqual(stored.rawConfiguration, expected.rawConfiguration) ? "match" : "mismatch",
-    versionId: stored.versionId,
-  };
+  if (isDeepStrictEqual(stored.rawConfiguration, expected.rawConfiguration)) {
+    return { status: "match", versionId: stored.versionId };
+  }
+  return { status: "mismatch", versionId: stored.versionId, differingPaths: differingPaths(expected.rawConfiguration, stored.rawConfiguration) };
+}
+
+const DIFF_PATH_CAP = 20;
+
+/** Config paths where `a` and `b` differ (leaf-most, capped at DIFF_PATH_CAP). */
+export function differingPaths(a: unknown, b: unknown, path = "", out: string[] = []): string[] {
+  if (out.length >= DIFF_PATH_CAP || isDeepStrictEqual(a, b)) return out;
+  const objA = !!a && typeof a === "object";
+  const objB = !!b && typeof b === "object";
+  if (!objA || !objB || Array.isArray(a) !== Array.isArray(b)) {
+    out.push(path || "(root)");
+    return out;
+  }
+  const ra = a as Record<string, unknown>;
+  const rb = b as Record<string, unknown>;
+  for (const k of new Set([...Object.keys(ra), ...Object.keys(rb)])) {
+    const sub = Array.isArray(a) ? `${path}[${k}]` : path ? `${path}.${k}` : k;
+    differingPaths(ra[k], rb[k], sub, out);
+    if (out.length >= DIFF_PATH_CAP) break;
+  }
+  return out;
 }
 
 const command: CommandModule<SaveArgs, SaveData> = {
@@ -214,18 +241,27 @@ const command: CommandModule<SaveArgs, SaveData> = {
           : await pdApi.savePageFull(targetId, fresh.status, p.plan.configurationString);
 
       const verify = await verifySaved(targetId, p.after, saved.newVersionId);
-      if (verify.status === "mismatch") {
-        warn(`⚠ Read-back of ${targetId} does not match the planned config — inspect with \`belz pd show ${targetId} --force\`.`);
-      } else if (verify.status === "stale-read") {
+      if (verify.status === "stale-read") {
         warn(`ℹ Read-back returned versionId ${verify.versionId ?? "?"} (saved ${saved.newVersionId}); the server read may lag.`);
       }
 
-      return ok(build(fresh, p, gate, {
+      const data = build(fresh, p, gate, {
         dryRun: false,
         versionDrift: drift,
         result: { oldVersionId: fresh.versionId, newVersionId: saved.newVersionId },
         verify,
-      }));
+      });
+      if (verify.status === "mismatch") {
+        // OTH-R3: the server stored something other than the plan (like AD_SAVE_VERIFY_FAILED).
+        return failWithData(
+          "PD_SAVE_VERIFY_FAILED",
+          `Saved ${targetId} (versionId ${saved.newVersionId ?? "?"}), but the read-back does not match the planned config ` +
+            `at ${verify.differingPaths?.length ?? 0} path(s). Inspect with \`belz pd show ${targetId} --force\`.`,
+          data,
+          { details: { pageId: targetId, strategy: p.plan.strategy, newVersionId: saved.newVersionId, differingPaths: verify.differingPaths ?? [] } },
+        );
+      }
+      return ok(data);
     });
   },
 
@@ -275,6 +311,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
       ui.success(`Saved. versionId ${data.result.oldVersionId ?? "?"} → ${data.result.newVersionId ?? "?"}.`);
     }
     if (data.verify && data.verify.status !== "match") ui.kv("Read-back", data.verify.status);
+    if (data.verify?.differingPaths?.length) ui.kv("Differs at", data.verify.differingPaths.join(", "));
   },
 };
 

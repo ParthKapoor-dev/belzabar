@@ -42,7 +42,8 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 - **Envelope**: `--llm` returns the core envelope (`ok`, `data`, `error.code`, `meta`). Schemas
   are `pd.<cmd>`. Report-style failures use `failWithData` so the report stays in `data`:
   `PD_VALIDATION_FAILED` (validate), `PD_PREFLIGHT_FAILED`, `PD_SNAPSHOT_DIFFERS`,
-  `PD_LOCK_RELEASE_FAILED` — all exit 1. A write refused by the validator gate
+  `PD_LOCK_RELEASE_FAILED`, `PD_SAVE_VERIFY_FAILED` (save read-back differs from the plan;
+  `details.differingPaths`) — all exit 1. A write refused by the validator gate
   (`gateValidation`) is a `CliError` `PD_VALIDATION_FAILED` with the errors in `details.issues`.
 - **Error codes** (grep `code: "PD_` for the full set): `PD_NOT_FOUND`, `PD_NAME_AMBIGUOUS`,
   `PD_API_ERROR` / `PD_LOCKED` (409) from `lib/api/client.ts` (non-OK bodies summarised by core
@@ -72,7 +73,8 @@ rebuilt from parsed lists, so a full save is lossless apart from the edit). 5. `
 (before, after): pre-existing issues never block; introduced errors do. 6. PUT: partial ops only
 if replaying them reproduces the planned config exactly, else full (`fullSaveReason`); legacy
 pages always save full; keys outside the verified shape force full. 7. Read back: `verify` =
-`match | mismatch | stale-read`.
+`match | mismatch | stale-read`; `mismatch` fails the save (`PD_SAVE_VERIFY_FAILED`),
+`stale-read` only warns.
 
 Overlay (`Overlay` in `lib/types/common.ts`; unknown sections → `PD_OVERLAY_INVALID`):
 

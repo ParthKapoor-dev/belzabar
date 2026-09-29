@@ -26,6 +26,8 @@ export interface FakePd {
   releaseStatus: number;
   /** Status the save PUT answers with (default 200). */
   saveStatus: number;
+  /** Hook that may rewrite the stored inner config after a PUT (simulate a server that stores something else). */
+  onSave?: (inner: Record<string, unknown>) => void;
   searchRows: Array<Record<string, unknown>>;
   /** Status the name search answers with (default 200). */
   searchStatus: number;
@@ -162,6 +164,11 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
           config = JSON.stringify(next);
         } else {
           config = body.configuration;
+        }
+        if (state.onSave) {
+          const inner = JSON.parse(config) as Record<string, unknown>;
+          state.onSave(inner);
+          config = JSON.stringify(inner);
         }
         const saved = { ...p, configuration: config, versionId: (p.versionId ?? 0) + 1 };
         pages.set(p.id, saved);
