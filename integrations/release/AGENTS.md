@@ -4,7 +4,7 @@
 
 The `release/` module provides release promotion-tracking commands for the
 unified `belz` binary, registered as the `release` namespace. It answers the
-question the `agents/release-prep` skill audits by hand: **which change of
+question a release audit otherwise answers by hand: **which change of
 which item has reached which environment, and which ticket owns it.**
 
 ## Command Routing

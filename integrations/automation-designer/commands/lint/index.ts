@@ -1,6 +1,6 @@
 // belz ad lint <uuid|file> — read-only review of a method's V2 body (7.4):
 // the pre-save validator (lib/validate L1–L3, + L4 with --online) plus the
-// advisory review rules of lib/validate/lint.ts (SQL Q2–Q4, the team skills'
+// advisory review rules of lib/validate/lint.ts (SQL Q2–Q4, common AD
 // anti-patterns, platform prose rules; descriptions with --docs).
 // Output is grouped by step, one line per finding. Errors (validator) exit 1
 // with AD_LINT_FAILED; lint rules only warn unless --strict.

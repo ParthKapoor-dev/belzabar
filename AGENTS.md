@@ -42,7 +42,6 @@ promotion tracking. It ships one product: the **`belz` CLI**, one binary for all
 | `integrations/jenkins/` | `@belzabar/jenkins` | Jenkins REST client used by migrations | `integrations/jenkins/AGENTS.md` |
 | `scripts/` | — | `docs-check.ts` (docs gate) and `fixtures/` (read-only wire-fixture capture + sanitizer) | — |
 | `cloud/` | — | Claude Code cloud-session bootstrap (publish + sandbox files) | `cloud/README.md` |
-| `agents/` | — | Runtime agent skills (published to cloud sessions); not part of the build | — |
 | `.github/workflows/` | — | `ci.yml` (typecheck, docs check, tests), `belz-cloud-release.yml` | — |
 
 `expertly.coding.agents/`, if present locally, is a separate git checkout ignored by

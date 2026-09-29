@@ -1,14 +1,14 @@
-// `belz ad lint` rules (7.4): the review heuristics from the team skills that
+// `belz ad lint` rules (7.4): review heuristics that
 // the pre-save validator (L1–L4) does not enforce. Every rule here is ADVISORY
 // (warn): they look for patterns that usually mean a slow, fragile or
 // reimplemented step, and can be wrong on a given method.
 //
-// Sources: agents-repo-research §6b —
-//   SQL (ad-review §1, SEMS approach skills): Q2 per-row subquery, Q3 raw read
+// Rules —
+//   SQL: Q2 per-row subquery, Q3 raw read
 //   of a resolver-guarded config table, Q4 re-looking-up a bound value
 //   (Q1 bare `?`, Q5 autoformat damage and AD-SQL-004 `#{}` in SQL are
 //   validator rules already);
-//   AD/SKILL.md anti-patterns: JSON-juggling custom code, a DB step without a
+//   AD anti-patterns: JSON-juggling custom code, a DB step without a
 //   table, replacePlaceholdersInText building SQL;
 //   platform prose: reserved key `language`, >30 steps, echo read/write race,
 //   string `+` on numeric inputs, variable BASE_64 stripped, FLOAT defaults

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 // `bun run docs:check` — keeps AGENTS.md / README.md files honest.
 //
-// Two checks over every AGENTS.md and README.md in the repo (agents/, .claude/,
+// Two checks over every AGENTS.md and README.md in the repo (.claude/,
 // node_modules/, fixtures and the untracked expertly.coding.agents/ are skipped):
 //
 //   1. Paths. Every code span, markdown link target and fenced-block token that
@@ -38,7 +38,7 @@ export interface Problem {
 }
 
 const SKIP_DIRS = new Set([
-  "node_modules", ".git", ".claude", "agents", "expertly.coding.agents",
+  "node_modules", ".git", ".claude", "expertly.coding.agents",
   "fixtures", "dist", "build", "dist-pack", ".turbo", ".next",
 ]);
 const DOC_NAMES = new Set(["AGENTS.md", "README.md"]);

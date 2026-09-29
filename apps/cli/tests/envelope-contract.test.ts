@@ -1,6 +1,6 @@
 // Envelope contract: every registered command's `--llm` output validates
 // against core's EnvelopeSchema, `ok:false` ⇔ nonzero exit, and stdout is the
-// envelope and nothing else. The agent skills parse this output.
+// envelope and nothing else. Agents and scripts parse this output.
 //
 // No network: fetch is replaced by a fakeFetch with no routes (any request
 // fails inside the command), process spawning is blocked, cwd is a tmp dir.

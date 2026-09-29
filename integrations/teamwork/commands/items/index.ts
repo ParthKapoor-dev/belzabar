@@ -5,10 +5,10 @@ import { extractTicketItems, type ItemsData } from "../../lib/items";
 
 export type { ItemsData } from "../../lib/items";
 
-// `belz tw items` — the release-prep "linker". Pulls a ticket (and its subtask
+// `belz tw items` — the release "linker". Pulls a ticket (and its subtask
 // comments), parses every comment for AD/PD/SQL references, and emits a deduped
 // item set with provenance plus a recommended set drawn from the latest
-// dev-note block. This replaces the manual Stage 2 grep in agents/release-prep.
+// dev-note block.
 // The extraction logic lives in lib/items.ts (shared with `belz release matrix`).
 
 interface ItemsArgs {

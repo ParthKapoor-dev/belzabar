@@ -10,7 +10,7 @@ The lib is also used by `@belzabar/release` (`extractTicketItems`, `parseTaskId`
 |---|---|---|
 | `belz tw task <taskId\|url>` | read | task + assignees, tags, status; subtasks paginated to the end |
 | `belz tw comments <taskId\|url>` | read | every comment (paginated; Teamwork ignores `limit`) |
-| `belz tw items <taskId\|url>` | read | release-prep linker: AD/PD/SQL items from ticket + subtask comments |
+| `belz tw items <taskId\|url>` | read | release linker: AD/PD/SQL items from ticket + subtask comments |
 | `belz tw search <query> [--project <id>] [--limit <n>] [--all]` | read | `--limit` 1–500 (default 25); `--all` = `--include-completed` |
 | `belz tw add-comment <taskId\|url> --body <text>\|--body-file <path> [--html] [--yes]` | **write** | `writes = true`; confirmation-gated |
 

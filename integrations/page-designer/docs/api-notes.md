@@ -1,7 +1,7 @@
 # Page Designer — belz-cli API notes
 
-**Belz-owned cheatsheet.** Read this first, then the expertly `page-designer/SKILL.md` for full
-component/rule reference. This file records belz's operational contract — what we rely on, what we
+**Belz-owned cheatsheet.** Read this first, then the Expertly platform's Page Designer
+documentation for the full component/rule reference. This file records belz's operational contract — what we rely on, what we
 have verified live, and how the PD module is structured inside belz.
 
 ---
@@ -124,7 +124,7 @@ and `http: [...]` instead of `httpRequests.userDefined`. The parser normalizes b
 
 ---
 
-## Failure-mode catalog (mirrors expertly `page-designer/SKILL.md` §Common errors)
+## Failure-mode catalog (mirrors the platform docs' common errors)
 
 These are the classes of corruption belz must either prevent (validator rule) or surface cleanly
 (`show`/`validate` output). When adding a validator rule, cite the matching failure mode here.

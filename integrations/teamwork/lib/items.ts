@@ -117,7 +117,7 @@ export async function extractTicketItems(taskId: number): Promise<ItemsData> {
 
     // A unit counts as a dev-note block if it carries a labeled list, or both
     // AD and PD references, or 2+ references of one kind — the shapes the
-    // release-prep skill calls an "Items to move" / "Published Id" block.
+    // usual "Items to move" / "Published Id" dev-note block.
     const adCount = ex.ad.length;
     const pdCount = ex.pd.length;
     const isDevNote =
@@ -148,8 +148,8 @@ export async function extractTicketItems(taskId: number): Promise<ItemsData> {
     }
   }
 
-  // ── Recommended set: prefer the LATEST dev-note block (release-prep Stage 2
-  //    "prefer the latest dev-note block" lesson). Fall back per-type so an
+  // ── Recommended set: prefer the LATEST dev-note block (the latest
+  //    note supersedes earlier ones). Fall back per-type so an
   //    AD-only final note still picks up PD from the last PD-bearing note. ──
   const warnings: string[] = [];
   const recommended = pickRecommended(devNoteBlocks, warnings);

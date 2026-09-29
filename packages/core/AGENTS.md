@@ -216,7 +216,7 @@ API:
 3. Build the binary once (`bun run belz:build`) if you touched the runner or stdio
 
 Avoid breaking changes to `CommandModule`, `ok`/`fail`, `CliError`, error codes or the envelope
-schema — external `--llm` consumers (agents, the skills in the repo's `agents/` directory) parse them.
+schema — external `--llm` consumers (agents and scripts) parse them.
 
 ---
 

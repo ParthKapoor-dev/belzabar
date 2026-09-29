@@ -336,7 +336,7 @@ export async function searchTasks(query: string, opts: TaskSearchOptions = {}): 
 
 // ── Posting a comment (WRITE) ─────────────────────────────────────────────────
 // Callers MUST confirm the exact body with the user before invoking this — see
-// commands/add-comment and the belz-ai skill's hard rule on Teamwork comments.
+// commands/add-comment.
 
 export interface AddCommentOptions {
   contentType?: "TEXT" | "HTML";

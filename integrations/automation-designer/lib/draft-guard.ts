@@ -1,9 +1,8 @@
 // Draft-safety guard.
 //
 // Every AD write command routes its target UUID through resolveDraftTarget()
-// before any save or publish. The invariant is documented in
-// expertly.coding.agents/Claude/Common/claude/skills/ad/reference/draft-publish-lifecycle.md
-// and summarised in docs/api-notes.md. In short: never POST a save payload
+// before any save or publish. The invariant (the platform's draft/publish
+// lifecycle) is summarised in docs/api-notes.md. In short: never POST a save payload
 // whose UUID resolves to a PUBLISHED method. The server will silently
 // overwrite production if you do.
 //

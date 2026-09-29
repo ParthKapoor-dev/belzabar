@@ -1,9 +1,7 @@
 # Automation Designer — belz-cli API Notes
 
 This is belz's own cheatsheet for how the CLI talks to Automation Designer. For
-the exhaustive server API reference see the expertly docs under
-`expertly.coding.agents/Claude/docs-projects/Expertly/Automation_Designer/` and
-`expertly.coding.agents/Claude/Common/claude/skills/ad/reference/`. This file
+the exhaustive server API reference see the Expertly platform documentation. This file
 is the short version — what belz assumes, which code path owns which verb, and
 where the footguns live.
 

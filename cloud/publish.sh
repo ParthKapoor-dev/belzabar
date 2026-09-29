@@ -5,7 +5,6 @@
 # belzabar stays private and is NEVER attached to a cloud session. Instead this
 # script pushes everything a cloud session needs OUT to belz-sandbox:
 #   • belz-linux-x64   → a rolling GitHub Release (tag: latest) on belz-sandbox
-#   • .claude/skills/  ← agents/*/  (committed, so the cloud session loads them)
 #   • CLAUDE.md        ← cloud/sandbox-CLAUDE.md (the "use belz, don't commit" rules)
 #   • cloud-setup.sh   ← the session bootstrap script (committed for reference)
 #
@@ -40,21 +39,13 @@ fi
 cd "$REPO_ROOT/apps/cli"
 bun build --compile --minify --target=bun-linux-x64 ./bin/cli.ts --outfile "$WORK/$ASSET"
 
-# ── 2. Refresh belz-sandbox tracked content (skills + rules + setup script) ──
+# ── 2. Refresh belz-sandbox tracked content (rules + setup script) ───────────
 # Make plain `git push` use gh's token (CI sets GH_TOKEN; locally uses your auth).
 gh auth setup-git
 echo "📥 cloning $SANDBOX_REPO…"
 gh repo clone "$SANDBOX_REPO" "$WORK/sandbox" -- --depth=1
 SB="$WORK/sandbox"
 
-rm -rf "$SB/.claude/skills"
-mkdir -p "$SB/.claude/skills"
-for d in "$REPO_ROOT"/agents/*/; do
-  [ -f "$d/SKILL.md" ] || continue
-  name="$(basename "$d")"
-  mkdir -p "$SB/.claude/skills/$name"
-  cp -R "$d." "$SB/.claude/skills/$name/"
-done
 cp "$SCRIPT_DIR/sandbox-CLAUDE.md" "$SB/CLAUDE.md"
 cp "$SCRIPT_DIR/setup.sh" "$SB/cloud-setup.sh"
 # SessionStart hook that runs cloud-setup.sh in-session (where env vars exist).
@@ -65,14 +56,14 @@ cp "$SCRIPT_DIR/sandbox-settings.json" "$SB/.claude/settings.json"
 cd "$SB"
 git add -A
 if git diff --cached --quiet; then
-  echo "↔︎  skills/rules unchanged — no commit."
+  echo "↔︎  rules unchanged — no commit."
 else
   SRC_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
   git -c user.name="belz-cloud-bot" -c user.email="belz-cloud-bot@users.noreply.github.com" \
-    commit -m "chore(cloud): sync belz skills + rules (belzabar@${SRC_SHA})"
+    commit -m "chore(cloud): sync belz rules (belzabar@${SRC_SHA})"
   # `-u origin HEAD` handles the first push into a brand-new empty repo.
   git push -u origin HEAD
-  echo "⬆️  pushed skills/rules to $SANDBOX_REPO"
+  echo "⬆️  pushed rules to $SANDBOX_REPO"
 fi
 
 # ── 4. Publish the binary as the rolling release ─────────────────────────────

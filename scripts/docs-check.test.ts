@@ -83,11 +83,11 @@ describe("checkDocs on a temp repo", () => {
     root = mkdtempSync(join(tmpdir(), "docs-check-"));
     mkdirSync(join(root, "integrations/ad/lib/save"), { recursive: true });
     mkdirSync(join(root, "integrations/ad/node_modules/x"), { recursive: true });
-    mkdirSync(join(root, "agents/skill"), { recursive: true });
+    mkdirSync(join(root, ".claude/skill"), { recursive: true });
     writeFileSync(join(root, "integrations/ad/lib/save/verify.ts"), "");
     writeFileSync(join(root, "integrations/ad/package.json"), JSON.stringify({ name: "@belzabar/ad" }));
     writeFileSync(join(root, "integrations/ad/node_modules/x/README.md"), "`lib/nope.ts`");
-    writeFileSync(join(root, "agents/skill/README.md"), "`lib/nope.ts`");
+    writeFileSync(join(root, ".claude/skill/README.md"), "`lib/nope.ts`");
     writeFileSync(
       join(root, "integrations/ad/AGENTS.md"),
       [
@@ -103,7 +103,7 @@ describe("checkDocs on a temp repo", () => {
   });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
-  test("findDocs skips agents/ and node_modules/", () => {
+  test("findDocs skips .claude/ and node_modules/", () => {
     expect(findDocs(root)).toEqual(["README.md", "integrations/ad/AGENTS.md"]);
   });
 

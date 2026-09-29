@@ -136,7 +136,7 @@ belz release matrix …    belz release freeze …   # see `belz release <cmd> -
 
 ## Claude Code cloud sessions
 
-The `belz-cloud-release` workflow publishes the belz binary and the `agents/` skills to a
+The `belz-cloud-release` workflow publishes the belz binary to a
 separate `belz-sandbox` repo, so a Claude Code cloud session can run belz without access to
 this repo. Setup and the network allowlist: [`cloud/README.md`](./cloud/README.md).
 
@@ -155,7 +155,6 @@ integrations/migrations/            belz migrate …   (uses integrations/jenkin
 integrations/release/               belz release …
 scripts/                    docs:check + wire-fixture capture
 cloud/                      cloud-session bootstrap
-agents/                     runtime agent skills
 ```
 
 Where the docs live:

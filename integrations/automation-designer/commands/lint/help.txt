@@ -1,7 +1,7 @@
 Usage: belz ad lint <UUID|FILE> [flags]
 
 Review a method's V2 body (read-only): the pre-save validator plus the
-review rules from the team skills, grouped by step, one line per finding.
+advisory review rules, grouped by step, one line per finding.
 
 Arguments:
   <UUID|FILE>           A method uuid (any spelling or AD URL; fetched from --env),

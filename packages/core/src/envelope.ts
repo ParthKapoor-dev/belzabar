@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * The `--llm` output contract: the exact shape `toEnvelope` (runner.ts) and the
- * runner-level help/error envelopes produce. The agent skills and scripts parse
+ * runner-level help/error envelopes produce. Agents and scripts parse
  * this, so it is a public contract — every command is checked against it by
  * `apps/cli/tests/envelope-contract.test.ts`.
  *

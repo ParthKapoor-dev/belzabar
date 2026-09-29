@@ -18,7 +18,7 @@ belz ad show <UUID|URL|FILE> [flags]
 - `--compact`: `lib/method-view.ts:compactMethod` — `{view:"compact", name,
   category, state, version, uuid, in, out, vars, steps: string[], blocks?}`;
   one line per step. `--sql` / `--code` / `--full` add full bodies as `blocks`.
-- `--story`: `lib/method-view.ts:storyMarkdown` — the AD skill's pre-save
+- `--story`: `lib/method-view.ts:storyMarkdown` — the plain-English pre-save
   approval template, `{view:"story", name, uuid, markdown}`.
 
 ## Flags

@@ -1,7 +1,7 @@
 // Item extraction from Teamwork ticket text.
 //
-// Codifies the three comment patterns documented in agents/release-prep/SKILL.md
-// Stage 2, so the `belz tw items` linker no longer relies on an agent eyeballing
+// Codifies the three dev-note comment patterns (see commands/items/help.txt),
+// so the `belz tw items` linker no longer relies on an agent eyeballing
 // comments. All functions here are pure and operate on a single text blob — the
 // command layer (commands/items/index.ts) attaches comment provenance and merges.
 

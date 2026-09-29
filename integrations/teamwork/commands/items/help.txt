@@ -5,7 +5,7 @@ comments — for the AD chains, PD pages/symbols, and SQL changes it delivers.
 This is the "linker" stage of a release audit: it turns free-text dev notes
 into a structured item set.
 
-It recognizes the three conventions documented in the release-prep skill:
+It recognizes three dev-note conventions:
   A. URLs        — automation-designer/<cat>/<id>, ui-designer/page/<id>,
                    ui-designer/symbol/<name>
   B. Labeled CSV — "PD Pages Published : <hex>,<hex>"

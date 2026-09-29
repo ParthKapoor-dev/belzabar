@@ -6,7 +6,7 @@
 //                            outputs → variables, exit rules). Full bodies go to
 //                            `blocks` only when asked for.
 //   storyMarkdown(method)  → `ad show --story`: the plain-English pre-save
-//                            approval template of the team's AD skill
+//                            approval template
 //                            (What it does / Approach / Service, Inputs,
 //                            Outputs, Steps tables, decoded custom code).
 //

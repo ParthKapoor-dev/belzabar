@@ -14,15 +14,15 @@ account can see — it does not have to be belzabar. So we use a tiny throwaway
   belzabar (private)                belz-sandbox (private)            cloud session
   ─────────────────                 ──────────────────────            ─────────────
   CI: cloud/publish.sh  ──pushes──▶  • belz-linux-x64 (Release)  ◀──clones──  setup
-  on every push to main             • skills (from agents/)       script installs
-                                    • CLAUDE.md (rules)           belz + writes
-                                    • cloud-setup.sh              ~/.belz/config.json
+  on every push to main             • CLAUDE.md (rules)           script installs
+                                    • cloud-setup.sh              belz + writes
+                                                                  ~/.belz/config.json
 ```
 
 - **belzabar** — never attached to a cloud session. Its CI builds belz and
   pushes the bundle *out* to belz-sandbox.
 - **belz-sandbox** — a private repo the cloud session connects to. CI-maintained;
-  you never hand-edit it. Holds the skills (copied from `agents/*/`), a rules
+  you never hand-edit it. Holds a rules
   `CLAUDE.md` (from `cloud/sandbox-CLAUDE.md`), `cloud-setup.sh` (from
   `cloud/setup.sh`), and the belz binary as a rolling Release.
 - **cloud session** — clones belz-sandbox, runs the setup script, ends up with a
@@ -118,11 +118,11 @@ TEAMWORK_PASSWORD=...
 
 ## What a session can do
 On session start, the hook installs belz + writes the config, so the session has
-`belz` on PATH and the skills loaded — identical to local. It works through the
+`belz` on PATH — identical to local. It works through the
 **belz CLI** only; it has no belzabar source and the `CLAUDE.md` rules tell it
 never to commit to the sandbox repo. Verify with `belz envs` and `belz --help`.
 (If the hook didn't run, `bash cloud-setup.sh` bootstraps it — it's idempotent.)
 
 ## Updating belz
 Push to belzabar `main` → CI rebuilds and republishes to belz-sandbox →
-the next cloud session downloads the latest binary + skills automatically.
+the next cloud session downloads the latest binary automatically.
