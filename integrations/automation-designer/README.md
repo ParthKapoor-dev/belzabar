@@ -1,26 +1,78 @@
 # @belzabar/ad — Automation Designer
 
-The `belz ad` commands and the library behind them. It covers reading, editing,
-validating, saving, publishing and testing Automation Designer methods. This
-package has no entry point of its own: it is compiled into the `belz` binary
-through `registry.ts`.
+The `belz ad` commands and the library behind them: read, search, edit, validate, save,
+publish, test and trace Automation Designer methods, and run SQL through the platform.
 
-- Maintainer guide (layout, contracts, save pipeline, validator, testing): [AGENTS.md](./AGENTS.md)
-- Wire and platform notes: [docs/api-notes.md](./docs/api-notes.md)
-- Command reference: `belz ad <cmd> --help`, or `belz --help-full` for every command
+Automation Designer keeps backend logic as versioned **methods** ("chains") of steps. A method
+has a DRAFT chain and, once published, a PUBLISHED chain; the two have separate uuids and
+independent version counters. belz edits only drafts.
+
+## Role in the monorepo
+
+The package has no entry point of its own. `apps/cli` compiles it into `belz` through
+[`registry.ts`](registry.ts); other workspaces import the library:
+
+| Export | Used by |
+|---|---|
+| `@belzabar/ad/registry` | `apps/cli` (routing and `belz --help-full`) |
+| `@belzabar/ad/lib/*` | `release` (`lib/trace`), the CLI live tests (`lib/api/v2`, `lib/save/api`) |
+
+It depends on `@belzabar/core` and on `@belzabar/pd` (`ad callers --pd` scans PD pages).
+
+## Layout
+
+| Path | Contents |
+|---|---|
+| [`commands/`](commands/README.md) | One folder per command (`index.ts`, `help.txt`, `desc.txt`) and the command map. |
+| [`lib/`](lib/README.md) | The library: API clients, parser, save pipeline, validator, test cases, SQL, caches. |
+| [`tests/`](tests/README.md) | Unit and command tests, sanitized real fixtures. |
+| `registry.ts` | The static, sorted command registry. |
 
 ## Typical loop
 
 ```bash
-belz ad find "order list"                      # locate a method (cached index)
-belz ad show <uuid> --compact                  # read it, one line per step
-belz ad lint <uuid>                            # review it
-belz ad save edit.json --uuid <uuid> --dry-run # plan + validate an overlay; writes nothing
+belz ad find "order list"                        # locate a method (cached index)
+belz ad show <uuid> --compact                    # read it, one line per step
+belz ad lint <uuid>                              # review it
+belz ad save edit.json --uuid <uuid> --dry-run --env <env>  # plan + validate; writes nothing
 belz ad save edit.json --uuid <uuid> --env <env>
 belz ad test <uuid> --env <env> --inputs in.json --expect out=42
 belz ad publish <uuid> --note "why" --env <env>
 ```
 
-Add `--llm` to any command to get a structured JSON envelope. Write commands need an
-explicit `--env`. They ask for confirmation, and in `--llm` mode they need `--yes`
-instead.
+Every command's reference is its `help.txt`: `belz ad <cmd> --help`, or `belz --help-full` for
+all of them.
+
+## Behaviour common to every command
+
+- `--llm` returns the core JSON envelope; machine output never goes through `console.log`.
+- Writes (anything that changes or executes remote state) need an explicit `--env` and a
+  confirmation; in `--llm` mode `--yes` replaces the prompt (`AD_CONFIRMATION_REQUIRED`
+  without it).
+- Every write to a method goes to its DRAFT: a PUBLISHED uuid is switched to its linked draft
+  (see the draft guard in [`lib/README.md`](lib/README.md)).
+- Method uuids may be given in any spelling or as an AD URL.
+- Error codes are stable and listed in each help.txt. Main families: `INVALID_UUID`,
+  `METHOD_NOT_FOUND` (also for a soft-deleted method, `details.deleted: true`),
+  `AD_DRAFT_GUARD_*`, `AD_OVERLAY_*`, `AD_SERIALIZER_DRIFT`, `AD_SPEC_*`,
+  `AD_VALIDATION_FAILED`, `AD_VERSION_CONFLICT`, `AD_SAVE_*`, `AD_METHOD_EXISTS`,
+  `AD_CATEGORY_PROTECTED`, `AD_IMPORT_*`, `AD_DELETE_*`, `AD_TEST_*`, `AD_TESTCASE_*`,
+  `AD_LINT_FAILED`, `HISTORY_*`, `RESTORE_UNCONFIRMED`, `SQL_*`.
+
+## Configuration
+
+| Setting | Effect |
+|---|---|
+| `environments.<env>.sqlDefaultDb` in `~/.belz/config.json` | Default database for `ad sql` on that env. |
+| `BELZ_SQL_DEFAULT_DB` | Default database for `ad sql` on every env (after the config key). |
+| `"lint": {"resolverTables": {"<table>": "<fn>"}}` in `~/.belz/config.json` | Enables lint rule Q3 (tables that must be read through a resolver function). |
+
+Caches live under `~/.belz/cache/` (see [`lib/README.md`](lib/README.md#caching)).
+
+## Testing
+
+`bun test integrations/automation-designer` (no network), or `bun run check` from the repo root.
+See [`tests/README.md`](tests/README.md). Live suites are opt-in and live in
+[`apps/cli/tests/live`](../../apps/cli/tests/live/README.md).
+
+Maintainer rules: [`AGENTS.md`](AGENTS.md).
