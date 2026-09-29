@@ -104,6 +104,14 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
       pages.set(pubId, pub);
       return json(pub);
     }
+    if (path === "/pages/history" && req.method === "GET") {
+      const id = u.searchParams.get("pageId");
+      return json(
+        [...versions.values()]
+          .filter((v) => v.id === id)
+          .map((v) => ({ id: v.versionId, status: v.status, partialUpdate: false, updatedAt: 0, updatedBy: 1, userName: null })),
+      );
+    }
     if ((m = path.match(/^\/pages\/(\w+)$/))) {
       const p = pages.get(m[1]!);
       if (!p) return json({ message: "not found" }, 404);

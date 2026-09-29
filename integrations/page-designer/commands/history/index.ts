@@ -62,6 +62,9 @@ interface HistoryListData {
   pageId: string;
   totalVersions: number;
   versions: VersionRow[];
+  /** Set when a DRAFT lists 0 versions: history is recorded on its PUBLISHED sibling. */
+  publishedId?: string;
+  hint?: string;
 }
 
 interface HistoryShowData {
@@ -215,12 +218,23 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       const entries = await pdApi.historyList(args.pageId);
       const rows = entries.map(toRow).sort((a, b) => b.versionId - a.versionId);
       const clipped = rows.slice(0, args.limit);
-      return ok<HistoryListData>({
+      const data: HistoryListData = {
         action: "list",
         pageId: args.pageId,
         totalVersions: rows.length,
         versions: clipped,
-      });
+      };
+      if (rows.length === 0) {
+        // History is recorded on the PUBLISHED page; a draft id lists nothing.
+        const raw = await pdApi.fetchPage(args.pageId);
+        const ref = typeof raw?.referenceId === "string" ? raw.referenceId.trim() : "";
+        if (raw && String(raw.status).toUpperCase() === "DRAFT" && ref && ref !== args.pageId) {
+          data.publishedId = ref;
+          data.hint = `History is recorded on the published page: belz pd history list ${ref}`;
+          context.warn(`${args.pageId} is a DRAFT; its history is on the published page ${ref}.`);
+        }
+      }
+      return ok<HistoryListData>(data);
     }
 
     if (args.action === "show") {
@@ -335,7 +349,10 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       ui.kv("Page", data.pageId);
       ui.kv("Total versions", data.totalVersions);
       if (data.versions.length === 0) {
-        ui.info("No version history yet. PD records one entry per save; brand-new pages show empty until their first update.");
+        ui.info(
+          data.hint ??
+            "No version history yet. History is recorded on the PUBLISHED page; a page never published or updated lists none.",
+        );
         return;
       }
       ui.table(

@@ -33,6 +33,15 @@ beforeEach(() => {
 afterEach(() => pd.restore());
 
 describe("pd history (PD-15)", () => {
+  test("list on a DRAFT with no versions points at the published page (smoke doc mismatch)", async () => {
+    const d = await run(history, ["list", DRAFT]);
+    expect(d.envelope?.data).toMatchObject({ totalVersions: 0, publishedId: PUB });
+    expect(String((d.envelope?.data as { hint?: string }).hint)).toContain(`belz pd history list ${PUB}`);
+    const p = await run(history, ["list", PUB]);
+    expect(p.envelope?.data).toMatchObject({ totalVersions: 1 });
+    expect((p.envelope?.data as { publishedId?: string }).publishedId).toBeUndefined();
+  });
+
   test("show refuses a version that belongs to another page", async () => {
     const r = await run(history, ["show", PUB, "--version", "200"]);
     expect(r.envelope?.error).toMatchObject({ code: "PD_VERSION_PAGE_MISMATCH", details: { ownerId: OTHER_PUB } });
