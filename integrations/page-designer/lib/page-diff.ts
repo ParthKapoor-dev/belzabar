@@ -2,11 +2,14 @@
 //
 // Used by `pd history diff` (two versions), `pd diff` (two environments) and
 // the save / preflight edit summary (`editSummary`). Compares (PD-11):
-//   - variables: added / removed / changed (type, initialValue, translateInitialValue)
-//   - derived:   added / removed / changed (from, spec, filterFn, sideEffect)
+//   - variables: added / removed / changed (the whole raw entry, OTH-R12:
+//                compileType, description, variableMetadata, … count too);
+//                a duplicate name is keyed `name#2`, `name#3` (never dropped)
+//   - derived:   added / removed / changed (the whole raw entry)
 //   - HTTP:      added / removed / changed (the whole raw request config, by callId)
 //   - layout:    nodes added / removed / kind-changed / changed (props, events,
-//                loop, field — children excluded)
+//                loop, field — children excluded), moved (new parent) and
+//                parents whose common children were reordered (OTH-R12)
 //   - styles:    changed + line counts
 //   - everything else in the config (inputs, events, helpText, __version, …)
 
@@ -36,6 +39,10 @@ export interface PageDiff {
   nodesKindChanged: Array<{ nodeId: string; before: string; after: string }>;
   /** Nodes present on both sides whose own props/events/loop/field differ. */
   nodesChanged: string[];
+  /** Nodes present on both sides whose parent changed. */
+  nodesMoved: string[];
+  /** Parents whose (common) children are in a different order. */
+  childrenReordered: string[];
   styles: StyleDiff;
   /** Other top-level config keys that differ (inputs, events, helpText, …). */
   otherChanged: string[];
@@ -76,6 +83,83 @@ function collectNodes(page: HydratedPage): Map<string, { kind: string; fp: strin
   return m;
 }
 
+/** node id → parent id, and parent id → child ids in order. */
+export function treeShape(p: HydratedPage): { parent: Map<string, string>; kids: Map<string, string[]> } {
+  const parent = new Map<string, string>();
+  const kids = new Map<string, string[]>();
+  const visit = (n: HydratedPage["layout"]) => {
+    kids.set(n.nodeId, n.children.map((c) => c.nodeId));
+    for (const c of n.children) {
+      parent.set(c.nodeId, n.nodeId);
+      visit(c);
+    }
+  };
+  visit(p.layout);
+  return { parent, kids };
+}
+
+/** Moved nodes and reordered parents between two layouts. */
+function treeChanges(a: HydratedPage, b: HydratedPage): { nodesMoved: string[]; childrenReordered: string[] } {
+  const ta = treeShape(a);
+  const tb = treeShape(b);
+  const nodesMoved = [...tb.parent].filter(([id, par]) => ta.parent.has(id) && ta.parent.get(id) !== par).map(([id]) => id);
+  const childrenReordered: string[] = [];
+  for (const [par, kidsB] of tb.kids) {
+    const kidsA = ta.kids.get(par);
+    if (!kidsA) continue;
+    const inB = new Set(kidsB);
+    const orderA = kidsA.filter((k) => inB.has(k));
+    const inA = new Set(orderA);
+    const orderB = kidsB.filter((k) => inA.has(k));
+    if (orderA.join("\u0000") !== orderB.join("\u0000")) childrenReordered.push(par);
+  }
+  return { nodesMoved, childrenReordered };
+}
+
+/** name → fingerprint; a repeated name gets `name#2`, `name#3` so no entry is dropped. */
+function byName(items: Array<{ name: string; raw: unknown }>): Map<string, string> {
+  const m = new Map<string, string>();
+  const seen = new Map<string, number>();
+  for (const it of items) {
+    const n = (seen.get(it.name) ?? 0) + 1;
+    seen.set(it.name, n);
+    m.set(n === 1 ? it.name : `${it.name}#${n}`, stableStringify(it.raw));
+  }
+  return m;
+}
+
+/**
+ * The RAW variable entries, split into plain and derived. Read from the raw
+ * config (not the parsed lists, which drop a duplicate name) so every entry
+ * and every field is compared.
+ */
+function rawVariableEntries(p: HydratedPage): { plain: Array<{ name: string; raw: unknown }>; derived: Array<{ name: string; raw: unknown }> } {
+  const inner = (p.rawConfiguration ?? {}) as {
+    variables?: { userDefined?: unknown; derived?: unknown };
+    context?: { properties?: unknown; derived?: unknown };
+  };
+  const plain: Array<{ name: string; raw: unknown }> = [];
+  const derived: Array<{ name: string; raw: unknown }> = [];
+  const ud = inner.variables?.userDefined;
+  if (Array.isArray(ud) && ud.length > 0) {
+    for (const e of ud) {
+      if (!e || typeof e !== "object" || typeof (e as { name?: unknown }).name !== "string") continue;
+      (Array.isArray((e as { from?: unknown }).from) ? derived : plain).push({ name: (e as { name: string }).name, raw: e });
+    }
+  } else if (Array.isArray(inner.context?.properties)) {
+    for (const e of inner.context!.properties as unknown[]) {
+      if (Array.isArray(e) && typeof e[0] === "string") plain.push({ name: e[0], raw: e });
+    }
+  }
+  const rd = inner.variables?.derived ?? inner.context?.derived;
+  if (Array.isArray(rd)) {
+    for (const e of rd) {
+      if (e && typeof e === "object" && typeof (e as { name?: unknown }).name === "string") derived.push({ name: (e as { name: string }).name, raw: e });
+    }
+  }
+  return { plain, derived };
+}
+
 /** Keyed diff: added / removed by key, changed when the fingerprints differ. */
 function keyedDiff(before: Map<string, string>, after: Map<string, string>): SetDiff {
   const out: SetDiff = { added: [], removed: [], changed: [] };
@@ -105,10 +189,8 @@ const MODELLED_KEYS = new Set(["layout", "styles", "variables", "httpRequests", 
 
 /** Structural diff: `a` is the "before"/"from" page, `b` is the "after"/"to" page. */
 export function diffPages(a: HydratedPage, b: HydratedPage): PageDiff {
-  const varFp = (p: HydratedPage) =>
-    new Map(p.variables.map((v) => [v.name, stableStringify([v.type, v.initialValue, v.translateInitialValue ?? null])] as const));
-  const derFp = (p: HydratedPage) =>
-    new Map(p.derived.map((d) => [d.name, stableStringify([d.from, d.spec, d.filterFn, d.sideEffect])] as const));
+  const varFp = (p: HydratedPage) => byName(rawVariableEntries(p).plain);
+  const derFp = (p: HydratedPage) => byName(rawVariableEntries(p).derived);
   const httpFp = (p: HydratedPage) =>
     new Map(p.httpRequests.map((h) => [h.callId ?? `idx:${h.index}`, stableStringify(h.raw)] as const));
 
@@ -148,6 +230,7 @@ export function diffPages(a: HydratedPage, b: HydratedPage): PageDiff {
     nodesRemoved,
     nodesKindChanged,
     nodesChanged,
+    ...treeChanges(a, b),
     styles: diffStyles(a.styles, b.styles),
     otherChanged,
   };
@@ -158,6 +241,7 @@ export function isIdentical(d: PageDiff): boolean {
   return (
     sets.every((s) => s.added.length + s.removed.length + s.changed.length === 0) &&
     d.nodesAdded.length + d.nodesRemoved.length + d.nodesKindChanged.length + d.nodesChanged.length === 0 &&
+    d.nodesMoved.length + d.childrenReordered.length === 0 &&
     !d.styles.changed &&
     d.otherChanged.length === 0
   );
@@ -177,6 +261,8 @@ export interface EditSummary {
   nodesAdded: string[];
   nodesRemoved: string[];
   nodesChanged: string[];
+  nodesMoved: string[];
+  childrenReordered: string[];
   stylesChanged: boolean;
   otherChanged: string[];
 }
@@ -196,6 +282,8 @@ export function editSummary(before: HydratedPage, after: HydratedPage): EditSumm
     nodesAdded: d.nodesAdded,
     nodesRemoved: d.nodesRemoved,
     nodesChanged: [...d.nodesChanged, ...d.nodesKindChanged.map((k) => k.nodeId)],
+    nodesMoved: d.nodesMoved,
+    childrenReordered: d.childrenReordered,
     stylesChanged: d.styles.changed,
     otherChanged: d.otherChanged,
   };
@@ -219,6 +307,8 @@ export function editSummaryLines(s: EditSummary): string[] {
   add("+", "nodes", s.nodesAdded);
   add("-", "nodes", s.nodesRemoved);
   add("~", "nodes", s.nodesChanged);
+  add("↷", "nodes moved", s.nodesMoved);
+  add("↕", "children reordered under", s.childrenReordered);
   if (s.stylesChanged) lines.push("~ styles changed");
   add("~", "config", s.otherChanged);
   return lines;

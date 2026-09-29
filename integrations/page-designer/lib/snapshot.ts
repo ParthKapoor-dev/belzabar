@@ -129,21 +129,6 @@ export interface SnapshotComparison {
   unclassified: boolean;
 }
 
-/** node id → parent id, and parent id → child ids in order. */
-function treeShape(p: HydratedPage): { parent: Map<string, string>; kids: Map<string, string[]> } {
-  const parent = new Map<string, string>();
-  const kids = new Map<string, string[]>();
-  const visit = (n: HydratedPage["layout"]) => {
-    kids.set(n.nodeId, n.children.map((c) => c.nodeId));
-    for (const c of n.children) {
-      parent.set(c.nodeId, n.nodeId);
-      visit(c);
-    }
-  };
-  visit(p.layout);
-  return { parent, kids };
-}
-
 /** Compare a stored snapshot (`base`) with a fresh one (`live`): what changed from base to live. */
 export function compareSnapshots(base: PageSnapshot, live: PageSnapshot): SnapshotComparison {
   const identical = stableStringify(base) === stableStringify(live);
@@ -152,22 +137,10 @@ export function compareSnapshots(base: PageSnapshot, live: PageSnapshot): Snapsh
   );
   const a = pageFromSnapshot(base);
   const b = pageFromSnapshot(live);
-  const summary = editSummary(a, b);
+  const { nodesMoved, childrenReordered, ...summary } = editSummary(a, b);
   const changes: Partial<EditSummary> = {};
   for (const [k, v] of Object.entries(summary) as Array<[keyof EditSummary, EditSummary[keyof EditSummary]]>) {
     if (Array.isArray(v) ? v.length > 0 : v === true) (changes as Record<string, unknown>)[k] = v;
-  }
-  const ta = treeShape(a);
-  const tb = treeShape(b);
-  const nodesMoved = [...tb.parent].filter(([id, par]) => ta.parent.has(id) && ta.parent.get(id) !== par).map(([id]) => id);
-  const childrenReordered: string[] = [];
-  for (const [par, kidsB] of tb.kids) {
-    const kidsA = ta.kids.get(par);
-    if (!kidsA) continue;
-    const common = new Set(kidsA.filter((k) => kidsB.includes(k)));
-    const orderA = kidsA.filter((k) => common.has(k));
-    const orderB = kidsB.filter((k) => common.has(k));
-    if (!isDeepStrictEqual(orderA, orderB)) childrenReordered.push(par);
   }
   const explained =
     entityChanged.length > 0 || Object.keys(changes).length > 0 || nodesMoved.length > 0 || childrenReordered.length > 0;

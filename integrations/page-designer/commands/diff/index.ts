@@ -164,6 +164,8 @@ const command: CommandModule<DiffArgs, DiffData> = {
       if (d.nodesChanged.length > 0) ui.text(`~ ${d.nodesChanged.join(", ")}`);
       for (const c of d.nodesKindChanged) ui.text(`~ ${c.nodeId}: ${c.before} → ${c.after}`);
     }
+    if (d.nodesMoved.length > 0) ui.kv("Nodes moved", d.nodesMoved.join(", "));
+    if (d.childrenReordered.length > 0) ui.kv("Children reordered under", d.childrenReordered.join(", "));
     if (d.otherChanged.length > 0) ui.kv("Other config changed", d.otherChanged.join(", "));
   },
 };

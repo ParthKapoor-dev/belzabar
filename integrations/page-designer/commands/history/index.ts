@@ -108,6 +108,8 @@ interface HistoryDiffData {
   nodesRemoved: string[];
   nodesKindChanged: Array<{ nodeId: string; before: string; after: string }>;
   nodesChanged: string[];
+  nodesMoved: string[];
+  childrenReordered: string[];
   stylesChanged: boolean;
   otherChanged: string[];
 }
@@ -308,6 +310,8 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
         nodesRemoved: diff.nodesRemoved,
         nodesKindChanged: diff.nodesKindChanged,
         nodesChanged: diff.nodesChanged,
+        nodesMoved: diff.nodesMoved,
+        childrenReordered: diff.childrenReordered,
         stylesChanged: diff.styles.changed,
         otherChanged: diff.otherChanged,
       });
@@ -482,6 +486,8 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
         if (data.nodesChanged.length > 0) ui.text(`~ ${data.nodesChanged.join(", ")}`);
         for (const c of data.nodesKindChanged) ui.text(`~ ${c.nodeId}: ${c.before} → ${c.after}`);
       }
+      if (data.nodesMoved.length > 0) ui.kv("Nodes moved", data.nodesMoved.join(", "));
+      if (data.childrenReordered.length > 0) ui.kv("Children reordered under", data.childrenReordered.join(", "));
       if (data.otherChanged.length > 0) ui.kv("Other config changed", data.otherChanged.join(", "));
       return;
     }

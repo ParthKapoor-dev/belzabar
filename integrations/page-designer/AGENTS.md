@@ -146,7 +146,7 @@ editor metadata; sorts keys; turns multi-line strings into `{"$lines": [...]}` (
 | `lib/lock.ts` | `withLock` + per-env lock file helpers |
 | `lib/resolver.ts`, `lib/url-parser.ts` | input → entity (type comes from the server) |
 | `lib/extract.ts` | read views (`show` sections, `findNodes`, `adIdsOf`, `childComponentNames`) |
-| `lib/page-diff.ts` | the one diff engine (`diffPages`, `editSummary`) for diff / history diff / save / preflight / snapshot |
+| `lib/page-diff.ts` | the one diff engine (`diffPages`, `editSummary`, `treeShape`) for diff / history diff / save / preflight / snapshot: raw variable entries (every field; duplicate names keyed `name#2`), node own-fields, `nodesMoved`, `childrenReordered` |
 | `lib/page-finder.ts` | search index + fuzzy search, `collapsePairs` |
 | `lib/analyzer.ts` | recursive analysis + compliance (`--compliance <file>` list of ids) |
 | `lib/page-dependencies.ts` | page-deps / translations entity resolution |
