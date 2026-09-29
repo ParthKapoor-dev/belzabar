@@ -4,7 +4,7 @@
 //   bun scripts/dead-code.ts            human report
 //   bun scripts/dead-code.ts --json     machine-readable report
 //   bun scripts/dead-code.ts --summary  one line of counts (what `bun run check` prints)
-//   bun scripts/dead-code.ts --check    exit 1 when anything is found (CI gate)
+//   bun scripts/dead-code.ts --check    exit 1 on any finding except test seams (`bun run check`, CI)
 //
 // What it reports:
 //   1. unused exports — exported symbols nothing outside their own file uses.
@@ -19,7 +19,7 @@
 //   3. package.json dependencies no file of the workspace imports, and bare imports a
 //      workspace makes without declaring them.
 //
-// Allowlist: ALLOW below (file → export names) for deliberate public API.
+// Allowlist: ALLOW below (file → export names) for deliberate API and test hooks.
 
 import ts from "typescript";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
@@ -293,13 +293,14 @@ for (const w of workspaces) {
 exportFindings.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
 const report = { exports: exportFindings, files: [...fileFindings, ...orphanTestSupport], deps: depFindings };
 const countOf = (s: string) => exportFindings.filter((e) => e.status === s).length;
+const failing = exportFindings.some((e) => e.status !== "test-seam") || report.files.length > 0 || depFindings.length > 0;
 if (JSON_OUT) {
   console.log(JSON.stringify(report, null, 2));
 } else if (SUMMARY) {
   console.log(
     `dead-code: exports dead ${countOf("dead")}, test-only ${countOf("test-only")}, local-only ${countOf("local-only")}; ` +
       `unreachable files ${report.files.length}; dependency problems ${depFindings.length}` +
-      (CHECK ? "" : " (report only; `bun scripts/dead-code.ts` lists them)"),
+      (failing ? " — `bun scripts/dead-code.ts` lists them" : ""),
   );
 } else {
   const by = (s: string) => exportFindings.filter((e) => e.status === s);
@@ -313,4 +314,4 @@ if (JSON_OUT) {
   console.log(`\n## dependencies (${depFindings.length})`);
   for (const d of depFindings) console.log(`${d.workspace}: ${d.kind} ${d.dep}${d.importers ? `  ← ${d.importers.join(", ")}` : ""}`);
 }
-if (CHECK && (exportFindings.some((e) => e.status === "dead" || e.status === "test-only") || report.files.length || depFindings.length)) process.exit(1);
+if (CHECK && failing) process.exit(1);
