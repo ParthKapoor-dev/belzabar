@@ -284,3 +284,28 @@ describe("listing failures have stable codes (ADR-R6)", () => {
     expect(r.envelope?.error).toMatchObject({ code: "PD_LIST_FAILED", details: { status: 503 } });
   });
 });
+
+// review-verify: a 200 whose body is empty or not JSON (SSO / maintenance page)
+// crashed `find` and `callers` with UNHANDLED_EXCEPTION (raw response.json()).
+describe("find / callers on a non-JSON or empty 200 body", () => {
+  const HTML = respond({ text: "<html><head><title>Maintenance</title></head></html>", headers: { "content-type": "text/html" } });
+  test("the category listing: HTTP_BAD_JSON, not UNHANDLED_EXCEPTION", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes({ "GET /rest/api/automation/services*": HTML })).install();
+    const findCommand = (await import("../../commands/find/index")).default;
+    for (const [cmd, argv] of [[callersCommand, [ARRAY_OUTPUT, "--refresh"]], [findCommand, ["x", "--refresh"]]] as const) {
+      const r = await runCommand(cmd as typeof callersCommand, [...argv], { env: "t-dev" });
+      expect(r.envelope?.error?.code).toBe("HTTP_BAD_JSON");
+      expect(r.envelope?.error?.message).toContain("Maintenance");
+    }
+  });
+
+  test("a category's method page that is not JSON is a skipped category, an empty one has no methods", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    for (const body of [HTML, respond({ text: "" })]) {
+      using _ff = fakeFetch(routes({ [`GET /rest/api/automation/methods?categoryUuid=${CAT}*`]: body })).install();
+      const { index } = await loadOrBuildMethodFinderIndex({ refresh: true });
+      expect(index.methods).toEqual([]);
+    }
+  });
+});
