@@ -25,6 +25,7 @@ import type { RawConfiguration } from "../../types/wire";
 import { issue } from "../catalogue";
 import { bindingRoot, isBuiltinRoot, type Rule } from "../context";
 import { isStyleOnlySymbol } from "./invariants";
+import { isObj } from "@belzabar/core";
 
 const nodeRef = (n: ParsedNode) => ({ nodeId: n.nodeId, nodeName: n.tagName });
 const inner = (page: HydratedPage) => (page.rawConfiguration ?? {}) as RawConfiguration & Record<string, unknown>;
@@ -110,9 +111,9 @@ const ruleBucketsAreArrays: Rule = (page) => {
     }
   }
   const http = cfg.httpRequests as unknown;
-  if (http && typeof http === "object" && !Array.isArray(http)) {
+  if (isObj(http)) {
     for (const k of ["userDefined", "generated"] as const) {
-      const v = (http as Record<string, unknown>)[k];
+      const v = http[k];
       if (v !== undefined && v !== null && !Array.isArray(v)) {
         out.push(issue("HTTP_NOT_ARRAY", `httpRequests.${k} must be an array — keyed service calls are stripped on save`, { path: `httpRequests.${k}` }));
       }
@@ -241,9 +242,7 @@ function tables(page: HydratedPage): TableCtx[] {
     const varName = m?.[1] ?? null;
     const v = varName ? page.variables.find((x) => x.name === varName) : undefined;
     const iv = v?.initialValue;
-    const rows = iv && typeof iv === "object" && !Array.isArray(iv) && Array.isArray((iv as { rows?: unknown }).rows)
-      ? ((iv as { rows: unknown[] }).rows)
-      : null;
+    const rows = isObj(iv) && Array.isArray(iv.rows) ? (iv.rows as unknown[]) : null;
     out.push({ node: n, props, varName, sub: m?.[2] ?? "", initialValue: iv, varType: v?.type ?? null, rows });
   });
   return out;

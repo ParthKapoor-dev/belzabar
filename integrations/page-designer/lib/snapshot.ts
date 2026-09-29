@@ -22,6 +22,7 @@ import { isDeepStrictEqual } from "node:util";
 import { parsePage } from "./parser/index";
 import { editSummary, stableStringify, type EditSummary } from "./page-diff";
 import type { HydratedPage, RawPageResponse } from "./types/common";
+import { isObj } from "@belzabar/core";
 
 const SNAPSHOT_VERSION = 1;
 
@@ -41,7 +42,7 @@ const DROP_KEYS = new Set(["_elementId"]);
 const DROP_WHEN_EMPTY = new Set(["__LAYOUT_CONFIG_METADATA", "variableMetadata"]);
 
 function isEmptyObject(v: unknown): boolean {
-  return !!v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length === 0;
+  return isObj(v) && Object.keys(v).length === 0;
 }
 
 /** Recursively normalize a JSON value (see file header). */

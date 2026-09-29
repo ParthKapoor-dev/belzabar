@@ -13,6 +13,7 @@
 
 import type { PageDerivedVariable, PageVariable } from "../types/common";
 import type { RawConfiguration, RawDerivedVar, RawUserDefinedVar } from "../types/wire";
+import { isObj } from "@belzabar/core";
 
 interface ParsedVariablesResult {
   userDefined: PageVariable[];
@@ -22,7 +23,7 @@ interface ParsedVariablesResult {
 
 /** A userDefined entry the editor uses as a derived variable (has a `from` array). */
 export function isDerivedEntry(raw: unknown): boolean {
-  return !!raw && typeof raw === "object" && !Array.isArray(raw) && Array.isArray((raw as { from?: unknown }).from);
+  return isObj(raw) && Array.isArray(raw.from);
 }
 
 function toDerived(d: RawDerivedVar, location: PageDerivedVariable["location"]): PageDerivedVariable {

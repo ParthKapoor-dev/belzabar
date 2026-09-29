@@ -1,4 +1,4 @@
-import { CliError, type CommandModule, Config, defineArgs, ok, openUrlInBrowser, pickFields, strOrNull, triggerDetachedRefresh } from "@belzabar/core";
+import { CliError, type CommandModule, Config, defineArgs, isObj, ok, openUrlInBrowser, pickFields, strOrNull, triggerDetachedRefresh } from "@belzabar/core";
 import { PD_FORCE_FLAG } from "../../lib/args/common";
 import { analyzeItem, cacheDeps, collectAllAdIds, formatTreeLines, type AnalyzeError } from "../../lib/analyzer";
 import {
@@ -501,9 +501,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
         editUrl,
         configSizeBytes: Buffer.byteLength(configStr, "utf-8"),
         topLevelKeys:
-          configurationParsed && typeof configurationParsed === "object" && !Array.isArray(configurationParsed)
-            ? Object.keys(configurationParsed as Record<string, unknown>)
-            : [],
+          isObj(configurationParsed) ? Object.keys(configurationParsed) : [],
         userDefinedVarCount: vars.userDefined.length,
         derivedVarCount: vars.derived.length,
         httpCallCount: httpCalls.length,

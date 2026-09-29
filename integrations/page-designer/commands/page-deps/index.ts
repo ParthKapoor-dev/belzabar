@@ -10,7 +10,7 @@
 // config bytes, phrase counts). `--full` returns the raw `dependencyJSON`.
 // No validation — see `belz pd translations` for the release-check verdict.
 
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { asObj, CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { PD_DEP_STATUS_FLAG, PD_FORCE_FLAG, PD_INPUT_POSITIONAL } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { resolveEntityIds } from "../../lib/page-dependencies";
@@ -66,7 +66,7 @@ export function summarizeDependencies(dependencyJSON: Record<string, unknown>, r
   const str = (v: unknown) => (typeof v === "string" && v ? v : null);
   const rows = [...bases].map((key): DepEntity => {
     const row = dependencyJSON[key];
-    const r = row && typeof row === "object" && !Array.isArray(row) ? (row as Record<string, unknown>) : {};
+    const r = asObj(row) ?? {};
     return {
       key,
       name: str(r.name),

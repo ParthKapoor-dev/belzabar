@@ -13,6 +13,7 @@ import { createHash } from "node:crypto";
 import type { NodesOverlay, NodeUpdate, PartialDataType, RawPartialUpdateOperation } from "../types/common";
 import type { RawConfiguration } from "../types/wire";
 import { encodeValue, guessDataType, hasPath } from "./paths";
+import { asObj } from "@belzabar/core";
 
 type RawNode = Record<string, unknown>;
 
@@ -110,7 +111,7 @@ function applyUpdate(target: RawNode, u: NodeUpdate): void {
     const patch = u[m];
     if (!patch) continue;
     const cur = target[m];
-    const map: RawNode = cur && typeof cur === "object" && !Array.isArray(cur) ? (cur as RawNode) : {};
+    const map: RawNode = asObj(cur) ?? {};
     for (const [k, v] of Object.entries(patch)) {
       if (v === null) delete map[k];
       else map[k] = v;
