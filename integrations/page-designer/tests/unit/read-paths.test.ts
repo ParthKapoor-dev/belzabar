@@ -102,6 +102,22 @@ describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
     expect(rec.envelope?.data).toMatchObject({ adIds: ["ad1", "ad2"], errors: [{ name: "ghost" }] });
   });
 
+  test("OTH-R15: --compliance is a gate — rogue ids and an incomplete walk are ok:false", async () => {
+    const { writeFileSync } = await import("fs");
+    const f = join(BELZ_CONFIG_DIR, "master.txt");
+    writeFileSync(f, "ad1, ad2");
+    // PAGE references the unresolvable "ghost" symbol → incomplete walk.
+    const inc = await run(analyze, [PAGE, "--compliance", f]);
+    expect(inc.exitCode).toBe(1);
+    expect(inc.envelope).toMatchObject({ ok: false, error: { code: "PD_COMPLIANCE_INCOMPLETE" }, data: { compliance: { isCompliant: null } } });
+    writeFileSync(f, "ad1");
+    const bad = await run(analyze, [PAGE, "--compliance", f]);
+    expect(bad.envelope).toMatchObject({ ok: false, error: { code: "PD_COMPLIANCE_FAILED" }, data: { compliance: { isCompliant: false, rogueIds: [{ id: "ad2" }] } } });
+    writeFileSync(f, "ad2");
+    const good = await run(analyze, [COMP, "--compliance", f]);
+    expect(good.envelope).toMatchObject({ ok: true, data: { compliance: { isCompliant: true } } });
+  });
+
   test("OTH-R19/R13: --force re-reads child components too; cached reads are counted and warned about", async () => {
     // Warm the cache, then change the child on the server.
     await run(findAdMethods, [PAGE, "-r"]);

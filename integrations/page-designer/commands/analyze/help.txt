@@ -10,7 +10,10 @@ Arguments:
 Flags:
   --compliance <file> Check the discovered AD ids against a master list file
                       (ids separated by commas and/or whitespace): rogue ids
-                      (not in the list), missing ids, common ids.
+                      (not in the list), missing ids, common ids. Rogue ids
+                      → ok:false PD_COMPLIANCE_FAILED (exit 1); components
+                      that could not be inspected → isCompliant:null,
+                      ok:false PD_COMPLIANCE_INCOMPLETE (exit 1).
   --force             Re-read every page/component config (roots and every
                       referenced component) instead of the local cache.
   --help, -h          Show this help message.

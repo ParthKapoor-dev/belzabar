@@ -158,7 +158,8 @@ export interface RogueIdInfo {
 }
 
 export interface ComplianceResult {
-  isCompliant: boolean;
+  /** null when the walk was incomplete (unresolved/unfetchable components): not provable either way (OTH-R15). */
+  isCompliant: boolean | null;
   rogueIds: RogueIdInfo[];
   missingIds: string[];
   commonIds: string[];
@@ -181,8 +182,12 @@ export async function loadMasterIds(path: string): Promise<Set<string>> {
   return ids;
 }
 
-/** Generated AD ids vs an approved master list: rogue (not approved), missing, common. */
-export function verifyCompliance(roots: ReportNode[], masterIds: Set<string>): ComplianceResult {
+/**
+ * Generated AD ids vs an approved master list: rogue (not approved), missing,
+ * common. `walkErrors` > 0 means part of the tree was never inspected, so a
+ * clean result is not a pass: isCompliant is null (rogue ids still make it false).
+ */
+export function verifyCompliance(roots: ReportNode[], masterIds: Set<string>, walkErrors = 0): ComplianceResult {
   const generated = new Set(collectAllAdIds(roots));
   const foundIn = (adId: string): string[] => {
     const sources = new Set<string>();
@@ -200,5 +205,6 @@ export function verifyCompliance(roots: ReportNode[], masterIds: Set<string>): C
     else rogueIds.push({ id, foundIn: foundIn(id) });
   }
   const missingIds = [...masterIds].filter((id) => !generated.has(id));
-  return { isCompliant: rogueIds.length === 0, rogueIds, missingIds: missingIds.sort(), commonIds: commonIds.sort() };
+  const isCompliant = rogueIds.length > 0 ? false : walkErrors > 0 ? null : true;
+  return { isCompliant, rogueIds, missingIds: missingIds.sort(), commonIds: commonIds.sort() };
 }

@@ -5,8 +5,10 @@
 // gone), every referenced component is followed (no components.json), and the
 // compliance master list is an explicit file (no master_ids.txt from CWD).
 // PD-19: fetch/resolve failures are reported in `errors`, never swallowed.
+// OTH-R15: with --compliance, rogue ids → ok:false PD_COMPLIANCE_FAILED; an
+// incomplete walk → isCompliant:null, ok:false PD_COMPLIANCE_INCOMPLETE.
 
-import { defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import {
   analyzeItem,
   cacheDeps,
@@ -84,17 +86,33 @@ const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
     const note = cacheUseWarning(cache);
     if (note) context.warn(note);
 
-    return ok({
+    const data: AnalyzeData = {
       targetIds,
       uniqueAdIds: collectAllAdIds(reports),
-      compliance: masterIds ? verifyCompliance(reports, masterIds) : null,
+      compliance: masterIds ? verifyCompliance(reports, masterIds, errors.length) : null,
       treeByRoot,
       errors,
       cache,
-    });
+    };
+    // OTH-R15: a compliance check is a gate — a failure or an incomplete walk is ok:false (exit 1).
+    if (data.compliance?.isCompliant === false) {
+      return failWithData(
+        "PD_COMPLIANCE_FAILED",
+        `${data.compliance.rogueIds.length} AD id(s) are not in the master list.`,
+        data,
+      );
+    }
+    if (data.compliance && data.compliance.isCompliant === null) {
+      return failWithData(
+        "PD_COMPLIANCE_INCOMPLETE",
+        `Compliance not proven: ${errors.length} component(s) could not be inspected (see data.errors).`,
+        data,
+      );
+    }
+    return ok(data);
   },
   presentHuman(envelope, ui) {
-    if (!envelope.ok) return;
+    if (!envelope.data) return;
     const data = envelope.data as AnalyzeData;
 
     data.treeByRoot.forEach(tree => {
@@ -117,8 +135,10 @@ const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
         ]
       );
 
-      if (data.compliance.isCompliant) {
+      if (data.compliance.isCompliant === true) {
         ui.success("Compliance passed.");
+      } else if (data.compliance.isCompliant === null) {
+        ui.warn("Compliance NOT proven: part of the tree could not be inspected (see errors).");
       } else {
         ui.warn("Compliance failed.");
         if (data.compliance.rogueIds.length > 0) {
