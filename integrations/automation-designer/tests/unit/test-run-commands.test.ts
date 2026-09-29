@@ -11,14 +11,11 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import {
-  fakeFetch,
   respond,
   runCommand,
   scratchDir,
-  withTempEnvConfig,
   type FakeFetch,
-  type RecordedRequest,
-  type TempEnvConfig,
+  type RecordedRequest
 } from "@belzabar/core/testing";
 import testCommand, { matchStep } from "../../commands/test/index";
 import runSuitesCommand from "../../commands/run-suites/index";
@@ -26,20 +23,16 @@ import saveSuiteCommand from "../../commands/save-suite/index";
 import runCommandModule from "../../commands/run/index";
 import { buildV1TestPayload } from "../../lib/payload-builder";
 import type { ParsedStep } from "../../lib/types/common";
+import { definitionRoute, fakeAdEnv } from "./helpers/fake-ad";
 
 const FIX = join(import.meta.dir, "../fixtures");
 const UUID = "4f6331f11208e5ccc8ddaaad20727664";
 const rawBody = () => JSON.parse(readFileSync(join(FIX, "real-v1", `${UUID}.v1.json`), "utf8"));
-const defTemplate = () => JSON.parse(readFileSync(join(FIX, "definitions", "976.json"), "utf8"));
 
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
+const ad = fakeAdEnv({ env: "t-s4b-run" });
 const spies: Array<{ mockRestore(): void }> = [];
 afterEach(() => {
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
+  ad.restore();
   while (spies.length) spies.pop()!.mockRestore();
 });
 
@@ -48,29 +41,20 @@ function wire(
   body = rawBody(),
   execute: unknown = () => ({ response: { ok: 1 }, executionStatus: { failed: false } }),
 ) {
-  cfg = withTempEnvConfig({ envs: { "t-s4b-run": { url: "https://t-dev.test" } }, activeEnv: "t-s4b-run" });
-  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
-  ff = fakeFetch([
+  ad.install([
     { method: "GET", url: `/rest/api/automation/chain/${UUID}`, response: body },
-    {
-      method: "GET",
-      url: /\/rest\/api\/automations\/(\d+)/,
-      response: (req: RecordedRequest) => {
-        const id = Number(/automations\/(\d+)/.exec(req.url)![1]);
-        const d = defTemplate();
-        d.id = id;
-        d.automationAPI = { ...d.automationAPI, id: id + 100_000 };
-        return d;
-      },
-    },
+    definitionRoute((d, id) => {
+      d.id = id;
+      d.automationAPI = { ...d.automationAPI, id: id + 100_000 };
+    }),
     { method: "POST", url: "/rest/api/automation/chain/test", response: testResponse },
     {
       method: "POST",
       url: /\/chain\/execute\//,
       response: execute as never,
     },
-  ]).install();
-  return ff;
+  ]);
+  return ad.ff;
 }
 
 /** The JSON body of the multipart `/chain/test` POST. */

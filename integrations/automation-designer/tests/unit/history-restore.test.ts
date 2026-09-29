@@ -10,34 +10,25 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
 import {
-  fakeFetch,
   type FakeFetch,
   jsonFixtures,
   type RecordedRequest,
   respond,
   runCommand,
-  type TempEnvConfig,
-  withTempEnvConfig,
+  withTempEnvConfig
 } from "@belzabar/core/testing";
 import historyCommand from "../../commands/history/index";
 import { interpretRestoreResponse } from "../../lib/api/v1";
 import { logIntent } from "../../lib/args/confirm";
+import { fakeAdEnv, historyServiceRoute } from "./helpers/fake-ad";
 
 const FIX = join(import.meta.dir, "../fixtures/history");
 const load = jsonFixtures(FIX);
 const DRAFT = "4bdea25c480a8e9dbc1cae830cb89b68";
 const PUB = "0000000000000000000000000000beef";
 
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
-const spies: Array<{ mockRestore(): void }> = [];
-afterEach(() => {
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
-  while (spies.length) spies.pop()!.mockRestore();
-});
+const ad = fakeAdEnv();
+afterEach(() => ad.restore());
 
 interface WireOpts {
   /** Chain body returned for GET chain/<DRAFT> (v1). Default: the real draft. */
@@ -53,18 +44,12 @@ interface WireOpts {
 
 /** The history services + chain endpoints. `get` serves the draft fixtures for includeDraft, a "published" body otherwise. */
 function wire(opts: WireOpts = {}) {
-  cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
   const pubGet = (v: string) => ({ ...load("get-draft-v1.json"), methodID: PUB, methodVersion: Number(v), methodVersionID: `pub-${v}` });
-  ff = fakeFetch([
+  ad.install([
     { method: "GET", url: `/rest/api/automation/chain/${DRAFT}`, response: opts.draftV1 ?? load("chain-v1-draft.json") },
     { method: "GET", url: `/rest/api/automation/chain/${PUB}`, response: opts.publishedV1 ?? { error: "no published fixture" } },
     { method: "GET", url: `/rest/api/automation/chain/v2/${DRAFT}?basicInfo=false`, response: opts.draftV2 ?? load("chain-v2-draft.json") },
-    {
-      method: "GET",
-      url: /automation-systems\/Expertly\.Automation\.Method\.History\/automation-apis\//,
-      response: (req: RecordedRequest) => ({ serviceChainUID: `hist-${req.url.split("/").pop()}` }),
-    },
+    historyServiceRoute(),
     { method: "POST", url: /chain\/execute\/hist-listAll/, response: load("listAll-draft.json") },
     {
       method: "POST",
@@ -83,8 +68,8 @@ function wire(opts: WireOpts = {}) {
       url: /chain\/execute\/hist-restore/,
       response: opts.restore ?? (() => ({ response: true, executionStatus: { executed: true, failed: false, statusCode: 200 } })),
     },
-  ]).install();
-  return ff;
+  ]);
+  return ad.ff;
 }
 
 const getCalls = (f: FakeFetch) => f.requests.filter((r) => r.url.includes("execute/hist-get")).map((r) => r.json());

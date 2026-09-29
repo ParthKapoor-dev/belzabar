@@ -2,14 +2,14 @@
 // that mints step ids and fills input types like the real server):
 //   ad save  — structural ops, --sql-file / --code-file, --dry-run, verify
 //   ad create --spec <compact> — contracts, codeFile/sqlFile, spec.category, --dry-run
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
-import { fakeFetch, fixture, runCommand, scratchDir, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
+import { fixture, runCommand, scratchDir, type RecordedRequest } from "@belzabar/core/testing";
 import saveCommand from "../../commands/save/index";
 import createCommand from "../../commands/create/index";
-import { COMPILED_CACHE_ROUTES } from "../../lib/save/compiled-cache";
 import type { V2MethodResponse, V2Step } from "../../lib/types/v2-wire";
+import { categoryRoutes, compiledCacheRoutes, fakeAdEnv, v2Store } from "./helpers/fake-ad";
 
 const FIX = `${import.meta.dir}/../fixtures`;
 const ON = `${FIX}/validate/online`;
@@ -19,16 +19,8 @@ const GET = `/rest/api/automation/chain/v2/${U}?basicInfo=false`;
 const NEW = "4d42844c66f687f1226eb020eb10f4db";
 const base = (): V2MethodResponse => structuredClone(require(`${FIX}/real-v2/${U}.v2.json`));
 
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
-const spies: Array<{ mockRestore(): void }> = [];
-afterEach(() => {
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
-  while (spies.length) spies.pop()!.mockRestore();
-});
+const ad = fakeAdEnv();
+afterEach(() => ad.restore());
 
 const contractRoutes = [
   { method: "GET", url: `${API}/Helpers.Legacy/automation-apis/echo`, response: fixture(`${ON}/api-echo.json`) },
@@ -56,32 +48,15 @@ function serverFill(body: V2MethodResponse): V2MethodResponse {
 }
 
 function setup(): string {
-  cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
+  ad.env();
   const dir = join(scratchDir("ad-author"), Math.random().toString(36).slice(2));
   mkdirSync(dir, { recursive: true });
   return dir;
 }
 
 function wireSave(onStore: (b: V2MethodResponse) => V2MethodResponse = serverFill) {
-  const s = { stored: base(), posts: [] as V2MethodResponse[] };
-  ff = fakeFetch([
-    { method: "GET", url: GET, response: () => structuredClone(s.stored) },
-    {
-      method: "POST",
-      url: "/rest/api/automation/chain/v2",
-      response: (req: RecordedRequest) => {
-        const body = req.json() as V2MethodResponse;
-        s.posts.push(body);
-        const next = onStore(body);
-        next.metadata.version = { ...next.metadata.version!, name: String(Number(s.stored.metadata.version?.name) + 1) };
-        s.stored = next;
-        return next;
-      },
-    },
-    ...contractRoutes,
-    ...COMPILED_CACHE_ROUTES.map((p) => ({ method: "POST", url: p, response: () => "success" })),
-  ]).install();
+  const s = v2Store(U, base(), { onPost: onStore });
+  ad.install([...s.routes, ...contractRoutes, ...compiledCacheRoutes()]);
   return s;
 }
 
@@ -144,7 +119,7 @@ describe("ad save — structural ops", () => {
     expect((r2.envelope!.data as any).valid).toBe(false);
     expect((r2.envelope!.data as any).validation.errors.map((f: any) => f.rule)).toContain("AD-REF-001");
     expect(s.posts).toHaveLength(0);
-    expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
+    expect(ad.ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
   });
 
   test("a server that drops an added step's input → AD_SAVE_VERIFY_FAILED naming the path", async () => {
@@ -203,9 +178,8 @@ describe("ad save — structural ops", () => {
 
 function wireCreate() {
   let stored: V2MethodResponse | null = null;
-  ff = fakeFetch([
-    { method: "GET", url: "/rest/api/automation/chain/category?fetchSystemServices=false", response: fixture(`${FIX}/categories/chain-category.json`) },
-    { method: "GET", url: "/rest/api/automation/chain/category?fetchSystemServices=true", response: fixture(`${FIX}/categories/chain-category-system.json`) },
+  ad.install([
+    ...categoryRoutes(),
     {
       method: "POST",
       url: "/rest/api/automation/chain/v2",
@@ -217,7 +191,7 @@ function wireCreate() {
     },
     { method: "GET", url: `/rest/api/automation/chain/v2/${NEW}?basicInfo=false`, response: () => stored },
     ...contractRoutes,
-  ]).install();
+  ]);
 }
 
 const compactSpec = {
@@ -242,7 +216,7 @@ describe("ad create --spec (compact)", () => {
     const r = await runCommand(createCommand, ["--spec", write(dir, "spec.json", compactSpec), "--yes"], { env: "t-dev" });
     expect(r.envelope?.error ?? null).toBeNull();
     expect(r.envelope!.data).toMatchObject({ uuid: NEW, name: "belz_tst_s7b_unit", stepCount: 3, category: { chainCategoryId: 1135 } });
-    const post = ff!.requests.find((q) => q.method === "POST")!.json() as V2MethodResponse;
+    const post = ad.ff.requests.find((q) => q.method === "POST")!.json() as V2MethodResponse;
     expect(post.steps!.map((s) => `${s.serviceName ?? "CC"}/${s.methodName ?? ""}`)).toEqual(["Helpers.Legacy/echo", "CC/", "db_service/data.read"]);
     expect(post.steps![1]!.properties!.customCode!.inlineCode).toBe("console.log('#{greeting}'.length)");
     expect(post.steps![2]!.accountConfiguration).toEqual({ id: 2, name: "ZCPS-RDS" });
@@ -259,7 +233,7 @@ describe("ad create --spec (compact)", () => {
     const d = r.envelope!.data as any;
     expect(d).toMatchObject({ dryRun: true, valid: true, category: { chainCategoryId: 1135 } });
     expect(d.body.steps).toHaveLength(3);
-    expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
+    expect(ad.ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
     // A method output nothing writes (M3) → valid:false with the finding, still no POST.
     const bad = { ...compactSpec, outputs: [...compactSpec.outputs, "ghost"] };
     const r2 = await runCommand(createCommand, ["--spec", write(dir, "bad.json", bad), "--dry-run"], { env: "t-dev" });
@@ -282,7 +256,7 @@ describe("ad create --spec (compact)", () => {
     expect((await run({ ...compactSpec, variables: [{ key: "v", encodingType: "BASE_64" }] })).envelope?.error?.code).toBe("AD_SPEC_NOT_APPLIED");
     expect((await run({ ...compactSpec, inputs: [{ key: "a", requierd: true }] })).envelope?.error?.code).toBe("AD_SPEC_UNKNOWN_KEY");
     expect((await run({ ...compactSpec, outputs: [{ key: "o", fooBar: 1 }] })).envelope?.error?.code).toBe("AD_SPEC_UNKNOWN_KEY");
-    expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
+    expect(ad.ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
   });
 });
 
@@ -292,34 +266,19 @@ describe("ad save — methods with test cases (testSuite)", () => {
   // is kept and only its updatedOn moves. Either way the re-read suite differs from the
   // body belz sent, which used to fail every save with AD_SAVE_VERIFY_FAILED.
   function wireSuiteServer() {
-    const s = { stored: base(), posts: [] as V2MethodResponse[] };
+    const s = v2Store(U, base(), {
+      onPost: (body: any) => {
+        const prevSuite = structuredClone((s.stored as any).testSuite);
+        const next = serverFill(body) as any;
+        if (body.testSuite) {
+          next.testSuite.chainVersionId = 2; // rebuilt from the sent copy
+          for (const c of next.testSuite.testCases) for (const a of c.assertions ?? []) a.id = `rebuilt-${a.id}`;
+        } else next.testSuite = { ...prevSuite, updatedOn: 1790663918718 };
+        return next;
+      },
+    });
     expect((s.stored as any).testSuite.testCases).toHaveLength(2);
-    ff = fakeFetch([
-      {
-        method: "GET",
-        url: GET,
-        response: () => structuredClone(s.stored),
-      },
-      {
-        method: "POST",
-        url: "/rest/api/automation/chain/v2",
-        response: (req: RecordedRequest) => {
-          const body = req.json() as any;
-          s.posts.push(body);
-          const prevSuite = structuredClone((s.stored as any).testSuite);
-          const next = serverFill(body) as any;
-          if (body.testSuite) {
-            next.testSuite.chainVersionId = 2; // rebuilt from the sent copy
-            for (const c of next.testSuite.testCases) for (const a of c.assertions ?? []) a.id = `rebuilt-${a.id}`;
-          } else next.testSuite = { ...prevSuite, updatedOn: 1790663918718 };
-          next.metadata.version = { ...next.metadata.version, name: String(Number(s.stored.metadata.version?.name) + 1) };
-          s.stored = next;
-          return next;
-        },
-      },
-      ...contractRoutes,
-      ...COMPILED_CACHE_ROUTES.map((p) => ({ method: "POST", url: p, response: () => "success" })),
-    ]).install();
+    ad.install([...s.routes, ...contractRoutes, ...compiledCacheRoutes()]);
     return s;
   }
 
@@ -340,8 +299,7 @@ describe("ad save — methods with test cases (testSuite)", () => {
     const dir = setup();
     const s = wireSuiteServer();
     let gets = 0;
-    ff!.restore();
-    ff = fakeFetch([
+    ad.install([
       {
         method: "GET",
         url: GET,
@@ -356,8 +314,8 @@ describe("ad save — methods with test cases (testSuite)", () => {
         url: "/rest/api/automation/chain/v2",
         response: (req: RecordedRequest) => (s.stored = { ...serverFill(req.json() as V2MethodResponse), testSuite: (s.stored as any).testSuite }),
       },
-      ...COMPILED_CACHE_ROUTES.map((p) => ({ method: "POST", url: p, response: () => "success" })),
-    ]).install();
+      ...compiledCacheRoutes(),
+    ]);
     const r = await runCommand(saveCommand, [write(dir, "o.json", { summary: "x" }), "--uuid", U, "--yes"], { env: "t-dev" });
     expect(r.envelope?.error ?? null).toBeNull();
   });

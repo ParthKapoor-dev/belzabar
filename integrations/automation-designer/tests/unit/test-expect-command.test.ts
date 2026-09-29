@@ -2,12 +2,13 @@
 // real acme-dev bodies of belz_tst_s7c_t1 (fixtures/test-cases: draft
 // 4252b87e… whose echo was changed to "Hi #{name}", and its published copy
 // 4725bcfb… still saying "Hello #{name}") and the real /chain/test answers.
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { readFileSync, writeFileSync } from "fs";
+import { afterEach, describe, expect, test } from "bun:test";
+import { writeFileSync } from "fs";
 import { join } from "path";
-import { fakeFetch, type FakeFetch, jsonFixtures, type RecordedRequest, runCommand, scratchDir, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
+import { jsonFixtures, type RecordedRequest, runCommand, scratchDir } from "@belzabar/core/testing";
 import testCommand from "../../commands/test/index";
 import { counterpart, diffOutputs, outputsMap } from "../../lib/test-run";
+import { definitionRoute, fakeAdEnv } from "./helpers/fake-ad";
 
 const FIX = join(import.meta.dir, "../fixtures");
 const DRAFT = "4252b87e4d77d2a6e8f59325550558ae";
@@ -15,16 +16,8 @@ const PUB = "4725bcfbb9d1e3c7eeb489dc0293d96a";
 const load = jsonFixtures(join(FIX, "test-cases"));
 const ENV = "t-s7c-test";
 
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
-const spies: Array<{ mockRestore(): void }> = [];
-afterEach(() => {
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
-  while (spies.length) spies.pop()!.mockRestore();
-});
+const ad = fakeAdEnv({ env: ENV });
+afterEach(() => ad.restore());
 
 /** The multipart /chain/test body's `uuid`: which chain a test POST ran. */
 function testedUuid(req: RecordedRequest): string {
@@ -33,16 +26,10 @@ function testedUuid(req: RecordedRequest): string {
 }
 
 function wire(opts: { failed?: boolean } = {}) {
-  cfg = withTempEnvConfig({ envs: { [ENV]: { url: "https://t-dev.test" } }, activeEnv: ENV });
-  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
-  ff = fakeFetch([
+  ad.install([
     { method: "GET", url: `/rest/api/automation/chain/${DRAFT}`, response: load("draft.v1.json") },
     { method: "GET", url: `/rest/api/automation/chain/${PUB}`, response: load("published.v1.json") },
-    {
-      method: "GET",
-      url: /\/rest\/api\/automations\/(\d+)/,
-      response: () => JSON.parse(readFileSync(join(FIX, "definitions", "976.json"), "utf8")),
-    },
+    definitionRoute(),
     {
       method: "POST",
       url: "/rest/api/automation/chain/test",
@@ -52,7 +39,7 @@ function wire(opts: { failed?: boolean } = {}) {
         return body;
       },
     },
-  ]).install();
+  ]);
   const inputs = join(scratchDir("ad-test-expect"), "in.json");
   writeFileSync(inputs, JSON.stringify({ name: "World" }));
   return inputs;
@@ -83,7 +70,7 @@ describe("ad test --expect (7.7)", () => {
     wire();
     const r = await runCommand(testCommand, [DRAFT, "--expect", "nooperator"], { env: ENV });
     expect(r.envelope?.error?.code).toBe("INVALID_EXPECTATION");
-    expect(ff!.requests).toEqual([]);
+    expect(ad.ff.requests).toEqual([]);
   });
 
   test("--case: inputs and assertions from a test-case file", async () => {
@@ -99,7 +86,7 @@ describe("ad test --expect (7.7)", () => {
     );
     const r = await runCommand(testCommand, [DRAFT, "--case", file], { env: ENV });
     expect(r.envelope?.ok).toBe(true);
-    const req = ff!.requests.find((q) => q.url.endsWith("/chain/test"))!;
+    const req = ad.ff.requests.find((q) => q.url.endsWith("/chain/test"))!;
     const body = JSON.parse(JSON.parse(req.body!).find(([k]: [string]) => k === "body")[1]);
     expect(JSON.parse(body.jsonDefinition).inputs.find((i: any) => i.fieldCode === "name").testValue).toBe("World");
     expect((r.envelope?.data as any).expectations).toMatchObject({ total: 1, passed: 1, unevaluated: ["#{a} eq #{b}"] });
@@ -128,7 +115,7 @@ describe("ad test input files: stable error codes (was UNHANDLED_EXCEPTION)", ()
     if (content !== null) writeFileSync(file, content);
     const r = await runCommand(testCommand, [DRAFT, "--inputs", content === null ? `${file}.missing` : file], { env: ENV });
     expect(r.envelope?.error?.code).toBe(errCode);
-    expect(ff!.requests.filter((q) => q.url.endsWith("/chain/test"))).toEqual([]);
+    expect(ad.ff.requests.filter((q) => q.url.endsWith("/chain/test"))).toEqual([]);
   });
 
   test("--case: missing file / invalid JSON", async () => {
@@ -172,7 +159,7 @@ describe("ad test --compare-published (7.12)", () => {
       draft: { status: "SUCCESS" },
       published: { status: "SUCCESS", outputs: { greetingOut: "Hello World" } },
     });
-    expect(ff!.requests.filter((q) => q.url.endsWith("/chain/test")).map(testedUuid)).toEqual([DRAFT, PUB]);
+    expect(ad.ff.requests.filter((q) => q.url.endsWith("/chain/test")).map(testedUuid)).toEqual([DRAFT, PUB]);
   });
 
   test("published uuid: the draft is the main run; expectations decide on the draft, published is informational", async () => {
@@ -188,18 +175,17 @@ describe("ad test --compare-published (7.12)", () => {
     const inputs = wire();
     const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--compare-published"], { env: ENV });
     expect(r.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
-    expect(ff!.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
+    expect(ad.ff.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
   });
 
   test("a method without a counterpart → AD_NO_PUBLISHED_COUNTERPART", async () => {
     const inputs = wire();
     const body = load("draft.v1.json");
     body.referenceId = null;
-    ff!.restore();
-    ff = fakeFetch([
+    ad.install([
       { method: "GET", url: `/rest/api/automation/chain/${DRAFT}`, response: body },
-      { method: "GET", url: /\/rest\/api\/automations\/(\d+)/, response: () => JSON.parse(readFileSync(join(FIX, "definitions", "976.json"), "utf8")) },
-    ]).install();
+      definitionRoute(),
+    ]);
     const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--compare-published"], { env: ENV });
     expect(r.envelope?.error?.code).toBe("AD_NO_PUBLISHED_COUNTERPART");
   });
@@ -229,7 +215,7 @@ describe("lib/test-run helpers", () => {
 // CLI trial: `ad test` took only `--inputs <file>` (in --llm), while
 // `test-case create` takes `--input k=v` and `ad run` inline JSON.
 describe("ad test --input k=v and inline --inputs JSON", () => {
-  const posted = () => ff!.requests.find((q) => q.method === "POST")!.body ?? "";
+  const posted = () => ad.ff.requests.find((q) => q.method === "POST")!.body ?? "";
 
   test("--input name=World runs with that value", async () => {
     wire();
@@ -250,7 +236,7 @@ describe("ad test --input k=v and inline --inputs JSON", () => {
     wire();
     const bad = await runCommand(testCommand, [DRAFT, "--input", "nope=1"], { env: ENV });
     expect(bad.envelope?.error?.code).toBe("INVALID_INPUT");
-    expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
+    expect(ad.ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
     const none = await runCommand(testCommand, [DRAFT], { env: ENV });
     expect(none.envelope?.error?.code).toBe("INTERACTIVE_NOT_SUPPORTED");
     expect(none.envelope?.error?.message).toContain("--input");

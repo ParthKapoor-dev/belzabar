@@ -1,25 +1,16 @@
 // `ad create` (spec → V2 create body, WSR-6 category guard, verify) and
 // `ad delete` (soft delete of never-published drafts only).
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { CliError } from "@belzabar/core";
-import {
-  fakeFetch,
-  fixture,
-  respond,
-  runCommand,
-  scratchDir,
-  withTempEnvConfig,
-  type FakeFetch,
-  type RecordedRequest,
-  type TempEnvConfig,
-} from "@belzabar/core/testing";
+import { respond, runCommand, scratchDir, type RecordedRequest } from "@belzabar/core/testing";
 import createCommand from "../../commands/create/index";
 import deleteCommand from "../../commands/delete/index";
 import { assertCreatableCategory, buildCreateBody } from "../../lib/save/create";
 import { buildCategories, requireChainCategory, type Category } from "../../lib/categories";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
+import { categoryRoutes, fakeAdEnv } from "./helpers/fake-ad";
 
 const FIX = `${import.meta.dir}/../fixtures`;
 const CATS = buildCategories(require(`${FIX}/categories/chain-category.json`), require(`${FIX}/categories/chain-category-system.json`));
@@ -27,20 +18,8 @@ const TEST_TESTER = requireChainCategory(CATS, "Test-Tester");
 const REAL_V2 = `${FIX}/real-v2`;
 const real = (u: string): V2MethodResponse => structuredClone(require(`${FIX}/real-v2/${u}.v2.json`));
 
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
-const spies: Array<{ mockRestore(): void }> = [];
-afterEach(() => {
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
-  while (spies.length) spies.pop()!.mockRestore();
-});
-function env() {
-  cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
-}
+const ad = fakeAdEnv();
+afterEach(() => ad.restore());
 function file(o: unknown): string {
   const p = join(scratchDir("ad-create"), `s-${Math.random().toString(36).slice(2)}.json`);
   writeFileSync(p, JSON.stringify(o));
@@ -137,11 +116,9 @@ describe("assertCreatableCategory (WSR-6)", () => {
 
 const NEW = "4d42844c66f687f1226eb020eb10f4db";
 function wireCreate(post?: (req: RecordedRequest) => unknown) {
-  env();
   let stored: any = null;
-  ff = fakeFetch([
-    { method: "GET", url: "/rest/api/automation/chain/category?fetchSystemServices=false", response: fixture(`${FIX}/categories/chain-category.json`) },
-    { method: "GET", url: "/rest/api/automation/chain/category?fetchSystemServices=true", response: fixture(`${FIX}/categories/chain-category-system.json`) },
+  ad.install([
+    ...categoryRoutes(),
     {
       method: "POST",
       url: "/rest/api/automation/chain/v2",
@@ -154,7 +131,7 @@ function wireCreate(post?: (req: RecordedRequest) => unknown) {
         }),
     },
     { method: "GET", url: `/rest/api/automation/chain/v2/${NEW}?basicInfo=false`, response: () => stored },
-  ]).install();
+  ]);
 }
 const spec = { name: "belz_tst_s5a_unit", steps: [{ properties: { customCode: { inlineCode: "console.log(1)" } }, outputs: [{ key: "o" }] }] };
 
@@ -165,7 +142,7 @@ describe("ad create", () => {
     expect(r.envelope?.ok).toBe(true);
     const d = r.envelope!.data as any;
     expect(d).toMatchObject({ uuid: NEW, name: "belz_tst_s5a_unit", state: "DRAFT", version: "1", stepCount: 1, category: { chainCategoryId: 1135, name: "Test-Tester" } });
-    const post = ff!.requests.find((q) => q.method === "POST")!.json();
+    const post = ad.ff.requests.find((q) => q.method === "POST")!.json();
     expect(post).not.toHaveProperty("uuid");
     expect(post.metadata.service.id).toBe(1135);
   });
@@ -174,7 +151,7 @@ describe("ad create", () => {
     wireCreate();
     const r = await runCommand(createCommand, ["--category", "Helpers.JSON", "--spec", file(spec), "--yes"], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("AD_CATEGORY_PROTECTED");
-    expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
+    expect(ad.ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
   });
 
   test("duplicate name → AD_METHOD_EXISTS", async () => {
@@ -189,7 +166,7 @@ describe("ad create", () => {
     wireCreate();
     const r = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec)], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
-    expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
+    expect(ad.ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
     // No --category and no spec.category (read from the spec file, Stage 7.3).
     expect((await runCommand(createCommand, ["--spec", file(spec), "--yes"], { env: "t-dev" })).envelope?.error?.code).toBe("MISSING_CATEGORY");
     expect((await runCommand(createCommand, ["--category", "x"], { env: "t-dev" })).envelope?.error?.code).toBe("MISSING_SPEC");
@@ -201,7 +178,7 @@ describe("ad create --dry-run needs an explicit --env (CLI trial: it silently re
     wireCreate();
     const r = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec), "--dry-run"]);
     expect(r.envelope?.error?.code).toBe("ENV_REQUIRED_FOR_WRITE");
-    expect(ff!.requests).toHaveLength(0);
+    expect(ad.ff.requests).toHaveLength(0);
     const ok = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec), "--dry-run"], { env: "t-dev" });
     expect(ok.envelope?.error?.code).not.toBe("ENV_REQUIRED_FOR_WRITE");
     expect(ok.envelope?.meta).toMatchObject({ env: "t-dev", envSource: "flag" });
@@ -211,9 +188,8 @@ describe("ad create --dry-run needs an explicit --env (CLI trial: it silently re
 describe("ad delete", () => {
   const D = "40b7959fb1dd8b4cf2ee9f5e54630ea8"; // DRAFT, referenceId null
   function wireDelete(mutate: (b: V2MethodResponse) => void = () => {}) {
-    env();
     let deleted = false;
-    ff = fakeFetch([
+    ad.install([
       {
         method: "GET",
         url: `/rest/api/automation/chain/v2/${D}?basicInfo=false`,
@@ -233,9 +209,9 @@ describe("ad delete", () => {
         },
       },
       { method: "POST", url: /cache\/invalidate$/, response: "success" },
-    ]).install();
+    ]);
   }
-  const deletes = () => ff!.requests.filter((q) => q.method === "DELETE");
+  const deletes = () => ad.ff.requests.filter((q) => q.method === "DELETE");
 
   test("never-published draft: DELETE, verified by the V2 re-read (METHOD_NOT_FOUND)", async () => {
     wireDelete();
@@ -243,15 +219,14 @@ describe("ad delete", () => {
     expect(r.envelope?.ok).toBe(true);
     expect(r.envelope!.data).toEqual({ uuid: D, name: "notification.setting.getList", deleted: true, verified: true });
     expect(deletes()).toHaveLength(1);
-    expect(ff!.requests.find((q) => q.url.endsWith("cache/invalidate"))!.json()).toEqual({ uuids: [D], type: "AUTOMATION" });
+    expect(ad.ff.requests.find((q) => q.url.endsWith("cache/invalidate"))!.json()).toEqual({ uuids: [D], type: "AUTOMATION" });
   });
 
   test("PUBLISHED → AD_DELETE_PUBLISHED; draft with a published version → AD_DELETE_HAS_PUBLISHED", async () => {
     wireDelete((b) => (b.metadata.state = "PUBLISHED"));
     expect((await runCommand(deleteCommand, [D, "--yes"], { env: "t-dev" })).envelope?.error?.code).toBe("AD_DELETE_PUBLISHED");
     expect(deletes()).toHaveLength(0);
-    ff!.restore();
-    cfg!.restore();
+    ad.restore();
     wireDelete((b) => (b.metadata.referenceId = "0000000000000000000000000000beef    "));
     expect((await runCommand(deleteCommand, [D, "--yes"], { env: "t-dev" })).envelope?.error?.code).toBe("AD_DELETE_HAS_PUBLISHED");
     expect(deletes()).toHaveLength(0);
@@ -260,8 +235,7 @@ describe("ad delete", () => {
   test("missing state → fail closed; --llm without --yes → confirmation required", async () => {
     wireDelete((b) => delete (b.metadata as any).state);
     expect((await runCommand(deleteCommand, [D, "--yes"], { env: "t-dev" })).envelope?.error?.code).toBe("AD_DRAFT_GUARD_STATE_UNKNOWN");
-    ff!.restore();
-    cfg!.restore();
+    ad.restore();
     wireDelete();
     expect((await runCommand(deleteCommand, [D], { env: "t-dev" })).envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
     expect(deletes()).toHaveLength(0);

@@ -5,7 +5,7 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, readFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import { fakeFetch, jsonFixtures, type RecordedRequest, runCommand, withTempEnvConfig } from "@belzabar/core/testing";
+import { fakeFetch, jsonFixtures, runCommand, withTempEnvConfig } from "@belzabar/core/testing";
 import categoriesCommand from "../../commands/categories/index";
 import changelogCommand, { entryRows } from "../../commands/changelog/index";
 import exportCommand from "../../commands/export/index";
@@ -15,6 +15,7 @@ import { adApi, type ChangelogEntry } from "../../lib/api/index";
 import { htmlToText } from "../../lib/compact";
 import { parseV1Method } from "../../lib/parser/v1";
 import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
+import { historyServiceRoute } from "./helpers/fake-ad";
 
 const FIX = `${import.meta.dir}/../fixtures`;
 const load = jsonFixtures(FIX);
@@ -129,11 +130,7 @@ describe("history show: compact view by default, --full adds the parse", () => {
     quiet();
     return fakeFetch([
       { method: "GET", url: `/rest/api/automation/chain/${DRAFT}`, response: load("history/chain-v1-draft.json") },
-      {
-        method: "GET",
-        url: /automation-systems\/Expertly\.Automation\.Method\.History\/automation-apis\//,
-        response: (req: RecordedRequest) => ({ serviceChainUID: `hist-${req.url.split("/").pop()}` }),
-      },
+      historyServiceRoute(),
       { method: "POST", url: /chain\/execute\/hist-get/, response: () => load("history/get-draft-v3.json") },
       { method: "GET", url: /\/automations\/\d+/, response: {} },
     ]).install();

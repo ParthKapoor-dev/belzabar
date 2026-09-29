@@ -2,24 +2,15 @@
 // draft guard → overlay → validate → confirm → freshness re-GET (AD-08) →
 // POST /chain/v2 → post-save verify (AD-01) → compiled cache on both routes
 // (AD-20) → local cache.
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { writeFileSync } from "fs";
 import { join } from "path";
-import {
-  fakeFetch,
-  respond,
-  runCommand,
-  scratchDir,
-  withTempEnvConfig,
-  type FakeFetch,
-  type RecordedRequest,
-  type TempEnvConfig,
-} from "@belzabar/core/testing";
+import { respond, runCommand, scratchDir, type FakeFetch, type RecordedRequest } from "@belzabar/core/testing";
 import saveCommand from "../../commands/save/index";
 import { __setValidatorsForTests } from "../../lib/save/validation";
 import { CacheManager } from "../../lib/cache";
-import { COMPILED_CACHE_ROUTES } from "../../lib/save/compiled-cache";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
+import { compiledCacheRoutes, fakeAdEnv, v2Store, type V2Store } from "./helpers/fake-ad";
 
 const DIR = `${import.meta.dir}/../fixtures/real-v2`;
 const U = "41bb1b438875bd8b994196db1f12b7c2"; // DRAFT; 1: SQL read, 2: CC plain
@@ -28,23 +19,11 @@ const GET = `/rest/api/automation/chain/v2/${U}?basicInfo=false`;
 const base = (): V2MethodResponse => structuredClone(require(`${DIR}/${U}.v2.json`));
 const V0 = String(base().metadata.version!.name);
 
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
-const spies: Array<{ mockRestore(): void }> = [];
+const ad = fakeAdEnv();
 afterEach(() => {
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
+  ad.restore();
   __setValidatorsForTests();
-  while (spies.length) spies.pop()!.mockRestore();
 });
-
-interface Server {
-  stored: V2MethodResponse;
-  gets: number;
-  posts: V2MethodResponse[];
-}
 
 interface Opts {
   /** Mutate what the Nth GET returns (1 = guard, 2 = freshness, 3 = verify). */
@@ -55,43 +34,27 @@ interface Opts {
   invalidate?: (req: RecordedRequest) => unknown;
 }
 
-function wire(opts: Opts = {}): Server {
-  cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
-  const s: Server = { stored: base(), gets: 0, posts: [] };
-  if (opts.published) s.stored.metadata.referenceId = `${PUB}    `;
-  ff = fakeFetch([
-    {
-      method: "GET",
-      url: GET,
-      response: () => {
-        s.gets++;
-        const b = structuredClone(s.stored);
-        return opts.onGet ? opts.onGet(s.gets, b) : b;
-      },
+function wire(opts: Opts = {}): V2Store {
+  const s = v2Store(U, base(), {
+    onGet: opts.onGet,
+    // The server also bumps an internal migration counter the verify must ignore.
+    onPost: (body) => {
+      const out = opts.onPost ? opts.onPost(body) : body;
+      if ("metadata" in out) (out as V2MethodResponse).metadata.internal = { ...(out as V2MethodResponse).metadata.internal, migrationVersion: 1 };
+      return out;
     },
+  });
+  if (opts.published) s.stored.metadata.referenceId = `${PUB}    `;
+  ad.install([
+    s.routes[0]!,
     {
       method: "GET",
       url: `/rest/api/automation/chain/v2/${PUB}?basicInfo=false`,
       response: () => ({ ...base(), uuid: PUB, metadata: { ...base().metadata, state: "PUBLISHED", referenceId: `${U}    ` } }),
     },
-    {
-      method: "POST",
-      url: "/rest/api/automation/chain/v2",
-      response: (req: RecordedRequest) => {
-        const body = req.json() as V2MethodResponse;
-        s.posts.push(body);
-        const out = opts.onPost ? opts.onPost(structuredClone(body)) : structuredClone(body);
-        if (!("metadata" in out)) return out; // an explicit respond() error
-        const next = out as V2MethodResponse;
-        next.metadata.version = { ...next.metadata.version!, name: String(Number(s.stored.metadata.version?.name) + 1) };
-        next.metadata.internal = { ...next.metadata.internal, migrationVersion: 1 };
-        s.stored = next;
-        return next;
-      },
-    },
-    ...COMPILED_CACHE_ROUTES.map((p) => ({ method: "POST", url: p, response: opts.invalidate ?? (() => "success") })),
-  ]).install();
+    s.routes[1]!,
+    ...compiledCacheRoutes(opts.invalidate),
+  ]);
   return s;
 }
 
@@ -111,7 +74,7 @@ describe("ad save (V2 pipeline)", () => {
     await CacheManager.save(U, { uuid: U } as any, "t-dev");
     const r = await run({ summary: "new summary", parsedSteps: [{ orderIndex: 2, source: "console.log(1)" }] });
     expect(r.envelope?.ok).toBe(true);
-    expect(paths(ff!)).toEqual([
+    expect(paths(ad.ff)).toEqual([
       `GET ${GET}`,
       `GET ${GET}`,
       "POST /rest/api/automation/chain/v2",
@@ -140,7 +103,7 @@ describe("ad save (V2 pipeline)", () => {
     expect(sent.steps![1]!.properties!.customCode!.inlineCode).toBe("console.log(1)");
     expect(sent.steps![0]).toEqual(base().steps![0]);
     // invalidate body: one uuid, AUTOMATION, never empty
-    const inv = ff!.requests.filter((q) => q.url.endsWith("cache/invalidate")).map((q) => q.json());
+    const inv = ad.ff.requests.filter((q) => q.url.endsWith("cache/invalidate")).map((q) => q.json());
     expect(inv).toEqual([
       { uuids: [U], type: "AUTOMATION" },
       { uuids: [U], type: "AUTOMATION" },
@@ -200,7 +163,7 @@ describe("ad save (V2 pipeline)", () => {
     const d = r.envelope?.error?.details as any;
     expect(d.notLanded.map((n: any) => n.key)).toEqual(["summary"]);
     expect(d.notLanded[0].expected).toBe("lost");
-    expect(paths(ff!).filter((p) => p.endsWith("cache/invalidate"))).toHaveLength(2);
+    expect(paths(ad.ff).filter((p) => p.endsWith("cache/invalidate"))).toHaveLength(2);
   });
 
   test("changelog bookkeeping (entityVersion, user.lastLoginDate) is neither a conflict nor a verify failure", async () => {
@@ -232,7 +195,7 @@ describe("ad save (V2 pipeline)", () => {
     const r = await run({ summary: "x" });
     expect(r.envelope?.error?.code).toBe("AD_SAVE_REJECTED");
     expect(r.envelope?.error?.message).toContain("Invalid state");
-    expect(paths(ff!).filter((p) => p.endsWith("cache/invalidate"))).toHaveLength(2);
+    expect(paths(ad.ff).filter((p) => p.endsWith("cache/invalidate"))).toHaveLength(2);
   });
 
   test("a rejected save never echoes a bearer token (error body redacted)", async () => {

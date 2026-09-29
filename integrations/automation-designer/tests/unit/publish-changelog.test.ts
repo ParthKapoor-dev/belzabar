@@ -3,22 +3,20 @@
 // note; the note id is found from the list (the POST answers {"success":true},
 // no id — live acme-dev). F39: an unknown uuid is a clean METHOD_NOT_FOUND.
 // AD-32/33: `changelog --note` confirms and records on the draft chain.
-import { afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
 import {
-  fakeFetch,
   respond,
   runCommand,
-  withTempEnvConfig,
   type FakeFetch,
-  type RecordedRequest,
-  type TempEnvConfig,
+  type RecordedRequest
 } from "@belzabar/core/testing";
 import publishCommand, { __setNoteRetryDelayForTests, NOTE_ATTEMPTS } from "../../commands/publish/index";
 import changelogCommand from "../../commands/changelog/index";
 import { findChangelogId } from "../../lib/api/changelog";
 import { __setValidatorsForTests } from "../../lib/save/validation";
+import { fakeAdEnv } from "./helpers/fake-ad";
 
 const FIX = join(import.meta.dir, "../fixtures/history");
 const DRAFT = "4bdea25c480a8e9dbc1cae830cb89b68";
@@ -28,17 +26,11 @@ const PUB_ID = 20999;
 const draftBody = () => JSON.parse(readFileSync(join(FIX, "chain-v1-draft.json"), "utf8"));
 const draftV2 = () => JSON.parse(readFileSync(join(FIX, "chain-v2-draft.json"), "utf8"));
 
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
-const spies: Array<{ mockRestore(): void }> = [];
 beforeAll(() => __setNoteRetryDelayForTests(0));
+const ad = fakeAdEnv();
 afterEach(() => {
+  ad.restore();
   __setValidatorsForTests();
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
-  while (spies.length) spies.pop()!.mockRestore();
 });
 
 interface Opts {
@@ -51,11 +43,9 @@ interface Opts {
 }
 
 function wire(opts: Opts = {}) {
-  cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
   const notes: any[] = [];
   let published = !!opts.published;
-  ff = fakeFetch([
+  ad.install([
     {
       method: "GET",
       url: `/rest/api/automation/chain/${DRAFT}`,
@@ -96,8 +86,8 @@ function wire(opts: Opts = {}) {
       },
     },
     { method: "GET", url: /\/chain\/changelog\/\d+$/, response: () => notes },
-  ]).install();
-  return ff;
+  ]);
+  return ad.ff;
 }
 
 const posts = (f: FakeFetch) =>
@@ -167,11 +157,10 @@ describe("ad publish (AD-19)", () => {
   });
 
   test("F39: unknown uuid -> METHOD_NOT_FOUND before any write", async () => {
-    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-    ff = fakeFetch({ "GET /rest/api/automation/chain/*": respond({ status: 200, text: "" }) }).install();
+    ad.install({ "GET /rest/api/automation/chain/*": respond({ status: 200, text: "" }) });
     const r = await runCommand(publishCommand, ["00000000000000000000000000000000", "--note", "x", "--yes"], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("METHOD_NOT_FOUND");
-    expect(ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
+    expect(ad.ff.requests.filter((q) => q.method === "POST")).toHaveLength(0);
   });
 });
 

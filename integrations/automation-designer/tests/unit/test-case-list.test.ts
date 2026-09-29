@@ -1,30 +1,24 @@
 // F24: `ad test-case list` returns the same structured result as `ad test-cases`
 // (it returned the raw body — `null` for a method without a suite).
 import { afterEach, describe, expect, test } from "bun:test";
-import { fakeFetch, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { respond, runCommand } from "@belzabar/core/testing";
 import testCaseCommand from "../../commands/test-case/index";
 import testCasesCommand from "../../commands/test-cases/index";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { fakeAdEnv } from "./helpers/fake-ad";
 
 const UUID = "4bdea25c480a8e9dbc1cae830cb89b68";
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
-afterEach(() => {
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
-});
+const ad = fakeAdEnv({ quiet: false });
+afterEach(() => ad.restore());
 
 function wire(body: unknown) {
-  cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-  ff = fakeFetch({
+  ad.install({
     [`GET /rest/api/automation/chain/testsuite/service-chain/${UUID}`]:
       body === null ? respond({ status: 200, text: "null" }) : body,
     // The method exists (only read when the suite is empty).
     "GET /rest/api/automation/chain/v2/*": REAL_V2,
-  }).install();
+  });
 }
 
 const REAL_V2 = JSON.parse(
@@ -63,12 +57,11 @@ describe("test-case list == test-cases (F24)", () => {
   });
 
   test("an unknown uuid is METHOD_NOT_FOUND, not an empty ok suite (smoke: ok on failure)", async () => {
-    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
-    ff = fakeFetch({
+    ad.install({
       [`GET /rest/api/automation/chain/testsuite/service-chain/${UUID}`]: respond({ status: 200, text: "null" }),
       // Real acme-dev answer for a missing uuid (fixtures/not-found): 200 + empty body.
       "GET /rest/api/automation/chain/v2/*": respond({ status: 200, text: "" }),
-    }).install();
+    });
     for (const [cmd, argv] of [[testCasesCommand, [UUID]], [testCaseCommand, ["list", UUID]]] as const) {
       const r = await runCommand(cmd, [...argv], { env: "t-dev" });
       expect(r.envelope?.ok).toBe(false);

@@ -3,30 +3,23 @@
 // (fixtures/test-cases/suite.json) and an in-memory fake of the suite store
 // that mimics the live server: PUT keeps name/description, DELETE is soft and
 // reserves the name, jsonb values come back re-spaced.
-import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "fs";
 import { join } from "path";
-import { fakeFetch, type FakeFetch, jsonFixtures, type RecordedRequest, respond, runCommand, scratchDir, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
+import { jsonFixtures, type RecordedRequest, respond, runCommand, scratchDir } from "@belzabar/core/testing";
 import testCaseCommand from "../../commands/test-case/index";
 import { caseFromWire, caseToWire, diffCases, parseCaseInput, serializeCaseFile } from "../../lib/test-cases/case-file";
 import { planSync, type SuiteSnapshot } from "../../lib/test-cases/suite";
 import { writeMethodDir, readCaseFiles } from "../../lib/test-cases/files";
+import { fakeAdEnv } from "./helpers/fake-ad";
 
 const FIX = join(import.meta.dir, "../fixtures/test-cases");
 const DRAFT = "4252b87e4d77d2a6e8f59325550558ae";
 const load = jsonFixtures(FIX);
 const ENV = "t-s7c";
 
-let ff: FakeFetch | null = null;
-let cfg: TempEnvConfig | null = null;
-const spies: Array<{ mockRestore(): void }> = [];
-afterEach(() => {
-  ff?.restore();
-  ff = null;
-  cfg?.restore();
-  cfg = null;
-  while (spies.length) spies.pop()!.mockRestore();
-});
+const ad = fakeAdEnv({ env: ENV });
+afterEach(() => ad.restore());
 
 // ── fake suite store ─────────────────────────────────────────────────────
 
@@ -99,9 +92,7 @@ function fakeServer(initial: any = load("suite.json")) {
 }
 
 function wire(server = fakeServer()) {
-  cfg = withTempEnvConfig({ envs: { [ENV]: { url: "https://t-dev.test" } }, activeEnv: ENV });
-  spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
-  ff = fakeFetch(server.routes).install();
+  ad.install(server.routes);
   return server;
 }
 
@@ -217,7 +208,7 @@ describe("test-case create --assert (fetch-back verified)", () => {
     wire();
     const r = await run(["create", DRAFT, "--name", "t.greet.new.1", "--description", "d", "--input", "name=007", "--assert", "greetingOut=Hello 007", "--yes"]);
     expect(r.envelope?.ok).toBe(true);
-    const post = ff!.requests.find((q) => q.method === "POST")!.json();
+    const post = ad.ff.requests.find((q) => q.method === "POST")!.json();
     expect(post).toEqual({
       name: "t.greet.new.1",
       description: "d",
@@ -251,12 +242,9 @@ describe("test-case create --assert (fetch-back verified)", () => {
       wire();
       const r = await run(["create", DRAFT, ...argv, "--yes"]);
       expect(r.envelope?.error?.code).toBe(code);
-      expect(ff!.requests.filter((q) => q.method !== "GET")).toEqual([]);
-      ff!.restore();
-      cfg!.restore();
+      expect(ad.ff.requests.filter((q) => q.method !== "GET")).toEqual([]);
+      ad.restore();
     }
-    ff = null;
-    cfg = null;
   });
 
   test("a name reserved by a deleted case → AD_TESTCASE_NAME_RESERVED", async () => {
@@ -300,7 +288,7 @@ describe("test-case bulk", () => {
     ]));
     const r = await run(["bulk", DRAFT, "--file", f, "--yes"]);
     expect(r.envelope?.ok).toBe(true);
-    expect(ff!.requests.filter((q) => q.method === "POST").map((q) => q.url)).toEqual([
+    expect(ad.ff.requests.filter((q) => q.method === "POST").map((q) => q.url)).toEqual([
       `https://t-dev.test/rest/api/automation/chain/testcases/${DRAFT}`,
       `https://t-dev.test/rest/api/automation/chain/testcases/${DRAFT}`,
     ]);
@@ -331,7 +319,7 @@ describe("test-case export / sync (7.13)", () => {
     const again = await run(["export", DRAFT, "--dir", root]);
     expect((again.envelope?.data as any).files.written).toEqual([]);
     // export is read-only on the server
-    expect(ff!.requests.every((q) => q.method === "GET")).toBe(true);
+    expect(ad.ff.requests.every((q) => q.method === "GET")).toBe(true);
   });
 
   test("sync: dry run plans, --apply writes and verifies, a second plan is clean", async () => {
@@ -346,12 +334,12 @@ describe("test-case export / sync (7.13)", () => {
     edited.description = "local wording";
     writeFileSync(ok1, JSON.stringify(edited));
     writeFileSync(join(cases, "new.json"), JSON.stringify({ name: "t.new.1", inputs: { name: "N" }, assertions: [] }));
-    const writesBefore = ff!.requests.filter((q) => q.method !== "GET").length;
+    const writesBefore = ad.ff.requests.filter((q) => q.method !== "GET").length;
 
     const dry = await run(["sync", dir.methodDir]);
     expect(dry.envelope?.ok).toBe(true);
     expect((dry.envelope?.data as any).counts).toEqual({ unchanged: 2, update: 1, create: 1 });
-    expect(ff!.requests.filter((q) => q.method !== "GET").length).toBe(writesBefore);
+    expect(ad.ff.requests.filter((q) => q.method !== "GET").length).toBe(writesBefore);
 
     const applied = await run(["sync", dir.methodDir, "--apply", "--yes"]);
     expect(applied.envelope?.ok).toBe(true);
