@@ -27,7 +27,7 @@ Flags:
 
 Global Flags:
   --env <name>          Set active environment (default: defaultEnv, else nsm-dev).
-                        Available: nsm-dev | nsm-qa | nsm-uat
+                        Any env from `belz envs` (configured in ~/.belz/config.json).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
