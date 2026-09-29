@@ -64,13 +64,6 @@ export interface CommandContext {
 
 export interface CommandModule<TArgs = unknown, TData = unknown> {
   /**
-   * @deprecated Ignored. The runner derives the envelope schema from routing:
-   * `<namespace>.<command>` (`ad.show`, `migrate.status`, `belz.config`).
-   */
-  schema?: string;
-  /** @deprecated Ignored. Every envelope is `version: "2.0"` (`ENVELOPE_VERSION`). */
-  version?: string;
-  /**
    * The command talks to the active AD/PD environment. Default true. When false
    * (teamwork, jenkins/migrate, release, local config…), the envelope omits
    * `meta.env` and the command never needs `--env`.

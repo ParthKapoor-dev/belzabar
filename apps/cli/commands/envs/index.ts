@@ -17,7 +17,6 @@ interface EnvsData {
 export const args = defineArgs({ command: "belz envs" });
 
 const command: CommandModule<undefined, EnvsData> = {
-  schema: "belz.envs",
   parseArgs: (argv) => {
     args.parse(argv);
     return undefined;

@@ -158,7 +158,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<SetupArgs, SetupData> = {
-  schema: "belz.setup",
 
   /** Writes ~/.belz/config.json. */
   writesLocal: true,

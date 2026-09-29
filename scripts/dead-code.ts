@@ -40,7 +40,7 @@ const ALLOW: Record<string, string[]> = {
 };
 
 /** Members of CommandModule the runner reads off a command's namespace object. */
-const COMMAND_MEMBERS = new Set(["args", "parseArgs", "execute", "presentHuman", "envAware", "writes", "schema", "version", "default"]);
+const COMMAND_MEMBERS = new Set(["args", "parseArgs", "execute", "presentHuman", "envAware", "writes", "requiresEnv", "writesLocal", "ownsFlags", "default"]);
 
 // ---------------------------------------------------------------- program
 const cfgPath = join(ROOT, "tsconfig.json");

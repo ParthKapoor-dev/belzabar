@@ -126,7 +126,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<UpdateArgs, UpdateData> = {
-  schema: "belz.update",
 
   /** Rebuilds and reinstalls the local belz binary. */
   writesLocal: true,

@@ -379,7 +379,6 @@ export const args = defineSubcommands(
 );
 
 const command: CommandModule<CacheArgs, CacheData> = {
-  schema: "belz.cache",
 
   /** Only `invalidate` writes remotely; `prune-local` only touches local files (see `writesLocal`). */
   writes: args => args.subcommand !== "prune-local",

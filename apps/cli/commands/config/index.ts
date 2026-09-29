@@ -302,7 +302,6 @@ function tokenExpiresAt(token: string | undefined): string | null {
 }
 
 const command: CommandModule<ConfigArgs, ConfigData> = {
-  schema: "belz.config",
 
   parseArgs(argv) {
     return parseConfigArgs(argv);

@@ -128,7 +128,6 @@ describe("apiFetch via fakeFetch + withTempEnvConfig", () => {
 
 describe("runCommand", () => {
   const good: CommandModule<{ n: number }, { n: number }> = {
-    schema: "t.good",
     parseArgs: args => ({ n: Number(args[0] ?? 0) }),
     execute: args => ok({ n: args.n }),
   };

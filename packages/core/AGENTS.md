@@ -106,7 +106,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 ### Command Interface
 | Export | Description |
 |--------|-------------|
-| `CommandModule` | Interface: `{ parseArgs, execute, presentHuman?, envAware?, writes?, requiresEnv?, writesLocal?, ownsFlags? }`. `schema`/`version` are deprecated and ignored |
+| `CommandModule` | Interface: `{ parseArgs, execute, presentHuman?, envAware?, writes?, requiresEnv?, writesLocal?, ownsFlags? }` |
 | `ok(data)` | Returns a successful command result |
 | `fail(code, message, {details?, data?})` | Returns a failed command result |
 | `failWithData(code, message, data)` | Failure that still carries its result (validator found errors, preflight failed, lookup found nothing): `ok:false`, exit 1, `data` set; the human presenter still runs, then the error is printed |
@@ -117,7 +117,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 
 - `schema`: `<namespace>.<command>`, derived by the runner from routing (`ad.show`, `migrate.status`,
   `release.matrix`, top-level `belz.envs`/`belz.config`); runner-level `belz.help`, `belz.runner`,
-  `belz.version`. A command's own `schema` field is ignored.
+  `belz.version`.
 - `version`: always `"2.0"` (`ENVELOPE_VERSION`).
 - `ok`: `true ⇔ error:null ⇔ exit 0`; failure-shaped results use `failWithData`.
 - `error`: `{code (UPPER_SNAKE), message (no "Error:" prefix), details?}`; `details` is always an

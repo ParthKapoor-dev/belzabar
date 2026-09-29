@@ -62,9 +62,9 @@ function cli(extra: Partial<NamespacedCliOptions> = {}): NamespacedCliOptions {
 
 describe("envelope naming and version", () => {
   test("schema is <namespace>.<command>, derived from routing; version 2.0", async () => {
-    const legacy: CommandModule = { schema: "belz.migrate.status", version: "1.0", execute: () => ok(1) };
+    const status: CommandModule = { execute: () => ok(1) };
     const opts = cli();
-    opts.namespaces.migrate = { name: "M", description: "m", commands: { status: legacy } };
+    opts.namespaces.migrate = { name: "M", description: "m", commands: { status } };
     for (const [argv, schema] of [
       [["ad", "show", "x"], "ad.show"],
       [["tw", "task", "1"], "tw.task"],
