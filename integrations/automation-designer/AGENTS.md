@@ -44,8 +44,9 @@ READMEs; read the one for the directory you touch before editing it.
   unknown fields.
 - **Types boundary.** Code that reads a method uses `lib/types/common.ts`; only raw-body code
   imports the wire types.
-- **No `response.json()`** on server responses: use `lib/api/v1.ts:readJson` or core
-  `readJsonOrNull` / `expectJson` (several routes answer "nothing" with an empty 200).
+- **No `response.json()`** on server responses: use core `readJsonOrNull` / `expectJson`
+  (inside `lib/api/v1.ts`, its private `readJson`); several routes answer "nothing" with an
+  empty 200.
 - **Writes are declared.** `writes` is set on anything that changes or executes remote state
   (including `test`, `run`, `run-suites`, and `--dry-run-compile`); they confirm, or need
   `--yes` in `--llm`.

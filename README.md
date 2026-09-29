@@ -81,7 +81,7 @@ boilerplate. `belz ad save --help` documents the overlay keys (`parsedSteps[]` l
 ```bash
 belz ad validate <uuid>                                  # validator L1–L3 (add --online for L4)
 belz ad lint <uuid>                                      # validator + SQL and anti-pattern review
-belz ad save edit.json --uuid <uuid> --dry-run           # plan + validate, write nothing
+belz ad save edit.json --uuid <uuid> --dry-run --env dev # plan + validate, write nothing
 belz ad save edit.json --uuid <uuid> --env dev      # save to the draft (confirms first)
 belz ad save --uuid <uuid> --sql-file 3=step3.sql --env dev   # replace one step's SQL
 belz ad publish <uuid> --note "fix totals" --env dev
