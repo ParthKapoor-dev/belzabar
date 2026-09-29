@@ -22,9 +22,13 @@ Flags:
                           160 chars), key inputs, outputs -> variables, exit
                           rules. Add --sql / --code for full bodies (`blocks`),
                           --full for no abbreviation, --step <N> for one step.
+                          Always read fresh from the V2 route, so input paths
+                          (`body.json=`) and outputs (`key→as⇒$var`) use the
+                          keys that `ad save` ops and create specs accept.
   --story                 The plain-English approval template (What it does,
                           Approach, Service, Inputs / Outputs / Steps tables,
-                          decoded custom code and SQL) as Markdown.
+                          decoded custom code and SQL) as Markdown. Read fresh
+                          from the V2 route, like --compact.
   --inputs                Show a table of input arguments.
   --outputs               Show the method's outputs.
   --variables             Show the method's variables.

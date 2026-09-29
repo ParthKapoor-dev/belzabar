@@ -104,8 +104,10 @@ interface ShowMethodData {
   raw?: unknown;
 }
 
-type CompactData = { view: "compact" } & CompactMethodView;
-interface StoryData {
+/** `source` / `fetchedAt` (ADR-R13): the views are always read fresh, or from a local file. */
+type ViewSource = { source: "fresh" | "file"; sourceVersion: "v1" | "v2"; fetchedAt?: string };
+type CompactData = { view: "compact" } & ViewSource & CompactMethodView;
+interface StoryData extends ViewSource {
   view: "story";
   name: string;
   uuid: string;
@@ -341,6 +343,21 @@ export function parseMethodFile(path: string): HydratedMethod {
   });
 }
 
+/**
+ * The `--compact` / `--story` read: V2, fresh (never the V1-shaped cache).
+ * Falls back to the V1 parse only when the V2 route refuses the method (some
+ * old bodies fail the server's V2 conversion); an unknown uuid still fails.
+ */
+async function fetchViewMethod(uuid: string, warn: (m: string) => void): Promise<HydratedMethod> {
+  try {
+    return await adApi.fetchMethod(uuid, "v2");
+  } catch (err) {
+    if (err instanceof CliError && err.code === "METHOD_NOT_FOUND") throw err;
+    warn(`V2 read failed (${(err as Error).message}); showing the V1 parse, whose input names are UI labels, not save keys.`);
+    return adApi.fetchMethod(uuid, "v1");
+  }
+}
+
 function looksLikeFile(input: string): boolean {
   try {
     return existsSync(input) && statSync(input).isFile();
@@ -415,6 +432,12 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       if (flags.open) throw new CliError("--open needs a method uuid, not a file.", { code: "INVALID_ARGUMENT" });
       method = parseMethodFile(target.path);
       source = "file";
+    } else if (flags.compact || flags.story) {
+      // ADR-R4: the agent views read V2, whose input paths (`body.json`) and
+      // output keys (`key→fieldCode`) are what `ad save` ops / `create --spec`
+      // take. V1 names inputs by UI label and drops the service output key.
+      source = "fresh";
+      method = await fetchViewMethod(target.uuid, context.warn.bind(context));
     } else {
       const uuid = target.uuid;
       const cached = await CacheManager.loadSwr(uuid);
@@ -459,8 +482,13 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       }
     }
 
+    const viewSource: ViewSource = {
+      source: source === "file" ? "file" : "fresh",
+      sourceVersion: method.sourceVersion,
+      ...(source === "file" ? {} : { fetchedAt: new Date().toISOString() }),
+    };
     if (flags.story) {
-      return ok<ShowData>({ view: "story", name: method.name, uuid: method.uuid, markdown: storyMarkdown(method) }, { sourceVersion: method.sourceVersion });
+      return ok<ShowData>({ view: "story", ...viewSource, name: method.name, uuid: method.uuid, markdown: storyMarkdown(method) }, { sourceVersion: method.sourceVersion });
     }
 
     if (flags.compact) {
@@ -480,7 +508,7 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
           spel: flags.full || flags.step !== null,
         },
       });
-      return ok<ShowData>(pruneEmpty<CompactData>({ view: "compact", ...view }), { sourceVersion: method.sourceVersion });
+      return ok<ShowData>(pruneEmpty<CompactData>({ view: "compact", ...viewSource, ...view }), { sourceVersion: method.sourceVersion });
     }
 
     const includeInputs = flags.inputs || flags.full;

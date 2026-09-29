@@ -176,6 +176,48 @@ describe("ad show --compact (7.1)", () => {
   });
 });
 
+// ADR-R4: the agent views read V2 so their keys are the ones `ad save` ops take.
+describe("ad show --compact / --story read V2 (ADR-R4, R13)", () => {
+  test("without --v2 the views fetch V2, fresh, and say so", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
+    const m = await v2(SQL_UUID);
+    const fetch = spyOn(adApi, "fetchMethod").mockResolvedValue(m);
+    const load = spyOn(CacheManager, "loadSwr").mockResolvedValue(null);
+    spies.push(fetch, load);
+    for (const view of ["--compact", "--story"]) {
+      const d = (await runCommand(showCommand, [SQL_UUID, view], { env: "t-dev" })).envelope?.data as any;
+      expect(d).toMatchObject({ source: "fresh", sourceVersion: "v2", fetchedAt: expect.any(String) });
+    }
+    expect(fetch.mock.calls.map((c) => c[1])).toEqual(["v2", "v2"]);
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  test("a V2 refusal falls back to V1 with a warning; an unknown uuid still fails", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
+    const { CliError } = await import("@belzabar/core");
+    const m1 = parseV1Method((await Bun.file(`${FIX}/real-v1/${SQL_UUID}.v1.json`).json()) as V1RawMethodResponse);
+    let notFound = false;
+    const fetch = spyOn(adApi, "fetchMethod").mockImplementation(async (_u: string, v: string) => {
+      if (notFound) throw new CliError("gone", { code: "METHOD_NOT_FOUND" });
+      if (v === "v2") throw new CliError("400", { code: "API_ERROR" });
+      return m1;
+    });
+    spies.push(fetch, spyOn(ServiceHydrator, "getDefinition").mockResolvedValue(null));
+    const r = await runCommand(showCommand, [SQL_UUID, "--compact"], { env: "t-dev" });
+    expect((r.envelope?.data as any).sourceVersion).toBe("v1");
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toMatch(/V2 read failed/);
+    notFound = true;
+    expect((await runCommand(showCommand, [SQL_UUID, "--compact"], { env: "t-dev" })).envelope?.error?.code).toBe("METHOD_NOT_FOUND");
+  });
+
+  test("over every real V2 body, compact input names are wire keys, never `#<id>` labels", async () => {
+    for (const f of V2_FILES) {
+      const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${f}`).json(), { env: "sems-dev" });
+      for (const line of compactMethod(m).steps) expect(line).not.toMatch(/(^|[ ,|])#\d+\./);
+    }
+  });
+});
+
 describe("ad show --story (7.1)", () => {
   test("renders the approval template with decoded code and SQL", async () => {
     const m = await v2(SQL_UUID);
