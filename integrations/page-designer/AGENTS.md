@@ -71,8 +71,10 @@ warns), `--yes`/`-y`. On read commands `--force` means "bypass the cache".
 ## Save pipeline (`save`, `preflight`; `publish` / `history restore` share steps 1–3 and 5)
 
 1. `resolveWriteTarget` → draft id. 2. `withLock(id)` (nested calls are re-entrant; a page
-recorded by `belz pd lock acquire` still re-acquires the server lock — a stale record fails closed
-as `PD_LOCKED` — but is not released).
+recorded by `belz pd lock acquire` still re-acquires the server lock but is not released; a 409
+on such a page is reused as the held lock only when its body names the signed-in user
+(`lockHolderFields` vs `/rest/api/users/me`), otherwise it fails closed as `PD_LOCKED`
+with `staleLocalRecord`).
 3. `fetchFresh` inside the lock; `versionDrift` reports a concurrent change. 4. `planSave`
 (`lib/serialize/index.ts`) applies the overlay to a **clone of the raw config** (nothing is
 rebuilt from parsed lists, so a full save is lossless apart from the edit). 5. `validateEdit`
@@ -80,7 +82,10 @@ rebuilt from parsed lists, so a full save is lossless apart from the edit). 5. `
 if replaying them reproduces the planned config exactly, else full (`fullSaveReason`); legacy
 pages always save full; keys outside the verified shape force full. 7. Read back: `verify` =
 `match | mismatch | stale-read`; `mismatch` fails the save (`PD_SAVE_VERIFY_FAILED`),
-`stale-read` only warns.
+`stale-read` only warns. The write's own answer is read by `writeAnswer`: an empty/non-JSON
+body is `{}`, but a body read that stalls keeps `HTTP_TIMEOUT` (`mayHaveCompleted`) — re-read
+before retrying. `publish` validates against `fetchPublishedBaseline` (the GET, superseded by a
+newer history version when the server-cached GET lags a recent publish).
 
 Overlay (`Overlay` in `lib/types/common.ts`; unknown sections, and any shape problem — `null`, a
 section that is not an object, a list that is not an array, a missing `name`/`callId`/`id`/`key`,
@@ -196,6 +201,11 @@ Config facts (verified on real sems-dev pages): derived variables live in
    belz never sends them: those edits are full saves (OTH-R1).
 3. `pd diff` across envs reports HTTP calls as changed when their env-local AD ids differ.
 4. App-URL resolution needs a registered deployment domain; the validator is static only.
+5. Whether the server answers 200 or 409 when a session re-acquires its OWN lock is not
+   verified live (NEW-5; no live PD writes). belz proceeds inside a manual lock on a 200, or on
+   a 409 whose body names the signed-in user; any other 409 fails closed (`PD_LOCKED`,
+   `staleLocalRecord`). If the real 409 body names nobody, a save inside a manual lock needs
+   `belz pd lock release <id>` first.
 
 ## Maintainer rule
 

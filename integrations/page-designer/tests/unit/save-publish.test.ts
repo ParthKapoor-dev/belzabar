@@ -256,6 +256,18 @@ describe("pd publish", () => {
     expect((r.envelope?.data as any).validation.preExistingCount).toBeGreaterThan(0);
   });
 
+  test("NEW-5: the baseline is read fresh — a GET that lags a recent publish is superseded by the newer history version", async () => {
+    pd.pages.set(DRAFT, page(DRAFT, orphanInner("gone"), { referenceId: PUB }));
+    // The server-cached GET still serves the pre-publish body (v3, clean) …
+    pd.pages.set(PUB, page(PUB, cleanInner(), { status: "PUBLISHED", referenceId: DRAFT, versionId: 3 }));
+    // … while history already holds the live v5, which has the same issue as the draft.
+    pd.versions.set(5, page(PUB, orphanInner("gone"), { status: "PUBLISHED", referenceId: DRAFT, versionId: 5 }));
+    const r = await run(publish, [DRAFT, "--yes"]);
+    expect(r.envelope?.error ?? null).toBeNull();
+    expect((r.envelope?.data as any).validation).toMatchObject({ baseline: "published", errorCount: 0 });
+    expect(pd.log()).toContain("GET /pages/version/5");
+  });
+
   test("OTH-R10: an error the draft introduces since the last publish still blocks", async () => {
     pd.pages.set(DRAFT, page(DRAFT, orphanInner("typo"), { referenceId: PUB }));
     const r = await run(publish, [DRAFT, "--yes"]);

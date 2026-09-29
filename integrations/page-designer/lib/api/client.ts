@@ -7,7 +7,7 @@
 // All endpoints live under `/rest/api/pagedesigner`. Auth is Bearer via
 // @belzabar/core's apiFetch, which auto-refreshes on 401.
 
-import { apiFetch, CliError, httpError, readBodySummary } from "@belzabar/core";
+import { apiFetch, CliError, httpError, readBodySummary, summarizeBody } from "@belzabar/core";
 import type {
   RawPageResponse,
   RawPageDependencies,
@@ -229,6 +229,29 @@ export interface SaveResult {
   raw: unknown;
 }
 
+/**
+ * The JSON answer of a PD write that already returned 2xx. An empty or
+ * non-JSON body is `{}` (the write stands); a body read that stalls (core
+ * HTTP_TIMEOUT, NEW-2) is NOT swallowed: the write was accepted but its answer
+ * is unknown, so the caller must re-read before trusting or retrying it.
+ */
+async function writeAnswer(response: Response, what: string): Promise<unknown> {
+  try {
+    return await response.json();
+  } catch (e) {
+    if (e instanceof SyntaxError) return {};
+    if (e instanceof CliError) {
+      const details = typeof e.details === "object" && e.details !== null ? (e.details as Record<string, unknown>) : {};
+      throw new CliError(
+        `${what} was accepted (HTTP ${response.status}) but its response could not be read: ${e.message} ` +
+          `Re-read the page before retrying.`,
+        { code: e.code, exitCode: e.exitCode, details: { ...details, status: response.status, mayHaveCompleted: true, retryable: false } },
+      );
+    }
+    throw e;
+  }
+}
+
 export async function savePageFull(
   pageId: string,
   status: PdStatus,
@@ -246,7 +269,7 @@ export async function savePageFull(
     headers: { "Content-Type": "application/json" },
   });
   await ensureOk(response, { method: "PUT", path: `/pages/${pageId} (full)` });
-  const raw = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  const raw = ((await writeAnswer(response, `PD save of ${pageId}`)) ?? {}) as Record<string, unknown>;
   return {
     newVersionId: typeof raw.versionId === "number" ? raw.versionId : null,
     raw,
@@ -270,7 +293,7 @@ export async function savePagePartial(
     headers: { "Content-Type": "application/json" },
   });
   await ensureOk(response, { method: "PUT", path: `/pages/${pageId} (partial)` });
-  const raw = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+  const raw = ((await writeAnswer(response, `PD save of ${pageId}`)) ?? {}) as Record<string, unknown>;
   return {
     newVersionId: typeof raw.versionId === "number" ? raw.versionId : null,
     raw,
@@ -297,7 +320,7 @@ export async function publishPage(
     authMode: "Bearer",
   });
   await ensureOk(response, { method: "POST", path: `/pages/${pageId}/publish` });
-  return response.json().catch(() => ({}));
+  return writeAnswer(response, `PD publish of ${pageId}`);
 }
 
 // -------- lock -----------------------------------------------------------
@@ -312,13 +335,66 @@ export async function acquireLock(pageId: string): Promise<void> {
     { method: "PUT", authMode: "Bearer" },
   );
   if (response.status === 409) {
-    const body = await readBodySummary(response, 500);
+    let text = "";
+    try {
+      text = await response.text();
+    } catch {
+      text = "";
+    }
     throw new CliError(
       `Page ${pageId} is locked by another session.`,
-      { code: "PD_LOCKED", details: { status: 409, body } },
+      {
+        code: "PD_LOCKED",
+        details: { status: 409, body: summarizeBody(text, response.headers.get("content-type"), 500), holder: lockHolderFields(text) },
+      },
     );
   }
   await ensureOk(response, { method: "PUT", path: `/pages/lock/${pageId} (acquire)` });
+}
+
+/**
+ * Who holds the lock, as far as a 409 body says: every scalar field (at any
+ * depth) whose key names a user / owner / lock holder / email. Empty when
+ * the body is not JSON or names nobody.
+ */
+export function lockHolderFields(text: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return out;
+  }
+  const walk = (v: unknown, path: string, depth: number) => {
+    if (depth > 4 || v === null || v === undefined) return;
+    if (typeof v === "object") {
+      for (const [k, x] of Object.entries(v as Record<string, unknown>)) walk(x, path ? `${path}.${k}` : k, depth + 1);
+      return;
+    }
+    const leaf = path.split(".").pop() ?? "";
+    if (/(At|Time|Date|On)$/.test(leaf)) return; // lockedAt, createdOn: timestamps, not holders
+    if (/user|owner|locked|holder|by$|email/i.test(path) && (typeof v === "string" || typeof v === "number")) out[path] = String(v);
+  };
+  walk(parsed, "", 0);
+  return out;
+}
+
+/** The signed-in user (`GET /rest/api/users/me` → `{user}`): id, email, user name. Null when unreadable. */
+export async function fetchCurrentUserIdentity(): Promise<string[] | null> {
+  const response = await apiFetch("/rest/api/users/me", { method: "GET", authMode: "Bearer" });
+  if (!response.ok) {
+    await readBodySummary(response);
+    return null;
+  }
+  const body = (await response.json().catch((e: unknown) => {
+    if (e instanceof SyntaxError) return null;
+    throw e;
+  })) as { user?: Record<string, unknown> } | null;
+  const u = body?.user;
+  if (!u) return null;
+  return [u.id, u.email, u.userName, u.username, u.loginId]
+    .filter((x): x is string | number => (typeof x === "string" && x.trim() !== "") || typeof x === "number")
+    .map((x) => String(x).trim().toLowerCase());
 }
 
 /**

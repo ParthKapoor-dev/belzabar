@@ -81,6 +81,33 @@ export async function fetchFresh(targetId: string): Promise<HydratedPage> {
   return parsePage(raw);
 }
 
+/**
+ * The live PUBLISHED page as a validation baseline (NEW-5 / NEW-OTH-2). The
+ * single-page GET is served from a server-side cache that can return the
+ * PRE-publish version for a while after a publish, so it is checked against
+ * the page's history: when history holds a newer version than the GET, that
+ * version's body is the baseline. History unreadable → the GET, with a warning.
+ */
+export async function fetchPublishedBaseline(publishedId: string, warn: (message: string) => void): Promise<HydratedPage | null> {
+  const raw = await pdApi.fetchPage(publishedId);
+  if (!raw) return null;
+  const getVersion = typeof raw.versionId === "number" ? raw.versionId : -1;
+  try {
+    const entries = await pdApi.historyList(publishedId);
+    const newest = entries
+      .filter((e) => typeof e.id === "number" && (e.pageId === undefined || e.pageId === publishedId))
+      .reduce((max, e) => Math.max(max, e.id), -1);
+    if (newest > getVersion) {
+      const body = await pdApi.historyGet(newest);
+      if (body) return parsePage(body);
+      warn(`Published baseline: history version ${newest} of ${publishedId} is unreadable; validating against the (possibly stale) GET.`);
+    }
+  } catch (e) {
+    warn(`Published baseline: history of ${publishedId} is unreadable (${(e as Error).message}); validating against the (possibly stale) GET.`);
+  }
+  return parsePage(raw);
+}
+
 const WARNING_PRINT_CAP = 10;
 
 export interface GateResult {

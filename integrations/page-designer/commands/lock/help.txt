@@ -3,8 +3,10 @@ Usage: belz pd lock <action> [pageId]
 Manage PD edit locks. Every write (`save`, `publish`, `history restore`)
 already acquires and releases the lock itself — this command is for holding
 the lock across several operations. For a page recorded here, those writes
-still re-acquire the server lock (the record may be stale: a 409 then fails
-with PD_LOCKED) but do NOT release it afterwards.
+still re-acquire the server lock but do NOT release it afterwards. A 409 on
+that re-acquire counts as your held lock only when the server's answer names
+you (the signed-in user); otherwise the record is treated as stale and the
+write fails with PD_LOCKED (details.staleLocalRecord).
 
 Actions:
   acquire <pageId>    PUT /pages/lock/<pageId>?pageLockAction=ACQUIRED.

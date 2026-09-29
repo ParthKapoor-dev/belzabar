@@ -91,6 +91,10 @@ export const pdApi = {
     return client.acquireLock(pageId);
   },
 
+  currentUserIdentity(): Promise<string[] | null> {
+    return client.fetchCurrentUserIdentity();
+  },
+
   releaseLock(pageId: string): Promise<boolean> {
     return client.releaseLock(pageId);
   },

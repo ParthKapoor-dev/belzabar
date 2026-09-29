@@ -8,9 +8,14 @@
 // releases. A page recorded by `belz pd lock acquire`
 // (~/.belz/pd-locks/<env>.json) is NOT trusted blindly (OTH-R4): the record
 // may be stale (expired, released in the UI, taken by someone else), so the
-// server lock is still acquired — a 409 fails closed as PD_LOCKED with a hint
-// about the stale record — but it is not released afterwards, so a save
+// server lock is still acquired, and it is not released afterwards, so a save
 // inside a manual lock does not drop the operator's lock.
+// NEW-5: whether the server answers 200 or 409 when a session re-acquires its
+// OWN lock is unverified (no live PD writes). A 409 on a recorded page is
+// therefore reused as our held lock ONLY when the 409 body names the signed-in
+// user (id / email / user name from /rest/api/users/me); anything else — no
+// holder in the body, another holder, an unreadable user — fails closed as
+// PD_LOCKED with the stale-record hint. A 409 changes nothing server-side.
 //
 // Every PD write (save, publish, history restore) runs inside withLock, so the
 // local page cache for pageId is invalidated here once fn has run (PD-12).
@@ -72,6 +77,10 @@ export async function withLock<T>(pageId: string, fn: () => Promise<T>): Promise
       await pdApi.acquireLock(pageId);
     } catch (err) {
       if (manual && err instanceof CliError && err.code === "PD_LOCKED") {
+        if (await heldByMe(err)) {
+          heldInProcess.add(key);
+          return runHeld(pageId, key, fn, { release: false });
+        }
         throw new CliError(
           `Page ${pageId} is locked by another session, although \`belz pd lock acquire\` recorded it for you ` +
             `(the local record is stale: the lock expired, was released in the UI, or was taken). ` +
@@ -83,14 +92,32 @@ export async function withLock<T>(pageId: string, fn: () => Promise<T>): Promise
     }
     heldInProcess.add(key);
   }
+  return runHeld(pageId, nested ? null : key, fn, { release: !nested && !manual });
+}
+
+/** True when a PD_LOCKED 409 names the signed-in user as the holder (NEW-5). */
+async function heldByMe(err: CliError): Promise<boolean> {
+  const details = (err.details ?? {}) as { holder?: Record<string, string> };
+  const holder = Object.values(details.holder ?? {}).map((v) => v.trim().toLowerCase()).filter(Boolean);
+  if (holder.length === 0) return false;
+  let me: string[] | null = null;
+  try {
+    me = await pdApi.currentUserIdentity();
+  } catch {
+    return false;
+  }
+  return !!me && me.some((m) => holder.includes(m));
+}
+
+async function runHeld<T>(pageId: string, key: string | null, fn: () => Promise<T>, opts: { release: boolean }): Promise<T> {
   try {
     return await fn();
   } finally {
     await invalidatePageCache(pageId);
-    if (!nested) {
+    if (key !== null) {
       heldInProcess.delete(key);
       // A manually-held lock stays held: the operator releases it with `belz pd lock release`.
-      if (!manual) {
+      if (opts.release) {
         try {
           const released = await pdApi.releaseLock(pageId);
           if (!released) process.stderr.write(`⚠️  withLock: the lock on ${pageId} may still be held (release was refused).\n`);

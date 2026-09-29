@@ -25,9 +25,8 @@ import {
 } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { invalidatePageCache } from "../../lib/cache";
-import { fetchFresh, gateValidation, logIntent, requireConfirmation, resolveWriteTarget, versionDrift } from "../../lib/edit";
+import { fetchFresh, fetchPublishedBaseline, gateValidation, logIntent, requireConfirmation, resolveWriteTarget, versionDrift } from "../../lib/edit";
 import { withLock } from "../../lib/lock";
-import { parsePage } from "../../lib/parser/index";
 import { validateEdit, validateHydrated } from "../../lib/validator/index";
 import type { HydratedPage, ValidationIssue } from "../../lib/types/common";
 
@@ -92,10 +91,10 @@ const command: CommandModule<PublishArgs, PublishData> = {
     const before = target.snapshot;
 
     // Baseline: the live PUBLISHED sibling (not when publishing a PUBLISHED page itself).
+    // Read fresh (NEW-5): the GET can lag a recent publish; history is authoritative.
     let baseline: HydratedPage | null = null;
     if (target.publishedId && target.publishedId !== targetId) {
-      const raw = await pdApi.fetchPage(target.publishedId);
-      if (raw) baseline = parsePage(raw);
+      baseline = await fetchPublishedBaseline(target.publishedId, warn);
     }
     const check = (page: HydratedPage) => (baseline ? validateEdit(baseline, page) : validateHydrated(page));
     gateValidation(check(before), args.overrides.forceValidation, warn);

@@ -26,6 +26,10 @@ export interface FakePd {
   releaseStatus: number;
   /** Status the lock-acquire endpoint answers with (default 200; 409 = held by another session). */
   acquireStatus: number;
+  /** Body of a non-200 acquire answer (default {message:"locked by someone"}). */
+  acquireBody?: unknown;
+  /** GET /rest/api/users/me → {user: currentUser}. */
+  currentUser?: Record<string, unknown>;
   /** Status the save PUT answers with (default 200). */
   saveStatus: number;
   /** Hook that may rewrite the stored inner config after a PUT (simulate a server that stores something else). */
@@ -119,9 +123,10 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
     const u = new URL(req.url);
     const path = u.pathname.replace(BASE, "");
     let m: RegExpMatchArray | null;
+    if (u.pathname === "/rest/api/users/me") return state.currentUser ? json({ user: state.currentUser }) : json({ message: "no" }, 404);
     if ((m = path.match(/^\/pages\/lock\/(\w+)$/)) && req.method === "PUT") {
       if (u.searchParams.get("pageLockAction") === "ACQUIRED") {
-        if (state.acquireStatus !== 200) return json({ message: "locked by someone" }, state.acquireStatus);
+        if (state.acquireStatus !== 200) return json(state.acquireBody ?? { message: "locked by someone" }, state.acquireStatus);
         state.onAcquire?.(m[1]!);
         return json({});
       }

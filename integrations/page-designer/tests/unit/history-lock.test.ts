@@ -130,6 +130,33 @@ describe("pd lock (PD-20)", () => {
     expect(pd.log().filter((l) => /^PUT \/pages\/\w+$/.test(l))).toEqual([]);
   });
 
+  test("NEW-5: a 409 that names the signed-in user reuses the manual lock (no release); another holder fails closed", async () => {
+    expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
+    pd.acquireStatus = 409;
+    pd.currentUser = { id: 7, email: "Me@Example.com", fullName: "Me" };
+    pd.acquireBody = { message: "Page is locked", lockedBy: { id: 7, email: "me@example.com" }, lockedAt: 7 };
+    const before = pd.log().length;
+    const mine = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
+    expect(mine.envelope?.ok).toBe(true);
+    expect(pd.log().slice(before).filter((l) => l.includes("/lock/"))).toEqual([`PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`]);
+
+    pd.acquireBody = { message: "Page is locked", lockedBy: { id: 8, email: "other@example.com" }, lockedAt: 7 };
+    const theirs = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
+    expect(theirs.envelope?.error).toMatchObject({ code: "PD_LOCKED", details: { staleLocalRecord: true } });
+
+    pd.acquireBody = { message: "locked", lockedAt: 7 }; // names nobody (only a timestamp that equals my id)
+    const nobody = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
+    expect(nobody.envelope?.error?.code).toBe("PD_LOCKED");
+  });
+
+  test("NEW-5: without a manual record a 409 naming me still fails (belz never takes over an unrecorded lock)", async () => {
+    pd.acquireStatus = 409;
+    pd.currentUser = { id: 7 };
+    pd.acquireBody = { lockedBy: 7 };
+    const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
+    expect(r.envelope?.error?.code).toBe("PD_LOCKED");
+  });
+
   test("a refused release is ok:false PD_LOCK_RELEASE_FAILED (it used to always succeed)", async () => {
     pd.releaseStatus = 409;
     const r = await run(lock, ["release", DRAFT]);
