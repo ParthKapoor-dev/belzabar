@@ -4,7 +4,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, readFileSync } from "fs";
 import { runCommand, scratchDir, withTempEnvConfig } from "@belzabar/core/testing";
-import diffCommand, { fetchOnEnv } from "../../commands/diff/index";
+import diffCommand, { fetchOnEnv, spawnEditor } from "../../commands/diff/index";
 import { adApi } from "../../lib/api/index";
 
 let prevTmp: string | undefined;
@@ -52,6 +52,38 @@ describe("ad diff history mode", () => {
       expect(existsSync(p)).toBe(true);
       expect(() => JSON.parse(readFileSync(p, "utf8"))).not.toThrow();
     }
+  });
+});
+
+// ADR-R7: --llm never opens an editor by default; a missing binary is a warning.
+describe("ad diff editor (ADR-R7)", () => {
+  function stubHistory() {
+    spies.push(
+      spyOn(adApi, "fetchMethod").mockResolvedValue({ uuid: UUID, state: "DRAFT", name: "m", category: { name: "C" } } as any),
+      spyOn(adApi, "historyGet").mockImplementation(async (o: { version: number }) => versionBody(o.version) as any),
+    );
+  }
+
+  test("--llm without --editor launches nothing", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
+    stubHistory();
+    const r = await runCommand(diffCommand, [UUID, "--from", "1", "--to", "2"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope?.data as { editor: string | null }).editor).toBeNull();
+  });
+
+  test("an editor binary that cannot start → editor:null plus a warning, no crash", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
+    stubHistory();
+    const r = await runCommand(diffCommand, [UUID, "--from", "1", "--to", "2", "--editor", "belz-no-such-editor-zzz"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope?.data as { editor: string | null }).editor).toBeNull();
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toMatch(/Could not start editor 'belz-no-such-editor-zzz'/);
+  });
+
+  test("spawnEditor resolves null when the process starts", async () => {
+    expect(await spawnEditor("true", "a", "b")).toBeNull();
+    expect(await spawnEditor("belz-no-such-editor-zzz", "a", "b")).toEqual(expect.any(String));
   });
 });
 

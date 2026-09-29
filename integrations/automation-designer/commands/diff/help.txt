@@ -37,8 +37,10 @@ Shared flags:
   --clean                 Write the semantic logic view to the files. (default: on)
   --raw                   Write the full parsed method instead (all fields).
                           changed/differences still use the semantic view.
-  --editor <cmd>          Editor binary. Default: zed. The command is invoked as
-                          `<editor> <diff-flag> <left> <right>` (zed's diff flag).
+  --editor <cmd>          Editor binary. Default: zed (none in --llm mode). The
+                          command is invoked as `<editor> <diff-flag> <left>
+                          <right>` (zed's diff flag). An editor that cannot be
+                          started is a warning and data.editor is null.
   --no-editor             Write both sides to temp files but do not launch an
                           editor. Use this in headless/scripted contexts — the
                           file paths are returned as data.left.path and
@@ -52,7 +54,8 @@ Global Flags:
                           fzf env picker offers the active env's project envs.
   --llm                   JSON envelope output. Interactive escalation is
                           disabled — UUID and from/to (or from-env/to-env)
-                          must all be supplied.
+                          must all be supplied. No editor is opened unless
+                          --editor is given.
 
 Notes:
   - Interactive escalation needs fzf on PATH.

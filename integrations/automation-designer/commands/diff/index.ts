@@ -28,7 +28,8 @@ interface DiffArgs {
   fromEnv?: string;
   toEnv?: string;
   clean: boolean;
-  editor: string;
+  /** --editor as given; null = the default (zed in human mode, none in --llm). */
+  editor: string | null;
   noEditor: boolean;
 }
 
@@ -42,7 +43,11 @@ interface DiffData {
   uuid: string;
   left: DiffSide;
   right: DiffSide;
-  /** null when --no-editor was passed; both sides are still written to disk. */
+  /**
+   * The editor that was launched; null with --no-editor, in --llm without
+   * --editor, or when the editor could not be started (a warning says why).
+   * Both sides are always written to disk.
+   */
   editor: string | null;
   /** true: the files hold the semantic diff view; false (--raw): the full parsed method. */
   cleaned: boolean;
@@ -65,7 +70,7 @@ export const args = defineArgs({
     clean: { type: "boolean" },
     raw: { type: "boolean" },
     "no-editor": { type: "boolean" },
-    editor: { type: "string", default: "zed" },
+    editor: { type: "string" },
   },
 });
 
@@ -83,7 +88,7 @@ const command: CommandModule<DiffArgs, DiffData> = {
       fromEnv: flags.fromEnv,
       toEnv: flags.toEnv,
       clean: !flags.raw, // --raw overrides --clean
-      editor: flags.editor,
+      editor: flags.editor ?? null,
       noEditor: flags.noEditor,
     };
   },
@@ -195,14 +200,14 @@ async function executeHistoryDiff(
   const rightPath = join(dir, `${shortUuid(args.uuid)}-v${to}.json`);
 
   const cmp = await writeSides(leftParsed, rightParsed, leftPath, rightPath, args.clean);
-  if (!args.noEditor) spawnEditor(args.editor, leftPath, rightPath);
+  const editor = await openEditor(args, context, leftPath, rightPath);
 
   return ok<DiffData>({
     mode: "history",
     uuid: args.uuid,
     left: { label: `v${from}`, path: leftPath },
     right: { label: `v${to}`, path: rightPath },
-    editor: args.noEditor ? null : args.editor,
+    editor,
     cleaned: args.clean,
     ...cmp,
   });
@@ -253,14 +258,14 @@ async function executeCrossEnvDiff(
   const rightPath = join(dir, `${shortUuid(args.uuid)}-${toEnv}.json`);
 
   const cmp = await writeSides(left, right, leftPath, rightPath, args.clean);
-  if (!args.noEditor) spawnEditor(args.editor, leftPath, rightPath);
+  const editor = await openEditor(args, context, leftPath, rightPath);
 
   return ok<DiffData>({
     mode: "cross-env",
     uuid: args.uuid,
     left: { label: fromEnv, path: leftPath },
     right: { label: toEnv, path: rightPath },
-    editor: args.noEditor ? null : args.editor,
+    editor,
     cleaned: args.clean,
     ...cmp,
   });
@@ -431,12 +436,42 @@ function runFzf(rows: string[], opts: FzfOpts): Promise<string | undefined> {
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 
-function spawnEditor(editor: string, left: string, right: string): void {
-  const child = nodeSpawn(editor, ["--diff", left, right], {
-    detached: true,
-    stdio: "ignore",
+/**
+ * Launch the diff editor (ADR-R7): never by default in --llm mode (an agent
+ * run must not pop a window on the developer's desktop), and a missing
+ * binary is a warning plus `editor: null`, not a crash or a false "Opened".
+ */
+async function openEditor(
+  args: Pick<DiffArgs, "editor" | "noEditor">,
+  context: { outputMode: "human" | "llm"; warn(msg: string): void },
+  left: string,
+  right: string,
+): Promise<string | null> {
+  if (args.noEditor) return null;
+  const editor = args.editor ?? (context.outputMode === "llm" ? null : "zed");
+  if (!editor) return null;
+  const error = await spawnEditor(editor, left, right);
+  if (error) {
+    context.warn(`Could not start editor '${editor}' (${error}); both sides are on disk.`);
+    return null;
+  }
+  return editor;
+}
+
+/** Resolves null once the editor process started, else the error message. */
+export function spawnEditor(editor: string, left: string, right: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    try {
+      const child = nodeSpawn(editor, ["--diff", left, right], { detached: true, stdio: "ignore" });
+      child.once("error", (e) => resolve(e.message));
+      child.once("spawn", () => {
+        child.unref();
+        resolve(null);
+      });
+    } catch (e) {
+      resolve((e as Error).message);
+    }
   });
-  child.unref();
 }
 
 function shortUuid(uuid: string): string {
