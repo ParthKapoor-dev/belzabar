@@ -32,9 +32,12 @@ const SUMMARY = process.argv.includes("--summary");
 
 /** Deliberate API kept although production never calls it: repo-relative file → names. */
 const ALLOW: Record<string, string[]> = {
-  // Test hooks that core/testing (withTempEnvConfig, fakeFetch) drives.
+  // Test hooks: module state a unit test must reset or stub (core/testing drives the core ones).
   "packages/core/src/config/index.ts": ["reloadConfig"],
   "packages/core/src/http/dns.ts": ["setIpv4ResolverForTesting"],
+  "integrations/automation-designer/lib/save/validation.ts": ["__setValidatorsForTests"],
+  "integrations/automation-designer/lib/sql/api.ts": ["resetExecutableCategoryCache"],
+  "integrations/teamwork/lib/api.ts": ["setTeamworkBackoffForTesting"],
   // The repo's secret scanner lives in fixtures-secrets.test.ts and is built on these.
   "scripts/fixtures/sanitize.ts": ["setScrubTerms", "findHosts", "withoutBase64", "findSecrets"],
 };
