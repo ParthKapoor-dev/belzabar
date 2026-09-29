@@ -9,7 +9,8 @@
 //   sql          SQL text → db_service step; the service defaults from the verb
 //                (SELECT/WITH data.read, INSERT data.add, UPDATE data.update,
 //                DELETE data.delete) and the text goes to body.queryString
-//   account      db account id or nickname (default: the service's only account)
+//   account      db account id or nickname; may be omitted only when the service
+//                has exactly one account (otherwise AD_SPEC_INVALID lists them)
 //   description  step description
 //   inputs       {"key": value, "body.nested": value}; values are strings
 //                (objects/arrays/numbers are JSON-stringified); keys are the
@@ -245,6 +246,30 @@ export function normaliseOutputs(given: unknown, where: string, p: Problems): Ou
   return [];
 }
 
+/**
+ * A step output key that indexes or paths into a service output
+ * (`flatData[0].col`, `flatData[].col`, `response.a`) → why it cannot work and
+ * the pattern that does, else null. Live sems-dev 2026-09-29: the V2 route
+ * stores the contract's own key (`flatData[]`, matched by uuid) or drops the
+ * output altogether, and drops `elementToRetrieve` on non-code steps, so an
+ * index never reaches the runtime.
+ */
+export function indexedOutputHint(o: Pick<OutputSpec, "key" | "as">, known: string[]): string | null {
+  const bare = (k: string) => k.replace(/\[\]$/, "");
+  const base = known.find((k) => o.key !== k && (o.key.startsWith(`${bare(k)}[`) || o.key.startsWith(`${bare(k)}.`)));
+  if (!base && !/\[\d+\]/.test(o.key)) return null;
+  const whole = base ?? o.key.replace(/\[\d+\].*$/, "[]");
+  let rest = base ? o.key.slice(bare(base).length).replace(/^\[\]/, "") : o.key.slice(o.key.search(/\[\d+\]/));
+  if (!rest.startsWith("[")) rest = `${whole.endsWith("[]") ? "[0]" : ""}${rest.startsWith(".") || !rest ? rest : `.${rest}`}`;
+  const tmp = o.as === o.key ? "rows" : `${o.as}Rows`;
+  return (
+    `'${o.key}' indexes into the service output '${whole}': step output keys cannot be indexed or pathed ` +
+    `(the server keeps only the contract key '${whole}' or drops the output). Bind the whole output and reduce it in the next step: ` +
+    `outputs [{"key": "${whole}", "as": "${tmp}"}], then {"service": "Helpers.Legacy/echo", "inputs": {"Input": "#{${tmp}${rest}}"}, ` +
+    `"outputs": [{"key": "response", "as": "${o.as}"}]}`
+  );
+}
+
 /** Build one step output. Custom code outputs are bound by key (the server rewrites fieldCode := key). */
 function buildOutput(o: OutputSpec, isCc: boolean, multi: boolean, contract: ApiContract | null | undefined, where: string, p: Problems): Obj | null {
   if (isCc) {
@@ -260,6 +285,11 @@ function buildOutput(o: OutputSpec, isCc: boolean, multi: boolean, contract: Api
   }
   const outs = contract?.automationAPIOutputs ?? [];
   const match = outs.find((c) => c.consumes === o.key);
+  const indexed = !match ? indexedOutputHint(o, outs.map((c) => c.consumes).filter((k): k is string => typeof k === "string")) : null;
+  if (indexed) {
+    p.drop(where, indexed);
+    return null;
+  }
   if (outs.length > 0 && !match) {
     p.drop(where, `'${o.key}' is not an output of the service (known: ${outs.map((c) => c.consumes).join(", ")})`);
     return null;
@@ -429,7 +459,9 @@ function pickAccount(service: string, given: unknown, catalog: ServiceCatalog, w
     if (accounts && accounts.length === 1) return { id: accounts[0]!.id, name: accounts[0]!.nickname };
     p.bad(
       where,
-      `a ${service} step needs an account (id or nickname)${accounts?.length ? `: ${accounts.map((a) => `${a.id}=${a.nickname}`).join(", ")}` : ""}`,
+      accounts?.length
+        ? `${service} has ${accounts.length} accounts on this env, so the step must name one (id or nickname): ${accounts.map((a) => `${a.id}=${a.nickname}`).join(", ")}`
+        : `a ${service} step needs an account (id or nickname); ${accounts ? "the service has no accounts on this env" : "its accounts were not loaded"}`,
     );
     return null;
   }

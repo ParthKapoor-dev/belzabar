@@ -15,6 +15,8 @@ Compact spec (belz expands it to the full V2 body with UI defaults):
       {"sql": "SELECT … WHERE id = '#{id}'", "account": "BCPS-RDS",
        "outputs": {"rows": "flatData[]"}, "when": "#{id} ne null"},
        // flatData[] = the rows as an array of OBJECTS [{col: v}, …]
+       // output keys cannot be indexed (flatData[0].col is refused): reduce
+       // in a next step, e.g. echo "Input": "#{rows[0].col}"
       {"service": "Helpers.Legacy/echo", "inputs": {"Input": "#{rows.size()}"},
        "outputs": [{"key": "response", "as": "count"}]},
       {"codeFile": "step3.js", "outputs": ["a", "b"], "exit": {"onFailure": false}}
@@ -25,7 +27,10 @@ Compact spec (belz expands it to the full V2 body with UI defaults):
   ["key"] | [{key, as, var, type, elementToRetrieve}] | {as: key}, when,
   exit {onFailure, code, message}, exitIf {when, code, message},
   loop {over} | {times} | {while} | {from, to, by} (+counter, parallel,
-  threads), account (db_service; defaults to the only account), description,
+  threads), account (db_service: an id or nickname; it may be omitted only
+  when the service has exactly one account on the env — sems-dev has
+  several, and then AD_SPEC_INVALID lists them as id=nickname; see
+  `belz ad child-info db_service select` lists them), description,
   language, async. `sql` alone picks db_service data.read/add/update/delete
   from the verb. Service input/output keys, accounts and services are checked
   online against the callee contract (unknown ones are refused: the server

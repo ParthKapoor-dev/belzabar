@@ -37,8 +37,10 @@ Arguments:
                           exitIf {when, code, message} | null   conditional exit
                           loop {over:"#{list}"} | {times:n} | {while:"<SpEL>"} |
                                {from,to,by} (+counter, parallel, threads) | null
-                          account <id|nickname> (db_service), description,
-                          language, async
+                          account <id|nickname> (db_service; may be omitted
+                            only when the service has exactly one account on
+                            the env — otherwise AD_OVERLAY_INVALID lists them
+                            as id=nickname), description, language, async
                         sql alone picks db_service/data.read|add|update|delete
                         from the verb. Input/output keys are checked against the
                         callee contract (online, cached 1 h).
@@ -57,6 +59,15 @@ Arguments:
                         quoting (JS SyntaxError). Reduce it to a scalar first
                         (an echo step, or SQL). db_service flatData[] is an
                         array of row objects, not scalars.
+                        Step output keys cannot be indexed or pathed
+                        (flatData[0].col, flatData[].col): the server keeps
+                        only the contract key or drops the output (verified
+                        live), so belz refuses them. Bind the whole output and
+                        reduce it in the next step:
+                          {"sql": "…", "outputs": {"rows": "flatData[]"}},
+                          {"service": "Helpers.Legacy/echo",
+                           "inputs": {"Input": "#{rows[0].col}"},
+                           "outputs": [{"key": "response", "as": "col"}]}
 
 Flags:
   --uuid <UUID>         Target draft uuid (or its PUBLISHED uuid, or an AD URL). (required)

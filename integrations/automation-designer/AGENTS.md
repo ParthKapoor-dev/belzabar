@@ -47,7 +47,8 @@ lib/
   validate/            pre-save validator (see below) + lint.ts (ad lint rules)
   test-run.ts          runInlineTest: one /chain/test run → outputs + trace
   payload-builder.ts   buildV1TestPayload: the one /chain/test body (test, run-suites, sql)
-  test-cases/          expect.ts (--expect / assertions), case-file.ts, suite.ts, files.ts
+  test-cases/          expect.ts (--expect / assertions), case-file.ts, suite.ts, files.ts,
+                       run-suite.ts (runSuiteCases: `test-case run-suite --wait`)
   test-suite.ts        summarizeTestSuite (test-cases, test-case list)
   sql/                 executor, payload builder, DB selector, read-only gate, tui/
   history.ts           getVersionOf / listAll (history, diff)
@@ -84,7 +85,7 @@ needs `--yes` instead.
 | `show-code`, `outputs`, `state` | Decoded custom code; the I/O contract plus `stepOutputs` (what each step writes, `declaredAs` output/variable/input/null) from the same fresh V2 read as `show --compact` (`lib/view-fetch.ts`); draft/published linkage + `inSync` |
 | `categories`, `services`, `child-info` | Categories (`--search`); the service catalog (`--search`), or `services <SERVICE>` = its methods (the names compact steps take; `--all`, `--search`); a callee's contract (`--shape`) |
 | `callers <uuid>` | AD methods (and PD pages/components with `--pd`) that call the method. `coverage.complete` only for a fresh, full index with nothing unresolved; `coverage.skippedCategories` for failed listings |
-| `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases (`METHOD_NOT_FOUND` for an unknown/soft-deleted uuid, since the suite route answers it like "no suite"); the latest suite report |
+| `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases (`METHOD_NOT_FOUND` for an unknown/soft-deleted uuid, since the suite route answers it like "no suite"); the global (not per-method) suite report — `found:false` + `note` when it shows no run (it never tracks `run-suite`) |
 | `history list\|show\|diff`, `diff`, `trace` | Version history, history or cross-env semantic diff (`diff` opens an editor only in human mode or with `--editor`; a failed spawn is a warning), where a method is on every env |
 | `validate <uuid\|file>` | Validator L1–L3 (`--online` L4, `--dry-run-compile` = **W**, `--strict`). A file may be a V2 body or a compact create spec (expanded first via `lib/save/spec.ts`, `data.spec`; `--category`) |
 | `lint <uuid\|file>` | Validator + advisory review rules (`--online`, `--docs`, `--strict`); same file handling as validate |
@@ -98,7 +99,7 @@ needs `--yes` instead.
 | `changelog <uuid> [--note "…"]` | List notes; `--note` is **W** (draft-guarded) |
 | `history restore <draftUuid> --version N` | **W** draft-guarded restore; fails `RESTORE_UNCONFIRMED` unless the re-read draft matches the target content (fingerprint projection; `contentDiff` names differing paths); evicts the compiled cache; reports validator findings |
 | `test <uuid>` | **W** (really runs the chain). `--inputs <file|json>`, `--input k=v` (repeatable, typed; on top of --inputs/--case), `--case`, `--expect`, `--compare-published` (runs the published copy too: confirms, `--yes`). A FAILED execution exits 1 `AD_TEST_FAILED` |
-| `test-case <action>` | `list`, `export` and `sync` (dry run; needs `--env`) are reads. `create`, `update`, `delete`, `bulk`, `run-suite`, `delete-suite` and `sync --apply` are **W** |
+| `test-case <action>` | `list`, `export` and `sync` (dry run; needs `--env`) are reads. `create`, `update`, `delete`, `bulk`, `run-suite`, `delete-suite` and `sync --apply` are **W**. `run-suite --wait` runs every active case now (one `/chain/test` each), evaluates assertions, returns per-case PASS/FAIL/ERROR (`AD_TESTCASE_SUITE_FAILED` unless all pass, `AD_TESTCASE_NONE` for an empty suite); plain `run-suite` is the unobservable async server run (`data.hint`) |
 | `run <publishedId>`, `run-suites`, `save-suite` | **W** live execute of the uuid's own saved body — a draft uuid runs the draft; `data.publishedUuid` names the published copy (`--stream`); **W** run local `suites/*.spec.json` (a malformed file fails alone as INVALID_JSON; a suite saved on another env is ENV_MISMATCH, not run; a legacy suite with no `env` is ENV_MISSING, not run, unless `--legacy-env` equals `--env`); save a local suite (records `env`) |
 
 `desc.txt` for each command lists every invocation variant. `belz --help-full` prints
@@ -318,6 +319,11 @@ facts to keep in mind:
 - `PUT` persists only inputs and assertions.
 - `DELETE` is soft and never frees the name (`AD_TESTCASE_NAME_RESERVED`).
 - `bulk` posts one case at a time.
+- The server's suite run is not observable (live, tr2): `/testsuite/execute` returns at once
+  ("you will receive an email"), `/testsuite/report` is not per chain and stayed all zeros
+  before/during/after it, and the suite's `executionStatus` stayed PASS with a failing
+  assertion; no case carries a result. Hence `run-suite --wait` (`lib/test-cases/run-suite.ts`)
+  runs the cases through `/chain/test` itself, like `ad test --case`.
 
 ### Platform traps agents hit (CLI trial, sems-dev 2026-09-29)
 Documented in `ad save --help` / `ad create --help` / `ad outputs --help`, where agents look:
@@ -329,6 +335,15 @@ Documented in `ad save --help` / `ad create --help` / `ad outputs --help`, where
   echo or SQL step).
 - A step output whose `as` is not declared on the method is not returned (`ad outputs`
   `stepOutputs[].declaredAs: null`).
+- Step output keys cannot be indexed or pathed (`flatData[0].col`, `flatData[].col`). Live
+  (tr2): the V2 route stores the contract key matched by uuid (`flatData[]`) or, without the
+  uuid, drops the output; `elementToRetrieve` on a non-code step is dropped too. The compact
+  expander refuses such keys (`indexedOutputHint`, AD_SPEC_/AD_OVERLAY_NOT_APPLIED) and names
+  the pattern that works: bind `flatData[]` as `rows`, then an echo step
+  `{"service":"Helpers.Legacy/echo","inputs":{"Input":"#{rows[0].col}"},"outputs":[{"key":"response","as":"col"}]}`
+  (verified live; no method variable needed).
+- A db_service step's `account` defaults only when the service has exactly one account on the
+  env (sems-dev has 8). Otherwise AD_SPEC_INVALID / AD_OVERLAY_INVALID lists them as `id=nickname`.
 
 ### SQL
 Default DB when `--db` is absent, in order:
