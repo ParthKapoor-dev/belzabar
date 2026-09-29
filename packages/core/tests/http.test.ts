@@ -10,6 +10,7 @@ import {
   createLimiter,
   defaultTimeoutMs,
   resolveTimeoutMs,
+  isConnectPhaseError,
   DEFAULT_HTTP_TIMEOUT_MS,
   DEFAULT_HTTP_WRITE_TIMEOUT_MS,
 } from "../src/http/transport";
@@ -158,6 +159,64 @@ describe("transport", () => {
     const err = await caught(httpRequest("https://down.test/x"));
     expect(err.code).toBe("HTTP_NETWORK_ERROR");
     expect(ff.requests.length).toBe(2);
+  });
+
+  test("CORE-R1: POST + ECONNRESET on the pinned IP → 1 request, mayHaveCompleted, never re-sent", async () => {
+    ff = fakeFetch([
+      {
+        url: "https://lb.test/chain/run",
+        method: "POST",
+        response: () => {
+          throw Object.assign(new Error("socket connection was closed unexpectedly"), { code: "ECONNRESET" });
+        },
+      },
+    ]).install();
+    const err = await caught(httpRequest("https://lb.test/chain/run", { method: "POST", body: "{}" }));
+    expect(err.code).toBe("HTTP_NETWORK_ERROR");
+    expect(err.details).toMatchObject({ method: "POST", connectPhase: false, mayHaveCompleted: true, retryable: false });
+    expect(err.message).toContain("may have reached the server");
+    expect(ff.requests.length).toBe(1);
+  });
+
+  test("CORE-R1: POST + connection refused on the pinned IP → safe hostname retry", async () => {
+    ff = fakeFetch([
+      {
+        url: "https://lb.test/chain/save",
+        method: "POST",
+        response: (req: RecordedRequest) => {
+          if (req.wireUrl.includes("127.0.0.2"))
+            throw Object.assign(new Error("Unable to connect. Is the computer able to access the url?"), { code: "ConnectionRefused" });
+          return { saved: true };
+        },
+      },
+    ]).install();
+    const res = await httpRequest("https://lb.test/chain/save", { method: "POST", body: "{}" });
+    expect(await res.json()).toEqual({ saved: true });
+    expect(ff.requests.length).toBe(2);
+  });
+
+  test("CORE-R1: GET + ECONNRESET on the pinned IP is retried by hostname (idempotent)", async () => {
+    ff = fakeFetch([
+      {
+        url: "https://lb.test/read",
+        response: (req: RecordedRequest) => {
+          if (req.wireUrl.includes("127.0.0.2")) throw Object.assign(new Error("reset"), { code: "ECONNRESET" });
+          return { ok: 1 };
+        },
+      },
+    ]).install();
+    const res = await httpRequest("https://lb.test/read");
+    expect(await res.json()).toEqual({ ok: 1 });
+    expect(ff.requests.length).toBe(2);
+  });
+
+  test("CORE-R1: isConnectPhaseError classifies connect vs mid-flight failures", () => {
+    expect(isConnectPhaseError(new TypeError("ECONNREFUSED"))).toBe(true);
+    expect(isConnectPhaseError(Object.assign(new Error("x"), { code: "ConnectionRefused" }))).toBe(true);
+    expect(isConnectPhaseError(new Error("Unable to connect. Is the computer able to access the url?"))).toBe(true);
+    expect(isConnectPhaseError(Object.assign(new Error("x"), { code: "EHOSTUNREACH" }))).toBe(true);
+    expect(isConnectPhaseError(Object.assign(new Error("x"), { code: "ECONNRESET" }))).toBe(false);
+    expect(isConnectPhaseError(new Error("The socket connection was closed unexpectedly"))).toBe(false);
   });
 
   test("singleFlight shares one in-flight promise per key", async () => {

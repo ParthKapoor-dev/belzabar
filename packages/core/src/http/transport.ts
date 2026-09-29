@@ -1,7 +1,10 @@
 // The one transport every belz HTTP call goes through (AD/PD via apiFetch,
 // Teamwork, Jenkins):
 //   - IPv4 pinning (dns.ts) with pin eviction + one hostname retry when the
-//     pinned IP fails to connect (CORE-20);
+//     pinned IP fails to connect (CORE-20). The retry happens only for
+//     connect-phase failures (nothing was sent) or for read methods; a POST
+//     whose connection dropped after it may have been sent is never re-sent
+//     (CORE-R1);
 //   - a default timeout mapped to CliError HTTP_TIMEOUT instead of hanging
 //     forever (CORE-13): 60 s for GET/HEAD, 300 s for anything else (AD test,
 //     run, SQL, save/publish execute server-side and are legitimately slow).
@@ -67,6 +70,32 @@ export function resolveTimeoutMs(option: TimeoutOption | undefined, method: stri
 /** URL safe for logs/messages: query values that look secret are redacted. */
 function safeUrl(url: string): string {
   return redactString(url);
+}
+
+/**
+ * Error codes/messages that mean the TCP connection was never established, so
+ * no request bytes reached the server and re-sending any method is safe.
+ * Bun reports a refused connect as code "ConnectionRefused" ("Unable to connect…").
+ */
+const CONNECT_PHASE_CODES = [
+  "ECONNREFUSED",
+  "ConnectionRefused",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "EADDRNOTAVAIL",
+  "FailedToOpenSocket",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+];
+const CONNECT_PHASE_RE = new RegExp(`\\b(${CONNECT_PHASE_CODES.join("|")})\\b|Unable to connect`, "i");
+
+/** True when `err` is a failure to connect (no bytes sent). ECONNRESET / "socket closed" are not. */
+export function isConnectPhaseError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return CONNECT_PHASE_RE.test(String(err));
+  const code = (err as { code?: unknown }).code;
+  if (typeof code === "string" && CONNECT_PHASE_CODES.some((c) => c.toLowerCase() === code.toLowerCase())) return true;
+  const message = (err as { message?: unknown }).message;
+  return typeof message === "string" && CONNECT_PHASE_RE.test(message);
 }
 
 function isAbortError(err: unknown): boolean {
@@ -139,16 +168,23 @@ export async function httpRequest(url: string, init: HttpInit = {}): Promise<Res
     if (isAbortError(err)) {
       throw new CliError(`Request aborted: ${label}`, { code: "HTTP_ABORTED" });
     }
-    if (!prepared.pinnedHost) throw networkError(err, label);
+    const connectPhase = isConnectPhaseError(err);
+    if (!prepared.pinnedHost) throw networkError(err, label, method, connectPhase);
     // The pinned IP may be stale (load balancer moved): evict, retry by hostname once.
-    vlog(`${label} FAILED on pinned IP — evicting and retrying by hostname`, { error: redactString(String(err)) });
+    // Only when nothing was sent (connect failure) or the method is a read: a
+    // POST that died mid-flight (ECONNRESET) may have run server-side (CORE-R1).
     evictIpv4Cache(prepared.pinnedHost);
+    if (!connectPhase && !isReadMethod(method)) {
+      vlog(`${label} FAILED on pinned IP after connecting — not retrying a ${method}`, { error: redactString(String(err)) });
+      throw networkError(err, label, method, false);
+    }
+    vlog(`${label} FAILED on pinned IP — evicting and retrying by hostname`, { error: redactString(String(err)) });
     try {
       response = await fetchOnce(url, rest, timeoutMs, `${label} (hostname retry)`, method);
     } catch (err2) {
       if (err2 instanceof CliError) throw err2;
       if (isAbortError(err2)) throw new CliError(`Request aborted: ${label}`, { code: "HTTP_ABORTED" });
-      throw networkError(err2, label);
+      throw networkError(err2, label, method, isConnectPhaseError(err2));
     }
   }
   vlog(`${label} → ${response.status}`);
@@ -173,11 +209,19 @@ function timeoutError(timeoutMs: number, label: string, method: string): CliErro
   });
 }
 
-function networkError(err: unknown, label: string): CliError {
+/**
+ * HTTP_NETWORK_ERROR. A non-GET that failed after connecting (reset, closed
+ * socket) may have reached the server: flag it like a timed-out write.
+ */
+function networkError(err: unknown, label: string, method: string, connectPhase: boolean): CliError {
   const reason = redactString(err instanceof Error ? err.message : String(err));
-  return new CliError(`Network error: ${label}: ${reason}`, {
+  const mayHaveCompleted = !connectPhase && !isReadMethod(method);
+  const message = mayHaveCompleted
+    ? `Network error: ${label}: ${reason}. The request may have reached the server — check its result before retrying.`
+    : `Network error: ${label}: ${reason}`;
+  return new CliError(message, {
     code: "HTTP_NETWORK_ERROR",
-    details: { reason },
+    details: { reason, method, connectPhase, mayHaveCompleted, retryable: !mayHaveCompleted },
   });
 }
 
