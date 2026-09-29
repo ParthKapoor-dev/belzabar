@@ -41,3 +41,7 @@ Examples:
   belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8
   belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --category Schools --pd --llm
   belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --all --refresh
+
+Errors: CATEGORY_NOT_FOUND (--category names a category the index lacks),
+AD_INDEX_FETCH_FAILED (the category listing failed while building the index),
+PD_LIST_FAILED (--pd page listing failed); details carry {path, status}.

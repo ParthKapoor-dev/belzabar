@@ -262,3 +262,25 @@ describe("stale and partial method index", () => {
     }
   });
 });
+
+// ADR-R6: listing failures surface as stable codes, not UNHANDLED_EXCEPTION.
+describe("listing failures have stable codes (ADR-R6)", () => {
+  test("index build: category listing 503 → AD_INDEX_FETCH_FAILED", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes({ "GET /rest/api/automation/services*": respond({ status: 503, text: "" }) })).install();
+    const r = await runCommand(callersCommand, [ARRAY_OUTPUT, "--refresh"], { env: "t-dev" });
+    expect(r.envelope?.error).toMatchObject({ code: "AD_INDEX_FETCH_FAILED", details: { status: 503 } });
+  });
+
+  test("--pd: page listing 503 → PD_LIST_FAILED", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(
+      routes({
+        "GET /rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ status: 503, text: "" }),
+        "GET /rest/api/pagedesigner/pages?*pageType=COMPONENT*": respond({ json: [] }),
+      }),
+    ).install();
+    const r = await runCommand(callersCommand, [ARRAY_OUTPUT, "--pd", "--refresh"], { env: "t-dev" });
+    expect(r.envelope?.error).toMatchObject({ code: "PD_LIST_FAILED", details: { status: 503 } });
+  });
+});

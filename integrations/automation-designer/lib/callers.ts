@@ -394,7 +394,12 @@ async function fetchPagesWithConfig(): Promise<RawPageResponse[]> {
     authMode: "Bearer",
     timeoutMs: 180_000,
   });
-  if (!res.ok) throw new Error(`GET /pagedesigner/pages (PAGE, MEDIUM) → ${res.status}`);
+  if (!res.ok) {
+    throw new CliError(`Listing PD pages failed: ${res.status}`, {
+      code: "PD_LIST_FAILED",
+      details: { path: "/rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM", status: res.status },
+    });
+  }
   const body = (await res.json()) as unknown;
   return Array.isArray(body) ? (body as RawPageResponse[]) : [];
 }

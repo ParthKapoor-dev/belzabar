@@ -1,5 +1,5 @@
 import { join } from "path";
-import { BELZ_CONFIG_DIR, Cache, Config, apiFetch } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, Cache, CliError, Config, apiFetch } from "@belzabar/core";
 
 const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
@@ -419,7 +419,10 @@ async function fetchAllCategories(): Promise<MethodFinderCategory[]> {
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch categories: ${response.status} ${response.statusText}`);
+      throw new CliError(`Failed to list AD categories for the method index: ${response.status} ${response.statusText}`.trim(), {
+        code: "AD_INDEX_FETCH_FAILED",
+        details: { path, status: response.status },
+      });
     }
 
     const payload = await response.json();
