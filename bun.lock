@@ -5,6 +5,8 @@
       "name": "belzabar",
       "devDependencies": {
         "@belzabar/core": "workspace:*",
+        "@belzabar/migrations": "workspace:*",
+        "@belzabar/teamwork": "workspace:*",
         "@types/bun": "1.3.14",
         "typescript": "^5",
       },
