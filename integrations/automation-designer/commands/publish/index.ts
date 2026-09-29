@@ -10,6 +10,7 @@ import { ruleInfo } from "../../lib/validate/index";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
 import { runValidationGate, type ValidationSummary } from "../../lib/save/validation";
 import { invalidateCompiledCache, type CompiledCacheResult } from "../../lib/save/compiled-cache";
+import { assertDraftUnchanged } from "../../lib/save/pipeline";
 
 interface PublishArgs {
   uuid: string;
@@ -125,6 +126,14 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Validation", validation.skipped ? "SKIPPED (--no-validate)" : `${validation.warnings.length} warning(s)`],
       ],
     });
+
+    // ADW-R5: the confirmation can wait indefinitely; publish only the body
+    // that was validated. Anything else moving on the draft is a conflict.
+    await assertDraftUnchanged(
+      draft.uuid,
+      draftBody,
+      "Nothing was published; re-run the publish so the current draft is validated.",
+    );
 
     // AD-19: publish FIRST, then record the note. A failed publish must not
     // leave an orphan note claiming a change that never shipped.

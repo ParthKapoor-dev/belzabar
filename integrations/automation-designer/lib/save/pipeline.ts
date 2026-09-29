@@ -164,18 +164,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   ]);
 
   // Freshness: nothing may have changed since the body the overlay was applied to.
-  const fresh = await v2.fetchRawMethod(draftUuid);
-  const moved = diffPaths(live, fresh).filter((p) => !IGNORED_FOR_FRESHNESS.some((s) => isUnder(p, s)));
-  if (moved.length > 0) {
-    throw new CliError(
-      `Draft ${draftUuid} changed on the server since it was read (version ${previousVersion} → ${versionName(fresh)}). ` +
-        "Nothing was saved; re-run the save against the current draft.",
-      {
-        code: "AD_VERSION_CONFLICT",
-        details: { uuid: draftUuid, expectedVersion: previousVersion, currentVersion: versionName(fresh), changedPaths: moved.slice(0, 50) },
-      },
-    );
-  }
+  await assertDraftUnchanged(draftUuid, live, "Nothing was saved; re-run the save against the current draft.");
 
   logIntent("POST", "/rest/api/automation/chain/v2", { draftUuid, version: previousVersion, changes: plan.applied });
   let compiledCache: CompiledCacheResult = { ok: false, uuids: [], routes: [] };
@@ -212,6 +201,27 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
 }
 
 /** Verify with the check that fits the plan (leaf targets, or the whole body for ops). */
+/**
+ * Re-GET the draft and refuse (AD_VERSION_CONFLICT) when anything but the
+ * change log / test suite moved since `seen` was read — the server ignores
+ * `metadata.version`, so belz checks it (save, and publish after its
+ * confirmation: ADW-R5).
+ */
+export async function assertDraftUnchanged(draftUuid: string, seen: V2MethodResponse, outcome: string): Promise<V2MethodResponse> {
+  const fresh = await v2.fetchRawMethod(draftUuid);
+  const moved = diffPaths(seen, fresh).filter((p) => !IGNORED_FOR_FRESHNESS.some((s) => isUnder(p, s)));
+  if (moved.length > 0) {
+    throw new CliError(
+      `Draft ${draftUuid} changed on the server since it was read (version ${versionName(seen)} → ${versionName(fresh)}). ${outcome}`,
+      {
+        code: "AD_VERSION_CONFLICT",
+        details: { uuid: draftUuid, expectedVersion: versionName(seen), currentVersion: versionName(fresh), changedPaths: moved.slice(0, 50) },
+      },
+    );
+  }
+  return fresh;
+}
+
 export function verifyPlan(uuid: string, before: V2MethodResponse, after: V2MethodResponse, plan: V2OverlayPlan): void {
   if (plan.structural) verifyStructural(uuid, plan.body, after, plan.structural.touched);
   else verifySaved(uuid, before, after, plan.targets);

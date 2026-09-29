@@ -45,6 +45,9 @@ interface Opts {
   publish?: (req: RecordedRequest) => unknown;
   changelogPost?: (req: RecordedRequest) => unknown;
   published?: boolean; // draft already linked to PUB
+  /** V2 GET bodies of the draft / published side (default: the history fixture). */
+  draftV2?: () => unknown;
+  publishedV2?: () => unknown;
 }
 
 function wire(opts: Opts = {}) {
@@ -63,11 +66,12 @@ function wire(opts: Opts = {}) {
       url: `/rest/api/automation/chain/${PUB}`,
       response: () => ({ ...draftBody(), uuid: PUB, id: PUB_ID, automationState: "PUBLISHED", referenceId: DRAFT }),
     },
-    { method: "GET", url: `/rest/api/automation/chain/v2/${DRAFT}?basicInfo=false`, response: () => draftV2() },
+    { method: "GET", url: `/rest/api/automation/chain/v2/${DRAFT}?basicInfo=false`, response: () => (opts.draftV2 ?? draftV2)() },
     {
       method: "GET",
       url: `/rest/api/automation/chain/v2/${PUB}?basicInfo=false`,
-      response: () => ({ ...draftV2(), uuid: PUB, metadata: { ...draftV2().metadata, state: "PUBLISHED", referenceId: DRAFT } }),
+      response: () =>
+        opts.publishedV2?.() ?? { ...draftV2(), uuid: PUB, metadata: { ...draftV2().metadata, state: "PUBLISHED", referenceId: DRAFT } },
     },
     { method: "POST", url: /\/cache\/invalidate$/, response: "success" },
     { method: "GET", url: "/rest/api/users/me", response: { user: { id: 2, fullName: "Test User" } } },
@@ -247,3 +251,53 @@ describe("ad publish — validator gate + compiled cache (Stage 5)", () => {
     expect((r.envelope!.data as any).compiledCache.ok).toBe(true);
   });
 });
+
+describe("ad publish — freshness and real draft/published pairs", () => {
+  const PAIRS = join(import.meta.dir, "../fixtures/draft-published");
+  const pair = (f: string) => JSON.parse(readFileSync(join(PAIRS, f), "utf8"));
+
+  test("ADW-R5: a draft that changed between validation and the publish → AD_VERSION_CONFLICT, nothing published", async () => {
+    let reads = 0;
+    const f = wire({
+      draftV2: () => {
+        reads++;
+        const b = draftV2();
+        if (reads > 1) b.steps[0].description = "edited by someone else";
+        return b;
+      },
+    });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("AD_VERSION_CONFLICT");
+    expect((r.envelope?.error?.details as any).changedPaths).toEqual(["steps[0].description"]);
+    expect(posts(f)).toEqual([]);
+  });
+
+  test("ADW-R5: an unchanged draft publishes (changelog/testSuite churn is ignored)", async () => {
+    let reads = 0;
+    wire({
+      draftV2: () => {
+        reads++;
+        return { ...draftV2(), changelogs: reads > 1 ? [{ note: "x" }] : [] };
+      },
+    });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    expect(reads).toBeGreaterThanOrEqual(2);
+  });
+
+  test("ADW-R4: an unchanged real draft (different step ids from its published copy) publishes with --allow-preexisting", async () => {
+    const draft = pair("438b502717b979a6a8539691d673fc39.draft.v2.json");
+    const published = pair("41f705aff6c768c033b4ad9840b69dde.published.v2.json");
+    wire({ published: true, draftV2: () => structuredClone(draft), publishedV2: () => structuredClone(published) });
+    const blocked = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    // pre-existing errors still block by default — but only pre-existing ones
+    expect(blocked.envelope?.error?.code).toBe("AD_VALIDATION_FAILED");
+    const d = blocked.envelope?.error?.details as any;
+    expect(d.errors).toEqual([]);
+    expect(d.blocking.length).toBeGreaterThan(0);
+    expect(d.blocking.every((f: any) => f.preexisting)).toBe(true);
+    const ok = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes", "--allow-preexisting"], { env: "t-dev" });
+    expect(ok.envelope?.ok).toBe(true);
+  });
+});
+

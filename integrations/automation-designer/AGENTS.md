@@ -167,7 +167,9 @@ Some rules that apply across the pipeline:
 - Custom code keeps its stored encoding. SQL keeps its slot's `encodingType`.
 
 `publish` validates the draft first. Findings that the published copy already has
-still block unless `--allow-preexisting`. The publish runs BEFORE the note is
+still block unless `--allow-preexisting`. After the confirmation it re-reads the
+draft (`assertDraftUnchanged`, shared with save) and refuses with
+`AD_VERSION_CONFLICT` if it moved since it was validated (ADW-R5). The publish runs BEFORE the note is
 recorded: the note gets three attempts, and if it still fails the result reports
 `noteRecorded:false` and the publish stays. Afterwards the compiled cache of both
 draft and published is evicted.
