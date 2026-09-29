@@ -297,12 +297,17 @@ fails if a folder is missing from the registry.
    fingerprints of draft and published are equal (AD-18: the two version
    counters are independent, never compare them). One fetch per side (the
    guard returns `initial`).
-7. `categories` — list AD categories (`id` = chain-category id, plus systemId/systemUuid); filter by `--user` / `--system`
+7. `categories` — list AD categories (`id` = chain-category id, plus systemId/systemUuid); filter by `--user` / `--system`.
+   7.9: default rows `{id, uuid, name, type, systemId}` (the chainCategoryId/
+   chainCategoryUuid duplicates, systemUuid, label only with `--fields a,b|all`)
 8. `services` — list platform services (`--internal`, `--limit`, `--fields a,b|all`);
    compact rows by default. `--search <q>` fuzzy-ranks (method-finder scorer,
    `scoreFuzzy`) over name/label/aliases/description, adds `score`, top 20.
-9. `export` — export a single method as JSON (numeric chain id or any uuid spelling)
-10. `export-category` — export every method in a category (name, id or uuid → chain-category id)
+9. `export` — export a single method as JSON (numeric chain id or any uuid spelling);
+   `data.methods` = names. 7.9: with `--out` the body (`preview`) is left out of
+   the envelope unless `--full` (without `--out` it stays — `ad import` reads
+   a saved envelope's `data.preview`)
+10. `export-category` — export every method in a category (name, id or uuid → chain-category id); same `--out`/`--full` rule
 11. `test-cases` — list persistent test cases on a method
 12. `test-report` — latest test-suite execution report
 13. `child-info` — resolve a child method's inputs/outputs by name (unknown/draft-only → METHOD_NOT_FOUND).
@@ -330,7 +335,10 @@ fails if a folder is missing from the registry.
     it can switch to write modes). `explain "<read>" [--analyze [--buffers]]
     [--format text|json]` (7.11) → `plan` (lines or parsed JSON) + `timing
     {planningMs, executionMs}`; a read, gated like run.
-18. `changelog <uuid>` — list the notes of the chain the uuid names;
+18. `changelog <uuid>` — list the notes of the chain the uuid names (7.9:
+    rows `{id, when, author, note}` with the rich-text comment as plain text,
+    `lib/compact.ts:htmlToText`; `--fields a,b|all`; `uuid` only when it differs
+    from `chainUuid`);
     `--note "<text>"` is a write: draft-guarded (recorded on the DRAFT chain,
     as publish does), confirmation / `--yes`
 19b. `lint <uuid|file>` (7.4) — read-only review: the validator (L1–L3,
@@ -349,7 +357,8 @@ fails if a folder is missing from the registry.
     `AD_VALIDATION_FAILED` (data = result). A PUBLISHED uuid is audited without
     AD-META-001.
 19. `history list|show|diff <uuid>` — the history of the chain the uuid
-    names (`side` in the data); `trace <uuid>` — spine = active env (or
+    names (`side` in the data; 7.9: `show` returns the compact view
+    `in`/`out`/`vars`/`steps[]` — the full parse `method` only with `--full`); `trace <uuid>` — spine = active env (or
     `--spine`), envs = the spine's project family (or `--envs a,b`), a
     draft uuid is traced via its published chain (AD-25); `diff` — history
     or cross-env (in-process, AD-26), reports `changed` + `differences`

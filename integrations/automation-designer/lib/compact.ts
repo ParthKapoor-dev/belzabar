@@ -82,3 +82,17 @@ export function projectRow<R extends Record<string, unknown>>(
   for (const f of fields) if (f in full && !isEmptyValue(full[f])) out[f] = full[f];
   return out;
 }
+
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", "#39": "'" };
+
+/** Rich-text (AD UI) → plain text: `<br>` / block ends become " / ", tags dropped, common entities decoded. */
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<br\b[^>]*>|<\/(p|div|li)>/gi, " / ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&(#39|[a-z]+);/gi, (m, name: string) => ENTITIES[name.toLowerCase()] ?? m)
+    .replace(/\s*\/\s*(\/\s*)+/g, " / ")
+    .replace(/\s+/g, " ")
+    .replace(/^\s*\/\s*|\s*\/\s*$/g, "")
+    .trim();
+}

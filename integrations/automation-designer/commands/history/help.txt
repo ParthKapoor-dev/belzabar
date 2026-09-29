@@ -5,8 +5,9 @@ Expertly.Automation.Method.History service methods via the execute endpoint.
 
 Actions:
   list <uuid>                         List all saved versions
-  show <uuid> --version N             Fetch + parse a specific version (shows
-                                      step kinds, inputs, full structure)
+  show <uuid> --version N             Fetch + parse a specific version: metadata
+                                      plus the compact view (in/out/vars and one
+                                      line per step, like the `ad show` compact view)
   diff <uuid> --from N --to M           Compare two versions side by side (step
                                       count, kind changes, input changes)
   restore <uuid> --version N [--yes]  Revert the DRAFT to a previous version
@@ -15,6 +16,7 @@ Flags:
   --version <N>    Version number (for show/restore)
   --from <N>       First version (for diff)
   --to <M>         Second version (for diff)
+  --full           show: also return the full parsed method (`method`)
   --yes, -y        Skip interactive confirmation (restore; required for --llm mode)
   --v2             Accepted for consistency; history is V1-only (a notice is printed)
   --llm            Emit a JSON envelope
@@ -43,5 +45,5 @@ Examples:
   belz ad history list 4e3f3f8d5f8a8160e879ae012989f6f9
   belz ad history show 4e3f3f8d... --version 3
   belz ad history diff 4e3f3f8d... --from 1 --to 5
-  belz ad history show 4e3f3f8d... --version 1 --llm | jq '.data.method.parsedSteps'
+  belz ad history show 4e3f3f8d... --version 1 --full --llm | jq '.data.method.parsedSteps'
   belz ad history restore 4e3f3f8d... --version 3 --env <env> --yes

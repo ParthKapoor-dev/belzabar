@@ -6,7 +6,9 @@ by name, chain-category id or uuid, or automation-system id or uuid; it is
 resolved to the chain-category id (the one `belz ad categories` shows as ID).
 
 Flags:
-  --out <file>    Write the exported JSON to a file instead of stdout
+  --out <file>    Write the exported JSON to a file; the envelope then omits
+                  the body (`preview`).
+  --full          With --out: also include the body in the output.
   --v2            Accepted for consistency; always V1 (a notice is printed)
   --llm           Emit a JSON envelope with {id, category, methodCount, writtenTo, bytes, preview}
 

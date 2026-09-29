@@ -1,4 +1,5 @@
 belz ad history list <uuid>  :->  List all saved versions of the chain the uuid names (draft and published histories are separate)
 belz ad history show <uuid> --version <N>  :->  Fetch and parse one saved version
+belz ad history show <uuid> --version <N> --full  :->  Also return the full parsed method at that version
 belz ad history diff <uuid> --from <N> --to <M>  :->  Compare two versions (steps, kinds, inputs)
 belz ad history restore <draftUuid> --version <N> --env <env> [--yes]  :->  Revert the draft to a previous draft version (write; draft-guarded, confirms first, reports resultingVersion)

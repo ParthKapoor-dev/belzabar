@@ -1,2 +1,3 @@
 belz ad changelog <uuid>  :->  List change notes recorded against the chain of this uuid
 belz ad changelog <uuid> --note "<text>" --env <env> --yes  :->  Record a change note on the draft chain (write; draft-guarded, confirms), then list the updated history
+belz ad changelog <uuid> --fields <a,b|all>  :->  Pick entry fields (default id, when, author, plain-text note), or all for raw entries

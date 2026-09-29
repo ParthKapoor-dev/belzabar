@@ -6,6 +6,7 @@ import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 interface ExportCategoryArgs {
   ref: string;
   outPath?: string;
+  full: boolean;
 }
 
 interface ExportCategoryData {
@@ -13,15 +14,16 @@ interface ExportCategoryData {
   id: number;
   category: Category;
   methodCount: number;
-  writtenTo: string | null;
+  writtenTo?: string;
   bytes: number;
-  preview: unknown;
+  /** The export body — omitted when written to --out unless --full (7.9). */
+  preview?: unknown;
 }
 
 export const args = defineArgs({
   command: "belz ad export-category",
   positionals: [{ name: "category", required: true, missingCode: "MISSING_CATEGORY_ID", missingMessage: "Missing category (name, uuid or id) argument." }],
-  flags: { ...AD_COMMON_FLAGS, out: { type: "string" } },
+  flags: { ...AD_COMMON_FLAGS, out: { type: "string" }, full: { type: "boolean" } },
 });
 
 const command: CommandModule<ExportCategoryArgs, ExportCategoryData> = {
@@ -29,9 +31,9 @@ const command: CommandModule<ExportCategoryArgs, ExportCategoryData> = {
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
     resolveAdCommon(flags, "export", "export-category");
-    return { ref: positionals.category, outPath: flags.out };
+    return { ref: positionals.category, outPath: flags.out, full: flags.full };
   },
-  async execute({ ref, outPath }, context) {
+  async execute({ ref, outPath, full }, context) {
     // AD-09/F9: resolve name / uuid / system id to the chain-category id the
     // export endpoint needs (the system id 1318 exported an empty list).
     const category = requireChainCategory(await fetchCategories(), ref);
@@ -47,7 +49,14 @@ const command: CommandModule<ExportCategoryArgs, ExportCategoryData> = {
       await Bun.write(outPath, serialised);
       written = outPath;
     }
-    return ok<ExportCategoryData>({ id, category, methodCount, writtenTo: written, bytes: serialised.length, preview: body });
+    return ok<ExportCategoryData>({
+      id,
+      category,
+      methodCount,
+      ...(written ? { writtenTo: written } : {}),
+      bytes: serialised.length,
+      ...(written && !full ? {} : { preview: body }),
+    });
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;

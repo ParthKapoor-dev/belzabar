@@ -2,26 +2,35 @@ import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { resolveMethodRef } from "../../lib/ids";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { extractMethodNames } from "../import/index";
 
 interface ExportArgs {
   /** Numeric chain id, or a canonical method uuid (resolved to its chain id). */
   ref: { id: number } | { uuid: string };
   outPath?: string;
+  full: boolean;
 }
 
 interface ExportData {
   /** Numeric chain id that was exported. */
   id: number;
   uuid: string | null;
-  writtenTo: string | null;
+  writtenTo?: string;
   bytes: number;
-  preview: unknown;
+  /** Method name(s) in the export. */
+  methods: string[];
+  /**
+   * The export body. 7.9: omitted when it was written to --out (the file has
+   * it) unless --full; always present without --out (`ad import` reads it
+   * from a saved --llm envelope).
+   */
+  preview?: unknown;
 }
 
 export const args = defineArgs({
   command: "belz ad export",
   positionals: [{ name: "method-id", required: true, missingCode: "MISSING_METHOD_ID", missingMessage: "Missing method id (numeric) or UUID argument." }],
-  flags: { ...AD_COMMON_FLAGS, out: { type: "string" } },
+  flags: { ...AD_COMMON_FLAGS, out: { type: "string" }, full: { type: "boolean" } },
 });
 
 const command: CommandModule<ExportArgs, ExportData> = {
@@ -31,9 +40,9 @@ const command: CommandModule<ExportArgs, ExportData> = {
     resolveAdCommon(flags, "export", "export");
     const input = positionals.methodId.trim();
     const ref = /^\d+$/.test(input) ? { id: Number(input) } : { uuid: resolveMethodRef(input) };
-    return { ref, outPath: flags.out };
+    return { ref, outPath: flags.out, full: flags.full };
   },
-  async execute({ ref, outPath }) {
+  async execute({ ref, outPath, full }) {
     // F12 / AD-31: the export endpoint only takes the numeric chain id.
     let id: number;
     let uuid: string | null = null;
@@ -56,9 +65,10 @@ const command: CommandModule<ExportArgs, ExportData> = {
     return ok<ExportData>({
       id,
       uuid,
-      writtenTo: written,
+      ...(written ? { writtenTo: written } : {}),
       bytes: serialised.length,
-      preview: body,
+      methods: extractMethodNames(body),
+      ...(written && !full ? {} : { preview: body }),
     });
   },
   presentHuman(envelope, ui) {

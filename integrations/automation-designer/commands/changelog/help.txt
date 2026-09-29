@@ -15,6 +15,10 @@ Flags:
   --note "<text>"  Record this change note (a write: needs --env and
                    confirmation). Omit to list only.
   --yes, -y        Skip the confirmation prompt (required with --llm).
+  --fields <a,b|all>
+                   Pick entry fields: id,when,author,note,type,html,user,
+                   createdAt; `all` = the server's entries unchanged.
+                   Default: id, when (ISO), author, note (plain text).
   --v2             Accepted for consistency; always V1 (a notice is printed).
   --llm            Emit a JSON envelope.
 

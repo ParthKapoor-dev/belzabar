@@ -1,2 +1,3 @@
-belz ad export <method-id-or-uuid>  :->  Export a single method as JSON
-belz ad export <method-id-or-uuid> --out <file>  :->  Export a single method and write the JSON to a file
+belz ad export <method-id-or-uuid>  :->  Export a single method as JSON (body in `preview`)
+belz ad export <method-id-or-uuid> --out <file>  :->  Write the export to a file; the output lists only id, bytes and method names
+belz ad export <method-id-or-uuid> --out <file> --full  :->  Write the file and also return the body

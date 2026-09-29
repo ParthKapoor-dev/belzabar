@@ -2,16 +2,25 @@ Usage: belz ad categories [flags]
 
 List all AD categories (services) — both user-generated and system-generated.
 ID is the chain-category id (what methods, `ad find` and `ad export-category`
-use); System ID / System UUID identify the automation system behind it.
+use); System ID identifies the automation system behind it.
 SYSTEM_GENERATED services have no chain category (ID is empty). UUIDs are trimmed.
 
 Flags:
-  --user     Only show USER_GENERATED categories
-  --system   Only show SYSTEM_GENERATED categories (cannot be combined with --user)
-  --v2       Accepted for consistency; categories always use V1 (a notice is printed)
-  --llm      Emit a JSON envelope with {total, filter, categories[]}; each row has
-             id, uuid, chainCategoryId, chainCategoryUuid, systemId, systemUuid, name, type
+  --user              Only show USER_GENERATED categories
+  --system            Only show SYSTEM_GENERATED categories (cannot be combined with --user)
+  --fields <a,b|all>  Pick row fields: id,uuid,name,type,systemId,systemUuid,
+                      chainCategoryId,chainCategoryUuid,label; `all` = full
+                      rows. Default: id, uuid, name, type, systemId (empty
+                      values omitted).
+  --v2                Accepted for consistency; categories always use V1 (a notice is printed)
+  --help, -h          Show this help message.
 
-Example:
+Global Flags:
+  --env <name>        Set active environment. (default: nsm-dev)
+                      Available: nsm-dev | nsm-qa | nsm-uat
+  --llm               Output structured JSON envelope for scripting/LLM use.
+
+Examples:
   belz ad categories --user
+  belz ad categories --fields name,systemUuid --llm
   belz ad categories --llm | jq '.data.categories[] | select(.type == "SYSTEM_GENERATED")'

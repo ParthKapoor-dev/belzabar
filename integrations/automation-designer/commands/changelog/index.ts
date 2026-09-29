@@ -5,22 +5,54 @@ import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, AD_NOTE_FLAG, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import type { HydratedMethod } from "../../lib/types/common";
+import { htmlToText, parseFieldList, projectRow } from "../../lib/compact";
 
 interface ChangelogArgs {
   uuid: string;
   note?: string;
   yes: boolean;
+  /** Raw `--fields` value (validated in parseArgs). */
+  fields?: string;
 }
 
 interface ChangelogData {
-  uuid: string;
+  /** The uuid passed — only when it differs from chainUuid (--note on a published uuid). */
+  uuid?: string;
   /** The chain whose notes are listed: the uuid passed for a listing, the resolved draft for --note. */
   chainUuid: string;
   chainId: number;
   action: "add" | "list";
   addedId?: string | null;
   addedNote?: string;
-  entries: ChangelogEntry[];
+  total: number;
+  entries: Array<Record<string, unknown>>;
+}
+
+// 7.9: compact entries (id, when = ISO time, author, note = the rich-text
+// comment as plain text); `--fields a,b` picks (type, html = raw comment,
+// user = full user object), `--fields all` = the server's entries unchanged.
+export const ENTRY_FIELDS = ["id", "when", "author", "note", "type", "html", "user", "createdAt"] as const;
+const DEFAULT_ENTRY_FIELDS = ["id", "when", "author", "note"];
+
+export function entryRows(entries: ChangelogEntry[], fields: string | undefined): Array<Record<string, unknown>> {
+  const sel = parseFieldList(fields, ENTRY_FIELDS);
+  if (sel.mode === "all") return entries as unknown as Array<Record<string, unknown>>;
+  return entries.map((e) =>
+    projectRow(
+      {
+        id: e.id,
+        when: e.createdAt ? new Date(e.createdAt).toISOString() : undefined,
+        author: e.user?.fullName ?? e.user?.email,
+        note: typeof e.comment === "string" ? htmlToText(e.comment) : undefined,
+        type: e.changelogType,
+        html: e.comment,
+        user: e.user,
+        createdAt: e.createdAt,
+      },
+      sel,
+      DEFAULT_ENTRY_FIELDS,
+    ),
+  );
 }
 
 function chainIdOf(method: HydratedMethod): number {
@@ -36,7 +68,7 @@ function chainIdOf(method: HydratedMethod): number {
 export const args = defineArgs({
   command: "belz ad changelog",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
-  flags: { ...AD_COMMON_FLAGS, ...AD_NOTE_FLAG, ...AD_YES_FLAG },
+  flags: { ...AD_COMMON_FLAGS, ...AD_NOTE_FLAG, ...AD_YES_FLAG, fields: { type: "string" } },
 });
 
 const command: CommandModule<ChangelogArgs, ChangelogData> = {
@@ -49,9 +81,10 @@ const command: CommandModule<ChangelogArgs, ChangelogData> = {
     if (flags.note !== undefined && !note) {
       throw new CliError('--note needs a non-empty text.', { code: "MISSING_CHANGE_NOTE" });
     }
-    return { uuid: positionals.uuid, note, yes: flags.yes };
+    parseFieldList(flags.fields, ENTRY_FIELDS);
+    return { uuid: positionals.uuid, note, yes: flags.yes, ...(flags.fields !== undefined ? { fields: flags.fields } : {}) };
   },
-  async execute({ uuid: uuidArg, note, yes }, context) {
+  async execute({ uuid: uuidArg, note, yes, fields }, context) {
     const uuid = resolveMethodRef(uuidArg);
     if (note) {
       // AD-33: a note is recorded on the DRAFT chain (as `publish` does; the
@@ -79,20 +112,28 @@ const command: CommandModule<ChangelogArgs, ChangelogData> = {
       const addedId = await adApi.addChangelog(chainId, note);
       const entries = await adApi.listChangelog(chainId);
       return ok<ChangelogData>({
-        uuid,
+        ...(uuid !== draft.uuid ? { uuid } : {}),
         chainUuid: draft.uuid,
         chainId,
         action: "add",
         addedId,
         addedNote: note,
-        entries,
+        total: entries.length,
+        entries: entryRows(entries, fields),
       });
     }
 
     const method = await adApi.fetchMethod(uuid, "v1");
     const chainId = chainIdOf(method);
     const entries = await adApi.listChangelog(chainId);
-    return ok<ChangelogData>({ uuid, chainUuid: method.uuid, chainId, action: "list", entries });
+    return ok<ChangelogData>({
+      ...(uuid !== method.uuid ? { uuid } : {}),
+      chainUuid: method.uuid,
+      chainId,
+      action: "list",
+      total: entries.length,
+      entries: entryRows(entries, fields),
+    });
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
@@ -104,14 +145,10 @@ const command: CommandModule<ChangelogArgs, ChangelogData> = {
       ui.info(`No change notes on chain ${data.chainId}.`);
       return;
     }
-    ui.table(
-      ["When", "Author", "Note"],
-      data.entries.map((e) => [
-        e.createdAt ? new Date(e.createdAt).toISOString() : "(unknown)",
-        e.user?.fullName ?? e.user?.email ?? "(unknown)",
-        e.comment ?? "",
-      ]),
-    );
+    const columns: string[] = [];
+    for (const r of data.entries) for (const k of Object.keys(r)) if (!columns.includes(k)) columns.push(k);
+    const cell = (v: unknown) => (v === undefined || v === null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v));
+    ui.table(columns, data.entries.map((r) => columns.map((c) => cell(r[c]))));
   },
 };
 

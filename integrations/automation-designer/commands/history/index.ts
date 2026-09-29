@@ -8,6 +8,8 @@ import { getVersionOf, sideOf, type HistorySide } from "../../lib/history";
 import { resolveMethodRef } from "../../lib/ids";
 import type { HydratedMethod } from "../../lib/types/common";
 import { CacheManager } from "../../lib/cache";
+import { compactMethod } from "../../lib/method-view";
+import { pruneEmpty } from "../../lib/compact";
 
 type Action = "list" | "show" | "diff" | "restore";
 
@@ -18,6 +20,8 @@ interface HistoryArgs {
   v1?: number;
   v2num?: number;
   yes: boolean;
+  /** show: include the full parsed method (`method`). */
+  full?: boolean;
 }
 
 interface VersionRow {
@@ -53,7 +57,13 @@ interface HistoryShowData {
   addedWhen: string;
   stepCount: number;
   inputCount: number;
-  method: HydratedMethod;
+  /** 7.9: the version as a compact view (`in`/`out`/`vars` + one line per step, see `ad show --compact`). */
+  in?: string;
+  out?: string;
+  vars?: string;
+  steps: string[];
+  /** The full parsed method — only with --full. */
+  method?: HydratedMethod;
 }
 
 interface DiffStepRow {
@@ -113,7 +123,7 @@ const VERSION_FLAG = {
 export const args = defineSubcommands(
   {
     list: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS } },
-    show: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS, version: VERSION_FLAG } },
+    show: { positionals: UUID_ARG, flags: { ...AD_COMMON_FLAGS, version: VERSION_FLAG, full: { type: "boolean" } } },
     diff: {
       positionals: UUID_ARG,
       flags: {
@@ -147,7 +157,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       case "list":
         return { ...base, yes: false };
       case "show":
-        return { ...base, version: parsed.flags.version, yes: false };
+        return { ...base, version: parsed.flags.version, yes: false, ...(parsed.flags.full ? { full: true } : {}) };
       case "diff":
         return { ...base, v1: parsed.flags.from, v2num: parsed.flags.to, yes: false };
       case "restore":
@@ -215,8 +225,13 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
           ],
         );
         ui.section("Steps at this version");
-        if (data.method.parsedSteps.length === 0) {
+        if (data.steps.length === 0) {
           ui.text("(no steps — likely the initial creation)");
+        } else if (!data.method) {
+          if (data.in) ui.text(`in: ${data.in}`);
+          if (data.out) ui.text(`out: ${data.out}`);
+          if (data.vars) ui.text(`vars: ${data.vars}`);
+          ui.text(data.steps.join("\n"));
         } else {
           const badgeMap: Record<string, string> = {
             CUSTOM_CODE: "CODE", SPEL_ECHO: "SPEL", SQL: "SQL",
@@ -323,8 +338,9 @@ async function executeShow(
 
   const full = await getVersionOf(current, category, args.version);
   const parsed = parseVersionBody(full);
+  const view = compactMethod(parsed);
 
-  return ok<HistoryShowData>({
+  const data = pruneEmpty<HistoryShowData>({
     action: "show",
     uuid: args.uuid,
     side: sideOf(current),
@@ -337,8 +353,15 @@ async function executeShow(
     addedWhen: full.addedWhen,
     stepCount: parsed.parsedSteps.length,
     inputCount: parsed.inputs.length,
-    method: parsed,
+    in: view.in,
+    out: view.out,
+    vars: view.vars,
+    steps: view.steps,
   });
+  if (!data.steps) data.steps = [];
+  // The full parse is kept verbatim (not pruned) and only on request.
+  if (args.full) data.method = parsed;
+  return ok<HistoryShowData>(data);
 }
 
 async function executeDiff(
