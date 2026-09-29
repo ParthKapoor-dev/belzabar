@@ -1,4 +1,4 @@
-// RL-1..4: spec validated up front (zod), spine/stage envs derived from the
+// Spec validated up front (zod), spine/stage envs derived from the
 // project, freeze fails when no item has stage data, atomic ledger with
 // LEDGER_CORRUPT / collisions / --force.
 import { afterEach, describe, expect, test } from "bun:test";
@@ -6,7 +6,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, 
 import { tmpdir } from "os";
 import { join } from "path";
 import { Config, type CommandContext } from "@belzabar/core";
-import { fakeFetch, fixture, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { caughtCliError, fakeFetch, fixture, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import matrix, { type MatrixData } from "../../commands/matrix/index";
 import freeze from "../../commands/freeze/index";
 import {
@@ -43,14 +43,8 @@ function specFile(body: unknown): string {
   return p;
 }
 
-async function err(fn: () => unknown): Promise<any> {
-  try {
-    await fn();
-  } catch (e) {
-    return e;
-  }
-  throw new Error("expected a throw");
-}
+/** The CliError `fn` throws or rejects with (sync or async). */
+const err = (fn: () => unknown) => caughtCliError(Promise.resolve().then(fn));
 
 const ENVS = {
   "orb-dev": { url: "https://orb-dev.test" },
@@ -61,7 +55,7 @@ const ENVS = {
   "gm-qa": { url: "https://gm-qa.test" },
 };
 
-describe("RL-1: spec validated with zod, before any network", () => {
+describe("spec validated with zod, before any network", () => {
   const bad: Array<[string, unknown, string]> = [
     ["null spec", null, "(root)"],
     ["numeric name", { name: 123, included: [1] }, "name"],
@@ -92,7 +86,7 @@ describe("RL-1: spec validated with zod, before any network", () => {
   });
 });
 
-describe("RL-2: spine/stage envs derived from the project", () => {
+describe("spine/stage envs derived from the project", () => {
   function envs() {
     cfg = withTempEnvConfig({ envs: ENVS });
     return Config.getAllEnvs();
@@ -150,7 +144,7 @@ describe("matrix end to end (real Teamwork fixture, faked transport)", () => {
     expect(d.stageEnv).toBe("acme-stage");
     expect(d.tickets.find((t) => t.id === 25807610)!.error).toBeUndefined();
     expect(d.tickets.find((t) => t.id === 1)!.error).toContain("not found");
-    // OTH-R21: an unlinked ticket makes the audit incomplete — failed, nothing saved.
+    // An unlinked ticket makes the audit incomplete — failed, nothing saved.
     if (res.ok) throw new Error("expected a failure");
     expect(res.error.code).toBe("RELEASE_MATRIX_INCOMPLETE");
     expect(existsSync(join(RELEASES_DIR, "sep-28.json"))).toBe(false);
@@ -174,7 +168,7 @@ function savedRelease(items: unknown[], stageEnv = "acme-stage") {
 }
 const cell = (env: string, status: string, spinePos: number, spineVersion: number | null) => ({ env, status, spinePos, spineVersion });
 
-describe("RL-3: freeze and missing stage data", () => {
+describe("freeze and missing stage data", () => {
   test("every item missing stage data → FREEZE_NO_STAGE_DATA, nothing written", async () => {
     saveRelease("rel", savedRelease([
       { uuid: "u1", name: "m1", envs: [cell("acme-dev", "latest", 3, 7)] },
@@ -206,7 +200,7 @@ describe("RL-3: freeze and missing stage data", () => {
   });
 });
 
-describe("RL-4: ledger safety", () => {
+describe("ledger safety", () => {
   test("corrupt JSON and wrong shape → LEDGER_CORRUPT (was UNHANDLED)", async () => {
     mkdirSync(RELEASES_DIR, { recursive: true });
     writeFileSync(join(RELEASES_DIR, "rel.json"), "{truncated");

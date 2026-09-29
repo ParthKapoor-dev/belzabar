@@ -1,4 +1,4 @@
-// OTH-R20/R21/R24/R30: matrix item selection, collision detection, leak
+// Matrix item selection, collision detection, leak
 // classification and the incomplete-input guard. Teamwork is faked over the
 // wire (fakeFetch); AD tracing returns 503 so every item is a trace-error row.
 import { afterEach, describe, expect, test } from "bun:test";
@@ -6,7 +6,7 @@ import { existsSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { Config, type CommandContext } from "@belzabar/core";
-import { fakeFetch, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { errorCode, fakeFetch, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import { saveTeamworkSession } from "@belzabar/teamwork/lib/auth";
 import matrix, { classifyLeak, type MatrixData } from "../../commands/matrix/index";
 import { PROMOTION_DIR, RELEASES_DIR } from "../../lib/ledger";
@@ -81,7 +81,7 @@ async function setup(routes: unknown[]) {
   ]).install();
 }
 
-describe("OTH-R20: item selection", () => {
+describe("item selection", () => {
   test("an excluded ticket with ONE plain AD URL still collides (was invisible, 'Collisions: None')", async () => {
     const shared = U("a");
     await setup([
@@ -131,7 +131,7 @@ describe("OTH-R20: item selection", () => {
   });
 });
 
-describe("OTH-R21: a ticket that fails to link", () => {
+describe("a ticket that fails to link", () => {
   test("→ RELEASE_MATRIX_INCOMPLETE, collisionsComplete:false, no ledger record", async () => {
     await setup([
       ...ticketRoutes(100, [`${adUrl(U("a"))}`]),
@@ -148,7 +148,7 @@ describe("OTH-R21: a ticket that fails to link", () => {
   });
 });
 
-describe("OTH-R30: leak classification", () => {
+describe("leak classification", () => {
   const cell = (env: string, status: string, spinePos = 0) => ({ env, status, spinePos, spineVersion: null });
   const cases: Array<[string, Parameters<typeof classifyLeak>[0], string]> = [
     ["stage at spine head", { envs: [cell("acme-stage", "latest", 3)] }, "leaked"],
@@ -166,17 +166,11 @@ describe("OTH-R30: leak classification", () => {
   }
 });
 
-describe("OTH-R24: spine and stage from different projects", () => {
+describe("spine and stage from different projects", () => {
   test("→ BAD_SPEC (the tracer would never reach the stage env)", () => {
     cfg = withTempEnvConfig({ envs: ENVS });
     const all = Config.getAllEnvs();
-    let code = "";
-    try {
-      resolveReleaseEnvs({ spineEnv: "acme-dev", stageEnv: "orb-stage" }, all["acme-dev"]!, all);
-    } catch (e) {
-      code = (e as { code: string }).code;
-    }
-    expect(code).toBe("BAD_SPEC");
+    expect(errorCode(() => resolveReleaseEnvs({ spineEnv: "acme-dev", stageEnv: "orb-stage" }, all["acme-dev"]!, all))).toBe("BAD_SPEC");
     expect(resolveReleaseEnvs({ project: "acme" }, all["orb-dev"]!, all).stageEnv).toBe("acme-stage");
   });
 });

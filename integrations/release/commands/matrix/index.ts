@@ -21,8 +21,8 @@ import { loadReleaseSpec, resolveReleaseEnvs, type ReleaseSpec } from "../../lib
 //     ticket's edits along,
 //   - per collision, whether the excluded change has already LEAKED to stage.
 //
-// AD-only for now: PD items are listed per ticket but not traced (PD pages are
-// not name-resolvable across envs — see plan).
+// AD only: PD items are listed per ticket but not traced (PD pages are not
+// name-resolvable across envs).
 
 interface MatrixArgs {
   specPath: string;
@@ -36,7 +36,7 @@ interface TicketRow {
   kind: TicketKind;
   ad: string[];
   /**
-   * Where `ad` came from (OTH-R20): the latest dev-note block, or every AD
+   * Where `ad` came from: the latest dev-note block, or every AD
    * reference on the ticket (excluded tickets always; included tickets when
    * no dev-note block lists AD items).
    */
@@ -75,7 +75,7 @@ interface Collision {
 export interface MatrixData {
   name: string;
   generatedAt: string;
-  /** Project whose envs were used (RL-2): spec.project, the spec envs' project, or the active env's. */
+  /** Project whose envs were used: spec.project, the spec envs' project, or the active env's. */
   project: string;
   spineEnv: string;
   stageEnv: string;
@@ -83,7 +83,7 @@ export interface MatrixData {
   items: ItemRow[];
   collisions: Collision[];
   /**
-   * False when a ticket could not be linked (OTH-R21): its items are unknown,
+   * False when a ticket could not be linked: its items are unknown,
    * so `collisions` may be missing entries. The command then fails with
    * RELEASE_MATRIX_INCOMPLETE and writes no ledger record.
    */
@@ -110,7 +110,7 @@ function parseArgs(argv: string[]): MatrixArgs {
   return { specPath: args.parse(argv).positionals.spec };
 }
 
-/** Ticket refs → ids, as BAD_SPEC (TW-6 validator); an id both included and excluded is BAD_SPEC (RL-5). */
+/** Ticket refs → ids; a junk ref or an id both included and excluded is BAD_SPEC. */
 function ticketIds(spec: ReleaseSpec): { id: number; kind: TicketKind }[] {
   const toId = (t: unknown, kind: TicketKind) => {
     try {
@@ -163,8 +163,7 @@ export function classifyLeak(
 
 async function execute(args: MatrixArgs, context: CommandContext): Promise<CommandResult<MatrixData>> {
   // Everything that can be wrong with the spec fails here, before any network
-  // work (RL-1): shape (zod), ticket refs + overlap (TW-6/RL-5), envs (RL-2),
-  // and the ledger slot (RL-4).
+  // work: shape (zod), ticket refs + overlap, envs, and the ledger slot.
   const spec = loadReleaseSpec(args.specPath);
   const ticketSpecs = ticketIds(spec);
   const { project, spineEnv, stageEnv } = resolveReleaseEnvs(spec, context.env);
@@ -173,7 +172,7 @@ async function execute(args: MatrixArgs, context: CommandContext): Promise<Comma
 
   // ── 1. Link every ticket → its items (parallel; teamwork auth, no Config). ──
 
-  //    Item selection (OTH-R20): a missed collision is the dangerous error,
+  //    Item selection: a missed collision is the dangerous error,
   //    so an EXCLUDED ticket contributes every AD reference it mentions (a
   //    single plain AD URL forms no dev-note block). An INCLUDED ticket uses
   //    its latest dev-note block, falling back to every reference when that
@@ -280,7 +279,7 @@ async function execute(args: MatrixArgs, context: CommandContext): Promise<Comma
     warnings,
   };
 
-  // OTH-R21: an unlinked ticket's items were never traced, so "no collisions"
+  // An unlinked ticket's items were never traced, so "no collisions"
   // would be a guess. Fail and write no ledger record — `freeze` must never
   // snapshot an incomplete audit.
   if (!collisionsComplete) {
@@ -364,8 +363,6 @@ function presentHuman(envelope: CommandEnvelope<MatrixData>, ui: HumanPresenterH
 }
 
 const command: CommandModule<MatrixArgs, MatrixData> = {
-  schema: "release.matrix",
-  version: "1.0",
   /** Writes the local promotion ledger (release record) only; no remote state. */
   writesLocal: true,
   parseArgs,

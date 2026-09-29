@@ -1,6 +1,6 @@
 // Release spec (`belz release matrix <release.json>`): validated up front with
-// zod (RL-1) and its spine/stage envs resolved from the project (RL-2), so a bad
-// spec is BAD_SPEC before any Teamwork or AD request.
+// zod and its spine/stage envs resolved from the project, so a bad spec is
+// BAD_SPEC before any Teamwork or AD request.
 
 import { existsSync } from "fs";
 import { z } from "zod";
@@ -9,7 +9,7 @@ import { releaseSlug } from "./ledger";
 
 const TicketRef = z.union([z.number(), z.string()]);
 
-export const ReleaseSpecSchema = z
+const ReleaseSpecSchema = z
   .object({
     name: z
       .string()
@@ -57,7 +57,7 @@ export function loadReleaseSpec(path: string): ReleaseSpec {
   return validateReleaseSpec(raw, path);
 }
 
-export interface ReleaseEnvs {
+interface ReleaseEnvs {
   project: string;
   spineEnv: string;
   stageEnv: string;
@@ -86,7 +86,7 @@ function findProjectEnv(
 }
 
 /**
- * spineEnv/stageEnv for a spec (RL-2). Explicit values must be configured envs.
+ * spineEnv/stageEnv for a spec. Explicit values must be configured envs.
  * Missing ones come from the project: `spec.project`, else the project of an
  * explicit spineEnv/stageEnv, else the project of `fallback` (the active env —
  * `--env`, BELZ_ENV or defaultEnv). A release never defaults to another project's envs.
@@ -115,7 +115,7 @@ export function resolveReleaseEnvs(
   }
   const spineEnv = spec.spineEnv ?? findProjectEnv(envs, project, "spine");
   const stageEnv = spec.stageEnv ?? findProjectEnv(envs, project, "stage");
-  // OTH-R24: the tracer only locates a method on the spine env's project
+  // The tracer only locates a method on the spine env's project
   // family, so a stage env from another project would never be traced and
   // every collision would come out `leak: "unknown"`.
   const spineProject = envs[spineEnv]!.project.toUpperCase();

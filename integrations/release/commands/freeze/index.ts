@@ -12,10 +12,10 @@ import { loadRelease, saveProdSnapshot, type ProdSnapshot, type ProdSnapshotItem
 // the ledger as the prod pointer. Run `belz release matrix` first (it writes
 // the release record); run `freeze` right after the prod push.
 //
-// RL-3: an item whose stage cell is absent or a trace error is a MISS, recorded
-// as stageStatus "unknown" plus a warning (it used to be a silent spinePos -1,
-// indistinguishable from "not on stage"). If every item misses, nothing real
-// would be frozen: FREEZE_NO_STAGE_DATA. RL-4: an existing snapshot needs --force.
+// An item whose stage cell is absent or a trace error is a MISS, recorded as
+// stageStatus "unknown" plus a warning, so it stays distinguishable from "not
+// on stage". If every item misses, nothing real would be frozen:
+// FREEZE_NO_STAGE_DATA. An existing snapshot needs --force.
 
 interface FreezeArgs {
   name: string;
@@ -113,8 +113,6 @@ function presentHuman(envelope: CommandEnvelope<ProdSnapshot>, ui: HumanPresente
 }
 
 const command: CommandModule<FreezeArgs, ProdSnapshot> = {
-  schema: "release.freeze",
-  version: "1.0",
   /** Writes the local promotion ledger (prod snapshot) only; no remote state. */
   writesLocal: true,
   parseArgs,

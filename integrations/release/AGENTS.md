@@ -88,7 +88,7 @@ source of truth.
 
 ## Core Behavior Contract
 
-1. Commands export a default `CommandModule` (`schema`, `parseArgs`,
+1. Commands export a default `CommandModule` (`parseArgs`,
    `execute`, `presentHuman`) and `args` (core `defineArgs`).
 2. `release` is in `NOT_ENV_AWARE_NAMESPACES` (`apps/cli/bin/options.ts`): envelopes carry
    no `meta.env`; the envs come from the spec. `--env` only picks the project that

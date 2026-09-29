@@ -4,7 +4,7 @@
 // release-over-release; `belz release freeze` writes a prod snapshot (prod is
 // not queryable, so its state is captured from stage at release-push time).
 //
-// RL-4: writes are atomic (tmp + rename via core writeSecureJson); an
+// Writes are atomic (tmp + rename via core writeSecureJson); an
 // unreadable or malformed record is LEDGER_CORRUPT (never UNHANDLED); a name
 // with no letters/digits is INVALID_RELEASE_NAME; two names that slug to the
 // same file are LEDGER_NAME_COLLISION; a snapshot is only replaced with --force.
@@ -14,9 +14,9 @@ import { existsSync } from "fs";
 import { z } from "zod";
 import { BELZ_CONFIG_DIR, CliError, readJsonInputSync, writeSecureJson } from "@belzabar/core";
 
-const PROMOTION_DIR = join(BELZ_CONFIG_DIR, "promotion");
-const RELEASES_DIR = join(PROMOTION_DIR, "releases");
-const SNAPSHOTS_DIR = join(PROMOTION_DIR, "prod-snapshots");
+export const PROMOTION_DIR = join(BELZ_CONFIG_DIR, "promotion");
+export const RELEASES_DIR = join(PROMOTION_DIR, "releases");
+export const SNAPSHOTS_DIR = join(PROMOTION_DIR, "prod-snapshots");
 
 /** The ledger isn't secret: world-readable like the other ~/.belz caches. */
 const LEDGER_MODE = 0o644;
@@ -68,7 +68,7 @@ const SavedReleaseSchema = z
   })
   .passthrough();
 
-export type SavedRelease = z.infer<typeof SavedReleaseSchema>;
+type SavedRelease = z.infer<typeof SavedReleaseSchema>;
 
 /** File-name slug of a release name. Empty (e.g. "!!!") → INVALID_RELEASE_NAME. */
 export function releaseSlug(name: string, opts: { throwOnEmpty?: boolean } = {}): string {
@@ -82,11 +82,11 @@ export function releaseSlug(name: string, opts: { throwOnEmpty?: boolean } = {})
   return s;
 }
 
-export function releasePath(name: string): string {
+function releasePath(name: string): string {
   return join(RELEASES_DIR, `${releaseSlug(name)}.json`);
 }
 
-export function snapshotPath(name: string): string {
+function snapshotPath(name: string): string {
   return join(SNAPSHOTS_DIR, `${releaseSlug(name)}.json`);
 }
 
@@ -166,5 +166,3 @@ export function saveProdSnapshot(snapshot: ProdSnapshot, opts: { force?: boolean
   writeSecureJson(path, snapshot, { pretty: true, mode: LEDGER_MODE });
   return path;
 }
-
-export { PROMOTION_DIR, RELEASES_DIR, SNAPSHOTS_DIR };
