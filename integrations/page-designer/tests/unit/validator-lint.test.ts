@@ -1,4 +1,4 @@
-// Stage 7 (7.8): pd-review §3a–3d + figma-to-pd lint rules. Every rule has a
+// pd-review §3a–3d + figma-to-pd lint rules. Every rule has a
 // positive and a negative case; UNUSED_VARIABLE false positives found on real
 // pages have regression tests; every emitted code is catalogued and listed in
 // help.txt; validate --recursive checks page ↔ symbol interfaces.
@@ -124,7 +124,7 @@ describe("pd-review §3c/§3d HTTP + accessibility", () => {
 describe("figma-to-pd rules (codes kept)", () => {
   const table = (props: Record<string, unknown>) => [{ id: "tbl", name: "exp-data-table", props: { datasourceState: "initial", ...props } }];
 
-  test("V4: types outside the enum; the acme-dev editor's String/Boolean/Number are valid", () => {
+  test("V4: types outside the enum; the PD editor's String/Boolean/Number are valid", () => {
     expect(codes(wrap(pageInner(vars({ name: "a", type: "List" }), [{ id: "x", name: "div", props: { innerHTML: "{%a%}" } }])), "V4")).toHaveLength(1);
     for (const t of ["String", "Boolean", "Number", "Any", "KeyValue", "PAGINATION_STORE", "boolean"]) {
       expect(codes(wrap(pageInner(vars({ name: "a", type: t }))), "V4")).toHaveLength(0);
@@ -192,7 +192,7 @@ describe("figma-to-pd rules (codes kept)", () => {
   });
 });
 
-describe("UNUSED_VARIABLE false positives (Stage 6 reported 126 on Student Application)", () => {
+describe("UNUSED_VARIABLE false positives seen on real pages", () => {
   const unused = (raw: RawPageResponse) => codes(raw, "UNUSED_VARIABLE").map((i) => i.path);
 
   test("names reached from custom code by string or via the scope object are used", () => {

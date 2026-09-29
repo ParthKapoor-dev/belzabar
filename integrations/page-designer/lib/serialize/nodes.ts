@@ -1,4 +1,4 @@
-// Node-id overlay ops (Stage 7, 7.8): `nodes.update / insert / remove` address
+// Node-id overlay ops: `nodes.update / insert / remove` address
 // layout nodes by `id` (or `_elementId`) so an agent never computes
 // `children[i]` paths. Resolved against the RAW inner config:
 //   - applyNodeOps edits the raw clone (apply.ts) — lossless like every edit;

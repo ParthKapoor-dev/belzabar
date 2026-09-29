@@ -4,16 +4,15 @@
 // POST /pages/<draftId>/publish?landingPage=&hostIds=. The draft is resolved
 // via referenceId (a PUBLISHED input publishes its linked draft) and
 // validated, then published inside withLock. Afterwards the local cache
-// entries of BOTH the draft and the published page are dropped (s0-review:
-// the published sibling used to stay stale).
+// entries of BOTH the draft and the published page are dropped.
 //
-// Validation is diff-aware against the currently PUBLISHED version
-// (OTH-R10): only errors the draft introduces since the last publish block;
+// Validation is diff-aware against the currently PUBLISHED version: only
+// errors the draft introduces since the last publish block;
 // issues the live page already has are reported as pre-existing warnings. A
 // never-published draft (or --allow-published on a lone PUBLISHED page) is
 // gated on every error. The gate runs once on the pre-lock snapshot (fail
-// fast, before --yes) and again on a FRESH fetch inside the lock (OTH-R5:
-// what is POSTed is what was validated; data.versionDrift reports a change).
+// fast, before --yes) and again on a FRESH fetch inside the lock, so what is
+// POSTed is what was validated (data.versionDrift reports a change).
 
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import {
@@ -47,7 +46,7 @@ interface PublishData {
   postPublishVersionId: number | null;
   /** What validation was relative to: the PUBLISHED version (diff-aware) or nothing (full). */
   validation: { baseline: "published" | "none"; errorCount: number; warnCount: number; preExistingCount: number };
-  /** The draft changed between the first read and the in-lock fetch (OTH-R5). */
+  /** The draft changed between the first read and the in-lock fetch. */
   versionDrift: { from: number | null; to: number | null } | null;
   bypassedErrors: ValidationIssue[];
 }
@@ -57,8 +56,8 @@ export const args = defineArgs({
   positionals: [{ name: "page-id", required: true, missingCode: "MISSING_INPUT", missingMessage: "Missing <pageId>." }],
   flags: {
     landing: { type: "boolean" },
-    // PD-16: `--host` without a value is MISSING_VALUE (it used to be dropped,
-    // publishing without deploying).
+    // `--host` without a value is MISSING_VALUE (dropping it would publish
+    // without deploying).
     host: { type: "string", repeatable: true },
     ...PD_YES_FLAG,
     ...PD_WRITE_OVERRIDE_FLAGS,
@@ -86,7 +85,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
     const before = target.snapshot;
 
     // Baseline: the live PUBLISHED sibling (not when publishing a PUBLISHED page itself).
-    // Read fresh (NEW-5): the GET can lag a recent publish; history is authoritative.
+    // Read fresh: the GET can lag a recent publish; history is authoritative.
     let baseline: HydratedPage | null = null;
     if (target.publishedId && target.publishedId !== targetId) {
       baseline = await fetchPublishedBaseline(target.publishedId, warn);
@@ -104,7 +103,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
     // The POST /pages/<draftId>/publish response body IS the freshly-published
     // page — it carries the authoritative post-publish versionId.
     const { publishResponse, gate, issues, drift } = await withLock(targetId, async () => {
-      // OTH-R5: validate what will actually be published — a fresh read inside the lock.
+      // Validate what will actually be published — a fresh read inside the lock.
       const fresh = await fetchFresh(targetId);
       const drift = versionDrift(before, fresh, warn);
       const issues = check(fresh);

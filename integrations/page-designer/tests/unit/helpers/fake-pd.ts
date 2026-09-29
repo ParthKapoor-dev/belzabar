@@ -2,9 +2,8 @@
 // write paths (save / publish / history / lock). Pages are stored as raw wire
 // bodies; PUT replaces the configuration, or applies partial operations with
 // the fake's OWN key parser (`applyWireOps`), written from the live wire
-// evidence and deliberately independent of belz's serializer (OTH-R1:
-// replaying with belz's own `replayOperations` made the partial-save tests
-// circular).
+// evidence and deliberately independent of belz's serializer (replaying with
+// belz's own `replayOperations` would make the partial-save tests circular).
 import { fakeFetch, runCommand, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
 import type { RawConfiguration, RawPageResponse } from "../../../lib/types/wire";
 

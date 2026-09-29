@@ -4,14 +4,14 @@
 // local page cache and releases the lock (finally). A 409 on acquire surfaces
 // as PD_LOCKED with the server's owner info; belz never force-releases.
 //
-// Re-entrant (PD-20): a nested withLock in this process neither acquires nor
+// Re-entrant: a nested withLock in this process neither acquires nor
 // releases. A page recorded by `belz pd lock acquire`
-// (~/.belz/pd-locks/<env>.json) is NOT trusted blindly (OTH-R4): the record
+// (~/.belz/pd-locks/<env>.json) is NOT trusted blindly: the record
 // may be stale (expired, released in the UI, taken by someone else), so the
 // server lock is still acquired, and it is not released afterwards, so a save
 // inside a manual lock does not drop the operator's lock.
 // Re-acquiring a lock the signed-in user already holds is an HTTP 400 on the
-// wire (verified live, NEW-5); `acquireLock` then reads the page's
+// wire (verified live); `acquireLock` then reads the page's
 // `pageLockDetails.lockedByCurrentUser` and reports `heldByMe`. belz writes
 // inside such a lock and never releases it (it is the operator's manual lock,
 // another belz run's, or the user's own open PD editor). A lock held by
@@ -19,7 +19,7 @@
 // exists).
 //
 // Every PD write (save, publish, history restore) runs inside withLock, so the
-// local page cache for pageId is invalidated here once fn has run (PD-12).
+// local page cache for pageId is invalidated here once fn has run.
 
 import { join } from "node:path";
 import { mkdir, readFile } from "node:fs/promises";
@@ -37,7 +37,7 @@ function activeEnvName(): string {
   return Config.activeEnv?.name || "default";
 }
 
-/** Per-env lock file (PD-9). */
+/** Per-env lock file. */
 function lockFilePath(env = activeEnvName()): { dir: string; file: string; env: string } {
   const dir = join(BELZ_CONFIG_DIR, "pd-locks");
   return { dir, file: join(dir, `${env}.json`), env };
@@ -54,7 +54,7 @@ export async function loadLockFile(env = activeEnvName()): Promise<{ env: string
   }
 }
 
-/** Atomic 0600 write (OTH-R9: a torn write used to reset every record). */
+/** Atomic 0600 write (a torn write used to reset every record). */
 export async function saveLockFile(file: string, data: LockFile): Promise<void> {
   writeSecureJson(file, data, { pretty: true });
 }

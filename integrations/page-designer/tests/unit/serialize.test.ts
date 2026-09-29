@@ -1,6 +1,5 @@
 // Serializer: applyOverlay (raw-config edit), partial ops (raw indices, full
-// coverage), planSave strategy, full save losslessness.
-// Bugs: PD-2 (raw indices), PD-3 (handler/transform ops), PD-22 (lossless).
+// coverage, handler/transform ops), planSave strategy, full save losslessness.
 import { describe, test, expect } from "bun:test";
 import { parsePage } from "../../lib/parser/index";
 import {
@@ -53,7 +52,7 @@ const call = (callId: string, extra: Record<string, unknown> = {}) => ({
 
 const inner = (p: HydratedPage) => p.rawConfiguration as RawConfiguration;
 
-describe("serializeFull is lossless (PD-22)", () => {
+describe("serializeFull is lossless", () => {
   test("duplicate vars, null type, legacy format, inputs/events survive untouched", () => {
     const cfg = {
       __version: 5,
@@ -154,7 +153,7 @@ describe("applyOverlay", () => {
   });
 });
 
-describe("partial operations use RAW indices (PD-2)", () => {
+describe("partial operations use RAW indices", () => {
   test("duplicate names before the target: the op points at the raw index", () => {
     const cfg = rootInner({
       variables: {
@@ -201,7 +200,7 @@ describe("partial operations use RAW indices (PD-2)", () => {
   });
 });
 
-describe("httpRequests.update emits every field (PD-3)", () => {
+describe("httpRequests.update emits every field", () => {
   const cfg = rootInner({ httpRequests: { generated: [call("gen-1")], userDefined: [call("sc-0"), call("sc-1")] } });
   const page = parsePage(wrap(cfg));
 
@@ -275,12 +274,12 @@ describe("planSave strategy", () => {
     "layout.props.[(value)]",
     "layout.props.(click)",
     "layout.props.data-x",
-  ])("OTH-R1: an op keyed %s (verified live) stays a partial save", (key) => {
+  ])("an op keyed %s (verified live) stays a partial save", (key) => {
     const plan = planSave(page, { elements: { operations: [{ key, value: "v", operation: "CREATE", dataType: "STRING" }] } });
     expect(plan.strategy).toBe("partial");
   });
 
-  test("OTH-R1: a raw elements op on a dotted prop name ([attr.title]) is refused — like the server, belz splits it on the dot", () => {
+  test("a raw elements op on a dotted prop name ([attr.title]) is refused — like the server, belz splits it on the dot", () => {
     const key = "layout.props.[attr.title]";
     expect(() => planSave(page, { elements: { operations: [{ key, value: "v", operation: "CREATE", dataType: "STRING" }] } })).toThrow(
       /does not resolve/,
@@ -288,7 +287,7 @@ describe("planSave strategy", () => {
     // nodes.update addresses the prop by name, so it can still be saved (in full): see save-publish.test.ts.
   });
 
-  test("OTH-R1: isVerifiedKeyShape = the shapes proven on the wire (tests/fixtures/wire/partial-keys.json)", () => {
+  test("isVerifiedKeyShape = the shapes proven on the wire (tests/fixtures/wire/partial-keys.json)", () => {
     for (const k of [
       "styles",
       "layout.props.className",

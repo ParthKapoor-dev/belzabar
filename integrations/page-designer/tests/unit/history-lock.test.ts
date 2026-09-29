@@ -1,5 +1,5 @@
-// pd history show/diff/restore ownership + guard (PD-15) and the re-entrant,
-// truthful lock (PD-20), over the in-memory PD server.
+// pd history show/diff/restore ownership + guard and the re-entrant, truthful
+// lock, over the in-memory PD server.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 afterEach(() => pd.restore());
 
-describe("pd history (PD-15)", () => {
+describe("pd history", () => {
   test("list on a DRAFT with no versions points at the published page (smoke doc mismatch)", async () => {
     const d = await run(history, ["list", DRAFT]);
     expect(d.envelope?.data).toMatchObject({ totalVersions: 0, publishedId: PUB });
@@ -47,7 +47,7 @@ describe("pd history (PD-15)", () => {
     expect((await run(history, ["diff", PUB, "--from", "100", "--to", "200"])).envelope?.error?.code).toBe("PD_VERSION_PAGE_MISMATCH");
   });
 
-  test("show accepts the owner id and its linked draft id; entity type from the server (F17)", async () => {
+  test("show accepts the owner id and its linked draft id; entity type from the server", async () => {
     for (const id of [PUB, DRAFT]) {
       const r = await run(history, ["show", id, "--version", "100"]);
       expect(r.envelope?.ok).toBe(true);
@@ -61,7 +61,7 @@ describe("pd history (PD-15)", () => {
     expect(pd.log().some((l) => l.startsWith("PUT"))).toBe(false);
   });
 
-  test("OTH-R2 (verified live): restore rewrites the DRAFT via /pages/revert/<draftId>?versionId=, never the published row", async () => {
+  test("restore rewrites the DRAFT via /pages/revert/<draftId>?versionId=, never the published row (verified live)", async () => {
     const pubBefore = pd.pages.get(PUB)!.configuration;
     const r = await run(history, ["restore", PUB, "--version", "100", "--yes"]);
     expect(r.envelope?.ok).toBe(true);
@@ -121,14 +121,14 @@ describe("pd history (PD-15)", () => {
   });
 });
 
-describe("pd lock (PD-20)", () => {
+describe("pd lock", () => {
   const overlay = () => {
     const f = join(dir, "o.json");
     writeFileSync(f, JSON.stringify({ variables: { update: [{ name: "greeting", initialValue: "x" }] } }));
     return f;
   };
 
-  test("NEW-5 (verified live): a save inside a manual lock — the re-acquire is a 400, pageLockDetails says it is mine — proceeds and never releases", async () => {
+  test("a save inside a manual lock — the re-acquire is a 400, pageLockDetails says it is mine — proceeds and never releases (verified live)", async () => {
     expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
     const before = pd.log().length;
     const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
@@ -139,7 +139,7 @@ describe("pd lock (PD-20)", () => {
     expect((status.envelope?.data as any).locks.map((l: any) => l.pageId)).toEqual([DRAFT]);
   });
 
-  test("NEW-5: a lock I hold WITHOUT a manual record (another run / my PD editor) is reused and left held, with a note", async () => {
+  test("a lock I hold WITHOUT a manual record (another run / my PD editor) is reused and left held, with a note", async () => {
     pd.locks.set(DRAFT, "me");
     const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
     expect(r.envelope?.ok).toBe(true);
@@ -147,7 +147,7 @@ describe("pd lock (PD-20)", () => {
     expect(pd.locks.get(DRAFT)).toBe("me");
   });
 
-  test("OTH-R4: a stale local record never skips the server lock — someone else's lock fails closed with a hint", async () => {
+  test("a stale local record never skips the server lock — someone else's lock fails closed with a hint", async () => {
     expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
     pd.locks.set(DRAFT, "user-0002"); // someone else took it since
     const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
@@ -183,7 +183,7 @@ describe("pd lock (PD-20)", () => {
     expect(pd.locks.has(DRAFT)).toBe(false);
   });
 
-  test("OTH-R9: a 5xx release keeps the local record; the lock file is written atomically with mode 0600", async () => {
+  test("a 5xx release keeps the local record; the lock file is written atomically with mode 0600", async () => {
     expect((await run(lock, ["acquire", DRAFT])).envelope?.ok).toBe(true);
     const file = join(BELZ_CONFIG_DIR, "pd-locks", `${ENV}.json`);
     expect(statSync(file).mode & 0o777).toBe(0o600);

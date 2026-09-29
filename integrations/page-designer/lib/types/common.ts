@@ -292,7 +292,7 @@ export interface ElementOperation {
 }
 
 /**
- * Node-id overlay ops (Stage 7): address layout nodes by `id` (or
+ * Node-id overlay ops: address layout nodes by `id` (or
  * `_elementId`). Maps are MERGED into the node; a `null` value removes that
  * key (full save). `events` entries replace the whole handler list of that
  * event name.

@@ -7,10 +7,10 @@
 // `patched` is applyOverlay(before, overlay): the page the validator scores
 // and the config a full save sends. A partial plan is only returned when its
 // operations, replayed on the raw config the way the server applies them,
-// reproduce `patched` exactly (PD-3: an op the serializer cannot emit — or a
+// reproduce `patched` exactly (an op the serializer cannot emit — or a
 // parent path that does not exist yet — forces a full save instead of a
 // silent partial no-op). Ops are also limited to key shapes the server is
-// known to parse (`isVerifiedKeyShape`, OTH-R1); any other key → full save.
+// known to parse (`isVerifiedKeyShape`); any other key → full save.
 
 import { isDeepStrictEqual } from "node:util";
 import type { HydratedPage, Overlay, RawPartialUpdateOperation } from "../types/common";

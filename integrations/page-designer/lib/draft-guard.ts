@@ -3,8 +3,8 @@
 // explicit operator intent.
 //
 // Algorithm (mirrors AD's lib/draft-guard.ts): the draft/published pair is
-// linked by each row's `referenceId`. Names are NOT unique (dev-tenant has two
-// "Add Student" pages), so the sibling is never looked up by name.
+// linked by each row's `referenceId`. Names are NOT unique (real envs have
+// several pages with one name), so the sibling is never looked up by name.
 //   1. Fetch the input id. Missing/unknown status → refuse (fail closed).
 //   2. DRAFT → write target is the input. Its referenceId (if any) is the
 //      published sibling, confirmed by fetching it.

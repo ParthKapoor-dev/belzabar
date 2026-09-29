@@ -1,4 +1,4 @@
-// OTH-R12: diffPages / editSummary must see reorders, moves, every variable
+// diffPages / editSummary must see reorders, moves, every variable
 // field and duplicate names (they reported identical:true before), over the
 // real "Student Application" fixture.
 import { describe, expect, test } from "bun:test";
@@ -28,7 +28,7 @@ function parentWithKids(n: any): any {
   return null;
 }
 
-describe("diffPages sees every structural change (OTH-R12)", () => {
+describe("diffPages sees every structural change", () => {
   test("identical copy → identical", () => {
     expect(isIdentical(diffPages(before, mutate(() => {})))).toBe(true);
   });

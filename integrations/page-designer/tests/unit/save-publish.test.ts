@@ -1,6 +1,6 @@
 // Command-level tests for the PD write paths over an in-memory PD server
-// (fakeFetch): save (PD-4, PD-6, PD-3, PD-17), publish (PD-6, s0-review cache
-// invalidation), preflight / validate exit codes (PD-8 / F18).
+// (fakeFetch): save, publish (guards, cache invalidation), preflight /
+// validate exit codes.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -49,7 +49,7 @@ describe("pd save", () => {
     expect(saves()).toEqual([]);
   });
 
-  test("a real save: lock → fresh GET inside the lock → PUT → read-back → release (PD-4)", async () => {
+  test("a real save: lock → fresh GET inside the lock → PUT → read-back → release", async () => {
     const r = await run(save, [DRAFT, "--overlay", overlayFile(upd), "--yes"]);
     expect(r.envelope?.ok).toBe(true);
     const log = pd.log();
@@ -63,7 +63,7 @@ describe("pd save", () => {
     expect(innerOf(pd.pages.get(DRAFT)!).variables!.userDefined![0]!.initialValue).toBe("hello");
   });
 
-  test("a concurrent edit between the first read and the lock is kept, and reported (PD-4)", async () => {
+  test("a concurrent edit between the first read and the lock is kept, and reported", async () => {
     pd.onAcquire = (id) => {
       const p = pd.pages.get(id)!;
       const inner = innerOf(p);
@@ -117,7 +117,7 @@ describe("pd save", () => {
     expect(locks()).toEqual([]);
   });
 
-  test("PD-3: an http handler / transform edit is saved (it used to be a silent 0-op partial save)", async () => {
+  test("an http handler / transform edit is saved (it used to be a silent 0-op partial save)", async () => {
     pd.pages.set(DRAFT, page(DRAFT, cleanInner({
       httpRequests: { generated: [], userDefined: [{ meta: { serviceCall: { callId: "c1", label: "c1" } }, handler: { success: [], error: [] }, request: { url: "/u" }, trigger: [] }] },
     }), { referenceId: PUB }));
@@ -130,7 +130,7 @@ describe("pd save", () => {
     expect(call.responseTransformSpec).toBe("(d)=>d");
   });
 
-  test("OTH-R1: a binding-prop edit ([innerHTML], verified live) is a PARTIAL save keyed at the literal prop", async () => {
+  test("a binding-prop edit ([innerHTML], verified live) is a PARTIAL save keyed at the literal prop", async () => {
     const edit = { nodes: { update: [{ id: "n1", props: { "[innerHTML]": "{%other%}" } }] } };
     const r = await run(save, [DRAFT, "--overlay", overlayFile(edit), "--yes"]);
     expect(r.envelope?.ok).toBe(true);
@@ -143,13 +143,13 @@ describe("pd save", () => {
     expect((innerOf(pd.pages.get(DRAFT)!).layout as any).children[0].props["[innerHTML]"]).toBe("{%other%}");
   });
 
-  test("OTH-R1: a dotted binding prop ([attr.title]) is still a FULL save (the server 500s on it)", async () => {
+  test("a dotted binding prop ([attr.title]) is still a FULL save (the server 500s on it)", async () => {
     const edit = { nodes: { update: [{ id: "n1", props: { "[attr.title]": "t" } }] } };
     const r = await run(save, [DRAFT, "--overlay", overlayFile(edit), "--yes"]);
     expect(r.envelope?.data).toMatchObject({ strategy: "full", fullSaveReason: "unverified partial-op key shape: layout.children[0].props.[attr.title]", verify: { status: "match" } });
   });
 
-  test("OTH-R1: the fake server follows the wire, not belz's replay (dotted names 500, missing parents are dropped)", async () => {
+  test("the fake server follows the wire, not belz's replay (dotted names 500, missing parents are dropped)", async () => {
     const { applyWireOps } = await import("./helpers/fake-pd");
     const op = (key: string) => ({ key, value: "x", operation: "UPDATE", dataType: "STRING" });
     expect(applyWireOps(cleanInner(), [op("layout.children[0].props.[attr.title]")])).toBeNull();
@@ -157,7 +157,7 @@ describe("pd save", () => {
     expect((applyWireOps(cleanInner(), [op("layout.children[0].props.[innerHTML]")]) as any).layout.children[0].props["[innerHTML]"]).toBe("x");
   });
 
-  test("OTH-R6: when the read-back GET returns an older version, the PUT's own answer decides (no blind stale-read)", async () => {
+  test("when the read-back GET returns an older version, the PUT's own answer decides (no blind stale-read)", async () => {
     const edit = { variables: { update: [{ name: "greeting", initialValue: "changed" }] } };
     const stale = pd.pages.get(DRAFT)!;
     let saved = false;
@@ -171,7 +171,7 @@ describe("pd save", () => {
     expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes("verified against the save's own answer"))).toBe(true);
   });
 
-  test("OTH-R3: a read-back that differs from the plan is ok:false PD_SAVE_VERIFY_FAILED (was a warning with ok:true)", async () => {
+  test("a read-back that differs from the plan is ok:false PD_SAVE_VERIFY_FAILED (was a warning with ok:true)", async () => {
     pd.onSave = (inner) => {
       (inner as any).variables.userDefined[1].initialValue = "server-rewrote";
     };
@@ -189,7 +189,7 @@ describe("pd save", () => {
     ["update as an object", { variables: { update: { name: "greeting" } } }, "variables.update must be an array"],
     ["an element op without dataType", { elements: { operations: [{ key: "styles", value: "x", operation: "UPDATE" }] } }, "elements.operations[0].dataType must be one of"],
     ["a node update without id", { nodes: { update: [{ props: {} }] } }, "nodes.update[0].id must be a non-empty string"],
-  ])("OTH-R7: a malformed overlay (%s) is PD_OVERLAY_INVALID, not UNHANDLED_EXCEPTION", async (_label, overlay, problem) => {
+  ])("a malformed overlay (%s) is PD_OVERLAY_INVALID, not UNHANDLED_EXCEPTION", async (_label, overlay, problem) => {
     for (const cmd of [save, preflight]) {
       const r = await run(cmd, [DRAFT, "--overlay", overlayFile(overlay), "--yes"].slice(0, cmd === save ? 4 : 3));
       expect(r.envelope?.error?.code).toBe("PD_OVERLAY_INVALID");
@@ -212,7 +212,7 @@ describe("pd save", () => {
     expect(innerOf(pd.pages.get(DRAFT)!)).toEqual(expected);
   });
 
-  test("PD-17 / overlay targets: missing file, bad JSON, unknown variable are coded errors", async () => {
+  test("overlay targets: missing file, bad JSON, unknown variable are coded errors", async () => {
     expect((await run(save, [DRAFT, "--overlay", join(dir, "absent.json"), "--yes"])).envelope?.error?.code).toBe("PD_FILE_NOT_FOUND");
     const badJson = join(dir, "bad.json");
     writeFileSync(badJson, "{nope");
@@ -238,7 +238,7 @@ describe("pd publish", () => {
     return join(d, `${id}.json`);
   }
 
-  test("drops the cache of BOTH the draft and the published page (s0-review)", async () => {
+  test("drops the cache of BOTH the draft and the published page", async () => {
     const draftFile = seedCache(DRAFT);
     const pubFile = seedCache(PUB);
     const r = await run(publish, [DRAFT, "--yes"]);
@@ -263,7 +263,7 @@ describe("pd publish", () => {
     return inner;
   };
 
-  test("OTH-R10: the gate is diff-aware vs the PUBLISHED version — errors the live page already has do not block", async () => {
+  test("the gate is diff-aware vs the PUBLISHED version — errors the live page already has do not block", async () => {
     pd.pages.set(DRAFT, page(DRAFT, orphanInner("gone"), { referenceId: PUB }));
     pd.pages.set(PUB, page(PUB, orphanInner("gone"), { status: "PUBLISHED", referenceId: DRAFT }));
     const r = await run(publish, [DRAFT, "--yes"]);
@@ -272,7 +272,7 @@ describe("pd publish", () => {
     expect((r.envelope?.data as any).validation.preExistingCount).toBeGreaterThan(0);
   });
 
-  test("NEW-5: the baseline is read fresh — a GET that lags a recent publish is superseded by the newer history version", async () => {
+  test("the baseline is read fresh — a GET that lags a recent publish is superseded by the newer history version", async () => {
     pd.pages.set(DRAFT, page(DRAFT, orphanInner("gone"), { referenceId: PUB }));
     // The server-cached GET still serves the pre-publish body (v3, clean) …
     pd.pages.set(PUB, page(PUB, cleanInner(), { status: "PUBLISHED", referenceId: DRAFT, versionId: 3 }));
@@ -284,14 +284,14 @@ describe("pd publish", () => {
     expect(pd.log()).toContain("GET /pages/version/5");
   });
 
-  test("OTH-R10: an error the draft introduces since the last publish still blocks", async () => {
+  test("an error the draft introduces since the last publish still blocks", async () => {
     pd.pages.set(DRAFT, page(DRAFT, orphanInner("typo"), { referenceId: PUB }));
     const r = await run(publish, [DRAFT, "--yes"]);
     expect(r.envelope?.error).toMatchObject({ code: "PD_VALIDATION_FAILED", details: { issues: [{ code: "ORPHAN_BINDING", introduced: true }] } });
     expect(pd.log().some((l) => l.includes("/publish"))).toBe(false);
   });
 
-  test("OTH-R5: the draft is re-fetched and re-validated INSIDE the lock; a bad concurrent edit is not published", async () => {
+  test("the draft is re-fetched and re-validated INSIDE the lock; a bad concurrent edit is not published", async () => {
     pd.onAcquire = (id) => {
       const p = pd.pages.get(id)!;
       pd.pages.set(id, { ...p, configuration: JSON.stringify(orphanInner("sneaky")), versionId: 5 });
@@ -305,7 +305,7 @@ describe("pd publish", () => {
     expect(log[log.length - 1]).toBe(`PUT /pages/lock/${DRAFT}?pageLockAction=RELEASED`);
   });
 
-  test("OTH-R5: a clean concurrent edit is published and reported as versionDrift", async () => {
+  test("a clean concurrent edit is published and reported as versionDrift", async () => {
     pd.onAcquire = (id) => {
       const p = pd.pages.get(id)!;
       pd.pages.set(id, { ...p, versionId: 5 });
@@ -321,7 +321,7 @@ describe("pd publish", () => {
   });
 });
 
-describe("preflight target (OTH-R14)", () => {
+describe("preflight target", () => {
   test("a PUBLISHED id is checked on its linked draft — the page save would write", async () => {
     // The draft carries an orphan binding the published page does not have.
     const inner = cleanInner();
@@ -340,7 +340,7 @@ describe("preflight target (OTH-R14)", () => {
   });
 });
 
-describe("preflight / validate exit codes (PD-8 / F18)", () => {
+describe("preflight / validate exit codes", () => {
   test("a page with validator errors → ok:false, exit 1, report in data", async () => {
     pd.pages.set(DRAFT, page(DRAFT, cleanInner({ layout: { id: "r", name: "div", children: [] } })));
     const p = await run(preflight, [DRAFT]);
@@ -361,7 +361,7 @@ describe("preflight / validate exit codes (PD-8 / F18)", () => {
   });
 });
 
-describe("pd translations exit code (OTH-R18)", () => {
+describe("pd translations exit code", () => {
   test("verdict FAIL is ok:false PD_TRANSLATIONS_FAILED (exit 1); PASS stays ok:true", async () => {
     const translations = (await import("../../commands/translations/index")).default;
     pd.deps[PUB] = { [`${PUB}__translated_phrases`]: [{ key: "garbage" }] };

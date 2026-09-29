@@ -2,12 +2,12 @@
 //   - New:    configuration.variables.userDefined : RawUserDefinedVar[]
 //   - Legacy: configuration.context.properties    : [name, value][]
 //
-// Real editor output (every dev-tenant fixture) keeps DERIVED variables inside
+// Real editor output (every real fixture) keeps DERIVED variables inside
 // `variables.userDefined` — entries with a `from` array and a `spec` — and
 // leaves `variables.derived` empty. Those entries are parsed as derived
 // (`location: "userDefined"`); entries of `variables.derived` / `context.derived`
 // get `location: "derived"`. The serializer never rebuilds these arrays from
-// the parsed lists — it edits the raw config in place (lossless, PD-22).
+// the parsed lists — it edits the raw config in place (lossless).
 //
 // Output is always the normalized unified shape (PageVariable / PageDerivedVariable).
 

@@ -26,13 +26,13 @@ function parseConfigurationString(str: string, warnings: string[]): RawConfigura
 }
 
 /**
- * PAGE vs COMPONENT, from the server's own fields first (PD-10 / F17):
+ * PAGE vs COMPONENT, from the server's own fields first:
  *   1. `isComponent` (boolean on every GET /pages/{id} component body)
  *   2. `pageType` ("PAGE" | "COMPONENT", when present)
  *   3. a non-empty `relativeRoute` — only pages are routable
  * Only when none is present (e.g. a hand-built body) fall back to the config
  * shape. The root `isSymbol` flag alone is NOT decisive: real pages copy it
- * (e.g. both dev-tenant "Add Student" pages have `layout.isSymbol: true`).
+ * (e.g. both "Add Student" fixture pages have `layout.isSymbol: true`).
  */
 export function inferEntityType(raw: RawPageResponse, inner: RawConfiguration = {}): PdEntityType {
   if (typeof raw.isComponent === "boolean") return raw.isComponent ? "COMPONENT" : "PAGE";

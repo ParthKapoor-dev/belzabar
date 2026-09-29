@@ -1,7 +1,6 @@
 // Pins belz's PD write contract to live wire evidence (captured 2026-09-29 on a
 // scratch page, sanitized, in tests/fixtures/wire/): the partial-op key shapes
-// the server accepts (OTH-R1), the lock answers (NEW-5), and the revert form
-// (OTH-R2). If the server changes, re-capture and these fail loudly.
+// the server accepts, the lock answers, and the revert form. If the server changes, re-capture and these fail loudly.
 import { afterEach, describe, expect, test } from "bun:test";
 import { join } from "path";
 import { CliError } from "@belzabar/core";
@@ -33,7 +32,7 @@ function scaffold(c: KeyCase): RawConfiguration {
   return { layout: { children } } as unknown as RawConfiguration;
 }
 
-describe("partial-op key shapes (OTH-R1, live evidence)", () => {
+describe("partial-op key shapes (live evidence)", () => {
   test("the evidence covers accepted, rejected and silently-dropped shapes", () => {
     expect(keys.cases.filter((c) => c.status === 200).length).toBeGreaterThanOrEqual(15);
     expect(keys.cases.filter((c) => c.status === 500).map((c) => c.op.key)).toEqual(["layout.children[0].props.[attr.title]"]);
@@ -92,7 +91,7 @@ const lock = load<{ steps: LockStep[]; getWhileLocked: Record<string, unknown>; 
 const step = (name: string) => lock.steps.find((s) => s.step === name)!;
 const answer = (s: LockStep) => respond({ status: s.status, json: s.body });
 
-describe("lock answers (NEW-5, live evidence)", () => {
+describe("lock answers (live evidence)", () => {
   test("re-acquiring my own lock is a 400 (not 409); pageLockDetails says it is mine → heldByMe", async () => {
     cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } }, activeEnv: "t-dev" });
     ff = fakeFetch([
@@ -144,7 +143,7 @@ describe("lock answers (NEW-5, live evidence)", () => {
   });
 });
 
-describe("revert form (OTH-R2, live evidence)", () => {
+describe("revert form (live evidence)", () => {
   const rv = load<{
     legacyVersionPath: { status: number; body: { errorMessage: string } };
     draftForm: { path: string; status: number; answer: Record<string, unknown>; answerConfig: unknown; historyAfter: unknown[] };

@@ -2,10 +2,10 @@
 // page/component name → the fetched page body.
 //
 // The entity type is the SERVER's (parser `inferEntityType`: `isComponent`,
-// `pageType`, route), never guessed from the input shape (PD-10 / F17). A
+// `pageType`, route), never guessed from the input shape. A
 // name resolves to the one DRAFT component with that exact name, else the one
-// DRAFT page with that name (PD-28); several matches are PD_NAME_AMBIGUOUS —
-// names are not unique (PD-1).
+// DRAFT page with that name; several matches are PD_NAME_AMBIGUOUS —
+// names are not unique.
 
 import { CliError } from "@belzabar/core";
 import { pdApi } from "./api/index";

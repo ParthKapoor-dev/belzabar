@@ -3,8 +3,7 @@ import { BELZ_CONFIG_DIR, Cache, ENTITY_CACHE_STALE_MS, ENTITY_CACHE_TTL_MS } fr
 import { pdApi } from "./api/index";
 import type { RawPageResponse } from "./types/wire";
 
-// Env-scoped by core `Cache`: `cache/pages/<env>/<id>.json`. Legacy unscoped
-// `cache/pages/<id>.json` files are simply never read again. Pages and
+// Env-scoped by core `Cache`: `cache/pages/<env>/<id>.json`. Pages and
 // components share one endpoint (GET /pages/{id}) and one cache.
 const pdCache = new Cache<RawPageResponse>({
   dir: join(BELZ_CONFIG_DIR, "cache", "pages"),

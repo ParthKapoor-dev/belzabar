@@ -9,21 +9,21 @@
 // List is backed by GET /pages/history?pageId=<id>. Show is backed by
 // GET /pages/version/<vid>. Restore is backed by PUT /pages/revert/<vid>.
 //
-// PD-15: a version id is global, so show/diff/restore check that the version
+// A version id is global, so show/diff/restore check that the version
 // belongs to <pageId> (the version body's `id` is its owning page, its
 // `referenceId` the linked sibling — history is recorded on the PUBLISHED
 // row).
 //
-// Restore (OTH-R2, verified live 2026-09-29): `PUT
+// Restore (verified live 2026-09-29): `PUT
 // /pages/revert/<draftId>?versionId=<vid>` copies the version's configuration
 // into the DRAFT row (new draft versionId) and leaves the PUBLISHED row and
 // the history alone — so restore is a draft edit, made live by `belz pd
 // publish`. (The endpoint given the PUBLISHED id rewrites the live row with no
 // publish and no history entry; belz never sends that. The old
 // `/pages/revert/<vid>` form was a 400, so restore never worked before.)
-// Flow: ownership check (PD-15) → the draft of the version's page (none →
+// Flow: ownership check → the draft of the version's page (none →
 // PD_PUBLISHED_NO_DRAFT) → diff-aware validation of the version against the
-// draft → --yes → withLock(draft): fresh read + re-validate (OTH-R5) → revert
+// draft → --yes → withLock(draft): fresh read + re-validate → revert
 // → read back and compare with the version (PD_RESTORE_VERIFY_FAILED on a
 // mismatch).
 
@@ -197,7 +197,7 @@ async function restoreDraftOf(ownerRaw: RawPageResponse): ReturnType<typeof reso
   return { ok: true, draftId: draftRaw.id, publishedId: null, draftRaw, deletedSiblingId: ownerRaw.id };
 }
 
-/** Fetch version `vid` and check it belongs to `pageId` (PD-15). */
+/** Fetch version `vid` and check it belongs to `pageId`. */
 async function fetchOwnedVersion(pageId: string, vid: number): Promise<RawPageResponse> {
   const raw = await pdApi.historyGet(vid);
   if (!raw) throw new CliError(`Version ${vid} not found.`, { code: "PD_VERSION_NOT_FOUND" });
@@ -356,7 +356,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
     logIntent("history-restore", draftId, { versionId: vid, ownerId });
 
     const res = await withLock(draftId, async () => {
-      // OTH-R5: validate against the draft as it is now, inside the lock.
+      // Validate against the draft as it is now, inside the lock.
       const freshRaw = await pdApi.fetchPage(draftId);
       if (!freshRaw) throw new CliError(`Page ${draftId} disappeared before the restore.`, { code: "PD_NOT_FOUND" });
       const fresh = parsePage(freshRaw);

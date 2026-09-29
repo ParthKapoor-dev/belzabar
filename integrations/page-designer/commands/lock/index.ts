@@ -8,12 +8,12 @@
 //
 // Acquired locks are recorded in ~/.belz/pd-locks/<env>.json (atomic, 0600).
 // `withLock` (every save/publish/restore) still acquires the server lock for a
-// recorded page (OTH-R4: the record can be stale); the server answers a
+// recorded page (the record can be stale); the server answers a
 // re-acquire of your own lock with HTTP 400, which belz recognises through
 // the page's `pageLockDetails.lockedByCurrentUser` and writes inside the
-// lock without releasing it (PD-20, NEW-5). `acquire` on a lock you already
+// lock without releasing it. `acquire` on a lock you already
 // hold is ok with `alreadyHeld: true`. A release answers 200 `true` (released)
-// or 200 `false` (nothing of yours was held); a 5xx keeps the record (OTH-R9).
+// or 200 `false` (nothing of yours was held); a 5xx keeps the record.
 // `status <pageId>` also reads the server's view of that page's lock.
 
 import { defineSubcommands, failWithData, ok, type CommandModule } from "@belzabar/core";
@@ -40,10 +40,10 @@ interface LockReleaseData {
   action: "release";
   pageId: string;
   env: string;
-  /** The server released a lock of yours (PD-20); false = nothing of yours was held / refused; null = unknown (5xx). */
+  /** The server released a lock of yours; false = nothing of yours was held / refused; null = unknown (5xx). */
   released: boolean | null;
   httpStatus: number;
-  /** The local record was kept because the outcome is unknown (5xx, OTH-R9). */
+  /** The local record was kept because the outcome is unknown (5xx). */
   recordKept: boolean;
 }
 interface LockStatusData {
@@ -101,7 +101,7 @@ const command: CommandModule<LockArgs, LockData> = {
     if (args.action === "release") {
       const { status, released } = await pdApi.releaseLock(args.pageId!);
       const { data, file, env } = await loadLockFile();
-      // OTH-R9: only a definite answer drops the record (released, or the
+      // Only a definite answer drops the record (released, or the
       // server says nothing of ours was held). A 5xx leaves the outcome
       // unknown: keep the record so `status` shows it.
       const recordKept = released === null && args.pageId! in data.locks;

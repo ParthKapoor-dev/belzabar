@@ -1,5 +1,5 @@
 // Locate overlay targets inside the RAW inner configuration, by their real
-// array index (PD-2: indices are never taken from the parsed, de-duplicated
+// array index (indices are never taken from the parsed, de-duplicated
 // lists). Used by applyOverlay and by the partial-ops serializer.
 
 import { isDerivedEntry } from "../parser/variables";

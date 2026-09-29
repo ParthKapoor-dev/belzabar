@@ -1,11 +1,10 @@
 // belz pd analyze <id...> [--compliance <file>]
 //
 // Recursive dependency + AD-method analysis of one or more pages/components.
-// PD-13 / F21: roots are given explicitly (the old hard-coded, tenant-specific root list is
-// gone), every referenced component is followed (no components.json), and the
-// compliance master list is an explicit file (no master_ids.txt from CWD).
-// PD-19: fetch/resolve failures are reported in `errors`, never swallowed.
-// OTH-R15: with --compliance, rogue ids → ok:false PD_COMPLIANCE_FAILED; an
+// Roots are given explicitly, every referenced component is followed, and the
+// compliance master list is an explicit file (nothing is read from the CWD).
+// Fetch/resolve failures are reported in `errors`, never swallowed.
+// With --compliance, rogue ids → ok:false PD_COMPLIANCE_FAILED; an
 // incomplete walk → isCompliant:null, ok:false PD_COMPLIANCE_INCOMPLETE.
 
 import { defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
@@ -38,7 +37,7 @@ interface AnalyzeData {
   compliance: ComplianceResult | null;
   treeByRoot: Array<{ rootId: string; lines: string[] }>;
   errors: AnalyzeError[];
-  /** Where the configs came from (OTH-R13: cached data is up to 1 h old). */
+  /** Where the configs came from (cached data is up to 1 h old). */
   cache: SourceCounts;
 }
 
@@ -93,7 +92,7 @@ const command: CommandModule<AnalyzeArgs, AnalyzeData> = {
       errors,
       cache,
     };
-    // OTH-R15: a compliance check is a gate — a failure or an incomplete walk is ok:false (exit 1).
+    // A compliance check is a gate — a failure or an incomplete walk is ok:false (exit 1).
     if (data.compliance?.isCompliant === false) {
       return failWithData(
         "PD_COMPLIANCE_FAILED",

@@ -1,4 +1,4 @@
-// Regressions found by typechecking (Stage 3D):
+// Regressions found by typechecking:
 // - `pd show` on a response without `configuration` crashed with a raw TypeError
 //   (Buffer.byteLength(undefined)); it now fails with PD_CONFIG_MISSING.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";

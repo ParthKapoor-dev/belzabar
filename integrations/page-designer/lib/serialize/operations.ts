@@ -8,12 +8,12 @@
 //   nodes.update         → <node path>.{props,field,attrs,events}.<key> (lib/serialize/nodes.ts)
 //   styles.replace       → `styles`
 //
-// `i` is always the RAW array index (PD-2). Anything partial ops cannot
+// `i` is always the RAW array index. Anything partial ops cannot
 // express — adds/removes, derived edits, legacy-format pages — makes
 // `partialOperationsFor` return null; the caller then does a full save.
 // Every field the overlay sets must be covered by an op: planSave() checks
 // that the ops reproduce applyOverlay's config and otherwise falls back to a
-// full save (PD-3).
+// full save.
 
 import type { Overlay, PartialDataType, RawPartialUpdateOperation } from "../types/common";
 import type { RawConfiguration } from "../types/wire";

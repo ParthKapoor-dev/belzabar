@@ -212,8 +212,7 @@ the failure mode here, add a true-positive test in
 - **Verified key shapes only** — a partial op is only sent when every dot segment of its key is
   a shape verified live (see "Key parsing" above): plain names with `[n]` indices, and literal
   binding props (`[innerHTML]`, `[(value)]`, `(click)`, `data-x`, …). A prop name that itself
-  contains a dot (`[attr.title]`) cannot be addressed (500), so such an edit is saved in full
-  (OTH-R1).
+  contains a dot (`[attr.title]`) cannot be addressed (500), so such an edit is saved in full.
 - **Full** — `variables.add/remove`, `derived.*`, `httpRequests.add/remove`, legacy-format pages,
   or ops that would not cover the edit (e.g. a parent object that does not exist yet). The body is
   the page's own raw config with only the edit applied (lossless otherwise).

@@ -1,4 +1,4 @@
-// CLI trial: `pd validate --llm` listed every UNUSED_VARIABLE ref (61+ names).
+// `pd validate --summary`: large pages carry dozens of refs per warning code;
 // --summary keeps the counts per code and drops the refs.
 import { describe, expect, test } from "bun:test";
 import { args, entityReport } from "../../commands/validate/index";

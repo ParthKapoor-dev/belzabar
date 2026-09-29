@@ -1,4 +1,4 @@
-// Structural check of a user overlay file (OTH-R7). A `null` overlay, a
+// Structural check of a user overlay file. A `null` overlay, a
 // section that is not an object, or a list that is not an array used to crash
 // the command with UNHANDLED_EXCEPTION; now every shape problem is reported at
 // once as PD_OVERLAY_INVALID. Semantic checks (unknown variable / callId /

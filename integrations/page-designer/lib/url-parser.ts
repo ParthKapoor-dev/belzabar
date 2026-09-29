@@ -23,7 +23,7 @@ export function tryParseUrl(input: string): URL | null {
 /**
  * A PD designer URL (`/ui-designer/page/<id>` or `/ui-designer/symbol/<name>`),
  * or null when `input` is not one. A malformed %-escape in the token is an
- * INVALID_URL CliError (PD-17), not an unhandled URIError.
+ * INVALID_URL CliError, not an unhandled URIError.
  */
 export function parsePdUrl(input: string): ParsedPdUrl | null {
   if (!input) return null;

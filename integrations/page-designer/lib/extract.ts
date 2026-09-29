@@ -1,6 +1,5 @@
-// Read-side views over a HydratedPage — the single parser stack (the old
-// string-based `parser/legacy.ts` extractors are gone). Used by `show`,
-// `find-ad-methods` and the recursive analyzer.
+// Read-side views over a HydratedPage. Used by `show`, `find-ad-methods` and
+// the recursive analyzer.
 
 import { walkParsed } from "./parser/nodes";
 import type { HydratedPage, ParsedNode, PageHttpRequest } from "./types/common";
@@ -17,7 +16,7 @@ export function adIdsOf(page: HydratedPage): string[] {
 /**
  * Names of the components (symbol references) used in the layout, in order,
  * de-duplicated. The walk starts at the root's CHILDREN: a component's own
- * root carries `isSymbol: true` and is not a child of itself (PD-25).
+ * root carries `isSymbol: true` and is not a child of itself.
  */
 export function childComponentNames(page: HydratedPage): string[] {
   const out = new Set<string>();

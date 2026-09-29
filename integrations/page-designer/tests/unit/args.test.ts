@@ -1,4 +1,4 @@
-// PD argument parsing through core defineArgs (PD-16, PD-23, F34-class).
+// PD argument parsing through core defineArgs.
 import { describe, expect, test } from "bun:test";
 import type { CommandContext } from "@belzabar/core";
 import publish from "../../commands/publish/index";
@@ -13,7 +13,7 @@ import { errorCode as code } from "@belzabar/core/testing";
 
 const ctx = { outputMode: "llm" } as unknown as CommandContext;
 
-describe("pd publish (PD-16)", () => {
+describe("pd publish", () => {
   test("--host without a value is MISSING_VALUE, not a silent publish-without-deploy", () => {
     expect(code(() => publish.parseArgs!(["abc", "--host", "--yes"], ctx))).toBe("MISSING_VALUE");
     expect(code(() => publish.parseArgs!(["abc", "--yes", "--host"], ctx))).toBe("MISSING_VALUE");
@@ -35,7 +35,7 @@ describe("pd publish (PD-16)", () => {
   });
 });
 
-describe("pd show (PD-23)", () => {
+describe("pd show", () => {
   test("--var-detail / --node / --http-detail without a value → MISSING_VALUE", () => {
     expect(code(() => show.parseArgs!(["abc", "--var-detail"], ctx))).toBe("MISSING_VALUE");
     expect(code(() => show.parseArgs!(["abc", "--node", "--tree"], ctx))).toBe("MISSING_VALUE");

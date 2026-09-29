@@ -12,7 +12,7 @@ import {
 } from "../../lib/page-finder";
 
 /**
- * Compact rows (Stage 7, 7.9): list/search rows drop `url` (it is
+ * Compact rows: list/search rows drop `url` (it is
  * `<base>/ui-designer/page/<id>` or `/symbol/<name>`) and `updatedAt`; the
  * request echo is gone and cache metadata is `{source, ageMs, pages,
  * components}`. `--full` restores the full rows and cache block.
@@ -69,7 +69,7 @@ interface FindSearchData {
   mode: "search";
   query: string;
   cache: CacheMeta;
-  /** Matches before --limit (PD-27: used to be counted after slicing). */
+  /** Matches before --limit (used to be counted after slicing). */
   totalMatches: number;
   matches: Array<PageFinderMatch | Compact<PageFinderMatch>>;
 }

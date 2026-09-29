@@ -2,9 +2,8 @@
 // `pd show -r`): a page/component, the components its layout references, and
 // every AD method id their HTTP calls execute.
 //
-// PD-13 / F21: no `components.json` whitelist and no CWD files — every symbol
-// reference in the layout is followed, resolved by exact component name via the
-// API. PD-19: fetch/resolve failures during the walk are collected in
+// Every symbol reference in the layout is followed, resolved by exact
+// component name via the API. Fetch/resolve failures during the walk are collected in
 // `errors` (and surfaced by the commands), never swallowed.
 
 import { CliError } from "@belzabar/core";
@@ -41,9 +40,9 @@ export function emptySourceCounts(): SourceCounts {
 }
 
 /**
- * Cache-backed deps. `force` re-reads every config (OTH-R19: it used to
+ * Cache-backed deps. `force` re-reads every config (it used to
  * refresh the root only); `sources` counts where each config came from so the
- * command can say how much of the walk used cached data (OTH-R13).
+ * command can say how much of the walk used cached data.
  */
 export function cacheDeps(force = false, sources?: SourceCounts): AnalyzerDeps {
   return {
@@ -158,7 +157,7 @@ interface RogueIdInfo {
 }
 
 export interface ComplianceResult {
-  /** null when the walk was incomplete (unresolved/unfetchable components): not provable either way (OTH-R15). */
+  /** null when the walk was incomplete (unresolved/unfetchable components): not provable either way. */
   isCompliant: boolean | null;
   rogueIds: RogueIdInfo[];
   missingIds: string[];

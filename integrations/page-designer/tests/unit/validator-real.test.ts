@@ -1,7 +1,7 @@
-// PD-5: validator calibration against the 15 real acme-dev pages/components.
+// Validator calibration against the real pages/components in tests/fixtures/real.
 // Real editor output must produce 0 errors; the demoted rules still catch
 // their true positives, and validateEdit escalates them when an edit
-// introduces one. PD-26: duplicate ids reported once; INVALID_JSON exists.
+// introduces one. Duplicate ids are reported once; INVALID_JSON exists.
 import { describe, expect, test } from "bun:test";
 import { parsePage } from "../../lib/parser/index";
 import { applyOverlay } from "../../lib/serialize/index";
@@ -152,7 +152,7 @@ describe("validateEdit: diff-aware gate", () => {
   });
 });
 
-describe("PD-26", () => {
+describe("duplicate ids and unreadable JSON", () => {
   test("a duplicate _elementId used as the node id is reported once", () => {
     const p = parsePage(wrap(pageInner({}, [
       { name: "span", _elementId: "e1" },

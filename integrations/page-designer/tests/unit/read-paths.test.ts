@@ -1,7 +1,5 @@
-// Read-side fixes: input resolution (PD-10, PD-17, PD-18, PD-28), recursive
-// analysis without components.json (PD-13 / F21, PD-19, PD-25),
-// find-ad-methods by name (PD-14 / F20), finder dedupe + limit (F19 / PD-27),
-// diff engine coverage (PD-11).
+// Read paths: input resolution, recursive analysis, find-ad-methods by name,
+// finder dedupe + limit, diff engine coverage.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { rmSync } from "fs";
 import { join } from "path";
@@ -50,13 +48,13 @@ beforeEach(() => {
 afterEach(() => pd.restore());
 
 describe("resolveInput", () => {
-  test("PD-10: entity type is the server's, whatever the input kind", async () => {
+  test("entity type is the server's, whatever the input kind", async () => {
     expect((await resolveInput(COMP)).entityType).toBe("COMPONENT"); // a bare id used to be PAGE
     expect((await resolveInput(PAGE)).entityType).toBe("PAGE");
     expect((await resolveInput("widget")).entityType).toBe("COMPONENT");
   });
 
-  test("PD-28: a page NAME resolves (only component names used to)", async () => {
+  test("a page NAME resolves (only component names used to)", async () => {
     const r = await resolveInput("Add Student");
     expect(r).toMatchObject({ resolvedId: PAGE, entityType: "PAGE", inputKind: "name" });
   });
@@ -67,19 +65,19 @@ describe("resolveInput", () => {
     await expect(resolveInput("nobody")).rejects.toMatchObject({ code: "COMPONENT_NOT_FOUND" });
   });
 
-  test("PD-18: a 5xx on the name search is an API error, not 'not found'", async () => {
+  test("a 5xx on the name search is an API error, not 'not found'", async () => {
     pd.searchStatus = 500;
     await expect(resolveInput("widget")).rejects.toMatchObject({ code: "PD_API_ERROR", details: { status: 500 } });
   });
 
-  test("PD-17: malformed URLs are INVALID_URL CliErrors", () => {
+  test("malformed URLs are INVALID_URL CliErrors", () => {
     expect(() => detectInputKind("https://")).toThrow(expect.objectContaining({ code: "INVALID_URL" }));
     expect(() => detectInputKind("https://h.test/ui-designer/symbol/%E0%A4%A")).toThrow(expect.objectContaining({ code: "INVALID_URL" }));
     expect(detectInputKind("https://h.test/ui-designer/symbol/my%20comp")).toMatchObject({ kind: "pd-url", urlType: "COMPONENT", pdToken: "my comp" });
   });
 });
 
-describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
+describe("recursive analysis", () => {
   test("childComponentNames skips the root (a component root is isSymbol) and de-dupes", () => {
     const comp = parsePage(pd.pages.get(COMP)!);
     expect(comp.layout.kind).toBe("SYMBOL");
@@ -93,14 +91,14 @@ describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
     expect(errors.map((e) => e.name)).toEqual(["ghost"]);
   });
 
-  test("find-ad-methods by component NAME (PD-14 / F20) and recursive", async () => {
+  test("find-ad-methods by component NAME and recursive", async () => {
     const r = await run(findAdMethods, ["widget", "--component"]);
     expect(r.envelope?.data).toMatchObject({ resolvedId: COMP, type: "COMPONENT", adIds: ["ad2"] });
     const rec = await run(findAdMethods, [PAGE, "-r"]);
     expect(rec.envelope?.data).toMatchObject({ adIds: ["ad1", "ad2"], errors: [{ name: "ghost" }] });
   });
 
-  test("OTH-R15: --compliance is a gate — rogue ids and an incomplete walk are ok:false", async () => {
+  test("--compliance is a gate — rogue ids and an incomplete walk are ok:false", async () => {
     const { writeFileSync } = await import("fs");
     const f = join(BELZ_CONFIG_DIR, "master.txt");
     writeFileSync(f, "ad1, ad2");
@@ -116,7 +114,7 @@ describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
     expect(good.envelope).toMatchObject({ ok: true, data: { compliance: { isCompliant: true } } });
   });
 
-  test("OTH-R19/R13: --force re-reads child components too; cached reads are counted and warned about", async () => {
+  test("--force re-reads child components too; cached reads are counted and warned about", async () => {
     // Warm the cache, then change the child on the server.
     await run(findAdMethods, [PAGE, "-r"]);
     const comp = pd.pages.get(COMP)!;
@@ -133,7 +131,7 @@ describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
     expect(a.envelope?.data).toMatchObject({ uniqueAdIds: ["ad1", "ad3"], cache: { cache: 0, stale: 0 } });
   });
 
-  test("OTH-R13: validate always reads fresh — a cached old config never decides the verdict", async () => {
+  test("validate always reads fresh — a cached old config never decides the verdict", async () => {
     const validate = (await import("../../commands/validate/index")).default;
     const broken = page(PAGE, cleanInner({ layout: { id: "r", name: "div", children: [] } }), { name: "Add Student" });
     const good = pd.pages.get(PAGE)!;
@@ -150,7 +148,7 @@ describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
     expect((await run(analyze, [PAGE, "--compliance", "/nonexistent/master.txt"])).envelope?.error?.code).toBe("MASTER_IDS_FILE_MISSING");
   });
 
-  test("show -r reports unresolvable components (PD-19) and direct children skip the root (PD-25)", async () => {
+  test("show -r reports unresolvable components and direct children skip the root", async () => {
     const r = await run(show, [COMP, "-r"]);
     expect(r.envelope?.data).toMatchObject({ summary: { entityType: "COMPONENT", directChildComponents: [{ name: "widget" }] } });
     const p = await run(show, [PAGE, "-r", "--force"]);
@@ -158,7 +156,7 @@ describe("recursive analysis (PD-13 / F21, PD-19, PD-25)", () => {
   });
 });
 
-describe("page finder (F19 / PD-27)", () => {
+describe("page finder", () => {
   const comp = (id: string, name: string, status: string, referenceId: string) => ({ id, name, status, referenceId, updatedAt: 0, url: "" });
   const index: PageFinderIndex = {
     env: ENV,
@@ -187,7 +185,7 @@ describe("page finder (F19 / PD-27)", () => {
   });
 });
 
-describe("diff engine (PD-11)", () => {
+describe("diff engine", () => {
   const base = parsePage(page(PAGE, cleanInner({ httpRequests: { generated: [], userDefined: [exec("ad1", "h1")] } })));
   test.each([
     ["HTTP url", { httpRequests: { update: [{ callId: "h1", request: { url: "/other" } }] } }, (d: any) => d.httpRequests.changed, ["h1"]],

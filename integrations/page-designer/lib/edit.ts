@@ -1,11 +1,11 @@
 // The shared write pipeline for `save`, `publish` and `history restore`:
 //
 //   1. resolveWriteTarget — draft-guard (referenceId pair); a PUBLISHED page
-//      with no draft needs --allow-published (PD-6)
+//      with no draft needs --allow-published
 //   2. the command plans + validates on the guard's snapshot (fail fast,
 //      before asking for --yes)
 //   3. withLock(target) → FRESH fetch, re-plan, re-validate, compare the
-//      versionId with the snapshot (PD-4), write, verify
+//      versionId with the snapshot, write, verify
 //
 // Validation errors block unless --force-validation; bypassed errors are
 // reported in `bypassedErrors`.
@@ -18,7 +18,7 @@ import type { HydratedPage, ValidationIssue } from "./types/common";
 import type { WriteOverrides } from "./args/common";
 import { partitionBySeverity } from "./validator/index";
 
-/** Read + JSON-parse a user file; a missing/unreadable/invalid file is a CliError (PD-17). */
+/** Read + JSON-parse a user file; a missing/unreadable/invalid file is a CliError. */
 export function readJsonFile(path: string, invalidCode: string, what: string): Promise<unknown> {
   return readJsonInput(path, {
     unreadable: (err, missing) =>
@@ -74,7 +74,7 @@ export async function fetchFresh(targetId: string): Promise<HydratedPage> {
 }
 
 /**
- * The live PUBLISHED page as a validation baseline (NEW-5 / NEW-OTH-2). The
+ * The live PUBLISHED page as a validation baseline. The
  * single-page GET is served from a server-side cache that can return the
  * PRE-publish version for a while after a publish, so it is checked against
  * the page's history: when history holds a newer version than the GET, that

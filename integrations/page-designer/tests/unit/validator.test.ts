@@ -339,11 +339,11 @@ describe("validator — clean page produces no errors", () => {
   });
 });
 
-describe("OTH-R10/R11/R17 calibration (633 live acme-dev drafts)", () => {
+describe("calibration against live drafts", () => {
   const orphanRoots = (page: ReturnType<typeof parsePage>) =>
     validateHydrated(page).filter((i) => i.code === "ORPHAN_BINDING" && i.severity === "error").map((i) => i.path);
 
-  test("OTH-R11: a {%x%} inside a code comment is not a binding (live 'Enrollment')", () => {
+  test("a {%x%} inside a code comment is not a binding (live 'Enrollment')", () => {
     const spec = "(function (data) {\n  // was: return {%oldVar%};\n  /* also {%blockVar%} */\n  return data.a; // {%tailVar%}\n})";
     const page = parsePage(wrap(rootPage({
       variables: { generated: [], userDefined: [{ name: "a", type: "String", initialValue: "" }, { name: "d", from: ["a"], spec }], derived: [] },
@@ -351,7 +351,7 @@ describe("OTH-R10/R11/R17 calibration (633 live acme-dev drafts)", () => {
     expect(orphanRoots(page)).toEqual([]);
   });
 
-  test("OTH-R11: live bindings and URLs in code are still seen", () => {
+  test("live bindings and URLs in code are still seen", () => {
     const spec = "(function () {\n  fetch('https://x.test/a');\n  return {%realMissing%};\n})";
     const page = parsePage(wrap(rootPage({
       variables: { generated: [], userDefined: [{ name: "d", from: [], spec }], derived: [] },
@@ -359,21 +359,21 @@ describe("OTH-R10/R11/R17 calibration (633 live acme-dev drafts)", () => {
     expect(orphanRoots(page)).toEqual(["realMissing"]);
   });
 
-  test("OTH-R10: {%ref.X%} (element-reference scope) is not an orphan", () => {
+  test("{%ref.X%} (element-reference scope) is not an orphan", () => {
     const page = parsePage(wrap(rootPage({}, {
       children: [{ id: "n", name: "span", props: { "[expPopoverTriggerFor]": "{%ref.Popover_ref_1%}" } }],
     })));
     expect(orphanRoots(page)).toEqual([]);
   });
 
-  test("OTH-R10: a style-only component with no layout key is not ROOT_LAYOUT_MALFORMED; an empty one still is", () => {
+  test("a style-only component with no layout key is not ROOT_LAYOUT_MALFORMED; an empty one still is", () => {
     const styled = parsePage(wrap({ __version: 5, styles: ".latest-version .x{}", variables: {}, httpRequests: {} }, { isComponent: true } as never));
     expect(codes(validateHydrated(styled))).not.toContain("ROOT_LAYOUT_MALFORMED");
     const empty = parsePage(wrap({ __version: 5 }, { isComponent: true } as never));
     expect(codes(partitionBySeverity(validateHydrated(empty)).errors)).toContain("ROOT_LAYOUT_MALFORMED");
   });
 
-  test.each(["{% upper %}", "{%upper.x%}"])("OTH-R17: DERIVED_IN_INNERHTML matches %s and plain textContent", (binding) => {
+  test.each(["{% upper %}", "{%upper.x%}"])("DERIVED_IN_INNERHTML matches %s and plain textContent", (binding) => {
     const vars = {
       variables: {
         generated: [],

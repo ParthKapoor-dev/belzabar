@@ -1,6 +1,6 @@
-// PD-1 / PD-7 regression: the draft/published sibling must be resolved via the
-// row's referenceId, never by page name. Fixture mirrors acme-dev, which has
-// two unrelated "Add Student" pairs.
+// The draft/published sibling must be resolved via the row's referenceId,
+// never by page name: names are not unique (the fixture has two unrelated
+// "Add Student" pairs, as real envs do).
 import { describe, test, expect } from "bun:test";
 import { resolveDraftTarget, resolveLinkedPair, describeDraftGuardFailure } from "../../lib/draft-guard";
 import { entityIdsFromRaw } from "../../lib/page-dependencies";

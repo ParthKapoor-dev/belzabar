@@ -1,4 +1,4 @@
-// Regression tests for env-scoped PD cache + lock file (CORE-3, PD-9, PD-12, F4, F22).
+// The PD page cache and lock file are env-scoped.
 // BELZ_HOME is a tmp dir set by the bunfig.toml test preload; beforeAll refuses
 // to run otherwise so nothing can touch the real ~/.belz. No network: pdApi
 // lock calls are stubbed on the façade object.
@@ -74,7 +74,7 @@ describe("PD page cache", () => {
     expect(existsSync(join(root, "cache", "pages", "t-qa", "p2.json"))).toBe(true);
   });
 
-  test("withLock (every PD write) invalidates the page cache (PD-12)", async () => {
+  test("withLock (every PD write) invalidates the page cache", async () => {
     await seed("t-dev", "p3", "before-write");
     core.Config.setActiveEnv("t-dev");
     await withLock("p3", async () => "saved");
@@ -86,7 +86,7 @@ describe("PD page cache", () => {
   });
 });
 
-describe("pd lock file (PD-9 / F22)", () => {
+describe("pd lock file", () => {
   test("uses the active env name, not 'default'", async () => {
     core.Config.setActiveEnv("t-qa");
     const res = await lockCmd.execute({ action: "acquire", pageId: "pg1" }, {} as any);

@@ -60,7 +60,7 @@ Write commands have no `--force`; on read commands `--force` means "bypass the c
 - **Cache** (`lib/cache.ts`): env-scoped core `Cache` at `~/.belz/cache/pages/<env>/<id>.json`,
   shared by pages and components; SWR with 5-min soft / 1-h hard TTL. `withLock` invalidates the
   page after every write; `publish` also drops the published id. `snapshot`, `validate` (root and
-  `--recursive` symbols, OTH-R13) and all write paths always read fresh. The recursive walk
+  `--recursive` symbols) and all write paths always read fresh. The recursive walk
   (`analyze`, `find-ad-methods -r`, `show -r`) threads `--force` to every component
   (`cacheDeps` in `lib/analyzer.ts`) and reports `data.cache` `{cache, stale, fresh}` with a
   warning when cached configs were used.

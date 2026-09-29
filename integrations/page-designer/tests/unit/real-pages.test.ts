@@ -1,11 +1,11 @@
-// Property tests over real acme-dev PD pages/components (Stage 1).
+// Property tests over real PD pages/components.
 //
 // Fixtures: tests/fixtures/real/<id>.json — raw GET /rest/api/pagedesigner/pages/{id}
 // bodies, sanitized, captured by scripts/fixtures/capture.ts (see manifest.json).
-// Includes both "Add Student" draft/published pairs (duplicate names, PD-1/PD-7)
+// Includes both "Add Student" draft/published pairs (duplicate names)
 // and "Student Application" 4cba8f39… (475 vars, ~585 KB).
 //
-// PD-22: a full save of an unedited page is lossless on every real page, and
+// A full save of an unedited page is lossless on every real page, and
 // a full save of an edited page differs from the original ONLY at the edit.
 
 import { describe, expect, test } from "bun:test";
@@ -74,7 +74,7 @@ describe("parsePage on every real page", () => {
   });
 });
 
-describe("entity type comes from the server (PD-10 / F17)", () => {
+describe("entity type comes from the server", () => {
   test("isComponent rows are COMPONENT; routed pages are PAGE even with an isSymbol root", () => {
     for (const f of REAL_FILES) {
       const raw = loadReal(f);
@@ -97,7 +97,7 @@ describe("entity type comes from the server (PD-10 / F17)", () => {
   });
 });
 
-describe("full-save serialization (PD-22)", () => {
+describe("full-save serialization", () => {
   for (const f of REAL_FILES) {
     const raw = loadReal(f);
     const label = `${raw.id.slice(0, 10)} ${raw.name}`;
@@ -122,7 +122,7 @@ describe("full-save serialization (PD-22)", () => {
   });
 });
 
-describe("duplicate-name 'Add Student' pairs on the real wire (PD-1/PD-7)", () => {
+describe("duplicate-name 'Add Student' pairs on the real wire", () => {
   const PUB_A = "4bde22f76091a82364fda322eeeda597";
   const DRAFT_A = "4440a1a4628001dfb1b79aaec9dd55fe";
   const PUB_B = "48ac453ee33bbe32f0248075df59ec71";

@@ -39,13 +39,12 @@ interface ShowArgs {
     node: string | null;         // --node <id> detailed node dump
     varGraph: boolean;           // --var-graph variable write/read/derive/trigger map
     open: boolean;               // --open / -o open the editable draft URL in the browser
-    // Stage 7
     find: string | null;         // --find <text|id|component>
     fields: string[] | null;     // --fields a,b,… (vars / http rows); ["all"] = every field
   };
 }
 
-// --- Compact rows (Stage 7, 7.9) ---
+// --- Compact rows ---
 //
 // --vars / --http rows carry only the fields an agent needs to pick the next
 // call; empty values (null, "", [], {}) are omitted. `--fields a,b` picks
@@ -308,7 +307,7 @@ interface ShowSummary {
   publishedId: string | null;
   versionId: string | number | null;
   // The overview fields below are only on a bare `pd show` (and --full/--raw):
-  // with a section flag the summary is just the identity above (Stage 7, 7.9).
+  // with a section flag the summary is just the identity above.
   inputKind?: InputKind;
   editUrl?: string | null;
   configSizeBytes?: number;
@@ -333,7 +332,7 @@ interface ShowData {
   recursive?: {
     treeLines: string[];
     uniqueAdMethodIds: string[];
-    /** Components that could not be fetched/resolved during the walk (PD-19). */
+    /** Components that could not be fetched/resolved during the walk. */
     errors: AnalyzeError[];
   };
   raw?: {
@@ -405,7 +404,7 @@ export const args = defineArgs({
     ...PD_FORCE_FLAG,
     raw: { type: "boolean" },
     recursive: { type: "boolean", alias: ["-r"] },
-    // PD-23: a value flag with no value is MISSING_VALUE (was silently ignored).
+    // A value flag with no value is MISSING_VALUE (was silently ignored).
     "var-detail": { type: "string" },
     "http-detail": { type: "number", integer: true, min: 1 },
     tree: { type: "boolean" },

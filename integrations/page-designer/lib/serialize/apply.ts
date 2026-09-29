@@ -6,7 +6,7 @@
 //
 // The edit is applied to a deep clone of the RAW inner configuration — never
 // rebuilt from the parsed lists — so everything the overlay does not touch
-// round-trips byte-for-byte in structure (PD-22): duplicate variables, nulls,
+// round-trips byte-for-byte in structure: duplicate variables, nulls,
 // legacy `context.properties` / `http`, component `inputs`/`events`, unknown
 // keys. Targets are found by their raw index (lib/serialize/locate.ts).
 //

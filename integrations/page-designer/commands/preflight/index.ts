@@ -1,12 +1,12 @@
 // belz pd preflight <pageId> [--overlay <file>]
 //
-// Read-only dry-run. Resolves the page `save` would write (OTH-R14: the same
+// Read-only dry-run. Resolves the page `save` would write (the same
 // draft guard — a PUBLISHED id with a linked draft checks that draft),
 // optionally applies an overlay, runs the validator (diff-aware with an
 // overlay — the same gate `save` uses), and reports what would change and how
 // it would be saved. Never writes.
 //
-// PD-8 / F18: when the validator reports errors the envelope is ok:false
+// When the validator reports errors the envelope is ok:false
 // (PD_PREFLIGHT_FAILED, exit 1) with the full result in `data`, so agent
 // scripts can chain: `belz pd preflight … && belz pd save …`.
 

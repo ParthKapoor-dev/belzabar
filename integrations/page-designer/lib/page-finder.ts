@@ -128,7 +128,7 @@ function normalizeComponent(raw: RawPageListItem): PageFinderComponent | null {
 }
 
 /**
- * One row per draft/published component pair (F19: search listed both). The
+ * One row per draft/published component pair (search listed both). The
  * DRAFT row is kept (its `referenceId` names the published one); a PUBLISHED
  * row whose draft is not in the list stays.
  */

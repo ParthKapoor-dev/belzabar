@@ -51,7 +51,7 @@ function pdBadJson(context: { method: string; path: string }): (text: string, re
 }
 
 /**
- * Parse a 2xx JSON body (OTH-R16). An empty body is null; a non-JSON body (an
+ * Parse a 2xx JSON body. An empty body is null; a non-JSON body (an
  * SSO / maintenance HTML page served with 200) is PD_API_ERROR with a redacted
  * summary instead of a raw SyntaxError (UNHANDLED_EXCEPTION).
  */
@@ -78,7 +78,7 @@ export function isComponentRow(item: RawPageListItem): boolean {
 /**
  * The id of the DRAFT component with exactly this name, or null when there is
  * none. Several components with one name → PD_NAME_AMBIGUOUS (never guess:
- * names are not unique, PD-1).
+ * names are not unique).
  */
 export async function fetchComponentIdByName(name: string): Promise<string | null> {
   const items = (await searchPagesByName(name, "DRAFT")).filter(
@@ -101,7 +101,7 @@ export async function searchPagesByName(
   const url = `${PD_BASE}/pages?name=${encodeURIComponent(name)}&apiInfoLevel=MEDIUM&status=${status}`;
   const response = await apiFetch(url, { method: "GET", authMode: "Bearer" });
   if (response.status === 404) return [];
-  // PD-18: a 401/5xx is an API error, not "no such page".
+  // A 401/5xx is an API error, not "no such page".
   await ensureOk(response, { method: "GET", path: "/pages?name=" });
   const data = await readJson<unknown>(response, { method: "GET", path: "/pages?name=" });
   return Array.isArray(data) ? (data as RawPageListItem[]) : [];
@@ -264,7 +264,7 @@ export interface SaveResult {
 /**
  * The JSON answer of a PD write that already returned 2xx. An empty or
  * non-JSON body is `{}` (the write stands); a body read that stalls (core
- * HTTP_TIMEOUT, NEW-2) is NOT swallowed: the write was accepted but its answer
+ * HTTP_TIMEOUT) is NOT swallowed: the write was accepted but its answer
  * is unknown, so the caller must re-read before trusting or retrying it.
  */
 async function writeAnswer(response: Response, what: string): Promise<unknown> {
@@ -434,7 +434,7 @@ export interface ReleaseOutcome {
   released: boolean | null;
 }
 
-/** Release the lock. Never throws for an HTTP refusal — callers decide how to report it (PD-20). */
+/** Release the lock. Never throws for an HTTP refusal — callers decide how to report it. */
 export async function releaseLock(pageId: string): Promise<ReleaseOutcome> {
   const response = await apiFetch(
     `${PD_BASE}/pages/lock/${pageId}?pageLockAction=RELEASED`,

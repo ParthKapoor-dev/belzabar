@@ -27,7 +27,7 @@ export function parsePath(key: string): PathSegment[] {
 }
 
 /**
- * Partial-op key shapes the server is KNOWN to parse (OTH-R1, verified live
+ * Partial-op key shapes the server is KNOWN to parse (verified live
  * 2026-09-29 on a scratch page; wire evidence in
  * tests/fixtures/wire/partial-keys.json). The server splits the key on EVERY
  * `.`, reads a trailing `[n]` run as array indices, and takes any other

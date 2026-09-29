@@ -1,4 +1,4 @@
-// Stage 7 (7.8 / 7.9): `pd show --find`, node-id overlay ops
+// `pd show --find`, node-id overlay ops
 // (nodes.update / insert / remove) through the save pipeline on real
 // fixtures, and the compact read outputs (show sections, page-deps summary,
 // find list rows).

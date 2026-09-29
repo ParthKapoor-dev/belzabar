@@ -1,9 +1,8 @@
 // belz pd find-ad-methods <input> [--component] [--recursive]
 //
 // AD method ids a page/component's HTTP calls execute. <input> is resolved
-// like `pd show` (id, exact name, URL — PD-14 / F20: names used to be fetched
-// as `/pages/<name>`). --recursive follows every referenced component (no
-// components.json, PD-13 / F21); unresolvable ones are listed in `errors`.
+// like `pd show` (id, exact name, URL). --recursive follows every referenced
+// component; unresolvable ones are listed in `errors`.
 
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { PD_FORCE_FLAG } from "../../lib/args/common";
@@ -28,7 +27,7 @@ interface FindAdMethodsData {
   recursive: boolean;
   adIds: string[];
   errors: AnalyzeError[];
-  /** Where the configs came from (OTH-R13: cached data is up to 1 h old). */
+  /** Where the configs came from (cached data is up to 1 h old). */
   cache: SourceCounts;
 }
 

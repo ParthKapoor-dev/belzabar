@@ -1,4 +1,4 @@
-// Normalized page snapshots (Stage 7, 7.14) — a stable, diff-friendly JSON of
+// Normalized page snapshots — a stable, diff-friendly JSON of
 // a page or component to keep in git as a test baseline, and a semantic
 // comparison of a snapshot against the live page.
 //

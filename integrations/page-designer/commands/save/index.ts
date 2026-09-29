@@ -12,8 +12,8 @@
 //      else full)
 //   4. --dry-run → envelope, no lock, no write
 //   5. --yes required
-//   6. withLock(draft): FRESH fetch → re-plan + re-validate on it (PD-4;
-//      versionId drift is reported) → PUT partial/full
+//   6. withLock(draft): FRESH fetch → re-plan + re-validate on it
+//      (versionId drift is reported) → PUT partial/full
 //   7. verify: re-fetch and compare the stored config with the planned one
 //      (the PUT's answer decides if the GET lags); a mismatch is ok:false
 //      PD_SAVE_VERIFY_FAILED
@@ -60,7 +60,7 @@ interface SaveData {
   diffSummary: EditSummary;
   validation: { issues: ValidationIssue[]; errorCount: number; warnCount: number };
   parseWarnings: string[];
-  /** The page changed between the first read and the in-lock fetch (PD-4). */
+  /** The page changed between the first read and the in-lock fetch. */
   versionDrift: { from: number | null; to: number | null } | null;
   result: {
     oldVersionId: number | null;
@@ -116,7 +116,7 @@ function prepare(before: HydratedPage, edit: Edit): Prepared {
 }
 
 /**
- * Read-back (OTH-R6, verified live 2026-09-29): the draft GET right after a
+ * Read-back (verified live 2026-09-29): the draft GET right after a
  * PUT returns the new versionId and exactly the stored config, and the PUT's
  * own answer is the full stored page. So the GET decides; if it ever returns
  * an older versionId, the PUT answer's configuration decides instead
@@ -213,7 +213,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
     logIntent("save", targetId, { strategy: first.plan.strategy });
 
     return withLock(targetId, async () => {
-      // PD-4: fetch, apply and validate INSIDE the lock, on the latest version.
+      // Fetch, apply and validate INSIDE the lock, on the latest version.
       const fresh = await fetchFresh(targetId);
       const drift = versionDrift(target.snapshot, fresh, warn);
       const p = drift ? prepare(fresh, edit) : first;
@@ -248,7 +248,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
         verify,
       });
       if (verify.status === "mismatch") {
-        // OTH-R3: the server stored something other than the plan (like AD_SAVE_VERIFY_FAILED).
+        // The server stored something other than the plan (like AD_SAVE_VERIFY_FAILED).
         return failWithData(
           "PD_SAVE_VERIFY_FAILED",
           `Saved ${targetId} (versionId ${saved.newVersionId ?? "?"}), but the read-back does not match the planned config ` +

@@ -82,7 +82,7 @@ const command: CommandModule<TranslationsArgs, TranslationsData> = {
       status,
       check,
     };
-    // OTH-R18: a post-release check must fail the exit code on FAIL.
+    // A post-release check must fail the exit code on FAIL.
     if (check.verdict === "FAIL") {
       return failWithData("PD_TRANSLATIONS_FAILED", `Translation check FAILED: ${check.reason}`, data);
     }

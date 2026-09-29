@@ -1,6 +1,6 @@
 // belz pd snapshot <input> [--out <file>] | --compare <file>
 //
-// 7.14: a normalized, stable, diff-friendly JSON of a page/component (see
+// A normalized, stable, diff-friendly JSON of a page/component (see
 // lib/snapshot.ts for the normalization) to keep as a test baseline, and a
 // semantic comparison of such a baseline with the live page. Always reads the
 // page fresh (a baseline check must not pass on a stale cache).

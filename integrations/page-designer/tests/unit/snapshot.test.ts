@@ -1,4 +1,4 @@
-// 7.14: `pd snapshot` — normalized, stable page snapshots and the semantic
+// `pd snapshot` — normalized, stable page snapshots and the semantic
 // compare against the live page.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readFileSync, rmSync, writeFileSync } from "fs";

@@ -1,15 +1,15 @@
 // Structural diff between two HydratedPage objects — the ONE diff engine.
 //
 // Used by `pd history diff` (two versions), `pd diff` (two environments) and
-// the save / preflight edit summary (`editSummary`). Compares (PD-11):
-//   - variables: added / removed / changed (the whole raw entry, OTH-R12:
+// the save / preflight edit summary (`editSummary`). Compares:
+//   - variables: added / removed / changed (the whole raw entry:
 //                compileType, description, variableMetadata, … count too);
 //                a duplicate name is keyed `name#2`, `name#3` (never dropped)
 //   - derived:   added / removed / changed (the whole raw entry)
 //   - HTTP:      added / removed / changed (the whole raw request config, by callId)
 //   - layout:    nodes added / removed / kind-changed / changed (props, events,
 //                loop, field — children excluded), moved (new parent) and
-//                parents whose common children were reordered (OTH-R12)
+//                parents whose common children were reordered
 //   - styles:    changed + line counts
 //   - everything else in the config (inputs, events, helpText, __version, …)
 
