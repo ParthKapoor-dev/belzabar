@@ -175,6 +175,26 @@ function decoded(v: unknown): unknown {
   return typeof v === "string" ? (decodeBase64Strict(v) ?? v) : v;
 }
 
+/**
+ * Fields whose default is serialised by one env / endpoint and omitted by
+ * another (live sems-dev vs sems-qa history: `encodedBase64:false` on every
+ * input in qa only). The default value is dropped so absent == default.
+ */
+const DEFAULT_VALUES: Readonly<Record<string, unknown>> = {
+  encodedBase64: false,
+  runAsync: false,
+  required: false,
+};
+
+/**
+ * A category / service NAME as spelled by different endpoints: the V2 GET
+ * says "Schools-Utilities" where history (and other envs) say
+ * "Schools - Utilities" for the same category uuid. Whitespace is dropped.
+ */
+function normaliseServiceName(v: unknown): unknown {
+  return typeof v === "string" ? v.replace(/\s+/g, "") : v;
+}
+
 function projectWire(value: unknown): unknown {
   if (value === null || value === undefined) return undefined;
   if (typeof value === "string") return value;
@@ -184,6 +204,11 @@ function projectWire(value: unknown): unknown {
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
     if (BOOKKEEPING_KEYS.has(k)) continue;
+    if (k in DEFAULT_VALUES && v === DEFAULT_VALUES[k]) continue;
+    // `databaseRead.account`: the env-local numeric account id as a string
+    // ("149" in qa, "null" in dev for the same step). The account itself is
+    // hashed by name via `accountConfiguration.name`.
+    if (k === "account" && (typeof v === "number" || (typeof v === "string" && (NUMERIC_ID.test(v) || v === "null")))) continue;
     if (/(Id|Uuid)s?$/.test(k)) {
       const pv = projectIdField(v);
       if (pv !== undefined) out[k] = pv;
@@ -193,13 +218,14 @@ function projectWire(value: unknown): unknown {
       // Only the behavioural parts: where the method lives and its time limit.
       const md = (v ?? {}) as Record<string, unknown>;
       const svc = md.service as Record<string, unknown> | undefined;
-      const projected = projectWire({ service: svc?.name, executionTimeLimit: md.executionTimeLimit, categories: md.categories });
+      const projected = projectWire({ service: normaliseServiceName(svc?.name), executionTimeLimit: md.executionTimeLimit, categories: md.categories });
       if (projected && Object.keys(projected as object).length > 0) out.metadata = projected;
       continue;
     }
     let pv: unknown;
     if (k === "inlineCode" || k === "code") pv = decoded(v);
     else if (k === "value" && obj.encodingType === "BASE_64") pv = decoded(v);
+    else if (k === "serviceName") pv = normaliseServiceName(v);
     else if (k === "encodingType" && v === "BASE_64" && typeof obj.value === "string" && decodeBase64Strict(obj.value) !== null) pv = "NONE";
     else pv = projectWire(v);
     if (pv !== undefined) out[k] = pv;
@@ -222,7 +248,23 @@ function orderedV1(body: Record<string, unknown>): Record<string, unknown> {
  */
 export function fingerprintProjection(m: HydratedMethod): unknown {
   const body = wireBody(m.raw);
-  return body ? projectWire(orderedV1(body)) : undefined;
+  return body ? projectWire(withoutDerivedOutputFields(orderedV1(body))) : undefined;
+}
+
+/**
+ * The V2 GET adds `fieldCode` (a copy of `key`) to each METHOD output; history
+ * bodies omit it (live sems-dev, ADW-R8). A fieldCode that only repeats the
+ * key is derived, so it is dropped. (Step outputs' fieldCode is a binding and
+ * stays.)
+ */
+function withoutDerivedOutputFields(body: Record<string, unknown>): Record<string, unknown> {
+  if (!Array.isArray(body.outputs)) return body;
+  const outputs = (body.outputs as unknown[]).map((o) => {
+    if (!o || typeof o !== "object" || Array.isArray(o)) return o;
+    const { fieldCode, ...rest } = o as Record<string, unknown>;
+    return fieldCode === undefined || fieldCode === rest.key ? rest : o;
+  });
+  return { ...body, outputs };
 }
 
 /**

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
-import { diffPaths, fingerprintMethod, fingerprintProjection, stableStringify } from "../../lib/fingerprint";
+import { diffPaths, fingerprintMethod, fingerprintProjection, parseVersionBody, stableStringify } from "../../lib/fingerprint";
 import { parseV1Method, parseV2Method } from "../../lib/parser/index";
 import { encodeBase64 } from "../../lib/base64";
 import type { HydratedMethod } from "../../lib/types/common";
@@ -190,5 +190,58 @@ describe("fingerprintMethod over the wire body (ADW-R2)", () => {
     expect(withUuid("4f11484a706062c55fafb7dde8ae3fd2    ")).toBe(bare);
     expect(withUuid("4F11484A-7060-62C5-5FAF-B7DDE8AE3FD2")).toBe(bare);
     expect(withUuid("4f11484a706062c55fafb7dde8ae3fd3")).not.toBe(bare);
+  });
+});
+
+// Real sems-dev / sems-qa history bodies of the same published logic
+// (captured read-only, tests/fixtures/cross-env). They differ only in
+// serialisation noise: `encodedBase64:false` present in qa only, and
+// `databaseRead.account` = the env-local numeric id ("149") vs "null".
+describe("fingerprint across environments (ADW-R2 regression)", () => {
+  const hist = (f: string) => parseVersionBody(readJson(`cross-env/${f}`));
+  const PAIRS: Array<[string, string, string]> = [
+    ["4bfc83c7 (dev v3 = qa v1)", "4bfc83c7fc3da12d7e639ee88a40ff27.sems-dev.history-v3.json", "4bfc83c7fc3da12d7e639ee88a40ff27.sems-qa.history-v1.json"],
+    ["4b0270f0 (dev v4 = qa v4)", "4b0270f001810b5babeb919d9dd48c46.sems-dev.history-v4.json", "4b0270f001810b5babeb919d9dd48c46.sems-qa.history-v4.json"],
+  ];
+  for (const [what, dev, qa] of PAIRS) {
+    test(`identical logic on two envs has one fingerprint: ${what}`, () => {
+      const a = hist(dev);
+      const b = hist(qa);
+      expect(diffPaths(fingerprintProjection(a), fingerprintProjection(b))).toEqual([]);
+      expect(fingerprintMethod(a)).toBe(fingerprintMethod(b));
+    });
+  }
+
+  test("a real change on the qa copy still differs (callee, account name, SQL, async)", () => {
+    const qa = readJson("cross-env/4b0270f001810b5babeb919d9dd48c46.sems-qa.history-v4.json");
+    const base = fingerprintMethod(hist("4b0270f001810b5babeb919d9dd48c46.sems-dev.history-v4.json"));
+    const withChange = (fn: (jd: Body) => void) => {
+      const copy = structuredClone(qa);
+      fn(copy.jsonDefinition);
+      return fingerprintMethod(parseVersionBody(copy));
+    };
+    expect(withChange(() => {})).toBe(base);
+    expect(withChange((jd) => (jd.steps[2].methodName = "other.method"))).not.toBe(base);
+    expect(withChange((jd) => (jd.steps[0].accountConfiguration.name = "Other-DB"))).not.toBe(base);
+    expect(withChange((jd) => (jd.steps[0].inputs[0].properties[0].value = "select 2"))).not.toBe(base);
+    expect(withChange((jd) => ((jd.steps[1].properties ??= {}).runAsync = true))).not.toBe(base);
+    expect(withChange((jd) => (jd.steps[0].inputs[0].encodedBase64 = true))).not.toBe(base);
+  });
+
+  test("the V2 GET of a published method matches its own history body (ADW-R8: fieldCode, service spelling)", () => {
+    for (const [get, h] of [
+      ["real-v2/4bfc83c7fc3da12d7e639ee88a40ff27.v2.json", "4bfc83c7fc3da12d7e639ee88a40ff27.sems-dev.history-v3.json"],
+      ["real-v2/4b0270f001810b5babeb919d9dd48c46.v2.json", "4b0270f001810b5babeb919d9dd48c46.sems-dev.history-v4.json"],
+    ] as const) {
+      const a = parseV2Method(readJson(get));
+      const b = hist(h);
+      expect(diffPaths(fingerprintProjection(a), fingerprintProjection(b))).toEqual([]);
+    }
+  });
+
+  test("a method output fieldCode that differs from its key still counts", () => {
+    const withFc = (fc: string) => mutated((b) => (b.outputs = [{ key: "out", fieldCode: fc, type: "TEXT" }]));
+    expect(withFc("out")).toBe(mutated((b) => (b.outputs = [{ key: "out", type: "TEXT" }])));
+    expect(withFc("other")).not.toBe(withFc("out"));
   });
 });
