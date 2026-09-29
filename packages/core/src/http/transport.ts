@@ -10,7 +10,8 @@
 //     run, SQL, save/publish execute server-side and are legitimately slow).
 //     Per call `timeoutMs` (0 / "none" disables); env BELZ_HTTP_TIMEOUT_MS
 //     (both defaults) and BELZ_HTTP_WRITE_TIMEOUT_MS (non-GET only). A timed-out
-//     non-GET is never retried and says it may still complete server-side;
+//     non-GET is never retried and says it may still complete server-side.
+//     The same limit is an idle deadline on the body read (CORE-R10);
 //   - network failures mapped to CliError HTTP_NETWORK_ERROR (never an
 //     UNHANDLED_EXCEPTION);
 //   - verbose logging with secrets redacted.
@@ -135,7 +136,7 @@ async function fetchOnce(
   try {
     const res = await Promise.race([fetch(url, { ...init, signal: controller.signal }), timeoutPromise]);
     stop();
-    return res;
+    return timeoutMs > 0 ? withBodyDeadline(res, timeoutMs, controller, () => bodyTimeoutError(timeoutMs, label, method)) : res;
   } catch (err) {
     stop();
     if (timedOut) throw timeoutError(timeoutMs, label, method);
@@ -144,6 +145,67 @@ async function fetchOnce(
     if (timer) clearTimeout(timer);
     callerSignal?.removeEventListener("abort", onCallerAbort);
   }
+}
+
+/** Statuses whose Response must have a null body (the constructor throws otherwise). */
+const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
+
+/**
+ * Keep a deadline on the body read (CORE-R10): the header timeout alone let a
+ * server that stalls mid-body hang `res.text()` / `res.json()` forever. Each
+ * read of the underlying stream must produce a chunk within `timeoutMs` (an
+ * idle timeout, so a large but steadily flowing body is fine); otherwise the
+ * fetch is aborted and the body read rejects with HTTP_TIMEOUT. No timer runs
+ * while nobody is reading the body.
+ */
+function withBodyDeadline(
+  res: Response,
+  timeoutMs: number,
+  controller: AbortController,
+  makeError: () => CliError,
+): Response {
+  if (!res.body || NULL_BODY_STATUSES.has(res.status)) return res;
+  const reader = res.body.getReader();
+  const body = new ReadableStream<Uint8Array>({
+    async pull(ctrl) {
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const deadline = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          const err = makeError();
+          // Reject first: cancelling resolves the pending read with done:true,
+          // which would otherwise win the race and end the body "successfully".
+          reject(err);
+          controller.abort(err);
+          reader.cancel(err).catch(() => {});
+        }, timeoutMs);
+      });
+      try {
+        const { done, value } = await Promise.race([reader.read(), deadline]);
+        if (done) ctrl.close();
+        else ctrl.enqueue(value);
+      } catch (err) {
+        ctrl.error(err);
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    },
+    cancel(reason) {
+      return reader.cancel(reason);
+    },
+  });
+  const wrapped = new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+  // Keep the metadata a constructed Response loses.
+  Object.defineProperty(wrapped, "url", { value: res.url });
+  Object.defineProperty(wrapped, "redirected", { value: res.redirected });
+  return wrapped;
+}
+
+function bodyTimeoutError(timeoutMs: number, label: string, method: string): CliError {
+  const secs = Math.round(timeoutMs / 1000);
+  return new CliError(`Response body stalled for ${secs}s: ${label}.`, {
+    code: "HTTP_TIMEOUT",
+    details: { timeoutMs, method, phase: "body", mayHaveCompleted: !isReadMethod(method), retryable: isReadMethod(method) },
+  });
 }
 
 /**

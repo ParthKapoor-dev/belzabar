@@ -219,6 +219,41 @@ describe("transport", () => {
     expect(isConnectPhaseError(new Error("The socket connection was closed unexpectedly"))).toBe(false);
   });
 
+  test("CORE-R10: a body that stalls after the headers fails with HTTP_TIMEOUT instead of hanging", async () => {
+    const enc = new TextEncoder();
+    ff = fakeFetch({
+      "GET https://slow.test/body": () =>
+        new Response(new ReadableStream({ start(c) { c.enqueue(enc.encode('{"partial":')); } }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    }).install();
+    const res = await httpRequest("https://slow.test/body", { timeoutMs: 30 });
+    expect(res.status).toBe(200);
+    const err = await caught(res.text());
+    expect(err).toBeInstanceOf(CliError);
+    expect(err.code).toBe("HTTP_TIMEOUT");
+    expect(err.details).toMatchObject({ phase: "body", mayHaveCompleted: false });
+  });
+
+  test("CORE-R10: a body that keeps flowing is read whole; no deadline when timeoutMs is none", async () => {
+    const enc = new TextEncoder();
+    const slowBody = () =>
+      new Response(
+        new ReadableStream({
+          async start(c) {
+            for (const part of ['{"a"', ":", "1}"]) { await Bun.sleep(15); c.enqueue(enc.encode(part)); }
+            c.close();
+          },
+        }),
+        { status: 200 },
+      );
+    ff = fakeFetch({ "GET https://slow.test/flow": slowBody, "POST https://slow.test/stream": slowBody }).install();
+    expect(await (await httpRequest("https://slow.test/flow", { timeoutMs: 30 })).json()).toEqual({ a: 1 });
+    const res = await httpRequest("https://slow.test/stream", { method: "POST", body: "{}", timeoutMs: "none" });
+    expect(await res.text()).toBe('{"a":1}');
+  });
+
   test("singleFlight shares one in-flight promise per key", async () => {
     const sf = singleFlight<number>();
     let calls = 0;
