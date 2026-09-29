@@ -126,7 +126,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<UpdateArgs, UpdateData> = {
-
   /** Rebuilds and reinstalls the local belz binary. */
   writesLocal: true,
   parseArgs(argv) {

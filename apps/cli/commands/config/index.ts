@@ -258,7 +258,6 @@ function tokenExpiresAt(token: string | undefined): string | null {
 }
 
 const command: CommandModule<ConfigArgs, ConfigData> = {
-
   parseArgs(argv) {
     return parseConfigArgs(argv);
   },

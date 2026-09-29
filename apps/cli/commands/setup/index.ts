@@ -120,7 +120,6 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<SetupArgs, SetupData> = {
-
   /** Writes ~/.belz/config.json. */
   writesLocal: true,
   parseArgs(argv) {
