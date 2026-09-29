@@ -7,16 +7,17 @@
 // switched off, so it needs an explicit --env like other test endpoints).
 // Errors → AD_VALIDATION_FAILED (ok:false, exit 1) with the full result as data.
 
-import { readFile } from "fs/promises";
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
 import { resolveMethodRef } from "../../lib/ids";
 import { auditExistingRecord, validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
 import type { V2MethodBody } from "../../lib/types/v2-wire";
+import { loadBodyOrSpec, type LoadedBody } from "../../lib/save/spec";
 
 interface ValidateArgs {
   target: string;
   kind: "uuid" | "file";
+  category: string | null;
   online: boolean;
   dryRunCompile: boolean;
   strict: boolean;
@@ -24,6 +25,8 @@ interface ValidateArgs {
 
 export interface ValidateData {
   source: { kind: "uuid" | "file"; ref: string };
+  /** The file was a compact create spec, expanded first (as `ad create --dry-run`). */
+  spec?: LoadedBody<unknown>["spec"];
   uuid: string | null;
   name: string | null;
   state: string | null;
@@ -42,6 +45,7 @@ export const args = defineArgs({
     online: { type: "boolean", description: "Also check each step against its service contract on --env (L4)" },
     "dry-run-compile": { type: "boolean", description: "Also compile the method on the server with every step switched off (implies --online)" },
     strict: { type: "boolean", description: "Treat warnings as errors" },
+    category: { type: "string", description: "Category for a compact spec file without spec.category" },
   },
 });
 
@@ -59,13 +63,17 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
     return {
       target: kind === "uuid" ? resolveMethodRef(target) : target,
       kind,
+      category: flags.category ?? null,
       online: flags.online || flags.dryRunCompile,
       dryRunCompile: flags.dryRunCompile,
       strict: flags.strict,
     };
   },
   async execute(a, context) {
-    const body = a.kind === "file" ? await readBody(a.target) : await v2.fetchRawMethod(a.target);
+    if (a.kind === "uuid" && a.category) throw new CliError("--category applies only to a compact spec file.", { code: "INVALID_ARGUMENT" });
+    const loaded: LoadedBody<V2MethodBody> =
+      a.kind === "file" ? await loadBodyOrSpec<V2MethodBody>(a.target, a.category) : { body: await v2.fetchRawMethod(a.target), spec: null };
+    const body = loaded.body;
     const notes: string[] = [];
     const input = { after: body, strict: a.strict };
     const result = a.online
@@ -85,6 +93,7 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
     }
     const data: ValidateData = {
       source: { kind: a.kind, ref: a.target },
+      ...(loaded.spec ? { spec: loaded.spec } : {}),
       uuid: typeof body.uuid === "string" ? body.uuid.trim() : null,
       name: typeof body.name === "string" ? body.name : null,
       state,
@@ -119,18 +128,5 @@ const command: CommandModule<ValidateArgs, ValidateData> = {
   },
 };
 
-async function readBody(path: string): Promise<V2MethodBody> {
-  let text: string;
-  try {
-    text = await readFile(path, "utf-8");
-  } catch (err) {
-    throw new CliError(`Cannot read ${path}: ${String(err)}`, { code: "FILE_NOT_FOUND" });
-  }
-  try {
-    return JSON.parse(text) as V2MethodBody;
-  } catch (err) {
-    throw new CliError(`${path} is not valid JSON: ${String(err)}`, { code: "INVALID_JSON" });
-  }
-}
 
 export default command;

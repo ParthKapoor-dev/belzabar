@@ -5,17 +5,18 @@
 // Output is grouped by step, one line per finding. Errors (validator) exit 1
 // with AD_LINT_FAILED; lint rules only warn unless --strict.
 
-import { readFile } from "fs/promises";
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
 import { resolveMethodRef } from "../../lib/ids";
 import { validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
 import { lintMethodV2 } from "../../lib/validate/lint";
 import type { V2MethodBody } from "../../lib/types/v2-wire";
+import { loadBodyOrSpec, type LoadedBody } from "../../lib/save/spec";
 
 interface LintArgs {
   target: string;
   kind: "uuid" | "file";
+  category: string | null;
   online: boolean;
   docs: boolean;
   strict: boolean;
@@ -39,6 +40,8 @@ export interface LintGroup {
 
 export interface LintData {
   source: { kind: "uuid" | "file"; ref: string };
+  /** The file was a compact create spec, expanded first (as `ad create --dry-run`). */
+  spec?: LoadedBody<unknown>["spec"];
   uuid: string | null;
   name: string | null;
   state: string | null;
@@ -57,6 +60,7 @@ export const args = defineArgs({
     online: { type: "boolean", description: "Also check each step against its service contract on --env (L4)" },
     docs: { type: "boolean", description: "Also report missing descriptions" },
     strict: { type: "boolean", description: "Treat warnings as errors" },
+    category: { type: "string", description: "Category for a compact spec file without spec.category" },
   },
 });
 
@@ -64,19 +68,6 @@ function looksLikeFile(target: string): boolean {
   return target.endsWith(".json") || target.includes("/") || target.startsWith(".");
 }
 
-async function readBody(path: string): Promise<V2MethodBody> {
-  let text: string;
-  try {
-    text = await readFile(path, "utf-8");
-  } catch (err) {
-    throw new CliError(`Cannot read ${path}: ${(err as Error).message}`, { code: "FILE_NOT_FOUND" });
-  }
-  try {
-    return JSON.parse(text) as V2MethodBody;
-  } catch (err) {
-    throw new CliError(`${path} is not valid JSON: ${(err as Error).message}`, { code: "INVALID_JSON" });
-  }
-}
 
 /** Group findings by step (method-level first), one compact line each. */
 export function groupFindings(findings: ValidationFinding[]): LintGroup[] {
@@ -113,13 +104,17 @@ const command: CommandModule<LintArgs, LintData> = {
     return {
       target: kind === "uuid" ? resolveMethodRef(target) : target,
       kind,
+      category: flags.category ?? null,
       online: flags.online,
       docs: flags.docs,
       strict: flags.strict,
     };
   },
   async execute(a, context) {
-    const body = a.kind === "file" ? await readBody(a.target) : await v2.fetchRawMethod(a.target);
+    if (a.kind === "uuid" && a.category) throw new CliError("--category applies only to a compact spec file.", { code: "INVALID_ARGUMENT" });
+    const loaded: LoadedBody<V2MethodBody> =
+      a.kind === "file" ? await loadBodyOrSpec<V2MethodBody>(a.target, a.category) : { body: await v2.fetchRawMethod(a.target), spec: null };
+    const body = loaded.body;
     const state = typeof body.metadata?.state === "string" ? body.metadata.state : null;
     const result = a.online ? await validateOnline({ after: body, env: context.env.name }) : validateMethodV2({ after: body });
     // Auditing a published record: "a save body must be a draft" is not a finding about the logic.
@@ -132,6 +127,7 @@ const command: CommandModule<LintArgs, LintData> = {
     const errors = all.filter((f) => f.severity === "error").length;
     const data: LintData = {
       source: { kind: a.kind, ref: a.target },
+      ...(loaded.spec ? { spec: loaded.spec } : {}),
       uuid: typeof body.uuid === "string" ? body.uuid.trim() : null,
       name: typeof body.name === "string" ? body.name : null,
       state,

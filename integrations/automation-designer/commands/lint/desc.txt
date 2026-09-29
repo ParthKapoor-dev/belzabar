@@ -2,3 +2,4 @@ belz ad lint <uuid|file>  :->  Review a method (fetched V2 body or local V2 file
 belz ad lint <uuid|file> --online  :->  Also check steps against their live service contracts (validator L4)
 belz ad lint <uuid|file> --docs  :->  Also report missing descriptions (method, io, steps, exit messages)
 belz ad lint <uuid|file> --strict  :->  Treat warnings as errors
+belz ad lint <spec.json> [--category <name|id|uuid>]  :->  Lint a compact create spec: expanded against --env first (as create's dry run), then reviewed

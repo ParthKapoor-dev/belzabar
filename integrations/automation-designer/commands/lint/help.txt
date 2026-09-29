@@ -4,8 +4,11 @@ Review a method's V2 body (read-only): the pre-save validator plus the
 review rules from the team skills, grouped by step, one line per finding.
 
 Arguments:
-  <UUID|FILE>           A method uuid (any spelling or AD URL; fetched from --env)
-                        or a local V2 JSON file (a path or a name ending in .json).
+  <UUID|FILE>           A method uuid (any spelling or AD URL; fetched from --env),
+                        a local V2 JSON file, or the compact spec `ad create`
+                        takes (expanded against --env first, exactly as
+                        `create`'s dry run does; data.spec says so). A path or a
+                        name ending in .json.
 
 Flags:
   --online              Also check every step against its service contract on
@@ -13,6 +16,8 @@ Flags:
   --docs                Also report missing descriptions (method, summary, inputs,
                         outputs, variables, steps, exit-on-failure messages).
   --strict              Treat warnings as errors.
+  --category <CATEGORY> Category for a compact spec without "category" (name, id
+                        or uuid; must agree with spec.category).
   --help, -h            Show this help message.
 
 Global Flags:
@@ -47,4 +52,5 @@ Notes:
 Examples:
   belz ad lint 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --env sems-dev
   belz ad lint ./method.v2.json --docs --llm
+  belz ad lint ./greet.spec.json --online --env sems-dev --llm
   belz ad lint 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --online --strict --env sems-dev

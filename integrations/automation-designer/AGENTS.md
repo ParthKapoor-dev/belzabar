@@ -41,7 +41,8 @@ lib/
                        compact.ts compact step format + expansion, diff.ts path diffing
   save/                pipeline.ts saveOverlayV2 / verifySaved / verifyStructural,
                        validation.ts runValidationGate, api.ts postChainV2 / deleteChainV2,
-                       compiled-cache.ts, create.ts, services.ts, sources.ts, flags.ts
+                       compiled-cache.ts, create.ts, services.ts, sources.ts, flags.ts,
+                       spec.ts (spec file → V2 body: create, lint, validate)
   validate/            pre-save validator (see below) + lint.ts (ad lint rules)
   test-run.ts          runInlineTest: one /chain/test run → outputs + trace
   payload-builder.ts   buildV1TestPayload: the one /chain/test body (test, run-suites, sql)
@@ -79,8 +80,8 @@ needs `--yes` instead.
 | `callers <uuid>` | AD methods (and PD pages/components with `--pd`) that call the method. `coverage.complete` only for a fresh, full index with nothing unresolved; `coverage.skippedCategories` for failed listings |
 | `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases (`METHOD_NOT_FOUND` for an unknown/soft-deleted uuid, since the suite route answers it like "no suite"); the latest suite report |
 | `history list\|show\|diff`, `diff`, `trace` | Version history, history or cross-env semantic diff (`diff` opens an editor only in human mode or with `--editor`; a failed spawn is a warning), where a method is on every env |
-| `validate <uuid\|file>` | Validator L1–L3 (`--online` L4, `--dry-run-compile` = **W**, `--strict`) |
-| `lint <uuid\|file>` | Validator + advisory review rules (`--online`, `--docs`, `--strict`) |
+| `validate <uuid\|file>` | Validator L1–L3 (`--online` L4, `--dry-run-compile` = **W**, `--strict`). A file may be a V2 body or a compact create spec (expanded first via `lib/save/spec.ts`, `data.spec`; `--category`) |
+| `lint <uuid\|file>` | Validator + advisory review rules (`--online`, `--docs`, `--strict`); same file handling as validate |
 | `sql dbs\|run\|explain` | Read-only SQL. `run`/`explain` accept one read statement (`SQL_NOT_READ_ONLY`) |
 | `sql update\|insert\|modify\|tui` | **W** SQL writes (tui can switch into write modes) |
 | `save [file] --uuid <uuid>` | **W** overlay / structural ops onto the DRAFT (`--dry-run` is not a write but still needs `--env` — `requiresEnv`, it reads the target draft; `--dry-run --dry-run-compile` is a write, since it POSTs `/chain/test`) |

@@ -4,8 +4,10 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { writeFileSync } from "fs";
 import { join } from "path";
-import { fakeFetch, runCommand, scratchDir, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { fakeFetch, fixture, runCommand, scratchDir, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import lintCommand, { groupFindings } from "../../commands/lint/index";
+import validateCommand from "../../commands/validate/index";
+import { isCompactSpec } from "../../lib/save/spec";
 import { isJsonJuggling, lintMethodV2, LINT_RULES } from "../../lib/validate/lint";
 import { golden, realV2 } from "./validate-fixtures";
 
@@ -178,6 +180,35 @@ describe("ad lint command", () => {
     expect((await runCommand(lintCommand, [join(dir, "none.json")], {})).envelope?.error?.code).toBe("FILE_NOT_FOUND");
     writeFileSync(join(dir, "bad.json"), "{");
     expect((await runCommand(lintCommand, [join(dir, "bad.json")], {})).envelope?.error?.code).toBe("INVALID_JSON");
+  });
+
+  test("a compact create spec is expanded first, as create --dry-run does (CLI trial)", async () => {
+    cfg = withTempEnvConfig({ envs: { "t-lint": { url: "https://t.test" } }, activeEnv: "t-lint" });
+    spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
+    const CATS = `${import.meta.dir}/../fixtures/categories`;
+    ff = fakeFetch([
+      { method: "GET", url: "/rest/api/automation/chain/category?fetchSystemServices=false", response: fixture(`${CATS}/chain-category.json`) },
+      { method: "GET", url: "/rest/api/automation/chain/category?fetchSystemServices=true", response: fixture(`${CATS}/chain-category-system.json`) },
+    ]).install();
+    const dir = scratchDir("ad-lint");
+    const file = join(dir, "greet.spec.json");
+    const spec = { name: "belz_tst_lint_spec", category: "Test-Parth", inputs: ["name"], outputs: ["greeting"], steps: [{ code: "const greeting = 'Hello, ' + name;", outputs: ["greeting"] }] };
+    writeFileSync(file, JSON.stringify(spec));
+    for (const cmd of [lintCommand, validateCommand] as const) {
+      const r = await runCommand(cmd as typeof lintCommand, [file], { env: "t-lint" });
+      const d = r.envelope?.data as any;
+      expect(JSON.stringify(r.envelope?.error ?? null)).not.toContain("Expected array");
+      expect(d.spec).toMatchObject({ expanded: true, category: { chainCategoryId: 1135, name: "Test-Parth" } });
+      expect(d.name).toBe("belz_tst_lint_spec");
+    }
+    expect(ff.requests.every((q) => q.method === "GET")).toBe(true);
+    // a V2 body is not a spec; --category only applies to one
+    expect(isCompactSpec(golden())).toBe(false);
+    expect(realV2().filter((r) => isCompactSpec(r.body)).map((r) => r.file)).toEqual([]);
+    expect(isCompactSpec(spec)).toBe(true);
+    const v2 = join(dir, "m.v2.json");
+    writeFileSync(v2, JSON.stringify(golden()));
+    expect((await runCommand(lintCommand, [v2, "--category", "1135"], { env: "t-lint" })).envelope?.error?.code).toBe("INVALID_ARGUMENT");
   });
 
   test("groupFindings: method first, errors before warnings", () => {

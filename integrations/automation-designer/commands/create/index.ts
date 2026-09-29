@@ -1,18 +1,13 @@
-import { readFile } from "fs/promises";
-import { dirname } from "path";
 import { CliError, currentCacheEnv, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
-import { fetchCategories, requireChainCategory } from "../../lib/categories";
 import { normalizeUuid } from "../../lib/ids";
 import { invalidateMethodIndexEntry } from "../../lib/method-finder";
 import { postChainV2 } from "../../lib/save/api";
-import { assertCreatableCategory, buildCreateBody, compactSteps } from "../../lib/save/create";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
+import { expandSpec, readSpecFile } from "../../lib/save/spec";
 import { dryRunValidation, verifyStructural, versionName, type DryRunValidation } from "../../lib/save/pipeline";
-import { loadServiceCatalog, servicesOfCompactSteps } from "../../lib/save/services";
-import { resolveSpecSources } from "../../lib/save/sources";
 import { runValidationGate, type ValidationSummary } from "../../lib/save/validation";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
@@ -81,36 +76,8 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
     };
   },
   async execute(a, context) {
-    let spec: unknown;
-    try {
-      spec = JSON.parse(await readFile(a.specPath, "utf-8"));
-    } catch (err) {
-      const missing = (err as NodeJS.ErrnoException).code === "ENOENT";
-      throw new CliError(`${missing ? "Cannot read" : "Invalid JSON in"} spec file ${a.specPath}: ${String(err)}`, {
-        code: missing ? "FILE_NOT_FOUND" : "INVALID_JSON",
-      });
-    }
-
-    await resolveSpecSources(spec, dirname(a.specPath));
-    const specCategory = spec && typeof spec === "object" && !Array.isArray(spec) ? (spec as Record<string, unknown>).category : undefined;
-    if (specCategory !== undefined && typeof specCategory !== "string" && typeof specCategory !== "number") {
-      throw new CliError("spec.category must be a category name, id or uuid.", { code: "AD_SPEC_INVALID", details: { path: "category" } });
-    }
-    const categoryRef = a.category ?? (specCategory === undefined ? null : String(specCategory));
-    if (!categoryRef) {
-      throw new CliError("--category <name|id|uuid> is required (or set category in the spec).", { code: "MISSING_CATEGORY" });
-    }
-    const categories = await fetchCategories();
-    const category = requireChainCategory(categories, categoryRef);
-    if (a.category && specCategory !== undefined && requireChainCategory(categories, String(specCategory)).chainCategoryId !== category.chainCategoryId) {
-      throw new CliError(`--category ${a.category} and spec.category ${String(specCategory)} name different categories.`, {
-        code: "AD_SPEC_INVALID",
-        details: { flag: a.category, spec: specCategory },
-      });
-    }
-    assertCreatableCategory(category);
-    const catalog = await loadServiceCatalog(servicesOfCompactSteps(compactSteps(spec)));
-    const { body, dropped } = buildCreateBody(spec, category, catalog);
+    const spec = await readSpecFile(a.specPath);
+    const { body, dropped, category } = await expandSpec(spec, a.category);
     if (dropped.length > 0) context.warn(`Dropped server-owned spec key(s): ${dropped.join(", ")}.`);
     const flags = { noValidate: a.noValidate, strict: a.strict, dryRunCompile: a.dryRunCompile };
     const gate = { after: body as V2MethodResponse, env: context.env.name, action: "create", warn: (m: string) => context.warn(m) };
