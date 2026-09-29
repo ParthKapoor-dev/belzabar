@@ -1,8 +1,25 @@
 Usage: belz ad test-report [flags]
 
-Print the latest test-suite execution report from
+Print the test-suite execution report from
 /rest/api/automation/chain/testsuite/report.
 
+The route is not scoped to a method, and it does not track
+`belz ad test-case run-suite` (live sems-dev: it stayed all zeros before,
+during and after a suite run; the server e-mails that report). When the
+report shows no run, data.found is false and data.note says so: all zeros
+never means "0 tests ran" or "all passed". For per-case results of one
+method run its suite in wait mode (see `belz ad test-case --help`, run-suite).
+
 Flags:
-  --v2     Accepted for consistency; V1-only (notice printed).
-  --llm    Emit a JSON envelope
+  --v2                  Accepted for consistency; V1-only (notice printed).
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Set active environment (default: defaultEnv, else nsm-dev).
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Data: {report, found, note?}.
+
+Examples:
+  belz ad test-report --env sems-dev --llm
+  belz ad test-report --env sems-dev

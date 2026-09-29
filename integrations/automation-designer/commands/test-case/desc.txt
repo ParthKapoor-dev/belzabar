@@ -6,7 +6,8 @@ belz ad test-case update <uuid> <testCaseId> --file <case.json> --env <env> [--y
 belz ad test-case update <uuid> <testCaseId> --input <k=v> --assert <out=v> --env <env>  :->  Change single inputs / replace the assertions of an existing case
 belz ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case
 belz ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Create an array of test cases (one POST each; verified)
-belz ad test-case run-suite <uuid> --env <env> [--yes]  :->  Execute the method's test suite (async; does not evaluate assertions)
+belz ad test-case run-suite <uuid> --env <env> [--yes]  :->  Trigger the server's suite run (async, e-mail report only; not observable via test-report)
+belz ad test-case run-suite <uuid> --wait --env <env> [--yes]  :->  Run every active case now (one /chain/test each), evaluate assertions, return per-case PASS/FAIL/ERROR; exit 1 unless all pass
 belz ad test-case delete-suite <testSuiteId> --env <env> [--yes]  :->  Delete a test suite
 belz ad test-case export <uuid> --dir <root>  :->  Write the suite as git-friendly files: <root>/<Category>/<method>/{method.json,cases/*.json}; read-only
 belz ad test-case export <uuid> --dir <root> --prune  :->  Also delete case files whose case is no longer on the server

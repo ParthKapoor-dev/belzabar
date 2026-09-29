@@ -26,6 +26,7 @@ import {
   type SyncItem,
   WRITE_ACTIONS,
 } from "../../lib/test-cases/suite";
+import { runSuiteCases, type SuiteRunSummary } from "../../lib/test-cases/run-suite";
 import { splitInputPair } from "../../lib/input-collector";
 import type { HydratedMethod } from "../../lib/types/common";
 
@@ -48,6 +49,7 @@ interface TestCaseArgs extends CaseFlags {
   dir?: string;
   apply?: boolean;
   prune?: boolean;
+  wait?: boolean;
   yes: boolean;
 }
 
@@ -88,7 +90,16 @@ type TestCaseData =
   | WriteData
   | ExportData
   | SyncData
-  | { action: "delete" | "run-suite" | "delete-suite"; response: unknown };
+  | RunSuiteWaitData
+  | { action: "delete" | "run-suite" | "delete-suite"; response: unknown; hint?: string };
+
+/** `run-suite --wait`: every active case run now through /chain/test, assertions evaluated by belz. */
+interface RunSuiteWaitData extends SuiteRunSummary {
+  action: "run-suite";
+  mode: "wait";
+  chainUuid: string;
+  testSuiteId: string | null;
+}
 
 const UUID = { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid>." } as const;
 const TC_ID = { name: "test-case-id", required: true, missingCode: "MISSING_TC_ID", missingMessage: "Missing <testCaseId>." } as const;
@@ -117,7 +128,7 @@ export const args = defineSubcommands(
       positionals: [UUID],
       flags: { ...AD_COMMON_FLAGS, file: { type: "string", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing --file argument." }, ...AD_YES_FLAG },
     },
-    "run-suite": { positionals: [UUID], flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG } },
+    "run-suite": { positionals: [UUID], flags: { ...AD_COMMON_FLAGS, wait: { type: "boolean" }, ...AD_YES_FLAG } },
     "delete-suite": {
       positionals: [{ name: "test-suite-id", required: true, missingCode: "MISSING_SUITE_ID", missingMessage: "Missing <testSuiteId>." }],
       flags: { ...AD_COMMON_FLAGS, ...AD_YES_FLAG },
@@ -187,6 +198,10 @@ function contract(cases: CaseFile[], method: HydratedMethod): ContractProblem[] 
   return all;
 }
 
+const RUN_SUITE_ASYNC_HINT =
+  "The server runs the suite in the background and reports only by e-mail: `ad test-report` does not track it and the " +
+  "suite's executionStatus ignores assertions. Use `ad test-case run-suite <uuid> --wait` for a per-case pass/fail result.";
+
 async function fetchContract(uuid: string): Promise<HydratedMethod> {
   return adApi.fetchMethod(uuid, "v2");
 }
@@ -230,7 +245,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       case "bulk":
         return { ...base, action: "bulk", chainUuid: p.positionals.uuid, filePath: p.flags.file, yes: p.flags.yes };
       case "run-suite":
-        return { ...base, action: "run-suite", chainUuid: p.positionals.uuid, yes: p.flags.yes };
+        return { ...base, action: "run-suite", chainUuid: p.positionals.uuid, wait: p.flags.wait || undefined, yes: p.flags.yes };
       case "delete":
         return { ...base, action: "delete", testCaseId: p.positionals.testCaseId, yes: p.flags.yes };
       case "delete-suite":
@@ -361,10 +376,34 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       }
 
       case "run-suite": {
+        if (args.wait) {
+          const uuid = args.chainUuid!;
+          const [method, suite] = await Promise.all([adApi.fetchMethod(uuid, "v1"), fetchSuite(uuid)]);
+          if (suite.cases.length === 0) {
+            await loadTestSuite(uuid); // METHOD_NOT_FOUND for an unknown / deleted uuid
+            throw new CliError(`${method.name} has no active test cases to run.`, { code: "AD_TESTCASE_NONE", details: { uuid, testSuiteId: suite.testSuiteId } });
+          }
+          await confirm(`run ${suite.cases.length} test case(s) of ${method.name} now, one execution each (real side effects)`, [
+            ["Method UUID", uuid],
+            ["Test cases", suite.cases.map((c) => c.file.name).join(", ")],
+          ]);
+          logIntent("POST", `/rest/api/automation/chain/test (x${suite.cases.length})`, { chainUuid: uuid, wait: true });
+          const summary = await runSuiteCases(method, suite);
+          const data: RunSuiteWaitData = { action: "run-suite", mode: "wait", chainUuid: uuid, testSuiteId: suite.testSuiteId, ...summary };
+          if (summary.failed + summary.errored > 0) {
+            const bad = summary.cases.filter((c) => c.status !== "PASS");
+            return failWithData(
+              "AD_TESTCASE_SUITE_FAILED",
+              `${bad.length} of ${summary.total} test case(s) did not pass: ${bad.map((c) => `${c.name} ${c.status}`).join(", ")}`,
+              data,
+            );
+          }
+          return ok<TestCaseData>(data);
+        }
         await confirm(`run test suite for ${args.chainUuid}`, [["Method UUID", args.chainUuid!]]);
         logIntent("POST", "/rest/api/automation/chain/testsuite/execute", { chainUuid: args.chainUuid });
         const response = await adApi.runTestSuite(args.chainUuid!);
-        return ok<TestCaseData>({ action: "run-suite", response });
+        return ok<TestCaseData>({ action: "run-suite", response, hint: RUN_SUITE_ASYNC_HINT });
       }
 
       case "delete-suite": {
@@ -498,13 +537,26 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       }
       return;
     }
+    if (data.action === "run-suite" && "mode" in data) {
+      ui.section(`Test suite ${data.chainUuid} (run now by belz)`);
+      for (const c of data.cases) {
+        const why =
+          c.status === "ERROR"
+            ? ` — ${c.error ?? c.failedStep?.parsedError.summary ?? "execution failed"}`
+            : c.status === "FAIL"
+              ? ` — ${c.assertions.results.filter((r) => !r.pass).map((r) => `${r.expectation} (${r.reason})`).join("; ")}`
+              : "";
+        const line = `${c.status.padEnd(5)} ${c.name} (${c.assertions.passed}/${c.assertions.total} assertions)${why}`;
+        if (c.status === "PASS") ui.success(line);
+        else ui.error(line);
+        for (const u of c.unevaluated) ui.info(`      SKIP ${u} (not evaluated locally)`);
+      }
+      ui.text(`${data.passed} passed, ${data.failed} failed, ${data.errored} errored of ${data.total}`);
+      return;
+    }
     ui.success(`test-case ${data.action} complete`);
     if (data.action === "run-suite") {
-      ui.warn(
-        "Note: /testsuite/execute does NOT evaluate assertions. executionStatus=PASS " +
-          "means the method ran without errors, not that assertions passed. " +
-          "Use `belz ad test <uuid> --case <file>` to check a case's assertions.",
-      );
+      ui.warn(RUN_SUITE_ASYNC_HINT);
     }
     ui.section("Response");
     ui.object(data.response);

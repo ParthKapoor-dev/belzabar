@@ -16,7 +16,11 @@ Actions:
                                           description cannot be changed through the API)
   delete <testCaseId> [--yes]             Delete a test case
   bulk <uuid> --file <cases.json> [--yes] Create an array of test cases (one POST each)
-  run-suite <uuid> [--yes]                Execute the method's test suite (async)
+  run-suite <uuid> [--yes]                Trigger the server's suite run (async: e-mail report
+                                          only, not observable from the CLI)
+  run-suite <uuid> --wait [--yes]         Run every active case now (one /chain/test run
+                                          each), evaluate its assertions, and return a
+                                          per-case PASS/FAIL/ERROR summary
   delete-suite <testSuiteId> [--yes]      Delete a test suite
   export <uuid> --dir <root> [--prune]    Write the suite to <root>/<Category>/<method>/
                                           (method.json + cases/<name>.json); read-only
@@ -36,6 +40,9 @@ Flags:
                         string. Stored as advance-mode SpEL `#{out} eq 'v'`.
   --dir <path>          Export root (export).
   --uuid <uuid>         Chain to sync to (sync). Default: method.json uuids[<env>].
+  --wait                run-suite: run the cases now and wait for every result
+                        (exit 1 AD_TESTCASE_SUITE_FAILED unless all pass;
+                        AD_TESTCASE_NONE when the suite has no active case).
   --apply               Perform the sync (without it sync only prints the plan).
   --prune               export: delete case files no longer on the server;
                         sync: delete server cases that have no file.
@@ -67,11 +74,16 @@ conflict (duplicate name on the server). Names are never released: DELETE is
 a soft delete, so a deleted case's name cannot be created again
 (AD_TESTCASE_NAME_RESERVED) — rename the file's case instead.
 
-Gotcha: /testsuite/execute does NOT evaluate assertions. executionStatus=PASS
-means the method ran without errors, not that assertions passed. Use
-`belz ad test <uuid>` with the case file to check its assertions (see its help).
+run-suite without --wait (live sems-dev): /testsuite/execute returns at once
+("you will receive an email"); `ad test-report` is not per chain and stays all
+zeros; the suite's executionStatus stays PASS even when an assertion fails, and
+no case carries a result. Use --wait to see results: data {mode:"wait", total,
+passed, failed, errored, cases[{id, name, status, execution, outputs,
+assertions{total, passed, failed, results}, unevaluated, failedStep?, error?}]}.
+Assertions that are not `#{out} op literal` are listed in `unevaluated`.
 
 Examples:
   belz ad test-case create 4a1b... --name greet.ok.1 --input name=World --assert "greetingOut=Hello World" --env <env> --yes
+  belz ad test-case run-suite 4a1b... --wait --env <env> --yes --llm
   belz ad test-case export 4a1b... --dir ./unit-tests/ad --env <env>
   belz ad test-case sync ./unit-tests/ad/Test-Parth/greet --env <env> --apply --yes --llm
