@@ -51,6 +51,10 @@ Global Flags:
                           Any env from `belz envs` (configured in ~/.belz/config.json).
   --llm                   Output structured JSON envelope for scripting/LLM use.
 
+Errors: METHOD_NOT_FOUND for an unknown uuid, and for a soft-deleted method
+(details.deleted: true): the V1 route still serves deleted records, so a V1
+read also reads V2, and a cached copy of a method since seen deleted is refused.
+
 Examples:
   belz ad show 1234-5678 --compact --llm
   belz ad show 1234-5678 --compact --sql

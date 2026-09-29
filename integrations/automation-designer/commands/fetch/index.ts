@@ -1,6 +1,7 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
+import { fetchMethodChecked } from "../../lib/view-fetch";
 import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { HydratedMethod } from "../../lib/types/common";
@@ -45,7 +46,7 @@ const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
     return { uuid: resolveMethodRef(positionals.uuid), raw: flags.raw, apiVersion: common.apiVersion.version };
   },
   async execute({ uuid, raw, apiVersion }, context) {
-    const method = await adApi.fetchMethod(uuid, apiVersion);
+    const method = await fetchMethodChecked(uuid, apiVersion); // V1 serves soft-deleted methods
     const unresolved = method.unresolvedServices ?? [];
     // A degraded parse (a definition lookup failed) is not cached (ADR-R11).
     if (unresolved.length === 0) await CacheManager.save(uuid, method);

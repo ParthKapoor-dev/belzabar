@@ -31,7 +31,7 @@ import type {
 } from "../../lib/types/common";
 import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
-import { fetchViewMethod } from "../../lib/view-fetch";
+import { assertNotKnownDeleted, fetchMethodChecked, fetchViewMethod } from "../../lib/view-fetch";
 
 // Moved to lib/method-view.ts (shared with --compact / --story); re-exported for callers/tests.
 export { flattenStepInputs, identityForStep };
@@ -434,9 +434,12 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       // Cache is V1-shaped; if --v2 or force is set, refetch.
       if (!m || flags.force || apiVersion === "v2" || m.sourceVersion !== apiVersion) {
         source = "fresh";
-        m = await adApi.fetchMethod(uuid, apiVersion);
+        // V1 serves soft-deleted methods: fetchMethodChecked reads V2 beside it.
+        m = await fetchMethodChecked(uuid, apiVersion);
         // A degraded parse (a definition lookup failed) is not cached (ADR-R11).
         if (apiVersion === "v1" && !m.unresolvedServices?.length) await CacheManager.save(uuid, m);
+      } else {
+        await assertNotKnownDeleted(uuid); // a cached copy of a method seen deleted since
       }
       method = m;
 

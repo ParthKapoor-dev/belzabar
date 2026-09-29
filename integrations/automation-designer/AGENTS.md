@@ -114,7 +114,10 @@ all of them together.
   `{schema:"ad.<cmd>", version, ok, command, data, error, meta}`. Machine output
   never goes through `console.log`.
 - Error codes are stable and documented in each help.txt. The main families:
-  - `INVALID_UUID`, `METHOD_NOT_FOUND` (an unknown uuid, or a 200 with an empty body)
+  - `INVALID_UUID`, `METHOD_NOT_FOUND` (an unknown uuid, or a 200 with an empty body; a
+    soft-deleted method: `details.deleted: true` — V1 still serves deleted records, so
+    `show`/`fetch` read V2 beside every fresh V1 read (`lib/view-fetch.ts:fetchMethodChecked`),
+    and a V2 success clears a stale gone mark)
   - `AD_DRAFT_GUARD_*`
   - `AD_OVERLAY_{UNKNOWN_KEY,INVALID,NOT_APPLIED}`, `AD_SERIALIZER_DRIFT`
   - `AD_SPEC_*`, `AD_VALIDATION_FAILED`, `AD_VERSION_CONFLICT`, `AD_SAVE_REJECTED`,

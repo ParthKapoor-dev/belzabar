@@ -78,6 +78,26 @@ export async function markMethodGone(env: string, uuid: string | null | undefine
   }
 }
 
+/** A V2 read of the uuid succeeded: drop a stale gone mark. Never throws. */
+export async function unmarkMethodGone(env: string, uuid: string | null | undefined): Promise<void> {
+  const id = uuid?.trim().toLowerCase();
+  if (!id) return;
+  try {
+    const marks = await dirtyCache.load(goneKey(env));
+    if (!marks || !(id in marks)) return;
+    delete marks[id];
+    await dirtyCache.save(goneKey(env), marks);
+  } catch {
+    /* best effort */
+  }
+}
+
+/** True when the uuid carries a gone mark on this env (see markMethodGone). */
+export async function isMethodGone(env: string, uuid: string): Promise<boolean> {
+  const marks = (await dirtyCache.load(goneKey(env)).catch(() => null)) ?? {};
+  return uuid.trim().toLowerCase() in marks;
+}
+
 async function withoutGone(index: MethodFinderIndex): Promise<MethodFinderIndex> {
   const marks = (await dirtyCache.load(goneKey(index.env)).catch(() => null)) ?? {};
   if (Object.keys(marks).length === 0) return index;
