@@ -95,7 +95,7 @@ needs `--yes` instead.
 | `delete <uuid>` | **W** soft-delete a never-published DRAFT |
 | `import <file>`, `category create <name>` | **W**. import refuses an empty/invalid file (`AD_IMPORT_EMPTY`/`_INVALID`, `FILE_NOT_FOUND`), PUBLISHED records or targets (`AD_IMPORT_PUBLISHED`/`_TARGETS_PUBLISHED`), and validator errors on V2 records; the route 400s on sems-dev |
 | `changelog <uuid> [--note "…"]` | List notes; `--note` is **W** (draft-guarded) |
-| `history restore <draftUuid> --version N` | **W** draft-guarded restore; fails `RESTORE_UNCONFIRMED` unless the re-read draft matches the target content; evicts the compiled cache; reports validator findings |
+| `history restore <draftUuid> --version N` | **W** draft-guarded restore; fails `RESTORE_UNCONFIRMED` unless the re-read draft matches the target content (fingerprint projection; `contentDiff` names differing paths); evicts the compiled cache; reports validator findings |
 | `test <uuid>` | **W** (really runs the chain). `--inputs <file|json>`, `--input k=v` (repeatable, typed; on top of --inputs/--case), `--case`, `--expect`, `--compare-published` (runs the published copy too: confirms, `--yes`). A FAILED execution exits 1 `AD_TEST_FAILED` |
 | `test-case <action>` | `list`, `export` and `sync` (dry run; needs `--env`) are reads. `create`, `update`, `delete`, `bulk`, `run-suite`, `delete-suite` and `sync --apply` are **W** |
 | `run <publishedId>`, `run-suites`, `save-suite` | **W** live execute of the uuid's own saved body — a draft uuid runs the draft; `data.publishedUuid` names the published copy (`--stream`); **W** run local `suites/*.spec.json` (a malformed file fails alone as INVALID_JSON; a suite saved on another env is ENV_MISMATCH, not run); save a local suite (records `env`) |

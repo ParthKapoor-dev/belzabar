@@ -46,6 +46,8 @@ interface WireOpts {
   /** V2 chain body served after a restore (default: the real one). */
   draftV2?: any;
   publishedV1?: any;
+  /** History.get body for draft version 1 (default: the real one). */
+  draftHistV1?: any;
 }
 
 /** The history services + chain endpoints. `get` serves the draft fixtures for includeDraft, a "published" body otherwise. */
@@ -69,7 +71,7 @@ function wire(opts: WireOpts = {}) {
       response: (req: RecordedRequest) => {
         const b = req.json();
         if (b.includeDraft !== "true") return pubGet(b.version);
-        if (b.version === "1") return load("get-draft-v1.json");
+        if (b.version === "1") return opts.draftHistV1 ?? load("get-draft-v1.json");
         if (b.version === "3") return load("get-draft-v3.json");
         return respond({ status: 500, json: load("get-not-found-500.json") });
       },
@@ -204,6 +206,32 @@ describe("ad history restore (AD-23)", () => {
     expect(r.envelope?.error?.code).toBe("RESTORE_UNCONFIRMED");
     const d = r.envelope?.data as any;
     expect([d.platformResponse, d.contentMatches, d.success]).toEqual([true, false, false]);
+  });
+
+  test("ADW-R8 regression: a real V2 GET vs its own history body (GET-only fieldCode, service spelling) -> success", async () => {
+    // Real sems-dev 4bfc83c7: the V2 GET spells the category "Schools-Utilities"
+    // and adds method-output fieldCode; the history body of the same version
+    // says "Schools - Utilities" and has no fieldCode.
+    const XF = join(import.meta.dir, "../fixtures");
+    const read = (f: string) => JSON.parse(readFileSync(join(XF, f), "utf8"));
+    wire({
+      draftHistV1: { ...read("cross-env/4bfc83c7fc3da12d7e639ee88a40ff27.sems-dev.history-v3.json"), methodID: DRAFT, isPublished: false },
+      draftV2: read("real-v2/4bfc83c7fc3da12d7e639ee88a40ff27.v2.json"),
+    });
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error ?? null).toBeNull();
+    const d = r.envelope?.data as any;
+    expect([d.contentMatches, d.success]).toEqual([true, true]);
+  });
+
+  test("ADW-R8: a content mismatch names the differing paths", async () => {
+    const v2 = load("chain-v2-draft.json");
+    const step = v2.steps[0].properties.customCode;
+    step.inlineCode = step.inlineCode.replace("v1-content", "v3-content");
+    wire({ draftV2: v2 });
+    const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("RESTORE_UNCONFIRMED");
+    expect((r.envelope?.data as any).contentDiff).toEqual(["$.steps[0].properties.customCode.inlineCode"]);
   });
 
   test("ADW-R8: the compiled cache of the draft is evicted on both routes; the restored body is validated", async () => {

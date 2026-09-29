@@ -2,7 +2,7 @@ import { CliError, defineSubcommands, failWithData, ok, type CommandModule, type
 import { adApi, type MethodVersionSummary, type MethodVersionFull } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
-import { fingerprintMethod, parseVersionBody } from "../../lib/fingerprint";
+import { diffPaths, fingerprintMethod, fingerprintProjection, parseVersionBody } from "../../lib/fingerprint";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { getVersionOf, sideOf, type HistorySide } from "../../lib/history";
 import { resolveMethodRef } from "../../lib/ids";
@@ -120,6 +120,8 @@ interface HistoryRestoreData {
   resultingVersion: number | null;
   /** Whether the re-fetched draft's logic fingerprint equals the target version's. */
   contentMatches: boolean | null;
+  /** When contentMatches is false: up to 10 projection paths that differ (see fingerprintProjection). */
+  contentDiff?: string[];
   /** Compiled-chain cache eviction for the draft (both routes). */
   compiledCache: CompiledCacheResult;
   /** Validator findings on the restored body (the restore already happened: reported, not blocking). */
@@ -540,10 +542,14 @@ async function executeRestore(
   // now carries the target version's logic.
   let resultingVersion: number | null = null;
   let contentMatches: boolean | null = null;
+  let contentDiff: string[] | undefined;
   try {
     const after = await adApi.fetchMethod(draft.uuid, targetIsV2 ? "v2" : "v1");
     resultingVersion = typeof after.version === "number" ? after.version : null;
+    // Same normalised projection as trace/state (ADW-R8): the V2 GET and the
+    // history body differ in display-only fields (fieldCode, service spelling).
     contentMatches = fingerprintMethod(after) === fingerprintMethod(targetMethod);
+    if (!contentMatches) contentDiff = diffPaths(fingerprintProjection(after), fingerprintProjection(targetMethod), 10);
   } catch {
     // leave as null — reported below
   }
@@ -573,6 +579,7 @@ async function executeRestore(
     previousVersion,
     resultingVersion,
     contentMatches,
+    ...(contentDiff ? { contentDiff } : {}),
     compiledCache,
     validation,
   };

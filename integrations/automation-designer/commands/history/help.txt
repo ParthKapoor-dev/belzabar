@@ -38,7 +38,10 @@ Notes:
     the old body as a NEW draft version; belz re-fetches the draft and reports
     resultingVersion and contentMatches. Whatever the platform answers, the
     restore fails (RESTORE_UNCONFIRMED) unless the re-fetched draft verifiably
-    carries the target version's content. The draft's compiled cache is
+    carries the target version's content. Content is compared on the
+    fingerprint projection (display-only fields such as a method output's
+    fieldCode or the category's spelling are ignored); on a mismatch
+    data.contentDiff lists up to 10 differing paths. The draft's compiled cache is
     evicted (data.compiledCache) and the restored body is validated
     (data.validation; reported, not blocking — it is already saved).
   - Version numbers are integers starting at 1. Use 'list' to see which
