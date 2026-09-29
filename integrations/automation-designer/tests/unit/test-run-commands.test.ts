@@ -162,9 +162,36 @@ describe("ad run-suites (AD-38 / F14)", () => {
   function suitesDir(): string {
     const dir = scratchDir("ad-suites");
     mkdirSync(join(dir, "suites"), { recursive: true });
-    writeFileSync(join(dir, "suites", "s1.spec.json"), JSON.stringify({ name: "s1", uuid: ` ${UUID.toUpperCase()}  `, inputs: { cityCode: "Z" } }));
+    writeFileSync(join(dir, "suites", "s1.spec.json"), JSON.stringify({ name: "s1", uuid: ` ${UUID.toUpperCase()}  `, env: "t-s4b-run", inputs: { cityCode: "Z" } }));
     return dir;
   }
+  const legacySuite = (dir: string) =>
+    writeFileSync(join(dir, "suites", "s1.spec.json"), JSON.stringify({ name: "s1", uuid: UUID, inputs: { cityCode: "Z" } }));
+
+  test("ADW-R13: a legacy suite without env is refused (ENV_MISSING), nothing runs", async () => {
+    const dir = suitesDir();
+    legacySuite(dir);
+    const f = wire(okTestResponse);
+    spies.push(spyOn(process, "cwd").mockReturnValue(dir));
+    const r = await runCommand(runSuitesCommand, [], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.code).toBe("SUITES_FAILED");
+    expect((r.envelope?.data as any).suites[0].reason).toContain("ENV_MISSING");
+    expect((r.envelope?.data as any).suites[0].reason).toContain("--legacy-env t-s4b-run");
+    expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
+  });
+
+  test("ADW-R13: --legacy-env for another env still refuses; the matching one runs it", async () => {
+    const dir = suitesDir();
+    legacySuite(dir);
+    const f = wire(okTestResponse);
+    spies.push(spyOn(process, "cwd").mockReturnValue(dir));
+    const other = await runCommand(runSuitesCommand, ["--legacy-env", "nsm-qa"], { env: "t-s4b-run" });
+    expect((other.envelope?.data as any).suites[0].reason).toContain("ENV_MISSING");
+    expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
+    const same = await runCommand(runSuitesCommand, ["--legacy-env", "t-s4b-run"], { env: "t-s4b-run" });
+    expect(same.envelope?.ok).toBe(true);
+    expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(1);
+  });
 
   test("posts the same 5-key test body as `ad test`, with apiIds injected", async () => {
     const dir = suitesDir();

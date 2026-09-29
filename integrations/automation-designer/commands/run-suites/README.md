@@ -20,3 +20,8 @@ server-side test cases (`belz ad test-case`).
 
 The suites really execute (SQL and HTTP steps run), so the command declares `writes`
 and needs an explicit `--env`.
+
+A suite saved on another env (`env` field) is not run (ENV_MISMATCH). A legacy suite
+with no `env` is not run either (ENV_MISSING): its bare uuid could belong to any env.
+Pass `--legacy-env <env>` equal to `--env` to run such suites as that env's, or
+re-save them with `belz ad save-suite`.

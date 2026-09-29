@@ -29,19 +29,29 @@ interface TestExecutionResponse {
 
 export const args = defineArgs({
   command: "belz ad run-suites",
-  flags: { ...AD_COMMON_FLAGS },
+  flags: {
+    ...AD_COMMON_FLAGS,
+    "legacy-env": {
+      type: "string",
+      description: "Env that suites without an `env` field were saved for; they run only when it equals --env",
+    },
+  },
 });
 
-const command: CommandModule<undefined, RunSuitesData> = {
+interface RunSuitesArgs {
+  legacyEnv?: string;
+}
+
+const command: CommandModule<RunSuitesArgs, RunSuitesData> = {
   schema: "ad.run-suites",
   // Executes every suite's chain (SQL/HTTP steps really run): explicit --env required.
   writes: true,
   parseArgs(argv) {
     const { flags } = args.parse(argv);
     resolveAdCommon(flags, "test", "run-suites");
-    return undefined;
+    return { legacyEnv: flags.legacyEnv?.trim() || undefined };
   },
-  async execute(_args, context) {
+  async execute({ legacyEnv }, context) {
     const suitesDir = join(process.cwd(), "suites");
     if (!existsSync(suitesDir)) {
       throw new CliError("No suites directory found.", { code: "SUITES_DIR_MISSING" });
@@ -84,7 +94,24 @@ const command: CommandModule<undefined, RunSuitesData> = {
         failed++;
         continue;
       }
-      if (typeof suite.env !== "string") legacy++;
+      // ADW-R13: a suite saved before save-suite recorded the env names a bare
+      // uuid of an unknown env. It is refused unless the operator states which
+      // env such suites belong to (--legacy-env) and that is the target env.
+      if (typeof suite.env !== "string") {
+        legacy++;
+        if (legacyEnv !== context.env.name) {
+          suites.push({
+            name: suite.name ?? file,
+            uuid: suite.uuid,
+            status: "failed",
+            reason: legacyEnv
+              ? `ENV_MISSING: no env recorded; --legacy-env ${legacyEnv} is not ${context.env.name}`
+              : `ENV_MISSING: no env recorded; pass --legacy-env ${context.env.name} if it was saved for ${context.env.name}, or re-save it`,
+          });
+          failed++;
+          continue;
+        }
+      }
 
       try {
         // AD-38 / F14: the same `/chain/test` body `ad test` posts (not the whole GET body).
@@ -132,7 +159,9 @@ const command: CommandModule<undefined, RunSuitesData> = {
     }
 
     if (legacy > 0) {
-      context.warn(`${legacy} suite(s) carry no env (saved before ADW-R13); re-save them with \`belz ad save-suite\` to pin the env.`);
+      context.warn(
+        `${legacy} suite(s) carry no env (saved before ADW-R13)${legacyEnv === context.env.name ? ` and ran as ${legacyEnv} suites (--legacy-env)` : " and were not run"}; re-save them with \`belz ad save-suite\` to pin the env.`,
+      );
     }
     const summary: RunSuitesData = { total: files.length, passed, failed, suites };
 

@@ -1,1 +1,2 @@
 belz ad run-suites --env <env>  :->  Run all saved test suites in suites/ (really executes; needs --env); verifies HTTP 200 and non-failed execution, reports the server's error message
+belz ad run-suites --env <env> --legacy-env <env>  :->  Also run suites saved without an env (they are refused otherwise, ENV_MISSING); only when --legacy-env equals --env
