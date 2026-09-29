@@ -39,6 +39,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Decide "first run" now: step 6b (record-install) creates config.json, so
+# testing for it at step 8 would never see a first run (CORE-R2).
+FIRST_RUN=0
+[[ -f "$BELZ_CONFIG_DIR/config.json" ]] || FIRST_RUN=1
+
 # ── 1. Check bun ─────────────────────────────────────────────────────────────
 if ! command -v bun &>/dev/null; then
   echo "❌ bun is not installed. Please install bun first: https://bun.sh" >&2
@@ -99,7 +104,7 @@ fi
 # ── 8. First-time setup ──────────────────────────────────────────────────────
 # With --env-file, run `belz setup` non-interactively. Otherwise run the guided
 # `belz onboard` flow (credentials + extension).
-if [[ ! -f "$BELZ_CONFIG_DIR/config.json" ]]; then
+if [[ "$FIRST_RUN" == 1 ]]; then
   echo ""
   if [[ -n "$ENV_FILE" ]]; then
     echo "🆕 No config found — running 'belz setup --env-file'…"

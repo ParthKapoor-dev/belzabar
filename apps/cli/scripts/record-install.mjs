@@ -6,7 +6,7 @@
 //
 // Usage: node record-install.mjs <sourceDir> <installDir> <repoUrl> <version>
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
@@ -16,8 +16,12 @@ const configPath = join(homedir(), '.belz', 'config.json');
 let config = {};
 try {
   config = JSON.parse(readFileSync(configPath, 'utf8'));
-} catch {
-  /* no existing config */
+} catch (err) {
+  if (err?.code !== 'ENOENT') {
+    // Never replace an unreadable/malformed config (it holds credentials).
+    console.error(`record-install: not updating ${configPath}: ${err?.message ?? err}`);
+    process.exit(1);
+  }
 }
 
 config.belz = {
@@ -29,6 +33,11 @@ config.belz = {
   installedAt: new Date().toISOString(),
 };
 
-mkdirSync(dirname(configPath), { recursive: true });
-writeFileSync(configPath, JSON.stringify(config, null, 2));
+// config.json holds credentials: private dir, 0600 file, written atomically
+// (tmp + rename) so a crash never truncates it (CORE-R2).
+mkdirSync(dirname(configPath), { recursive: true, mode: 0o700 });
+const tmp = `${configPath}.${process.pid}.${Date.now()}.tmp`;
+writeFileSync(tmp, JSON.stringify(config, null, 2), { mode: 0o600 });
+chmodSync(tmp, 0o600);
+renameSync(tmp, configPath);
 console.log(`recorded belz install metadata → ${configPath}`);

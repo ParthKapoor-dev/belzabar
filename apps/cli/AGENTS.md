@@ -106,8 +106,9 @@ bun run belz:reinstall                   # scripts/reinstall.sh
 
 - `scripts/install.sh [--env-file <path>] [--install-dir <dir>]` — `bun install --ignore-scripts`,
   compile, install the binary (default `~/.local/bin`), record install metadata
-  (`scripts/record-install.mjs`, read by `belz update`), and on first install run `belz onboard`
-  (or `belz setup --env-file`). `scripts/install.ps1` is the Windows equivalent.
+  (`scripts/record-install.mjs`, read by `belz update`; atomic, 0600, never overwrites a malformed
+  config), and on first install run `belz onboard` (or `belz setup --env-file`). "First install" is
+  decided before record-install creates config.json (`FIRST_RUN`, CORE-R2). `scripts/install.ps1` is the Windows equivalent.
 - `scripts/reinstall.sh` — wipes `~/.belz/` and the binary, then delegates to `install.sh`.
 - The repo-root one-liners (`install.sh`, `install.ps1`) and `belz update` call
   `apps/cli/scripts/`, falling back to the pre-restructure `cli/scripts/` path.
@@ -131,6 +132,7 @@ Run from the repo root: `bun run check` = typecheck + `bun run docs:check` + all
 | `help-flags.test.ts` | `--help` anywhere shows help instead of running |
 | `compiled-pipe.test.ts` | compiles to a tmp dir; a >64 KiB `--llm` envelope survives a slow pipe |
 | `entry.test.ts` | `--version`, registry load-failure report |
+| `install-scripts.test.ts` | record-install (scratch HOME: 0600/0700, keeps sections, refuses malformed config); installers decide first run before recording |
 | `onboard.test.ts` | a failed step → `ONBOARD_INCOMPLETE` (exit 1); Ctrl-C (`USER_ABORT`) ends the flow |
 | `cache-command.test.ts`, `cache-prune-local.test.ts` | `belz cache` invalidate body/guards, prune-local |
 | `setup-config-exec.test.ts`, `update-paths.test.ts` | setup merge + password encoding, config token refresh; update script paths |

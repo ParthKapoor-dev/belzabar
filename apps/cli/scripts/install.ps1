@@ -19,6 +19,9 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..\..")
 $BelzConfigDir = Join-Path $env:USERPROFILE ".belz"
 
+# Decide "first run" now: step 6 (record-install) creates config.json (CORE-R2).
+$FirstRun = -not (Test-Path (Join-Path $BelzConfigDir "config.json"))
+
 # ── 1. Check bun ──────────────────────────────────────────────────────────────
 if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
   Write-Error "bun is not installed. Install it first: https://bun.sh"
@@ -76,7 +79,7 @@ if ($userPath -notlike "*$InstallDir*") {
 }
 
 # ── 8. First-time setup ───────────────────────────────────────────────────────
-if (-not (Test-Path (Join-Path $BelzConfigDir "config.json"))) {
+if ($FirstRun) {
   if ($EnvFile) {
     Write-Host "No config found - running 'belz setup --env-file'..."
     & $Target setup --env-file $EnvFile
