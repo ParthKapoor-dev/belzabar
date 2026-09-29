@@ -21,6 +21,7 @@ import { createHash } from "crypto";
 import { isObj } from "@belzabar/core";
 import { parseV1Method, parseV2Method } from "./parser/index";
 import { decodeBase64Strict } from "./base64";
+import { outputSpecs } from "./method-view";
 import type { HydratedMethod, ParsedStep, StepInput } from "./types/common";
 import type { MethodVersionFull } from "./api/v1";
 import type { V1RawMethodResponse } from "./types/v1-wire";
@@ -45,7 +46,9 @@ function semanticInput(i: StepInput): unknown {
   };
 }
 
-/** Env-agnostic projection of one step: substantive logic only. */
+const codeText = (c: number | string | undefined): string => (c == null ? "" : String(c));
+
+/** Env-agnostic projection of one step: substantive logic and every behaviour gate. */
 function semanticStep(s: ParsedStep): unknown {
   const base: Record<string, unknown> = {
     o: s.orderIndex,
@@ -55,6 +58,17 @@ function semanticStep(s: ParsedStep): unknown {
     mth: s.methodName ?? "",
     cond: s.conditionExpression ?? "",
     inputs: (s.inputs ?? []).map(semanticInput),
+    outs: outputSpecs(s),
+    async: !!s.runAsync,
+    loop: s.repeatStepExecution
+      ? { type: s.loopConfiguration?.type ?? "", over: s.loopExecutionSource ?? "", counter: s.loopConfiguration?.counter ?? "", parallel: !!s.loopConfiguration?.executeParallel }
+      : null,
+    exitOnFail: s.forceExitFromFailure ? { code: codeText(s.forceExitStatusCode), msg: s.forceExitErrorMessage ?? "" } : null,
+    exitIf: s.forceReturnExpression || s.forceReturnRows
+      ? { expr: s.forceReturnExpression ?? "", rows: s.forceReturnRows ?? [], code: codeText(s.forceReturnStatusCode), msg: s.forceReturnMessage ?? "" }
+      : null,
+    // by name: account ids are env-local.
+    account: s.account?.name ?? "",
   };
   switch (s.kind) {
     case "CUSTOM_CODE": base.body = { lang: s.language, src: s.source }; break;
@@ -317,6 +331,9 @@ export function methodDiffView(m: HydratedMethod): Record<string, unknown> {
     name: m.name,
     summary: m.summary ?? "",
     description: m.description ?? "",
+    deprecated: !!m.deprecated,
+    scope: m.scope ?? "",
+    timeoutSeconds: m.timeoutSeconds ?? null,
     inputs: m.inputs.map(field),
     variables: m.variables.map(field),
     outputs: m.outputs.map((o) => field(o as unknown as { code?: string; type?: unknown })),

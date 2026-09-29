@@ -11,6 +11,7 @@ import {
   flattenStepInputs,
   identityForStep,
   renderCompact,
+  stepGates,
   storyMarkdown,
   type CompactMethodView,
   type InputLabeler,
@@ -64,6 +65,8 @@ interface StepSummaryRow {
   kind: ParsedStep["kind"];
   description?: string;
   identity?: string;
+  /** Behaviour markers: entry condition, loop, exit-if / exit-on-fail, async, account. */
+  gates?: string[];
 }
 
 /**
@@ -92,6 +95,9 @@ interface ShowMethodData {
     stepCount: number;
     parseWarnings?: string[];
     editUrl?: string;
+    deprecated?: boolean;
+    scope?: string;
+    timeoutSeconds?: number;
   };
   steps: StepSummaryRow[];
   inputs?: Array<{ code: string; type: string; required: boolean; description: string }>;
@@ -141,7 +147,11 @@ interface StepDetailView {
   condition?: { mode?: string; expression?: string; rows?: ConditionRow[] };
   /** Step input values. */
   inputs?: Array<{ input: string; value: string }>;
-  loop?: { source?: string; parallel?: boolean };
+  loop?: { source?: string; parallel?: boolean; type?: string; counter?: string };
+  /** Conditional exit: the method returns after this step when `expression` holds. */
+  exitIf?: { mode?: string; expression?: string; rows?: ConditionRow[]; statusCode?: number | string; message?: string };
+  exitOnFailure?: { statusCode?: number | string; message?: string };
+  account?: { id?: number | string; name?: string };
   reason?: string;
 }
 
@@ -177,6 +187,7 @@ function summariseSteps(method: HydratedMethod): StepSummaryRow[] {
     kind: s.kind,
     description: s.description ?? "",
     identity: identityForStep(s),
+    gates: stepGates(s),
   }));
 }
 
@@ -212,10 +223,20 @@ async function buildStepDetailView(
       value: step.loopConfiguration?.executeParallel ? "Parallel" : "Sequential",
     });
   }
+  const exitThen = (code: unknown, message: unknown) =>
+    [code != null && code !== "" ? String(code) : "", typeof message === "string" && message ? `"${message}"` : ""].filter(Boolean).join(" ");
+  const onFail = step.forceExitFromFailure ? exitThen(step.forceExitStatusCode, step.forceExitErrorMessage) : "";
   config.push({
     key: "Abort on Failure",
-    value: step.forceExitFromFailure ? "Yes" : "No",
+    value: step.forceExitFromFailure ? `Yes${onFail ? ` → ${onFail}` : ""}` : "No",
   });
+  if (step.forceReturnExpression || step.forceReturnRows) {
+    const then = exitThen(step.forceReturnStatusCode, step.forceReturnMessage);
+    config.push({ key: "Exit If", value: `${step.forceReturnExpression ?? "(basic rows)"}${then ? ` → ${then}` : ""}` });
+  }
+  if (step.account && (step.account.name || step.account.id != null)) {
+    config.push({ key: "Account", value: [step.account.name, step.account.id != null ? `#${step.account.id}` : ""].filter(Boolean).join(" ") });
+  }
 
   const labelFor = (await v1LabelerFor(method, step)) ?? (() => undefined);
 
@@ -246,10 +267,25 @@ async function buildStepDetailView(
     const inputs = flattenStepInputs(step.inputs, labelFor);
     if (inputs.length > 0) base.inputs = inputs;
   }
+  if (step.forceReturnExpression || step.forceReturnRows) {
+    base.exitIf = {
+      mode: step.forceReturnMode,
+      expression: step.forceReturnExpression,
+      ...(step.forceReturnRows ? { rows: step.forceReturnRows } : {}),
+      statusCode: step.forceReturnStatusCode,
+      message: step.forceReturnMessage,
+    };
+  }
+  if (step.forceExitFromFailure) {
+    base.exitOnFailure = { statusCode: step.forceExitStatusCode, message: step.forceExitErrorMessage || undefined };
+  }
+  if (step.account) base.account = step.account;
   if (step.repeatStepExecution) {
     base.loop = {
       source: step.loopExecutionSource,
       parallel: step.loopConfiguration?.executeParallel,
+      type: step.loopConfiguration?.type,
+      counter: step.loopConfiguration?.counter,
     };
   }
 
@@ -377,8 +413,8 @@ export const args = defineArgs({
  * text cut to 100 chars (raw `<ul><li>` / `&lt;` would otherwise fill the cells).
  * The `--llm` data keeps the description as stored.
  */
-export function stepTableRows(steps: Array<{ orderIndex: number; kind: ParsedStep["kind"]; description?: string; identity?: string }>): Array<Array<string | number>> {
-  return steps.map(s => [s.orderIndex, `[${badgeForKind(s.kind)}]`, abbreviate(htmlToText(s.description ?? ""), 100), s.identity ?? ""]);
+export function stepTableRows(steps: Array<{ orderIndex: number; kind: ParsedStep["kind"]; description?: string; identity?: string; gates?: string[] }>): Array<Array<string | number>> {
+  return steps.map(s => [s.orderIndex, `[${badgeForKind(s.kind)}]`, abbreviate(htmlToText(s.description ?? ""), 100), s.identity ?? "", (s.gates ?? []).join("; ")]);
 }
 
 const command: CommandModule<ShowMethodArgs, ShowData> = {
@@ -526,6 +562,9 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
         stepCount: method.parsedSteps.length,
         parseWarnings: method.parseWarnings,
         editUrl,
+        deprecated: method.deprecated,
+        scope: method.scope,
+        timeoutSeconds: method.timeoutSeconds,
       },
       steps: summariseSteps(method),
       stepDetail,
@@ -579,6 +618,9 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       ["API Source", data.sourceVersion.toUpperCase()],
       ["Cache", data.source === "stale" ? "stale (refreshing…)" : data.source],
     ];
+    if (summary.deprecated) rows.push(["Deprecated", "Yes"]);
+    if (summary.scope) rows.push(["Scope", summary.scope]);
+    if (summary.timeoutSeconds != null) rows.push(["Timeout", `${summary.timeoutSeconds}s`]);
     if (summary.editUrl) rows.push(["Edit URL", summary.editUrl]);
     ui.table(["Property", "Value"], rows);
 
@@ -593,7 +635,7 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       ui.text("No steps defined.");
     } else {
       ui.table(
-        ["#", "Kind", "Description", "Identity"],
+        ["#", "Kind", "Description", "Identity", "Gates"],
         stepTableRows(data.steps),
       );
     }
@@ -637,12 +679,17 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
           ui.text(`  ${r.groupOp ? `${r.groupOp} ` : ""}${r.field} ${r.operator} ${r.value ?? "null"}`);
         }
       }
+      for (const r of detail.exitIf?.rows ?? []) {
+        ui.text(`  exit-if ${r.groupOp ? `${r.groupOp} ` : ""}${r.field} ${r.operator} ${r.value ?? "null"}`);
+      }
       if (detail.inputs) {
         ui.table(["Input", "Value"], detail.inputs.map(i => [i.input, i.value]));
       }
       if (detail.loop) {
         ui.kv("Loop Source", detail.loop.source ?? "(none)");
         ui.kv("Parallel", detail.loop.parallel ? "Yes" : "No");
+        if (detail.loop.type) ui.kv("Loop Type", detail.loop.type);
+        if (detail.loop.counter) ui.kv("Loop Counter", detail.loop.counter);
       }
 
       if (detail.kind === "CUSTOM_CODE") {

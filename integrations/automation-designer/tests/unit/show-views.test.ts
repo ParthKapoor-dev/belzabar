@@ -112,8 +112,10 @@ describe("ad show --compact", () => {
     expect(data.view).toBe("compact");
     expect(data.steps).toHaveLength(m.parsedSteps.length);
     for (const line of data.steps) expect(line).not.toContain("\n");
+    const acct = m.parsedSteps[0]!.account?.name;
+    expect(acct).toBeTruthy();
     expect(data.steps[0]).toBe(
-      "1 SQL db_service.data.read | when #{code} ne null | sql: select * from enrollment_stage_type where code = '#{code}'; | -> flatData[]→enrollment_stage_type_info, rowsImpacted→enrollment_stage_type_count",
+      `1 SQL db_service.data.read | when #{code} ne null | sql: select * from enrollment_stage_type where code = '#{code}'; | -> flatData[]→enrollment_stage_type_info, rowsImpacted→enrollment_stage_type_count | account ${acct}`,
     );
     expect(data.steps[1]).toStartWith("2 CODE(javascript) | when #{code} ne null | code: if('#{enrollment_stage_type_count}' != 0)");
     expect(data.steps[3]).toBe("4 CALL Schools-Utilities.find.initials.from.string | when #{code} eq null | display_name=#{stage_name} | -> response→stage_name_initials");
@@ -231,7 +233,8 @@ describe("ad show --story", () => {
     expect(md).toContain("**Service:** Schools");
     expect(md).toContain("| Field | Type | Test value | Purpose |");
     expect(md).toContain("| # | Type | What it does |");
-    expect(md).toContain("| 1 | db_service/data.read (SQL read) | only when #{code} ne null; gives `enrollment_stage_type_info`, `enrollment_stage_type_count` |");
+    const acct = (await v2(SQL_UUID)).parsedSteps[0]!.account?.name;
+    expect(md).toContain(`| 1 | db_service/data.read (SQL read) | only when #{code} ne null; gives \`enrollment_stage_type_info\`, \`enrollment_stage_type_count\`; uses account ${acct} |`);
     expect(md).toContain("### Custom code (Step 2) — javascript\n```javascript\n");
     expect(md).toContain("### SQL (Step 1)\n```sql\nselect * from enrollment_stage_type");
   });
@@ -271,7 +274,7 @@ describe("show human step table: no HTML in cells", () => {
       { orderIndex: 2, kind: "EXISTING_SERVICE", description: 'If it returns false<ul><li>Return false with message "Operation not allowed"</li></ul>', identity: "Helpers.Legacy.exception.raise" },
       { orderIndex: 13, kind: "EXISTING_SERVICE", description: `Check &lt;epStageId&gt; ${"w".repeat(200)}` },
     ]);
-    expect(rows[0]).toEqual([2, "[EXISTING]", 'If it returns false / Return false with message "Operation not allowed"', "Helpers.Legacy.exception.raise"]);
+    expect(rows[0]).toEqual([2, "[EXISTING]", 'If it returns false / Return false with message "Operation not allowed"', "Helpers.Legacy.exception.raise", ""]);
     expect(String(rows[1]![2]).startsWith("Check <epStageId> www")).toBe(true);
     expect(String(rows[1]![2])).toMatch(/…\(\+\d+\)$/);
   });

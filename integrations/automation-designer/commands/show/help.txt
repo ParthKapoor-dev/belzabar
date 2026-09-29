@@ -7,6 +7,12 @@ than 5 minutes is served instantly while a background process refreshes it
 A local V2 (steps[]) or V1 method JSON file is shown without any fetch — use it
 with --story to present a method for approval before `ad create` / `ad save`.
 
+The default step table has a Gates column: entry condition (`when`), loop,
+conditional exit (`exit-if <expr> → <code>`: the method returns after the
+step when it holds), `exit-on-fail`, `async` and the step's account. Step
+detail (--service-detail / --full) adds "Exit If", the exit code/message and
+"Account"; the header shows Deprecated / Scope / Timeout when set.
+
 The --llm payload is lean: no request echo, empty/null fields dropped, SQL and
 code bodies only when asked for (--sql / --code / --full / --service-detail),
 and the wire body only with --raw (emitted once, as `raw`).
@@ -20,7 +26,7 @@ Flags:
   --compact               One line per step: index, kind/service, description,
                           entry condition, loop, decoded SQL/code/SpEL (cut at
                           160 chars), key inputs, outputs -> variables, exit
-                          rules. Add --sql / --code for full bodies (`blocks`),
+                          rules (exit-on-fail, exit-if), async, account. Add --sql / --code for full bodies (`blocks`),
                           --full for no abbreviation, --step <N> for one step.
                           Always read fresh from the V2 route, so input paths
                           (`body.json=`) and outputs (`key→as⇒$var`) use the

@@ -10,8 +10,8 @@
 //                            (What it does / Approach / Service, Inputs,
 //                            Outputs, Steps tables, decoded custom code).
 //
-// Works on V1 and V2 parses. Loops and exit-on-failure come from ParsedStep;
-// only the conditional exit (not a ParsedStep field) is read from the wire.
+// Works on V1 and V2 parses; every behaviour field (entry condition, loop,
+// exit-on-failure, conditional exit, async, account) comes from ParsedStep.
 
 import { decodeBase64Strict } from "./base64";
 import { abbreviate, htmlToText, oneLine } from "./compact";
@@ -68,6 +68,8 @@ interface StepFacts {
   exitIfCode?: string;
   exitIfMessage?: string;
   async?: boolean;
+  /** Account name (else `#id`) the step runs with. */
+  account?: string;
 }
 
 const LOOP_SHORT: Record<string, string> = {
@@ -79,7 +81,6 @@ const LOOP_SHORT: Record<string, string> = {
 
 export function stepFacts(step: ParsedStep): StepFacts {
   const facts: StepFacts = {};
-  const raw = isObj(step.raw) ? step.raw : {};
   if (str(step.conditionExpression)) facts.when = oneLine(step.conditionExpression!);
   if (step.runAsync) facts.async = true;
 
@@ -99,21 +100,31 @@ export function stepFacts(step: ParsedStep): StepFacts {
     facts.exitMessage = str(step.forceExitErrorMessage);
     if (code) facts.exitCode = code;
   }
-  // Conditional exit is not on ParsedStep: V2 `exitCondition.conditionalExit`, V1
-  // `forceReturnConditionExpression` (V1 shares the exit's status code and message).
-  const props = isObj(raw.properties) ? raw.properties : null;
-  const exit = props && isObj(props.exitCondition) ? props.exitCondition : null;
-  const ce = exit && isObj(exit.conditionalExit) ? exit.conditionalExit : null;
-  const cond = ce ? str(ce.expression) : undefined;
-  const exitIf = cond ?? str(raw.forceReturnConditionExpression);
-  if (exitIf) {
-    facts.exitIf = oneLine(exitIf);
-    const ifCode = ce ? statusCode(ce.code) : code;
-    const ifMessage = ce ? str(ce.message) : str(step.forceExitErrorMessage);
+  if (str(step.forceReturnExpression)) {
+    facts.exitIf = oneLine(step.forceReturnExpression!);
+    const ifCode = statusCode(step.forceReturnStatusCode);
+    const ifMessage = str(step.forceReturnMessage);
     if (ifCode) facts.exitIfCode = ifCode;
     if (ifMessage) facts.exitIfMessage = ifMessage;
   }
+  if (step.account && (step.account.name || step.account.id != null)) facts.account = step.account.name ?? `#${step.account.id}`;
   return facts;
+}
+
+/**
+ * Short behaviour markers for the default `ad show` step table: entry
+ * condition, loop, exit rules, async and account. Expressions cut at `chars`.
+ */
+export function stepGates(step: ParsedStep, chars = 60): string[] {
+  const f = stepFacts(step);
+  const out: string[] = [];
+  if (f.when) out.push(`when ${abbreviate(f.when, chars)}`);
+  if (f.loop) out.push(`loop ${f.loop.type ? LOOP_SHORT[f.loop.type] ?? f.loop.type : "loop"}${f.loop.over ? ` ${f.loop.over}` : ""}${f.loop.parallel ? " parallel" : ""}`);
+  if (f.exitIf) out.push(`exit-if ${abbreviate(f.exitIf, chars)}${f.exitIfCode ? ` → ${f.exitIfCode}` : ""}`);
+  if (f.exitOnFailure) out.push(`exit-on-fail${f.exitCode ? ` ${f.exitCode}` : ""}`);
+  if (f.async) out.push("async");
+  if (f.account) out.push(`account ${f.account}`);
+  return out;
 }
 
 function statusCode(v: unknown): string | undefined {
@@ -152,7 +163,8 @@ function stepBody(step: ParsedStep): { kind: "SQL" | "CODE" | "SPEL"; text: stri
 }
 
 /** `key[→fieldCode][ ⇒ $var]` per output; V2 outputs carry the exposed name as `fieldCode`. */
-function outputSpecs(step: ParsedStep): string[] {
+/** Step outputs as `key→exposed⇒$variable` (the binding a step writes). */
+export function outputSpecs(step: ParsedStep): string[] {
   return (step.outputs ?? []).map((o) => {
     const raw = isObj(o.raw) ? o.raw : {};
     const exposed = str(raw.fieldCode) ?? str(raw.name);
@@ -199,6 +211,8 @@ export interface CompactMethodView {
   version: number | string;
   uuid: string;
   referenceId?: string;
+  /** `deprecated`, `scope X`, `timeout Ns` — only when set. */
+  flags?: string;
   summary?: string;
   /** `key:TYPE` joined by ", "; `*` = required. */
   in?: string;
@@ -254,6 +268,7 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
   if (outs.length) parts.push(`-> ${outs.join(", ")}`);
   const flags: string[] = [];
   if (f.async) flags.push("async");
+  if (f.account) flags.push(`account ${f.account}`);
   if (f.exitOnFailure) flags.push(["exit-on-fail", f.exitCode, f.exitMessage && `"${abbreviate(f.exitMessage, 60)}"`].filter(Boolean).join(" "));
   if (f.exitIf) {
     const then = [f.exitIfCode, f.exitIfMessage && `"${abbreviate(f.exitIfMessage, 60)}"`].filter(Boolean).join(" ");
@@ -262,6 +277,15 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
   if (step.kind === "UNKNOWN") flags.push(`unparsed: ${step.reason}`);
   if (flags.length) parts.push(flags.join(", "));
   return parts.join(" | ");
+}
+
+/** Method-level behaviour flags; undefined when none is set. */
+function methodFlags(m: HydratedMethod): string | undefined {
+  const out: string[] = [];
+  if (m.deprecated) out.push("deprecated");
+  if (m.scope) out.push(`scope ${m.scope}`);
+  if (m.timeoutSeconds != null) out.push(`timeout ${m.timeoutSeconds}s`);
+  return out.length ? out.join(", ") : undefined;
 }
 
 export function compactMethod(method: HydratedMethod, opts: CompactOptions = {}): CompactMethodView {
@@ -273,6 +297,7 @@ export function compactMethod(method: HydratedMethod, opts: CompactOptions = {})
     version: method.version,
     uuid: method.uuid,
     referenceId: method.referenceId ?? undefined,
+    flags: methodFlags(method),
     summary: str(method.summary) ? oneLine(method.summary) : undefined,
     in: fieldList(method.inputs.filter((f) => !f.hideInput), true),
     out: method.outputs.length ? method.outputs.map((o) => `${outputName(o)}:${String(o.type ?? "?")}`).join(", ") : undefined,
@@ -297,6 +322,7 @@ export function compactMethod(method: HydratedMethod, opts: CompactOptions = {})
 export function renderCompact(view: CompactMethodView): string {
   const lines: string[] = [];
   lines.push(`${view.name} [${view.state} v${view.version}] ${view.category} ${view.uuid}${view.referenceId ? ` (ref ${view.referenceId})` : ""}`);
+  if (view.flags) lines.push(`flags: ${view.flags}`);
   if (view.summary) lines.push(`summary: ${view.summary}`);
   if (view.in) lines.push(`in: ${view.in}`);
   if (view.out) lines.push(`out: ${view.out}`);
@@ -348,7 +374,12 @@ function storyStepWhat(step: ParsedStep): string {
   }).filter(Boolean);
   if (outs.length) bits.push(`gives ${outs.map((o) => `\`${o}\``).join(", ")}`);
   if (f.exitOnFailure) bits.push(`stops the method on failure${f.exitCode ? ` (${f.exitCode})` : ""}`);
-  if (f.exitIf) bits.push(`exits when ${f.exitIf}${f.exitIfCode ? ` (${f.exitIfCode})` : ""}`);
+  if (f.exitIf) {
+    const then = [f.exitIfCode, f.exitIfMessage && `"${abbreviate(f.exitIfMessage, 60)}"`].filter(Boolean).join(" ");
+    bits.push(`returns early when ${f.exitIf}${then ? ` (${then})` : ""}`);
+  }
+  if (f.async) bits.push("runs async");
+  if (f.account) bits.push(`uses account ${f.account}`);
   return bits.join("; ");
 }
 
@@ -365,7 +396,10 @@ export function storyMarkdown(method: HydratedMethod): string {
   out.push(`**What it does:** ${oneLine(what)}`);
   out.push(`**Approach:** ${approach(method)}`);
   out.push(`**Service:** ${method.category?.name ?? "Uncategorized"}`);
-  out.push(`**State:** ${method.state} v${method.version} (\`${method.uuid}\`)`, "");
+  out.push(`**State:** ${method.state} v${method.version} (\`${method.uuid}\`)`);
+  const mf = methodFlags(method);
+  if (mf) out.push(`**Flags:** ${mf}`);
+  out.push("");
 
   const inputs = method.inputs.filter((f) => !f.hideInput);
   out.push("### Inputs");
