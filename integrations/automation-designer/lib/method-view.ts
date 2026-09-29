@@ -14,7 +14,7 @@
 // only the conditional exit (not a ParsedStep field) is read from the wire.
 
 import { decodeBase64Strict } from "./base64";
-import { abbreviate, oneLine } from "./compact";
+import { abbreviate, htmlToText, oneLine } from "./compact";
 import type { HydratedMethod, MethodField, MethodOutput, ParsedStep, StepInput } from "./types/common";
 
 export type InputLabeler = (input: StepInput) => string | undefined;
@@ -211,7 +211,10 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
   // `SQL db_service.data.read` already names the operation; `SQL(read)` only when the service is unresolved.
   let head = `${step.orderIndex} ${step.kind === "SQL" && ident ? "SQL" : kindLabel(step)}`;
   if (ident) head += ` ${ident}`;
-  if (nonBlank(step.description)) head += ` "${abbreviate(step.description!, 80)}"`;
+  // AD rich-text descriptions (`<ul id="isPasted" style=…`) as plain text;
+  // cut at 80 unless --full (bodyChars 0) (ADR-R5).
+  const desc = nonBlank(step.description) ? htmlToText(step.description!) : "";
+  if (desc) head += ` "${abbreviate(desc, bodyChars === 0 ? 0 : 80)}"`;
   parts.push(head);
 
   const f = stepFacts(step);
@@ -315,7 +318,7 @@ function storyStepType(step: ParsedStep): string {
 
 function storyStepWhat(step: ParsedStep): string {
   const bits: string[] = [];
-  const desc = nonBlank(step.description) ?? (step.kind === "SPEL_ECHO" && step.expression ? `computes ${abbreviate(step.expression, 80)}` : undefined);
+  const desc = nonBlank(step.description ? htmlToText(step.description) : undefined) ?? (step.kind === "SPEL_ECHO" && step.expression ? `computes ${abbreviate(step.expression, 80)}` : undefined);
   if (desc) bits.push(desc);
   const f = stepFacts(step);
   if (f.when) bits.push(`only when ${f.when}`);

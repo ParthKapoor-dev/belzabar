@@ -275,3 +275,19 @@ describe("show human step table (smoke UX: HTML in cells)", () => {
     expect(String(rows[1]![2])).toMatch(/…\(\+\d+\)$/);
   });
 });
+
+// ADR-R5: rich-text step descriptions are shown as text; --full does not cut them.
+describe("HTML step descriptions (ADR-R5)", () => {
+  const RICH = "42eca7d0b957039f8538aa7480498546.v2.json";
+  test("compact and story show the text, not the markup; --full keeps it whole", async () => {
+    const m = parseV2Method(await Bun.file(`${FIX}/real-v2/${RICH}`).json(), { env: "sems-dev" });
+    const step = m.parsedSteps[4]!;
+    expect(step.description).toStartWith("<ul");
+    const short = compactStepLine(step);
+    expect(short).not.toMatch(/<ul|style=|&nbsp;/);
+    const full = compactStepLine(step, { bodyChars: 0 });
+    expect(full).not.toContain("…(+");
+    expect(full.length).toBeGreaterThanOrEqual(short.length);
+    expect(storyMarkdown(m)).not.toMatch(/<ul|<li|&nbsp;/);
+  });
+});
