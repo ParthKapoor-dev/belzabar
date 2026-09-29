@@ -146,7 +146,7 @@ function mapMapping(m: V1Mapping): StepInput {
 }
 
 function buildCustomCode(raw: V1ServiceStep, base: BaseFields, warn: Warn): CustomCodeStep {
-  // V1 stores `code` either as plain text (most sems-dev steps) or as base64.
+  // V1 stores `code` either as plain text (most a dev env steps) or as base64.
   // The runtime content-sniffs; we do the same with a *strict* decoder so
   // plain JS is never mangled into garbage by a lenient base64 decode.
   const { source, encoding } = decodeCustomCode(typeof raw.code === "string" ? raw.code : "");
@@ -239,7 +239,7 @@ export function locateSqlMapping(
   hint: { inputUuids?: readonly string[] } = {},
 ): SqlMappingLocation | null {
   // 0. The service's own query input (definition `produces: queryString`), or
-  //    the slot the parser picked (SqlStep.sqlInputUuid) — unambiguous on sems,
+  //    the slot the parser picked (SqlStep.sqlInputUuid) — unambiguous on the envs captured,
   //    where the plain-text query sits beside other CUSTOM leaves.
   const wanted = new Set((hint.inputUuids ?? []).map((u) => u.trim().toLowerCase()).filter(Boolean));
   if (wanted.size > 0) {
@@ -291,7 +291,7 @@ function buildRedis(
   const setTtlChildId = 41961;
   const setOverwriteChildId = 41962;
 
-  // The numeric sub-input ids above are nsm's; on other envs fall back to the
+  // The numeric sub-input ids above are one env's; on other envs fall back to the
   // service's own input labels (from the definition) when the ids miss.
   const labels = identity?.inputLabels ?? {};
   const byLabel = new Map<string, string>();
@@ -299,7 +299,7 @@ function buildRedis(
     const label = labels[trimUuid(m.automationUserInputUuid) ?? ""] ?? labels[String(m.automationUserInputId ?? "")];
     if (label && typeof m.value === "string") byLabel.set(label.trim().toLowerCase(), m.value);
   }
-  // sems names them scope / expirationSeconds / canReplace (ADR-R3).
+  // some envs name them scope / expirationSeconds / canReplace (ADR-R3).
   const LABEL_FOR: Record<number, string[]> = {
     [getKeyChildId]: ["key"],
     [getKeyId + 2]: ["store", "cache store", "scope"],

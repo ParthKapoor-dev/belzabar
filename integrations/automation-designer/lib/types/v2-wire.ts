@@ -59,7 +59,7 @@ export interface V2StepProperties {
   entryCondition?: V2EntryCondition;
   exitCondition?: V2ExitCondition;
   /**
-   * Real wire (sems-dev): `{type, value, counter, executeParallel,
+   * Real wire: `{type, value, counter, executeParallel,
    * numberOfConcurrentThread}` (+ `rangeStartInclusive`/`rangeEndExclusive`
    * for LOOP_EXECUTION_ON_RANGE, `expandedExpression` for _ON_CONDITION).
    * `enabled`/`source` are an older belz guess, still read for compatibility.

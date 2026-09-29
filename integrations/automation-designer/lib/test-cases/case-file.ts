@@ -1,7 +1,7 @@
 // AD test cases: the UI wire encoding ↔ a git-friendly case file (7.7 / 7.13).
 //
 // Wire (what `POST /chain/testcases/{chainUuid}` takes and the suite GET
-// returns — api-endpoints.md §8.2, live sems-dev 2026-09-29):
+// returns — api-endpoints.md §8.2, live 2026-09-29):
 //   { name, description, inputs: [{fieldCode, value, defaultValue}],
 //     assertions: [{mode:"advance", conditionExpression:"#{out} eq 'x'", conditions:null}] }
 //   value/defaultValue are JSON TEXT of a wrapper {"value": <actual>} (plus

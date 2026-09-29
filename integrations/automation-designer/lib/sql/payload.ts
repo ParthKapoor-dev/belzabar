@@ -313,8 +313,16 @@ export function buildSqlReadPayload(options: BuildSqlPayloadOptions): V1RawMetho
 
   return {
     ...template,
-    category: (template as any).category ?? fallbackCategory ?? { id: 37, name: "NSM.Helpers" },
+    category: (template as any).category ?? fallbackCategory ?? noExecutableCategory(),
     version: (template as any).version ?? 1,
     jsonDefinition: JSON.stringify(innerDefinition),
   };
+}
+
+/** No category from the template or the env: there is no built-in id that is valid everywhere. */
+function noExecutableCategory(): never {
+  throw new CliError(
+    "Cannot run the SQL test chain: its template has no category and no PUBLIC chain category was found on this environment.",
+    { code: "SQL_NO_EXECUTABLE_CATEGORY" },
+  );
 }

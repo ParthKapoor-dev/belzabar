@@ -31,7 +31,9 @@ Rules:
   into SQL), SP1 (nested ternary), CI1, AS1, ...
   Lint (advisory warnings, lib/validate/lint.ts):
     Q2           SELECT-list subquery runs once per row
-    Q3           raw read of feature_config/feature_status (use features_getEnabledForLevel)
+    Q3           raw read of a table that must go through a resolver function;
+                 tables come from config "lint": {"resolverTables":
+                 {"<table>": "<resolverFn>"}} (none built in)
     Q4           query returns only columns it filters by equality to a bound :param
     AD-LINT-001  custom code that only parses JSON and reads/sets one key
     AD-LINT-002  SQL that reads no table

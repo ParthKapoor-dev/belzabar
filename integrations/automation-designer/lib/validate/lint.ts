@@ -28,7 +28,7 @@ export interface LintRuleInfo {
 
 export const LINT_RULES = {
   Q2: { description: "SELECT-list subquery runs once per row; if its value does not depend on the row, bind it once (CTE, join or :param)" },
-  Q3: { description: "Raw read of a config table that has a resolver function (SEMS feature_config/feature_status → features_getEnabledForLevel)" },
+  Q3: { description: "Raw read of a table that must be read through a resolver function (config lint.resolverTables)" },
   Q4: { description: "Query only returns columns it already filters by equality to a bound value (re-looks up a value the step already has)" },
   "AD-LINT-001": { description: "Custom code only parses JSON, reads/sets one key and stringifies it; use Helpers.JSON/fetchKeyValue or setOrUpdateElement" },
   "AD-LINT-002": { description: "db_service SQL reads no table (no FROM/JOIN/INTO/UPDATE); compute it with SpEL or a helper instead of a DB round trip" },
@@ -47,14 +47,23 @@ export type LintRuleCode = keyof typeof LINT_RULES;
 export interface LintOptions {
   /** Also report missing descriptions (AD-LINT-010). */
   docs?: boolean;
+  /**
+   * Q3: table name → the resolver function that must be used to read it
+   * (config `lint.resolverTables`; project-specific, so nothing is built in).
+   */
+  resolverTables?: Record<string, string>;
 }
 
 type Obj = Record<string, unknown>;
 
-/** Config tables that must be read through a resolver function (SEMS). */
-const RESOLVED_TABLES: Array<{ table: RegExp; resolver: string }> = [
-  { table: /\b(?:\w+\.)?feature_(?:config|status)\b/i, resolver: "features_getEnabledForLevel" },
-];
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** Q3 matchers from `LintOptions.resolverTables` (a table matches with or without a schema prefix). */
+function resolvedTables(map: Record<string, string> | undefined): Array<{ table: RegExp; resolver: string }> {
+  return Object.entries(map ?? {})
+    .filter(([table, resolver]) => table.trim() && resolver.trim())
+    .map(([table, resolver]) => ({ table: new RegExp(`\\b(?:\\w+\\.)?${escapeRe(table.trim())}\\b`, "i"), resolver: resolver.trim() }));
+}
 
 const NUMERIC_TYPES = new Set(["NUMBER", "INTEGER", "FLOAT", "DOUBLE", "LONG", "DECIMAL"]);
 
@@ -63,6 +72,7 @@ export function lintMethodV2(body: unknown, opts: LintOptions = {}): ValidationF
   const out: ValidationFinding[] = [];
   const report = (f: Omit<ValidationFinding, "severity">) => out.push({ severity: "warn", ...f });
   const steps = arr(body.steps);
+  const resolvers = resolvedTables(opts.resolverTables);
 
   // ── method-level ────────────────────────────────────────────────────────
   const numeric = new Set<string>();
@@ -106,7 +116,7 @@ export function lintMethodV2(body: unknown, opts: LintOptions = {}): ValidationF
       }
     }
 
-    if (kind === "SQL") lintSql(s, ref, at, placeholderOutputs, report);
+    if (kind === "SQL") lintSql(s, ref, at, placeholderOutputs, report, resolvers);
 
     if (kind === "SPEL_ECHO") {
       const value = firstInputValue(s);
@@ -152,6 +162,7 @@ function lintSql(
   at: (...rest: Array<string | number>) => string,
   placeholderOutputs: Map<string, number>,
   report: (f: Omit<ValidationFinding, "severity">) => void,
+  resolvers: Array<{ table: RegExp; resolver: string }>,
 ): void {
   const q = findSqlInput(s);
   const raw = q && typeof q.inp.value === "string" ? q.inp.value : "";
@@ -179,7 +190,7 @@ function lintSql(
   }
 
   // Q3: resolver-guarded config tables.
-  for (const r of RESOLVED_TABLES) {
+  for (const r of resolvers) {
     const hit = r.table.exec(skel);
     if (hit && !new RegExp(`\\b${r.resolver}\\b`, "i").test(skel)) {
       report({ rule: "Q3", message: `SQL reads ${hit[0]} directly; its value must come from ${r.resolver}().`, path, step: ref, fix: `SELECT … FROM ${r.resolver}(…)` });

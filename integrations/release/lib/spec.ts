@@ -16,7 +16,7 @@ export const ReleaseSpecSchema = z
       .trim()
       .min(1, "must be a non-empty string")
       .refine((n) => releaseSlug(n, { throwOnEmpty: false }) !== "", "must contain a letter or digit"),
-    /** Project whose envs are traced (e.g. "SEMS"); default: from spineEnv/stageEnv, else the active env. */
+    /** Project whose envs are traced (e.g. "ACME"); default: from spineEnv/stageEnv, else the active env. */
     project: z.string().trim().min(1).optional(),
     included: z.array(TicketRef).min(1, "must list at least one ticket"),
     excluded: z.array(TicketRef).default([]),
@@ -93,7 +93,7 @@ function findProjectEnv(
  * spineEnv/stageEnv for a spec (RL-2). Explicit values must be configured envs.
  * Missing ones come from the project: `spec.project`, else the project of an
  * explicit spineEnv/stageEnv, else the project of `fallback` (the active env —
- * `--env`, BELZ_ENV or defaultEnv). A SEMS release no longer defaults to nsm-*.
+ * `--env`, BELZ_ENV or defaultEnv). A release never defaults to another project's envs.
  */
 export function resolveReleaseEnvs(
   spec: Pick<ReleaseSpec, "project" | "spineEnv" | "stageEnv">,

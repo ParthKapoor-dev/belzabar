@@ -1,19 +1,23 @@
-// Live-suite cleanup helper: soft-delete belz_tst_ methods in Test-Parth on
-// sems-dev, including PUBLISHED copies (which `belz ad delete` refuses by
+// Live-suite cleanup helper: soft-delete belz_tst_ methods in the live
+// category on the live env, including PUBLISHED copies (which `belz ad delete` refuses by
 // design). Spawned by the write suite's afterAll with BELZ_HOME = the seeded
 // live home; never imported by the CLI.
 //
 //   bun soft-delete.ts <uuid>...   → one JSON line: [{uuid, result, name?}]
 //
-// Guards (fail closed): env sems-dev only, the V2 body must name a
-// `belz_tst_` method in chain category 1135 (Test-Parth). A uuid whose V2
+// Guards (fail closed): env BELZ_LIVE only, the V2 body must name a
+// `belz_tst_` method in chain category BELZ_LIVE_CATEGORY_ID. A uuid whose V2
 // read is already METHOD_NOT_FOUND counts as gone.
 import { CliError, Config } from "@belzabar/core";
 import * as v2 from "@belzabar/ad/lib/api/v2";
 import { deleteChainV2 } from "@belzabar/ad/lib/save/api";
 
-const LIVE_ENV = "sems-dev";
-const TEST_PARTH_CHAIN_CATEGORY = 1135;
+// Same variables as core/testing live.ts (not imported: it pulls in bun:test).
+const LIVE_ENV = process.env.BELZ_LIVE?.trim() ?? "";
+const LIVE_CHAIN_CATEGORY = Number(process.env.BELZ_LIVE_CATEGORY_ID);
+if (!LIVE_ENV || !Number.isSafeInteger(LIVE_CHAIN_CATEGORY) || LIVE_CHAIN_CATEGORY <= 0) {
+  throw new Error("soft-delete: BELZ_LIVE and BELZ_LIVE_CATEGORY_ID must be set");
+}
 
 type Result = { uuid: string; result: "deleted" | "gone" | "refused" | "error"; name?: string; detail?: string };
 
@@ -27,7 +31,7 @@ async function softDelete(uuid: string): Promise<Result> {
   }
   const name = String((body as { name?: unknown }).name ?? "");
   const service = (body as { metadata?: { service?: { id?: unknown } } }).metadata?.service;
-  if (!name.startsWith("belz_tst_") || Number(service?.id) !== TEST_PARTH_CHAIN_CATEGORY) {
+  if (!name.startsWith("belz_tst_") || Number(service?.id) !== LIVE_CHAIN_CATEGORY) {
     return { uuid, result: "refused", name, detail: `category ${String(service?.id)}` };
   }
   try {

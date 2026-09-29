@@ -359,7 +359,7 @@ async function pickVersionInteractive(
 }
 
 async function pickEnvInteractive(promptLabel: string): Promise<string | undefined> {
-  // The active env's project family (sems-* / nsm-* …), from the config.
+  // The active env's project family (`acme-*` for `acme-dev` …), from the config.
   const line = await runFzf(traceEnvFamily(Config.activeEnv.name), { prompt: `${promptLabel}> ` });
   return line || undefined;
 }

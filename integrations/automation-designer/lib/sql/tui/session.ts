@@ -11,7 +11,6 @@ import {
   loadSqlModifyContext,
   resolveSqlDbContext,
   sqlDefaultDb,
-  DEFAULT_SQL_DB_FALLBACK,
 } from "../executor";
 import { fetchSqlDatabases } from "../api";
 import { normalizeSqlDatabases, resolveSqlDatabase } from "../selector";
@@ -69,7 +68,6 @@ async function switchDatabase(state: SqlTuiSessionState, requestedDb: string): P
   const context = await resolveSqlDbContext({
     requestedDb,
     envDefault: state.envDefault,
-    fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
   });
 
   state.databases = context.databases;
@@ -90,7 +88,6 @@ async function renderDatabases(state: SqlTuiSessionState): Promise<void> {
   const context = await resolveSqlDbContext({
     requestedDb: String(state.activeDatabase.id),
     envDefault: state.envDefault,
-    fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
   });
 
   state.databases = context.databases;
@@ -255,11 +252,10 @@ export async function runSqlTuiSession(args: SqlTuiArgs): Promise<SqlTuiSessionS
       requested: args.db,
       envDefault: envDefault?.value,
       envDefaultSource: envDefault?.source,
-      fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
     });
     selectedDb = resolution.selected;
   } else {
-    const fallback = envDefault?.value || DEFAULT_SQL_DB_FALLBACK;
+    const fallback = envDefault?.value;
     const initialDb = databases.find((db) => db.nickname === fallback) ?? databases[0];
     selectedDb = await prompts.select({
       message: "Database:",

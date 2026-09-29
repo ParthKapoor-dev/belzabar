@@ -38,7 +38,7 @@ const command: CommandModule<DeleteArgs, DeleteData> = {
   async execute({ uuid, yes }, context) {
     // V2 read (no service lookups). A soft-deleted method no longer reads on
     // V2 (400 "automationAPI is null" → METHOD_NOT_FOUND); V1 still returns it,
-    // and its `active`/`deprecatedAt` fields do not mark deletion (live sems-dev:
+    // and its `active`/`deprecatedAt` fields do not mark deletion (live:
     // every method has active:false, every save stamps deprecatedAt).
     const m = await adApi.fetchMethod(uuid, "v2");
     if (m.state !== "DRAFT") {

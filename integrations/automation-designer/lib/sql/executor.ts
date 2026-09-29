@@ -22,8 +22,6 @@ import type {
   SqlDbResolutionResult,
 } from "./types";
 
-export const DEFAULT_SQL_DB_FALLBACK = "NSM_Read_DB";
-
 export interface SqlDefaultDb {
   value: string;
   /** "config": `environments.<env>.sqlDefaultDb`; "env": BELZ_SQL_DEFAULT_DB. */
@@ -33,8 +31,8 @@ export interface SqlDefaultDb {
 /**
  * The default SQL database for the active env when `--db` is not given
  * (AD-36 / F26): `environments.<env>.sqlDefaultDb` in ~/.belz/config.json,
- * then BELZ_SQL_DEFAULT_DB (all envs). The hard-coded `NSM_Read_DB` fallback
- * applies after these, and only exists on NSM.
+ * then BELZ_SQL_DEFAULT_DB (all envs). There is no built-in database name:
+ * without either, pass --db.
  */
 export function sqlDefaultDb(envName: string | undefined = safeActiveEnvName()): SqlDefaultDb | undefined {
   if (envName) {
@@ -100,7 +98,7 @@ export async function resolveSqlDbContext(options: {
     requested: options.requestedDb,
     envDefault: def?.value,
     envDefaultSource: def?.source,
-    fallbackNickname: options.fallbackNickname ?? DEFAULT_SQL_DB_FALLBACK,
+    ...(options.fallbackNickname ? { fallbackNickname: options.fallbackNickname } : {}),
   });
 
   return {
@@ -112,7 +110,7 @@ export async function resolveSqlDbContext(options: {
 /**
  * Start the executable-category lookup (cached per process) while the
  * operation contract and template load: it is needed only at execute time and
- * was a serial ~2 s on sems-dev (smoke UX: ~5 s per statement). Marked
+ * was a serial ~2 s on a dev env (smoke UX: ~5 s per statement). Marked
  * handled here; the execute path awaits the same promise and sees any error.
  */
 function prefetchExecutableCategory(): void {

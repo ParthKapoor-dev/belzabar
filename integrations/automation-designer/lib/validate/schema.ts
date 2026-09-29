@@ -3,7 +3,7 @@
 // zod checks JSON types and the server-side enums (step type, language,
 // executor, state); explicit checks add the key regexes and required fields,
 // each under its own rule code. Enums and optional fields are calibrated on the
-// 36 real sems-dev bodies in tests/fixtures/real-v2 (nullable almost
+// 36 real a dev env bodies in tests/fixtures/real-v2 (nullable almost
 // everywhere; step `id`/`automationAPIId` absent on custom code).
 
 import { z } from "zod";
@@ -21,7 +21,7 @@ export const STEP_TYPES = ["EXISTING_SERVICE", "CUSTOM_CODE"] as const;
 /** Server enum (400 on anything else). */
 export const CC_LANGUAGES = ["JAVA", "COBOL", "PYTHON", "JAVASCRIPT", "PERL"] as const;
 export const CC_EXECUTORS = ["CODE_LAMBDA", "NODEJS_LAMBDA", "INTERNAL_SERVER"] as const;
-/** Data types: the team's documented set plus CUSTOM and ENUM (both seen live on sems-dev). */
+/** Data types: the team's documented set plus CUSTOM and ENUM (both seen live on a dev env). */
 export const DATA_TYPES = new Set([
   "STRING", "TEXT", "NUMBER", "INTEGER", "FLOAT", "BOOLEAN", "OBJECT", "ARRAY", "JSON", "DATE", "TIMESTAMP", "CUSTOM", "ENUM",
 ]);

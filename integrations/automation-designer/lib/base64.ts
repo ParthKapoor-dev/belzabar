@@ -18,7 +18,7 @@ const UTF8_FATAL = new TextDecoder("utf-8", { fatal: true });
  * "this is not base64 — treat it as plain text".
  *
  * `Buffer.from(x, "base64")` never throws, so the lenient decoder turns plain
- * JS into garbage. V1 stores custom-code `code` as plain text on most sems-dev
+ * JS into garbage. V1 stores custom-code `code` as plain text on most
  * steps; the runtime content-sniffs, and so must we.
  */
 export function decodeBase64Strict(input: string): string | null {

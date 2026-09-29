@@ -13,7 +13,7 @@
 //      AD_OVERLAY_INVALID.
 //   2. Keys that cannot land → AD_OVERLAY_NOT_APPLIED: missing/ambiguous step,
 //      a field on a step of another kind, and fields the V2 route silently
-//      drops (buttonLabel, internalMethod, inputs[].testValue — live sems-dev
+//      drops (buttonLabel, internalMethod, inputs[].testValue — live
 //      2026-09-28: 200 OK, absent from the next GET and from V1).
 //   3. L0: the body differs from the live body only at target paths
 //      (AD_SERIALIZER_DRIFT otherwise) — metadata can never change.

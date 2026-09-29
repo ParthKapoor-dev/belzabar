@@ -10,9 +10,9 @@ import { jsonPath, stepKind, stepRef, walkInputs } from "./schema";
 import { scanSpel, spelRoots } from "./spel";
 import { arr, isObj, nonBlank, str, type Report, type StepRef } from "./types";
 
-/** Roots the platform provides in every SpEL context (LoggedInUser: seen on sems-dev). */
+/** Roots the platform provides in every SpEL context (LoggedInUser: seen on a dev env). */
 export const PLATFORM_ROOTS = new Set(["util", "QUOTE", "ESCAPE", "JSON", "Math", "T", "LoggedInUser"]);
-/** Per-step success flags the engine sets: serviceSuccess<step>[_<sub>] (seen on sems-dev). */
+/** Per-step success flags the engine sets: serviceSuccess<step>[_<sub>] (seen on a dev env). */
 const PLATFORM_ROOT_RE = /^serviceSuccess\d+(?:_\d+)*$/;
 
 export function isPlatformRoot(name: string): boolean {

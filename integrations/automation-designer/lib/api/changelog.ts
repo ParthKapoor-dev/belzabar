@@ -59,7 +59,7 @@ export async function listChangelog(chainId: number): Promise<ChangelogEntry[]> 
  * Record a change note against a chain. Returns the created entry's id, or
  * null when it could not be identified.
  *
- * Live wire (sems-dev, AD-19): the POST answers `{"success":true}` with no id,
+ * Live wire (AD-19): the POST answers `{"success":true}` with no id,
  * so the id is looked up afterwards in the chain's list: the newest
  * USER_GENERATED entry with the same comment created at/after the POST.
  * `{"success":false}` is a failure (AD_CHANGELOG_ERROR).

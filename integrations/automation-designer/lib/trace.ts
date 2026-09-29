@@ -25,7 +25,7 @@ export interface TraceOptions {
   spineEnv: string;
   /**
    * Envs to locate the method on (AD-25). Default: every configured env of
-   * the spine env's project (sems-* for a sems spine), never other projects.
+   * the spine env's project (`acme-*` for an `acme-dev` spine), never other projects.
    * The spine env is always included.
    */
   envs?: string[];

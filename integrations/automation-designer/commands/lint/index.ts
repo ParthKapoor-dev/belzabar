@@ -5,7 +5,7 @@
 // Output is grouped by step, one line per finding. Errors (validator) exit 1
 // with AD_LINT_FAILED; lint rules only warn unless --strict.
 
-import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, failWithData, loadConfigFileRaw, ok, type CommandModule } from "@belzabar/core";
 import * as v2 from "../../lib/api/v2";
 import { resolveMethodRef } from "../../lib/ids";
 import { validateMethodV2, validateOnline, type ValidationFinding } from "../../lib/validate/index";
@@ -119,7 +119,8 @@ const command: CommandModule<LintArgs, LintData> = {
     const result = a.online ? await validateOnline({ after: body, env: context.env.name }) : validateMethodV2({ after: body });
     // Auditing a published record: "a save body must be a draft" is not a finding about the logic.
     const validator = [...result.errors, ...result.warnings].filter((f) => !(state === "PUBLISHED" && f.rule === "AD-META-001"));
-    const lint = lintMethodV2(body, { docs: a.docs });
+    const resolverTables = loadConfigFileRaw().lint?.resolverTables;
+    const lint = lintMethodV2(body, { docs: a.docs, ...(resolverTables ? { resolverTables } : {}) });
     const all = [...validator, ...lint].map((f) => (a.strict && f.severity === "warn" ? { ...f, severity: "error" as const } : f));
 
     const byRule: Record<string, number> = {};

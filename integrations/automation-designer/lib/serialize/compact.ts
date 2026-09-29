@@ -249,7 +249,7 @@ export function normaliseOutputs(given: unknown, where: string, p: Problems): Ou
 /**
  * A step output key that indexes or paths into a service output
  * (`flatData[0].col`, `flatData[].col`, `response.a`) → why it cannot work and
- * the pattern that does, else null. Live sems-dev 2026-09-29: the V2 route
+ * the pattern that does, else null. Live 2026-09-29: the V2 route
  * stores the contract's own key (`flatData[]`, matched by uuid) or drops the
  * output altogether, and drops `elementToRetrieve` on non-code steps, so an
  * index never reaches the runtime.
@@ -412,7 +412,7 @@ export function expandLoop(given: unknown, where: string, p: Problems): Obj | nu
     return null;
   }
   if ("over" in given) return { type: "LOOP_EXECUTION_ON_INPUT_OUTPUT", ...common(), value: stringValue(given.over) };
-  // The server stores loop numbers as strings (live sems-dev: 2 → "2"); send them
+  // The server stores loop numbers as strings (live: 2 → "2"); send them
   // that way so the post-save verify compares like with like.
   if ("times" in given) return { type: "LOOP_EXECUTION_ON_NUMBER", ...common(), value: stringValue(given.times) };
   if ("while" in given) return { type: "LOOP_EXECUTION_ON_CONDITION", ...common(), value: stringValue(given.while) };
@@ -639,7 +639,7 @@ export function applyStepFields(
     }
   }
   // One exit code/message pair per step: the server stores it once and
-  // mirrors it into exitOnFailure AND conditionalExit (live sems-dev; every
+  // mirrors it into exitOnFailure AND conditionalExit (live; every
   // real body has the two equal). `exit` and `exitIf` both write the pair.
   if ("exit" in set || "exitIf" in set) {
     const ex = (props.exitCondition ??= stepSkeleton("EXISTING_SERVICE").properties!.exitCondition!);

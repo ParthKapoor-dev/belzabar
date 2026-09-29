@@ -349,7 +349,10 @@ Documented in `ad save --help` / `ad create --help` / `ad outputs --help`, where
 Default DB when `--db` is absent, in order:
 1. `environments.<env>.sqlDefaultDb` in `~/.belz/config.json`
 2. `BELZ_SQL_DEFAULT_DB`
-3. `NSM_Read_DB` (NSM only)
+
+There is no built-in database name; without either, `--db` is required
+(`SQL_DEFAULT_DB_NOT_FOUND`). The synthetic SQL test chain is stamped with a PUBLIC chain
+category found on the env (`SQL_NO_EXECUTABLE_CATEGORY` when there is none).
 
 `selectedBy` reports which one was used.
 

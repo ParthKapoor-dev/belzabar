@@ -177,7 +177,7 @@ function decoded(v: unknown): unknown {
 
 /**
  * Fields whose default is serialised by one env / endpoint and omitted by
- * another (live sems-dev vs sems-qa history: `encodedBase64:false` on every
+ * another (live dev vs qa history: `encodedBase64:false` on every
  * input in qa only). The default value is dropped so absent == default.
  */
 const DEFAULT_VALUES: Readonly<Record<string, unknown>> = {
@@ -253,7 +253,7 @@ export function fingerprintProjection(m: HydratedMethod): unknown {
 
 /**
  * The V2 GET adds `fieldCode` (a copy of `key`) to each METHOD output; history
- * bodies omit it (live sems-dev, ADW-R8). A fieldCode that only repeats the
+ * bodies omit it (live, ADW-R8). A fieldCode that only repeats the
  * key is derived, so it is dropped. (Step outputs' fieldCode is a binding and
  * stays.)
  */
@@ -280,7 +280,7 @@ function withoutDerivedOutputFields(body: Record<string, unknown>): Record<strin
  * Compare fingerprints of V2 (or history) bodies. V1 jsonDefinitions carry UI
  * serialisation noise that differs between a UI-saved draft and its
  * server-built published copy (activeTab text, automationUiSelector,
- * executionStatus, orderIndex -1 defaults — live sems-dev), and have no
+ * executionStatus, orderIndex -1 defaults — live), and have no
  * account name; `ad state` / `ad publish` therefore read both sides on V2.
  */
 export function fingerprintMethod(m: HydratedMethod): string {

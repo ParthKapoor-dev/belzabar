@@ -25,7 +25,7 @@ belz ad sql tui --env <env>
     1. `--db`
     2. `environments.<env>.sqlDefaultDb` in `~/.belz/config.json` (per env)
     3. `BELZ_SQL_DEFAULT_DB`
-    4. `NSM_Read_DB` fallback (NSM only)
+    (no built-in database name: without these, pass `--db`)
 
 - `explain <query>` (7.11)
   - Plan of one read statement: `EXPLAIN [(ANALYZE, BUFFERS, FORMAT JSON)] <query>`.

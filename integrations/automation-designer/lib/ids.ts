@@ -20,7 +20,7 @@ const DASHED = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
  *   - `"4bf56e008eabe4010508af439a15ecfb    "` (padded, as the wire returns it)
  *   - `4BF56E00…` (upper case)
  *   - `4bf56e00-8eab-e401-0508-af439a15ecfb` (dashed)
- *   - `https://sems-dev…/automation-designer/Test-Parth/4bf56e00…` (AD URL, query/hash ignored)
+ *   - `https://dev.example.test/automation-designer/Sandbox/4bf56e00…` (AD URL, query/hash ignored)
  *
  * Anything else throws `CliError` with code `INVALID_UUID`.
  */

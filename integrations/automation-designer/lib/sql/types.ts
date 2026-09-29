@@ -54,7 +54,8 @@ export interface SqlDbResolutionOptions {
   envDefault?: string;
   /** Where envDefault came from: config `environments.<env>.sqlDefaultDb` or BELZ_SQL_DEFAULT_DB. */
   envDefaultSource?: "config" | "env";
-  fallbackNickname: string;
+  /** Optional last-resort nickname (none is built in). */
+  fallbackNickname?: string;
 }
 
 export type SqlDbSelectedBy = "--db" | "config" | "env" | "fallback";
@@ -92,7 +93,7 @@ export interface BuildSqlPayloadOptions {
    * none. The connected env's server authorizes execution by looking this
    * category up by id, so it MUST exist on that env — otherwise it throws a
    * NullPointerException in AuthorizeExecution.canExecuteCategory. Resolved per
-   * env via fetchExecutableCategory(); falls back to the legacy NSM constant.
+   * env via fetchExecutableCategory(); there is no built-in fallback id.
    */
   fallbackCategory?: ExecutableCategoryRef | null;
 }

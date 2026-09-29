@@ -55,8 +55,8 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
   },
   async execute({ system, user, search, fields }, context) {
     const sel = parseFieldList(fields, CATEGORY_FIELDS);
-    // AD-09/F9: chain categories (id 1135 = what methods, POST /chain and
-    // export-category use), joined with their automation system (1318).
+    // AD-09/F9: chain categories (the id methods, POST /chain and
+    // export-category use), joined with their automation system.
     const categories: CategoryRow[] = (await fetchCategories()).map((c) => ({
       id: c.chainCategoryId,
       uuid: c.chainCategoryUuid ?? c.systemUuid,

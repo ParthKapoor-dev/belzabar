@@ -1,7 +1,7 @@
 // `ad test-case run-suite --wait`: run a method's persisted test cases now,
 // one /chain/test run each, and evaluate their assertions locally.
 //
-// Why not poll the server's own suite run (live sems-dev 2026-09-29,
+// Why not poll the server's own suite run (live 2026-09-29,
 // belz_tst_fixt2_idx with one passing and one failing case):
 //   - POST /chain/testsuite/execute answers at once with "…you will receive an
 //     email with an execution report";

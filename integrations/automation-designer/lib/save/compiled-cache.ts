@@ -1,7 +1,7 @@
 // Evict the platform's compiled copy of a chain after a write.
 //
 // After a save the runtime may keep executing the previously compiled chain.
-// On sems-dev `/rest/api/cache/invalidate` alone did NOT evict it; only both
+// On a dev env `/rest/api/cache/invalidate` alone did NOT evict it; only both
 // routes together did (research/ad-validation §2.1). On micro-AD tenants the
 // monolith route answers 200 without owning the cache. So: POST to every route,
 // succeed if ANY answers 2xx, report each. Mirrors `belz cache` and the team's

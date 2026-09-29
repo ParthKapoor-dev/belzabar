@@ -1,12 +1,20 @@
-// Opt-in live tests against sems-dev. Never run by default.
+// Opt-in live tests against ONE configured environment. Never run by default.
+// Everything tenant-specific comes from environment variables:
 //
-//   BELZ_LIVE=sems-dev bun test tests/live                    → read-only suites
-//   BELZ_LIVE=sems-dev BELZ_LIVE_WRITE=1 bun test tests/live  → + write suites
+//   BELZ_LIVE=<env>                     the env under test (must be in config.json)
+//   BELZ_LIVE_WRITE=1                   also run the write suites, which need:
+//   BELZ_LIVE_CATEGORY=<name>           the AD category they may write in
+//   BELZ_LIVE_CATEGORY_ID=<id>          its chain-category id (the guard checks it)
+//   BELZ_LIVE_METHOD=<uuid>             optional: a long-lived published method for
+//                                       the read-only smoke tests that need one
 //
-// Any other BELZ_LIVE value is refused (throws at load). Live CLI runs use a
-// tmp BELZ_HOME seeded with a *copy* of the real config.json and sems-dev
+//   BELZ_LIVE=dev bun test tests/live
+//   BELZ_LIVE=dev BELZ_LIVE_WRITE=1 BELZ_LIVE_CATEGORY=Sandbox BELZ_LIVE_CATEGORY_ID=42 bun test tests/live
+//
+// spawnLive refuses any --env other than BELZ_LIVE. Live CLI runs use a tmp
+// BELZ_HOME seeded with a *copy* of the real config.json and that env's
 // session, so the real ~/.belz is only read, never written.
-// Write suites: category Test-Parth only, `belz_tst_` prefix, clean up in
+// Write suites: the BELZ_LIVE_CATEGORY only, `belz_tst_` prefix, clean up in
 // afterAll, and call registerLiveResource() for everything created.
 
 import { afterAll, describe } from "bun:test";
@@ -17,16 +25,30 @@ import { parseGlobalFlags } from "../runner";
 import { scratchDir } from "./scratch";
 import { repoRoot, spawnCli, type SpawnCliOptions, type SpawnResult } from "./spawn-cli";
 
-export const LIVE_ENV = "sems-dev";
+/** The env under test (BELZ_LIVE); "" when live tests are off. */
+export const LIVE_ENV = process.env.BELZ_LIVE?.trim() ?? "";
 export const LIVE_WRITE_PREFIX = "belz_tst_";
 
-function liveMode(): { read: boolean; write: boolean } {
-  const live = process.env.BELZ_LIVE;
-  if (!live) return { read: false, write: false };
-  if (live !== LIVE_ENV) {
-    throw new Error(`BELZ_LIVE=${live} refused: live tests only run against ${LIVE_ENV}.`);
+/** The one AD category write suites may touch (BELZ_LIVE_CATEGORY / BELZ_LIVE_CATEGORY_ID). */
+export function liveCategory(): { name: string; id: number } {
+  const name = process.env.BELZ_LIVE_CATEGORY?.trim() ?? "";
+  const id = Number(process.env.BELZ_LIVE_CATEGORY_ID);
+  if (!name || !Number.isSafeInteger(id) || id <= 0) {
+    throw new Error("live write suites need BELZ_LIVE_CATEGORY=<name> and BELZ_LIVE_CATEGORY_ID=<chain-category id>");
   }
-  return { read: true, write: process.env.BELZ_LIVE_WRITE === "1" };
+  return { name, id };
+}
+
+/** A long-lived published method on the live env (BELZ_LIVE_METHOD), or null. */
+export function liveMethod(): string | null {
+  return process.env.BELZ_LIVE_METHOD?.trim() || null;
+}
+
+function liveMode(): { read: boolean; write: boolean } {
+  if (!LIVE_ENV) return { read: false, write: false };
+  const write = process.env.BELZ_LIVE_WRITE === "1";
+  if (write) liveCategory(); // fail fast: never write without an explicit category
+  return { read: true, write };
 }
 
 /** The seeded home holds a copy of real credentials: drop it after each live block. */
@@ -40,12 +62,12 @@ function withLiveCleanup(fn: () => void): () => void {
   };
 }
 
-/** A describe block that only runs when BELZ_LIVE=sems-dev. */
+/** A describe block that only runs when BELZ_LIVE is set. */
 export function describeLive(name: string, fn: () => void): void {
   (liveMode().read ? describe : describe.skip)(`[live ${LIVE_ENV}] ${name}`, withLiveCleanup(fn));
 }
 
-/** A describe block that only runs when BELZ_LIVE=sems-dev and BELZ_LIVE_WRITE=1. */
+/** A describe block that only runs when BELZ_LIVE is set and BELZ_LIVE_WRITE=1. */
 export function describeLiveWrite(name: string, fn: () => void): void {
   const m = liveMode();
   (m.read && m.write ? describe : describe.skip)(`[live-write ${LIVE_ENV}] ${name}`, withLiveCleanup(fn));
@@ -53,7 +75,7 @@ export function describeLiveWrite(name: string, fn: () => void): void {
 
 let seededHome: string | null = null;
 
-/** tmp BELZ_HOME holding copies of the real config.json + sems-dev session. */
+/** tmp BELZ_HOME holding copies of the real config.json + the live env's session. */
 export function liveBelzHome(): string {
   if (seededHome) return seededHome;
   const source = process.env.BELZ_LIVE_SOURCE_HOME ?? join(homedir(), ".belz");
@@ -69,7 +91,7 @@ export function liveBelzHome(): string {
   return (seededHome = home);
 }
 
-/** Spawn the CLI against sems-dev. Refuses any other --env; adds `--env sems-dev` when absent. */
+/** Spawn the CLI against BELZ_LIVE. Refuses any other --env; adds `--env <BELZ_LIVE>` when absent. */
 export async function spawnLive(argv: string[], opts: SpawnCliOptions = {}): Promise<SpawnResult> {
   const { envName, error } = parseGlobalFlags(argv);
   if (error) throw new Error(`spawnLive: ${error.message}`);

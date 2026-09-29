@@ -26,7 +26,8 @@ Flags (run):
   --db <NAME|ID>      Database nickname or ID.
                       Default resolution (every subcommand): --db →
                       environments.<env>.sqlDefaultDb in ~/.belz/config.json →
-                      BELZ_SQL_DEFAULT_DB → NSM_Read_DB (exists on NSM only).
+                      BELZ_SQL_DEFAULT_DB (no built-in name: without them,
+                      pass --db; SQL_DEFAULT_DB_NOT_FOUND).
                       selectedBy reports which one was used.
   --raw               Include raw operation metadata and execution response.
 

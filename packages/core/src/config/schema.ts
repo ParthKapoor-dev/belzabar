@@ -55,6 +55,14 @@ export const ConfigFileSchema = z
       })
       .passthrough()
       .optional(),
+    /** `belz ad lint` project rules. */
+    lint: z
+      .object({
+        /** Q3: table name → resolver function that must be used to read it. */
+        resolverTables: z.record(z.string()).optional(),
+      })
+      .passthrough()
+      .optional(),
     /** Install metadata — written by the installer / `belz update`. */
     belz: z
       .object({

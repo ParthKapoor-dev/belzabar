@@ -2,11 +2,11 @@
 //
 // The platform has two id spaces for what the UI calls a "category":
 //   - the chain category (`/chain/category?fetchSystemServices=false`,
-//     `/automation/services`): id 1135 / uuid 4e98… for Test-Parth. This is
+//     `/automation/services`): e.g. id 42 for one category. This is
 //     what methods carry as `category`, what `POST /chain` and
 //     `/chain/export/category/{id}` accept, and what `ad find` indexes.
 //   - the automation system (`/chain/category?fetchSystemServices=true`):
-//     id 1318 / uuid 4037… for Test-Parth; a user system points back with
+//     e.g. id 57 for the same one; a user system points back with
 //     `automationChainCategoryId`, a chain category points at its system with
 //     `automationSystemUuid`.
 // SYSTEM_GENERATED services (db_service, …) exist only as systems: they carry

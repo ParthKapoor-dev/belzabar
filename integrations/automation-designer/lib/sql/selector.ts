@@ -91,7 +91,9 @@ export function resolveSqlDatabase(
     }
   }
 
-  const fallback = databases.find((db) => db.nickname === options.fallbackNickname);
+  const fallback = options.fallbackNickname
+    ? databases.find((db) => db.nickname === options.fallbackNickname)
+    : undefined;
   if (fallback) {
     return {
       selected: fallback,
@@ -102,12 +104,13 @@ export function resolveSqlDatabase(
 
   throw new CliError(
     `No default SQL database for this environment. Pass --db <nickname|id> (see 'belz ad sql dbs'), or set ` +
-      `environments.<env>.sqlDefaultDb in ~/.belz/config.json (or BELZ_SQL_DEFAULT_DB). Fallback '${options.fallbackNickname}' is unavailable.`,
+      `environments.<env>.sqlDefaultDb in ~/.belz/config.json (or BELZ_SQL_DEFAULT_DB).` +
+      (options.fallbackNickname ? ` Fallback '${options.fallbackNickname}' is unavailable.` : ""),
     {
       code: "SQL_DEFAULT_DB_NOT_FOUND",
       details: {
         envDefault: options.envDefault,
-        fallbackNickname: options.fallbackNickname,
+        ...(options.fallbackNickname ? { fallbackNickname: options.fallbackNickname } : {}),
         available: databases.map((db) => ({ id: db.id, nickname: db.nickname })),
       },
     }

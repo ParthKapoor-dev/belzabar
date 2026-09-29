@@ -1,7 +1,7 @@
 // A method's persistent test suite as case files, plus the write helpers that
 // verify every write by reading the suite back (7.7 / 7.13).
 //
-// Live sems-dev facts (2026-09-29) this module is built around:
+// Live facts (2026-09-29) this module is built around:
 //   - `POST /chain/testcases/{chainUuid}` stores the body verbatim (creates the
 //     suite on first use) — the only write that persists every field.
 //   - `PUT /chain/testcases/{chainUuid}/{id}` replaces inputs + assertions but

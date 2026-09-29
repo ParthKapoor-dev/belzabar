@@ -128,7 +128,7 @@ export function insertOutputIds(operation: unknown): SqlInsertOutputIds {
 }
 
 // The platform's JDBC getKey() refuses multi-row RETURNING, AFTER the insert
-// committed, and names the keys in the message (live sems-dev):
+// committed, and names the keys in the message (live):
 //   "DB execution failed: The getKey method should only be used when a single
 //    key is returned. The current key entry contains multiple keys: [{id=3}, {id=4}]"
 const MULTI_KEY = /contains multiple keys:\s*\[(.*)\]\s*$/s;

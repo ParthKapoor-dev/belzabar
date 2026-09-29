@@ -12,7 +12,6 @@ import {
   loadSqlModifyContext,
   resolveSqlDbContext,
   sqlDefaultDb,
-  DEFAULT_SQL_DB_FALLBACK,
 } from "../../lib/sql/executor";
 import { normalizeSqlDatabases } from "../../lib/sql/selector";
 import { assertReadOnlySql, buildExplainSql, checkReadOnlySql } from "../../lib/sql/read-only";
@@ -39,7 +38,6 @@ interface SqlDbsData {
     configValue?: string;
     /** BELZ_SQL_DEFAULT_DB. */
     envValue?: string;
-    fallbackNickname: string;
   };
   raw?: {
     databases: unknown;
@@ -373,7 +371,6 @@ const command: CommandModule<SqlArgs, SqlData> = {
         defaultResolution: {
           ...(envDefault?.source === "config" ? { configValue: envDefault.value } : {}),
           ...(envDefault?.source === "env" ? { envValue: envDefault.value } : {}),
-          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
         },
       };
 
@@ -391,7 +388,6 @@ const command: CommandModule<SqlArgs, SqlData> = {
         resolveSqlDbContext({
           requestedDb: args.db,
           envDefault,
-          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
         }),
         loadSqlExecutionContext(),
       ]);
@@ -421,7 +417,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
 
     if (args.action === "explain") {
       const [dbContext, executionContext] = await Promise.all([
-        resolveSqlDbContext({ requestedDb: args.db, envDefault, fallbackNickname: DEFAULT_SQL_DB_FALLBACK }),
+        resolveSqlDbContext({ requestedDb: args.db, envDefault }),
         loadSqlExecutionContext(),
       ]);
       const ex = args.explain!;
@@ -453,7 +449,6 @@ const command: CommandModule<SqlArgs, SqlData> = {
         resolveSqlDbContext({
           requestedDb: args.db,
           envDefault,
-          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
         }),
         loadSqlUpdateContext(),
       ]);
@@ -487,7 +482,6 @@ const command: CommandModule<SqlArgs, SqlData> = {
         resolveSqlDbContext({
           requestedDb: args.db,
           envDefault,
-          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
         }),
         loadSqlInsertContext(),
       ]);
@@ -523,7 +517,6 @@ const command: CommandModule<SqlArgs, SqlData> = {
         resolveSqlDbContext({
           requestedDb: args.db,
           envDefault,
-          fallbackNickname: DEFAULT_SQL_DB_FALLBACK,
         }),
         loadSqlModifyContext(),
       ]);

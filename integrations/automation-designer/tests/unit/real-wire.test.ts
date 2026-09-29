@@ -229,14 +229,12 @@ describe("AD-02 step classification by service identity", () => {
     expect(n).toBe(41);
   });
 
-  test("offline, sems-dev fat steps classify through the verified fast path; other envs never guess", async () => {
+  test("offline without a resolver, numeric apiIds never classify (ids are env-local; no built-in per-env tables)", async () => {
     const raw1 = (await json(`${FIX}/real-v1/486041dfd02d9fd45a27b608ad2dce0c.v1.json`)) as V1RawMethodResponse;
-    const sems = parseV1Method(raw1).parsedSteps.map((s) => s.kind);
-    expect(sems.filter((k) => k === "SPEL_ECHO").length).toBe(0); // no env, no resolver → unresolved
-    const semsFast = parseV1Method(raw1, { env: "sems-dev" }).parsedSteps.map((s) => s.kind);
-    expect(semsFast.filter((k) => k === "SPEL_ECHO").length).toBe(3);
-    const nsm = parseV1Method(raw1, { env: "nsm-dev" }).parsedSteps.map((s) => s.kind);
-    expect(nsm.filter((k) => k === "SQL" || k === "SPEL_ECHO").length).toBe(0);
+    for (const opts of [undefined, { env: "sems-dev" }, { env: "other" }]) {
+      const kinds = parseV1Method(raw1, opts).parsedSteps.map((s) => s.kind);
+      expect(kinds.filter((k) => k === "SQL" || k === "SPEL_ECHO").length).toBe(0);
+    }
   });
 
   test("buildServiceResolver: one lookup per distinct automationId; failures are reported", async () => {

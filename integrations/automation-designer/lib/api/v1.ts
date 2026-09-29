@@ -411,7 +411,7 @@ export async function historyGet(opts: {
  * `includeDraft: true` restores the DRAFT chain named by category+methodName
  * (`version` is a draft-history version); without it the PUBLISHED chain is
  * restored — callers must never do that (the command goes through the draft
- * guard). Live wire (sems-dev): `{response: true, executionStatus: {...}}` on
+ * guard). Live wire: `{response: true, executionStatus: {...}}` on
  * success, HTTP 500 `EEException: No record found.` for an unknown version.
  *
  * Returns `true` / `false` for a recognised answer and `null` when the

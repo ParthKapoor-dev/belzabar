@@ -66,6 +66,7 @@ describe("SQL payload builder", () => {
       operation,
       dbAuthId: 55,
       query: "select * from users limit 1",
+      fallbackCategory: { id: 1, name: "Helpers" },
     });
 
     const inner = JSON.parse(payload.jsonDefinition);
@@ -109,14 +110,15 @@ describe("SQL payload builder", () => {
     ],
   };
 
-  test("falls back to the legacy NSM category when no fallbackCategory is given", () => {
-    const payload = buildSqlReadPayload({
-      template: makeTemplate(),
-      operation,
-      dbAuthId: 55,
-      query: "select 1",
-    });
-    expect((payload as any).category).toEqual({ id: 37, name: "NSM.Helpers" });
+  test("no template category and no env category → SQL_NO_EXECUTABLE_CATEGORY (no built-in id)", () => {
+    expect(() =>
+      buildSqlReadPayload({
+        template: makeTemplate(),
+        operation,
+        dbAuthId: 55,
+        query: "select 1",
+      }),
+    ).toThrow(expect.objectContaining({ code: "SQL_NO_EXECUTABLE_CATEGORY" }));
   });
 
   test("stamps the env-resolved fallbackCategory when the template has none", () => {

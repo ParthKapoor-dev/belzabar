@@ -2,7 +2,8 @@
 // per rule, on the research golden method), calibration over the 36 real
 // sems-dev bodies, and the command (grouping, exit code) via fakeFetch.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
+import { reloadConfig } from "@belzabar/core";
 import { join } from "path";
 import { fakeFetch, fixture, runCommand, scratchDir, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import lintCommand, { groupFindings } from "../../commands/lint/index";
@@ -14,7 +15,9 @@ import { golden, realV2 } from "./validate-fixtures";
 // Tests mutate deep wire paths freely: the body is untyped JSON here on purpose.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Body = any;
-const rules = (b: unknown, docs = false) => lintMethodV2(b, { docs }).map((f) => f.rule);
+// Q3 is config-driven (config lint.resolverTables); the tests configure one project's tables.
+const RESOLVER_TABLES = { feature_config: "features_getEnabledForLevel", feature_status: "features_getEnabledForLevel" };
+const rules = (b: unknown, docs = false) => lintMethodV2(b, { docs, resolverTables: RESOLVER_TABLES }).map((f) => f.rule);
 
 function withSql(sql: string): Body {
   const b = golden() as Body;
@@ -27,6 +30,10 @@ describe("SQL rules", () => {
     expect(rules(withSql("select a, (select max(x) from t2) as m from t1"))).toContain("Q2");
     expect(rules(withSql("select a from t1 where b in (select b from t2)"))).not.toContain("Q2");
     expect(rules(withSql("select s.a from (select a from t1) s"))).not.toContain("Q2");
+  });
+
+  test("Q3: no resolver tables configured → no Q3 (nothing project-specific is built in)", () => {
+    expect(lintMethodV2(withSql("select details from feature_config where code = :c")).map((f) => f.rule)).not.toContain("Q3");
   });
 
   test("Q3: feature_config / feature_status read directly", () => {
@@ -125,7 +132,7 @@ describe("anti-patterns and prose rules", () => {
 describe("calibration over the 36 real sems-dev bodies", () => {
   test("lint counts are pinned (docs off): few, specific findings", () => {
     const counts: Record<string, number> = {};
-    for (const { body } of realV2()) for (const f of lintMethodV2(body)) counts[f.rule] = (counts[f.rule] ?? 0) + 1;
+    for (const { body } of realV2()) for (const f of lintMethodV2(body, { resolverTables: RESOLVER_TABLES })) counts[f.rule] = (counts[f.rule] ?? 0) + 1;
     expect(counts).toEqual({ "AD-LINT-003": 4, Q2: 3, Q3: 2 });
   });
 });
@@ -173,6 +180,20 @@ describe("ad lint command", () => {
     expect((r.envelope?.data as any).byRule).toMatchObject({ "AD-LINT-002": 1 });
     const strict = await runCommand(lintCommand, [file, "--strict"], {});
     expect(strict.envelope?.error?.code).toBe("AD_LINT_FAILED");
+  });
+
+  test("Q3 tables come from config lint.resolverTables", async () => {
+    const dir = scratchDir("ad-lint");
+    const file = join(dir, "q3.v2.json");
+    writeFileSync(file, JSON.stringify(withSql("select v from app_settings where k = :k")));
+    cfg = withTempEnvConfig({ envs: { "t-lint": { url: "https://t.test" } } });
+    expect((await runCommand(lintCommand, [file], {})).envelope?.data as any).not.toHaveProperty("byRule.Q3");
+    cfg.restore();
+    cfg = withTempEnvConfig({ envs: { "t-lint": { url: "https://t.test" } } });
+    const raw = JSON.parse(readFileSync(cfg.configPath, "utf8"));
+    writeFileSync(cfg.configPath, JSON.stringify({ ...raw, lint: { resolverTables: { app_settings: "settings_get" } } }));
+    reloadConfig();
+    expect(((await runCommand(lintCommand, [file], {})).envelope?.data as any).byRule.Q3).toBe(1);
   });
 
   test("a missing / invalid file has a stable code", async () => {

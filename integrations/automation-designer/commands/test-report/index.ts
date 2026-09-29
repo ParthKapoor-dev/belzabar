@@ -17,7 +17,7 @@ export const args = defineArgs({
   flags: { ...AD_COMMON_FLAGS },
 });
 
-// Live sems-dev 2026-09-29: the route is not per chain, and it answered
+// Live 2026-09-29: the route is not per chain, and it answered
 // {testsCompleted:0, testsRemaining:0, results:null} before, during and after
 // a `test-case run-suite` of a 2-case suite. All zeros means "nothing reported",
 // never "0 tests ran / all passed" (CLI trial tr2).

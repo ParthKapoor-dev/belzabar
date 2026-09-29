@@ -13,7 +13,7 @@
 // and variables may be plain key strings; `default` is the defaultValue.
 // `category` may be given in the spec instead of --category.
 //
-// Live sems-dev (2026-09-28): a minimal body is accepted and the server mints
+// Live (2026-09-28): a minimal body is accepted and the server mints
 // step ids and input/output uuids; a duplicate name is refused with
 // `error.automation_chain.duplicate_method_name`.
 

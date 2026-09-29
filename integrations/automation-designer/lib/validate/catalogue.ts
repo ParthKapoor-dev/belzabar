@@ -7,14 +7,14 @@
 //   - a dotted variable key is rejected live (VK1), whatever method-json.md says;
 //   - method names allow `[A-Za-z0-9_.~-]`, no leading/trailing `.` (M1).
 // Severity changes vs validate.py, with the live evidence (ad-validation §4):
-//   - CC2 no longer requires base64: sems-dev stores most code plain and the
+//   - CC2 no longer requires base64: a dev env stores most code plain and the
 //     runtime content-sniffs; CC2 = inlineCode missing/blank only;
 //   - CC5 (bad executor) and CC1 (language outside the server enum) are errors:
 //     the server rejects them with 400 (v2_cc_executor_bad / _language_bad);
 //   - CR1 (entry condition reads an undefined name) is an error: the step is
 //     silently skipped and the run stays green (v2_entry_cond_undeclared).
 //   - CI1 and DUP1 are warnings (ADW-R15): 58 CI1 and 5 DUP1 hits on the 36
-//     real sems-dev bodies, 8 of them PUBLISHED and running. SpEL with
+//     real a dev env bodies, 8 of them PUBLISHED and running. SpEL with
 //     combineInput:false runs via the API (only the UI runner cannot run it),
 //     and a fieldCode written by two steps is often an intentional overwrite
 //     (research §4.2: "warn: some real methods do this"). --strict blocks new ones.

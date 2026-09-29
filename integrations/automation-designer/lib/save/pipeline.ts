@@ -11,7 +11,7 @@
 //
 // The server ignores `metadata.version` (AD-08), so the freshness check is the
 // only lost-update protection. A no-op V2 save changes only
-// `metadata.version.name` and `metadata.internal.*` (live sems-dev 2026-09-28);
+// `metadata.version.name` and `metadata.internal.*` (live 2026-09-28);
 // those are the only paths verify tolerates besides the targets.
 
 import { CliError } from "@belzabar/core";
@@ -34,11 +34,11 @@ import { runValidationGate, type ValidationFinding, type ValidationFlags, type V
  * `metadata.internal`) or outside the method content (`changelogs`: each
  * entry's `entityVersion` follows the draft version and its `user` block
  * carries `lastLoginDate`, which moves whenever that user logs in — live
- * sems-dev 2026-09-28). `testSuite` is the method's persisted test cases,
+ * a dev env 2026-09-28). `testSuite` is the method's persisted test cases,
  * managed by `ad test-case`, not by a save: a V2 POST that carries it makes
  * the server rebuild the suite from the (possibly stale) copy — new assertion
  * ids, createdOn/updatedOn, chainVersionId — while a POST without it leaves
- * the suite intact (live sems-dev 2026-09-29). So the save never sends it
+ * the suite intact (live 2026-09-29). So the save never sends it
  * (`postBody`) and the freshness check and the verify ignore it.
  */
 export const SERVER_OWNED_ON_SAVE = ["metadata.version", "metadata.internal", "changelogs", "testSuite"];

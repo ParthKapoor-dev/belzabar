@@ -1,6 +1,26 @@
 import { describe, expect, test } from "bun:test";
 import { parseV1Step } from "../../lib/parser/steps/v1";
 import type { V1ServiceStep } from "../../lib/types/v1-wire";
+import type { ServiceResolver } from "../../lib/parser/steps/classify";
+
+// The hand-written fixtures carry one environment's numeric apiIds. Ids are
+// env-local and belz has no built-in tables, so the test supplies the
+// resolver (online, lib/hydrator.ts builds it from the definition cache).
+const API_IDS: Record<number, [string, string]> = {
+  48: ["Database.SQL", "data.read"],
+  49: ["Database.SQL", "data.update"],
+  893: ["Database.SQL", "data.add"],
+  894: ["Database.SQL", "data.delete"],
+  50: ["Database.SQL", "schema.modify"],
+  21927: ["Helpers.Legacy", "echo"],
+  22929: ["Cache.Redis", "get"],
+  22930: ["Cache.Redis", "set"],
+  22928: ["Cache.Redis", "remove"],
+};
+const resolveService: ServiceResolver = (ref) => {
+  const hit = typeof ref.automationApiId === "number" ? API_IDS[ref.automationApiId] : undefined;
+  return hit ? { system: hit[0], api: hit[1], apiId: ref.automationApiId as number } : null;
+};
 
 async function loadStep(name: string): Promise<V1ServiceStep> {
   const file = Bun.file(`${import.meta.dir}/../fixtures/v1/${name}`);
@@ -10,8 +30,7 @@ async function loadStep(name: string): Promise<V1ServiceStep> {
 async function parse(name: string) {
   const raw = await loadStep(name);
   const warnings: string[] = [];
-  // Hand-written fixtures carry nsm's documented apiIds (fast path keyed by env).
-  const step = parseV1Step(raw, raw.orderIndex, w => warnings.push(w), { env: "nsm-dev" });
+  const step = parseV1Step(raw, raw.orderIndex, w => warnings.push(w), { resolveService });
   return { raw, step, warnings };
 }
 

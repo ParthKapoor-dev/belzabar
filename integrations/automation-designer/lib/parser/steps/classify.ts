@@ -2,16 +2,15 @@
 //
 // A step's real service is `automationSystem` + `automationAPI` of the
 // automation record it points at (`GET /automations/{automationId}`). The
-// numeric `automationApiId` is env-local: sems-dev registers `db_service
-// data.read` as 19, nsm documents `Database.SQL data.read` as 48. Classifying
-// by numeric ids alone missed every SQL and echo step on sems.
+// numeric `automationApiId` is env-local: the same `data.read` API has a
+// different id on every environment, so numeric ids are never classified by
+// value (there are no built-in per-env tables).
 //
 // Identity sources, strongest first:
 //   1. an injected `ServiceResolver` (online: lib/hydrator.ts builds one from
 //      the env-scoped definition cache; offline/tests: from fixtures);
-//   2. the wire's own names — V2 `serviceName`/`methodName`;
-//   3. a per-env fast path of verified numeric apiIds / apiUuids.
-// When none applies the step stays EXISTING_SERVICE: never guess SQL/SpEL,
+//   2. the wire's own names — V2 `serviceName`/`methodName`.
+// When neither applies the step stays EXISTING_SERVICE: never guess SQL/SpEL,
 // because the save guard only writes `sql`/`expression` into steps of that kind.
 
 /** The service a step calls. `system` is the automation-system name (`db_service`), `api` the API label (`data.read`). */
@@ -43,7 +42,7 @@ export interface StepServiceRef {
 export type ServiceResolver = (ref: StepServiceRef) => ServiceIdentity | null;
 
 export interface ParseOptions {
-  /** Environment the body came from; enables the verified numeric fast path. */
+  /** Environment the body came from (informational; ids are env-local). */
   env?: string;
   /** Online or fixture-backed service lookup (see lib/hydrator.ts:buildServiceResolver). */
   resolveService?: ServiceResolver;
@@ -95,75 +94,8 @@ export function classifyService(id: ServiceIdentity | null | undefined): StepFam
   return { kind: "EXISTING_SERVICE" };
 }
 
-// ─── verified per-env fast path ───────────────────────────────────────────
-//
-// Numeric apiIds and apiUuids are env-local, so each table is keyed by env
-// name and only consulted for that env. sems-dev values are verified against
-// the captured definitions (tests/fixtures/definitions, real-v1/real-v2
-// pairs). The nsm values are the team-documented ids from
-// ad-rest-api-step-types.md (the pre-AD-02 constants).
-
-type Key = Pick<ServiceIdentity, "system" | "api">;
-const k = (system: string, api: string): Key => ({ system, api });
-
-const SEMS_DEV: { ids: Record<number, Key>; uuids: Record<string, Key> } = {
-  ids: {
-    19: k("db_service", "data.read"),
-    20: k("db_service", "data.update"),
-    21: k("db_service", "data.add"),
-    6501: k("Helpers.Legacy", "echo"),
-    6700: k("Cache.Redis", "get"),
-    6701: k("Cache.Redis", "set"),
-  },
-  uuids: {
-    "15805db3-0a4f-4f2a-80d8-c433a1ffeced": k("db_service", "data.read"),
-    "3706a083-4647-4c2b-8391-1a80613b8bbc": k("db_service", "data.update"),
-    "f5164443-9f04-4391-b2d1-fe0b8e00f5a9": k("db_service", "data.add"),
-    "7cacda5d-186b-4e1b-aaf1-a8acb617f35b": k("db_service", "data.delete"),
-    "424ffd4c9e0f55befc238dd999dab2d6": k("Helpers.Legacy", "echo"),
-    "48cee4eb419d451c5397a5225c88c11c": k("Cache.Redis", "get"),
-    "4954080a4640be01364a9b597ce2b82d": k("Cache.Redis", "set"),
-  },
-};
-
-const NSM: { ids: Record<number, Key>; uuids: Record<string, Key> } = {
-  ids: {
-    48: k("Database.SQL", "data.read"),
-    49: k("Database.SQL", "data.update"),
-    893: k("Database.SQL", "data.add"),
-    894: k("Database.SQL", "data.delete"),
-    50: k("Database.SQL", "schema.modify"),
-    21927: k("Helpers.Legacy", "echo"),
-    22929: k("Cache.Redis", "get"),
-    22930: k("Cache.Redis", "set"),
-    22928: k("Cache.Redis", "remove"),
-  },
-  uuids: {},
-};
-
-const FAST_PATH: Record<string, { ids: Record<number, Key>; uuids: Record<string, Key> }> = {
-  "sems-dev": SEMS_DEV,
-  "nsm-dev": NSM,
-  "nsm-qa": NSM,
-  "nsm-uat": NSM,
-};
-
-/** Identity from the verified per-env tables, or null. */
-export function fastPathIdentity(ref: StepServiceRef, env: string | undefined): ServiceIdentity | null {
-  if (!env) return null;
-  const table = FAST_PATH[env];
-  if (!table) return null;
-  const apiId = typeof ref.automationApiId === "number" ? ref.automationApiId : null;
-  if (apiId !== null && table.ids[apiId]) return { ...table.ids[apiId]!, apiId };
-  for (const u of [ref.automationApiUuid, typeof ref.automationApiId === "string" ? ref.automationApiId : undefined]) {
-    const key = typeof u === "string" ? u.trim().toLowerCase() : "";
-    if (key && table.uuids[key]) return { ...table.uuids[key]!, apiUuid: key };
-  }
-  return null;
-}
-
 /**
- * Resolve a step's identity: injected resolver → wire names → env fast path.
+ * Resolve a step's identity: injected resolver → wire names.
  * The V2 wire names (`serviceName` = system name, `methodName` = API label)
  * are portable and need no lookup.
  */
@@ -177,5 +109,5 @@ export function resolveStepIdentity(ref: StepServiceRef, opts: ParseOptions | un
       apiUuid: typeof ref.automationApiId === "string" ? ref.automationApiId.trim() : undefined,
     };
   }
-  return fastPathIdentity(ref, opts?.env);
+  return null;
 }

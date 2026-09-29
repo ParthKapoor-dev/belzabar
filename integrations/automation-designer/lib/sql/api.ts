@@ -94,7 +94,8 @@ export function resetExecutableCategoryCache(): void {
  * AuthorizeExecution check. The server only needs a real category *id* (the name
  * is cosmetic); any PUBLIC category works. Prefer a "Helpers"-style one for
  * stability, else the lowest-id PUBLIC category. Cached per process; returns
- * null if the lookup fails (caller then falls back to the legacy NSM constant).
+ * null if the lookup fails (the caller then fails with SQL_NO_EXECUTABLE_CATEGORY
+ * unless the template carries its own category).
  */
 export async function fetchExecutableCategory(): Promise<ExecutableCategoryRef | null> {
   if (executableCategoryCache) return executableCategoryCache;

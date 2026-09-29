@@ -310,7 +310,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           throw new CliError(`Test case ${id} is not in ${method.name}'s suite.`, { code: "AD_TESTCASE_NOT_FOUND", details: { id, uuid } });
         }
         const c = await buildCase(args, method, current.file);
-        // PUT replaces inputs + assertions only; the server keeps name/description (live sems-dev),
+        // PUT replaces inputs + assertions only; the server keeps name/description (live),
         // and a deleted case's name is never released, so they cannot be changed at all.
         const fixed = (["name", "description"] as const).filter((k) => c[k] !== current.file[k]);
         if (fixed.length > 0) {

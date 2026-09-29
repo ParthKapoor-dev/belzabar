@@ -1,7 +1,8 @@
-// Opt-in live WRITE suite: the full AD method lifecycle on sems-dev, category
-// Test-Parth (chain category 1135), names `belz_tst_s9_*`.
+// Opt-in live WRITE suite: the full AD method lifecycle on the BELZ_LIVE env, in
+// the BELZ_LIVE_CATEGORY category only, names `belz_tst_s9_*`.
 //
-//   BELZ_LIVE=sems-dev BELZ_LIVE_WRITE=1 bun test apps/cli/tests/live
+//   BELZ_LIVE=<env> BELZ_LIVE_WRITE=1 BELZ_LIVE_CATEGORY=<name> BELZ_LIVE_CATEGORY_ID=<id> \
+//     bun test apps/cli/tests/live
 //
 // create --spec → validate / lint → structural save → test (+ --expect) →
 // test-case create / export / sync → publish → test --compare-published →
@@ -16,6 +17,7 @@ import {
   EnvelopeSchema,
   LIVE_ENV,
   describeLiveWrite,
+  liveCategory,
   liveBelzHome,
   markLiveResourceCleaned,
   registerLiveResource,
@@ -30,6 +32,9 @@ const NAME = `belz_tst_s9_life_${STAMP}`;
 const NAME_DEL = `belz_tst_s9_del_${STAMP}`;
 const T = 240_000;
 
+// Resolved lazily: the suite is skipped (and needs no category) when BELZ_LIVE_WRITE is off.
+const category = () => liveCategory();
+
 const created: string[] = [];
 const cleaned = new Set<string>();
 
@@ -37,7 +42,7 @@ function track(uuid: string, what: string, name = NAME): void {
   created.push(uuid);
   registerLiveResource({
     agent: AGENT,
-    kind: `method (${what}, ${LIVE_ENV}, Test-Parth 1135)`,
+    kind: `method (${what}, ${LIVE_ENV}, ${category().name} ${category().id})`,
     identifier: uuid,
     purpose: `${name}: live lifecycle suite`,
     cleaned: "no — pending afterAll soft delete",
@@ -83,13 +88,13 @@ describeLiveWrite("ad lifecycle", () => {
     expect(results.every(r => r.result === "deleted" || r.result === "gone")).toBe(true);
   }, T);
 
-  test("create --spec (compact) makes a Test-Parth draft", async () => {
+  test("create --spec (compact) makes a draft in the live category", async () => {
     const spec = join(dir, "spec.json");
     writeFileSync(
       spec,
       JSON.stringify({
         name: NAME,
-        category: "Test-Parth",
+        category: category().name,
         summary: "belz live lifecycle suite",
         inputs: ["name"],
         outputs: ["greetingOut"],
@@ -105,7 +110,7 @@ describeLiveWrite("ad lifecycle", () => {
     const uuid = (r.envelope?.data as { uuid?: string } | undefined)?.uuid;
     if (uuid) track(uuid, "draft");
     const d = okData<{ uuid: string; name: string; state: string; category: { chainCategoryId: number }; stepCount: number }>(r);
-    expect(d).toMatchObject({ name: NAME, state: "DRAFT", category: { chainCategoryId: 1135 }, stepCount: 1 });
+    expect(d).toMatchObject({ name: NAME, state: "DRAFT", category: { chainCategoryId: category().id }, stepCount: 1 });
     draft = d.uuid;
   }, T);
 
@@ -178,7 +183,7 @@ describeLiveWrite("ad lifecycle", () => {
 
     const root = join(dir, "export");
     okData(await belz(["ad", "test-case", "export", draft, "--dir", root]));
-    const methodDir = join(root, "Test-Parth", NAME);
+    const methodDir = join(root, category().name, NAME);
     const caseFiles = readdirSync(join(methodDir, "cases"));
     expect(caseFiles.length).toBe(1);
     const caseFile = JSON.parse(readFileSync(join(methodDir, "cases", caseFiles[0]!), "utf8"));
@@ -267,7 +272,7 @@ describeLiveWrite("ad lifecycle", () => {
   test("create (V2 subset spec) + delete a never-published draft, verified", async () => {
     const spec = join(dir, "spec-del.json");
     writeFileSync(spec, JSON.stringify({ name: NAME_DEL, summary: "belz live delete probe", inputs: [], outputs: [], variables: [], steps: [] }));
-    const r = await belz(["ad", "create", "--spec", spec, "--category", "1135", "--yes"]);
+    const r = await belz(["ad", "create", "--spec", spec, "--category", String(category().id), "--yes"]);
     const uuid = (r.envelope?.data as { uuid?: string } | undefined)?.uuid;
     if (uuid) track(uuid, "draft", NAME_DEL);
     const d = okData<{ uuid: string; state: string }>(r);
