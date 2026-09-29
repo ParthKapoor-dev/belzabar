@@ -14,7 +14,7 @@ import { CliError } from "../command";
 import type { AuthSession } from "../types";
 import { vlog } from "../verbose";
 import { lifecycle } from "../ui";
-import { httpRequest, singleFlight } from "./transport";
+import { defaultTimeoutMs, httpRequest, singleFlight } from "./transport";
 import { readBodySummary } from "./errors";
 
 const SESSION_DIR = join(BELZ_CONFIG_DIR, "sessions");
@@ -113,9 +113,19 @@ async function doLogin(envName: string): Promise<AuthSession> {
         "User-Agent": "Bun/1.0 (Belzabar CLI)",
       },
       body: JSON.stringify({ loginId, password }),
+      // Login is a POST but has no server-side work to "complete": use the read
+      // timeout (60 s), not the 300 s write one (CORE-R9).
+      timeoutMs: defaultTimeoutMs("GET"),
     });
   } catch (err) {
     spin.error(`Authentication failed for ${envName}`);
+    if (err instanceof CliError && err.code === "HTTP_TIMEOUT") {
+      const timeoutMs = defaultTimeoutMs("GET");
+      throw new CliError(
+        `Login to ${envName} timed out after ${Math.round(timeoutMs / 1000)}s (raise the limit with BELZ_HTTP_TIMEOUT_MS).`,
+        { code: "HTTP_TIMEOUT", details: { env: envName, timeoutMs, mayHaveCompleted: false, retryable: true } },
+      );
+    }
     throw err;
   }
   vlog(`auth login → ${response.status}`);

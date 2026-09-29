@@ -308,6 +308,28 @@ describe("apiFetch", () => {
     expect(ff.calls("GET").every((r) => r.headers["authorization"] === "Bearer one")).toBe(true);
   });
 
+  test("CORE-R9: login uses the read timeout and a login-specific message", async () => {
+    const saved = { a: process.env.BELZ_HTTP_TIMEOUT_MS, b: process.env.BELZ_HTTP_WRITE_TIMEOUT_MS };
+    process.env.BELZ_HTTP_TIMEOUT_MS = "25";
+    process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = "600000";
+    try {
+      cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", user: "u", password: "p" } }, activeEnv: "t-dev" });
+      ff = fakeFetch([{ method: "POST", url: "/do/login", response: () => new Promise(() => {}) }]).install();
+      const started = Date.now();
+      const err = await caught(login());
+      expect(Date.now() - started).toBeLessThan(5_000);
+      expect(err.code).toBe("HTTP_TIMEOUT");
+      expect(err.message).toContain("Login to t-dev timed out");
+      expect(err.message).not.toContain("may still complete");
+      expect(err.details).toMatchObject({ mayHaveCompleted: false });
+    } finally {
+      if (saved.a === undefined) delete process.env.BELZ_HTTP_TIMEOUT_MS;
+      else process.env.BELZ_HTTP_TIMEOUT_MS = saved.a;
+      if (saved.b === undefined) delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
+      else process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = saved.b;
+    }
+  });
+
   test("concurrent 401s share one re-login", async () => {
     cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", token: "stale" } }, activeEnv: "t-dev" });
     setOutputMode("llm");
