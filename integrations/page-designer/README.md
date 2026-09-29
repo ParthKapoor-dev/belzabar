@@ -1,46 +1,48 @@
 # Page Designer CLI (`belz pd`)
 
-CLI tools for deep inspection of Page Designer pages and components — variables, HTTP service calls, component trees, validation, and AD method tracing.
+Inspect, validate, snapshot, edit and publish Page Designer pages and components.
+Maintainer notes live in `AGENTS.md`; the exact flags of every command are in
+`belz pd <cmd> --help` and `belz --help-full`.
 
-## Commands
+`<input>` accepts an app page URL, a PD designer URL, a bare hex id, or an exact page/component name.
 
-```bash
-belz pd show <input>                      # Overview: name, IDs, variable/HTTP/component counts
-belz pd show <input> --vars               # List all variables (user-defined + derived)
-belz pd show <input> --http               # List all HTTP service calls
-belz pd show <input> --components         # Show layout/component tree
-belz pd show <input> --var-detail <name>  # Full config for a specific variable or derived
-belz pd show <input> --http-detail <N>    # Full config for the Nth HTTP call (1-indexed)
-belz pd show <input> --full               # All sections + all details
-belz pd show <input> --force              # Bypass the local cache (SWR 5 min / 1 h)
-belz pd show <input> --recursive          # Recursive component tree + all AD IDs
-
-belz pd validate <input>                  # Calibrated validator (exit 1 on errors)
-belz pd find [query]                      # Search pages/components (7-day cached index)
-belz pd find-ad-methods <ID>              # Extract AD method IDs (--recursive for full tree)
-belz pd analyze <id...> [--compliance f]  # Recursive dependency + compliance analysis
-```
-
-`<input>` accepts any of: app URL, PD designer URL, bare hex ID, or an exact page/component name.
-
-## Examples
+## Read
 
 ```bash
-# Inspect a page by PD URL
-belz pd show https://nsm-dev.nc.verifi.dev/ui-designer/page/406c644cc2511cc15f309adb44137e99
-
-# Show all variables with types and initial values
-belz pd show 406c644cc2511cc15f309adb44137e99 --vars
-
-# Deep-dive into a specific HTTP call
-belz pd show 406c644cc2511cc15f309adb44137e99 --http-detail 1
-
-# Validate a page for common errors
-belz pd validate 406c644cc2511cc15f309adb44137e99
-
-# Search for pages by name
-belz pd find "notice"
-
-# Structured JSON output for agents
-belz pd show 406c644cc2511cc15f309adb44137e99 --vars --llm
+belz pd show <input>                      # overview: name, ids, variable/HTTP/component counts
+belz pd show <input> --vars               # variables (user-defined + derived)
+belz pd show <input> --http               # HTTP service calls with AD ids and triggers
+belz pd show <input> --tree               # layout tree with node-kind badges and pitfalls
+belz pd show <input> --find "Save"        # locate nodes: id + key path (for overlay edits)
+belz pd show <input> --var-detail <name>  # one variable's full config
+belz pd show <input> --http-detail 1      # the Nth HTTP call in full
+belz pd find "notice"                     # fuzzy search pages/components (7-day cached index)
+belz pd find-ad-methods <input> -r        # AD method ids used, following components
+belz pd page-deps <input>                 # page-dependencies summary
+belz pd diff <input> --from nsm-dev --to nsm-qa
+belz pd history list <pageId>             # server version history
 ```
+
+Reads are cached per env (5 min soft / 1 h hard); `--force` fetches fresh.
+
+## Validate and snapshot
+
+```bash
+belz pd validate <input>                  # exit 1 on any validator error
+belz pd validate <input> --recursive      # also every symbol the page uses
+belz pd snapshot <input> --out snapshots/page.json        # normalized baseline for git
+belz pd snapshot <input> --compare snapshots/page.json    # exit 1 when the live page differs
+```
+
+## Edit and publish
+
+Writes need an explicit `--env`, and `--yes` in `--llm` or non-interactive mode.
+
+```bash
+belz pd preflight <pageId> --overlay edit.json           # dry run: plan + validate, no write
+belz pd save <pageId> --overlay edit.json --env nsm-dev  # validated, locked save of the draft
+belz pd publish <pageId> --env nsm-dev
+```
+
+An overlay edits the draft's raw config, e.g. `{"nodes":{"update":[{"id":"<nodeId>","props":{…}}]}}`;
+see `AGENTS.md` for every section. Add `--llm` to any command for a JSON envelope.

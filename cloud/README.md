@@ -14,7 +14,7 @@ account can see — it does not have to be belzabar. So we use a tiny throwaway
   belzabar (private)                belz-sandbox (private)            cloud session
   ─────────────────                 ──────────────────────            ─────────────
   CI: cloud/publish.sh  ──pushes──▶  • belz-linux-x64 (Release)  ◀──clones──  setup
-  on every push to main             • .claude/skills/             script installs
+  on every push to main             • skills (from agents/)       script installs
                                     • CLAUDE.md (rules)           belz + writes
                                     • cloud-setup.sh              ~/.belz/config.json
 ```
@@ -22,8 +22,9 @@ account can see — it does not have to be belzabar. So we use a tiny throwaway
 - **belzabar** — never attached to a cloud session. Its CI builds belz and
   pushes the bundle *out* to belz-sandbox.
 - **belz-sandbox** — a private repo the cloud session connects to. CI-maintained;
-  you never hand-edit it. Holds the skills, a rules `CLAUDE.md`, and the belz
-  binary as a rolling Release.
+  you never hand-edit it. Holds the skills (copied from `agents/*/`), a rules
+  `CLAUDE.md` (from `cloud/sandbox-CLAUDE.md`), `cloud-setup.sh` (from
+  `cloud/setup.sh`), and the belz binary as a rolling Release.
 - **cloud session** — clones belz-sandbox, runs the setup script, ends up with a
   fully configured belz exactly like a local session.
 
@@ -66,8 +67,9 @@ SANDBOX_REPO=your-org/belz-sandbox bash cloud/publish.sh
   explicitly — or use **Full** if the allowlist gets unwieldy.
 - **Setup script:** **leave empty.** Cloud env vars are NOT exported to the
   Setup-script phase — only to the running session. belz is instead installed +
-  configured by a **SessionStart hook** (`.claude/settings.json`, committed into
-  belz-sandbox) that runs `cloud-setup.sh` in-session, where the env vars exist.
+  configured by a **SessionStart hook** (belz-sandbox's Claude settings file,
+  copied from `cloud/sandbox-settings.json`) that runs `cloud-setup.sh`
+  in-session, where the env vars exist.
 - **Environment variables:** see below.
 
 ### 4. Environment variables (the only place creds can go)
@@ -78,7 +80,7 @@ exposure. Use the project-agnostic `BELZ_ENV_<NAME>_*` keys
 
 > **Do NOT quote values.** The cloud .env field stores quotes literally
 > (`KEY='v$$'` → the value becomes `'v$$'`, quotes and all). Write bare values:
-> `BELZ_ENV_NSM_DEV_PASSWORD=preeti@Ver1f1$$`.
+> `BELZ_ENV_NSM_DEV_PASSWORD=p@ss$$word`.
 
 ```dotenv
 # which repo holds the belz release (also derivable from the clone's origin)
@@ -98,7 +100,7 @@ BELZ_ENV_YS_QA_USER=...
 BELZ_ENV_YS_QA_PASSWORD=...
 BELZ_ENV_YS_QA_PROJECT=YieldSec
 
-# optional
+# optional (imported into config.json by `belz setup --from-env`)
 BELZ_JENKINS_URL=...
 BELZ_JENKINS_USER=...
 BELZ_JENKINS_PASSWORD=...

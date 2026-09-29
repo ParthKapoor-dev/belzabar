@@ -78,21 +78,26 @@ source of truth.
 ## Core Behavior Contract
 
 1. Commands export a default `CommandModule` (`schema`, `parseArgs`,
-   `execute`, `presentHuman`).
-2. Commands never call `process.exit()` or print ad-hoc output.
-3. `--llm` mode returns raw JSON envelopes; human mode uses `presentHuman()`.
-4. `matrix` traces items SEQUENTIALLY — `traceMethod` mutates the global active
+   `execute`, `presentHuman`) and `args` (core `defineArgs`).
+2. `release` is in `NOT_ENV_AWARE_NAMESPACES` (`apps/cli/bin/options.ts`): envelopes carry
+   no `meta.env`; the envs come from the spec. `--env` only picks the project that
+   `matrix` derives spine/stage envs from when the spec names none.
+3. Commands never call `process.exit()` or print ad-hoc output.
+4. `--llm` mode returns raw JSON envelopes; human mode uses `presentHuman()`.
+5. `matrix` traces items SEQUENTIALLY — `traceMethod` mutates the global active
    environment, so concurrent traces would race. Do not parallelize them.
 
 ## Known limitations
 
 - AD-only. PD items are listed per ticket but not traced — PD pages are not
   name-resolvable across environments. PD tracing needs caller-supplied
-  per-env page IDs (see the plan / `belz pd trace`, not yet built).
+  per-env page IDs; it is deferred (there is no PD trace command yet).
 - Leak detection depends on the stage environment being queryable. When the
   AD history service is unavailable on stage, leak status is `unknown`.
 
 ## Adding a New Command
 
 1. Create `release/commands/<cmd>/` with `index.ts`, `help.txt`, `desc.txt`.
-2. Add it to `registry.ts` (sorted).
+2. Add it to `registry.ts` (sorted); `apps/cli/tests/registry.test.ts` and
+   `apps/cli/tests/args-docs.test.ts` enforce registration and help/desc ↔ spec.
+3. Update this file.

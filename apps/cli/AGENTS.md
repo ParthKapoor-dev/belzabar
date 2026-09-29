@@ -2,142 +2,131 @@
 
 ## Purpose
 
-`apps/cli/` is the **orchestration layer** for the `belz` binary. It owns:
+`apps/cli/` (package `belzabar.cli`) builds the **`belz` binary**. It owns:
 
-- The entry point (`bin/cli.ts`, used both in dev and for the compiled binary)
-- The wiring of every integration's command registry (`bin/options.ts`)
-- Top-level commands (`cache`, `config`, `envs`, `extension`, `onboard`, `setup`, `update`)
-- Install / reinstall scripts
+- the entry point `bin/cli.ts` (the same file runs in dev and is compiled into the release binary),
+- the wiring of every integration's static command registry (`bin/options.ts`),
+- the top-level commands `cache`, `config`, `envs`, `extension`, `onboard`, `setup`, `update`,
+- the install / reinstall scripts.
 
-Command implementations for `ad`, `pd`, `tw`, `migrate` and `release` live in the
-`integrations/*` workspace packages (`@belzabar/ad`, `@belzabar/pd`, …); this app only wires
-them together.
+`ad`, `pd`, `tw`, `migrate` and `release` commands live in the `integrations/*` packages
+(`@belzabar/ad`, `@belzabar/pd`, `@belzabar/teamwork`, `@belzabar/migrations`, `@belzabar/release`);
+this app only wires them together. The framework (runner, args, envelope, http, cache, ui) is
+`@belzabar/core` — see `packages/core/AGENTS.md`.
 
 ---
 
-## Directory Map
+## Directory map
 
 ```
 apps/cli/
 ├── bin/
-│   ├── cli.ts              Entry point: --help-full, then runNamespacedCli(buildCliOptions())
-│   └── options.ts          Registries → runner options + `belz --help-full` text; REGISTRIES (for tests)
+│   ├── cli.ts          Entry: installStdioGuard → load options → --help-full | runNamespacedCli
+│   ├── options.ts      NAMESPACES + registries → runner options; buildHelpFull(); REGISTRIES (tests)
+│   └── build-info.ts   Bun macro: {version, sha, dirty, builtAt} for `belz --version`
 ├── commands/
-│   ├── registry.ts         Static, sorted registry of the top-level commands below
-│   ├── cache/  config/  envs/  extension/  onboard/  setup/  update/
-│   │                       each: index.ts + help.txt + desc.txt
-├── tests/
-│   ├── registry.test.ts           Every commands/*/ folder is registered, sorted, has help/desc
-│   ├── write-commands.test.ts     D6: every remote-write command/sub-action declares writes (local: writesLocal)
-│   ├── envelope-contract.test.ts  Every registered command's --llm envelope vs EnvelopeSchema
-│   ├── compiled-pipe.test.ts      Compiles the binary to a tmp dir; >64 KiB --llm through a slow pipe
-│   ├── update-paths.test.ts       `belz update` finds apps/cli/scripts (or the old cli/scripts)
-│   ├── help-flags.test.ts, cache-command.test.ts
-│   └── live/                      Opt-in live suites (BELZ_LIVE=sems-dev), skipped by default
-├── scripts/
-│   ├── install.sh / install.ps1   Build + install + first-run setup
-│   ├── reinstall.sh               Wipe ~/.belz + fresh install (delegates to install.sh)
-│   ├── record-install.mjs         Writes install metadata (sourceDir, …) for `belz update`
-│   └── swap-binary.ps1            Windows deferred binary swap
-├── package.json            Scripts: build, link. Depends on core + every integration package
-└── tsconfig.json           Extends ../../tsconfig.base.json
+│   ├── registry.ts     Static, sorted registry of the top-level commands
+│   └── cache/ config/ envs/ extension/ onboard/ setup/ update/
+│                       each: index.ts (exports `args` + default CommandModule), help.txt, desc.txt
+│                       (config keeps its arg spec in config/args.ts)
+├── scripts/            install.sh, install.ps1, reinstall.sh, record-install.mjs, swap-binary.ps1
+├── tests/              see Tests
+├── bunfig.toml         test preload (BELZ_HOME → tmp)
+└── package.json        scripts: build, link; depends on core + every integration
 ```
+
+The compiled binary is written to `apps/cli` as `belz` (gitignored, with `belz.map`).
 
 ---
 
-## Registries and routing
+## Routing
 
-Each integration exports a hand-maintained `registry` (`integrations/<x>/registry.ts`, exported as
-`@belzabar/<pkg>/registry`): command name → `{ module, help, desc }`, with `help.txt`/`desc.txt`
-imported `with { type: "text" }` so the compiled binary embeds them. There is no generator.
-
-`bin/options.ts` builds the `runNamespacedCli` options:
+`bin/options.ts` builds the `runNamespacedCli` options from the registries:
 
 ```
-belz ad | pd | tw | migrate | release <cmd>  → namespace commands from that registry
-belz config / belz extension                 → passthrough namespaces (the module sub-routes)
+belz ad | pd | tw | migrate | release <cmd>  → namespace commands (one registry each)
+belz config | extension <sub>                → passthrough namespaces (the module self-routes)
 belz cache | envs | onboard | setup | update → top-level commands
+belz --version | --help | --help-full        → runner / entry point
 ```
 
-`belz cache` is itself a single top-level `CommandModule` that self-routes two subcommands via
-core `defineSubcommands` (`{command: "belz cache", default: "invalidate"}`), the same pattern as
-`config`/`extension`: `belz cache <uuid>...` / `--all --yes` (no literal subcommand keyword,
-argv falls through to the `invalidate` default — a remote write, `writes: true`) and
-`belz cache prune-local [--yes]` (local filesystem only: removes flat
-`<namespace>/<key>.json` files left over from before caches were env-scoped — skipping
-`method-finder`/`page-finder`, which are flat *by design*, see `UNSCOPED_NAMESPACES` in
-`commands/cache/index.ts` — plus abandoned `.refresh/*.lock` files older than 10 minutes; default
-dry run, `--yes` deletes; module declares `writesLocal: true` and `writes` is a function of the
-parsed args so `prune-local` never demands an explicit `--env`). The reusable scan/delete core is
-exported as `pruneLocalCache(cacheDir, {yes, now?, onError?})` for testing against a scratch dir.
-
-`belz --help-full` = every `desc.txt`, in fixed section order, commands sorted (deterministic;
-dev and compiled output are identical).
-
----
-
-## Adding Commands
-
-- **Top-level:** create `commands/<name>/{index.ts,help.txt,desc.txt}` and add the entry to
-  `commands/registry.ts` (sorted). If it sub-routes itself like `config`, add it to `PASSTHROUGH`
-  in `bin/options.ts`.
-- **Integration command:** add the folder under `integrations/<x>/commands/` and the entry to
-  `integrations/<x>/registry.ts` — see that module's AGENTS.md.
-- **New namespace:** create the integration package (package.json, tsconfig, registry.ts), add it
-  to `apps/cli/package.json` dependencies, `NAMESPACES` and `REGISTRIES` in `bin/options.ts`.
-
-`tests/registry.test.ts` fails if a folder and its registry disagree.
+- `envAware: false` for the `tw`, `migrate`, `release` namespaces and for
+  `config`, `extension`, `envs`, `setup`, `onboard`, `update` — their envelopes carry no `meta.env`.
+- `belz cache` self-routes with `defineSubcommands` (default `invalidate`): `belz cache --env <e> <uuid>…`
+  (remote write → explicit `--env` required; `--all --yes` for an org-wide flush) and
+  `belz cache prune-local [--yes]` (local only, `writesLocal`; dry run unless `--yes`; removes
+  pre-env-scope flat cache files — never `method-finder` / `page-finder`, which are flat by
+  design — and `.refresh/*.lock` files older than 10 minutes). `pruneLocalCache(dir, opts)` is
+  exported for tests.
+- `belz --help-full` (`buildHelpFull`) prints every `desc.txt`: namespaces in the fixed
+  `NAMESPACES` order, then top-level; commands sorted by `registryNames`. It has no env-, clock-,
+  locale- or build-dependent content (`tests/help-full.test.ts` spawns it twice under different
+  env/TZ/locale and requires byte-identical output). `bin/cli.ts` prints it before dispatching
+  anything and exits through `flushAndExit`.
 
 ---
 
-## Build
+## Adding a command
+
+- **Top-level:** create `commands/<name>/{index.ts,help.txt,desc.txt}` (declare `args` with
+  `defineArgs` / `defineSubcommands`, set `writes` / `writesLocal` / `envAware` as needed) and add
+  it to `commands/registry.ts` in sorted order. If it self-routes a namespace like `config`, add
+  it to `PASSTHROUGH` in `bin/options.ts`; if it never talks to an env, add it to
+  `NOT_ENV_AWARE_TOP_LEVEL`.
+- **Integration command:** folder under `integrations/<x>/commands/` + entry in that package's
+  `registry.ts` — see its `AGENTS.md`.
+- **New namespace:** new integration package (package.json, tsconfig, `registry.ts`), add it to
+  `package.json` dependencies here and to `NAMESPACES` + `REGISTRIES` in `bin/options.ts`.
+
+help.txt follows the template in `integrations/automation-designer/AGENTS.md`; desc.txt is one
+line per invocation, `belz <…>  :->  <what it does>`. `tests/args-docs.test.ts` fails when either
+drifts from the args spec; `tests/registry.test.ts` fails when folders and registries disagree.
+
+---
+
+## Build and install
 
 ```bash
-bun run belz:build                     # from the repo root → apps/cli/belz
-cd apps/cli && bun run build           # same
-bun apps/cli/bin/cli.ts ad show --help # dev mode, no compile
-bun run belz:install                   # apps/cli/scripts/install.sh (build + install + first-run)
+bun run belz:build                       # repo root → compiles bin/cli.ts to apps/cli (binary `belz`)
+bun apps/cli/bin/cli.ts ad show --help   # dev mode, no compile
+bun run belz:install                     # scripts/install.sh
+bun run belz:reinstall                   # scripts/reinstall.sh
 ```
+
+- `scripts/install.sh [--env-file <path>] [--install-dir <dir>]` — `bun install --ignore-scripts`,
+  compile, install the binary (default `~/.local/bin`), record install metadata
+  (`scripts/record-install.mjs`, read by `belz update`), and on first install run `belz onboard`
+  (or `belz setup --env-file`). `scripts/install.ps1` is the Windows equivalent.
+- `scripts/reinstall.sh` — wipes `~/.belz/` and the binary, then delegates to `install.sh`.
+- The repo-root one-liners (`install.sh`, `install.ps1`) and `belz update` call
+  `apps/cli/scripts/`, falling back to the pre-restructure `cli/scripts/` path.
 
 ---
 
 ## Tests
 
-From the repo root: `bun run test` (all tests), `bun run typecheck` (root `tsconfig.json`, one
-`tsc` program over every workspace), `bun run check` (both). CI: `.github/workflows/ci.yml`
-(typecheck, then tests; both blocking — keep `tsc` at zero errors). The envelope contract test picks up new commands
-automatically; add invocations that legitimately break the contract to its `KNOWN_VIOLATIONS`
-only with a reason. Live: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live`.
+Run from the repo root: `bun run check` = typecheck + `bun run docs:check` + all tests (also CI:
+`.github/workflows/ci.yml`). Files in `tests/`:
 
----
-
-## Install Scripts
-
-```bash
-bash ./apps/cli/scripts/install.sh [--env-file <path>] [--install-dir <dir>]
-bash ./apps/cli/scripts/reinstall.sh [--env-file <path>] [--install-dir <dir>] [--yes]
-```
-
-**`install.sh`** — `bun install --ignore-scripts`, compile `bin/cli.ts`, install the binary,
-record install metadata, and on first install run `belz onboard` (or `belz setup --env-file`).
-
-**`reinstall.sh`** — deletes `~/.belz/` and the binary, then delegates to `install.sh`.
-
-Both compute `REPO_ROOT` three levels up (`$SCRIPT_DIR/../../..`). The root one-liners
-(`install.sh`, `install.ps1`) and `belz update` use `apps/cli/scripts/`, falling back to the
-pre-restructure `cli/scripts/` for one release.
-
----
-
-## Help Text Standard
-
-Every command must have a `help.txt` following the standard in
-`integrations/automation-designer/AGENTS.md`, and a `desc.txt`: one line per invocation variant
-(`<full invocation>  :->  <what it does>`). `desc.txt` feeds `belz --help-full`.
+| Test | Guards |
+|------|--------|
+| `registry.test.ts` | every `commands/*/` folder is registered, sorted, has help/desc; all registered commands route |
+| `args-docs.test.ts` | help.txt / desc.txt vs each command's `args` spec |
+| `args-parse.test.ts`, `args-parse-setup.test.ts` | top-level commands reject bad argv |
+| `envelope-contract.test.ts` | every command's help/error `--llm` output vs `EnvelopeSchema` (`KNOWN_VIOLATIONS` must stay justified) |
+| `envelope-success.test.ts` | read commands over the sanitized fixtures via fakeFetch return valid `ok:true` envelopes |
+| `write-commands.test.ts` | every remote-write command/sub-action declares `writes` (D6) |
+| `help-full.test.ts` | `--help-full` is deterministic |
+| `help-flags.test.ts` | `--help` anywhere shows help instead of running |
+| `compiled-pipe.test.ts` | compiles to a tmp dir; a >64 KiB `--llm` envelope survives a slow pipe |
+| `entry.test.ts` | `--version`, registry load-failure report |
+| `cache-command.test.ts`, `cache-prune-local.test.ts` | `belz cache` invalidate body/guards, prune-local |
+| `setup-config-exec.test.ts`, `update-paths.test.ts` | setup merge + password encoding, config token refresh; update script paths |
+| `live/` | opt-in: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live` (read-only); add `BELZ_LIVE_WRITE=1` for the AD lifecycle write suite (Test-Parth, `belz_tst_` names, soft-deleted in `afterAll`) |
 
 ---
 
 ## Maintainer Agent Instructions
 
-When you make a meaningful change to this directory — new commands, changed entry-point logic,
-new scripts, structural changes — update this `AGENTS.md`, the registry, and `desc.txt`.
+When you change anything here — commands, entry-point logic, scripts, structure — update this
+`AGENTS.md`, the registry, and the command's `help.txt` / `desc.txt` in the same commit.

@@ -1,64 +1,32 @@
 # Belzabar Extension
 
-Browser extension for Service Designer automation tools that enhances the testing workflow.
+Browser extension (Chromium + Firefox/Zen, MV3) for the Automation Designer and Page Designer
+web UIs.
 
-## Features
+## What it adds
 
-### 📝 Title Updater
-- Automatically appends the current method name to the page title
-- Format: `Base Title – method.name`
-- Helps identify which method you're currently working on
+- **AD Network DevTools panel** — chain requests with their method names.
+- **PD Inspector DevTools panel** — component tree and on-page highlight for published pages.
+- **Designer helpers** — method/page name in the tab title, `Ctrl+Shift+Enter` to run a test,
+  a JSON editor for AD test inputs, copy buttons on outputs, a large code editor for textareas,
+  and a settings modal (`Ctrl+,`) to switch each feature on or off.
 
-### ⌨️ Keyboard Shortcuts
-- **Ctrl + Shift + Enter**: Trigger the "Run Test" button from anywhere on the page
-- Works even when not focused on form elements
-- Instant test execution without mouse navigation
+## Install
 
-### 📋 JSON Input Editor
-- Click the "📋 JSON" button to open a modal editor
-- Edit all input parameters as formatted JSON
-- Real-time synchronization back to the form
-- Type conversion (Text, Number, Boolean, JSON, etc.)
-- Mandatory field indicators
-- Input validation and error handling
+The normal route is the CLI, which force-installs the signed release into your browsers:
 
-## Example Usage
+```bash
+belz extension load        # pick browsers interactively (or --all)
+belz extension list        # what is installed where
+```
 
-When working on a method called `vin.lookup`:
-- Page title becomes: `Service Designer – vin.lookup`
-- Press Ctrl+Shift+Enter to run tests instantly
-- Click "📋 JSON" to bulk-edit all input parameters in a clean interface
+## Develop
 
-## Installation
+```bash
+bun run build              # bundle src/ into dist/
+node scripts/pack.mjs      # per-browser trees in build/chrome and build/firefox
+```
 
-### Browser Extension Setup
-1. Build the extension: `bun run build`
-2. Load as unpacked extension in your browser:
-
-#### Firefox
-- Open `about:debugging`
-- Click "This Firefox" → "Load Temporary Add-on"
-- Select the extension folder
-
-#### Chromium (Chrome/Edge)
-- Open `chrome://extensions`
-- Enable "Developer mode"
-- Click "Load unpacked"
-- Select the extension folder
-
-### Target Environment
-- Works on: `https://nsm-dev.nc.verifi.dev/automation-designer/*`
-- Requires Service Designer interface to function
-
-## Source
-
-- `manifest.json` - Extension configuration
-- `src/` - Source code organized in modules
-- `dist/content-script.js` - Bundled content script (generated)
-- `bunfig.toml` - Build configuration
-- `package.json` - Metadata and scripts
-
-## Development
-
-1. Build: `bun run build` (bun handles dependencies automatically)
-2. Load `dist/` folder as unpacked extension in browser
+Load the extension directory (Chromium: `chrome://extensions` → Developer mode → Load unpacked;
+Firefox: `about:debugging` → Load Temporary Add-on → `manifest.json`). Releases are cut by
+pushing an `ext-v<version>` tag. Maintainer notes: `AGENTS.md`.

@@ -11,7 +11,9 @@ where the footguns live.
 
 ## TL;DR
 
-- **V1 is the default** for every operation. V2 is opt-in via `--v2`.
+- **V1 is the default** for reads, test and publish; V2 is opt-in via `--v2`.
+  `save`, `create` and `delete` always use V2 (`/chain/v2`, D1); the V1 save
+  route was removed.
 - Every AD command accepts `--v2`. When the selected operation does not
   implement V2 the CLI prints a one-line fallback warning and runs V1.
 - All parser output is a single shape (`HydratedMethod` / `ParsedStep` in

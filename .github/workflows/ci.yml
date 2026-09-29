@@ -34,6 +34,10 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
+      # Every repo path and `belz <cmd>` named in AGENTS.md/README.md exists.
+      - name: Docs check
+        run: bun run docs:check
+
       # Unit + contract + compiled-binary pipe tests. Live suites are skipped
       # unless BELZ_LIVE=sems-dev, which CI never sets.
       - name: Test

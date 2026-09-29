@@ -1,21 +1,22 @@
-# Run Suites Command
+# ad run-suites
 
-Executes all regression tests defined in the `suites/` directory against the live API.
-
-## Usage
+Runs every local regression suite in `./suites/*.spec.json` (written by
+`belz ad save-suite`) against the chosen env.
 
 ```bash
-bun run bin/cli.ts run-suites
+belz ad run-suites --env <env>
 ```
 
-## Logic
+For each suite, the command:
+1. Fetches the method (the saved uuid).
+2. Injects the saved input values.
+3. Posts the same `/chain/test` body that `belz ad test` sends
+   (`lib/payload-builder.ts:buildV1TestPayload`).
+4. Checks for HTTP 200 and a non-failed execution. A failure reports the server's
+   message.
 
-1. Scans `suites/*.spec.json`.
-2. For each suite:
-    - Fetches the *latest* definition for the UUID (Draft or Published).
-    - Injects the saved input values into the definition.
-    - Sends the payload to the Test API (`/rest/api/automation/chain/test`).
-    - Verifies that `executionStatus.failed` is `false`.
-3. Reports a summary of Passed vs Failed suites.
+Output values are not asserted. For that, use `belz ad test --expect` or the
+server-side test cases (`belz ad test-case`).
 
-**Note:** This command asserts *Execution Success* only. It does not assert specific output values (like Database IDs) to avoid brittleness in dynamic environments.
+The suites really execute (SQL and HTTP steps run), so the command declares `writes`
+and needs an explicit `--env`.

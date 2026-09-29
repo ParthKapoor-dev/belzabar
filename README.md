@@ -1,216 +1,199 @@
 # Belzabar
 
-Developer toolset for NSM platform engineers. Ships the **`belz` CLI** and a **browser extension**.
+Developer toolset for engineers working on the **Expertly** low-code platform (NSM, SEMS, …).
+It ships:
+
+- **`belz`** — one CLI for Automation Designer (AD) methods, Page Designer (PD) pages,
+  Teamwork tickets, Jenkins DB migrations and release tracking. Every command has a
+  human view and a structured `--llm` JSON envelope for scripts and AI agents.
+- **A browser extension** that enhances the AD/PD web UIs.
 
 ---
 
-## Quick install
+## Install
 
-One line, anywhere:
+One line, anywhere (Linux/macOS):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ParthKapoor-dev/belzabar/main/install.sh | bash
 ```
 
-This installs [`bun`](https://bun.sh) if you don't have it, clones the repo into `~/.belz/src`, builds the `belz` binary, drops it at `~/.local/bin/belz`, and walks you through credential setup the first time.
+Windows (PowerShell): `irm https://raw.githubusercontent.com/ParthKapoor-dev/belzabar/main/install.ps1 | iex`
 
-Make sure `~/.local/bin` is on your `PATH`.
+The installer installs [`bun`](https://bun.sh) if missing, clones the repo into `~/.belz/src`,
+builds the binary to `~/.local/bin/belz` (make sure that is on your `PATH`) and walks you
+through credential setup the first time. **To update**, run `belz update` or re-run the
+one-liner; credentials, sessions and caches are kept.
 
-**To update** (preserves credentials, sessions, and cache): re-run the same one-liner.
+Non-interactive install: `… | bash -s -- --env-file ./belz.env --install-dir /opt/bin`.
 
-**Forwarded flags** (non-interactive setups):
+From a clone (development):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ParthKapoor-dev/belzabar/main/install.sh \
-  | bash -s -- --env-file ./belz.env --install-dir /opt/bin
+git clone https://github.com/ParthKapoor-dev/belzabar.git && cd belzabar
+bun install --ignore-scripts
+bun run belz:install        # build + install the binary + first-run setup
+bun run belz:reinstall      # wipe ~/.belz and the binary, then install fresh
 ```
 
 ---
 
-## Manual install (for development)
+## Configure
 
-```bash
-git clone https://github.com/ParthKapoor-dev/belzabar.git
-cd belzabar
-bun install
-bun run belz:install       # builds + installs binary + first-run setup
-```
+- `belz setup` (or `belz onboard` for the guided first run) adds or updates environments in
+  `~/.belz/config.json` (mode 0600). It merges; `--replace --force` starts over.
+- `belz envs` lists the configured environments and checks their auth; `belz config get`
+  shows one env (never the token).
+- Built-in environments: `nsm-dev`, `nsm-qa`, `nsm-uat`; others (e.g. `sems-dev`) come from
+  your config. Pick one per command with `--env <name>`. When omitted, belz uses `BELZ_ENV`,
+  then `"defaultEnv"` in config.json, then `nsm-dev`.
+- **Commands that write to an environment require an explicit `--env`**, even for the default
+  env, and ask for confirmation (pass `--yes` in scripts / `--llm` mode).
+- belz reads only `BELZ_*` environment variables (`BELZ_ENV`, `BELZ_HOME`,
+  `BELZ_HTTP_TIMEOUT_MS`, `BELZ_JENKINS_*`, `BELZ_TEAMWORK_*`, …) and ignores values that come
+  from a `.env` file in the current directory.
 
-**Full wipe + reinstall** (deletes `~/.belz/` and the binary):
-
-```bash
-bun run belz:reinstall
-```
+Global flags: `--env <name>`, `--llm` (JSON envelope), `-v`/`--verbose`, `-h`/`--help`.
+`belz --help-full` prints every command variant with a one-line description — it is the
+complete command reference.
 
 ---
 
-## CLI tour
+## Workflows
+
+### Read an AD method
 
 ```bash
-# Automation Designer
-belz ad show <uuid> --open              # inspect + open editable draft in browser
-belz ad find <query>                    # fuzzy-find methods
-belz ad save <uuid> --json patch.json   # safe edit (lock + validate + apply)
-belz ad run <uuid>                      # execute published method live
-belz ad sql tui                         # interactive SQL session
-
-# Page Designer
-belz pd show <name-or-id> --open        # inspect page/component, open in browser
-belz pd find <query>                    # fuzzy-find pages/components
-belz pd save <uuid> --json patch.json   # safe edit
-belz pd publish <uuid>                  # promote draft to published
-belz pd preflight <uuid>                # validator-only (CI gate)
-belz pd history <uuid>                  # browse / restore versions
-belz pd analyze                         # static analysis across all pages
-
-# Migrations (Jenkins-backed)
-belz migrate profiles                   # list available profiles
-belz migrate run --profile devncdns_qancdns --module AD_Method --ids "<uuid>"
-belz migrate status <buildNumber>
-belz migrate logs <buildNumber>
-
-# Teamwork
-belz tw task <id>                       # show a Teamwork task
-belz tw comments <id>                   # task comments
-belz tw search <query>                  # search tasks by keyword
-belz tw add-comment <id> --body "..."   # post a comment (confirmation-gated write)
-
-# Cache + Config + Envs
-belz cache <uuid>                       # invalidate a server-side cache entry
-belz config                             # manage ~/.belz/config.json
-belz envs                               # list configured environments
-belz setup                              # re-run interactive credential setup
+belz ad find "<words>"                 # search methods by name / alias / uuid
+belz ad find --describe "<words>"      # "does a method for X exist?"
+belz ad show <uuid>                    # structure + metadata (cached 5 min; --force for fresh)
+belz ad show <uuid> --compact          # one line per step (conditions, loops, SQL/code, I/O)
+belz ad show <uuid> --story            # plain-English Markdown summary for reviews
+belz ad state <uuid>                   # draft/published linkage and whether they are in sync
+belz ad callers <uuid>                 # who calls this method (add --pd for PD pages)
+belz ad child-info <category> <method> --shape   # a callee's input/output contract
 ```
 
-**Global flags** (work on every command):
+### Edit, validate, save and publish an AD method
 
-| Flag | Purpose |
-|------|---------|
-| `--env <name>` | Target a specific environment (`nsm-dev` / `nsm-qa` / `nsm-uat` / `nsm-stage`). |
-| `--llm` | Emit a structured JSON envelope for scripting or LLM consumption. |
-| `--help, -h` | Per-command help. |
+Edits are small JSON **overlays** applied to the method's draft; belz fills in the platform
+boilerplate. `belz ad save --help` documents the overlay keys (`parsedSteps[]` leaf edits and
+`ops[]` such as `add-step`, `remove-step`, `move-step`, `update-step`, `set-input`).
 
-Run `belz --help-full` for a one-screen tour of every command with its one-line description.
+```bash
+belz ad validate <uuid>                                  # validator L1–L3 (add --online for L4)
+belz ad lint <uuid>                                      # validator + SQL and anti-pattern review
+belz ad save edit.json --uuid <uuid> --dry-run           # plan + validate, write nothing
+belz ad save edit.json --uuid <uuid> --env sems-dev      # save to the draft (confirms first)
+belz ad save --uuid <uuid> --sql-file 3=step3.sql --env sems-dev   # replace one step's SQL
+belz ad publish <uuid> --note "TW-1234: fix totals" --env sems-dev
+```
+
+Save refuses to overwrite a draft someone changed since it was read, re-reads the draft
+afterwards to verify every change landed, and evicts the server's compiled cache. New methods:
+`belz ad create --spec method.json --category <name> --env <env>` (same compact step format).
+
+### Test an AD method
+
+```bash
+belz ad test <uuid> --env sems-dev --inputs inputs.json --expect total=42
+belz ad test <uuid> --env sems-dev --inputs inputs.json --compare-published
+belz ad test-case list <uuid>
+belz ad test-case create <uuid> --name smoke --input id=1 --assert status=OK --env sems-dev
+belz ad test-case export <uuid> --dir ./tests      # git-friendly case files
+belz ad test-case sync ./tests/<Category>/<method> --apply --env sems-dev
+belz ad sql run "select 1"                          # read-only SQL (writes: `sql update`/`insert`)
+belz ad sql explain "select …" --analyze
+```
+
+`ad test` really executes the method, so it needs `--env`.
+
+### Page Designer
+
+```bash
+belz pd show <page>                    # app/PD URL, id or exact name; --tree, --http, --vars
+belz pd show <page> --find "<text>"    # locate a node (id + key path)
+belz pd validate <page> --recursive    # exit 1 on validator errors
+belz pd snapshot <page> --out base.json          # baseline …
+belz pd snapshot <page> --compare base.json      # … exit 1 when the live page differs
+belz pd preflight <pageId> --overlay edit.json   # dry-run an edit
+belz pd save <pageId> --overlay edit.json --env <env>
+belz pd publish <pageId> --env <env>
+```
+
+### Teamwork, migrations, releases
+
+```bash
+belz tw task <id>        belz tw comments <id>     belz tw search "<query>"
+belz migrate profiles    belz migrate run --profile <profile> --module AD_Method --ids "<uuid>"
+belz migrate status <build>   belz migrate logs <build>
+belz release matrix …    belz release freeze …   # see `belz release <cmd> --help`
+```
+
+### Caches
+
+`belz cache --env <env> <uuid>` evicts a method from the server's compiled cache (a remote write, so `--env` is required).
+`belz cache prune-local` cleans stale local cache files under `~/.belz/cache`.
 
 ---
 
 ## Browser extension
 
 ```bash
-cd apps/extension && bun run build
-# In Chrome: chrome://extensions → Developer Mode → Load unpacked → pick apps/extension/
+belz extension load        # force-install into supported browsers (auto-updates)
 ```
 
-Active on `nsm-dev`, `nsm-qa`, `nsm-uat`, `nsm-stage`, and `staff-nss.verifi-nc.com` (NSM-prod).
-
-**Shortcuts**: `Ctrl+Shift+Enter` runs Run Test from anywhere on an AD method page; `Shift+L` copies a rich AD/PD link.
-
-See `apps/extension/README.md` for the full feature list.
+Or build and load it unpacked: `cd apps/extension && bun run build`, then Load unpacked in
+`chrome://extensions` (Developer Mode). See `apps/extension/README.md` for features and shortcuts.
 
 ---
 
 ## Claude Code cloud sessions
 
-Run belz from a Claude Code **cloud** session (claude.ai/code) — from your phone,
-laptop off — without ever attaching this private repo. The session connects to a
-throwaway **`belz-sandbox`** repo; belzabar's CI publishes the belz binary +
-skills *out* to it, so the cloud never sees belzabar's source.
-
-1. Create a private **`belz-sandbox`** repo (empty).
-2. In belzabar's GitHub settings add variable `BELZ_SANDBOX_REPO=<you>/belz-sandbox`
-   and secret `BELZ_SANDBOX_TOKEN` (fine-grained PAT, Contents: read & write on
-   belz-sandbox only — never belzabar). The `belz-cloud-release` workflow then
-   publishes the bundle on every push to `main`, or run it by hand:
-   ```bash
-   SANDBOX_REPO=<you>/belz-sandbox bash cloud/publish.sh
-   ```
-3. New cloud environment → repository `belz-sandbox`, Network **Custom** + your
-   API domains, **leave the Setup script empty** (a SessionStart hook bootstraps
-   belz in-session), and add per-env creds as `BELZ_ENV_<NAME>_*` variables —
-   **unquoted** (the cloud stores quotes literally).
-
-Full walkthrough, env-var keys, and the network allowlist: [`cloud/README.md`](./cloud/README.md).
+The `belz-cloud-release` workflow publishes the belz binary and the `agents/` skills to a
+separate `belz-sandbox` repo, so a Claude Code cloud session can run belz without access to
+this repo. Setup and the network allowlist: [`cloud/README.md`](./cloud/README.md).
 
 ---
 
-## Repo layout
+## Repo layout and docs
 
 ```
-belzabar/
-├── apps/
-│   ├── cli/                    the belz binary (bin/cli.ts entry, top-level commands, install scripts)
-│   └── extension/              browser extension (MV3, JavaScript)
-├── packages/
-│   ├── core/                   @belzabar/core — shared CLI framework
-│   └── design/                 @belzabar/design — design tokens
-├── integrations/               workspace packages wired into belz
-│   ├── automation-designer/    @belzabar/ad        belz ad …
-│   ├── page-designer/          @belzabar/pd        belz pd …
-│   ├── teamwork/               @belzabar/teamwork  belz tw …
-│   ├── migrations/             @belzabar/migrations belz migrate …  (Jenkins flow)
-│   ├── release/                @belzabar/release   belz release …
-│   └── jenkins/                @belzabar/jenkins   Jenkins REST client
-├── scripts/fixtures/           read-only wire-fixture capture + sanitizer
-├── cloud/                      Claude Code cloud-session bootstrap (setup/publish + sandbox files)
-└── install.sh                  the public one-line installer
+apps/cli/                   CLI binary (belz): entry point, top-level commands, install scripts
+apps/extension/             browser extension (MV3)
+packages/core/              @belzabar/core — shared CLI framework
+packages/design/            @belzabar/design — design tokens
+integrations/automation-designer/   belz ad …
+integrations/page-designer/         belz pd …
+integrations/teamwork/              belz tw …
+integrations/migrations/            belz migrate …   (uses integrations/jenkins/)
+integrations/release/               belz release …
+scripts/                    docs:check + wire-fixture capture
+cloud/                      cloud-session bootstrap
+agents/                     runtime agent skills
 ```
 
-Each integration module has its own `AGENTS.md` describing conventions, lib layout, and how to add new commands.
+Where the docs live:
 
----
-
-## Adding a command
-
-```
-integrations/<module>/commands/<cmd>/
-├── index.ts     # exports a default CommandModule
-├── help.txt     # full --help text
-└── desc.txt     # one-line description for `belz --help-full`
-```
-
-Then add it to that module's `registry.ts` (sorted; it imports the module and its
-help/desc text). `apps/cli/tests/registry.test.ts` fails if a folder is missing from the registry.
-
-Use the existing commands as templates — see e.g. `integrations/page-designer/commands/show/index.ts`.
+- **Command reference**: `belz --help-full`, and `belz <ns> <cmd> --help` (from each command's
+  `help.txt`/`desc.txt`).
+- **Maintainer docs**: `AGENTS.md` at the root and in every module (layout, contracts, how to
+  add a command, testing).
+- **Platform API notes**: `integrations/automation-designer/docs/api-notes.md`,
+  `integrations/page-designer/docs/api-notes.md`.
 
 ---
 
 ## Development
 
 ```bash
-# Run CLI without building
-bun apps/cli/bin/cli.ts ad show <uuid>
-
-# Build the binary (apps/cli/belz)
-bun run belz:build
-
-# Tests / typecheck (all workspaces)
-bun run test
-bun run typecheck
-bun test integrations/automation-designer/tests/unit/   # one module
+bun apps/cli/bin/cli.ts ad show <uuid>     # run from source, no build
+bun run belz:build                         # compile the binary into apps/cli
+bun run check                              # typecheck + docs:check + all tests (run before committing)
+bun test integrations/automation-designer  # one module
+BELZ_LIVE=sems-dev bun test apps/cli/tests/live   # opt-in live suite (read-only)
 ```
 
----
-
-## Configuration
-
-Credentials live at `~/.belz/config.json` (mode 600; new passwords are stored as plain text with `"passwordEncoding": "plain"`, older entries are base64). Re-run `belz setup` any time to add or update envs (it merges; `--replace --force` starts over). Set `"defaultEnv"` in config.json (or `BELZ_ENV`) to change the env used when `--env` is omitted. belz reads only `BELZ_*` env vars (`BELZ_ENV`, `BELZ_HTTP_TIMEOUT_MS`, `BELZ_JENKINS_*`, `BELZ_TEAMWORK_*`), and ignores values that come from a `.env` file in the current directory.
-
-Runtime data under `~/.belz/`:
-
-| Path | Contents |
-|------|----------|
-| `~/.belz/config.json` | Credentials per environment + Jenkins config |
-| `~/.belz/sessions/<env>.json` | Saved auth sessions |
-| `~/.belz/cache/methods/<uuid>.json` | AD method cache (5-minute TTL) |
-| `~/.belz/cache/pages/<id>.json` | PD page/component cache |
-| `~/.belz/migrations/jenkins-profiles.json` | Jenkins profile cache |
-| `~/.belz/src/` | Repo checkout (created by the one-line installer) |
-
----
-
-## Contributing
-
-Each subtree has an `AGENTS.md` with conventions and "Maintainer Agent" guidance. Top-level conventions live in `AGENTS.md`.
-
-Don't commit secrets. `~/.belz/config.json` is never read into the repo; the install script populates it locally.
+Adding a command: see "Adding a Command" in `AGENTS.md`. Never commit secrets:
+`~/.belz/config.json` stays on your machine, and committed test fixtures are sanitized
+(`scripts/fixtures/fixtures-secrets.test.ts` enforces it).

@@ -1,14 +1,12 @@
-# Envs Command
+# `belz envs`
 
-Lists the available environment profiles.
-
-## Usage
+Lists every configured environment (from `~/.belz/config.json`, or `BELZ_HOME`) with its
+project and base URL, and marks the active one: `--env`, else `BELZ_ENV`, else the config's
+`defaultEnv`, else `nsm-dev`.
 
 ```bash
-bun run bin/cli.ts envs
+belz envs
+belz envs --env nsm-qa --llm
 ```
 
-## Logic
-
-- Displays all configured environments from `lib/config.ts`.
-- Highlights the currently selected environment (default or selected via `--env`).
+Local only (no network); the envelope carries no `meta.env`. Implementation: `index.ts`.

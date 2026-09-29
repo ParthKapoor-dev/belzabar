@@ -9,7 +9,7 @@
 #   2. Clones (or updates) the repo into $env:BELZ_SRC_DIR
 #      (default %USERPROFILE%\.belz\src).
 #   3. Runs `bun install --ignore-scripts` to hydrate workspaces.
-#   4. Hands off to cli\scripts\install.ps1, which builds belz.exe and
+#   4. Hands off to apps\cli\scripts\install.ps1, which builds belz.exe and
 #      (on first install) runs `belz onboard`.
 #
 # Set $env:BELZ_SRC_DIR to clone somewhere other than %USERPROFILE%\.belz\src.

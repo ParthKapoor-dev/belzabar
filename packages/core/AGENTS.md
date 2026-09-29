@@ -2,17 +2,29 @@
 
 ## Purpose
 
-`packages/core/` is the **`@belzabar/core`** workspace package — the shared framework consumed
-by every integration package (`integrations/*`) and by `apps/cli`.
+`packages/core/` is the **`@belzabar/core`** workspace package — the shared CLI framework used by
+every `integrations/*` package and by `apps/cli`. Package exports: `.` → `src/index.ts` (barrel)
+and `./testing` → `src/testing/index.ts` (test helpers only; never import from runtime code).
 
-It provides:
-- Config loading and credential management (`src/config/`)
-- Auth (session login, persistence) and the HTTP stack (`src/http/`)
-- The namespaced CLI runner and static command registries (`src/registry.ts`)
-- Command module interface and result types
-- **Unified UI layer** (`src/ui.ts`): clack-backed prompts, lifecycle helpers, spinners,
-  and the `HumanUi` implementation that every command's `presentHuman()` consumes. Tables
-  are still rendered by `cli-table3`; everything else is `@clack/prompts` + `picocolors`.
+## Module map (`src/`)
+
+| Path | Role |
+|------|------|
+| `src/args/` | `defineArgs` / `defineSubcommands` (`spec.ts` types, `parse.ts` parser), `doc-check.ts` (help.txt/desc.txt drift check) |
+| `src/config/` | `index.ts` (`Config`, env table, default env), `schema.ts` (zod), `secrets.ts`, `fs.ts` (atomic 0600 writes), `env-vars.ts` (trusted `BELZ_*` vars) |
+| `src/http/` | `transport.ts` (`httpRequest`, timeouts, limiter), `auth.ts` (sessions/login), `api.ts` (`apiFetch`), `errors.ts`, `redact.ts`, `dns.ts` (IPv4 pinning) |
+| `src/runner.ts` | `runNamespacedCli` / `dispatchNamespaced`: global flags, routing, help, env + write guard, envelope, exit |
+| `src/command.ts` | `CommandModule`, `CommandContext`, `ok` / `fail` / `failWithData`, `CliError` |
+| `src/envelope.ts` | `EnvelopeSchema` — the `--llm` wire contract |
+| `src/registry.ts` | `CommandRegistry` types, `registryNames` (sorted), `registryModules`, `registryHelpResolver` |
+| `src/cache.ts` | `Cache<T>` — env-scoped JSON file cache with hard/soft TTL |
+| `src/swr.ts` | Stale-while-revalidate: refresh locks + detached `--force` re-run |
+| `src/ui.ts` / `src/theme.ts` | Human/LLM rendering, `lifecycle`, `prompts`; palette + glyphs from `@belzabar/design` |
+| `src/verbose.ts` | `vlog` / `vtime` — redacted stderr debug lines when `BELZ_VERBOSE=1` (`-v`) |
+| `src/belz-meta.ts` | Install metadata (source checkout, install dir, binary path) used by `belz update` |
+| `src/browsers.ts` / `src/open.ts` | Browser detection + policy locations (`belz extension load`); `openUrlInBrowser` |
+| `src/types.ts` | Shared domain types (`Environment`, `AuthSession`, …) |
+| `src/testing/` | `@belzabar/core/testing` (see Testing) |
 
 ---
 
@@ -110,6 +122,28 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 `envelope-success.test.ts` (read commands over the real fixtures) check it. Change the schema and
 the runner together.
 
+### Cache (`src/cache.ts`, `src/swr.ts`)
+| Export | Description |
+|--------|-------------|
+| `new Cache<T>({dir, ttlMs, staleMs?, envScoped?})` | JSON entries at `<dir>/<env>/<key>.json` (`envScoped` defaults **true** — ids collide across envs; opt out only when the key encodes the env). `save` / `load` / `loadSwr` (→ `{data, stale, savedAt}`, stale past `staleMs`, null past `ttlMs`) / `invalidate` (never throws). TTLs may be functions of the key |
+| `normalizeCacheKey` / `currentCacheEnv()` | Safe file stem; the active env name used when none is passed |
+| `shouldRefresh` / `triggerDetachedRefresh` / `buildRefreshCommand` | SWR: a `.refresh/<key>.lock` (30 s TTL) de-duplicates background refreshes that re-run the current invocation with `--force` (side-effect flags such as `--open` are stripped) |
+
+Cache roots live under `BELZ_CONFIG_DIR/cache/…` (`~/.belz`, or `BELZ_HOME`). `belz cache prune-local`
+removes pre-env-scope flat entries and abandoned refresh locks.
+
+### Stable error codes raised by core
+- Args: `UNKNOWN_FLAG`, `MISSING_VALUE`, `INVALID_VALUE`, `MISSING_FLAG`, `MISSING_ARGUMENT`,
+  `UNEXPECTED_ARGUMENT`, `CONFLICTING_FLAGS`, `DUPLICATE_FLAG`, `UNKNOWN_SUBCOMMAND`, `MISSING_SUBCOMMAND`.
+- Runner: `UNKNOWN_COMMAND`, `INVALID_ARGS` (global flags), `MISSING_ENV_ARG`, `INVALID_ENV`,
+  `ENV_REQUIRED_FOR_WRITE`, `INVALID_COMMAND_MODULE`, `UNHANDLED_EXCEPTION`, `USER_ABORT` (exit 130).
+- Config/auth: `CONFIG_INVALID`, `AUTH_MISSING_CREDENTIALS`, `AUTH_FAILED`, `AUTH_NO_TOKEN`, `AUTH_EXPIRED`.
+- HTTP: `HTTP_TIMEOUT`, `HTTP_NETWORK_ERROR`, `HTTP_ABORTED`, `HTTP_BAD_JSON`, `NOT_FOUND`, `HTTP_<status>`.
+- UI/misc: `INTERACTIVE_NOT_SUPPORTED`, `NO_TTY`, `OPEN_COMMAND_NOT_FOUND`, `OPEN_FAILED`.
+
+Integrations add their own prefixed codes (documented in their `AGENTS.md`). Codes are part of the
+public contract: renaming one is a breaking change.
+
 ### UI (`src/ui.ts`)
 | Export | Description |
 |--------|-------------|
@@ -120,24 +154,6 @@ the runner together.
 | `prompts` | `{ confirm, text, password, select, multiselect }` — throws `INTERACTIVE_NOT_SUPPORTED` in `--llm` mode and `NO_TTY` when stdin isn't a TTY |
 | `setOutputMode(mode)` / `getOutputMode()` | Module-level mode used by helpers that don't hold a `CommandContext` |
 | `colors` | Re-export of `picocolors` for commands that want custom inline styling |
-
----
-
-## Key Files
-
-| File | Role |
-|------|------|
-| `src/index.ts` | Barrel — re-exports everything |
-| `src/config/` | `index.ts` (`Config`, env table, default env), `schema.ts` (zod), `secrets.ts` (encode/decode), `fs.ts` (atomic 0600 writes), `env-vars.ts` (trusted `BELZ_*` vars, dotenv guard) |
-| `src/http/` | `transport.ts` (timeout, pin eviction, singleFlight, limiter), `auth.ts` (sessions, login), `api.ts` (`apiFetch`), `errors.ts` (status → CliError, body summaries), `redact.ts`, `dns.ts` (IPv4 pinning) |
-| `src/runner.ts` | `runNamespacedCli`, routing, envelope wrapping, help dispatch; also calls `setOutputMode()` after stripping `--llm` |
-| `src/command.ts` | `CommandModule`, `CommandContext`, `HumanPresenterHelpers`, `ok`, `fail`, `CliError`, `CommandResult`, `CommandEnvelope` |
-| `src/ui.ts` | Unified UI layer: `renderHuman`, `renderLLM`, `HumanUi`, `lifecycle`, `prompts`, `setOutputMode`, `colors` |
-| `src/types.ts` | Shared domain types (`Environment`, `AuthSession`, etc.) |
-| `src/envelope.ts` | `EnvelopeSchema` — the `--llm` envelope contract |
-| `src/registry.ts` | `CommandRegistry` / `RegisteredCommand` types, `registryModules`, `registryHelpResolver`, `registryNames` |
-| `src/testing/` | `@belzabar/core/testing` — test helpers (see Testing below). Never import from runtime code |
-| `tests/preload-belz-home.ts` | bun test preload (root + per-dir `bunfig.toml`): `BELZ_HOME` → tmp dir, `BELZ_TEST_TMP` scratch root, removed by a global `afterAll` |
 
 ---
 
@@ -153,8 +169,8 @@ preload has pointed `BELZ_HOME` at a tmp dir; helpers refuse to write otherwise.
 | `runCommand(module, argv, {env?, llm = true, helpResolver?})` | Runs one `CommandModule` through the real dispatch in-process → `{envelope, stdout, stderr, exitCode}`. Global flags parsed as in the binary; `process.exit` is trapped; output mode / active env restored after |
 | `runCliInProcess(options, argv, {env?, llm?})` | Same, through full namespace routing (`loadDevCliOptions()` gives the dev entry's maps) |
 | `spawnCli(argv, {env, cwd, bin, stdin, timeoutMs})` | Real process: `bun <cli entry>` (or a compiled `bin`) with an isolated env (scratch HOME/cwd, no inherited creds) |
-| `repoRoot()` / `cliDir()` / `cliEntry()` / `cliBuildEntry()` | Layout-agnostic paths (`apps/cli` or `cli`) — never hardcode CLI paths in tests |
-| `describeLive` / `describeLiveWrite` / `spawnLive` / `registerLiveResource` | Opt-in live suites: run only with `BELZ_LIVE=sems-dev` (+ `BELZ_LIVE_WRITE=1`); any other `BELZ_LIVE` or `--env` is refused. `spawnLive` uses a tmp copy of `~/.belz/config.json` + the sems-dev session (real `~/.belz` is never written). `registerLiveResource` appends to `$BELZ_LIVE_RESOURCES` or `../belzabar-workspace/live-resources.md` if it exists. Write suites: Test-Parth, `belz_tst_` prefix, `afterAll` cleanup |
+| `repoRoot()` / `cliDir()` / `cliEntry()` / `cliBuildEntry()` / `loadDevCliOptions()` | CLI paths for tests (never hardcode them) and the dev entry's `NamespacedCliOptions` |
+| `describeLive` / `describeLiveWrite` / `spawnLive` / `registerLiveResource` | Opt-in live suites: run only with `BELZ_LIVE=sems-dev` (+ `BELZ_LIVE_WRITE=1`); any other `BELZ_LIVE` or `--env` is refused. `spawnLive` uses a tmp copy of `~/.belz/config.json` + the sems-dev session (real `~/.belz` is never written). `registerLiveResource` appends to `$BELZ_LIVE_RESOURCES`, or to the maintainer workspace's live-resources log when that sibling directory exists. Write suites: Test-Parth, `belz_tst_` prefix, `afterAll` cleanup |
 | `scratchDir(prefix)` | tmp dir under the run's `BELZ_TEST_TMP` (auto-removed) |
 
 Test seams in runtime code (test-only; do not use elsewhere): `reloadConfig()` (config/index.ts),
@@ -176,10 +192,12 @@ belz <token> [args]
 ```
 
 A **namespace** has `commands: Record<string, CommandModule>` (multiple subcommands).
-A **passthrough module** has `command: CommandModule` (single command that handles its own subcommand routing internally — used for `migrate`).
+A **passthrough module** has `command: CommandModule` (a single command that routes its own
+subcommands — `config` and `extension`).
 
-Help resolution: each namespace/module can provide either a `helpDir` (file-based, dev mode) or
-a `helpResolver` (function-based, prod mode with embedded text). Both are optional.
+Help text comes from a `helpResolver` built from the static registry (`registryHelpResolver`), so
+dev mode and the compiled binary print identical help. (`helpDir` still exists on the type but no
+namespace uses it.)
 
 ---
 
@@ -188,12 +206,11 @@ a `helpResolver` (function-based, prod mode with embedded text). Both are option
 Changes to `@belzabar/core` affect every module in the repository. Before changing any public
 API:
 1. Check all usages across `integrations/*` and `apps/cli/`
-2. Verify everything still typechecks and builds (`bun run typecheck`, `bun run belz:build`)
-3. Run all tests (`bun run test` from the repo root)
+2. Run `bun run check` from the repo root (typecheck + docs check + all tests)
+3. Build the binary once (`bun run belz:build`) if you touched the runner or stdio
 
-Avoid breaking changes to `CommandModule`, `ok`/`fail`, `CliError`, or the envelope schema —
-these are consumed by the MCP adapter (`automation-designer/integrations/gemini-mcp/server.ts`)
-and by external `--llm` consumers.
+Avoid breaking changes to `CommandModule`, `ok`/`fail`, `CliError`, error codes or the envelope
+schema — external `--llm` consumers (agents, the skills in the repo's `agents/` directory) parse them.
 
 ---
 

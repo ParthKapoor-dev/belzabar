@@ -1,9 +1,10 @@
 # Jenkins client (`@belzabar/jenkins`) — Maintainer Agent
 
 A small Jenkins REST client (basic auth, CSRF crumbs, build trigger, queue
-resolution, build info, progressive console streaming). Extracted from
-`integrations/migrations/lib/jenkins`; `@belzabar/migrations` is its only
-consumer today and re-exports it from its `lib/index.ts`. It has no commands.
+resolution, build info, progressive console streaming). `@belzabar/migrations`
+is its only consumer and re-exports it from `integrations/migrations/lib/index.ts`.
+It has no commands and no registry; the package's only export is `.` (`lib/index.ts`).
+Credentials come from core `Config.getJenkins()` (see `integrations/migrations/AGENTS.md`).
 
 ## Layout
 
@@ -15,7 +16,7 @@ jenkins/
 │   ├── crumb.ts       CSRF crumb fetch + per-process cache
 │   ├── client.ts      jenkinsFetch, jenkinsError, getJobParameters, triggerBuild,
 │   │                  resolveQueueItem, getBuild, getConsoleChunk, getFullConsole, buildUrl, jobUrl
-│   ├── stream.ts      Progressive console tail until the build completes
+│   ├── stream.ts      streamConsole — progressive console tail until the build completes
 │   ├── types.ts       Wire types (JenkinsParameterDefinition, TriggerBuildInput, QueueItem,
 │   │                  BuildInfo, ConsoleChunk)
 │   ├── constants.ts   Poll intervals, queue deadline (10 min), default stream timeout
@@ -34,6 +35,11 @@ keeps the status + page `<title>` only. A build 404 is `Build #n not found`
 `resolveQueueItem` gives up after `timeoutMs` (default `QUEUE_TIMEOUT_MS`) with
 `JENKINS_QUEUE_TIMEOUT`.
 
-Error codes keep their historical `MIGRATE_JENKINS_*` names (except the new
-`JENKINS_QUEUE_TIMEOUT`) (they surface in
-`belz migrate` envelopes).
+Error codes keep their historical `MIGRATE_JENKINS_*` names (they surface in `belz migrate`
+envelopes): `CONFIG_MISSING`, `CRUMB_FAILED`, `PARAMS_FAILED`, `TRIGGER_FAILED`,
+`NO_QUEUE_LOCATION`, `QUEUE_READ_FAILED`, `QUEUE_CANCELLED`, `BUILD_NOT_FOUND`,
+`BUILD_READ_FAILED`, `CONSOLE_READ_FAILED`, `TIMEOUT` — plus the unprefixed
+`JENKINS_QUEUE_TIMEOUT`.
+
+To add an endpoint: a function in `lib/client.ts` on `jenkinsFetch` + `jenkinsError`, a wire type
+in `lib/types.ts`, and a `fakeFetch` test in `tests/client.test.ts`.

@@ -28,4 +28,6 @@ belz ad show <UUID|URL|FILE> [flags]
 - `--code`, `--sql`: include decoded bodies.
 - `--full`: everything.
 - `--raw`: the wire body once.
-- `--force`: bypass cache.
+- `--force`: bypass the cache (5-min stale-while-revalidate otherwise).
+- `--open`, `-o`: open the editable draft in the browser.
+- `--v2`: fetch through the V2 API.

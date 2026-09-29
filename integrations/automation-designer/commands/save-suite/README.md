@@ -1,20 +1,14 @@
-# Save Suite Command
+# ad save-suite
 
-Creates a persistent regression test case ("Suite") for an Automation Method.
-
-## Usage
+Saves a named local regression suite for a method so `belz ad run-suites` can run it
+later.
 
 ```bash
-bun run bin/cli.ts save-suite <UUID> --name <suite-name> [flags]
+belz ad save-suite <uuid> --name smoke-test [--inputs in.json]
 ```
 
-## Logic
-
-- Fetches the method definition to validate the UUID.
-- Collects input values (interactively or via `--inputs`).
-- Creates a JSON specification file in the `suites/` directory.
-- This suite can later be executed by `run-suites`.
-
-## Output
-
-Creates a file at `suites/<suite-name>.spec.json`.
+- Fetches the method to validate the uuid.
+- Collects input values, interactively or from `--inputs`. `--inputs` is required
+  with `--llm`.
+- Writes `suites/<name>.spec.json` under the current directory. The name may contain
+  only letters, digits, `.`, `_` and `-`.

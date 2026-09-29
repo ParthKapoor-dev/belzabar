@@ -1,19 +1,25 @@
-# SQL Command
+# ad sql
 
-Executes read-mode SQL queries through Automation Designer's DB service operation.
+Runs SQL through Automation Designer's `db_service` operations. `dbs`, `run` and
+`explain` are reads. `update`, `insert`, `modify` and `tui` are writes: they need an
+explicit `--env`, and a confirmation or `--yes`.
 
 ## Usage
 
 ```bash
-bun run bin/cli.ts sql run "select * from users limit 1"
-bun run bin/cli.ts sql dbs
-bun run bin/cli.ts sql tui
+belz ad sql dbs
+belz ad sql run "select * from users limit 1"
+belz ad sql explain "select * from users where id = 1" --analyze
+belz ad sql update "UPDATE t SET x = 1 WHERE id = 2" --db <db> --env <env> --yes
+belz ad sql tui --env <env>
 ```
 
 ## Subcommands
 
 - `run <query>`
-  - Executes query using the DB read operation (`select`).
+  - Executes ONE read statement (SELECT / WITH … SELECT / VALUES / EXPLAIN of a read)
+    through the DB read operation. Anything else is refused client-side
+    (`SQL_NOT_READ_ONLY`, `lib/sql/read-only.ts`).
   - Optional `--db <nickname|id>` overrides DB selection.
   - DB selection priority:
     1. `--db`
@@ -30,10 +36,13 @@ bun run bin/cli.ts sql tui
 - `dbs`
   - Lists available DB auth configurations from `/rest/api/automation-systems/db_service/auth`.
 
+- `update <query>` / `insert <query>` / `modify <query>`
+  - UPDATE/DELETE, INSERT (`RETURNING <col>` returns the generated values), and DDL.
+
 - `tui`
   - Starts an interactive SQL session with multiline query support and pagination.
-  - Uses read-mode execution for each statement.
-  - Supports psql-like meta commands (`\\q`, `\\db`, `\\use`, etc.).
+  - Prompts for the DB and the mode (read|insert|update|modify) unless `--db` / `--mode` are given; `\mode` switches mode in the session.
+  - Supports psql-like meta commands (`\q`, `\db`, `\use`, etc.).
 
 ## Flags
 
@@ -43,6 +52,7 @@ bun run bin/cli.ts sql tui
 
 - `tui` flags
   - `--db <nickname|id>`: starting database.
+  - `--mode <read|insert|update|modify>`: starting mode.
   - `--format <table|json>`: result output mode.
   - `--timing`: print timing after each statement.
   - `--page-size <n>`: page size for paginated results.
@@ -50,7 +60,7 @@ bun run bin/cli.ts sql tui
 
 ## Notes
 
-- `sql tui` is interactive and intended for human use.
-- `sql tui --llm` is rejected intentionally.
-- This command currently targets read-mode operation only.
-- Future write/DDL modes should be added as additional SQL subcommands under `belz sql`.
+- `sql tui` is interactive and intended for human use. `sql tui --llm` is rejected
+  intentionally.
+- New SQL modes are added as subcommands of `belz ad sql` (`defineSubcommands` in
+  `index.ts`).

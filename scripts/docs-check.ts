@@ -138,7 +138,7 @@ export function checkPath(root: string, docDir: string, token: string, packages:
 /** `belz …` invocations inside a code snippet, as word lists (stopping at a flag/placeholder). */
 export function commandCandidates(text: string): string[][] {
   const out: string[][] = [];
-  for (const m of text.matchAll(/(?<![\w.:-])belz((?:[ \t]+[a-z][\w-]*)+)/g)) {
+  for (const m of text.matchAll(/(?<![\w.:\[-])belz((?:[ \t]+[a-z][\w-]*)+)/g)) {
     out.push(m[1]!.trim().split(/[ \t]+/));
   }
   return out;

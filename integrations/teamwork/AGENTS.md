@@ -1,86 +1,77 @@
-# Teamwork Module — Maintainer Agent Guide
+# Teamwork (`@belzabar/teamwork`) — Maintainer Guide
 
-## Purpose
+`belz tw …`: read tickets, comments and release items from Teamwork
+(`projects.webintensive.com`), plus one confirmation-gated write (`add-comment`).
+The lib is also used by `@belzabar/release` (`extractTicketItems`, `parseTaskId`).
 
-The `teamwork/` module provides CLI commands for interacting with the Teamwork project management API at `projects.webintensive.com`. It is registered as the `tw` namespace in the unified `belz` binary.
+## Commands
 
-## Command Routing
+| Invocation | Kind | Notes |
+|---|---|---|
+| `belz tw task <taskId\|url>` | read | task + assignees, tags, status; subtasks paginated to the end |
+| `belz tw comments <taskId\|url>` | read | every comment (paginated; Teamwork ignores `limit`) |
+| `belz tw items <taskId\|url>` | read | release-prep linker: AD/PD/SQL items from ticket + subtask comments |
+| `belz tw search <query> [--project <id>] [--limit <n>] [--all]` | read | `--limit` 1–500 (default 25); `--all` = `--include-completed` |
+| `belz tw add-comment <taskId\|url> --body <text>\|--body-file <path> [--html] [--yes]` | **write** | `writes = true`; confirmation-gated |
 
-```
-belz tw task <taskId|url>             → teamwork/commands/task/
-belz tw comments <taskId|url>         → teamwork/commands/comments/
-belz tw items <taskId|url>            → teamwork/commands/items/         (release-prep linker)
-belz tw search <query>                → teamwork/commands/search/        (read-only task search)
-belz tw add-comment <taskId|url> ...  → teamwork/commands/add-comment/   (WRITE — confirmation-gated)
-```
+`belz --help-full` / each `help.txt` is the flag reference; `desc.txt` must list every variant.
 
-## Directory Map
+## Layout
 
 ```
 teamwork/
-├── commands/
-│   ├── task/             belz tw task — task metadata (subtasks via `fetchSubtasks`: pageSize=500 + page until hasMore=false; TW-11)
-│   ├── comments/         belz tw comments — all comments (read; `fetchComments` paginates pageSize=500 + page until meta.page.hasMore=false — Teamwork ignores `limit`)
-│   ├── items/            belz tw items — extract AD/PD/SQL release items
-│   ├── search/           belz tw search — keyword task search (read)
-│   └── add-comment/      belz tw add-comment — post a comment (WRITE, gated)
-│       ├── index.ts      CommandModule implementation
-│       ├── help.txt      Full help text
-│       └── desc.txt      One-line descriptions for --help-full
+├── commands/<cmd>/{index.ts,help.txt,desc.txt}
 ├── lib/
-│   ├── api.ts            Teamwork HTTP client + domain API functions
-│   ├── auth.ts           Cookie-based authentication (tw-auth)
-│   ├── confirm.ts        Confirmation gate + write-intent logging (for add-comment)
-│   ├── extract.ts        Pure AD/PD/SQL extraction (release-prep Stage 2 patterns)
-│   ├── items.ts          extractTicketItems — ticket → release items (used by `tw items` and `release matrix`)
-│   ├── task-id.ts        parseTaskId + TASK_ID_POSITIONAL — the one `<taskId|url>` validator (INVALID_TASK_ID)
-│   └── types.ts          Shared TypeScript types
-├── registry.ts           Static, sorted command registry (@belzabar/teamwork/registry)
-├── tests/unit/           bun test — extract, comment + subtask pagination, real comments, adapter, args
-└── AGENTS.md             This file
+│   ├── api.ts       teamworkFetch + fetchTask / fetchSubtasks / fetchComments / searchTasks / addComment
+│   ├── auth.ts      cookie login (tw-auth), session file, single-flight re-login
+│   ├── confirm.ts   requireConfirmation + logIntent (add-comment)
+│   ├── extract.ts   pure AD/PD/SQL reference extraction from comment text
+│   ├── items.ts     extractTicketItems — ticket → deduped items (tw items, release matrix)
+│   ├── task-id.ts   parseTaskId + TASK_ID_POSITIONAL (the one `<taskId|url>` validator → INVALID_TASK_ID)
+│   └── types.ts
+├── registry.ts      static, sorted registry (`@belzabar/teamwork/registry`)
+└── tests/           unit/*.test.ts, fixtures/real/
 ```
 
-## Tests and Fixtures
+Package exports: `./registry`, `./lib/*`.
 
-`tests/fixtures/real/` — sanitized real task + comment pages (task 25085246 captured
-with pageSize=2 → 2 pages), `manifest.json`. Refresh (read-only) with
-`bun scripts/fixtures/capture.ts tw <taskId> [pageSize]`. Used by `tests/unit/real-comments.test.ts`.
+## Contracts
 
-## Write Safety
+- **Not env-aware.** `tw` is in `NOT_ENV_AWARE_NAMESPACES` (`apps/cli/bin/options.ts`):
+  envelopes carry no `meta.env` (Teamwork is a single host; `--env` is irrelevant). Because `writes` enforcement
+  only applies to env-aware commands, `add-comment` is guarded by confirmation instead.
+- **Write safety.** `add-comment` prints the exact body and prompts in human mode; with
+  `--llm` it refuses (`TW_CONFIRMATION_REQUIRED`) unless `--yes`. Declining is
+  `TW_USER_ABORT`. The intent is logged to stderr (`logIntent`) before the POST. An agent
+  passes `--yes` only after the user approved the exact text.
+- **Auth.** Credentials from `Config.getTeamwork()` (`~/.belz/config.json` → `teamwork`:
+  `email`, `password`, `passwordEncoding`), falling back to trusted `BELZ_TEAMWORK_EMAIL` /
+  `BELZ_TEAMWORK_PASSWORD`. Session cookie in `~/.belz/sessions/teamwork.json` (0600, atomic).
+  Codes: `TW_AUTH_MISSING_CREDENTIALS`, `TW_AUTH_FAILED`, `TW_AUTH_NO_COOKIE`.
+- **HTTP.** `teamworkFetch` runs on core `httpRequest` (timeout, IPv4 pin): single-flight
+  login, one shared re-login on 401, bounded 429 backoff (Retry-After), ≤6 requests in
+  flight. Non-OK → `TW_NOT_FOUND` / `TW_HTTP_<status>`.
+- **No silent truncation.** Comments and subtasks page until `hasMore=false`, else fail
+  (`TW_HTTP_*`, or `TW_TOO_MANY_COMMENTS` / `TW_TOO_MANY_SUBTASKS` past 100 pages). A failed
+  subtask listing fails `tw task`.
+- Commands export `schema`, `args` (core `defineArgs`), `parseArgs` (built on `args.parse`),
+  `execute`, optional `presentHuman`; they return `ok(...)` / throw `CliError` and never print
+  or exit themselves.
 
-`add-comment` is the only command that writes to Teamwork. It routes through
-`lib/confirm.ts` → `requireConfirmation`, which prints the exact comment body
-and prompts in human mode, and **refuses in `--llm` mode unless `--yes` is
-passed**. The intent is that an agent only ever passes `--yes` after showing the
-user the exact comment text and getting validation in chat — re-confirmed for
-every post. A write is logged to stderr via `logIntent` before the POST.
+## Adding a command
 
-## Authentication
+1. `commands/<cmd>/index.ts` (export `args`; set `writes` if it mutates Teamwork and gate it
+   through `lib/confirm.ts`), `help.txt`, `desc.txt`.
+2. Add it to `registry.ts` (sorted). `apps/cli/tests/registry.test.ts` and
+   `apps/cli/tests/args-docs.test.ts` check registration and help/desc ↔ spec drift.
+3. Update this file.
 
-Teamwork uses cookie-based auth, separate from the NSM Bearer token flow:
-- Credentials: `~/.belz/config.json` under `teamwork` (`email`, `password`, `passwordEncoding`
-  `"plain"`|`"base64"`; absent = legacy base64), read via `Config.getTeamwork()`; fallback
-  env vars `BELZ_TEAMWORK_EMAIL` / `BELZ_TEAMWORK_PASSWORD` (plain)
-- Session: `~/.belz/sessions/teamwork.json` (tw-auth cookie value, written atomically, 0600)
-- HTTP: `teamworkFetch` runs on core `httpRequest` (timeout, IPv4 pin); single-flight login,
-  401 → one shared re-login, 429 → bounded backoff (Retry-After), max 6 requests in flight.
-  Non-OK → `teamworkError()` → `TW_NOT_FOUND` / `TW_HTTP_<status>`; auth → `TW_AUTH_*`
-- Lists (comments, subtasks) are paginated to the end or fail (`TW_HTTP_*`,
-  `TW_TOO_MANY_COMMENTS` / `TW_TOO_MANY_SUBTASKS` past 100 pages) — never a silently
-  truncated list. A failed subtask listing fails `tw task` (it used to show "Unknown" rows).
-- Auto-login on first request; auto-retry on 401
+## Testing
 
-## Core Behavior Contract
-
-1. Every command exports `schema`, `args` (a core `defineArgs` spec), `parseArgs` (built on
-   `args.parse`: unknown flags, missing values and bad task ids are CliErrors), `execute`, and
-   optionally `presentHuman`. `add-comment` also exports `writes = true`. Every flag in the spec
-   must be documented in help.txt (checked by `apps/cli/tests/args-docs.test.ts`).
-2. Commands **never** call `process.exit()` or print ad-hoc output.
-3. All data flows through `ok(data)` / `CliError` — the runner handles envelopes.
-4. `--llm` mode returns raw JSON envelopes; human mode uses `presentHuman()`.
-
-## Adding a New Command
-
-1. Create `teamwork/commands/<cmd>/` with `index.ts`, `help.txt`, `desc.txt`.
-2. Add it to `registry.ts` (sorted); help/desc are embedded from there in dev and in the binary.
+- `tests/unit/adapter.test.ts` — HTTP adapter over `fakeFetch` / `respond` /
+  `withTempEnvConfig` from `@belzabar/core/testing` (login, 401, 429, errors).
+- `tests/unit/real-comments.test.ts` — sanitized real task + two comment pages in
+  `tests/fixtures/real/` (`manifest.json`). Refresh read-only with
+  `bun scripts/fixtures/capture.ts tw <taskId> [pageSize]`.
+- Also: `args.test.ts`, `extract.test.ts`, `comments-pagination.test.ts`,
+  `subtasks-pagination.test.ts`.

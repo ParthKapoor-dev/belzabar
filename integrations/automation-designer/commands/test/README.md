@@ -1,6 +1,8 @@
-# Test Command
+# ad test
 
-Executes an Automation Designer method (usually the draft) with given input values.
+Executes an Automation Designer method (usually the draft) with the given input values.
+This really runs the chain (SQL steps commit), so the command declares `writes` and
+needs an explicit `--env`.
 
 ## Usage
 
@@ -25,5 +27,5 @@ belz ad test <UUID> --env <env> [flags]
 - `--case <file>`: Inputs + assertions from a test-case file (`ad test-case export` format).
 - `--expect <out=value>`: Repeatable output check (`lib/test-cases/expect.ts`).
 - `--compare-published`: Draft vs published output diff.
-- `--verbose`: Show deep inspection of step outputs.
+- `--verbose`, `-v`: Show deep inspection of step outputs.
 - `--raw`: Include the raw execution response.

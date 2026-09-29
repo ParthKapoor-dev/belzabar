@@ -1,95 +1,67 @@
-# AGENTS.md — Browser Extension
+# AGENTS.md — Browser Extension (`apps/extension`)
 
 ## Purpose
 
-This app is a browser extension content script for AD/PD web UIs. Current features:
+`belzabar-extension` is an MV3 browser extension (plain JavaScript, ES modules) for the
+Automation Designer / Page Designer web UIs, for Chromium and Firefox (incl. Zen). It has three
+parts:
 
-1. Update page title with current method/page name
-2. Trigger Run Test via keyboard shortcut (`Ctrl+Shift+Enter`) from anywhere on the page, including focused inputs/textareas
-3. Provide a JSON modal editor to bulk edit AD test inputs and sync values back to DOM controls
-4. Add a hover-revealed copy icon inside each output container to copy full output JSON and show toast feedback
-5. Add hover-revealed overlay controls for native `<textarea>`: Open icon + Copy icon stacked at top-right (Open above Copy), with Open launching a large CodeMirror 6 editor modal (single editor surface) with line numbers, automatic lightweight syntax highlighting (Auto/SQL/SpEL/JS/JSON/plain), optional wrap mode (Wrap/No Wrap), and quick controls (language/wrap/font/copy). Overlay controls are injected via an extension-owned wrapper around each textarea for stable positioning.
-6. Provide extension settings (button near `.header_banner` + `Ctrl+,`) to enable/disable features and manage persisted textarea editor defaults (language/wrap/font size)
+1. **Content scripts** on the designers: `src/ad-content.js` (`/automation-designer/*`) and
+   `src/pd-content.js` (`/ui-designer/*`). Both call `src/core/bootstrap.js` with their feature
+   set; features are toggled from the settings modal and persisted (`src/core/settings.js`).
+2. **DevTools panels** (`devtools.html` → `src/devtools/devtools-page.js`):
+   - **AD Network** (`panel.html`, `src/devtools/panel.js`): a Network-tab-style list of AD chain
+     requests with the method name. Standalone: names are learned from definition responses in
+     the recorded traffic; execute-only uuids show the raw uuid. (It no longer calls a local
+     belz web dashboard, which was removed; there are no localhost permissions.)
+   - **PD Inspector** (`panel-pd.html`, `src/devtools/panel-pd.js`): component tree + on-page
+     highlight for published `/pages/*`, talking to the `src/pd-inspector.js` content script
+     through the `src/background.js` relay (Firefox panels have no `chrome.tabs`).
+3. **Background relay** `src/background.js` (service worker on Chromium, script on Firefox).
 
-## Tech and Runtime
+Hosts: `manifest.json` lists the NSM (dev/qa/uat, staff-nss), YieldSec and Expertly hosts; keep
+`host_permissions` and every `content_scripts.matches` list aligned.
 
-1. Language: JavaScript (ES modules)
-2. Manifest: MV3 (`manifest.json`)
-3. Build: Bun bundling of `src/content-script.js` to `dist/content-script.js` with post-build non-ASCII escaping (`scripts/escape-non-ascii.mjs`) for extension loader compatibility
-4. Target hosts: NSM dev/qa/uat, AD and PD paths
+## Features (AD unless noted)
 
-## Directory Map
+| Feature | Files | Notes |
+|---------|-------|-------|
+| Title updater (AD+PD) | `src/features/title-updater/index.js` | appends method/page name to the tab title |
+| Run-test shortcut (AD+PD) | `src/features/keyboard/shortcuts.js`, `src/features/run-test/` | `Ctrl+Shift+Enter`, works inside inputs |
+| JSON input editor | `src/features/json-editor/` (`extractor`, `sync`, `modal`, `injector`, `types`) | bulk-edit test inputs; type-aware sync incl. boolean `exp-select`, date pickers, structured-data textareas |
+| Output copy (AD+PD) | `src/features/output-copy/index.js` | hover copy icon per `.output-container` |
+| Textarea editor (AD+PD) | `src/features/textarea-editor/` | Open/Copy overlay on native textareas; CodeMirror 6 modal (Auto/SQL/SpEL/JS/JSON/plain, wrap, font) |
+| Settings (AD+PD) | `src/features/settings/`, `src/core/settings.js` | `⚙` button near `.header_banner`, `Ctrl+,` |
+| Curl autofill | `src/features/curl-autofill/index.js` | AD only; fills test inputs from the `_belz_autofill` URL param |
+| PD inspector | `src/features/pd-inspector/` (see its `HOW-IT-WORKS.md`), `src/pd-inspector.js` | published pages only |
 
-1. `src/content-script.js` - app bootstrap
-2. `src/config/` - selectors/constants
-3. `src/core/` - shared state + logging + persisted settings
-4. `src/features/title-updater/` - title logic + mutation observer
-5. `src/features/keyboard/` - shortcut handler
-6. `src/features/run-test/` - run button lookup + click
-7. `src/features/json-editor/` - button injection, modal UI, input extraction, type handling, sync engine
-8. `src/features/output-copy/` - output container copy-button injection + clipboard copy
-9. `src/features/textarea-editor/` - textarea launcher injection + large modal editor
-10. `src/features/settings/` - settings button/modal + keyboard shortcut
-11. `src/ui/toast.js` - toast notifications
-12. `src/ui/modal-lock.js` - page interaction lock while modal/dialog is open
-13. `src/utils/dom.js` - DOM utility helpers
+Shared: `src/config/constants.js` (selectors), `src/core/` (bootstrap, state, logger, observer,
+settings), `src/ui/` (toast, modal, modal-lock, styles, theme from `@belzabar/design`),
+`src/utils/` (dom, clipboard).
 
-## Feature Flow
+## Build, pack, release
 
-1. On load, extension reads persisted settings and enables only selected features.
-2. JSON feature injects a `📋 JSON` button near the Inputs section.
-3. Output copy feature injects a hover-revealed copy icon inside each `.output-container`.
-4. Textarea editor feature injects hover-revealed overlay icons inside eligible native textareas (`Open` and `Copy` stacked on the top-right).
-5. Open launches a large CodeMirror modal editor with line numbers and syntax highlighting (Auto/SQL/SpEL/JS/JSON/plain), plus language/wrap/font/copy controls, an in-editor button to open extension settings, and Save/Cancel actions.
-6. Settings feature injects an icon-only `⚙` button near `.header_banner .page_title` and opens via `Ctrl+,`.
-7. Settings toggles enable/disable title updater, run-test shortcut, JSON editor, output copy, and textarea editor in real time; settings also store textarea editor defaults (language/wrap/font size).
-8. Modal loads detected inputs and current values into formatted JSON.
-9. Sync path parses user JSON and writes values to AD controls with type-aware behavior.
+- `bun run build` (`scripts/build.mjs`) bundles each entry flat into `dist/` (gitignored) and runs
+  `scripts/escape-non-ascii.mjs` on each output (extension loaders reject some non-ASCII).
+  `bun run dev` watches the main entries.
+- `node scripts/pack.mjs [--version X.Y.Z]` builds, then assembles loadable per-browser trees in
+  `build/chrome` and `build/firefox` (gitignored), using `release.config.json` for the Firefox id
+  and update URLs.
+- Release: push a tag `ext-v<version>`; `.github/workflows/extension-release.yml` packs a signed
+  CRX, signs the XPI via AMO, and publishes the update manifests to GitHub Pages.
+- Install for users: `belz extension load` writes each browser's enterprise force-install policy
+  (see `packages/core/src/browsers.ts`); `belz extension list` / `belz extension remove`.
+- Local dev: load the extension directory unpacked after `bun run build`.
 
-## JSON Sync Engine (Current)
+## Risks / checklist
 
-1. Extracts inputs from AD DOM using selector and container heuristics.
-2. Normalizes value by target type:
-   - Text, Number, Integer, Boolean, Date, DateTime, Json, Array, Map, StructuredData
-3. Handles special controls:
-   - boolean `exp-select`
-   - date pickers (calendar navigation + model event synchronization)
-   - structured-data textareas
-4. Returns structured sync result:
-   - success/failure
-   - warnings/errors
-   - counts and failed/missing keys
-
-## Important Files for Agents
-
-1. Bootstrap: `src/content-script.js`
-2. Selectors/constants: `src/config/constants.js`
-3. JSON extraction: `src/features/json-editor/extractor.js`
-4. JSON sync implementation: `src/features/json-editor/sync.js`
-5. JSON modal/UI actions: `src/features/json-editor/modal.js`
-6. Injection logic: `src/features/json-editor/injector.js`
-7. Output copy feature: `src/features/output-copy/index.js`
-8. Textarea editor feature: `src/features/textarea-editor/index.js`
-9. Textarea editor modal: `src/features/textarea-editor/modal.js`
-10. Settings persistence: `src/core/settings.js`
-11. Settings UI: `src/features/settings/index.js`, `src/features/settings/modal.js`
-
-## Known Current Risks
-
-1. DOM coupling is high; selectors depend on current AD/PD UI structure and class names.
-2. Inline style-heavy modal implementation increases maintenance overhead.
-3. Changes in datepicker/select control internals can break sync.
-4. Console logging exists in bootstrap and JSON flows; keep this in mind for production noise.
-
-## Safe Change Checklist
-
-1. Validate behavior on both AD and PD pages after selector changes.
-2. Test boolean/date/structured-data sync paths manually after editing `sync.js`.
-3. Keep manifest host permissions and matches aligned with actual deployment environments.
-4. Rebuild `dist/content-script.js` after code changes before shipping.
+1. DOM coupling is high — selectors depend on the AD/PD UI's class names. After a selector
+   change, check both AD and PD pages.
+2. After editing `src/features/json-editor/sync.js`, manually test boolean, date and
+   structured-data sync.
+3. There are no automated tests for the extension; `bun run check` does not cover it.
 
 ## Maintainer Agent Instructions
 
-You are the Maintainer Agent. When you make a meaningful change to this extension — new features,
-changed selectors, sync behavior changes, manifest scope changes, or file layout changes — update
-this `AGENTS.md` in the same commit. Rebuild `dist/content-script.js` before shipping.
+When you change features, selectors, sync behaviour, manifest scope or file layout, update this
+`AGENTS.md` (and `README.md` if user-facing) in the same commit.

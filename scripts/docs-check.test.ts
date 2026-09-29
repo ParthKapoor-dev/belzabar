@@ -60,7 +60,7 @@ describe("pathCandidates", () => {
 describe("commandCandidates / checkCommand", () => {
   test("extracts words after belz up to a flag or placeholder", () => {
     expect(commandCandidates("belz ad show <uuid> --llm && belz cache prune-local --yes")).toEqual([["ad", "show"], ["cache", "prune-local"]]);
-    expect(commandCandidates("bun run belz:install; ./belz --help-full")).toEqual([]);
+    expect(commandCandidates("bun run belz:install; ./belz --help-full; [belz pd write] saved")).toEqual([]);
   });
 
   test("registered commands pass", () => {
