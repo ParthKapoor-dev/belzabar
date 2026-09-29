@@ -38,7 +38,7 @@ Everything is exported from `src/index.ts`. Grouped by concern:
 ### Config and Credentials (`src/config/`)
 | Export | Description |
 |--------|-------------|
-| `Config` | Active env + credentials. `setActiveEnv(name)` (explicit, throws `INVALID_ENV`), `resetActiveEnv()`, `activeEnv` (never throws), `defaultEnvName` (BELZ_ENV > config `defaultEnv` > the only configured env > `NO_ENV` = ""), `envSource` (`flag`/`BELZ_ENV`/`config`/`only`/`none`), `noEnvSelectedError()`, `envWasExplicit`, `configError`, `assertUsable()`, `cleanBaseUrl`/`loginId`/`password` (throw `CONFIG_INVALID`/`INVALID_ENV`/`ENV_NOT_SELECTED` when the env is unusable), `getJenkins()`, `getTeamwork()` |
+| `Config` | Active env + credentials. `setActiveEnv(name)` (explicit, throws `INVALID_ENV`), `resetActiveEnv()`, `activeEnv` (never throws), `defaultEnvName` (BELZ_ENV > config `defaultEnv` > the only configured env > `NO_ENV` = ""), `envSource` (`flag`/`BELZ_ENV`/`config`/`only`/`none`), `noEnvSelectedError()`, `envWasExplicit`, `configError`, `assertUsable()`, `cleanBaseUrl`/`loginId`/`password` (throw `CONFIG_INVALID`/`INVALID_ENV`/`ENV_NOT_SELECTED` when the env is unusable), `getJenkins()`, `getTeamwork()`, `withEnv(name, fn)` (run on another env, restore the caller's selection exactly, even on throw), `captureActiveEnv()` (restore function, for code that switches several times) |
 | `BELZ_CONFIG_DIR` / `CONFIG_FILE_PATH` | `~/.belz/` (or `BELZ_HOME`) and its `config.json` |
 | `loadConfigFileRaw()` / `writeConfigFile(cfg)` | Raw read (unvalidated, for read-modify-write) / atomic 0600 write |
 | `ConfigFileSchema`, `validateConfigFile` | zod schema (passthrough: unknown keys survive). Violations → `CONFIG_INVALID` naming the path |

@@ -133,8 +133,13 @@ function allContractUuids(inputs: ContractInput[] | undefined, out = new Set<str
   return out;
 }
 
+/** The L4 checks, run on `opts.env`; the caller's env selection is restored afterwards. */
 export async function runOnline(body: unknown, opts: OnlineOptions): Promise<{ findings: FindingInput[]; layers: string[] }> {
-  if (Config.activeEnv.name !== opts.env) Config.setActiveEnv(opts.env);
+  if (Config.activeEnv.name === opts.env) return runOnlineHere(body, opts);
+  return Config.withEnv(opts.env, () => runOnlineHere(body, opts));
+}
+
+async function runOnlineHere(body: unknown, opts: OnlineOptions): Promise<{ findings: FindingInput[]; layers: string[] }> {
   const findings: FindingInput[] = [];
   const layers: string[] = [];
   if (!isObj(body) || !Array.isArray(body.steps)) return { findings, layers };

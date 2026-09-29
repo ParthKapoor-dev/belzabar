@@ -3,6 +3,7 @@
 // (tests/fixtures/validate/online, read-only endpoints, see manifest.json).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import { Config } from "@belzabar/core";
 import { fakeFetch, fixture, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import { validateOnline, type ValidationResult } from "../../lib/validate/index";
 import { buildDryRunPayload, DRY_RUN_GATE, dryRunExecutedSteps, type ApiContract } from "../../lib/validate/online";
@@ -35,6 +36,20 @@ afterEach(() => {
 const run = (after: unknown, extra: { dryRunCompile?: boolean; before?: unknown } = {}) =>
   validateOnline({ after: after as never, before: extra.before as never, env: "t-dev", dryRunCompile: extra.dryRunCompile });
 const l4 = (r: ValidationResult) => [...r.errors, ...r.warnings].filter((f) => /^AD-(SVC|COMPILE)/.test(f.rule)).map((f) => `${f.rule}:${f.severity}:${f.path}`);
+
+describe("L4 env handling", () => {
+  test("runs on the requested env and restores the caller's env afterwards (it used to leak the switch)", async () => {
+    cfg.restore();
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" }, "t-qa": { url: "https://t-qa.test" } }, activeEnv: "t-qa" });
+    const hosts: string[] = [];
+    ff.restore();
+    ff = fakeFetch({ [`GET ${API}/Helpers.Legacy/automation-apis/echo`]: (req: Request) => { hosts.push(new URL(req.url).host); return fixture(`${ON}/api-echo.json`); } }).install();
+    await run(golden()).catch(() => undefined);
+    expect(hosts.length).toBeGreaterThan(0);
+    expect(new Set(hosts)).toEqual(new Set(["t-dev.test"]));
+    expect(Config.activeEnv.name).toBe("t-qa");
+  });
+});
 
 describe("L4 service lookup", () => {
   test("golden: every step checked, no findings; db_service falls back from label to uri", async () => {

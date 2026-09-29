@@ -233,6 +233,22 @@ describe("default env (D6 / CORE-26)", () => {
     expect(Config.envSource).toBe("flag");
   });
 
+  test("withEnv switches for the callback and restores a defaulted env as defaulted", async () => {
+    cfg = withTempEnvConfig({ envs: { "t-a": { url: "https://a.test" }, "t-b": { url: "https://b.test" } }, defaultEnv: "t-b" });
+    const seen = await Config.withEnv("t-a", () => Config.activeEnv.name);
+    expect(seen).toBe("t-a");
+    expect(Config.activeEnv.name).toBe("t-b");
+    expect(Config.envWasExplicit).toBe(false);
+    await expect(Config.withEnv("t-a", () => { throw new Error("boom"); })).rejects.toThrow("boom");
+    expect(Config.activeEnv.name).toBe("t-b");
+    Config.setActiveEnv("t-a");
+    const restore = Config.captureActiveEnv();
+    Config.setActiveEnv("t-b");
+    restore();
+    expect(Config.activeEnv.name).toBe("t-a");
+    expect(Config.envSource).toBe("flag");
+  });
+
   test("BELZ_ENV beats config defaultEnv", () => {
     process.env.BELZ_ENV = "t-a";
     cfg = withTempEnvConfig({ envs: { "t-a": { url: "https://a.test" }, "t-b": { url: "https://b.test" } }, defaultEnv: "t-b" });

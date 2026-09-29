@@ -101,7 +101,7 @@ const command: CommandModule<DiffArgs, DiffData> = {
       });
     }
 
-    const original = Config.activeEnv.name;
+    const restoreEnv = Config.captureActiveEnv();
     let fromResult: { side: SideInfo; page: HydratedPage };
     let toResult: { side: SideInfo; page: HydratedPage };
     try {
@@ -109,7 +109,7 @@ const command: CommandModule<DiffArgs, DiffData> = {
       toResult = await resolveInEnv(to, input);
     } finally {
       // Restore the original active env so the command envelope's meta.env is sane.
-      Config.setActiveEnv(original);
+      restoreEnv();
     }
 
     const diff = diffPages(fromResult.page, toResult.page);

@@ -135,7 +135,7 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
     ? [args.spineEnv, ...args.envs.filter((e) => e !== args.spineEnv)]
     : traceEnvFamily(args.spineEnv, configured);
 
-  const original = Config.activeEnv.name;
+  const restoreEnv = Config.captureActiveEnv();
   const warnings: string[] = [];
 
   try {
@@ -272,6 +272,6 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
       warnings,
     };
   } finally {
-    Config.setActiveEnv(original);
+    restoreEnv();
   }
 }

@@ -229,6 +229,35 @@ export const Config = {
   },
 
   /**
+   * Snapshot the current env selection; the returned function restores it
+   * exactly (the same name and the same explicit/defaulted source). For code
+   * that switches env several times and must leave the caller's env intact.
+   */
+  captureActiveEnv(): () => void {
+    const name = activeEnvName;
+    const source = envSource;
+    return () => {
+      activeEnvName = name;
+      envSource = source;
+    };
+  },
+
+  /**
+   * Run `fn` with `name` as the active env (INVALID_ENV if unknown), then
+   * restore the caller's selection even when `fn` throws. The env is process
+   * global, so calls must not run concurrently.
+   */
+  async withEnv<T>(name: string, fn: () => Promise<T> | T): Promise<T> {
+    const restore = Config.captureActiveEnv();
+    Config.setActiveEnv(name);
+    try {
+      return await fn();
+    } finally {
+      restore();
+    }
+  },
+
+  /**
    * The active env. Never throws: an unknown or missing default env yields a placeholder
    * (empty url; name `NO_ENV` when none is selected) — the coded error surfaces on
    * first use (baseUrl / credentials / assertUsable).

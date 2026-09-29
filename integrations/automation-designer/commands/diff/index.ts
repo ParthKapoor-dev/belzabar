@@ -273,7 +273,7 @@ async function executeCrossEnvDiff(
 
 /** Fetch + parse the method on `env` in-process, restoring the active env afterwards. */
 export async function fetchOnEnv(uuid: string, env: string): Promise<HydratedMethod> {
-  const original = Config.activeEnv.name;
+  const restoreEnv = Config.captureActiveEnv();
   try {
     Config.setActiveEnv(env);
     return await adApi.fetchMethod(uuid, "v1");
@@ -283,7 +283,7 @@ export async function fetchOnEnv(uuid: string, env: string): Promise<HydratedMet
     }
     throw e;
   } finally {
-    Config.setActiveEnv(original);
+    restoreEnv();
   }
 }
 

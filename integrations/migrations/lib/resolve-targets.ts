@@ -162,10 +162,8 @@ export async function resolveMigrationTargets(opts: {
     );
   }
 
-  // Restore the caller's env exactly: an explicit choice by name, a default by
-  // reset (setActiveEnv on an unconfigured default name would throw and mark it explicit).
-  const original = Config.activeEnv.name;
-  const wasExplicit = Config.envWasExplicit;
+  // Restore the caller's env exactly (explicit or defaulted) afterwards.
+  const restoreEnv = Config.captureActiveEnv();
   Config.setActiveEnv(sourceEnv);
   try {
     const targets: ResolvedTarget[] = [];
@@ -190,8 +188,7 @@ export async function resolveMigrationTargets(opts: {
     }
     throw e;
   } finally {
-    if (wasExplicit) Config.setActiveEnv(original);
-    else Config.resetActiveEnv();
+    restoreEnv();
   }
 }
 
