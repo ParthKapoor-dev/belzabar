@@ -33,11 +33,22 @@ import { runValidationGate, type ValidationFinding, type ValidationFlags, type V
  * `metadata.internal`) or outside the method content (`changelogs`: each
  * entry's `entityVersion` follows the draft version and its `user` block
  * carries `lastLoginDate`, which moves whenever that user logs in — live
- * sems-dev 2026-09-28). Ignored by the freshness check and the verify.
+ * sems-dev 2026-09-28). `testSuite` is the method's persisted test cases,
+ * managed by `ad test-case`, not by a save: a V2 POST that carries it makes
+ * the server rebuild the suite from the (possibly stale) copy — new assertion
+ * ids, createdOn/updatedOn, chainVersionId — while a POST without it leaves
+ * the suite intact (live sems-dev 2026-09-29). So the save never sends it
+ * (`postBody`) and the freshness check and the verify ignore it.
  */
-export const SERVER_OWNED_ON_SAVE = ["metadata.version", "metadata.internal", "changelogs"];
-/** Freshness: any content change is a conflict; changelog bookkeeping is not. */
-const IGNORED_FOR_FRESHNESS = ["changelogs"];
+export const SERVER_OWNED_ON_SAVE = ["metadata.version", "metadata.internal", "changelogs", "testSuite"];
+/** Freshness: any content change is a conflict; changelog / test-suite bookkeeping is not. */
+const IGNORED_FOR_FRESHNESS = ["changelogs", "testSuite"];
+
+/** The body actually POSTed: everything but `testSuite` (see SERVER_OWNED_ON_SAVE). */
+export function postBody(body: V2MethodResponse): V2MethodResponse {
+  const { testSuite: _suite, ...rest } = body;
+  return rest as V2MethodResponse;
+}
 
 export interface SaveV2Input {
   uuid: string;
@@ -170,7 +181,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   let compiledCache: CompiledCacheResult = { ok: false, uuids: [], routes: [] };
   let after: V2MethodResponse;
   try {
-    await postChainV2(plan.body);
+    await postChainV2(postBody(plan.body));
     after = await v2.fetchRawMethod(draftUuid);
   } finally {
     // Once the POST was attempted the stored body may have changed: always evict.

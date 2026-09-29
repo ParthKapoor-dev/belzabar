@@ -281,3 +281,80 @@ describe("ad create --spec (compact)", () => {
     expect(ff!.requests.filter((q) => q.method === "POST")).toHaveLength(0);
   });
 });
+
+describe("ad save — methods with test cases (testSuite)", () => {
+  // Live sems-dev 2026-09-29: a V2 POST carrying testSuite makes the server rebuild the
+  // suite (new assertion ids, createdOn/updatedOn, chainVersionId); without it the suite
+  // is kept and only its updatedOn moves. Either way the re-read suite differs from the
+  // body belz sent, which used to fail every save with AD_SAVE_VERIFY_FAILED.
+  function wireSuiteServer() {
+    const s = { stored: base(), posts: [] as V2MethodResponse[] };
+    expect((s.stored as any).testSuite.testCases).toHaveLength(2);
+    ff = fakeFetch([
+      {
+        method: "GET",
+        url: GET,
+        response: () => structuredClone(s.stored),
+      },
+      {
+        method: "POST",
+        url: "/rest/api/automation/chain/v2",
+        response: (req: RecordedRequest) => {
+          const body = req.json() as any;
+          s.posts.push(body);
+          const prevSuite = structuredClone((s.stored as any).testSuite);
+          const next = serverFill(body) as any;
+          if (body.testSuite) {
+            next.testSuite.chainVersionId = 2; // rebuilt from the sent copy
+            for (const c of next.testSuite.testCases) for (const a of c.assertions ?? []) a.id = `rebuilt-${a.id}`;
+          } else next.testSuite = { ...prevSuite, updatedOn: 1790663918718 };
+          next.metadata.version = { ...next.metadata.version, name: String(Number(s.stored.metadata.version?.name) + 1) };
+          s.stored = next;
+          return next;
+        },
+      },
+      ...contractRoutes,
+      ...COMPILED_CACHE_ROUTES.map((p) => ({ method: "POST", url: p, response: () => "success" })),
+    ]).install();
+    return s;
+  }
+
+  test("the suite is never sent (so never rebuilt) and its bookkeeping does not fail the verify", async () => {
+    const dir = setup();
+    const s = wireSuiteServer();
+    const before = structuredClone((s.stored as any).testSuite);
+    for (const overlay of [{ summary: "leaf edit" }, { ops: [{ op: "remove-step", step: 11 }] }]) {
+      const r = await runCommand(saveCommand, [write(dir, `o${Math.random()}.json`, overlay), "--uuid", U, "--yes"], { env: "t-dev" });
+      expect(r.envelope?.error ?? null).toBeNull();
+      expect(s.posts.at(-1)).not.toHaveProperty("testSuite");
+    }
+    const after = (s.stored as any).testSuite;
+    expect({ ...after, updatedOn: undefined }).toEqual({ ...before, updatedOn: undefined });
+  });
+
+  test("a suite changed by someone else between read and save is not a version conflict", async () => {
+    const dir = setup();
+    const s = wireSuiteServer();
+    let gets = 0;
+    ff!.restore();
+    ff = fakeFetch([
+      {
+        method: "GET",
+        url: GET,
+        response: () => {
+          const b = structuredClone(s.stored) as any;
+          if (++gets >= 2) b.testSuite.testCases.push({ id: "new", name: "added.meanwhile", inputs: [], assertions: [] });
+          return b;
+        },
+      },
+      {
+        method: "POST",
+        url: "/rest/api/automation/chain/v2",
+        response: (req: RecordedRequest) => (s.stored = { ...serverFill(req.json() as V2MethodResponse), testSuite: (s.stored as any).testSuite }),
+      },
+      ...COMPILED_CACHE_ROUTES.map((p) => ({ method: "POST", url: p, response: () => "success" })),
+    ]).install();
+    const r = await runCommand(saveCommand, [write(dir, "o.json", { summary: "x" }), "--uuid", U, "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error ?? null).toBeNull();
+  });
+});

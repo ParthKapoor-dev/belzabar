@@ -116,7 +116,10 @@ rationale.
    (AD_SAVE_VERIFY_FAILED; tolerates only `metadata.version` /
    `metadata.internal`, which every save rewrites, and `changelogs`, whose
    `entityVersion` follows the draft version and whose `user.lastLoginDate`
-   moves on every login — also ignored by the freshness check) → compiled cache + local
+   moves on every login — also ignored by the freshness check; and `testSuite`,
+   which the save never POSTs (`postBody`): a body carrying it makes the server
+   rebuild the suite from a possibly stale copy, without it the suite is kept
+   and only its updatedOn moves — live sems-dev 2026-09-29) → compiled cache + local
    cache evicted, even when the POST/verify failed). `api.ts` —
    `postChainV2` (AD_SAVE_REJECTED with the server message), `deleteChainV2`.
    `compiled-cache.ts` — `invalidateCompiledCache(uuids)` POSTs
