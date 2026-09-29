@@ -1,18 +1,18 @@
 // belz pd preflight <pageId> [--overlay <file>]
 //
-// Read-only dry-run. Fetches the current page, optionally applies an overlay,
-// runs the validator (diff-aware with an overlay — the same gate `save` uses),
-// and reports what would change and how it would be saved. Never writes.
+// Read-only dry-run. Resolves the page `save` would write (OTH-R14: the same
+// draft guard — a PUBLISHED id with a linked draft checks that draft),
+// optionally applies an overlay, runs the validator (diff-aware with an
+// overlay — the same gate `save` uses), and reports what would change and how
+// it would be saved. Never writes.
 //
 // PD-8 / F18: when the validator reports errors the envelope is ok:false
 // (PD_PREFLIGHT_FAILED, exit 1) with the full result in `data`, so agent
 // scripts can chain: `belz pd preflight … && belz pd save …`.
 
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
-import { pdApi } from "../../lib/api/index";
-import { readJsonFile } from "../../lib/edit";
+import { readJsonFile, resolveWriteTarget, type WriteTarget } from "../../lib/edit";
 import { countNodes, editSummary, editSummaryLines, type EditSummary } from "../../lib/page-diff";
-import { parsePage } from "../../lib/parser/index";
 import { assertOverlayShape } from "../../lib/serialize/overlay-shape";
 import { planSave } from "../../lib/serialize/index";
 import { partitionBySeverity, validateEdit, validateHydrated } from "../../lib/validator/index";
@@ -25,6 +25,9 @@ interface PreflightArgs {
 
 interface PreflightData {
   pageId: string;
+  /** The page save would write (the linked draft for a PUBLISHED input). */
+  targetId: string;
+  switchedFromPublished: boolean;
   name: string;
   entityType: "PAGE" | "COMPONENT";
   status: string;
@@ -69,11 +72,20 @@ const command: CommandModule<PreflightArgs, PreflightData> = {
     return { pageId: positionals.pageId, overlayFile: flags.overlay ?? null };
   },
 
-  async execute({ pageId, overlayFile }) {
+  async execute({ pageId, overlayFile }, context) {
+    const warn = (m: string) => context.warn(m);
     const overlay = overlayFile ? assertOverlayShape(await readJsonFile(overlayFile, "INVALID_OVERLAY", "Overlay")) : null;
-    const raw = await pdApi.fetchPage(pageId);
-    if (!raw) throw new CliError(`Page ${pageId} not found.`, { code: "PD_NOT_FOUND" });
-    const before = parsePage(raw);
+    const noOverrides = { forceValidation: false, allowPublished: false, deprecatedForce: false };
+    let target: WriteTarget;
+    try {
+      target = await resolveWriteTarget(pageId, noOverrides, warn, "checking");
+    } catch (err) {
+      if (!(err instanceof CliError) || err.code !== "PD_PUBLISHED_NO_DRAFT") throw err;
+      // Read-only: check the PUBLISHED page itself, but say save would need the override.
+      target = await resolveWriteTarget(pageId, { ...noOverrides, allowPublished: true }, () => {}, "checking");
+      warn(`ℹ ${pageId} is a PUBLISHED page with no linked draft; \`belz pd save\` would need --allow-published.`);
+    }
+    const before = target.snapshot;
 
     let after: HydratedPage = before;
     let issues: ValidationIssue[];
@@ -94,6 +106,8 @@ const command: CommandModule<PreflightArgs, PreflightData> = {
 
     const data: PreflightData = {
       pageId,
+      targetId: target.targetId,
+      switchedFromPublished: target.switchedFromPublished,
       name: after.name,
       entityType: after.entityType,
       status: after.status,
@@ -125,6 +139,7 @@ const command: CommandModule<PreflightArgs, PreflightData> = {
       ["Property", "Value"],
       [
         ["Page", data.pageId],
+        ...(data.targetId !== data.pageId ? [["Checked (draft)", data.targetId] as [string, string]] : []),
         ["Name", data.name],
         ["Entity Type", data.entityType],
         ["Status", data.status],

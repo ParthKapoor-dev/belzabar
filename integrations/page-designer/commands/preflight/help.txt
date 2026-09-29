@@ -1,6 +1,8 @@
 Usage: belz pd preflight <pageId> [--overlay <file>]
 
-Read-only dry-run. Fetches the current page, optionally applies an overlay,
+Read-only dry-run. Resolves the page `belz pd save` would write (a
+PUBLISHED id with a linked draft checks that draft; data.targetId), optionally
+applies an overlay,
 runs the validator, and reports what would change and how `belz pd save`
 would write it (partial operations or a full save). Makes NO network writes.
 
@@ -9,7 +11,8 @@ page already had are reported as pre-existing warnings; only issues the
 overlay INTRODUCES can be errors.
 
 Arguments:
-  <pageId>            PD page or component id (hex UUID).
+  <pageId>            PD page or component id (hex UUID). A PUBLISHED id is
+                      followed to its linked draft, exactly like save.
 
 Flags:
   --overlay <file>    Apply a JSON overlay before validation. See `belz pd

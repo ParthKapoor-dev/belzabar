@@ -27,7 +27,7 @@ component name (component first, then page; several matches → `PD_NAME_AMBIGUO
 | `belz pd translations <input>` | Release check of phrase keys; `--status`, `--expect-draft <id>`, `--force` |
 | `belz pd diff <input> --from <envA> --to <envB>` | Cross-env structural diff (flips `Config.activeEnv` per side, then restores it) |
 | `belz pd history <list\|show\|diff\|restore> <pageId>` | Server version history (lives on the PUBLISHED id: `list` on a draft with no versions adds `publishedId` + `hint` and a warning); `restore` writes and is refused (`PD_RESTORE_UNVERIFIED`) without `--acknowledge-unverified` |
-| `belz pd preflight <pageId> [--overlay <file>]` | Dry run of `save`: parse + validate + plan; never writes |
+| `belz pd preflight <pageId> [--overlay <file>]` | Dry run of `save` on the same draft-guarded target (`data.targetId`): parse + validate + plan; never writes |
 | `belz pd save <pageId> --overlay <file> \| --config <file>` | Validated, locked save; `--dry-run` |
 | `belz pd publish <pageId>` | Draft-guard + diff-aware validate (vs the PUBLISHED version) + locked publish, re-validated on a fresh read inside the lock; `--landing`, `--host <id>` (repeatable) |
 | `belz pd lock <acquire\|release\|status>` | Manual lock control (`~/.belz/pd-locks/<env>.json`, atomic 0600; a 5xx release keeps the record) |

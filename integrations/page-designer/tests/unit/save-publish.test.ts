@@ -293,6 +293,25 @@ describe("pd publish", () => {
   });
 });
 
+describe("preflight target (OTH-R14)", () => {
+  test("a PUBLISHED id is checked on its linked draft — the page save would write", async () => {
+    // The draft carries an orphan binding the published page does not have.
+    const inner = cleanInner();
+    (inner.layout.children as any[]).push({ id: "o", name: "span", props: { "[innerHTML]": "{%onlyInDraft%}" } });
+    pd.pages.set(DRAFT, page(DRAFT, inner, { referenceId: PUB }));
+    const r = await run(preflight, [PUB]);
+    expect(r.envelope?.error?.code).toBe("PD_PREFLIGHT_FAILED");
+    expect(r.envelope?.data).toMatchObject({ pageId: PUB, targetId: DRAFT, switchedFromPublished: true });
+  });
+
+  test("a lone PUBLISHED page is still checked, with a note that save needs --allow-published", async () => {
+    const r = await run(preflight, [LONE_PUB]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ targetId: LONE_PUB });
+    expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes("--allow-published"))).toBe(true);
+  });
+});
+
 describe("preflight / validate exit codes (PD-8 / F18)", () => {
   test("a page with validator errors → ok:false, exit 1, report in data", async () => {
     pd.pages.set(DRAFT, page(DRAFT, cleanInner({ layout: { id: "r", name: "div", children: [] } })));
