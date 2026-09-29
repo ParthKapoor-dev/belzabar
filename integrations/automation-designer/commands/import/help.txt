@@ -1,22 +1,42 @@
-Usage: belz ad import <file> --env <env> [flags]
+Usage: belz ad import <FILE> --env <env> [flags]
 
-Import one or more method definitions via
-/rest/api/automation/chain/import. The file contents are posted verbatim;
-belz only extracts method names for the confirmation prompt.
+Import one or more method definitions (the output of `belz ad export` /
+`export-category`, or an --llm envelope around it) via
+POST /rest/api/automation/chain/import. The file is posted verbatim after
+belz has checked every method record in it.
+
+Arguments:
+  <FILE>                Export JSON file. (required)
+
+Flags:
+  --yes, -y             Skip the confirmation prompt (required with --llm).
+  --no-validate         Skip the validator on V2 records. Logged loudly; not recommended.
+  --v2                  Accepted for consistency; always V1 (a notice is printed).
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Target environment. Required: import is a write.
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Checks (nothing is sent when one fails):
+  - FILE_NOT_FOUND / INVALID_JSON for an unreadable file.
+  - AD_IMPORT_EMPTY: no method record recognised.
+  - AD_IMPORT_INVALID: a record without a readable definition (V1: a
+    jsonDefinition string with services[] that carry activeTab; V2: steps[]).
+  - AD_IMPORT_PUBLISHED: a record whose state is PUBLISHED.
+  - AD_IMPORT_TARGETS_PUBLISHED: a record uuid that is PUBLISHED on --env (an
+    existing DRAFT with that uuid is reported as "overwrites draft").
+  - AD_VALIDATION_FAILED: validator errors on a V2 record (diff-aware against
+    the existing draft). V1 records (the export format) are shape-checked only.
+  The platform documents neither whether import creates or overwrites nor
+  the state it lands in; on sems-dev the route answers 400 "Request method
+  'POST' is not supported" (2026-09-29).
 
 Prerequisites (from the AD API docs):
   1. Dependent methods must already exist in the target environment.
   2. Category / service names must match.
   3. Database account names must match.
   4. Helper method configurations must exist.
-
-Flags:
-  --yes, -y  Skip the interactive confirmation prompt
-  --v2     Accepted for consistency; always V1 (a notice is printed)
-  --llm    Emit a JSON envelope; --yes is required in this mode
-
-Global Flags:
-  --env <name>          Target environment. Required: import is a write.
 
 Examples:
   belz ad import methods.json --env <env>

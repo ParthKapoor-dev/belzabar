@@ -85,7 +85,7 @@ needs `--yes` instead.
 | `create --spec <file>` | **W** new DRAFT from a compact spec or a V2 body (`--dry-run` is not a write; with `--dry-run-compile` it is) |
 | `publish <uuid> --note "…"` | **W** validate, publish, record the note, evict the compiled cache |
 | `delete <uuid>` | **W** soft-delete a never-published DRAFT |
-| `import <file>`, `category create <name>` | **W** |
+| `import <file>`, `category create <name>` | **W**. import refuses an empty/invalid file (`AD_IMPORT_EMPTY`/`_INVALID`, `FILE_NOT_FOUND`), PUBLISHED records or targets (`AD_IMPORT_PUBLISHED`/`_TARGETS_PUBLISHED`), and validator errors on V2 records; the route 400s on sems-dev |
 | `changelog <uuid> [--note "…"]` | List notes; `--note` is **W** (draft-guarded) |
 | `history restore <draftUuid> --version N` | **W** draft-guarded restore; fails `RESTORE_UNCONFIRMED` unless the re-read draft matches the target content; evicts the compiled cache; reports validator findings |
 | `test <uuid>` | **W** (really runs the chain). `--inputs`, `--case`, `--expect`, `--compare-published` |
@@ -110,7 +110,7 @@ all of them together.
   - `AD_OVERLAY_{UNKNOWN_KEY,INVALID,NOT_APPLIED}`, `AD_SERIALIZER_DRIFT`
   - `AD_SPEC_*`, `AD_VALIDATION_FAILED`, `AD_VERSION_CONFLICT`, `AD_SAVE_REJECTED`,
     `AD_SAVE_VERIFY_FAILED`
-  - `AD_METHOD_EXISTS`, `AD_CATEGORY_PROTECTED`
+  - `AD_METHOD_EXISTS`, `AD_CATEGORY_PROTECTED`, `AD_IMPORT_*`
   - `AD_DELETE_PUBLISHED`, `AD_DELETE_HAS_PUBLISHED`
   - `AD_TEST_EXPECTATION_FAILED`, `AD_TESTCASE_*`, `AD_LINT_FAILED`
   - `HISTORY_*`, `RESTORE_UNCONFIRMED`

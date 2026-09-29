@@ -1,0 +1,11 @@
+[
+  {
+    "file": "method-606.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T08:06:57.143Z",
+    "bytes": 93664,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/export/606",
+    "status": 200
+  }
+]
