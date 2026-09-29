@@ -37,7 +37,7 @@ export const CONFIG_FILE_PATH = join(BELZ_CONFIG_DIR, "config.json");
 /** Active-env name used when nothing selects an env (see `ENV_NOT_SELECTED`). */
 export const NO_ENV = "";
 
-export interface JenkinsConfig {
+interface JenkinsConfig {
   baseUrl: string;
   user: string;
   password: string;
@@ -46,7 +46,7 @@ export interface JenkinsConfig {
   profileEnvs: Record<string, string>;
 }
 
-export interface TeamworkCredentials {
+interface TeamworkCredentials {
   /** Site root without a trailing slash; "" when not configured. */
   baseUrl: string;
   email: string;
@@ -57,7 +57,7 @@ export interface TeamworkCredentials {
  * Where the active env came from. "flag" = chosen explicitly (--env / setActiveEnv),
  * "only" = the single configured env, "none" = nothing selected an env.
  */
-export type EnvSource = "flag" | "BELZ_ENV" | "config" | "only" | "none";
+type EnvSource = "flag" | "BELZ_ENV" | "config" | "only" | "none";
 
 interface LoadedConfig {
   /** Parsed JSON as-is (for read-modify-write by setup / config edit). */

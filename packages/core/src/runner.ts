@@ -14,7 +14,7 @@ import { verboseEnabled, vlog } from "./verbose";
 import { ENVELOPE_VERSION } from "./envelope";
 import { declaresFlag, type AnyArgsDef } from "./args";
 
-export interface NamespaceDefinition {
+interface NamespaceDefinition {
   name: string;
   description: string;
   /** Sub-command map (ad, pd style). Mutually exclusive with `command`. */
@@ -28,7 +28,7 @@ export interface NamespaceDefinition {
 }
 
 /** Build identity, printed by `belz --version`. */
-export interface BuildInfo {
+interface BuildInfo {
   version: string;
   /** Short git SHA the binary was built from ("unknown" outside a checkout). */
   sha: string;
@@ -111,7 +111,7 @@ export function installStdioGuard(): void {
 }
 
 /** Resolve once every console write made through the guard has been handed to the OS. */
-export async function flushStdio(): Promise<void> {
+async function flushStdio(): Promise<void> {
   // Note: a zero-length write's callback can fire before earlier queued writes
   // drain, so we wait on every tracked write rather than appending a marker.
   await Promise.all([...pendingWrites.values()]);
@@ -127,13 +127,13 @@ export async function flushAndExit(code: number): Promise<never> {
 // ── Global flags ────────────────────────────────────────────────────────────
 
 /** A `-v`/`--verbose` token removed by the global parser, and where it stood. */
-export interface VerboseToken {
+interface VerboseToken {
   /** Index in `GlobalFlags.args` the token stood before (== args.length when trailing). */
   index: number;
   token: string;
 }
 
-export interface GlobalFlags {
+interface GlobalFlags {
   /** argv with the global flags removed (everything from `--` onward is kept verbatim). */
   args: string[];
   outputMode: "human" | "llm";
@@ -207,7 +207,7 @@ export function parseGlobalFlags(argv: string[]): GlobalFlags {
 }
 
 /** Process-wide global state for one invocation, threaded into dispatch. */
-export interface GlobalContext {
+interface GlobalContext {
   /** `--env` was given explicitly. */
   envExplicit: boolean;
   verboseTokens: VerboseToken[];
@@ -237,7 +237,7 @@ function applyDefaultEnv(): { code: string; message: string } | null {
 }
 
 /** `meta.envSource`: where the env came from. `default` = config.json `defaultEnv` or the only configured env. */
-export type MetaEnvSource = "flag" | "BELZ_ENV" | "default";
+type MetaEnvSource = "flag" | "BELZ_ENV" | "default";
 
 function metaEnvSource(envExplicit: boolean): MetaEnvSource {
   if (envExplicit) return "flag";
@@ -361,7 +361,7 @@ export function renderOutcome(outcome: RunOutcome): void {
 }
 
 const ANSI_RE = /\x1b\[[0-9;?]*[A-Za-z]/g;
-export function stripAnsi(s: string): string {
+function stripAnsi(s: string): string {
   return s.replace(ANSI_RE, "");
 }
 
@@ -444,7 +444,7 @@ function reinsert(args: string[], tokens: VerboseToken[]): string[] {
   return out;
 }
 
-export interface DispatchOptions {
+interface DispatchOptions {
   globals?: GlobalContext;
   /** Index of `args[0]` (the command name) within the globally-parsed argv (for re-inserting owned flags). */
   base?: number;
@@ -630,7 +630,7 @@ export interface HelpFullOptions {
   index?: boolean;
 }
 
-export function formatBuildInfo(binaryName: string, build: BuildInfo): string {
+function formatBuildInfo(binaryName: string, build: BuildInfo): string {
   const sha = build.sha + (build.dirty ? "-dirty" : "");
   return `${binaryName} ${build.version} (${sha}${build.builtAt ? `, built ${build.builtAt}` : ""})`;
 }
@@ -860,7 +860,7 @@ export async function dispatchNamespaced(
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-export function toEnvelope(
+function toEnvelope(
   schema: string,
   commandName: string,
   result: CommandResult,
@@ -894,7 +894,7 @@ export function toEnvelope(
 }
 
 /** `"Error: x"` → `"x"` (messages never carry the prefix; human rendering adds its own marker). */
-export function stripErrorPrefix(message: string): string {
+function stripErrorPrefix(message: string): string {
   return message.replace(/^\s*(?:[A-Za-z]*Error:\s*)+/, "");
 }
 

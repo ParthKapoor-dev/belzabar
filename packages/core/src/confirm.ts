@@ -6,7 +6,7 @@ import { CliError } from "./command";
 import { Config } from "./config";
 import { lifecycle, prompts } from "./ui";
 
-export interface ConfirmWriteOptions {
+interface ConfirmWriteOptions {
   /** `--yes` was passed: proceed without asking. */
   yes: boolean;
   outputMode: "human" | "llm";

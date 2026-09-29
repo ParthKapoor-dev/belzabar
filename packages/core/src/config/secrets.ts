@@ -8,9 +8,9 @@
 
 import { CliError } from "../command";
 
-export type SecretEncoding = "plain" | "base64";
+type SecretEncoding = "plain" | "base64";
 
-export interface StoredSecret {
+interface StoredSecret {
   password?: string;
   passwordEncoding?: SecretEncoding;
 }

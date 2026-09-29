@@ -30,8 +30,14 @@ const JSON_OUT = process.argv.includes("--json");
 const CHECK = process.argv.includes("--check");
 const SUMMARY = process.argv.includes("--summary");
 
-/** Deliberate public API kept even if currently unused: repo-relative file → names. */
-const ALLOW: Record<string, string[]> = {};
+/** Deliberate API kept although production never calls it: repo-relative file → names. */
+const ALLOW: Record<string, string[]> = {
+  // Test hooks that core/testing (withTempEnvConfig, fakeFetch) drives.
+  "packages/core/src/config/index.ts": ["reloadConfig"],
+  "packages/core/src/http/dns.ts": ["setIpv4ResolverForTesting"],
+  // The repo's secret scanner lives in fixtures-secrets.test.ts and is built on these.
+  "scripts/fixtures/sanitize.ts": ["setScrubTerms", "findHosts", "withoutBase64", "findSecrets"],
+};
 
 /** Members of CommandModule the runner reads off a command's namespace object. */
 const COMMAND_MEMBERS = new Set(["args", "parseArgs", "execute", "presentHuman", "envAware", "writes", "schema", "version", "default"]);

@@ -19,7 +19,7 @@ import { readBodySummary } from "./errors";
 
 const SESSION_DIR = join(BELZ_CONFIG_DIR, "sessions");
 
-export function sessionFilePath(envName: string): string {
+function sessionFilePath(envName: string): string {
   return join(SESSION_DIR, `${envName}.json`);
 }
 
@@ -27,7 +27,7 @@ function activeEnvName(): string {
   return Config.activeEnv.name;
 }
 
-export async function saveSession(session: AuthSession, envName: string = activeEnvName()): Promise<void> {
+async function saveSession(session: AuthSession, envName: string = activeEnvName()): Promise<void> {
   writeSecureJson(sessionFilePath(envName), session);
 }
 

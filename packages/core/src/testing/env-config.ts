@@ -13,7 +13,7 @@ import { homedir } from "os";
 import { isAbsolute, join, relative, resolve } from "path";
 import { BELZ_CONFIG_DIR, Config, reloadConfig, type BelzConfigFile } from "../config";
 
-export interface TempEnvSpec {
+interface TempEnvSpec {
   url: string;
   user?: string;
   /** Plain-text password (base64-encoded into config.json for you). */
@@ -25,7 +25,7 @@ export interface TempEnvSpec {
   token?: string | null;
 }
 
-export interface TempEnvConfigOptions {
+interface TempEnvConfigOptions {
   envs: Record<string, TempEnvSpec>;
   teamwork?: BelzConfigFile["teamwork"];
   jenkins?: BelzConfigFile["jenkins"];

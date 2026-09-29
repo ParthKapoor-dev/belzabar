@@ -28,7 +28,7 @@ export const DEFAULT_HTTP_TIMEOUT_MS = 60_000;
 export const DEFAULT_HTTP_WRITE_TIMEOUT_MS = 300_000;
 
 /** Per-call timeout: ms to wait for response headers; `0` or `"none"` disables it (streaming, long ops). */
-export type TimeoutOption = number | "none";
+type TimeoutOption = number | "none";
 
 export interface HttpInit extends RequestInit {
   /**
@@ -47,7 +47,7 @@ function envMs(name: string): number | undefined {
 }
 
 /** True for methods that only read (the server has nothing to "complete" after a timeout). */
-export function isReadMethod(method: string | undefined): boolean {
+function isReadMethod(method: string | undefined): boolean {
   const m = (method ?? "GET").toUpperCase();
   return m === "GET" || m === "HEAD" || m === "OPTIONS";
 }

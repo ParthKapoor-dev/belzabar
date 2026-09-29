@@ -38,11 +38,11 @@ interface BaseFlag {
   missingMessage?: string;
 }
 
-export interface BooleanFlagSpec extends BaseFlag {
+interface BooleanFlagSpec extends BaseFlag {
   type: "boolean";
 }
 
-export interface StringFlagSpec extends BaseFlag {
+interface StringFlagSpec extends BaseFlag {
   type: "string";
   default?: string;
   /** Accept a following value that looks like a flag (`--pattern -x`). Default false. */
@@ -51,7 +51,7 @@ export interface StringFlagSpec extends BaseFlag {
   allowEmpty?: boolean;
 }
 
-export interface NumberFlagSpec extends BaseFlag {
+interface NumberFlagSpec extends BaseFlag {
   type: "number";
   default?: number;
   integer?: boolean;
@@ -59,7 +59,7 @@ export interface NumberFlagSpec extends BaseFlag {
   max?: number;
 }
 
-export interface EnumFlagSpec extends BaseFlag {
+interface EnumFlagSpec extends BaseFlag {
   type: "enum";
   values: readonly string[];
   default?: string;
@@ -70,7 +70,7 @@ export interface EnumFlagSpec extends BaseFlag {
 export type FlagSpec = BooleanFlagSpec | StringFlagSpec | NumberFlagSpec | EnumFlagSpec;
 export type FlagsSpec = Record<string, FlagSpec>;
 
-export interface PositionalSpec {
+interface PositionalSpec {
   name: string;
   required?: boolean;
   /** Collects every remaining positional (must be last). */
@@ -100,7 +100,7 @@ export interface ArgsSpec {
 
 // ── Type-level mapping: spec → parsed values ────────────────────────────────
 
-export type CamelCase<S extends string> = S extends `${infer H}-${infer T}`
+type CamelCase<S extends string> = S extends `${infer H}-${infer T}`
   ? `${H}${Capitalize<CamelCase<T>>}`
   : S;
 
@@ -110,7 +110,7 @@ type ScalarOf<F extends FlagSpec> = F extends { type: "number" }
     ? V
     : string;
 
-export type FlagValue<F extends FlagSpec> = F extends { type: "boolean" }
+type FlagValue<F extends FlagSpec> = F extends { type: "boolean" }
   ? boolean
   : F extends { repeatable: true }
     ? ScalarOf<F>[]
@@ -120,7 +120,7 @@ export type FlagValue<F extends FlagSpec> = F extends { type: "boolean" }
         ? ScalarOf<F>
         : ScalarOf<F> | undefined;
 
-export type FlagValues<F extends FlagsSpec | undefined> = F extends FlagsSpec
+type FlagValues<F extends FlagsSpec | undefined> = F extends FlagsSpec
   ? { -readonly [K in keyof F & string as CamelCase<K>]: FlagValue<F[K]> }
   : {};
 
@@ -130,7 +130,7 @@ type PositionalValue<P extends PositionalSpec> = P extends { variadic: true }
     ? string
     : string | undefined;
 
-export type PositionalValues<P extends readonly PositionalSpec[] | undefined> = P extends readonly PositionalSpec[]
+type PositionalValues<P extends readonly PositionalSpec[] | undefined> = P extends readonly PositionalSpec[]
   ? { -readonly [E in P[number] as CamelCase<E["name"]>]: PositionalValue<E> }
   : {};
 

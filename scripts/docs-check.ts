@@ -21,7 +21,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { dirname, join, relative, resolve } from "path";
 
-export interface CommandIndex {
+interface CommandIndex {
   /** Top-level commands (`belz <cmd>`) → their subcommand info. */
   top: Map<string, SubInfo>;
   /** Namespaces (`belz <ns> <cmd>`) → command → subcommand info. */
@@ -29,9 +29,9 @@ export interface CommandIndex {
 }
 
 /** A command's subcommand names (null when it has none, or has a default subcommand). */
-export type SubInfo = { strict: Set<string> } | null;
+type SubInfo = { strict: Set<string> } | null;
 
-export interface Problem {
+interface Problem {
   file: string;
   line: number;
   message: string;
@@ -59,7 +59,7 @@ export function findDocs(root: string): string[] {
   return out.sort();
 }
 
-export interface Snippet {
+interface Snippet {
   text: string;
   line: number;
   /** "code" = inline code span or fenced block; "link" = markdown link target. */
@@ -119,7 +119,7 @@ function existsWithFallback(p: string): boolean {
  * is not anchored in the repo (its first segment exists neither next to the
  * doc nor at the root).
  */
-export function checkPath(root: string, docDir: string, token: string, packages: Map<string, string>): string | null {
+function checkPath(root: string, docDir: string, token: string, packages: Map<string, string>): string | null {
   if (token.startsWith("@")) {
     const [scope, name] = token.split("/");
     const pkg = `${scope}/${name}`;

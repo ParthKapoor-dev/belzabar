@@ -11,7 +11,7 @@ export function flagsMentioned(text: string): string[] {
   return [...out];
 }
 
-export interface DocCheckInput {
+interface DocCheckInput {
   /** `belz ad show` / `belz envs`. */
   invocation: string;
   def: AnyArgsDef;

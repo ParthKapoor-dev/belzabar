@@ -13,7 +13,7 @@
 import { CliError } from "../command";
 import { redactSecrets, redactString } from "./redact";
 
-export const MAX_ERROR_BODY_CHARS = 500;
+const MAX_ERROR_BODY_CHARS = 500;
 
 function decodeEntities(s: string): string {
   return s
@@ -25,7 +25,7 @@ function decodeEntities(s: string): string {
     .replace(/&nbsp;/g, " ");
 }
 
-export function looksLikeHtml(text: string, contentType?: string | null): boolean {
+function looksLikeHtml(text: string, contentType?: string | null): boolean {
   if (contentType && /html/i.test(contentType)) return true;
   return /^\s*(<!doctype html|<html[\s>]|<head[\s>]|<body[\s>])/i.test(text);
 }
@@ -75,7 +75,7 @@ export async function readErrorBody(res: Response, maxJsonChars = 4096): Promise
   return summarizeBody(text, res.headers.get("content-type"));
 }
 
-export interface HttpErrorOptions {
+interface HttpErrorOptions {
   /** Path or label for the message (e.g. `/rest/api/automation/chain/x`). Query strings are kept. */
   path?: string;
   method?: string;
@@ -111,7 +111,7 @@ export async function httpError(res: Response, opts: HttpErrorOptions = {}): Pro
   return new CliError(`${head}${tail}${body ? `: ${body}` : ""}`, { code, details });
 }
 
-export interface ApiErrorOptions {
+interface ApiErrorOptions {
   /** Error code, or a function of the HTTP status (e.g. 409 → a conflict code). */
   code: string | ((status: number) => string);
   /** Message, or a function of the response and its error body. Default `<status> <statusText> on <path>`. */
@@ -142,7 +142,7 @@ export async function ensureApiOk(res: Response, opts: ApiErrorOptions): Promise
   throw await apiError(res, opts);
 }
 
-export interface ExpectJsonOptions extends HttpErrorOptions {
+interface ExpectJsonOptions extends HttpErrorOptions {
   /**
    * When true (the default for expectJson), a 2xx with an empty body or a
    * literal `null` is treated as not-found (`notFoundCode`). Set false to get

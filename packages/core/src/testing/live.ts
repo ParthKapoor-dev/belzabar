@@ -102,7 +102,7 @@ export async function spawnLive(argv: string[], opts: SpawnCliOptions = {}): Pro
   return spawnCli(args, { ...opts, env: { BELZ_HOME: liveBelzHome(), ...opts.env } });
 }
 
-export interface LiveResource {
+interface LiveResource {
   kind: string; // method / table / row / suite / category
   identifier: string;
   purpose: string;
@@ -111,7 +111,7 @@ export interface LiveResource {
 }
 
 /** Path of the live-resources ledger (BELZ_LIVE_RESOURCES, else ../belzabar-workspace/live-resources.md). */
-export function liveResourcesPath(): string {
+function liveResourcesPath(): string {
   return process.env.BELZ_LIVE_RESOURCES ?? join(repoRoot(), "..", "belzabar-workspace", "live-resources.md");
 }
 

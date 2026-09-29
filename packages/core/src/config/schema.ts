@@ -14,7 +14,7 @@ const secretFields = {
   passwordEncoding: z.enum(["plain", "base64"]).optional(),
 };
 
-export const EnvEntrySchema = z
+const EnvEntrySchema = z
   .object({
     url: z.string().optional(),
     user: z.string().optional(),
@@ -26,7 +26,7 @@ export const EnvEntrySchema = z
   })
   .passthrough();
 
-export const ConfigFileSchema = z
+const ConfigFileSchema = z
   .object({
     /** Env used when no `--env` is given and BELZ_ENV is unset (D6). */
     defaultEnv: z.string().min(1).optional(),
@@ -78,7 +78,7 @@ export const ConfigFileSchema = z
   .passthrough();
 
 export type BelzConfigFile = z.infer<typeof ConfigFileSchema>;
-export type EnvEntry = z.infer<typeof EnvEntrySchema>;
+type EnvEntry = z.infer<typeof EnvEntrySchema>;
 
 function formatPath(path: (string | number)[]): string {
   return path.map((p) => String(p)).join(".") || "(root)";

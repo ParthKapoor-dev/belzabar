@@ -11,7 +11,7 @@ import { dirname, basename, join } from "path";
 let counter = 0;
 
 /** Atomically write `content` to `path` with `mode` (default 0600). Creates the parent dir (0700). */
-export function writeFileAtomic(path: string, content: string, mode = 0o600): void {
+function writeFileAtomic(path: string, content: string, mode = 0o600): void {
   const dir = dirname(path);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const tmp = join(dir, `.${basename(path)}.${process.pid}.${Date.now()}.${counter++}.tmp`);

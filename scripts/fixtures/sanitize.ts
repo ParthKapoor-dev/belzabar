@@ -36,24 +36,24 @@ import { readFileSync } from "fs";
 //      fired inside them; untouched strings stay byte-identical so the
 //      round-trip tests still see the real wire bytes.
 
-export const SECRET_KEY_RE =
+const SECRET_KEY_RE =
   /^(password|passwd|pwd|secret|client_?secret|api_?key|x-api-key|token|access_?token|refresh_?token|auth_?token|id_?token|session_?token|authorization|cookie|set-cookie|tw-?auth|expertly-auth-token|private_?key)$/i;
 
-export const JWT_RE = /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g;
+const JWT_RE = /eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g;
 const BEARER_RE = /\b(Bearer|Basic)\s+(?!REDACTED\b)[A-Za-z0-9._~+/=-]{16,}/g;
 const COOKIE_RE = /\b(tw-auth|JSESSIONID|SESSION)=(?!REDACTED\b)[^;\s"'&]{8,}/gi;
-export const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
+const EMAIL_RE = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}/g;
 // Needs separators between the groups, so hex ids / timestamps / dates never match.
-export const PHONE_RE = /(?<![\w.-])(?:\+?1[\s.-])?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}(?![\w-])/g;
+const PHONE_RE = /(?<![\w.-])(?:\+?1[\s.-])?(?:\(\d{3}\)\s?|\d{3}[\s.-])\d{3}[\s.-]\d{4}(?![\w-])/g;
 
 /** Names inside {fieldName,fieldValue} / {name,value} records whose value is sensitive. */
-export const SECRET_FIELD_NAME_RE =
+const SECRET_FIELD_NAME_RE =
   /^(password|passwd|pwd|username|user|login|host|hostname|secret|client_?secret|client_?id|api_?key|x-api-key|key|token|access_?token|refresh_?token|auth_?token|authorization|cookie|private_?key|connection_?string|url)$/i;
 
 const SAFE_EMAIL_DOMAINS = /^user\d*@example\.com$|@(example\.(com|org|net)|[a-z0-9-]+\.example)$/i;
-export const SAFE_PHONE = "555-555-0100";
+const SAFE_PHONE = "555-555-0100";
 
-export function isSafeEmail(e: string): boolean {
+function isSafeEmail(e: string): boolean {
   return SAFE_EMAIL_DOMAINS.test(e);
 }
 
@@ -175,13 +175,13 @@ const URL_HOST_RE = new RegExp(`(?<=//)(?:[a-z0-9-]+\\.)+${PUBLIC_TLD}(?![\\w.-]
 const BARE_HOST_RE = new RegExp(`(?<![\\w.@/-])(?:[a-z0-9-]+\\.){2,}${PUBLIC_TLD}(?![\\w.-])`, "gi");
 
 /** Generic infrastructure hosts (exact or a subdomain of) that may stay. */
-export const GENERIC_HOSTS = [
+const GENERIC_HOSTS = [
   "example.com", "example.org", "example.net", "w3.org", "schema.org", "github.com", "githubusercontent.com",
   "bun.sh", "npmjs.com", "npmjs.org", "fonts.googleapis.com", "fonts.gstatic.com", "www.googleapis.com",
   "claude.ai", "claude.com", "anthropic.com", "git-scm.com", "slack.com",
 ];
 
-export function isGenericHost(host: string): boolean {
+function isGenericHost(host: string): boolean {
   const h = host.toLowerCase();
   return GENERIC_HOSTS.some((g) => h === g || h.endsWith(`.${g}`));
 }
@@ -245,7 +245,7 @@ function looksLikeJson(s: string): boolean {
   return c === "{" || c === "[";
 }
 
-export interface SanitizeStats {
+interface SanitizeStats {
   redactedKeys: number;
   scrubbedStrings: number;
   reencodedJsonStrings: number;
@@ -334,7 +334,7 @@ export function sanitizeText(s: string): string {
   return scrubText(scrubString(s));
 }
 
-export interface SecretFinding {
+interface SecretFinding {
   kind: "jwt" | "bearer" | "cookie" | "email" | "phone" | "secret-key" | "person-name";
   match: string;
 }

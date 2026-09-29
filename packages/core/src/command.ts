@@ -9,7 +9,7 @@ export interface CommandError {
   details?: unknown;
 }
 
-export interface CommandResultMeta {
+interface CommandResultMeta {
   [key: string]: unknown;
 }
 

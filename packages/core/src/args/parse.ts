@@ -28,7 +28,7 @@ import { levenshtein } from "../search";
 
 const FLAG_LIKE = /^-{1,2}[A-Za-z]/;
 
-export function camelCase(key: string): string {
+function camelCase(key: string): string {
   return key.replace(/-([a-zA-Z0-9])/g, (_, c: string) => c.toUpperCase());
 }
 
@@ -46,12 +46,12 @@ export function suggest(input: string, known: readonly string[]): string | undef
 }
 
 /** Every spelling of a flag: `--key` plus its aliases. */
-export function flagSpellings(key: string, flag: FlagSpec): string[] {
+function flagSpellings(key: string, flag: FlagSpec): string[] {
   return [`--${key}`, ...(flag.alias ?? [])];
 }
 
 /** A token as shown in an error message: single line, at most `max` chars (SQL/free text can be huge). */
-export function shownToken(token: string, max = 40): string {
+function shownToken(token: string, max = 40): string {
   const flat = token.replace(/\s+/g, " ");
   return flat.length > max ? `${flat.slice(0, max)}…` : flat;
 }
@@ -101,7 +101,7 @@ function convert(spec: ArgsSpec, key: string, flag: FlagSpec, raw: string, shown
 }
 
 /** Parse argv against one spec. Throws CliError on any problem. */
-export function parseWithSpec<S extends ArgsSpec>(spec: S, argv: readonly string[]): ParsedArgs<S> {
+function parseWithSpec<S extends ArgsSpec>(spec: S, argv: readonly string[]): ParsedArgs<S> {
   const flags = (spec.flags ?? {}) as Record<string, FlagSpec>;
   const byToken = new Map<string, string>();
   for (const [key, flag] of Object.entries(flags)) {

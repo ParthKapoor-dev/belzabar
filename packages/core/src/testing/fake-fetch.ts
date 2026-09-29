@@ -32,9 +32,9 @@ export interface RecordedRequest {
   json(): any;
 }
 
-export type FakeHandler = (req: RecordedRequest) => unknown | Response | Promise<unknown | Response>;
+type FakeHandler = (req: RecordedRequest) => unknown | Response | Promise<unknown | Response>;
 
-export interface FakeResponseSpec {
+interface FakeResponseSpec {
   status?: number;
   headers?: Record<string, string>;
   /** JSON body. */
@@ -58,7 +58,7 @@ export function fixture(path: string, opts: Omit<FakeResponseSpec, "file" | "jso
   return respond({ ...opts, file: path });
 }
 
-export interface FakeRoute {
+interface FakeRoute {
   method?: string; // default: any
   url: string | RegExp;
   /** Handler function, Response, respond()/fixture() spec, or any JSON value. */
@@ -68,7 +68,7 @@ export interface FakeRoute {
 }
 
 /** Either a route list, or `{ "METHOD pattern": response }` (method optional: `"* pattern"` or just `"pattern"`). */
-export type FakeRoutes = FakeRoute[] | Record<string, unknown>;
+type FakeRoutes = FakeRoute[] | Record<string, unknown>;
 
 const FAKE_IP = "127.0.0.2";
 

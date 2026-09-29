@@ -18,11 +18,8 @@ export * from "./spec";
 export {
   defineArgs,
   defineSubcommands,
-  parseWithSpec,
   specsOf,
   acceptedFlags,
   declaresFlag,
   suggest,
-  camelCase,
-  flagSpellings,
 } from "./parse";

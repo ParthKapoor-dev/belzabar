@@ -84,7 +84,7 @@ export function evictIpv4Cache(host: string): void {
  * queries via c-ares; lookup() goes through getaddrinfo. They fail independently,
  * so try both before giving up.
  */
-export type Ipv4Resolver = (host: string) => string | Promise<string>;
+type Ipv4Resolver = (host: string) => string | Promise<string>;
 let resolverOverride: Ipv4Resolver | null = null;
 
 /**
@@ -135,7 +135,7 @@ async function resolveIPv4(host: string): Promise<string> {
   throw lastError ?? new Error(`Could not resolve an IPv4 address for ${host}`);
 }
 
-export interface Ipv4FetchPrep {
+interface Ipv4FetchPrep {
   url: string;
   init: RequestInit & { tls?: { serverName: string } };
   /** The hostname whose IP was substituted, when the request was pinned. */

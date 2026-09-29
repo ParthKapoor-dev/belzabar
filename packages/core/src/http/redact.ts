@@ -39,11 +39,11 @@ function normalizeKey(key: string): string {
 /** Only credential-carrying header names (for payloads with legitimate "token"/"password" data fields). */
 const HEADER_SECRET_KEYS = new Set(["authorization", "proxyauthorization", "expertlyauthtoken", "cookie", "setcookie"]);
 
-export function isSecretKey(key: string): boolean {
+function isSecretKey(key: string): boolean {
   return SECRET_KEYS.has(normalizeKey(key));
 }
 
-export interface RedactOptions {
+interface RedactOptions {
   /**
    * "all" (default): every secret-looking key (password, token, cookie, …).
    * "headers": only Authorization / Expertly-Auth-Token / Cookie keys — use for

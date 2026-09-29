@@ -15,7 +15,7 @@ export const args = defineSubcommands(
   },
 );
 
-export type ParsedConfigArgs = { action: "get" } | { action: "token"; refresh: boolean } | { action: "edit" };
+type ParsedConfigArgs = { action: "get" } | { action: "token"; refresh: boolean } | { action: "edit" };
 
 export function parseConfigArgs(argv: string[]): ParsedConfigArgs {
   let parsed;

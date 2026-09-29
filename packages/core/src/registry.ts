@@ -5,7 +5,7 @@
 // help.txt / desc.txt, imported as text so the compiled binary embeds them.
 
 /** One registered command. */
-export interface RegisteredCommand {
+interface RegisteredCommand {
   /** Namespace import of `commands/<name>/index.ts` (default export = the CommandModule). */
   module: unknown;
   /** Contents of `commands/<name>/help.txt` (`belz … <name> --help`). */

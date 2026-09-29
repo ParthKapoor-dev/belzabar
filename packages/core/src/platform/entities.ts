@@ -9,12 +9,12 @@ import { apiFetch } from "../http/api";
 export const adChainPath = (uuid: string): string => `/rest/api/automation/chain/${uuid}`;
 export const pdPagePath = (id: string): string => `/rest/api/pagedesigner/pages/${id}`;
 
-export type RawEntityResult<T> =
+type RawEntityResult<T> =
   | { found: true; body: T }
   | { found: false; reason: "http-404"; res: Response }
   | { found: false; reason: "empty" };
 
-export interface RawEntityOptions {
+interface RawEntityOptions {
   /** The error for a non-OK, non-404 response. */
   onError: (res: Response, path: string) => Promise<CliError> | CliError;
   /** The error for a 2xx body that is not JSON. Default: treat it as empty (not found). */

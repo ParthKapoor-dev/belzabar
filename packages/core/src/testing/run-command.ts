@@ -21,14 +21,14 @@ import {
   type RunOutcome,
 } from "../runner";
 
-export interface RunOptions {
+interface RunOptions {
   /** Environment name, passed as `--env <name>`. */
   env?: string;
   /** `--llm` output (default true). */
   llm?: boolean;
 }
 
-export interface RunCommandOptions extends RunOptions {
+interface RunCommandOptions extends RunOptions {
   /** Name the command is registered under (default "cmd"). */
   commandName?: string;
   binaryName?: string;
@@ -44,7 +44,7 @@ export interface RunResult {
   outcome: RunOutcome;
 }
 
-export class ProcessExitTrap extends Error {
+class ProcessExitTrap extends Error {
   constructor(readonly code: number) {
     super(`process.exit(${code}) called in-process`);
     this.name = "ProcessExitTrap";

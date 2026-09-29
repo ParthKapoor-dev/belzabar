@@ -31,9 +31,9 @@ import { z } from "zod";
 export const ENVELOPE_VERSION = "2.0" as const;
 
 /** `<namespace>.<command>`: lowercase words joined by `-`, exactly one dot. */
-export const SCHEMA_NAME = /^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/;
+const SCHEMA_NAME = /^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/;
 
-export const EnvelopeErrorSchema = z
+const EnvelopeErrorSchema = z
   .object({
     code: z.string().regex(/^[A-Z][A-Z0-9_]*$/, "error.code must be UPPER_SNAKE"),
     message: z.string().refine((m) => !/^\s*Error:/.test(m), "error.message must not start with 'Error:'"),
@@ -41,7 +41,7 @@ export const EnvelopeErrorSchema = z
   })
   .strict();
 
-export const EnvelopeMetaSchema = z
+const EnvelopeMetaSchema = z
   .object({
     env: z.string().min(1).optional(),
     envSource: z.enum(["flag", "BELZ_ENV", "default"]).optional(),

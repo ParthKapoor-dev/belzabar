@@ -12,7 +12,7 @@ export const ENTITY_CACHE_TTL_MS = 60 * 60 * 1000;
 /** Finder index (AD method finder, PD page finder) lifetime. */
 export const FINDER_INDEX_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
-export interface CacheOptions<T> {
+interface CacheOptions<T> {
   dir: string;
   /** Hard TTL — past this an entry is expired and discarded. */
   ttlMs: TtlSpec;
