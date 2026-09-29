@@ -46,6 +46,17 @@ SAFETY
     devsems_qasems = sems-dev → sems-qa); a contradiction aborts with
     MIGRATE_ENV_PROFILE_MISMATCH. For a profile whose envs belz can't derive,
     pass both env flags or neither (MIGRATE_ENV_PROFILE_UNVERIFIED).
+  - --module and --module-custom cannot be combined (MIGRATE_MODULE_CONFLICT).
+  - *_COMPARISON_REPORT / *_MIGRATION_STATUS need --migration-id
+    (MIGRATE_MIGRATION_ID_REQUIRED).
+  - An explicit --client must be the profile's Jenkins client group
+    (MIGRATE_CLIENT_PROFILE_MISMATCH).
+  - AD ids must be method uuids (32 hex, not all digits:
+    MIGRATE_TARGET_ID_INVALID); an unknown one is MIGRATE_TARGET_NOT_FOUND.
+  - Any failure AFTER the build was triggered (queue, console stream,
+    timeout) keeps its code and carries details.buildTriggered=true plus
+    buildNumber / buildUrl / queueUrl: check it with 'belz migrate status <n>'
+    and do NOT re-run.
 
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by

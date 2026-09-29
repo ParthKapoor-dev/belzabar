@@ -22,6 +22,13 @@ export function normalizeClient(value: string | undefined): JenkinsClient | unde
 }
 
 function normalizeMigrateType(value: string | undefined, custom: string | undefined): MigrateType | string {
+  // OTH-R25: --module-custom used to silently override --module.
+  if (custom?.trim() && value?.trim()) {
+    throw new CliError("Pass --module or --module-custom, not both.", {
+      code: "MIGRATE_MODULE_CONFLICT",
+      details: { module: value, moduleCustom: custom },
+    });
+  }
   if (custom?.trim()) return custom.trim();
   if (!value?.trim()) {
     throw new CliError(
@@ -193,9 +200,17 @@ export async function parseMigrateRunArgs(argv: string[]): Promise<MigrateRunArg
   let ids = parseIdsCsv(flags.ids);
   if (flags.idsFile) ids = await parseIdsFromFile(flags.idsFile);
 
-  const requiresIds = !/MIGRATION_STATUS|COMPARISON_REPORT/i.test(String(migrateType));
-  if (requiresIds && ids.length === 0) {
+  const isReportType = /MIGRATION_STATUS|COMPARISON_REPORT/i.test(String(migrateType));
+  if (!isReportType && ids.length === 0) {
     throw new CliError("Missing --ids or --ids-file.", { code: "MIGRATE_IDS_REQUIRED" });
+  }
+  // OTH-R25: a report/status build without a migration id ran with MIGRATION_ID="".
+  const migrationId = flags.migrationId?.trim() || undefined;
+  if (isReportType && !migrationId) {
+    throw new CliError(`--migration-id is required for --module ${migrateType}.`, {
+      code: "MIGRATE_MIGRATION_ID_REQUIRED",
+      details: { module: migrateType },
+    });
   }
 
   if (!profile && (!sourceEnv || !targetEnv)) {
@@ -215,7 +230,7 @@ export async function parseMigrateRunArgs(argv: string[]): Promise<MigrateRunArg
     targetEnv,
     migrateType,
     ids,
-    migrationId: flags.migrationId?.trim() || undefined,
+    migrationId,
     asyncMigration: flags.async,
     migrateDependent: flags.migrateDependents,
     devopsTag: flags.devopsTag?.trim() || undefined,

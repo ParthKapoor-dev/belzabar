@@ -37,7 +37,17 @@ async function getJson(path: string, env: string): Promise<Record<string, unknow
       { code: "MIGRATE_TARGET_RESOLVE_FAILED", details: { env, path, status: res.status } },
     );
   }
-  return (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  // An unknown id is not always a 404: AD answers 200 with an empty body (or
+  // `null`) for a uuid it doesn't know (OTH-R22). Anything that isn't a
+  // non-empty JSON object is "not found", never a crash on `.name`.
+  const body: unknown = await res.json().catch(() => null);
+  if (!isRecord(body) || Object.keys(body).length === 0) {
+    throw new CliError(`Migration target not found on '${env}' (empty response): ${path}`, {
+      code: "MIGRATE_TARGET_NOT_FOUND",
+      details: { env, path },
+    });
+  }
+  return body;
 }
 
 async function resolvePd(id: string, env: string): Promise<ResolvedTarget> {
@@ -66,8 +76,26 @@ async function resolvePd(id: string, env: string): Promise<ResolvedTarget> {
   };
 }
 
+const AD_UUID = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+const normUuid = (s: string) => s.replace(/-/g, "").toLowerCase();
+
 async function resolveAd(id: string, env: string): Promise<ResolvedTarget> {
+  // OTH-R27: AD also accepts a NUMERIC chain id on this endpoint, so an
+  // all-digit id silently resolves to some other method. Only a uuid is a
+  // migration id, and the method that comes back must carry that uuid.
+  if (!AD_UUID.test(id) || /^[0-9-]+$/.test(id)) {
+    throw new CliError(`'${id}' is not an AD method uuid (32 hex characters, not all digits).`, {
+      code: "MIGRATE_TARGET_ID_INVALID",
+      details: { id, env },
+    });
+  }
   const method = await getJson(`/rest/api/automation/chain/${id}`, env);
+  if (typeof method.uuid === "string" && normUuid(method.uuid) !== normUuid(id)) {
+    throw new CliError(`AD id '${id}' resolved to a different method (${method.uuid}) on '${env}'.`, {
+      code: "MIGRATE_TARGET_ID_MISMATCH",
+      details: { id, env, resolvedUuid: method.uuid },
+    });
+  }
   const name = typeof method.name === "string" && method.name ? method.name : "(unnamed)";
   return { inputId: id, resolvedId: id, name, kind: "AD", swapped: false };
 }

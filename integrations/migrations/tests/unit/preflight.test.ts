@@ -3,9 +3,12 @@
 // published sibling; auth failures say what to do; the caller's env is restored.
 import { afterEach, describe, expect, test } from "bun:test";
 import { Config } from "@belzabar/core";
-import { fakeFetch, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
+import { fakeFetch, fixture, respond, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import { resolveMigrationTargets } from "../../lib";
 import runCmd from "../../commands/run/index";
+
+// OTH-R26: an explicit --client is checked against the profile's Jenkins group.
+const JOB_PARAMS = { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${import.meta.dir}/../fixtures/real/job-parameters.json`) };
 
 let cfg: TempEnvConfig | null = null;
 let ff: FakeFetch | null = null;
@@ -78,7 +81,7 @@ describe("migrate pre-flight", () => {
     ff = fakeFetch([{ url: /sems-dev\.test/, response: respond({ status: 401, json: { message: "bad creds" } }) }]).install();
     let err: any;
     try {
-      await resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: ["u1"] });
+      await resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: ["4d075e621c93206fb95d84795fc05e00"] });
     } catch (e) {
       err = e;
     }
@@ -91,9 +94,9 @@ describe("migrate pre-flight", () => {
 
   test("a 404 keeps the specific MIGRATE_TARGET_NOT_FOUND", async () => {
     cfg = withTempEnvConfig({ envs: { "sems-dev": { url: "https://sems-dev.test" } } });
-    ff = fakeFetch([{ url: /chain\/nope/, response: respond({ status: 404, json: {} }) }]).install();
+    ff = fakeFetch([{ url: /chain\/abcdefabcdefabcdefabcdefabcdefab/, response: respond({ status: 404, json: {} }) }]).install();
     await expect(
-      resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: ["nope"] }),
+      resolveMigrationTargets({ profile: "devsems_qasems", migrateType: "AD_Method", ids: ["abcdefabcdefabcdefabcdefabcdefab"] }),
     ).rejects.toMatchObject({ code: "MIGRATE_TARGET_NOT_FOUND" });
   });
 });
@@ -107,6 +110,7 @@ describe("migrate run: skipped pre-flight surfaces in the envelope", () => {
     });
     const JOB = "https://jk.test/job/A/job/b";
     ff = fakeFetch([
+      JOB_PARAMS,
       { method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) },
       { method: "POST", url: `${JOB}/buildWithParameters`, response: respond({ status: 201, headers: { location: "https://jk.test/queue/item/7/" } }) },
       { method: "GET", url: "https://jk.test/queue/item/7/api/json", response: { id: 7, executable: { number: 42, url: `${JOB}/42/` } } },
@@ -132,7 +136,7 @@ describe("migrate run: confirmation gate", () => {
       envs: {},
       jenkins: { baseUrl: "https://jk.test", user: "u", password: "p", passwordEncoding: "plain", migrationJob: "A/b" },
     });
-    ff = fakeFetch([{ method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) }]).install();
+    ff = fakeFetch([JOB_PARAMS, { method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) }]).install();
     for (const extra of [[], ["--dry-run"]]) {
       const r = await runCommand(runCmd, [
         "--profile", "devsems_qasems", "--client", "SEMS", "--module", "PD", "--ids", "p1", "--no-follow", ...extra,

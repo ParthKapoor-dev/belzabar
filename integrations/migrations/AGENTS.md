@@ -62,6 +62,19 @@ Package exports: `./registry`, `.` (the lib barrel), `./lib/*`. From outside, im
     (`MIGRATE_TARGET_NOT_FOUND`, `MIGRATE_TARGET_DRAFT_UNPUBLISHED`); a PD draft id is swapped
     for its published id. A skipped pre-flight (source env not configured, or underivable)
     is a warning in `meta.warnings`, never silent. The caller's active env is restored after.
+    AD ids must be uuids, not all digits (`MIGRATE_TARGET_ID_INVALID`; AD also accepts
+    numeric chain ids, OTH-R27); a 200 with an empty/`null` body is `MIGRATE_TARGET_NOT_FOUND`
+    (OTH-R22); a method whose `uuid` differs from the input is `MIGRATE_TARGET_ID_MISMATCH`.
+  - Flags (OTH-R25/R26): `--module` + `--module-custom` → `MIGRATE_MODULE_CONFLICT`;
+    `*_COMPARISON_REPORT`/`*_MIGRATION_STATUS` without `--migration-id` →
+    `MIGRATE_MIGRATION_ID_REQUIRED`; an explicit `--client` that isn't the profile's Jenkins
+    group → `MIGRATE_CLIENT_PROFILE_MISMATCH` (an unlisted profile keeps the explicit client).
+  - After the trigger (OTH-R23): every failure (queue, getBuild, console stream, timeout,
+    artifacts, the build's own failure) keeps its code and gets `details.buildTriggered: true`,
+    `jobUrl`, and `queueUrl` / `buildNumber` / `buildUrl` when known; except for
+    `MIGRATE_RUN_FAILED` the message says "do NOT re-run" and names `belz migrate status <n>`
+    (`withBuildRef` in `commands/run/index.ts`). A 2xx trigger with no queue Location is
+    treated the same.
 - `--dry-run` only sends `DRY_RUN=true` to the job: it is still a real Jenkins build, not a
   local validation.
 - **Config.** `Config.getJenkins()` from `~/.belz/config.json` → `jenkins` (`baseUrl`, `user`,
@@ -85,4 +98,5 @@ Package exports: `./registry`, `.` (the lib barrel), `./lib/*`. From outside, im
   `bun scripts/fixtures/capture.ts jenkins`.
 - `tests/unit/real-jenkins.test.ts` replays them through the client via `fakeFetch`
   (`@belzabar/core/testing`); `preflight.test.ts` covers the pre-flight and a faked end-to-end
-  `run`; `run-args.test.ts` (MG-1/MG-2); `profiles-cache.test.ts` (TTL, MG-4).
+  `run`; `run-args.test.ts` (MG-1/MG-2); `profiles-cache.test.ts` (TTL, MG-4);
+  `run-safety.test.ts` (OTH-R22/R23/R25/R26/R27). `bunfig.toml` preloads a temp `BELZ_HOME`.
