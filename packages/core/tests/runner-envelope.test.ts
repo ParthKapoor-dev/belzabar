@@ -5,7 +5,6 @@ import {
   CliError,
   Config,
   defineArgs,
-  EnvelopeSchema,
   fail,
   failWithData,
   lifecycle,
@@ -16,7 +15,7 @@ import {
   type CommandModule,
   type NamespacedCliOptions,
 } from "../src/index";
-import { runCliInProcess, runCommand, withTempEnvConfig, type TempEnvConfig } from "../src/testing";
+import { EnvelopeSchema, runCliInProcess, runCommand, withTempEnvConfig, type TempEnvConfig } from "../src/testing";
 
 let cfg: TempEnvConfig | null = null;
 const savedBelzEnv = process.env.BELZ_ENV;

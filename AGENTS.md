@@ -107,7 +107,7 @@ env URLs (docs, tests and fixtures use placeholders such as `dev`, `qa`, `https:
   and exported from the command's `index.ts` as `args`; `parseArgs` calls `args.parse(argv)`.
   Never hand-roll argv parsing. Bad input fails with stable codes (`UNKNOWN_FLAG`,
   `MISSING_VALUE`, `INVALID_VALUE`, …).
-- **`--llm` envelope** (`packages/core/src/envelope.ts`, v`2.0`):
+- **`--llm` envelope** (`packages/core/src/testing/envelope-schema.ts`, v`2.0`):
   `{ schema: "<ns>.<cmd>", version, ok, command, data, error: { code, message, details? } | null, meta: { durationMs, env?, warnings? } }`.
   `ok` ⇔ exit code 0; `error.code` is UPPER_SNAKE. `apps/cli/tests/envelope-contract.test.ts`
   checks every command against the schema.

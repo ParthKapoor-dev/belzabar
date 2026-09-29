@@ -15,7 +15,7 @@ every `integrations/*` package and by `apps/cli`. Package exports: `.` → `src/
 | `src/http/` | `transport.ts` (`httpRequest`, timeouts, limiter), `auth.ts` (sessions/login), `api.ts` (`apiFetch`), `errors.ts`, `redact.ts`, `dns.ts` (IPv4 pinning) |
 | `src/runner.ts` | `runNamespacedCli` / `dispatchNamespaced`: global flags, routing, help, env + write guard, envelope, exit |
 | `src/command.ts` | `CommandModule`, `CommandContext`, `ok` / `fail` / `failWithData`, `CliError` |
-| `src/envelope.ts` | `EnvelopeSchema` — the `--llm` wire contract |
+| `src/envelope.ts` | `ENVELOPE_VERSION`; the `--llm` wire contract `EnvelopeSchema` is in `src/testing/envelope-schema.ts` |
 | `src/registry.ts` | `CommandRegistry` types, `registryNames` (sorted), `registryModules`, `registryHelpResolver` |
 | `src/cache.ts` | `Cache<T>` — env-scoped JSON file cache with hard/soft TTL; shared lifetimes `ENTITY_CACHE_STALE_MS` (5 min), `ENTITY_CACHE_TTL_MS` (1 h), `FINDER_INDEX_TTL_MS` (7 days) |
 | `src/swr.ts` | Stale-while-revalidate: refresh locks + detached `--force` re-run |
@@ -112,7 +112,7 @@ command that cannot run at all. Do not "simplify" this back into a throw.
 | `failWithData(code, message, data)` | Failure that still carries its result (validator found errors, preflight failed, lookup found nothing): `ok:false`, exit 1, `data` set; the human presenter still runs, then the error is printed |
 | `CliError` | Error class for user-facing failures (caught by runner, rendered cleanly) |
 
-### Envelope contract (`src/envelope.ts`)
+### Envelope contract (`src/testing/envelope-schema.ts`)
 `EnvelopeSchema` (zod, strict) is the `--llm` wire contract (a public contract — agents parse it):
 
 - `schema`: `<namespace>.<command>`, derived by the runner from routing (`ad.show`, `migrate.status`,

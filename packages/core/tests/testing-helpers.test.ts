@@ -6,7 +6,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import { apiFetch } from "../src/http/api";
 import { CliError, fail, ok, type CommandModule } from "../src/command";
 import { Config } from "../src/config";
-import { EnvelopeSchema } from "../src/envelope";
+import { EnvelopeSchema } from "../src/testing/envelope-schema";
 import { setOutputMode } from "../src/ui";
 import {
   fakeFetch,

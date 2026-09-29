@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync } from "fs";
 import { tmpdir } from "os";
 import { join, resolve } from "path";
-import { EnvelopeSchema } from "@belzabar/core";
+import { EnvelopeSchema } from "@belzabar/core/testing";
 import { BUILD, buildHelpFull, REGISTRIES } from "../bin/options";
 
 const CLI = resolve(import.meta.dir, "../bin/cli.ts");
