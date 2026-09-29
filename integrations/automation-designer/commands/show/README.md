@@ -1,28 +1,31 @@
 # Show Command
 
-Displays detailed metadata, inputs, and service steps for an Automation Method.
+Displays detailed metadata, inputs, and service steps for an Automation Method,
+or for a local method JSON file (nothing fetched).
 
 ## Usage
 
 ```bash
-belz ad show <UUID> [flags]
+belz ad show <UUID|URL|FILE> [flags]
 ```
 
-## Logic
+## Views
 
-- Fetches the method definition (uses cache by default).
-- Displays a summary table (Name, State, Version, etc.).
-- Can list defined Inputs (`--inputs`).
-- Can list the Service Chain (`--services`).
-- Can drill down into specific service details (`--service-detail <index>`).
-- Can include expanded service logic details (`--full`).
-- Can include raw payloads (`--raw`).
+- default: summary table + step list. The `--llm` payload is lean (Stage 7.1):
+  no request echo, empty/null fields pruned (`lib/compact.ts:pruneEmpty`),
+  SQL/code bodies only with `--sql` / `--code` / `--full` / `--service-detail`,
+  the wire body only with `--raw` (once, as `data.raw`).
+- `--compact`: `lib/method-view.ts:compactMethod` — `{view:"compact", name,
+  category, state, version, uuid, in, out, vars, steps: string[], blocks?}`;
+  one line per step. `--sql` / `--code` / `--full` add full bodies as `blocks`.
+- `--story`: `lib/method-view.ts:storyMarkdown` — the AD skill's pre-save
+  approval template, `{view:"story", name, uuid, markdown}`.
 
 ## Flags
 
-- `--inputs`: Show input arguments table.
-- `--services`: Show service chain table.
-- `--service-detail <n>`: Inspect a specific step (0-indexed).
-- `--full`: Include expanded service logic details.
-- `--raw`: Include raw payloads in output data.
-- `--force`: Bypass cache.
+- `--inputs`, `--outputs`, `--variables`, `--services`: sections.
+- `--service-detail <n>` / `--step <n>`: one step (1-based orderIndex).
+- `--code`, `--sql`: include decoded bodies.
+- `--full`: everything.
+- `--raw`: the wire body once.
+- `--force`: bypass cache.

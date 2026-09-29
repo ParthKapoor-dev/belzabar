@@ -1,10 +1,21 @@
+import { existsSync, readFileSync, statSync } from "fs";
 import { CliError, ok, Config, defineArgs, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import { resolveMethodRef } from "../../lib/ids";
-import { decodeBase64Strict } from "../../lib/base64";
+import { pruneEmpty } from "../../lib/compact";
+import { parseV1Method, parseV2Method } from "../../lib/parser/index";
+import {
+  compactMethod,
+  flattenStepInputs,
+  identityForStep,
+  renderCompact,
+  storyMarkdown,
+  type CompactMethodView,
+  type InputLabeler,
+} from "../../lib/method-view";
 import type {
   HydratedMethod,
   ParsedStep,
@@ -12,13 +23,17 @@ import type {
   SpelEchoStep,
   SqlStep,
   RedisStep,
-  ExistingServiceStep,
   UnknownStep,
   MethodField,
   MethodOutput,
   StepInput,
   ConditionRow,
 } from "../../lib/types/common";
+import type { V1RawMethodResponse } from "../../lib/types/v1-wire";
+import type { V2MethodResponse } from "../../lib/types/v2-wire";
+
+// Moved to lib/method-view.ts (shared with --compact / --story); re-exported for callers/tests.
+export { flattenStepInputs, identityForStep };
 
 interface ShowMethodFlags {
   code: boolean;
@@ -32,10 +47,15 @@ interface ShowMethodFlags {
   raw: boolean;
   step: number | null;
   open: boolean;
+  compact: boolean;
+  story: boolean;
 }
 
+/** `uuid` for a method on the env, or `file` for a local V1/V2 JSON body (e.g. a create spec before save). */
+type ShowTarget = { kind: "uuid"; uuid: string } | { kind: "file"; path: string };
+
 interface ShowMethodArgs {
-  uuid: string;
+  target: ShowTarget;
   flags: ShowMethodFlags;
   apiVersion: "v1" | "v2";
 }
@@ -43,14 +63,19 @@ interface ShowMethodArgs {
 interface StepSummaryRow {
   orderIndex: number;
   kind: ParsedStep["kind"];
-  badge: string;
-  description: string;
-  identity: string;
+  description?: string;
+  identity?: string;
 }
 
+/**
+ * Default `ad show` payload. Lean by design (7.1): no request echo, empty /
+ * null fields dropped (pruneEmpty), the wire body only with `--raw` and only
+ * once (`raw`), code / SQL bodies only when asked for (`--code`, `--sql`,
+ * `--full`).
+ */
 interface ShowMethodData {
-  request: { uuid: string; flags: ShowMethodFlags };
-  source: "cache" | "stale" | "fresh";
+  view?: undefined;
+  source: "cache" | "stale" | "fresh" | "file";
   sourceVersion: "v1" | "v2";
   summary: {
     name: string;
@@ -59,15 +84,15 @@ interface ShowMethodData {
     state: string;
     version: number | string;
     uuid: string;
-    referenceId: string | null;
-    updated: string;
-    summary: string;
+    referenceId?: string | null;
+    updated?: string;
+    summary?: string;
     inputCount: number;
     variableCount: number;
     outputCount: number;
     stepCount: number;
-    parseWarnings: string[];
-    editUrl: string;
+    parseWarnings?: string[];
+    editUrl?: string;
   };
   steps: StepSummaryRow[];
   inputs?: Array<{ code: string; type: string; required: boolean; description: string }>;
@@ -75,18 +100,30 @@ interface ShowMethodData {
   outputs?: Array<{ code: string; type: string; displayName: string; description: string }>;
   stepDetail?: StepDetailView | null;
   allStepDetails?: StepDetailView[];
-  raw?: { method: HydratedMethod };
+  /** The wire body as fetched (V1 or V2) — `--raw` only. */
+  raw?: unknown;
 }
+
+type CompactData = { view: "compact" } & CompactMethodView;
+interface StoryData {
+  view: "story";
+  name: string;
+  uuid: string;
+  markdown: string;
+}
+
+type ShowData = ShowMethodData | CompactData | StoryData;
 
 interface StepDetailView {
   orderIndex: number;
   kind: ParsedStep["kind"];
-  badge: string;
   description: string;
   identity: string;
   language?: string;
+  /** Decoded custom code — only with --code / --full (or --service-detail N). */
   source?: string | null;
   expression?: string | null;
+  /** Decoded SQL — only with --sql / --full (or --service-detail N). */
   sql?: string | null;
   sqlOperation?: string;
   resultShape?: string;
@@ -133,50 +170,10 @@ function badgeForKind(kind: ParsedStep["kind"]): string {
   }
 }
 
-/**
- * Always a string (F37): `<service>.<method>` when the service is resolved,
- * else `apiId:<id>` / `automationId:<id>`, else "".
- */
-export function identityForStep(step: ParsedStep): string {
-  if (step.serviceName && step.methodName) {
-    return `${step.serviceName}.${step.methodName}`;
-  }
-  if (step.automationApiId != null && String(step.automationApiId).trim()) return `apiId:${String(step.automationApiId).trim()}`;
-  if (step.automationId != null && String(step.automationId).trim()) return `automationId:${String(step.automationId).trim()}`;
-  return "";
-}
-
-/**
- * Step inputs as `path = value` rows (AD-40): nested mappings are flattened
- * to dotted label paths, empty slots skipped, BASE_64-flagged values decoded.
- * `labelFor` supplies V1 labels (from the service definition); V2 inputs
- * carry their own key/name.
- */
-export function flattenStepInputs(
-  inputs: StepInput[],
-  labelFor: (input: StepInput) => string | undefined = () => undefined,
-): Array<{ input: string; value: string }> {
-  const rows: Array<{ input: string; value: string }> = [];
-  const walk = (list: StepInput[] | undefined, prefix: string) => {
-    for (const i of list ?? []) {
-      const name = labelFor(i) ?? i.key ?? i.label ?? (i.automationUserInputId != null ? `#${i.automationUserInputId}` : "?");
-      const path = prefix ? `${prefix}.${name}` : name;
-      if (typeof i.value === "string" && i.value.length > 0) {
-        const decoded = i.encodingType === "BASE_64" ? decodeBase64Strict(i.value) : null;
-        rows.push({ input: path, value: decoded ?? i.value });
-      }
-      walk(i.mappings, path);
-    }
-  };
-  walk(inputs, "");
-  return rows;
-}
-
 function summariseSteps(method: HydratedMethod): StepSummaryRow[] {
   return method.parsedSteps.map(s => ({
     orderIndex: s.orderIndex,
     kind: s.kind,
-    badge: badgeForKind(s.kind),
     description: s.description ?? "",
     identity: identityForStep(s),
   }));
@@ -189,9 +186,21 @@ function indentSource(source: string, indent = "  "): string {
     .join("\n");
 }
 
+/** V1 input labels come from the (cached) service definition; V2 inputs carry their own names. */
+async function v1LabelerFor(method: HydratedMethod, step: ParsedStep): Promise<InputLabeler | undefined> {
+  if (method.sourceVersion !== "v1" || step.automationId == null || step.inputs.length === 0) return undefined;
+  const def = await ServiceHydrator.getDefinition(step.automationId).catch(() => null);
+  if (!def) return undefined;
+  return (i) =>
+    i.automationUserInputId != null
+      ? ServiceHydrator.findInputLabel(def, i.automationUserInputId)?.label || undefined
+      : undefined;
+}
+
 async function buildStepDetailView(
   method: HydratedMethod,
   step: ParsedStep,
+  bodies: { code: boolean; sql: boolean },
 ): Promise<StepDetailView> {
   const config: StepDetailView["config"] = [];
   if (step.runAsync) config.push({ key: "Async", value: "Yes" });
@@ -207,33 +216,20 @@ async function buildStepDetailView(
     value: step.forceExitFromFailure ? "Yes" : "No",
   });
 
-  // The parser already resolved the service (AD-02). V1 input labels come
-  // from the (cached) service definition; V2 inputs carry their own names.
-  const displayIdentity = identityForStep(step);
-  let labelFor: (i: StepInput) => string | undefined = () => undefined;
-  if (method.sourceVersion === "v1" && step.automationId != null && step.inputs.length > 0) {
-    const def = await ServiceHydrator.getDefinition(step.automationId).catch(() => null);
-    if (def) {
-      labelFor = (i) =>
-        i.automationUserInputId != null
-          ? ServiceHydrator.findInputLabel(def, i.automationUserInputId)?.label || undefined
-          : undefined;
-    }
-  }
+  const labelFor = (await v1LabelerFor(method, step)) ?? (() => undefined);
 
   const outputs: StepDetailView["outputs"] = (step.outputs ?? []).map(o => ({
     code: o.code,
     type: (o.type as string) ?? "",
     displayName: o.displayName ?? o.code,
-    link: o.internalVarRef ?? o.inputReference,
+    link: o.internalVarRef ?? (typeof o.inputReference === "string" ? o.inputReference : undefined),
   }));
 
   const base: StepDetailView = {
     orderIndex: step.orderIndex,
     kind: step.kind,
-    badge: badgeForKind(step.kind),
     description: step.description ?? "",
-    identity: displayIdentity,
+    identity: identityForStep(step),
     config,
     outputs,
   };
@@ -260,7 +256,7 @@ async function buildStepDetailView(
     case "CUSTOM_CODE": {
       const s = step as CustomCodeStep;
       base.language = s.language ?? "";
-      base.source = s.source;
+      if (bodies.code) base.source = s.source;
       return base;
     }
     case "SPEL_ECHO": {
@@ -270,7 +266,7 @@ async function buildStepDetailView(
     }
     case "SQL": {
       const s = step as SqlStep;
-      base.sql = s.sql;
+      if (bodies.sql) base.sql = s.sql;
       base.sqlOperation = s.operation;
       base.resultShape = s.resultShape;
       base.automationAuthId = s.automationAuthId;
@@ -290,7 +286,6 @@ async function buildStepDetailView(
       return base;
     }
     case "EXISTING_SERVICE": {
-      // Identity + outputs already populated above.
       return base;
     }
     case "UNKNOWN": {
@@ -327,6 +322,33 @@ function mapOutputFields(outputs: MethodOutput[]): NonNullable<ShowMethodData["o
   }));
 }
 
+/** A local V2 (`steps[]`) or V1 (`services[]` / `jsonDefinition`) method body. */
+export function parseMethodFile(path: string): HydratedMethod {
+  let body: unknown;
+  try {
+    body = JSON.parse(readFileSync(path, "utf8"));
+  } catch (e) {
+    throw new CliError(`Cannot read ${path} as JSON: ${(e as Error).message}`, { code: "INVALID_FILE" });
+  }
+  const o = body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
+  if (o && Array.isArray(o.steps)) return parseV2Method(o as unknown as V2MethodResponse);
+  if (o && (typeof o.jsonDefinition === "string" || Array.isArray(o.services))) {
+    const raw = typeof o.jsonDefinition === "string" ? o : { jsonDefinition: JSON.stringify(o) };
+    return parseV1Method(raw as unknown as V1RawMethodResponse);
+  }
+  throw new CliError(`${path} is not an AD method body (expected V2 \`steps[]\` or V1 \`services[]\`/\`jsonDefinition\`).`, {
+    code: "INVALID_FILE",
+  });
+}
+
+function looksLikeFile(input: string): boolean {
+  try {
+    return existsSync(input) && statSync(input).isFile();
+  } catch {
+    return false;
+  }
+}
+
 export const args = defineArgs({
   command: "belz ad show",
   positionals: [
@@ -346,15 +368,20 @@ export const args = defineArgs({
     // AD-14 / F6: `--service-detail N` is the documented spelling; `--step N` the original one.
     step: { type: "number", integer: true, min: 1, alias: ["--service-detail"] },
     open: { type: "boolean", alias: ["-o"] },
+    compact: { type: "boolean" },
+    story: { type: "boolean" },
   },
+  exclusive: [["compact", "story"], ["story", "raw"], ["compact", "raw"]],
 });
 
-const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
+const command: CommandModule<ShowMethodArgs, ShowData> = {
   schema: "ad.show",
   parseArgs(argv) {
     const { positionals, flags: f } = args.parse(argv);
     const common = resolveAdCommon(f, "fetch", "show");
-    const uuid = resolveMethodRef(positionals.uuid);
+    const target: ShowTarget = looksLikeFile(positionals.uuid)
+      ? { kind: "file", path: positionals.uuid }
+      : { kind: "uuid", uuid: resolveMethodRef(positionals.uuid) };
     const flags: ShowMethodFlags = {
       code: f.code,
       sql: f.sql,
@@ -367,41 +394,43 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
       raw: f.raw,
       step: f.step ?? null,
       open: f.open,
+      compact: f.compact,
+      story: f.story,
     };
-    return { uuid, flags, apiVersion: common.apiVersion.version };
+    return { target, flags, apiVersion: common.apiVersion.version };
   },
-  async execute({ uuid, flags, apiVersion }, context) {
-    const cached = await CacheManager.loadSwr(uuid);
-    let method = cached?.data ?? null;
-    let source: "cache" | "stale" | "fresh" = cached?.stale ? "stale" : "cache";
+  async execute({ target, flags, apiVersion }, context) {
+    let method: HydratedMethod;
+    let source: ShowMethodData["source"];
+    if (target.kind === "file") {
+      if (flags.open) throw new CliError("--open needs a method uuid, not a file.", { code: "INVALID_ARGUMENT" });
+      method = parseMethodFile(target.path);
+      source = "file";
+    } else {
+      const uuid = target.uuid;
+      const cached = await CacheManager.loadSwr(uuid);
+      let m = cached?.data ?? null;
+      source = cached?.stale ? "stale" : "cache";
 
-    // Cache is V1-shaped; if --v2 or force is set, refetch.
-    if (!method || flags.force || apiVersion === "v2" || method.sourceVersion !== apiVersion) {
-      source = "fresh";
-      method = await adApi.fetchMethod(uuid, apiVersion);
-      if (apiVersion === "v1") await CacheManager.save(uuid, method);
-    }
-
-    if (source === "stale") {
-      // Serve stale data now; refresh the cache in a detached background process.
-      context.warn("Using stale cached definition — refreshing in background.");
-      triggerDetachedRefresh(CacheManager.dir, uuid);
-    } else if (source === "cache") {
-      context.warn("Using cached method definition. Use --force for refresh.");
-    }
-
-    const includeInputs = flags.inputs || flags.full;
-    const includeServices = flags.services || flags.full;
-    const includeVariables = flags.variables || flags.full;
-    const includeOutputs = flags.outputs || flags.full;
-
-    let stepDetail: StepDetailView | null = null;
-    if (flags.step !== null) {
-      const match = method.parsedSteps.find(s => s.orderIndex === flags.step);
-      if (!match) {
-        throw new CliError(`Step with index ${flags.step} not found.`, { code: "STEP_NOT_FOUND" });
+      // Cache is V1-shaped; if --v2 or force is set, refetch.
+      if (!m || flags.force || apiVersion === "v2" || m.sourceVersion !== apiVersion) {
+        source = "fresh";
+        m = await adApi.fetchMethod(uuid, apiVersion);
+        if (apiVersion === "v1") await CacheManager.save(uuid, m);
       }
-      stepDetail = await buildStepDetailView(method, match);
+      method = m;
+
+      if (source === "stale") {
+        // Serve stale data now; refresh the cache in a detached background process.
+        context.warn("Using stale cached definition — refreshing in background.");
+        triggerDetachedRefresh(CacheManager.dir, uuid);
+      } else if (source === "cache") {
+        context.warn("Using cached method definition. Use --force for refresh.");
+      }
+    }
+
+    if (flags.step !== null && !method.parsedSteps.some(s => s.orderIndex === flags.step)) {
+      throw new CliError(`Step with index ${flags.step} not found.`, { code: "STEP_NOT_FOUND" });
     }
 
     // The AD UI expects a DRAFT uuid in the URL; a published row's
@@ -409,10 +438,56 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
     const categoryName = method.category?.name ?? "Uncategorized";
     const draftUuid =
       method.state === "PUBLISHED" && method.referenceId ? method.referenceId : method.uuid;
-    const editUrl = `${Config.cleanBaseUrl}/automation-designer/${encodeURIComponent(categoryName)}/${draftUuid}`;
+    const editUrl = target.kind === "uuid"
+      ? `${Config.cleanBaseUrl}/automation-designer/${encodeURIComponent(categoryName)}/${draftUuid}`
+      : undefined;
+
+    if (flags.open && editUrl) {
+      try {
+        await openUrlInBrowser(editUrl);
+      } catch (err) {
+        context.warn(`--open failed: ${(err as Error).message}. URL: ${editUrl}`);
+      }
+    }
+
+    if (flags.story) {
+      return ok<ShowData>({ view: "story", name: method.name, uuid: method.uuid, markdown: storyMarkdown(method) }, { sourceVersion: method.sourceVersion });
+    }
+
+    if (flags.compact) {
+      const labels = new Map<number, InputLabeler>();
+      for (const s of method.parsedSteps) {
+        const l = await v1LabelerFor(method, s);
+        if (l) labels.set(s.orderIndex, l);
+      }
+      const view = compactMethod(method, {
+        labels,
+        step: flags.step,
+        bodyChars: flags.full ? 0 : 160,
+        valueChars: flags.full ? 0 : 60,
+        fullBodies: {
+          sql: flags.sql || flags.full || flags.step !== null,
+          code: flags.code || flags.full || flags.step !== null,
+          spel: flags.full || flags.step !== null,
+        },
+      });
+      return ok<ShowData>(pruneEmpty<CompactData>({ view: "compact", ...view }), { sourceVersion: method.sourceVersion });
+    }
+
+    const includeInputs = flags.inputs || flags.full;
+    const includeServices = flags.services || flags.full;
+    const includeVariables = flags.variables || flags.full;
+    const includeOutputs = flags.outputs || flags.full;
+    const bodies = { code: flags.code || flags.full, sql: flags.sql || flags.full };
+
+    let stepDetail: StepDetailView | null = null;
+    if (flags.step !== null) {
+      const match = method.parsedSteps.find(s => s.orderIndex === flags.step)!;
+      // A single step's detail always carries its body (the point of asking for it).
+      stepDetail = await buildStepDetailView(method, match, { code: true, sql: true });
+    }
 
     const data: ShowMethodData = {
-      request: { uuid, flags },
       source,
       sourceVersion: method.sourceVersion,
       summary: {
@@ -423,7 +498,7 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
         version: method.version,
         uuid: method.uuid,
         referenceId: method.referenceId,
-        updated: `${formatDate(method.updatedOn)} by ${method.updatedBy ?? "unknown"}`,
+        updated: method.updatedOn ? `${formatDate(method.updatedOn)} by ${method.updatedBy ?? "unknown"}` : undefined,
         summary: method.summary ?? "",
         inputCount: method.inputs.length,
         variableCount: method.variables.length,
@@ -440,56 +515,56 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
     if (includeVariables) data.variables = mapVariableFields(method.variables);
     if (includeOutputs) data.outputs = mapOutputFields(method.outputs);
 
-    if (includeServices || flags.full || flags.code || flags.sql) {
+    if (includeServices || flags.code || flags.sql) {
       const details: StepDetailView[] = [];
       for (const step of method.parsedSteps) {
-        details.push(await buildStepDetailView(method, step));
+        details.push(await buildStepDetailView(method, step, bodies));
       }
       data.allStepDetails = details;
     }
 
-    if (flags.raw) data.raw = { method };
-
-    if (flags.open) {
-      try {
-        await openUrlInBrowser(editUrl);
-      } catch (err) {
-        context.warn(`--open failed: ${(err as Error).message}. URL: ${editUrl}`);
-      }
-    }
-
-    return ok(data, { sourceVersion: method.sourceVersion });
+    const lean = pruneEmpty(data);
+    // Kept verbatim (never pruned): the wire body, emitted once.
+    if (flags.raw) lean.raw = method.raw;
+    return ok<ShowData>(lean, { sourceVersion: method.sourceVersion });
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
-    const data = envelope.data as ShowMethodData;
-    const flags = data.request.flags;
+    const payload = envelope.data as ShowData;
+    if (payload.view === "story") {
+      ui.text(payload.markdown);
+      return;
+    }
+    if (payload.view === "compact") {
+      ui.text(renderCompact(payload));
+      return;
+    }
+    const data = payload;
+    const summary = data.summary;
 
-    ui.table(
-      ["Property", "Value"],
-      [
-        ["Method Name", data.summary.name],
-        ["Alias", data.summary.alias ?? ""],
-        ["Category", data.summary.category],
-        ["State", data.summary.state],
-        ["Version", data.summary.version],
-        [data.summary.state === "PUBLISHED" ? "Published ID" : "Draft ID", data.summary.uuid],
-        [data.summary.state === "PUBLISHED" ? "Draft ID" : "Published ID", data.summary.referenceId ?? ""],
-        ["Updated", data.summary.updated],
-        ["Summary", data.summary.summary],
-        ["Inputs", data.summary.inputCount],
-        ["Variables", data.summary.variableCount],
-        ["Outputs", data.summary.outputCount],
-        ["Steps", data.summary.stepCount],
-        ["API Source", data.sourceVersion.toUpperCase()],
-        ["Cache", data.source === "stale" ? "stale (refreshing…)" : data.source],
-        ["Edit URL", data.summary.editUrl],
-      ],
-    );
+    const rows: unknown[][] = [
+      ["Method Name", summary.name],
+      ["Alias", summary.alias ?? ""],
+      ["Category", summary.category],
+      ["State", summary.state],
+      ["Version", summary.version],
+      [summary.state === "PUBLISHED" ? "Published ID" : "Draft ID", summary.uuid],
+      [summary.state === "PUBLISHED" ? "Draft ID" : "Published ID", summary.referenceId ?? ""],
+      ["Updated", summary.updated ?? "N/A"],
+      ["Summary", summary.summary ?? ""],
+      ["Inputs", summary.inputCount],
+      ["Variables", summary.variableCount],
+      ["Outputs", summary.outputCount],
+      ["Steps", summary.stepCount],
+      ["API Source", data.sourceVersion.toUpperCase()],
+      ["Cache", data.source === "stale" ? "stale (refreshing…)" : data.source],
+    ];
+    if (summary.editUrl) rows.push(["Edit URL", summary.editUrl]);
+    ui.table(["Property", "Value"], rows);
 
-    if (data.summary.parseWarnings.length > 0) {
+    if (summary.parseWarnings?.length) {
       ui.section("Parse Warnings");
-      for (const w of data.summary.parseWarnings) ui.warn(w);
+      for (const w of summary.parseWarnings) ui.warn(w);
     }
 
     // Compact step listing with kind badges.
@@ -499,117 +574,109 @@ const command: CommandModule<ShowMethodArgs, ShowMethodData> = {
     } else {
       ui.table(
         ["#", "Kind", "Description", "Identity"],
-        data.steps.map(s => [s.orderIndex, `[${s.badge}]`, s.description, s.identity]),
+        data.steps.map(s => [s.orderIndex, `[${badgeForKind(s.kind)}]`, s.description ?? "", s.identity ?? ""]),
       );
     }
 
+    // Empty lists are pruned from the payload: a missing section = none / not asked for.
     if (data.inputs) {
       ui.section("Inputs");
-      if (data.inputs.length === 0) ui.text("(none)");
-      else ui.table(
+      ui.table(
         ["Field", "Type", "Required", "Description"],
-        data.inputs.map(i => [i.code, i.type, i.required ? "Yes" : "No", i.description]),
+        data.inputs.map(i => [i.code, i.type ?? "", i.required ? "Yes" : "No", i.description ?? ""]),
       );
     }
 
     if (data.variables) {
       ui.section("Variables");
-      if (data.variables.length === 0) ui.text("(none)");
-      else ui.table(
+      ui.table(
         ["Field", "Type", "Description"],
-        data.variables.map(v => [v.code, v.type, v.description]),
+        data.variables.map(v => [v.code, v.type ?? "", v.description ?? ""]),
       );
     }
 
     if (data.outputs) {
       ui.section("Outputs");
-      if (data.outputs.length === 0) ui.text("(none)");
-      else ui.table(
+      ui.table(
         ["Code", "Display Name", "Type", "Description"],
-        data.outputs.map(o => [o.code, o.displayName, o.type, o.description]),
+        data.outputs.map(o => [o.code, o.displayName ?? "", o.type ?? "", o.description ?? ""]),
       );
     }
 
-    if (data.allStepDetails) {
-      for (const detail of data.allStepDetails) {
-        ui.section(`Step ${detail.orderIndex}: [${detail.badge}] ${detail.description || detail.identity}`);
-        if (detail.identity) ui.kv("Identity", detail.identity);
-        if (detail.reason) ui.warn(detail.reason);
+    const presentDetail = (detail: StepDetailView, title: string) => {
+      ui.section(title);
+      if (detail.identity) ui.kv("Identity", detail.identity);
+      if (detail.reason) ui.warn(detail.reason);
 
-        if (detail.config.length > 0) {
-          ui.table(["Property", "Value"], detail.config.map(c => [c.key, c.value]));
-        }
-        if (detail.condition) {
-          ui.kv("Condition", `${detail.condition.mode ?? "advance"}: ${detail.condition.expression ?? ""}`);
-          for (const r of detail.condition.rows ?? []) {
-            ui.text(`  ${r.groupOp ? `${r.groupOp} ` : ""}${r.field} ${r.operator} ${r.value ?? "null"}`);
-          }
-        }
-        if (detail.inputs) {
-          ui.table(["Input", "Value"], detail.inputs.map(i => [i.input, i.value]));
-        }
-        if (detail.loop) {
-          ui.kv("Loop Source", detail.loop.source ?? "(none)");
-          ui.kv("Parallel", detail.loop.parallel ? "Yes" : "No");
-        }
-
-        if (detail.kind === "CUSTOM_CODE" && (flags.code || flags.full)) {
-          ui.kv("Language", detail.language ?? "");
-          ui.section("Source");
-          ui.text(indentSource(detail.source ?? ""));
-        } else if (detail.kind === "CUSTOM_CODE") {
-          ui.kv("Language", detail.language ?? "");
-          ui.text("(source hidden — use --code or --full)");
-        }
-
-        if (detail.kind === "SPEL_ECHO") {
-          ui.kv("Expression", detail.expression ?? "");
-        }
-
-        if (detail.kind === "SQL") {
-          ui.kv("Operation", detail.sqlOperation ?? "");
-          ui.kv("Result Shape", detail.resultShape ?? "");
-          if (detail.automationAuthId != null) ui.kv("DB Auth ID", String(detail.automationAuthId));
-          if (flags.sql || flags.full) {
-            ui.section("SQL");
-            ui.text(indentSource(detail.sql ?? ""));
-          } else {
-            ui.text("(SQL hidden — use --sql or --full)");
-          }
-        }
-
-        if (detail.redis) {
-          if (detail.redis.key != null) ui.kv("Key", detail.redis.key);
-          if (detail.redis.value != null) ui.kv("Value", detail.redis.value);
-          if (detail.redis.ttlSeconds != null) ui.kv("TTL", detail.redis.ttlSeconds);
-          if (detail.redis.store != null) ui.kv("Store", detail.redis.store);
-          if (detail.redis.overwrite != null) ui.kv("Overwrite", detail.redis.overwrite);
-        }
-
-        if (detail.outputs.length > 0) {
-          ui.table(
-            ["Output", "Type", "Display", "Link"],
-            detail.outputs.map(o => [o.code, o.type, o.displayName, o.link ?? ""]),
-          );
+      if (detail.config?.length) {
+        ui.table(["Property", "Value"], detail.config.map(c => [c.key, c.value]));
+      }
+      if (detail.condition) {
+        ui.kv("Condition", `${detail.condition.mode ?? "advance"}: ${detail.condition.expression ?? ""}`);
+        for (const r of detail.condition.rows ?? []) {
+          ui.text(`  ${r.groupOp ? `${r.groupOp} ` : ""}${r.field} ${r.operator} ${r.value ?? "null"}`);
         }
       }
+      if (detail.inputs) {
+        ui.table(["Input", "Value"], detail.inputs.map(i => [i.input, i.value]));
+      }
+      if (detail.loop) {
+        ui.kv("Loop Source", detail.loop.source ?? "(none)");
+        ui.kv("Parallel", detail.loop.parallel ? "Yes" : "No");
+      }
+
+      if (detail.kind === "CUSTOM_CODE") {
+        ui.kv("Language", detail.language ?? "");
+        if (detail.source != null) {
+          ui.section("Source");
+          ui.text(indentSource(detail.source));
+        } else {
+          ui.text("(source hidden — use --code or --full)");
+        }
+      }
+
+      if (detail.kind === "SPEL_ECHO") {
+        ui.kv("Expression", detail.expression ?? "");
+      }
+
+      if (detail.kind === "SQL") {
+        ui.kv("Operation", detail.sqlOperation ?? "");
+        ui.kv("Result Shape", detail.resultShape ?? "");
+        if (detail.automationAuthId != null) ui.kv("DB Auth ID", String(detail.automationAuthId));
+        if (detail.sql != null) {
+          ui.section("SQL");
+          ui.text(indentSource(detail.sql));
+        } else {
+          ui.text("(SQL hidden — use --sql or --full)");
+        }
+      }
+
+      if (detail.redis) {
+        if (detail.redis.key != null) ui.kv("Key", detail.redis.key);
+        if (detail.redis.value != null) ui.kv("Value", detail.redis.value);
+        if (detail.redis.ttlSeconds != null) ui.kv("TTL", detail.redis.ttlSeconds);
+        if (detail.redis.store != null) ui.kv("Store", detail.redis.store);
+        if (detail.redis.overwrite != null) ui.kv("Overwrite", detail.redis.overwrite);
+      }
+
+      if (detail.outputs?.length) {
+        ui.table(
+          ["Output", "Type", "Display", "Link"],
+          detail.outputs.map(o => [o.code, o.type ?? "", o.displayName ?? "", o.link ?? ""]),
+        );
+      }
+    };
+
+    for (const detail of data.allStepDetails ?? []) {
+      presentDetail(detail, `Step ${detail.orderIndex}: [${badgeForKind(detail.kind)}] ${detail.description || detail.identity || ""}`);
     }
 
     if (data.stepDetail) {
       const d = data.stepDetail;
-      ui.section(`Step Detail [Index ${d.orderIndex}] [${d.badge}]`);
-      ui.kv("Description", d.description);
-      ui.kv("Identity", d.identity);
-      if (d.kind === "CUSTOM_CODE") {
-        ui.kv("Language", d.language ?? "");
-        if (flags.code || flags.full) ui.text(indentSource(d.source ?? ""));
-      }
-      if (d.kind === "SQL" && (flags.sql || flags.full)) {
-        ui.text(indentSource(d.sql ?? ""));
-      }
+      presentDetail(d, `Step Detail [Index ${d.orderIndex}] [${badgeForKind(d.kind)}] ${d.description ?? ""}`);
     }
 
-    if (data.raw) {
+    if (data.raw !== undefined) {
       ui.section("Raw Data");
       ui.object(data.raw);
     }

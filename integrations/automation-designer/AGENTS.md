@@ -156,6 +156,13 @@ rationale.
     (`/chain/category`, `/automation/services`), `not-found/`.
     `tests/fixtures/v1/step-*.json` are hand-written single-step fixtures
     (numeric `automationId`, like the wire). Prefer real fixtures for new tests.
+15a. `lib/compact.ts` — `pruneEmpty`, `abbreviate`/`oneLine`, and the
+    `--fields a,b|all` convention (`parseFieldList` + `projectRow`, same as
+    `pd show --fields`) used by the trimmed read commands (Stage 7.9).
+    `lib/method-view.ts` — `compactMethod`/`compactStepLine`/`renderCompact`
+    (`show --compact`), `storyMarkdown` (`show --story`), `stepFacts` (loop /
+    exit read from the step wire: V2 `repeatStepExecution.{type,value,counter}`,
+    `exitCondition`), `flattenStepInputs`/`identityForStep` (moved from show).
 16. `docs/api-notes.md` — belz-owned cheatsheet (read this before touching
     lib/api/*, lib/parser/*, or lib/draft-guard.ts)
 17. `lib/validate/` — the pre-save validator (Stage 5, A4) over the **V2 wire
@@ -197,10 +204,17 @@ fails if a folder is missing from the registry.
 
 1. `fetch` — raw V1 or V2 fetch + cache
 2. `find` — search and pick methods (cached index)
-3. `show` — rich display with `[CODE]` / `[SPEL]` / `[SQL]` / `[REDIS-*]`
+3. `show <uuid|url|file>` — rich display with `[CODE]` / `[SPEL]` / `[SQL]` / `[REDIS-*]`
    badges, `--code`, `--sql`, `--outputs`, `--variables`, `--service-detail <N>` (alias `--step <N>`, orderIndex) flags.
-   Step `identity` is always a string (`service.method`, `apiId:N`, `automationId:N`);
-   step details include input values (`inputs[]`) and basic condition rows
+   Step `identity` is a string when present (`service.method`, `apiId:N`, `automationId:N`);
+   step details include input values (`inputs[]`) and basic condition rows.
+   Stage 7.1: the `--llm` payload is lean (no `request` echo, no `badge`,
+   empty/null fields pruned, SQL/code bodies only with `--sql`/`--code`/`--full`/
+   `--service-detail`, `--raw` = the wire body once as `data.raw`).
+   `--compact` = `{view:"compact", …, steps: string[], blocks?}` (one line per
+   step, `lib/method-view.ts`), `--story` = `{view:"story", markdown}` (the AD
+   skill's pre-save approval template). A local V2/V1 JSON file is shown
+   without a fetch (`source:"file"`).
 4. `show-code` — dump decoded custom-code source for all / a single step
 5. `outputs` — inputs/variables/outputs contract only (agent-friendly)
 6. `state` — draft/published linkage, `versions`, and `inSync` = logic

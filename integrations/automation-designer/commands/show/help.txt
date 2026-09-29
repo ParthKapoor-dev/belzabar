@@ -1,15 +1,30 @@
-Usage: belz ad show <UUID> [flags]
+Usage: belz ad show <UUID|URL|FILE> [flags]
 
 Display the structure and metadata of an Automation Designer method.
 The method definition is fetched and cached automatically. Cached data older
 than 5 minutes is served instantly while a background process refreshes it
 (stale-while-revalidate); use --force to fetch fresh synchronously.
+A local V2 (steps[]) or V1 method JSON file is shown without any fetch — use it
+with --story to present a method for approval before `ad create` / `ad save`.
+
+The --llm payload is lean: no request echo, empty/null fields dropped, SQL and
+code bodies only when asked for (--sql / --code / --full / --service-detail),
+and the wire body only with --raw (emitted once, as `raw`).
 
 Arguments:
-  <UUID|URL>              The UUID of the method, or a full AD URL
-                          (e.g. https://nsm-dev.nc.verifi.dev/automation-designer/Category/426f97...).
+  <UUID|URL|FILE>         The UUID of the method, a full AD URL
+                          (e.g. https://nsm-dev.nc.verifi.dev/automation-designer/Category/426f97...),
+                          or the path of a local method JSON file.
 
 Flags:
+  --compact               One line per step: index, kind/service, description,
+                          entry condition, loop, decoded SQL/code/SpEL (cut at
+                          160 chars), key inputs, outputs -> variables, exit
+                          rules. Add --sql / --code for full bodies (`blocks`),
+                          --full for no abbreviation, --step <N> for one step.
+  --story                 The plain-English approval template (What it does,
+                          Approach, Service, Inputs / Outputs / Steps tables,
+                          decoded custom code and SQL) as Markdown.
   --inputs                Show a table of input arguments.
   --outputs               Show the method's outputs.
   --variables             Show the method's variables.
@@ -20,7 +35,7 @@ Flags:
   --sql                   Include SQL text in step detail.
   --full                  Include expanded per-service logic details.
   --force                 Bypass cache and fetch a fresh method definition.
-  --raw                   Include raw payloads in output.
+  --raw                   Include the wire body (V1 or V2, as fetched) once.
   --open, -o              Open the editable draft URL in your default browser
                           (uses the draft uuid even when the input is the
                           published id).
@@ -33,10 +48,10 @@ Global Flags:
   --llm                   Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad show 1234-5678 --inputs
+  belz ad show 1234-5678 --compact --llm
+  belz ad show 1234-5678 --compact --sql
+  belz ad show ./new-method.json --story
   belz ad show 1234-5678 --services
   belz ad show 1234-5678 --service-detail 2
-  belz ad show 1234-5678 --service-detail 2 --raw --llm
-  belz ad show 1234-5678 --force
+  belz ad show 1234-5678 --raw --llm
   belz ad show 1234-5678 --open
-  belz ad show 1234-5678 -o

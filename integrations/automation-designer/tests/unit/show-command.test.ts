@@ -73,7 +73,7 @@ describe("ad show command", () => {
     for (const input of [`https://t.test/automation-designer/Schools/${UUID}`, `${UUID.toUpperCase()}    `]) {
       const r = await runCommand(showCommand, [input, "--v2"], { env: "t-dev" });
       expect(r.envelope?.ok).toBe(true);
-      expect((r.envelope?.data as any).request.uuid).toBe(UUID);
+      expect((r.envelope?.data as any).summary.uuid).toBe(UUID);
     }
     expect(fetch.mock.calls.map((c) => c[0])).toEqual([UUID, UUID]);
   });
@@ -92,7 +92,8 @@ describe("ad show command", () => {
     const r = await runCommand(showCommand, [UUID, "--v2", "--sql"], { env: "t-dev" });
     const data = r.envelope?.data as any;
     expect(data.summary.editUrl.endsWith(`/${UUID}`)).toBe(true);
-    for (const s of data.steps) expect(typeof s.identity).toBe("string");
+    // F37: identity is a string when present (empty ones are pruned from the lean payload, 7.1).
+    for (const s of data.steps) expect(s.identity === undefined || typeof s.identity === "string").toBe(true);
     const first = data.allStepDetails[0];
     expect(first.kind).toBe("SQL");
     expect(first.identity).toBe("db_service.data.read");

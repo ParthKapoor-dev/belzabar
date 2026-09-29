@@ -1,10 +1,16 @@
-belz ad show <uuid|url>  :->  Display structure and metadata of a method (auto-fetched, 5-min cache)
+belz ad show <uuid|url>  :->  Display structure and metadata of a method (auto-fetched, 5-min cache; lean --llm payload, empty fields dropped)
+belz ad show <uuid|url> --compact  :->  One line per step: kind/service, condition, loop, decoded SQL/code (abbreviated), inputs, outputs -> variables
+belz ad show <uuid|url> --compact --sql --code  :->  Compact view plus the full decoded SQL / code bodies (`blocks`)
+belz ad show <uuid|url> --compact --step <N>  :->  Compact line and full body of one step
+belz ad show <uuid|url> --story  :->  Plain-English approval template (inputs, outputs, steps tables, decoded code) as Markdown
+belz ad show <file.json> --story  :->  Same for a local V2/V1 method body before create/save (nothing fetched)
 belz ad show <uuid|url> --inputs  :->  Show input argument definitions
 belz ad show <uuid|url> --services  :->  Show service step names and IDs
-belz ad show <uuid|url> --service-detail <N>  :->  Show detailed info for the step with orderIndex N (alias --step <N>)
+belz ad show <uuid|url> --service-detail <N>  :->  Show detailed info (incl. SQL/code body) for the step with orderIndex N (alias --step <N>)
 belz ad show <uuid|url> --outputs --variables  :->  Show outputs and variables
+belz ad show <uuid|url> --sql --code  :->  Include decoded SQL / custom-code bodies in the step details
 belz ad show <uuid|url> --open  :->  Open the editable draft in the browser (-o)
-belz ad show <uuid|url> --full  :->  Show all details including per-service logic and mappings
+belz ad show <uuid|url> --full  :->  Show all details including per-service logic, mappings and bodies
 belz ad show <uuid|url> --force  :->  Bypass cache and fetch a fresh method definition
-belz ad show <uuid|url> --raw  :->  Include raw payloads in output
+belz ad show <uuid|url> --raw  :->  Include the wire body once (`raw`)
 belz ad show <uuid|url> --v2  :->  Fetch through the V2 API
