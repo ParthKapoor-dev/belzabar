@@ -125,7 +125,7 @@ belz pd publish <pageId> --env <env>
 
 ```bash
 belz tw task <id>        belz tw comments <id>     belz tw search "<query>"
-belz migrate profiles    belz migrate run --profile <profile> --module AD_Method --ids "<uuid>"
+belz migrate profiles    belz migrate run --profile <profile> --module AD_Method --ids "<uuid>" --yes
 belz migrate status <build>   belz migrate logs <build>
 belz release matrix …    belz release freeze …   # see `belz release <cmd> --help`
 ```

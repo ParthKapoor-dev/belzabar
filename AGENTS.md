@@ -172,7 +172,8 @@ Guards: `apps/cli/tests/registry.test.ts` (folders ⇔ registry), `apps/cli/test
   anything that looks like a secret or PII — re-run
   `bun scripts/fixtures/capture.ts resanitize <dir>` if it trips.
 - **Live suites** are opt-in: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live` (read-only), plus
-  `BELZ_LIVE_WRITE=1` for write suites (AD category Test-Parth only, `belz_tst_` names). Any other
+  `BELZ_LIVE_WRITE=1` for write suites such as `apps/cli/tests/live/ad-lifecycle.live-write.test.ts`
+  (AD category Test-Parth only, `belz_tst_` names, soft-deleted afterwards). Any other
   `BELZ_LIVE` value is refused. CI never sets it.
 
 ---

@@ -122,7 +122,7 @@ Run from the repo root: `bun run check` = typecheck + `bun run docs:check` + all
 | `entry.test.ts` | `--version`, registry load-failure report |
 | `cache-command.test.ts`, `cache-prune-local.test.ts` | `belz cache` invalidate body/guards, prune-local |
 | `setup-config-exec.test.ts`, `update-paths.test.ts` | setup merge + password encoding, config token refresh; update script paths |
-| `live/` | opt-in: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live` (read-only); add `BELZ_LIVE_WRITE=1` for the AD lifecycle write suite (Test-Parth, `belz_tst_` names, soft-deleted in `afterAll`) |
+| `live/` | opt-in: `BELZ_LIVE=sems-dev bun test apps/cli/tests/live` (read-only); add `BELZ_LIVE_WRITE=1` for the AD lifecycle write suite (Test-Parth, `belz_tst_` names, soft-deleted in `afterAll` by `live/support/soft-delete.ts`, published copies included) |
 
 ---
 

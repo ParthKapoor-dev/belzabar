@@ -26,7 +26,7 @@ component name (component first, then page; several matches → `PD_NAME_AMBIGUO
 | `belz pd page-deps <input>` | page-dependencies summary; `--status PUBLISHED\|DRAFT`, `--full` (raw graph) |
 | `belz pd translations <input>` | Release check of phrase keys; `--status`, `--expect-draft <id>`, `--force` |
 | `belz pd diff <input> --from <envA> --to <envB>` | Cross-env structural diff (flips `Config.activeEnv` per side, then restores it) |
-| `belz pd history <list\|show\|diff\|restore> <pageId>` | Server version history (lives on the PUBLISHED id); `restore` writes |
+| `belz pd history <list\|show\|diff\|restore> <pageId>` | Server version history (lives on the PUBLISHED id: `list` on a draft with no versions adds `publishedId` + `hint` and a warning); `restore` writes |
 | `belz pd preflight <pageId> [--overlay <file>]` | Dry run of `save`: parse + validate + plan; never writes |
 | `belz pd save <pageId> --overlay <file> \| --config <file>` | Validated, locked save; `--dry-run` |
 | `belz pd publish <pageId>` | Draft-guard + validate + locked publish; `--landing`, `--host <id>` (repeatable) |

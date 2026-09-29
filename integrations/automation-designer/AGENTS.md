@@ -68,13 +68,13 @@ needs `--yes` instead.
 
 | Command | What it does |
 |---|---|
-| `find [list\|pick\|<query>]` | Cached method index: category counts, fzf picker, ranked search; `--describe`, `--category`, `--fields`, `--refresh` |
-| `fetch <uuid\|url>` | Fetch + cache + hydrate (`--v2`, `--raw`) |
+| `find [list\|pick\|<query>]` | Cached method index: category counts, fzf picker, ranked search (`totalMatches` counts every match, before `--limit`); `--describe`, `--category`, `--fields`, `--refresh` |
+| `fetch <uuid\|url>` | Fetch + cache + hydrate (`--v2`; `--raw` adds the wire body as `data.raw`) |
 | `show <uuid\|url\|file>` | Method view. Lean `--llm` payload; `--compact` (one line per step), `--story` (approval Markdown), `--sql`/`--code`/`--full`, `--service-detail N` (alias `--step`), `--raw`, `--open`. A local V1/V2 JSON file is shown without a fetch |
 | `show-code`, `outputs`, `state` | Decoded custom code; the I/O contract only; draft/published linkage + `inSync` |
 | `categories`, `services`, `child-info` | Categories; the service catalog (`--search`); a callee's contract (`--shape`) |
 | `callers <uuid>` | AD methods (and PD pages/components with `--pd`) that call the method |
-| `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases; the latest suite report |
+| `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases (`METHOD_NOT_FOUND` for an unknown/soft-deleted uuid, since the suite route answers it like "no suite"); the latest suite report |
 | `history list\|show\|diff`, `diff`, `trace` | Version history, history or cross-env semantic diff, where a method is on every env |
 | `validate <uuid\|file>` | Validator L1–L3 (`--online` L4, `--dry-run-compile` = **W**, `--strict`) |
 | `lint <uuid\|file>` | Validator + advisory review rules (`--online`, `--docs`, `--strict`) |
@@ -89,7 +89,7 @@ needs `--yes` instead.
 | `history restore <draftUuid> --version N` | **W** draft-guarded restore |
 | `test <uuid>` | **W** (really runs the chain). `--inputs`, `--case`, `--expect`, `--compare-published` |
 | `test-case <action>` | `list`, `export` and `sync` (dry run) are reads. `create`, `update`, `delete`, `bulk`, `run-suite`, `delete-suite` and `sync --apply` are **W** |
-| `run <publishedId>`, `run-suites`, `save-suite` | **W** live execute (`--stream`); **W** run local `suites/*.spec.json`; save a local suite |
+| `run <publishedId>`, `run-suites`, `save-suite` | **W** live execute of the uuid's own saved body — a draft uuid runs the draft; `data.publishedUuid` names the published copy (`--stream`); **W** run local `suites/*.spec.json`; save a local suite |
 
 `desc.txt` for each command lists every invocation variant. `belz --help-full` prints
 all of them together.

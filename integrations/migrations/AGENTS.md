@@ -16,7 +16,7 @@ REST client lives in `integrations/jenkins` (`@belzabar/jenkins`); `lib/index.ts
 `migrate run` flags (see `commands/run/help.txt`): `--module`/`--module-name`, `--module-custom`,
 `--client`, `--profile`, `--source-env`/`--target-env` (derive the profile from an NCDNS env pair),
 `--ids`/`--ids-file` (exclusive), `--migration-id`, `--async Y|N`, `--migrate-dependents Y|N`,
-`--devops-tag`, `--out <dir>`, `--dry-run`, `--no-auto-approve`, `--quiet`, `--no-follow`.
+`--devops-tag`, `--out <dir>`, `--dry-run`, `--no-auto-approve`, `--quiet`, `--no-follow`, `--yes`/`-y`.
 
 ## Layout
 
@@ -55,6 +55,9 @@ Package exports: `./registry`, `.` (the lib barrel), `./lib/*`. From outside, im
   - MG-2 — `--source-env`/`--target-env` must match the profile's segments
     (`MIGRATE_ENV_PROFILE_MISMATCH`); for an unknown profile family both must be given
     explicitly (`MIGRATE_ENV_PROFILE_UNVERIFIED`).
+  - Confirmation — every `run` (including `--dry-run`) is confirmed before any Jenkins
+    request: `--yes`/`-y` proceeds, a TTY is prompted, `--llm` or a non-TTY without `--yes`
+    fails `MIGRATE_CONFIRMATION_REQUIRED` (details: profile, client, module, resolved ids, dry run).
   - Pre-flight — ids are resolved on the source env before the build: missing ids fail
     (`MIGRATE_TARGET_NOT_FOUND`, `MIGRATE_TARGET_DRAFT_UNPUBLISHED`); a PD draft id is swapped
     for its published id. A skipped pre-flight (source env not configured, or underivable)

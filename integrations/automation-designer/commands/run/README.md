@@ -1,6 +1,6 @@
 # ad run
 
-Live-executes a **published** method.
+Live-executes a method's saved body (normally the published copy).
 
 ```bash
 belz ad run <publishedId> [PAYLOAD_JSON_OR_FILE] --env <env> [--raw] [--stream]
@@ -8,9 +8,11 @@ belz ad run <publishedId> [PAYLOAD_JSON_OR_FILE] --env <env> [--raw] [--stream]
 
 - Sends `POST /rest/api/automation/chain/execute/<id>?encrypted=true` with the raw
   token (no `Bearer` prefix).
-- If you pass a DRAFT uuid, the platform runs the PUBLISHED body linked to it. belz
-  warns about this and reports `inputState` / `executesPublishedUuid`. To execute a
-  draft, use `belz ad test`.
+- The execute endpoint runs the uuid's OWN saved body: a DRAFT uuid runs the draft
+  (unpublished changes included; never-published drafts run too). belz warns and
+  reports `inputState` / `publishedUuid` (the published copy, null if never
+  published) — pass that uuid to run what is published.
+- `EXECUTION_FAILED` details are an object `{path, status, body}` (redacted).
 - `--stream` sends `Accept: application/stream+json`. The progressive chunks and the
   final JSON envelope are parsed separately (`lib/stream-parser.ts`). No timeout is
   applied.
