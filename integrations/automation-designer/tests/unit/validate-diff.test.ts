@@ -2,8 +2,22 @@
 // calibration over the 36 real sems-dev bodies, and the §4 catalogue map.
 
 import { describe, expect, test } from "bun:test";
-import { RULES, validateMethodV2 } from "../../lib/validate/index";
+import { readdirSync, readFileSync } from "fs";
+import { RULES, alignSteps, validateMethodV2 } from "../../lib/validate/index";
 import { CASES, caseBody, golden, mutate, realV2 } from "./validate-fixtures";
+
+const PAIRS_DIR = `${import.meta.dir}/../fixtures/draft-published`;
+/** The 8 real sems-dev draft/published pairs (their step ids all differ). */
+function draftPublishedPairs(): Array<{ name: string; draft: any; published: any }> {
+  const read = (f: string) => JSON.parse(readFileSync(`${PAIRS_DIR}/${f}`, "utf8"));
+  return readdirSync(PAIRS_DIR)
+    .filter((f) => f.endsWith(".published.v2.json"))
+    .sort()
+    .map((f) => {
+      const published = read(f);
+      return { name: f.slice(0, 8), published, draft: read(`${published.metadata.referenceId}.draft.v2.json`) };
+    });
+}
 
 describe("diff-aware", () => {
   test("a finding already in `before` is a pre-existing warning; a new one blocks", () => {
@@ -27,6 +41,78 @@ describe("diff-aware", () => {
     const moved = r.warnings.find((w) => w.rule === "AD-REF-001");
     expect(moved?.path).toBe("steps[1].inputs[0].value");
     expect(moved?.preexisting).toBe(true);
+  });
+
+  test("ADW-R3: a DIFFERENT broken body at the same path is new and blocks", () => {
+    const before = caseBody("v2_cc_syntax_error");
+    const same = validateMethodV2({ after: structuredClone(before), before });
+    expect(same.errors).toEqual([]);
+    const after = structuredClone(before) as any; // `any`: test mutation of the wire body
+    after.steps[1].properties.customCode.inlineCode = "function broken( { return";
+    const r = validateMethodV2({ after, before });
+    expect(r.errors.map((e) => e.rule)).toContain("AD-CC-001");
+  });
+
+  test("ADW-R3: a different dangling #{ref} at the same input is new", () => {
+    const before = caseBody("v2_spel_dangling_ref");
+    const after = structuredClone(before) as any; // `any`: test mutation of the wire body
+    const v = after.steps[0].inputs[0].value as string;
+    after.steps[0].inputs[0].value = v.replace(/#\{(\w+)\}/, "#{otherGhost}");
+    expect(after.steps[0].inputs[0].value).not.toBe(v);
+    const r = validateMethodV2({ after, before });
+    expect(r.errors.some((e) => e.rule === "AD-REF-001" && e.path === "steps[0].inputs[0].value")).toBe(true);
+  });
+
+  test("ADW-R3: a new unbound output that lands on an old unbound output's index is new", () => {
+    const before = mutate((m) => m.outputs.unshift({ key: "ghost", fieldCode: "ghost", name: "ghost", type: "STRING", description: "" }));
+    const after = structuredClone(before) as any; // `any`: test mutation of the wire body
+    after.outputs[0] = { key: "ghost2", fieldCode: "ghost2", name: "ghost2", type: "STRING", description: "" };
+    const pre = validateMethodV2({ after: structuredClone(before), before });
+    expect(pre.warnings.some((w) => w.rule === "M3" && w.preexisting)).toBe(true);
+    const r = validateMethodV2({ after, before });
+    const m3 = [...r.errors, ...r.warnings].filter((f) => f.rule === "M3");
+    expect(m3.map((f) => [f.path, !!f.preexisting])).toEqual([["outputs[0].key", false]]);
+  });
+
+  test("ADW-R3: removing an earlier output does not turn an old finding into a new one", () => {
+    const before = mutate((m) => m.outputs.push({ key: "ghost", fieldCode: "ghost", name: "ghost", type: "STRING", description: "" }));
+    const after = structuredClone(before) as any; // `any`: test mutation of the wire body
+    after.outputs.splice(0, 1); // ghost moves from outputs[3] to outputs[2]
+    const r = validateMethodV2({ after, before });
+    const m3 = [...r.errors, ...r.warnings].filter((f) => f.rule === "M3" && f.path.endsWith(".key"));
+    expect(m3.map((f) => [f.path, f.preexisting])).toEqual([["outputs[2].key", true]]);
+  });
+
+  test("ADW-R4: steps align by position/service when the ids differ (draft vs published)", () => {
+    for (const { name, draft, published } of draftPublishedPairs()) {
+      const map = alignSteps(published, draft);
+      expect({ name, map }).toEqual({ name, map: draft.steps.map((_s: unknown, i: number) => i) });
+    }
+    // an inserted step in the middle does not shift the pairing of the others
+    const before = golden() as any; // `any`: test mutation of the wire body
+    const after = structuredClone(before);
+    after.steps.forEach((s: any, i: number) => (s.id = `x${i}`));
+    after.steps.splice(1, 0, structuredClone(after.steps[0]));
+    expect(alignSteps(before, after)).toEqual([0, -1, 1, 2]);
+  });
+
+  test("ADW-R4: every real draft validated against its published copy has only pre-existing findings", () => {
+    let preexisting = 0;
+    for (const { name, draft, published } of draftPublishedPairs()) {
+      const r = validateMethodV2({ after: draft, before: published });
+      expect({ name, errors: r.errors }).toEqual({ name, errors: [] });
+      expect({ name, allPre: r.warnings.every((w) => w.preexisting) }).toEqual({ name, allPre: true });
+      preexisting += r.warnings.length;
+    }
+    expect(preexisting).toBeGreaterThan(0); // e.g. 438b5027's CI1 inputs are matched across different step ids
+  });
+
+  test("ADW-R4: a new error in a draft is still new against the published copy", () => {
+    const { draft, published } = draftPublishedPairs().find((p) => p.name === "41f705af")!;
+    const after = structuredClone(draft);
+    after.outputs.push({ key: "ghostOut", name: "ghostOut", type: "STRING" });
+    const r = validateMethodV2({ after, before: published });
+    expect([...r.errors, ...r.warnings].some((f) => f.rule === "M3" && !f.preexisting)).toBe(true);
   });
 
   test("strict turns new warnings into errors but leaves pre-existing ones as warnings", () => {

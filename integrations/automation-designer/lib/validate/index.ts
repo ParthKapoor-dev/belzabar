@@ -8,10 +8,16 @@
 //   L1 structure (schema.ts) · L2 per step (steps.ts) · L3 reference graph
 //   (graph.ts) · L4 online (online.ts). Rule codes: catalogue.ts.
 //
-// Diff-aware: with `before` (the fetched draft), a finding whose fingerprint
-// (rule + path, step indices replaced by the step id) is also found in
-// `before` is downgraded to a warning with `preexisting: true`, so methods
-// that already break a rule stay saveable and only NEW violations block.
+// Diff-aware: with `before` (the fetched draft, or the published copy on
+// publish), a finding whose identity is also found in `before` is downgraded
+// to a warning with `preexisting: true`, so methods that already break a rule
+// stay saveable and only NEW violations block. The identity (ADW-R3/R4) is
+// semantic, not positional: rule + path with each step index replaced by the
+// ALIGNED `before` step (same step id, else an in-order match on the step's
+// service/type — a draft and its published copy have different step ids) and
+// every other array index by the element's `key`, plus the value at the path
+// when it is a leaf. So a different broken body at the same path, or a new
+// output that lands on an old output's index, is NEW and blocks.
 // `strict` turns the remaining (new) warnings into errors; pre-existing
 // findings stay warnings. `overlayPaths` (the JSON paths the caller meant to
 // edit) marks new findings outside them as possible serializer drift.
@@ -21,7 +27,8 @@ import { ruleInfo } from "./catalogue";
 import { checkStructure } from "./schema";
 import { checkSteps } from "./steps";
 import { checkGraph } from "./graph";
-import { isObj, arr, nonBlank, type FindingInput, type Report, type ValidationFinding, type ValidationResult } from "./types";
+import { BOOKKEEPING_KEYS } from "../fingerprint";
+import { isObj, arr, nonBlank, str, type FindingInput, type Report, type ValidationFinding, type ValidationResult } from "./types";
 
 export type { ValidationFinding, ValidationResult, StepRef, Severity } from "./types";
 export { RULES, ruleInfo, type RuleCode, type RuleInfo } from "./catalogue";
@@ -40,15 +47,13 @@ export interface ValidateOnlineInput extends ValidateInput {
 
 export const OFFLINE_LAYERS = ["L1", "L2", "L3"] as const;
 
-interface RawFinding extends ValidationFinding {
-  fingerprint: string;
-}
+/** A finding plus the raw path it was reported at (identity is computed in `finish`). */
+type RawFinding = ValidationFinding;
 
 /** Run L1–L3 on one body and return every finding at its catalogue severity. */
 export function collectOffline(body: unknown): RawFinding[] {
   const out: RawFinding[] = [];
-  const stepKeys = stepKeyTable(body);
-  const report: Report = (f: FindingInput) => out.push(toFinding(f, stepKeys));
+  const report: Report = (f: FindingInput) => out.push(toFinding(f));
   const usable = checkStructure(body, report);
   if (usable && isObj(body)) {
     checkSteps(body, report);
@@ -67,29 +72,35 @@ export async function validateOnline(input: ValidateOnlineInput): Promise<Valida
   const layers: string[] = [...OFFLINE_LAYERS];
   const { runOnline } = await import("./online");
   const online = await runOnline(input.after, { env: input.env, dryRunCompile: !!input.dryRunCompile });
-  const stepKeys = stepKeyTable(input.after);
-  for (const f of online.findings) findings.push(toFinding(f, stepKeys));
+  for (const f of online.findings) findings.push(toFinding(f));
   layers.push(...online.layers);
   // L4 findings already true of `before` are pre-existing too (service layer only: cached lookups, no second compile).
-  const beforeExtra: string[] = [];
+  const beforeExtra: RawFinding[] = [];
   if (input.before !== undefined) {
     const prior = await runOnline(input.before, { env: input.env, dryRunCompile: false });
-    const keys = stepKeyTable(input.before);
-    for (const f of prior.findings) beforeExtra.push(toFinding(f, keys).fingerprint);
+    for (const f of prior.findings) beforeExtra.push(toFinding(f));
   }
   return finish(dedupe(findings), input, layers, beforeExtra);
 }
 
 // ── internals ─────────────────────────────────────────────────────────────
 
-function finish(findings: RawFinding[], input: ValidateInput, layersRun: string[], beforeExtra: string[] = []): ValidationResult {
-  const before = input.before !== undefined ? new Set([...collectOffline(input.before).map((f) => f.fingerprint), ...beforeExtra]) : null;
+function finish(findings: RawFinding[], input: ValidateInput, layersRun: string[], beforeExtra: RawFinding[] = []): ValidationResult {
+  let before: Set<string> | null = null;
+  let afterAnchors: string[] = [];
+  if (input.before !== undefined) {
+    const beforeAnchors = arr(isObj(input.before) ? input.before.steps : undefined).map((_s, j) => `s${j}`);
+    afterAnchors = alignSteps(input.before, input.after).map((j, i) => (j >= 0 ? `s${j}` : `new${i}`));
+    before = new Set(
+      [...collectOffline(input.before), ...beforeExtra].map((f) => findingIdentity(f, input.before, beforeAnchors)),
+    );
+  }
   const overlay = input.overlayPaths?.filter((p) => p.length > 0) ?? [];
   const errors: ValidationFinding[] = [];
   const warnings: ValidationFinding[] = [];
   for (const raw of findings) {
-    const { fingerprint, ...f } = raw;
-    if (before?.has(fingerprint)) {
+    const f = { ...raw };
+    if (before?.has(findingIdentity(raw, input.after, afterAnchors))) {
       f.preexisting = true;
       f.severity = "warn";
     } else {
@@ -107,25 +118,114 @@ function underPath(path: string, prefix: string): boolean {
   return path === prefix || path.startsWith(`${prefix}.`) || path.startsWith(`${prefix}[`) || prefix.startsWith(`${path}.`) || prefix.startsWith(`${path}[`);
 }
 
-/** steps[i] → a stable key (the step id when present) for fingerprints. */
-function stepKeyTable(body: unknown): string[] {
-  if (!isObj(body)) return [];
-  return arr(body.steps).map((s, i) => {
-    const id = isObj(s) ? nonBlank(s.id) : undefined;
-    return id ? `id:${id.toLowerCase()}` : `#${i}`;
-  });
+/** Parse `steps[2].inputs[0].value` into ["steps", 2, "inputs", 0, "value"]. */
+function pathParts(path: string): Array<string | number> {
+  const parts: Array<string | number> = [];
+  for (const m of path.matchAll(/([^.[\]]+)|\[(\d+)\]/g)) parts.push(m[2] !== undefined ? Number(m[2]) : m[1]!);
+  return parts;
 }
 
-function toFinding(f: FindingInput, stepKeys: string[]): RawFinding {
+/**
+ * Semantic identity of a finding within `body`: rule, the path with the step
+ * index replaced by its anchor and other array indices by the element's key,
+ * and the leaf value at the path (ids excluded: they differ draft vs published).
+ */
+function findingIdentity(f: ValidationFinding, body: unknown, stepAnchors: string[]): string {
+  const parts = pathParts(f.path);
+  let node: unknown = body;
+  let label = "";
+  let last: string | number | undefined;
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i]!;
+    if (typeof p === "number") {
+      const list = arr(node);
+      const el = list[p];
+      if (i === 1 && parts[0] === "steps") {
+        label += `{${stepAnchors[p] ?? `new${p}`}}`;
+      } else {
+        const key = isObj(el) ? nonBlank(el.key) ?? nonBlank(el.fieldCode) : undefined;
+        if (key) {
+          const nth = list.slice(0, p).filter((x) => isObj(x) && (nonBlank(x.key) ?? nonBlank(x.fieldCode)) === key).length;
+          label += `{${key}${nth ? `#${nth}` : ""}}`;
+        } else label += `[${p}]`;
+      }
+      node = el;
+    } else {
+      label += `.${p}`;
+      node = isObj(node) ? node[p] : undefined;
+    }
+    last = p;
+  }
+  const leaf =
+    typeof last === "string" && BOOKKEEPING_KEYS.has(last)
+      ? ""
+      : node === null || node === undefined
+        ? "∅"
+        : typeof node === "object"
+          ? ""
+          : String(node).trim();
+  return `${f.rule}|${label}|${leaf}`;
+}
+
+/** Coarse step signature for aligning steps whose ids differ (draft vs published). */
+function stepSignature(s: unknown): string {
+  if (!isObj(s)) return "?";
+  const props = isObj(s.properties) ? s.properties : {};
+  const cc = isObj(props.customCode) ? props.customCode : {};
+  return [str(props.type) ?? "", nonBlank(s.serviceName) ?? "", nonBlank(s.methodName) ?? "", str(cc.language) ?? ""].join("/");
+}
+
+/**
+ * For each step of `after`, the index of the matching `before` step, or -1.
+ * Steps with the same id pair first (a save: same draft). The rest pair by a
+ * longest common subsequence over their service/type signature, which keeps
+ * order and aligns a draft with its published copy (all ids differ).
+ */
+export function alignSteps(before: unknown, after: unknown): number[] {
+  const b = arr(isObj(before) ? before.steps : undefined);
+  const a = arr(isObj(after) ? after.steps : undefined);
+  const idOf = (s: unknown) => (isObj(s) ? nonBlank(s.id)?.toLowerCase() : undefined);
+  const result = a.map(() => -1);
+  const usedBefore = new Set<number>();
+  const byId = new Map<string, number>();
+  b.forEach((s, j) => {
+    const id = idOf(s);
+    if (id && !byId.has(id)) byId.set(id, j);
+  });
+  a.forEach((s, i) => {
+    const id = idOf(s);
+    const j = id ? byId.get(id) : undefined;
+    if (j !== undefined && !usedBefore.has(j)) {
+      result[i] = j;
+      usedBefore.add(j);
+    }
+  });
+  const ra = a.map((_s, i) => i).filter((i) => result[i] === -1);
+  const rb = b.map((_s, j) => j).filter((j) => !usedBefore.has(j));
+  if (ra.length === 0 || rb.length === 0) return result;
+  const sa = ra.map((i) => stepSignature(a[i]));
+  const sb = rb.map((j) => stepSignature(b[j]));
+  const dp: number[][] = Array.from({ length: sa.length + 1 }, () => new Array<number>(sb.length + 1).fill(0));
+  for (let x = sa.length - 1; x >= 0; x--) {
+    for (let y = sb.length - 1; y >= 0; y--) {
+      dp[x]![y] = sa[x] === sb[y] ? dp[x + 1]![y + 1]! + 1 : Math.max(dp[x + 1]![y]!, dp[x]![y + 1]!);
+    }
+  }
+  for (let x = 0, y = 0; x < sa.length && y < sb.length; ) {
+    if (sa[x] === sb[y]) {
+      result[ra[x]!] = rb[y]!;
+      x++;
+      y++;
+    } else if (dp[x + 1]![y]! >= dp[x]![y + 1]!) x++;
+    else y++;
+  }
+  return result;
+}
+
+function toFinding(f: FindingInput): RawFinding {
   const info = ruleInfo(f.rule);
   const severity = f.severity ?? info?.severity ?? "error";
-  const finding: RawFinding = {
-    rule: f.rule,
-    severity,
-    message: f.message,
-    path: f.path,
-    fingerprint: `${f.rule}|${f.path.replace(/^steps\[(\d+)\]/, (_m, n: string) => `steps{${stepKeys[Number(n)] ?? `#${n}`}}`)}`,
-  };
+  const finding: RawFinding = { rule: f.rule, severity, message: f.message, path: f.path };
   if (f.step) finding.step = f.step;
   if (f.fix) finding.fix = f.fix;
   if (f.evidence) finding.evidence = f.evidence;
@@ -136,7 +236,7 @@ function dedupe(findings: RawFinding[]): RawFinding[] {
   const seen = new Set<string>();
   const out: RawFinding[] = [];
   for (const f of findings) {
-    const k = `${f.fingerprint}|${f.message}`;
+    const k = `${f.rule}|${f.path}|${f.message}`;
     if (seen.has(k)) continue;
     seen.add(k);
     out.push(f);

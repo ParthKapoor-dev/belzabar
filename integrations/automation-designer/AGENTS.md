@@ -237,7 +237,12 @@ The entry points in `index.ts` are `validateMethodV2` (L1–L3, pure) and
 `validateOnline` (+L4).
 
 Validation is **diff-aware**. A finding that is also present in `before` becomes a
-`preexisting` warning, and `--strict` promotes only new warnings. Calibration is
+`preexisting` warning, and `--strict` promotes only new warnings. A finding's
+identity (ADW-R3/R4) is rule + path with the step index replaced by the aligned
+`before` step (same id, else an in-order match on service/type — `alignSteps`,
+which is how a draft lines up with its published copy), other array indices
+replaced by the element's `key`, plus the leaf value at the path. A different
+broken value at the same path, or a new output on an old output's index, is new. Calibration is
 pinned in `tests/unit/validate-diff.test.ts`: the 36 real bodies validated against
 themselves produce 0 errors.
 
