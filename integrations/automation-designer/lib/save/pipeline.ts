@@ -22,6 +22,7 @@ import { logIntent } from "../args/confirm";
 import { diffPaths, getAtPath, isUnder, jsonEqual } from "../serialize/diff";
 import { planV2Overlay, type OverlayTarget, type V2OverlayPlan } from "../serialize/v2";
 import { isObj } from "../serialize/compact";
+import { BOOKKEEPING_KEYS } from "../fingerprint";
 import { loadServiceCatalog, servicesOfOps } from "./services";
 import type { V2MethodResponse } from "../types/v2-wire";
 import { postChainV2 } from "./api";
@@ -223,7 +224,10 @@ export async function assertDraftUnchanged(draftUuid: string, seen: V2MethodResp
 }
 
 export function verifyPlan(uuid: string, before: V2MethodResponse, after: V2MethodResponse, plan: V2OverlayPlan): void {
-  if (plan.structural) verifyStructural(uuid, plan.body, after, plan.structural.touched);
+  if (plan.structural) {
+    const removals = structuralRemovals(before, plan.body, plan.structural.order);
+    verifyStructural(uuid, plan.body, after, plan.structural.touched, removals);
+  }
   else verifySaved(uuid, before, after, plan.targets);
 }
 
@@ -238,11 +242,21 @@ const PADDED_KEYS = new Set(["uuid", "id", "automationAPIId", "automationApiId"]
  * belz sent that reads back different or missing is `notLanded`; any other
  * difference is `unexpected`. Throws AD_SAVE_VERIFY_FAILED.
  */
-export function verifyStructural(uuid: string, expected: unknown, after: unknown, touched: string[]): void {
+export function verifyStructural(uuid: string, expected: unknown, after: unknown, touched: string[], removals: Removal[] = []): void {
   const all = touched.includes("");
   const underTouched = (p: string) => all || touched.some((t) => isUnder(p, t));
   const notLanded: Array<{ path: string; expected: unknown; actual: unknown }> = [];
   const unexpected: string[] = [];
+  // ADW-R7: a value the ops removed is absent from `expected`, so the loop
+  // below would take it for a server-filled field. Check removals explicitly.
+  for (const r of removals) {
+    const got = getAtPath(after, r.path);
+    if (r.key === undefined) {
+      if (!isEmptyish(got)) notLanded.push({ path: r.path, expected: "(removed)", actual: got });
+    } else if (Array.isArray(got) && got.some((el) => elementKey(el) === r.key)) {
+      notLanded.push({ path: `${r.path}{${r.key}}`, expected: "(removed)", actual: got.find((el) => elementKey(el) === r.key) });
+    }
+  }
   for (const p of diffPaths(expected, after)) {
     if (SERVER_OWNED_ON_SAVE.some((s) => isUnder(p, s))) continue;
     const want = getAtPath(expected, p);
@@ -269,6 +283,67 @@ export function verifyStructural(uuid: string, expected: unknown, after: unknown
       details: { uuid, version: versionName(after as V2MethodResponse), notLanded: notLanded.slice(0, 100), unexpected: unexpected.slice(0, 100) },
     },
   );
+}
+
+/** Something the structural ops removed: an object key (`key` undefined) or a keyed array element. */
+export interface Removal {
+  path: string;
+  key?: string;
+}
+
+/** Identity of a keyed list element: `key`, plus `fieldCode` for step outputs. */
+function elementKey(el: unknown): string | undefined {
+  if (!isObj(el) || typeof el.key !== "string") return undefined;
+  return typeof el.fieldCode === "string" ? `${el.key}|${el.fieldCode}` : el.key;
+}
+
+/** null / absent, or an object/array whose every leaf is null, false or "" (how the server stores "none"). */
+function isEmptyish(v: unknown): boolean {
+  if (v === undefined || v === null || v === false || v === "") return true;
+  if (Array.isArray(v)) return v.every(isEmptyish);
+  if (isObj(v)) return Object.values(v).every(isEmptyish);
+  return false;
+}
+
+function collectRemovals(a: unknown, b: unknown, path: string, out: Removal[]): void {
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (!a.every((el) => elementKey(el) !== undefined)) return; // positional lists: the diff covers them
+    const bByKey = new Map(b.map((el) => [elementKey(el), el] as const));
+    for (const el of a) {
+      const k = elementKey(el)!;
+      if (!bByKey.has(k)) out.push({ path, key: k });
+      else collectRemovals(el, bByKey.get(k), `${path}[${b.indexOf(bByKey.get(k))}]`, out);
+    }
+    return;
+  }
+  if (!isObj(a) || !isObj(b)) return;
+  for (const [k, av] of Object.entries(a)) {
+    if (av === null || av === undefined || BOOKKEEPING_KEYS.has(k)) continue; // ids/uuids: server-owned
+    const p = path ? `${path}.${k}` : k;
+    if (!(k in b) || b[k] === null || b[k] === undefined) {
+      if (!isEmptyish(av)) out.push({ path: p });
+    } else collectRemovals(av, b[k], p, out);
+  }
+}
+
+/**
+ * What the structural ops removed from the fetched draft (`live`) to get
+ * `expected`: step outputs / inputs / loop / output bindings of kept steps
+ * (paths in `expected`'s step numbering, via `order`), and method inputs,
+ * variables and outputs. Each must be gone after the save (ADW-R7).
+ */
+export function structuralRemovals(live: unknown, expected: unknown, order: Array<number | null>): Removal[] {
+  const out: Removal[] = [];
+  if (!isObj(live) || !isObj(expected)) return out;
+  for (const list of ["inputs", "variables", "outputs"]) {
+    if (Array.isArray(live[list])) collectRemovals(live[list], Array.isArray(expected[list]) ? expected[list] : [], list, out);
+  }
+  const ls = Array.isArray(live.steps) ? live.steps : [];
+  const es = Array.isArray(expected.steps) ? expected.steps : [];
+  order.forEach((from, i) => {
+    if (from !== null && ls[from - 1] !== undefined && es[i] !== undefined) collectRemovals(ls[from - 1], es[i], `steps[${i}]`, out);
+  });
+  return out;
 }
 
 /**

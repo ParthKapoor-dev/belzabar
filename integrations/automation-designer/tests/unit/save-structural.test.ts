@@ -6,7 +6,7 @@ import { describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
 import { planV2Overlay } from "../../lib/serialize/v2";
 import { dbMethodForSql, emptyCatalog, type ServiceCatalog } from "../../lib/serialize/compact";
-import { verifyStructural } from "../../lib/save/pipeline";
+import { structuralRemovals, verifyStructural } from "../../lib/save/pipeline";
 import { decodeBase64Strict } from "../../lib/base64";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
@@ -372,3 +372,68 @@ describe("verifyStructural (post-save check for ops and creates)", () => {
     expect(fails(b).notLanded.map((n) => n.path)).toEqual(["steps[1].inputs[0]"]);
   });
 });
+
+describe("ADW-R7: removals must not be mistaken for server-filled fields", () => {
+  const live = {
+    name: "m",
+    outputs: [{ key: "keep", type: "TEXT" }, { key: "gone", type: "TEXT" }],
+    steps: [
+      { id: "s1", description: "untouched" },
+      {
+        id: "s2",
+        inputs: [{ key: "a", value: "1" }, { key: "b", value: "2" }],
+        outputs: [{ key: "response", fieldCode: "x", inputReference: { type: "method_input", reference: "v" } }, { key: "response", fieldCode: "y" }],
+        properties: { runAsync: false, repeatStepExecution: { type: "LOOP_EXECUTION_ON_INPUT_OUTPUT", value: "#{rows}" } },
+      },
+    ],
+  };
+  // update-step 2 {removeOutputs:["y"], inputs:{b:null}, loop:null, outputs:[{as:"x", var:null}]} + remove-output gone
+  const expected = structuredClone(live) as any;
+  expected.outputs.splice(1, 1);
+  expected.steps[1].inputs.splice(1, 1);
+  expected.steps[1].outputs.splice(1, 1);
+  delete expected.steps[1].outputs[0].inputReference;
+  delete expected.steps[1].properties.repeatStepExecution;
+  const order = [1, 2];
+  const removals = structuralRemovals(live, expected, order);
+  const touched = ["steps[1]"];
+
+  test("the removals are recorded", () => {
+    expect(removals).toEqual([
+      { path: "outputs", key: "gone" },
+      { path: "steps[1].inputs", key: "b" },
+      { path: "steps[1].outputs[0].inputReference" },
+      { path: "steps[1].outputs", key: "response|y" },
+      { path: "steps[1].properties.repeatStepExecution" },
+    ]);
+  });
+
+  test("landed removals verify (an all-null loop object counts as none)", () => {
+    const after = structuredClone(expected);
+    after.steps[1].properties.repeatStepExecution = { type: null, value: null };
+    expect(() => verifyStructural("u", expected, after, touched, removals)).not.toThrow();
+  });
+
+  test("an output, input, loop or binding the server kept is notLanded", () => {
+    const after = structuredClone(expected);
+    after.steps[1].outputs.push({ key: "response", fieldCode: "y" });
+    after.steps[1].inputs.push({ key: "b", value: "2" });
+    after.steps[1].properties.repeatStepExecution = live.steps[1]!.properties!.repeatStepExecution;
+    after.steps[1].outputs[0].inputReference = { type: "method_input", reference: "v" };
+    let details: any;
+    try {
+      verifyStructural("u", expected, after, touched, removals);
+    } catch (e) {
+      details = (e as CliError).details;
+    }
+    expect(details?.notLanded.map((n: any) => n.path)).toEqual([
+      "steps[1].inputs{b}",
+      "steps[1].outputs[0].inputReference",
+      "steps[1].outputs{response|y}",
+      "steps[1].properties.repeatStepExecution",
+    ]);
+    // without the removals the old check passed these as server-filled
+    expect(() => verifyStructural("u", expected, after, touched)).not.toThrow();
+  });
+});
+

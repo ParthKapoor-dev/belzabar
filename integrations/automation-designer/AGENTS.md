@@ -152,6 +152,9 @@ The steps run in this order:
 6. `POST /chain/v2`. A rejection returns `AD_SAVE_REJECTED` with the server's message.
 7. A verify re-GET (`verifySaved`, or `verifyStructural` for ops and create). Every
    sent value must read back, otherwise `AD_SAVE_VERIFY_FAILED {notLanded, unexpected}`.
+   Everything the ops removed (step outputs/inputs, a loop, an output binding,
+   method inputs/variables/outputs — `structuralRemovals`) must be gone too; a
+   removal the server ignored is `notLanded` (ADW-R7).
    Server bookkeeping is ignored: `metadata.version`, `metadata.internal`,
    `changelogs` and `testSuite`.
 8. The compiled cache is evicted on BOTH `/rest/api/cache/invalidate` and
