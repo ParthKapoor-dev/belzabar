@@ -13,7 +13,10 @@ import { mkdirSync, mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
-if (!process.env.BELZ_HOME) {
+// Always override: an exported BELZ_HOME may be the developer's real belz
+// home (e.g. BELZ_HOME=/data/belz), and tests write config/sessions/caches
+// into it (CORE-R15). Tests that need a specific home set it per spawn.
+{
   const root = mkdtempSync(join(tmpdir(), "belz-home-test-"));
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });

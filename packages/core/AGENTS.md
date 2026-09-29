@@ -174,6 +174,8 @@ preload has pointed `BELZ_HOME` at a tmp dir; helpers refuse to write otherwise.
 | `describeLive` / `describeLiveWrite` / `spawnLive` / `registerLiveResource` / `markLiveResourceCleaned` | Opt-in live suites: run only with `BELZ_LIVE=sems-dev` (+ `BELZ_LIVE_WRITE=1`); any other `BELZ_LIVE` or `--env` is refused. `spawnLive` uses a tmp copy of `~/.belz/config.json` + the sems-dev session (real `~/.belz` is never written). `registerLiveResource` appends to `$BELZ_LIVE_RESOURCES`, or to the maintainer workspace's live-resources log when that sibling directory exists. `markLiveResourceCleaned(identifier, note)` rewrites that row's cleaned cell in place. Write suites: Test-Parth, `belz_tst_` prefix, `afterAll` cleanup |
 | `scratchDir(prefix)` | tmp dir under the run's `BELZ_TEST_TMP` (auto-removed) |
 
+The preload (`tests/preload-belz-home.ts`) **always** replaces `BELZ_HOME` with a fresh dir under `BELZ_TEST_TMP`, even when one is exported, and `assertSafeBelzHome()` (used by `withTempEnvConfig`) refuses any home outside `BELZ_TEST_TMP` (CORE-R15).
+
 Test seams in runtime code (test-only; do not use elsewhere): `reloadConfig()` (config/index.ts),
 `setIpv4ResolverForTesting()` (http/dns.ts). Hanging-request tests: a fakeFetch handler that
 never resolves plus `httpRequest(url, {timeoutMs: 30})` — the timeout is raced, so it fires even

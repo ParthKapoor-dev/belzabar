@@ -10,7 +10,7 @@
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { homedir } from "os";
-import { join, resolve } from "path";
+import { isAbsolute, join, relative, resolve } from "path";
 import { BELZ_CONFIG_DIR, Config, reloadConfig, type BelzConfigFile } from "../config";
 
 export interface TempEnvSpec {
@@ -43,9 +43,25 @@ export interface TempEnvConfig {
   [Symbol.dispose](): void;
 }
 
+/** True when `dir` is `root` or inside it. */
+function isInside(dir: string, root: string): boolean {
+  const rel = relative(resolve(root), resolve(dir));
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+/**
+ * The belz home tests may write to: it must be the preload's throwaway dir
+ * (inside BELZ_TEST_TMP), never `~/.belz` or any other exported BELZ_HOME (CORE-R15).
+ */
 export function assertSafeBelzHome(): string {
   const real = resolve(join(homedir(), ".belz"));
-  if (!process.env.BELZ_HOME || resolve(BELZ_CONFIG_DIR) === real) {
+  const testTmp = process.env.BELZ_TEST_TMP;
+  if (
+    !process.env.BELZ_HOME ||
+    resolve(BELZ_CONFIG_DIR) === real ||
+    !testTmp ||
+    !isInside(BELZ_CONFIG_DIR, testTmp)
+  ) {
     throw new Error(
       "core/testing: BELZ_HOME must point at a throwaway dir (is the bun test preload " +
         "packages/core/tests/preload-belz-home.ts wired in bunfig.toml?)"
