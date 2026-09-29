@@ -91,7 +91,7 @@ needs `--yes` instead.
 | `history restore <draftUuid> --version N` | **W** draft-guarded restore; fails `RESTORE_UNCONFIRMED` unless the re-read draft matches the target content; evicts the compiled cache; reports validator findings |
 | `test <uuid>` | **W** (really runs the chain). `--inputs`, `--case`, `--expect`, `--compare-published` (runs the published copy too: confirms, `--yes`). A FAILED execution exits 1 `AD_TEST_FAILED` |
 | `test-case <action>` | `list`, `export` and `sync` (dry run) are reads. `create`, `update`, `delete`, `bulk`, `run-suite`, `delete-suite` and `sync --apply` are **W** |
-| `run <publishedId>`, `run-suites`, `save-suite` | **W** live execute of the uuid's own saved body — a draft uuid runs the draft; `data.publishedUuid` names the published copy (`--stream`); **W** run local `suites/*.spec.json`; save a local suite |
+| `run <publishedId>`, `run-suites`, `save-suite` | **W** live execute of the uuid's own saved body — a draft uuid runs the draft; `data.publishedUuid` names the published copy (`--stream`); **W** run local `suites/*.spec.json` (a malformed file fails alone as INVALID_JSON; a suite saved on another env is ENV_MISMATCH, not run); save a local suite (records `env`) |
 
 `desc.txt` for each command lists every invocation variant. `belz --help-full` prints
 all of them together.

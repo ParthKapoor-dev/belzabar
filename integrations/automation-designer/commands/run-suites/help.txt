@@ -4,7 +4,10 @@ Execute all saved regression test suites found in the 'suites/' directory.
 Each suite is verified for HTTP 200 and a non-failed execution result.
 Suites really execute (SQL/HTTP steps run), so an explicit --env is required.
 The test body is the same one `belz ad test` posts; a failed request reports
-the server's message.
+the server's message. A suite file that is not valid JSON fails on its own
+(reason INVALID_JSON) and the rest still run. A suite saved on another env
+(its `env` field, written by save-suite) is not run (reason ENV_MISMATCH);
+suites without `env` run with a warning.
 
 Flags:
   --v2                Accepted for consistency; suites run on V1 (with a notice).

@@ -41,7 +41,7 @@ const command: CommandModule<undefined, RunSuitesData> = {
     resolveAdCommon(flags, "test", "run-suites");
     return undefined;
   },
-  async execute() {
+  async execute(_args, context) {
     const suitesDir = join(process.cwd(), "suites");
     if (!existsSync(suitesDir)) {
       throw new CliError("No suites directory found.", { code: "SUITES_DIR_MISSING" });
@@ -56,13 +56,35 @@ const command: CommandModule<undefined, RunSuitesData> = {
     let passed = 0;
     let failed = 0;
 
+    let legacy = 0;
     for (const file of files) {
       const suitePath = join(suitesDir, file);
-      const suite = (await Bun.file(suitePath).json()) as {
-        name: string;
-        uuid: string;
-        inputs?: Record<string, unknown>;
-      };
+      // ADW-R13: a malformed suite fails on its own; the earlier suites already ran
+      // (with side effects), so the run must still end with a summary.
+      let suite: { name: string; uuid: string; env?: string; inputs?: Record<string, unknown> };
+      try {
+        const parsed = (await Bun.file(suitePath).json()) as unknown;
+        if (!parsed || typeof parsed !== "object" || typeof (parsed as { uuid?: unknown }).uuid !== "string") {
+          throw new Error("not a suite object with a uuid");
+        }
+        suite = parsed as typeof suite;
+      } catch (error) {
+        suites.push({ name: file, uuid: "", status: "failed", reason: `INVALID_JSON: ${(error as Error).message}` });
+        failed++;
+        continue;
+      }
+      // Suites name a bare uuid: a suite saved on one env must not replay on another.
+      if (typeof suite.env === "string" && suite.env !== context.env.name) {
+        suites.push({
+          name: suite.name ?? file,
+          uuid: suite.uuid,
+          status: "failed",
+          reason: `ENV_MISMATCH: saved for ${suite.env}, not run on ${context.env.name}`,
+        });
+        failed++;
+        continue;
+      }
+      if (typeof suite.env !== "string") legacy++;
 
       try {
         // AD-38 / F14: the same `/chain/test` body `ad test` posts (not the whole GET body).
@@ -109,6 +131,9 @@ const command: CommandModule<undefined, RunSuitesData> = {
       }
     }
 
+    if (legacy > 0) {
+      context.warn(`${legacy} suite(s) carry no env (saved before ADW-R13); re-save them with \`belz ad save-suite\` to pin the env.`);
+    }
     const summary: RunSuitesData = { total: files.length, passed, failed, suites };
 
     if (failed > 0) {

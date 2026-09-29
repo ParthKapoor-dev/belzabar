@@ -1,7 +1,8 @@
 Usage: belz ad save-suite <UUID> --name <NAME> [flags]
 
 Capture and save a regression test suite for a method.
-Stores input values for repeated use with 'belz ad run-suites'.
+Stores input values for repeated use with 'belz ad run-suites'. The suite
+records the env it was saved on; run-suites refuses to replay it elsewhere.
 
 Arguments:
   <UUID>              The UUID of the method to save a test suite for.

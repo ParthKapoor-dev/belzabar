@@ -36,7 +36,7 @@ const command: CommandModule<SaveSuiteArgs, SaveSuiteData> = {
     resolveAdCommon(flags, "test", "save-suite");
     return { uuid: positionals.uuid, suiteName: flags.name, inputsFile: flags.inputs };
   },
-  async execute({ uuid: uuidArg, suiteName, inputsFile }) {
+  async execute({ uuid: uuidArg, suiteName, inputsFile }, context) {
     const uuid = resolveMethodRef(uuidArg);
     if (!/^[\w.-]+$/.test(suiteName) || suiteName.startsWith(".")) {
       throw new CliError(`Invalid suite name '${suiteName}': use letters, digits, '.', '_' or '-' (it becomes suites/<name>.spec.json).`, {
@@ -49,6 +49,8 @@ const command: CommandModule<SaveSuiteArgs, SaveSuiteData> = {
     const suite = {
       name: suiteName,
       uuid,
+      // ADW-R13: the uuid is env-specific; run-suites refuses to replay it elsewhere.
+      env: context.env.name,
       description: `Test suite for ${method.name}`,
       inputs: values,
     };

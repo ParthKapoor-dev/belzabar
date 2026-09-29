@@ -22,6 +22,7 @@ import {
 } from "@belzabar/core/testing";
 import testCommand, { matchStep } from "../../commands/test/index";
 import runSuitesCommand from "../../commands/run-suites/index";
+import saveSuiteCommand from "../../commands/save-suite/index";
 import runCommandModule from "../../commands/run/index";
 import { buildV1TestPayload } from "../../lib/payload-builder";
 import type { ParsedStep } from "../../lib/types/common";
@@ -175,6 +176,44 @@ describe("ad run-suites (AD-38 / F14)", () => {
     const body = await testBody(f);
     expect(Object.keys(body).sort()).toEqual(["category", "id", "jsonDefinition", "uuid", "version"]);
     expect(JSON.parse(body.jsonDefinition).inputs.find((i: any) => i.fieldCode === "cityCode").testValue).toBe("Z");
+  });
+
+  test("ADW-R13: a malformed suite fails on its own (INVALID_JSON), the others still run and a summary is returned", async () => {
+    const dir = suitesDir();
+    writeFileSync(join(dir, "suites", "a-broken.spec.json"), "{ not json");
+    const f = wire(okTestResponse);
+    spies.push(spyOn(process, "cwd").mockReturnValue(dir));
+    const r = await runCommand(runSuitesCommand, [], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.code).toBe("SUITES_FAILED");
+    const d = r.envelope?.data as any;
+    expect(d.total).toBe(2);
+    expect(d.suites.map((x: any) => [x.status, (x.reason ?? "").split(":")[0]])).toEqual([
+      ["failed", "INVALID_JSON"],
+      ["passed", ""],
+    ]);
+    expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(1);
+  });
+
+  test("ADW-R13: a suite saved on another env is not run (ENV_MISMATCH)", async () => {
+    const dir = suitesDir();
+    writeFileSync(join(dir, "suites", "s1.spec.json"), JSON.stringify({ name: "s1", uuid: UUID, env: "nsm-qa", inputs: {} }));
+    const f = wire(okTestResponse);
+    spies.push(spyOn(process, "cwd").mockReturnValue(dir));
+    const r = await runCommand(runSuitesCommand, [], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.code).toBe("SUITES_FAILED");
+    expect((r.envelope?.data as any).suites[0].reason).toContain("ENV_MISMATCH");
+    expect(f.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
+  });
+
+  test("ADW-R13: save-suite records the env the uuid belongs to", async () => {
+    const dir = suitesDir();
+    wire(okTestResponse);
+    spies.push(spyOn(process, "cwd").mockReturnValue(dir));
+    const inputs = join(dir, "in.json");
+    writeFileSync(inputs, JSON.stringify({ cityCode: "Z", displayName: "D" }));
+    const r = await runCommand(saveSuiteCommand, [UUID, "--name", "s2", "--inputs", inputs], { env: "t-s4b-run" });
+    expect(r.envelope?.error ?? null).toBeNull();
+    expect(JSON.parse(readFileSync(join(dir, "suites", "s2.spec.json"), "utf8"))).toMatchObject({ uuid: UUID, env: "t-s4b-run" });
   });
 
   test("a 400 reports the server's message, not a bare status", async () => {
