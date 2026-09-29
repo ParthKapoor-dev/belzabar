@@ -273,4 +273,9 @@ export interface HydratedMethod {
   raw: unknown;
   /** Best-effort warnings captured during parse. Surfaced in --llm envelopes. */
   parseWarnings: string[];
+  /**
+   * V1 only: automationIds whose service definition lookup failed, so their
+   * steps may be misclassified. A parse with any is never cached (ADR-R11).
+   */
+  unresolvedServices?: string[];
 }

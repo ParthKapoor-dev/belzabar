@@ -41,6 +41,7 @@ export const adApi = {
     const { resolveService, unresolved } = await buildServiceResolver(raw);
     const method = parseV1Method(raw, { env, resolveService });
     if (unresolved.length > 0) {
+      method.unresolvedServices = unresolved;
       method.parseWarnings.push(
         `Service definition lookup failed for automationId(s) ${unresolved.join(", ")}; those steps are classified ` +
           "by the verified fast path only and may show as EXISTING_SERVICE.",

@@ -1,7 +1,6 @@
 import { defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
-import { ServiceHydrator } from "../../lib/hydrator";
 import { resolveMethodRef } from "../../lib/ids";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
 import type { HydratedMethod } from "../../lib/types/common";
@@ -26,6 +25,8 @@ interface FetchMethodData {
     sourceVersion: "v1" | "v2";
   };
   hydratedServiceIds: string[];
+  /** automationIds whose definition lookup failed (their steps may be misclassified). */
+  unresolvedServiceIds?: string[];
   /** --raw: the wire body exactly as the API returned it (once; not the parsed method). */
   raw?: HydratedMethod["raw"];
 }
@@ -45,23 +46,23 @@ const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
   },
   async execute({ uuid, raw, apiVersion }, context) {
     const method = await adApi.fetchMethod(uuid, apiVersion);
-    await CacheManager.save(uuid, method);
+    const unresolved = method.unresolvedServices ?? [];
+    // A degraded parse (a definition lookup failed) is not cached (ADR-R11).
+    if (unresolved.length === 0) await CacheManager.save(uuid, method);
+    else context.warn(`Service definition lookup failed for ${unresolved.join(", ")}; the method was not cached.`);
 
+    // V1-only: adApi.fetchMethod already looked every step up (AD-02); report
+    // the ones it resolved, without re-requesting the failures (ADR-R12).
     const hydratedServiceIds: string[] = [];
-    // V1-only: adApi.fetchMethod already looked every step up (AD-02); this
-    // just reports which definitions are now cached (no extra GETs).
-    if (method.sourceVersion === "v1" && method.parsedSteps.length > 0) {
-      const uniqueIds = new Set<string>();
+    if (method.sourceVersion === "v1") {
+      const failed = new Set(unresolved);
       for (const step of method.parsedSteps) {
-        if (step.automationId != null) uniqueIds.add(String(step.automationId));
-      }
-      for (const serviceId of uniqueIds) {
-        await ServiceHydrator.ensureCached(serviceId);
-        hydratedServiceIds.push(serviceId);
+        const id = step.automationId != null ? String(step.automationId) : null;
+        if (id && !failed.has(id) && !hydratedServiceIds.includes(id)) hydratedServiceIds.push(id);
       }
     }
 
-    if (hydratedServiceIds.length === 0) {
+    if (hydratedServiceIds.length === 0 && unresolved.length === 0) {
       context.warn("No service definitions needed hydration.");
     }
 
@@ -79,6 +80,7 @@ const command: CommandModule<FetchMethodArgs, FetchMethodData> = {
         sourceVersion: method.sourceVersion,
       },
       hydratedServiceIds,
+      ...(unresolved.length ? { unresolvedServiceIds: unresolved } : {}),
     };
 
     if (raw) {

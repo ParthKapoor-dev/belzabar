@@ -448,7 +448,8 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       if (!m || flags.force || apiVersion === "v2" || m.sourceVersion !== apiVersion) {
         source = "fresh";
         m = await adApi.fetchMethod(uuid, apiVersion);
-        if (apiVersion === "v1") await CacheManager.save(uuid, m);
+        // A degraded parse (a definition lookup failed) is not cached (ADR-R11).
+        if (apiVersion === "v1" && !m.unresolvedServices?.length) await CacheManager.save(uuid, m);
       }
       method = m;
 

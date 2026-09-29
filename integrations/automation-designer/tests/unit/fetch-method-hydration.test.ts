@@ -73,3 +73,36 @@ describe("V2 GET of a soft-deleted method (AD-40)", () => {
     await expect(adApi.fetchMethod("4bf56e008eabe4010508af439a15ecfb", "v2")).rejects.toMatchObject({ code: "METHOD_NOT_FOUND" });
   });
 });
+
+// ADR-R11 / ADR-R12: a parse with failed definition lookups is never cached,
+// and fetch reports only the definitions it actually resolved (once each).
+describe("degraded V1 parses (ADR-R11, R12)", () => {
+  test("show does not cache a parse with unresolved services; a clean one is cached", async () => {
+    const { runCommand } = await import("@belzabar/core/testing");
+    const { CacheManager } = await import("../../lib/cache");
+    const show = (await import("../../commands/show/index")).default;
+    serve("t-hyd4", { "976": true });
+    const r = await runCommand(show, [UUID], { env: "t-hyd4" });
+    expect(r.envelope?.ok).toBe(true);
+    expect(await CacheManager.load(UUID, "t-hyd4")).toBeNull();
+    ff!.restore();
+    cfg!.restore();
+    serve("t-hyd5", ALL);
+    await runCommand(show, [UUID], { env: "t-hyd5" });
+    expect(await CacheManager.load(UUID, "t-hyd5")).not.toBeNull();
+  });
+
+  test("fetch lists resolved ids only, names the failed ones, and asks for each once", async () => {
+    const { runCommand } = await import("@belzabar/core/testing");
+    const { CacheManager } = await import("../../lib/cache");
+    const fetchCmd = (await import("../../commands/fetch/index")).default;
+    serve("t-hyd6", { "976": true, "988": true });
+    const r = await runCommand(fetchCmd, [UUID], { env: "t-hyd6" });
+    const d = r.envelope?.data as { hydratedServiceIds: string[]; unresolvedServiceIds?: string[] };
+    expect(d.hydratedServiceIds.sort()).toEqual(["976", "988"]);
+    expect(d.unresolvedServiceIds).toHaveLength(8);
+    const gets = ff!.requests.filter((q) => q.url.includes("/rest/api/automations/")).map((q) => q.url);
+    expect(new Set(gets).size).toBe(gets.length);
+    expect(await CacheManager.load(UUID, "t-hyd6")).toBeNull();
+  });
+});
