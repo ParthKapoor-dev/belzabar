@@ -261,8 +261,14 @@ Validation is **diff-aware**. A finding that is also present in `before` becomes
 identity (ADW-R3/R4) is rule + path with the step index replaced by the aligned
 `before` step (same id, else an in-order match on service/type — `alignSteps`,
 which is how a draft lines up with its published copy), other array indices
-replaced by the element's `key`, plus the leaf value at the path. A different
-broken value at the same path, or a new output on an old output's index, is new.
+replaced by the element's `key`, plus the leaf value at the path — or, for a
+TEXT leaf (SQL / code / template: >80 chars or multi-line), the finding message
+with step numbers and line/column normalised away. A different broken short
+value at the same path, a different dangling ref in the same SQL, or a new
+output on an old output's index, is new; an unrelated edit elsewhere in the
+same SQL/code body keeps its old findings pre-existing (so publish's
+`--allow-preexisting` can clear them). A second finding of a fixed-message rule
+(Q5, CC3) in a body that already had one is treated as pre-existing.
 
 Calibration is pinned in `tests/unit/validate-diff.test.ts` WITHOUT self-diffing (ADW-R15): the 36
 real bodies audited as stored (`auditExistingRecord`, what `ad validate <uuid>`

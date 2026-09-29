@@ -115,6 +115,25 @@ describe("diff-aware", () => {
     expect([...r.errors, ...r.warnings].some((f) => f.rule === "M3" && !f.preexisting)).toBe(true);
   });
 
+  test("ADW-R3: an unrelated edit to a SQL body keeps its old findings pre-existing (real 422a34a9)", () => {
+    const before = JSON.parse(readFileSync(`${import.meta.dir}/../fixtures/real-v2/422a34a9657e3daa50108389a35609db.v2.json`, "utf8"));
+    const PATH = "steps[7].inputs[0].properties[0].value";
+    const base = validateMethodV2({ after: before });
+    expect(base.errors.filter((e) => e.path === PATH).map((e) => e.rule).sort()).toEqual(["AD-REF-001", "Q5"]);
+
+    const touched = structuredClone(before);
+    touched.steps[7].inputs[0].properties[0].value = "/* touched */ " + touched.steps[7].inputs[0].properties[0].value;
+    const r = validateMethodV2({ after: touched, before });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings.filter((w) => w.path === PATH && (w.rule === "Q5" || w.rule === "AD-REF-001")).map((w) => w.preexisting)).toEqual([true, true]);
+
+    // a NEW dangling ref in the same SQL is still new and blocks
+    const ghost = structuredClone(before);
+    ghost.steps[7].inputs[0].properties[0].value += " and x = '#{brandNewGhost}'";
+    const g = validateMethodV2({ after: ghost, before });
+    expect(g.errors.map((e) => [e.rule, e.message.includes("brandNewGhost")])).toEqual([["AD-REF-001", true]]);
+  });
+
   test("strict turns new warnings into errors but leaves pre-existing ones as warnings", () => {
     const before = golden();
     const after = mutate((m) => { m.steps[0].id = "step-1"; });

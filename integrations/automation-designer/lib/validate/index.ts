@@ -16,8 +16,11 @@
 // ALIGNED `before` step (same step id, else an in-order match on the step's
 // service/type — a draft and its published copy have different step ids) and
 // every other array index by the element's `key`, plus the value at the path
-// when it is a leaf. So a different broken body at the same path, or a new
-// output that lands on an old output's index, is NEW and blocks.
+// when it is a short scalar leaf, or the normalised finding message when it is
+// a text leaf (SQL / code / template). So a different broken value, a
+// different dangling ref in the same SQL, or a new output that lands on an old
+// output's index, is NEW and blocks; an unrelated edit elsewhere in the same
+// SQL / code body keeps its old findings pre-existing.
 // `strict` turns the remaining (new) warnings into errors; pre-existing
 // findings stay warnings. `overlayPaths` (the JSON paths the caller meant to
 // edit) marks new findings outside them as possible serializer drift.
@@ -183,6 +186,12 @@ function findingIdentity(f: ValidationFinding, body: unknown, stepAnchors: strin
     }
     last = p;
   }
+  // A TEXT leaf (SQL, code, a SpEL template: long or multi-line) is identified
+  // by the finding's subject — its normalised message, which names the
+  // offending ref/token — not by the whole text, so an unrelated edit to the
+  // same body (a comment, another clause) keeps an old finding pre-existing
+  // (ADW-R3). A short scalar keeps its value: a different broken value at the
+  // same place is new.
   const leaf =
     typeof last === "string" && isBookkeepingKey(last)
       ? ""
@@ -190,8 +199,24 @@ function findingIdentity(f: ValidationFinding, body: unknown, stepAnchors: strin
         ? "∅"
         : typeof node === "object"
           ? ""
-          : String(node).trim();
+          : isTextLeaf(node)
+            ? `msg:${normaliseMessage(f.message)}`
+            : String(node).trim();
   return `${f.rule}|${label}|${leaf}`;
+}
+
+function isTextLeaf(v: unknown): boolean {
+  return typeof v === "string" && (v.length > 80 || v.includes("\n"));
+}
+
+/** A finding message without positional detail (step numbers, line/column) that an unrelated edit shifts. */
+function normaliseMessage(m: string): string {
+  return m
+    .replace(/\b[Ss]teps? \d+\b/g, "step #")
+    .replace(/\b(line|col(umn)?)\s*:?\s*\d+/gi, "$1 #")
+    .replace(/\(\d+:\d+\)/g, "(#:#)")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** Coarse step signature for aligning steps whose ids differ (draft vs published). */
