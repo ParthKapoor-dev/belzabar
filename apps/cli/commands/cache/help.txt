@@ -28,6 +28,8 @@ Subcommands:
 
 Args:
   <uuid...>           One or more cache entry UUIDs (e.g. method/chain UUIDs).
+                      Each must be 32 hex characters (or dashed UUID form);
+                      anything else (e.g. a mistyped subcommand) → INVALID_UUID.
 
 Flags:
   --type <TYPE>       Cache type to invalidate. (default: AUTOMATION)

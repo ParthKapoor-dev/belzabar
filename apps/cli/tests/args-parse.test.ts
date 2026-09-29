@@ -54,7 +54,7 @@ describe("extension", () => {
 describe("cache", () => {
   const parse = (a: string[]) => cache.parseArgs!(a, ctx) as any;
   test("flags", () => {
-    expect(parse(["u1", "--type=PAGE"])).toMatchObject({ uuids: ["u1"], type: "PAGE", all: false });
+    expect(parse(["44014c3707d6b6d8ae848839a1c8d1e7", "--type=PAGE"])).toMatchObject({ uuids: ["44014c3707d6b6d8ae848839a1c8d1e7"], type: "PAGE", all: false });
     expect(parse(["-y", "--all"])).toMatchObject({ uuids: [], all: true, yes: true, type: "AUTOMATION" });
   });
   test("errors", () => {
@@ -64,7 +64,7 @@ describe("cache", () => {
   });
   test("invalidate is a remote write, prune-local is not", () => {
     const writes = cache.writes as (args: any) => boolean;
-    expect(writes(parse(["u1"]))).toBe(true);
+    expect(writes(parse(["44014c3707d6b6d8ae848839a1c8d1e7"]))).toBe(true);
     expect(writes(parse(["prune-local"]))).toBe(false);
   });
 });

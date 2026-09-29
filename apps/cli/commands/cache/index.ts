@@ -112,6 +112,27 @@ function parseUuids(rest: string[]): string[] {
   return rest.map(u => u.trim()).filter(u => u.length > 0);
 }
 
+/** A cache entry id: 32 hex chars (AD/PD ids), or the dashed 8-4-4-4-12 form. */
+const CACHE_UUID_RE = /^(?:[0-9a-f]{32}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+
+/**
+ * Refuse anything that is not a uuid (CORE-R12): `invalidate` is the default
+ * subcommand, so a mistyped subcommand (`belz cache prune`) used to be POSTed
+ * as the uuid "prune" and reported as a successful invalidation.
+ */
+export function assertCacheUuids(uuids: string[]): void {
+  const bad = uuids.filter(u => !CACHE_UUID_RE.test(u));
+  if (bad.length === 0) return;
+  const known = ["invalidate", "prune-local"];
+  const looksLikeSubcommand = bad.length === 1 && uuids.length === 1 && /^[a-z][a-z-]*$/.test(bad[0]!);
+  throw new CliError(
+    `Invalid cache UUID${bad.length === 1 ? "" : "s"}: ${bad.map(b => `'${b.slice(0, 60)}'`).join(", ")}. ` +
+      `Expected 32 hex characters.` +
+      (looksLikeSubcommand ? ` Subcommands: ${known.join(", ")}.` : ""),
+    { code: "INVALID_UUID", details: { invalid: bad, subcommands: known } },
+  );
+}
+
 /**
  * Request body. The server key is `uuids` (plural). An empty or absent `uuids` list
  * means "flush every entry of this type for the whole org" — callers must only build
@@ -377,6 +398,7 @@ const command: CommandModule<CacheArgs, CacheData> = {
     if (all && uuids.length > 0) {
       throw new CliError("--all cannot be combined with UUIDs.", { code: "INVALID_ARGS" });
     }
+    assertCacheUuids(uuids);
     if (uuids.length === 0 && !all) {
       throw new CliError(
         "No UUIDs given. An invalidate without UUIDs flushes the whole org's cache; pass --all --yes to do that deliberately.",
@@ -404,6 +426,7 @@ const command: CommandModule<CacheArgs, CacheData> = {
         code: "CACHE_CONFIRMATION_REQUIRED",
       });
     }
+    assertCacheUuids(args.uuids);
     const scope: InvalidateData["scope"] = args.uuids.length === 0 ? "all" : "uuids";
     const envName = context.env.name;
     const body = buildInvalidateBody(args.uuids, args.type);

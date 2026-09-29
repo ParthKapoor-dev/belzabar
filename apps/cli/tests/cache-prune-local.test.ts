@@ -150,7 +150,7 @@ describe("belz cache prune-local (command wiring)", () => {
     expect(typeof command.writes).toBe("function");
     const parsed = (command.parseArgs as any)(["prune-local"], {} as any);
     expect((command.writes as (a: unknown) => boolean)(parsed)).toBe(false);
-    const invalidateParsed = (command.parseArgs as any)(["u1"], {} as any);
+    const invalidateParsed = (command.parseArgs as any)(["44014c3707d6b6d8ae848839a1c8d1e7"], {} as any);
     expect((command.writes as (a: unknown) => boolean)(invalidateParsed)).toBe(true);
   });
 

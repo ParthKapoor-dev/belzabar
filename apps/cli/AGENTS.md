@@ -53,7 +53,8 @@ belz --version | --help | --help-full        → runner / entry point
 - `envAware: false` for the `tw`, `migrate`, `release` namespaces and for
   `config`, `extension`, `envs`, `setup`, `onboard`, `update` — their envelopes carry no `meta.env`.
 - `belz cache` self-routes with `defineSubcommands` (default `invalidate`): `belz cache --env <e> <uuid>…`
-  (remote write → explicit `--env` required; `--all --yes` for an org-wide flush) and
+  (remote write → explicit `--env` required; every uuid must be 32 hex or dashed, else `INVALID_UUID` —
+  so a mistyped subcommand is never POSTed (CORE-R12); `--all --yes` for an org-wide flush) and
   `belz cache prune-local [--yes]` (local only, `writesLocal`; dry run unless `--yes`; removes
   pre-env-scope flat cache files — never `method-finder` / `page-finder`, which are flat by
   design — and `.refresh/*.lock` files older than 10 minutes). `pruneLocalCache(dir, opts)` is
