@@ -5,7 +5,8 @@
 import { decodeBase64Strict } from "../base64";
 import { jsonPath, stepKind, stepRef, walkInputs, DATA_TYPES } from "./schema";
 import { hasSpel, replaceSpelBlocks, scanSpel, stripStrings, type SpelIssue } from "./spel";
-import { arr, isObj, nonBlank, str, type Report, type StepRef } from "./types";
+import { arr, str, type Report, type StepRef } from "./types";
+import { isObj, str as nonBlank } from "@belzabar/core";
 
 const SQL_INPUT_KEYS = new Set(["queryString", "SQLQuery"]);
 

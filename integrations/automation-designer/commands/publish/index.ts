@@ -1,4 +1,4 @@
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, type CommandModule, defineArgs, isObj, ok } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { resolveMethodRef } from "../../lib/ids";
@@ -226,7 +226,7 @@ async function recordNoteWithRetry(
       // NEW-1: a POST that reached the server (reset / timeout after sending:
       // core marks it mayHaveCompleted, retryable:false) may have created the
       // note. Re-sending would duplicate it: look it up instead, never retry.
-      if (e instanceof CliError && isRecord(e.details) && (e.details.mayHaveCompleted === true || e.details.retryable === false)) {
+      if (e instanceof CliError && isObj(e.details) && (e.details.mayHaveCompleted === true || e.details.retryable === false)) {
         try {
           const id = await adApi.findChangelogNote(chainId, note, startedAt);
           if (id) return { recorded: true, id };
@@ -243,10 +243,6 @@ async function recordNoteWithRetry(
     }
   }
   return { recorded: false, id: null, error: lastError };
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
 export default command;

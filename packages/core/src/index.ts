@@ -12,3 +12,5 @@ export * from "./belz-meta";
 export * from "./envelope";
 export * from "./registry";
 export * from "./args";
+export * from "./guards";
+export * from "./search";

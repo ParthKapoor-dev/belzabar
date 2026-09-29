@@ -1,4 +1,4 @@
-import { CliError, Config, defineArgs, ok, openUrlInBrowser, triggerDetachedRefresh, type CommandModule } from "@belzabar/core";
+import { CliError, type CommandModule, Config, defineArgs, ok, openUrlInBrowser, strOrNull, triggerDetachedRefresh } from "@belzabar/core";
 import { PD_FORCE_FLAG } from "../../lib/args/common";
 import { analyzeItem, cacheDeps, collectAllAdIds, formatTreeLines, type AnalyzeError } from "../../lib/analyzer";
 import {
@@ -373,18 +373,14 @@ interface ShowData {
 
 // --- Helpers ---
 
-function str(v: unknown): string | null {
-  return typeof v === "string" && v.trim() ? v.trim() : null;
-}
-
 /**
  * Draft / published ids from the fetched row: the API returns ONE entity
  * (draft OR published) plus `referenceId` pointing at the other version.
  */
 function extractMetadata(source: RawPageResponse, fallbackId: string) {
   const status = typeof source.status === "string" ? source.status.toUpperCase() : null;
-  const ownId = str(source.id) ?? fallbackId;
-  const refId = str(source.referenceId);
+  const ownId = strOrNull(source.id) ?? fallbackId;
+  const refId = strOrNull(source.referenceId);
   const isPublished = status === "PUBLISHED";
   return {
     status,

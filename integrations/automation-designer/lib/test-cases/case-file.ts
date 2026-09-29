@@ -16,7 +16,7 @@
 //     inputExtras?: {fieldCode: {defaultValue?, wrapper?, raw?}},
 //     assertions: [{output, op, expected} | {expression, mode?, conditions?}] }
 
-import { CliError } from "@belzabar/core";
+import { CliError, isObj } from "@belzabar/core";
 import { assertionFromWire, assertionToWire, isStructured, type CaseAssertion } from "./expect";
 
 export interface InputExtra {
@@ -37,10 +37,6 @@ export interface CaseFile {
 }
 
 type Obj = Record<string, unknown>;
-
-function isObj(v: unknown): v is Obj {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
 
 /** Recursively sort object keys (stable files, order-insensitive compare). */
 export function sortKeys(v: unknown): unknown {

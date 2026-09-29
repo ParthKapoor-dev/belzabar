@@ -5,8 +5,7 @@
 
 import { readFile } from "fs/promises";
 import { isAbsolute, resolve } from "path";
-import { CliError } from "@belzabar/core";
-import { isObj } from "../serialize/compact";
+import { CliError, isObj } from "@belzabar/core";
 
 type Obj = Record<string, unknown>;
 

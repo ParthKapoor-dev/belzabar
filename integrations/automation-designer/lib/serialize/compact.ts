@@ -39,9 +39,9 @@
 import type { ApiContract, ContractInput } from "../validate/online";
 import type { V2Step, V2StepInput } from "../types/v2-wire";
 import { decodeBase64Strict, encodeBase64 } from "../base64";
+import { isObj } from "@belzabar/core";
 
 type Obj = Record<string, unknown>;
-export const isObj = (v: unknown): v is Obj => !!v && typeof v === "object" && !Array.isArray(v);
 
 // ── problems ────────────────────────────────────────────────────────────────
 

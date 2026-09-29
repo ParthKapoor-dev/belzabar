@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { CliError, currentCacheEnv, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, type CommandModule, currentCacheEnv, defineArgs, isObj, ok } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
@@ -142,7 +142,6 @@ const command: CommandModule<ImportArgs, ImportData> = {
 };
 
 type Obj = Record<string, unknown>;
-const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 
 /** The method's state as the record carries it (V1 automationState/state, V2 metadata.state). */
 function recordState(r: Obj): string | null {

@@ -17,7 +17,7 @@
 //      referenceId pointing at the soft-deleted row, and a publish rewrites that
 //      row's config without ever restoring its status).
 
-import { CliError } from "@belzabar/core";
+import { CliError, strOrNull } from "@belzabar/core";
 import { pdApi } from "./api/index";
 import { parsePage } from "./parser/index";
 import type { HydratedPage, PdEntityType, PdStatus } from "./types/common";
@@ -49,10 +49,6 @@ export type LinkedPairResult =
     }
   | { ok: false; reason: LinkFailureReason; message: string };
 
-function str(v: unknown): string | null {
-  return typeof v === "string" && v.trim() ? v.trim() : null;
-}
-
 function statusOf(raw: RawPageResponse): PdStatus | null {
   const s = typeof raw.status === "string" ? raw.status.toUpperCase() : "";
   return s === "DRAFT" || s === "PUBLISHED" ? s : null;
@@ -67,7 +63,7 @@ export async function resolveLinkedPair(
   raw: RawPageResponse,
   deps: DraftGuardDeps = defaultDeps,
 ): Promise<LinkedPairResult> {
-  const ownId = str(raw.id) ?? "";
+  const ownId = strOrNull(raw.id) ?? "";
   const status = statusOf(raw);
   if (!status) {
     return {
@@ -76,7 +72,7 @@ export async function resolveLinkedPair(
       message: `Page ${ownId} has no recognisable status (${String(raw.status)}); refusing to guess draft vs published.`,
     };
   }
-  const refId = str(raw.referenceId);
+  const refId = strOrNull(raw.referenceId);
   const expected: PdStatus = status === "DRAFT" ? "PUBLISHED" : "DRAFT";
 
   if (!refId || refId === ownId) {
@@ -108,7 +104,7 @@ export async function resolveLinkedPair(
         `instead of ${expected}. Refusing to guess the sibling.`,
     };
   }
-  const backRef = str(linked.referenceId);
+  const backRef = strOrNull(linked.referenceId);
   if (backRef && backRef !== ownId) {
     return {
       ok: false,
@@ -163,7 +159,7 @@ export async function resolveDraftTarget(
     return {
       ok: false,
       reason: link.reason,
-      publishedId: statusOf(raw) === "PUBLISHED" ? str(raw.id) : null,
+      publishedId: statusOf(raw) === "PUBLISHED" ? strOrNull(raw.id) : null,
       inputId,
       message: link.message,
     };

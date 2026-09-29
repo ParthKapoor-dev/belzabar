@@ -16,7 +16,7 @@
 //     one by one instead.
 //   - The suite GET omits `active:false` (and deleted) cases.
 
-import { CliError } from "@belzabar/core";
+import { CliError, isObj } from "@belzabar/core";
 import { adApi } from "../api/index";
 import { caseFromWire, caseToWire, diffCases, type CaseFile } from "./case-file";
 import { isStructured } from "./expect";
@@ -34,7 +34,6 @@ export interface SuiteSnapshot {
 }
 
 type Obj = Record<string, unknown>;
-const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 
 export async function fetchSuite(chainUuid: string): Promise<SuiteSnapshot> {
   const body = await adApi.listTestCases(chainUuid);

@@ -24,13 +24,13 @@ import {
 
   expandCompactStep,
   expandField,
-  isObj,
   mergeField,
   Problems,
   STEP_SET_KEYS,
   type FieldKind,
   type ServiceCatalog,
 } from "./compact";
+import { isObj } from "@belzabar/core";
 
 export const OP_NAMES = [
   "add-step",

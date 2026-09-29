@@ -24,25 +24,12 @@ import {
   type SubcommandsOptions,
   type SubcommandsSpec,
 } from "./spec";
+import { levenshtein } from "../search";
 
 const FLAG_LIKE = /^-{1,2}[A-Za-z]/;
 
 export function camelCase(key: string): string {
   return key.replace(/-([a-zA-Z0-9])/g, (_, c: string) => c.toUpperCase());
-}
-
-function editDistance(a: string, b: string): number {
-  const dp = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    let prev = dp[0]!;
-    dp[0] = i;
-    for (let j = 1; j <= b.length; j++) {
-      const tmp = dp[j]!;
-      dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j]!, dp[j - 1]!);
-      prev = tmp;
-    }
-  }
-  return dp[b.length]!;
 }
 
 /** Closest known spelling to `input`, or undefined when nothing is close. */
@@ -51,7 +38,7 @@ export function suggest(input: string, known: readonly string[]): string | undef
   const n = norm(input);
   let best: { value: string; d: number } | undefined;
   for (const k of known) {
-    const d = editDistance(n, norm(k));
+    const d = levenshtein(n, norm(k));
     if (!best || d < best.d) best = { value: k, d };
   }
   if (!best) return undefined;

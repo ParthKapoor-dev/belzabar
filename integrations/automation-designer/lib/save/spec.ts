@@ -4,9 +4,9 @@
 
 import { readFile } from "fs/promises";
 import { dirname } from "path";
-import { CliError } from "@belzabar/core";
+import { CliError, isObj } from "@belzabar/core";
 import { fetchCategories, requireChainCategory, type Category } from "../categories";
-import { isObj, isRawV2Step } from "../serialize/compact";
+import { isRawV2Step } from "../serialize/compact";
 import { assertCreatableCategory, buildCreateBody, compactSteps } from "./create";
 import { loadServiceCatalog, servicesOfCompactSteps } from "./services";
 import { resolveSpecSources } from "./sources";

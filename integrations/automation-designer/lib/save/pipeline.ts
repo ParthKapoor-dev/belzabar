@@ -14,14 +14,14 @@
 // `metadata.version.name` and `metadata.internal.*` (live 2026-09-28);
 // those are the only paths verify tolerates besides the targets.
 
-import { CliError } from "@belzabar/core";
+import { CliError, isObj } from "@belzabar/core";
 import * as v2 from "../api/v2";
 import { resolveDraftTarget } from "../draft-guard";
 import { CacheManager } from "../cache";
 import { logIntent } from "../args/confirm";
 import { diffPaths, getAtPath, isUnder, jsonEqual } from "../serialize/diff";
 import { planV2Overlay, type OverlayTarget, type V2OverlayPlan } from "../serialize/v2";
-import { isObj } from "../serialize/compact";
+
 import { isBookkeepingKey } from "../fingerprint";
 import { loadServiceCatalog, servicesOfOps } from "./services";
 import type { V2MethodResponse } from "../types/v2-wire";

@@ -22,13 +22,13 @@
 //
 // Pure: no network.
 
-import { CliError } from "@belzabar/core";
+import { CliError, isObj } from "@belzabar/core";
 import type { V2MethodResponse, V2Step } from "../types/v2-wire";
 import { decodeBase64Strict, encodeBase64 } from "../base64";
 import { parseV2Step } from "../parser/steps/v2";
 import type { ParseOptions } from "../parser/steps/classify";
 import { diffPaths, getAtPath, isUnder, jsonEqual, pathSegments } from "./diff";
-import { emptyCatalog, encodeSql, findSqlSlot, isObj, Problems, type ServiceCatalog } from "./compact";
+import { emptyCatalog, encodeSql, findSqlSlot, Problems, type ServiceCatalog } from "./compact";
 import { applyStructuralOps, OP_NAMES } from "./ops";
 
 export { encodeSql };

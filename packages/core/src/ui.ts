@@ -21,6 +21,7 @@ import {
 } from "./command";
 import { ui as theme, term, symbols, wordmark } from "./theme";
 import { vlog } from "./verbose";
+import { isObj } from "./guards";
 
 let currentOutputMode: OutputMode = "human";
 
@@ -121,12 +122,8 @@ function stringifyScalar(value: unknown): string {
   }
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function isObjectArray(value: unknown): value is Record<string, unknown>[] {
-  return Array.isArray(value) && value.every((item) => isPlainObject(item));
+  return Array.isArray(value) && value.every((item) => isObj(item));
 }
 
 function renderDefaultHuman(envelope: CommandEnvelope<unknown>, ui: HumanPresenterHelpers): void {
@@ -147,7 +144,7 @@ function renderDefaultHuman(envelope: CommandEnvelope<unknown>, ui: HumanPresent
     return;
   }
 
-  if (isPlainObject(data)) {
+  if (isObj(data)) {
     const entries = Object.entries(data);
     if (entries.every(([, value]) => value === null || ["string", "number", "boolean"].includes(typeof value))) {
       ui.table(

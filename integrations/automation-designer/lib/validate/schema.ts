@@ -8,7 +8,8 @@
 
 import { z } from "zod";
 import { classifyService } from "../parser/steps/classify";
-import { arr, isObj, nonBlank, str, type Report, type StepRef } from "./types";
+import { arr, str, type Report, type StepRef } from "./types";
+import { isObj, str as nonBlank } from "@belzabar/core";
 
 /** ^\w+$ — input, variable and output keys; step output name/fieldCode (live-verified). */
 export const KEY_RE = /^[A-Za-z0-9_]+$/;

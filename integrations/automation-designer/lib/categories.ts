@@ -13,7 +13,7 @@
 // system ids in both lists and have no chain category.
 // Uuids come padded with 4 spaces; every uuid here is trimmed, never padded.
 
-import { CliError } from "@belzabar/core";
+import { CliError, num, strOrNull } from "@belzabar/core";
 import { normalizeUuid } from "./ids";
 import { adApi } from "./api/index";
 
@@ -42,8 +42,6 @@ function rows(payload: unknown): Row[] {
   return arr.filter((r): r is Row => !!r && typeof r === "object" && !Array.isArray(r));
 }
 
-const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
-const str = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 /**
  * Join the chain-category list with the system list into one row per
@@ -64,10 +62,10 @@ export function buildCategories(chainList: unknown, systemList: unknown): Catego
   const out: Category[] = [];
   const seen = new Set<string>();
   for (const c of rows(chainList)) {
-    const name = str(c.name) ?? str(c.label);
+    const name = strOrNull(c.name) ?? strOrNull(c.label);
     if (!name) continue;
-    const type = str(c.type) ?? "";
-    const label = str(c.label) ?? undefined;
+    const type = strOrNull(c.type) ?? "";
+    const label = strOrNull(c.label) ?? undefined;
     if (type === "SYSTEM_GENERATED") {
       const systemUuid = normalizeUuid(c.uuid);
       out.push({ chainCategoryId: null, chainCategoryUuid: null, systemId: num(c.id), systemUuid, name, type, label });
@@ -97,7 +95,7 @@ export function buildCategories(chainList: unknown, systemList: unknown): Catego
   // Systems with no chain-category row (not expected, but never drop data).
   for (const s of systems) {
     const u = normalizeUuid(s.uuid);
-    const name = str(s.name) ?? str(s.label);
+    const name = strOrNull(s.name) ?? strOrNull(s.label);
     if (!name || (u && seen.has(u))) continue;
     out.push({
       chainCategoryId: num(s.automationChainCategoryId),
@@ -105,8 +103,8 @@ export function buildCategories(chainList: unknown, systemList: unknown): Catego
       systemId: num(s.id),
       systemUuid: u,
       name,
-      type: str(s.type) ?? "",
-      label: str(s.label) ?? undefined,
+      type: strOrNull(s.type) ?? "",
+      label: strOrNull(s.label) ?? undefined,
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name));

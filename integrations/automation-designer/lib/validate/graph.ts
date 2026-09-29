@@ -8,7 +8,8 @@
 import { customCodeSource, loopConfig } from "./steps";
 import { jsonPath, stepKind, stepRef, walkInputs } from "./schema";
 import { scanSpel, spelRoots } from "./spel";
-import { arr, isObj, nonBlank, str, type Report, type StepRef } from "./types";
+import { arr, str, type Report, type StepRef } from "./types";
+import { isObj, str as nonBlank } from "@belzabar/core";
 
 /** Roots the platform provides in every SpEL context (LoggedInUser: seen on a dev env). */
 export const PLATFORM_ROOTS = new Set(["util", "QUOTE", "ESCAPE", "JSON", "Math", "T", "LoggedInUser"]);

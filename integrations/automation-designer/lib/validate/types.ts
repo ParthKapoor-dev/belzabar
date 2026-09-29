@@ -49,11 +49,6 @@ export interface FindingInput {
 
 export type Report = (f: FindingInput) => void;
 
-/** Plain JSON object guard. */
-export function isObj(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}
-
 export function arr(v: unknown): unknown[] {
   return Array.isArray(v) ? v : [];
 }
@@ -62,7 +57,3 @@ export function str(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
 }
 
-/** Non-blank string, trimmed. */
-export function nonBlank(v: unknown): string | undefined {
-  return typeof v === "string" && v.trim() ? v.trim() : undefined;
-}

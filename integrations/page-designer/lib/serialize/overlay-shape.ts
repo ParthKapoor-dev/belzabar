@@ -4,13 +4,12 @@
 // once as PD_OVERLAY_INVALID. Semantic checks (unknown variable / callId /
 // node id, unknown section names) stay in apply.ts.
 
-import { CliError } from "@belzabar/core";
+import { CliError, isObj } from "@belzabar/core";
 import type { Overlay } from "../types/common";
 
 const DATA_TYPES = new Set(["STRING", "NUMBER", "BOOLEAN", "ARRAY", "OBJECT"]);
 
 type Rec = Record<string, unknown>;
-const isObj = (v: unknown): v is Rec => !!v && typeof v === "object" && !Array.isArray(v);
 
 /** Shape problems in `value` as an Overlay (empty = OK). */
 export function overlayShapeProblems(value: unknown): string[] {

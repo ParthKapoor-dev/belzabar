@@ -31,7 +31,8 @@ import { checkStructure } from "./schema";
 import { checkSteps } from "./steps";
 import { checkGraph } from "./graph";
 import { isBookkeepingKey } from "../fingerprint";
-import { isObj, arr, nonBlank, str, type FindingInput, type Report, type ValidationFinding, type ValidationResult } from "./types";
+import { arr, str, type FindingInput, type Report, type ValidationFinding, type ValidationResult } from "./types";
+import { isObj, str as nonBlank } from "@belzabar/core";
 
 export type { ValidationFinding, ValidationResult, StepRef, Severity } from "./types";
 export { RULES, ruleInfo, type RuleCode, type RuleInfo } from "./catalogue";

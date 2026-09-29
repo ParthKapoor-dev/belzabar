@@ -16,6 +16,7 @@
 import { decodeBase64Strict } from "./base64";
 import { abbreviate, htmlToText, oneLine } from "./compact";
 import type { HydratedMethod, MethodField, MethodOutput, ParsedStep, StepInput } from "./types/common";
+import { isObj, str } from "@belzabar/core";
 
 export type InputLabeler = (input: StepInput) => string | undefined;
 
@@ -56,8 +57,6 @@ export function identityForStep(step: ParsedStep): string {
 // ── Wire facts (loop / exit) ────────────────────────────────────────────────
 
 type Obj = Record<string, unknown>;
-const isObj = (v: unknown): v is Obj => !!v && typeof v === "object" && !Array.isArray(v);
-const nonBlank = (v: unknown): string | undefined => (typeof v === "string" && v.trim() ? v.trim() : undefined);
 
 export interface StepFacts {
   when?: string;
@@ -82,23 +81,23 @@ const LOOP_SHORT: Record<string, string> = {
 export function stepFacts(step: ParsedStep): StepFacts {
   const facts: StepFacts = {};
   const raw = isObj(step.raw) ? step.raw : {};
-  if (nonBlank(step.conditionExpression)) facts.when = oneLine(step.conditionExpression!);
+  if (str(step.conditionExpression)) facts.when = oneLine(step.conditionExpression!);
   if (step.runAsync) facts.async = true;
 
   // Loop + exit-on-failure come from the parser (V1 and V2 alike).
   if (step.repeatStepExecution) {
     const cfg = step.loopConfiguration ?? {};
     facts.loop = {
-      type: nonBlank(cfg.type),
-      over: nonBlank(step.loopExecutionSource),
-      counter: nonBlank(cfg.counter),
+      type: str(cfg.type),
+      over: str(step.loopExecutionSource),
+      counter: str(cfg.counter),
       parallel: cfg.executeParallel === true || undefined,
     };
   }
   const code = statusCode(step.forceExitStatusCode);
   if (step.forceExitFromFailure) {
     facts.exitOnFailure = true;
-    facts.exitMessage = nonBlank(step.forceExitErrorMessage);
+    facts.exitMessage = str(step.forceExitErrorMessage);
     if (code) facts.exitCode = code;
   }
   // Conditional exit is not on ParsedStep: V2 `exitCondition.conditionalExit`, V1
@@ -106,12 +105,12 @@ export function stepFacts(step: ParsedStep): StepFacts {
   const props = isObj(raw.properties) ? raw.properties : null;
   const exit = props && isObj(props.exitCondition) ? props.exitCondition : null;
   const ce = exit && isObj(exit.conditionalExit) ? exit.conditionalExit : null;
-  const cond = ce ? nonBlank(ce.expression) : undefined;
-  const exitIf = cond ?? nonBlank(raw.forceReturnConditionExpression);
+  const cond = ce ? str(ce.expression) : undefined;
+  const exitIf = cond ?? str(raw.forceReturnConditionExpression);
   if (exitIf) {
     facts.exitIf = oneLine(exitIf);
     const ifCode = ce ? statusCode(ce.code) : code;
-    const ifMessage = ce ? nonBlank(ce.message) : nonBlank(step.forceExitErrorMessage);
+    const ifMessage = ce ? str(ce.message) : str(step.forceExitErrorMessage);
     if (ifCode) facts.exitIfCode = ifCode;
     if (ifMessage) facts.exitIfMessage = ifMessage;
   }
@@ -119,7 +118,7 @@ export function stepFacts(step: ParsedStep): StepFacts {
 }
 
 function statusCode(v: unknown): string | undefined {
-  return typeof v === "number" ? String(v) : nonBlank(v);
+  return typeof v === "number" ? String(v) : str(v);
 }
 
 // ── Step pieces ─────────────────────────────────────────────────────────────
@@ -157,10 +156,10 @@ export function stepBody(step: ParsedStep): { kind: "SQL" | "CODE" | "SPEL"; tex
 export function outputSpecs(step: ParsedStep): string[] {
   return (step.outputs ?? []).map((o) => {
     const raw = isObj(o.raw) ? o.raw : {};
-    const exposed = nonBlank(raw.fieldCode) ?? nonBlank(raw.name);
+    const exposed = str(raw.fieldCode) ?? str(raw.name);
     let s = o.code || exposed || "?";
     if (exposed && exposed !== o.code) s += `→${exposed}`;
-    const ref = isObj(o.inputReference) ? nonBlank((o.inputReference as Obj).reference) : nonBlank(o.inputReference ?? o.internalVarRef);
+    const ref = isObj(o.inputReference) ? str((o.inputReference as Obj).reference) : str(o.inputReference ?? o.internalVarRef);
     if (ref) s += `⇒$${ref}`;
     return s;
   });
@@ -231,7 +230,7 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
   if (ident) head += ` ${ident}`;
   // AD rich-text descriptions (`<ul id="isPasted" style=…`) as plain text;
   // cut at 80 unless --full (bodyChars 0) (ADR-R5).
-  const desc = nonBlank(step.description) ? htmlToText(step.description!) : "";
+  const desc = str(step.description) ? htmlToText(step.description!) : "";
   if (desc) head += ` "${abbreviate(desc, bodyChars === 0 ? 0 : 80)}"`;
   parts.push(head);
 
@@ -275,7 +274,7 @@ export function compactMethod(method: HydratedMethod, opts: CompactOptions = {})
     version: method.version,
     uuid: method.uuid,
     referenceId: method.referenceId ?? undefined,
-    summary: nonBlank(method.summary) ? oneLine(method.summary) : undefined,
+    summary: str(method.summary) ? oneLine(method.summary) : undefined,
     in: fieldList(method.inputs.filter((f) => !f.hideInput), true),
     out: method.outputs.length ? method.outputs.map((o) => `${outputName(o)}:${String(o.type ?? "?")}`).join(", ") : undefined,
     vars: fieldList(method.variables),
@@ -339,14 +338,14 @@ function storyStepType(step: ParsedStep): string {
 
 function storyStepWhat(step: ParsedStep): string {
   const bits: string[] = [];
-  const desc = nonBlank(step.description ? htmlToText(step.description) : undefined) ?? (step.kind === "SPEL_ECHO" && step.expression ? `computes ${abbreviate(step.expression, 80)}` : undefined);
+  const desc = str(step.description ? htmlToText(step.description) : undefined) ?? (step.kind === "SPEL_ECHO" && step.expression ? `computes ${abbreviate(step.expression, 80)}` : undefined);
   if (desc) bits.push(desc);
   const f = stepFacts(step);
   if (f.when) bits.push(`only when ${f.when}`);
   if (f.loop) bits.push(`repeats ${f.loop.type ? LOOP_SHORT[f.loop.type] ?? f.loop.type : "loop"}${f.loop.over ? ` over ${f.loop.over}` : ""}`);
   const outs = (step.outputs ?? []).map((o) => {
     const raw = isObj(o.raw) ? o.raw : {};
-    return nonBlank(raw.fieldCode) ?? o.code;
+    return str(raw.fieldCode) ?? o.code;
   }).filter(Boolean);
   if (outs.length) bits.push(`gives ${outs.map((o) => `\`${o}\``).join(", ")}`);
   if (f.exitOnFailure) bits.push(`stops the method on failure${f.exitCode ? ` (${f.exitCode})` : ""}`);
@@ -363,7 +362,7 @@ function testValue(f: MethodField): string {
 export function storyMarkdown(method: HydratedMethod): string {
   const out: string[] = [];
   out.push(`## ${method.name}`, "");
-  const what = nonBlank(method.summary) ?? nonBlank(method.description) ?? "(no summary)";
+  const what = str(method.summary) ?? str(method.description) ?? "(no summary)";
   out.push(`**What it does:** ${oneLine(what)}`);
   out.push(`**Approach:** ${approach(method)}`);
   out.push(`**Service:** ${method.category?.name ?? "Uncategorized"}`);

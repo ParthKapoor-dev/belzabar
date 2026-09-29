@@ -1,5 +1,5 @@
 import { join } from "path";
-import { apiFetch, BELZ_CONFIG_DIR, Cache, CliError, Config, readJsonOrNull } from "@belzabar/core";
+import { apiFetch, asObj, BELZ_CONFIG_DIR, Cache, CliError, Config, containsWordStart, dedupeBy, levenshtein, normalizeSearchText, numLike, readJsonOrNull, scoreText, strOrNull, tokenize } from "@belzabar/core";
 
 const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
@@ -308,7 +308,7 @@ export function listMethodFinderCategories(index: MethodFinderIndex): MethodFind
 }
 
 export function searchMethodIndex(index: MethodFinderIndex, query: string, limit: number): MethodFinderMatch[] {
-  const normalizedQuery = normalize(query);
+  const normalizedQuery = normalizeSearchText(query);
   if (!normalizedQuery) return [];
 
   const matches: MethodFinderMatch[] = [];
@@ -350,16 +350,16 @@ export function normalizeCategoryRecord(input: unknown): RawServiceCategory | nu
   const record = unwrapWrappedRecord(input);
   if (!record) return null;
 
-  const uuid = getString(record.uuid);
-  const name = getString(record.name) ?? getString(record.label);
+  const uuid = strOrNull(record.uuid);
+  const name = strOrNull(record.name) ?? strOrNull(record.label);
   if (!uuid || !name) return null;
 
   return {
-    id: getNumber(record.id),
-    systemUuid: getString(record.automationSystemUuid),
+    id: numLike(record.id),
+    systemUuid: strOrNull(record.automationSystemUuid),
     uuid,
     name,
-    label: getString(record.label) ?? name,
+    label: strOrNull(record.label) ?? name,
     aliasName: getStringArray(record.aliasName),
   };
 }
@@ -386,7 +386,7 @@ export function normalizeMethodRecord(
     uuid,
     referenceId: raw.referenceId,
     aliasName: raw.aliasName,
-    methodName: getString(def?.name) ?? fallbackName,
+    methodName: strOrNull(def?.name) ?? fallbackName,
     state,
     version: raw.version,
     categoryUuid: category.uuid,
@@ -395,11 +395,11 @@ export function normalizeMethodRecord(
     updatedOn: raw.lastUpdatedOn || raw.updatedOn,
     url: buildMethodUrl(category.name, draftUuid),
   };
-  const apiUuid = getString(record.automationApiUuid);
+  const apiUuid = strOrNull(record.automationApiUuid);
   if (apiUuid) method.automationApiUuid = apiUuid.toLowerCase();
-  const summary = capText(getString(def?.summary));
+  const summary = capText(strOrNull(def?.summary));
   if (summary) method.summary = summary;
-  const description = capText(getString(record.methodDescription) ?? getString(def?.methodDescription) ?? getString(def?.description));
+  const description = capText(strOrNull(record.methodDescription) ?? strOrNull(def?.methodDescription) ?? strOrNull(def?.description));
   if (description && description !== summary) method.description = description;
   if (def) {
     const { calls, opaque } = stepCallRefs(def);
@@ -418,7 +418,7 @@ function capText(text: string | null): string | null {
 function parseDefinition(jsonDefinition: string): Record<string, unknown> | null {
   if (!jsonDefinition) return null;
   try {
-    return asObject(JSON.parse(jsonDefinition));
+    return asObj(JSON.parse(jsonDefinition));
   } catch {
     return null;
   }
@@ -433,11 +433,11 @@ export function stepCallRefs(def: Record<string, unknown>): { calls: string[]; o
   const calls = new Set<string>();
   let opaque = 0;
   for (const step of getArray(def.services)) {
-    const s = asObject(step);
+    const s = asObj(step);
     if (!s) continue;
-    if (getString(s.language) || typeof s.code === "string") continue; // custom code
-    const apiUuid = getString(s.automationApiUuid);
-    const apiId = getNumber(s.automationApiId);
+    if (strOrNull(s.language) || typeof s.code === "string") continue; // custom code
+    const apiUuid = strOrNull(s.automationApiUuid);
+    const apiId = numLike(s.automationApiId);
     if (apiUuid) calls.add(`u:${apiUuid.toLowerCase()}`);
     else if (apiId !== null) calls.add(`n:${apiId}`);
     else if (s.automationId !== undefined && s.automationId !== null) opaque++;
@@ -644,122 +644,15 @@ function scoreCategoryMatch(query: string, category: MethodFinderCategory): numb
   return Math.max(aliasScore, nameScore, labelScore, uuidScore);
 }
 
-function scoreText(query: string, value: string, weight: number): number {
-  const normalizedValue = normalize(value);
-  if (!normalizedValue) return 0;
-
-  let base = 0;
-  if (normalizedValue === query) {
-    base = 1000;
-  } else if (normalizedValue.startsWith(query)) {
-    base = 900;
-  } else if (containsWordStart(normalizedValue, query)) {
-    base = 850;
-  } else if (normalizedValue.includes(query)) {
-    base = 760;
-  } else {
-    base = fuzzyScore(query, normalizedValue);
-  }
-
-  if (base <= 0) return 0;
-  return Math.max(1, Math.round(base * weight));
-}
-
-function containsWordStart(value: string, query: string): boolean {
-  if (value.startsWith(query)) return true;
-  return value.includes(` ${query}`)
-    || value.includes(`.${query}`)
-    || value.includes(`_${query}`)
-    || value.includes(`-${query}`)
-    || value.includes(`/${query}`);
-}
-
-function fuzzyScore(query: string, value: string): number {
-  const q = query.trim();
-  if (!q) return 0;
-
-  let best = 0;
-
-  const subsequence = subsequenceScore(q, value);
-  best = Math.max(best, subsequence);
-
-  const tokens = tokenize(value);
-  const maxDistance = Math.max(1, Math.floor(q.length * 0.4));
-
-  for (const token of tokens) {
-    if (token.length < 2) continue;
-    if (Math.abs(token.length - q.length) > maxDistance + 4) continue;
-
-    const distance = levenshtein(q, token);
-    if (distance > maxDistance) continue;
-
-    const score = 640 - distance * 120 - Math.abs(token.length - q.length) * 12;
-    best = Math.max(best, score);
-  }
-
-  return Math.max(0, best);
-}
-
-function subsequenceScore(query: string, value: string): number {
-  let qIndex = 0;
-  let vIndex = 0;
-
-  while (qIndex < query.length && vIndex < value.length) {
-    if (query[qIndex] === value[vIndex]) {
-      qIndex += 1;
-    }
-    vIndex += 1;
-  }
-
-  if (qIndex < query.length) return 0;
-
-  const density = query.length / Math.max(1, value.length);
-  const lengthBoost = Math.min(1, query.length / 8);
-  return Math.round(420 + density * 180 + lengthBoost * 40);
-}
-
-function levenshtein(a: string, b: string): number {
-  // Two-row DP; indices are always in bounds, hence the `!`s.
-  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
-  for (let i = 1; i <= a.length; i += 1) {
-    const cur = [i];
-    for (let j = 1; j <= b.length; j += 1) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      cur[j] = Math.min(prev[j]! + 1, cur[j - 1]! + 1, prev[j - 1]! + cost);
-    }
-    prev = cur;
-  }
-  return prev[b.length]!;
-}
-
-function tokenize(value: string): string[] {
-  return value
-    .split(/[^a-z0-9]+/g)
-    .map(t => t.trim())
-    .filter(Boolean);
-}
-
-function normalize(value: string): string {
-  return value.toLowerCase().trim();
-}
-
 function getNextOffset(payload: unknown, current: number, increment: number): number {
-  const p = asObject(payload);
-  const currentOffset = p ? getNumber(p.currentOffset) : null;
+  const p = asObj(payload);
+  const currentOffset = p ? numLike(p.currentOffset) : null;
   if (currentOffset !== null && currentOffset > current) return currentOffset;
   return current + increment;
 }
 
-function dedupeBy<T>(items: T[], keyFn: (item: T) => string): T[] {
-  const map = new Map<string, T>();
-  for (const item of items) {
-    map.set(keyFn(item), item);
-  }
-  return [...map.values()];
-}
-
 function unwrapWrappedRecord(input: unknown): Record<string, unknown> | null {
-  const objectValue = asObject(input);
+  const objectValue = asObj(input);
   if (!objectValue) return null;
 
   if (hasKey(objectValue, "uuid") || hasKey(objectValue, "name") || hasKey(objectValue, "label")) {
@@ -768,11 +661,11 @@ function unwrapWrappedRecord(input: unknown): Record<string, unknown> | null {
 
   const values = Object.values(objectValue);
   if (values.length === 1) {
-    return asObject(values[0]);
+    return asObj(values[0]);
   }
 
   for (const value of values) {
-    const candidate = asObject(value);
+    const candidate = asObj(value);
     if (!candidate) continue;
     if (hasKey(candidate, "uuid") || hasKey(candidate, "name") || hasKey(candidate, "label")) {
       return candidate;
@@ -790,46 +683,26 @@ function getArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
-function getString(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
 function getStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
-    .map(item => getString(item))
+    .map(item => strOrNull(item))
     .filter((item): item is string => item !== null);
-}
-
-function getNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) return value;
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) return parsed;
-  }
-  return null;
-}
-
-function asObject(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return value as Record<string, unknown>;
 }
 
 function asRawMethodRecord(value: Record<string, unknown>): RawMethodRecord {
   return {
-    uuid: getString(value.uuid) ?? "",
-    referenceId: getString(value.referenceId) ?? "",
-    aliasName: getString(value.aliasName) ?? "",
-    name: getString(value.name) ?? "",
-    automationState: getString(value.automationState) ?? "",
-    state: getString(value.state) ?? "",
-    version: getNumber(value.version) ?? 0,
-    jsonDefinition: getString(value.jsonDefinition) ?? "",
-    createdOn: getNumber(value.createdOn) ?? 0,
-    lastUpdatedOn: getNumber(value.lastUpdatedOn) ?? 0,
-    updatedOn: getNumber(value.updatedOn) ?? 0,
+    uuid: strOrNull(value.uuid) ?? "",
+    referenceId: strOrNull(value.referenceId) ?? "",
+    aliasName: strOrNull(value.aliasName) ?? "",
+    name: strOrNull(value.name) ?? "",
+    automationState: strOrNull(value.automationState) ?? "",
+    state: strOrNull(value.state) ?? "",
+    version: numLike(value.version) ?? 0,
+    jsonDefinition: strOrNull(value.jsonDefinition) ?? "",
+    createdOn: numLike(value.createdOn) ?? 0,
+    lastUpdatedOn: numLike(value.lastUpdatedOn) ?? 0,
+    updatedOn: numLike(value.updatedOn) ?? 0,
   };
 }
 
@@ -837,14 +710,14 @@ function asRawMethodRecord(value: Record<string, unknown>): RawMethodRecord {
 
 /** The index's name scoring (exact > prefix > word start > substring > fuzzy), for other catalogues (`ad services --search`). */
 export function scoreFuzzy(query: string, value: string, weight = 1): number {
-  const q = normalize(query);
+  const q = normalizeSearchText(query);
   return q ? scoreText(q, value, weight) : 0;
 }
 
 const DESCRIBE_STOPWORDS = new Set(["a", "an", "the", "of", "to", "in", "on", "for", "and", "or", "by", "with", "is", "it", "from", "that", "this", "be", "as", "at", "into"]);
 
 export function describeTokens(text: string): string[] {
-  return [...new Set(tokenize(normalize(text)).filter((t) => t.length >= 2 && !DESCRIBE_STOPWORDS.has(t)))];
+  return [...new Set(tokenize(normalizeSearchText(text)).filter((t) => t.length >= 2 && !DESCRIBE_STOPWORDS.has(t)))];
 }
 
 export interface DescribeMatch extends MethodFinderMethod {
@@ -864,16 +737,16 @@ export function describeSearch(index: MethodFinderIndex, text: string, limit: nu
   const tokens = describeTokens(text);
   if (tokens.length === 0) return [];
   const need = Math.max(1, Math.ceil(tokens.length / 2));
-  const cat = opts.category ? normalize(opts.category) : null;
+  const cat = opts.category ? normalizeSearchText(opts.category) : null;
   const out: DescribeMatch[] = [];
   for (const m of index.methods) {
-    if (cat && !normalize(m.categoryName).startsWith(cat)) continue;
+    if (cat && !normalizeSearchText(m.categoryName).startsWith(cat)) continue;
     const fields: Array<[string, number]> = [
-      [normalize(m.methodName), 3],
-      [normalize(m.aliasName), 2.5],
-      [normalize(m.summary ?? ""), 2],
-      [normalize(m.description ?? ""), 1.5],
-      [normalize(m.categoryName), 1],
+      [normalizeSearchText(m.methodName), 3],
+      [normalizeSearchText(m.aliasName), 2.5],
+      [normalizeSearchText(m.summary ?? ""), 2],
+      [normalizeSearchText(m.description ?? ""), 1.5],
+      [normalizeSearchText(m.categoryName), 1],
     ];
     let score = 0;
     const matched: string[] = [];

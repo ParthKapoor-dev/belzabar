@@ -3,9 +3,9 @@
 //   GET /rest/api/automation-systems/{svc}/automation-apis/{uri}   (lib/validate/online fetchContract)
 //   GET /rest/api/automation-systems/{svc}/auth                    (db_service accounts: id + nickname)
 
-import { apiFetch, CliError, readJsonOrNull } from "@belzabar/core";
+import { apiFetch, CliError, isObj, readJsonOrNull } from "@belzabar/core";
 import { fetchContract } from "../validate/online";
-import { compactService, emptyCatalog, isObj, splitService, type DbAccount, type ServiceCatalog } from "../serialize/compact";
+import { compactService, emptyCatalog, splitService, type DbAccount, type ServiceCatalog } from "../serialize/compact";
 import { stepService } from "../serialize/ops";
 import type { V2MethodResponse, V2Step } from "../types/v2-wire";
 

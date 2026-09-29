@@ -7,12 +7,10 @@
 // The contract is GET /rest/api/automation-systems/{service}/automation-apis/{method}
 // (what `ad child-info` fetches); accounts are GET /automation-systems/{service}/auth.
 
-import { apiFetch } from "@belzabar/core";
+import { apiFetch, isObj, str } from "@belzabar/core";
 import { normalizeUuid } from "./ids";
 
 type Obj = Record<string, unknown>;
-const isObj = (v: unknown): v is Obj => !!v && typeof v === "object" && !Array.isArray(v);
-const str = (v: unknown): string | undefined => (typeof v === "string" && v.trim() ? v.trim() : undefined);
 
 export interface ApiShape {
   service: string;

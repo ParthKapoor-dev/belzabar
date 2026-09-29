@@ -10,7 +10,7 @@
 // show the operator, so a doomed build (or a silent wrong-entity migration) is
 // caught here instead of 7s into Jenkins.
 
-import { apiFetch, CliError, Config } from "@belzabar/core";
+import { apiFetch, CliError, Config, isObj } from "@belzabar/core";
 import { envPairFromProfile } from "./args";
 import type { ResolvedTarget } from "./types";
 
@@ -46,7 +46,7 @@ async function getJson(path: string, env: string): Promise<Record<string, unknow
     if (e instanceof SyntaxError) return null;
     throw e;
   });
-  if (!isRecord(body) || Object.keys(body).length === 0) {
+  if (!isObj(body) || Object.keys(body).length === 0) {
     throw new CliError(`Migration target not found on '${env}' (empty response): ${path}`, {
       code: "MIGRATE_TARGET_NOT_FOUND",
       details: { env, path },
@@ -184,7 +184,7 @@ export async function resolveMigrationTargets(opts: {
         {
           code: e.code,
           exitCode: e.exitCode,
-          details: { ...(isRecord(e.details) ? e.details : {}), preflightEnv: sourceEnv },
+          details: { ...(isObj(e.details) ? e.details : {}), preflightEnv: sourceEnv },
         },
       );
     }
@@ -195,6 +195,3 @@ export async function resolveMigrationTargets(opts: {
   }
 }
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null && !Array.isArray(v);
-}

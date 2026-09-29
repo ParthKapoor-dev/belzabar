@@ -16,11 +16,12 @@
 //
 // Input: the V2 wire body, like lib/validate/index.ts.
 
-import { arr, isObj, nonBlank, str, type ValidationFinding } from "./types";
+import { arr, str, type ValidationFinding } from "./types";
 import { jsonPath, stepKind, stepRef } from "./schema";
 import { customCodeSource, findSqlInput, sqlSkeleton } from "./steps";
 import { replaceSpelBlocks, scanSpel, spelRoots } from "./spel";
 import { decodeBase64Strict } from "../base64";
+import { isObj, str as nonBlank } from "@belzabar/core";
 
 export interface LintRuleInfo {
   description: string;
