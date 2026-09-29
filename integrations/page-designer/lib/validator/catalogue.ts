@@ -32,7 +32,7 @@ export const PD_RULES: Record<string, PdRuleInfo> = {
   MISSING_NODE_ID: { severity: "warn", source: "pd-review 3a", description: "node without an id" },
   ORPHAN_HTTP_TRIGGER: { severity: "warn", source: "pd-review 3a", description: "HTTP call triggered by an undefined variable (never fires)" },
   ORPHAN_EVENT_TARGET: { severity: "warn", source: "pd-review 3a", description: "event handler writes this.x where x is undefined" },
-  V4: { severity: "warn", source: "figma V4", description: "variable type outside the PD type enum (String/Boolean/Number/Any/KeyValue/… are valid on sems-dev)" },
+  V4: { severity: "warn", source: "figma V4", description: "variable type outside the PD type enum (String/Boolean/Number/Any/KeyValue/… are valid in the PD editor)" },
   T2: { severity: "warn", source: "figma T2", description: "table rowData variable is not {rows:[…]} (or a raw array bound directly)" },
   T4: { severity: "warn", source: "figma T4", description: "{rows:[…]} table variable not typed Any" },
   T5: { severity: "warn", source: "figma T5", description: "{%$src.$row.X%} in plain HTML inside a dict cellLayout" },

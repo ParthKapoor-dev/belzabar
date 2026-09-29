@@ -7,7 +7,7 @@
 //                                   only what the edit INTRODUCES can block.
 //
 // Severities are calibrated so real editor output (tests/fixtures/real, 15
-// sems-dev pages/components) has 0 errors — see tests/unit/validator-real.test.ts.
+// dev-tenant pages/components) has 0 errors — see tests/unit/validator-real.test.ts.
 
 import type { HydratedPage, ValidationIssue } from "../types/common";
 import { buildRuleContext } from "./context";

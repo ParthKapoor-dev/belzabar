@@ -1,6 +1,6 @@
 // Shared, once-per-page facts every rule reads (built by validateHydrated).
 //
-// Calibrated against the real sems-dev fixtures (tests/fixtures/real, PD-5):
+// Calibrated against the real dev-tenant fixtures (tests/fixtures/real, PD-5):
 //   - a binding `{%a.b[0].c%}` refers to the variable `a` (root segment);
 //   - variables come from userDefined, derived, variables.generated (editor-
 //     owned: form configs, `$$navigation*`, `requestEvent*`), and a component's
@@ -29,7 +29,7 @@ const BINDING_RE = /\{%([^%]+)%\}/g;
 /**
  * Runtime-scope roots that are never declared as page variables. `ref` is the
  * element-reference scope (`[expPopoverTriggerFor]: "{%ref.Popover_ref_1%}"`,
- * 3 live sems-dev pages, never declared — OTH-R10 calibration).
+ * 3 live dev-tenant pages, never declared — OTH-R10 calibration).
  */
 const BUILTIN_ROOTS = new Set(["pageContext", "null", "true", "false", "undefined", "this", "ref"]);
 
@@ -108,7 +108,7 @@ export function buildRuleContext(page: HydratedPage): RuleContext {
   const generatedBindingRefs = new Set<string>();
   for (const ref of collectBindingRefs(generatedText)) if (!bindingRefs.has(ref)) generatedBindingRefs.add(ref);
 
-  // Trimmed too: the editor keeps names verbatim (sems-dev "Student
+  // Trimmed too: the editor keeps names verbatim (dev-tenant "Student
   // Information" has a derived var " loaderTextNull" bound as {% loaderTextNull%}).
   const definedVarNames = new Set<string>();
   for (const n of [

@@ -16,7 +16,7 @@ export type { RuleContext } from "../context";
  * per root (`{%x.a%}` + `{%x.b%}` → one issue for `x`).
  *   - author-owned config (layout, httpRequests, derived, …) → error
  *   - only inside `variables.generated` (editor-owned form configs) → warn:
- *     real sems-dev pages carry stale form-config bindings the editor never
+ *     real dev-tenant pages carry stale form-config bindings the editor never
  *     cleans up, and they render (PD-5 calibration).
  */
 export function ruleOrphanBinding(

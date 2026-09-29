@@ -32,7 +32,7 @@ function parseConfigurationString(str: string, warnings: string[]): RawConfigura
  *   3. a non-empty `relativeRoute` — only pages are routable
  * Only when none is present (e.g. a hand-built body) fall back to the config
  * shape. The root `isSymbol` flag alone is NOT decisive: real pages copy it
- * (e.g. both sems-dev "Add Student" pages have `layout.isSymbol: true`).
+ * (e.g. both dev-tenant "Add Student" pages have `layout.isSymbol: true`).
  */
 export function inferEntityType(raw: RawPageResponse, inner: RawConfiguration = {}): PdEntityType {
   if (typeof raw.isComponent === "boolean") return raw.isComponent ? "COMPONENT" : "PAGE";

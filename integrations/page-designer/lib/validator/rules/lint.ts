@@ -9,15 +9,15 @@
 // BUTTON_DYNAMIC_CLASSNAME, FORM_FIELD_PROPS, INVALID_SLIDE_TOGGLE, …) — see
 // lib/validator/catalogue.ts for the mapping.
 //
-// Calibration (tests/unit/validator-real.test.ts + live sems-dev sample): every
+// Calibration (tests/unit/validator-real.test.ts + live dev-tenant sample): every
 // rule here fires on real pages that render, so they are WARNINGS; the ones
 // worth blocking when an edit introduces them are listed in
 // ESCALATE_WHEN_INTRODUCED (validator/index.ts). Messages never carry a
 // position that shifts when siblings are added (HTTP calls are named by
 // callId/label, nodes by id), so validateEdit's pre-existing match holds.
 //
-// Figma rules NOT ported (they encode that runtime, not sems-dev): V4's
-// "capitalized primitives are invalid" (the sems-dev editor itself writes
+// Figma rules NOT ported (they encode that runtime, not dev-tenant): V4's
+// "capitalized primitives are invalid" (the dev-tenant editor itself writes
 // String/Boolean/Number — V4 here flags types outside the known enum), V5
 // metadata (real pages carry `__LAYOUT_CONFIG_METADATA: {}`), C6 checkbox
 // chrome, B1 (needs an LLM), H2, S1.
@@ -212,7 +212,7 @@ export const ruleImgNoAlt: Rule = (page) => {
 // ---------------------------------------------------------------------------
 
 /**
- * Types the sems-dev editor writes (all 15 fixtures + the live sample) plus
+ * Types the dev-tenant editor writes (all 15 fixtures + the live sample) plus
  * the lowercase spellings figma-to-pd allows. Anything else is V4.
  */
 export const KNOWN_VARIABLE_TYPES = new Set([

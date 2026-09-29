@@ -1,7 +1,7 @@
 // belz pd analyze <id...> [--compliance <file>]
 //
 // Recursive dependency + AD-method analysis of one or more pages/components.
-// PD-13 / F21: roots are given explicitly (the hardcoded nsm-dev root list is
+// PD-13 / F21: roots are given explicitly (the old hard-coded, tenant-specific root list is
 // gone), every referenced component is followed (no components.json), and the
 // compliance master list is an explicit file (no master_ids.txt from CWD).
 // PD-19: fetch/resolve failures are reported in `errors`, never swallowed.

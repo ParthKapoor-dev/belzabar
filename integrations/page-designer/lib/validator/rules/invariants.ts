@@ -8,7 +8,7 @@ import { bindingRoot, type RuleContext } from "../context";
 
 // DERIVED_IN_INNERHTML — derived variables bound to innerHTML/textContent render empty.
 // Cites: docs/api-notes.md §Silent-page-crash
-// Severity: warn. 8 of the 15 sems-dev fixtures do this on live pages (derived
+// Severity: warn. 8 of the 15 dev-tenant fixtures do this on live pages (derived
 // vars live in variables.userDefined there); validateEdit escalates it to an
 // error when an edit introduces one.
 export function ruleDerivedInInnerHtml(
@@ -53,7 +53,7 @@ export function ruleDerivedInInnerHtml(
 // when a userDefined variable has an array initialValue.
 // Cites: docs/api-notes.md §Silent-page-crash
 // Severity: warn. Real editor-saved pages carry array initialValues (2 of the
-// 15 sems-dev fixtures), so it is not a hard error on an existing page; the
+// 15 dev-tenant fixtures), so it is not a hard error on an existing page; the
 // edit gate (validateEdit) escalates it to an error when an edit INTRODUCES one.
 export function ruleArrayInitialValue(page: HydratedPage): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
@@ -92,13 +92,13 @@ export function rulePhoneFieldType(page: HydratedPage): ValidationIssue[] {
 // shape the renderer needs.
 // Cites: docs/api-notes.md §Silent-page-crash (both "layout must be root div
 // node" and "symbols use isSymbol:true")
-// Calibrated against real editor output (PD-5): every sems-dev root is
+// Calibrated against real editor output (PD-5): every dev-tenant root is
 // `name:"div", unSelectable:true`; components ALSO set `isSymbol:true`, and
 // about half the pages have no root `_elementId`. So: a page root must be a
 // div with unSelectable:true; a component root must be a div with
 // isSymbol:true. `_elementId` and "unSelectable on a symbol" are not checked.
 /**
- * A style-only symbol (sems-dev `style_*` components): the editor saves its
+ * A style-only symbol (dev-tenant `style_*` components): the editor saves its
  * layout as just `{isSymbol: true}` — no name, no children — and the component
  * only contributes `styles`. Found live in Stage 7 (style_parent_site_inner_pages).
  */
