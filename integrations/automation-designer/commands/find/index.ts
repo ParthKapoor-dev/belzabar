@@ -1,6 +1,6 @@
-import { CliError, defineSubcommands, lifecycle, ok, openUrlInBrowser, type CommandModule, type FlagsSpec } from "@belzabar/core";
+import { CliError, type CommandModule, defineSubcommands, type FieldSelection, type FlagsSpec, lifecycle, ok, openUrlInBrowser, parseFieldList, projectRow } from "@belzabar/core";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
-import { abbreviate, parseFieldList, projectRow, type FieldSelection } from "../../lib/compact";
+import { abbreviate } from "../../lib/compact";
 import { spawn } from "node:child_process";
 import {
   type MethodFinderIndex,

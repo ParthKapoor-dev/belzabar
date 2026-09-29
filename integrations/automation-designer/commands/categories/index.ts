@@ -1,7 +1,7 @@
-import { defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { type CommandModule, defineArgs, ok, parseFieldList, projectRow } from "@belzabar/core";
 import { fetchCategories, type Category } from "../../lib/categories";
 import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
-import { parseFieldList, projectRow } from "../../lib/compact";
+
 
 interface CategoriesArgs {
   system: boolean;

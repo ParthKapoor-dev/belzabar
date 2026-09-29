@@ -7,13 +7,14 @@ import showCommand, { parseMethodFile, stepTableRows } from "../../commands/show
 import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
-import { abbreviate, parseFieldList, projectRow, pruneEmpty } from "../../lib/compact";
+import { abbreviate, pruneEmpty } from "../../lib/compact";
 import { compactMethod, compactStepLine, renderCompact, stepFacts, storyMarkdown } from "../../lib/method-view";
 import { parseV1Method } from "../../lib/parser/v1";
 import { parseV2Method } from "../../lib/parser/v2";
 import type { V1AutomationDefinition, V1RawMethodResponse } from "../../lib/types/v1-wire";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 import type { HydratedMethod } from "../../lib/types/common";
+import { parseFieldList, projectRow } from "@belzabar/core";
 
 const FIX = `${import.meta.dir}/../fixtures`;
 const V2_FILES = readdirSync(`${FIX}/real-v2`).filter((f) => f.endsWith(".v2.json"));

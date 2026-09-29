@@ -1,4 +1,4 @@
-import { CliError, type CommandModule, Config, defineArgs, ok, openUrlInBrowser, strOrNull, triggerDetachedRefresh } from "@belzabar/core";
+import { CliError, type CommandModule, Config, defineArgs, ok, openUrlInBrowser, pickFields, strOrNull, triggerDetachedRefresh } from "@belzabar/core";
 import { PD_FORCE_FLAG } from "../../lib/args/common";
 import { analyzeItem, cacheDeps, collectAllAdIds, formatTreeLines, type AnalyzeError } from "../../lib/analyzer";
 import {
@@ -61,19 +61,6 @@ const SHORT_VALUE = 80;
 
 type Row = Record<string, unknown>;
 
-function isEmpty(v: unknown): boolean {
-  if (v === null || v === undefined || v === "") return true;
-  if (Array.isArray(v)) return v.length === 0;
-  if (typeof v === "object") return Object.keys(v as object).length === 0;
-  return false;
-}
-
-function pick(full: Row, fields: readonly string[]): Row {
-  const out: Row = {};
-  for (const f of fields) if (f in full && !isEmpty(full[f])) out[f] = full[f];
-  return out;
-}
-
 export function parseFields(raw: string | undefined): string[] | null {
   if (raw === undefined) return null;
   const list = raw.split(",").map((f) => f.trim()).filter(Boolean);
@@ -92,8 +79,8 @@ function varRows(page: HydratedPage, fields: string[] | null): { userDefined: Ro
   const all = fields?.[0] === "all";
   const user = page.variables.map((v): Row => {
     const full: Row = { name: v.name, type: v.type, initialValue: v.initialValue };
-    if (fields) return all ? full : pick(full, ["name", ...fields]);
-    const row = pick(full, DEFAULT_VAR_FIELDS);
+    if (fields) return all ? full : pickFields(full, ["name", ...fields]);
+    const row = pickFields(full, DEFAULT_VAR_FIELDS);
     const json = v.initialValue === undefined ? "" : JSON.stringify(v.initialValue);
     if (typeof v.initialValue !== "number" && typeof v.initialValue !== "boolean" && json.length > SHORT_VALUE) {
       delete row.initialValue;
@@ -103,8 +90,8 @@ function varRows(page: HydratedPage, fields: string[] | null): { userDefined: Ro
   });
   const derived = page.derived.map((d): Row => {
     const full: Row = { name: d.name, from: d.from, spec: d.spec, filterFn: d.filterFn, sideEffect: d.sideEffect };
-    if (fields) return all ? full : pick(full, ["name", ...fields]);
-    return pick(full, DEFAULT_DERIVED_FIELDS);
+    if (fields) return all ? full : pickFields(full, ["name", ...fields]);
+    return pickFields(full, DEFAULT_DERIVED_FIELDS);
   });
   return { userDefined: user, derived };
 }
@@ -124,7 +111,7 @@ function httpRows(page: HydratedPage, fields: string[] | null): Row[] {
       eventMeta: c.hasEventMeta ? (c.eventMetaEmpty ? "empty" : "set") : null,
     };
     if (fields?.[0] === "all") return full;
-    return pick(full, fields ? ["index", ...fields] : DEFAULT_HTTP_FIELDS);
+    return pickFields(full, fields ? ["index", ...fields] : DEFAULT_HTTP_FIELDS);
   });
 }
 

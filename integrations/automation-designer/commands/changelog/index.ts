@@ -1,11 +1,11 @@
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, type CommandModule, defineArgs, ok, parseFieldList, projectRow } from "@belzabar/core";
 import { adApi, type ChangelogEntry } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { AD_COMMON_FLAGS, AD_NOTE_FLAG, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import type { HydratedMethod } from "../../lib/types/common";
-import { htmlToText, parseFieldList, projectRow } from "../../lib/compact";
+import { htmlToText } from "../../lib/compact";
 
 interface ChangelogArgs {
   uuid: string;

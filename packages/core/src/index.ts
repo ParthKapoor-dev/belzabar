@@ -15,3 +15,4 @@ export * from "./args";
 export * from "./guards";
 export * from "./search";
 export * from "./confirm";
+export * from "./output/fields";
