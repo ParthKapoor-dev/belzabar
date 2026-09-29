@@ -40,7 +40,12 @@ export const args = defineArgs({
   requireOneOf: [["body", "body-file"]],
 });
 
-/** Posting a comment changes the ticket: requires an explicit target (D6 runner check). */
+/**
+ * Posting a comment changes the ticket. Declared for the record only: `tw` is
+ * not env-aware (NOT_ENV_AWARE_NAMESPACES), so the runner's explicit-`--env`
+ * write gate does NOT apply here. The only guard is requireConfirmation below
+ * (--yes / TTY prompt; --llm without --yes refuses) (OTH-R28).
+ */
 export const writes = true;
 
 export function parseArgs(argv: string[], _context?: CommandContext): AddCommentArgs {
