@@ -1,191 +1,46 @@
-# AGENTS.md — Belzabar Repository
+# AGENTS.md — Belzabar repository
 
-## You Are the Maintainer Agent
+You maintain this monorepo. What belz is, how to install and configure it, the workflows and the
+repository map are in [`README.md`](./README.md); code docs are the README.md in each
+directory. `belz --help-full` is the only command reference: never invent flags.
 
-You are working inside the **Belzabar** monorepo. Your role is to understand, extend, and
-maintain this codebase. Before making changes in any module, read that module's `AGENTS.md`.
+## Map
 
-**Standing instruction:** Whenever you make a meaningful change to any module — new commands,
-changed behavior, new files, API changes, structural reorganization — you **must** update the
-`AGENTS.md` in that module. If the overall repository structure changes, update this root
-`AGENTS.md` as well. If you add, remove, or change flags on any command, update that command's
-`help.txt` and `desc.txt` — `desc.txt` is what `belz --help-full` outputs and what runtime agents
-use as their command reference. `bun run docs:check` fails when a doc names a path or a
-`belz` command that does not exist.
+| Workspace | Agent rules |
+|-----------|-------------|
+| `apps/cli/` | [`apps/cli/AGENTS.md`](./apps/cli/AGENTS.md) |
+| `packages/core/` | [`packages/core/AGENTS.md`](./packages/core/AGENTS.md) |
+| `integrations/automation-designer/` | [`integrations/automation-designer/AGENTS.md`](./integrations/automation-designer/AGENTS.md) |
+| `integrations/page-designer/` | [`integrations/page-designer/AGENTS.md`](./integrations/page-designer/AGENTS.md) |
+| `integrations/teamwork/` | [`integrations/teamwork/AGENTS.md`](./integrations/teamwork/AGENTS.md) |
+| `integrations/migrations/` | [`integrations/migrations/AGENTS.md`](./integrations/migrations/AGENTS.md) (Jenkins client: [`lib/jenkins/README.md`](./integrations/migrations/lib/jenkins/README.md)) |
+| `integrations/release/` | [`integrations/release/AGENTS.md`](./integrations/release/AGENTS.md) |
+| `scripts/`, `cloud/` | Their README.md |
 
----
+Read the workspace's `AGENTS.md` and the README of the directory you touch before changing it.
 
-## What Is Belzabar
+## Standing rules
 
-Belzabar is an internal developer toolset for the **Expertly** low-code platform:
-
-- **Automation Designer (AD)** — backend logic as versioned "methods" (chains of steps)
-- **Page Designer (PD)** — frontend pages/components as JSON configurations
-
-plus **Teamwork** (ticket tracker), Jenkins-backed DB **migrations**, and **release**
-promotion tracking. It ships one product: the **`belz` CLI**, one binary for all of the above.
-
----
-
-## Repository Layout
-
-| Directory | Package | Role | Docs |
-|-----------|---------|------|------|
-| `apps/cli/` | `belzabar.cli` | The `belz` binary: entry point, top-level commands, install scripts | `apps/cli/AGENTS.md` |
-| `packages/core/` | `@belzabar/core` | Shared CLI framework (args, runner, envelope, config, http/auth, cache, ui, testing) | `packages/core/AGENTS.md` |
-| `integrations/automation-designer/` | `@belzabar/ad` | `belz ad` commands + lib | `integrations/automation-designer/AGENTS.md` |
-| `integrations/page-designer/` | `@belzabar/pd` | `belz pd` commands + lib | `integrations/page-designer/AGENTS.md` |
-| `integrations/teamwork/` | `@belzabar/teamwork` | `belz tw` commands + lib | `integrations/teamwork/AGENTS.md` |
-| `integrations/migrations/` | `@belzabar/migrations` | `belz migrate` commands + lib (Jenkins-backed) | `integrations/migrations/AGENTS.md` |
-| `integrations/release/` | `@belzabar/release` | `belz release` commands (uses the AD/TW libs) | `integrations/release/AGENTS.md` |
-| `scripts/` | — | `docs-check.ts` (docs gate) and `fixtures/` (read-only wire-fixture capture + sanitizer) | — |
-| `cloud/` | — | Claude Code cloud-session bootstrap (publish + sandbox files) | `cloud/README.md` |
-| `.github/workflows/` | — | `ci.yml` (typecheck, docs check, tests), `belz-cloud-release.yml` | — |
-
-`expertly.coding.agents/`, if present locally, is a separate git checkout ignored by
-`.gitignore`; it is not part of this repo.
-
----
-
-## Monorepo Structure
-
-A **Bun workspaces** monorepo (no Turborepo). Root `package.json` workspaces:
-`packages/*`, `apps/*`, `integrations/*`. Every workspace has its own `package.json` and a
-`tsconfig.json` extending the root `tsconfig.base.json`; the root `tsconfig.json` is one `tsc`
-program over all of them.
-
-- Integrations depend on `@belzabar/core` and on each other through package imports
-  (e.g. `@belzabar/release` → `@belzabar/ad/lib/trace`); never through `../../..` paths.
-- Integration packages export `./registry` (their static command registry) and `./lib/*`.
-- `apps/cli` depends on every integration and wires their registries together.
-
-Root scripts:
-
-| Script | Does |
-|--------|------|
-| `bun run check` | `typecheck` + `docs:check` + `dead-code` + `test` — must be green before every commit |
-| `bun run typecheck` | `tsc --noEmit` over every workspace |
-| `bun run docs:check` | `scripts/docs-check.ts`: every repo path and `belz <cmd>` named in an `AGENTS.md`/`README.md` must exist |
-| `bun run dead-code` | `scripts/dead-code.ts --summary --check`: fails on any unused or file-local export (test seams excepted; deliberate hooks go in its `ALLOW`), unreachable file or dependency problem; `bun scripts/dead-code.ts` lists every finding, `--json` for tooling |
-| `bun run test` | `bun test` (unit, contract, compiled-binary pipe tests; live suites skipped) |
-| `bun run build` | `bun run --filter '*' build` |
-| `bun run belz:build` / `belz:install` / `belz:reinstall` | Build / install / wipe-and-reinstall the binary (`apps/cli/scripts/`) |
-
----
-
-## How `belz` Routes Commands
-
-```
-belz ad <cmd>      → integrations/automation-designer/commands/<cmd>/
-belz pd <cmd>      → integrations/page-designer/commands/<cmd>/
-belz tw <cmd>      → integrations/teamwork/commands/<cmd>/
-belz migrate <cmd> → integrations/migrations/commands/<cmd>/
-belz release <cmd> → integrations/release/commands/<cmd>/
-belz config …      → apps/cli/commands/config/     (passthrough: does its own sub-routing)
-belz cache | envs | setup | onboard | update → apps/cli/commands/<cmd>/
-```
-
-Each integration lists its commands in a hand-maintained, sorted `registry.ts` (top-level:
-`apps/cli/commands/registry.ts`). `apps/cli/bin/options.ts` turns the registries into the runner
-options and `belz --help-full` (fixed namespace order, commands sorted, byte-deterministic);
-`apps/cli/bin/cli.ts` is the single entry point (dev and compiled). Routing itself is
-`packages/core/src/runner.ts` (`runNamespacedCli`).
-
-**Environments:** there are no built-in environments — every env (name + URL) comes from
-`~/.belz/config.json`. The default env is `BELZ_ENV` > config `defaultEnv` > the only configured
-env; with several envs and no default, env-aware commands fail with `ENV_NOT_SELECTED` until
-`--env` is given. The repo is project-agnostic: never commit client/project names, hostnames or
-env URLs (docs, tests and fixtures use placeholders such as `dev`, `qa`, `https://dev.example.test`).
-
----
-
-## Key Contracts
-
-- **Commands** implement `CommandModule` from `@belzabar/core`: `parseArgs` + `execute` +
-  optional `presentHuman`. Results are `ok(data)` / `fail(message)` or `throw new CliError(message, { code })`.
-- **Arguments** are declared with `defineArgs` / `defineSubcommands` (`packages/core/src/args/`)
-  and exported from the command's `index.ts` as `args`; `parseArgs` calls `args.parse(argv)`.
-  Never hand-roll argv parsing. Bad input fails with stable codes (`UNKNOWN_FLAG`,
-  `MISSING_VALUE`, `INVALID_VALUE`, …).
-- **`--llm` envelope** (`packages/core/src/testing/envelope-schema.ts`, v`2.0`):
-  `{ schema: "<ns>.<cmd>", version, ok, command, data, error: { code, message, details? } | null, meta: { durationMs, env?, warnings? } }`.
-  `ok` ⇔ exit code 0; `error.code` is UPPER_SNAKE. `apps/cli/tests/envelope-contract.test.ts`
-  checks every command against the schema.
-- **Writes**: a command that writes to a remote env sets `writes: true` (or a function of the
-  parsed args). The runner then refuses to run it without an explicit `--env`
-  (`ENV_REQUIRED_FOR_WRITE`) and names the target env in human mode. Prompts refuse in `--llm`
-  mode, so destructive commands take `--yes`.
-- **UI**: all user-facing output goes through `@belzabar/core`'s `ui` module (prompts, spinners,
-  tables, `log.*`). Never use `inquirer`, `chalk`, or hand-rolled readline selectors.
-- **Config & env vars**: belz reads only `BELZ_*` variables (and ignores values injected from a
-  cwd `.env*` file). Useful ones: `BELZ_HOME`, `BELZ_ENV`, `BELZ_VERBOSE`,
-  `BELZ_HTTP_TIMEOUT_MS`, `BELZ_HTTP_WRITE_TIMEOUT_MS`, `BELZ_LIVE` (tests).
-
----
-
-## Runtime Data
-
-Everything lives under `~/.belz/` (`BELZ_HOME` overrides it; tests set a temp one via the
-`bunfig.toml` preload):
-
-| Path | Contents |
-|------|----------|
-| `~/.belz/config.json` | Credentials per env, `defaultEnv`, Jenkins/Teamwork config (0600, zod-validated; passwords carry `passwordEncoding`) |
-| `~/.belz/sessions/<env>.json` | Saved auth sessions per environment (0600) |
-| `~/.belz/cache/<kind>/<env>/…` | Local caches (AD `methods`, `definitions`, `callers`, …; PD `pages`, …) |
-| `~/.belz/pd-locks/<env>.json` | PD edit locks held by this machine |
-| `~/.belz/migrations/jenkins-profiles.json` | Jenkins migration profile cache |
-| `~/.belz/promotion/` | Local release-promotion ledger |
-
-Core `Cache` namespaces every entry by env by default (`envScoped: false` opts out).
-`belz cache prune-local` removes stale pre-env-scope entries and abandoned refresh locks.
-
----
-
-## Adding a Command
-
-1. Create `commands/<cmd>/` in the owning module with `index.ts` (exports `args` and a default
-   `CommandModule`), `help.txt` (template in `integrations/automation-designer/AGENTS.md`) and
-   `desc.txt` (one line per invocation variant: `<full invocation>  :->  <what it does>`).
-2. Add it to that module's `registry.ts`, keeping it sorted.
-3. Add a contract test (fakeFetch + the module's `tests/fixtures/`).
-4. Update the module's `AGENTS.md`, then run `bun run check`.
-
-Guards: `apps/cli/tests/registry.test.ts` (folders ⇔ registry), `apps/cli/tests/args-docs.test.ts`
-(help.txt/desc.txt ⇔ `args` spec), `apps/cli/tests/write-commands.test.ts` (writes declared),
-`apps/cli/tests/help-full.test.ts` (`--help-full` deterministic).
-
----
-
-## Testing
-
-- `bun run test` runs everything offline. HTTP is faked with `fakeFetch` and the other helpers in
-  `@belzabar/core/testing` (`packages/core/src/testing/`), fed by sanitized real responses in each
-  module's `tests/fixtures/`.
-- **Wire fixtures**: `scripts/fixtures/capture.ts` captures real API responses (with
-  `manifest.json`). It is **read-only** (GET only), reads only the env named by `BELZ_CAPTURE_ENV`
-  (use a non-production env), and runs every body through `scripts/fixtures/sanitize.ts`
-  (secrets, e-mails, phones, and person names — firstName/lastName/fullName records, Jenkins
-  users, `Developer: X` notes — pseudonymized deterministically as `Test User-<code>` /
-  `person-<code>`; real hostnames → the reserved `.example` TLD; project/tenant/person terms from
-  the **local, never-committed** list named by `BELZ_SCRUB_TERMS` → placeholders).
-  `scripts/fixtures/fixtures-secrets.test.ts` fails on anything that looks like a secret or PII,
-  on any real hostname in a tracked file, and — when `BELZ_SCRUB_TERMS` is set — on any listed
-  term. Re-run `BELZ_SCRUB_TERMS=<list> bun scripts/fixtures/capture.ts resanitize <dir>` if it trips
-  (it imports `@belzabar/core`, so point `BELZ_HOME` at a scratch dir).
-- **Live suites** are opt-in: `BELZ_LIVE=<env> bun test apps/cli/tests/live` (read-only), plus
-  `BELZ_LIVE_WRITE=1 BELZ_LIVE_CATEGORY=<name> BELZ_LIVE_CATEGORY_ID=<id>` for write suites such as
-  `apps/cli/tests/live/ad-lifecycle.live-write.test.ts` (that AD category only, `belz_tst_` names,
-  soft-deleted afterwards). CI never sets them.
-
----
-
-## Where to Start
-
-- AD command? `integrations/automation-designer/AGENTS.md`
-- PD command? `integrations/page-designer/AGENTS.md`
-- CLI entry point, build, install, top-level commands? `apps/cli/AGENTS.md`
-- Framework (runner, args, envelope, http, cache, testing)? `packages/core/AGENTS.md`
-- Teamwork / migrations (incl. the Jenkins client) / release? `integrations/teamwork/AGENTS.md`,
-  `integrations/migrations/AGENTS.md`, `integrations/release/AGENTS.md`
-- Human-facing overview and workflows: `README.md`
+- **Keep docs in step with code, in the same commit.** README.md is the documentation; AGENTS.md
+  holds only agent working rules and links. Never duplicate content between them.
+  - Every workspace root and every source, test and script directory has a README.md.
+  - Command folders (`commands/<name>/`) have no README.md: their `help.txt` is the doc, and
+    `desc.txt` (one line per invocation, `<full invocation>  :->  <what it does>`) feeds
+    `belz --help-full`. Update both whenever a command's flags change.
+  - Fixture directories are documented by their `manifest.json`, not a README.
+  - `bun run docs:check` enforces the README rule, verifies every path and `belz` command in the
+    docs, and keeps AGENTS.md files short.
+- **Commands.** Implement `CommandModule` from `@belzabar/core`; declare arguments with
+  `defineArgs` / `defineSubcommands` and export them as `args` (never hand-roll argv parsing);
+  mark remote writes with `writes` (local-only writes with `writesLocal`). Adding or removing a
+  command means its folder **and** its entry in the package's sorted `registry.ts`.
+- **All user-facing UI goes through core's `ui` / `lifecycle` / `prompts`** (no other prompt or
+  colour libraries); prompts refuse in `--llm` mode.
+- **Packages import each other by package name** (`@belzabar/ad/lib/…`), never by `../../..`.
+- **Project-agnostic.** No client or project names, hostnames, env URLs or ticket/stage ids in
+  code, comments, tests or docs; use placeholders (`example.test`, `dev`, `qa`).
+- **Never commit secrets.** Fixtures are captured only with `scripts/fixtures/capture.ts`
+  (read-only, sanitized); the secrets test must stay green.
+- **Never run** `bun run belz:install` / `belz:reinstall`, `belz update`, `belz setup` or
+  `belz onboard` as part of a change, and never write to the real `~/.belz`.
+- **Before committing:** `bun run check` (typecheck, docs:check, dead-code, all tests) is green.

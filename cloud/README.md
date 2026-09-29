@@ -4,6 +4,15 @@ Use belz from a Claude Code cloud session (claude.ai/code) — driveable from yo
 phone, with your laptop off — **without ever giving the cloud session access to
 this private `belzabar` repo.**
 
+## Files
+
+| File | Role |
+|------|------|
+| `publish.sh` | Builds the Linux binary (pinned Bun, frozen lockfile) and pushes it plus the files below to the sandbox repo; run by `.github/workflows/belz-cloud-release.yml` |
+| `setup.sh` | Becomes the sandbox's `cloud-setup.sh`: downloads the binary and writes `~/.belz/config.json` from env vars (`belz setup --from-env`); idempotent |
+| `sandbox-CLAUDE.md` | Becomes the sandbox's `CLAUDE.md`: rules for the cloud session |
+| `sandbox-settings.json` | Becomes the sandbox's Claude settings: the SessionStart hook that runs `cloud-setup.sh` |
+
 ## The idea: decouple the session's repo from the belz tooling
 
 A cloud session always clones *a* repo, but it can be **any** repo your GitHub

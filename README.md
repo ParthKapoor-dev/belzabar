@@ -84,7 +84,7 @@ belz ad lint <uuid>                                      # validator + SQL and a
 belz ad save edit.json --uuid <uuid> --dry-run           # plan + validate, write nothing
 belz ad save edit.json --uuid <uuid> --env dev      # save to the draft (confirms first)
 belz ad save --uuid <uuid> --sql-file 3=step3.sql --env dev   # replace one step's SQL
-belz ad publish <uuid> --note "TW-1234: fix totals" --env dev
+belz ad publish <uuid> --note "fix totals" --env dev
 ```
 
 Save refuses to overwrite a draft someone changed since it was read, re-reads the draft
@@ -137,47 +137,59 @@ belz release matrix …    belz release freeze …   # see `belz release <cmd> -
 
 ## Claude Code cloud sessions
 
-The `belz-cloud-release` workflow publishes the belz binary to a
-separate `belz-sandbox` repo, so a Claude Code cloud session can run belz without access to
-this repo. Setup and the network allowlist: [`cloud/README.md`](./cloud/README.md).
+The `belz-cloud-release` workflow publishes the belz binary to a separate sandbox repo, so a
+Claude Code cloud session can run belz without access to this repo. Setup and the network
+allowlist: [`cloud/README.md`](./cloud/README.md).
 
 ---
 
-## Repo layout and docs
+## Repository map
 
-```
-apps/cli/                   CLI binary (belz): entry point, top-level commands, install scripts
-packages/core/              @belzabar/core — shared CLI framework
-integrations/automation-designer/   belz ad …
-integrations/page-designer/         belz pd …
-integrations/teamwork/              belz tw …
-integrations/migrations/            belz migrate …   (Jenkins client in lib/jenkins/)
-integrations/release/               belz release …
-scripts/                    docs:check + dead-code + wire-fixture capture
-cloud/                      cloud-session bootstrap
-```
+A Bun workspaces monorepo (`packages/*`, `apps/*`, `integrations/*`; no build orchestrator).
+Every workspace and every source, test and script directory has a README.md; start from these:
+
+| Path | Package | Role |
+|------|---------|------|
+| [`apps/cli/`](./apps/cli/README.md) | `belzabar.cli` | The `belz` binary: entry point, registry wiring, top-level commands (`cache`, `config`, `envs`, `onboard`, `setup`, `update`), install scripts |
+| [`packages/core/`](./packages/core/README.md) | `@belzabar/core` | Shared CLI framework: args, runner + `--llm` envelope, config, http, cache, ui, `platform` and `testing` subpaths |
+| [`integrations/automation-designer/`](./integrations/automation-designer/README.md) | `@belzabar/ad` | `belz ad …` |
+| [`integrations/page-designer/`](./integrations/page-designer/README.md) | `@belzabar/pd` | `belz pd …` |
+| [`integrations/teamwork/`](./integrations/teamwork/README.md) | `@belzabar/teamwork` | `belz tw …` |
+| [`integrations/migrations/`](./integrations/migrations/README.md) | `@belzabar/migrations` | `belz migrate …` (Jenkins client in `lib/jenkins/`) |
+| [`integrations/release/`](./integrations/release/README.md) | `@belzabar/release` | `belz release …` (uses the AD and Teamwork libs) |
+| [`scripts/`](./scripts/README.md) | — | `docs:check`, dead-code check, repo-wide tests, wire-fixture capture |
+| [`cloud/`](./cloud/README.md) | — | Cloud-session bootstrap |
+
+Integrations depend on `@belzabar/core` and on each other through package imports
+(`@belzabar/release` → `@belzabar/ad/lib/…`), never through relative paths across packages.
+Each exports `./registry` (its hand-maintained, sorted command registry) and `./lib/*`;
+`apps/cli/bin/options.ts` wires the registries into `belz`.
+
+**Runtime data** lives under `~/.belz/` (`BELZ_HOME` overrides it): `config.json` (0600),
+`sessions/<env>.json` (0600), and `cache/` (method, definition, page and finder caches, scoped
+per env).
 
 Where the docs live:
 
-- **Command reference**: `belz --help-full`, and `belz <ns> <cmd> --help` (from each command's
-  `help.txt`/`desc.txt`).
-- **Maintainer docs**: `AGENTS.md` at the root and in every module (layout, contracts, how to
-  add a command, testing).
-- **Platform API notes**: `integrations/automation-designer/docs/api-notes.md`,
-  `integrations/page-designer/lib/api/README.md`.
+- **Command reference:** `belz --help-full`, and `belz <ns> <cmd> --help` (each command's
+  `help.txt` / `desc.txt`).
+- **Code docs:** the README.md in each directory.
+- **Agent rules:** `AGENTS.md` at the root and in each workspace (thin; they link here).
 
 ---
 
 ## Development
 
 ```bash
+bun install --ignore-scripts
 bun apps/cli/bin/cli.ts ad show <uuid>     # run from source, no build
 bun run belz:build                         # compile the binary into apps/cli
-bun run check                              # typecheck + docs:check + all tests (run before committing)
-bun test integrations/automation-designer  # one module
+bun run check                              # typecheck + docs:check + dead-code + all tests (CI runs this)
+bun test integrations/automation-designer  # one package
 BELZ_LIVE=<env> bun test apps/cli/tests/live    # opt-in live suite (read-only)
 ```
 
-Adding a command: see "Adding a Command" in `AGENTS.md`. Never commit secrets:
-`~/.belz/config.json` stays on your machine, and committed test fixtures are sanitized
-(`scripts/fixtures/fixtures-secrets.test.ts` enforces it).
+Tests never touch the real `~/.belz` (a preload points `BELZ_HOME` at a tmp dir). Committed
+wire fixtures are sanitized, and `scripts/fixtures/fixtures-secrets.test.ts` fails on anything
+that looks like a secret, personal data or a real hostname. Never commit `~/.belz/config.json`.
+Adding a command: see `AGENTS.md`.
