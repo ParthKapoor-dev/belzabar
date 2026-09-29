@@ -6,6 +6,8 @@ import { parseFieldList, projectRow } from "../../lib/compact";
 interface CategoriesArgs {
   system: boolean;
   user: boolean;
+  /** `--search <text>`: case-insensitive substring of name / label (or an exact id / uuid). */
+  search?: string;
   /** Raw `--fields` value (validated in parseArgs). */
   fields?: string;
 }
@@ -35,6 +37,7 @@ export const args = defineArgs({
     user: { type: "boolean" },
     system: { type: "boolean" },
     fields: { type: "string" },
+    search: { type: "string" },
   },
   // F34: the two filters contradict each other.
   exclusive: [["user", "system"]],
@@ -46,9 +49,10 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
     const { flags } = args.parse(argv);
     resolveAdCommon(flags, "category", "categories");
     parseFieldList(flags.fields, CATEGORY_FIELDS);
-    return { system: flags.system, user: flags.user, ...(flags.fields !== undefined ? { fields: flags.fields } : {}) };
+    const search = flags.search?.trim() || undefined;
+    return { system: flags.system, user: flags.user, ...(search ? { search } : {}), ...(flags.fields !== undefined ? { fields: flags.fields } : {}) };
   },
-  async execute({ system, user, fields }) {
+  async execute({ system, user, search, fields }) {
     const sel = parseFieldList(fields, CATEGORY_FIELDS);
     // AD-09/F9: chain categories (id 1135 = what methods, POST /chain and
     // export-category use), joined with their automation system (1318).
@@ -66,6 +70,18 @@ const command: CommandModule<CategoriesArgs, CategoriesData> = {
     } else if (user && !system) {
       filter = "user";
       filtered = categories.filter(c => c.type === "USER_GENERATED");
+    }
+
+    if (search) {
+      // CLI trial: finding one row meant reading all ~140 (15 KB).
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          (c.label ?? "").toLowerCase().includes(q) ||
+          String(c.id ?? "") === q ||
+          (c.uuid ?? "").toLowerCase() === q,
+      );
     }
 
     filtered.sort((a, b) => a.name.localeCompare(b.name));

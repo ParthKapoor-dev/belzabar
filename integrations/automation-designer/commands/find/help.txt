@@ -1,7 +1,8 @@
 Usage: belz ad find [LIST|PICK|QUERY] [flags]
 
 Find Automation Designer methods and categories from a cached local index.
-With no query (or `LIST`), lists all categories with method counts.
+With no query (or `LIST`), lists all categories with method counts; add
+`--category <name|id|uuid>` to list the METHODS in that category.
 Rows are compact (name, alias, category, state, uuid, referenceId, apiUuid =
 the automationAPIId other methods' steps use, summary, score); empty fields
 are omitted.
@@ -16,8 +17,11 @@ Flags:
                       category) for the QUERY words — "is there already a
                       method that does X?". Rows add `matched` words. Needs
                       index schema 2 (an older cached index is rebuilt once).
-  --category <prefix> Only categories whose name starts with <prefix>
-                      (e.g. Helpers).
+  --category <ref>    Only categories whose name starts with <ref>, or whose
+                      chain-category id / uuid is <ref> (e.g. Helpers, 1135).
+                      Without a query: lists that category's methods
+                      (data.methods, totalMethods; capped at --limit). Also
+                      scopes --raw, --describe and pick.
   --fields <a,b|all>  Pick row fields: type,name,alias,category,state,uuid,
                       referenceId,apiUuid,summary,description,version,
                       categoryUuid,createdOn,updatedOn,url,score,matched
@@ -27,7 +31,8 @@ Flags:
   --limit <N>         Maximum matches (and --raw index rows) to return, 1-200;
                       totalMatches still counts every match. (default: 20)
   --open              Open selected method URL in browser. (pick mode only)
-  --raw               Include the raw cached index, capped at --limit methods/categories.
+  --raw               Include the raw cached index (only --category's part when
+                      given), capped at --limit methods/categories.
   --v2                Accepted for consistency; the index is V1-only (a notice is printed).
   --help, -h          Show this help message.
 
@@ -38,6 +43,7 @@ Global Flags:
 
 Examples:
   belz ad find list
+  belz ad find --category Test-Parth --env sems-dev --llm
   belz ad find pick _lookupDCIN --open
   belz ad find "documents helper" --limit 30
   belz ad find --describe fetch value from json path --category Helpers --llm
@@ -45,3 +51,7 @@ Examples:
 
 Errors: AD_INDEX_FETCH_FAILED (the category listing failed while building the
 index; details {path, status}).
+
+Notes: the index is cached (7 days). Methods belz wrote are marked, and a
+method whose V2 read answers METHOD_NOT_FOUND (deleted) drops out of the
+cached index at once; --refresh rebuilds everything.

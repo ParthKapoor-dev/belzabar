@@ -8,6 +8,8 @@ SYSTEM_GENERATED services have no chain category (ID is empty). UUIDs are trimme
 Flags:
   --user              Only show USER_GENERATED categories
   --system            Only show SYSTEM_GENERATED categories (cannot be combined with --user)
+  --search <text>     Only categories whose name or label contains <text>
+                      (case-insensitive), or whose id / uuid is <text>.
   --fields <a,b|all>  Pick row fields: id,uuid,name,type,systemId,systemUuid,
                       chainCategoryId,chainCategoryUuid,label; `all` = full
                       rows. Default: id, uuid, name, type, systemId (empty
@@ -20,7 +22,11 @@ Global Flags:
                       Any env from `belz envs` (configured in ~/.belz/config.json).
   --llm               Output structured JSON envelope for scripting/LLM use.
 
+To list the methods in a category, use `belz ad find` with a category (see
+`belz ad find --help`).
+
 Examples:
   belz ad categories --user
+  belz ad categories --search test-parth --env sems-dev --llm
   belz ad categories --fields name,systemUuid --llm
   belz ad categories --llm | jq '.data.categories[] | select(.type == "SYSTEM_GENERATED")'

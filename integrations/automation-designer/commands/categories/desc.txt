@@ -2,3 +2,4 @@ belz ad categories  :->  List all AD categories (user- and system-generated; com
 belz ad categories --user  :->  Only USER_GENERATED categories
 belz ad categories --system  :->  Only SYSTEM_GENERATED categories (exclusive with --user)
 belz ad categories --fields <a,b|all>  :->  Pick row fields, or all for the full rows (chainCategoryId/Uuid, systemUuid, label)
+belz ad categories --search <text>  :->  Only categories whose name/label contains the text (or whose id/uuid it is); list their methods with `ad find` (category listing)

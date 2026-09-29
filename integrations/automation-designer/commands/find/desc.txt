@@ -5,8 +5,9 @@ belz ad find pick <query>  :->  Open fzf picker with an initial query prefilled
 belz ad find pick <query> --open  :->  Open the selected method URL in browser after picker selection
 belz ad find <query>  :->  Search methods and categories by name, alias, UUID, and reference ID (compact rows incl. apiUuid)
 belz ad find --describe <words>  :->  Search method summaries/descriptions for the words ("does a method for X exist?")
-belz ad find <query> --category <prefix>  :->  Only search categories whose name starts with <prefix>
+belz ad find --category <name|id|uuid>  :->  List the methods in a category (name prefix, chain-category id or uuid): data.methods + totalMethods, capped at --limit
+belz ad find <query> --category <name|id|uuid>  :->  Only search categories whose name starts with it (or whose id/uuid it is)
 belz ad find <query> --fields <a,b|all>  :->  Pick row fields, or all for every index field
 belz ad find <query> --limit <N>  :->  Return only the top N ranked matches (totalMatches = all matches)
 belz ad find <query> --refresh  :->  Rebuild the index from AD APIs before searching
-belz ad find <query> --raw  :->  Include the raw cached index (capped at --limit rows) in the command output
+belz ad find <query> --raw  :->  Include the raw cached index (capped at --limit rows; scoped by --category) in the command output

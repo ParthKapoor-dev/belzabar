@@ -4,7 +4,8 @@
 // fetchRawMethod too. Writes live in lib/save/api.ts. Other operations are
 // V1-only; SUPPORTED_VERSIONS in api-version.ts gates `--v2`.
 
-import { apiFetch, CliError, expectJson, readErrorBody } from "@belzabar/core";
+import { apiFetch, CliError, currentCacheEnv, expectJson, readErrorBody } from "@belzabar/core";
+import { markMethodGone } from "../method-finder";
 import type { V2MethodResponse } from "../types/v2-wire";
 
 async function checkResponse(response: Response, path: string): Promise<void> {
@@ -48,5 +49,11 @@ async function fetchChainJson<T>(response: Response, path: string, uuid: string)
 export async function fetchRawMethod(uuid: string): Promise<V2MethodResponse> {
   const path = `/rest/api/automation/chain/v2/${uuid}?basicInfo=false`;
   const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
-  return fetchChainJson<V2MethodResponse>(response, path, uuid);
+  try {
+    return await fetchChainJson<V2MethodResponse>(response, path, uuid);
+  } catch (err) {
+    // Unknown or soft-deleted: drop it from the cached method index (find/callers).
+    if (err instanceof CliError && err.code === "METHOD_NOT_FOUND") await markMethodGone(currentCacheEnv(), uuid);
+    throw err;
+  }
 }

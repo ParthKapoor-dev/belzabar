@@ -43,6 +43,9 @@ interface FindBrowseData {
   mode: "browse";
   cache: CacheMeta;
   categories: Row[];
+  /** With --category: the methods in the matching categories (by name, capped at --limit). */
+  totalMethods?: number;
+  methods?: Row[];
   raw?: RawIndexView;
 }
 
@@ -248,19 +251,36 @@ const command: CommandModule<FindArgs, FindData> = {
     }
     if (ageMs > METHOD_FINDER_CACHE_TTL_MS) context.warn("Method index is older than its TTL — use --refresh.");
 
-    const inCategory = (name: string) => !category || name.toLowerCase().startsWith(category.toLowerCase());
+    // --category: a name prefix, a chain-category id or a category uuid.
+    const catRef = category?.toLowerCase();
+    const matchingCategories = new Set(
+      index.categories
+        .filter((c) => !catRef || c.name.toLowerCase().startsWith(catRef) || String(c.chainCategoryId ?? "") === catRef || c.uuid.toLowerCase() === catRef)
+        .map((c) => c.uuid),
+    );
+    const inCategory = (uuid: string) => !catRef || matchingCategories.has(uuid);
+    const scoped = catRef
+      ? { ...index, methods: index.methods.filter((m) => inCategory(m.categoryUuid)), categories: index.categories.filter((c) => inCategory(c.uuid)) }
+      : index;
 
     if (mode === "browse") {
-      const categories = listMethodFinderCategories(index).filter((c) => inCategory(c.name)).map((c) => categoryRow(c, sel, false));
+      const categories = listMethodFinderCategories(scoped).map((c) => categoryRow(c, sel, false));
 
       const data: FindBrowseData = {
         mode: "browse",
         cache: cacheMeta,
         categories,
       };
+      if (catRef) {
+        // CLI trial: `find --category X` returned only a count; list the methods.
+        const methods = [...scoped.methods].sort((a, b) => a.methodName.localeCompare(b.methodName) || a.state.localeCompare(b.state));
+        data.totalMethods = methods.length;
+        data.methods = methods.slice(0, limit).map((m) => methodRow(m, sel, DEFAULT_METHOD_FIELDS.filter((f) => f !== "type" && f !== "score"), false));
+        if (categories.length === 0) context.warn(`No category matches '${category}' (name prefix, id or uuid).`);
+      }
 
       if (raw) {
-        data.raw = rawIndex(index, limit);
+        data.raw = rawIndex(scoped, limit);
       }
 
       return ok(data);
@@ -273,7 +293,7 @@ const command: CommandModule<FindArgs, FindData> = {
         });
       }
 
-      const selected = await runFzfPicker(index.methods.filter((m) => inCategory(m.categoryName)), query);
+      const selected = await runFzfPicker(scoped.methods, query);
       const data: FindPickData = {
         mode: "pick",
         query,
@@ -289,7 +309,7 @@ const command: CommandModule<FindArgs, FindData> = {
       }
 
       if (raw) {
-        data.raw = rawIndex(index, limit);
+        data.raw = rawIndex(scoped, limit);
       }
 
       return ok(data);
@@ -298,7 +318,7 @@ const command: CommandModule<FindArgs, FindData> = {
     const searchQuery = query ?? "";
     if (mode === "describe") {
       // totalMatches = every match; `matches` is capped at --limit.
-      const all = describeSearch(index, searchQuery, Number.MAX_SAFE_INTEGER, { category });
+      const all = describeSearch(scoped, searchQuery, Number.MAX_SAFE_INTEGER);
       const found = all.slice(0, Math.max(1, limit));
       if (found.length === 0) context.warn("No method summary/description matches found.");
       const data: FindDescribeData = {
@@ -311,9 +331,6 @@ const command: CommandModule<FindArgs, FindData> = {
       return ok(data);
     }
 
-    const scoped = category
-      ? { ...index, methods: index.methods.filter((m) => inCategory(m.categoryName)), categories: index.categories.filter((c) => inCategory(c.name)) }
-      : index;
     const allMatches: MethodFinderMatch[] = searchMethodIndex(scoped, searchQuery, Number.MAX_SAFE_INTEGER);
     const matches = allMatches.slice(0, Math.max(1, limit));
     if (matches.length === 0) {
@@ -329,7 +346,7 @@ const command: CommandModule<FindArgs, FindData> = {
     };
 
     if (raw) {
-      data.raw = rawIndex(index, limit);
+      data.raw = rawIndex(scoped, limit);
     }
 
     return ok(data);
@@ -383,7 +400,13 @@ const command: CommandModule<FindArgs, FindData> = {
     for (const r of rows) for (const k of Object.keys(r)) if (!columns.includes(k)) columns.push(k);
     const cell = (v: unknown) => (v === undefined ? "" : Array.isArray(v) ? v.join(", ") : typeof v === "object" && v !== null ? JSON.stringify(v) : String(v));
     ui.table(["#", ...columns], rows.map((r, i) => [i + 1, ...columns.map((c) => cell(r[c]))]));
-    if (data.mode !== "browse") ui.text("Tip: run 'belz ad show <uuid> --compact' to inspect a matched method.");
+    if (data.mode === "browse" && data.methods) {
+      ui.section(`Methods (${data.methods.length} of ${data.totalMethods})`);
+      const mcols: string[] = [];
+      for (const r of data.methods) for (const k of Object.keys(r)) if (!mcols.includes(k)) mcols.push(k);
+      if (data.methods.length) ui.table(["#", ...mcols], data.methods.map((r, i) => [i + 1, ...mcols.map((c) => cell(r[c]))]));
+    }
+    if (data.mode !== "browse" || data.methods) ui.text("Tip: run 'belz ad show <uuid> --compact' to inspect a matched method.");
   },
 };
 

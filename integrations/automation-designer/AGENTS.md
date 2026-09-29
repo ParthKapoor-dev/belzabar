@@ -52,7 +52,12 @@ lib/
   history.ts           getVersionOf / listAll (history, diff)
   fingerprint.ts       fingerprintMethod (behaviour hash: wire body minus bookkeeping and numeric
                        …Ids, other …Uuids normalised; compare V2/history bodies only — state and
-                       publish read both sides on V2; restore, trace) + methodDiffView
+                       publish read both sides on V2; restore, trace). Cross-env / cross-endpoint
+                       noise is normalised: default `encodedBase64`/`runAsync`/`required` false =
+                       absent, `databaseRead.account` numeric/"null" dropped (account hashed by
+                       name), service/category names without whitespace, method-output fieldCode
+                       equal to its key dropped (tests/fixtures/cross-env: real dev/qa pairs)
+                       + methodDiffView
   trace.ts             traceMethod (ad trace, release matrix)
   callers.ts           reverse index (ad callers); reads PD via @belzabar/pd/lib/*
   api-shape.ts         child-info --shape
@@ -72,11 +77,11 @@ needs `--yes` instead.
 
 | Command | What it does |
 |---|---|
-| `find [list\|pick\|<query>]` | Cached method index: category counts, fzf picker, ranked search (`totalMatches` counts every match, before `--limit`); `--describe`, `--category`, `--fields`, `--refresh` |
+| `find [list\|pick\|<query>]` | Cached method index: category counts, fzf picker, ranked search (`totalMatches` counts every match, before `--limit`); `--describe`, `--category` (name prefix / id / uuid; without a query it lists that category's methods: `data.methods`, `totalMethods`; also scopes `--raw`), `--fields`, `--refresh` |
 | `fetch <uuid\|url>` | Fetch + cache + hydrate (`--v2`; `--raw` adds the wire body as `data.raw`) |
 | `show <uuid\|url\|file>` | Method view. Lean `--llm` payload; `--compact` (one line per step), `--story` (approval Markdown), `--sql`/`--code`/`--full`, `--service-detail N` (alias `--step`), `--raw`, `--open`. `--compact`/`--story` always read V2 fresh (keys match save ops / create specs; V1 fallback with a warning) and carry `source`/`fetchedAt`. A local V1/V2 JSON file is shown without a fetch |
 | `show-code`, `outputs`, `state` | Decoded custom code; the I/O contract only; draft/published linkage + `inSync` |
-| `categories`, `services`, `child-info` | Categories; the service catalog (`--search`); a callee's contract (`--shape`) |
+| `categories`, `services`, `child-info` | Categories (`--search`); the service catalog (`--search`); a callee's contract (`--shape`) |
 | `callers <uuid>` | AD methods (and PD pages/components with `--pd`) that call the method. `coverage.complete` only for a fresh, full index with nothing unresolved; `coverage.skippedCategories` for failed listings |
 | `export`, `export-category`, `test-cases`, `test-report` | Export JSON; list test cases (`METHOD_NOT_FOUND` for an unknown/soft-deleted uuid, since the suite route answers it like "no suite"); the latest suite report |
 | `history list\|show\|diff`, `diff`, `trace` | Version history, history or cross-env semantic diff (`diff` opens an editor only in human mode or with `--editor`; a failed spawn is a warning), where a method is on every env |
@@ -322,7 +327,7 @@ literals — and splices the result into the SQL before the DB runs it. `EXPLAIN
 |---|---|---|---|
 | Methods | `methods/<env>/<uuid>.json` | 5 min soft (SWR) / 1 h hard | save, publish, delete, history restore; `show --force` bypasses. A V1 parse with failed definition lookups (`unresolvedServices`) is never cached |
 | Service definitions | `definitions/<env>/<automationId>.json` | 1 h | — |
-| Method index | `method-finder/index-v1-<env>.json` (+ `dirty-<env>.json`) | 7 days (`callers`: 24 h; partial index: 15 min) | `find --refresh`, `callers --refresh`; `ad import` drops it. belz writes mark the uuid dirty, and `callers` re-reads dirty methods |
+| Method index | `method-finder/index-v1-<env>.json` (+ `dirty-<env>.json`) | 7 days (`callers`: 24 h; partial index: 15 min) | `find --refresh`, `callers --refresh`; `ad import` drops it. belz writes mark the uuid dirty, and `callers` re-reads dirty methods. A V2 read answering METHOD_NOT_FOUND (deleted / unknown) marks the uuid gone (`gone-<env>.json`): `find`/`callers` drop it from the cached index at once; a rebuild clears the marks |
 | Callers | `callers/`, `callers-errors/` (1 day), `pd-ad-refs/` (1 h) | — | `callers --refresh` |
 | Published history bodies | `history-versions/<env>/<methodVersionID>.json` | 30 days (immutable) | — |
 | Validator L4 | `api-contracts/`, `service-accounts/` | 1 h | — |
@@ -393,6 +398,8 @@ Rules:
   - `definitions/`, `categories/`, `child-info/`, `callers/`, `history/`,
     `test-cases/`, `not-found/`.
   - `validate/`: the validator golden set plus live case patches.
+  - `cross-env/`: published history bodies of the same logic on sems-dev and
+    sems-qa (read-only History.get), for the cross-env fingerprint tests.
   - `v1/step-*.json` are hand-written, but prefer real fixtures.
   - Refresh fixtures from the repo root with `bun scripts/fixtures/capture.ts <target>`.
     It only issues GETs and only talks to sems-dev.

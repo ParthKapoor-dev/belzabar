@@ -58,6 +58,42 @@ export async function invalidateMethodIndexEntry(env: string, uuid: string | nul
   }
 }
 
+const goneKey = (env: string) => `gone-${env}`;
+
+/**
+ * Record that a method no longer exists (belz deleted it, or a V2 read answered
+ * METHOD_NOT_FOUND — soft-deleted methods do). `find` and `callers` drop gone
+ * uuids from a cached index, so a deletion shows without `--refresh` (CLI
+ * trial). A fresh index build clears the marks. Never throws.
+ */
+export async function markMethodGone(env: string, uuid: string | null | undefined): Promise<void> {
+  const id = uuid?.trim().toLowerCase();
+  if (!id) return;
+  try {
+    const marks = (await dirtyCache.load(goneKey(env))) ?? {};
+    marks[id] = Date.now();
+    await dirtyCache.save(goneKey(env), marks);
+  } catch {
+    /* best effort */
+  }
+}
+
+async function withoutGone(index: MethodFinderIndex): Promise<MethodFinderIndex> {
+  const marks = (await dirtyCache.load(goneKey(index.env)).catch(() => null)) ?? {};
+  if (Object.keys(marks).length === 0) return index;
+  const gone = (m: MethodFinderMethod) => m.uuid.toLowerCase() in marks;
+  const methods = index.methods.filter((m) => !gone(m));
+  if (methods.length === index.methods.length) return index;
+  const removed = new Map<string, number>();
+  for (const m of index.methods) if (gone(m)) removed.set(m.categoryUuid, (removed.get(m.categoryUuid) ?? 0) + 1);
+  return {
+    ...index,
+    methods,
+    methodCount: methods.length,
+    categories: index.categories.map((c) => (removed.has(c.uuid) ? { ...c, methodCount: Math.max(0, c.methodCount - removed.get(c.uuid)!) } : c)),
+  };
+}
+
 /** Drop the env's whole index (a write whose method uuids are unknown, e.g. `ad import`). Never throws. */
 export async function dropMethodIndex(env: string): Promise<void> {
   await methodFinderCache.invalidate(indexKey(env));
@@ -200,12 +236,13 @@ export async function loadOrBuildMethodFinderIndex(options: {
       age <= (options.maxAgeMs ?? METHOD_FINDER_CACHE_TTL_MS) &&
       !(partial && age > PARTIAL_INDEX_TTL_MS)
     ) {
-      return { index: cached, source: "cache" };
+      return { index: await withoutGone(cached), source: "cache" };
     }
   }
 
   const index = await buildMethodFinderIndex(options.onProgress);
   await methodFinderCache.save(cacheKey, index);
+  await dirtyCache.invalidate(goneKey(index.env));
   return { index, source: "fresh" };
 }
 
