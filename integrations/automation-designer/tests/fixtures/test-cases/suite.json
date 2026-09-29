@@ -1,0 +1,103 @@
+{
+  "id": "41364ebbc80d2c7f383ab4d710b22554",
+  "createdBy": 2,
+  "createdOn": 1790662106196,
+  "updatedBy": 2,
+  "updatedOn": 1790662961592,
+  "chainId": "4252b87e4d77d2a6e8f59325550558ae",
+  "chainVersionId": 2,
+  "testCases": [
+    {
+      "id": "490aec1f8e63c28bece382ff4bb9f3fe",
+      "createdBy": 2,
+      "createdOn": 1790662916977,
+      "updatedBy": 2,
+      "updatedOn": 1790662961593,
+      "name": "belz_tst_s7c_t1.greet.mars.2",
+      "description": "greets Mars (v2)",
+      "testSuiteId": "41364ebbc80d2c7f383ab4d710b22554",
+      "inputs": [
+        {
+          "id": "43f6a2ecdc25121e2b38afc4d0b77ac0",
+          "createdOn": 1790662961596,
+          "testCaseId": "490aec1f8e63c28bece382ff4bb9f3fe",
+          "fieldCode": "name",
+          "value": "{\"value\": \"Mars\"}",
+          "defaultValue": "{\"value\": \"Mars\"}"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "4b61d0844bc55fa758ab800543be91dd",
+          "createdOn": 1790662961598,
+          "mode": "advance",
+          "conditionExpression": "#{greetingOut} eq 'Hello Mars'",
+          "testCaseId": "490aec1f8e63c28bece382ff4bb9f3fe"
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "4940d1f6e5eae19d744080be0aa2ce4b",
+      "createdBy": 2,
+      "createdOn": 1790662106200,
+      "updatedBy": 2,
+      "updatedOn": 1790662961601,
+      "name": "belz_tst_s7c_t1.greet.ok.1",
+      "description": "greets World",
+      "testSuiteId": "41364ebbc80d2c7f383ab4d710b22554",
+      "inputs": [
+        {
+          "id": "4290d8cd09ca9943082aa67691df85d6",
+          "createdOn": 1790662961604,
+          "testCaseId": "4940d1f6e5eae19d744080be0aa2ce4b",
+          "fieldCode": "name",
+          "value": "{\"value\": \"World\"}",
+          "defaultValue": "{\"value\": \"World\"}"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "496cb117d474d07e49e7be9e1426725d",
+          "createdOn": 1790662961606,
+          "mode": "advance",
+          "conditionExpression": "#{greetingOut} eq 'Hello World'",
+          "testCaseId": "4940d1f6e5eae19d744080be0aa2ce4b"
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "45ac48837e914076d180af8e6182547f",
+      "createdBy": 2,
+      "createdOn": 1790662918758,
+      "updatedBy": 2,
+      "updatedOn": 1790662961612,
+      "name": "belz_tst_s7c_t1.greet.quote.1",
+      "description": "quote in name",
+      "testSuiteId": "41364ebbc80d2c7f383ab4d710b22554",
+      "inputs": [
+        {
+          "id": "40e3972738494ec308858ac526b43124",
+          "createdOn": 1790662961614,
+          "testCaseId": "45ac48837e914076d180af8e6182547f",
+          "fieldCode": "name",
+          "value": "{\"value\": \"O'Brien\"}",
+          "defaultValue": "{\"value\": \"O'Brien\"}"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "46772ae42e862aa420059b10bf70e0fe",
+          "createdOn": 1790662961617,
+          "mode": "advance",
+          "conditionExpression": "#{greetingOut} contains 'O''Brien'",
+          "testCaseId": "45ac48837e914076d180af8e6182547f"
+        }
+      ],
+      "active": true
+    }
+  ],
+  "executionStatus": "PASS",
+  "active": true
+}

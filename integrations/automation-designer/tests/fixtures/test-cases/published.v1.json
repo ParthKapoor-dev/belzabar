@@ -1,0 +1,125 @@
+{
+  "id": 20302,
+  "uuid": "4725bcfbb9d1e3c7eeb489dc0293d96a",
+  "jsonDefinition": "{\"name\": \"belz_tst_s7c_t1\", \"inputs\": [{\"type\": \"STRING\", \"uuid\": \"42657319aafebfdacd52bb879e7b84be\", \"label\": \"name\", \"secured\": false, \"editable\": false, \"required\": true, \"fieldCode\": \"name\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 29192, \"code\": \"greetingOut\", \"type\": \"STRING\", \"uuid\": \"491606522b1ac619818ba7162344c302\", \"fieldCode\": \"greetingOut\", \"sensitive\": false, \"outputCode\": \"greetingOut\", \"properties\": [], \"displayName\": \"greetingOut\", \"automationId\": 196938, \"automationUuid\": \"43c3260eaef9df76aab8b7e63fbe9759\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"s7c test-case probe\", \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"greetingOut\", \"uuid\": \"46965b2dcbdc7f629981bc011a1a58ea\", \"fieldCode\": \"greetingOut\", \"sensitive\": false, \"outputCode\": \"response\", \"properties\": [], \"displayName\": \"greetingOut\", \"automationId\": 196985, \"automationUuid\": \"43c3260eaef9df76aab8b7e63fbe9759\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 12908, \"automationAPIOutputUuid\": \"454b0e868e7fdf20249caae851c08208    \", \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"Hello #{name}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"encodedBase64\": false, \"sensitiveInput\": false, \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 23538, \"automationUserInputUuid\": \"4bd0e87488b2cf0ff019850ab3ae069c    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"description\": \"build greeting\", \"automationId\": 196985, \"categoryName\": \"Helpers.Legacy\", \"conditionMode\": \"advance\", \"streamCapable\": false, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"automationApiUuid\": \"424ffd4c9e0f55befc238dd999dab2d6    \", \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"forceReturnConditionMode\": \"advance\", \"useServiceAuthenticationStructure\": false}], \"variables\": [], \"assertions\": [], \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"belz_tst_s7c probe for ad test --expect / test-case sync; safe to delete\", \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
+  "version": 1,
+  "name": "belz_tst_s7c_t1",
+  "aliasName": "belz_tst_s7c_t1",
+  "category": {
+    "id": 1135,
+    "name": "Test-Parth",
+    "aliasName": [
+      ""
+    ],
+    "originalLabel": "Test-Parth",
+    "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 1886,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "SEMS",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin SEMS",
+            "title": "Admin SEMS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "SEMS",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin SEMS",
+      "title": "Admin SEMS",
+      "lastLoginDate": 1790662037714
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [],
+    "type": "USER_GENERATED",
+    "uuid": "4e98700b2524e2accd47b4addf95ceca",
+    "automationSystemUuid": "4037ada88a1a3ac30a1c9e63b6b0eed6",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [],
+  "createdBy": 2,
+  "createdOn": 1790662937120,
+  "referenceId": "4252b87e4d77d2a6e8f59325550558ae",
+  "state": "PUBLISHED",
+  "migrationVersion": 1790662937106,
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "aliasUuid": "4725bcfbb9d1e3c7eeb489dc0293d96a",
+  "lastPublishedAt": 1790662937106,
+  "lastPublishedBy": 2,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "46db17e1aaa2c4fc188f9d4f992ee88b",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": "",
+  "automationState": "PUBLISHED"
+}

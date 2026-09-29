@@ -1,0 +1,64 @@
+{
+  "services": [
+    {
+      "automationId": 196938,
+      "orderIndex": 1,
+      "successMessage": "Service executed successfully.",
+      "outputs": [
+        {
+          "automationAPIOutputId": 12908,
+          "outputCode": "response",
+          "code": "greetingOut",
+          "secured": false,
+          "testResult": "Hi World"
+        }
+      ],
+      "mappings": [
+        {
+          "automationUserInputId": 23538,
+          "value": "Hi #{name}",
+          "mappings": [],
+          "testResult": "Hi World"
+        }
+      ],
+      "executionStatus": {
+        "executed": true,
+        "message": "Service executed successfully.",
+        "failed": false,
+        "statusCode": 200,
+        "stepIndex": 1,
+        "executionTime": {
+          "time": 1,
+          "unit": "milliseconds"
+        },
+        "calls": []
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "automationAPIOutputId": 12908,
+      "outputCode": "greetingOut",
+      "code": "greetingOut",
+      "secured": false,
+      "testResult": "Hi World"
+    }
+  ],
+  "assertions": [],
+  "executionStatus": {
+    "executed": true,
+    "failed": false,
+    "statusCode": 200,
+    "executionTime": {
+      "time": 79,
+      "unit": "milliseconds"
+    },
+    "failingSteps": [],
+    "failingStepsStatuses": [],
+    "totalExecutionTime": {
+      "time": 145,
+      "unit": "milliseconds"
+    },
+    "calls": []
+  }
+}

@@ -1,0 +1,68 @@
+[
+  {
+    "file": "draft.v1.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:23:11.342Z",
+    "bytes": 5465,
+    "source": {
+      "uuid": "4252b87e4d77d2a6e8f59325550558ae"
+    },
+    "endpoint": "/rest/api/automation/chain/4252b87e4d77d2a6e8f59325550558ae",
+    "status": 200
+  },
+  {
+    "file": "published.v1.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:23:12.221Z",
+    "bytes": 5403,
+    "source": {
+      "uuid": "4725bcfbb9d1e3c7eeb489dc0293d96a"
+    },
+    "endpoint": "/rest/api/automation/chain/4725bcfbb9d1e3c7eeb489dc0293d96a",
+    "status": 200
+  },
+  {
+    "file": "draft.v2.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:23:12.962Z",
+    "bytes": 6142,
+    "source": {
+      "uuid": "4252b87e4d77d2a6e8f59325550558ae"
+    },
+    "endpoint": "/rest/api/automation/chain/v2/4252b87e4d77d2a6e8f59325550558ae?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "suite.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:23:13.845Z",
+    "bytes": 2271,
+    "source": {
+      "uuid": "4252b87e4d77d2a6e8f59325550558ae"
+    },
+    "endpoint": "/rest/api/automation/chain/testsuite/service-chain/4252b87e4d77d2a6e8f59325550558ae",
+    "status": 200
+  },
+  {
+    "file": "test-draft.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:23:00Z",
+    "source": {
+      "uuid": "4252b87e4d77d2a6e8f59325550558ae"
+    },
+    "endpoint": "POST /rest/api/automation/chain/test (inputs {name: World})",
+    "status": 200,
+    "note": "belz_tst_s7c_t1 after the draft echo changed to 'Hi #{name}'"
+  },
+  {
+    "file": "test-published.json",
+    "env": "sems-dev",
+    "capturedAt": "2026-09-29T06:23:00Z",
+    "source": {
+      "uuid": "4725bcfbb9d1e3c7eeb489dc0293d96a"
+    },
+    "endpoint": "POST /rest/api/automation/chain/test (inputs {name: World})",
+    "status": 200,
+    "note": "belz_tst_s7c_t1 after the draft echo changed to 'Hi #{name}'"
+  }
+]

@@ -129,6 +129,29 @@ rationale.
     N is read from the side the uuid names (F7). Used by `history` and `diff`.
 12c. `lib/test-suite.ts` — `summarizeTestSuite`: the structured
     `{testSuiteId, testCases, total}` of `test-cases` and `test-case list` (F24).
+12e. `lib/test-run.ts` — `runInlineTest(hydrated, values)`: one `/chain/test`
+    run → `{status, outputs {code: value}, trace, failedStep, …}`;
+    `diffOutputs`, `counterpart` (draft ↔ published via referenceId). Used by
+    `ad test` (`--expect`, `--compare-published`).
+12f. `lib/test-cases/` — test cases (7.7/7.13). `expect.ts`: `--expect`
+    syntax (`out=v`, `!=`, `~=`, `>`/`<`/`>=`/`<=`, `out.path[0]=v`) +
+    evaluation, and the assertion ↔ advance-mode SpEL mapping
+    (`#{out} eq 'v'`, UI ops eq/neq/gt/lt/contains). `case-file.ts`: UI wire
+    (`{"value": …}` wrapper text) ↔ case file `{name, description, inputs
+    {fc: value}, inputExtras?, assertions[{output,op,expected}|{expression}]}`
+    (stable key order, env-free), `diffCases`. `suite.ts`: `fetchSuite`,
+    contract check vs the method's inputs/outputs, verified create/update
+    (`checkPersisted` re-reads the suite), `planSync`/`applySync`. `files.ts`:
+    export layout `<root>/<Category>/<method>/{method.json, cases/*.json}`
+    (`method.json.uuids` = env → chain uuid). Live sems-dev facts: PUT
+    persists inputs+assertions only (name/description/active ignored, even
+    with the full body); DELETE is soft and never releases the name (400
+    "TestCase name should be unique" → AD_TESTCASE_NAME_RESERVED); the bulk
+    route wants `{fieldCode: string}` inputs (400 on UI bodies), so `bulk`
+    posts one case at a time; `active:false` cases vanish from the suite
+    GET; jsonb values read back re-spaced (compare decoded). The V2 GET body
+    embeds `testSuite`, and every V2 save rewrites its test-case input ids /
+    timestamps.
 12d. `lib/fingerprint.ts` — `fingerprintMethod` (12-hex logic hash, used by
     `state`, `publish`, `history restore`, `trace`) and `methodDiffView` /
     `diffPaths` (the semantic view `diff` compares: decoded code/SQL/SpEL,
@@ -229,8 +252,14 @@ fails if a folder is missing from the registry.
 12. `test-report` — latest test-suite execution report
 13. `child-info` — resolve a child method's inputs/outputs by name (unknown/draft-only → METHOD_NOT_FOUND)
 14. `test` — V1 test-before-save with rich per-step trace (rows joined to the
-    method's steps: real description + orderIndex). **Declares `writes`**: it
-    really runs the chain (SQL commits).
+    method's steps: real description + orderIndex) and `outputs {code:
+    value}`. `--expect out=v` (repeatable) → `expectations {total, passed,
+    failed, results}`, any failure = AD_TEST_EXPECTATION_FAILED (exit 1);
+    `--case <file>` takes inputs + assertions from a case file;
+    `--compare-published` also runs the counterpart (draft ↔ published) with
+    the same inputs → `compare {identical, differences[], published{status,
+    outputs, expectations?}}` (the draft run decides the exit code). **Declares
+    `writes`**: it really runs the chain (SQL commits).
 15. `run` — live-execute a published method (`--stream` opts into a streaming
     method: `application/stream+json` chunks + final JSON envelope; no
     timeout). **Declares `writes`.** A DRAFT uuid runs its PUBLISHED body —
@@ -282,7 +311,15 @@ fails if a folder is missing from the registry.
 3. `import <file>` — POST `/chain/import`
 4. `category create <name>` — create a new AD category/service
 5. `test-case <action>` — `list | create | update | delete | bulk |
-   run-suite | delete-suite` (V1 supports test-case UPDATE)
+   run-suite | delete-suite | export | sync`. create (`--file` case file / UI
+   body, or `--name --input k=v --assert out=v`), update and bulk are
+   contract-checked (AD_TESTCASE_CONTRACT), refuse a taken name
+   (AD_TESTCASE_EXISTS) and are verified by re-reading the suite
+   (AD_TESTCASE_VERIFY_FAILED). update refuses name/description changes
+   (AD_TESTCASE_FIELD_NOT_UPDATABLE). `export <uuid> --dir <root>` (read-only)
+   writes the git-friendly files; `sync <methodDir>` is a dry-run plan
+   (create/update/drift/extra/conflict) unless `--apply` (a write; `--prune`
+   deletes server-only cases); applied syncs are verified.
 6. `sql update|insert|modify` — SQL writes; confirmation or `--yes` like
    every other AD write.
 7. `history restore <draftUuid> --version N` — draft-guarded; a published

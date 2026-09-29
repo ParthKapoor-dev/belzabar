@@ -1,0 +1,307 @@
+{
+  "uuid": "4252b87e4d77d2a6e8f59325550558ae",
+  "automationApiId": "4997c27f4136f300a5638a3c61132347    ",
+  "name": "belz_tst_s7c_t1",
+  "summary": "s7c test-case probe",
+  "description": "belz_tst_s7c probe for ad test --expect / test-case sync; safe to delete",
+  "metadata": {
+    "version": {
+      "uuid": "4252b87e4d77d2a6e8f59325550558ae",
+      "name": "2",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 1135,
+      "uuid": "4e98700b2524e2accd47b4addf95ceca",
+      "name": "Test-Parth",
+      "description": "Scratch category for BCPS-596 build probes (Parth). Safe to delete.",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1790662086217,
+      "lastPublishedAt": 1790662937106,
+      "createdBy": 2,
+      "migrationVersion": 1,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": "4725bcfbb9d1e3c7eeb489dc0293d96a"
+  },
+  "inputs": [
+    {
+      "uuid": "4c45574199425770f81e813f2da0adff    ",
+      "key": "name",
+      "name": "name",
+      "type": "STRING",
+      "required": true,
+      "properties": [],
+      "encodingType": "NONE"
+    }
+  ],
+  "outputs": [
+    {
+      "uuid": "4024066bbf1574ce88b0ba474a502d74    ",
+      "key": "greetingOut",
+      "fieldCode": "greetingOut",
+      "name": "greetingOut",
+      "type": "STRING"
+    }
+  ],
+  "variables": [],
+  "steps": [
+    {
+      "id": "43c3260eaef9df76aab8b7e63fbe9759    ",
+      "automationAPIId": "424ffd4c9e0f55befc238dd999dab2d6    ",
+      "serviceName": "Helpers.Legacy",
+      "methodName": "echo",
+      "coreMethod": false,
+      "description": "build greeting",
+      "inputs": [
+        {
+          "uuid": "4bd0e87488b2cf0ff019850ab3ae069c    ",
+          "value": "Hi #{name}",
+          "key": "Input",
+          "name": "Input",
+          "type": "STRING",
+          "combineInput": true,
+          "properties": [],
+          "encodedBase64": false,
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "454b0e868e7fdf20249caae851c08208    ",
+          "key": "response",
+          "fieldCode": "greetingOut",
+          "name": "greetingOut"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": true,
+            "code": null,
+            "message": ""
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": "",
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [
+    {
+      "id": "48d7decfbb5781af0bf0877c4a781f7d",
+      "comment": "Method published by Admin SEMS",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790662037714
+      },
+      "createdAt": 1790662937390,
+      "changelogType": "EXPERTLY_SYSTEM",
+      "entityVersion": "2"
+    },
+    {
+      "id": "4a90e8329526caf09c14bc6cb1ae480e",
+      "comment": "belz_tst_s7c publish 1",
+      "user": {
+        "id": 2,
+        "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+        "email": "user@example.com",
+        "firstName": "Admin",
+        "lastName": "SEMS",
+        "ssoUser": false,
+        "boss": {
+          "id": 1,
+          "ssoUser": false,
+          "mfaEnabled": false
+        },
+        "userTimeZone": {
+          "id": 23,
+          "name": "America/New_York",
+          "displayName": "America/New_York",
+          "utcOffset": 0,
+          "utcDstOffset": 0
+        },
+        "mfaEnabled": false,
+        "applicationId": "9826b7f2-ca07-46ec-903d-f3abd294715c",
+        "tenantId": "18c5aada-92be-4a22-a13c-2f5fd2f36194",
+        "fullName": "Admin SEMS",
+        "title": "Admin SEMS",
+        "lastLoginDate": 1790662037714
+      },
+      "createdAt": 1790662940119,
+      "changelogType": "USER_GENERATED",
+      "entityVersion": "2"
+    }
+  ],
+  "testSuite": {
+    "id": "41364ebbc80d2c7f383ab4d710b22554",
+    "createdBy": 2,
+    "createdOn": 1790662106196,
+    "updatedBy": 2,
+    "updatedOn": 1790662961592,
+    "chainId": "4252b87e4d77d2a6e8f59325550558ae",
+    "chainVersionId": 2,
+    "testCases": [
+      {
+        "id": "490aec1f8e63c28bece382ff4bb9f3fe",
+        "createdBy": 2,
+        "createdOn": 1790662916977,
+        "updatedBy": 2,
+        "updatedOn": 1790662961593,
+        "name": "belz_tst_s7c_t1.greet.mars.2",
+        "description": "greets Mars (v2)",
+        "testSuiteId": "41364ebbc80d2c7f383ab4d710b22554",
+        "inputs": [
+          {
+            "id": "43f6a2ecdc25121e2b38afc4d0b77ac0",
+            "createdOn": 1790662961596,
+            "testCaseId": "490aec1f8e63c28bece382ff4bb9f3fe",
+            "fieldCode": "name",
+            "value": "{\"value\": \"Mars\"}",
+            "defaultValue": "{\"value\": \"Mars\"}"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "4b61d0844bc55fa758ab800543be91dd",
+            "createdOn": 1790662961598,
+            "mode": "advance",
+            "conditionExpression": "#{greetingOut} eq 'Hello Mars'",
+            "testCaseId": "490aec1f8e63c28bece382ff4bb9f3fe"
+          }
+        ],
+        "active": true
+      },
+      {
+        "id": "4940d1f6e5eae19d744080be0aa2ce4b",
+        "createdBy": 2,
+        "createdOn": 1790662106200,
+        "updatedBy": 2,
+        "updatedOn": 1790662961601,
+        "name": "belz_tst_s7c_t1.greet.ok.1",
+        "description": "greets World",
+        "testSuiteId": "41364ebbc80d2c7f383ab4d710b22554",
+        "inputs": [
+          {
+            "id": "4290d8cd09ca9943082aa67691df85d6",
+            "createdOn": 1790662961604,
+            "testCaseId": "4940d1f6e5eae19d744080be0aa2ce4b",
+            "fieldCode": "name",
+            "value": "{\"value\": \"World\"}",
+            "defaultValue": "{\"value\": \"World\"}"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "496cb117d474d07e49e7be9e1426725d",
+            "createdOn": 1790662961606,
+            "mode": "advance",
+            "conditionExpression": "#{greetingOut} eq 'Hello World'",
+            "testCaseId": "4940d1f6e5eae19d744080be0aa2ce4b"
+          }
+        ],
+        "active": true
+      },
+      {
+        "id": "45ac48837e914076d180af8e6182547f",
+        "createdBy": 2,
+        "createdOn": 1790662918758,
+        "updatedBy": 2,
+        "updatedOn": 1790662961612,
+        "name": "belz_tst_s7c_t1.greet.quote.1",
+        "description": "quote in name",
+        "testSuiteId": "41364ebbc80d2c7f383ab4d710b22554",
+        "inputs": [
+          {
+            "id": "40e3972738494ec308858ac526b43124",
+            "createdOn": 1790662961614,
+            "testCaseId": "45ac48837e914076d180af8e6182547f",
+            "fieldCode": "name",
+            "value": "{\"value\": \"O'Brien\"}",
+            "defaultValue": "{\"value\": \"O'Brien\"}"
+          }
+        ],
+        "assertions": [
+          {
+            "id": "46772ae42e862aa420059b10bf70e0fe",
+            "createdOn": 1790662961617,
+            "mode": "advance",
+            "conditionExpression": "#{greetingOut} contains 'O''Brien'",
+            "testCaseId": "45ac48837e914076d180af8e6182547f"
+          }
+        ],
+        "active": true
+      }
+    ],
+    "executionStatus": "PASS",
+    "active": true
+  },
+  "permissions": {
+    "permissionSet": [
+      "EDIT_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_IN_GUIDE",
+      "VIEW_AUTOMATION_METHOD",
+      "USE_AUTOMATION_METHOD_DIRECTLY",
+      "OWNER_METHOD"
+    ],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}

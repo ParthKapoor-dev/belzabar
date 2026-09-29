@@ -1,7 +1,16 @@
 belz ad test-case list <uuid>  :->  List test cases on a method (same structured result as `belz ad test-cases`)
-belz ad test-case create <uuid> --file <tc.json> --env <env> [--yes]  :->  Create one test case from a JSON file
-belz ad test-case update <uuid> <testCaseId> --file <tc.json> --env <env> [--yes]  :->  Update a test case
+belz ad test-case create <uuid> --name <n> --input <k=v> --assert <out=v> --env <env> [--yes]  :->  Create one UI-encoded test case from flags; verified by reading the suite back
+belz ad test-case create <uuid> --file <case.json> --env <env> [--yes]  :->  Create one test case from a case file or UI body (refuses an existing name); verified on read-back
+belz ad test-case create <uuid> --name <n> --description <d>  :->  Set the test case description
+belz ad test-case update <uuid> <testCaseId> --file <case.json> --env <env> [--yes]  :->  Replace a case's inputs/assertions (name/description cannot change via the API); verified
+belz ad test-case update <uuid> <testCaseId> --input <k=v> --assert <out=v> --env <env>  :->  Change single inputs / replace the assertions of an existing case
 belz ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case
-belz ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Bulk-create an array of test cases
+belz ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Create an array of test cases (one POST each; verified)
 belz ad test-case run-suite <uuid> --env <env> [--yes]  :->  Execute the method's test suite (async; does not evaluate assertions)
 belz ad test-case delete-suite <testSuiteId> --env <env> [--yes]  :->  Delete a test suite
+belz ad test-case export <uuid> --dir <root>  :->  Write the suite as git-friendly files: <root>/<Category>/<method>/{method.json,cases/*.json}; read-only
+belz ad test-case export <uuid> --dir <root> --prune  :->  Also delete case files whose case is no longer on the server
+belz ad test-case sync <methodDir>  :->  Dry run: plan create/update/drift/extra of the case files against the suite (method.json uuids[env])
+belz ad test-case sync <methodDir> --uuid <uuid>  :->  Sync to this chain instead of method.json's uuid for the env
+belz ad test-case sync <methodDir> --apply --env <env> [--yes]  :->  Apply the plan and verify every case on read-back
+belz ad test-case sync <methodDir> --apply --prune --env <env>  :->  Also delete server cases that have no file

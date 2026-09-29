@@ -1,32 +1,47 @@
 Usage: belz ad test <UUID> [flags]
 
-Execute a draft Automation Designer method for testing and inspection.
+Execute an Automation Designer method for testing and inspection.
 This really runs the chain (SQL steps commit, HTTP steps call out), so it
 requires an explicit --env.
 
 Arguments:
-  <UUID>              The UUID of the draft method to test.
+  <UUID>                The UUID of the method to test (usually the draft).
 
 Flags:
-  --inputs <FILE>     Path to a JSON file of input values. Prompts interactively if omitted
-                      (required with --llm).
-  --verbose, -v       Show detailed execution trace for each step. (A command
-                      flag here: it does not switch on runner debug logging.)
-  --v2                Accepted for consistency; test runs on V1 (notice printed).
-  --raw               Include raw execution payload in output.
-  --help, -h          Show this help message.
+  --inputs <FILE>       Path to a JSON file of input values. Prompts interactively if omitted
+                        (required with --llm unless --case is given).
+  --case <FILE>         Take the inputs AND the expectations from a test-case file
+                        (`belz ad test-case export` format, or a UI test-case body):
+                        every `{output, op, expected}` assertion is checked locally.
+                        Cannot be combined with --inputs.
+  --expect <OUT=VALUE>  Check a method output after the run (repeatable). Operators:
+                        = != ~= (contains) > < >= <=; `out.a[0]=x` looks inside JSON.
+                        The value is JSON when it parses, else text; quote it
+                        ('42') to compare as a string. Any failure exits 1 with
+                        AD_TEST_EXPECTATION_FAILED.
+  --compare-published   Also run the same inputs against the published copy (a draft's
+                        referenceId, or the draft of a published uuid) and diff every
+                        output. Expectations decide the exit code on the draft run.
+  --verbose, -v         Show detailed execution trace for each step. (A command
+                        flag here: it does not switch on runner debug logging.)
+  --v2                  Accepted for consistency; test runs on V1 (notice printed).
+  --raw                 Include raw execution payload in output.
+  --help, -h            Show this help message.
 
 Global Flags:
-  --env <name>        Set active environment. (default: nsm-dev)
-                      Available: nsm-dev | nsm-qa | nsm-uat
-  --llm               Output structured JSON envelope for scripting/LLM use.
+  --env <name>          Set active environment. (default: nsm-dev)
+                        Available: nsm-dev | nsm-qa | nsm-uat
+  --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Notes:
   - Posts {category, jsonDefinition, id, uuid, version} to /chain/test with
     testValues set and automationApiId filled on every step (lean chains).
+  - Data: outputs {code: value} (every method output), trace, expectations
+    {total, passed, failed, results[]}, compare {identical, differences[],
+    published{status, outputs}}.
   - Trace rows carry the method's own step descriptions and orderIndex.
 
 Examples:
-  belz ad test 4a1b2c3d... --env <env>
-  belz ad test 4a1b2c3d... --env <env> --verbose
-  belz ad test 4a1b2c3d... --env <env> --inputs ./test-data.json --raw --llm
+  belz ad test 4a1b2c3d... --env <env> --inputs ./in.json --expect greetingOut='Hello World'
+  belz ad test 4a1b2c3d... --env <env> --case ./cases/greet.ok.1.json --compare-published --llm
+  belz ad test 4a1b2c3d... --env <env> --inputs ./test-data.json --verbose --raw

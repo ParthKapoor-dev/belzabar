@@ -1,40 +1,76 @@
 Usage: belz ad test-case <action> [args] [flags]
 
-Manage persistent test cases attached to an AD method's test suite.
+Manage persistent test cases attached to an AD method's test suite. Every
+write is read back from the suite and compared with what was sent
+(AD_TESTCASE_VERIFY_FAILED when it did not land).
 
 Actions:
   list <uuid>                             List test cases: the same structured result
                                           as belz ad test-cases ({testSuiteId, testCases, total})
-  create <uuid> --file <tc.json> [--yes]  Create one test case from a file
-  update <uuid> <testCaseId> --file <f>   Update a test case (V1 supports this)
+  create <uuid> --name <n> [--description <d>] [--input k=v]... [--assert out=v]...
+  create <uuid> --file <case.json> [--assert out=v]...
+                                          Create one test case (UI encoding; refuses a
+                                          name already in the suite: AD_TESTCASE_EXISTS)
+  update <uuid> <testCaseId> [--file <f>] [--input k=v]... [--assert out=v]...
+                                          Replace a case's inputs/assertions (name and
+                                          description cannot be changed through the API)
   delete <testCaseId> [--yes]             Delete a test case
-  bulk <uuid> --file <cases.json> [--yes] Bulk create an array of test cases
+  bulk <uuid> --file <cases.json> [--yes] Create an array of test cases (one POST each)
   run-suite <uuid> [--yes]                Execute the method's test suite (async)
   delete-suite <testSuiteId> [--yes]      Delete a test suite
+  export <uuid> --dir <root> [--prune]    Write the suite to <root>/<Category>/<method>/
+                                          (method.json + cases/<name>.json); read-only
+  sync <methodDir> [--uuid <u>] [--apply] [--prune] [--yes]
+                                          Diff the case files against the suite (dry run);
+                                          --apply creates/updates them
 
 Flags:
-  --file <path>  Test case JSON (required for create, update, bulk)
-  --yes, -y      Skip the interactive confirmation prompt (write actions)
-  --v2           Accepted for consistency; V1-only (notice printed)
-  --llm          Emit a JSON envelope; --yes is required in this mode
-  --env <name>   Target environment. Required explicitly for every action
-                 except list (they write).
+  --file <path>         Test case JSON: a case file (see below) or a UI test-case body
+                        (create, update); an array of them (bulk).
+  --name <name>         Test case name (create). Convention: <method>.<scenario>.<outcome>.<n>
+  --description <text>  Test case description (create).
+  --input <k=v>         Input value (repeatable). STRING/TEXT inputs keep the text;
+                        other types parse as JSON when they can.
+  --assert <out=v>      Assertion (repeatable): out=v, out!=v, out>v, out<v, out~=v
+                        (contains). v is JSON when it parses; quote it ('42') for a
+                        string. Stored as advance-mode SpEL `#{out} eq 'v'`.
+  --dir <path>          Export root (export).
+  --uuid <uuid>         Chain to sync to (sync). Default: method.json uuids[<env>].
+  --apply               Perform the sync (without it sync only prints the plan).
+  --prune               export: delete case files no longer on the server;
+                        sync: delete server cases that have no file.
+  --yes, -y             Skip the interactive confirmation prompt (write actions)
+  --v2                  Accepted for consistency; V1-only (notice printed)
+  --help, -h            Show this help message.
 
-Test case schema (see ad-rest-api-crud-and-testing.md §"Test Case Payload
-Structure" for the authoritative form):
+Global Flags:
+  --env <name>          Target environment. Required explicitly for every action
+                        except list, export and a dry-run sync (they write).
+  --llm                 Emit a JSON envelope; --yes is required for writes in this mode.
+
+Case file (one per test case; stable key order; no ids, so it can live in a
+separate git repo and sync to any env):
   {
-    "name": "test.operation.description",
-    "description": "...",
-    "active": true,
-    "inputs": [
-      {
-        "fieldCode": "userId",
-        "value": "{\"value\": \"42\", \"properties\": [{\"value\": []}]}"
-      }
-    ],
-    "assertions": []
+    "name": "greet.ok.1",
+    "description": "greets World",
+    "inputs": { "name": "World" },
+    "assertions": [ { "output": "greetingOut", "op": "eq", "expected": "Hello World" } ]
   }
+  Assertions belz cannot parse stay verbatim as {"expression": "..."}. Inputs whose
+  stored wrapper carries more than {"value"} keep it in "inputExtras".
+
+Sync plan: create (only in files), update (inputs/assertions differ: PUT),
+drift (only the description differs: reported, the API cannot change it),
+delete (--prune: only on the server), extra (only on the server, left alone),
+conflict (duplicate name on the server). Names are never released: DELETE is
+a soft delete, so a deleted case's name cannot be created again
+(AD_TESTCASE_NAME_RESERVED) — rename the file's case instead.
 
 Gotcha: /testsuite/execute does NOT evaluate assertions. executionStatus=PASS
 means the method ran without errors, not that assertions passed. Use
-`belz ad test-report` for full evaluation results.
+`belz ad test <uuid>` with the case file to check its assertions (see its help).
+
+Examples:
+  belz ad test-case create 4a1b... --name greet.ok.1 --input name=World --assert "greetingOut=Hello World" --env <env> --yes
+  belz ad test-case export 4a1b... --dir ./unit-tests/ad --env <env>
+  belz ad test-case sync ./unit-tests/ad/Test-Parth/greet --env <env> --apply --yes --llm
