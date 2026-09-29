@@ -107,13 +107,22 @@ function deriveProject(name: string): string {
   return prefix.toUpperCase();
 }
 
+/** Own-property lookup: env names come from argv, so `constructor` / `__proto__` must not hit Object.prototype (CORE-R6). */
+function ownEntry<T>(table: Readonly<Record<string, T>>, name: string): T | undefined {
+  return Object.hasOwn(table, name) ? table[name] : undefined;
+}
+
 function buildEnvironments(config: BelzConfigFile): Record<string, Environment> {
   const fileEnvs = config.environments ?? {};
-  const environments: Record<string, Environment> = {};
-  const names = [...Object.keys(BUILTIN_ENV_URLS), ...Object.keys(fileEnvs).filter((n) => !(n in BUILTIN_ENV_URLS))];
+  // Null prototype: `environments[name]` is safe for any user-supplied name.
+  const environments: Record<string, Environment> = Object.create(null);
+  const names = [
+    ...Object.keys(BUILTIN_ENV_URLS),
+    ...Object.keys(fileEnvs).filter((n) => !Object.hasOwn(BUILTIN_ENV_URLS, n)),
+  ];
   for (const name of names) {
-    const entry = fileEnvs[name];
-    const builtinUrl = BUILTIN_ENV_URLS[name];
+    const entry = ownEntry(fileEnvs, name);
+    const builtinUrl = ownEntry(BUILTIN_ENV_URLS, name);
     const problem = envEntryProblem(entry, builtinUrl);
     environments[name] = {
       name,

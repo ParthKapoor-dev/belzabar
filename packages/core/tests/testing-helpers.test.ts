@@ -165,6 +165,10 @@ describe("runCommand", () => {
     const bad = await runCommand(probe, [], { env: "no-such-env" });
     expect(bad.exitCode).toBe(1);
     expect(bad.envelope?.error?.code).toBe("INVALID_ENV");
+    for (const proto of ["constructor", "toString", "__proto__"]) {
+      const p = await runCommand(probe, [], { env: proto }); // CORE-R6
+      expect(p.envelope?.error?.code).toBe("INVALID_ENV");
+    }
   });
 
   test("--help is handled by the runner", async () => {

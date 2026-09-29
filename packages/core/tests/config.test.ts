@@ -199,6 +199,18 @@ describe("default env (D6 / CORE-26)", () => {
   test("setActiveEnv with an unknown name throws INVALID_ENV", () => {
     expect(codeOf(() => Config.setActiveEnv("nope-nope"))).toBe("INVALID_ENV");
   });
+
+  test("CORE-R6: Object.prototype names are unknown envs, not crashes", () => {
+    for (const name of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
+      expect(codeOf(() => Config.setActiveEnv(name))).toBe("INVALID_ENV");
+    }
+    expect(Config.getAllEnvs()["constructor"]).toBeUndefined();
+  });
+
+  test("CORE-R6: a prototype-named default env fails with INVALID_ENV on use", () => {
+    cfg = withTempEnvConfig({ envs: { "t-a": { url: "https://a.test" } }, defaultEnv: "constructor" });
+    expect(errOf(() => Config.cleanBaseUrl).code).toBe("INVALID_ENV");
+  });
 });
 
 describe("dotenv guard (CORE-28)", () => {
