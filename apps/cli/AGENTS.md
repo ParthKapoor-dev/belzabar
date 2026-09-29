@@ -59,6 +59,18 @@ belz config / belz extension                 → passthrough namespaces (the mod
 belz cache | envs | onboard | setup | update → top-level commands
 ```
 
+`belz cache` is itself a single top-level `CommandModule` that self-routes two subcommands via
+core `defineSubcommands` (`{command: "belz cache", default: "invalidate"}`), the same pattern as
+`config`/`extension`: `belz cache <uuid>...` / `--all --yes` (no literal subcommand keyword,
+argv falls through to the `invalidate` default — a remote write, `writes: true`) and
+`belz cache prune-local [--yes]` (local filesystem only: removes flat
+`<namespace>/<key>.json` files left over from before caches were env-scoped — skipping
+`method-finder`/`page-finder`, which are flat *by design*, see `UNSCOPED_NAMESPACES` in
+`commands/cache/index.ts` — plus abandoned `.refresh/*.lock` files older than 10 minutes; default
+dry run, `--yes` deletes; module declares `writesLocal: true` and `writes` is a function of the
+parsed args so `prune-local` never demands an explicit `--env`). The reusable scan/delete core is
+exported as `pruneLocalCache(cacheDir, {yes, now?, onError?})` for testing against a scratch dir.
+
 `belz --help-full` = every `desc.txt`, in fixed section order, commands sorted (deterministic;
 dev and compiled output are identical).
 

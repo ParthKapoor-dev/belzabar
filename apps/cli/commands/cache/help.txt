@@ -1,13 +1,27 @@
 Usage: belz cache [flags] <uuid...>
        belz cache --all --yes [--type <TYPE>]
+       belz cache prune-local [--yes]
 
-Invalidate server-side cache entries for the active environment. Every call is
-POSTed to BOTH /rest/api/cache/invalidate and /rest/api/automations/cache/invalidate
-with body {"uuids":[...],"type":"<TYPE>"}; it succeeds if any route returns 2xx,
+Invalidate server-side cache entries for the active environment, or clean up
+stale local cache artifacts under ~/.belz/cache.
+
+Server-side invalidate (default subcommand): every call is POSTed to BOTH
+/rest/api/cache/invalidate and /rest/api/automations/cache/invalidate with
+body {"uuids":[...],"type":"<TYPE>"}; it succeeds if any route returns 2xx,
 and each route's result is reported.
 
 An invalidate with no UUIDs flushes the ENTIRE cache of that type for the whole
 organisation, so it is refused unless both --all and --yes are passed.
+
+Subcommands:
+  prune-local        Remove stale LOCAL cache artifacts left from before caches
+                      became env-scoped: flat <namespace>/<key>.json files
+                      (current layout is <namespace>/<env>/<key>.json) and
+                      abandoned .refresh/*.lock files older than 10 minutes.
+                      Local filesystem only — no network request, not
+                      environment-specific. Default is a dry run; pass --yes
+                      to actually delete.
+    --yes, -y         Delete the listed files instead of only listing them.
 
 Args:
   <uuid...>           One or more cache entry UUIDs (e.g. method/chain UUIDs).
@@ -15,7 +29,7 @@ Args:
 Flags:
   --type <TYPE>       Cache type to invalidate. (default: AUTOMATION)
   --all               Flush every entry of --type (org-wide). Requires --yes.
-  --yes, -y           Confirm an --all flush.
+  --yes, -y           Confirm an --all flush, or (with prune-local) confirm deletion.
   --help, -h          Show this help message.
 
 Global Flags:
@@ -36,3 +50,9 @@ Examples:
 
   # Invalidate by a non-default type
   belz cache --type PAGE <uuid>
+
+  # See what local cache cleanup would remove (dry run)
+  belz cache prune-local
+
+  # Actually delete stale local cache artifacts
+  belz cache prune-local --yes

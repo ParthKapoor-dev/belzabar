@@ -1,10 +1,17 @@
+import { readdirSync, rmSync, statSync } from "fs";
+import { join, relative } from "path";
+import type { Dirent, Stats } from "fs";
 import {
   apiFetch,
+  BELZ_CONFIG_DIR,
   Config,
   CliError,
-  defineArgs,
+  defineSubcommands,
   ok,
   lifecycle,
+  type CommandContext,
+  type CommandResult,
+  type HumanPresenterHelpers,
   type CommandModule,
 } from "@belzabar/core";
 
@@ -21,12 +28,35 @@ export const CACHE_INVALIDATE_PATHS = [
 ] as const;
 const DEFAULT_TYPE = "AUTOMATION";
 
-interface CacheArgs {
+/** Refresh locks TTL out after 30s (see core `swr.ts`); anything older is an abandoned lock. */
+const STALE_LOCK_AGE_MS = 10 * 60 * 1000;
+/** Cap on the item list embedded in the envelope; `truncated` reports the rest. */
+const SAMPLE_LIMIT = 25;
+
+/**
+ * Cache namespaces whose cache key already encodes the env, so their files are
+ * intentionally flat (`<namespace>/<key>.json`, never `<namespace>/<env>/<key>.json`).
+ * See `envScoped: false` in `integrations/automation-designer/lib/method-finder.ts`
+ * and `integrations/page-designer/lib/page-finder.ts`. `prune-local` must never
+ * treat these as pre-env-scoping leftovers. Update this set if another cache opts
+ * out of env-scoping.
+ */
+const UNSCOPED_NAMESPACES = new Set(["method-finder", "page-finder"]);
+
+interface InvalidateArgs {
+  subcommand: "invalidate";
   uuids: string[];
   type: string;
   yes: boolean;
   all: boolean;
 }
+
+interface PruneLocalArgs {
+  subcommand: "prune-local";
+  yes: boolean;
+}
+
+type CacheArgs = InvalidateArgs | PruneLocalArgs;
 
 export interface RouteResult {
   path: string;
@@ -36,7 +66,8 @@ export interface RouteResult {
   error?: string;
 }
 
-interface CacheData {
+interface InvalidateData {
+  action: "invalidate";
   env: string;
   type: string;
   scope: "all" | "uuids";
@@ -44,6 +75,36 @@ interface CacheData {
   uuids: string[];
   routes: RouteResult[];
 }
+
+/** One stale-artifact candidate (or, once `--yes` runs, a removed one). */
+export interface CacheItem {
+  /** Relative to `~/.belz/cache` (or `BELZ_HOME`/cache). */
+  path: string;
+  bytes: number;
+  ageMs: number;
+}
+
+export interface PruneCategorySummary {
+  scanned: number;
+  bytes: number;
+  /** First `SAMPLE_LIMIT` items, path-sorted, for display. */
+  sample: CacheItem[];
+  /** Items beyond the sample. */
+  truncated: number;
+}
+
+export interface PruneLocalData {
+  action: "prune-local";
+  cacheDir: string;
+  dryRun: boolean;
+  flatFiles: PruneCategorySummary;
+  staleLocks: PruneCategorySummary;
+  removed: { files: number; bytes: number };
+  /** Namespaces skipped because their flat layout is by design (see `UNSCOPED_NAMESPACES`). */
+  skippedNamespaces: string[];
+}
+
+type CacheData = InvalidateData | PruneLocalData;
 
 type Fetcher = (path: string, options: Parameters<typeof apiFetch>[1]) => Promise<Response>;
 
@@ -96,23 +157,221 @@ export async function invalidateOnAllRoutes(
   return results;
 }
 
-export const args = defineArgs({
-  command: "belz cache",
-  positionals: [{ name: "uuids", variadic: true }],
-  flags: {
-    type: { type: "string", default: DEFAULT_TYPE },
-    all: { type: "boolean" },
-    yes: { type: "boolean", alias: ["-y"] },
+// ── prune-local: local filesystem cleanup, no network ──────────────────────
+
+function listDirs(dir: string): string[] {
+  let entries: Dirent[];
+  try {
+    entries = readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  return entries.filter(e => e.isDirectory()).map(e => e.name);
+}
+
+function statSafe(path: string): Stats | null {
+  try {
+    return statSync(path);
+  } catch {
+    return null;
+  }
+}
+
+/** Every `.refresh` directory anywhere under `root` (legacy top-level, or the current per-env one). */
+function findRefreshDirs(root: string): string[] {
+  const out: string[] = [];
+  const stack = [root];
+  while (stack.length > 0) {
+    const dir = stack.pop()!;
+    let entries: Dirent[];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const e of entries) {
+      if (!e.isDirectory()) continue;
+      const p = join(dir, e.name);
+      if (e.name === ".refresh") out.push(p);
+      else stack.push(p);
+    }
+  }
+  return out;
+}
+
+/**
+ * Flat `<namespace>/<key>.json` files left over from before caches became
+ * env-scoped (current layout: `<namespace>/<env>/<key>.json`). Skips namespaces
+ * that are flat by design (`UNSCOPED_NAMESPACES`).
+ */
+export function scanFlatCacheFiles(cacheDir: string, now = Date.now()): { items: CacheItem[]; skippedNamespaces: string[] } {
+  const items: CacheItem[] = [];
+  const skippedNamespaces: string[] = [];
+  for (const ns of listDirs(cacheDir)) {
+    if (UNSCOPED_NAMESPACES.has(ns)) {
+      skippedNamespaces.push(ns);
+      continue;
+    }
+    const nsDir = join(cacheDir, ns);
+    let children: Dirent[];
+    try {
+      children = readdirSync(nsDir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const c of children) {
+      if (!c.isFile() || !c.name.endsWith(".json")) continue;
+      const p = join(nsDir, c.name);
+      const st = statSafe(p);
+      if (!st) continue;
+      items.push({ path: relative(cacheDir, p), bytes: st.size, ageMs: Math.max(0, now - st.mtimeMs) });
+    }
+  }
+  items.sort((a, b) => a.path.localeCompare(b.path));
+  return { items, skippedNamespaces: skippedNamespaces.sort() };
+}
+
+/** `.refresh/*.lock` files older than `maxAgeMs` (an active lock never gets this old). */
+export function scanStaleLocks(cacheDir: string, maxAgeMs: number, now = Date.now()): CacheItem[] {
+  const items: CacheItem[] = [];
+  for (const refreshDir of findRefreshDirs(cacheDir)) {
+    let children: Dirent[];
+    try {
+      children = readdirSync(refreshDir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const c of children) {
+      if (!c.isFile() || !c.name.endsWith(".lock")) continue;
+      const p = join(refreshDir, c.name);
+      const st = statSafe(p);
+      if (!st) continue;
+      const ageMs = Math.max(0, now - st.mtimeMs);
+      if (ageMs > maxAgeMs) items.push({ path: relative(cacheDir, p), bytes: st.size, ageMs });
+    }
+  }
+  items.sort((a, b) => a.path.localeCompare(b.path));
+  return items;
+}
+
+function summarize(items: CacheItem[]): PruneCategorySummary {
+  const bytes = items.reduce((sum, i) => sum + i.bytes, 0);
+  return { scanned: items.length, bytes, sample: items.slice(0, SAMPLE_LIMIT), truncated: Math.max(0, items.length - SAMPLE_LIMIT) };
+}
+
+/**
+ * Scan `cacheDir` for stale local artifacts and, when `yes` is true, delete them.
+ * Pure and side-effect-free beyond the filesystem it is pointed at — takes
+ * `cacheDir` explicitly (rather than reading `BELZ_CONFIG_DIR` itself) so tests
+ * can run it against an isolated scratch directory. `onError` receives a message
+ * for any file that failed to delete (best-effort: one failure does not abort
+ * the rest).
+ */
+export function pruneLocalCache(
+  cacheDir: string,
+  options: { yes: boolean; now?: number; onError?: (message: string) => void } = { yes: false },
+): PruneLocalData {
+  const now = options.now ?? Date.now();
+  const { items: flatItems, skippedNamespaces } = scanFlatCacheFiles(cacheDir, now);
+  const lockItems = scanStaleLocks(cacheDir, STALE_LOCK_AGE_MS, now);
+
+  let removedFiles = 0;
+  let removedBytes = 0;
+  if (options.yes) {
+    for (const item of [...flatItems, ...lockItems]) {
+      try {
+        rmSync(join(cacheDir, item.path), { force: true });
+        removedFiles += 1;
+        removedBytes += item.bytes;
+      } catch (e: any) {
+        options.onError?.(`Failed to remove ${item.path}: ${e?.message ?? String(e)}`);
+      }
+    }
+  }
+
+  return {
+    action: "prune-local",
+    cacheDir,
+    dryRun: !options.yes,
+    flatFiles: summarize(flatItems),
+    staleLocks: summarize(lockItems),
+    removed: { files: options.yes ? removedFiles : 0, bytes: options.yes ? removedBytes : 0 },
+    skippedNamespaces,
+  };
+}
+
+async function executePruneLocal(args: PruneLocalArgs, context: CommandContext): Promise<CommandResult<PruneLocalData>> {
+  const cacheDir = join(BELZ_CONFIG_DIR, "cache");
+  const data = pruneLocalCache(cacheDir, { yes: args.yes, onError: msg => context.warn(msg) });
+  return ok<PruneLocalData>(data);
+}
+
+function presentPruneLocal(data: PruneLocalData, ui: HumanPresenterHelpers): void {
+  const totalScanned = data.flatFiles.scanned + data.staleLocks.scanned;
+  if (totalScanned === 0) {
+    ui.success("No stale local cache artifacts found.");
+    return;
+  }
+  ui.section(data.dryRun ? "Dry run — pass --yes to delete" : "Removed");
+  ui.table(
+    ["Category", "Count", "Bytes"],
+    [
+      ["Flat legacy cache files", String(data.flatFiles.scanned), String(data.flatFiles.bytes)],
+      ["Stale refresh locks (>10m)", String(data.staleLocks.scanned), String(data.staleLocks.bytes)],
+    ],
+  );
+  const totalBytes = data.flatFiles.bytes + data.staleLocks.bytes;
+  if (data.dryRun) {
+    ui.info(`Would remove ${totalScanned} file(s), ${totalBytes} bytes. Pass --yes to delete.`);
+  } else {
+    ui.success(`Removed ${data.removed.files} file(s), ${data.removed.bytes} bytes.`);
+  }
+  if (data.skippedNamespaces.length > 0) {
+    ui.info(`Skipped (flat by design, not env-scoped): ${data.skippedNamespaces.join(", ")}`);
+  }
+  const sample = [...data.flatFiles.sample, ...data.staleLocks.sample];
+  if (sample.length > 0) {
+    ui.section("Sample");
+    for (const item of sample) ui.text(item.path);
+    const truncated = data.flatFiles.truncated + data.staleLocks.truncated;
+    if (truncated > 0) ui.text(`… and ${truncated} more`);
+  }
+}
+
+// ── args ─────────────────────────────────────────────────────────────────
+
+export const args = defineSubcommands(
+  {
+    invalidate: {
+      positionals: [{ name: "uuids", variadic: true }],
+      flags: {
+        type: { type: "string", default: DEFAULT_TYPE },
+        all: { type: "boolean" },
+        yes: { type: "boolean", alias: ["-y"] },
+      },
+    },
+    "prune-local": {
+      flags: {
+        yes: { type: "boolean", alias: ["-y"] },
+      },
+    },
   },
-});
+  { command: "belz cache", default: "invalidate" },
+);
 
 const command: CommandModule<CacheArgs, CacheData> = {
   schema: "belz.cache",
 
-  /** Invalidates server-side cache entries on the target environment. */
-  writes: true,
+  /** Only `invalidate` writes remotely; `prune-local` only touches local files (see `writesLocal`). */
+  writes: args => args.subcommand !== "prune-local",
+  writesLocal: true,
+
   parseArgs(argv) {
-    const { positionals, flags } = args.parse(argv);
+    const parsed = args.parse(argv);
+    if (parsed.subcommand === "prune-local") {
+      return { subcommand: "prune-local", yes: parsed.flags.yes };
+    }
+    const { positionals, flags } = parsed;
     const { type, yes, all } = flags;
     const uuids = parseUuids(positionals.uuids);
     if (all && uuids.length > 0) {
@@ -131,17 +390,21 @@ const command: CommandModule<CacheArgs, CacheData> = {
       );
     }
 
-    return { uuids, type, yes, all };
+    return { subcommand: "invalidate", uuids, type, yes, all };
   },
 
   async execute(args, context) {
+    if (args.subcommand === "prune-local") {
+      return executePruneLocal(args, context);
+    }
+
     // parseArgs already enforces this; re-check so a direct execute() call cannot flush the org.
     if (args.uuids.length === 0 && !(args.all && args.yes)) {
       throw new CliError("Refusing an invalidate with no UUIDs unless --all --yes is passed.", {
         code: "CACHE_CONFIRMATION_REQUIRED",
       });
     }
-    const scope: CacheData["scope"] = args.uuids.length === 0 ? "all" : "uuids";
+    const scope: InvalidateData["scope"] = args.uuids.length === 0 ? "all" : "uuids";
     const envName = context.env.name;
     const body = buildInvalidateBody(args.uuids, args.type);
 
@@ -166,7 +429,8 @@ const command: CommandModule<CacheArgs, CacheData> = {
     }
     spin.stop("Cache invalidate request complete.");
 
-    return ok<CacheData>({
+    return ok<InvalidateData>({
+      action: "invalidate",
       env: envName,
       type: args.type,
       scope,
@@ -179,6 +443,10 @@ const command: CommandModule<CacheArgs, CacheData> = {
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
     const data = envelope.data as CacheData;
+    if (data.action === "prune-local") {
+      presentPruneLocal(data, ui);
+      return;
+    }
     const target =
       data.scope === "all"
         ? `entire '${data.type}' cache`

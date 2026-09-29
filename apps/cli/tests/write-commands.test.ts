@@ -63,6 +63,9 @@ const CASES: Case[] = [
   { owner: "integrations/migrations", command: "run", argv: [], kind: "writes" },
   { owner: "integrations/release", command: "freeze", argv: [], kind: "writesLocal" },
   { owner: "integrations/release", command: "matrix", argv: [], kind: "writesLocal" },
+  // ── Top-level ──
+  { owner: "apps/cli", command: "cache", argv: [UUID], kind: "writes" },
+  { owner: "apps/cli", command: "cache", argv: ["prune-local"], kind: "writesLocal" },
 ];
 
 const ctx: CommandContext = {
