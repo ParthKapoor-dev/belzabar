@@ -21,7 +21,11 @@ Flags:
                         AD_TEST_EXPECTATION_FAILED.
   --compare-published   Also run the same inputs against the published copy (a draft's
                         referenceId, or the draft of a published uuid) and diff every
-                        output. Expectations decide the exit code on the draft run.
+                        output. This EXECUTES TWICE — both runs have real side effects,
+                        one through the production body — so it asks for confirmation
+                        (--yes, required with --llm). Expectations and the draft run's
+                        status decide the exit code.
+  --yes, -y             Confirm --compare-published's second (published) execution.
   --verbose, -v         Show detailed execution trace for each step. (A command
                         flag here: it does not switch on runner debug logging.)
   --v2                  Accepted for consistency; test runs on V1 (notice printed).
@@ -34,6 +38,9 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Notes:
+  - Exit 1 with AD_TEST_FAILED when the (draft) execution FAILED, with the
+    full data (failedStep, trace); AD_TEST_EXPECTATION_FAILED wins when an
+    expectation failed.
   - Posts {category, jsonDefinition, id, uuid, version} to /chain/test with
     testValues set and automationApiId filled on every step (lean chains).
   - Data: outputs {code: value} (every method output), trace, expectations
@@ -43,5 +50,5 @@ Notes:
 
 Examples:
   belz ad test 4a1b2c3d... --env <env> --inputs ./in.json --expect greetingOut='Hello World'
-  belz ad test 4a1b2c3d... --env <env> --case ./cases/greet.ok.1.json --compare-published --llm
+  belz ad test 4a1b2c3d... --env <env> --case ./cases/greet.ok.1.json --compare-published --yes --llm
   belz ad test 4a1b2c3d... --env <env> --inputs ./test-data.json --verbose --raw

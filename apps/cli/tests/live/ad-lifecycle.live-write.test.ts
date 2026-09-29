@@ -206,7 +206,7 @@ describeLiveWrite("ad lifecycle", () => {
 
   test("test --compare-published: identical outputs", async () => {
     const d = okData<{ compare: { identical: boolean } }>(
-      await belz(["ad", "test", draft, "--inputs", join(dir, "in.json"), "--compare-published"])
+      await belz(["ad", "test", draft, "--inputs", join(dir, "in.json"), "--compare-published", "--yes"])
     );
     expect(d.compare.identical).toBe(true);
   }, T);

@@ -32,7 +32,7 @@ function testedUuid(req: RecordedRequest): string {
   return JSON.parse(entries.find(([k]) => k === "body")![1]).uuid;
 }
 
-function wire() {
+function wire(opts: { failed?: boolean } = {}) {
   cfg = withTempEnvConfig({ envs: { [ENV]: { url: "https://t-dev.test" } }, activeEnv: ENV });
   spies.push(spyOn(process.stderr, "write").mockImplementation(() => true));
   ff = fakeFetch([
@@ -46,7 +46,11 @@ function wire() {
     {
       method: "POST",
       url: "/rest/api/automation/chain/test",
-      response: (req: RecordedRequest) => (testedUuid(req) === PUB ? load("test-published.json") : load("test-draft.json")),
+      response: (req: RecordedRequest) => {
+        const body = testedUuid(req) === PUB ? load("test-published.json") : load("test-draft.json");
+        if (opts.failed) body.executionStatus.failed = true;
+        return body;
+      },
     },
   ]).install();
   const inputs = join(scratchDir("ad-test-expect"), "in.json");
@@ -137,10 +141,27 @@ describe("ad test input files: stable error codes (was UNHANDLED_EXCEPTION)", ()
   });
 });
 
+describe("ad test: a FAILED execution (ADW-R12)", () => {
+  test("exits 1 with AD_TEST_FAILED and keeps the run data", async () => {
+    const inputs = wire({ failed: true });
+    const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs], { env: ENV });
+    expect(r.envelope?.ok).toBe(false);
+    expect(r.envelope?.error?.code).toBe("AD_TEST_FAILED");
+    expect(r.exitCode).not.toBe(0);
+    expect((r.envelope?.data as any).status).toBe("FAILED");
+  });
+
+  test("a failed expectation still wins over the execution failure", async () => {
+    const inputs = wire({ failed: true });
+    const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--expect", "greetingOut=nope"], { env: ENV });
+    expect(r.envelope?.error?.code).toBe("AD_TEST_EXPECTATION_FAILED");
+  });
+});
+
 describe("ad test --compare-published (7.12)", () => {
   test("draft uuid: runs both, diffs the outputs", async () => {
     const inputs = wire();
-    const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--compare-published"], { env: ENV });
+    const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--compare-published", "--yes"], { env: ENV });
     expect(r.envelope?.ok).toBe(true);
     const c = (r.envelope?.data as any).compare;
     expect(c).toMatchObject({
@@ -156,11 +177,18 @@ describe("ad test --compare-published (7.12)", () => {
 
   test("published uuid: the draft is the main run; expectations decide on the draft, published is informational", async () => {
     const inputs = wire();
-    const r = await runCommand(testCommand, [PUB, "--inputs", inputs, "--compare-published", "--expect", "greetingOut=Hello World"], { env: ENV });
+    const r = await runCommand(testCommand, [PUB, "--inputs", inputs, "--compare-published", "--yes", "--expect", "greetingOut=Hello World"], { env: ENV });
     expect(r.envelope?.error?.code).toBe("AD_TEST_EXPECTATION_FAILED");
     const d = r.envelope?.data as any;
     expect(d.outputs).toEqual({ greetingOut: "Hi World" });
     expect(d.compare.published.expectations).toMatchObject({ passed: 1, failed: 0 });
+  });
+
+  test("ADW-R14: the second (published) execution needs confirmation; --llm without --yes runs nothing", async () => {
+    const inputs = wire();
+    const r = await runCommand(testCommand, [DRAFT, "--inputs", inputs, "--compare-published"], { env: ENV });
+    expect(r.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
+    expect(ff!.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(0);
   });
 
   test("a method without a counterpart → AD_NO_PUBLISHED_COUNTERPART", async () => {

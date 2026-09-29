@@ -1,7 +1,7 @@
-belz ad test <uuid> --env <env>  :->  Execute a method (really runs it: needs --env); prompts for inputs interactively, returns outputs {code: value} and the step trace
+belz ad test <uuid> --env <env>  :->  Execute a method (really runs it: needs --env); prompts for inputs interactively, returns outputs {code: value} and the step trace; a FAILED execution exits 1 (AD_TEST_FAILED)
 belz ad test <uuid> --env <env> --inputs <file>  :->  Pass a JSON file of input values (skips interactive prompts; required with --llm unless --case)
 belz ad test <uuid> --env <env> --case <file>  :->  Inputs and assertions from a test-case file; assertions are checked locally like --expect
 belz ad test <uuid> --env <env> --expect <out=value>  :->  Check an output after the run (repeatable; = != ~= > < >= <=, out.path for JSON); exit 1 on a mismatch
-belz ad test <uuid> --env <env> --compare-published  :->  Run the same inputs on the draft and its published copy and diff every output
+belz ad test <uuid> --env <env> --compare-published --yes  :->  Run the same inputs on the draft AND its published copy (two real executions; confirms, --yes with --llm) and diff every output
 belz ad test <uuid> --env <env> --verbose  :->  Show detailed execution trace for each step (-v)
 belz ad test <uuid> --env <env> --raw  :->  Include raw execution payload in output

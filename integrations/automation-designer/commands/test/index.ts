@@ -3,7 +3,8 @@ import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@bel
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
 import { resolveMethodRef } from "../../lib/ids";
-import { AD_COMMON_FLAGS, resolveAdCommon } from "../../lib/args/common";
+import { AD_COMMON_FLAGS, AD_YES_FLAG, resolveAdCommon } from "../../lib/args/common";
+import { requireConfirmation } from "../../lib/args/confirm";
 import {
   counterpart,
   diffOutputs,
@@ -33,6 +34,7 @@ interface TestMethodArgs {
   caseFile?: string;
   expect: string[];
   comparePublished: boolean;
+  yes: boolean;
   verbose: boolean;
   raw: boolean;
   force: boolean;
@@ -88,6 +90,7 @@ export const args = defineArgs({
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {
     ...AD_COMMON_FLAGS,
+    ...AD_YES_FLAG,
     inputs: { type: "string" },
     case: { type: "string" },
     expect: { type: "string", repeatable: true },
@@ -154,6 +157,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       caseFile: flags.case,
       expect: flags.expect,
       comparePublished: flags.comparePublished,
+      yes: flags.yes,
       verbose: flags.verbose,
       raw: flags.raw,
       force: flags.force,
@@ -192,6 +196,20 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       unevaluated = c.unevaluated;
     } else {
       values = await InputCollector.collect(draft.inputs, a.inputsFile);
+    }
+
+    if (published && pair) {
+      // ADW-R14: the published copy runs too, with the same side effects (SQL commits,
+      // HTTP calls, e-mails) — through the production body. Confirm it (--yes in --llm).
+      await requireConfirmation({
+        yes: a.yes,
+        outputMode: context.outputMode,
+        action: "execute the method TWICE (draft and the PUBLISHED copy), with real side effects both times",
+        details: [
+          ["Draft UUID", pair.draftUuid],
+          ["Published UUID", pair.publishedUuid],
+        ],
+      });
     }
 
     const run = await runInlineTest(draft, values);
@@ -234,6 +252,11 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
         data,
         { details: { failed } },
       );
+    }
+    // ADW-R12: a failed execution is a failed command (like `ad run` / `run-suites`), not ok:true.
+    if (!run.success) {
+      const where = run.failedStep ? ` at step ${run.failedStep.index}: ${run.failedStep.parsedError.summary}` : "";
+      return failWithData("AD_TEST_FAILED", `The method execution FAILED${where}.`, data);
     }
     return ok(data);
   },
