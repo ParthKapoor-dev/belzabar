@@ -78,7 +78,7 @@ export interface CommandModule<TArgs = unknown, TData = unknown> {
   envAware?: boolean;
   /**
    * The command changes state on the target environment. Such commands refuse to
-   * run on the default env: `--env` must be given explicitly (D6), else
+   * run on the default env: `--env` must be given explicitly, else
    * `ENV_REQUIRED_FOR_WRITE`. A function is evaluated on the parsed args (for
    * commands with read and write sub-actions). Enforced only for env-aware
    * commands (a non-env-aware writer such as `migrate run` names its target
@@ -88,7 +88,7 @@ export interface CommandModule<TArgs = unknown, TData = unknown> {
   /**
    * The command does not write here, but it reads the target env for a write it
    * previews (the `--dry-run` of save/create, `test-case sync` without
-   * `--apply`). Like `writes`, it refuses to run on the default env (D6), so a
+   * `--apply`). Like `writes`, it refuses to run on the default env, so a
    * preview can never silently read a different project than the write would
    * hit. `ENV_REQUIRED_FOR_WRITE`. Enforced only for env-aware commands.
    */

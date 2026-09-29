@@ -2,10 +2,10 @@
 //
 // - login() is single-flight per env: concurrent callers (PD recursive show,
 //   AD bulk reads, release matrix) share one POST /do/login instead of racing
-//   on the session file (CORE-14).
-// - Session files are written atomically with mode 0600 (CORE-12).
+//   on the session file.
+// - Session files are written atomically with mode 0600.
 // - Failures are coded CliErrors: AUTH_MISSING_CREDENTIALS, AUTH_FAILED,
-//   AUTH_NO_TOKEN (CORE-17); response bodies are summarised + redacted.
+//   AUTH_NO_TOKEN; response bodies are summarised + redacted.
 
 import { join } from "path";
 import { readFileSync } from "fs";
@@ -114,7 +114,7 @@ async function doLogin(envName: string): Promise<AuthSession> {
       },
       body: JSON.stringify({ loginId, password }),
       // Login is a POST but has no server-side work to "complete": use the read
-      // timeout (60 s), not the 300 s write one (CORE-R9).
+      // timeout (60 s), not the 300 s write one.
       timeoutMs: defaultTimeoutMs("GET"),
     });
   } catch (err) {

@@ -1,11 +1,11 @@
 // belz configuration: ~/.belz/config.json (+ explicit BELZ_* env vars).
 //
 //   config/schema.ts    zod schema, validated at load (CONFIG_INVALID with a path)
-//   config/secrets.ts   decodeSecret/encodeSecret — explicit passwordEncoding (D5)
+//   config/secrets.ts   decodeSecret/encodeSecret — explicit passwordEncoding
 //   config/fs.ts        writeSecureJson — atomic tmp+rename, 0600
 //   config/env-vars.ts  trustedBelzEnv — BELZ_* only, cwd .env injection ignored
 //
-// Env selection (D6): `--env` (runner → Config.setActiveEnv) > BELZ_ENV >
+// Env selection: `--env` (runner → Config.setActiveEnv) > BELZ_ENV >
 // config.json `defaultEnv` > the only configured env. There is no built-in env:
 // with several envs and no default, env-aware commands fail with
 // ENV_NOT_SELECTED. `Config.envSource` / `envWasExplicit` tell the runner
@@ -109,7 +109,7 @@ function deriveProject(name: string): string {
   return prefix.toUpperCase();
 }
 
-/** Own-property lookup: env names come from argv, so `constructor` / `__proto__` must not hit Object.prototype (CORE-R6). */
+/** Own-property lookup: env names come from argv, so `constructor` / `__proto__` must not hit Object.prototype. */
 function ownEntry<T>(table: Readonly<Record<string, T>>, name: string): T | undefined {
   return Object.hasOwn(table, name) ? table[name] : undefined;
 }
@@ -136,7 +136,7 @@ function buildEnvironments(config: BelzConfigFile): Record<string, Environment> 
   return environments;
 }
 
-// Repair loose permissions left by older installs before anything is read (CORE-R5).
+// Repair loose permissions left by older installs before anything is read.
 hardenBelzHome(BELZ_CONFIG_DIR);
 
 let loaded = loadConfig();
@@ -284,7 +284,7 @@ export const Config = {
     return envSource;
   },
 
-  /** True when the active env was chosen explicitly (`--env`), not defaulted (D6: writes require this). */
+  /** True when the active env was chosen explicitly (`--env`), not defaulted (writes require this). */
   get envWasExplicit(): boolean {
     return envSource === "flag";
   },

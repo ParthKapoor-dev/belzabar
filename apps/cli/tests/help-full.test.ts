@@ -52,7 +52,7 @@ describe("belz --help-full", () => {
     }
   });
 
-  test("CORE-R11: --help-full --llm is one belz.help envelope carrying the text", () => {
+  test("--help-full --llm is one belz.help envelope carrying the text", () => {
     const home = mkdtempSync(join(tmpdir(), "hf-llm-"));
     for (const args of [["--help-full", "--llm"], ["--llm", "--help-full"]]) {
       const r = runHelpFull({ BELZ_HOME: home }, tmpdir(), args);
@@ -64,12 +64,12 @@ describe("belz --help-full", () => {
     }
   }, 30_000);
 
-  test("CORE-R11: --help-full after `--` belongs to the command, not the runner", () => {
+  test("--help-full after `--` belongs to the command, not the runner", () => {
     const r = runHelpFull({ BELZ_HOME: mkdtempSync(join(tmpdir(), "hf-dd-")) }, tmpdir(), ["ad", "show", "--", "--help-full", "--llm"]);
     expect(r.out).not.toContain("NOTE FOR LLM AGENTS");
   }, 30_000);
 
-  test("CLI trial: --help-full <module> prints one section; --index one line per command", () => {
+  test("--help-full <module> prints one section; --index one line per command", () => {
     const full = buildHelpFull()!;
     const ad = buildHelpFull({ namespace: "ad" })!;
     expect(ad).toContain("belz ad <cmd>");

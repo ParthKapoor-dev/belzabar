@@ -1,5 +1,5 @@
-// Stage 3 envelope / human-output / global-flag contract of the runner
-// (CORE-6/7/9/23/24/26, F31/F32/F38, D6). In-process via core/testing.
+// Envelope / human-output / global-flag contract of the runner, in-process
+// via core/testing.
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import {
   CliError,
@@ -60,7 +60,7 @@ function cli(extra: Partial<NamespacedCliOptions> = {}): NamespacedCliOptions {
   };
 }
 
-describe("envelope naming and version (CORE-23)", () => {
+describe("envelope naming and version", () => {
   test("schema is <namespace>.<command>, derived from routing; version 2.0", async () => {
     const legacy: CommandModule = { schema: "belz.migrate.status", version: "1.0", execute: () => ok(1) };
     const opts = cli();
@@ -114,7 +114,7 @@ describe("meta.env only for env-aware commands", () => {
   });
 });
 
-describe("errors (CORE-9, F38)", () => {
+describe("errors", () => {
   test("details are always an object", () => {
     expect(normalizeDetails("plain")).toEqual({ text: "plain" });
     expect(normalizeDetails('{"a":1}')).toEqual({ a: 1 });
@@ -176,7 +176,7 @@ describe("errors (CORE-9, F38)", () => {
   });
 });
 
-describe("human output streams (F31, CORE-6, F32)", () => {
+describe("human output streams", () => {
   test("errors go to stderr, stdout stays empty", async () => {
     const r = await runCommand({ execute: () => fail("NOPE", "it broke", { details: "why" }) }, [], { llm: false });
     expect(r.stdout).toBe("");
@@ -229,7 +229,7 @@ describe("human output streams (F31, CORE-6, F32)", () => {
   });
 });
 
-describe("help is plain text off a TTY, even with FORCE_COLOR (CLI trial)", () => {
+describe("help is plain text off a TTY, even with FORCE_COLOR", () => {
   test("--help, <module> --help, <cmd> --help, --help-full: no escape codes when stdout is a pipe", async () => {
     const saved = { force: process.env.FORCE_COLOR, tty: Object.getOwnPropertyDescriptor(process.stdout, "isTTY") };
     process.env.FORCE_COLOR = "3";
@@ -252,7 +252,7 @@ describe("help is plain text off a TTY, even with FORCE_COLOR (CLI trial)", () =
   });
 });
 
-describe("printErr (F32)", () => {
+describe("printErr", () => {
   test("strips ANSI when stderr is not a TTY, unless FORCE_COLOR", () => {
     const saved = { error: console.error, force: process.env.FORCE_COLOR };
     const lines: string[] = [];
@@ -271,7 +271,7 @@ describe("printErr (F32)", () => {
   });
 });
 
-describe("--version (CORE-24)", () => {
+describe("--version", () => {
   test("human and --llm", async () => {
     const h = await runCliInProcess(cli(), ["--version"], { llm: false });
     expect(h.stdout.trim()).toBe("belz 9.9.9 (abc1234)");
@@ -285,7 +285,7 @@ describe("--version (CORE-24)", () => {
   });
 });
 
-describe("global flags (CORE-7)", () => {
+describe("global flags", () => {
   const owner = { ...probe, ownsFlags: ["-v", "--verbose"] };
 
   test("-v after the command goes to a command that declares it (ownsFlags)", async () => {
@@ -324,7 +324,7 @@ describe("global flags (CORE-7)", () => {
   });
 });
 
-describe("default env + explicit env on writes (D6, CORE-26)", () => {
+describe("default env + explicit env on writes", () => {
   test("a write without --env → ENV_REQUIRED_FOR_WRITE naming the default env", async () => {
     const r = await runCliInProcess(cli(), ["ad", "save", "x"]);
     expect(r.exitCode).toBe(1);
@@ -371,7 +371,7 @@ describe("default env + explicit env on writes (D6, CORE-26)", () => {
     expect((await runCliInProcess(cli(), ["ad", "show", "--env", "t-dev"])).envelope?.meta.env).toBe("t-dev");
   });
 
-  test("requiresEnv (the dry run of a write reads the target env) needs --env too (CLI trial)", async () => {
+  test("requiresEnv (the dry run of a write reads the target env) needs --env too", async () => {
     const dry: CommandModule<string[], unknown> = { ...probe, writes: false, requiresEnv: (a) => a[0] === "--dry-run" };
     const opts = cli();
     opts.namespaces.ad!.commands!.save = dry;

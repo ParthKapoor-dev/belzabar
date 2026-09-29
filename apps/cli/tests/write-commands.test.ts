@@ -1,4 +1,4 @@
-// D6 guard, registry-wide: every command (or sub-action) that mutates a remote
+// Write guard, registry-wide: every command (or sub-action) that mutates a remote
 // environment declares `writes` (so the runner demands an explicit --env), and
 // every command that only writes local state declares `writesLocal`. A few read
 // sub-actions are pinned too, so `writes: true` on everything cannot pass.
@@ -112,7 +112,7 @@ async function passes(c: Case): Promise<boolean> {
   }
 }
 
-describe("write commands declare writes / writesLocal (D6)", async () => {
+describe("write commands declare writes / writesLocal", async () => {
   for (const c of CASES) {
     const name = `${c.owner.replace("integrations/", "")} ${c.command} ${c.argv.slice(0, 2).join(" ")}`.trim() + ` → ${c.kind}`;
     if (c.todo && !(await passes(c))) {

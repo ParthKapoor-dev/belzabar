@@ -114,7 +114,7 @@ function parseUuids(rest: string[]): string[] {
 }
 
 /**
- * Refuse anything that is not a uuid (32 hex chars, or the dashed 8-4-4-4-12 form; CORE-R12): `invalidate` is the default
+ * Refuse anything that is not a uuid (32 hex chars, or the dashed 8-4-4-4-12 form): `invalidate` is the default
  * subcommand, so a mistyped subcommand (`belz cache prune`) used to be POSTed
  * as the uuid "prune" and reported as a successful invalidation.
  */

@@ -7,7 +7,7 @@ import { buildRefreshCommand, shouldRefresh } from "../src/swr";
 const tmp = mkdtempSync(join(tmpdir(), "belz-swr-test-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
-describe("buildRefreshCommand (CORE-4 / AD-07)", () => {
+describe("buildRefreshCommand", () => {
   test("dev shape: re-runs bun with the script path", () => {
     const cmd = buildRefreshCommand(
       ["/usr/bin/bun", "/repo/cli/bin/cli.ts", "ad", "show", "X", "--env", "acme-dev"],

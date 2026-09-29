@@ -1,4 +1,4 @@
-// Which process env vars belz trusts (CORE-28).
+// Which process env vars belz trusts.
 //
 // Bun auto-loads `.env*` files from the current directory into process.env —
 // in dev mode AND in the compiled binary (Bun 1.2.x has no build flag to turn
@@ -64,7 +64,7 @@ function dotenvValues(cwd: string): Record<string, string> {
  * Every non-empty process env var except those a cwd `.env*` file injected
  * (same key, same value). `dropped` names the ignored keys. Used by
  * `belz setup --from-env`, which imports TEAMWORK_* keys too
- * and must not persist a hostile cwd `.env` into config.json (CORE-R14).
+ * and must not persist a hostile cwd `.env` into config.json.
  */
 export function withoutDotenvInjected(
   env: NodeJS.ProcessEnv = process.env,

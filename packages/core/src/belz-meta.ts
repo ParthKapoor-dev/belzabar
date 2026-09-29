@@ -14,7 +14,7 @@ const isWindows = process.platform === "win32";
 
 /** Default source-checkout location when nothing is recorded. */
 function defaultSourceDir(): string {
-  // Via trustedBelzEnv: a cwd `.env` must not choose which install.sh `belz update` runs (CORE-R14).
+  // Via trustedBelzEnv: a cwd `.env` must not choose which install.sh `belz update` runs.
   return trustedBelzEnv().BELZ_SRC_DIR || join(homedir(), ".belz", "src");
 }
 

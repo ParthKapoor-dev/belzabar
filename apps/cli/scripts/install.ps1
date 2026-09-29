@@ -19,7 +19,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..\..")
 $BelzConfigDir = Join-Path $env:USERPROFILE ".belz"
 
-# Decide "first run" now: step 6 (record-install) creates config.json (CORE-R2).
+# Decide "first run" now: step 6 (record-install) creates config.json.
 $FirstRun = -not (Test-Path (Join-Path $BelzConfigDir "config.json"))
 
 # ── 1. Check bun ──────────────────────────────────────────────────────────────

@@ -14,7 +14,7 @@ const update = { ...updateModule, envAware: false };
 const dirs: string[] = [];
 afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }); });
 
-describe("planUpdate (CORE-R4)", () => {
+describe("planUpdate", () => {
   const clean = { ahead: 0, behind: 0, dirty: false };
   test("--force only rebuilds; it never implies a reset", () => {
     expect(planUpdate(clean, { check: false, force: false }).action).toBe("up-to-date");
@@ -58,7 +58,7 @@ describe("worktreeDirty (NEW-4)", () => {
   });
 });
 
-describe("installerCommand (CORE-R3)", () => {
+describe("installerCommand", () => {
   test("forwards the recorded install dir to install.sh / install.ps1", () => {
     expect(installerCommand("/s", "/usr/local/bin", false)).toEqual({
       cmd: "bash",
@@ -69,7 +69,7 @@ describe("installerCommand (CORE-R3)", () => {
   });
 });
 
-describe("belz update on a real checkout (CORE-R4)", () => {
+describe("belz update on a real checkout", () => {
   const g = (cwd: string, ...a: string[]) => {
     const r = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", ...a], {
       cwd,

@@ -17,7 +17,7 @@ import { readFileSync } from "fs";
 //      auths) and {name|key, value} header pairs: the value → "REDACTED" when
 //      securedField is true or the name is secret-ish (password, username,
 //      host, token, key, …).
-//   8. person names (CORE-R13), deterministically pseudonymized so the same
+//   8. person names, deterministically pseudonymized so the same
 //      person maps to the same pseudonym in every fixture:
 //      - objects with firstName/lastName/fullName (AD owner/createdBy, Teamwork
 //        users, …) → "Test" / "User-<code>" / "Test User-<code>"; the shared
@@ -57,7 +57,7 @@ function isSafeEmail(e: string): boolean {
   return SAFE_EMAIL_DOMAINS.test(e);
 }
 
-// ── person names (CORE-R13) ──────────────────────────────────────────────
+// ── person names ──────────────────────────────────────────────
 
 /** Short, stable code for a person (FNV-1a over the normalized name, base36). */
 export function personCode(name: string): string {
@@ -355,7 +355,7 @@ export function findSecrets(text: string): SecretFinding[] {
   for (const m of text.matchAll(recRe)) {
     if (SECRET_FIELD_NAME_RE.test(m[1]!)) found.push({ kind: "secret-key", match: `${m[1]}=${m[2]!.slice(0, 8)}…` });
   }
-  // Person names (CORE-R13): name fields must be pseudonyms, empty, or a system account part.
+  // Person names: name fields must be pseudonyms, empty, or a system account part.
   const allowedNamePart = /^(|Test|Admin|Super|User|[A-Z][A-Z0-9]+|Admin [A-Za-z0-9]+|Super User|User-[0-9a-z]{4}|Test User-[0-9a-z]{4})$/;
   const nameRe = /\\?"(firstName|lastName|middleName|fullName|first-name|last-name)\\?"\s*:\s*\\?"([^"\\]*)/g;
   for (const m of text.matchAll(nameRe)) {

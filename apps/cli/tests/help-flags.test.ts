@@ -1,4 +1,4 @@
-// F16: `--help` anywhere must show help instead of running the command.
+// `--help` anywhere must show help instead of running the command.
 // Spawns the dev CLI in an isolated HOME/cwd so no real ~/.belz or .env is read.
 import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
@@ -27,7 +27,7 @@ async function belz(...args: string[]) {
   return { stdout, stderr, exitCode: await proc.exited };
 }
 
-describe("runner-level --help (F16)", () => {
+describe("runner-level --help", () => {
   test("config token --help prints help, never a token", async () => {
     const r = await belz("config", "token", "--help", "--llm");
     expect(r.exitCode).toBe(0);
@@ -48,7 +48,7 @@ describe("runner-level --help (F16)", () => {
   }
 });
 
-describe("global --env forms (F3)", () => {
+describe("global --env forms", () => {
   test("--env=<name> is honoured", async () => {
     const r = await belz("envs", "--env=qa", "--llm");
     // `envs` is not env-aware (no meta.env); it reports the selected env as data.active.

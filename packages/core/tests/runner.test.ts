@@ -40,7 +40,7 @@ async function runHarness(args: string[]) {
   return { stdout, stderr, exitCode };
 }
 
-describe("runner output flushing (CORE-1 / F1)", () => {
+describe("runner output flushing", () => {
   test("--llm envelope larger than 64 KiB arrives complete through a slow pipe", async () => {
     const { stdout } = await runPipedSlow(["big", "--llm"]);
     expect(stdout.length).toBeGreaterThan(300_000);
@@ -63,7 +63,7 @@ describe("runner output flushing (CORE-1 / F1)", () => {
   }, 20_000);
 });
 
-describe("parseGlobalFlags (CORE-2 / F3)", () => {
+describe("parseGlobalFlags", () => {
   test("--env <name>", () => {
     const r = parseGlobalFlags(["ad", "show", "x", "--env", "acme-dev"]);
     expect(r.envName).toBe("acme-dev");
@@ -119,7 +119,7 @@ describe("parseGlobalFlags (CORE-2 / F3)", () => {
   });
 });
 
-describe("help handling (CORE-8 / F16)", () => {
+describe("help handling", () => {
   test("hasHelpFlag finds -h/--help anywhere before --", () => {
     expect(hasHelpFlag(["token", "--help"])).toBe(true);
     expect(hasHelpFlag(["search", "foo", "-h"])).toBe(true);

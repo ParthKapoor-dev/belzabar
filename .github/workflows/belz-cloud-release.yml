@@ -46,8 +46,8 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          # Pinned to the CI version (ci.yml): the stdout-flush workaround (CORE-1) is
-          # tied to Bun 1.2.x pipe behaviour; bump every workflow together (CORE-R7).
+          # Pinned to the CI version (ci.yml): the stdout-flush workaround is
+          # tied to Bun 1.2.x pipe behaviour; bump every workflow together.
           bun-version: 1.2.20
 
       - name: Publish cloud bundle to belz-sandbox

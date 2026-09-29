@@ -6,7 +6,7 @@
 // - 404                → NOT_FOUND (or the caller's notFoundCode)
 // - other 4xx/5xx      → HTTP_<status> (or `${codePrefix}_<status>`)
 // - 200 + empty/"null" → not-found (the AD chain endpoints answer an unknown
-//                        uuid with 200 and an empty body; AD-11 / F10)
+//                        uuid with 200 and an empty body)
 // Bodies are summarised before they reach a message or error.details: HTML is
 // reduced to its <title>, everything is truncated and secret-redacted.
 
@@ -153,7 +153,7 @@ interface ExpectJsonOptions extends HttpErrorOptions {
 
 /**
  * Parse a JSON response. Non-OK → mapped CliError; 2xx with empty/`null` body →
- * not-found CliError (AD-11); unparseable JSON → HTTP_BAD_JSON.
+ * not-found CliError; unparseable JSON → HTTP_BAD_JSON.
  */
 export async function expectJson<T>(res: Response, opts: ExpectJsonOptions = {}): Promise<T> {
   const value = await readJsonOrNull<T>(res, opts);

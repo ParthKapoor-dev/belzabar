@@ -50,8 +50,8 @@ type SecretFields = { password: string; passwordEncoding: "plain" | "base64" };
 
 // Every password setup reads (env file, process env, prompts) is plain text,
 // and is stored plain with an explicit `passwordEncoding: "plain"` in the 0600
-// config (D5). The old "already base64?" guess is gone: it silently kept a
-// plain password that happened to decode to printable ASCII (CORE-11, TW-8).
+// config. The old "already base64?" guess is gone: it silently kept a
+// plain password that happened to decode to printable ASCII.
 function plainSecret(value: string): SecretFields {
   return encodeSecret(value);
 }
@@ -179,7 +179,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
     const existing = loadConfigFileRaw();
     const existingHasEnvs = Object.keys(existing.environments ?? {}).length > 0;
 
-    // Merging is the default (CORE-15): envs not mentioned in this run are kept.
+    // Merging is the default: envs not mentioned in this run are kept.
     // Replacing the whole map is explicit and needs --force.
     if (args.replace && !args.force) {
       throw new CliError("--replace discards every configured environment not in this run; add --force to confirm.", {
@@ -209,7 +209,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
     let values: Record<string, string> | null = null;
     let ignoredDotenvKeys: string[] = [];
     if (args.fromEnv) {
-      // Bun auto-loads a cwd `.env` into process.env; never persist those values (CORE-R14).
+      // Bun auto-loads a cwd `.env` into process.env; never persist those values.
       const trusted = withoutDotenvInjected();
       values = trusted.values;
       ignoredDotenvKeys = trusted.dropped.filter((k) => /^(TEAMWORK_|JENKINS_|BELZ_)/.test(k));

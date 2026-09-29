@@ -1,4 +1,4 @@
-// CORE-R2: the installers decide "first run" before record-install creates
+// The installers decide "first run" before record-install creates
 // config.json, and record-install writes it atomically with mode 0600.
 // The installers themselves are never run here (they compile and install);
 // record-install.mjs runs against a scratch HOME.
@@ -17,7 +17,7 @@ function recordInstall(home: string, ...args: string[]) {
   });
 }
 
-describe("record-install.mjs (CORE-R2)", () => {
+describe("record-install.mjs", () => {
   test("creates ~/.belz/config.json 0600 in a 0700 dir, no temp files left", () => {
     const home = scratchDir("ri-home-");
     const r = recordInstall(home, "/src", "/bin", "git@x:y.git", "abc1234");
@@ -45,7 +45,7 @@ describe("record-install.mjs (CORE-R2)", () => {
   });
 });
 
-describe("install scripts decide first run before recording (CORE-R2)", () => {
+describe("install scripts decide first run before recording", () => {
   test("install.sh", () => {
     const sh = readFileSync(join(SCRIPTS, "install.sh"), "utf8");
     const firstRun = sh.indexOf("FIRST_RUN=1");

@@ -1,6 +1,6 @@
-// `belz setup` merges instead of replacing (CORE-15) and stores explicit
-// password encodings (D5, CORE-11); `belz config token` re-logs in when the
-// JWT has expired or --refresh is given (CORE-10).
+// `belz setup` merges instead of replacing and stores explicit
+// password encodings; `belz config token` re-logs in when the
+// JWT has expired or --refresh is given.
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync, statSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -38,7 +38,7 @@ function seedExisting() {
   reloadConfig();
 }
 
-describe("belz setup (CORE-15, D5)", () => {
+describe("belz setup", () => {
   test("--env-file merges into existing envs; encodings are explicit; file is 0600", async () => {
     seedExisting();
     const file = envFile([
@@ -81,7 +81,7 @@ describe("belz setup (CORE-15, D5)", () => {
   });
 });
 
-describe("belz config get (F16 class)", () => {
+describe("belz config get", () => {
   test("never prints the token; reports presence and expiry", async () => {
     const exp = Math.floor(Date.now() / 1000) + 3600;
     cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test", token: jwt(exp) } } });
@@ -96,7 +96,7 @@ describe("belz config get (F16 class)", () => {
   });
 });
 
-describe("belz config token (CORE-10)", () => {
+describe("belz config token", () => {
   const future = Math.floor(Date.now() / 1000) + 3600;
   const past = Math.floor(Date.now() / 1000) - 60;
 
@@ -124,7 +124,7 @@ describe("belz config token (CORE-10)", () => {
   });
 });
 
-describe("belz setup: dotenv handling (CORE-R14, CORE-R16)", () => {
+describe("belz setup: dotenv handling", () => {
   test("--env-file strips inline comments on unquoted values (core parseDotEnv)", async () => {
     seedExisting();
     const file = envFile([

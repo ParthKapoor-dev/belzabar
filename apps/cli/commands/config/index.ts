@@ -152,8 +152,8 @@ async function runEditTui(): Promise<ConfigEditData> {
       message: current.password ? "Password (leave blank to keep current)" : "Password",
     });
 
-    // Keep every other field (project, …) — CORE-16. New passwords are stored
-    // plain with an explicit encoding (D5; config.json is 0600).
+    // Keep every other field (project, …). New passwords are stored
+    // plain with an explicit encoding (config.json is 0600).
     const { password: _p, passwordEncoding: _e, ...rest } = current;
     const updatedEnv = {
       ...rest,
@@ -336,7 +336,7 @@ const command: CommandModule<ConfigArgs, ConfigData> = {
 
     if (args.action === "token") {
       // Re-login when there is no session, the JWT `exp` has passed, or
-      // --refresh was given — never hand a dead token to curl (CORE-10).
+      // --refresh was given — never hand a dead token to curl.
       let session = await loadSession();
       if (!session || args.refresh || isTokenExpired(session.token)) {
         session = await login();

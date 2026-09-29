@@ -5,7 +5,7 @@
 // (Error/help paths: envelope-contract.test.ts.)
 //
 // KNOWN_VIOLATIONS: invocations that still break the contract, with the bug id
-// that fixes them (Stage 4/6). They run as test.todo.
+// that fixes them. They run as test.todo.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "fs";
 import { tmpdir } from "os";

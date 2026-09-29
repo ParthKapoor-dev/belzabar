@@ -34,7 +34,7 @@ config.belz = {
 };
 
 // config.json holds credentials: private dir, 0600 file, written atomically
-// (tmp + rename) so a crash never truncates it (CORE-R2).
+// (tmp + rename) so a crash never truncates it.
 mkdirSync(dirname(configPath), { recursive: true, mode: 0o700 });
 const tmp = `${configPath}.${process.pid}.${Date.now()}.tmp`;
 writeFileSync(tmp, JSON.stringify(config, null, 2), { mode: 0o600 });

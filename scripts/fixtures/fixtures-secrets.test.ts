@@ -1,5 +1,5 @@
 // Guards the committed wire fixtures: nothing that looks like a credential,
-// token, cookie, personal e-mail, phone number or person name (CORE-R13) may
+// token, cookie, personal e-mail, phone number or person name may
 // be checked in. Guards the whole tracked tree against real hostnames (and,
 // when BELZ_SCRUB_TERMS names the local term list, against project/tenant
 // names): the repo is project-agnostic. Also unit-tests the sanitizer and the
@@ -114,7 +114,7 @@ describe("sanitize()", () => {
   });
 });
 
-describe("person names (CORE-R13)", () => {
+describe("person names", () => {
   test("person records are pseudonymized deterministically; system accounts kept", () => {
     const out = sanitize({
       a: { id: 1, firstName: "Jane", lastName: "Roe", fullName: "Jane Roe", email: "n@corp.io" },

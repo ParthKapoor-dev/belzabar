@@ -1,4 +1,4 @@
-// One secret encode/decode helper for every stored password (CORE-11, TW-8, D5).
+// One secret encode/decode helper for every stored password.
 //
 // Stored secrets carry an explicit encoding:
 //   { password: "...", passwordEncoding: "plain" }   ← every new write (file is 0600)
@@ -50,7 +50,7 @@ function lastSegment(path: string): string {
   return parts[parts.length - 1] ?? "password";
 }
 
-/** The fields to store for a newly entered plain-text password (D5: plain + explicit encoding, file 0600). */
+/** The fields to store for a newly entered plain-text password (plain + explicit encoding; the file is 0600). */
 export function encodeSecret(plain: string): { password: string; passwordEncoding: "plain" } {
   return { password: plain, passwordEncoding: "plain" };
 }

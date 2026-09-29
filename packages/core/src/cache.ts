@@ -81,7 +81,7 @@ export class Cache<T> {
 
   async save(rawKey: string | number, data: T, env?: string): Promise<void> {
     const key = normalizeCacheKey(rawKey);
-    // Private: definition caches hold auth records (CORE-R5).
+    // Private: definition caches hold auth records.
     await mkdir(this.dirFor(env), { recursive: true, mode: 0o700 });
     const entry: CacheEntry<T> = { savedAt: Date.now(), data };
     await writeFile(this.filePath(key, env), JSON.stringify(entry, null, 2), { mode: 0o600 });

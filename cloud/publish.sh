@@ -28,9 +28,9 @@ echo "🔨 building $ASSET…"
 cd "$REPO_ROOT"
 # --ignore-scripts: we only need workspace deps for the compile.
 # --frozen-lockfile with no fallback: the cloud binary must be built from the
-# committed dependency set; a stale bun.lock fails the publish (CORE-R7).
+# committed dependency set; a stale bun.lock fails the publish.
 bun install --frozen-lockfile --ignore-scripts
-# Same Bun as CI (the CORE-1 stdout-flush workaround is Bun-1.2-specific).
+# Same Bun as CI (the runner stdout-flush workaround is Bun-1.2-specific).
 EXPECTED_BUN="1.2.20"
 if [[ "$(bun --version)" != "$EXPECTED_BUN" ]]; then
   echo "❌ cloud/publish.sh builds with Bun $EXPECTED_BUN (found $(bun --version)); see .github/workflows/ci.yml" >&2

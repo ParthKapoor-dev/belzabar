@@ -21,13 +21,13 @@ jobs:
 
       - uses: oven-sh/setup-bun@v2
         with:
-          # Pinned: the runner's stdout-flush workaround (CORE-1) is tied to
+          # Pinned: the runner's stdout-flush workaround is tied to
           # Bun 1.2.x pipe behaviour; bump deliberately, with the pipe tests.
           bun-version: 1.2.20
 
       # --ignore-scripts: the root package's lifecycle scripts must never run
-      # the belz installer (CORE-5). --frozen-lockfile: test exactly the
-      # committed dependency set (CORE-R7).
+      # the belz installer. --frozen-lockfile: test exactly the
+      # committed dependency set.
       - name: Install
         run: bun install --frozen-lockfile --ignore-scripts
 

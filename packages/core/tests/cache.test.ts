@@ -13,7 +13,7 @@ function makeCache(name: string, extra: Partial<ConstructorParameters<typeof Cac
   return new Cache<{ v: string }>({ dir: join(tmp, name), ttlMs: 60_000, ...extra });
 }
 
-describe("core Cache — env scoping (CORE-3)", () => {
+describe("core Cache — env scoping", () => {
   test("an entry saved for env A is a miss for env B", async () => {
     const c = makeCache("scoped");
     await c.save("abc", { v: "from-a" }, "env-a");
@@ -64,7 +64,7 @@ describe("core Cache — env scoping (CORE-3)", () => {
   });
 });
 
-describe("core Cache — private files (CORE-R5)", () => {
+describe("core Cache — private files", () => {
   test("save creates 0700 dirs and 0600 entry files", async () => {
     const c = makeCache("private");
     await c.save("k1", { v: "x" }, "env-p");
@@ -76,7 +76,7 @@ describe("core Cache — private files (CORE-R5)", () => {
 });
 
 describe("core Cache — keys", () => {
-  test("numeric keys work with a TTL function (F5: key.includes is not a function)", async () => {
+  test("numeric keys work with a TTL function (no key.includes crash)", async () => {
     const seen: unknown[] = [];
     const c = new Cache<{ v: string }>({
       dir: join(tmp, "numeric"),

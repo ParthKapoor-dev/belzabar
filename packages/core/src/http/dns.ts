@@ -60,7 +60,7 @@ function storeCached(host: string, ip: string): void {
 /**
  * Drop `host`'s pinned IPv4 (memory + disk). Called when a request to the
  * pinned IP fails to connect, so a load balancer IP change is picked up at
- * once instead of after the 5-minute TTL (CORE-20).
+ * once instead of after the 5-minute TTL.
  */
 export function evictIpv4Cache(host: string): void {
   memCache.delete(host);

@@ -1,5 +1,5 @@
-// core/config: schema validation, secrets (D5), atomic 0600 writes, default
-// env (D6), and the cwd-.env guard (CORE-28).
+// core/config: schema validation, secrets, atomic 0600 writes, default
+// env, and the cwd-.env guard.
 import { afterEach, describe, expect, test } from "bun:test";
 import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync, readdirSync } from "fs";
 import { join } from "path";
@@ -45,7 +45,7 @@ function rawConfig(value: unknown) {
   reloadConfig();
 }
 
-describe("secrets (D5)", () => {
+describe("secrets", () => {
   test("plain, legacy base64 and explicit base64 decode; bad base64 is CONFIG_INVALID with a path", () => {
     expect(decodeSecret("hunter2", "plain", "x.password")).toBe("hunter2");
     expect(decodeSecret(btoa("hunter2"), undefined, "x.password")).toBe("hunter2");
@@ -68,14 +68,14 @@ describe("secrets (D5)", () => {
     expect(Config.password).toBe("Zz==plain");
   });
 
-  test("a non-base64 legacy password is CONFIG_INVALID, not UNHANDLED (CORE-11)", () => {
+  test("a non-base64 legacy password is CONFIG_INVALID, not UNHANDLED", () => {
     rawConfig({ environments: { "t-dev": { url: "https://t.test", user: "u", password: "plain text!" } } });
     Config.setActiveEnv("t-dev");
     expect(codeOf(() => Config.password)).toBe("CONFIG_INVALID");
   });
 });
 
-describe("schema validation (CORE-18)", () => {
+describe("schema validation", () => {
   test("a custom env without url → CONFIG_INVALID naming the env, only when used", () => {
     rawConfig({ environments: { "t-nourl": { user: "u" }, "t-ok": { url: "https://ok.test" } } });
     Config.setActiveEnv("t-ok");
@@ -97,7 +97,7 @@ describe("schema validation (CORE-18)", () => {
     expect(() => Config.getAllEnvs()).not.toThrow();
   });
 
-  test("environments.<env>.sqlDefaultDb (AD-36): a string is accepted; a non-string is CONFIG_INVALID", () => {
+  test("environments.<env>.sqlDefaultDb: a string is accepted; a non-string is CONFIG_INVALID", () => {
     rawConfig({ environments: { "t-dev": { url: "https://t.test", sqlDefaultDb: "testing_db" } } });
     expect(Config.configError).toBeNull();
     expect(loadConfigFileRaw().environments?.["t-dev"]?.sqlDefaultDb).toBe("testing_db");
@@ -152,7 +152,7 @@ describe("schema validation (CORE-18)", () => {
   });
 });
 
-describe("atomic 0600 writes (CORE-12)", () => {
+describe("atomic 0600 writes", () => {
   test("writeConfigFile and writeSecureJson write 0600 and leave no temp files", () => {
     cfg = withTempEnvConfig({ envs: {} });
     writeConfigFile({ environments: {} });
@@ -167,7 +167,7 @@ describe("atomic 0600 writes (CORE-12)", () => {
   });
 });
 
-describe("permission repair (CORE-R5)", () => {
+describe("permission repair", () => {
   function looseHome(): string {
     const home = join(scratchDir("perm-"), "belz");
     mkdirSync(join(home, "sessions"), { recursive: true });
@@ -204,7 +204,7 @@ describe("permission repair (CORE-R5)", () => {
   }, 30_000);
 });
 
-describe("default env (D6 / CORE-26)", () => {
+describe("default env", () => {
   test("config defaultEnv is used when no --env; it is not explicit", () => {
     cfg = withTempEnvConfig({ envs: { "t-a": { url: "https://a.test" }, "t-b": { url: "https://b.test" } }, defaultEnv: "t-b" });
     expect(Config.activeEnv.name).toBe("t-b");
@@ -271,20 +271,20 @@ describe("default env (D6 / CORE-26)", () => {
     expect(codeOf(() => Config.setActiveEnv("nope-nope"))).toBe("INVALID_ENV");
   });
 
-  test("CORE-R6: Object.prototype names are unknown envs, not crashes", () => {
+  test("Object.prototype names are unknown envs, not crashes", () => {
     for (const name of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
       expect(codeOf(() => Config.setActiveEnv(name))).toBe("INVALID_ENV");
     }
     expect(Config.getAllEnvs()["constructor"]).toBeUndefined();
   });
 
-  test("CORE-R6: a prototype-named default env fails with INVALID_ENV on use", () => {
+  test("a prototype-named default env fails with INVALID_ENV on use", () => {
     cfg = withTempEnvConfig({ envs: { "t-a": { url: "https://a.test" } }, defaultEnv: "constructor" });
     expect(errOf(() => Config.cleanBaseUrl).code).toBe("INVALID_ENV");
   });
 });
 
-describe("dotenv guard (CORE-28)", () => {
+describe("dotenv guard", () => {
   test("trustedBelzEnv: BELZ_* only; values injected from a cwd .env are ignored", () => {
     const dir = scratchDir("dotenv-");
     writeFileSync(join(dir, ".env"), "BELZ_ENV=orb-qa\nBELZ_JENKINS_URL='https://evil.test'\nNSM_QA_URL=https://x\n");
@@ -299,7 +299,7 @@ describe("dotenv guard (CORE-28)", () => {
     expect(trustedBelzEnv({ BELZ_ENV: "acme-dev" }, dir)).toEqual({ BELZ_ENV: "acme-dev" });
   });
 
-  test("CORE-R14: withoutDotenvInjected drops any cwd-.env value (not just BELZ_*), reports the keys", () => {
+  test("withoutDotenvInjected drops any cwd-.env value (not just BELZ_*), reports the keys", () => {
     const dir = scratchDir("dotenv-any-");
     writeFileSync(join(dir, ".env"), "ORB_DEV_PASSWORD=evil\nBELZ_SRC_DIR=/tmp/evil\n");
     const r = withoutDotenvInjected({ ORB_DEV_PASSWORD: "evil", BELZ_SRC_DIR: "/tmp/evil", ORB_QA_USER: "me" }, dir);
@@ -307,7 +307,7 @@ describe("dotenv guard (CORE-28)", () => {
     expect(r.dropped).toEqual(["BELZ_SRC_DIR", "ORB_DEV_PASSWORD"]);
   });
 
-  test("CORE-R14: a cwd .env BELZ_SRC_DIR does not pick the source dir for `belz update`", () => {
+  test("a cwd .env BELZ_SRC_DIR does not pick the source dir for `belz update`", () => {
     const dir = scratchDir("dotenv-src-");
     writeFileSync(join(dir, ".env"), "BELZ_SRC_DIR=/tmp/evil-src\n");
     const saved = process.env.BELZ_SRC_DIR;

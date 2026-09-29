@@ -1,4 +1,4 @@
-// Atomic, private file writes for config and session files (CORE-12).
+// Atomic, private file writes for config and session files.
 //
 // writeSecureJson writes to a temp file in the same directory (mode 0600),
 // fsyncs it, and renames it over the target, so a crash or a concurrent
@@ -61,8 +61,8 @@ function tighten(path: string, mode: number): boolean {
 }
 
 /**
- * One-time permission repair for the belz home (CORE-R5). The 0600/0700 modes
- * only applied to files written after CORE-12, and `mkdir`'s mode only on
+ * One-time permission repair for the belz home. The 0600/0700 modes
+ * only applied to files written after atomic private writes landed, and `mkdir`'s mode only on
  * create, so older installs kept a 0755 `~/.belz` with 0644 session files
  * holding live JWTs. Tightens: the home and `sessions/`, `cache/` to 0700;
  * `config.json` and every session file to 0600. Cheap (a few stats), never

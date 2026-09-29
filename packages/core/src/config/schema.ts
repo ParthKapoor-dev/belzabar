@@ -1,10 +1,7 @@
-// zod schema for ~/.belz/config.json, validated at load (CORE-18).
+// zod schema for ~/.belz/config.json, validated at load.
 //
 // Unknown keys are kept (passthrough) so sections owned by other tools or
-// older/newer belz versions survive a read-modify-write. Sections from
-// features that no longer live in this repo (the browser extension's
-// `extension`, the old dashboard's `web`) are not modelled: they fall under
-// passthrough, so an old config.json that still carries them loads unchanged.
+// older/newer belz versions survive a read-modify-write.
 
 import { z } from "zod";
 import { CliError } from "../command";
@@ -21,14 +18,14 @@ const EnvEntrySchema = z
     ...secretFields,
     /** Project this env belongs to (e.g. "ACME"). Defaults to the env-name prefix. */
     project: z.string().optional(),
-    /** `belz ad sql`: default database (nickname or id) for this env when --db is not given (AD-36). */
+    /** `belz ad sql`: default database (nickname or id) for this env when --db is not given. */
     sqlDefaultDb: z.string().min(1).optional(),
   })
   .passthrough();
 
 const ConfigFileSchema = z
   .object({
-    /** Env used when no `--env` is given and BELZ_ENV is unset (D6). */
+    /** Env used when no `--env` is given and BELZ_ENV is unset. */
     defaultEnv: z.string().min(1).optional(),
     environments: z.record(EnvEntrySchema).optional(),
     teamwork: z

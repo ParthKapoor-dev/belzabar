@@ -40,7 +40,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Decide "first run" now: step 6b (record-install) creates config.json, so
-# testing for it at step 8 would never see a first run (CORE-R2).
+# testing for it at step 8 would never see a first run.
 FIRST_RUN=0
 [[ -f "$BELZ_CONFIG_DIR/config.json" ]] || FIRST_RUN=1
 

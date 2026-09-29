@@ -1,4 +1,4 @@
-// CORE-R15: the preload must replace an exported BELZ_HOME (it may be the
+// The preload must replace an exported BELZ_HOME (it may be the
 // developer's real belz home), and core/testing refuses any home outside the
 // run's BELZ_TEST_TMP.
 import { describe, expect, test } from "bun:test";
@@ -8,7 +8,7 @@ import { scratchDir } from "../src/testing/scratch";
 
 const REPO = resolve(import.meta.dir, "../../..");
 
-describe("test preload (CORE-R15)", () => {
+describe("test preload", () => {
   test("an exported BELZ_HOME is replaced by a throwaway dir inside BELZ_TEST_TMP", () => {
     const dir = scratchDir("preload-");
     const probe = join(dir, "probe.test.ts");

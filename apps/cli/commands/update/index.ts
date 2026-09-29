@@ -79,7 +79,7 @@ export type UpdatePlan =
   | { action: "refuse"; code: "DIRTY_TREE" | "LOCAL_COMMITS"; reason: string };
 
 /**
- * What `belz update` does for a checkout state (CORE-R4). It never discards
+ * What `belz update` does for a checkout state. It never discards
  * work: the checkout only moves by fast-forward, and a tree with uncommitted
  * changes or local commits is refused when there is something to pull.
  * `--force` only means "rebuild even when already up to date" — it no longer
@@ -101,7 +101,7 @@ export function planUpdate(state: UpdateState, opts: { check: boolean; force: bo
   return { action: "fast-forward" };
 }
 
-/** The platform install script invocation, installing to the recorded install dir (CORE-R3). */
+/** The platform install script invocation, installing to the recorded install dir. */
 export function installerCommand(
   scriptDir: string,
   installDir: string,

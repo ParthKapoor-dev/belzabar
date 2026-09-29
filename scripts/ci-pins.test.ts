@@ -1,4 +1,4 @@
-// CORE-R7: every workflow (and cloud/publish.sh) builds/tests with the same
+// Every workflow (and cloud/publish.sh) builds/tests with the same
 // pinned Bun, and installs strictly from the committed lockfile.
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "fs";
@@ -10,7 +10,7 @@ const workflowFiles = readdirSync(WORKFLOWS).filter((f) => f.endsWith(".yml") ||
 const read = (p: string) => readFileSync(p, "utf8");
 const ciPin = read(join(WORKFLOWS, "ci.yml")).match(/bun-version:\s*(\S+)/)![1]!;
 
-describe("Bun pins and lockfile (CORE-R7)", () => {
+describe("Bun pins and lockfile", () => {
   test("CI pins an exact Bun version", () => {
     expect(ciPin).toMatch(/^\d+\.\d+\.\d+$/);
   });

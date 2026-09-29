@@ -19,7 +19,7 @@ interface TempEnvSpec {
   /** Plain-text password (base64-encoded into config.json for you). */
   password?: string;
   project?: string;
-  /** How the password is stored in config.json: "base64" (legacy, default) or "plain" (D5). */
+  /** How the password is stored in config.json: "base64" (legacy, default) or "plain". */
   passwordEncoding?: "plain" | "base64";
   /** Session token written to sessions/<env>.json. Default "test-token"; `null` = no session (forces login). */
   token?: string | null;
@@ -51,7 +51,7 @@ function isInside(dir: string, root: string): boolean {
 
 /**
  * The belz home tests may write to: it must be the preload's throwaway dir
- * (inside BELZ_TEST_TMP), never `~/.belz` or any other exported BELZ_HOME (CORE-R15).
+ * (inside BELZ_TEST_TMP), never `~/.belz` or any other exported BELZ_HOME.
  */
 export function assertSafeBelzHome(): string {
   const real = resolve(join(homedir(), ".belz"));

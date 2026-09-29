@@ -153,7 +153,7 @@ describe("transport", () => {
     expect(ff.requests.length).toBe(2);
   });
 
-  test("CORE-R1: POST + ECONNRESET on the pinned IP → 1 request, mayHaveCompleted, never re-sent", async () => {
+  test("POST + ECONNRESET on the pinned IP → 1 request, mayHaveCompleted, never re-sent", async () => {
     ff = fakeFetch([
       {
         url: "https://lb.test/chain/run",
@@ -170,7 +170,7 @@ describe("transport", () => {
     expect(ff.requests.length).toBe(1);
   });
 
-  test("CORE-R1: POST + connection refused on the pinned IP → safe hostname retry", async () => {
+  test("POST + connection refused on the pinned IP → safe hostname retry", async () => {
     ff = fakeFetch([
       {
         url: "https://lb.test/chain/save",
@@ -187,7 +187,7 @@ describe("transport", () => {
     expect(ff.requests.length).toBe(2);
   });
 
-  test("CORE-R1: GET + ECONNRESET on the pinned IP is retried by hostname (idempotent)", async () => {
+  test("GET + ECONNRESET on the pinned IP is retried by hostname (idempotent)", async () => {
     ff = fakeFetch([
       {
         url: "https://lb.test/read",
@@ -202,7 +202,7 @@ describe("transport", () => {
     expect(ff.requests.length).toBe(2);
   });
 
-  test("CORE-R1: isConnectPhaseError classifies connect vs mid-flight failures", () => {
+  test("isConnectPhaseError classifies connect vs mid-flight failures", () => {
     expect(isConnectPhaseError(new TypeError("ECONNREFUSED"))).toBe(true);
     expect(isConnectPhaseError(Object.assign(new Error("x"), { code: "ConnectionRefused" }))).toBe(true);
     expect(isConnectPhaseError(new Error("Unable to connect. Is the computer able to access the url?"))).toBe(true);
@@ -211,7 +211,7 @@ describe("transport", () => {
     expect(isConnectPhaseError(new Error("The socket connection was closed unexpectedly"))).toBe(false);
   });
 
-  test("CORE-R10: a body that stalls after the headers fails with HTTP_TIMEOUT instead of hanging", async () => {
+  test("a body that stalls after the headers fails with HTTP_TIMEOUT instead of hanging", async () => {
     const enc = new TextEncoder();
     ff = fakeFetch({
       "GET https://slow.test/body": () =>
@@ -228,7 +228,7 @@ describe("transport", () => {
     expect(err.details).toMatchObject({ phase: "body", mayHaveCompleted: false });
   });
 
-  test("CORE-R10: a body that keeps flowing is read whole; no deadline when timeoutMs is none", async () => {
+  test("a body that keeps flowing is read whole; no deadline when timeoutMs is none", async () => {
     const enc = new TextEncoder();
     const slowBody = () =>
       new Response(
@@ -300,7 +300,7 @@ describe("apiFetch", () => {
     expect(ff.calls("GET").every((r) => r.headers["authorization"] === "Bearer one")).toBe(true);
   });
 
-  test("CORE-R9: login uses the read timeout and a login-specific message", async () => {
+  test("login uses the read timeout and a login-specific message", async () => {
     const saved = { a: process.env.BELZ_HTTP_TIMEOUT_MS, b: process.env.BELZ_HTTP_WRITE_TIMEOUT_MS };
     process.env.BELZ_HTTP_TIMEOUT_MS = "25";
     process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = "600000";

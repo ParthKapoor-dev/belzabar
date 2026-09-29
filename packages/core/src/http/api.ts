@@ -6,7 +6,7 @@
 //   - 401 → one refresh (shared across concurrent callers) + one retry,
 //     including FormData bodies; non-replayable bodies (streams) are not retried;
 //     a second 401 after a successful re-login is AUTH_FAILED (never a loop);
-//   - no Content-Type on GET/HEAD or FormData (CORE-19).
+//   - no Content-Type on GET/HEAD or FormData.
 
 import { Config } from "../config";
 import { CliError } from "../command";

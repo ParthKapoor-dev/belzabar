@@ -15,7 +15,7 @@ import { join } from "path";
 
 // Always override: an exported BELZ_HOME may be the developer's real belz
 // home (e.g. BELZ_HOME=/data/belz), and tests write config/sessions/caches
-// into it (CORE-R15). Tests that need a specific home set it per spawn.
+// into it. Tests that need a specific home set it per spawn.
 {
   const root = mkdtempSync(join(tmpdir(), "belz-home-test-"));
   const home = join(root, "home");

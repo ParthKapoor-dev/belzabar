@@ -73,12 +73,12 @@ class HumanUi implements HumanPresenterHelpers {
     console.log(theme.info(message));
   }
 
-  /** Warnings go to stderr (F31), so piped stdout carries only the result. */
+  /** Warnings go to stderr, so piped stdout carries only the result. */
   warn(message: string): void {
     printErr(theme.warn(message));
   }
 
-  /** Errors go to stderr (F31). */
+  /** Errors go to stderr. */
   error(message: string): void {
     printErr(theme.err(message));
   }
@@ -185,7 +185,7 @@ function renderErrorHuman(envelope: CommandEnvelope<unknown>): void {
   console.error(JSON.stringify(details, null, 2));
 }
 
-/** `meta.warnings` → stderr, after the result (CORE-6). */
+/** `meta.warnings` → stderr, after the result. */
 function renderWarningsHuman(envelope: CommandEnvelope<unknown>): void {
   const warnings = envelope.meta?.warnings;
   if (!Array.isArray(warnings)) return;
@@ -265,7 +265,7 @@ export const lifecycle = {
     }
     if (!process.stdout.isTTY) {
       // Not a terminal (piped/redirected): no animation frames or cursor codes
-      // in the output (F32). Final messages go to stderr as plain lines.
+      // in the output. Final messages go to stderr as plain lines.
       const line = (msg?: string) => { if (msg) console.error(msg); };
       let cancelled = false;
       return {

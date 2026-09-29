@@ -1,6 +1,6 @@
 // The argv parser behind `defineArgs` / `defineSubcommands`.
 //
-// Rules (CORE-7, AD-29/37, TW-3/5, MG-1/6, PD-16/23, F34):
+// Rules:
 //   - `--flag value` and `--flag=value`; `-x value` for declared short aliases.
 //   - A value that looks like a flag (`--body --yes`) is MISSING_VALUE, not a value.
 //     Negative numbers (`-5`) and a bare `-` are values / positionals, never flags.

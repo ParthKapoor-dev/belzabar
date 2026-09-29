@@ -1,10 +1,10 @@
-// CORE-R8: onboard must not exit 0 when a step failed, and a Ctrl-C inside a
+// Onboard must not exit 0 when a step failed, and a Ctrl-C inside a
 // step ends the flow instead of being recorded as a failure.
 import { describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
 import { finishOnboard, runStep } from "../commands/onboard/index";
 
-describe("belz onboard (CORE-R8)", () => {
+describe("belz onboard", () => {
   test("runStep records an ordinary failure", async () => {
     const step = await runStep("Credentials", async () => {
       throw new CliError("setup failed", { code: "SETUP_FAILED" });

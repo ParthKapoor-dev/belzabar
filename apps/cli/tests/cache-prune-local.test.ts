@@ -1,7 +1,7 @@
 // `belz cache prune-local` — local-only cleanup of stale cache artifacts left
 // from before caches became env-scoped (see packages/core/src/cache.ts) plus
 // abandoned `.refresh/*.lock` files (packages/core/src/swr.ts). No network,
-// not environment-specific (D6: writesLocal, not writes).
+// not environment-specific (writesLocal, not writes).
 import { afterAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdirSync, rmSync, utimesSync, writeFileSync } from "fs";
 import { join } from "path";

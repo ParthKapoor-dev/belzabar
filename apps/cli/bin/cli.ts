@@ -8,7 +8,7 @@ installStdioGuard();
 
 // Loaded dynamically so a command module that fails to import (syntax error,
 // missing export) is reported clearly on stderr instead of a bare loader trace
-// or a silently missing command (CORE-22).
+// or a silently missing command.
 let options: typeof import("./options");
 try {
   options = await import("./options");

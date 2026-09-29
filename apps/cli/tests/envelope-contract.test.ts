@@ -10,7 +10,7 @@
 // KNOWN_VIOLATIONS lists invocations that break the contract today. They run
 // as test.todo with the bug id that fixes them. Success paths over the real
 // fixtures: envelope-success.test.ts. Registry completeness: registry.test.ts;
-// a module that fails to load: entry.test.ts (CORE-22).
+// a module that fails to load: entry.test.ts.
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";

@@ -52,7 +52,7 @@ export interface NamespacedCliOptions {
   /**
    * `belz --help-full`: the full command reference. Honoured only as the
    * first argument after the global flags (never after a command name or
-   * `--`); in `--llm` mode it is a `belz.help` envelope with `data.text` (CORE-R11).
+   * `--`); in `--llm` mode it is a `belz.help` envelope with `data.text`.
    */
   /**
    * `belz --help-full [<namespace>] [--index]`: the whole reference, one
@@ -219,7 +219,7 @@ interface GlobalContext {
 }
 
 /**
- * Select the default env for a run without `--env` (D6): BELZ_ENV > config.json
+ * Select the default env for a run without `--env`: BELZ_ENV > config.json
  * `defaultEnv` > the only configured env (core/config owns the precedence).
  * Returns an error when the default names an env that is not configured
  * (INVALID_ENV) or when nothing selects an env (ENV_NOT_SELECTED).
@@ -337,7 +337,7 @@ export function renderOutcome(outcome: RunOutcome): void {
   if (outcome.kind === "print") {
     // Help / --help-full / --version are reference text that agents read from a
     // pipe: plain whenever the stream is not a TTY or NO_COLOR is set — even
-    // under FORCE_COLOR, which agent harnesses export (CLI trial).
+    // under FORCE_COLOR, which agent harnesses export.
     const plain = (tty: boolean | undefined) => !tty || process.env.NO_COLOR !== undefined;
     const [log, error] = [console.log, console.error];
     const strip = (write: (...a: unknown[]) => void, on: boolean) =>
@@ -421,7 +421,7 @@ export function globalErrorOutcome(
   return envelopeOutcome(outputMode, runnerEnvelope(binaryName, "runner", "global", startedAt, { ok: false, error }), 1);
 }
 
-// ── Command-owned global flags (CORE-7) ─────────────────────────────────────
+// ── Command-owned global flags ─────────────────────────────────────
 
 /** Global-flag tokens a command claims: `ownsFlags`, plus flags declared in the module's exported `args` spec. */
 function ownedGlobalTokens(moduleNs: unknown, command: CommandModule<any, any>): Set<string> {
@@ -530,7 +530,7 @@ export async function dispatchCommand(
     return printOutcome(0, () => console.log(helpText ?? `No help file found for '${commandName}'.`));
   }
 
-  // -v/--verbose after the command name belongs to the command when it declares it (CORE-7).
+  // -v/--verbose after the command name belongs to the command when it declares it.
   let commandArgs = args.slice(1);
   const globals = opts.globals;
   if (globals && globals.verboseTokens.length > 0) {
@@ -596,7 +596,7 @@ export async function dispatchCommand(
     if (writes && outputMode === "human") {
       printErr(theme.faint(`${symbols.arrow} target env: ${activeEnv.name} (${activeEnv.baseUrl})`));
     } else if (envAware && !envExplicit && outputMode === "human") {
-      // D6: reads may use the default env, but never silently (CLI trial).
+      // Reads may use the default env, but never silently.
       printErr(theme.faint(`${symbols.arrow} env: ${activeEnv.name} (${envSourceLabel()}; pass --env to choose)`));
     }
 
@@ -701,7 +701,7 @@ export async function dispatchNamespaced(
   }
 
   if (token === "--help-full" && options.helpFull) {
-    // `--help-full [<namespace>] [--index]` (CLI trial: the full text is ~35 KB).
+    // `--help-full [<namespace>] [--index]` (the full text is ~35 KB).
     const rest = args.slice(1);
     const bad = rest.filter((a) => a.startsWith("-") && a !== "--index");
     const words = rest.filter((a) => !a.startsWith("-"));
@@ -899,7 +899,7 @@ function stripErrorPrefix(message: string): string {
 }
 
 /**
- * `error.details` on the wire is always an object (F38): a JSON-object string is
+ * `error.details` on the wire is always an object: a JSON-object string is
  * parsed, any other string becomes `{ text }`, arrays `{ items }`, scalars `{ value }`.
  */
 export function normalizeDetails(details: unknown): Record<string, unknown> | undefined {

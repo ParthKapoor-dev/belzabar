@@ -268,7 +268,7 @@ function resanitize(dir: string) {
   for (const f of walkDir(resolve(dir))) {
     const text = readFileSync(f, "utf8");
     if (f.endsWith(".txt")) {
-      // Console logs etc. (CORE-R13: Jenkins "Started by user X").
+      // Console logs etc. (Jenkins "Started by user X").
       const clean = sanitizeText(text);
       if (clean !== text) {
         writeFileSync(f, clean);

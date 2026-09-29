@@ -1,4 +1,4 @@
-// F33: `belz cache` must send {"uuids":[…]} to BOTH invalidate routes and refuse an
+// `belz cache` must send {"uuids":[…]} to BOTH invalidate routes and refuse an
 // org-wide flush unless --all --yes is passed. No network: the fetcher is mocked.
 import { describe, expect, test } from "bun:test";
 import type { CliError } from "@belzabar/core";
@@ -75,7 +75,7 @@ describe("cache arg guard", () => {
     expect(() => parse(["--all", "--yes", "u1"])).toThrow(/cannot be combined/);
   });
 
-  test("CORE-R12: a mistyped subcommand or non-uuid is INVALID_UUID, never POSTed", async () => {
+  test("a mistyped subcommand or non-uuid is INVALID_UUID, never POSTed", async () => {
     const codeOf = (a: string[]) => {
       try {
         parse(a);

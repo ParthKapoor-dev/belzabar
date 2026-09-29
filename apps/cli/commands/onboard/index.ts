@@ -30,7 +30,7 @@ interface OnboardData {
 /**
  * Run a sub-command's execute() and reduce it to a step result. A Ctrl-C
  * (USER_ABORT) is re-thrown: it ends onboarding (exit 130) instead of being
- * recorded as a failed step and carrying on to the next prompt (CORE-R8).
+ * recorded as a failed step and carrying on to the next prompt.
  */
 export async function runStep(
   name: string,
@@ -49,7 +49,7 @@ export async function runStep(
 /**
  * The command result: ok only when no step failed. A failed step used to be
  * reported with exit 0, so install.sh's `if ! belz onboard` treated a broken
- * setup as success (CORE-R8).
+ * setup as success.
  */
 export function finishOnboard(steps: OnboardStep[]) {
   const failed = steps.filter((s) => s.status === "failed");

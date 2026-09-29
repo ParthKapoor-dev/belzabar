@@ -56,15 +56,15 @@ belz --version | --help | --help-full        → runner / entry point
   refuses a dirty tree (`DIRTY_TREE`: tracked edits / staged changes; untracked files don't count)
   or unpushed commits (`LOCAL_COMMITS`) — it never `git reset`s.
   `--force` = rebuild even when up to date. The installer gets `--install-dir`/`-InstallDir` from the
-  recorded `belz.installDir` (`installerCommand`) (CORE-R3, CORE-R4).
+  recorded `belz.installDir` (`installerCommand`).
 - `belz setup` parses `--env-file` with core `parseDotEnv` (inline `# comments` stripped on unquoted
-  values, CORE-R16); `--from-env` reads `withoutDotenvInjected()`, so values Bun auto-loaded from a cwd
-  `.env` are ignored and listed in `meta.warnings` (CORE-R14).
+  values); `--from-env` reads `withoutDotenvInjected()`, so values Bun auto-loaded from a cwd
+  `.env` are ignored and listed in `meta.warnings`.
 - `belz onboard` walks the credentials step (`belz setup`) only. It returns `failWithData("ONBOARD_INCOMPLETE")` when any step failed (so `install.sh`'s
-  `if ! belz onboard` sees it) and re-throws `USER_ABORT` from a step (CORE-R8).
+  `if ! belz onboard` sees it) and re-throws `USER_ABORT` from a step.
 - `belz cache` self-routes with `defineSubcommands` (default `invalidate`): `belz cache --env <e> <uuid>…`
   (remote write → explicit `--env` required; every uuid must be 32 hex or dashed, else `INVALID_UUID` —
-  so a mistyped subcommand is never POSTed (CORE-R12); `--all --yes` for an org-wide flush) and
+  so a mistyped subcommand is never POSTed; `--all --yes` for an org-wide flush) and
   `belz cache prune-local [--yes]` (local only, `writesLocal`; dry run unless `--yes`; removes
   pre-env-scope flat cache files — never `method-finder` / `page-finder`, which are flat by
   design — and `.refresh/*.lock` files older than 10 minutes). `pruneLocalCache(dir, opts)` is
@@ -74,9 +74,9 @@ belz --version | --help | --help-full        → runner / entry point
   locale- or build-dependent content (`tests/help-full.test.ts` spawns it twice under different
   env/TZ/locale and requires byte-identical output). The runner handles it (`helpFull` option)
   only as the first argument after the global flags (not after a command or `--`); with `--llm`
-  it is a `belz.help` envelope with `data.text` (CORE-R11). `belz --help-full <ns>` (`ad`, `pd`,
+  it is a `belz.help` envelope with `data.text`. `belz --help-full <ns>` (`ad`, `pd`,
   `tw`, `migrate`, `release`, `top`) prints one section and `--index` one line per command (the
-  first desc line) — the full text is ~35 KB (CLI trial). The header tells agents that stdout is
+  first desc line) — the full text is ~35 KB. The header tells agents that stdout is
   only the envelope and stderr carries notices.
 
 ---
@@ -112,7 +112,7 @@ bun run belz:reinstall                   # scripts/reinstall.sh
   compile, install the binary (default `~/.local/bin`), record install metadata
   (`scripts/record-install.mjs`, read by `belz update`; atomic, 0600, never overwrites a malformed
   config), and on first install run `belz onboard` (or `belz setup --env-file`). "First install" is
-  decided before record-install creates config.json (`FIRST_RUN`, CORE-R2). `scripts/install.ps1` is the Windows equivalent.
+  decided before record-install creates config.json (`FIRST_RUN`). `scripts/install.ps1` is the Windows equivalent.
 - `scripts/reinstall.sh` — wipes `~/.belz/` and the binary, then delegates to `install.sh`.
 - The repo-root one-liners (`install.sh`, `install.ps1`) and `belz update` call
   `apps/cli/scripts/`.
@@ -131,7 +131,7 @@ Run from the repo root: `bun run check` = typecheck + `bun run docs:check` + all
 | `args-parse.test.ts`, `args-parse-setup.test.ts` | top-level commands reject bad argv |
 | `envelope-contract.test.ts` | every command's help/error `--llm` output vs `EnvelopeSchema` (`KNOWN_VIOLATIONS` must stay justified) |
 | `envelope-success.test.ts` | read commands over the sanitized fixtures via fakeFetch return valid `ok:true` envelopes |
-| `write-commands.test.ts` | every remote-write command/sub-action declares `writes` (D6) |
+| `write-commands.test.ts` | every remote-write command/sub-action declares `writes` |
 | `help-full.test.ts` | `--help-full` is deterministic |
 | `help-flags.test.ts` | `--help` anywhere shows help instead of running |
 | `compiled-pipe.test.ts` | compiles to a tmp dir; a >64 KiB `--llm` envelope survives a slow pipe |

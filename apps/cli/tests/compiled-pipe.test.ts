@@ -1,4 +1,4 @@
-// CORE-1 / F1 regression against the *compiled* binary: an `--llm` envelope
+// Regression against the *compiled* binary: an `--llm` envelope
 // larger than the 64 KiB pipe buffer must arrive complete through a slow pipe.
 // Compiles bin/cli.ts into a tmp dir (≈1 s; nothing is installed).
 // The big payload comes from `envs` over a config with ~1500 custom envs, so no

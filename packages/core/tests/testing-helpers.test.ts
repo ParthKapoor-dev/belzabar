@@ -168,7 +168,7 @@ describe("runCommand", () => {
     expect(bad.exitCode).toBe(1);
     expect(bad.envelope?.error?.code).toBe("INVALID_ENV");
     for (const proto of ["constructor", "toString", "__proto__"]) {
-      const p = await runCommand(probe, [], { env: proto }); // CORE-R6
+      const p = await runCommand(probe, [], { env: proto });
       expect(p.envelope?.error?.code).toBe("INVALID_ENV");
     }
   });
@@ -218,7 +218,7 @@ describe("EnvelopeSchema", () => {
     ).toBe(false);
     expect(EnvelopeSchema.safeParse({ ...base, ok: true, data: 1, error: null, extra: 1 }).success).toBe(false);
   });
-  test("rejects unstable names, versions, details and prefixes (CORE-23, F38)", () => {
+  test("rejects unstable names, versions, details and prefixes", () => {
     const bad = (patch: Record<string, unknown>) => EnvelopeSchema.safeParse({ ...base, ok: true, data: 1, error: null, ...patch }).success;
     expect(bad({ schema: "belz ad.runner" })).toBe(false);
     expect(bad({ schema: "result" })).toBe(false);

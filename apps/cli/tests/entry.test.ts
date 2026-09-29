@@ -1,5 +1,5 @@
-// The real entry point (bin/cli.ts), spawned: --version (CORE-24) and the
-// load-failure report (CORE-22).
+// The real entry point (bin/cli.ts), spawned: --version and the
+// load-failure report.
 import { afterAll, describe, expect, test } from "bun:test";
 import { copyFileSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { join } from "path";
@@ -31,7 +31,7 @@ describe("bin/cli.ts", () => {
     expect(typeof env.data.sha).toBe("string");
   }, 30_000);
 
-  test("a command module that fails to load is reported on stderr (CORE-22)", async () => {
+  test("a command module that fails to load is reported on stderr", async () => {
     // A copy of the entry next to a broken options.ts, inside the workspace so
     // @belzabar/core still resolves.
     const dir = mkdtempSync(join(cliDir(), ".tmp-entry-"));

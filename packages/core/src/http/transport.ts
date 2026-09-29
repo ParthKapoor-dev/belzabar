@@ -1,17 +1,16 @@
 // The one transport every belz HTTP call goes through (AD/PD via apiFetch,
 // Teamwork, Jenkins):
 //   - IPv4 pinning (dns.ts) with pin eviction + one hostname retry when the
-//     pinned IP fails to connect (CORE-20). The retry happens only for
+//     pinned IP fails to connect. The retry happens only for
 //     connect-phase failures (nothing was sent) or for read methods; a POST
-//     whose connection dropped after it may have been sent is never re-sent
-//     (CORE-R1);
+//     whose connection dropped after it may have been sent is never re-sent;
 //   - a default timeout mapped to CliError HTTP_TIMEOUT instead of hanging
-//     forever (CORE-13): 60 s for GET/HEAD, 300 s for anything else (AD test,
+//     forever: 60 s for GET/HEAD, 300 s for anything else (AD test,
 //     run, SQL, save/publish execute server-side and are legitimately slow).
 //     Per call `timeoutMs` (0 / "none" disables); env BELZ_HTTP_TIMEOUT_MS
 //     (both defaults) and BELZ_HTTP_WRITE_TIMEOUT_MS (non-GET only). A timed-out
 //     non-GET is never retried and says it may still complete server-side.
-//     The same limit is an idle deadline on the body read (CORE-R10);
+//     The same limit is an idle deadline on the body read;
 //   - network failures mapped to CliError HTTP_NETWORK_ERROR (never an
 //     UNHANDLED_EXCEPTION);
 //   - verbose logging with secrets redacted.
@@ -151,7 +150,7 @@ async function fetchOnce(
 const NULL_BODY_STATUSES = new Set([101, 103, 204, 205, 304]);
 
 /**
- * Keep a deadline on the body read (CORE-R10): the header timeout alone let a
+ * Keep a deadline on the body read: the header timeout alone let a
  * server that stalls mid-body hang `res.text()` / `res.json()` forever. Each
  * read of the underlying stream must produce a chunk within `timeoutMs` (an
  * idle timeout, so a large but steadily flowing body is fine); otherwise the
@@ -234,7 +233,7 @@ export async function httpRequest(url: string, init: HttpInit = {}): Promise<Res
     if (!prepared.pinnedHost) throw networkError(err, label, method, connectPhase);
     // The pinned IP may be stale (load balancer moved): evict, retry by hostname once.
     // Only when nothing was sent (connect failure) or the method is a read: a
-    // POST that died mid-flight (ECONNRESET) may have run server-side (CORE-R1).
+    // POST that died mid-flight (ECONNRESET) may have run server-side.
     evictIpv4Cache(prepared.pinnedHost);
     if (!connectPhase && !isReadMethod(method)) {
       vlog(`${label} FAILED on pinned IP after connecting — not retrying a ${method}`, { error: redactString(String(err)) });

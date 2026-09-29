@@ -27,30 +27,30 @@ describeLive("read-only smoke", () => {
     await expect(spawnLive(["envs", "--env", `${LIVE_ENV}-other`])).rejects.toThrow(/refused/);
   });
 
-  // Stage 9: smoke-matrix regressions that need the real server (research/smoke-test.md).
+  // Smoke-matrix regressions that need the real server.
   // A long-lived published method with a large history (BELZ_LIVE_METHOD); tests that need it skip without it.
   const MID = liveMethod();
 
-  test.skipIf(!MID)("F1: a >64 KB --llm envelope arrives whole through a pipe", async () => {
+  test.skipIf(!MID)("a >64 KB --llm envelope arrives whole through a pipe", async () => {
     const r = await spawnLive(["ad", "history", "show", MID!, "--version", "1", "--full", "--llm"], { timeoutMs: 90_000 });
     expect(r.stdout.length).toBeGreaterThan(65_536);
     expect(r.envelope?.ok).toBe(true);
   }, 100_000);
 
-  test.skipIf(!MID)("F3: --env=<name> is honoured", async () => {
+  test.skipIf(!MID)("--env=<name> is honoured", async () => {
     const r = await spawnLive(["ad", "show", MID!, `--env=${LIVE_ENV}`, "--llm"], { timeoutMs: 60_000 });
     expect(r.envelope?.meta.env).toBe(LIVE_ENV);
   }, 70_000);
 
   const CATEGORY = process.env.BELZ_LIVE_CATEGORY?.trim();
   const CATEGORY_ID = Number(process.env.BELZ_LIVE_CATEGORY_ID);
-  test.skipIf(!CATEGORY || !CATEGORY_ID)("F9: the configured live category has the configured chain-category id", async () => {
+  test.skipIf(!CATEGORY || !CATEGORY_ID)("the configured live category has the configured chain-category id", async () => {
     const r = await spawnLive(["ad", "categories", "--llm"], { timeoutMs: 60_000 });
     const rows = (r.envelope?.data as { categories: Array<{ id: number; name: string }> }).categories;
     expect(rows.find((c) => c.name === CATEGORY)?.id).toBe(CATEGORY_ID);
   }, 70_000);
 
-  test("F10 / smoke envelope #5: unknown uuids fail METHOD_NOT_FOUND", async () => {
+  test("unknown uuids fail METHOD_NOT_FOUND", async () => {
     const missing = "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     for (const argv of [["ad", "show", missing], ["ad", "state", missing], ["ad", "test-cases", missing]]) {
       const r = await spawnLive([...argv, "--llm"], { timeoutMs: 60_000 });
@@ -58,7 +58,7 @@ describeLive("read-only smoke", () => {
     }
   }, 190_000);
 
-  test("F2: sql run refuses writes client-side", async () => {
+  test("sql run refuses writes client-side", async () => {
     const r = await spawnLive(["ad", "sql", "run", "delete from belz_tst_nothing where 1=0", "--db", "any_db", "--llm"], { timeoutMs: 30_000 });
     expect(r.envelope?.error?.code).toBe("SQL_NOT_READ_ONLY");
   }, 40_000);
