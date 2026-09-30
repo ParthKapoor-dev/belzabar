@@ -147,6 +147,19 @@ describe("ad create", () => {
     expect(post.metadata.service.id).toBe(1135);
   });
 
+  test("required inputs → a note that the new draft stores no testValues (designer Test dialog)", async () => {
+    wireCreate();
+    const withInputs = { ...spec, inputs: [{ key: "name", required: true }, "opt"] };
+    const r = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(withInputs), "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const notes = ((r.envelope?.meta?.warnings ?? []) as string[]).filter((w) => w.includes("stores no testValues"));
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain("required input(s) [name]");
+    wireCreate();
+    const plain = await runCommand(createCommand, ["--category", "Test-Tester", "--spec", file(spec), "--yes"], { env: "t-dev" });
+    expect(((plain.envelope?.meta?.warnings ?? []) as string[]).some((w) => w.includes("testValues"))).toBe(false);
+  });
+
   test("core category → AD_CATEGORY_PROTECTED, nothing POSTed", async () => {
     wireCreate();
     const r = await runCommand(createCommand, ["--category", "Helpers.JSON", "--spec", file(spec), "--yes"], { env: "t-dev" });

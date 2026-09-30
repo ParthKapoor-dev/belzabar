@@ -27,6 +27,7 @@ import { loadServiceCatalog, servicesOfOps } from "./services";
 import type { V2MethodResponse } from "../types/v2-wire";
 import { postChainV2 } from "./api";
 import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-cache";
+import { storedTestValues, testValueDropWarning } from "./test-values";
 import { runValidationGate, type ValidationFinding, type ValidationFlags, type ValidationSummary } from "./validation";
 
 /**
@@ -74,6 +75,8 @@ export interface SaveDryRunData {
   /** No blocking validator findings: the real save would pass the gate. */
   valid: boolean;
   validation: DryRunValidation;
+  /** Inputs whose stored testValue the real save would drop (V1 read; absent when none or unreadable). */
+  testValuesAtRisk?: string[];
 }
 
 /** Validator result as a dry run reports it: blocking findings are data, not an error. */
@@ -109,6 +112,8 @@ export interface SaveV2Data {
   unchanged: string[];
   validation: ValidationSummary;
   compiledCache: CompiledCacheResult;
+  /** Inputs whose stored testValue the save dropped (absent when none). */
+  testValuesDropped?: string[];
 }
 
 export function versionName(body: V2MethodResponse | null | undefined): string | null {
@@ -138,8 +143,11 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     action: "save",
     warn: input.warn,
   };
+  // The V2 save strips stored input testValues; only a V1 read shows them.
+  const withTestValues = (await storedTestValues(draftUuid)) ?? [];
   if (input.dryRun) {
     const v = await dryRunValidation(() => runValidationGate(input.flags, gate));
+    if (withTestValues.length > 0) input.warn(testValueDropWarning(withTestValues, "will be dropped"));
     return {
       action: "DRY_RUN",
       draftUuid,
@@ -149,6 +157,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
       ...(plan.structural ? { order: plan.structural.order } : {}),
       valid: v.errors.length === 0,
       validation: v,
+      ...(withTestValues.length > 0 ? { testValuesAtRisk: withTestValues } : {}),
     };
   }
   const validation = await runValidationGate(input.flags, gate);
@@ -162,6 +171,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     ["Current version", previousVersion ?? "?"],
     ["Changes", plan.applied.join(", ")],
     ["Validation", validation.skipped ? "SKIPPED (--no-validate)" : `${validation.warnings.length} warning(s)`],
+    ...(withTestValues.length > 0 ? [["Stored testValues", `${withTestValues.join(", ")} (the save drops them)`] as [string, string]] : []),
   ]);
 
   // Freshness: nothing may have changed since the body the overlay was applied to.
@@ -187,6 +197,13 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
 
   verifyPlan(draftUuid, live, after, plan);
 
+  let testValuesDropped: string[] = [];
+  if (withTestValues.length > 0) {
+    const kept = await storedTestValues(draftUuid);
+    if (kept) testValuesDropped = withTestValues.filter((c) => !kept.includes(c));
+    if (testValuesDropped.length > 0) input.warn(testValueDropWarning(testValuesDropped, "dropped"));
+  }
+
   return {
     action: "UPDATED",
     draftUuid,
@@ -198,6 +215,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     unchanged: plan.unchanged,
     validation,
     compiledCache,
+    ...(testValuesDropped.length > 0 ? { testValuesDropped } : {}),
   };
 }
 

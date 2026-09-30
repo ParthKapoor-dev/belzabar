@@ -16,6 +16,7 @@ const DIR = `${import.meta.dir}/../fixtures/real-v2`;
 const U = "41bb1b438875bd8b994196db1f12b7c2"; // DRAFT; 1: SQL read, 2: CC plain
 const PUB = "0000000000000000000000000000beef";
 const GET = `/rest/api/automation/chain/v2/${U}?basicInfo=false`;
+const V1_GET = `/rest/api/automation/chain/${U}`;
 const base = (): V2MethodResponse => structuredClone(require(`${DIR}/${U}.v2.json`));
 const V0 = String(base().metadata.version!.name);
 
@@ -32,13 +33,17 @@ interface Opts {
   onPost?: (body: V2MethodResponse) => V2MethodResponse | object;
   published?: boolean;
   invalidate?: (req: RecordedRequest) => unknown;
+  /** Stored input testValues the V1 read shows; the (fake) server drops them on the V2 POST, as the real one does. */
+  testValues?: Record<string, unknown>;
 }
 
 function wire(opts: Opts = {}): V2Store {
+  let testValues = opts.testValues ?? {};
   const s = v2Store(U, base(), {
     onGet: opts.onGet,
     // The server also bumps an internal migration counter the verify must ignore.
     onPost: (body) => {
+      testValues = {};
       const out = opts.onPost ? opts.onPost(body) : body;
       if ("metadata" in out) (out as V2MethodResponse).metadata.internal = { ...(out as V2MethodResponse).metadata.internal, migrationVersion: 1 };
       return out;
@@ -53,6 +58,14 @@ function wire(opts: Opts = {}): V2Store {
       response: () => ({ ...base(), uuid: PUB, metadata: { ...base().metadata, state: "PUBLISHED", referenceId: `${U}    ` } }),
     },
     s.routes[1]!,
+    {
+      method: "GET",
+      url: V1_GET,
+      response: () => ({
+        uuid: U,
+        jsonDefinition: JSON.stringify({ inputs: Object.entries(testValues).map(([fieldCode, testValue]) => ({ fieldCode, type: "TEXT", testValue })) }),
+      }),
+    },
     ...compiledCacheRoutes(opts.invalidate),
   ]);
   return s;
@@ -76,6 +89,7 @@ describe("ad save (V2 pipeline)", () => {
     expect(r.envelope?.ok).toBe(true);
     expect(paths(ad.ff)).toEqual([
       `GET ${GET}`,
+      `GET ${V1_GET}`,
       `GET ${GET}`,
       "POST /rest/api/automation/chain/v2",
       `GET ${GET}`,
@@ -234,6 +248,33 @@ describe("ad save (V2 pipeline)", () => {
     wire();
     const r = await runCommand(saveCommand, [overlayFile({ summary: "x" }), "--yes"], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("MISSING_UUID");
+  });
+});
+
+describe("ad save — stored input testValues", () => {
+  test("a save that drops stored testValues says so (data.testValuesDropped + warning); V1 read before and after", async () => {
+    wire({ testValues: { name: "Alice", empty: "" } });
+    const r = await run({ summary: "new summary" });
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope!.data as any).testValuesDropped).toEqual(["name"]);
+    const warnings = (r.envelope?.meta?.warnings ?? []) as string[];
+    expect(warnings.some((w) => w.startsWith("testValue dropped for input(s) [name]") && w.includes("Mandatory fields are not filled"))).toBe(true);
+    expect(paths(ad.ff).filter((p) => p === `GET ${V1_GET}`)).toHaveLength(2);
+  });
+
+  test("--dry-run warns which testValues the save would drop; nothing is written", async () => {
+    wire({ testValues: { name: "Alice" } });
+    const r = await run({ summary: "new summary" }, "--dry-run");
+    expect((r.envelope!.data as any).testValuesAtRisk).toEqual(["name"]);
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).some((w) => w.startsWith("testValue will be dropped for input(s) [name]"))).toBe(true);
+    expect(ad.ff.requests.some((q) => q.method === "POST")).toBe(false);
+  });
+
+  test("no stored testValues: no warning and no second V1 read", async () => {
+    wire();
+    const r = await run({ summary: "new summary" });
+    expect((r.envelope!.data as any).testValuesDropped).toBeUndefined();
+    expect(paths(ad.ff).filter((p) => p === `GET ${V1_GET}`)).toHaveLength(1);
   });
 });
 

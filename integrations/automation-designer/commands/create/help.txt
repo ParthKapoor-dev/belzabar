@@ -65,6 +65,11 @@ Global Flags:
                         back to the default env (ENV_REQUIRED_FOR_WRITE).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
+Platform trap: a new draft stores no input testValues (belz cannot set them),
+so the AD designer's Test dialog reports "Mandatory fields are not filled" for
+its required inputs until they are entered there; the create warns and names
+them. 'belz ad test' takes the values as inputs instead.
+
 Errors: MISSING_CATEGORY, AD_SPEC_UNKNOWN_KEY, AD_SPEC_INVALID,
 AD_SPEC_NOT_APPLIED (key/service/account the server would drop or reject;
 method inputs/outputs/variables get the same checks as `ad save` set-input:

@@ -15,6 +15,7 @@ the verification.
 | `create.ts` | `buildCreateBody` (spec → V2 create body), `assertCreatableCategory`, `compactSteps`. |
 | `spec.ts` | A spec file → the body `create` would POST (`readSpecFile`, `expandSpec`, `loadTargetBody`); shared by `create`, `lint` and `validate`. |
 | `sources.ts` | Reads `codeFile` / `sqlFile` references and turns `--sql-file N=path` / `--code-file N=path` into update-step ops. |
+| `test-values.ts` | `storedTestValues` (V1 read of the inputs carrying a stored testValue; null when unreadable), the save's drop warning and the create note. |
 | `services.ts` | `loadServiceCatalog`: callee contracts and db accounts for the compact expander, cached 1 h (the validator's L4 cache). |
 
 ## Save pipeline (`saveOverlayV2`)
@@ -36,6 +37,11 @@ the verification.
    `metadata.version`, `metadata.internal`, `changelogs`, `testSuite`.
 8. The compiled cache (both routes) and the local method cache are evicted, even when the
    POST or the verify failed.
+9. Stored input testValues: the V2 body has none, so a V1 GET before the save lists the inputs
+   that carry one (`--dry-run` warns and returns `testValuesAtRisk`). When any did, a V1 re-read
+   after the verify reports the dropped ones as a warning and `testValuesDropped`: every V2
+   save strips them, and the designer's Test dialog then reports "Mandatory fields are not
+   filled". Best effort; an unreadable V1 body never blocks the save.
 
 A save never POSTs `testSuite`: a body that carries it makes the server rebuild the suite from
 a possibly stale copy.
@@ -54,7 +60,8 @@ a possibly stale copy.
   (`AD_METHOD_EXISTS`), drops server-owned keys (listed in `dropped`), and verifies on a
   re-read. A spec is a compact spec or a (subset of a) V2 body; `name`, `category`,
   `summary`, `description`, and `inputs` / `variables` / `outputs` as key strings or
-  `{key, type, required, default, description}`.
+  `{key, type, required, default, description}`. A new draft stores no testValues, so a
+  create with required inputs warns that the designer's Test dialog will ask for them.
 - **delete** is a soft `DELETE /chain/v2/{uuid}`, allowed only for a draft that was never
   published, and verified when a V2 re-read answers `METHOD_NOT_FOUND`.
 

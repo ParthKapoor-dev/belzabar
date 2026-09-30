@@ -5,6 +5,7 @@ import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { normalizeUuid } from "@belzabar/core/platform";
 import { markMethodIndexDirty } from "@belzabar/core/platform";
 import { addMethodToIndex } from "../../lib/method-finder";
+import { createTestValueNote } from "../../lib/save/test-values";
 import { postChainV2 } from "../../lib/save/api";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
 import { expandSpec, readSpecFile } from "../../lib/save/spec";
@@ -150,6 +151,10 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
     }
     // Every value sent must read back (the server only adds ids, uuids and defaults).
     verifyStructural(uuid, body, back, [""]);
+
+    // A new draft has no stored testValues, which the designer's Test dialog needs for required inputs.
+    const requiredInputs = (back.inputs ?? []).filter((f) => f.required === true && typeof f.key === "string").map((f) => f.key);
+    if (requiredInputs.length > 0) context.warn(createTestValueNote(requiredInputs));
 
     return ok<CreateData>({
       uuid,
