@@ -1,12 +1,12 @@
-import { join } from "path";
-import { BELZ_CONFIG_DIR, Cache, ENTITY_CACHE_STALE_MS, ENTITY_CACHE_TTL_MS } from "@belzabar/core";
+import { Cache, ENTITY_CACHE_STALE_MS, ENTITY_CACHE_TTL_MS } from "@belzabar/core";
+import { PAGE_CACHE_DIR } from "@belzabar/core/platform";
 import { pdApi } from "./api/index";
 import type { RawPageResponse } from "./types/wire";
 
 // Env-scoped by core `Cache`: `cache/pages/<env>/<id>.json`. Pages and
 // components share one endpoint (GET /pages/{id}) and one cache.
 const pdCache = new Cache<RawPageResponse>({
-  dir: join(BELZ_CONFIG_DIR, "cache", "pages"),
+  dir: PAGE_CACHE_DIR,
   staleMs: ENTITY_CACHE_STALE_MS,
   ttlMs: ENTITY_CACHE_TTL_MS,
 });

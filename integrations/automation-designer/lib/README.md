@@ -22,7 +22,7 @@ Everything the `belz ad` commands share. Other workspaces import it as
 | File | Contents |
 |---|---|
 | `draft-guard.ts` | `resolveDraftTarget`: the only way a write picks its target (see below). |
-| `cache.ts` | `CacheManager`: the parsed-method cache; `invalidate` also marks the method-index entry dirty. |
+| `cache.ts` | `CacheManager`: the parsed-method cache (directory from core `METHOD_CACHE_DIR`); `invalidate` also marks the method-index entry dirty. |
 | `hydrator.ts` | V1 service-definition lookup and cache; `buildServiceResolver` for the V1 parser. |
 | `categories.ts` | One category model joining the two id spaces (chain category and automation system): `fetchCategories`, `findCategory`, `requireChainCategory`. |
 | `method-finder.ts` | The cached method index behind `find` and `callers` (core `finderIndexStore`): build, search, dirty and gone marks, `addMethodToIndex`. |
@@ -64,9 +64,9 @@ All caches are core `Cache` instances under `~/.belz/cache/`, env-scoped.
 
 | Cache | Location | TTL | Evicted by |
 |---|---|---|---|
-| Methods | `methods/<env>/<uuid>.json` | 5 min soft (stale-while-revalidate), 1 h hard | save, publish, delete, history restore; `show --force` bypasses. A V1 parse with unresolved services is never cached. |
+| Methods | `methods/<env>/<uuid>.json` | 5 min soft (stale-while-revalidate), 1 h hard | save, publish, delete, history restore, and `belz migrate run` for its target env (core `invalidateEntityCache`); `show --force` bypasses. A V1 parse with unresolved services is never cached. |
 | Service definitions | `definitions/<env>/<automationId>.json` | 1 h | — |
-| Method index | `method-finder/index-v1-<env>.json`, `dirty-<env>.json`, `gone-<env>.json` | 7 days (`callers` rebuilds after 24 h; a partial index after 15 min) | `find --refresh`, `callers --refresh`, `ad import`. belz writes mark a uuid dirty (`callers` re-reads it); `create` adds the new draft; a V2 `METHOD_NOT_FOUND` marks it gone. |
+| Method index | `method-finder/index-v1-<env>.json`, `dirty-<env>.json`, `gone-<env>.json` | 7 days (`callers` rebuilds after 24 h; a partial index after 15 min) | `find --refresh`, `callers --refresh`, `ad import`. belz writes (and `migrate run` on its target env) mark a uuid dirty through core `markMethodIndexDirty` (`callers` re-reads it); `create` adds the new draft; a V2 `METHOD_NOT_FOUND` marks it gone. |
 | Caller refs | `callers/` (30 days, keyed by uuid and `updatedOn`), `callers-errors/` (1 day) | — | `callers --refresh` |
 | Published history bodies | `history-versions/<env>/` | 30 days (immutable) | — |
 | Validator L4 | `api-contracts/`, `service-accounts/` | 1 h | — |

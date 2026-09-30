@@ -1,4 +1,5 @@
 import { apiFetch, asObj, Cache, CliError, Config, containsWordStart, dedupeBy, FINDER_INDEX_TTL_MS, finderIndexStore, levenshtein, normalizeSearchText, numLike, readJsonOrNull, scoreText, strOrNull, tokenize } from "@belzabar/core";
+import { METHOD_FINDER_INDEX, methodIndexDirtyKey } from "@belzabar/core/platform";
 
 const CATEGORY_PAGE_LIMIT = 2000;
 const METHOD_PAGE_LIMIT = 100;
@@ -16,39 +17,19 @@ export const METHOD_FINDER_SCHEMA = 2;
 /** Per-method text kept in the index (summary / description), to bound its size. */
 const TEXT_CAP = 400;
 
-const indexStore = finderIndexStore<MethodFinderIndex>("method-finder");
+const indexStore = finderIndexStore<MethodFinderIndex>(METHOD_FINDER_INDEX);
 
 /**
  * Methods belz itself wrote since the index was built: uuid → when
- * it was marked. Kept beside the index (not in it) so a mark never rewrites
- * the multi-MB index nor resets its age.
+ * it was marked (core `markMethodIndexDirty`). Kept beside the index (not in
+ * it) so a mark never rewrites the multi-MB index nor resets its age.
  */
 const dirtyCache = new Cache<Record<string, number>>({
   dir: indexStore.dir,
   ttlMs: FINDER_INDEX_TTL_MS,
   envScoped: false,
 });
-const dirtyKey = (env: string) => `dirty-${env}`;
-
-/**
- * Mark a method's index entry stale after belz changed it (save, create,
- * publish, delete, restore). `ad callers` re-reads marked methods' bodies
- * whatever the scope, and reads marked uuids the index does not list yet
- * (new methods). Never throws.
- */
-export async function invalidateMethodIndexEntry(env: string, uuid: string | null | undefined): Promise<void> {
-  const id = uuid?.trim().toLowerCase();
-  if (!id) return;
-  try {
-    const now = Date.now();
-    const marks = (await dirtyCache.load(dirtyKey(env))) ?? {};
-    for (const [k, at] of Object.entries(marks)) if (now - at > FINDER_INDEX_TTL_MS) delete marks[k];
-    marks[id] = now;
-    await dirtyCache.save(dirtyKey(env), marks);
-  } catch {
-    /* best effort: a missed mark only means a stale index entry */
-  }
-}
+const dirtyKey = methodIndexDirtyKey;
 
 const goneKey = (env: string) => `gone-${env}`;
 

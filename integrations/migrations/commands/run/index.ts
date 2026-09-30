@@ -1,7 +1,9 @@
 import { CliError, type CommandModule, Config, confirmWrite, isObj, ok } from "@belzabar/core";
+import { invalidateEntityCache } from "@belzabar/core/platform";
 import {
   assertJenkinsAuth,
   buildUrl,
+  envPairFromProfile,
   resolveClientForProfile,
   getBuild,
   jobUrl,
@@ -194,6 +196,16 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         resolvedTargets: preflight?.targets,
         resolvedSourceEnv: preflight?.sourceEnv,
       };
+
+      // The build wrote the TARGET env: drop belz's cached copies there so the
+      // next `ad show` / `pd show --env <target>` reads fresh. Best effort, and
+      // only once the build is over (a followed, non-dry run).
+      const targetEnv = args.targetEnv ?? envPairFromProfile(profile)?.targetEnv;
+      const cacheKind = /^AD_Method$/i.test(String(args.migrateType)) ? "AD" : /^PD$/i.test(String(args.migrateType)) ? "PD" : null;
+      if (args.follow && !args.dryRun && targetEnv && cacheKind && effectiveIds.length > 0) {
+        const ids = await invalidateEntityCache(cacheKind, targetEnv, effectiveIds).catch(() => []);
+        data.cacheInvalidated = { env: targetEnv, ids };
+      }
 
       // A build can finish SUCCESS and change nothing: the script skips a
       // method whose version is the same on both sides (the report says

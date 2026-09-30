@@ -14,7 +14,7 @@ Unit tests for `@belzabar/core`. Run with `bun test packages/core` (or `bun run 
 | `cache.test.ts`, `swr.test.ts`, `finder-index.test.ts` | Env-scoped cache, refresh locks and re-run command, finder index store |
 | `confirm.test.ts` | `confirmWrite`, `logWriteIntent` |
 | `guards-search.test.ts`, `json-input.test.ts`, `output-fields.test.ts` | Value guards and fuzzy search, JSON input errors, `--fields` |
-| `platform-ids.test.ts`, `platform-entities.test.ts` | `resolveMethodRef` and id guards; the raw-entity not-found rule |
+| `platform-ids.test.ts`, `platform-entities.test.ts`, `platform-entity-cache.test.ts` | `resolveMethodRef` and id guards; the raw-entity not-found rule; evicting another env's entity cache |
 | `testing-helpers.test.ts` | `@belzabar/core/testing` itself, including `apiFetch`/login end to end with no network |
 | `fixtures/runner-harness.ts` | A tiny CLI with fake commands, spawned by `runner.test.ts` |
 

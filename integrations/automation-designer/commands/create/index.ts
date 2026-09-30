@@ -3,7 +3,8 @@ import * as v2 from "../../lib/api/v2";
 import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { normalizeUuid } from "@belzabar/core/platform";
-import { addMethodToIndex, invalidateMethodIndexEntry } from "../../lib/method-finder";
+import { markMethodIndexDirty } from "@belzabar/core/platform";
+import { addMethodToIndex } from "../../lib/method-finder";
 import { postChainV2 } from "../../lib/save/api";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
 import { expandSpec, readSpecFile } from "../../lib/save/spec";
@@ -115,7 +116,7 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
       throw err;
     }
     const uuid = normalizeUuid(created.uuid);
-    await invalidateMethodIndexEntry(currentCacheEnv(), uuid); // `ad callers` reads it before the next index build
+    await markMethodIndexDirty(currentCacheEnv(), uuid); // `ad callers` reads it before the next index build
     if (!uuid) {
       throw new CliError("Create answered without a uuid; check the category in the AD UI.", {
         code: "AD_SAVE_INVALID_RESPONSE",

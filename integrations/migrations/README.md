@@ -6,7 +6,8 @@ Migrations run through Jenkins only; the Jenkins REST client lives in [`lib/jenk
 
 ## Role in the monorepo
 
-- Depends only on `@belzabar/core` (config, http, args, confirmation, platform entity GETs).
+- Depends only on `@belzabar/core` (config, http, args, confirmation, platform entity GETs and
+  entity cache eviction).
 - `apps/cli` mounts [`registry.ts`](registry.ts) as the `migrate` namespace.
 - `migrate` is **not env-aware** (`NOT_ENV_AWARE_NAMESPACES` in `apps/cli/bin/options.ts`): the
   Jenkins profile names the source and target, so envelopes carry no `meta.env` and `--env` is not needed.
@@ -88,6 +89,10 @@ Runtime file: `~/.belz/migrations/jenkins-profiles.json` (profile cache).
   unchanged id is a warning, and human output warns instead of reporting success. The run stays
   `ok`; `--strict` fails `MIGRATE_NOTHING_MIGRATED` / `MIGRATE_PARTIALLY_MIGRATED` (without the
   do-not-re-run hint: the build finished).
+- **Target cache.** After a followed, non-dry `AD_Method` or `PD` build whose target env is known
+  (`--target-env` or `jenkins.profileEnvs`), belz drops its cached copies of the ids on that env
+  (core `invalidateEntityCache`: the method or page cache, plus a dirty mark in the AD method
+  index) and reports `data.cacheInvalidated {env, ids}`. Best effort; it never fails the run.
 - `--dry-run` only sends `DRY_RUN=true`: it is still a real Jenkins build.
 
 ## Testing

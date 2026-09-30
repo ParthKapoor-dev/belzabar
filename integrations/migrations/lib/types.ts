@@ -183,6 +183,8 @@ export interface MigrateRunData {
   outcome?: MigrateOutcome;
   /** Requested ids that did not change on the target (skipped or UNCHANGED). */
   unchanged?: string[];
+  /** Target-env cache entries dropped after a followed, non-dry AD_Method / PD build. */
+  cacheInvalidated?: { env: string; ids: string[] };
 }
 
 export interface MigrateStatusData {

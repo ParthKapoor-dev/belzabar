@@ -7,7 +7,8 @@ integrations need. Generic helpers belong in `src/`, not here.
 |------|----------|
 | `ids.ts` | `resolveMethodRef` (canonical method uuid), `normalizeUuid`, `trimUuidPadding`, `isHex32`, `isEntityId`, `canonicalUuid` |
 | `entities.ts` | `fetchRawEntity`, `fetchRawChain`, `fetchRawPage`, and the paths `adChainPath`, `pdPagePath` |
-| `index.ts` | Re-exports both |
+| `entity-cache.ts` | `METHOD_CACHE_DIR`, `PAGE_CACHE_DIR`, `METHOD_FINDER_INDEX`, `methodIndexDirtyKey`: the AD/PD entity cache layout; `markMethodIndexDirty`; `invalidateEntityCache(kind, env, ids)` (best effort, used by `migrate run` for the target env) |
+| `index.ts` | Re-exports them |
 
 ## Contracts
 
@@ -21,5 +22,5 @@ integrations need. Generic helpers belong in `src/`, not here.
   `fetchRawEntity` returns `{found: false, reason}` for both and leaves the error codes to the
   caller (`onError` for other non-OK responses, optional `badJson`).
 
-Tests: `packages/core/tests/platform-ids.test.ts`, `platform-entities.test.ts`.
+Tests: `packages/core/tests/platform-ids.test.ts`, `platform-entities.test.ts`, `platform-entity-cache.test.ts`.
 Up: [src](../README.md).

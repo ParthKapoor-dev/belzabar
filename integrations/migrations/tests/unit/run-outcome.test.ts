@@ -1,9 +1,12 @@
 // `migrate run` outcome: a build can finish SUCCESS and migrate nothing (the
 // script skips a method whose version is the same on source and target). The
 // same-version console is derived from the sanitized build-1904 capture.
+// Also: the target env's cache is evicted after a followed, real build.
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { fakeFetch, type FakeFetch, fixture, respond, runCommand, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
+import { Cache } from "@belzabar/core";
+import { METHOD_CACHE_DIR } from "@belzabar/core/platform";
 import { migrationOutcome, parseConsoleWarnings, parseJenkinsConsole } from "../../lib";
 import runCmdModule from "../../commands/run/index";
 
@@ -108,5 +111,25 @@ describe("migrate run over a followed build", () => {
     const r = await runCommand(runCmd, [...argv, "--strict"]);
     expect(r.envelope?.ok).toBe(true);
     expect((r.envelope?.data as { outcome: string }).outcome).toBe("MIGRATED");
+  });
+
+  const methods = new Cache<unknown>({ dir: METHOD_CACHE_DIR, ttlMs: null });
+
+  test("the target env's cached copy of a migrated method is dropped (data.cacheInvalidated)", async () => {
+    build(REAL_CONSOLE);
+    await methods.save(UUID, { stale: true }, "acme-qa");
+    await methods.save(UUID, { source: true }, "acme-dev");
+    const r = await runCommand(runCmd, argv);
+    expect((r.envelope?.data as { cacheInvalidated: unknown }).cacheInvalidated).toEqual({ env: "acme-qa", ids: [UUID] });
+    expect(await methods.load(UUID, "acme-qa")).toBeNull();
+    expect(await methods.load(UUID, "acme-dev")).toEqual({ source: true });
+  });
+
+  test("a dry run leaves the target cache alone", async () => {
+    build(REAL_CONSOLE);
+    await methods.save(UUID, { kept: true }, "acme-qa");
+    const r = await runCommand(runCmd, [...argv, "--dry-run"]);
+    expect((r.envelope?.data as { cacheInvalidated?: unknown }).cacheInvalidated).toBeUndefined();
+    expect(await methods.load(UUID, "acme-qa")).toEqual({ kept: true });
   });
 });

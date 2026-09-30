@@ -1,11 +1,10 @@
-import { join } from "path";
-import { BELZ_CONFIG_DIR, Cache, type CacheResult, currentCacheEnv, ENTITY_CACHE_STALE_MS, ENTITY_CACHE_TTL_MS } from "@belzabar/core";
-import { invalidateMethodIndexEntry } from "./method-finder";
+import { Cache, type CacheResult, currentCacheEnv, ENTITY_CACHE_STALE_MS, ENTITY_CACHE_TTL_MS } from "@belzabar/core";
+import { markMethodIndexDirty, METHOD_CACHE_DIR } from "@belzabar/core/platform";
 import type { HydratedMethod } from "./types/common";
 
 // Parsed-method cache, env-scoped by core `Cache`: `cache/methods/<env>/<uuid>.json`.
 const methodCache = new Cache<HydratedMethod>({
-  dir: join(BELZ_CONFIG_DIR, "cache", "methods"),
+  dir: METHOD_CACHE_DIR,
   staleMs: ENTITY_CACHE_STALE_MS,
   ttlMs: ENTITY_CACHE_TTL_MS,
 });
@@ -41,7 +40,7 @@ export class CacheManager {
    */
   static async invalidate(uuid: string | null | undefined, env?: string): Promise<void> {
     if (!uuid) return;
-    await invalidateMethodIndexEntry(env ?? currentCacheEnv(), uuid);
+    await markMethodIndexDirty(env ?? currentCacheEnv(), uuid);
     return methodCache.invalidate(methodCacheKey(uuid), env);
   }
 }

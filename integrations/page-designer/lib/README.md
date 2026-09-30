@@ -15,7 +15,7 @@ Everything the `belz pd` commands share. Other packages may import any module as
 | [`validator/`](./validator/README.md) | Rule catalogue, rules, diff-aware edit gate, recursive symbol check |
 | `ad-refs.ts` | Slim index of every `/chain/execute/<uuid>` call in PAGE drafts and components (cached 1 h); read by `belz ad callers --pd` |
 | `analyzer.ts` | Recursive walk (`analyze`, `find-ad-methods -r`, `show -r`): components used, AD ids, `--compliance` |
-| `cache.ts` | Env-scoped page-config cache (`~/.belz/cache/pages/<env>/<id>.json`) with stale-while-revalidate |
+| `cache.ts` | Env-scoped page-config cache (`~/.belz/cache/pages/<env>/<id>.json`, core `PAGE_CACHE_DIR`) with stale-while-revalidate; `belz migrate run` evicts its target env's entries |
 | `draft-guard.ts` | Draft/published pairing through `referenceId` |
 | `edit.ts` | Write-pipeline helpers: `resolveWriteTarget`, `fetchFresh`, `fetchPublishedBaseline`, `gateValidation`, `versionDrift`, `requireConfirmation`, `logIntent`, `readJsonFile` |
 | `extract.ts` | Read views over a page: `show` sections, `findNodes`, `adIdsOf`, `childComponentNames` |

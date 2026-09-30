@@ -86,6 +86,12 @@ OUTCOME
   data.report.entities (id, name, status, identical) carry the detail.
   The run stays ok (the build succeeded) unless --strict is given.
 
+TARGET CACHE
+  After a followed, non-dry AD_Method or PD build whose target env is known
+  (--target-env, or the profile via jenkins.profileEnvs), belz drops its
+  cached copies of the migrated ids on the target env, so the next
+  'belz ad show' / 'belz pd show' there reads fresh (data.cacheInvalidated).
+
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by
                                default). Names are the Jenkins job's client
