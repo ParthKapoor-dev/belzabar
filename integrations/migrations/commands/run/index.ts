@@ -5,6 +5,7 @@ import {
   resolveClientForProfile,
   getBuild,
   jobUrl,
+  migrationOutcome,
   parseJenkinsConsole,
   parseMigrateRunArgs,
   RUN_ARGS,
@@ -194,6 +195,25 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         resolvedSourceEnv: preflight?.sourceEnv,
       };
 
+      // A build can finish SUCCESS and change nothing: the script skips a
+      // method whose version is the same on both sides (the report says
+      // UNCHANGED). Only a followed, real build of ids has a knowable outcome.
+      if (success && args.follow && !args.dryRun && effectiveIds.length > 0) {
+        const { outcome, unchanged } = migrationOutcome(effectiveIds, parsed);
+        data.outcome = outcome;
+        data.unchanged = unchanged;
+        for (const id of unchanged) {
+          const skip = parsed.skipped.find((s) => s.id === id);
+          const name = parsed.reportSummary?.entities.find((e) => e.id?.toLowerCase() === id)?.name
+            ?? preflight?.targets.find((t) => t.resolvedId.toLowerCase() === id)?.name;
+          const label = name ? `${name} ${id}` : id;
+          context.warn(skip
+            ? `${label}: skipped, same version${skip.version !== undefined ? ` ${skip.version}` : ""} on source and target. ` +
+              "Target PUBLISHED is unchanged, and the target DRAFT may have been overwritten. Bump the source version (publish again) and re-run."
+            : `${label}: UNCHANGED on the target (the migration report lists it but did not migrate it).`);
+        }
+      }
+
       if (args.outPath) {
         if (showProgress) logProgress(args.quiet, `Writing artifacts to ${args.outPath}…`);
         data.artifacts = await writeArtifacts(args.outPath, {
@@ -214,6 +234,18 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         });
       }
 
+      if (args.strict && data.outcome && data.outcome !== "MIGRATED") {
+        const nothing = data.outcome === "NOTHING_MIGRATED";
+        throw new CliError(
+          `Migration build #${buildNumber} finished ${finalResult} but ${nothing ? "migrated nothing" : "left some ids unchanged"}` +
+            ` (--strict): ${data.unchanged?.join(", ") || "no entity COMPLETED"}.`,
+          {
+            code: nothing ? "MIGRATE_NOTHING_MIGRATED" : "MIGRATE_PARTIALLY_MIGRATED",
+            details: { buildUrl: data.buildUrl, outcome: data.outcome, unchanged: data.unchanged, skipped: parsed.skipped, report: parsed.reportSummary },
+          },
+        );
+      }
+
       return ok(data);
     } catch (e) {
       throw withBuildRef(e, {
@@ -227,7 +259,10 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
     const data = envelope.data as MigrateRunData;
-    ui.success(`Build #${data.buildNumber} ${data.result ?? "completed"} in ${(data.duration / 1000).toFixed(1)}s.`);
+    const headline = `Build #${data.buildNumber} ${data.result ?? "completed"} in ${(data.duration / 1000).toFixed(1)}s.`;
+    if (data.outcome === "NOTHING_MIGRATED") ui.warn(`${headline} Nothing was migrated: every entity was skipped or UNCHANGED.`);
+    else if (data.outcome === "PARTIAL") ui.warn(`${headline} Partially migrated: ${data.unchanged?.length ?? 0} id(s) unchanged.`);
+    else ui.success(headline);
     ui.table(
       ["Property", "Value"],
       [
@@ -240,6 +275,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         ["Migrate Type", String(data.input.migrateType)],
         ["IDs", data.input.ids.join(", ") || "(none)"],
         ["Dry Run", data.input.dryRun ? "Yes" : "No"],
+        ["Outcome", data.outcome ?? ""],
         ["Migration ID", data.parsed.migrationId ?? ""],
         ["Source DB", data.parsed.sourceDb ?? ""],
         ["Target DB", data.parsed.targetDb ?? ""],
@@ -272,8 +308,15 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
           ["Mismatched", data.report.mismatchCount],
           ["Completed", data.report.completedCount],
           ["Failed", data.report.failedCount],
+          ["Unchanged", data.report.unchangedCount],
         ]
       );
+      if (data.report.entities.length > 0) {
+        ui.table(
+          ["Name", "Id", "Status", "Identical"],
+          data.report.entities.map((e) => [e.name ?? "", e.id ?? "", e.status ?? "", e.identical === undefined ? "" : String(e.identical)]),
+        );
+      }
     }
 
     if (data.artifacts) {
@@ -302,7 +345,9 @@ function withBuildRef(
   const where = ref.buildNumber !== undefined
     ? `build #${ref.buildNumber} (${ref.buildUrl}); check it with 'belz migrate status ${ref.buildNumber}'`
     : ref.queueUrl ? `queue item ${ref.queueUrl}; find the build on ${ref.jobUrl}` : `a build on ${ref.jobUrl}`;
-  const hint = code === "MIGRATE_RUN_FAILED" ? "" : ` A build WAS triggered — do NOT re-run 'migrate run'; ${where}.`;
+  // The build finished: a failed or strict-refused result is not a lost build.
+  const finished = code === "MIGRATE_RUN_FAILED" || code === "MIGRATE_NOTHING_MIGRATED" || code === "MIGRATE_PARTIALLY_MIGRATED";
+  const hint = finished ? "" : ` A build WAS triggered — do NOT re-run 'migrate run'; ${where}.`;
   const prior = cli && isObj(cli.details) ? cli.details : {};
   const details: Record<string, unknown> = { ...prior, buildTriggered: true, jobUrl: ref.jobUrl };
   if (ref.queueUrl) details.queueUrl = ref.queueUrl;

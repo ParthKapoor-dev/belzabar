@@ -8,8 +8,8 @@ Everything `belz migrate` does besides argument wiring. Exposed as the package r
 | `args.ts` | `RUN_ARGS` + `parseMigrateRunArgs` (module, ids, profile ↔ env checks, env-pair → profile); `envPairFromProfile`; `normalizeClient` / `matchClient`; `buildNumberArgs` / `parseBuildNumber` for `status` and `logs` |
 | `profiles.ts` | `groupProfiles` (divider groups → clients), `discoverProfiles` (24 h cache), `resolveClientForProfile` (one re-fetch on a cache miss) |
 | `resolve-targets.ts` | `resolveMigrationTargets` — the pre-flight on the source env |
-| `parser.ts` | `stripAnsi` (also Pipeline `ha:////` markers), `parseJenkinsConsole` (migration id, DB/host lines, `REPORT` JSON, failure hints) |
-| `report.ts` | `summarizeReport` — counts over `methodComparisonResult` / `comparisonResults` |
+| `parser.ts` | `stripAnsi` (also Pipeline `ha:////` markers), `parseJenkinsConsole` (migration id, DB/host lines, `REPORT` JSON, failure hints, same-version skips and other `WARNING:` lines via `parseConsoleWarnings`) |
+| `report.ts` | `summarizeReport` — counts (incl. `UNCHANGED`) and per-entity rows over `methodComparisonResult` / `comparisonResults`; `migrationOutcome` — MIGRATED / PARTIAL / NOTHING_MIGRATED |
 | `artifacts.ts` | `writeArtifacts` — `--out <dir or file.json>` → `<name>.json` + `<name>.console.log` |
 | `constants.ts` | `KNOWN_MIGRATE_TYPES`, `JenkinsClient` (a string), profile cache path |
 | `types.ts` | Args, data and report shapes |

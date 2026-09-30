@@ -82,6 +82,12 @@ Runtime file: `~/.belz/migrations/jenkins-profiles.json` (profile cache).
 - **After the trigger** every failure keeps its code and adds `details.buildTriggered: true`
   plus `jobUrl` / `queueUrl` / `buildNumber` / `buildUrl` when known; unless the build itself
   failed (`MIGRATE_RUN_FAILED`) the message says not to re-run and names `belz migrate status <n>`.
+- **Outcome.** A SUCCESS build can migrate nothing: the script skips a method whose version is
+  the same on source and target. For a followed, non-dry build of ids `data.outcome` is
+  `MIGRATED`, `PARTIAL` or `NOTHING_MIGRATED` (`migrationOutcome` in `lib/report.ts`), each
+  unchanged id is a warning, and human output warns instead of reporting success. The run stays
+  `ok`; `--strict` fails `MIGRATE_NOTHING_MIGRATED` / `MIGRATE_PARTIALLY_MIGRATED` (without the
+  do-not-re-run hint: the build finished).
 - `--dry-run` only sends `DRY_RUN=true`: it is still a real Jenkins build.
 
 ## Testing

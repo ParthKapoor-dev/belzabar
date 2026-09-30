@@ -7,6 +7,7 @@
 | `run-args.test.ts` | `migrate run` flag parsing (unknown flags, did-you-mean), profile ↔ env consistency, `status` / `logs` / `profiles` args |
 | `profiles-cache.test.ts` | Profile cache TTL and the single re-fetch on a cache miss |
 | `preflight.test.ts` | Pre-flight: skip warnings, PD draft → published swap, auth failures, env restore; confirmation gate of a faked end-to-end `run` |
+| `run-outcome.test.ts` | Same-version skips (console derived from the build-1904 capture), `data.outcome`, warnings, `--strict` |
 | `run-safety.test.ts` | AD id checks, module / migration-id flags, `--client` vs profile, build reference on every failure after the trigger |
 
 New tests follow the same pattern: `withTempEnvConfig` / `fakeFetch` / `respond` from

@@ -35,6 +35,15 @@ export interface RawReport {
   [key: string]: unknown;
 }
 
+/** One entity row of the migration report. */
+export interface ReportEntityRow {
+  id?: string;
+  name?: string;
+  /** `entityMigrationStatus`, upper-cased (COMPLETED, UNCHANGED, FAILED, …). */
+  status?: string;
+  identical?: boolean;
+}
+
 export interface ReportSummary {
   migrationId?: string;
   migrationStatus?: string;
@@ -43,7 +52,24 @@ export interface ReportSummary {
   mismatchCount: number;
   completedCount: number;
   failedCount: number;
+  /** Entities the service left as they were (`UNCHANGED`, e.g. a same-version method). */
+  unchangedCount: number;
+  entities: ReportEntityRow[];
 }
+
+/** An id the migration script skipped (console `WARNING: Method <id> has same version (<n>) …`). */
+export interface SkippedEntity {
+  id: string;
+  reason: "same-version";
+  version?: number;
+}
+
+/**
+ * What a followed, non-dry build actually changed: every requested entity
+ * migrated, only some, or none (all skipped / UNCHANGED). The build result
+ * alone says SUCCESS for all three.
+ */
+export type MigrateOutcome = "MIGRATED" | "PARTIAL" | "NOTHING_MIGRATED";
 
 export interface ParsedMigrationOutput {
   cleanedOutput: string;
@@ -58,6 +84,10 @@ export interface ParsedMigrationOutput {
   sourceHost?: string;
   targetHost?: string;
   failureHints: string[];
+  /** Ids the migration script skipped (same version on source and target). */
+  skipped: SkippedEntity[];
+  /** Other `WARNING:` lines of the console, verbatim (run id prefix stripped). */
+  warnings: string[];
   reportSummary?: ReportSummary;
   rawReport?: RawReport;
 }
@@ -95,6 +125,8 @@ export interface MigrateRunArgs {
   outPath?: string;
   quiet?: boolean;
   follow: boolean;
+  /** Fail (exit 1) when the outcome is not MIGRATED. */
+  strict: boolean;
   /** Skip the confirmation prompt (required with --llm or without a terminal). */
   yes?: boolean;
 }
@@ -147,6 +179,10 @@ export interface MigrateRunData {
   /** Source-env id resolution performed before triggering the build. */
   resolvedTargets?: ResolvedTarget[];
   resolvedSourceEnv?: string;
+  /** Followed, non-dry builds of an id-based module only (absent otherwise). */
+  outcome?: MigrateOutcome;
+  /** Requested ids that did not change on the target (skipped or UNCHANGED). */
+  unchanged?: string[];
 }
 
 export interface MigrateStatusData {

@@ -2,3 +2,4 @@ belz migrate run --profile <p> --module <type> --ids "<csv>"  :->  Trigger a Jen
 belz migrate run --source-env <env> --target-env <env> --module <type> --ids-file <path>  :->  Derive the profile from an env pair (config jenkins.profileEnvs); ids from a file
 belz migrate run … --dry-run --no-follow --quiet --out <dir>  :->  Still a real Jenkins build (DRY_RUN=true); return without streaming; write summary.json + console log
 belz migrate run … --yes  :->  Skip the confirmation (required with --llm / no terminal; without it nothing is triggered: MIGRATE_CONFIRMATION_REQUIRED)
+belz migrate run … --strict  :->  Fail unless every id migrated (MIGRATE_NOTHING_MIGRATED / MIGRATE_PARTIALLY_MIGRATED); data.outcome says MIGRATED, PARTIAL or NOTHING_MIGRATED

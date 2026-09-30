@@ -139,6 +139,7 @@ export const RUN_ARGS = defineArgs({
     "no-auto-approve": { type: "boolean" },
     quiet: { type: "boolean" },
     "no-follow": { type: "boolean" },
+    strict: { type: "boolean" },
     yes: { type: "boolean", alias: ["-y"] },
   },
   exclusive: [["ids", "ids-file"]],
@@ -253,6 +254,7 @@ export async function parseMigrateRunArgs(argv: string[]): Promise<MigrateRunArg
     outPath: flags.out?.trim() || undefined,
     quiet: flags.quiet,
     follow: !flags.noFollow,
+    strict: flags.strict,
     yes: flags.yes,
   };
 }

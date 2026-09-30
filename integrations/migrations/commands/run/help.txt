@@ -72,6 +72,20 @@ SAFETY
     and do NOT re-run (a failed build is MIGRATE_RUN_FAILED; anything else
     after the trigger without its own code is MIGRATE_RUN_INTERRUPTED).
 
+OUTCOME
+  A build can finish SUCCESS and change nothing: the migration script skips a
+  method whose version is the same on source and target (console "WARNING:
+  Method <id> has same version (<n>)", report status UNCHANGED). For a
+  followed, non-dry build of ids, data.outcome says what changed:
+    MIGRATED          every requested id migrated
+    PARTIAL           some ids skipped or UNCHANGED (data.unchanged)
+    NOTHING_MIGRATED  every id skipped/UNCHANGED, or no report entity COMPLETED
+  Each unchanged id is a warning (meta.warnings). A same-version skip leaves
+  the target PUBLISHED as it was, but the target DRAFT may be overwritten:
+  bump the source version (publish again) and re-run. data.parsed.skipped and
+  data.report.entities (id, name, status, identical) carry the detail.
+  The run stays ok (the build succeeded) unless --strict is given.
+
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by
                                default). Names are the Jenkins job's client
@@ -91,6 +105,9 @@ OPTIONS
   --no-follow                  Trigger build and return without streaming logs.
   --out <path>                 Write summary.json + summary.console.log to dir.
   --quiet                      Suppress progress output.
+  --strict                     Fail (exit 1) unless data.outcome is MIGRATED:
+                               MIGRATE_NOTHING_MIGRATED or
+                               MIGRATE_PARTIALLY_MIGRATED (details.unchanged).
   --yes, -y                    Skip the confirmation prompt (required with --llm
                                or without a terminal).
   --llm                        Emit structured JSON for agent consumption.
