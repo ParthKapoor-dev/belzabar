@@ -60,6 +60,45 @@ async function readInputsArg(arg: string): Promise<Record<string, unknown>> {
   return data as Record<string, unknown>;
 }
 
+/**
+ * Apply `--input k=v` pairs (typed by the method's input types) on top of `values`, keep only
+ * the method's inputs, and fail MISSING_INPUT when a required one is absent (`from` names the
+ * source in the message).
+ */
+export function resolveInputValues(
+  inputs: MethodField[],
+  given: Record<string, unknown>,
+  pairs: readonly string[],
+  from: string,
+  details: Record<string, unknown> = {},
+): Record<string, unknown> {
+  const values = { ...given };
+  const known = new Map(inputs.map((i) => [i.code, i]));
+  for (const p of pairs) {
+    const [k, v] = splitInputPair(p);
+    if (!known.has(k)) {
+      throw new CliError(`--input ${k}: the method has no input '${k}'. Inputs: ${[...known.keys()].join(", ") || "(none)"}.`, {
+        code: "INVALID_INPUT",
+        details: { key: k, inputs: [...known.keys()] },
+      });
+    }
+    values[k] = coerceInputValue(v, String(known.get(k)!.type ?? ""));
+  }
+  const collected: Record<string, unknown> = {};
+  const missing: string[] = [];
+  for (const input of inputs) {
+    if (values[input.code] !== undefined) collected[input.code] = values[input.code];
+    else if (input.required) missing.push(input.code);
+  }
+  if (missing.length > 0) {
+    throw new CliError(`${from} is missing required input(s): ${missing.join(", ")}.`, {
+      code: "MISSING_INPUT",
+      details: { ...details, missing },
+    });
+  }
+  return collected;
+}
+
 export class InputCollector {
   /**
    * `source`: `--inputs <file|json>`; `pairs`: repeatable `--input k=v`, applied
@@ -75,30 +114,8 @@ export class InputCollector {
 
     if (source || pairs.length > 0) {
       const values: Record<string, unknown> = source ? await readInputsArg(source) : {};
-      const known = new Map(inputs.map((i) => [i.code, i]));
-      for (const p of pairs) {
-        const [k, v] = splitInputPair(p);
-        if (!known.has(k)) {
-          throw new CliError(`--input ${k}: the method has no input '${k}'. Inputs: ${[...known.keys()].join(", ") || "(none)"}.`, {
-            code: "INVALID_INPUT",
-            details: { key: k, inputs: [...known.keys()] },
-          });
-        }
-        values[k] = coerceInputValue(v, String(known.get(k)!.type ?? ""));
-      }
-      const missing: string[] = [];
-      for (const input of inputs) {
-        if (values[input.code] !== undefined) collected[input.code] = values[input.code];
-        else if (input.required) missing.push(input.code);
-      }
-      if (missing.length > 0) {
-        const from = source ? (source.trimStart().startsWith("{") ? "--inputs" : `Inputs file ${source}`) : "--input";
-        throw new CliError(`${from} is missing required input(s): ${missing.join(", ")}.`, {
-          code: "MISSING_INPUT",
-          details: { ...(source ? { path: source } : {}), missing },
-        });
-      }
-      return collected;
+      const from = source ? (source.trimStart().startsWith("{") ? "--inputs" : `Inputs file ${source}`) : "--input";
+      return resolveInputValues(inputs, values, pairs, from, source ? { path: source } : {});
     }
 
     if (getOutputMode() === "llm") {

@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, failWithData, ok, type CommandModule, type OutputMode } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
 import { resolveMethodRef } from "@belzabar/core/platform";
@@ -24,6 +24,7 @@ import {
   type ExpectationResult,
 } from "../../lib/test-cases/expect";
 import { parseCaseInput } from "../../lib/test-cases/case-file";
+import { caseFailure, readCases, resolveCaseInputs, runCases, type CaseResult, type CasesSummary } from "../../lib/test-cases/cases-table";
 import type { HydratedMethod } from "../../lib/types/common";
 
 export { matchStep } from "../../lib/test-run";
@@ -33,6 +34,7 @@ interface TestMethodArgs {
   inputsFile?: string;
   inputPairs: string[];
   caseFile?: string;
+  casesFile?: string;
   expect: string[];
   comparePublished: boolean;
   yes: boolean;
@@ -65,6 +67,13 @@ interface CompareBlock {
   };
 }
 
+/** `--cases`: one row per case. */
+interface TestCasesData {
+  uuid: string;
+  cases: CaseResult[];
+  summary: CasesSummary;
+}
+
 interface TestMethodData {
   uuid: string;
   verbosity: "normal" | "verbose";
@@ -93,6 +102,7 @@ export const args = defineArgs({
     inputs: { type: "string" },
     input: { type: "string", repeatable: true },
     case: { type: "string" },
+    cases: { type: "string" },
     expect: { type: "string", repeatable: true },
     "compare-published": { type: "boolean" },
     // A command flag, not the runner's debug switch: declared here so
@@ -100,7 +110,7 @@ export const args = defineArgs({
     verbose: { type: "boolean", alias: ["-v"] },
     raw: { type: "boolean" },
   },
-  exclusive: [["inputs", "case"]],
+  exclusive: [["inputs", "case", "cases"], ["cases", "compare-published"]],
 });
 
 function block(results: ExpectationResult[], unevaluated: string[] = []): ExpectationBlock {
@@ -140,7 +150,27 @@ function requireInputs(method: HydratedMethod, values: Record<string, unknown>, 
   }
 }
 
-const command: CommandModule<TestMethodArgs, TestMethodData> = {
+async function runCaseTable(a: TestMethodArgs, method: HydratedMethod, outputMode: OutputMode) {
+  const cases = resolveCaseInputs(method, await readCases(a.casesFile!), a.inputPairs);
+  await requireConfirmation({
+    yes: a.yes,
+    outputMode,
+    action: `execute the method ${cases.length} time(s), once per case, with real side effects every time`,
+    details: [
+      ["Method", `${method.name} (${method.uuid})`],
+      ["Cases", String(cases.length)],
+    ],
+  });
+  const { results, summary } = await runCases(method, cases, a.expect.map(parseExpectation));
+  const data: TestCasesData = { uuid: method.uuid, cases: results, summary };
+  if (summary.failed > 0) {
+    const failed = results.filter((r) => !r.pass).map((r) => r.name);
+    return failWithData("AD_TEST_CASES_FAILED", `${summary.failed} of ${summary.total} case(s) failed: ${failed.join(", ")}.`, data, { details: { failed } });
+  }
+  return ok(data);
+}
+
+const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
   // Executes the chain: SQL/HTTP steps really run (and commit), so an explicit --env is required.
   writes: true,
   parseArgs(argv) {
@@ -152,6 +182,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
       inputsFile: flags.inputs,
       inputPairs: flags.input,
       caseFile: flags.case,
+      casesFile: flags.cases,
       expect: flags.expect,
       comparePublished: flags.comparePublished,
       yes: flags.yes,
@@ -163,6 +194,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
     const uuid = resolveMethodRef(a.uuid);
     // V1 fetch: the test body is the fetched definition (test-before-save).
     const given = await adApi.fetchMethod(uuid, "v1");
+    if (a.casesFile) return runCaseTable(a, given, context.outputMode);
 
     let draft = given;
     let published: HydratedMethod | null = null;
@@ -256,8 +288,19 @@ const command: CommandModule<TestMethodArgs, TestMethodData> = {
     return ok(data);
   },
   presentHuman(envelope, ui) {
-    const data = envelope.data as TestMethodData | null;
-    if (!data) return;
+    const raw = envelope.data as TestMethodData | TestCasesData | null;
+    if (!raw) return;
+    if ("cases" in raw) {
+      ui.table(
+        ["Case", "Result", "Status", "Failure"],
+        raw.cases.map((c) => [c.name, c.pass ? "PASS" : "FAIL", c.status, c.pass ? "" : caseFailure(c)]),
+      );
+      const s = raw.summary;
+      // a failure's summary is the error message the runner prints
+      if (s.failed === 0) ui.success(`${s.passed}/${s.total} case(s) passed.`);
+      return;
+    }
+    const data = raw;
 
     if (data.success) {
       ui.success("Method executed successfully.");

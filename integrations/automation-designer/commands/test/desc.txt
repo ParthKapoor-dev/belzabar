@@ -2,6 +2,7 @@ belz ad test <uuid> --env <env>  :->  Execute a method (really runs it: needs --
 belz ad test <uuid> --env <env> --inputs <file|json>  :->  Input values from a JSON file or an inline JSON object (skips the prompts)
 belz ad test <uuid> --env <env> --input <key=value>  :->  One input value, repeatable, typed by the method's input type (on top of --inputs/--case); with --llm give --input, --inputs or --case
 belz ad test <uuid> --env <env> --case <file>  :->  Inputs and assertions from a test-case file; assertions are checked locally like --expect
+belz ad test <uuid> --env <env> --cases <file> --yes  :->  Run once per case in a JSON array / JSONL of {name?, inputs, expect[]} (N real executions; confirms, --yes with --llm); one pass/fail row per case, exit 1 (AD_TEST_CASES_FAILED) if any fails
 belz ad test <uuid> --env <env> --expect <out=value>  :->  Check an output after the run (repeatable; = != ~= > < >= <=, out.path for JSON); exit 1 on a mismatch
 belz ad test <uuid> --env <env> --compare-published --yes  :->  Run the same inputs on the draft AND its published copy (two real executions; confirms, --yes with --llm) and diff every output
 belz ad test <uuid> --env <env> --verbose  :->  Show detailed execution trace for each step (-v)

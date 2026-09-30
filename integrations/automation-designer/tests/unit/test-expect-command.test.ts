@@ -244,3 +244,69 @@ describe("ad test --input k=v and inline --inputs JSON", () => {
     expect(badJson.envelope?.error?.code).toBe("INVALID_JSON");
   });
 });
+
+describe("ad test --cases: a table of input cases", () => {
+  function casesFile(name: string, text: string): string {
+    const file = join(scratchDir("ad-test-cases"), name);
+    writeFileSync(file, text);
+    return file;
+  }
+  const posts = () => ad.ff.requests.filter((r) => r.method === "POST").length;
+
+  test("JSONL: one execution per case, per-case pass/fail, AD_TEST_CASES_FAILED when any fails", async () => {
+    wire();
+    const file = casesFile(
+      "cases.jsonl",
+      [
+        JSON.stringify({ name: "ok", inputs: { name: "World" }, expect: ["greetingOut=Hi World"] }),
+        JSON.stringify({ inputs: { name: "Bob" }, expect: ["greetingOut=Hi Bob"] }),
+      ].join("\n"),
+    );
+    const r = await runCommand(testCommand, [DRAFT, "--cases", file, "--expect", "greetingOut~=Hi", "--yes"], { env: ENV });
+    expect(r.envelope?.error?.code).toBe("AD_TEST_CASES_FAILED");
+    expect(r.exitCode).not.toBe(0);
+    const d = r.envelope?.data as any;
+    expect(d.summary).toEqual({ total: 2, passed: 1, failed: 1 });
+    expect(d.cases.map((c: any) => [c.name, c.pass])).toEqual([["ok", true], ["case 2", false]]);
+    // the common --expect runs after each case's own
+    expect(d.cases[1].expectations.map((e: any) => e.pass)).toEqual([false, true]);
+    expect(posts()).toBe(2);
+  });
+
+  test("JSON array, all pass → ok; a FAILED execution fails its case", async () => {
+    wire();
+    const file = casesFile("cases.json", JSON.stringify([{ name: "a", inputs: { name: "World" } }]));
+    const r = await runCommand(testCommand, [DRAFT, "--cases", file, "--yes"], { env: ENV });
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope?.data as any).summary).toEqual({ total: 1, passed: 1, failed: 0 });
+    ad.restore();
+    wire({ failed: true });
+    const f = await runCommand(testCommand, [DRAFT, "--cases", file, "--yes"], { env: ENV });
+    expect(f.envelope?.error?.code).toBe("AD_TEST_CASES_FAILED");
+    expect((f.envelope?.data as any).cases[0].status).toBe("FAILED");
+  });
+
+  test("--llm without --yes runs nothing; a bad row fails before any execution", async () => {
+    wire();
+    const good = casesFile("good.json", JSON.stringify([{ inputs: { name: "World" } }]));
+    const r = await runCommand(testCommand, [DRAFT, "--cases", good], { env: ENV, llm: true });
+    expect(r.envelope?.ok).toBe(false);
+    expect(posts()).toBe(0);
+    const missing = casesFile("missing.json", JSON.stringify([{ inputs: { name: "World" } }, { name: "empty", inputs: {} }]));
+    const m = await runCommand(testCommand, [DRAFT, "--cases", missing, "--yes"], { env: ENV });
+    expect(m.envelope?.error?.code).toBe("MISSING_INPUT");
+    const bad = casesFile("bad.json", JSON.stringify([{ inputs: { name: "x" }, expect: ["nooperator"] }]));
+    expect((await runCommand(testCommand, [DRAFT, "--cases", bad, "--yes"], { env: ENV })).envelope?.error?.code).toBe("INVALID_EXPECTATION");
+    const notObj = casesFile("notobj.json", "[1]");
+    expect((await runCommand(testCommand, [DRAFT, "--cases", notObj, "--yes"], { env: ENV })).envelope?.error?.code).toBe("INVALID_CASES");
+    expect(posts()).toBe(0);
+  });
+
+  test("--cases cannot be combined with --inputs, --case or --compare-published", async () => {
+    wire();
+    for (const extra of [["--inputs", "{}"], ["--case", "x.json"], ["--compare-published"]]) {
+      const r = await runCommand(testCommand, [DRAFT, "--cases", "c.json", ...extra], { env: ENV });
+      expect(r.envelope?.error?.code).toBe("CONFLICTING_FLAGS");
+    }
+  });
+});

@@ -19,6 +19,16 @@ Flags:
                         (`belz ad test-case export` format, or a UI test-case body):
                         every `{output, op, expected}` assertion is checked locally.
                         Cannot be combined with --inputs.
+  --cases <FILE>        Run the method once per case in FILE: a JSON array, or JSONL
+                        (one object per line), of {name?, inputs?, expect?[]} where
+                        expect uses the --expect syntax. --input and --expect apply
+                        to every case. Every case is a REAL execution (N cases, N
+                        sets of side effects), so it confirms first, showing the
+                        case count (--yes, required with --llm). Every row's inputs
+                        are checked before anything runs. Prints one row per case;
+                        exit 1 with AD_TEST_CASES_FAILED when any case fails.
+                        Cannot be combined with --inputs, --case or
+                        --compare-published.
   --expect <OUT=VALUE>  Check a method output after the run (repeatable). Operators:
                         = != ~= (contains) > < >= <=; `out.a[0]=x` looks inside JSON.
                         The value is JSON when it parses, else text; quote it
@@ -30,7 +40,8 @@ Flags:
                         one through the production body — so it asks for confirmation
                         (--yes, required with --llm). Expectations and the draft run's
                         status decide the exit code.
-  --yes, -y             Confirm --compare-published's second (published) execution.
+  --yes, -y             Confirm --compare-published's second (published) execution,
+                        or the --cases executions.
   --verbose, -v         Show detailed execution trace for each step. (A command
                         flag here: it does not switch on runner debug logging.)
   --raw                 Include raw execution payload in output.
@@ -50,10 +61,15 @@ Notes:
   - Data: outputs {code: value} (every method output), trace, expectations
     {total, passed, failed, results[]}, compare {identical, differences[],
     published{status, outputs}}.
+  - With --cases, data is {uuid, cases[{name, pass, status (SUCCESS, FAILED
+    or ERROR), outputs, failedStep, expectations[], error?{code, message}}],
+    summary{total, passed, failed}}. A case whose run throws (compile error)
+    is status ERROR; the other cases still run.
   - Trace rows carry the method's own step descriptions and orderIndex.
 
 Examples:
   belz ad test 4a1b2c3d... --env <env> --inputs ./in.json --expect greetingOut='Hello World'
   belz ad test 4a1b2c3d... --env <env> --input name=World --expect 'greeting=Hello, World' --llm
   belz ad test 4a1b2c3d... --env <env> --case ./cases/greet.ok.1.json --compare-published --yes --llm
+  belz ad test 4a1b2c3d... --env <env> --cases ./cases.jsonl --yes --llm
   belz ad test 4a1b2c3d... --env <env> --inputs ./test-data.json --verbose --raw

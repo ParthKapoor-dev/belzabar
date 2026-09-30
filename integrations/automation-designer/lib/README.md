@@ -37,7 +37,7 @@ Everything the `belz ad` commands share. Other workspaces import it as
 | `test-run.ts` | `runInlineTest`: one `/chain/test` run → status, trace, outputs map; `diffOutputs` for `--compare-published`. |
 | `payload-builder.ts` | `buildV1TestPayload`: the one `/chain/test` body (`test`, `run-suites`, test-case runs). |
 | `test-suite.ts` | `loadTestSuite`: one summary of a method's suite for `test-cases` and `test-case list`. |
-| `input-collector.ts` | Test input values from prompts, files and `--input k=v`. |
+| `input-collector.ts` | Test input values from prompts, files and `--input k=v`; `resolveInputValues` checks a values object against the method (also used per `--cases` row). |
 | `stream-parser.ts` | `application/stream+json` responses (`run --stream`). |
 | `error-parser.ts` | Java exceptions returned with HTTP 200, and per-step failure status. |
 | `base64.ts` | `encodeBase64`, `decodeBase64Strict` (plain text is never mis-decoded). |
