@@ -33,9 +33,15 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
 - Rule names: codes inherited from the team's own validator (`M1`, `CI1`, `LP3`, …) keep their
   meaning; belz-only rules are `AD-<FAMILY>-nnn`. `CI1` and `DUP1` are warnings because they
   fire on working methods.
-- Lint rules (`Q2`–`Q4`, `AD-LINT-001`…) never run on save or publish. `Q3` is
+- Lint rules (`Q2`–`Q4`, `Q6`, `AD-LINT-001`…) never run on save or publish. `Q3` is
   project-specific and config-driven: `"lint": {"resolverTables": {"<table>": "<resolverFn>"}}`
   in `~/.belz/config.json` (read by `commands/lint`); with none configured it never fires.
+- `Q6` (uuid compared as text): a column named `id`, `*_id` or `*uuid` cast to
+  `text`/`varchar` and compared (`=`, `<>`, `IN (…)`, either side) to a bound value (`'#{x}'`,
+  `#{x}`, `:param`). Postgres `'…'::uuid` accepts upper case, braces and undashed spellings;
+  the text comparison silently misses them. Fix: `col = '#{x}'::uuid`. Heuristic on the column
+  name, so a genuinely-text id column is a false positive (advisory only). `Q5` is taken by
+  the validator's autoformat rule, hence the gap.
 
 ## Adding a rule
 

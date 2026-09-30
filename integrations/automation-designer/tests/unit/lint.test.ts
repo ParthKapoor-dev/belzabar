@@ -49,6 +49,31 @@ describe("SQL rules", () => {
     expect(rules(withSql("select id from users where id = :id or id = :other"))).not.toContain("Q4");
   });
 
+  test("Q6: a uuid-like column compared as text to a bound value", () => {
+    for (const sql of [
+      "select name from users where id::text = '#{userId}'",
+      "select name from users u where u.user_id::varchar = :userId",
+      "select name from users where '#{userId}' = owner_uuid::text",
+      "select name from users where group_id::text in ('#{a}', '#{b}')",
+      "select name from users where ID :: TEXT = #{userId}",
+    ]) {
+      expect(rules(withSql(sql))).toContain("Q6");
+    }
+    const f = lintMethodV2(withSql("select name from users u where u.id::text = '#{userId}'")).find((x) => x.rule === "Q6");
+    expect(f?.message).toStartWith("u.id::text is compared");
+    expect(f?.fix).toContain("u.id = '#{x}'::uuid");
+    for (const sql of [
+      "select name from users where id = '#{userId}'::uuid",
+      "select name from users where id = :userId::uuid",
+      "select name from users where code::text = '#{code}'",
+      "select id::text as id from users where name = :n",
+      "select name from users where id::text = 'literal'",
+      "select name from users where id::text = other_id::text",
+    ]) {
+      expect(rules(withSql(sql))).not.toContain("Q6");
+    }
+  });
+
   test("AD-LINT-002: SQL that reads no table", () => {
     expect(rules(withSql("select to_char(now(), 'YYYY')"))).toContain("AD-LINT-002");
     expect(rules(withSql("select 1 from users limit 1"))).not.toContain("AD-LINT-002");

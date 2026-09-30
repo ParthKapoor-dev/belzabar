@@ -35,6 +35,10 @@ Rules:
                  tables come from config "lint": {"resolverTables":
                  {"<table>": "<resolverFn>"}} (none built in)
     Q4           query returns only columns it filters by equality to a bound :param
+    Q6           uuid-like column cast to text and compared to a bound value
+                 (id::text = '#{x}', :p = owner_uuid::text, x_id::text IN (…)):
+                 misses the same uuid spelled in upper case, with braces or
+                 without dashes; compare as uuid: id = '#{x}'::uuid
     AD-LINT-001  custom code that only parses JSON and reads/sets one key
     AD-LINT-002  SQL that reads no table
     AD-LINT-003  SQL text built by replacePlaceholdersInText

@@ -5,7 +5,8 @@
 //
 // Rules —
 //   SQL: Q2 per-row subquery, Q3 raw read
-//   of a resolver-guarded config table, Q4 re-looking-up a bound value
+//   of a resolver-guarded config table, Q4 re-looking-up a bound value,
+//   Q6 a uuid-like column compared as text to a bound value
 //   (Q1 bare `?`, Q5 autoformat damage and AD-SQL-004 `#{}` in SQL are
 //   validator rules already);
 //   AD anti-patterns: JSON-juggling custom code, a DB step without a
@@ -31,6 +32,7 @@ export const LINT_RULES = {
   Q2: { description: "SELECT-list subquery runs once per row; if its value does not depend on the row, bind it once (CTE, join or :param)" },
   Q3: { description: "Raw read of a table that must be read through a resolver function (config lint.resolverTables)" },
   Q4: { description: "Query only returns columns it already filters by equality to a bound value (re-looks up a value the step already has)" },
+  Q6: { description: "A uuid-like column cast to text and compared to a bound value misses equal uuids spelled differently (case, braces, dashes); compare as uuid" },
   "AD-LINT-001": { description: "Custom code only parses JSON, reads/sets one key and stringifies it; use Helpers.JSON/fetchKeyValue or setOrUpdateElement" },
   "AD-LINT-002": { description: "db_service SQL reads no table (no FROM/JOIN/INTO/UPDATE); compute it with SpEL or a helper instead of a DB round trip" },
   "AD-LINT-003": { description: "SQL text is built by a replacePlaceholdersInText step; use :param placeholders + body.queryParams" },
@@ -208,6 +210,42 @@ function lintSql(
   if (q4) {
     report({ rule: "Q4", message: `The query returns ${q4} but filters it by equality to a bound value it already has.`, path, step: ref, fix: "Use the bound value directly; for an existence check use SELECT EXISTS(…)." });
   }
+
+  // Q6: <id-like col>::text compared to a bound value.
+  const q6 = uuidTextComparison(sql);
+  if (q6) {
+    report({
+      rule: "Q6",
+      message: `${q6}::text is compared to a bound value as text: equal uuids spelled differently (upper case, braces, no dashes) do not match.`,
+      path,
+      step: ref,
+      fix: `Compare as uuid: ${q6} = '#{x}'::uuid (or :param::uuid).`,
+    });
+  }
+}
+
+// A uuid-looking column (`id`, `*_id`, `*uuid`, optionally qualified) cast to text.
+const UUID_COL = String.raw`((?:\w+\.)?(?:id|\w+_id|\w*uuid))`;
+const TEXT_CAST = String.raw`\s*::\s*(?:text|varchar|character varying)`;
+const BOUND = "__bound__";
+const Q6_PATTERNS = [
+  new RegExp(String.raw`\b${UUID_COL}${TEXT_CAST}\s*(?:=|<>|!=)\s*${BOUND}`),
+  new RegExp(String.raw`${BOUND}(?:${TEXT_CAST})?\s*(?:=|<>|!=)\s*${UUID_COL}${TEXT_CAST}\b`),
+  new RegExp(String.raw`\b${UUID_COL}${TEXT_CAST}\s+(?:not\s+)?in\s*\([^)]*${BOUND}`),
+];
+
+/**
+ * Q6: the column of the first `<uuid-like col>::text = <bound value>` (either
+ * side, or `IN (…)`), where a bound value is `'#{…}'`, `#{…}` or `:param`.
+ */
+function uuidTextComparison(sql: string): string | undefined {
+  const bound = replaceSpelBlocks(sql.replace(/'[^']*#\{[^}]*\}[^']*'/g, ` ${BOUND} `), ` ${BOUND} `);
+  const skel = sqlSkeleton(bound).toLowerCase().replace(/(?<![:\w]):[a-z_]\w*/g, BOUND).replace(/\s+/g, " ");
+  for (const re of Q6_PATTERNS) {
+    const m = re.exec(skel);
+    if (m) return m[1];
+  }
+  return undefined;
 }
 
 /** The outer SELECT list: text between the first top-level SELECT and its FROM (depth 0). */
