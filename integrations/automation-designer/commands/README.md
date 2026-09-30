@@ -14,6 +14,7 @@ asks for confirmation (in `--llm` mode it needs `--yes` instead).
 | Command | What it does |
 |---|---|
 | `find [list\|pick\|<query>]` | Search the cached method index; category counts; fzf picker. |
+| `grep <regex>` | Regex search over method step text: SQL, custom code, SpEL, input values (read-only). |
 | `fetch`, `show`, `show-code` | Read a method (`--v2` to read through V2). `show --compact` / `--story` are the agent views; `show <file>` shows a local body. |
 | `outputs`, `state` | The I/O contract plus what each step writes; draft/published linkage and `inSync`. |
 | `categories`, `category create` | List categories; **W** create one. |

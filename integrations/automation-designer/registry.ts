@@ -42,6 +42,9 @@ import fetchDesc from "./commands/fetch/desc.txt" with { type: "text" };
 import * as findCmd from "./commands/find/index";
 import findHelp from "./commands/find/help.txt" with { type: "text" };
 import findDesc from "./commands/find/desc.txt" with { type: "text" };
+import * as grepCmd from "./commands/grep/index";
+import grepHelp from "./commands/grep/help.txt" with { type: "text" };
+import grepDesc from "./commands/grep/desc.txt" with { type: "text" };
 import * as historyCmd from "./commands/history/index";
 import historyHelp from "./commands/history/help.txt" with { type: "text" };
 import historyDesc from "./commands/history/desc.txt" with { type: "text" };
@@ -116,6 +119,7 @@ export const registry = {
   "export-category": { module: exportCategoryCmd, help: exportCategoryHelp, desc: exportCategoryDesc },
   fetch: { module: fetchCmd, help: fetchHelp, desc: fetchDesc },
   find: { module: findCmd, help: findHelp, desc: findDesc },
+  grep: { module: grepCmd, help: grepHelp, desc: grepDesc },
   history: { module: historyCmd, help: historyHelp, desc: historyDesc },
   import: { module: importCmd, help: importHelp, desc: importDesc },
   lint: { module: lintCmd, help: lintHelp, desc: lintDesc },

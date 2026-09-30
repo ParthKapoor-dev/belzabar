@@ -9,7 +9,7 @@ preload points `BELZ_HOME` at a temp dir, so nothing touches `~/.belz`.
 | Helpers | `helpers/` ([README](helpers/README.md)), `validate-fixtures.ts` (validator fixtures: `golden()`, `caseBody(name)`, `mutate`, `realV2()`) |
 | Args and help | `args-a`, `args-b`, `common-args`, `find-command`, `show-args`, `sql-args`, `sql-explain` |
 | API and parsing | `api-error-detection`, `api-http`, `base64`, `fetch-method-hydration`, `fetch-raw`, `parser-v1-method`, `parser-v1-steps`, `parser-v2-loop`, `parser-v2-smoke`, `real-wire`, `parsed-fields-guard`, `stream-parser` |
-| Read commands | `categories`, `find-category`, `method-finder`, `callers`, `services-methods`, `lookup-views`, `outputs-command`, `show-command`, `show-views`, `show-deleted`, `state-command`, `trim-outputs`, `export-import-childinfo`, `cache-env-scope` |
+| Read commands | `categories`, `find-category`, `method-finder`, `callers`, `grep`, `services-methods`, `lookup-views`, `outputs-command`, `show-command`, `show-views`, `show-deleted`, `state-command`, `trim-outputs`, `export-import-childinfo`, `cache-env-scope` |
 | History and trace | `diff-history`, `history-restore`, `history-uuid-cache`, `fingerprint`, `trace-envs` |
 | Writes | `draft-guard`, `save-command`, `save-structural`, `save-v2-overlay`, `author-commands`, `compact-format`, `create-delete`, `publish-changelog` |
 | Validator and lint | `validate-l1`, `validate-rules`, `validate-online`, `validate-team`, `validate-diff`, `validate-command`, `lint` |

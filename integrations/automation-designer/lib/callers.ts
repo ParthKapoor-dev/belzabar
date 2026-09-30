@@ -149,13 +149,25 @@ export function stepRefsOf(body: unknown): StepRef[] {
  * Refs-cache key: the index's `updatedOn`, or — for a method belz changed
  * after the index was built — the mark time, so the edit is re-read.
  */
-function refsKey(m: MethodFinderMethod, dirty?: Map<string, number>): string {
+export function refsKey(m: MethodFinderMethod, dirty?: Map<string, number>): string {
   const mark = dirty?.get(m.uuid.toLowerCase());
   return mark !== undefined ? `${m.uuid}@dirty-${mark}` : `${m.uuid}@${m.updatedOn || 0}`;
 }
 
-async function stepRefsFor(m: MethodFinderMethod, key: string): Promise<StepRef[]> {
-  const cached = await refsCache.load(key);
+/**
+ * Read a method's V2 body and reduce it with `extract`, cached under `key` (`refsKey`) in
+ * `cache`. A body the server refuses is remembered for a day (`retryFailed` forgets it first).
+ * Shared by `ad callers` and `ad grep`.
+ */
+export async function readBodyCached<T>(
+  m: MethodFinderMethod,
+  key: string,
+  cache: Cache<T>,
+  extract: (body: unknown) => T,
+  retryFailed = false,
+): Promise<T> {
+  if (retryFailed) await refsErrorCache.invalidate(key);
+  const cached = await cache.load(key);
   if (cached) return cached;
   const failed = await refsErrorCache.load(key);
   if (failed) throw new Error(`${failed} (cached failure; --refresh retries)`);
@@ -166,9 +178,9 @@ async function stepRefsFor(m: MethodFinderMethod, key: string): Promise<StepRef[
     await refsErrorCache.save(key, e instanceof Error ? e.message : String(e));
     throw e;
   }
-  const refs = stepRefsOf(body);
-  await refsCache.save(key, refs);
-  return refs;
+  const value = extract(body);
+  await cache.save(key, value);
+  return value;
 }
 
 function stepCallsTarget(step: StepRef, t: CallTarget): boolean {
@@ -222,12 +234,12 @@ export interface AdCallersResult {
   };
 }
 
-function isNotFound(e: unknown): boolean {
+export function isNotFound(e: unknown): boolean {
   return e instanceof CliError && e.code === "METHOD_NOT_FOUND";
 }
 
 /** An index-shaped record for a method the index does not list yet (from its V2 body). */
-function stubFromBody(uuid: string, body: unknown): MethodFinderMethod {
+export function stubFromBody(uuid: string, body: unknown): MethodFinderMethod {
   const b = isObj(body) ? body : {};
   const meta = isObj(b.metadata) ? b.metadata : {};
   const service = isObj(meta.service) ? meta.service : {};
@@ -256,7 +268,7 @@ function stepLine(s: StepRef): string {
 
 const CONCURRENCY = 6;
 
-async function pool<T>(items: T[], worker: (item: T) => Promise<void>): Promise<void> {
+export async function pool<T>(items: T[], worker: (item: T) => Promise<void>): Promise<void> {
   let next = 0;
   await Promise.all(
     Array.from({ length: Math.min(CONCURRENCY, items.length) }, async () => {
@@ -313,8 +325,7 @@ export async function findAdCallers(
   await pool(work, async (m) => {
     const key = refsKey(m, dirty);
     try {
-      if (opts.retryFailed) await refsErrorCache.invalidate(key);
-      refsByUuid.set(m.uuid, await stepRefsFor(m, key));
+      refsByUuid.set(m.uuid, await readBodyCached(m, key, refsCache, stepRefsOf, opts.retryFailed));
     } catch (e) {
       if (dirty.has(m.uuid.toLowerCase()) && isNotFound(e)) deleted.add(m.uuid); // deleted by belz
       else errors.push(`${m.categoryName}/${m.methodName} (${m.uuid}): ${e instanceof Error ? e.message : String(e)}`);

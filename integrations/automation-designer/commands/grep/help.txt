@@ -1,0 +1,52 @@
+Usage: belz ad grep <PATTERN> (--category <a,b> | --all | --method <UUID>...) [flags]
+
+Search the step text of AD methods with a regular expression: the SQL of
+db_service steps and the source of custom-code steps (both decoded from
+base64 when stored so), SpEL entry conditions, exit-if expressions, echo
+expressions, and every step input value. Read-only.
+
+Each line of a text is matched separately; a match reports the method, its
+state, the step (number and description), where in the step (sql, code,
+condition, exitIf, expression, input <key>), the line number and the line.
+
+Methods come from the cached method index (rebuilt when more than 24 h old,
+as for `belz ad callers`); bodies are read once per method version and
+cached, so a repeated or interrupted sweep only reads what changed. Methods
+belz itself changed since the index was built are re-read; methods created
+in the AD UI since then are missed until --refresh.
+
+Arguments:
+  <PATTERN>             A JavaScript regular expression ('delete\s+from\s+t').
+
+Flags:
+  --category <a,b>      Search every method in these categories (names).
+  --all                 Search every method in every category (slow the first
+                        time: one read per method; cached afterwards).
+  --method <UUID>       Search this method (uuid or AD URL; repeatable). Read
+                        fresh, without the index.
+  --in <KINDS>          Comma list of sql, code, spel (conditions, exit-if,
+                        echo expressions, input values), or all (default).
+  --ignore-case, -i     Case-insensitive match.
+  --draft               Only drafts.
+  --published           Only published methods.
+  --refresh             Rebuild the method index and retry bodies that failed.
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Set active environment (default: BELZ_ENV, else defaultEnv, else the only env).
+                        Any env from `belz envs` (configured in ~/.belz/config.json).
+  --llm                 Output structured JSON envelope for scripting/LLM use.
+
+Data: {pattern, in[], total, matches[{method, category, state, uuid, step,
+stepDescription?, kind (sql|code|spel), field, line, excerpt}], coverage
+{scope, scanned, unscanned, errors?[], indexAgeMinutes, indexSource,
+skippedCategories?}}. `excerpt` is the trimmed line, cut at 200 characters.
+
+Examples:
+  belz ad grep 'delete\s+from\s+orders' --category Orders,Billing -i
+  belz ad grep levelId --all --in sql --llm
+  belz ad grep '#\{userId\}' --method 4a1b2c3d... --in spel
+
+Errors: MISSING_PATTERN, INVALID_PATTERN (the regex does not compile),
+CONFLICTING_FLAGS / MISSING_FLAG (give exactly one of --category, --all,
+--method), CATEGORY_NOT_FOUND, METHOD_NOT_FOUND (--method), AD_INDEX_FETCH_FAILED.

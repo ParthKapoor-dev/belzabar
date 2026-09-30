@@ -1,0 +1,7 @@
+belz ad grep <pattern> --category <a,b>  :->  Regex search over the step text (SQL, custom code, SpEL conditions/expressions, input values) of every method in these categories; read-only
+belz ad grep <pattern> --all  :->  Search every method in every category (one cached read per method version)
+belz ad grep <pattern> --method <uuid>  :->  Search these methods only (repeatable; read fresh)
+belz ad grep <pattern> --category <a,b> --in <sql,code,spel>  :->  Search only these kinds of text (default all)
+belz ad grep <pattern> --category <a,b> --ignore-case  :->  Case-insensitive match (-i)
+belz ad grep <pattern> --category <a,b> --draft  :->  Drafts only (--published: published only)
+belz ad grep <pattern> --category <a,b> --refresh  :->  Rebuild the method index and retry unreadable bodies

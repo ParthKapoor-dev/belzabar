@@ -26,7 +26,8 @@ Everything the `belz ad` commands share. Other workspaces import it as
 | `hydrator.ts` | V1 service-definition lookup and cache; `buildServiceResolver` for the V1 parser. |
 | `categories.ts` | One category model joining the two id spaces (chain category and automation system): `fetchCategories`, `findCategory`, `requireChainCategory`. |
 | `method-finder.ts` | The cached method index behind `find` and `callers` (core `finderIndexStore`): build, search, dirty and gone marks, `addMethodToIndex`. |
-| `callers.ts` | `ad callers`: the reverse index (AD methods; PD pages and components via `@belzabar/pd/lib/ad-refs`), with honest coverage reporting. |
+| `callers.ts` | `ad callers`: the reverse index (AD methods; PD pages and components via `@belzabar/pd/lib/ad-refs`), with honest coverage reporting; its body reader (`readBodyCached`, `pool`) is shared with `grep.ts`. |
+| `grep.ts` | `ad grep`: step texts of a V2 body (`stepTextsOf`, SQL and code decoded), line matching; reads bodies through `callers.ts`' `readBodyCached` (per-version cache `cache/grep`). |
 | `view-fetch.ts` | `fetchViewMethod` (fresh V2 read, V1 fallback) for `show --compact` / `--story` and `outputs`; `fetchMethodChecked` (V1 read confirmed on V2, so soft-deleted methods are `METHOD_NOT_FOUND`). |
 | `method-view.ts` | `compactMethod` / `renderCompact` (`show --compact`: `{view:"compact", name, category, state, version, uuid, in, out, vars, steps[], blocks?}`, one line per step) and `storyMarkdown` (`show --story`: `{view:"story", name, uuid, markdown}`). |
 | `compact.ts` | Output trimming for `--llm` payloads: `pruneEmpty`, `oneLine`, `abbreviate`, `htmlToText`. |
@@ -68,6 +69,7 @@ All caches are core `Cache` instances under `~/.belz/cache/`, env-scoped.
 | Service definitions | `definitions/<env>/<automationId>.json` | 1 h | — |
 | Method index | `method-finder/index-v1-<env>.json`, `dirty-<env>.json`, `gone-<env>.json` | 7 days (`callers` rebuilds after 24 h; a partial index after 15 min) | `find --refresh`, `callers --refresh`, `ad import`. belz writes (and `migrate run` on its target env) mark a uuid dirty through core `markMethodIndexDirty` (`callers` re-reads it); `create` adds the new draft; a V2 `METHOD_NOT_FOUND` marks it gone. |
 | Caller refs | `callers/` (30 days, keyed by uuid and `updatedOn`), `callers-errors/` (1 day) | — | `callers --refresh` |
+| Grep step texts | `grep/` (30 days, keyed by uuid and `updatedOn`; failures share `callers-errors/`) | — | `grep --refresh` retries failures |
 | Published history bodies | `history-versions/<env>/` | 30 days (immutable) | — |
 | Validator L4 | `api-contracts/`, `service-accounts/` | 1 h | — |
 
