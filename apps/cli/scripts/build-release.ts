@@ -50,8 +50,13 @@ if (!process.argv.includes("--manifest-only")) {
         console.error("build-release: --sign needs macOS (codesign)");
         process.exit(1);
       }
-      run("codesign", ["--remove-signature", file]);
-      run("codesign", ["--force", "--sign", "-", file]);
+      // Apple Silicon refuses unsigned binaries, so darwin-arm64 must sign; Intel Macs run
+      // unsigned ones, so darwin-x64 (cross-compiled, no signature to replace) is best effort.
+      spawnSync("codesign", ["--remove-signature", file], { stdio: "ignore" });
+      if (t === "darwin-arm64") run("codesign", ["--force", "--sign", "-", file]);
+      else if (spawnSync("codesign", ["--force", "--sign", "-", file], { stdio: "inherit" }).status !== 0) {
+        console.warn(`build-release: ${assetName(t)} left unsigned (not required on Intel Macs)`);
+      }
     }
   }
   process.exit(0);
