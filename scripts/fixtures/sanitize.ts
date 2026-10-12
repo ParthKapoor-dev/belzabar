@@ -178,7 +178,7 @@ const BARE_HOST_RE = new RegExp(`(?<![\\w.@/-])(?:[a-z0-9-]+\\.){2,}${PUBLIC_TLD
 const GENERIC_HOSTS = [
   "example.com", "example.org", "example.net", "w3.org", "schema.org", "github.com", "githubusercontent.com",
   "bun.sh", "npmjs.com", "npmjs.org", "fonts.googleapis.com", "fonts.gstatic.com", "www.googleapis.com",
-  "claude.ai", "claude.com", "anthropic.com", "git-scm.com", "slack.com",
+  "claude.ai", "claude.com", "anthropic.com", "git-scm.com", "slack.com", "shields.io",
 ];
 
 function isGenericHost(host: string): boolean {
