@@ -1,3 +1,4 @@
-belz update  :->  Update belz: fast-forward the source checkout, rebuild, reinstall to the recorded install dir (refuses if the checkout has uncommitted changes or local commits)
+belz update  :->  Update belz: a binary install downloads, verifies and swaps in the latest release (or the pinned one); a source install fast-forwards its checkout and rebuilds
 belz update --check  :->  Check whether an update is available
-belz update --force  :->  Rebuild/reinstall even when up to date (-f); never resets or discards local source changes
+belz update --force  :->  Reinstall even when up to date (-f); never resets or discards local source changes
+belz update --rollback  :->  Binary install: restore the previous binary kept from the last update

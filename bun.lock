@@ -24,6 +24,7 @@
         "@belzabar/pd": "workspace:*",
         "@belzabar/release": "workspace:*",
         "@belzabar/teamwork": "workspace:*",
+        "zod": "^3.22.4",
       },
     },
     "integrations/automation-designer": {

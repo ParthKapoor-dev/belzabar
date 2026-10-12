@@ -8,6 +8,7 @@ as part of `bun test`.
 | `docs-check.ts` | `bun run docs:check`: keeps README.md / AGENTS.md honest (see below) |
 | `docs-check.test.ts` | Unit tests for `docs-check.ts` |
 | `dead-code.ts` | `bun run dead-code`: TypeScript-compiler-API dead-code report (unused exports split into dead / local-only / test-only, unreferenced files, unused or undeclared dependencies). `--json`, `--summary`, `--check` (exit 1 on any finding outside its `ALLOW` list) |
+| `release.ts` | `bun run release <patch\|minor\|major\|x.y.z> [--dry-run]`: on a clean `main` equal to `origin/main`, bumps `apps/cli/package.json`, commits, tags `vX.Y.Z` and pushes; the tag runs `.github/workflows/release.yml` |
 | `ci-pins.test.ts` | Every workflow (and `cloud/publish.sh`) uses the same pinned Bun and installs from the committed lockfile |
 | `no-module-mocks.test.ts` | No test uses `mock.module` (it is process-wide in Bun); fake the network with `fakeFetch` |
 | [`fixtures/`](./fixtures/README.md) | Read-only wire-fixture capture, sanitizer and secrets scan |

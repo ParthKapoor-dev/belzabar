@@ -47,8 +47,10 @@ describe("cache", () => {
 
 describe("update / onboard / envs", () => {
   test("update", () => {
-    expect(update.parseArgs!(["--check"], ctx)).toEqual({ check: true, force: false });
-    expect(update.parseArgs!(["-f"], ctx)).toEqual({ check: false, force: true });
+    expect(update.parseArgs!(["--check"], ctx)).toEqual({ check: true, force: false, rollback: false });
+    expect(update.parseArgs!(["-f"], ctx)).toEqual({ check: false, force: true, rollback: false });
+    expect(update.parseArgs!(["--rollback"], ctx)).toEqual({ check: false, force: false, rollback: true });
+    expect(code(() => update.parseArgs!(["--rollback", "--check"], ctx))).toBe("CONFLICTING_FLAGS");
     expect(code(() => update.parseArgs!(["--chek"], ctx))).toBe("UNKNOWN_FLAG");
   });
   test("onboard / envs take no arguments", () => {

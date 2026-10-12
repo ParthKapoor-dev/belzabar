@@ -20,6 +20,7 @@ whole command set. Run with `bun test apps/cli` or `bun run check`.
 | `cache-command.test.ts`, `cache-prune-local.test.ts` | `belz cache` invalidate body and guards; `prune-local` |
 | `setup-config-exec.test.ts` | `setup` merges and stores explicit password encodings; `config token` re-logs in on expiry or `--refresh` |
 | `update-paths.test.ts` | `belz update` never discards local work and installs to the recorded dir |
+| `self-update.test.ts` | Release versions and targets, manifest + verified download against a local fake release server (checksum mismatch refused), the auto-update gate, swap and rollback |
 | [`live/`](./live/README.md) | Opt-in suites against a real environment |
 
 Up: [apps/cli](../README.md).

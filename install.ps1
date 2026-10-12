@@ -1,75 +1,107 @@
-# install.ps1 — One-line installer for the belz CLI on Windows.
+# install.ps1 — One-line installer for the belz CLI (Windows x64).
 #
-# Public command (PowerShell):
+#   irm https://github.com/ParthKapoor-dev/belzabar/releases/latest/download/install.ps1 | iex
 #
-#   irm https://raw.githubusercontent.com/ParthKapoor-dev/belzabar/main/install.ps1 | iex
+# Default (binary install): downloads belz-windows-x64.exe from the release, checks it against the
+# release's SHA256SUMS, installs it to %LOCALAPPDATA%\belz\bin\belz.exe (added to your user PATH)
+# and records a binary install, which keeps itself up to date (a background check at most once a
+# day). On a first install it then runs `belz onboard`.
 #
-# What it does:
-#   1. Ensures `git` and `bun` are available (installs bun if missing).
-#   2. Clones (or updates) the repo into $env:BELZ_SRC_DIR
-#      (default %USERPROFILE%\.belz\src).
-#   3. Runs `bun install --ignore-scripts` to hydrate workspaces.
-#   4. Hands off to apps\cli\scripts\install.ps1, which builds belz.exe and
-#      (on first install) runs `belz onboard`.
+# Options (environment variables, since `irm | iex` takes no arguments):
+#   BELZ_VERSION=x.y.z      Install that release instead of the latest.
+#   BELZ_INSTALL_DIR=<dir>  Where belz.exe goes.
+#   BELZ_FROM_SOURCE=1      Clone into %USERPROFILE%\.belz\src and build with bun instead.
 #
-# Set $env:BELZ_SRC_DIR to clone somewhere other than %USERPROFILE%\.belz\src.
+# Credentials, sessions and caches in %USERPROFILE%\.belz are never touched.
 
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 
-$RepoUrl = if ($env:BELZ_REPO_URL) { $env:BELZ_REPO_URL } else { "https://github.com/ParthKapoor-dev/belzabar.git" }
-$SrcDir = if ($env:BELZ_SRC_DIR) { $env:BELZ_SRC_DIR } else { Join-Path $env:USERPROFILE ".belz\src" }
+$Repo = "ParthKapoor-dev/belzabar"
+$Releases = if ($env:BELZ_UPDATE_BASE_URL) { $env:BELZ_UPDATE_BASE_URL.TrimEnd('/') } else { "https://github.com/$Repo/releases" }
+$InstallDir = if ($env:BELZ_INSTALL_DIR) { $env:BELZ_INSTALL_DIR } else { Join-Path $env:LOCALAPPDATA "belz\bin" }
+$BelzDir = if ($env:BELZ_HOME) { $env:BELZ_HOME } else { Join-Path $env:USERPROFILE ".belz" }
 
 function Info($m) { Write-Host "==> $m" -ForegroundColor Blue }
 function Ok($m)   { Write-Host " ok  $m" -ForegroundColor Green }
 
-# ── Preflight ─────────────────────────────────────────────────────────────────
-if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-  Write-Error "git is required. Install Git for Windows: https://git-scm.com/download/win"
-  exit 1
-}
-
-# ── Bun ───────────────────────────────────────────────────────────────────────
-if (Get-Command bun -ErrorAction SilentlyContinue) {
-  Ok "bun $(bun --version) already installed"
-} else {
-  Info "Installing bun via https://bun.sh/install.ps1"
-  Invoke-RestMethod https://bun.sh/install.ps1 | Invoke-Expression
-  $env:Path = "$env:USERPROFILE\.bun\bin;$env:Path"
+# ── From source (developers) ────────────────────────────────────────────────
+if ($env:BELZ_FROM_SOURCE -eq "1") {
+  $RepoUrl = if ($env:BELZ_REPO_URL) { $env:BELZ_REPO_URL } else { "https://github.com/$Repo.git" }
+  $SrcDir = if ($env:BELZ_SRC_DIR) { $env:BELZ_SRC_DIR } else { Join-Path $env:USERPROFILE ".belz\src" }
+  if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw "git is required: https://git-scm.com/download/win" }
   if (-not (Get-Command bun -ErrorAction SilentlyContinue)) {
-    Write-Error "bun installed but is not on PATH. Add %USERPROFILE%\.bun\bin to PATH and re-run."
-    exit 1
+    Info "Installing bun via https://bun.sh/install.ps1"
+    Invoke-RestMethod https://bun.sh/install.ps1 | Invoke-Expression
+    $env:Path = "$env:USERPROFILE\.bun\bin;$env:Path"
   }
-  Ok "bun $(bun --version) installed"
+  if (Test-Path (Join-Path $SrcDir ".git")) {
+    git -C $SrcDir fetch --quiet origin main
+    git -C $SrcDir reset --hard origin/main
+  } else {
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SrcDir) | Out-Null
+    git clone --depth 1 $RepoUrl $SrcDir
+  }
+  Push-Location $SrcDir; bun install --silent --ignore-scripts; Pop-Location
+  & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $SrcDir "apps\cli\scripts\install.ps1") -InstallDir $InstallDir
+  return
 }
 
-# ── Clone or update ───────────────────────────────────────────────────────────
-if (Test-Path (Join-Path $SrcDir ".git")) {
-  Info "Updating existing checkout at $SrcDir"
-  git -C $SrcDir fetch --quiet origin main
-  git -C $SrcDir reset --hard origin/main
-  Ok "Synced to origin/main ($(git -C $SrcDir rev-parse --short HEAD))"
-} else {
-  Info "Cloning $RepoUrl into $SrcDir"
-  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SrcDir) | Out-Null
-  git clone --depth 1 $RepoUrl $SrcDir
-  Ok "Cloned to $SrcDir"
+# ── Binary install ──────────────────────────────────────────────────────────
+if (-not [Environment]::Is64BitOperatingSystem) { throw "belz ships a 64-bit Windows binary only." }
+$Asset = "belz-windows-x64.exe"
+$Base = if ($env:BELZ_VERSION) { "$Releases/download/v$($env:BELZ_VERSION.TrimStart('v'))" } else { "$Releases/latest/download" }
+
+$Tmp = Join-Path ([IO.Path]::GetTempPath()) ("belz-install-" + [Guid]::NewGuid())
+New-Item -ItemType Directory -Force -Path $Tmp | Out-Null
+try {
+  Info "Downloading $Asset"
+  Invoke-WebRequest -UseBasicParsing -Uri "$Base/$Asset" -OutFile (Join-Path $Tmp $Asset)
+  Invoke-WebRequest -UseBasicParsing -Uri "$Base/SHA256SUMS" -OutFile (Join-Path $Tmp "SHA256SUMS")
+
+  $Line = Get-Content (Join-Path $Tmp "SHA256SUMS") | Where-Object { ($_ -split '\s+')[1] -eq $Asset } | Select-Object -First 1
+  if (-not $Line) { throw "SHA256SUMS has no entry for $Asset" }
+  $Expected = ($Line -split '\s+')[0].ToLower()
+  $Actual = (Get-FileHash -Algorithm SHA256 (Join-Path $Tmp $Asset)).Hash.ToLower()
+  if ($Expected -ne $Actual) { throw "Checksum mismatch for $Asset (expected $Expected, got $Actual). Nothing was installed." }
+  Ok "Checksum verified"
+
+  $FirstRun = -not (Test-Path (Join-Path $BelzDir "config.json"))
+  New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
+  $Target = Join-Path $InstallDir "belz.exe"
+  if (Test-Path $Target) {
+    # A running belz.exe can be renamed aside but not overwritten.
+    Remove-Item -Force "$Target.prev" -ErrorAction SilentlyContinue
+    Move-Item -Force $Target "$Target.prev"
+  }
+  Move-Item -Force (Join-Path $Tmp $Asset) $Target
+
+  # An explicit BELZ_VERSION is pinned (config.json "update.pin"); the installer's own runs never
+  # start an update check.
+  $env:BELZ_RECORD_INSTALL = "binary"
+  $env:BELZ_RECORD_PIN = if ($env:BELZ_VERSION) { $env:BELZ_VERSION.TrimStart('v') } else { "" }
+  & $Target
+  Remove-Item Env:\BELZ_RECORD_INSTALL, Env:\BELZ_RECORD_PIN -ErrorAction SilentlyContinue
+  $env:BELZ_NO_UPDATE = "1"
+  Ok "Installed $(& $Target --version) to $Target"
+  if ($env:BELZ_VERSION) { Write-Host "Pinned to v$($env:BELZ_VERSION): auto-update is off until you remove `"update.pin`" from config.json." }
+
+  $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
+  if ($UserPath -notlike "*$InstallDir*") {
+    [Environment]::SetEnvironmentVariable("Path", "$UserPath;$InstallDir", "User")
+    Write-Host "Added $InstallDir to your user PATH (restart your shell to pick it up)."
+  }
+
+  if ($FirstRun) {
+    Info "No config found: running 'belz onboard'"
+    & $Target onboard
+  }
+} finally {
+  Remove-Item -Recurse -Force $Tmp -ErrorAction SilentlyContinue
+  # `irm | iex` runs in the caller's session: leave no installer variables behind.
+  Remove-Item Env:\BELZ_NO_UPDATE, Env:\BELZ_RECORD_INSTALL, Env:\BELZ_RECORD_PIN -ErrorAction SilentlyContinue
 }
 
-# ── Hydrate workspaces ────────────────────────────────────────────────────────
-Info "Hydrating workspaces (bun install --ignore-scripts)"
-Push-Location $SrcDir
-bun install --silent --ignore-scripts
-Pop-Location
-Ok "Workspaces ready"
-
-# ── Build + install + first-run ───────────────────────────────────────────────
-Info "Building and installing the belz binary"
-$Installer = Join-Path $SrcDir "apps\cli\scripts\install.ps1"
-& powershell -NoProfile -ExecutionPolicy Bypass -File $Installer @args
-
 Write-Host ""
-Ok "Installed. Try:"
-Write-Host "    belz --help"
-Write-Host "    belz onboard"
-Write-Host ""
-Write-Host "Updates: run 'belz update' (or re-run this one-liner) any time."
+Ok "Done. Try: belz --help"
+Write-Host "Updates install themselves (at most one check a day); run 'belz update' to update now."

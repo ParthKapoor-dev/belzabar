@@ -68,6 +68,18 @@ const ConfigFileSchema = z
         repoUrl: z.string().optional(),
         installedAt: z.string().optional(),
         version: z.string().optional(),
+        /** "binary": installed from a release (auto-updates); "source": built from a git checkout. */
+        installKind: z.enum(["binary", "source"]).optional(),
+      })
+      .passthrough()
+      .optional(),
+    /** Self-update of binary installs (apps/cli/lib/auto-update.ts). */
+    update: z
+      .object({
+        /** false turns the daily background update check off. */
+        auto: z.boolean().optional(),
+        /** Stay on this version: no auto-update, `belz update` installs exactly it. */
+        pin: z.string().regex(/^v?\d+\.\d+\.\d+$/, "a major.minor.patch version").optional(),
       })
       .passthrough()
       .optional(),

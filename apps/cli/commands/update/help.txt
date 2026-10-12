@@ -1,34 +1,45 @@
 Usage: belz update [flags]
 
-Update belz to the latest version: pull the source checkout, recompile the
-binary, and install it.
+Update belz to the latest version.
 
-belz is a compiled binary built from a git checkout. `belz update` fetches
-that checkout's tracking branch, fast-forwards it, and re-runs the install
-script, installing to the recorded install dir ("belz.installDir"). The
-location of the checkout is read from "belz.sourceDir" in
-~/.belz/config.json (recorded by the installer; defaults to ~/.belz/src).
+belz has two kinds of install, recorded as "belz.installKind" in
+~/.belz/config.json:
 
-belz update never discards local work: when there is something to pull and
-the checkout has uncommitted/staged changes (DIRTY_TREE) or local commits not
-on origin (LOCAL_COMMITS), it refuses and tells you how to resolve it.
-Untracked files do not block (git's fast-forward refuses by itself if the
-update would overwrite one).
+Binary install (the release installer, install.sh / install.ps1):
+  `belz update` reads the latest release's manifest.json, downloads this
+  platform's binary, checks its sha256, and swaps it in. The old binary is
+  kept next to it as <belz>.prev, so `belz update --rollback` can restore it.
+  With "update.pin" set in config.json, it installs exactly that version.
+  Binary installs also check for a new release in the background, at most
+  once every 24 hours, and install it the same way; the new version takes
+  effect on the next run. Turn that off with BELZ_NO_UPDATE=1 or
+  "update": { "auto": false } in config.json. It never crosses a major
+  version: a new major waits for `belz update`.
+
+Source install (a git checkout, e.g. `bun run belz:install`):
+  `belz update` fetches the checkout's tracking branch, fast-forwards it, and
+  re-runs the install script, installing to the recorded install dir
+  ("belz.installDir"). The checkout is "belz.sourceDir" (default
+  ~/.belz/src). It never discards local work: with something to pull and
+  uncommitted/staged changes (DIRTY_TREE) or local commits not on origin
+  (LOCAL_COMMITS), it refuses and tells you how to resolve it.
 
 Flags:
   --check       Report whether an update is available, without changing anything.
-  -f, --force   Rebuild and reinstall even when already up to date. Never
-                resets or discards anything in the source checkout.
+  -f, --force   Reinstall even when already up to date. Never resets or
+                discards anything in a source checkout.
+  --rollback    Binary install: put back the previous binary (<belz>.prev).
   --help, -h    Show this help message.
 
 Examples:
   belz update --check     See if a newer version exists
-  belz update             Pull, rebuild, and install the latest version
-  belz update --force     Rebuild the current checkout even with no new commits
+  belz update             Install the latest version
+  belz update --force     Reinstall the current version
+  belz update --rollback  Go back to the binary you had before the last update
 
 Notes:
-  - A broken build never replaces your working binary — the install script
-    builds before it installs and aborts on failure.
+  - A failed download, a checksum mismatch or a broken build never replaces
+    your working binary.
   - Your ~/.belz/ config, credentials, and sessions are never touched.
-  - On Linux/macOS the new binary swaps in place; on Windows it is staged and
-    swapped after the current process exits.
+  - On Linux/macOS the new binary swaps in place; on Windows the running
+    belz.exe is renamed aside first.

@@ -30,6 +30,8 @@ config.belz = {
   installDir: installDir || config.belz?.installDir,
   repoUrl: repoUrl || config.belz?.repoUrl,
   version: version || config.belz?.version,
+  // Built from a checkout: updated by `belz update` with git, never by the release auto-update.
+  installKind: 'source',
   installedAt: new Date().toISOString(),
 };
 

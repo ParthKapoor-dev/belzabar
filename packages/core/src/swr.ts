@@ -18,7 +18,7 @@ function lockPath(cacheDir: string, key: string): string {
 }
 
 /** True when running from a `bun build --compile` binary (argv[1] is a virtual bunfs path). */
-function isCompiledEntry(entry: string | undefined): boolean {
+export function isCompiledEntry(entry: string | undefined): boolean {
   return !!entry && (entry.startsWith("/$bunfs/") || /^[A-Za-z]:[\\/]~BUN[\\/]/.test(entry));
 }
 

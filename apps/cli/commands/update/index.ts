@@ -1,5 +1,5 @@
 import { spawnSync } from "child_process";
-import { existsSync } from "fs";
+import { existsSync, rmSync } from "fs";
 import { join } from "path";
 import {
   CliError,
@@ -8,18 +8,39 @@ import {
   lifecycle,
   getInstallDir,
   getSourceDir,
+  isCompiledEntry,
+  loadConfigFileRaw,
   recordBelzMeta,
   type CommandModule,
 } from "@belzabar/core";
+import { installKind, rollbackBinary, swapInBinary } from "../../lib/auto-update";
+import { compareVersions, downloadVerifiedAsset, fetchManifest } from "../../lib/release";
+import { buildInfo } from "../../bin/build-info" with { type: "macro" };
+
+const BUILD = buildInfo();
 
 const isWindows = process.platform === "win32";
 
 interface UpdateArgs {
   check: boolean;
   force: boolean;
+  rollback: boolean;
 }
 
-interface UpdateData {
+/** A binary install (installed from a release): versions, not commits. */
+interface BinaryUpdateData {
+  mode: "binary";
+  status: "up-to-date" | "updated" | "check-only" | "rolled-back";
+  fromVersion: string;
+  /** The release version installed or available; absent after a rollback. */
+  toVersion?: string;
+  /** Set when config.json `update.pin` chose the version. */
+  pinned?: string;
+  binary: string;
+}
+
+interface SourceUpdateData {
+  mode: "source";
   sourceDir: string;
   fromSha: string;
   toSha: string;
@@ -29,6 +50,8 @@ interface UpdateData {
   rebuilt: boolean;
   installDir?: string;
 }
+
+type UpdateData = BinaryUpdateData | SourceUpdateData;
 
 // ── git helpers ────────────────────────────────────────────────────────────────
 
@@ -122,18 +145,80 @@ export const args = defineArgs({
   flags: {
     check: { type: "boolean" },
     force: { type: "boolean", alias: ["-f"] },
+    rollback: { type: "boolean" },
   },
+  exclusive: [["rollback", "check"], ["rollback", "force"]],
 });
+
+/** `belz update` for a binary install: download the release binary, verify it, swap it in. */
+async function updateBinary(args: UpdateArgs): Promise<BinaryUpdateData> {
+  if (!isCompiledEntry(process.argv[1])) {
+    throw new CliError("This belz runs from source; only a compiled binary can update itself from a release.", {
+      code: "UPDATE_NOT_COMPILED",
+    });
+  }
+  const binary = process.execPath;
+  const base = { mode: "binary" as const, fromVersion: BUILD.version, binary };
+  if (args.rollback) {
+    try {
+      rollbackBinary(binary);
+    } catch (e) {
+      throw new CliError(`Cannot roll back: ${(e as Error).message}.`, { code: "UPDATE_NO_PREVIOUS" });
+    }
+    return { ...base, status: "rolled-back" };
+  }
+  const pin = loadConfigFileRaw().update?.pin?.replace(/^v/, "");
+  const spin = lifecycle.spinner("Checking for updates");
+  spin.start(pin ? `Reading release v${pin}…` : "Reading the latest release…");
+  let manifest;
+  try {
+    manifest = await fetchManifest(pin);
+  } catch (e) {
+    spin.error("Could not read the release.");
+    throw e;
+  }
+  const cmp = compareVersions(manifest.version, BUILD.version);
+  const current = pin ? cmp === 0 : cmp <= 0;
+  const result = { ...base, toVersion: manifest.version, ...(pin ? { pinned: pin } : {}) };
+  if (current && !args.force) {
+    spin.stop("Already up to date.");
+    return { ...result, status: "up-to-date" };
+  }
+  if (args.check) {
+    spin.stop("Update available.");
+    return { ...result, status: "check-only" };
+  }
+  spin.message(`Downloading v${manifest.version}…`);
+  const next = `${binary}.next`;
+  try {
+    await downloadVerifiedAsset(manifest, next);
+    swapInBinary(binary, next);
+  } catch (e) {
+    spin.error("Update failed; your belz binary is unchanged.");
+    throw e;
+  } finally {
+    rmSync(next, { force: true });
+  }
+  recordBelzMeta({ version: manifest.version, installedAt: new Date().toISOString() });
+  spin.stop(`Installed v${manifest.version}.`);
+  return { ...result, status: "updated" };
+}
 
 const command: CommandModule<UpdateArgs, UpdateData> = {
   /** Rebuilds and reinstalls the local belz binary. */
   writesLocal: true,
   parseArgs(argv) {
     const { flags } = args.parse(argv);
-    return { check: flags.check, force: flags.force };
+    return { check: flags.check, force: flags.force, rollback: flags.rollback };
   },
 
   async execute(args) {
+    if (installKind(loadConfigFileRaw()) === "binary") return ok<UpdateData>(await updateBinary(args));
+    if (args.rollback) {
+      throw new CliError("--rollback is for binary installs; roll a source install back in its checkout.", {
+        code: "UPDATE_NO_PREVIOUS",
+      });
+    }
     const sourceDir = getSourceDir();
     if (!existsSync(join(sourceDir, ".git"))) {
       throw new CliError(
@@ -163,7 +248,7 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     const [ahead = 0, behind = 0] = counts.split(/\s+/).map((n) => Number(n) || 0);
 
     const plan = planUpdate({ ahead, behind, dirty }, args);
-    const base = { sourceDir, fromSha, toSha: remoteSha, branch, dirty };
+    const base = { mode: "source" as const, sourceDir, fromSha, toSha: remoteSha, branch, dirty };
 
     if (plan.action === "up-to-date") {
       spin.stop("Already up to date.");
@@ -228,7 +313,17 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
 
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
-    const data = envelope.data as UpdateData;
+    const all = envelope.data as UpdateData;
+    if (all.mode === "binary") {
+      if (all.status === "rolled-back") ui.success(`Rolled back to the previous belz binary (was v${all.fromVersion}).`);
+      else if (all.status === "up-to-date") ui.success(`belz v${all.fromVersion} is up to date${all.pinned ? " (pinned)" : ""}.`);
+      else if (all.status === "check-only") {
+        ui.warn(`An update is available: v${all.fromVersion} → v${all.toVersion}.`);
+        ui.text("Run `belz update` to install it.");
+      } else ui.success(`belz updated: v${all.fromVersion} → v${all.toVersion}. It takes effect on your next belz run.`);
+      return;
+    }
+    const data = all;
 
     if (data.status === "up-to-date") {
       ui.success(`belz is already up to date (${data.fromSha} on ${data.branch}).`);

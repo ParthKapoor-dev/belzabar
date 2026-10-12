@@ -9,20 +9,34 @@ human view and a structured `--llm` JSON envelope for scripts and AI agents.
 
 ## Install
 
-One line, anywhere (Linux/macOS):
+One line (Linux, macOS; x64 and arm64):
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ParthKapoor-dev/belzabar/main/install.sh | bash
+curl -fsSL https://github.com/ParthKapoor-dev/belzabar/releases/latest/download/install.sh | bash
 ```
 
-Windows (PowerShell): `irm https://raw.githubusercontent.com/ParthKapoor-dev/belzabar/main/install.ps1 | iex`
+Windows (PowerShell): `irm https://github.com/ParthKapoor-dev/belzabar/releases/latest/download/install.ps1 | iex`
 
-The installer installs [`bun`](https://bun.sh) if missing, clones the repo into `~/.belz/src`,
-builds the binary to `~/.local/bin/belz` (make sure that is on your `PATH`) and walks you
-through credential setup the first time. **To update**, run `belz update` or re-run the
-one-liner; credentials, sessions and caches are kept.
+The installer downloads the release binary for your OS and CPU, checks it against the release's
+`SHA256SUMS`, installs it to `~/.local/bin/belz` (Windows: `%LOCALAPPDATA%\belz\bin`, added to
+your PATH) and walks you through credential setup the first time. No bun or git needed.
+Credentials, sessions and caches are always kept.
 
-Non-interactive install: `… | bash -s -- --env-file ./belz.env --install-dir /opt/bin`.
+Or download a binary directly: `…/releases/latest/download/belz-<os>-<arch>` with `linux-x64`,
+`linux-arm64`, `darwin-x64`, `darwin-arm64` or `windows-x64.exe`; a fixed version is at
+`…/releases/download/vX.Y.Z/<file>`.
+
+Installer flags (piped: `… | bash -s -- <flags>`): `--version 0.2.0` (installs and pins that version), `--install-dir <dir>`,
+`--env-file ./belz.env` (non-interactive setup), `--from-source` (clone into `~/.belz/src` and
+build with bun). On Windows set `BELZ_VERSION`, `BELZ_INSTALL_DIR` or `BELZ_FROM_SOURCE=1`.
+
+**Updates.** A binary install keeps itself up to date: at most once every 24 hours a belz run
+checks the latest release in the background and, if there is a newer one in the same major
+version, downloads it, verifies it and swaps it in; your next run uses it. `belz update` updates
+now, `belz update --check` only looks, `belz update --rollback` restores the previous binary.
+Opt out with `BELZ_NO_UPDATE=1` or `"update": { "auto": false }` in `~/.belz/config.json`; pin a
+version with `"update": { "pin": "0.2.0" }`. A source install updates with `belz update`
+(git fast-forward + rebuild).
 
 From a clone (development):
 
@@ -193,3 +207,18 @@ Tests never touch the real `~/.belz` (a preload points `BELZ_HOME` at a tmp dir)
 wire fixtures are sanitized, and `scripts/fixtures/fixtures-secrets.test.ts` fails on anything
 that looks like a secret, personal data or a real hostname. Never commit `~/.belz/config.json`.
 Adding a command: see `AGENTS.md`.
+
+### Releasing
+
+```bash
+bun run release patch --dry-run     # show the next version
+bun run release patch               # or minor | major | x.y.z
+```
+
+`scripts/release.ts` needs a clean `main` equal to `origin/main`. It bumps
+`apps/cli/package.json`, commits, tags `vX.Y.Z` and pushes. The tag runs
+`.github/workflows/release.yml`: `bun run check`, then the five binaries
+(`apps/cli/scripts/build-release.ts`; Linux and Windows cross-compiled on Ubuntu, macOS built and
+ad-hoc signed on macOS), a `--version` smoke test of each on its own OS and CPU, and a GitHub
+Release with `SHA256SUMS`, `manifest.json` and the installers. Every binary install picks it up
+within a day. How releases and self-update work: [`apps/cli/lib/README.md`](./apps/cli/lib/README.md).

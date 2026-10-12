@@ -12,7 +12,8 @@ commands live in `integrations/*`; the framework (runner, args, envelope, http, 
 |------|----------|
 | [`bin/`](./bin/README.md) | Entry point, namespace wiring, `--help-full`, build info |
 | [`commands/`](./commands/README.md) | Top-level commands and their registry |
-| [`scripts/`](./scripts/README.md) | Install, reinstall and update helper scripts |
+| [`lib/`](./lib/README.md) | Releases and self-update: targets, manifest, verified download, background auto-update, swap and rollback |
+| [`scripts/`](./scripts/README.md) | Install, reinstall and update helper scripts; the release build |
 | [`tests/`](./tests/README.md) | Cross-package CLI tests (registry, args docs, envelope contract, install scripts, live suites) |
 | `bunfig.toml` | Test preload (`BELZ_HOME` → tmp) |
 | `package.json` | `build` (compile `bin/cli.ts` to `./belz`), `link`; depends on core and every integration |

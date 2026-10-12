@@ -2,7 +2,8 @@
 // The belz entry point — run directly in dev (`bun bin/cli.ts …`) and compiled
 // into the release binary. Commands and help text come from the static
 // registries (see bin/options.ts), so both modes behave identically.
-import { flushAndExit, installStdioGuard, runNamespacedCli } from "@belzabar/core";
+import { flushAndExit, installStdioGuard, runNamespacedCli, trustedBelzEnv } from "@belzabar/core";
+import { autoUpdateTick, recordBinaryInstall, runUpdateWorker } from "../lib/auto-update";
 
 installStdioGuard();
 
@@ -19,4 +20,17 @@ try {
   await flushAndExit(70);
 }
 
+// Internal modes (not commands): the detached background update check, and the release
+// installer recording a binary install. See lib/auto-update.ts.
+const internal = trustedBelzEnv();
+if (internal.BELZ_UPDATE_WORKER === "1") {
+  await runUpdateWorker(options!.BUILD);
+  await flushAndExit(0);
+}
+if (internal.BELZ_RECORD_INSTALL === "binary") {
+  recordBinaryInstall(options!.BUILD);
+  await flushAndExit(0);
+}
+
+autoUpdateTick(options!.BUILD);
 await runNamespacedCli(process.argv, options!.buildCliOptions());

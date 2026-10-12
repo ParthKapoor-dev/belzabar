@@ -1,0 +1,149 @@
+# Publishes a belz release when a v* tag is pushed (`bun run release <bump>` creates one).
+#
+#   check  → bun run check (the same gate as ci.yml)
+#   build  → belz-linux-{x64,arm64}, belz-windows-x64.exe (cross-compiled on Ubuntu) and
+#            belz-darwin-{x64,arm64} (built and ad-hoc signed on macOS)
+#   smoke  → each binary runs `--version` on its own OS/CPU and must print the tag's version
+#            (linux-arm64 only while the repo is public: free arm64 runners)
+#   publish→ SHA256SUMS + manifest.json + install.sh/install.ps1, then a GitHub Release
+#
+# Download URLs (public repo, no auth):
+#   https://github.com/<owner>/belzabar/releases/latest/download/<asset>
+#   https://github.com/<owner>/belzabar/releases/download/vX.Y.Z/<asset>
+
+name: release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.20
+      - name: Tag matches apps/cli/package.json
+        run: |
+          v="$(jq -r .version apps/cli/package.json)"
+          [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME != package.json v$v"; exit 1; }
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun run check
+
+  build-linux-windows:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.20
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun apps/cli/scripts/build-release.ts --targets linux-x64,linux-arm64,windows-x64 --out dist/release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-linux-windows
+          path: dist/release/belz-*
+          if-no-files-found: error
+
+  build-macos:
+    needs: check
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.20
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun apps/cli/scripts/build-release.ts --targets darwin-arm64,darwin-x64 --sign --out dist/release
+      - run: codesign --verify --verbose dist/release/belz-darwin-arm64 dist/release/belz-darwin-x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-macos
+          path: dist/release/belz-*
+          if-no-files-found: error
+
+  smoke:
+    needs: [build-linux-windows, build-macos]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, asset: belz-linux-x64 }
+          - { os: macos-latest, asset: belz-darwin-arm64 }
+          - { os: macos-latest, asset: belz-darwin-x64, rosetta: true }
+          - { os: windows-latest, asset: belz-windows-x64.exe }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bin-*
+          merge-multiple: true
+          path: bin
+      - name: "${{ matrix.asset }} --version"
+        shell: bash
+        env:
+          BELZ_HOME: ${{ runner.temp }}/belz-home
+        run: |
+          chmod +x "bin/${{ matrix.asset }}" || true
+          if [ "${{ matrix.rosetta }}" = "true" ]; then
+            out="$(arch -x86_64 "bin/${{ matrix.asset }}" --version)"
+          else
+            out="$("bin/${{ matrix.asset }}" --version)"
+          fi
+          echo "$out"
+          case "$out" in "belz ${GITHUB_REF_NAME#v} "*) ;; *) echo "expected belz ${GITHUB_REF_NAME#v}"; exit 1 ;; esac
+
+  # GitHub's hosted arm64 Linux runners are free for public repos only: skipped while private.
+  smoke-linux-arm64:
+    needs: [build-linux-windows]
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: bin-linux-windows
+          path: bin
+      - name: belz-linux-arm64 --version
+        env:
+          BELZ_HOME: ${{ runner.temp }}/belz-home
+        run: |
+          chmod +x bin/belz-linux-arm64
+          out="$(bin/belz-linux-arm64 --version)"
+          echo "$out"
+          case "$out" in "belz ${GITHUB_REF_NAME#v} "*) ;; *) echo "expected belz ${GITHUB_REF_NAME#v}"; exit 1 ;; esac
+
+  publish:
+    needs: [smoke, smoke-linux-arm64]
+    if: ${{ !cancelled() && needs.smoke.result == 'success' && contains(fromJSON('["success","skipped"]'), needs.smoke-linux-arm64.result) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.20
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bin-*
+          merge-multiple: true
+          path: dist/release
+      - run: bun apps/cli/scripts/build-release.ts --manifest-only --out dist/release
+      - run: cat dist/release/manifest.json dist/release/SHA256SUMS
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/release/* \
+            --title "belz $GITHUB_REF_NAME" --generate-notes --verify-tag

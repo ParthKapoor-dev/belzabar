@@ -33,7 +33,11 @@ environment and its credentials.
   `CONFIG_INVALID` naming the path.
 - `passwordEncoding` is `"plain"` or `"base64"`; absent means legacy base64, decoded strictly.
   New writes are plain (the file is 0600). Never guess an encoding.
-- The `belz` section is install metadata written by the installer and `belz update`.
+- The `belz` section is install metadata written by the installer and `belz update`;
+  `belz.installKind` is `"binary"` (release install, self-updating) or `"source"` (git checkout).
+- `update` (optional): `auto: false` turns off the daily background update check of a binary
+  install; `pin: "x.y.z"` keeps it on that version (`belz update` installs exactly it). See
+  [`apps/cli/lib/README.md`](../../../../apps/cli/lib/README.md).
 - When config loads, `hardenBelzHome` tightens an existing belz home to 0700 dirs and 0600
   files (no-op on Windows, never throws).
 
@@ -65,6 +69,9 @@ cwd `.env*` file is treated as injected and ignored. Variables read:
 | `BELZ_JENKINS_{URL,USER,PASSWORD,JOB}` | Fallbacks for fields missing from the `jenkins` section |
 | `BELZ_TEAMWORK_{URL,EMAIL,PASSWORD}` | Fallbacks for fields missing from the `teamwork` section (password plain) |
 | `BELZ_SRC_DIR` | Fallback source checkout for `belz update` |
+| `BELZ_NO_UPDATE` | `1` turns off the background auto-update of a binary install |
+| `BELZ_UPDATE_BASE_URL` | Replaces the GitHub Releases URL that updates and the installers download from (a mirror; the tests' local server) |
+| `BELZ_UPDATE_WORKER`, `BELZ_RECORD_INSTALL`, `BELZ_RECORD_PIN` | Internal modes of the binary (the background update check; the release installer recording the install and the pin of an explicit `--version`), set by belz and its installers |
 | `BELZ_VERBOSE` | Set to `1` by `-v`; enables `vlog` (read directly, not through `trustedBelzEnv`) |
 
 Unprefixed keys (e.g. `TEAMWORK_*`) are read only by `belz setup --from-env`, through

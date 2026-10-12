@@ -16,6 +16,7 @@
     "@belzabar/pd": "workspace:*",
     "@belzabar/teamwork": "workspace:*",
     "@belzabar/migrations": "workspace:*",
-    "@belzabar/release": "workspace:*"
+    "@belzabar/release": "workspace:*",
+    "zod": "^3.22.4"
   }
 }
