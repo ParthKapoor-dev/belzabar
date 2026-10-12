@@ -10,6 +10,7 @@
 # Options (environment variables, since `irm | iex` takes no arguments):
 #   BELZ_VERSION=x.y.z      Install that release instead of the latest.
 #   BELZ_INSTALL_DIR=<dir>  Where belz.exe goes.
+#   BELZ_NO_SETUP=1         Skip the first-run `belz onboard` (scripts, CI, coding agents).
 #   BELZ_FROM_SOURCE=1      Clone into %USERPROFILE%\.belz\src and build with bun instead.
 #
 # Credentials, sessions and caches in %USERPROFILE%\.belz are never touched.
@@ -92,7 +93,9 @@ try {
     Write-Host "Added $InstallDir to your user PATH (restart your shell to pick it up)."
   }
 
-  if ($FirstRun) {
+  if ($FirstRun -and $env:BELZ_NO_SETUP -eq "1") {
+    Write-Host "No config yet (BELZ_NO_SETUP=1): run 'belz onboard' to add your environments."
+  } elseif ($FirstRun) {
     Info "No config found: running 'belz onboard'"
     & $Target onboard
   }

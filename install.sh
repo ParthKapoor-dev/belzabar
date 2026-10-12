@@ -12,6 +12,8 @@
 #   --version <x.y.z>      Install that release instead of the latest.
 #   --install-dir <dir>    Where the binary goes (default ~/.local/bin).
 #   --env-file <path>      Non-interactive credentials for the first setup.
+#   --no-setup             Skip the first-run `belz onboard` (scripts, CI, coding agents; also
+#                          BELZ_NO_SETUP=1). Run `belz onboard` / `belz setup` later.
 #   --from-source          Clone the repo into $BELZ_SRC_DIR (default ~/.belz/src) and build it
 #                          with bun instead (developers; updates via `belz update` + git).
 #
@@ -30,6 +32,7 @@ VERSION=""
 INSTALL_DIR="${HOME}/.local/bin"
 ENV_FILE=""
 FROM_SOURCE=0
+NO_SETUP="${BELZ_NO_SETUP:-0}"
 FORWARD=()
 
 # ── Pretty logging ────────────────────────────────────────────────────────────
@@ -49,6 +52,7 @@ while [[ $# -gt 0 ]]; do
     --install-dir) [[ $# -ge 2 ]] || die "--install-dir needs a value"; INSTALL_DIR="$2"; FORWARD+=("$1" "$2"); shift 2 ;;
     --env-file)    [[ $# -ge 2 ]] || die "--env-file needs a value"; ENV_FILE="$2"; FORWARD+=("$1" "$2"); shift 2 ;;
     --from-source) FROM_SOURCE=1; shift ;;
+    --no-setup)    NO_SETUP=1; shift ;;
     *) die "Unknown argument: $1 (see the header of install.sh)" ;;
   esac
 done
@@ -142,11 +146,13 @@ if ! echo ":${PATH}:" | grep -q ":${INSTALL_DIR}:"; then
   echo "    export PATH=\"\$PATH:$INSTALL_DIR\""
 fi
 
-if [[ "$FIRST_RUN" == 1 ]]; then
+if [[ "$FIRST_RUN" == 1 && "$NO_SETUP" == 1 ]]; then
+  warn "No config yet (--no-setup): run 'belz onboard' in a terminal to add your environments."
+elif [[ "$FIRST_RUN" == 1 ]]; then
   if [[ -n "$ENV_FILE" ]]; then
     log "No config found: running 'belz setup --env-file'"
     "$INSTALL_DIR/belz" setup --env-file "$ENV_FILE" || die "Setup aborted. Re-run 'belz setup' any time."
-  elif [[ -r /dev/tty ]]; then
+  elif ( exec < /dev/tty ) 2>/dev/null; then   # a terminal that can really be opened
     log "No config found: running 'belz onboard'"
     "$INSTALL_DIR/belz" onboard < /dev/tty || die "Onboarding aborted. Re-run 'belz onboard' any time."
   else

@@ -27,8 +27,10 @@ Or download a binary directly: `…/releases/latest/download/belz-<os>-<arch>` w
 `…/releases/download/vX.Y.Z/<file>`.
 
 Installer flags (piped: `… | bash -s -- <flags>`): `--version 0.2.0` (installs and pins that version), `--install-dir <dir>`,
-`--env-file ./belz.env` (non-interactive setup), `--from-source` (clone into `~/.belz/src` and
-build with bun). On Windows set `BELZ_VERSION`, `BELZ_INSTALL_DIR` or `BELZ_FROM_SOURCE=1`.
+`--env-file ./belz.env` (non-interactive setup), `--no-setup` (skip first-run onboarding: scripts,
+CI, coding agents), `--from-source` (clone into `~/.belz/src` and
+build with bun). On Windows set `BELZ_VERSION`, `BELZ_INSTALL_DIR`, `BELZ_NO_SETUP=1` or
+`BELZ_FROM_SOURCE=1`.
 
 **Updates.** A binary install keeps itself up to date: at most once every 24 hours a belz run
 checks the latest release in the background and, if there is a newer one in the same major
