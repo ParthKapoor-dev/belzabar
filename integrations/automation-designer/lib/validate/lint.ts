@@ -13,7 +13,10 @@
 //   table, replacePlaceholdersInText building SQL;
 //   platform prose: reserved key `language`, >30 steps, echo read/write race,
 //   string `+` on numeric inputs, variable BASE_64 stripped, FLOAT defaults
-//   truncated, descriptions (opt-in: `docs`).
+//   truncated, descriptions (opt-in: `docs`);
+//   Report Designer datasources (a method with a reportColumns / reportData
+//   output): exactly one step, no trailing whitespace after the SQL, lower-case
+//   input keys.
 //
 // Input: the V2 wire body, like lib/validate/index.ts.
 
@@ -43,6 +46,9 @@ export const LINT_RULES = {
   "AD-LINT-008": { description: "Variable encodingType BASE_64 is silently stripped on save; encode at the step input" },
   "AD-LINT-009": { description: "FLOAT defaultValue has more than 6 significant digits; the platform truncates it" },
   "AD-LINT-010": { description: "Missing description (method, summary, inputs, outputs, steps) — the team's design principle #6 (lint --docs)" },
+  "AD-LINT-011": { description: "Report Designer datasource with more than one step: RD marks it corrupted and shows only the raw outputs as columns" },
+  "AD-LINT-012": { description: "Report Designer datasource SQL ends with whitespace or a newline: RD's column discovery silently falls back to the raw outputs" },
+  "AD-LINT-013": { description: "Report Designer datasource input key with upper-case letters: RD fills filters only into inputs named like the column in lower case" },
 } as const satisfies Record<string, LintRuleInfo>;
 
 /** Every lint finding names a rule of the catalogue above. */
@@ -99,6 +105,7 @@ export function lintMethodV2(body: unknown, opts: LintOptions = {}): ValidationF
     report({ rule: "AD-LINT-005", message: `${steps.length} steps; methods above ~30 steps are slow in the UI and hard to review.`, path: "steps", fix: "Move cohesive parts into published sub-methods." });
   }
   if (opts.docs) docs(body, report);
+  if (isReportDatasource(body)) reportDatasource(body, steps, report);
 
   // Which step output names come from replacePlaceholdersInText (AD-LINT-003).
   const placeholderOutputs = new Map<string, number>();
@@ -317,6 +324,49 @@ function spelValues(s: Obj): Array<{ value: string; path: Array<string | number>
 function significantDigits(v: string): number {
   const d = v.trim().replace(/^[-+]/, "").replace(/e.*$/i, "").replace(".", "").replace(/^0+/, "");
   return /^\d+$/.test(d) ? d.length : 0;
+}
+
+/** A Report Designer datasource returns `reportColumns` / `reportData` (its RD contract). */
+function isReportDatasource(body: Obj): boolean {
+  return arr(body.outputs).some((o) => isObj(o) && ["reportColumns", "reportData"].includes(str(o.key) ?? ""));
+}
+
+function reportDatasource(body: Obj, steps: unknown[], report: Report): void {
+  if (steps.length > 1) {
+    report({
+      rule: "AD-LINT-011",
+      message: `Report Designer datasource has ${steps.length} steps; RD needs exactly one data.read SQL step and otherwise shows only reportColumns/reportData/reportCount as columns.`,
+      path: "steps",
+      fix: "Move the other logic into the SQL, or into a separate method the report does not use.",
+    });
+  }
+  steps.forEach((s, i) => {
+    if (!isObj(s) || stepKind(s) !== "SQL") return;
+    const q = findSqlInput(s);
+    const raw = q && typeof q.inp.value === "string" ? q.inp.value : "";
+    const flagged = q?.inp.encodingType === "BASE_64" || q?.inp.encodedBase64 === true;
+    const sql = flagged ? decodeBase64Strict(raw) ?? raw : raw;
+    if (sql.trim() && /\s$/.test(sql)) {
+      report({
+        rule: "AD-LINT-012",
+        message: "Report Designer datasource SQL ends with whitespace or a newline; RD then cannot read its column names.",
+        path: jsonPath(["steps", i, ...q!.path, "value"]),
+        step: stepRef(s, i),
+        fix: "Remove the trailing newline (a SQL file usually ends with one).",
+      });
+    }
+  });
+  arr(body.inputs).forEach((f, i) => {
+    const key = isObj(f) ? str(f.key) ?? "" : "";
+    if (key !== key.toLowerCase()) {
+      report({
+        rule: "AD-LINT-013",
+        message: `Input "${key}" has upper-case letters; Report Designer filters on column "${key}" are only passed to an input named "${key.toLowerCase()}", so they are ignored.`,
+        path: jsonPath(["inputs", i, "key"]),
+        fix: `Rename the input to "${key.toLowerCase()}".`,
+      });
+    }
+  });
 }
 
 function docs(body: Obj, report: Report): void {

@@ -43,6 +43,13 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
   name, so a genuinely-text id column is a false positive (advisory only). `Q5` is taken by
   the validator's autoformat rule, hence the gap.
 
+- Report Designer datasources (`AD-LINT-011`–`013`) are linted only when the method has a
+  `reportColumns` / `reportData` output (the RD contract): exactly one step, no whitespace
+  after the SQL (RD's column discovery parses the SQL text and silently falls back to the raw
+  outputs), and lower-case input keys (RD fills a filter into the input named like the column
+  in lower case). Both platform behaviours were observed on a live env; see
+  [`../../../report-designer/README.md`](../../../report-designer/README.md).
+
 ## Adding a rule
 
 1. Add the code to `catalogue.ts` (or `LINT_RULES` for an advisory rule).

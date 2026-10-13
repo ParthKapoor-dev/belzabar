@@ -154,6 +154,40 @@ describe("anti-patterns and prose rules", () => {
   });
 });
 
+describe("Report Designer datasource rules (a method with a reportColumns output)", () => {
+  const RD = ["AD-LINT-011", "AD-LINT-012", "AD-LINT-013"];
+  /** The golden method reduced to its SQL step and given the RD output contract. */
+  function datasource(sql = "select 1 as n", inputKeys = ["label"]): Body {
+    const b = withSql(sql);
+    b.steps = [b.steps[2]];
+    b.outputs = [{ ...b.outputs[0], key: "reportColumns", fieldCode: "reportColumns", name: "reportColumns" }];
+    b.inputs = inputKeys.map((key) => ({ ...b.inputs[0], key, name: key }));
+    return b;
+  }
+  const rd = (b: Body) => rules(b).filter((r) => RD.includes(r));
+
+  test("a clean single-step datasource has no finding", () => expect(rd(datasource())).toEqual([]));
+  test("AD-LINT-011: more than one step", () => {
+    const b = datasource();
+    b.steps.push((golden() as Body).steps[1]);
+    expect(rd(b)).toEqual(["AD-LINT-011"]);
+  });
+  test("AD-LINT-012: SQL ending in a newline or spaces", () => {
+    expect(rd(datasource("select 1 as n\n"))).toEqual(["AD-LINT-012"]);
+    expect(rd(datasource("select 1 as n  "))).toEqual(["AD-LINT-012"]);
+  });
+  test("AD-LINT-013: an input key with upper case", () => {
+    const f = lintMethodV2(datasource("select 1 as n", ["Label", "orderBy"])).filter((x) => x.rule === "AD-LINT-013");
+    expect(f.map((x) => x.path)).toEqual(["inputs[0].key", "inputs[1].key"]);
+    expect(f[0]!.fix).toBe('Rename the input to "label".');
+  });
+  test("methods that are not datasources are never checked", () => {
+    const b = withSql("select 1 as n\n");
+    b.inputs[0].key = "Label";
+    expect(rd(b)).toEqual([]);
+  });
+});
+
 describe("calibration over the 36 real acme-dev bodies", () => {
   test("lint counts are pinned (docs off): few, specific findings", () => {
     const counts: Record<string, number> = {};

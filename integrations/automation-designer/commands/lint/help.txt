@@ -49,6 +49,11 @@ Rules:
     AD-LINT-008  variable encodingType BASE_64 (stripped on save)
     AD-LINT-009  FLOAT default with more than 6 significant digits
     AD-LINT-010  missing descriptions (--docs)
+    AD-LINT-011  Report Designer datasource with more than one step
+    AD-LINT-012  Report Designer datasource SQL ending in a newline/space
+    AD-LINT-013  Report Designer datasource input key with upper case
+                 (011-013 only for methods with a reportColumns/reportData
+                 output; see `belz rd uses <uuid>` for the reports using it)
 
 Notes:
   - Errors exit 1 with AD_LINT_FAILED. Data: {clean, counts, byRule, groups:
