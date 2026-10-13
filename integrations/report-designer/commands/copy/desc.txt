@@ -1,0 +1,4 @@
+belz rd copy <id> --from-env <source> --env <target> --yes  :->  Copy a report to another env as a new report (datasource mapped by category + method name)
+belz rd copy <id> --from-env <source> --env <target> --into <id> --yes  :->  Overwrite an existing target report instead (backup, conflict check, read-back)
+belz rd copy <id> --from-env <source> --env <target> --dry-run  :->  Resolve the datasource on the target and show the plan; write nothing
+belz rd copy <id> --from-env <source> --env <target> --title <text> --exact  :->  Rename on the target; also copy the display settings (runs the source report once)

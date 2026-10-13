@@ -9,6 +9,9 @@ import type { CommandRegistry } from "@belzabar/core";
 import * as archiveCmd from "./commands/archive/index";
 import archiveHelp from "./commands/archive/help.txt" with { type: "text" };
 import archiveDesc from "./commands/archive/desc.txt" with { type: "text" };
+import * as copyCmd from "./commands/copy/index";
+import copyHelp from "./commands/copy/help.txt" with { type: "text" };
+import copyDesc from "./commands/copy/desc.txt" with { type: "text" };
 import * as createCmd from "./commands/create/index";
 import createHelp from "./commands/create/help.txt" with { type: "text" };
 import createDesc from "./commands/create/desc.txt" with { type: "text" };
@@ -39,6 +42,7 @@ import usesDesc from "./commands/uses/desc.txt" with { type: "text" };
 
 export const registry = {
   archive: { module: archiveCmd, help: archiveHelp, desc: archiveDesc },
+  copy: { module: copyCmd, help: copyHelp, desc: copyDesc },
   create: { module: createCmd, help: createHelp, desc: createDesc },
   datasources: { module: datasourcesCmd, help: datasourcesHelp, desc: datasourcesDesc },
   download: { module: downloadCmd, help: downloadHelp, desc: downloadDesc },

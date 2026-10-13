@@ -1,0 +1,34 @@
+Usage: belz rd copy <id> --from-env <source> --env <target> [flags]
+
+Copy a report from one env to another; Jenkins migrations have no report
+module, so this is how a report is promoted. belz reads the report on the
+source env (without running it), maps its datasource to the target env by AD
+category and method name, and creates a new report there, or overwrites one
+with --into.
+
+The datasource method must already be published on the target env: migrate it
+first (`belz migrate run`, module AD_Method), otherwise the copy stops with
+RD_DATASOURCE_NOT_FOUND before writing anything.
+
+Arguments:
+  <id>                The report on the source env (32 hex or a URL).
+
+Flags:
+  --from-env <env>    The source env. Required. --env is the target.
+  --into <id>         Overwrite this report on the target instead of creating
+                      one (same safety as `belz rd save`: changes listed,
+                      backup first, conflict check, read back).
+  --title <text>      Title on the target (default: the source title).
+  --exact             Also copy summaryPosition and filterConfig; this RUNS
+                      the report once on the source env.
+  --dry-run           Resolve everything and show the plan; write nothing.
+  --yes, -y           Skip the confirmation prompt (required with --llm).
+  --help, -h          Show this help message.
+
+Without --exact, a new copy gets the default display settings and --into keeps
+the target's own. A warning lists target reports with the same title.
+
+Examples:
+  belz rd copy 0123456789abcdef0123456789abcdef --from-env dev --env qa --dry-run
+  belz rd copy 0123456789abcdef0123456789abcdef --from-env dev --env qa --yes
+  belz rd copy 0123456789abcdef0123456789abcdef --from-env dev --env qa --into fedcba9876543210fedcba9876543210 --yes

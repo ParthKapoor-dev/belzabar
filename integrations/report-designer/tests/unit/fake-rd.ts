@@ -11,12 +11,16 @@
 import { spyOn } from "bun:test";
 import { fakeFetch, respond, withTempEnvConfig, type FakeFetch, type RecordedRequest, type TempEnvConfig } from "@belzabar/core/testing";
 import type { Obj } from "@belzabar/core";
+import { forgetDataSources } from "../../lib/datasource";
 
 export const RD_ENV = "t-rd";
 export const RD_ENV_2 = "t-rd2";
 export const REPORT_ID = "0123456789abcdef0123456789abcdef";
 export const CATEGORY = { id: 7, name: "Reports-Test", uuid: "aaaabbbbccccddddeeeeffff00001111", aliasName: ["Reports-Test"] };
 export const DS = { type: "SERVICE", id: "501", label: "orders_by_day", description: "Orders per day" };
+/** The same category and method on the second env, with that env's own ids. */
+export const CATEGORY_2 = { ...CATEGORY, id: 9, uuid: "99998888777766665555444433332222" };
+export const DS_2 = { ...DS, id: "777" };
 
 export const COLUMNS: Obj[] = [
   { id: "111", data: [], name: "Day", type: "DATE", label: "Day", width: 150, starred: false, filterable: true, reportable: true },
@@ -116,6 +120,7 @@ function v3(r: StoredReport): Obj {
   };
 }
 
+const onEnv2 = (req: RecordedRequest) => req.url.includes(`//${RD_ENV_2}.`);
 const idOf = (url: string) => /[/=]([0-9a-f]{32})(?:[/?&]|$)/.exec(url)?.[1] ?? "";
 
 export function fakeRdEnv(opts: { envs?: string[] } = {}): FakeRdEnv {
@@ -137,11 +142,12 @@ export function fakeRdEnv(opts: { envs?: string[] } = {}): FakeRdEnv {
       cfg ??= withTempEnvConfig({ envs, activeEnv: (opts.envs ?? [RD_ENV])[0] });
       quiet ??= spyOn(process.stderr, "write").mockImplementation(() => true);
       ff?.restore();
+      forgetDataSources();
       const get = (req: RecordedRequest) => self.reports.get(idOf(req.url));
       ff = fakeFetch([
         ...(extra as unknown[]),
-        { method: "GET", url: /\/rest\/api\/v2\/reports\/datasources\/category$/, response: [CATEGORY] },
-        { method: "GET", url: /\/rest\/api\/v2\/reports\/datasources\?/, response: [DS] },
+        { method: "GET", url: /\/rest\/api\/v2\/reports\/datasources\/category$/, response: (req: RecordedRequest) => [onEnv2(req) ? CATEGORY_2 : CATEGORY] },
+        { method: "GET", url: /\/rest\/api\/v2\/reports\/datasources\?/, response: (req: RecordedRequest) => [onEnv2(req) ? DS_2 : DS] },
         { method: "GET", url: /\/rest\/api\/v2\/reports\/count$/, response: { TOTAL: self.reports.size, ARCHIVED: 0 } },
         { method: "GET", url: /\/rest\/api\/v2\/reports\?/, response: () => [...self.reports.values()].map(basic) },
         { method: "GET", url: /\/rest\/api\/v3\/reports\?reportId=/, response: (req: RecordedRequest) => (get(req) ? [v3(get(req)!)] : notFound()) },

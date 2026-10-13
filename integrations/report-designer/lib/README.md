@@ -5,9 +5,9 @@ The Report Designer client and definitions, imported as `@belzabar/rd/lib/<file>
 | File | Contents |
 |---|---|
 | `api.ts` | Every RD request (on core `apiFetch`): reports, runs, exports, datasources, the AD → report lookup; `RD_*` error mapping |
-| `datasource.ts` | `{category, method}` ↔ env-local `dataSourceId` / `dataSourceCategoryUuid` (`resolveDataSource`, `describeDataSource`), per-env memo |
+| `datasource.ts` | `{category, method}` ↔ env-local `dataSourceId` / `dataSourceCategoryUuid` (`resolveDataSource`, `describeDataSource`), per-env memo (`forgetDataSources` after a miss) |
 | `definition.ts` | `readReport` (side-effect free unless `exact`), the spec (`parseSpec`, `readSpecFile`, `SPEC_FORMAT`), `toConfiguration`, `savedConfiguration` (the report's own ids, for runs), `specChanges` |
-| `write.ts` | The write pipeline: `backupReport` (`RD_BACKUP_DIR`), `definitionFingerprint` (conflict check), `withDisplayFrom`, `writeSpec` (PATCH / PUT / read-back), `createReport` |
+| `write.ts` | The write pipeline (PATCH / PUT / read-back): `createReport`, `planSave` / `applySave` (diff, backup to `RD_BACKUP_DIR`, conflict check, write) |
 | `confirm.ts` | `requireConfirmation` (`RD_CONFIRMATION_REQUIRED` / `RD_USER_ABORT`), `logIntent` (`[belz rd write]`) |
 | `report-id.ts` | `parseReportId` (id, dashed id or URL), `REPORT_ID_POSITIONAL` |
 | `view.ts` | Compact column / filter / summary views for presenters |
@@ -54,6 +54,11 @@ PATCH keeps the saved configuration (verified live). `writeSpec` re-reads the v3
 right before writing and compares it with the fingerprint taken before the confirmation
 (`RD_CONFLICT`), then reads back through `readReport` and lists differences with
 `specChanges`. Display settings are compared only when both sides know them.
+
+`planSave` reads the report with `exact` (it runs once) unless it is a dry run, so the display
+settings can be compared and kept when the spec leaves them out; `applySave` backs up, writes
+and verifies. `rd save` and `rd copy --into` share them. The memoised datasource lists are
+per env (keyed by env name), so `rd copy` resolves on the source and the target separately.
 
 ## Extending
 

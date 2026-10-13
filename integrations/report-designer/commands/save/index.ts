@@ -1,9 +1,9 @@
 import { type CommandModule, defineArgs, failWithData, ok } from "@belzabar/core";
 import { requireConfirmation } from "../../lib/confirm";
 import { resolveDataSource, type ResolvedDataSource } from "../../lib/datasource";
-import { readReport, readSpecFile, specChanges } from "../../lib/definition";
+import { readSpecFile } from "../../lib/definition";
 import { parseReportId, REPORT_ID_POSITIONAL } from "../../lib/report-id";
-import { backupReport, definitionFingerprint, withDisplayFrom, writeSpec } from "../../lib/write";
+import { applySave, planSave } from "../../lib/write";
 
 interface SaveArgs {
   id: string;
@@ -46,15 +46,9 @@ const command: CommandModule<SaveArgs, SaveData> = {
   async execute({ id, spec: path, yes, dryRun }, context) {
     const wanted = await readSpecFile(path);
     const ds = await resolveDataSource(wanted.dataSource);
-    // The two display settings are only in the executing read, so a real save
-    // runs the report once: to compare them, and to keep the current ones when
-    // the spec leaves them out. A dry run does neither.
-    const needsDisplay = wanted.summaryPosition === undefined || wanted.filterConfig === undefined;
-    const current = await readReport(id, { exact: !dryRun });
-    const fingerprint = await definitionFingerprint(id);
-    const spec = withDisplayFrom(wanted, dryRun ? null : current.spec);
-    const changes = specChanges(current.spec, spec);
-    const base = { id, dataSource: ds, displayFromCurrent: needsDisplay, changes };
+    const plan = await planSave(id, wanted, { dryRun });
+    const { current, changes } = plan;
+    const base = { id, dataSource: ds, displayFromCurrent: plan.displayFromCurrent, changes };
 
     if (changes.length === 0) {
       context.warn("The spec matches the saved definition; nothing to save.");
@@ -72,12 +66,10 @@ const command: CommandModule<SaveArgs, SaveData> = {
         ["Changes", changes.join("\n")],
       ],
     });
-    const backup = backupReport(current);
-    const titleChanged = spec.title !== current.spec.title || (spec.description ?? "") !== (current.spec.description ?? "");
-    const result = await writeSpec(id, spec, ds, { expectFingerprint: fingerprint, titleChanged });
-    const data: SaveData = { ...base, dryRun: false, changed: true, backup, mismatches: result.mismatches };
-    if (result.mismatches.length > 0) {
-      return failWithData("RD_VERIFY_FAILED", `Report ${id} was saved but reads back different: ${result.mismatches.join("; ")}.`, data);
+    const { backup, mismatches } = await applySave(id, plan, ds);
+    const data: SaveData = { ...base, dryRun: false, changed: true, backup, mismatches };
+    if (mismatches.length > 0) {
+      return failWithData("RD_VERIFY_FAILED", `Report ${id} was saved but reads back different: ${mismatches.join("; ")}.`, data);
     }
     return ok(data);
   },

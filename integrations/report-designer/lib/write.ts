@@ -17,7 +17,7 @@ import { readReport, specChanges, toConfiguration, type ReportSpec, type SavedRe
 export const RD_BACKUP_DIR = join(BELZ_CONFIG_DIR, "rd", "backups");
 
 /** Write the report's current spec (restorable with `rd save <id> --spec <file>`); returns the path. */
-export function backupReport(report: SavedReport): string {
+function backupReport(report: SavedReport): string {
   const dir = join(RD_BACKUP_DIR, Config.activeEnv.name);
   mkdirSync(dir, { recursive: true, mode: 0o700 });
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
@@ -27,7 +27,7 @@ export function backupReport(report: SavedReport): string {
 }
 
 /** Fill `summaryPosition` / `filterConfig` the spec leaves out from `current` (when it knows them). */
-export function withDisplayFrom(spec: ReportSpec, current: ReportSpec | null): ReportSpec {
+function withDisplayFrom(spec: ReportSpec, current: ReportSpec | null): ReportSpec {
   if (!current) return spec;
   return {
     ...spec,
@@ -37,7 +37,7 @@ export function withDisplayFrom(spec: ReportSpec, current: ReportSpec | null): R
 }
 
 /** The parsed definition as a stable string, for "did it change since we read it?". */
-export async function definitionFingerprint(id: string): Promise<string> {
+async function definitionFingerprint(id: string): Promise<string> {
   const d = await getReportDefinition(id);
   return JSON.stringify([d.name, d.description, d.columns, d.filters, d.summaries, d.dataSourceId, d.dataSourceCategoryUuid, d.filterRequired]);
 }
@@ -54,7 +54,7 @@ interface WriteResult {
  * and read it back. `expectFingerprint` (from before the confirmation) makes a
  * concurrent change a RD_CONFLICT instead of a silent overwrite.
  */
-export async function writeSpec(
+async function writeSpec(
   id: string,
   spec: ReportSpec,
   ds: ResolvedDataSource,
@@ -98,3 +98,41 @@ export async function createReport(spec: ReportSpec, ds: ResolvedDataSource): Pr
   }
 }
 
+interface SavePlan {
+  current: SavedReport;
+  /** The spec to write: `wanted` with the display settings it leaves out taken from `current`. */
+  spec: ReportSpec;
+  changes: string[];
+  /** Taken before any confirmation; `applySave` refuses when the report moved since. */
+  fingerprint: string;
+  /** The spec left a display setting out (the report's current one is kept). */
+  displayFromCurrent: boolean;
+}
+
+/**
+ * Read report `id` and diff it with `wanted`. The two display settings are only
+ * in the executing read, so a real save runs the report once: to compare them,
+ * and to keep the current ones when the spec leaves them out. A dry run does
+ * neither.
+ */
+export async function planSave(id: string, wanted: ReportSpec, opts: { dryRun: boolean }): Promise<SavePlan> {
+  const current = await readReport(id, { exact: !opts.dryRun });
+  const fingerprint = await definitionFingerprint(id);
+  const spec = withDisplayFrom(wanted, opts.dryRun ? null : current.spec);
+  return {
+    current,
+    spec,
+    changes: specChanges(current.spec, spec),
+    fingerprint,
+    displayFromCurrent: wanted.summaryPosition === undefined || wanted.filterConfig === undefined,
+  };
+}
+
+/** Back up, write and verify a planned save. */
+export async function applySave(id: string, plan: SavePlan, ds: ResolvedDataSource): Promise<{ backup: string; mismatches: string[] }> {
+  const backup = backupReport(plan.current);
+  const before = plan.current.spec;
+  const titleChanged = plan.spec.title !== before.title || (plan.spec.description ?? "") !== (before.description ?? "");
+  const result = await writeSpec(id, plan.spec, ds, { expectFingerprint: plan.fingerprint, titleChanged });
+  return { backup, mismatches: result.mismatches };
+}

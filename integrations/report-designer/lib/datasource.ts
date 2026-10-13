@@ -72,6 +72,16 @@ export function dataSourcesOf(categoryUuid: string): Promise<DataSourceRow[]> {
   return p;
 }
 
+/**
+ * Forget the memoised lists (all envs). Called after a lookup miss, so a method
+ * published since the list was fetched is found on the next try; tests reset
+ * with it too.
+ */
+export function forgetDataSources(): void {
+  categoryMemo.clear();
+  dataSourceMemo.clear();
+}
+
 /** Category by name or alias (case-insensitive), or by uuid. */
 export async function findCategory(nameOrUuid: string): Promise<Category | null> {
   const q = nameOrUuid.trim().toLowerCase();
@@ -89,6 +99,7 @@ export async function resolveDataSource(ref: DataSourceRef): Promise<ResolvedDat
   const env = Config.activeEnv.name;
   const category = await findCategory(ref.category);
   if (!category) {
+    forgetDataSources();
     throw new CliError(`Datasource category '${ref.category}' does not exist on ${env}.`, {
       code: "RD_DATASOURCE_CATEGORY_NOT_FOUND",
       details: { env, category: ref.category },
@@ -98,6 +109,7 @@ export async function resolveDataSource(ref: DataSourceRef): Promise<ResolvedDat
   const hits = rows.filter((r) => r.method === ref.method);
   const hit = hits[0] ?? rows.find((r) => r.method.toLowerCase() === ref.method.toLowerCase());
   if (!hit) {
+    forgetDataSources();
     throw new CliError(
       `No published method '${ref.method}' in category '${category.name}' on ${env}. A report datasource must be a published ` +
         "AD method: publish it there (belz ad publish) or migrate it to this env first.",

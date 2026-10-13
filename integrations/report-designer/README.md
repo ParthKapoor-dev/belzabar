@@ -1,8 +1,8 @@
 # @belzabar/rd
 
 `belz rd …` — Report Designer: find and read reports without running them, run or download
-them, export a report as a portable spec and create or save reports from one, archive them,
-list datasources, and find the reports an AD method feeds.
+them, export a report as a portable spec and create or save reports from one, copy reports
+between envs, archive them, list datasources, and find the reports an AD method feeds.
 
 ## What a report is
 
@@ -44,6 +44,7 @@ Exports: `@belzabar/rd/registry` and `@belzabar/rd/lib/<file>`.
 | `belz rd create --spec <file> --env <env>` | **write** | New report from a spec (`--dry-run` resolves only) |
 | `belz rd save <id> --spec <file> --env <env>` | **write** | Replace a report's definition (`--dry-run` lists the changes) |
 | `belz rd archive <id> --env <env>` | **write** | Archive (`--restore`: unarchive) |
+| `belz rd copy <id> --from-env <src> --env <target>` | **write** (target) | Copy to another env: new report, or `--into <id>` |
 
 **Runs** execute the datasource method on the server (and move the report's execution time
 and version counter), so they declare `writes` and need an explicit `--env`; nothing in the
@@ -55,6 +56,16 @@ returns those two only from a call that **runs the report**, so `--exact` counts
 (summaries at top, `filterConfig` 0).
 
 Flags and examples: each `commands/<cmd>/help.txt` or `belz --help-full rd`.
+
+## Copying between envs
+
+Jenkins migrations have no report module, so `rd copy` is how a report moves from one env to
+another. It reads the report on `--from-env` (without running it, unless `--exact`), maps the
+datasource by category + method name to `--env`'s own chain id and category uuid, and creates a
+new report there, or with `--into <id>` overwrites one through the same pipeline as `rd save`.
+The datasource method must already be published on the target (`belz migrate run --module
+AD_Method …`); otherwise it stops with `RD_DATASOURCE_NOT_FOUND` before writing. Nothing is
+written on the source env.
 
 ## Write safety
 
@@ -102,6 +113,7 @@ Columns, filters and summaries are kept exactly as Report Designer stores them (
 | `RD_NOT_FOUND` | No such report on this env |
 | `RD_DATASOURCE_CATEGORY_NOT_FOUND` / `RD_DATASOURCE_NOT_FOUND` / `RD_DATASOURCE_AMBIGUOUS` | The spec's datasource does not resolve on the target env (the method must be published there) |
 | `RD_SPEC_UNREADABLE` / `RD_SPEC_INVALID` / `MISSING_SPEC` | The spec file is missing or malformed (`details.problems`) |
+| `RD_SAME_ENV` / `MISSING_FROM_ENV` | `copy`: source and target are the same env, or no `--from-env` |
 | `RD_CONFLICT` | `save`: the report changed on the server after belz read it; nothing written |
 | `RD_VERIFY_FAILED` | The definition or status read back differs from what was written |
 | `RD_NO_DATASOURCE` | `run` / `download` on a report that has no datasource saved yet |

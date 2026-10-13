@@ -209,6 +209,7 @@ belz rd uses <method-uuid>             # reports fed by an AD method
 belz rd run <id> --env dev             # rows, as saved (runs the datasource method)
 belz rd save <id> --spec report.json --env dev --dry-run   # changes; drop --dry-run to save
 belz rd create --spec report.json --env dev               # a new report from a spec
+belz rd copy <id> --from-env dev --env qa --dry-run       # promote a report to another env
 ```
 
 `rd save` backs the report up to `~/.belz/rd/backups/` first and refuses if someone changed it
