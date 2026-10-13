@@ -1,0 +1,22 @@
+Usage: belz rd run <id> --env <env> [flags]
+
+Run a report as saved (its datasource method and saved filters) and return the
+rows. This EXECUTES the datasource method on the server, so it needs --env.
+Nothing about the saved definition changes, but the report's execution time
+and internal version counter move.
+
+Arguments:
+  <id>                Report id (32 hex) or a Report Designer URL.
+
+Flags:
+  --limit <n>         Rows to return, 1-5000 (default: 20).
+  --offset <n>        Skip this many rows first (default: 0).
+  --count             Also return the total row count (runs the method again).
+  --help, -h          Show this help message.
+
+Rows come back as objects keyed by column name; values are strings, as the
+server returns them. For a file, use `belz rd download`.
+
+Examples:
+  belz rd run 0123456789abcdef0123456789abcdef --env dev
+  belz rd run 0123456789abcdef0123456789abcdef --env dev --limit 100 --offset 100 --count

@@ -1,0 +1,19 @@
+Usage: belz rd datasources [flags]
+
+List what a report can use as its datasource. A datasource is a PUBLISHED AD
+method; Report Designer groups them by AD category. Read-only: nothing is run.
+
+Flags:
+  --category <name>   List the published methods of this category (name, alias
+                      or uuid): chain id, method name, description. Without it,
+                      the categories are listed.
+  --search <text>     Keep only categories / methods whose name contains this.
+  --help, -h          Show this help message.
+
+A method missing here is not published (or not in that category): publish it
+with `belz ad publish` before a report can use it.
+
+Examples:
+  belz rd datasources --search test
+  belz rd datasources --category Reports
+  belz rd datasources --category Reports --search invoice

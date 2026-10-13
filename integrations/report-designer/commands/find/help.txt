@@ -1,0 +1,23 @@
+Usage: belz rd find [<query>] [flags]
+
+List Report Designer reports, optionally only those whose title contains the
+query. Read-only. Archived reports are hidden unless --archived.
+
+Arguments:
+  <query>             Words the title must contain (case-insensitive). Omit to
+                      list every report.
+
+Flags:
+  --limit <n>         Rows to fetch, 1-1000 (default: 50).
+  --sort <order>      executed (most recently run first, default), created,
+                      owner, role or popular.
+  --archived          Also list archived reports.
+  --help, -h          Show this help message.
+
+Returns id, title, datasource method, status and last run time per report.
+Use the id with `belz rd show <id>`.
+
+Examples:
+  belz rd find invoice
+  belz rd find --sort created --limit 20
+  belz rd find "monthly summary" --archived

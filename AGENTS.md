@@ -12,6 +12,7 @@ directory. `belz --help-full` is the only command reference: never invent flags.
 | `packages/core/` | [`packages/core/AGENTS.md`](./packages/core/AGENTS.md) |
 | `integrations/automation-designer/` | [`integrations/automation-designer/AGENTS.md`](./integrations/automation-designer/AGENTS.md) |
 | `integrations/page-designer/` | [`integrations/page-designer/AGENTS.md`](./integrations/page-designer/AGENTS.md) |
+| `integrations/report-designer/` | [`integrations/report-designer/AGENTS.md`](./integrations/report-designer/AGENTS.md) |
 | `integrations/teamwork/` | [`integrations/teamwork/AGENTS.md`](./integrations/teamwork/AGENTS.md) |
 | `integrations/migrations/` | [`integrations/migrations/AGENTS.md`](./integrations/migrations/AGENTS.md) (Jenkins client: [`lib/jenkins/README.md`](./integrations/migrations/lib/jenkins/README.md)) |
 | `integrations/release/` | [`integrations/release/AGENTS.md`](./integrations/release/AGENTS.md) |

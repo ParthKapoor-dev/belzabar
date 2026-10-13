@@ -1,0 +1,3 @@
+belz rd find [<query>]  :->  List reports (id, title, datasource method, status, last run); the query matches the title
+belz rd find [<query>] --limit <n> --sort executed|created|owner|role|popular  :->  Cap rows (≤1000) and choose the order
+belz rd find [<query>] --archived  :->  Include archived reports

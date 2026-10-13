@@ -60,6 +60,10 @@ const CASES: Case[] = [
   { owner: PD, command: "lock", argv: ["release", UUID], kind: "writes" },
   { owner: PD, command: "history", argv: ["restore", UUID, "--version", "3", "--yes"], kind: "writes" },
   { owner: PD, command: "history", argv: ["list", UUID], kind: "reads" },
+  // ── Report Designer ──
+  { owner: "integrations/report-designer", command: "show", argv: [UUID], kind: "reads" },
+  { owner: "integrations/report-designer", command: "show", argv: [UUID, "--exact"], kind: "writes" },
+  { owner: "integrations/report-designer", command: "export", argv: [UUID], kind: "writesLocal" },
   // ── Teamwork / migrations / release ──
   { owner: "integrations/teamwork", command: "add-comment", argv: ["123", "--body", "hi"], kind: "writes" },
   { owner: "integrations/migrations", command: "run", argv: [], kind: "writes" },

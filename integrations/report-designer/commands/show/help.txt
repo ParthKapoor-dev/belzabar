@@ -1,0 +1,21 @@
+Usage: belz rd show <id> [flags]
+
+Show a report's saved definition: title, status, datasource (AD category and
+published method), columns, saved filters and summaries. Read-only: the report
+is not run, so its data and execution time are untouched.
+
+Arguments:
+  <id>                Report id (32 hex) or a Report Designer URL.
+
+Flags:
+  --exact             Also read summaryPosition and filterConfig (display
+                      settings). The server returns them only from a call that
+                      RUNS the report once, so this needs --env.
+  --help, -h          Show this help message.
+
+A warning means the datasource is missing or no longer published: the report
+will fail when run. Use `belz rd export <id>` for the full definition as a file.
+
+Examples:
+  belz rd show 0123456789abcdef0123456789abcdef
+  belz rd show 0123456789abcdef0123456789abcdef --exact --env dev

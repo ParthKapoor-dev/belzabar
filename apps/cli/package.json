@@ -14,6 +14,7 @@
     "@belzabar/core": "workspace:*",
     "@belzabar/ad": "workspace:*",
     "@belzabar/pd": "workspace:*",
+    "@belzabar/rd": "workspace:*",
     "@belzabar/teamwork": "workspace:*",
     "@belzabar/migrations": "workspace:*",
     "@belzabar/release": "workspace:*",

@@ -13,6 +13,7 @@ import {
 } from "@belzabar/core";
 import { registry as adRegistry } from "@belzabar/ad/registry";
 import { registry as pdRegistry } from "@belzabar/pd/registry";
+import { registry as rdRegistry } from "@belzabar/rd/registry";
 import { registry as twRegistry } from "@belzabar/teamwork/registry";
 import { registry as migrateRegistry } from "@belzabar/migrations/registry";
 import { registry as releaseRegistry } from "@belzabar/release/registry";
@@ -42,6 +43,7 @@ const NOT_ENV_AWARE_TOP_LEVEL = ["envs", "setup", "onboard", "update"] as const;
 const NAMESPACES: Array<{ key: string; name: string; description: string; registry: CommandRegistry; header: string }> = [
   { key: "ad", name: "Automation Designer", description: "Interact with Automation Designer APIs.", registry: adRegistry, header: "belz ad <cmd>  —  Automation Designer" },
   { key: "pd", name: "Page Designer", description: "Analyze Page Designer configuration.", registry: pdRegistry, header: "belz pd <cmd>  —  Page Designer" },
+  { key: "rd", name: "Report Designer", description: "Read, run, export and copy Report Designer reports.", registry: rdRegistry, header: "belz rd <cmd>  —  Report Designer" },
   { key: "tw", name: "Teamwork", description: "Interact with the Teamwork project management API.", registry: twRegistry, header: "belz tw <cmd>  —  Teamwork" },
   { key: "migrate", name: "Migrations (Jenkins)", description: "Trigger Jenkins-backed migration builds.", registry: migrateRegistry, header: "belz migrate <cmd>  —  Migrations (Jenkins)" },
   { key: "release", name: "Release promotion tracking", description: "Audit releases: link tickets, trace items, detect collisions.", registry: releaseRegistry, header: "belz release <cmd>  —  Release promotion tracking" },
@@ -51,6 +53,7 @@ const NAMESPACES: Array<{ key: string; name: string; description: string; regist
 export const REGISTRIES: Record<string, CommandRegistry> = {
   "integrations/automation-designer": adRegistry,
   "integrations/page-designer": pdRegistry,
+  "integrations/report-designer": rdRegistry,
   "integrations/teamwork": twRegistry,
   "integrations/migrations": migrateRegistry,
   "integrations/release": releaseRegistry,

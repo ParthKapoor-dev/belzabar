@@ -1,0 +1,27 @@
+Usage: belz rd export <id> [flags]
+
+Write a report's definition as a portable spec file. The datasource is named
+by AD category and method name instead of this env's numeric ids, so the spec
+means the same on any env where that method is published. Read-only on the
+server.
+
+Arguments:
+  <id>                Report id (32 hex) or a Report Designer URL.
+
+Flags:
+  --out, -o <file>    Write the spec to this file (otherwise it is printed).
+  --exact             Also export summaryPosition and filterConfig. The server
+                      returns them only from a call that RUNS the report once,
+                      so this needs --env. Without them, the defaults apply
+                      (summaries at top, filterConfig 0).
+  --help, -h          Show this help message.
+
+Spec format ("format": "belz.rd.report/1"):
+  title, description?, dataSource {category, method}, columns[], filters[],
+  summaries[], summaryPosition?, filterConfig?, isFilterRequired?
+Columns and filters are kept exactly as Report Designer stores them; a filter
+points at its column by columnId.
+
+Examples:
+  belz rd export 0123456789abcdef0123456789abcdef --out report.json
+  belz rd export 0123456789abcdef0123456789abcdef --exact --env dev -o report.json

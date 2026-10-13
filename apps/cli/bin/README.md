@@ -14,7 +14,7 @@ modes behave identically.
 
 `buildHelpFull({namespace?, index?})` prints every command's `desc.txt`: namespaces in the fixed
 `NAMESPACES` order, then top-level commands, each sorted by name. `belz --help-full <ns>`
-(`ad`, `pd`, `tw`, `migrate`, `release`, `top`) prints one section; `--index` prints one line
+(`ad`, `pd`, `rd`, `tw`, `migrate`, `release`, `top`) prints one section; `--index` prints one line
 per command (its first desc line). The output has no env-, clock-, locale- or build-dependent
 content, and `apps/cli/tests/help-full.test.ts` requires byte-identical output across runs. The header
 tells agents that stdout carries only the envelope and stderr the notices.

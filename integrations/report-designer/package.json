@@ -1,0 +1,14 @@
+{
+  "name": "@belzabar/rd",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Report Designer commands and lib (`belz rd`).",
+  "exports": {
+    "./registry": "./registry.ts",
+    "./lib/*": "./lib/*.ts"
+  },
+  "dependencies": {
+    "@belzabar/core": "workspace:*"
+  }
+}

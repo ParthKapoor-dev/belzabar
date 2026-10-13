@@ -1,0 +1,22 @@
+Usage: belz rd download <id> --env <env> [flags]
+
+Export a report (as saved, with its saved filters) to a CSV, Excel or PDF file.
+The server runs the datasource method and prepares the file in the background;
+belz waits for it and saves it. This EXECUTES the method, so it needs --env.
+
+Arguments:
+  <id>                Report id (32 hex) or a Report Designer URL.
+
+Flags:
+  --format <fmt>      csv (default), xlsx or pdf.
+  --out, -o <file>    Where to save (default: <title>.<format> in the current
+                      directory).
+  --wait <seconds>    Give up waiting after this long, 10-3600 (default: 300).
+  --help, -h          Show this help message.
+
+When an export takes long, the server emails it to the account instead; the
+result then says "emailed" and no file is written.
+
+Examples:
+  belz rd download 0123456789abcdef0123456789abcdef --env dev
+  belz rd download 0123456789abcdef0123456789abcdef --env dev --format xlsx -o orders.xlsx

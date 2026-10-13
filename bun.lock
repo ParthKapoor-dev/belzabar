@@ -13,7 +13,7 @@
     },
     "apps/cli": {
       "name": "belzabar.cli",
-      "version": "0.1.0",
+      "version": "0.2.3",
       "bin": {
         "belz": "./bin/cli.ts",
       },
@@ -22,6 +22,7 @@
         "@belzabar/core": "workspace:*",
         "@belzabar/migrations": "workspace:*",
         "@belzabar/pd": "workspace:*",
+        "@belzabar/rd": "workspace:*",
         "@belzabar/release": "workspace:*",
         "@belzabar/teamwork": "workspace:*",
         "zod": "^3.22.4",
@@ -61,6 +62,13 @@
         "zod": "^3.22.4",
       },
     },
+    "integrations/report-designer": {
+      "name": "@belzabar/rd",
+      "version": "0.1.0",
+      "dependencies": {
+        "@belzabar/core": "workspace:*",
+      },
+    },
     "integrations/teamwork": {
       "name": "@belzabar/teamwork",
       "version": "0.1.0",
@@ -86,6 +94,8 @@
     "@belzabar/migrations": ["@belzabar/migrations@workspace:integrations/migrations"],
 
     "@belzabar/pd": ["@belzabar/pd@workspace:integrations/page-designer"],
+
+    "@belzabar/rd": ["@belzabar/rd@workspace:integrations/report-designer"],
 
     "@belzabar/release": ["@belzabar/release@workspace:integrations/release"],
 

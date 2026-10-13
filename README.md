@@ -45,7 +45,7 @@ curl -fsSL https://github.com/ParthKapoor-dev/belzabar/releases/latest/download/
 Working on Expertly usually means clicking through the designer UI or hand-crafting REST calls
 with encoded payloads. belz does that platform work for you:
 
-- **One tool for everything** — AD methods, PD pages, the database, Teamwork tickets, Jenkins
+- **One tool for everything** — AD methods, PD pages, Report Designer reports, the database, Teamwork tickets, Jenkins
   migrations and release checks.
 - **Safe writes** — every write needs an explicit `--env`, asks for confirmation, refuses to
   overwrite a draft someone else changed, and reads the result back to verify it.
@@ -142,7 +142,7 @@ Every command documents itself: `belz <module> <command> --help`.
 ## Usage
 
 Commands are grouped into modules: `ad` (Automation Designer), `pd` (Page Designer),
-`tw` (Teamwork), `migrate` (Jenkins migrations), `release` (release audits) and `config`.
+`rd` (Report Designer), `tw` (Teamwork), `migrate` (Jenkins migrations), `release` (release audits) and `config`.
 
 ### Automation Designer methods
 
@@ -196,6 +196,16 @@ belz pd lint <page> --recursive    # check a page and its sub-pages
 belz pd find-ad-methods <page>         # which AD methods the page calls
 belz pd preflight <pageId> --overlay edit.json   # preview an edit
 belz pd save <pageId> --overlay edit.json --env dev
+```
+
+### Report Designer reports
+
+```bash
+belz rd find "<words>"                 # reports by title
+belz rd show <id>                      # definition: datasource, columns, filters (does not run it)
+belz rd export <id> --out report.json  # portable spec (datasource by category + method name)
+belz rd datasources --category <name>  # published AD methods a report can use
+belz rd uses <method-uuid>             # reports fed by an AD method
 ```
 
 ### Teamwork, migrations and releases
@@ -285,6 +295,7 @@ belzabar/
 ├── integrations/
 │   ├── automation-designer/        belz ad …
 │   ├── page-designer/              belz pd …
+│   ├── report-designer/            belz rd …
 │   ├── teamwork/                   belz tw …
 │   ├── migrations/                 belz migrate …
 │   └── release/                    belz release …
@@ -300,6 +311,7 @@ belzabar/
 | [`packages/core/`](./packages/core/README.md) | `@belzabar/core` | Shared CLI framework |
 | [`integrations/automation-designer/`](./integrations/automation-designer/README.md) | `@belzabar/ad` | `belz ad …` |
 | [`integrations/page-designer/`](./integrations/page-designer/README.md) | `@belzabar/pd` | `belz pd …` |
+| [`integrations/report-designer/`](./integrations/report-designer/README.md) | `@belzabar/rd` | `belz rd …` |
 | [`integrations/teamwork/`](./integrations/teamwork/README.md) | `@belzabar/teamwork` | `belz tw …` |
 | [`integrations/migrations/`](./integrations/migrations/README.md) | `@belzabar/migrations` | `belz migrate …` |
 | [`integrations/release/`](./integrations/release/README.md) | `@belzabar/release` | `belz release …` |

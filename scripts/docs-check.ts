@@ -356,6 +356,7 @@ async function main(): Promise<void> {
     {
       ad: REGISTRIES["integrations/automation-designer"]!,
       pd: REGISTRIES["integrations/page-designer"]!,
+      rd: REGISTRIES["integrations/report-designer"]!,
       tw: REGISTRIES["integrations/teamwork"]!,
       migrate: REGISTRIES["integrations/migrations"]!,
       release: REGISTRIES["integrations/release"]!,

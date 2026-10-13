@@ -11,6 +11,7 @@ import { REGISTRIES } from "../bin/options";
 const NAMESPACE: Record<string, string> = {
   "integrations/automation-designer": "ad",
   "integrations/page-designer": "pd",
+  "integrations/report-designer": "rd",
   "integrations/teamwork": "tw",
   "integrations/migrations": "migrate",
   "integrations/release": "release",

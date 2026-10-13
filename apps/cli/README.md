@@ -2,7 +2,7 @@
 
 Package `belzabar.cli`. Builds the `belz` binary: the entry point, the wiring of every
 integration's command registry, the top-level commands (`cache`, `config`, `envs`, `onboard`,
-`setup`, `update`) and the install scripts. The `ad`, `pd`, `tw`, `migrate` and `release`
+`setup`, `update`) and the install scripts. The `ad`, `pd`, `rd`, `tw`, `migrate` and `release`
 commands live in `integrations/*`; the framework (runner, args, envelope, http, cache, ui) is
 [`@belzabar/core`](../../packages/core/README.md).
 
@@ -23,7 +23,7 @@ The compiled binary (`belz`, with `belz.map`) is written here and gitignored.
 ## Routing
 
 ```
-belz ad | pd | tw | migrate | release <cmd>  → namespace commands (one registry each)
+belz ad | pd | rd | tw | migrate | release <cmd>  → namespace commands (one registry each)
 belz config <sub>                            → passthrough module (routes its own subcommands)
 belz cache | envs | onboard | setup | update → top-level commands
 belz --version | --help | --help-full        → runner
