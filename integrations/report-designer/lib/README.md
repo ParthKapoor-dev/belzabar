@@ -5,8 +5,10 @@ The Report Designer client and definitions, imported as `@belzabar/rd/lib/<file>
 | File | Contents |
 |---|---|
 | `api.ts` | Every RD request (on core `apiFetch`): reports, runs, exports, datasources, the AD → report lookup; `RD_*` error mapping |
-| `datasource.ts` | Env-local `dataSourceId` / `dataSourceCategoryUuid` → `{category, method}` (`describeDataSource`), category and datasource lists, per-env memo |
-| `definition.ts` | `readReport` (side-effect free unless `exact`), the spec type (`SPEC_FORMAT`), `toConfiguration`, `savedConfiguration` (the report's own ids, for runs) |
+| `datasource.ts` | `{category, method}` ↔ env-local `dataSourceId` / `dataSourceCategoryUuid` (`resolveDataSource`, `describeDataSource`), per-env memo |
+| `definition.ts` | `readReport` (side-effect free unless `exact`), the spec (`parseSpec`, `readSpecFile`, `SPEC_FORMAT`), `toConfiguration`, `savedConfiguration` (the report's own ids, for runs), `specChanges` |
+| `write.ts` | The write pipeline: `backupReport` (`RD_BACKUP_DIR`), `definitionFingerprint` (conflict check), `withDisplayFrom`, `writeSpec` (PATCH / PUT / read-back), `createReport` |
+| `confirm.ts` | `requireConfirmation` (`RD_CONFIRMATION_REQUIRED` / `RD_USER_ABORT`), `logIntent` (`[belz rd write]`) |
 | `report-id.ts` | `parseReportId` (id, dashed id or URL), `REPORT_ID_POSITIONAL` |
 | `view.ts` | Compact column / filter / summary views for presenters |
 
@@ -20,6 +22,9 @@ All verified against a live env; the RD web app uses the same calls.
 | `getReportBasic` | `GET /rest/api/v2/reports/{id}?apiInfoLevel=BASIC` (metadata; an unknown id is a 500) | none |
 | `getReportDefinition` | `GET /rest/api/v3/reports?reportId={id}` (parsed definition; 404 when unknown) | none |
 | `getReportDetailed` | `GET /rest/api/v2/reports/{id}?apiInfoLevel=DETAILED` (configuration string) | **runs the report** |
+| `createEmptyReport` | `POST /rest/api/v2/reports` (no body) | creates "Report, <date>" without contributors |
+| `patchReport` | `PATCH /rest/api/v2/reports/{id}[?execute=true]` `{title?, description?, reportStatus?}` | updates metadata; the saved configuration is kept |
+| `saveConfiguration` | `PUT /rest/api/v2/reports/{id}` `{configuration}` | replaces the definition |
 | `runReport` / `countRows` | `POST /rest/api/v2/reports/{id}` / `…/count/{id}` `{configuration}` | **runs the datasource** |
 | `requestExport` / `pollExport` | `POST …/{id}/content?format=CSV\|XL\|PDF`, then `GET /rest/api/reports/download/{requestId}` (needs a JSON Content-Type) | **runs the datasource** |
 | `listDatasourceCategories` / `listDatasources` | `GET …/datasources/category`, `GET …/datasources?apiInfoLevel=BASIC&categoryUuid=` | none |
@@ -37,8 +42,18 @@ listed in `unread` unless `exact` is set. The method name falls back to the reco
 
 ## Datasources (`datasource.ts`)
 
-A datasource is a published AD method; only published methods are listed, by category.
-Categories are found by name, alias or uuid (case-insensitive).
+A datasource is a published AD method; only published methods are listed, by category. A
+spec's `{category, method}` resolves by exact method name (then case-insensitive), category by
+name, alias or uuid. Two published methods with the same name in one category are
+`RD_DATASOURCE_AMBIGUOUS`.
+
+## Writes (`write.ts`)
+
+Title and description live on the record (PATCH), the rest in the configuration (PUT); a
+PATCH keeps the saved configuration (verified live). `writeSpec` re-reads the v3 definition
+right before writing and compares it with the fingerprint taken before the confirmation
+(`RD_CONFLICT`), then reads back through `readReport` and lists differences with
+`specChanges`. Display settings are compared only when both sides know them.
 
 ## Extending
 

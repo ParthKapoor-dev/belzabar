@@ -111,6 +111,23 @@ export async function getReportDetailed(id: string): Promise<Obj> {
   return object(await call(path, { what: `Read report ${id}`, timeoutMs: RD_RUN_TIMEOUT_MS }), path);
 }
 
+/** A new empty report ("Report, <date>"); returns its record. */
+export async function createEmptyReport(): Promise<Obj> {
+  return object(await call(RD_V2, { method: "POST", what: "Create report" }), RD_V2);
+}
+
+/** Title / description / status. `execute` is what the UI sends for archive and unarchive. */
+export async function patchReport(id: string, body: Obj, opts: { execute?: boolean } = {}): Promise<Obj> {
+  const path = `${RD_V2}/${id}${opts.execute ? "?execute=true" : ""}`;
+  return object(await call(path, { method: "PATCH", body, what: `Update report ${id}` }), path);
+}
+
+/** Save the definition (the configuration is JSON in a string). Last write wins. */
+export async function saveConfiguration(id: string, configuration: string): Promise<Obj> {
+  const path = `${RD_V2}/${id}?${qs({ offset: 0, limit: 1 })}`;
+  return object(await call(path, { method: "PUT", body: { configuration }, what: `Save report ${id}` }), path);
+}
+
 /** Run `configuration` ad hoc against report `id`: rows are column-major in `data.columns[].data`. */
 export async function runReport(id: string, configuration: string, page: { offset: number; limit: number }): Promise<Obj> {
   const path = `${RD_V2}/${id}?${qs(page)}`;

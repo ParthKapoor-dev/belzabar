@@ -1,0 +1,21 @@
+Usage: belz rd create --spec <file> --env <env> [flags]
+
+Create a new report from a spec file (as written by `belz rd export`). The
+spec's datasource {category, method} must be a published AD method on the
+target env; belz resolves it to that env's ids. The report is created, titled,
+given its definition, then read back and compared with the spec.
+
+Flags:
+  --spec <file>       The report spec (JSON). Required.
+  --dry-run           Validate the spec and resolve the datasource on --env;
+                      create nothing.
+  --yes, -y           Skip the confirmation prompt (required with --llm).
+  --help, -h          Show this help message.
+
+Report Designer adds new reports without contributors; share them in the UI.
+A warning lists existing reports with the same title. summaryPosition and
+filterConfig default to "summaries at top" and 0 when the spec has none.
+
+Examples:
+  belz rd create --spec report.json --env dev --dry-run
+  belz rd create --spec report.json --env dev --yes

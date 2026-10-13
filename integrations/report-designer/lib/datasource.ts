@@ -84,6 +84,35 @@ export async function findCategory(nameOrUuid: string): Promise<Category | null>
   );
 }
 
+/** {category, method} → the env-local ids. Throws when either is missing on this env. */
+export async function resolveDataSource(ref: DataSourceRef): Promise<ResolvedDataSource> {
+  const env = Config.activeEnv.name;
+  const category = await findCategory(ref.category);
+  if (!category) {
+    throw new CliError(`Datasource category '${ref.category}' does not exist on ${env}.`, {
+      code: "RD_DATASOURCE_CATEGORY_NOT_FOUND",
+      details: { env, category: ref.category },
+    });
+  }
+  const rows = await dataSourcesOf(category.uuid);
+  const hits = rows.filter((r) => r.method === ref.method);
+  const hit = hits[0] ?? rows.find((r) => r.method.toLowerCase() === ref.method.toLowerCase());
+  if (!hit) {
+    throw new CliError(
+      `No published method '${ref.method}' in category '${category.name}' on ${env}. A report datasource must be a published ` +
+        "AD method: publish it there (belz ad publish) or migrate it to this env first.",
+      { code: "RD_DATASOURCE_NOT_FOUND", details: { env, category: category.name, method: ref.method } },
+    );
+  }
+  if (hits.length > 1) {
+    throw new CliError(`Category '${category.name}' on ${env} has ${hits.length} published methods named '${ref.method}'.`, {
+      code: "RD_DATASOURCE_AMBIGUOUS",
+      details: { env, category: category.name, method: ref.method, ids: hits.map((h) => h.id) },
+    });
+  }
+  return { category: category.name, method: hit.method, id: hit.id, categoryUuid: category.uuid };
+}
+
 /** The env-local ids → names; null fields when the category or method is no longer listed. */
 export async function describeDataSource(
   id: string | null,

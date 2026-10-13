@@ -64,6 +64,12 @@ const CASES: Case[] = [
   { owner: "integrations/report-designer", command: "show", argv: [UUID], kind: "reads" },
   { owner: "integrations/report-designer", command: "show", argv: [UUID, "--exact"], kind: "writes" },
   { owner: "integrations/report-designer", command: "export", argv: [UUID], kind: "writesLocal" },
+  { owner: "integrations/report-designer", command: "run", argv: [UUID], kind: "writes" },
+  { owner: "integrations/report-designer", command: "create", argv: ["--spec", "s.json"], kind: "writes" },
+  { owner: "integrations/report-designer", command: "create", argv: ["--spec", "s.json", "--dry-run"], kind: "reads" },
+  { owner: "integrations/report-designer", command: "save", argv: [UUID, "--spec", "s.json"], kind: "writes" },
+  { owner: "integrations/report-designer", command: "save", argv: [UUID, "--spec", "s.json", "--dry-run"], kind: "reads" },
+  { owner: "integrations/report-designer", command: "archive", argv: [UUID], kind: "writes" },
   // ── Teamwork / migrations / release ──
   { owner: "integrations/teamwork", command: "add-comment", argv: ["123", "--body", "hi"], kind: "writes" },
   { owner: "integrations/migrations", command: "run", argv: [], kind: "writes" },

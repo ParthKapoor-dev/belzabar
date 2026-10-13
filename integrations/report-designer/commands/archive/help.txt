@@ -1,0 +1,19 @@
+Usage: belz rd archive <id> --env <env> [flags]
+
+Archive a report (it leaves the default lists but keeps its definition), or
+bring it back with --restore. Nothing is deleted; belz has no delete command.
+
+Arguments:
+  <id>                Report id (32 hex) or a Report Designer URL.
+
+Flags:
+  --restore           Unarchive: set the report back to ACTIVE.
+  --yes, -y           Skip the confirmation prompt (required with --llm).
+  --help, -h          Show this help message.
+
+The status is read back afterwards. A report already in the wanted state is
+left alone.
+
+Examples:
+  belz rd archive 0123456789abcdef0123456789abcdef --env dev
+  belz rd archive 0123456789abcdef0123456789abcdef --env dev --restore --yes

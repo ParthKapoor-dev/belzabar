@@ -206,7 +206,13 @@ belz rd show <id>                      # definition: datasource, columns, filter
 belz rd export <id> --out report.json  # portable spec (datasource by category + method name)
 belz rd datasources --category <name>  # published AD methods a report can use
 belz rd uses <method-uuid>             # reports fed by an AD method
+belz rd run <id> --env dev             # rows, as saved (runs the datasource method)
+belz rd save <id> --spec report.json --env dev --dry-run   # changes; drop --dry-run to save
+belz rd create --spec report.json --env dev               # a new report from a spec
 ```
+
+`rd save` backs the report up to `~/.belz/rd/backups/` first and refuses if someone changed it
+meanwhile; Report Designer itself keeps no history.
 
 ### Teamwork, migrations and releases
 

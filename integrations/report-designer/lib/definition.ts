@@ -7,7 +7,7 @@
 // `filterConfig`; only the DETAILED read has them, and it runs the report, so
 // it is opt-in (`exact`).
 
-import { CliError, isObj, str, type Obj } from "@belzabar/core";
+import { CliError, isObj, readJsonInput, str, type Obj } from "@belzabar/core";
 import { getReportBasic, getReportDefinition, getReportDetailed } from "./api";
 import { describeDataSource, type DataSourceRef, type ResolvedDataSource } from "./datasource";
 
@@ -142,3 +142,90 @@ export function savedConfiguration(report: SavedReport): string {
   return toConfiguration(report.spec, { id: report.dataSource.id, categoryUuid: report.dataSource.categoryUuid });
 }
 
+/** Validate a spec file's content. Every problem is listed in RD_SPEC_INVALID. */
+export function parseSpec(value: unknown): ReportSpec {
+  const problems: string[] = [];
+  if (!isObj(value)) throw new CliError("A report spec must be a JSON object.", { code: "RD_SPEC_INVALID", details: { problems: ["not an object"] } });
+  if (value.format !== undefined && value.format !== SPEC_FORMAT) problems.push(`format must be "${SPEC_FORMAT}"`);
+  if (!str(value.title)?.trim()) problems.push("title: a non-empty string is required");
+  if (value.description !== undefined && typeof value.description !== "string") problems.push("description: must be a string");
+  const ds = value.dataSource;
+  if (!isObj(ds) || !str(ds.category)?.trim() || !str(ds.method)?.trim()) {
+    problems.push('dataSource: {"category": "<AD category>", "method": "<published AD method>"} is required');
+  }
+  for (const key of ["columns", "filters", "summaries"] as const) {
+    if (value[key] !== undefined && !Array.isArray(value[key])) problems.push(`${key}: must be an array`);
+  }
+  const columns = arr(value.columns);
+  if (columns.length === 0) problems.push("columns: at least one column is required");
+  const ids = new Set<string>();
+  columns.forEach((c, i) => {
+    const id = c.id === undefined || c.id === null ? "" : String(c.id);
+    if (!id || !str(c.name)) problems.push(`columns[${i}]: id and name are required`);
+    if (id && ids.has(id)) problems.push(`columns[${i}]: duplicate id ${id}`);
+    ids.add(id);
+  });
+  arr(value.filters).forEach((f, i) => {
+    const id = f.columnId === undefined || f.columnId === null ? "" : String(f.columnId);
+    if (!ids.has(id)) problems.push(`filters[${i}]: columnId ${id || "(missing)"} is not one of the columns`);
+  });
+  if (value.filterConfig !== undefined && ![0, 1, 2].includes(value.filterConfig as number)) problems.push("filterConfig: must be 0, 1 or 2");
+  if (value.summaryPosition !== undefined && !isObj(value.summaryPosition)) problems.push("summaryPosition: must be an object");
+  if (value.isFilterRequired !== undefined && typeof value.isFilterRequired !== "boolean") problems.push("isFilterRequired: must be true or false");
+  if (problems.length > 0) {
+    throw new CliError(`Invalid report spec: ${problems.join("; ")}.`, { code: "RD_SPEC_INVALID", details: { problems } });
+  }
+  const d = ds as Obj;
+  return {
+    format: SPEC_FORMAT,
+    title: (value.title as string).trim(),
+    ...(typeof value.description === "string" && value.description ? { description: value.description } : {}),
+    dataSource: { category: (d.category as string).trim(), method: (d.method as string).trim() },
+    columns,
+    filters: arr(value.filters),
+    summaries: arr(value.summaries),
+    ...(isObj(value.summaryPosition) ? { summaryPosition: value.summaryPosition } : {}),
+    ...(typeof value.filterConfig === "number" ? { filterConfig: value.filterConfig } : {}),
+    ...(typeof value.isFilterRequired === "boolean" ? { isFilterRequired: value.isFilterRequired } : {}),
+  };
+}
+
+/** One line per difference between two specs (titles, datasource, columns by id, filters, summaries). */
+export function specChanges(before: ReportSpec, after: ReportSpec): string[] {
+  const out: string[] = [];
+  if (before.title !== after.title) out.push(`title: "${before.title}" → "${after.title}"`);
+  if ((before.description ?? "") !== (after.description ?? "")) out.push("description changed");
+  const ds = (s: ReportSpec) => `${s.dataSource.category}/${s.dataSource.method}`;
+  if (ds(before) !== ds(after)) out.push(`datasource: ${ds(before)} → ${ds(after)}`);
+  const byId = (cols: Obj[]) => new Map(cols.map((c) => [String(c.id), c]));
+  const b = byId(before.columns);
+  const a = byId(after.columns);
+  for (const [id, c] of a) {
+    if (!b.has(id)) out.push(`column added: ${String(c.name)}`);
+    else if (JSON.stringify(b.get(id)) !== JSON.stringify(c)) out.push(`column changed: ${String(c.name)}`);
+  }
+  for (const [id, c] of b) if (!a.has(id)) out.push(`column removed: ${String(c.name)}`);
+  const order = (cols: Obj[]) => cols.map((c) => String(c.id)).join(",");
+  if (out.every((l) => !l.startsWith("column")) && order(before.columns) !== order(after.columns)) out.push("columns reordered");
+  if (JSON.stringify(before.filters) !== JSON.stringify(after.filters)) out.push(`filters: ${before.filters.length} → ${after.filters.length} (changed)`);
+  if (JSON.stringify(before.summaries) !== JSON.stringify(after.summaries)) out.push(`summaries: ${before.summaries.length} → ${after.summaries.length} (changed)`);
+  if ((before.isFilterRequired ?? false) !== (after.isFilterRequired ?? false)) out.push("isFilterRequired changed");
+  // Display settings: only when both sides know them (a non-exact read does not).
+  for (const k of ["summaryPosition", "filterConfig"] as const) {
+    if (before[k] !== undefined && after[k] !== undefined && JSON.stringify(before[k]) !== JSON.stringify(after[k])) out.push(`${k} changed`);
+  }
+  return out;
+}
+
+/** Read and validate a spec file (`RD_SPEC_UNREADABLE` / `RD_SPEC_INVALID`). */
+export async function readSpecFile(path: string): Promise<ReportSpec> {
+  const value = await readJsonInput(path, {
+    unreadable: (err, missing) =>
+      new CliError(missing ? `Spec file not found: ${path}` : `Cannot read spec file ${path}: ${(err as Error).message}`, {
+        code: "RD_SPEC_UNREADABLE",
+        details: { path },
+      }),
+    invalid: (err) => new CliError(`Spec file ${path} is not valid JSON: ${(err as Error).message}`, { code: "RD_SPEC_INVALID", details: { path } }),
+  });
+  return parseSpec(value);
+}

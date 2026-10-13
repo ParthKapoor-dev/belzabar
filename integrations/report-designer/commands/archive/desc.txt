@@ -1,0 +1,2 @@
+belz rd archive <id> --env <env> --yes  :->  Archive a report (definition kept; status read back)
+belz rd archive <id> --env <env> --restore --yes  :->  Unarchive it (back to ACTIVE)

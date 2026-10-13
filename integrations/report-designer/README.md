@@ -1,8 +1,8 @@
 # @belzabar/rd
 
 `belz rd …` — Report Designer: find and read reports without running them, run or download
-them, export a report as a portable spec, list datasources, and find the reports an AD method
-feeds.
+them, export a report as a portable spec and create or save reports from one, archive them,
+list datasources, and find the reports an AD method feeds.
 
 ## What a report is
 
@@ -41,6 +41,9 @@ Exports: `@belzabar/rd/registry` and `@belzabar/rd/lib/<file>`.
 | `belz rd uses <method-uuid>` | read | Reports whose datasource is that AD method |
 | `belz rd run <id> --env <env>` | **runs** | Rows of the report as saved (`--limit`, `--offset`, `--count`) |
 | `belz rd download <id> --env <env>` | **runs** | CSV / xlsx / PDF export, polled until ready and saved |
+| `belz rd create --spec <file> --env <env>` | **write** | New report from a spec (`--dry-run` resolves only) |
+| `belz rd save <id> --spec <file> --env <env>` | **write** | Replace a report's definition (`--dry-run` lists the changes) |
+| `belz rd archive <id> --env <env>` | **write** | Archive (`--restore`: unarchive) |
 
 **Runs** execute the datasource method on the server (and move the report's execution time
 and version counter), so they declare `writes` and need an explicit `--env`; nothing in the
@@ -53,9 +56,26 @@ returns those two only from a call that **runs the report**, so `--exact` counts
 
 Flags and examples: each `commands/<cmd>/help.txt` or `belz --help-full rd`.
 
+## Write safety
+
+Writes need `--env` and a confirmation (`--yes` in `--llm` mode; `RD_CONFIRMATION_REQUIRED`,
+`RD_USER_ABORT`), and log a `[belz rd write]` line on stderr. Because Report Designer keeps no
+history and the last write wins, `rd save`:
+
+1. resolves the spec's datasource on the target env;
+2. writes the current definition to `~/.belz/rd/backups/<env>/<id>-<time>.json` (a spec: save
+   it back to undo);
+3. refuses with `RD_CONFLICT` if the definition changed since it was read;
+4. PATCHes the title / description when they change, PUTs the configuration, reads it back
+   and compares (`RD_VERIFY_FAILED`, with the differences in `data.mismatches`).
+
+`rd create` POSTs an empty report and then runs the same PATCH / PUT / read-back; if a step
+after the POST fails, the error names the new id (`details.createdId`). There is no delete
+command.
+
 ## The spec file
 
-`rd export` writes it (`"format": "belz.rd.report/1"`):
+`rd export` writes it, `rd create` and `rd save` take it (`"format": "belz.rd.report/1"`):
 
 ```json
 {
@@ -71,7 +91,8 @@ Flags and examples: each `commands/<cmd>/help.txt` or `belz --help-full rd`.
 ```
 
 Columns, filters and summaries are kept exactly as Report Designer stores them (a column's
-`id` is a hash of its name, the same on every env).
+`id` is a hash of its name, the same on every env). `parseSpec` lists every problem at once
+(`RD_SPEC_INVALID`).
 
 ## Error codes
 
@@ -79,6 +100,10 @@ Columns, filters and summaries are kept exactly as Report Designer stores them (
 |---|---|
 | `RD_INVALID_ID` / `MISSING_REPORT_ID` | The `<id>` is not 32 hex or a URL ending in one |
 | `RD_NOT_FOUND` | No such report on this env |
+| `RD_DATASOURCE_CATEGORY_NOT_FOUND` / `RD_DATASOURCE_NOT_FOUND` / `RD_DATASOURCE_AMBIGUOUS` | The spec's datasource does not resolve on the target env (the method must be published there) |
+| `RD_SPEC_UNREADABLE` / `RD_SPEC_INVALID` / `MISSING_SPEC` | The spec file is missing or malformed (`details.problems`) |
+| `RD_CONFLICT` | `save`: the report changed on the server after belz read it; nothing written |
+| `RD_VERIFY_FAILED` | The definition or status read back differs from what was written |
 | `RD_NO_DATASOURCE` | `run` / `download` on a report that has no datasource saved yet |
 | `RD_EXPORT_TIMEOUT` / `RD_DOWNLOAD_FAILED` | The export did not finish within `--wait`, or the file could not be fetched |
 | `RD_WRITE_FILE_FAILED` | The local file could not be written |

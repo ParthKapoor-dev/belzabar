@@ -1,0 +1,2 @@
+belz rd create --spec <file> --env <env> --yes  :->  Create a report from a spec (datasource resolved on that env), then read it back to verify
+belz rd create --spec <file> --env <env> --dry-run  :->  Validate the spec and resolve its datasource; create nothing
