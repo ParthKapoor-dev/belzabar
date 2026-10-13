@@ -1,4 +1,4 @@
-belz ad test-case list <uuid>  :->  List test cases on a method (same structured result as `belz ad test-cases`)
+belz ad test-case list <uuid>  :->  List a method's saved test cases (also create, update, delete, bulk, run-suite: see --help)
 belz ad test-case create <uuid> --name <n> --input <k=v> --assert <out=v> --env <env> [--yes]  :->  Create one UI-encoded test case from flags; verified by reading the suite back
 belz ad test-case create <uuid> --file <case.json> --env <env> [--yes]  :->  Create one test case from a case file or UI body (refuses an existing name); verified on read-back
 belz ad test-case create <uuid> --name <n> --description <d>  :->  Set the test case description

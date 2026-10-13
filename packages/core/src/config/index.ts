@@ -3,7 +3,8 @@
 //   config/schema.ts    zod schema, validated at load (CONFIG_INVALID with a path)
 //   config/secrets.ts   decodeSecret/encodeSecret — explicit passwordEncoding
 //   config/fs.ts        writeSecureJson — atomic tmp+rename, 0600
-//   config/env-vars.ts  trustedBelzEnv — BELZ_* only, cwd .env injection ignored
+//   config/env-vars.ts  trustedBelzEnv — BELZ_* only, cwd .env injection ignored;
+//                       inAgentSession — BELZ_AGENT / CLAUDECODE select --llm output
 //
 // Env selection: `--env` (runner → Config.setActiveEnv) > BELZ_ENV >
 // config.json `defaultEnv` > the only configured env. There is no built-in env:
@@ -24,7 +25,7 @@ import { validateConfigFile, envEntryProblem, type BelzConfigFile } from "./sche
 export * from "./schema";
 export * from "./secrets";
 export * from "./fs";
-export { trustedBelzEnv, parseDotEnv, withoutDotenvInjected } from "./env-vars";
+export { trustedBelzEnv, parseDotEnv, withoutDotenvInjected, inAgentSession } from "./env-vars";
 
 /**
  * Root of all belz runtime data. `BELZ_HOME` overrides `~/.belz` (used by tests

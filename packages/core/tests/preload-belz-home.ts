@@ -30,6 +30,10 @@ import { join } from "path";
   );
   process.env.BELZ_HOME = home;
   process.env.BELZ_TEST_TMP = root;
+  // Running the suite from an agent shell (CLAUDECODE=1) must not flip every
+  // command's default output to --llm; tests that need it set it themselves.
+  delete process.env.CLAUDECODE;
+  delete process.env.BELZ_AGENT;
   const cleanup = () => {
     try {
       rmSync(root, { recursive: true, force: true });

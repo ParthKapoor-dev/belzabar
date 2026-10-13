@@ -1,4 +1,4 @@
-belz pd find-ad-methods <input>  :->  List all AD method IDs referenced by a page/component (id, name, or URL)
+belz pd find-ad-methods <input>  :->  AD methods a page/component calls (page by id, name or URL)
 belz pd find-ad-methods <name> --component  :->  Same, resolving <name> as a component name only
 belz pd find-ad-methods <input> --recursive  :->  (-r) Deep-scan every referenced component and collect every AD method ID
 belz pd find-ad-methods <input> --force  :->  Bypass the local config cache

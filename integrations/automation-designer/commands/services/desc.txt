@@ -1,4 +1,4 @@
-belz ad services  :->  List platform services (compact rows; internal and external)
+belz ad services  :->  Built-in platform services a step can call (Helpers.*, db_service…); `services <name>` lists its methods
 belz ad services --search <q>  :->  Fuzzy-rank services by name / label / alias / description (top 20, with score)
 belz ad services --internal  :->  Only services with internalService=true
 belz ad services --limit <N>  :->  Return at most N rows

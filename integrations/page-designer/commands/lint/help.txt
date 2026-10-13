@@ -1,6 +1,7 @@
-Usage: belz pd validate <INPUT> [flags]
+Usage: belz pd lint <INPUT> [flags]
 
-Validate a Page Designer page or component against known failure patterns:
+Lint a Page Designer page or component (a static check of its config; no data is
+loaded and nothing is rendered) against known failure patterns:
 the platform crash/blank-page rules, the mechanical pd-review checks
 (structure, bindings, HTTP calls, accessibility) and the figma-to-pd rules
 that hold on real pages. Severities are calibrated against real editor
@@ -104,7 +105,7 @@ Global Flags:
   --help, -h          Show this help message.
 
 Examples:
-  belz pd validate 48b75e11e166e6b19e5796d59a936228
-  belz pd validate n_s_staff_email_correspondence --recursive
-  belz pd validate https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
-  belz pd validate 48b75e11e166e6b19e5796d59a936228 --llm | jq '.data.warnings'
+  belz pd lint 48b75e11e166e6b19e5796d59a936228
+  belz pd lint n_s_staff_email_correspondence --recursive
+  belz pd lint https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
+  belz pd lint 48b75e11e166e6b19e5796d59a936228 --llm | jq '.data.warnings'

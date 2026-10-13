@@ -21,6 +21,9 @@ import findAdMethodsDesc from "./commands/find-ad-methods/desc.txt" with { type:
 import * as historyCmd from "./commands/history/index";
 import historyHelp from "./commands/history/help.txt" with { type: "text" };
 import historyDesc from "./commands/history/desc.txt" with { type: "text" };
+import * as lintCmd from "./commands/lint/index";
+import lintHelp from "./commands/lint/help.txt" with { type: "text" };
+import lintDesc from "./commands/lint/desc.txt" with { type: "text" };
 import * as lockCmd from "./commands/lock/index";
 import lockHelp from "./commands/lock/help.txt" with { type: "text" };
 import lockDesc from "./commands/lock/desc.txt" with { type: "text" };
@@ -45,9 +48,6 @@ import snapshotDesc from "./commands/snapshot/desc.txt" with { type: "text" };
 import * as translationsCmd from "./commands/translations/index";
 import translationsHelp from "./commands/translations/help.txt" with { type: "text" };
 import translationsDesc from "./commands/translations/desc.txt" with { type: "text" };
-import * as validateCmd from "./commands/validate/index";
-import validateHelp from "./commands/validate/help.txt" with { type: "text" };
-import validateDesc from "./commands/validate/desc.txt" with { type: "text" };
 
 export const registry = {
   analyze: { module: analyzeCmd, help: analyzeHelp, desc: analyzeDesc },
@@ -55,6 +55,7 @@ export const registry = {
   find: { module: findCmd, help: findHelp, desc: findDesc },
   "find-ad-methods": { module: findAdMethodsCmd, help: findAdMethodsHelp, desc: findAdMethodsDesc },
   history: { module: historyCmd, help: historyHelp, desc: historyDesc },
+  lint: { module: lintCmd, help: lintHelp, desc: lintDesc },
   lock: { module: lockCmd, help: lockHelp, desc: lockDesc },
   "page-deps": { module: pageDepsCmd, help: pageDepsHelp, desc: pageDepsDesc },
   preflight: { module: preflightCmd, help: preflightHelp, desc: preflightDesc },
@@ -63,5 +64,4 @@ export const registry = {
   show: { module: showCmd, help: showHelp, desc: showDesc },
   snapshot: { module: snapshotCmd, help: snapshotHelp, desc: snapshotDesc },
   translations: { module: translationsCmd, help: translationsHelp, desc: translationsDesc },
-  validate: { module: validateCmd, help: validateHelp, desc: validateDesc },
 } satisfies CommandRegistry;

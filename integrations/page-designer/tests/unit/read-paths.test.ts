@@ -132,7 +132,7 @@ describe("recursive analysis", () => {
   });
 
   test("validate always reads fresh — a cached old config never decides the verdict", async () => {
-    const validate = (await import("../../commands/validate/index")).default;
+    const validate = (await import("../../commands/lint/index")).default;
     const broken = page(PAGE, cleanInner({ layout: { id: "r", name: "div", children: [] } }), { name: "Add Student" });
     const good = pd.pages.get(PAGE)!;
     pd.pages.set(PAGE, broken);

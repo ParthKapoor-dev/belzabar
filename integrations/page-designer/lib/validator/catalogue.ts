@@ -2,14 +2,14 @@
 // comes from (the figma-to-pd / pd-review name when it has another one), and
 // whether an edit that introduces it is blocked. Rules build their issues with
 // `issue()`, so the severities here are the ones the validator reports.
-// `commands/validate/help.txt` lists the same codes; a unit test keeps the two
+// `commands/lint/help.txt` lists the same codes; a unit test keeps the two
 // in sync.
 
 import type { ValidationIssue, ValidationSeverity } from "../types/common";
 
 interface PdRuleInfo {
   severity: ValidationSeverity;
-  /** figma-to-pd validate-pd-config.py code, pd-review section, or "belz". */
+  /** figma-to-pd lint-pd-config.py code, pd-review section, or "belz". */
   source: string;
   description: string;
   /**

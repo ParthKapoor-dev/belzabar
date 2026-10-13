@@ -9,7 +9,7 @@ import { scratchDir } from "@belzabar/core/testing";
 import save from "../../commands/save/index";
 import publish from "../../commands/publish/index";
 import preflight from "../../commands/preflight/index";
-import validate from "../../commands/validate/index";
+import validate from "../../commands/lint/index";
 import { cleanInner, ENV, innerOf, page, startFakePd, type FakePd, run } from "./helpers/fake-pd";
 
 const DRAFT = "d0000000000000000000000000000001";

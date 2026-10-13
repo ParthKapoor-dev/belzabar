@@ -4,7 +4,7 @@ import type { CommandContext } from "@belzabar/core";
 import publish from "../../commands/publish/index";
 import show from "../../commands/show/index";
 import pageDeps from "../../commands/page-deps/index";
-import validate from "../../commands/validate/index";
+import validate from "../../commands/lint/index";
 import history from "../../commands/history/index";
 import lock from "../../commands/lock/index";
 import save from "../../commands/save/index";

@@ -50,7 +50,7 @@ with encoded payloads. belz does that platform work for you:
 - **Safe writes** — every write needs an explicit `--env`, asks for confirmation, refuses to
   overwrite a draft someone else changed, and reads the result back to verify it.
 - **Readable output** — compact one-line-per-step views, plain-English summaries, diffs.
-- **Built for agents** — add `--llm` to any command and get exactly one JSON object back.
+- **Built for agents** — inside an agent session every command answers with exactly one JSON object.
 - **Zero dependencies** — a single binary for Linux, macOS and Windows that keeps itself up to date.
 
 ---
@@ -192,7 +192,7 @@ belz ad sql explain "select …" --analyze                     # query plan
 ```bash
 belz pd show <page>                    # by URL, id or exact name; --tree, --vars, --http
 belz pd show <page> --find "<text>"    # find a node on the page
-belz pd validate <page> --recursive    # check a page and its sub-pages
+belz pd lint <page> --recursive    # check a page and its sub-pages
 belz pd find-ad-methods <page>         # which AD methods the page calls
 belz pd preflight <pageId> --overlay edit.json   # preview an edit
 belz pd save <pageId> --overlay edit.json --env dev
@@ -211,7 +211,9 @@ belz release matrix --help             # tickets × environments promotion matri
 
 ### Using belz from scripts and AI agents
 
-Add `--llm` to any command. stdout is then exactly one JSON object:
+Inside a coding agent's shell (Claude Code sets `CLAUDECODE=1`; other tools set `BELZ_AGENT=1`)
+every command prints the `--llm` envelope by default; elsewhere add `--llm` (`--human` forces the
+readable view, `BELZ_AGENT=0` turns the detection off). stdout is then exactly one JSON object:
 
 ```json
 { "ok": true, "command": "ad.show", "data": { … }, "error": null, "meta": { … } }
@@ -250,12 +252,15 @@ Major versions are never installed automatically.
 | Move all of it | `BELZ_HOME=<dir>` |
 
 **Choosing an environment:** `--env <name>`, then `BELZ_ENV`, then `"defaultEnv"`, then the only
-configured environment. **Writes always need `--env`**, even to the default environment.
+configured environment. **Writes name their environment:** with `--env`, or, at a terminal,
+by picking it from a prompt that preselects the default. Agents and scripts must pass `--env`.
 
-**Global flags:** `--env <name>`, `--llm`, `-v`/`--verbose`, `--version`, `-h`/`--help`,
+**Global flags:** `--env <name>`, `--llm`, `--human`, `-v`/`--verbose`, `--version`, `-h`/`--help`,
 `--help-full`.
 
-belz reads only `BELZ_*` environment variables and ignores `.env` files in the current directory.
+belz reads only `BELZ_*` environment variables (plus Claude Code's `CLAUDECODE`) and ignores `.env`
+files in the current directory. An unknown command or flag mentions `belz update` when a newer
+release may have it.
 
 ---
 

@@ -1,13 +1,13 @@
-// `pd validate --summary`: large pages carry dozens of refs per warning code;
+// `pd lint --summary`: large pages carry dozens of refs per warning code;
 // --summary keeps the counts per code and drops the refs.
 import { describe, expect, test } from "bun:test";
-import { args, entityReport } from "../../commands/validate/index";
+import { args, entityReport } from "../../commands/lint/index";
 import type { ValidationIssue } from "../../lib/types/common";
 
 const issue = (code: string, severity: "error" | "warn", path: string): ValidationIssue =>
   ({ code, severity, message: `${code} at ${path}`, path }) as ValidationIssue;
 
-describe("pd validate --summary", () => {
+describe("pd lint --summary", () => {
   const issues = [issue("E1", "error", "a"), ...Array.from({ length: 61 }, (_, i) => issue("UNUSED_VARIABLE", "warn", `v${i}`)), issue("W2", "warn", "b")];
   const head = { name: "P", id: "p1", entityType: "PAGE" as const };
 

@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, test } from "bun:test";
-import { mkdtempSync, rmSync } from "fs";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import { hasHelpFlag, parseGlobalFlags } from "../src/runner";
@@ -28,10 +28,10 @@ async function runPipedSlow(args: string[], extraEnv: Record<string, string> = {
   return { stdout, stderr };
 }
 
-async function runHarness(args: string[]) {
+async function runHarness(args: string[], extraEnv: Record<string, string> = {}, cwd = home) {
   const proc = Bun.spawn([process.execPath, HARNESS, ...args], {
-    cwd: home,
-    env: childEnv,
+    cwd,
+    env: { ...childEnv, ...extraEnv },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -63,7 +63,38 @@ describe("runner output flushing", () => {
   }, 20_000);
 });
 
+describe("agent sessions default to --llm output", () => {
+  const isEnvelope = (s: string) => {
+    try { return JSON.parse(s).error?.code === "UNKNOWN_COMMAND"; } catch { return false; }
+  };
+
+  test("CLAUDECODE=1 or BELZ_AGENT=1 → envelope without --llm", async () => {
+    expect(isEnvelope((await runHarness(["nope"], { CLAUDECODE: "1" })).stdout)).toBe(true);
+    expect(isEnvelope((await runHarness(["nope"], { BELZ_AGENT: "1" })).stdout)).toBe(true);
+  }, 20_000);
+
+  test("no agent, --human, or BELZ_AGENT=0 → human output", async () => {
+    expect(isEnvelope((await runHarness(["nope"])).stdout)).toBe(false);
+    expect(isEnvelope((await runHarness(["nope", "--human"], { CLAUDECODE: "1" })).stdout)).toBe(false);
+    expect(isEnvelope((await runHarness(["nope"], { CLAUDECODE: "1", BELZ_AGENT: "0" })).stdout)).toBe(false);
+  }, 20_000);
+
+  test("a CLAUDECODE injected by a cwd .env is ignored", async () => {
+    const dir = mkdtempSync(join(home, "dotenv-"));
+    writeFileSync(join(dir, ".env"), "CLAUDECODE=1\n");
+    expect(isEnvelope((await runHarness(["nope"], { CLAUDECODE: "1" }, dir)).stdout)).toBe(false);
+  }, 20_000);
+});
+
 describe("parseGlobalFlags", () => {
+  test("output mode: default, --llm, --human, and both together", () => {
+    expect(parseGlobalFlags(["envs"]).outputMode).toBe("human");
+    expect(parseGlobalFlags(["envs"], "llm").outputMode).toBe("llm");
+    expect(parseGlobalFlags(["envs", "--human"], "llm").outputMode).toBe("human");
+    expect(parseGlobalFlags(["envs", "--llm"]).outputMode).toBe("llm");
+    expect(parseGlobalFlags(["envs", "--llm", "--human"]).error?.code).toBe("INVALID_ARGS");
+  });
+
   test("--env <name>", () => {
     const r = parseGlobalFlags(["ad", "show", "x", "--env", "acme-dev"]);
     expect(r.envName).toBe("acme-dev");

@@ -1,4 +1,4 @@
-// `pd validate --recursive`: validate a page AND every symbol it uses
+// `pd lint --recursive`: validate a page AND every symbol it uses
 // (transitively), plus the page ↔ symbol checks from pd-review §3b that need
 // both sides:
 //   SYMBOL_NOT_FOUND      a used symbol does not exist in this env

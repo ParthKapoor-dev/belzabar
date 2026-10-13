@@ -6,7 +6,7 @@
 // tests can check help.txt / desc.txt against it.
 
 /** Flags the runner owns. They are always "known" and never need declaring. */
-export const GLOBAL_FLAGS = ["--llm", "--env", "-e", "-v", "--verbose", "--help", "-h", "--help-full"] as const;
+export const GLOBAL_FLAGS = ["--llm", "--human", "--env", "-e", "-v", "--verbose", "--help", "-h", "--help-full"] as const;
 
 /** Stable error codes raised by the parser. */
 export const ARG_ERROR_CODES = {

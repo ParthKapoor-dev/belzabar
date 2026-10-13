@@ -17,7 +17,7 @@ and variable consistency, and the mechanical parts of a PD review checklist. Use
 ## Contracts
 
 - **The catalogue is the only place severities live.** Rules create issues with `issue(code,
-  …)`, so an uncatalogued code does not compile. `commands/validate/help.txt` lists the same
+  …)`, so an uncatalogued code does not compile. `commands/lint/help.txt` lists the same
   codes; `tests/unit/validator-lint.test.ts` keeps them in sync.
 - **Calibration: real editor output has 0 errors** (`tests/unit/validator-real.test.ts` over
   `tests/fixtures/real/`). A rule that fires on real, working pages is a warning; mark it
@@ -49,7 +49,7 @@ response, and Angular Material tab-switch console errors (harmless).
 
 1. Write it in the fitting `rules/*.ts` file as a `(page, ctx) → ValidationIssue[]` function and
    add it to that file's rule list.
-2. Catalogue its code in `catalogue.ts` and list it in `commands/validate/help.txt`.
+2. Catalogue its code in `catalogue.ts` and list it in `commands/lint/help.txt`.
 3. Add positive and negative cases (`validator.test.ts` or `validator-lint.test.ts`) and keep
    `validator-real.test.ts` at 0 errors.
 

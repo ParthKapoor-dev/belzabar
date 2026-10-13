@@ -1,4 +1,4 @@
-belz pd show <input>  :->  Display overview of a page or component (name, IDs, variable/HTTP/component counts)
+belz pd show <input>  :->  A page or component by id, exact name or URL: name, ids, variable/HTTP/component counts
 belz pd show <input> --vars  :->  List all user-defined and derived variables (compact rows: name, type, short initialValue; derived: from, sideEffect)
 belz pd show <input> --vars --fields <a,b,…|all>  :->  Pick the --vars/--http row fields (e.g. name,spec) or all
 belz pd show <input> --find <text|id|component>  :->  Find layout nodes: id, component, label, key path, parentId/index (for node-id overlay ops)

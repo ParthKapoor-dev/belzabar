@@ -1,4 +1,4 @@
-import { Config, NO_ENV, noEnvSelectedError } from "./config";
+import { Config, NO_ENV, inAgentSession, noEnvSelectedError } from "./config";
 import {
   CliError,
   type CommandContext,
@@ -8,7 +8,7 @@ import {
   type CommandResult,
   type HumanPresenterHelpers,
 } from "./command";
-import { printErr, renderHuman, renderLLM, setOutputMode } from "./ui";
+import { printErr, prompts, renderHuman, renderLLM, setOutputMode } from "./ui";
 import { ui as theme, symbols, wordmark } from "./theme";
 import { verboseEnabled, vlog } from "./verbose";
 import { ENVELOPE_VERSION } from "./envelope";
@@ -60,6 +60,29 @@ export interface NamespacedCliOptions {
    * unknown namespace.
    */
   helpFull?: (opts?: HelpFullOptions) => string | null;
+  /**
+   * Extra sentence for an UNKNOWN_COMMAND / UNKNOWN_SUBCOMMAND / UNKNOWN_FLAG error (the CLI
+   * suggests `belz update` when a newer release may know it). Null adds nothing.
+   */
+  unknownHint?: () => string | null;
+}
+
+const UNKNOWN_CODES = new Set(["UNKNOWN_COMMAND", "UNKNOWN_SUBCOMMAND", "UNKNOWN_FLAG"]);
+
+/** Append `options.unknownHint()` to an unknown command/flag error's message. */
+function withUnknownHint(outcome: RunOutcome, hint: NamespacedCliOptions["unknownHint"]): RunOutcome {
+  if (!hint) return outcome;
+  const error = outcome.kind === "envelope" ? outcome.envelope.error : null;
+  const unknown = outcome.kind === "print" ? outcome.unknown === true : !!error && UNKNOWN_CODES.has(error.code);
+  if (!unknown) return outcome;
+  let text: string | null = null;
+  try { text = hint(); } catch { /* a hint never breaks the error */ }
+  if (!text) return outcome;
+  if (outcome.kind === "print") {
+    return { ...outcome, print: () => { outcome.print(); printErr(theme.faint(`${symbols.arrow} ${text}`)); } };
+  }
+  const message = /[.!?]$/.test(error!.message) ? `${error!.message} ${text}` : `${error!.message}. ${text}`;
+  return { ...outcome, envelope: { ...outcome.envelope, error: { ...error!, message } } };
 }
 
 // ── Shared internals ────────────────────────────────────────────────────────
@@ -147,15 +170,17 @@ interface GlobalFlags {
 const VERBOSE_TOKENS = new Set(["-v", "--verbose"]);
 
 /**
- * Pure parser for the global flags `--llm`, `-v/--verbose`, `-e/--env <name>`, `--env=<name>`, `-e=<name>`.
+ * Pure parser for the global flags `--llm`, `--human`, `-v/--verbose`, `-e/--env <name>`,
+ * `--env=<name>`, `-e=<name>`. `defaultMode` is the output without `--llm`/`--human` (the
+ * runner passes "llm" inside an agent session); both flags together are an error.
  * Parsing stops at `--`: everything after it (including a literal `--llm` or
  * `-v`) is left for the command. A missing value, or `--env` given more than
  * once, is an error.
  */
-export function parseGlobalFlags(argv: string[]): GlobalFlags {
+export function parseGlobalFlags(argv: string[], defaultMode: "human" | "llm" = "human"): GlobalFlags {
   const args: string[] = [];
   const verboseTokens: VerboseToken[] = [];
-  let outputMode: "human" | "llm" = "human";
+  let explicitMode: "human" | "llm" | null = null;
   let envName: string | null = null;
   let error: GlobalFlags["error"] = null;
   const setError = (code: string, message: string) => { if (!error) error = { code, message }; };
@@ -178,7 +203,12 @@ export function parseGlobalFlags(argv: string[]): GlobalFlags {
       args.push(...argv.slice(i));
       break;
     }
-    if (a === "--llm") { outputMode = "llm"; continue; }
+    if (a === "--llm" || a === "--human") {
+      const mode = a === "--llm" ? "llm" : "human";
+      if (explicitMode !== null && explicitMode !== mode) setError("INVALID_ARGS", "--llm and --human cannot be combined.");
+      explicitMode = mode;
+      continue;
+    }
     if (VERBOSE_TOKENS.has(a)) { verboseTokens.push({ index: args.length, token: a }); continue; }
     if (a === "--env" || a === "-e") {
       const next = argv[i + 1];
@@ -203,6 +233,7 @@ export function parseGlobalFlags(argv: string[]): GlobalFlags {
     args.push(a);
   }
 
+  const outputMode = explicitMode ?? defaultMode;
   return { args, outputMode, verbose: verboseTokens.length > 0, verboseTokens, envName, error };
 }
 
@@ -234,6 +265,24 @@ function applyDefaultEnv(): { code: string; message: string } | null {
     Config.envSource === "BELZ_ENV" ? "BELZ_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "default";
   const name = Config.activeEnv.name;
   return Config.getAllEnvs()[name] ? null : unknownDefault(name, source);
+}
+
+/**
+ * Ask which env a write without `--env` targets (interactive terminals only): the default env
+ * first, then every other configured env. Returns the chosen env name; cancelling aborts.
+ */
+async function chooseWriteEnv(defaultName: string, writes: boolean): Promise<string | null> {
+  const names = Object.keys(Config.getAllEnvs());
+  if (!names.includes(defaultName)) return null;
+  const others = names.filter(n => n !== defaultName);
+  return prompts.select<string>({
+    message: writes ? "Write to which environment?" : "Preview the write against which environment?",
+    options: [
+      { label: defaultName, value: defaultName, hint: `default (${envSourceLabel()})` },
+      ...others.map(n => ({ label: n, value: n })),
+    ],
+    initialValue: defaultName,
+  });
 }
 
 /** `meta.envSource`: where the env came from. `default` = config.json `defaultEnv` or the only configured env. */
@@ -270,7 +319,7 @@ export function resolveGlobalFlags(argv: string[]): {
   globals: GlobalContext;
 } {
   const startedAt = Date.now();
-  const parsed = parseGlobalFlags(argv);
+  const parsed = parseGlobalFlags(argv, inAgentSession() ? "llm" : "human");
   const verboseEnvBefore = process.env.BELZ_VERBOSE;
   if (parsed.verbose) process.env.BELZ_VERBOSE = "1";
   setOutputMode(parsed.outputMode);
@@ -317,7 +366,7 @@ export type RunOutcome =
       envelope: CommandEnvelope;
       presenter?: (envelope: CommandEnvelope<unknown>, ui: HumanPresenterHelpers) => void;
     }
-  | { kind: "print"; exitCode: number; print: () => void };
+  | { kind: "print"; exitCode: number; print: () => void; unknown?: true };
 
 function envelopeOutcome(
   outputMode: "human" | "llm",
@@ -330,6 +379,11 @@ function envelopeOutcome(
 
 function printOutcome(exitCode: number, print: () => void): RunOutcome {
   return { kind: "print", exitCode, print };
+}
+
+/** Human output for an unknown command (exit 1); `withUnknownHint` can add its hint. */
+function unknownPrintOutcome(print: () => void): RunOutcome {
+  return { kind: "print", exitCode: 1, print, unknown: true };
 }
 
 /** Write an outcome to stdout/stderr (no exit). Human errors and warnings go to stderr. */
@@ -506,7 +560,7 @@ export async function dispatchCommand(
         1
       );
     }
-    return printOutcome(1, () => {
+    return unknownPrintOutcome(() => {
       printErr(theme.err(`Unknown command: ${theme.bold(`${binaryName} ${commandName}`)}`));
       listCommandsHuman();
     });
@@ -548,11 +602,11 @@ export async function dispatchCommand(
   }
 
   const envAware = command.envAware ?? opts.envAware ?? true;
-  const activeEnv = Config.activeEnv;
-  const envExplicit = globals?.envExplicit ?? false;
+  let activeEnv = Config.activeEnv;
+  let envExplicit = globals?.envExplicit ?? false;
   // No env selected (ENV_NOT_SELECTED): the envelope carries no meta.env.
-  const envForMeta = envAware && activeEnv.name !== NO_ENV ? activeEnv.name : null;
-  const envSourceForMeta = envForMeta !== null ? metaEnvSource(envExplicit) : null;
+  let envForMeta = envAware && activeEnv.name !== NO_ENV ? activeEnv.name : null;
+  let envSourceForMeta = envForMeta !== null ? metaEnvSource(envExplicit) : null;
   const schema = `${schemaNamespace(binaryName)}.${commandName}`;
 
   const commandContext: CommandContext = {
@@ -586,12 +640,26 @@ export async function dispatchCommand(
     const writes = envAware && flag(command.writes as never);
     const previewsWrite = envAware && !writes && flag(command.requiresEnv as never);
     if ((writes || previewsWrite) && !envExplicit) {
-      const what = writes ? "writes to an environment" : "previews a write by reading the target environment";
-      throw new CliError(
-        `'${binaryName} ${commandName}' ${what}, so --env is required ` +
-          `(the default env is '${activeEnv.name}'; to target it, add --env ${activeEnv.name}).`,
-        { code: "ENV_REQUIRED_FOR_WRITE", details: { defaultEnv: activeEnv.name, dryRun: previewsWrite } }
-      );
+      // A person at a terminal picks the target here (default env preselected);
+      // agents (--llm) and scripts (no TTY) must still name it with --env.
+      const chosen = outputMode === "human" && process.stdin.isTTY && process.stderr.isTTY
+        ? await chooseWriteEnv(activeEnv.name, writes)
+        : null;
+      if (chosen === null) {
+        const what = writes ? "writes to an environment" : "previews a write by reading the target environment";
+        throw new CliError(
+          `'${binaryName} ${commandName}' ${what}, so --env is required ` +
+            `(the default env is '${activeEnv.name}'; to target it, add --env ${activeEnv.name}).`,
+          { code: "ENV_REQUIRED_FOR_WRITE", details: { defaultEnv: activeEnv.name, dryRun: previewsWrite } }
+        );
+      }
+      Config.setActiveEnv(chosen);
+      activeEnv = Config.activeEnv;
+      envExplicit = true;
+      envForMeta = activeEnv.name;
+      envSourceForMeta = "flag";
+      commandContext.env = activeEnv;
+      commandContext.envExplicit = true;
     }
     if (writes && outputMode === "human") {
       printErr(theme.faint(`${symbols.arrow} target env: ${activeEnv.name} (${activeEnv.baseUrl})`));
@@ -619,7 +687,7 @@ export async function runNamespacedCli(
   options: NamespacedCliOptions
 ): Promise<void> {
   installStdioGuard();
-  await finishOutcome(await dispatchNamespaced(argv.slice(2), options));
+  await finishOutcome(withUnknownHint(await dispatchNamespaced(argv.slice(2), options), options.unknownHint));
 }
 
 /** `belz 0.1.0 (abc1234)` */
@@ -675,7 +743,8 @@ export async function dispatchNamespaced(
     console.log();
     console.log(theme.heading("flags"));
     console.log(`  ${theme.accent("-v, --verbose")}   ${theme.faint("stream timestamped debug logs to stderr")}`);
-    console.log(`  ${theme.accent("--llm")}           ${theme.faint("structured machine-readable output")}`);
+    console.log(`  ${theme.accent("--llm")}           ${theme.faint("structured JSON output (the default inside an agent session)")}`);
+    console.log(`  ${theme.accent("--human")}         ${theme.faint("readable output, also inside an agent session")}`);
     console.log(`  ${theme.accent("-e, --env <n>")}   ${theme.faint("run against a specific environment (required for writes)")}`);
     if (options.build) console.log(`  ${theme.accent("--version")}       ${theme.faint("print the version and build SHA")}`);
     if (options.helpFull) console.log(`  ${theme.accent("--help-full")}     ${theme.faint("every command variant; [<module>] for one module, [--index] one line per command")}`);
@@ -852,7 +921,7 @@ export async function dispatchNamespaced(
       1
     );
   }
-  return printOutcome(1, () => {
+  return unknownPrintOutcome(() => {
     printErr(theme.err(`Unknown module or command: ${theme.bold(token)}`));
     printHelp();
   });

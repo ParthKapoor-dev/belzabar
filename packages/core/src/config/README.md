@@ -12,7 +12,7 @@ environment and its credentials.
 | `schema.ts` | zod schema `validateConfigFile`, type `BelzConfigFile`, `envEntryProblem` |
 | `secrets.ts` | `decodeSecret`, `encodeSecret`, `keepSecret` |
 | `fs.ts` | `writeSecureJson` (tmp + fsync + rename, 0600), `hardenBelzHome` |
-| `env-vars.ts` | `trustedBelzEnv`, `withoutDotenvInjected`, `parseDotEnv` |
+| `env-vars.ts` | `trustedBelzEnv`, `withoutDotenvInjected`, `parseDotEnv`, `inAgentSession` |
 
 ## config.json
 
@@ -65,6 +65,7 @@ cwd `.env*` file is treated as injected and ignored. Variables read:
 |----------|--------|
 | `BELZ_HOME` | Replaces `~/.belz` (tests always set it) |
 | `BELZ_ENV` | Default env for this shell |
+| `BELZ_AGENT` | `1`: agent session (`--llm` output by default); `0`: never. Unset: Claude Code's `CLAUDECODE=1` decides (the one non-`BELZ_` variable read, dotenv-checked the same way) |
 | `BELZ_HTTP_TIMEOUT_MS` / `BELZ_HTTP_WRITE_TIMEOUT_MS` | HTTP timeouts (see [`../http/`](../http/README.md)) |
 | `BELZ_JENKINS_{URL,USER,PASSWORD,JOB}` | Fallbacks for fields missing from the `jenkins` section |
 | `BELZ_TEAMWORK_{URL,EMAIL,PASSWORD}` | Fallbacks for fields missing from the `teamwork` section (password plain) |

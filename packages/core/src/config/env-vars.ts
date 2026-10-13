@@ -94,3 +94,14 @@ export function trustedBelzEnv(env: NodeJS.ProcessEnv = process.env, cwd = proce
   for (const [key, value] of Object.entries(env)) if (key.startsWith("BELZ_")) belzOnly[key] = value;
   return withoutDotenvInjected(belzOnly, cwd).values;
 }
+
+/**
+ * True when belz runs inside a coding agent's shell, where the default output is the `--llm`
+ * envelope: `BELZ_AGENT=1`, or Claude Code's `CLAUDECODE=1` (the one non-BELZ_ variable read,
+ * and only when a cwd `.env*` did not inject it). `BELZ_AGENT=0` turns the detection off.
+ */
+export function inAgentSession(env: NodeJS.ProcessEnv = process.env, cwd = process.cwd()): boolean {
+  const flag = trustedBelzEnv(env, cwd).BELZ_AGENT;
+  if (flag !== undefined) return flag === "1";
+  return withoutDotenvInjected({ CLAUDECODE: env.CLAUDECODE }, cwd).values.CLAUDECODE === "1";
+}

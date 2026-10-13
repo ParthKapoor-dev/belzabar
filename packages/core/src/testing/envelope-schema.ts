@@ -8,7 +8,7 @@ import { ENVELOPE_VERSION } from "../envelope";
  * (`apps/cli/tests/envelope-contract.test.ts`); nothing validates at runtime.
  *
  * - `schema`   `<namespace>.<command>`, derived by the runner from routing:
- *              `ad.show`, `pd.validate`, `tw.task`, `migrate.status`,
+ *              `ad.show`, `pd.lint`, `tw.task`, `migrate.status`,
  *              `release.matrix`, top-level `belz.envs` / `belz.config`.
  *              Runner-level outcomes: `belz.help`, `belz.runner` (unknown
  *              command, bad global flags), `belz.version`.

@@ -1,4 +1,4 @@
-belz ad lint <uuid|file>  :->  Review a method (fetched V2 body or local V2 file): validator L1-L3 + SQL Q2-Q4, Q6 and anti-pattern warnings, grouped by step; exit 1 on errors; read-only
+belz ad lint <uuid|file>  :->  Review a method: validator + SQL and anti-pattern warnings, grouped by step; read-only
 belz ad lint <uuid|file> --online  :->  Also check steps against their live service contracts (validator L4)
 belz ad lint <uuid|file> --docs  :->  Also report missing descriptions (method, io, steps, exit messages)
 belz ad lint <uuid|file> --strict  :->  Treat warnings as errors

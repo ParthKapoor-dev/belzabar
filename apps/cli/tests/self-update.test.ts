@@ -4,8 +4,8 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
-import type { BelzConfigFile } from "@belzabar/core";
-import { autoUpdateBlocker, installKind, rollbackBinary, swapInBinary } from "../lib/auto-update";
+import { BELZ_CONFIG_DIR, type BelzConfigFile } from "@belzabar/core";
+import { autoUpdateBlocker, installKind, rollbackBinary, swapInBinary, updateHint } from "../lib/auto-update";
 import {
   assetName,
   compareVersions,
@@ -44,6 +44,31 @@ describe("versions and targets", () => {
     expect(currentTarget("freebsd", "x64")).toBeNull();
     expect(assetName("windows-x64")).toBe("belz-windows-x64.exe");
     expect(assetName("linux-arm64")).toBe("belz-linux-arm64");
+  });
+});
+
+describe("updateHint (unknown command/flag)", () => {
+  const statePath = join(BELZ_CONFIG_DIR, "update-state.json");
+  const build = { version: "0.2.3", dirty: false };
+  const now = 1_800_000_000_000;
+  const withState = (s: object) => writeFileSync(statePath, JSON.stringify(s));
+  afterAll(() => rmSync(statePath, { force: true }));
+
+  test("names a newer release the last check found", () => {
+    withState({ lastCheckAt: now - 1000, latestVersion: "0.2.4" });
+    expect(updateHint(build, now)).toContain("belz 0.2.4 is available");
+  });
+
+  test("says nothing when a recent check found this version current", () => {
+    withState({ lastCheckAt: now - 1000, latestVersion: "0.2.3" });
+    expect(updateHint(build, now)).toBeNull();
+  });
+
+  test("points at `belz update --check` when nothing recent is known", () => {
+    withState({});
+    expect(updateHint(build, now)).toContain("belz update --check");
+    withState({ lastCheckAt: now - 2 * 24 * 3600 * 1000, latestVersion: "0.2.3" });
+    expect(updateHint(build, now)).toContain("belz update --check");
   });
 });
 

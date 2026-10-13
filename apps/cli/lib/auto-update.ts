@@ -61,6 +61,22 @@ export function installKind(config: BelzConfigFile): "binary" | "source" {
   return config.belz?.installKind === "binary" ? "binary" : "source";
 }
 
+/**
+ * The sentence added to an unknown command/flag error: name the newer release when the last
+ * check found one, say nothing when a check within 24 h found this version current, and
+ * otherwise point at `belz update --check`.
+ */
+export function updateHint(build: BuildIdentity, now = Date.now()): string | null {
+  const state = readUpdateState();
+  const latest = state.latestVersion;
+  if (latest && compareVersions(latest, build.version) > 0) {
+    return `belz ${latest} is available (this is ${build.version}) and may have it: run \`belz update\`.`;
+  }
+  const fresh = state.lastCheckAt !== undefined && now - state.lastCheckAt < CHECK_INTERVAL_MS;
+  if (fresh && latest) return null;
+  return "If it is new, check for a newer belz with `belz update --check`.";
+}
+
 /** Why this run must not auto-update, or null when it may. */
 export function autoUpdateBlocker(
   build: BuildIdentity,

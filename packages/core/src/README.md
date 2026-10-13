@@ -58,8 +58,9 @@ belz <token> [args]
   └─ --help / no args / --help-full / --version → runner output
 ```
 
-- **Global flags** (`parseGlobalFlags`): `--llm`, `-v/--verbose`, `-e/--env <n>`, `--env=<n>`.
-  Parsing stops at `--`. Duplicate or conflicting `--env` → `INVALID_ARGS`. A `-v` after the
+- **Global flags** (`parseGlobalFlags`): `--llm`, `--human`, `-v/--verbose`, `-e/--env <n>`, `--env=<n>`.
+  Without `--llm`/`--human` the output mode is `llm` inside an agent session (`inAgentSession`:
+  `BELZ_AGENT=1` or `CLAUDECODE=1`), else `human`; both flags → `INVALID_ARGS`. Parsing stops at `--`. Duplicate or conflicting `--env` → `INVALID_ARGS`. A `-v` after the
   command name goes to the command when it declares `--verbose` (or `ownsFlags`); otherwise it
   turns on debug logging.
 - **Help.** `-h`/`--help` anywhere before `--` shows the command's help instead of running it
@@ -68,13 +69,17 @@ belz <token> [args]
   even with `FORCE_COLOR`.
 - **`--help-full [<namespace>] [--index]`** is handled only as the first token after the global
   flags; with `--llm` it is a `belz.help` envelope `{data: {text}}`.
+- **Unknown commands and flags.** `options.unknownHint()` (the CLI's "newer belz may have it:
+  `belz update`" sentence) is appended to `UNKNOWN_COMMAND` / `UNKNOWN_SUBCOMMAND` /
+  `UNKNOWN_FLAG` errors, and printed under the human command list.
 - **`--version`** prints `options.build` (`{version, sha, dirty, builtAt}`); `belz.version`
   envelope with `--llm`.
 - **Env guard.** Without `--env` the default env is used (see [`config/`](./config/README.md)).
   Unknown default → `INVALID_ENV`; no default with several (or zero) envs →
   `ENV_NOT_SELECTED` for env-aware commands (the rest still run). A command with `writes`
   (boolean or `(args) => boolean`) refuses to run without an explicit `--env`
-  (`ENV_REQUIRED_FOR_WRITE`) and prints `→ target env: <name> (<url>)` on stderr in human
+  (`ENV_REQUIRED_FOR_WRITE`) unless a person at a terminal (human mode, TTY stdin and stderr)
+  picks the env from a prompt (default preselected; counts as explicit), and prints `→ target env: <name> (<url>)` on stderr in human
   mode. `requiresEnv` is the same guard for a preview that reads the target env (dry runs;
   `details.dryRun: true`). `writesLocal` (local files only) needs no `--env`. Other env-aware
   commands on the default env print `→ env: <name> (<source>; pass --env to choose)`.

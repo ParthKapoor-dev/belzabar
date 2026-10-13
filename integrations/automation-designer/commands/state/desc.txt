@@ -1,1 +1,1 @@
-belz ad state <uuid>  :->  Draft/published linkage, versions, and inSync (logic fingerprint of draft vs published; read-only)
+belz ad state <uuid>  :->  Read-only: draft and published versions and whether the draft has unpublished changes (no body)

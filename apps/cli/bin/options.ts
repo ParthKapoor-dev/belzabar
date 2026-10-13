@@ -17,6 +17,7 @@ import { registry as twRegistry } from "@belzabar/teamwork/registry";
 import { registry as migrateRegistry } from "@belzabar/migrations/registry";
 import { registry as releaseRegistry } from "@belzabar/release/registry";
 import { registry as topCommands } from "../commands/registry";
+import { updateHint } from "../lib/auto-update";
 import { buildInfo } from "./build-info" with { type: "macro" };
 
 /** Version + git SHA, embedded at build time (macro). */
@@ -84,6 +85,7 @@ export function buildCliOptions(): NamespacedCliOptions {
     topLevelEnvAware: Object.fromEntries(NOT_ENV_AWARE_TOP_LEVEL.map((k) => [k, false])),
     build: BUILD,
     helpFull: buildHelpFull,
+    unknownHint: () => updateHint(BUILD),
   };
 }
 
@@ -102,8 +104,8 @@ export function buildHelpFull(opts: HelpFullOptions = {}): string | null {
   const sections = opts.namespace ? all.filter((s) => s.key === opts.namespace) : all;
   if (sections.length === 0) return null;
   const lines = [
-    "NOTE FOR LLM AGENTS: Always use the --llm flag for structured, parseable output.",
-    "  Example: belz ad show <uuid> --llm",
+    "NOTE FOR LLM AGENTS: inside an agent session (CLAUDECODE=1 or BELZ_AGENT=1) every command",
+    "  prints the --llm JSON envelope by default; elsewhere add --llm (--human forces text).",
     "  stdout carries only the JSON envelope; stderr carries human notices (the",
     "  `[belz ad write] {…}` audit line of a write, the default-env notice, progress).",
     "  `belz --help-full <module>` prints one module; `--index` one line per command.",

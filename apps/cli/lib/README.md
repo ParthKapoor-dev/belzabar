@@ -48,6 +48,11 @@ Blocked when: not a compiled binary (`bun bin/cli.ts`), a dirty build, `CI` set,
 `BELZ_NO_UPDATE=1`, `update.auto: false` or `update.pin` in config.json, or not a binary install.
 stdout is never written, so the `--llm` envelope is unaffected.
 
+`updateHint` (wired as the runner's `unknownHint`) adds a sentence to an unknown command or flag
+error: "belz X is available … run `belz update`" when the state file's `latestVersion` is newer,
+nothing when a check within 24 h found this version current, else a pointer to
+`belz update --check`.
+
 `swapInBinary` links (or copies) `<belz>` to `<belz>.prev` and renames `<belz>.next` over it,
 atomic on Linux/macOS. On Windows the running `belz.exe` is renamed to `.prev` first.
 `belz update --rollback` swaps `<belz>` and `<belz>.prev`.

@@ -1,1 +1,1 @@
-belz ad outputs <uuid>  :->  Print a method's inputs / variables / outputs contract plus stepOutputs (what each step writes, and whether the method declares it); fresh V2 read, names agree with the compact show view
+belz ad outputs <uuid>  :->  A method's contract: inputs, variables, outputs, plus what each step writes (read-only)

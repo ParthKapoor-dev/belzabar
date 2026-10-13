@@ -1,2 +1,2 @@
-belz pd preflight <pageId>  :->  Validate a page without saving (read-only; exit 1 if any validator error)
+belz pd preflight <pageId>  :->  Check a page (or an overlay applied in memory) like save would, without saving
 belz pd preflight <pageId> --overlay <file>  :->  Apply an overlay in memory, validate it like save does, and report what would change

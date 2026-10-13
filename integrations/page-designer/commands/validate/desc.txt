@@ -1,4 +1,0 @@
-belz pd validate <input>  :->  Validate a page/component (platform + pd-review + figma rules); errors in full, warnings grouped by code; exit 1 on any error
-belz pd validate <input> --recursive  :->  Also validate every symbol the page uses and the page <-> symbol inputs/events/nesting
-belz pd validate <input> --full  :->  List every issue individually instead of grouping warnings
-belz pd validate <input> --summary  :->  Warning counts per code only (no per-occurrence refs); errors in full

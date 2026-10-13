@@ -234,7 +234,7 @@ describe("UNUSED_VARIABLE false positives seen on real pages", () => {
 
 describe("calibration + catalogue", () => {
   test("every code emitted on the real fixtures is catalogued and documented in help.txt", () => {
-    const help = readFileSync(`${import.meta.dir}/../../commands/validate/help.txt`, "utf8");
+    const help = readFileSync(`${import.meta.dir}/../../commands/lint/help.txt`, "utf8");
     for (const code of Object.keys(PD_RULES)) expect(help).toContain(code);
     for (const f of REAL_FILES) {
       const raw = loadReal(f);

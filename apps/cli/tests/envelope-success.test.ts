@@ -126,7 +126,7 @@ const CASES: Case[] = [
   { argv: ["ad", "show-code", METHOD], envAware: true },
   { argv: ["pd", "show", PAGE], envAware: true },
   { argv: ["pd", "find", "search-student"], envAware: true },
-  { argv: ["pd", "validate", PAGE], envAware: true, failed: (d) => (d?.errorCount ?? 0) > 0 },
+  { argv: ["pd", "lint", PAGE], envAware: true, failed: (d) => (d?.errorCount ?? 0) > 0 },
   { argv: ["tw", "task", TASK], envAware: false },
   { argv: ["tw", "comments", TASK], envAware: false },
   { argv: ["migrate", "profiles"], envAware: false },

@@ -1,4 +1,4 @@
-belz ad show <uuid|url>  :->  Display structure and metadata of a method (auto-fetched, 5-min cache; lean --llm payload, empty fields dropped)
+belz ad show <uuid|url>  :->  A method's steps, inputs, outputs and metadata (--compact: one line per step; --story: plain English)
 belz ad show <uuid|url> --compact  :->  One line per step: kind/service, condition, loop, decoded SQL/code (abbreviated), inputs, outputs -> variables
 belz ad show <uuid|url> --compact --sql --code  :->  Compact view plus the full decoded SQL / code bodies (`blocks`)
 belz ad show <uuid|url> --compact --step <N>  :->  Compact line and full body of one step

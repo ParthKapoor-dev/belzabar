@@ -1,6 +1,6 @@
 # Page Designer (`@belzabar/pd`, `belz pd`)
 
-Inspect, validate, snapshot, edit and publish Page Designer (PD) pages and components
+Inspect, lint, snapshot, edit and publish Page Designer (PD) pages and components
 (symbols). A workspace package with no binary of its own: `apps/cli` wires its registry into
 `belz pd <cmd>`.
 
@@ -26,7 +26,7 @@ Inspect, validate, snapshot, edit and publish Page Designer (PD) pages and compo
 | Group | Commands |
 |---|---|
 | Read | `show`, `find`, `find-ad-methods`, `analyze`, `page-deps`, `translations`, `diff`, `history list/show/diff` |
-| Check | `validate`, `snapshot`, `preflight` |
+| Check | `lint`, `snapshot`, `preflight` |
 | Write | `save`, `publish`, `history restore`, `lock acquire/release` |
 
 `<input>` is an app page URL, a PD designer URL (`/ui-designer/page/<id>` or
@@ -35,7 +35,7 @@ then page; several matches → `PD_NAME_AMBIGUOUS`).
 
 ```bash
 belz pd show <input> --find "Save"                      # node ids + key paths, for overlays
-belz pd validate <input> --recursive                    # page + every symbol it uses
+belz pd lint <input> --recursive                    # page + every symbol it uses
 belz pd snapshot <input> --compare snapshots/page.json  # exit 1 when the live page differs
 belz pd preflight <pageId> --overlay edit.json          # plan + validate, never writes
 belz pd save <pageId> --overlay edit.json --env dev --yes
@@ -61,7 +61,7 @@ belz pd publish <pageId> --env dev --yes
   `--allow-published` (`save`/`publish` only: a PUBLISHED page with no linked draft). On read
   commands `--force` means "bypass the cache".
 - **Cache.** Page configs are cached per env under `~/.belz/cache/pages/<env>/` (5 min soft,
-  1 h hard TTL); `find` keeps a 7-day index. `validate`, `snapshot` and every write read fresh.
+  1 h hard TTL); `find` keeps a 7-day index. `lint`, `snapshot` and every write read fresh.
 
 ## Configuration
 

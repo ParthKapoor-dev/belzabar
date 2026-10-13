@@ -1,4 +1,4 @@
-belz ad test <uuid> --env <env>  :->  Execute a method (really runs it: needs --env); prompts for inputs interactively, returns outputs {code: value} and the step trace; a FAILED execution exits 1 (AD_TEST_FAILED)
+belz ad test <uuid> --env <env>  :->  Run a method on given inputs; returns its outputs and the step trace (really executes: needs --env)
 belz ad test <uuid> --env <env> --inputs <file|json>  :->  Input values from a JSON file or an inline JSON object (skips the prompts)
 belz ad test <uuid> --env <env> --input <key=value>  :->  One input value, repeatable, typed by the method's input type (on top of --inputs/--case); with --llm give --input, --inputs or --case
 belz ad test <uuid> --env <env> --case <file>  :->  Inputs and assertions from a test-case file; assertions are checked locally like --expect

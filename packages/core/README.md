@@ -33,7 +33,8 @@ command.
   Integrations add their own prefixed codes.
 - **Env selection.** `--env` > `BELZ_ENV` > config.json `defaultEnv` > the only configured env;
   otherwise env-aware commands fail with `ENV_NOT_SELECTED`. Remote writes need an explicit
-  `--env` (`ENV_REQUIRED_FOR_WRITE`). Details in [`src/config/`](./src/config/README.md) and
+  `--env` (`ENV_REQUIRED_FOR_WRITE`), except that a person at a terminal picks the env from a
+  prompt instead. Details in [`src/config/`](./src/config/README.md) and
   [`src/README.md`](./src/README.md).
 
 ### Error codes raised by core
