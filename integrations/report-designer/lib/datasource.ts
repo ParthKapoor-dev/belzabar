@@ -3,9 +3,9 @@
 // and `dataSourceCategoryUuid`. Specs name it portably as {category, method};
 // this module converts between the two on the active env.
 
-import { CliError, Config, str } from "@belzabar/core";
+import { CliError, Config, isObj, str } from "@belzabar/core";
 import { normalizeUuid } from "@belzabar/core/platform";
-import { listDatasourceCategories, listDatasources } from "./api";
+import { getChainById, listDatasourceCategories, listDatasources } from "./api";
 
 export interface DataSourceRef {
   /** AD category name. */
@@ -130,9 +130,12 @@ export async function describeDataSource(
   id: string | null,
   categoryUuid: string | null,
 ): Promise<{ category: string | null; method: string | null }> {
-  if (!categoryUuid) return { category: null, method: null };
-  const category = await findCategory(categoryUuid);
-  if (!category) return { category: null, method: null };
-  const row = id ? (await dataSourcesOf(category.uuid)).find((r) => r.id === id) : undefined;
-  return { category: category.name, method: row?.method ?? null };
+  const category = categoryUuid ? await findCategory(categoryUuid) : null;
+  const row = category && id ? (await dataSourcesOf(category.uuid)).find((r) => r.id === id) : undefined;
+  if (category && row) return { category: category.name, method: row.method };
+  // Older reports carry no category uuid, and a datasource that was unpublished
+  // is no longer listed: name it from the AD chain itself.
+  const chain = id ? await getChainById(id) : null;
+  const chainCategory = chain && isObj(chain.category) ? str(chain.category.name) ?? null : null;
+  return { category: chainCategory ?? category?.name ?? null, method: (chain && str(chain.name)) ?? null };
 }

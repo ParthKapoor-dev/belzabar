@@ -47,6 +47,17 @@ describe("rd run", () => {
   });
 });
 
+test("an older report without a category uuid runs with its saved ids only", async () => {
+  const { dataSourceCategoryUuid: _, ...cfg } = storedReport().configuration;
+  rd.reports.set(REPORT_ID, storedReport({ configuration: cfg }));
+  rd.install();
+  const r = await runCommand(run, [REPORT_ID], { env: RD_ENV });
+  expect(r.envelope?.error ?? null).toBeNull();
+  const sent = JSON.parse(rd.lastRun!);
+  expect(sent.dataSourceId).toBe(DS.id);
+  expect(sent.dataSourceCategoryUuid).toBeUndefined();
+});
+
 describe("rd download", () => {
   test("queues the export, polls until ready and saves the file", async () => {
     rd.install();

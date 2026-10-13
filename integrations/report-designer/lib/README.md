@@ -29,6 +29,7 @@ All verified against a live env; the RD web app uses the same calls.
 | `requestExport` / `pollExport` | `POST …/{id}/content?format=CSV\|XL\|PDF`, then `GET /rest/api/reports/download/{requestId}` (needs a JSON Content-Type) | **runs the datasource** |
 | `listDatasourceCategories` / `listDatasources` | `GET …/datasources/category`, `GET …/datasources?apiInfoLevel=BASIC&categoryUuid=` | none |
 | `dependentReports` | `GET /rest/api/automate/dependent/report?methodId=` (draft or published uuid) | none |
+| `getChainById` | `GET /rest/api/automation/chain/{chainId}` (an AD route: name, category, state) | none |
 
 Not used: `GET …/datasources/{chainId}?apiInfoLevel=MEDIUM` (schema discovery; it runs the
 method) and `DELETE …/{id}`.
@@ -39,6 +40,10 @@ method) and `DELETE …/{id}`.
 two display settings only the DETAILED read returns (`summaryPosition`, `filterConfig`) are
 listed in `unread` unless `exact` is set. The method name falls back to the record's
 `dataSourceName` when the chain id is no longer listed (e.g. the method was unpublished).
+
+Older reports were saved without `dataSourceCategoryUuid`; `describeDataSource` then names the
+datasource from the AD chain itself (`getChainById`), and runs send the configuration back
+without it, as saved.
 
 ## Datasources (`datasource.ts`)
 

@@ -21,6 +21,11 @@ export const DS = { type: "SERVICE", id: "501", label: "orders_by_day", descript
 /** The same category and method on the second env, with that env's own ids. */
 export const CATEGORY_2 = { ...CATEGORY, id: 9, uuid: "99998888777766665555444433332222" };
 export const DS_2 = { ...DS, id: "777" };
+/** AD chains by numeric id: the listed datasource, and one no longer listed (unpublished since). */
+export const CHAINS: Record<string, Obj> = {
+  [DS.id]: { id: Number(DS.id), name: DS.label, category: { name: CATEGORY.name, uuid: CATEGORY.uuid }, automationState: "PUBLISHED" },
+  "999": { id: 999, name: "orders_by_day_old", category: { name: CATEGORY.name, uuid: CATEGORY.uuid }, automationState: "DRAFT" },
+};
 
 export const COLUMNS: Obj[] = [
   { id: "111", data: [], name: "Day", type: "DATE", label: "Day", width: 150, starred: false, filterable: true, reportable: true },
@@ -248,6 +253,11 @@ export function fakeRdEnv(opts: { envs?: string[] } = {}): FakeRdEnv {
             r.configuration = JSON.parse((req.json() as { configuration: string }).configuration);
             return { ...basic(r), configuration: JSON.stringify(r.configuration) };
           },
+        },
+        {
+          method: "GET",
+          url: /\/rest\/api\/automation\/chain\/(\d+)$/,
+          response: (req: RecordedRequest) => CHAINS[/(\d+)$/.exec(req.url)![1]!] ?? respond({ status: 404, json: { errorMessage: "not found" } }),
         },
         {
           method: "GET",

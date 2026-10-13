@@ -40,14 +40,25 @@ describe("rd show", () => {
     expect(rd.reports.get(REPORT_ID)!.executions).toBe(1);
   });
 
-  test("unknown id → RD_NOT_FOUND; an unlisted chain id is named from the record", async () => {
+  test("unknown id → RD_NOT_FOUND; an unlisted chain id is named from the AD chain", async () => {
     rd.install();
     const missing = await runCommand(show, ["ffffffffffffffffffffffffffffffff"], { env: RD_ENV });
     expect(missing.envelope?.error?.code).toBe("RD_NOT_FOUND");
     rd.reports.set(REPORT_ID, storedReport({ configuration: { ...storedReport().configuration, dataSourceId: "999" } }));
     const r = await runCommand(show, [REPORT_ID], { env: RD_ENV });
-    expect(data<any>(r).dataSource).toMatchObject({ id: "999", category: CATEGORY.name, method: DS.label });
+    expect(data<any>(r).dataSource).toMatchObject({ id: "999", category: CATEGORY.name, method: "orders_by_day_old" });
     expect(r.envelope?.meta.warnings).toBeUndefined();
+  });
+});
+
+describe("older reports without a category uuid", () => {
+  test("the datasource is named from the AD chain, so export still writes a portable spec", async () => {
+    const { dataSourceCategoryUuid: _, ...cfg } = storedReport().configuration;
+    rd.reports.set(REPORT_ID, storedReport({ configuration: cfg }));
+    rd.install();
+    const r = await runCommand(exportCmd, [REPORT_ID], { env: RD_ENV });
+    expect(data<any>(r).spec.dataSource).toEqual({ category: CATEGORY.name, method: DS.label });
+    expect(rd.ff.requests.some((q) => q.url.endsWith(`/rest/api/automation/chain/${DS.id}`))).toBe(true);
   });
 });
 

@@ -11,6 +11,8 @@ const RD_V3 = "/rest/api/v3/reports";
 const RD_DOWNLOAD = "/rest/api/reports/download";
 /** AD → reports reverse lookup (an AD route). */
 const RD_DEPENDENTS = "/rest/api/automate/dependent/report";
+/** AD chain by numeric id (an AD route). */
+const AD_CHAIN = "/rest/api/automation/chain";
 
 /** Exports and runs execute the datasource method on the server. */
 const RD_RUN_TIMEOUT_MS = 10 * 60 * 1000;
@@ -160,6 +162,19 @@ export async function pollExport(requestId: string): Promise<Obj> {
 export async function dependentReports(methodUuid: string): Promise<Obj[]> {
   const path = `${RD_DEPENDENTS}?${qs({ methodId: methodUuid, offset: 0, limit: 500 })}`;
   return list(await call(path, { what: "Reports using the method" }), path);
+}
+
+/**
+ * The AD chain with this numeric id (`{id, uuid, name, category: {name, uuid}, automationState}`),
+ * or null. Read-only; names a datasource whose report has no category uuid.
+ */
+export async function getChainById(chainId: string): Promise<Obj | null> {
+  const path = `${AD_CHAIN}/${encodeURIComponent(chainId)}`;
+  const value = await call<unknown>(path, { what: `Read AD chain ${chainId}`, notFoundCode: "RD_DATASOURCE_NOT_FOUND" }).catch((err) => {
+    if (err instanceof CliError && err.code === "RD_DATASOURCE_NOT_FOUND") return null;
+    throw err;
+  });
+  return isObj(value) ? value : null;
 }
 
 // ── datasources ────────────────────────────────────────────────────────────

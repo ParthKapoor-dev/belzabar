@@ -9,7 +9,7 @@
 
 import { CliError, isObj, readJsonInput, str, type Obj } from "@belzabar/core";
 import { getReportBasic, getReportDefinition, getReportDetailed } from "./api";
-import { describeDataSource, type DataSourceRef, type ResolvedDataSource } from "./datasource";
+import { describeDataSource, type DataSourceRef } from "./datasource";
 
 export const SPEC_FORMAT = "belz.rd.report/1";
 export const DEFAULT_SUMMARY_POSITION = { label: "Show summaries at top", value: "top" } as const;
@@ -115,13 +115,14 @@ function parseConfiguration(value: unknown, id: string): Obj {
 }
 
 /** The configuration string the server stores, for `spec` on the env `ds` was resolved on. */
-export function toConfiguration(spec: ReportSpec, ds: Pick<ResolvedDataSource, "id" | "categoryUuid">): string {
+export function toConfiguration(spec: ReportSpec, ds: { id: string; categoryUuid: string | null }): string {
   return JSON.stringify({
     name: spec.title,
     ...(spec.description ? { description: spec.description } : {}),
     dataSourceId: ds.id,
     dataSourceType: "SERVICE",
-    dataSourceCategoryUuid: ds.categoryUuid,
+    // Older reports were saved without it; a run sends them back as they are.
+    ...(ds.categoryUuid ? { dataSourceCategoryUuid: ds.categoryUuid } : {}),
     columns: spec.columns,
     filters: spec.filters,
     summaries: spec.summaries,
@@ -133,7 +134,7 @@ export function toConfiguration(spec: ReportSpec, ds: Pick<ResolvedDataSource, "
 
 /** The saved report's own configuration (its env-local ids), for running it as saved. */
 export function savedConfiguration(report: SavedReport): string {
-  if (!report.dataSource.id || !report.dataSource.categoryUuid) {
+  if (!report.dataSource.id) {
     throw new CliError(`Report ${report.meta.id} has no datasource yet; save a definition first.`, {
       code: "RD_NO_DATASOURCE",
       details: { id: report.meta.id },

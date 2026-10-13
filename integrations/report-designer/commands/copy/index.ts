@@ -85,7 +85,8 @@ const command: CommandModule<CopyArgs, CopyData> = {
       ds = await resolveDataSource(spec.dataSource);
     } catch (err) {
       if (err instanceof CliError && err.code.startsWith("RD_DATASOURCE")) {
-        throw new CliError(`${err.message} Migrate the AD method to ${target} first (belz migrate run --module AD_Method …), then copy again.`, {
+        const head = err.code === "RD_DATASOURCE_NOT_FOUND" ? `No published method '${spec.dataSource.method}' in category '${spec.dataSource.category}' on ${target}.` : err.message;
+        throw new CliError(`${head} Migrate the AD method to ${target} first (belz migrate run --module AD_Method …), then copy again.`, {
           code: err.code,
           details: err.details,
         });
