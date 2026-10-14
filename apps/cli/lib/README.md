@@ -7,17 +7,18 @@ the release build ([`../scripts/build-release.ts`](../scripts/build-release.ts))
 | File | Contents |
 |------|----------|
 | `release.ts` | `RELEASE_TARGETS` and `assetName` (`wi-impl-<os>-<arch>[.exe]`), `currentTarget`, version helpers (`parseVersion`, `compareVersions`, `sameMajor`), the release `manifest.json` schema, `fetchManifest` (latest or `v<version>`), `downloadVerifiedAsset` (temp file → sha256 check → executable → rename), `releasesBaseUrl` |
-| `auto-update.ts` | `autoUpdateBlocker` (the gate), `autoUpdateTick` (startup: owed notice + at most one background check per 24 h), `runUpdateWorker` (the detached check), `swapInBinary` / `rollbackBinary`, `installKind`, `recordBinaryInstall` |
+| `auto-update.ts` | `autoUpdateBlocker` (the gate), `autoUpdateTick` (startup: owed notice + at most one background check per 24 h), `runUpdateWorker` (the detached check), `swapInBinary` / `rollbackBinary`, `installedBinary` (the real path, so the `belz` alias is never replaced), `installKind`, `recordBinaryInstall` |
+| `legacy-names.ts` | The one-time move of an install from before the rename (see below): `migrateLegacyBinary`, `migrateLegacyHome`; imported first by `bin/cli.ts` and runs only in a compiled binary |
 
 ## Releases
 
 A release is a GitHub Release `vX.Y.Z` of this repo (`.github/workflows/release.yml`) holding
-`belz-linux-x64`, `belz-linux-arm64`, `belz-darwin-x64`, `belz-darwin-arm64`,
-`belz-windows-x64.exe`, `SHA256SUMS`, `manifest.json` and the installers. `manifest.json`:
+`wi-impl-linux-x64`, `wi-impl-linux-arm64`, `wi-impl-darwin-x64`, `wi-impl-darwin-arm64`,
+`wi-impl-windows-x64.exe`, `SHA256SUMS`, `manifest.json` and the installers. `manifest.json`:
 
 ```json
 { "version": "0.2.0", "sha": "abc1234", "publishedAt": "…",
-  "assets": { "linux-x64": { "name": "belz-linux-x64", "sha256": "…" }, … } }
+  "assets": { "linux-x64": { "name": "wi-impl-linux-x64", "sha256": "…" }, … } }
 ```
 
 URLs are `<releases>/latest/download/<file>` and `<releases>/download/vX.Y.Z/<file>`, where
@@ -26,7 +27,7 @@ URLs are `<releases>/latest/download/<file>` and `<releases>/download/vX.Y.Z/<fi
 
 ## Auto-update
 
-Only for a **binary install**: `wi-impl.installKind` is `"binary"` in config.json, written by the
+Only for a **binary install**: `install.installKind` is `"binary"` in config.json, written by the
 release installer (`install.sh` / `install.ps1` run the new binary once with
 `WI_IMPL_RECORD_INSTALL=binary`; an explicit `--version` also passes `WI_IMPL_RECORD_PIN`, which sets
 `update.pin` so the version asked for is kept, while a latest install clears any pin). The
@@ -54,9 +55,25 @@ nothing when a check within 24 h found this version current, else a pointer to
 `wi-impl update --check`.
 
 `swapInBinary` links (or copies) `<wi-impl>` to `<wi-impl>.prev` and renames `<wi-impl>.next` over it,
-atomic on Linux/macOS. On Windows the running `belz.exe` is renamed to `.prev` first.
+atomic on Linux/macOS. On Windows the running `wi-impl.exe` is renamed to `.prev` first.
 `wi-impl update --rollback` swaps `<wi-impl>` and `<wi-impl>.prev`.
 
-Tests: [`../tests/self-update.test.ts`](../tests/self-update.test.ts).
+## The rename from belz
+
+Up to v0.2.4 the binary was `belz`, its data `~/.belz`, its release assets `belz-<os>-<arch>`.
+A pre-rename binary updates itself from the manifest's asset names, so it downloads the new
+`wi-impl-*` binary into its own path (`<dir>/belz`). The first run of that binary (any
+compiled run of a file named `belz`, before core loads) then:
+
+- renames itself to `<dir>/wi-impl` (and `belz.prev` to `wi-impl.prev`) and leaves `belz` as a
+  symlink to it; on Windows `wi-impl.exe` plus a `belz.cmd` that runs it;
+- moves `~/.belz` to `~/.wi-impl` and leaves `~/.belz` as a symlink (not on Windows), unless
+  `WI_IMPL_HOME` / `BELZ_HOME` is set or `~/.wi-impl` exists;
+- prints one line on stderr saying so.
+
+Failures leave the old names working. The installers do the same moves before installing;
+given an explicit pre-rename `--version`, they fetch its `belz-*` asset.
+
+Tests: [`../tests/self-update.test.ts`](../tests/self-update.test.ts), [`../tests/legacy-names.test.ts`](../tests/legacy-names.test.ts).
 
 Up: [apps/cli](../README.md).

@@ -4,9 +4,9 @@
 //   bun apps/cli/scripts/build-release.ts [--targets linux-x64,…] [--out <dir>] [--sign]
 //   bun apps/cli/scripts/build-release.ts --manifest-only [--out <dir>]
 //
-// Build mode compiles `belz-<target>` for each target (default: all of RELEASE_TARGETS) into
+// Build mode compiles `wi-impl-<target>` for each target (default: all of RELEASE_TARGETS) into
 // --out (default dist/release). --sign ad-hoc codesigns the darwin binaries (macOS only:
-// Apple Silicon refuses unsigned ones). --manifest-only hashes every belz-* binary already in
+// Apple Silicon refuses unsigned ones). --manifest-only hashes every wi-impl-* binary already in
 // --out and writes SHA256SUMS, manifest.json and the two installers next to them, so CI can
 // build on several runners and assemble one release. The version is apps/cli/package.json's.
 
@@ -77,7 +77,7 @@ for (const t of RELEASE_TARGETS) {
   assets[t] = { name, sha256 };
   sums.push(`${sha256}  ${name}`);
 }
-const stray = readdirSync(out).filter((f) => f.startsWith("belz-") && !Object.values(assets).some((a) => a.name === f));
+const stray = readdirSync(out).filter((f) => f.startsWith("wi-impl-") && !Object.values(assets).some((a) => a.name === f));
 if (stray.length) console.warn(`build-release: ignoring ${stray.join(", ")}`);
 
 writeFileSync(join(out, "SHA256SUMS"), `${sums.join("\n")}\n`);

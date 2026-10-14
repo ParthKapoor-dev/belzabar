@@ -13,7 +13,7 @@ import {
   recordBelzMeta,
   type CommandModule,
 } from "@belzabar/core";
-import { installKind, rollbackBinary, swapInBinary } from "../../lib/auto-update";
+import { installedBinary, installKind, rollbackBinary, swapInBinary } from "../../lib/auto-update";
 import { compareVersions, downloadVerifiedAsset, fetchManifest } from "../../lib/release";
 import { buildInfo } from "../../bin/build-info" with { type: "macro" };
 
@@ -157,7 +157,7 @@ async function updateBinary(args: UpdateArgs): Promise<BinaryUpdateData> {
       code: "UPDATE_NOT_COMPILED",
     });
   }
-  const binary = process.execPath;
+  const binary = installedBinary();
   const base = { mode: "binary" as const, fromVersion: BUILD.version, binary };
   if (args.rollback) {
     try {

@@ -1,7 +1,7 @@
 Usage: wi-impl rd save <id> --spec <file> --env <env> [flags]
 
 Replace a report's definition with a spec file: export it, edit the file, save
-it back. Report Designer keeps no history and last write wins, so belz:
+it back. Report Designer keeps no history and last write wins, so wi-impl:
   1. shows what changes (title, datasource, columns, filters, summaries);
   2. saves the current definition to ~/.wi-impl/rd/backups/<env>/ first (save that
      file back to undo);

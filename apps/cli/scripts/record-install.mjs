@@ -1,8 +1,8 @@
-// Records belz install metadata into ~/.wi-impl/config.json.
+// Records wi-impl install metadata into ~/.wi-impl/config.json.
 //
-// `belz update` needs to know which git checkout belz was built from and where
+// `wi-impl update` needs to know which git checkout wi-impl was built from and where
 // the binary was installed. The install scripts (install.sh / install.ps1) run
-// this after installing the binary, into the `install` section (`belz` before the rename,
+// this after installing the binary, into the `install` section (`wi-impl` before the rename,
 // moved here). Other config sections are preserved.
 //
 // Usage: node record-install.mjs <sourceDir> <installDir> <repoUrl> <version>
@@ -33,7 +33,7 @@ config.install = {
   installDir: installDir || previous?.installDir,
   repoUrl: repoUrl || previous?.repoUrl,
   version: version || previous?.version,
-  // Built from a checkout: updated by `belz update` with git, never by the release auto-update.
+  // Built from a checkout: updated by `wi-impl update` with git, never by the release auto-update.
   installKind: 'source',
   installedAt: new Date().toISOString(),
 };
@@ -45,4 +45,4 @@ const tmp = `${configPath}.${process.pid}.${Date.now()}.tmp`;
 writeFileSync(tmp, JSON.stringify(config, null, 2), { mode: 0o600 });
 chmodSync(tmp, 0o600);
 renameSync(tmp, configPath);
-console.log(`recorded belz install metadata → ${configPath}`);
+console.log(`recorded wi-impl install metadata → ${configPath}`);

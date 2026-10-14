@@ -5,7 +5,7 @@ Docs: [`README.md`](./README.md) (routing, build, install) and the READMEs in `b
 
 ## Rules
 
-- Never run `bun run belz:install`, `belz:reinstall`, `wi-impl update`, `wi-impl setup` or
+- Never run `bun run wi-impl:install`, `wi-impl:reinstall`, `wi-impl update`, `wi-impl setup` or
   `wi-impl onboard` as part of a change; they touch the real `~/.wi-impl` and binary. Tests use
   scratch homes.
 - `wi-impl --help-full` must stay deterministic: no env-, clock-, locale- or build-dependent text.

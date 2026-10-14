@@ -3,10 +3,11 @@
   "version": "0.2.4",
   "type": "module",
   "bin": {
+    "wi-impl": "./bin/cli.ts",
     "belz": "./bin/cli.ts"
   },
   "scripts": {
-    "build": "bun build --compile --minify --sourcemap ./bin/cli.ts --outfile belz",
+    "build": "bun build --compile --minify --sourcemap ./bin/cli.ts --outfile wi-impl",
     "link": "bun link"
   },
   "private": true,

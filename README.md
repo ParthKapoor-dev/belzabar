@@ -73,7 +73,7 @@ That's it. The installer:
 
 1. downloads the right binary for your OS and CPU,
 2. checks it against the release's `SHA256SUMS` (nothing is installed on a mismatch),
-3. puts it at `~/.local/bin/belz` (Windows: `%LOCALAPPDATA%\wi-impl\bin\belz.exe`, added to your PATH),
+3. puts it at `~/.local/bin/wi-impl` (Windows: `%LOCALAPPDATA%\wi-impl\bin\wi-impl.exe`, added to your PATH),
 4. starts the guided setup on a first install.
 
 No bun, node or git needed. Check it worked:
@@ -82,7 +82,7 @@ No bun, node or git needed. Check it worked:
 wi-impl --version
 ```
 
-> If your shell says `belz: command not found`, add `~/.local/bin` to your PATH:
+> If your shell says `wi-impl: command not found`, add `~/.local/bin` to your PATH:
 > `export PATH="$PATH:$HOME/.local/bin"` (put it in `~/.bashrc` or `~/.zshrc`).
 
 <details>
@@ -100,8 +100,8 @@ Pass flags after `bash -s --`, for example
 | `--from-source` | `WI_IMPL_FROM_SOURCE=1` | Clone the repo and build with bun (developers) |
 
 You can also download a binary by hand from the
-[releases page](https://github.com/ParthKapoor-dev/belzabar/releases): `belz-linux-x64`,
-`belz-linux-arm64`, `belz-darwin-x64`, `belz-darwin-arm64` or `belz-windows-x64.exe`.
+[releases page](https://github.com/ParthKapoor-dev/belzabar/releases): `wi-impl-linux-x64`,
+`wi-impl-linux-arm64`, `wi-impl-darwin-x64`, `wi-impl-darwin-arm64` or `wi-impl-windows-x64.exe`.
 
 </details>
 
@@ -258,6 +258,11 @@ Turn it off with `WI_IMPL_NO_UPDATE=1`, or in `~/.wi-impl/config.json`:
 `"update": { "auto": false }` (or `"update": { "pin": "0.2.1" }` to stay on one version).
 Major versions are never installed automatically.
 
+**Renamed from `belz`.** wi-impl was called `belz` up to v0.2.4. Nothing is needed to switch: the
+first run after the update renames the binary to `wi-impl` and moves `~/.belz` to `~/.wi-impl`
+(the installers do the same). `belz` keeps working as a second name for the same binary, and
+`BELZ_*` variables are still read when the `WI_IMPL_*` one is not set.
+
 ---
 
 ## Configuration reference
@@ -284,8 +289,8 @@ release may have it.
 ## Uninstall
 
 ```bash
-rm ~/.local/bin/belz     # the binary
-rm -rf ~/.wi-impl           # your config, sessions and caches (optional)
+rm ~/.local/bin/wi-impl ~/.local/bin/belz   # the binary and its belz alias
+rm -rf ~/.wi-impl ~/.belz                    # your config, sessions and caches (optional)
 ```
 
 ---
@@ -340,7 +345,7 @@ bun install --ignore-scripts
 bun apps/cli/bin/cli.ts ad show <uuid>      # run from source, no build
 bun run check                               # typecheck + docs check + dead code + all tests
 bun test integrations/automation-designer   # one package
-bun run belz:install                        # build and install your local binary
+bun run wi-impl:install                        # build and install your local binary
 ```
 
 - Tests never touch your real `~/.wi-impl` (they use a temporary `WI_IMPL_HOME`).

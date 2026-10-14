@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# reinstall.sh — Wipe all belz data and run a clean fresh install
+# reinstall.sh — Wipe all wi-impl data and run a clean fresh install
 #
 # ⚠️  WARNING: This permanently deletes:
 #     • ~/.wi-impl/        (all credentials, sessions, and cache)
-#     • The existing belz binary
+#     • The existing wi-impl binary
 #
 # Use this only when you want a completely clean slate.
 # To update the binary while keeping your credentials, use install.sh instead.
@@ -48,8 +48,8 @@ echo "⚠️  WARNING: Clean reinstall will permanently delete the following:"
 echo ""
 echo "   📁 ${BELZ_CONFIG_DIR}/"
 echo "      credentials (config.json), sessions/, cache/, and any other data"
-if [[ -f "$INSTALL_DIR/belz" ]]; then
-  echo "   🗑️  $INSTALL_DIR/belz  (existing binary)"
+if [[ -e "$INSTALL_DIR/wi-impl" || -e "$INSTALL_DIR/belz" ]]; then
+  echo "   🗑️  $INSTALL_DIR/wi-impl and its belz alias  (existing binary)"
 fi
 echo ""
 echo "   Your credentials will need to be re-entered."
@@ -69,11 +69,18 @@ if [[ -d "$BELZ_CONFIG_DIR" ]]; then
   rm -rf "$BELZ_CONFIG_DIR"
   echo "🗑️  Deleted $BELZ_CONFIG_DIR"
 fi
-
-if [[ -f "$INSTALL_DIR/belz" ]]; then
-  rm -f "$INSTALL_DIR/belz"
-  echo "🗑️  Deleted $INSTALL_DIR/belz"
+# The data dir before the rename (a directory, or the symlink left after the move).
+if [[ -e "$HOME/.belz" || -L "$HOME/.belz" ]]; then
+  rm -rf "$HOME/.belz"
+  echo "🗑️  Deleted $HOME/.belz"
 fi
+
+for f in wi-impl belz wi-impl.prev belz.prev; do
+  if [[ -e "$INSTALL_DIR/$f" || -L "$INSTALL_DIR/$f" ]]; then
+    rm -f "$INSTALL_DIR/$f"
+    echo "🗑️  Deleted $INSTALL_DIR/$f"
+  fi
+done
 
 echo ""
 

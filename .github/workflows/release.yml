@@ -1,8 +1,8 @@
-# Publishes a belz release when a v* tag is pushed (`bun run release <bump>` creates one).
+# Publishes a wi-impl release when a v* tag is pushed (`bun run release <bump>` creates one).
 #
 #   check  → bun run check (the same gate as ci.yml)
-#   build  → belz-linux-{x64,arm64}, belz-windows-x64.exe (cross-compiled on Ubuntu) and
-#            belz-darwin-{x64,arm64} (built and ad-hoc signed on macOS)
+#   build  → wi-impl-linux-{x64,arm64}, wi-impl-windows-x64.exe (cross-compiled on Ubuntu) and
+#            wi-impl-darwin-{x64,arm64} (built and ad-hoc signed on macOS)
 #   smoke  → each binary runs `--version` on its own OS/CPU and must print the tag's version
 #            (linux-arm64 only while the repo is public: free arm64 runners)
 #   publish→ SHA256SUMS + manifest.json + install.sh/install.ps1, then a GitHub Release
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: bin-linux-windows
-          path: dist/release/belz-*
+          path: dist/release/wi-impl-*
           if-no-files-found: error
 
   build-macos:
@@ -65,11 +65,11 @@ jobs:
           bun-version: 1.2.20
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun apps/cli/scripts/build-release.ts --targets darwin-arm64,darwin-x64 --sign --out dist/release
-      - run: codesign --verify --verbose dist/release/belz-darwin-arm64
+      - run: codesign --verify --verbose dist/release/wi-impl-darwin-arm64
       - uses: actions/upload-artifact@v4
         with:
           name: bin-macos
-          path: dist/release/belz-*
+          path: dist/release/wi-impl-*
           if-no-files-found: error
 
   smoke:
@@ -78,10 +78,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, asset: belz-linux-x64 }
-          - { os: macos-latest, asset: belz-darwin-arm64 }
-          - { os: macos-latest, asset: belz-darwin-x64, rosetta: true }
-          - { os: windows-latest, asset: belz-windows-x64.exe }
+          - { os: ubuntu-latest, asset: wi-impl-linux-x64 }
+          - { os: macos-latest, asset: wi-impl-darwin-arm64 }
+          - { os: macos-latest, asset: wi-impl-darwin-x64, rosetta: true }
+          - { os: windows-latest, asset: wi-impl-windows-x64.exe }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/download-artifact@v4
@@ -92,7 +92,7 @@ jobs:
       - name: "${{ matrix.asset }} --version"
         shell: bash
         env:
-          WI_IMPL_HOME: ${{ runner.temp }}/belz-home
+          WI_IMPL_HOME: ${{ runner.temp }}/wi-impl-home
         run: |
           chmod +x "bin/${{ matrix.asset }}" || true
           if [ "${{ matrix.rosetta }}" = "true" ]; then
@@ -101,7 +101,7 @@ jobs:
             out="$("bin/${{ matrix.asset }}" --version)"
           fi
           echo "$out"
-          case "$out" in "belz ${GITHUB_REF_NAME#v} "*) ;; *) echo "expected belz ${GITHUB_REF_NAME#v}"; exit 1 ;; esac
+          case "$out" in "wi-impl ${GITHUB_REF_NAME#v} "*) ;; *) echo "expected wi-impl ${GITHUB_REF_NAME#v}"; exit 1 ;; esac
 
   # GitHub's hosted arm64 Linux runners are free for public repos only: skipped while private.
   smoke-linux-arm64:
@@ -113,14 +113,14 @@ jobs:
         with:
           name: bin-linux-windows
           path: bin
-      - name: belz-linux-arm64 --version
+      - name: wi-impl-linux-arm64 --version
         env:
-          WI_IMPL_HOME: ${{ runner.temp }}/belz-home
+          WI_IMPL_HOME: ${{ runner.temp }}/wi-impl-home
         run: |
-          chmod +x bin/belz-linux-arm64
-          out="$(bin/belz-linux-arm64 --version)"
+          chmod +x bin/wi-impl-linux-arm64
+          out="$(bin/wi-impl-linux-arm64 --version)"
           echo "$out"
-          case "$out" in "belz ${GITHUB_REF_NAME#v} "*) ;; *) echo "expected belz ${GITHUB_REF_NAME#v}"; exit 1 ;; esac
+          case "$out" in "wi-impl ${GITHUB_REF_NAME#v} "*) ;; *) echo "expected wi-impl ${GITHUB_REF_NAME#v}"; exit 1 ;; esac
 
   publish:
     needs: [smoke, smoke-linux-arm64]
@@ -146,4 +146,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" dist/release/* \
-            --title "belz $GITHUB_REF_NAME" --generate-notes --verify-tag
+            --title "wi-impl $GITHUB_REF_NAME" --generate-notes --verify-tag

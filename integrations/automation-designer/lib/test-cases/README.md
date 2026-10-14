@@ -40,7 +40,7 @@ with `--apply`.
 
 ## Platform facts
 
-- A method without a suite: the suite GET answers 200 with an empty body (belz: no suite,
+- A method without a suite: the suite GET answers 200 with an empty body (wi-impl: no suite,
   0 cases). The first `POST /chain/testcases/{uuid}` creates the suite.
 - `POST` stores every field. `PUT` replaces only inputs and assertions and silently keeps
   name, description and active.

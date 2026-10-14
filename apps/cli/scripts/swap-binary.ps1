@@ -1,11 +1,11 @@
-# swap-binary.ps1 — deferred binary swap for `belz update` on Windows.
+# swap-binary.ps1 — deferred binary swap for `wi-impl update` on Windows.
 #
-# Windows cannot overwrite a running .exe. When `belz update` rebuilds the
-# binary, the new file is staged as `belz.exe.new` and this script is launched
-# detached. It waits for the old binary to be released (the running belz
+# Windows cannot overwrite a running .exe. When `wi-impl update` rebuilds the
+# binary, the new file is staged as `wi-impl.exe.new` and this script is launched
+# detached. It waits for the old binary to be released (the running wi-impl
 # process to exit), then moves the new binary into place.
 #
-# Usage: swap-binary.ps1 -NewPath <belz.exe.new> -TargetPath <belz.exe>
+# Usage: swap-binary.ps1 -NewPath <wi-impl.exe.new> -TargetPath <wi-impl.exe>
 
 param(
   [Parameter(Mandatory = $true)][string]$NewPath,
@@ -18,7 +18,7 @@ $ErrorActionPreference = 'SilentlyContinue'
 for ($i = 0; $i -lt 120; $i++) {
   try {
     Move-Item -Force -Path $NewPath -Destination $TargetPath -ErrorAction Stop
-    Write-Host "belz updated."
+    Write-Host "wi-impl updated."
     exit 0
   } catch {
     Start-Sleep -Milliseconds 500

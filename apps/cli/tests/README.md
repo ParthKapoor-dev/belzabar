@@ -16,6 +16,7 @@ whole command set. Run with `bun test apps/cli` or `bun run check`.
 | `entry.test.ts` | `bin/cli.ts` spawned: `--version`, registry load-failure report |
 | `compiled-pipe.test.ts` | Compiles to a tmp dir; a >64 KiB `--llm` envelope survives a slow pipe |
 | `install-scripts.test.ts` | `record-install.mjs` in a scratch HOME (0600/0700, keeps sections, refuses malformed config); installers decide first run before recording |
+| `legacy-names.test.ts` | The one-time move of a pre-rename install: `belz` → `wi-impl` + alias (Linux/macOS symlink, Windows `belz.cmd`), `~/.belz` → `~/.wi-impl` + link, and every skip case |
 | `onboard.test.ts` | A failed step → `ONBOARD_INCOMPLETE` (exit 1); Ctrl-C (`USER_ABORT`) ends the flow |
 | `cache-command.test.ts`, `cache-prune-local.test.ts` | `wi-impl cache` invalidate body and guards; `prune-local` |
 | `setup-config-exec.test.ts` | `setup` merges and stores explicit password encodings; `config token` re-logs in on expiry or `--refresh` |

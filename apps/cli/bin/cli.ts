@@ -2,6 +2,8 @@
 // The wi-impl entry point — run directly in dev (`bun bin/cli.ts …`) and compiled
 // into the release binary. Commands and help text come from the static
 // registries (see bin/options.ts), so both modes behave identically.
+// First: moves a pre-rename install (belz, ~/.belz) before core resolves the data dir.
+import "../lib/legacy-names";
 import { flushAndExit, installStdioGuard, runNamespacedCli, trustedBelzEnv } from "@belzabar/core";
 import { autoUpdateTick, recordBinaryInstall, runUpdateWorker } from "../lib/auto-update";
 

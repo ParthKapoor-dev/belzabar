@@ -1,5 +1,5 @@
-// What a belz release is: versions, platform targets, the release manifest, and downloading a
-// verified asset. Shared by `belz update` (binary installs), the background auto-update
+// What a wi-impl release is: versions, platform targets, the release manifest, and downloading a
+// verified asset. Shared by `wi-impl update` (binary installs), the background auto-update
 // (./auto-update.ts) and the release build (apps/cli/scripts/build-release.ts).
 
 import { createHash } from "crypto";
@@ -18,9 +18,9 @@ function releasesBaseUrl(): string {
 export const RELEASE_TARGETS = ["linux-x64", "linux-arm64", "darwin-x64", "darwin-arm64", "windows-x64"] as const;
 export type ReleaseTarget = (typeof RELEASE_TARGETS)[number];
 
-/** Release asset file name for a target: `belz-linux-x64`, `belz-windows-x64.exe`. */
+/** Release asset file name for a target: `wi-impl-linux-x64`, `wi-impl-windows-x64.exe`. */
 export function assetName(target: ReleaseTarget): string {
-  return `belz-${target}${target.startsWith("windows") ? ".exe" : ""}`;
+  return `wi-impl-${target}${target.startsWith("windows") ? ".exe" : ""}`;
 }
 
 /** The target of the running process, or null on a platform no release ships. */
@@ -47,7 +47,7 @@ export function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-/** Auto-update only moves within a major version; a new major waits for `belz update`. */
+/** Auto-update only moves within a major version; a new major waits for `wi-impl update`. */
 export function sameMajor(a: string, b: string): boolean {
   const pa = parseVersion(a);
   const pb = parseVersion(b);
@@ -101,7 +101,7 @@ export async function fetchManifest(version?: string, timeoutMs = 10_000): Promi
   }
   const parsed = ManifestSchema.safeParse(body);
   if (!parsed.success) {
-    throw new CliError(`${url} is not a belz release manifest: ${parsed.error.issues[0]?.message ?? "invalid"}`, {
+    throw new CliError(`${url} is not a wi-impl release manifest: ${parsed.error.issues[0]?.message ?? "invalid"}`, {
       code: "UPDATE_BAD_MANIFEST",
     });
   }
@@ -120,7 +120,7 @@ export function sha256Hex(data: Uint8Array): string {
 export async function downloadVerifiedAsset(manifest: ReleaseManifest, dest: string, timeoutMs = 300_000): Promise<void> {
   const target = currentTarget();
   if (!target) {
-    throw new CliError(`No belz release is built for ${process.platform}-${process.arch}.`, { code: "UPDATE_UNSUPPORTED_PLATFORM" });
+    throw new CliError(`No wi-impl release is built for ${process.platform}-${process.arch}.`, { code: "UPDATE_UNSUPPORTED_PLATFORM" });
   }
   const asset = manifest.assets[target];
   if (!asset) {

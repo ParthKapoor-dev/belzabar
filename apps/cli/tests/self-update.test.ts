@@ -42,8 +42,8 @@ describe("versions and targets", () => {
     expect(currentTarget("darwin", "arm64")).toBe("darwin-arm64");
     expect(currentTarget("win32", "x64")).toBe("windows-x64");
     expect(currentTarget("freebsd", "x64")).toBeNull();
-    expect(assetName("windows-x64")).toBe("belz-windows-x64.exe");
-    expect(assetName("linux-arm64")).toBe("belz-linux-arm64");
+    expect(assetName("windows-x64")).toBe("wi-impl-windows-x64.exe");
+    expect(assetName("linux-arm64")).toBe("wi-impl-linux-arm64");
   });
 });
 
@@ -73,7 +73,7 @@ describe("updateHint (unknown command/flag)", () => {
 });
 
 describe("autoUpdateBlocker", () => {
-  const compiled = ["bun", "/$bunfs/root/belz"];
+  const compiled = ["bun", "/$bunfs/root/wi-impl"];
   const binary: BelzConfigFile = { install: { installKind: "binary" } };
   const build = { version: "0.2.0", dirty: false };
   const gate = (over: { argv?: string[]; env?: NodeJS.ProcessEnv; config?: BelzConfigFile; dirty?: boolean } = {}) =>
@@ -105,7 +105,7 @@ describe("autoUpdateBlocker", () => {
 });
 
 describe("fetchManifest + downloadVerifiedAsset (fake release server)", () => {
-  const payload = new TextEncoder().encode("#!/bin/sh\necho new-belz\n");
+  const payload = new TextEncoder().encode("#!/bin/sh\necho new-wi-impl\n");
   const target = currentTarget()!;
   let server: ReturnType<typeof Bun.serve>;
   let manifest: ReleaseManifest;
@@ -152,14 +152,14 @@ describe("fetchManifest + downloadVerifiedAsset (fake release server)", () => {
   });
 
   test("a verified download lands executable at dest", async () => {
-    const dest = join(tmp(), "belz.next");
+    const dest = join(tmp(), "wi-impl.next");
     await downloadVerifiedAsset(manifest, dest);
     expect(readFileSync(dest)).toEqual(Buffer.from(payload));
   });
 
   test("a checksum mismatch is refused and leaves nothing behind", async () => {
     const dir = tmp();
-    const dest = join(dir, "belz.next");
+    const dest = join(dir, "wi-impl.next");
     tamper = true;
     try {
       await expect(downloadVerifiedAsset(manifest, dest)).rejects.toMatchObject({ code: "UPDATE_CHECKSUM_MISMATCH" });

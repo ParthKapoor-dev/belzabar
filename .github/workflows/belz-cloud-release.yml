@@ -1,9 +1,9 @@
-# Builds the belz Linux binary and publishes the "cloud bundle" to the
-# belz-sandbox repo, so Claude Code cloud sessions always get the latest belz
+# Builds the wi-impl Linux binary and publishes the "cloud bundle" to the
+# belz-sandbox repo, so Claude Code cloud sessions always get the latest wi-impl
 # WITHOUT ever attaching the private belzabar repo.
 #
 # What it does (see cloud/publish.sh):
-#   • compiles belz-linux-x64 and uploads it to a rolling Release on belz-sandbox
+#   • compiles wi-impl-linux-x64 and uploads it to a rolling Release on belz-sandbox
 #   • syncs the cloud rules + setup script into belz-sandbox
 #
 # Required configuration:

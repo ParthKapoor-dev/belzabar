@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# cloud/publish.sh — build the belz Linux binary and publish the cloud bundle
+# cloud/publish.sh — build the wi-impl Linux binary and publish the cloud bundle
 # to the belz-sandbox repo (the repo Claude Code cloud sessions connect to).
 #
 # belzabar stays private and is NEVER attached to a cloud session. Instead this
 # script pushes everything a cloud session needs OUT to belz-sandbox:
-#   • belz-linux-x64   → a rolling GitHub Release (tag: latest) on belz-sandbox
-#   • CLAUDE.md        ← cloud/sandbox-CLAUDE.md (the "use belz, don't commit" rules)
+#   • wi-impl-linux-x64   → a rolling GitHub Release (tag: latest) on belz-sandbox
+#   • CLAUDE.md        ← cloud/sandbox-CLAUDE.md (the "use wi-impl, don't commit" rules)
 #   • cloud-setup.sh   ← the session bootstrap script (committed for reference)
 #
 # Run locally (with your own gh auth) or from CI (.github/workflows/belz-cloud-release.yml).
@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SANDBOX_REPO="${SANDBOX_REPO:?set SANDBOX_REPO=owner/belz-sandbox}"
 RELEASE_TAG="${RELEASE_TAG:-latest}"
-ASSET="belz-linux-x64"
+ASSET="wi-impl-linux-x64"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
@@ -60,7 +60,7 @@ if git diff --cached --quiet; then
 else
   SRC_SHA="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
   git -c user.name="belz-cloud-bot" -c user.email="belz-cloud-bot@users.noreply.github.com" \
-    commit -m "chore(cloud): sync belz rules (belzabar@${SRC_SHA})"
+    commit -m "chore(cloud): sync wi-impl rules (belzabar@${SRC_SHA})"
   # `-u origin HEAD` handles the first push into a brand-new empty repo.
   git push -u origin HEAD
   echo "⬆️  pushed rules to $SANDBOX_REPO"
@@ -68,6 +68,6 @@ fi
 
 # ── 4. Publish the binary as the rolling release ─────────────────────────────
 gh release create "$RELEASE_TAG" --repo "$SANDBOX_REPO" \
-  --title "belz (rolling)" --notes "Latest belz build, published by belzabar CI." 2>/dev/null || true
+  --title "wi-impl (rolling)" --notes "Latest wi-impl build, published by belzabar CI." 2>/dev/null || true
 gh release upload "$RELEASE_TAG" "$WORK/$ASSET" --repo "$SANDBOX_REPO" --clobber
 echo "✅ published $ASSET to $SANDBOX_REPO @ $RELEASE_TAG"

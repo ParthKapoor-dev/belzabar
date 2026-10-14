@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# install.sh — Install or update the belz CLI
+# install.sh — Install or update the wi-impl CLI
 #
 # Behaviour:
-#   • Always rebuilds the binary and installs it to $INSTALL_DIR.
-#   • If ~/.wi-impl/config.json does not yet exist, runs `belz setup` at the end
+#   • Always rebuilds the binary and installs it to $INSTALL_DIR as `wi-impl`, with `belz`
+#     (its name before the rename) as an alias.
+#   • If ~/.wi-impl/config.json does not yet exist, runs `wi-impl setup` at the end
 #     to walk through interactive credential entry (or consumes --env-file).
 #   • Existing credentials, sessions, and cache in ~/.wi-impl/ are never touched
 #     by this script.
@@ -39,6 +40,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Before the rename the data lived in ~/.belz: move it (once), leaving ~/.belz pointing at it.
+if [[ ! -e "$HOME/.wi-impl" && -d "$HOME/.belz" && ! -L "$HOME/.belz" ]]; then
+  mv "$HOME/.belz" "$HOME/.wi-impl"
+  ln -s .wi-impl "$HOME/.belz" 2>/dev/null || true
+  echo "📁 Moved ~/.belz to ~/.wi-impl (the CLI was renamed from belz to wi-impl)"
+fi
+
 # Decide "first run" now: step 6b (record-install) creates config.json, so
 # testing for it at step 8 would never see a first run.
 FIRST_RUN=0
@@ -53,9 +61,9 @@ fi
 echo "✅ bun found: $(bun --version)"
 
 # ── 2. Detect existing installation ──────────────────────────────────────────
-if [[ -f "$INSTALL_DIR/belz" ]]; then
+if [[ -f "$INSTALL_DIR/wi-impl" || -f "$INSTALL_DIR/belz" ]]; then
   echo ""
-  echo "📦 Existing installation detected at $INSTALL_DIR/belz"
+  echo "📦 Existing installation detected in $INSTALL_DIR"
   echo "   Updating binary — your credentials and sessions in ~/.wi-impl/ are untouched."
 fi
 
@@ -67,17 +75,20 @@ bun install --ignore-scripts
 
 # ── 4. Build the binary ───────────────────────────────────────────────────────
 echo ""
-echo "🔨 Building belz binary..."
+echo "🔨 Building wi-impl binary..."
 cd "$REPO_ROOT/apps/cli"
-bun build --compile --minify --sourcemap ./bin/cli.ts --outfile belz
+bun build --compile --minify --sourcemap ./bin/cli.ts --outfile wi-impl
 
 # ── 5. Install the binary ─────────────────────────────────────────────────────
 mkdir -p "$INSTALL_DIR"
-mv belz "$INSTALL_DIR/belz"
+mv wi-impl "$INSTALL_DIR/wi-impl"
+# `belz` (the name before the rename) runs the same binary; it replaces a pre-rename binary.
+ln -sfn wi-impl "$INSTALL_DIR/belz"
+rm -f "$INSTALL_DIR/belz.prev"
 echo ""
-echo "✅ belz installed to $INSTALL_DIR/belz"
+echo "✅ wi-impl installed to $INSTALL_DIR/wi-impl (alias: belz)"
 
-# ── 6. Record install metadata (source path, etc.) for `belz update` ─────────
+# ── 6. Record install metadata (source path, etc.) for `wi-impl update` ─────────
 REPO_URL="$(git -C "$REPO_ROOT" remote get-url origin 2>/dev/null || echo "")"
 REPO_VERSION="$(git -C "$REPO_ROOT" rev-parse --short HEAD 2>/dev/null || echo "")"
 bun "$SCRIPT_DIR/record-install.mjs" \
@@ -92,24 +103,24 @@ if ! echo ":${PATH}:" | grep -q ":${INSTALL_DIR}:"; then
 fi
 
 # ── 8. First-time setup ──────────────────────────────────────────────────────
-# With --env-file, run `belz setup` non-interactively. Otherwise run the guided
-# `belz onboard` flow (credentials).
+# With --env-file, run `wi-impl setup` non-interactively. Otherwise run the guided
+# `wi-impl onboard` flow (credentials).
 if [[ "$FIRST_RUN" == 1 ]]; then
   echo ""
   if [[ -n "$ENV_FILE" ]]; then
-    echo "🆕 No config found — running 'belz setup --env-file'…"
-    if ! "$INSTALL_DIR/belz" setup --env-file "$ENV_FILE"; then
-      echo "❌ Setup aborted. Re-run 'belz setup' any time to finish configuration." >&2
+    echo "🆕 No config found — running 'wi-impl setup --env-file'…"
+    if ! "$INSTALL_DIR/wi-impl" setup --env-file "$ENV_FILE"; then
+      echo "❌ Setup aborted. Re-run 'wi-impl setup' any time to finish configuration." >&2
       exit 1
     fi
   else
-    echo "🆕 No config found — running 'belz onboard'…"
-    if ! "$INSTALL_DIR/belz" onboard; then
-      echo "❌ Onboarding aborted. Re-run 'belz onboard' any time to finish setup." >&2
+    echo "🆕 No config found — running 'wi-impl onboard'…"
+    if ! "$INSTALL_DIR/wi-impl" onboard; then
+      echo "❌ Onboarding aborted. Re-run 'wi-impl onboard' any time to finish setup." >&2
       exit 1
     fi
   fi
 fi
 
 echo ""
-echo "🎉 Done! Try: belz --help"
+echo "🎉 Done! Try: wi-impl --help"

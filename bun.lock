@@ -16,6 +16,7 @@
       "version": "0.2.3",
       "bin": {
         "belz": "./bin/cli.ts",
+        "wi-impl": "./bin/cli.ts",
       },
       "dependencies": {
         "@belzabar/ad": "workspace:*",

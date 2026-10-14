@@ -21,21 +21,21 @@ describe("buildRefreshCommand", () => {
 
   test("compiled shape: argv[0] is 'bun' and argv[1] is /$bunfs — spawn execPath with argv.slice(2)", () => {
     const cmd = buildRefreshCommand(
-      ["bun", "/$bunfs/root/belz", "pd", "show", "P", "--llm"],
-      "/home/u/.local/bin/belz",
+      ["bun", "/$bunfs/root/wi-impl", "pd", "show", "P", "--llm"],
+      "/home/u/.local/bin/wi-impl",
     );
-    expect(cmd).toEqual({ bin: "/home/u/.local/bin/belz", args: ["pd", "show", "P", "--llm", "--force"] });
+    expect(cmd).toEqual({ bin: "/home/u/.local/bin/wi-impl", args: ["pd", "show", "P", "--llm", "--force"] });
   });
 
   test("compiled shape on Windows (B:/~BUN/)", () => {
-    const cmd = buildRefreshCommand(["bun", "B:/~BUN/root/belz.exe", "ad", "show", "X"], "C:\\belz.exe");
-    expect(cmd).toEqual({ bin: "C:\\belz.exe", args: ["ad", "show", "X", "--force"] });
+    const cmd = buildRefreshCommand(["bun", "B:/~BUN/root/wi-impl.exe", "ad", "show", "X"], "C:\\wi-impl.exe");
+    expect(cmd).toEqual({ bin: "C:\\wi-impl.exe", args: ["ad", "show", "X", "--force"] });
   });
 
   test("strips --open / -o and does not duplicate --force", () => {
     const cmd = buildRefreshCommand(
-      ["bun", "/$bunfs/root/belz", "pd", "show", "P", "--open", "-o", "--force"],
-      "/bin/belz",
+      ["bun", "/$bunfs/root/wi-impl", "pd", "show", "P", "--open", "-o", "--force"],
+      "/bin/wi-impl",
     );
     expect(cmd!.args).toEqual(["pd", "show", "P", "--force"]);
   });

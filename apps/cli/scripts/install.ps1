@@ -1,16 +1,17 @@
-# install.ps1 — Install or update the belz CLI on Windows.
+# install.ps1 — Install or update the wi-impl CLI on Windows.
 #
 # Windows counterpart of apps/cli/scripts/install.sh:
-#   - Rebuilds the belz.exe binary and installs it to a per-user location.
-#   - Records install metadata, and runs `belz onboard` on first install.
-#   - No admin required — installs to %LOCALAPPDATA%\belz\bin and edits the
+#   - Rebuilds the wi-impl.exe binary and installs it to a per-user location.
+#   - Records install metadata, and runs `wi-impl onboard` on first install.
+#   - `belz` (the name before the rename) runs it too (belz.cmd).
+#   - No admin required — installs to %LOCALAPPDATA%\wi-impl\bin and edits the
 #     per-user PATH only.
 #
 # Usage: powershell -ExecutionPolicy Bypass -File install.ps1 [-EnvFile <path>] [-InstallDir <dir>]
 
 param(
   [string]$EnvFile = "",
-  [string]$InstallDir = "$env:LOCALAPPDATA\belz\bin"
+  [string]$InstallDir = "$env:LOCALAPPDATA\wi-impl\bin"
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,6 +19,13 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..\..")
 $BelzConfigDir = Join-Path $env:USERPROFILE ".wi-impl"
+
+# Before the rename the data lived in .belz: move it (once).
+$LegacyHome = Join-Path $env:USERPROFILE ".belz"
+if (-not (Test-Path $BelzConfigDir) -and (Test-Path $LegacyHome)) {
+  Move-Item $LegacyHome $BelzConfigDir
+  Write-Host "Moved .belz to .wi-impl (the CLI was renamed from belz to wi-impl)"
+}
 
 # Decide "first run" now: step 6 (record-install) creates config.json.
 $FirstRun = -not (Test-Path (Join-Path $BelzConfigDir "config.json"))
@@ -36,21 +44,21 @@ bun install --ignore-scripts
 Pop-Location
 
 # ── 3. Build the binary ───────────────────────────────────────────────────────
-Write-Host "Building belz binary..."
+Write-Host "Building wi-impl binary..."
 Push-Location (Join-Path $RepoRoot "apps\cli")
-bun build --compile --minify --sourcemap .\bin\cli.ts --outfile belz.exe
+bun build --compile --minify --sourcemap .\bin\cli.ts --outfile wi-impl.exe
 Pop-Location
-$BuiltExe = Join-Path $RepoRoot "apps\cli\belz.exe"
+$BuiltExe = Join-Path $RepoRoot "apps\cli\wi-impl.exe"
 
 # ── 4. Install the binary ─────────────────────────────────────────────────────
 New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
-$Target = Join-Path $InstallDir "belz.exe"
+$Target = Join-Path $InstallDir "wi-impl.exe"
 if (Test-Path $Target) {
   try {
     Move-Item -Force -Path $BuiltExe -Destination $Target -ErrorAction Stop
-    Write-Host "belz installed to $Target"
+    Write-Host "wi-impl installed to $Target"
   } catch {
-    # The binary is in use (e.g. `belz update` is running) — stage + defer.
+    # The binary is in use (e.g. `wi-impl update` is running) — stage + defer.
     $New = "$Target.new"
     Move-Item -Force -Path $BuiltExe -Destination $New
     Start-Process powershell -WindowStyle Hidden -ArgumentList @(
@@ -58,12 +66,20 @@ if (Test-Path $Target) {
       "-File", (Join-Path $ScriptDir "swap-binary.ps1"),
       "-NewPath", $New, "-TargetPath", $Target
     )
-    Write-Host "belz is currently running — the new binary will swap in when it exits."
+    Write-Host "wi-impl is currently running — the new binary will swap in when it exits."
   }
 } else {
   Move-Item -Force -Path $BuiltExe -Destination $Target
-  Write-Host "belz installed to $Target"
+  Write-Host "wi-impl installed to $Target"
 }
+
+# `belz` (the name before the rename) runs the same binary; a pre-rename belz.exe is moved aside.
+$Legacy = Join-Path $InstallDir "belz.exe"
+if (Test-Path $Legacy) {
+  Remove-Item -Force "$Legacy.prev" -ErrorAction SilentlyContinue
+  Move-Item -Force $Legacy "$Legacy.prev" -ErrorAction SilentlyContinue
+}
+Set-Content -Encoding ASCII -Path (Join-Path $InstallDir "belz.cmd") -Value '@"%~dp0wi-impl.exe" %*'
 
 # ── 5. Record install metadata ────────────────────────────────────────────────
 $RepoUrl = (git -C $RepoRoot remote get-url origin 2>$null)
@@ -81,13 +97,13 @@ if ($userPath -notlike "*$InstallDir*") {
 # ── 7. First-time setup ───────────────────────────────────────────────────────
 if ($FirstRun) {
   if ($EnvFile) {
-    Write-Host "No config found - running 'belz setup --env-file'..."
+    Write-Host "No config found - running 'wi-impl setup --env-file'..."
     & $Target setup --env-file $EnvFile
   } else {
-    Write-Host "No config found - running 'belz onboard'..."
+    Write-Host "No config found - running 'wi-impl onboard'..."
     & $Target onboard
   }
 }
 
 Write-Host ""
-Write-Host "Done! Try: belz --help"
+Write-Host "Done! Try: wi-impl --help"

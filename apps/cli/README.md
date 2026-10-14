@@ -16,9 +16,9 @@ commands live in `integrations/*`; the framework (runner, args, envelope, http, 
 | [`scripts/`](./scripts/README.md) | Install, reinstall and update helper scripts; the release build |
 | [`tests/`](./tests/README.md) | Cross-package CLI tests (registry, args docs, envelope contract, install scripts, live suites) |
 | `bunfig.toml` | Test preload (`WI_IMPL_HOME` → tmp) |
-| `package.json` | `build` (compile `bin/cli.ts` to `./belz`), `link`; depends on core and every integration |
+| `package.json` | `build` (compile `bin/cli.ts` to `./wi-impl`), `link`; depends on core and every integration |
 
-The compiled binary (`wi-impl`, with `belz.map`) is written here and gitignored.
+The compiled binary (`wi-impl`, with `wi-impl.map`) is written here and gitignored.
 
 ## Routing
 
@@ -35,10 +35,10 @@ their envelopes carry no `meta.env` and they run without a selected env.
 ## Build and install
 
 ```bash
-bun run belz:build                       # repo root: compile bin/cli.ts into this directory (gitignored binary)
+bun run wi-impl:build                       # repo root: compile bin/cli.ts into this directory (gitignored binary)
 bun apps/cli/bin/cli.ts ad show --help   # dev mode, no compile step
-bun run belz:install                     # scripts/install.sh: build, install, first-run setup
-bun run belz:reinstall                   # scripts/reinstall.sh: wipe ~/.wi-impl and the binary first
+bun run wi-impl:install                     # scripts/install.sh: build, install, first-run setup
+bun run wi-impl:reinstall                   # scripts/reinstall.sh: wipe ~/.wi-impl and the binary first
 ```
 
 The repo-root one-liners (`install.sh`, `install.ps1`) and `wi-impl update` call the scripts in

@@ -2,7 +2,7 @@ Usage: wi-impl update [flags]
 
 Update wi-impl to the latest version.
 
-wi-impl has two kinds of install, recorded as "wi-impl.installKind" in
+wi-impl has two kinds of install, recorded as "install.installKind" in
 ~/.wi-impl/config.json:
 
 Binary install (the release installer, install.sh / install.ps1):
@@ -16,7 +16,7 @@ Binary install (the release installer, install.sh / install.ps1):
   "update": { "auto": false } in config.json. It never crosses a major
   version: a new major waits for `wi-impl update`.
 
-Source install (a git checkout, e.g. `bun run belz:install`):
+Source install (a git checkout, e.g. `bun run wi-impl:install`):
   `wi-impl update` fetches the checkout's tracking branch, fast-forwards it, and
   re-runs the install script, installing to the recorded install dir
   ("install.installDir"). The checkout is "install.sourceDir" (default
@@ -42,4 +42,4 @@ Notes:
     your working binary.
   - Your ~/.wi-impl/ config, credentials, and sessions are never touched.
   - On Linux/macOS the new binary swaps in place; on Windows the running
-    belz.exe is renamed aside first.
+    wi-impl.exe is renamed aside first.

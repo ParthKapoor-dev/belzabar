@@ -12,7 +12,7 @@
 // throws into the command that triggered it.
 
 import { spawn } from "child_process";
-import { closeSync, copyFileSync, existsSync, linkSync, openSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "fs";
+import { closeSync, copyFileSync, existsSync, linkSync, openSync, readFileSync, realpathSync, renameSync, rmSync, statSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { BELZ_CONFIG_DIR, installMeta, isCompiledEntry, loadConfigFileRaw, recordBelzMeta, trustedBelzEnv, writeConfigFile, type BelzConfigFile } from "@belzabar/core";
 import { compareVersions, downloadVerifiedAsset, fetchManifest, sameMajor } from "./release";
@@ -129,6 +129,18 @@ export function autoUpdateTick(build: BuildIdentity, now = Date.now()): void {
   }
 }
 
+/**
+ * The binary file this process runs: the real path, so a run through the `belz` alias (a symlink
+ * to `wi-impl`) updates `wi-impl` and never replaces the alias with a copy.
+ */
+export function installedBinary(): string {
+  try {
+    return realpathSync(process.execPath);
+  } catch {
+    return process.execPath;
+  }
+}
+
 /** Atomically replace `exe` with `next`, keeping the old binary as `<exe>.prev`. */
 export function swapInBinary(exe: string, next: string): void {
   const prev = `${exe}.prev`;
@@ -169,7 +181,7 @@ export function rollbackBinary(exe: string): void {
 
 /** The detached worker started by autoUpdateTick (WI_IMPL_UPDATE_WORKER=1). */
 export async function runUpdateWorker(build: BuildIdentity): Promise<void> {
-  const exe = process.execPath;
+  const exe = installedBinary();
   const lock = `${exe}.update-lock`;
   let fd: number;
   try {
@@ -210,7 +222,7 @@ export async function runUpdateWorker(build: BuildIdentity): Promise<void> {
 export function recordBinaryInstall(build: BuildIdentity): void {
   recordBelzMeta({
     installKind: "binary",
-    installDir: dirname(process.execPath),
+    installDir: dirname(installedBinary()),
     version: build.version,
     installedAt: new Date().toISOString(),
   });

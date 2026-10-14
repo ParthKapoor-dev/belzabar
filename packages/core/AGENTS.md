@@ -7,7 +7,7 @@ Docs: [`README.md`](./README.md) (package, exports, error codes) and the README 
 
 - **Downstream impact.** Every integration and `apps/cli` depend on this package. Before changing
   a public export, check its usages across `integrations/*` and `apps/cli`, run `bun run check`
-  from the repo root, and build once (`bun run belz:build`) if you touched the runner or stdio.
+  from the repo root, and build once (`bun run wi-impl:build`) if you touched the runner or stdio.
 - **Public contracts; do not break them:** `CommandModule`, `ok` / `fail` / `failWithData`,
   `CliError`, error codes (renaming one is a breaking change), and `EnvelopeSchema`. Change the
   schema and the runner together; `apps/cli/tests/envelope-contract.test.ts` and

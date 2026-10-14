@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cloud/setup.sh — bootstrap belz inside a Claude Code *cloud* session.
+# cloud/setup.sh — bootstrap wi-impl inside a Claude Code *cloud* session.
 # (published into belz-sandbox as cloud-setup.sh by cloud/publish.sh)
 #
 # IMPORTANT: cloud "Environment variables" are NOT exported to the pre-launch
@@ -9,9 +9,9 @@
 #   • CLAUDE.md tells the agent to run it first as a fallback.
 # Both run where WI_IMPL_ENV_* / WI_IMPL_SANDBOX_TOKEN are available.
 #
-# It (1) installs the prebuilt belz Linux binary from the belz-sandbox release
+# It (1) installs the prebuilt wi-impl Linux binary from the belz-sandbox release
 # (private repo → no belzabar access), and (2) writes ~/.wi-impl/config.json via
-# `belz setup --from-env`. It is idempotent — safe to re-run on every SessionStart.
+# `wi-impl setup --from-env`. It is idempotent — safe to re-run on every SessionStart.
 #
 # Env it reads (set on the cloud environment's Environment variables field):
 #   WI_IMPL_ENV_<NAME>_URL/_USER/_PASSWORD[/_PROJECT]  — one set per env
@@ -33,14 +33,14 @@ fi
 [ -n "$REPO" ] || { echo "cloud-setup: cannot determine belz-sandbox repo (set WI_IMPL_SANDBOX_REPO)"; exit 0; }
 
 TAG="${WI_IMPL_RELEASE_TAG:-${BELZ_RELEASE_TAG:-latest}}"
-ASSET="belz-linux-x64"
-BIN="$HOME/.local/bin/belz"
+ASSET="wi-impl-linux-x64"
+BIN="$HOME/.local/bin/wi-impl"
 TOKEN="${WI_IMPL_SANDBOX_TOKEN:-${BELZ_SANDBOX_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}}"
 mkdir -p "$HOME/.local/bin"
 
-# 1. Install belz (skip the download if it's already here — SessionStart re-fires).
+# 1. Install wi-impl (skip the download if it's already here — SessionStart re-fires).
 if [ ! -x "$BIN" ]; then
-  echo "→ installing belz from ${REPO}@${TAG}…"
+  echo "→ installing wi-impl from ${REPO}@${TAG}…"
   if [ -f "$HERE/$ASSET" ]; then
     install -m 0755 "$HERE/$ASSET" "$BIN"
   elif command -v gh >/dev/null 2>&1; then
@@ -55,17 +55,19 @@ if [ ! -x "$BIN" ]; then
   [ -x "$BIN" ] || chmod +x "$BIN" 2>/dev/null || true
 fi
 if [ ! -x "$BIN" ]; then
-  echo "cloud-setup: could not install belz — set WI_IMPL_SANDBOX_TOKEN (read-only on $REPO)." >&2
+  echo "cloud-setup: could not install wi-impl — set WI_IMPL_SANDBOX_TOKEN (read-only on $REPO)." >&2
   exit 0
 fi
 
+ln -sfn wi-impl "$HOME/.local/bin/belz"   # the name before the rename
+ln -sf "$BIN" /usr/local/bin/wi-impl 2>/dev/null || true
 ln -sf "$BIN" /usr/local/bin/belz 2>/dev/null || true
 export PATH="$HOME/.local/bin:$PATH"
 
 # 2. Write ~/.wi-impl/config.json from the session's environment variables.
 echo "→ writing ~/.wi-impl/config.json from environment…"
 if "$BIN" setup --from-env --force --llm >/dev/null 2>&1; then
-  echo "✓ belz ready. Configured envs:"; "$BIN" envs 2>/dev/null || true
+  echo "✓ wi-impl ready. Configured envs:"; "$BIN" envs 2>/dev/null || true
 else
-  echo "⚠ 'belz setup --from-env' wrote no envs — check the WI_IMPL_ENV_* variables." >&2
+  echo "⚠ 'wi-impl setup --from-env' wrote no envs — check the WI_IMPL_ENV_* variables." >&2
 fi

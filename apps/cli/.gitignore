@@ -5,7 +5,10 @@ node_modules
 out
 dist
 *.tgz
+# compiled binary (bun run build): the current name and the pre-rename one
 wi-impl
+wi-impl.map
+belz
 
 # code coverage
 coverage

@@ -66,7 +66,7 @@ describe("pathCandidates", () => {
 describe("commandCandidates / checkCommand", () => {
   test("extracts words after wi-impl up to a flag or placeholder", () => {
     expect(commandCandidates("wi-impl ad show <uuid> --llm && wi-impl cache prune-local --yes")).toEqual([["ad", "show"], ["cache", "prune-local"]]);
-    expect(commandCandidates("bun run belz:install; ./belz --help-full; [wi-impl pd write] saved")).toEqual([]);
+    expect(commandCandidates("bun run wi-impl:install; ./wi-impl --help-full; [wi-impl pd write] saved")).toEqual([]);
   });
 
   test("registered commands pass", () => {

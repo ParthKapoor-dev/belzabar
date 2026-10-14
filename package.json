@@ -7,9 +7,9 @@
     "integrations/*"
   ],
   "scripts": {
-    "belz:install": "bash ./apps/cli/scripts/install.sh",
-    "belz:reinstall": "bash ./apps/cli/scripts/reinstall.sh",
-    "belz:build": "bun run --cwd apps/cli build",
+    "wi-impl:install": "bash ./apps/cli/scripts/install.sh",
+    "wi-impl:reinstall": "bash ./apps/cli/scripts/reinstall.sh",
+    "wi-impl:build": "bun run --cwd apps/cli build",
     "release": "bun scripts/release.ts",
     "build": "bun run --filter '*' build",
     "test": "bun test",

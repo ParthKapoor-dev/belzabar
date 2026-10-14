@@ -26,7 +26,7 @@ jobs:
           bun-version: 1.2.20
 
       # --ignore-scripts: the root package's lifecycle scripts must never run
-      # the belz installer. --frozen-lockfile: test exactly the
+      # the wi-impl installer. --frozen-lockfile: test exactly the
       # committed dependency set.
       - name: Install
         run: bun install --frozen-lockfile --ignore-scripts
@@ -35,7 +35,7 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
 
-      # Every repo path and `belz <cmd>` named in AGENTS.md/README.md exists.
+      # Every repo path and `wi-impl <cmd>` named in AGENTS.md/README.md exists.
       - name: Docs check
         run: bun run docs:check
 

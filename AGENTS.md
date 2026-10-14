@@ -42,6 +42,6 @@ Read the workspace's `AGENTS.md` and the README of the directory you touch befor
   code, comments, tests or docs; use placeholders (`example.test`, `dev`, `qa`).
 - **Never commit secrets.** Fixtures are captured only with `scripts/fixtures/capture.ts`
   (read-only, sanitized); the secrets test must stay green.
-- **Never run** `bun run belz:install` / `belz:reinstall`, `wi-impl update`, `wi-impl setup` or
+- **Never run** `bun run wi-impl:install` / `wi-impl:reinstall`, `wi-impl update`, `wi-impl setup` or
   `wi-impl onboard` as part of a change, and never write to the real `~/.wi-impl`.
 - **Before committing:** `bun run check` (typecheck, docs:check, dead-code, all tests) is green.
