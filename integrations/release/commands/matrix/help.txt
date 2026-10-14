@@ -17,7 +17,7 @@ If any ticket cannot be linked (Teamwork error, not found), the audit fails
 with RELEASE_MATRIX_INCOMPLETE: collisions are unknown and nothing is saved.
 
 WRITES LOCAL STATE: the result is saved to the promotion ledger
-(~/.belz/promotion/releases/<name>.json, atomic write), replacing the previous
+(~/.wi-impl/promotion/releases/<name>.json, atomic write), replacing the previous
 audit of the same release. A different release name that maps to the same
 file is refused (LEDGER_NAME_COLLISION).
 
@@ -38,7 +38,7 @@ spineEnv and stageEnv from different projects.
 
 spineEnv/stageEnv default to the project's "<project>-dev" / "<project>-stage"
 envs. The project is "project", else that of an explicit spineEnv/stageEnv,
-else that of the active env (--env / BELZ_ENV / defaultEnv).
+else that of the active env (--env / WI_IMPL_ENV / defaultEnv).
 
 Arguments:
   <release.json>        Path to the release spec JSON file.

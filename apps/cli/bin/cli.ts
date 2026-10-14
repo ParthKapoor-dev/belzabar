@@ -16,18 +16,18 @@ try {
 } catch (e) {
   const err = e as Error;
   console.error(`belz: failed to load the command registry: ${err?.message ?? String(e)}`);
-  if (process.env.BELZ_VERBOSE === "1" && err?.stack) console.error(err.stack);
+  if (process.env.WI_IMPL_VERBOSE === "1" && err?.stack) console.error(err.stack);
   await flushAndExit(70);
 }
 
 // Internal modes (not commands): the detached background update check, and the release
 // installer recording a binary install. See lib/auto-update.ts.
 const internal = trustedBelzEnv();
-if (internal.BELZ_UPDATE_WORKER === "1") {
+if (internal.WI_IMPL_UPDATE_WORKER === "1") {
   await runUpdateWorker(options!.BUILD);
   await flushAndExit(0);
 }
-if (internal.BELZ_RECORD_INSTALL === "binary") {
+if (internal.WI_IMPL_RECORD_INSTALL === "binary") {
   recordBinaryInstall(options!.BUILD);
   await flushAndExit(0);
 }

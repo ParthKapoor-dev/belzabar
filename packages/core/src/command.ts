@@ -55,7 +55,7 @@ export interface CommandContext {
   env: Environment;
   /** True when `--env` was given explicitly (otherwise `env` is the default env). */
   envExplicit: boolean;
-  /** Runner debug logging (`-v/--verbose` in global position, or BELZ_VERBOSE=1). */
+  /** Runner debug logging (`-v/--verbose` in global position, or WI_IMPL_VERBOSE=1). */
   verbose: boolean;
   binaryName: string;
   commandName: string;
@@ -87,7 +87,7 @@ export interface CommandModule<TArgs = unknown, TData = unknown> {
    */
   requiresEnv?: boolean | ((args: TArgs) => boolean);
   /**
-   * The command writes local state only (files, ledgers, ~/.belz). Informational:
+   * The command writes local state only (files, ledgers, ~/.wi-impl). Informational:
    * unlike `writes`, it does not require an explicit `--env`.
    */
   writesLocal?: boolean;

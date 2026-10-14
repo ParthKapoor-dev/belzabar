@@ -15,11 +15,11 @@ Everything the `belz pd` commands share. Other packages may import any module as
 | [`validator/`](./validator/README.md) | Rule catalogue, rules, diff-aware edit gate, recursive symbol check |
 | `ad-refs.ts` | Slim index of every `/chain/execute/<uuid>` call in PAGE drafts and components (cached 1 h); read by `belz ad callers --pd` |
 | `analyzer.ts` | Recursive walk (`analyze`, `find-ad-methods -r`, `show -r`): components used, AD ids, `--compliance` |
-| `cache.ts` | Env-scoped page-config cache (`~/.belz/cache/pages/<env>/<id>.json`, core `PAGE_CACHE_DIR`) with stale-while-revalidate; `belz migrate run` evicts its target env's entries |
+| `cache.ts` | Env-scoped page-config cache (`~/.wi-impl/cache/pages/<env>/<id>.json`, core `PAGE_CACHE_DIR`) with stale-while-revalidate; `belz migrate run` evicts its target env's entries |
 | `draft-guard.ts` | Draft/published pairing through `referenceId` |
 | `edit.ts` | Write-pipeline helpers: `resolveWriteTarget`, `fetchFresh`, `fetchPublishedBaseline`, `gateValidation`, `versionDrift`, `requireConfirmation`, `logIntent`, `readJsonFile` |
 | `extract.ts` | Read views over a page: `show` sections, `findNodes`, `adIdsOf`, `childComponentNames` |
-| `lock.ts` | `withLock` and the manual-lock record (`~/.belz/pd-locks/<env>.json`) |
+| `lock.ts` | `withLock` and the manual-lock record (`~/.wi-impl/pd-locks/<env>.json`) |
 | `page-dependencies.ts` | Entity resolution + phrase-key checks for `page-deps` / `translations` |
 | `page-diff.ts` | The one diff engine: `diffPages`, `editSummary`, `differingPaths` |
 | `page-finder.ts` | The `find` index (7 days) and fuzzy search; `collapsePairs` hides a PUBLISHED row whose draft is listed |

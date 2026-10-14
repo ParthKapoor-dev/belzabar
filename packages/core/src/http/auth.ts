@@ -1,4 +1,4 @@
-// Expertly (AD/PD) sessions: per-env JWT stored in ~/.belz/sessions/<env>.json.
+// Expertly (AD/PD) sessions: per-env JWT stored in ~/.wi-impl/sessions/<env>.json.
 //
 // - login() is single-flight per env: concurrent callers (PD recursive show,
 //   AD bulk reads, release matrix) share one POST /do/login instead of racing
@@ -122,7 +122,7 @@ async function doLogin(envName: string): Promise<AuthSession> {
     if (err instanceof CliError && err.code === "HTTP_TIMEOUT") {
       const timeoutMs = defaultTimeoutMs("GET");
       throw new CliError(
-        `Login to ${envName} timed out after ${Math.round(timeoutMs / 1000)}s (raise the limit with BELZ_HTTP_TIMEOUT_MS).`,
+        `Login to ${envName} timed out after ${Math.round(timeoutMs / 1000)}s (raise the limit with WI_IMPL_HTTP_TIMEOUT_MS).`,
         { code: "HTTP_TIMEOUT", details: { env: envName, timeoutMs, mayHaveCompleted: false, retryable: true } },
       );
     }

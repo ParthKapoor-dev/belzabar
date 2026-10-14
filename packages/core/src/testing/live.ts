@@ -1,20 +1,20 @@
 // Opt-in live tests against ONE configured environment. Never run by default.
 // Everything tenant-specific comes from environment variables:
 //
-//   BELZ_LIVE=<env>                     the env under test (must be in config.json)
-//   BELZ_LIVE_WRITE=1                   also run the write suites, which need:
-//   BELZ_LIVE_CATEGORY=<name>           the AD category they may write in
-//   BELZ_LIVE_CATEGORY_ID=<id>          its chain-category id (the guard checks it)
-//   BELZ_LIVE_METHOD=<uuid>             optional: a long-lived published method for
+//   WI_IMPL_LIVE=<env>                     the env under test (must be in config.json)
+//   WI_IMPL_LIVE_WRITE=1                   also run the write suites, which need:
+//   WI_IMPL_LIVE_CATEGORY=<name>           the AD category they may write in
+//   WI_IMPL_LIVE_CATEGORY_ID=<id>          its chain-category id (the guard checks it)
+//   WI_IMPL_LIVE_METHOD=<uuid>             optional: a long-lived published method for
 //                                       the read-only smoke tests that need one
 //
-//   BELZ_LIVE=dev bun test tests/live
-//   BELZ_LIVE=dev BELZ_LIVE_WRITE=1 BELZ_LIVE_CATEGORY=Sandbox BELZ_LIVE_CATEGORY_ID=42 bun test tests/live
+//   WI_IMPL_LIVE=dev bun test tests/live
+//   WI_IMPL_LIVE=dev WI_IMPL_LIVE_WRITE=1 WI_IMPL_LIVE_CATEGORY=Sandbox WI_IMPL_LIVE_CATEGORY_ID=42 bun test tests/live
 //
-// spawnLive refuses any --env other than BELZ_LIVE. Live CLI runs use a tmp
-// BELZ_HOME seeded with a *copy* of the real config.json and that env's
-// session, so the real ~/.belz is only read, never written.
-// Write suites: the BELZ_LIVE_CATEGORY only, `belz_tst_` prefix, clean up in
+// spawnLive refuses any --env other than WI_IMPL_LIVE. Live CLI runs use a tmp
+// WI_IMPL_HOME seeded with a *copy* of the real config.json and that env's
+// session, so the real ~/.wi-impl is only read, never written.
+// Write suites: the WI_IMPL_LIVE_CATEGORY only, `belz_tst_` prefix, clean up in
 // afterAll, and call registerLiveResource() for everything created.
 
 import { afterAll, describe } from "bun:test";
@@ -25,29 +25,29 @@ import { parseGlobalFlags } from "../runner";
 import { scratchDir } from "./scratch";
 import { repoRoot, spawnCli, type SpawnCliOptions, type SpawnResult } from "./spawn-cli";
 
-/** The env under test (BELZ_LIVE); "" when live tests are off. */
-export const LIVE_ENV = process.env.BELZ_LIVE?.trim() ?? "";
+/** The env under test (WI_IMPL_LIVE); "" when live tests are off. */
+export const LIVE_ENV = process.env.WI_IMPL_LIVE?.trim() ?? "";
 export const LIVE_WRITE_PREFIX = "belz_tst_";
 
-/** The one AD category write suites may touch (BELZ_LIVE_CATEGORY / BELZ_LIVE_CATEGORY_ID). */
+/** The one AD category write suites may touch (WI_IMPL_LIVE_CATEGORY / WI_IMPL_LIVE_CATEGORY_ID). */
 export function liveCategory(): { name: string; id: number } {
-  const name = process.env.BELZ_LIVE_CATEGORY?.trim() ?? "";
-  const id = Number(process.env.BELZ_LIVE_CATEGORY_ID);
+  const name = process.env.WI_IMPL_LIVE_CATEGORY?.trim() ?? "";
+  const id = Number(process.env.WI_IMPL_LIVE_CATEGORY_ID);
   if (!name || !Number.isSafeInteger(id) || id <= 0) {
-    throw new Error("live write suites need BELZ_LIVE_CATEGORY=<name> and BELZ_LIVE_CATEGORY_ID=<chain-category id>");
+    throw new Error("live write suites need WI_IMPL_LIVE_CATEGORY=<name> and WI_IMPL_LIVE_CATEGORY_ID=<chain-category id>");
   }
   return { name, id };
 }
 
-/** A long-lived published method on the live env (BELZ_LIVE_METHOD), or null. */
+/** A long-lived published method on the live env (WI_IMPL_LIVE_METHOD), or null. */
 export function liveMethod(): string | null {
-  return process.env.BELZ_LIVE_METHOD?.trim() || null;
+  return process.env.WI_IMPL_LIVE_METHOD?.trim() || null;
 }
 
 function liveMode(): { read: boolean; write: boolean } {
   if (!LIVE_ENV) return { read: false, write: false };
   // Suites that write to an AD category call liveCategory(), which refuses to run without one.
-  return { read: true, write: process.env.BELZ_LIVE_WRITE === "1" };
+  return { read: true, write: process.env.WI_IMPL_LIVE_WRITE === "1" };
 }
 
 /** The seeded home holds a copy of real credentials: drop it after each live block. */
@@ -61,12 +61,12 @@ function withLiveCleanup(fn: () => void): () => void {
   };
 }
 
-/** A describe block that only runs when BELZ_LIVE is set. */
+/** A describe block that only runs when WI_IMPL_LIVE is set. */
 export function describeLive(name: string, fn: () => void): void {
   (liveMode().read ? describe : describe.skip)(`[live ${LIVE_ENV}] ${name}`, withLiveCleanup(fn));
 }
 
-/** A describe block that only runs when BELZ_LIVE is set and BELZ_LIVE_WRITE=1. */
+/** A describe block that only runs when WI_IMPL_LIVE is set and WI_IMPL_LIVE_WRITE=1. */
 export function describeLiveWrite(name: string, fn: () => void): void {
   const m = liveMode();
   (m.read && m.write ? describe : describe.skip)(`[live-write ${LIVE_ENV}] ${name}`, withLiveCleanup(fn));
@@ -74,10 +74,17 @@ export function describeLiveWrite(name: string, fn: () => void): void {
 
 let seededHome: string | null = null;
 
-/** tmp BELZ_HOME holding copies of the real config.json + the live env's session. */
+/** The real data dir: `~/.wi-impl`, or the legacy `~/.belz` until a compiled binary moves it. */
+function realHome(): string {
+  const home = join(homedir(), ".wi-impl");
+  const legacy = join(homedir(), ".belz");
+  return !existsSync(home) && existsSync(legacy) ? legacy : home;
+}
+
+/** tmp WI_IMPL_HOME holding copies of the real config.json + the live env's session. */
 export function liveBelzHome(): string {
   if (seededHome) return seededHome;
-  const source = process.env.BELZ_LIVE_SOURCE_HOME ?? join(homedir(), ".belz");
+  const source = process.env.WI_IMPL_LIVE_SOURCE_HOME ?? realHome();
   const home = scratchDir("live-home-");
   const config = join(source, "config.json");
   if (!existsSync(config)) throw new Error(`live tests need ${config} (credentials for ${LIVE_ENV})`);
@@ -90,16 +97,16 @@ export function liveBelzHome(): string {
   return (seededHome = home);
 }
 
-/** Spawn the CLI against BELZ_LIVE. Refuses any other --env; adds `--env <BELZ_LIVE>` when absent. */
+/** Spawn the CLI against WI_IMPL_LIVE. Refuses any other --env; adds `--env <WI_IMPL_LIVE>` when absent. */
 export async function spawnLive(argv: string[], opts: SpawnCliOptions = {}): Promise<SpawnResult> {
   const { envName, error } = parseGlobalFlags(argv);
   if (error) throw new Error(`spawnLive: ${error.message}`);
   if (envName !== null && envName !== LIVE_ENV) {
     throw new Error(`spawnLive refused --env ${envName}: live tests only run against ${LIVE_ENV}.`);
   }
-  if (!liveMode().read) throw new Error("spawnLive called outside a describeLive block (BELZ_LIVE unset)");
+  if (!liveMode().read) throw new Error("spawnLive called outside a describeLive block (WI_IMPL_LIVE unset)");
   const args = envName === null ? [...argv, "--env", LIVE_ENV] : argv;
-  return spawnCli(args, { ...opts, env: { BELZ_HOME: liveBelzHome(), ...opts.env } });
+  return spawnCli(args, { ...opts, env: { WI_IMPL_HOME: liveBelzHome(), ...opts.env } });
 }
 
 interface LiveResource {
@@ -110,9 +117,9 @@ interface LiveResource {
   cleaned?: string;
 }
 
-/** Path of the live-resources ledger (BELZ_LIVE_RESOURCES, else ../belzabar-workspace/live-resources.md). */
+/** Path of the live-resources ledger (WI_IMPL_LIVE_RESOURCES, else ../belzabar-workspace/live-resources.md). */
 function liveResourcesPath(): string {
-  return process.env.BELZ_LIVE_RESOURCES ?? join(repoRoot(), "..", "belzabar-workspace", "live-resources.md");
+  return process.env.WI_IMPL_LIVE_RESOURCES ?? join(repoRoot(), "..", "belzabar-workspace", "live-resources.md");
 }
 
 /** Append a row to the live-resources ledger, when the file exists. Returns whether it was written. */

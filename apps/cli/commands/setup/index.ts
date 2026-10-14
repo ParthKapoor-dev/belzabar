@@ -6,6 +6,7 @@ import {
   defineArgs,
   parseDotEnv,
   withoutDotenvInjected,
+  withLegacyNames,
   ok,
   writeConfigFile,
   loadConfigFileRaw,
@@ -38,15 +39,15 @@ interface SetupData {
   jenkinsConfigured: boolean;
 }
 
-// Env keys: BELZ_ENV_<NAME>_{URL,USER,PASSWORD,PROJECT} where <NAME> maps to an
-// env name lowercased with `_`→`-` (BELZ_ENV_ACME_QA_URL → "acme-qa"). There are
+// Env keys: WI_IMPL_ENV_<NAME>_{URL,USER,PASSWORD,PROJECT} where <NAME> maps to an
+// env name lowercased with `_`→`-` (WI_IMPL_ENV_ACME_QA_URL → "acme-qa"). There are
 // no built-in envs: every env names its own URL. This is how envs are configured
 // non-interactively — e.g. from a cloud environment's variables.
-const GENERIC_ENV_RE = /^BELZ_ENV_(.+)_(URL|USER|PASSWORD|PROJECT)$/;
+const GENERIC_ENV_RE = /^WI_IMPL_ENV_(.+)_(URL|USER|PASSWORD|PROJECT)$/;
 
 type EnvEntry = { url?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; project?: string };
 
-/** Group BELZ_ENV_<NAME>_* keys into per-env entries (passwords are plain text). */
+/** Group WI_IMPL_ENV_<NAME>_* keys into per-env entries (passwords are plain text). */
 function collectGenericEnvs(values: Record<string, string>): Record<string, EnvEntry> {
   const grouped: Record<string, EnvEntry> = {};
   for (const [key, val] of Object.entries(values)) {
@@ -65,15 +66,16 @@ function collectGenericEnvs(values: Record<string, string>): Record<string, EnvE
   return grouped;
 }
 
-/** Build the full config from a flat key/value map (env file or process.env). */
-function buildConfigFromValues(values: Record<string, string>): {
+/** Build the full config from a flat key/value map (env file or process.env; legacy BELZ_* keys count). */
+function buildConfigFromValues(input: Record<string, string>): {
   envs: Record<string, EnvEntry>;
   tw?: { baseUrl?: string; email?: string; password?: string; passwordEncoding?: "plain" | "base64" };
   jenkins?: { baseUrl?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; migrationJob?: string };
 } {
+  const values = withLegacyNames(input);
   const envs: Record<string, EnvEntry> = {};
 
-  // 1. BELZ_ENV_<NAME>_* envs.
+  // 1. WI_IMPL_ENV_<NAME>_* envs.
   for (const [name, g] of Object.entries(collectGenericEnvs(values))) {
     if (!g.url) continue; // an env without a URL isn't usable — skip it
     envs[name] = g;
@@ -81,10 +83,10 @@ function buildConfigFromValues(values: Record<string, string>): {
 
   // 2. Jenkins.
   let jenkins: { baseUrl?: string; user?: string; password?: string; passwordEncoding?: "plain" | "base64"; migrationJob?: string } | undefined;
-  const jkUrl = values["BELZ_JENKINS_URL"];
-  const jkUser = values["BELZ_JENKINS_USER"];
-  const jkPass = values["BELZ_JENKINS_PASSWORD"];
-  const jkJob = values["BELZ_JENKINS_JOB"];
+  const jkUrl = values["WI_IMPL_JENKINS_URL"];
+  const jkUser = values["WI_IMPL_JENKINS_USER"];
+  const jkPass = values["WI_IMPL_JENKINS_PASSWORD"];
+  const jkJob = values["WI_IMPL_JENKINS_JOB"];
   if (jkUrl || jkUser || jkPass || jkJob) {
     jenkins = {};
     if (jkUrl) jenkins.baseUrl = jkUrl;
@@ -120,7 +122,7 @@ export const args = defineArgs({
 });
 
 const command: CommandModule<SetupArgs, SetupData> = {
-  /** Writes ~/.belz/config.json. */
+  /** Writes ~/.wi-impl/config.json. */
   writesLocal: true,
   parseArgs(argv) {
     const { flags } = args.parse(argv);
@@ -172,7 +174,7 @@ const command: CommandModule<SetupArgs, SetupData> = {
       // Bun auto-loads a cwd `.env` into process.env; never persist those values.
       const trusted = withoutDotenvInjected();
       values = trusted.values;
-      ignoredDotenvKeys = trusted.dropped.filter((k) => /^(TEAMWORK_|JENKINS_|BELZ_)/.test(k));
+      ignoredDotenvKeys = trusted.dropped.filter((k) => /^(TEAMWORK_|JENKINS_|WI_IMPL_|BELZ_)/.test(k));
       if (ignoredDotenvKeys.length > 0 && context.outputMode === "human") {
         lifecycle.notice(
           `Ignored ${ignoredDotenvKeys.length} value(s) loaded from a .env file in ${process.cwd()}: ${ignoredDotenvKeys.join(", ")}. ` +
@@ -232,14 +234,14 @@ const command: CommandModule<SetupArgs, SetupData> = {
 
     if (Object.keys(envs).length === 0) {
       throw new CliError(
-        "No environments resolved. Provide BELZ_ENV_<NAME>_{URL,USER,PASSWORD} values (a URL is required per env).",
+        "No environments resolved. Provide WI_IMPL_ENV_<NAME>_{URL,USER,PASSWORD} values (a URL is required per env).",
         { code: "SETUP_NO_ENVS" },
       );
     }
 
     if (context.outputMode === "human" && !nonInteractive) {
       lifecycle.note("Review", configSummary({ environments: envs, teamwork: tw, jenkins }));
-      const confirmed = await prompts.confirm({ message: "Write this configuration to ~/.belz/config.json?", initialValue: true });
+      const confirmed = await prompts.confirm({ message: "Write this configuration to ~/.wi-impl/config.json?", initialValue: true });
       if (!confirmed) {
         throw new CliError("Aborted: config was not written.", { code: "SETUP_ABORTED" });
       }

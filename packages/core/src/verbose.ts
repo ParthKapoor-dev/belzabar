@@ -3,7 +3,7 @@ import { redactSecrets, redactString } from "./http/redact";
 const START = Date.now();
 
 export function verboseEnabled(): boolean {
-  return process.env.BELZ_VERBOSE === "1";
+  return (process.env.WI_IMPL_VERBOSE ?? process.env.BELZ_VERBOSE) === "1";
 }
 
 function ts(): string {

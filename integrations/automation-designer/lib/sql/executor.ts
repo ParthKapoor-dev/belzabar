@@ -24,14 +24,14 @@ import type {
 
 export interface SqlDefaultDb {
   value: string;
-  /** "config": `environments.<env>.sqlDefaultDb`; "env": BELZ_SQL_DEFAULT_DB. */
+  /** "config": `environments.<env>.sqlDefaultDb`; "env": WI_IMPL_SQL_DEFAULT_DB. */
   source: "config" | "env";
 }
 
 /**
  * The default SQL database for the active env when `--db` is not given:
- * `environments.<env>.sqlDefaultDb` in ~/.belz/config.json,
- * then BELZ_SQL_DEFAULT_DB (all envs). There is no built-in database name:
+ * `environments.<env>.sqlDefaultDb` in ~/.wi-impl/config.json,
+ * then WI_IMPL_SQL_DEFAULT_DB (all envs). There is no built-in database name:
  * without either, pass --db.
  */
 export function sqlDefaultDb(envName: string | undefined = safeActiveEnvName()): SqlDefaultDb | undefined {
@@ -39,7 +39,7 @@ export function sqlDefaultDb(envName: string | undefined = safeActiveEnvName()):
     const fromConfig = loadConfigFileRaw().environments?.[envName]?.sqlDefaultDb;
     if (typeof fromConfig === "string" && fromConfig.trim()) return { value: fromConfig.trim(), source: "config" };
   }
-  const fromEnv = trustedBelzEnv().BELZ_SQL_DEFAULT_DB?.trim();
+  const fromEnv = trustedBelzEnv().WI_IMPL_SQL_DEFAULT_DB?.trim();
   return fromEnv ? { value: fromEnv, source: "env" } : undefined;
 }
 

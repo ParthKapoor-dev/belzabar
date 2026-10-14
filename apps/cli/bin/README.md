@@ -6,7 +6,7 @@ modes behave identically.
 
 | File | Contents |
 |------|----------|
-| `cli.ts` | Entry: `installStdioGuard` → load `options.ts` (a failed import is reported on stderr, exit 70) → internal modes (`BELZ_UPDATE_WORKER=1`: the background update check; `BELZ_RECORD_INSTALL=binary`: the release installer records a binary install; both exit) → `autoUpdateTick` → `runNamespacedCli`. See [`lib/`](../lib/README.md) |
+| `cli.ts` | Entry: `installStdioGuard` → load `options.ts` (a failed import is reported on stderr, exit 70) → internal modes (`WI_IMPL_UPDATE_WORKER=1`: the background update check; `WI_IMPL_RECORD_INSTALL=binary`: the release installer records a binary install; both exit) → `autoUpdateTick` → `runNamespacedCli`. See [`lib/`](../lib/README.md) |
 | `options.ts` | `buildCliOptions()`: namespaces (`NAMESPACES`), the `config` passthrough (`PASSTHROUGH`), env-awareness (`NOT_ENV_AWARE_NAMESPACES`, `NOT_ENV_AWARE_TOP_LEVEL`); `buildHelpFull()`; `REGISTRIES` (repo dir → registry, for tests and `scripts/docs-check.ts`) |
 | `build-info.ts` | Bun macro `buildInfo()` → `{version, sha, dirty, builtAt}` for `belz --version`, evaluated at build time |
 

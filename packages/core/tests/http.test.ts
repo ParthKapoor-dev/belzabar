@@ -58,28 +58,28 @@ describe("transport", () => {
   });
 
   test("default timeout: 60 s for GET/HEAD, 300 s for writes; env overrides; 0/none disable", () => {
-    const saved = { a: process.env.BELZ_HTTP_TIMEOUT_MS, b: process.env.BELZ_HTTP_WRITE_TIMEOUT_MS };
+    const saved = { a: process.env.WI_IMPL_HTTP_TIMEOUT_MS, b: process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS };
     try {
-      delete process.env.BELZ_HTTP_TIMEOUT_MS;
-      delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
+      delete process.env.WI_IMPL_HTTP_TIMEOUT_MS;
+      delete process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS;
       expect(defaultTimeoutMs("GET")).toBe(DEFAULT_HTTP_TIMEOUT_MS);
       expect(defaultTimeoutMs("head")).toBe(60_000);
       expect(defaultTimeoutMs("POST")).toBe(DEFAULT_HTTP_WRITE_TIMEOUT_MS);
       expect(DEFAULT_HTTP_WRITE_TIMEOUT_MS).toBe(300_000);
-      process.env.BELZ_HTTP_TIMEOUT_MS = "1234";
+      process.env.WI_IMPL_HTTP_TIMEOUT_MS = "1234";
       expect(defaultTimeoutMs("GET")).toBe(1234);
       expect(defaultTimeoutMs("PUT")).toBe(1234); // one knob for both when only it is set
-      process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = "0";
+      process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS = "0";
       expect(defaultTimeoutMs("POST")).toBe(0);
       expect(defaultTimeoutMs("GET")).toBe(1234);
       expect(resolveTimeoutMs("none", "GET")).toBe(0);
       expect(resolveTimeoutMs(0, "POST")).toBe(0);
       expect(resolveTimeoutMs(50, "POST")).toBe(50);
     } finally {
-      if (saved.a === undefined) delete process.env.BELZ_HTTP_TIMEOUT_MS;
-      else process.env.BELZ_HTTP_TIMEOUT_MS = saved.a;
-      if (saved.b === undefined) delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
-      else process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = saved.b;
+      if (saved.a === undefined) delete process.env.WI_IMPL_HTTP_TIMEOUT_MS;
+      else process.env.WI_IMPL_HTTP_TIMEOUT_MS = saved.a;
+      if (saved.b === undefined) delete process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS;
+      else process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS = saved.b;
     }
   });
 
@@ -110,8 +110,8 @@ describe("transport", () => {
   });
 
   test('timeoutMs: "none" waits past the default', async () => {
-    const saved = process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
-    process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = "10";
+    const saved = process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS;
+    process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS = "10";
     try {
       ff = fakeFetch({ "POST https://slow.test/long": async () => { await Bun.sleep(40); return { done: true }; } }).install();
       const res = await httpRequest("https://slow.test/long", { method: "POST", body: "{}", timeoutMs: "none" });
@@ -119,8 +119,8 @@ describe("transport", () => {
       const err = await caught(httpRequest("https://slow.test/long", { method: "POST", body: "{}" }));
       expect(err.code).toBe("HTTP_TIMEOUT");
     } finally {
-      if (saved === undefined) delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
-      else process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = saved;
+      if (saved === undefined) delete process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS;
+      else process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS = saved;
     }
   });
 
@@ -301,9 +301,9 @@ describe("apiFetch", () => {
   });
 
   test("login uses the read timeout and a login-specific message", async () => {
-    const saved = { a: process.env.BELZ_HTTP_TIMEOUT_MS, b: process.env.BELZ_HTTP_WRITE_TIMEOUT_MS };
-    process.env.BELZ_HTTP_TIMEOUT_MS = "25";
-    process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = "600000";
+    const saved = { a: process.env.WI_IMPL_HTTP_TIMEOUT_MS, b: process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS };
+    process.env.WI_IMPL_HTTP_TIMEOUT_MS = "25";
+    process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS = "600000";
     try {
       cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", user: "u", password: "p" } }, activeEnv: "t-dev" });
       ff = fakeFetch([{ method: "POST", url: "/do/login", response: () => new Promise(() => {}) }]).install();
@@ -315,10 +315,10 @@ describe("apiFetch", () => {
       expect(err.message).not.toContain("may still complete");
       expect(err.details).toMatchObject({ mayHaveCompleted: false });
     } finally {
-      if (saved.a === undefined) delete process.env.BELZ_HTTP_TIMEOUT_MS;
-      else process.env.BELZ_HTTP_TIMEOUT_MS = saved.a;
-      if (saved.b === undefined) delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
-      else process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = saved.b;
+      if (saved.a === undefined) delete process.env.WI_IMPL_HTTP_TIMEOUT_MS;
+      else process.env.WI_IMPL_HTTP_TIMEOUT_MS = saved.a;
+      if (saved.b === undefined) delete process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS;
+      else process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS = saved.b;
     }
   });
 
@@ -384,8 +384,8 @@ describe("apiFetch", () => {
     const origOutWrite = process.stdout.write.bind(process.stdout);
     const origError = console.error;
     const origLog = console.log;
-    const origVerbose = process.env.BELZ_VERBOSE;
-    delete process.env.BELZ_VERBOSE;
+    const origVerbose = process.env.WI_IMPL_VERBOSE;
+    delete process.env.WI_IMPL_VERBOSE;
     process.stderr.write = ((c: unknown) => { written.push(String(c)); return true; }) as typeof process.stderr.write;
     process.stdout.write = ((c: unknown) => { written.push(String(c)); return true; }) as typeof process.stdout.write;
     console.error = (...a: unknown[]) => { written.push(a.join(" ")); };
@@ -398,7 +398,7 @@ describe("apiFetch", () => {
       process.stdout.write = origOutWrite;
       console.error = origError;
       console.log = origLog;
-      if (origVerbose !== undefined) process.env.BELZ_VERBOSE = origVerbose;
+      if (origVerbose !== undefined) process.env.WI_IMPL_VERBOSE = origVerbose;
     }
     expect(written).toEqual([]);
   });

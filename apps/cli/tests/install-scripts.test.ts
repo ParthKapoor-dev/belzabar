@@ -18,21 +18,21 @@ function recordInstall(home: string, ...args: string[]) {
 }
 
 describe("record-install.mjs", () => {
-  test("creates ~/.belz/config.json 0600 in a 0700 dir, no temp files left", () => {
+  test("creates ~/.wi-impl/config.json 0600 in a 0700 dir, no temp files left", () => {
     const home = scratchDir("ri-home-");
     const r = recordInstall(home, "/src", "/bin", "git@x:y.git", "abc1234");
     expect(r.exitCode).toBe(0);
-    const cfg = join(home, ".belz", "config.json");
+    const cfg = join(home, ".wi-impl", "config.json");
     expect(statSync(cfg).mode & 0o777).toBe(0o600);
-    expect(statSync(join(home, ".belz")).mode & 0o777).toBe(0o700);
-    expect(JSON.parse(readFileSync(cfg, "utf8")).belz).toMatchObject({ sourceDir: "/src", installDir: "/bin", version: "abc1234" });
-    expect(readdirSync(join(home, ".belz"))).toEqual(["config.json"]);
+    expect(statSync(join(home, ".wi-impl")).mode & 0o777).toBe(0o700);
+    expect(JSON.parse(readFileSync(cfg, "utf8")).install).toMatchObject({ sourceDir: "/src", installDir: "/bin", version: "abc1234" });
+    expect(readdirSync(join(home, ".wi-impl"))).toEqual(["config.json"]);
   });
 
   test("keeps other sections; refuses to overwrite a malformed config", () => {
     const home = scratchDir("ri-keep-");
-    mkdirSync(join(home, ".belz"));
-    const cfg = join(home, ".belz", "config.json");
+    mkdirSync(join(home, ".wi-impl"));
+    const cfg = join(home, ".wi-impl", "config.json");
     writeFileSync(cfg, JSON.stringify({ environments: { "t-a": { url: "https://a.test" } } }), { mode: 0o644 });
     expect(recordInstall(home, "/src", "/bin", "", "v").exitCode).toBe(0);
     const written = JSON.parse(readFileSync(cfg, "utf8"));
@@ -63,7 +63,7 @@ describe("install scripts decide first run before recording", () => {
     const snippet = sh.match(/FIRST_RUN=0\n.*FIRST_RUN=1\n/)![0];
     const home = scratchDir("ri-first-");
     const detect = () =>
-      Bun.spawnSync(["bash", "-c", `BELZ_CONFIG_DIR="$HOME/.belz"\n${snippet}echo $FIRST_RUN`], {
+      Bun.spawnSync(["bash", "-c", `BELZ_CONFIG_DIR="$HOME/.wi-impl"\n${snippet}echo $FIRST_RUN`], {
         env: { PATH: process.env.PATH ?? "", HOME: home },
         stdout: "pipe",
       }).stdout.toString().trim();

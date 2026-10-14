@@ -129,7 +129,7 @@ describe("pruneLocalCache", () => {
 describe("belz cache prune-local (command wiring)", () => {
   // Unique namespace name so this suite never collides with real cache
   // namespaces (methods/pages/definitions/…) that other tests populate in
-  // the same shared BELZ_HOME.
+  // the same shared WI_IMPL_HOME.
   const cacheDir = join(BELZ_CONFIG_DIR, "cache");
   const NS = "belz-test-prune-ns";
   const flatFile = join(cacheDir, NS, "sentinel.json");

@@ -8,7 +8,7 @@
 //      looks like a repo path (at least two segments, e.g. `lib/save/verify.ts`)
 //      must exist. A path is resolved against the doc's own directory first, then
 //      the repo root, but only when its first segment exists there — so API routes
-//      (`chain/v2`) and runtime paths (`~/.belz/…`) are not mistaken for repo paths.
+//      (`chain/v2`) and runtime paths (`~/.wi-impl/…`) are not mistaken for repo paths.
 //      Placeholders (`<uuid>`, `*`, `{a,b}`, `…`) make a token unverifiable: skipped.
 //      A path without an extension also matches `<path>.ts` or `<path>/index.ts`.
 //      `@belzabar/<pkg>` imports must name a real workspace package.

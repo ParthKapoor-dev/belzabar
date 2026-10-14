@@ -1,7 +1,7 @@
 // Guards the committed wire fixtures: nothing that looks like a credential,
 // token, cookie, personal e-mail, phone number or person name may
 // be checked in. Guards the whole tracked tree against real hostnames (and,
-// when BELZ_SCRUB_TERMS names the local term list, against project/tenant
+// when WI_IMPL_SCRUB_TERMS names the local term list, against project/tenant
 // names): the repo is project-agnostic. Also unit-tests the sanitizer and the
 // capture tool's read-only guard.
 
@@ -159,9 +159,9 @@ describe("person names", () => {
 });
 
 describe("capture guard", () => {
-  test("only the BELZ_CAPTURE_ENV env; nothing built in", () => {
+  test("only the WI_IMPL_CAPTURE_ENV env; nothing built in", () => {
     expect(() => captureEnv("")).toThrow(CaptureRefused);
-    expect(() => captureEnv(undefined)).toThrow(/BELZ_CAPTURE_ENV/);
+    expect(() => captureEnv(undefined)).toThrow(/WI_IMPL_CAPTURE_ENV/);
     expect(captureEnv(" dev ")).toBe("dev");
     expect(() => assertCaptureEnv("dev", "dev")).not.toThrow();
     for (const env of ["prod", "dev2", "qa", ""]) expect(() => assertCaptureEnv(env, "dev")).toThrow(CaptureRefused);
@@ -238,7 +238,7 @@ describe("tracked files name no real hosts or projects", () => {
     expect(bad).toEqual([]);
   });
 
-  // Only with the local list (BELZ_SCRUB_TERMS): the names themselves are never committed.
+  // Only with the local list (WI_IMPL_SCRUB_TERMS): the names themselves are never committed.
   test.skipIf(!inGit || LOCAL_TERMS.length === 0)("no local scrub term (project / tenant / person name) anywhere, file names included", () => {
     const bad: string[] = [];
     for (const f of files) {

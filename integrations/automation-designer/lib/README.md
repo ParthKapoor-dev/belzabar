@@ -61,7 +61,7 @@ Everything the `belz ad` commands share. Other workspaces import it as
 
 ## Caching
 
-All caches are core `Cache` instances under `~/.belz/cache/`, env-scoped.
+All caches are core `Cache` instances under `~/.wi-impl/cache/`, env-scoped.
 
 | Cache | Location | TTL | Evicted by |
 |---|---|---|---|

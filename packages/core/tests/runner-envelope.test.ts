@@ -18,24 +18,24 @@ import {
 import { EnvelopeSchema, runCliInProcess, runCommand, withTempEnvConfig, type TempEnvConfig } from "../src/testing";
 
 let cfg: TempEnvConfig | null = null;
-const savedBelzEnv = process.env.BELZ_ENV;
+const savedBelzEnv = process.env.WI_IMPL_ENV;
 const envConfig = () =>
   withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" }, "t-qa": { url: "https://q.test" } }, defaultEnv: "t-dev" });
-/** Set BELZ_ENV and reload config (it is read at load time). */
+/** Set WI_IMPL_ENV and reload config (it is read at load time). */
 function setBelzEnv(value: string) {
-  process.env.BELZ_ENV = value;
+  process.env.WI_IMPL_ENV = value;
   cfg?.restore();
   cfg = envConfig();
 }
 beforeEach(() => {
-  delete process.env.BELZ_ENV;
+  delete process.env.WI_IMPL_ENV;
   cfg = envConfig();
 });
 afterEach(() => {
   cfg?.restore();
   cfg = null;
-  if (savedBelzEnv === undefined) delete process.env.BELZ_ENV;
-  else process.env.BELZ_ENV = savedBelzEnv;
+  if (savedBelzEnv === undefined) delete process.env.WI_IMPL_ENV;
+  else process.env.WI_IMPL_ENV = savedBelzEnv;
 });
 
 const probe: CommandModule<string[], unknown> = {
@@ -361,7 +361,7 @@ describe("default env + explicit env on writes", () => {
     expect((await runCliInProcess(opts, ["tw", "freeze"])).envelope?.ok).toBe(true);
   });
 
-  test("reads use BELZ_ENV as the default env", async () => {
+  test("reads use WI_IMPL_ENV as the default env", async () => {
     setBelzEnv("t-qa");
     const r = await runCliInProcess(cli(), ["ad", "show"]);
     expect(r.envelope?.meta.env).toBe("t-qa");
@@ -402,14 +402,14 @@ describe("default env + explicit env on writes", () => {
     expect(tw.envelope?.meta.env).toBeUndefined();
     expect(tw.envelope?.meta.envSource).toBeUndefined();
     setBelzEnv("t-qa");
-    expect((await runCliInProcess(cli(), ["ad", "show"])).envelope?.meta).toMatchObject({ env: "t-qa", envSource: "BELZ_ENV" });
+    expect((await runCliInProcess(cli(), ["ad", "show"])).envelope?.meta).toMatchObject({ env: "t-qa", envSource: "WI_IMPL_ENV" });
   });
 
   test("an unknown default env fails env-aware commands only", async () => {
     setBelzEnv("no-such-env");
     const r = await runCliInProcess(cli(), ["ad", "show"]);
     expect(r.envelope?.error?.code).toBe("INVALID_ENV");
-    expect(r.envelope?.error?.message).toContain("BELZ_ENV");
+    expect(r.envelope?.error?.message).toContain("WI_IMPL_ENV");
     expect((await runCliInProcess(cli(), ["envs"])).envelope?.ok).toBe(true);
     expect((await runCliInProcess(cli(), ["ad", "show", "--env", "t-dev"])).envelope?.ok).toBe(true);
   });

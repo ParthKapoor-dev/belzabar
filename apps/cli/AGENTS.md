@@ -6,10 +6,10 @@ Docs: [`README.md`](./README.md) (routing, build, install) and the READMEs in `b
 ## Rules
 
 - Never run `bun run belz:install`, `belz:reinstall`, `belz update`, `belz setup` or
-  `belz onboard` as part of a change; they touch the real `~/.belz` and binary. Tests use
+  `belz onboard` as part of a change; they touch the real `~/.wi-impl` and binary. Tests use
   scratch homes.
 - `belz --help-full` must stay deterministic: no env-, clock-, locale- or build-dependent text.
-- Scripts that write `~/.belz/config.json` write atomically with mode 0600 and never overwrite
+- Scripts that write `~/.wi-impl/config.json` write atomically with mode 0600 and never overwrite
   a config they cannot parse.
 
 ## Adding a command

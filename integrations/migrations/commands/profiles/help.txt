@@ -8,7 +8,7 @@ DESCRIPTION
   `--- <client> ---` dividers), and prints them.
 
   The first invocation hits Jenkins live; subsequent calls read a local cache
-  at ~/.belz/migrations/jenkins-profiles.json. Pass --refresh to force-fetch.
+  at ~/.wi-impl/migrations/jenkins-profiles.json. Pass --refresh to force-fetch.
 
 FLAGS
   --refresh           Bypass the local cache and re-fetch from Jenkins.

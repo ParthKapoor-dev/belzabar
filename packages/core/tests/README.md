@@ -4,8 +4,8 @@ Unit tests for `@belzabar/core`. Run with `bun test packages/core` (or `bun run 
 
 | File | Covers |
 |------|--------|
-| `preload-belz-home.ts` | The `bun test` preload used by every package: replaces `BELZ_HOME` with a fresh dir under `BELZ_TEST_TMP` (even when one is exported) and seeds a config with one neutral env `test` |
-| `preload-belz-home.test.ts` | The preload overrides an exported `BELZ_HOME`; `core/testing` refuses homes outside `BELZ_TEST_TMP` |
+| `preload-belz-home.ts` | The `bun test` preload used by every package: replaces `WI_IMPL_HOME` with a fresh dir under `WI_IMPL_TEST_TMP` (even when one is exported) and seeds a config with one neutral env `test` |
+| `preload-belz-home.test.ts` | The preload overrides an exported `WI_IMPL_HOME`; `core/testing` refuses homes outside `WI_IMPL_TEST_TMP` |
 | `args.test.ts` | `defineArgs` values and errors, `defineSubcommands` |
 | `config.test.ts` | Schema validation, secrets, atomic 0600 writes, default env, the cwd-`.env` guard |
 | `http.test.ts` | Transport timeouts and DNS eviction, `apiFetch` login / 401 retry / headers, error mapping, redaction |

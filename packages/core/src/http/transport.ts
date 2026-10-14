@@ -7,8 +7,8 @@
 //   - a default timeout mapped to CliError HTTP_TIMEOUT instead of hanging
 //     forever: 60 s for GET/HEAD, 300 s for anything else (AD test,
 //     run, SQL, save/publish execute server-side and are legitimately slow).
-//     Per call `timeoutMs` (0 / "none" disables); env BELZ_HTTP_TIMEOUT_MS
-//     (both defaults) and BELZ_HTTP_WRITE_TIMEOUT_MS (non-GET only). A timed-out
+//     Per call `timeoutMs` (0 / "none" disables); env WI_IMPL_HTTP_TIMEOUT_MS
+//     (both defaults) and WI_IMPL_HTTP_WRITE_TIMEOUT_MS (non-GET only). A timed-out
 //     non-GET is never retried and says it may still complete server-side.
 //     The same limit is an idle deadline on the body read;
 //   - network failures mapped to CliError HTTP_NETWORK_ERROR (never an
@@ -52,12 +52,12 @@ function isReadMethod(method: string | undefined): boolean {
 }
 
 /**
- * The default timeout for `method`: BELZ_HTTP_WRITE_TIMEOUT_MS (non-GET only)
- * > BELZ_HTTP_TIMEOUT_MS (all methods) > 60 s GET / 300 s otherwise.
+ * The default timeout for `method`: WI_IMPL_HTTP_WRITE_TIMEOUT_MS (non-GET only)
+ * > WI_IMPL_HTTP_TIMEOUT_MS (all methods) > 60 s GET / 300 s otherwise.
  */
 export function defaultTimeoutMs(method: string = "GET"): number {
-  if (isReadMethod(method)) return envMs("BELZ_HTTP_TIMEOUT_MS") ?? DEFAULT_HTTP_TIMEOUT_MS;
-  return envMs("BELZ_HTTP_WRITE_TIMEOUT_MS") ?? envMs("BELZ_HTTP_TIMEOUT_MS") ?? DEFAULT_HTTP_WRITE_TIMEOUT_MS;
+  if (isReadMethod(method)) return envMs("WI_IMPL_HTTP_TIMEOUT_MS") ?? DEFAULT_HTTP_TIMEOUT_MS;
+  return envMs("WI_IMPL_HTTP_WRITE_TIMEOUT_MS") ?? envMs("WI_IMPL_HTTP_TIMEOUT_MS") ?? DEFAULT_HTTP_WRITE_TIMEOUT_MS;
 }
 
 /** Resolve a per-call option to ms (0 = no timeout). */
@@ -262,8 +262,8 @@ function timeoutError(timeoutMs: number, label: string, method: string): CliErro
   const mayHaveCompleted = !isReadMethod(method);
   const message = mayHaveCompleted
     ? `Request timed out after ${secs}s: ${label}. The operation may still complete on the server — ` +
-      `check its result before retrying (raise the limit with BELZ_HTTP_WRITE_TIMEOUT_MS).`
-    : `Request timed out after ${secs}s: ${label} (raise the limit with BELZ_HTTP_TIMEOUT_MS).`;
+      `check its result before retrying (raise the limit with WI_IMPL_HTTP_WRITE_TIMEOUT_MS).`
+    : `Request timed out after ${secs}s: ${label} (raise the limit with WI_IMPL_HTTP_TIMEOUT_MS).`;
   return new CliError(message, {
     code: "HTTP_TIMEOUT",
     details: { timeoutMs, method, mayHaveCompleted, retryable: !mayHaveCompleted },

@@ -74,7 +74,7 @@ function deriveProfileFromEnvPair(sourceEnv: string, targetEnv: string): string 
   if (!s || !t) {
     throw new CliError(
       "Could not derive a profile from the env pair. Pass --profile, or map each env to one profile segment " +
-        'in ~/.belz/config.json under "jenkins.profileEnvs".',
+        'in ~/.wi-impl/config.json under "jenkins.profileEnvs".',
       {
         code: "MIGRATE_INVALID_ENV_PAIR",
         details: { sourceEnv, targetEnv, supportedEnvs: [...new Set(Object.values(profileSegmentEnvs()))] },

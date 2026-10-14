@@ -3,7 +3,7 @@ Usage: belz cache --env <name> [flags] <uuid...>
        belz cache prune-local [--yes]
 
 Invalidate server-side cache entries on an environment, or clean up stale
-local cache artifacts under ~/.belz/cache.
+local cache artifacts under ~/.wi-impl/cache.
 
 Invalidating is a remote write, so it requires an explicit --env (the default
 env is never used). prune-local touches local files only and needs no --env.

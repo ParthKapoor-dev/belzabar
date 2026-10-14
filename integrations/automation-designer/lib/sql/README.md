@@ -18,7 +18,7 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
 ## Contracts
 
 - **DB selection** when `--db` is absent: `environments.<env>.sqlDefaultDb` in
-  `~/.belz/config.json`, then `BELZ_SQL_DEFAULT_DB`. There is no built-in name; without
+  `~/.wi-impl/config.json`, then `WI_IMPL_SQL_DEFAULT_DB`. There is no built-in name; without
   either, `SQL_DEFAULT_DB_NOT_FOUND`. `selectedBy` reports which one was used.
 - **Read gate.** The read operation autocommits, so a write sent through `run` really commits.
   `run` and `explain` therefore accept exactly one read statement (after stripping comments

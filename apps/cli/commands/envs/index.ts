@@ -9,7 +9,7 @@ interface EnvRow {
 }
 
 interface EnvsData {
-  /** Active env name; null when no env is selected (no --env / BELZ_ENV / defaultEnv, several envs). */
+  /** Active env name; null when no env is selected (no --env / WI_IMPL_ENV / defaultEnv, several envs). */
   active: string | null;
   envs: EnvRow[];
 }
@@ -46,7 +46,7 @@ const command: CommandModule<undefined, EnvsData> = {
       data.envs.map((env) => [env.name, env.project, env.baseUrl, env.active ? "Active" : ""])
     );
     if (data.active === null && data.envs.length > 0) {
-      ui.text("No active environment: pass --env <name>, set BELZ_ENV, or set \"defaultEnv\" in config.json.");
+      ui.text("No active environment: pass --env <name>, set WI_IMPL_ENV, or set \"defaultEnv\" in config.json.");
     }
   },
 };

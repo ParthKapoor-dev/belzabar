@@ -1,15 +1,15 @@
 // Read-only guard for the fixture capture tool. Kept dependency-free so tests
-// can import it without loading @belzabar/core (which reads ~/.belz at import).
+// can import it without loading @belzabar/core (which reads ~/.wi-impl at import).
 
 export class CaptureRefused extends Error {}
 
 /**
- * The one env captures may read: BELZ_CAPTURE_ENV (a non-production env you
+ * The one env captures may read: WI_IMPL_CAPTURE_ENV (a non-production env you
  * choose; nothing is built in). Throws when unset.
  */
-export function captureEnv(value: string | undefined = process.env.BELZ_CAPTURE_ENV): string {
+export function captureEnv(value: string | undefined = process.env.WI_IMPL_CAPTURE_ENV): string {
   const env = value?.trim();
-  if (!env) throw new CaptureRefused("set BELZ_CAPTURE_ENV=<env> to name the (non-production) env fixtures are captured from");
+  if (!env) throw new CaptureRefused("set WI_IMPL_CAPTURE_ENV=<env> to name the (non-production) env fixtures are captured from");
   return env;
 }
 

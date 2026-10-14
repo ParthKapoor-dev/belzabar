@@ -8,4 +8,4 @@ Offline tests for `@belzabar/rd`: nothing reaches a real server. Transport is fa
 | [`unit/`](unit/README.md) | `bun test` files and the fake RD server |
 
 Run from the repo root with `bun test integrations/report-designer`, or `bun test` in the
-package (`../bunfig.toml` preloads a temporary `BELZ_HOME`).
+package (`../bunfig.toml` preloads a temporary `WI_IMPL_HOME`).

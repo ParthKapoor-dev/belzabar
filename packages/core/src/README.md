@@ -8,7 +8,7 @@ Source of `@belzabar/core`. `index.ts` re-exports every runtime module below;
 | Path | Role |
 |------|------|
 | [`args/`](./args/README.md) | `defineArgs` / `defineSubcommands`: declarative argv specs and the parser |
-| [`config/`](./config/README.md) | `Config` (active env, credentials), config.json schema, secrets, `BELZ_*` env vars |
+| [`config/`](./config/README.md) | `Config` (active env, credentials), config.json schema, secrets, `WI_IMPL_*` env vars |
 | [`http/`](./http/README.md) | The one HTTP stack: transport, sessions/login, `apiFetch`, error mapping, redaction, IPv4 pinning |
 | [`output/`](./output/README.md) | `--fields` column selection helpers |
 | [`platform/`](./platform/README.md) | `@belzabar/core/platform`: Expertly ids and raw entity GETs |
@@ -27,7 +27,7 @@ Source of `@belzabar/core`. `index.ts` re-exports every runtime module below;
 | `guards.ts` | Wire-JSON value guards: `isObj`, `asObj`, `str`, `strOrNull`, `num`, `numLike` |
 | `search.ts` | Fuzzy scoring for the finders: `scoreText`, `normalizeSearchText`, `tokenize`, `containsWordStart`, `levenshtein`, `dedupeBy` |
 | `json-input.ts` | `readJsonInput` / `readJsonInputSync`: user JSON files with the caller's error codes |
-| `verbose.ts` | `vlog` / `vtime`: redacted stderr debug lines when `BELZ_VERBOSE=1` (`-v`) |
+| `verbose.ts` | `vlog` / `vtime`: redacted stderr debug lines when `WI_IMPL_VERBOSE=1` (`-v`) |
 | `belz-meta.ts` | Install metadata (source checkout, install dir) recorded in config.json and read by `belz update` |
 | `open.ts` | `openUrlInBrowser` |
 | `types.ts` | `Environment`, `AuthSession`, `ApiOptions` |
@@ -60,7 +60,7 @@ belz <token> [args]
 
 - **Global flags** (`parseGlobalFlags`): `--llm`, `--human`, `-v/--verbose`, `-e/--env <n>`, `--env=<n>`.
   Without `--llm`/`--human` the output mode is `llm` inside an agent session (`inAgentSession`:
-  `BELZ_AGENT=1` or `CLAUDECODE=1`), else `human`; both flags → `INVALID_ARGS`. Parsing stops at `--`. Duplicate or conflicting `--env` → `INVALID_ARGS`. A `-v` after the
+  `WI_IMPL_AGENT=1` or `CLAUDECODE=1`), else `human`; both flags → `INVALID_ARGS`. Parsing stops at `--`. Duplicate or conflicting `--env` → `INVALID_ARGS`. A `-v` after the
   command name goes to the command when it declares `--verbose` (or `ownsFlags`); otherwise it
   turns on debug logging.
 - **Help.** `-h`/`--help` anywhere before `--` shows the command's help instead of running it
@@ -99,7 +99,7 @@ belz <token> [args]
 - `error` is `{code (UPPER_SNAKE), message (no "Error:" prefix), details?}`; `details` is always
   an object (`normalizeDetails`: JSON strings parsed, other strings `{text}`, arrays `{items}`,
   scalars `{value}`; `{stack}` only with `-v`).
-- `meta`: `durationMs` always; `env` and `envSource` (`flag` | `BELZ_ENV` | `default`) only for
+- `meta`: `durationMs` always; `env` and `envSource` (`flag` | `WI_IMPL_ENV` | `default`) only for
   env-aware commands with a selected env; `warnings` when raised.
 
 `renderLLM` prints it as one line on stdout. `renderHuman` runs the command's presenter (or a

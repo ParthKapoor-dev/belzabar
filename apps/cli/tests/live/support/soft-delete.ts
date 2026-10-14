@@ -1,22 +1,22 @@
 // Live-suite cleanup helper: soft-delete belz_tst_ methods in the live
 // category on the live env, including PUBLISHED copies (which `belz ad delete` refuses by
-// design). Spawned by the write suite's afterAll with BELZ_HOME = the seeded
+// design). Spawned by the write suite's afterAll with WI_IMPL_HOME = the seeded
 // live home; never imported by the CLI.
 //
 //   bun soft-delete.ts <uuid>...   → one JSON line: [{uuid, result, name?}]
 //
-// Guards (fail closed): env BELZ_LIVE only, the V2 body must name a
-// `belz_tst_` method in chain category BELZ_LIVE_CATEGORY_ID. A uuid whose V2
+// Guards (fail closed): env WI_IMPL_LIVE only, the V2 body must name a
+// `belz_tst_` method in chain category WI_IMPL_LIVE_CATEGORY_ID. A uuid whose V2
 // read is already METHOD_NOT_FOUND counts as gone.
 import { CliError, Config } from "@belzabar/core";
 import * as v2 from "@belzabar/ad/lib/api/v2";
 import { deleteChainV2 } from "@belzabar/ad/lib/save/api";
 
 // Same variables as core/testing live.ts (not imported: it pulls in bun:test).
-const LIVE_ENV = process.env.BELZ_LIVE?.trim() ?? "";
-const LIVE_CHAIN_CATEGORY = Number(process.env.BELZ_LIVE_CATEGORY_ID);
+const LIVE_ENV = process.env.WI_IMPL_LIVE?.trim() ?? "";
+const LIVE_CHAIN_CATEGORY = Number(process.env.WI_IMPL_LIVE_CATEGORY_ID);
 if (!LIVE_ENV || !Number.isSafeInteger(LIVE_CHAIN_CATEGORY) || LIVE_CHAIN_CATEGORY <= 0) {
-  throw new Error("soft-delete: BELZ_LIVE and BELZ_LIVE_CATEGORY_ID must be set");
+  throw new Error("soft-delete: WI_IMPL_LIVE and WI_IMPL_LIVE_CATEGORY_ID must be set");
 }
 
 type Result = { uuid: string; result: "deleted" | "gone" | "refused" | "error"; name?: string; detail?: string };

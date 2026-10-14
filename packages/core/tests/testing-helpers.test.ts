@@ -66,7 +66,7 @@ describe("fakeFetch", () => {
   });
 
   test("respond(), fixture(), RegExp routes, once", async () => {
-    const fx = join(process.env.BELZ_HOME!, "fake-fetch-sample.json");
+    const fx = join(process.env.WI_IMPL_HOME!, "fake-fetch-sample.json");
     writeFileSync(fx, JSON.stringify({ sample: [1, 2, 3] }));
     ff = fakeFetch([
       { method: "GET", url: /\/status$/, response: respond({ status: 418, text: "teapot" }), once: true },
@@ -236,15 +236,15 @@ describe("EnvelopeSchema", () => {
 describe("live-resources ledger", () => {
   let saved: string | undefined;
   afterEach(() => {
-    if (saved === undefined) delete process.env.BELZ_LIVE_RESOURCES;
-    else process.env.BELZ_LIVE_RESOURCES = saved;
+    if (saved === undefined) delete process.env.WI_IMPL_LIVE_RESOURCES;
+    else process.env.WI_IMPL_LIVE_RESOURCES = saved;
   });
 
   test("register appends a row; markLiveResourceCleaned rewrites its last cell in place", () => {
-    saved = process.env.BELZ_LIVE_RESOURCES;
+    saved = process.env.WI_IMPL_LIVE_RESOURCES;
     const path = join(scratchDir("ledger-"), "live-resources.md");
     writeFileSync(path, "| when | agent | kind | identifier | purpose | cleaned? |\n|---|---|---|---|---|---|\n");
-    process.env.BELZ_LIVE_RESOURCES = path;
+    process.env.WI_IMPL_LIVE_RESOURCES = path;
     expect(registerLiveResource({ kind: "method", identifier: "abc", purpose: "p | q", agent: "t" })).toBe(true);
     expect(registerLiveResource({ kind: "method", identifier: "def", purpose: "p2", agent: "t" })).toBe(true);
     expect(markLiveResourceCleaned("abc", "yes — soft-deleted")).toBe(true);

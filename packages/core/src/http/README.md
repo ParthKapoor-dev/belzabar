@@ -38,7 +38,7 @@ Sessions live in `sessions/<env>.json` (0600). Login uses the read timeout. Erro
 ## httpRequest: timeouts and retries
 
 - Default timeout: 60 s for GET/HEAD/OPTIONS, **300 s for every other method**.
-  `BELZ_HTTP_TIMEOUT_MS` sets both; `BELZ_HTTP_WRITE_TIMEOUT_MS` overrides non-GET. Per call:
+  `WI_IMPL_HTTP_TIMEOUT_MS` sets both; `WI_IMPL_HTTP_WRITE_TIMEOUT_MS` overrides non-GET. Per call:
   `timeoutMs: <ms>`, or `0` / `"none"` for streams and long server-side runs.
 - The timeout covers the response headers, then applies again as an idle deadline on each
   body chunk: a body that stalls mid-read rejects `res.text()` / `json()` with `HTTP_TIMEOUT`
@@ -58,7 +58,7 @@ the URL to the IP, keeping `Host` and TLS SNI.
 
 That makes the A-record query load-bearing, and flaky resolvers often refuse or time out on
 exactly that query. So `dns.ts` resolves through both `resolve4()` and `lookup()`, retries
-with backoff, and caches to `~/.belz/cache/dns.json` (a disk cache, because the CLI is a
+with backoff, and caches to `~/.wi-impl/cache/dns.json` (a disk cache, because the CLI is a
 short-lived process). If resolution fails outright it returns the original hostname URL
 rather than throwing: a request that might hang beats a command that cannot run.
 

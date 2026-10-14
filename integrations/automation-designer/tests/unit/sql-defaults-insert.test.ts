@@ -26,12 +26,12 @@ const INSERT_OP = {
 };
 
 let cfg: TempEnvConfig | null = null;
-const prevEnv = process.env.BELZ_SQL_DEFAULT_DB;
+const prevEnv = process.env.WI_IMPL_SQL_DEFAULT_DB;
 afterEach(() => {
   cfg?.restore();
   cfg = null;
-  if (prevEnv === undefined) delete process.env.BELZ_SQL_DEFAULT_DB;
-  else process.env.BELZ_SQL_DEFAULT_DB = prevEnv;
+  if (prevEnv === undefined) delete process.env.WI_IMPL_SQL_DEFAULT_DB;
+  else process.env.WI_IMPL_SQL_DEFAULT_DB = prevEnv;
 });
 
 function configWithSqlDefault(value: string | undefined) {
@@ -47,12 +47,12 @@ const dbs: NormalizedSqlDatabase[] = [
 ];
 
 describe("per-env SQL default DB", () => {
-  test("config environments.<env>.sqlDefaultDb wins over BELZ_SQL_DEFAULT_DB, per env", () => {
+  test("config environments.<env>.sqlDefaultDb wins over WI_IMPL_SQL_DEFAULT_DB, per env", () => {
     configWithSqlDefault("testing_db");
-    process.env.BELZ_SQL_DEFAULT_DB = "ZCPS-RDS";
+    process.env.WI_IMPL_SQL_DEFAULT_DB = "ZCPS-RDS";
     expect(sqlDefaultDb("acme-x")).toEqual({ value: "testing_db", source: "config" });
     expect(sqlDefaultDb("orb-x")).toEqual({ value: "ZCPS-RDS", source: "env" });
-    delete process.env.BELZ_SQL_DEFAULT_DB;
+    delete process.env.WI_IMPL_SQL_DEFAULT_DB;
     expect(sqlDefaultDb("orb-x")).toBeUndefined();
   });
 

@@ -46,8 +46,8 @@ test("a PD save/publish whose answer stalls keeps HTTP_TIMEOUT (mayHaveCompleted
     { method: "POST", url: /pages\/stall1\/publish/, response: stall },
     { method: "PUT", url: /pages\/empty1$/, response: respond({ status: 200, text: "" }) },
   ]).install();
-  const prev = process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
-  process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = "30";
+  const prev = process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS;
+  process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS = "30";
   try {
     for (const p of [savePageFull("stall1", "DRAFT", "{}"), savePagePartial("stall1", "DRAFT", []), publishPage("stall1")]) {
       const err = await caughtCliError(p);
@@ -57,7 +57,7 @@ test("a PD save/publish whose answer stalls keeps HTTP_TIMEOUT (mayHaveCompleted
     }
     expect(await savePageFull("empty1", "DRAFT", "{}")).toEqual({ newVersionId: null, configuration: null, raw: {} });
   } finally {
-    if (prev === undefined) delete process.env.BELZ_HTTP_WRITE_TIMEOUT_MS;
-    else process.env.BELZ_HTTP_WRITE_TIMEOUT_MS = prev;
+    if (prev === undefined) delete process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS;
+    else process.env.WI_IMPL_HTTP_WRITE_TIMEOUT_MS = prev;
   }
 });

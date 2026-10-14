@@ -156,7 +156,7 @@ describe("rd archive", () => {
   });
 });
 
-test("backups land under the test BELZ_HOME only", () => {
-  expect(RD_BACKUP_DIR.startsWith(process.env.BELZ_HOME!)).toBe(true);
+test("backups land under the test WI_IMPL_HOME only", () => {
+  expect(RD_BACKUP_DIR.startsWith(process.env.WI_IMPL_HOME!)).toBe(true);
   if (existsSync(RD_BACKUP_DIR)) expect(readdirSync(RD_BACKUP_DIR)).toContain(RD_ENV);
 });

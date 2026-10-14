@@ -74,7 +74,7 @@ Writes need `--env` and a confirmation (`--yes` in `--llm` mode; `RD_CONFIRMATIO
 history and the last write wins, `rd save`:
 
 1. resolves the spec's datasource on the target env;
-2. writes the current definition to `~/.belz/rd/backups/<env>/<id>-<time>.json` (a spec: save
+2. writes the current definition to `~/.wi-impl/rd/backups/<env>/<id>-<time>.json` (a spec: save
    it back to undo);
 3. refuses with `RD_CONFLICT` if the definition changed since it was read;
 4. PATCHes the title / description when they change, PUTs the configuration, reads it back

@@ -7,16 +7,16 @@ Subcommands:
   token           Print the raw Bearer token to stdout (for scripting/clipboard).
                   Re-logs in when there is no session or the token has expired.
     --refresh     Force a fresh login before printing the token.
-  edit            Interactively add, edit, or remove credentials in ~/.belz/config.json,
+  edit            Interactively add, edit, or remove credentials in ~/.wi-impl/config.json,
                   or set the default environment ("defaultEnv").
 
 Flags:
   --help, -h      Show this help message.
 
 Global Flags:
-  --env <name>    Set active environment (default: BELZ_ENV, else config defaultEnv,
+  --env <name>    Set active environment (default: WI_IMPL_ENV, else config defaultEnv,
                   else the only configured env).
-                  Any env from `belz envs` (configured in ~/.belz/config.json).
+                  Any env from `belz envs` (configured in ~/.wi-impl/config.json).
   --llm           Output structured JSON envelope for scripting/LLM use.
 
 Examples:

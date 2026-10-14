@@ -36,17 +36,17 @@ A task is a positive number or a Teamwork task URL (`…/tasks/<id>`); anything 
 
 ## Configuration
 
-`Config.getTeamwork()` reads `~/.belz/config.json` → `teamwork`, falling back to trusted
+`Config.getTeamwork()` reads `~/.wi-impl/config.json` → `teamwork`, falling back to trusted
 environment variables:
 
 | Key | Env fallback |
 |---|---|
-| `baseUrl` | `BELZ_TEAMWORK_URL` (no default; missing → `TW_CONFIG_MISSING`) |
-| `email` | `BELZ_TEAMWORK_EMAIL` |
-| `password` (+ `passwordEncoding`) | `BELZ_TEAMWORK_PASSWORD` |
+| `baseUrl` | `WI_IMPL_TEAMWORK_URL` (no default; missing → `TW_CONFIG_MISSING`) |
+| `email` | `WI_IMPL_TEAMWORK_EMAIL` |
+| `password` (+ `passwordEncoding`) | `WI_IMPL_TEAMWORK_PASSWORD` |
 
 Missing credentials fail `TW_AUTH_MISSING_CREDENTIALS`. The session cookie is kept in
-`~/.belz/sessions/teamwork.json` (0600, written atomically).
+`~/.wi-impl/sessions/teamwork.json` (0600, written atomically).
 
 ## Write safety
 

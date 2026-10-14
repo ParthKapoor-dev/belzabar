@@ -3,9 +3,9 @@
 #
 # Behaviour:
 #   • Always rebuilds the binary and installs it to $INSTALL_DIR.
-#   • If ~/.belz/config.json does not yet exist, runs `belz setup` at the end
+#   • If ~/.wi-impl/config.json does not yet exist, runs `belz setup` at the end
 #     to walk through interactive credential entry (or consumes --env-file).
-#   • Existing credentials, sessions, and cache in ~/.belz/ are never touched
+#   • Existing credentials, sessions, and cache in ~/.wi-impl/ are never touched
 #     by this script.
 #
 # Usage: ./install.sh [--env-file <path>] [--install-dir <dir>]
@@ -16,7 +16,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-BELZ_CONFIG_DIR="${HOME}/.belz"
+BELZ_CONFIG_DIR="${HOME}/.wi-impl"
 INSTALL_DIR="${HOME}/.local/bin"
 ENV_FILE=""
 
@@ -56,7 +56,7 @@ echo "✅ bun found: $(bun --version)"
 if [[ -f "$INSTALL_DIR/belz" ]]; then
   echo ""
   echo "📦 Existing installation detected at $INSTALL_DIR/belz"
-  echo "   Updating binary — your credentials and sessions in ~/.belz/ are untouched."
+  echo "   Updating binary — your credentials and sessions in ~/.wi-impl/ are untouched."
 fi
 
 # ── 3. Install dependencies ───────────────────────────────────────────────────

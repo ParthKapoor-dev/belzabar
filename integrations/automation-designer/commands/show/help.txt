@@ -53,8 +53,8 @@ Flags:
   --help, -h              Show this help message.
 
 Global Flags:
-  --env <name>            Set active environment (default: BELZ_ENV, else defaultEnv, else the only env).
-                          Any env from `belz envs` (configured in ~/.belz/config.json).
+  --env <name>            Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
+                          Any env from `belz envs` (configured in ~/.wi-impl/config.json).
   --llm                   Output structured JSON envelope for scripting/LLM use.
 
 Errors: METHOD_NOT_FOUND for an unknown uuid, and for a soft-deleted method

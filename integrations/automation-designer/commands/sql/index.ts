@@ -34,9 +34,9 @@ interface SqlDbsData {
   action: "dbs";
   databases: NormalizedSqlDatabase[];
   defaultResolution: {
-    /** `environments.<env>.sqlDefaultDb` from ~/.belz/config.json. */
+    /** `environments.<env>.sqlDefaultDb` from ~/.wi-impl/config.json. */
     configValue?: string;
-    /** BELZ_SQL_DEFAULT_DB. */
+    /** WI_IMPL_SQL_DEFAULT_DB. */
     envValue?: string;
   };
   raw?: {

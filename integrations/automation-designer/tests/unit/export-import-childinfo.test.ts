@@ -61,7 +61,7 @@ function realDef(name: string, uuid?: string): any {
   return d;
 }
 function writeTmp(text: string): string {
-  const dir = mkdtempSync(join(process.env.BELZ_HOME ?? "/tmp", "imp-"));
+  const dir = mkdtempSync(join(process.env.WI_IMPL_HOME ?? "/tmp", "imp-"));
   const file = join(dir, "export.json");
   writeFileSync(file, text);
   return file;

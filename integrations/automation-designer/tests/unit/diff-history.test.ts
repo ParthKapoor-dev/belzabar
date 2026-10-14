@@ -1,5 +1,5 @@
 // `ad diff` (history mode) writes both sides to a fresh temp dir and leaves
-// them for the editor. Under test, TMPDIR points at the run's BELZ_TEST_TMP
+// them for the editor. Under test, TMPDIR points at the run's WI_IMPL_TEST_TMP
 // scratch root (removed by the preload's afterAll) so nothing is left in /tmp.
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, readFileSync } from "fs";

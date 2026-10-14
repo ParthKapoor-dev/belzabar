@@ -20,7 +20,7 @@ import { ENVELOPE_VERSION } from "../envelope";
  *              prefix; `details` is always an object.
  * - `meta`     `durationMs` always; `env` only for env-aware commands (AD/PD,
  *              cache…), never for tw/migrate/release/config/envs or runner-level
- *              envelopes, and with it `envSource` (`flag` | `BELZ_ENV` |
+ *              envelopes, and with it `envSource` (`flag` | `WI_IMPL_ENV` |
  *              `default`: config.json `defaultEnv` or the only configured env;
  *              absent when no env is selected — ENV_NOT_SELECTED);
  *              `warnings` when any were raised.
@@ -43,7 +43,7 @@ const EnvelopeErrorSchema = z
 const EnvelopeMetaSchema = z
   .object({
     env: z.string().min(1).optional(),
-    envSource: z.enum(["flag", "BELZ_ENV", "default"]).optional(),
+    envSource: z.enum(["flag", "WI_IMPL_ENV", "default"]).optional(),
     durationMs: z.number().nonnegative(),
     warnings: z.array(z.string()).optional(),
   })

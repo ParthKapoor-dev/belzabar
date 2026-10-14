@@ -72,15 +72,15 @@ export interface SpawnResult {
 }
 
 /**
- * Spawn the CLI in an isolated env: HOME is a scratch dir, BELZ_HOME is the
- * test's BELZ_HOME (preload tmp dir), no inherited credentials.
+ * Spawn the CLI in an isolated env: HOME is a scratch dir, WI_IMPL_HOME is the
+ * test's WI_IMPL_HOME (preload tmp dir), no inherited credentials.
  */
 export async function spawnCli(argv: string[], opts: SpawnCliOptions = {}): Promise<SpawnResult> {
   const home = defaultHome();
   const env: Record<string, string> = {
     PATH: process.env.PATH ?? "",
     HOME: home,
-    BELZ_HOME: process.env.BELZ_HOME ?? join(home, ".belz"),
+    WI_IMPL_HOME: process.env.WI_IMPL_HOME ?? join(home, ".wi-impl"),
     EDITOR: "false",
     VISUAL: "false",
     NO_COLOR: "1",

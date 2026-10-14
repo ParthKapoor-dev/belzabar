@@ -3,7 +3,7 @@ Usage: belz update [flags]
 Update belz to the latest version.
 
 belz has two kinds of install, recorded as "belz.installKind" in
-~/.belz/config.json:
+~/.wi-impl/config.json:
 
 Binary install (the release installer, install.sh / install.ps1):
   `belz update` reads the latest release's manifest.json, downloads this
@@ -12,15 +12,15 @@ Binary install (the release installer, install.sh / install.ps1):
   With "update.pin" set in config.json, it installs exactly that version.
   Binary installs also check for a new release in the background, at most
   once every 24 hours, and install it the same way; the new version takes
-  effect on the next run. Turn that off with BELZ_NO_UPDATE=1 or
+  effect on the next run. Turn that off with WI_IMPL_NO_UPDATE=1 or
   "update": { "auto": false } in config.json. It never crosses a major
   version: a new major waits for `belz update`.
 
 Source install (a git checkout, e.g. `bun run belz:install`):
   `belz update` fetches the checkout's tracking branch, fast-forwards it, and
   re-runs the install script, installing to the recorded install dir
-  ("belz.installDir"). The checkout is "belz.sourceDir" (default
-  ~/.belz/src). It never discards local work: with something to pull and
+  ("install.installDir"). The checkout is "install.sourceDir" (default
+  ~/.wi-impl/src). It never discards local work: with something to pull and
   uncommitted/staged changes (DIRTY_TREE) or local commits not on origin
   (LOCAL_COMMITS), it refuses and tells you how to resolve it.
 
@@ -40,6 +40,6 @@ Examples:
 Notes:
   - A failed download, a checksum mismatch or a broken build never replaces
     your working binary.
-  - Your ~/.belz/ config, credentials, and sessions are never touched.
+  - Your ~/.wi-impl/ config, credentials, and sessions are never touched.
   - On Linux/macOS the new binary swaps in place; on Windows the running
     belz.exe is renamed aside first.

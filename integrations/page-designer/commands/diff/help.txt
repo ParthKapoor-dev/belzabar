@@ -21,6 +21,6 @@ Examples:
 
 Notes:
   - Both environments must have valid credentials configured in
-    ~/.belz/config.json; a login failure on either side aborts the diff.
+    ~/.wi-impl/config.json; a login failure on either side aborts the diff.
   - The diff engine is shared with `belz pd history diff`, so the structural
     comparison is identical — only the two sides differ (envs vs versions).

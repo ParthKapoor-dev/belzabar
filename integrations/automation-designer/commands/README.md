@@ -46,7 +46,7 @@ Flags:
   --help, -h            Show this help message.
 
 Global Flags:
-  --env <name>          Set active environment. (default: BELZ_ENV, else defaultEnv,
+  --env <name>          Set active environment. (default: WI_IMPL_ENV, else defaultEnv,
                         else the only env)
   --llm                 Output structured JSON envelope for scripting/LLM use.
 

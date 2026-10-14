@@ -223,7 +223,7 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     if (!existsSync(join(sourceDir, ".git"))) {
       throw new CliError(
         `belz source checkout not found at ${sourceDir}.\n` +
-          `Set "belz.sourceDir" in ~/.belz/config.json to your belz git checkout, or reinstall.`,
+          `Set "install.sourceDir" in ~/.wi-impl/config.json to your belz git checkout, or reinstall.`,
         { code: "SOURCE_NOT_FOUND" }
       );
     }

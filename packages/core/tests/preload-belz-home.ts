@@ -1,9 +1,9 @@
-// bun test preload: point BELZ_HOME at a throwaway dir before any module reads
-// it, so no test in the process can touch the real ~/.belz. Wired via the
+// bun test preload: point WI_IMPL_HOME at a throwaway dir before any module reads
+// it, so no test in the process can touch the real ~/.wi-impl. Wired via the
 // bunfig.toml files at the repo root and in each integration/core dir.
 //
-// Layout: $BELZ_TEST_TMP/            (removed after the whole run)
-//           home/                    BELZ_HOME
+// Layout: $WI_IMPL_TEST_TMP/            (removed after the whole run)
+//           home/                    WI_IMPL_HOME
 //           <scratch dirs>           core/testing scratchDir(): spawn homes, live config copies
 //
 // Cleanup uses a global afterAll (hooks registered in a preload run once, after
@@ -13,8 +13,8 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
-// Always override: an exported BELZ_HOME may be the developer's real belz
-// home (e.g. BELZ_HOME=/data/belz), and tests write config/sessions/caches
+// Always override: an exported WI_IMPL_HOME may be the developer's real belz
+// home (e.g. WI_IMPL_HOME=/data/belz), and tests write config/sessions/caches
 // into it. Tests that need a specific home set it per spawn.
 {
   const root = mkdtempSync(join(tmpdir(), "belz-home-test-"));
@@ -28,12 +28,12 @@ import { join } from "path";
     JSON.stringify({ environments: { test: { url: "https://test.example.test", user: "test-user", password: "test-password", passwordEncoding: "plain" } } }),
     { mode: 0o600 },
   );
-  process.env.BELZ_HOME = home;
-  process.env.BELZ_TEST_TMP = root;
+  process.env.WI_IMPL_HOME = home;
+  process.env.WI_IMPL_TEST_TMP = root;
   // Running the suite from an agent shell (CLAUDECODE=1) must not flip every
   // command's default output to --llm; tests that need it set it themselves.
   delete process.env.CLAUDECODE;
-  delete process.env.BELZ_AGENT;
+  delete process.env.WI_IMPL_AGENT;
   const cleanup = () => {
     try {
       rmSync(root, { recursive: true, force: true });

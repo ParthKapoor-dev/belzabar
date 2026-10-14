@@ -32,7 +32,7 @@ function envFile(lines: string[]): string {
 function seedExisting() {
   cfg = withTempEnvConfig({ envs: { dev: { url: "https://dev.test", user: "s", password: "sp" } } });
   const raw = JSON.parse(readFileSync(cfg.configPath, "utf8"));
-  raw.belz = { sourceDir: "/src" };
+  raw.install = { sourceDir: "/src" };
   raw.defaultEnv = "dev";
   writeFileSync(cfg.configPath, JSON.stringify(raw));
   reloadConfig();
@@ -42,18 +42,18 @@ describe("belz setup", () => {
   test("--env-file merges into existing envs; encodings are explicit; file is 0600", async () => {
     seedExisting();
     const file = envFile([
-      "BELZ_ENV_T_QA_URL=https://t-qa.test",
-      "BELZ_ENV_T_QA_USER=tq",
-      "BELZ_ENV_T_QA_PASSWORD=plain pass==",
-      "BELZ_ENV_T_DEV_URL=https://t-dev.test",
-      "BELZ_ENV_T_DEV_USER=nd",
-      "BELZ_ENV_T_DEV_PASSWORD=bm90YmFzZTY0", // looks like base64 but is taken literally
+      "WI_IMPL_ENV_T_QA_URL=https://t-qa.test",
+      "WI_IMPL_ENV_T_QA_USER=tq",
+      "WI_IMPL_ENV_T_QA_PASSWORD=plain pass==",
+      "WI_IMPL_ENV_T_DEV_URL=https://t-dev.test",
+      "WI_IMPL_ENV_T_DEV_USER=nd",
+      "WI_IMPL_ENV_T_DEV_PASSWORD=bm90YmFzZTY0", // looks like base64 but is taken literally
       "ORB_DEV_USER=legacy", // old per-project keys are no longer read
-      "BELZ_ENV_T_NOURL_USER=x", // an env without a URL is skipped
+      "WI_IMPL_ENV_T_NOURL_USER=x", // an env without a URL is skipped
       "TEAMWORK_URL=https://tw.example.test",
       "TEAMWORK_EMAIL=user@example.com",
       "TEAMWORK_PASSWORD=tw pw",
-      "BELZ_JENKINS_PASSWORD=jk",
+      "WI_IMPL_JENKINS_PASSWORD=jk",
     ]);
     const r = await runCommand(setup, ["--env-file", file]);
     expect(r.envelope?.ok).toBe(true);
@@ -64,7 +64,7 @@ describe("belz setup", () => {
     expect(written.environments["t-dev"]).toMatchObject({ password: "bm90YmFzZTY0", passwordEncoding: "plain" });
     expect(written.teamwork).toEqual({ baseUrl: "https://tw.example.test", email: "user@example.com", password: "tw pw", passwordEncoding: "plain" });
     expect(written.jenkins).toMatchObject({ password: "jk", passwordEncoding: "plain" });
-    expect(written.belz).toEqual({ sourceDir: "/src" });
+    expect(written.install).toEqual({ sourceDir: "/src" });
     expect(written.defaultEnv).toBe("dev");
     expect(statSync(CONFIG_FILE_PATH).mode & 0o777).toBe(0o600);
     expect((r.envelope!.data as any).configPath).toBe(CONFIG_FILE_PATH);
@@ -72,7 +72,7 @@ describe("belz setup", () => {
 
   test("--replace without --force is refused; with --force it drops unlisted envs", async () => {
     seedExisting();
-    const file = envFile(["BELZ_ENV_T_QA_URL=https://t-qa.test", "BELZ_ENV_T_QA_USER=u", "BELZ_ENV_T_QA_PASSWORD=p"]);
+    const file = envFile(["WI_IMPL_ENV_T_QA_URL=https://t-qa.test", "WI_IMPL_ENV_T_QA_USER=u", "WI_IMPL_ENV_T_QA_PASSWORD=p"]);
     const refused = await runCommand(setup, ["--env-file", file, "--replace"]);
     expect(refused.envelope?.error?.code).toBe("SETUP_REPLACE_NEEDS_FORCE");
     const r = await runCommand(setup, ["--env-file", file, "--replace", "--force"]);
@@ -128,10 +128,10 @@ describe("belz setup: dotenv handling", () => {
   test("--env-file strips inline comments on unquoted values (core parseDotEnv)", async () => {
     seedExisting();
     const file = envFile([
-      "BELZ_ENV_T_DEV_URL=https://t-dev.test",
-      "BELZ_ENV_T_DEV_PASSWORD=abc # rotated",
-      "BELZ_ENV_T_QA_URL=https://t-qa.test",
-      'BELZ_ENV_T_QA_PASSWORD="keep # this"',
+      "WI_IMPL_ENV_T_DEV_URL=https://t-dev.test",
+      "WI_IMPL_ENV_T_DEV_PASSWORD=abc # rotated",
+      "WI_IMPL_ENV_T_QA_URL=https://t-qa.test",
+      'WI_IMPL_ENV_T_QA_PASSWORD="keep # this"',
     ]);
     const r = await runCommand(setup, ["--env-file", file]);
     expect(r.envelope?.ok).toBe(true);
@@ -143,15 +143,15 @@ describe("belz setup: dotenv handling", () => {
   test("--from-env ignores values Bun auto-loaded from a cwd .env", async () => {
     seedExisting();
     const dir = scratchDir("setup-dotenv-");
-    writeFileSync(join(dir, ".env"), "BELZ_ENV_T_OK_PASSWORD=evilpw\nBELZ_ENV_EVIL_URL=https://evil.test\n");
-    const keys = ["BELZ_ENV_T_OK_PASSWORD", "BELZ_ENV_EVIL_URL", "BELZ_ENV_T_OK_URL", "BELZ_ENV_T_OK_USER"] as const;
+    writeFileSync(join(dir, ".env"), "WI_IMPL_ENV_T_OK_PASSWORD=evilpw\nWI_IMPL_ENV_EVIL_URL=https://evil.test\n");
+    const keys = ["WI_IMPL_ENV_T_OK_PASSWORD", "WI_IMPL_ENV_EVIL_URL", "WI_IMPL_ENV_T_OK_URL", "WI_IMPL_ENV_T_OK_USER"] as const;
     const saved = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
     const cwd = process.cwd();
     Object.assign(process.env, {
-      BELZ_ENV_T_OK_PASSWORD: "evilpw", // same as .env → injected
-      BELZ_ENV_EVIL_URL: "https://evil.test",
-      BELZ_ENV_T_OK_URL: "https://ok.test", // exported, not in .env → trusted
-      BELZ_ENV_T_OK_USER: "okuser",
+      WI_IMPL_ENV_T_OK_PASSWORD: "evilpw", // same as .env → injected
+      WI_IMPL_ENV_EVIL_URL: "https://evil.test",
+      WI_IMPL_ENV_T_OK_URL: "https://ok.test", // exported, not in .env → trusted
+      WI_IMPL_ENV_T_OK_USER: "okuser",
     });
     process.chdir(dir);
     try {
@@ -161,7 +161,7 @@ describe("belz setup: dotenv handling", () => {
       expect(written.environments["t-ok"]).toMatchObject({ url: "https://ok.test", user: "okuser" });
       expect(written.environments.evil).toBeUndefined();
       expect(written.environments["t-ok"].password).toBeUndefined();
-      expect(String(r.envelope?.meta?.warnings)).toContain("BELZ_ENV_T_OK_PASSWORD");
+      expect(String(r.envelope?.meta?.warnings)).toContain("WI_IMPL_ENV_T_OK_PASSWORD");
     } finally {
       process.chdir(cwd);
       for (const k of keys) {

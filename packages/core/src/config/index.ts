@@ -1,12 +1,12 @@
-// belz configuration: ~/.belz/config.json (+ explicit BELZ_* env vars).
+// belz configuration: ~/.wi-impl/config.json (+ explicit WI_IMPL_* env vars).
 //
 //   config/schema.ts    zod schema, validated at load (CONFIG_INVALID with a path)
 //   config/secrets.ts   decodeSecret/encodeSecret — explicit passwordEncoding
 //   config/fs.ts        writeSecureJson — atomic tmp+rename, 0600
-//   config/env-vars.ts  trustedBelzEnv — BELZ_* only, cwd .env injection ignored;
-//                       inAgentSession — BELZ_AGENT / CLAUDECODE select --llm output
+//   config/env-vars.ts  trustedBelzEnv — WI_IMPL_* only, cwd .env injection ignored;
+//                       inAgentSession — WI_IMPL_AGENT / CLAUDECODE select --llm output
 //
-// Env selection: `--env` (runner → Config.setActiveEnv) > BELZ_ENV >
+// Env selection: `--env` (runner → Config.setActiveEnv) > WI_IMPL_ENV >
 // config.json `defaultEnv` > the only configured env. There is no built-in env:
 // with several envs and no default, env-aware commands fail with
 // ENV_NOT_SELECTED. `Config.envSource` / `envWasExplicit` tell the runner
@@ -14,7 +14,7 @@
 
 import { join } from "path";
 import { homedir } from "os";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { CliError } from "../command";
 import type { Environment } from "../types";
 import { hardenBelzHome, writeSecureJson } from "./fs";
@@ -25,13 +25,23 @@ import { validateConfigFile, envEntryProblem, type BelzConfigFile } from "./sche
 export * from "./schema";
 export * from "./secrets";
 export * from "./fs";
-export { trustedBelzEnv, parseDotEnv, withoutDotenvInjected, inAgentSession } from "./env-vars";
+export { trustedBelzEnv, parseDotEnv, withoutDotenvInjected, withLegacyNames, inAgentSession } from "./env-vars";
+
+/** The data directory before the rename; a compiled binary moves it to `~/.wi-impl` on first run. */
+const LEGACY_CONFIG_DIR = join(homedir(), ".belz");
 
 /**
- * Root of all belz runtime data. `BELZ_HOME` overrides `~/.belz` (used by tests
- * so they never touch the real directory). Read once at import time.
+ * Root of all belz runtime data. `WI_IMPL_HOME` overrides `~/.wi-impl` (used by tests
+ * so they never touch the real directory). While only the legacy `~/.wi-impl` exists (not yet
+ * moved: a run from source never moves it), that is read instead. Read once at import time.
  */
-export const BELZ_CONFIG_DIR = trustedBelzEnv().BELZ_HOME || join(homedir(), ".belz");
+export const BELZ_CONFIG_DIR = resolveConfigDir(trustedBelzEnv().WI_IMPL_HOME, join(homedir(), ".wi-impl"), LEGACY_CONFIG_DIR);
+
+/** `override`, else `home`, else `legacy` while only that exists. Exported for tests. */
+export function resolveConfigDir(override: string | undefined, home: string, legacy: string): string {
+  if (override) return override;
+  return !existsSync(home) && existsSync(legacy) ? legacy : home;
+}
 
 export const CONFIG_FILE_PATH = join(BELZ_CONFIG_DIR, "config.json");
 
@@ -58,7 +68,7 @@ interface TeamworkCredentials {
  * Where the active env came from. "flag" = chosen explicitly (--env / setActiveEnv),
  * "only" = the single configured env, "none" = nothing selected an env.
  */
-type EnvSource = "flag" | "BELZ_ENV" | "config" | "only" | "none";
+type EnvSource = "flag" | "WI_IMPL_ENV" | "config" | "only" | "none";
 
 interface LoadedConfig {
   /** Parsed JSON as-is (for read-modify-write by setup / config edit). */
@@ -145,7 +155,7 @@ let trusted = trustedBelzEnv();
 let environments = buildEnvironments(loaded.config);
 
 function resolveDefault(): { name: string; source: EnvSource } {
-  if (trusted.BELZ_ENV) return { name: trusted.BELZ_ENV, source: "BELZ_ENV" };
+  if (trusted.WI_IMPL_ENV) return { name: trusted.WI_IMPL_ENV, source: "WI_IMPL_ENV" };
   if (loaded.config.defaultEnv) return { name: loaded.config.defaultEnv, source: "config" };
   const names = Object.keys(environments);
   if (names.length === 1) return { name: names[0]!, source: "only" };
@@ -173,19 +183,19 @@ export function reloadConfig(): void {
   }
 }
 
-/** ENV_NOT_SELECTED: no --env, no BELZ_ENV, no `defaultEnv`, and not exactly one configured env. */
+/** ENV_NOT_SELECTED: no --env, no WI_IMPL_ENV, no `defaultEnv`, and not exactly one configured env. */
 export function noEnvSelectedError(): CliError {
   const names = Object.keys(environments);
   const message = names.length === 0
     ? `No environments configured. Add one with 'belz config' (or 'belz setup'), then pass --env <name>.`
-    : `No environment selected. Pass --env <name>, set BELZ_ENV, or set "defaultEnv" in ${CONFIG_FILE_PATH}. ` +
+    : `No environment selected. Pass --env <name>, set WI_IMPL_ENV, or set "defaultEnv" in ${CONFIG_FILE_PATH}. ` +
       `Configured: ${names.join(", ")}`;
   return new CliError(message, { code: "ENV_NOT_SELECTED", details: { available: names } });
 }
 
 function unknownEnvError(name: string, source: EnvSource): CliError {
   const where =
-    source === "BELZ_ENV" ? " (from BELZ_ENV)" : source === "config" ? ` (from "defaultEnv" in ${CONFIG_FILE_PATH})` : "";
+    source === "WI_IMPL_ENV" ? " (from WI_IMPL_ENV)" : source === "config" ? ` (from "defaultEnv" in ${CONFIG_FILE_PATH})` : "";
   return new CliError(
     `Unknown environment: ${name}${where}. Available: ${Object.keys(environments).join(", ")}`,
     { code: "INVALID_ENV", details: { env: name, source } },
@@ -223,7 +233,7 @@ export const Config = {
     envSource = "flag";
   },
 
-  /** Drop an explicit selection: back to the default env (BELZ_ENV > defaultEnv > the only env, else none). */
+  /** Drop an explicit selection: back to the default env (WI_IMPL_ENV > defaultEnv > the only env, else none). */
   resetActiveEnv(): void {
     activeEnvName = defaultEnv.name;
     envSource = defaultEnv.source;
@@ -275,7 +285,7 @@ export const Config = {
     );
   },
 
-  /** Name of the env used when no `--env` is given: BELZ_ENV > config `defaultEnv` > the only env > `NO_ENV`. */
+  /** Name of the env used when no `--env` is given: WI_IMPL_ENV > config `defaultEnv` > the only env > `NO_ENV`. */
   get defaultEnvName(): string {
     return defaultEnv.name;
   },
@@ -322,26 +332,26 @@ export const Config = {
     const file = loaded.config.jenkins ?? {};
     const filePassword = decodeSecret(file.password, file.passwordEncoding, "jenkins.password");
     return {
-      baseUrl: (file.baseUrl ?? trusted.BELZ_JENKINS_URL ?? "").replace(/\/$/, ""),
-      user: file.user ?? trusted.BELZ_JENKINS_USER ?? "",
-      password: filePassword || trusted.BELZ_JENKINS_PASSWORD || "",
-      migrationJob: file.migrationJob ?? trusted.BELZ_JENKINS_JOB ?? "",
+      baseUrl: (file.baseUrl ?? trusted.WI_IMPL_JENKINS_URL ?? "").replace(/\/$/, ""),
+      user: file.user ?? trusted.WI_IMPL_JENKINS_USER ?? "",
+      password: filePassword || trusted.WI_IMPL_JENKINS_PASSWORD || "",
+      migrationJob: file.migrationJob ?? trusted.WI_IMPL_JENKINS_JOB ?? "",
       profileEnvs: Object.fromEntries(
         Object.entries(file.profileEnvs ?? {}).map(([segment, env]) => [segment.toLowerCase(), env]),
       ),
     };
   },
 
-  /** Teamwork site + credentials: config `teamwork` section, else BELZ_TEAMWORK_URL / _EMAIL / _PASSWORD (plain). */
+  /** Teamwork site + credentials: config `teamwork` section, else WI_IMPL_TEAMWORK_URL / _EMAIL / _PASSWORD (plain). */
   getTeamwork(): TeamworkCredentials {
     if (loaded.error) throw loaded.error;
     const tw = loaded.config.teamwork ?? {};
     const password = tw.password
       ? decodeSecret(tw.password, tw.passwordEncoding, "teamwork.password")
-      : trusted.BELZ_TEAMWORK_PASSWORD ?? "";
+      : trusted.WI_IMPL_TEAMWORK_PASSWORD ?? "";
     return {
-      baseUrl: (tw.baseUrl ?? trusted.BELZ_TEAMWORK_URL ?? "").replace(/\/+$/, ""),
-      email: tw.email ?? trusted.BELZ_TEAMWORK_EMAIL ?? "",
+      baseUrl: (tw.baseUrl ?? trusted.WI_IMPL_TEAMWORK_URL ?? "").replace(/\/+$/, ""),
+      email: tw.email ?? trusted.WI_IMPL_TEAMWORK_EMAIL ?? "",
       password,
     };
   },

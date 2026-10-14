@@ -1,7 +1,7 @@
-// Opt-in live WRITE suite: the full AD method lifecycle on the BELZ_LIVE env, in
-// the BELZ_LIVE_CATEGORY category only, names `belz_tst_life_*` / `belz_tst_del_*`.
+// Opt-in live WRITE suite: the full AD method lifecycle on the WI_IMPL_LIVE env, in
+// the WI_IMPL_LIVE_CATEGORY category only, names `belz_tst_life_*` / `belz_tst_del_*`.
 //
-//   BELZ_LIVE=<env> BELZ_LIVE_WRITE=1 BELZ_LIVE_CATEGORY=<name> BELZ_LIVE_CATEGORY_ID=<id> \
+//   WI_IMPL_LIVE=<env> WI_IMPL_LIVE_WRITE=1 WI_IMPL_LIVE_CATEGORY=<name> WI_IMPL_LIVE_CATEGORY_ID=<id> \
 //     bun test apps/cli/tests/live
 //
 // create --spec → validate / lint → structural save → test (+ --expect) →
@@ -33,7 +33,7 @@ const NAME = `${LIVE_WRITE_PREFIX}life_${STAMP}`;
 const NAME_DEL = `${LIVE_WRITE_PREFIX}del_${STAMP}`;
 const T = 240_000;
 
-// Resolved lazily: the suite is skipped (and needs no category) when BELZ_LIVE_WRITE is off.
+// Resolved lazily: the suite is skipped (and needs no category) when WI_IMPL_LIVE_WRITE is off.
 const category = () => liveCategory();
 
 const created: string[] = [];
@@ -75,7 +75,7 @@ describeLiveWrite("ad lifecycle", () => {
     const todo = [...created].reverse().filter(u => !cleaned.has(u));
     if (todo.length === 0) return;
     const proc = Bun.spawn(["bun", join(import.meta.dir, "support", "soft-delete.ts"), ...todo], {
-      env: { ...process.env, BELZ_HOME: liveBelzHome() },
+      env: { ...process.env, WI_IMPL_HOME: liveBelzHome() },
       stdout: "pipe",
       stderr: "pipe",
     });

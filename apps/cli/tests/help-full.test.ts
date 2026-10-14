@@ -23,9 +23,9 @@ function runHelpFull(env: Record<string, string>, cwd: string, args: string[] = 
 
 describe("belz --help-full", () => {
   test("is byte-identical across runs with different env, locale, timezone and cwd", () => {
-    const a = runHelpFull({ BELZ_HOME: mkdtempSync(join(tmpdir(), "hf-a-")), TZ: "UTC", LANG: "C" }, tmpdir());
+    const a = runHelpFull({ WI_IMPL_HOME: mkdtempSync(join(tmpdir(), "hf-a-")), TZ: "UTC", LANG: "C" }, tmpdir());
     const b = runHelpFull(
-      { BELZ_HOME: mkdtempSync(join(tmpdir(), "hf-b-")), TZ: "Asia/Kolkata", LANG: "tr_TR.UTF-8", BELZ_VERBOSE: "1", NO_COLOR: "1" },
+      { WI_IMPL_HOME: mkdtempSync(join(tmpdir(), "hf-b-")), TZ: "Asia/Kolkata", LANG: "tr_TR.UTF-8", WI_IMPL_VERBOSE: "1", NO_COLOR: "1" },
       resolve(import.meta.dir, ".."),
     );
     expect(a.code).toBe(0);
@@ -55,7 +55,7 @@ describe("belz --help-full", () => {
   test("--help-full --llm is one belz.help envelope carrying the text", () => {
     const home = mkdtempSync(join(tmpdir(), "hf-llm-"));
     for (const args of [["--help-full", "--llm"], ["--llm", "--help-full"]]) {
-      const r = runHelpFull({ BELZ_HOME: home }, tmpdir(), args);
+      const r = runHelpFull({ WI_IMPL_HOME: home }, tmpdir(), args);
       expect(r.code).toBe(0);
       const env = EnvelopeSchema.parse(JSON.parse(r.out));
       expect(env.schema).toBe("belz.help");
@@ -65,7 +65,7 @@ describe("belz --help-full", () => {
   }, 30_000);
 
   test("--help-full after `--` belongs to the command, not the runner", () => {
-    const r = runHelpFull({ BELZ_HOME: mkdtempSync(join(tmpdir(), "hf-dd-")) }, tmpdir(), ["ad", "show", "--", "--help-full", "--llm"]);
+    const r = runHelpFull({ WI_IMPL_HOME: mkdtempSync(join(tmpdir(), "hf-dd-")) }, tmpdir(), ["ad", "show", "--", "--help-full", "--llm"]);
     expect(r.out).not.toContain("NOTE FOR LLM AGENTS");
   }, 30_000);
 
@@ -80,10 +80,10 @@ describe("belz --help-full", () => {
     for (const name of Object.keys(REGISTRIES["integrations/automation-designer"]!)) expect(index).toContain(`belz ad ${name}  :->  `);
     expect(buildHelpFull({ namespace: "nope" })).toBeNull();
     const home = mkdtempSync(join(tmpdir(), "hf-ns-"));
-    const r = runHelpFull({ BELZ_HOME: home }, tmpdir(), ["--help-full", "pd", "--index"]);
+    const r = runHelpFull({ WI_IMPL_HOME: home }, tmpdir(), ["--help-full", "pd", "--index"]);
     expect(r.code).toBe(0);
     expect(r.out).toBe(buildHelpFull({ namespace: "pd", index: true }) + "\n");
-    const bad = runHelpFull({ BELZ_HOME: home }, tmpdir(), ["--help-full", "nope", "--llm"]);
+    const bad = runHelpFull({ WI_IMPL_HOME: home }, tmpdir(), ["--help-full", "nope", "--llm"]);
     expect(bad.code).toBe(1);
     expect(JSON.parse(bad.out).error.code).toBe("INVALID_ARGS");
   }, 30_000);

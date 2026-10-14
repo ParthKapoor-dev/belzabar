@@ -6,7 +6,7 @@
 //
 // Re-entrant: a nested withLock in this process neither acquires nor
 // releases. A page recorded by `belz pd lock acquire`
-// (~/.belz/pd-locks/<env>.json) is NOT trusted blindly: the record
+// (~/.wi-impl/pd-locks/<env>.json) is NOT trusted blindly: the record
 // may be stale (expired, released in the UI, taken by someone else), so the
 // server lock is still acquired, and it is not released afterwards, so a save
 // inside a manual lock does not drop the operator's lock.

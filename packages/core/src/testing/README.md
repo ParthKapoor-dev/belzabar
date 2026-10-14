@@ -2,7 +2,7 @@
 
 `@belzabar/core/testing`: helpers for every package's tests. Test code only; runtime code never
 imports it. Everything assumes the bun test preload (`packages/core/tests/preload-belz-home.ts`,
-wired by each package's `bunfig.toml`) pointed `BELZ_HOME` at a throwaway dir; the helpers
+wired by each package's `bunfig.toml`) pointed `WI_IMPL_HOME` at a throwaway dir; the helpers
 refuse to write anywhere else (`assertSafeBelzHome`).
 
 ## What's here
@@ -17,7 +17,7 @@ refuse to write anywhere else (`assertSafeBelzHome`).
 | `envelope-schema.ts` | `EnvelopeSchema`: the `--llm` wire contract (see [`../README.md`](../README.md#envelope)) |
 | `doc-check.ts` | `checkCommandDocs`, `flagsMentioned`: help.txt / desc.txt drift against the args spec |
 | `errors.ts` | `errorCode`, `thrownCliError`, `caughtCliError`, `rejectionCode`, `jsonFixtures` |
-| `scratch.ts` | `scratchDir(prefix)`: a tmp dir under the run's `BELZ_TEST_TMP`, removed after the run |
+| `scratch.ts` | `scratchDir(prefix)`: a tmp dir under the run's `WI_IMPL_TEST_TMP`, removed after the run |
 | `index.ts` | Re-exports all of the above |
 
 ## Helpers
@@ -46,19 +46,19 @@ refuse to write anywhere else (`assertSafeBelzHome`).
 
 ## Live suites
 
-Opt-in, against one configured env named by `BELZ_LIVE`. Nothing tenant-specific is
+Opt-in, against one configured env named by `WI_IMPL_LIVE`. Nothing tenant-specific is
 hard-coded:
 
 | Variable | Meaning |
 |----------|---------|
-| `BELZ_LIVE=<env>` | The env under test (must be in config.json) |
-| `BELZ_LIVE_METHOD=<uuid>` | Optional long-lived published method for read smokes |
-| `BELZ_LIVE_WRITE=1` | Also run write suites; requires the two below |
-| `BELZ_LIVE_CATEGORY` / `BELZ_LIVE_CATEGORY_ID` | The one AD category writes may touch |
-| `BELZ_LIVE_RESOURCES` | Ledger file for created objects (default: `live-resources.md` in a sibling maintainer workspace) |
-| `BELZ_LIVE_SOURCE_HOME` | Where to copy config and session from (default `~/.belz`) |
+| `WI_IMPL_LIVE=<env>` | The env under test (must be in config.json) |
+| `WI_IMPL_LIVE_METHOD=<uuid>` | Optional long-lived published method for read smokes |
+| `WI_IMPL_LIVE_WRITE=1` | Also run write suites; requires the two below |
+| `WI_IMPL_LIVE_CATEGORY` / `WI_IMPL_LIVE_CATEGORY_ID` | The one AD category writes may touch |
+| `WI_IMPL_LIVE_RESOURCES` | Ledger file for created objects (default: `live-resources.md` in a sibling maintainer workspace) |
+| `WI_IMPL_LIVE_SOURCE_HOME` | Where to copy config and session from (default `~/.wi-impl`) |
 
-`spawnLive` refuses any `--env` other than `BELZ_LIVE` and runs with a tmp `BELZ_HOME` holding a
+`spawnLive` refuses any `--env` other than `WI_IMPL_LIVE` and runs with a tmp `WI_IMPL_HOME` holding a
 copy of config.json and that env's session, so the real home is only read. Write suites name
 objects with `LIVE_WRITE_PREFIX` (`belz_tst_`), stay in the category, call
 `registerLiveResource` for everything they create and clean up in `afterAll`

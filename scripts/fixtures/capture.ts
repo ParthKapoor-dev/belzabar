@@ -17,9 +17,9 @@
 //   jenkins                    job parameters (profiles), latest finished build, console chunk
 //   resanitize <dir>           offline: re-run sanitize() over every *.json (sanitizeText over *.txt) under <dir> (rewrites only changed files)
 //
-// Safety: one env only — BELZ_CAPTURE_ENV (required for captures, never built
+// Safety: one env only — WI_IMPL_CAPTURE_ENV (required for captures, never built
 // in) — GET only, and every body goes through sanitize() before touching disk.
-// Project/tenant/person names are replaced when BELZ_SCRUB_TERMS names the
+// Project/tenant/person names are replaced when WI_IMPL_SCRUB_TERMS names the
 // local term list (see sanitize.ts rule 10). Each fixture dir gets a
 // manifest.json: { file, source, env, capturedAt, endpoint, status, bytes }
 // (sanitized too).
@@ -37,7 +37,7 @@ const TW_FIX = join(ROOT, "integrations/teamwork/tests/fixtures/real");
 const MG_FIX = join(ROOT, "integrations/migrations/tests/fixtures/real");
 
 if (loadScrubTerms().length === 0) {
-  console.warn("warning: BELZ_SCRUB_TERMS is not set — project/tenant names will not be replaced (see scripts/fixtures/sanitize.ts)");
+  console.warn("warning: WI_IMPL_SCRUB_TERMS is not set — project/tenant names will not be replaced (see scripts/fixtures/sanitize.ts)");
 }
 
 /** Select the capture env (lazily: `resanitize` needs no env). */

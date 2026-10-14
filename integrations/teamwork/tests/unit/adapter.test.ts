@@ -139,7 +139,7 @@ describe("teamwork adapter", () => {
     ff = fakeFetch([]).install();
     const e = await caught(teamworkFetch("/x"));
     expect(e.code).toBe("TW_CONFIG_MISSING");
-    expect(e.message).toContain("BELZ_TEAMWORK_URL");
+    expect(e.message).toContain("WI_IMPL_TEAMWORK_URL");
     expect(ff.requests).toHaveLength(0);
   });
 

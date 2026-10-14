@@ -7,11 +7,11 @@ import { chmodSync, renameSync, rmSync, writeFileSync } from "fs";
 import { z } from "zod";
 import { CliError, trustedBelzEnv } from "@belzabar/core";
 
-/** Public GitHub Releases of the belzabar repo. `BELZ_UPDATE_BASE_URL` overrides it (mirrors, tests). */
+/** Public GitHub Releases of the belzabar repo. `WI_IMPL_UPDATE_BASE_URL` overrides it (mirrors, tests). */
 const DEFAULT_RELEASES_URL = "https://github.com/ParthKapoor-dev/belzabar/releases";
 
 function releasesBaseUrl(): string {
-  return (trustedBelzEnv().BELZ_UPDATE_BASE_URL || DEFAULT_RELEASES_URL).replace(/\/+$/, "");
+  return (trustedBelzEnv().WI_IMPL_UPDATE_BASE_URL || DEFAULT_RELEASES_URL).replace(/\/+$/, "");
 }
 
 /** Every platform a release ships a binary for (`bun build --compile --target=bun-<target>`). */

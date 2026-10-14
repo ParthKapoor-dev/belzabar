@@ -1,3 +1,3 @@
-belz setup  :->  Interactive first-time setup: writes ~/.belz/config.json with per-environment credentials
+belz setup  :->  Interactive first-time setup: writes ~/.wi-impl/config.json with per-environment credentials
 belz setup --env-file <path> --force  :->  Non-interactive setup from a .env file, overwriting any existing config
 belz setup --from-env --force  :->  Non-interactive setup from the process environment (CI / cloud session)

@@ -1,7 +1,7 @@
 // Regression tests for env-scoped AD caches.
-// BELZ_HOME is set to a tmp dir by the bunfig.toml test preload before
+// WI_IMPL_HOME is set to a tmp dir by the bunfig.toml test preload before
 // @belzabar/core is first imported; beforeAll asserts it so nothing can ever
-// touch the real ~/.belz.
+// touch the real ~/.wi-impl.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, rmSync } from "fs";
 import { tmpdir } from "os";

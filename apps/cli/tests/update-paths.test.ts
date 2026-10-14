@@ -97,7 +97,7 @@ describe("belz update on a real checkout", () => {
     g(seed, "push", "-q", "origin", "HEAD:main");
     const cfg = withTempEnvConfig({ envs: {} });
     const raw = JSON.parse(readFileSync(CONFIG_FILE_PATH, "utf8"));
-    raw.belz = { sourceDir: src, installDir: join(root, "bin") };
+    raw.install = { sourceDir: src, installDir: join(root, "bin") };
     writeFileSync(CONFIG_FILE_PATH, JSON.stringify(raw));
     reloadConfig();
     return { src, cfg };

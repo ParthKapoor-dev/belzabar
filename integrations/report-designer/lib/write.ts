@@ -13,7 +13,7 @@ import { logIntent } from "./confirm";
 import type { ResolvedDataSource } from "./datasource";
 import { readReport, specChanges, toConfiguration, type ReportSpec, type SavedReport } from "./definition";
 
-/** `~/.belz/rd/backups/<env>/<id>-<timestamp>.json`; never pruned by `belz cache`. */
+/** `~/.wi-impl/rd/backups/<env>/<id>-<timestamp>.json`; never pruned by `belz cache`. */
 export const RD_BACKUP_DIR = join(BELZ_CONFIG_DIR, "rd", "backups");
 
 /** Write the report's current spec (restorable with `rd save <id> --spec <file>`); returns the path. */

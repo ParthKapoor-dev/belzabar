@@ -5,11 +5,14 @@
 // that off). A stray `.env` in whatever directory the user happens to run
 // `belz` from must not be able to redirect an environment URL or inject
 // credentials. So:
-//   1. belz only reads its own `BELZ_*` variables (the legacy per-project /
+//   1. belz only reads its own `WI_IMPL_*` variables (the legacy per-project /
 //      TEAMWORK_* / API_* variables are gone; `belz setup --from-env` still
 //      imports them explicitly into config.json), and
-//   2. a BELZ_* value that is identical to one in a cwd `.env*` file Bun would
+//   2. a WI_IMPL_* value that is identical to one in a cwd `.env*` file Bun would
 //      have loaded is treated as dotenv-injected and ignored.
+//
+// Releases before the rename read `BELZ_*`: each `BELZ_X` still counts as `WI_IMPL_X` when
+// `WI_IMPL_X` is not set (withLegacyNames), so existing shells, scripts and env files keep working.
 
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
@@ -85,23 +88,39 @@ export function withoutDotenvInjected(
   return { values, dropped: dropped.sort() };
 }
 
+const PREFIX = "WI_IMPL_";
+/** The prefix of the same variables before the rename. */
+const LEGACY_PREFIX = "BELZ_";
+
+/** `values` plus `WI_IMPL_X` for each legacy `BELZ_X` whose new name is not set. */
+export function withLegacyNames(values: Record<string, string>): Record<string, string> {
+  const out = { ...values };
+  for (const [key, value] of Object.entries(values)) {
+    if (!key.startsWith(LEGACY_PREFIX)) continue;
+    const name = PREFIX + key.slice(LEGACY_PREFIX.length);
+    if (out[name] === undefined) out[name] = value;
+  }
+  return out;
+}
+
 /**
- * The BELZ_* env vars belz honours: explicitly exported ones only. A value
- * that equals what a cwd `.env*` file defines for the same key is dropped.
+ * The WI_IMPL_* env vars belz honours (legacy BELZ_* names included): explicitly exported ones
+ * only. A value that equals what a cwd `.env*` file defines for the same key is dropped.
  */
 export function trustedBelzEnv(env: NodeJS.ProcessEnv = process.env, cwd = process.cwd()): Record<string, string> {
   const belzOnly: NodeJS.ProcessEnv = {};
-  for (const [key, value] of Object.entries(env)) if (key.startsWith("BELZ_")) belzOnly[key] = value;
-  return withoutDotenvInjected(belzOnly, cwd).values;
+  for (const [key, value] of Object.entries(env)) if (key.startsWith(PREFIX) || key.startsWith(LEGACY_PREFIX)) belzOnly[key] = value;
+  const trusted = withLegacyNames(withoutDotenvInjected(belzOnly, cwd).values);
+  return Object.fromEntries(Object.entries(trusted).filter(([key]) => key.startsWith(PREFIX)));
 }
 
 /**
  * True when belz runs inside a coding agent's shell, where the default output is the `--llm`
- * envelope: `BELZ_AGENT=1`, or Claude Code's `CLAUDECODE=1` (the one non-BELZ_ variable read,
- * and only when a cwd `.env*` did not inject it). `BELZ_AGENT=0` turns the detection off.
+ * envelope: `WI_IMPL_AGENT=1`, or Claude Code's `CLAUDECODE=1` (the one non-WI_IMPL_ variable read,
+ * and only when a cwd `.env*` did not inject it). `WI_IMPL_AGENT=0` turns the detection off.
  */
 export function inAgentSession(env: NodeJS.ProcessEnv = process.env, cwd = process.cwd()): boolean {
-  const flag = trustedBelzEnv(env, cwd).BELZ_AGENT;
+  const flag = trustedBelzEnv(env, cwd).WI_IMPL_AGENT;
   if (flag !== undefined) return flag === "1";
   return withoutDotenvInjected({ CLAUDECODE: env.CLAUDECODE }, cwd).values.CLAUDECODE === "1";
 }

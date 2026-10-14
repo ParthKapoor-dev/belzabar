@@ -1,11 +1,11 @@
-// withTempEnvConfig: write a throwaway ~/.belz/config.json (+ session files)
-// under BELZ_HOME and reload Config, so commands see fake environments.
+// withTempEnvConfig: write a throwaway ~/.wi-impl/config.json (+ session files)
+// under WI_IMPL_HOME and reload Config, so commands see fake environments.
 //
 //   const cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } }, activeEnv: "t-dev" });
 //   ... apiFetch uses session token "test-token", no login ...
 //   cfg.restore();
 //
-// Refuses to run unless BELZ_HOME points somewhere other than the real ~/.belz
+// Refuses to run unless WI_IMPL_HOME points somewhere other than the real ~/.wi-impl
 // (the bun test preload sets it to a tmp dir).
 
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
@@ -51,19 +51,19 @@ function isInside(dir: string, root: string): boolean {
 
 /**
  * The belz home tests may write to: it must be the preload's throwaway dir
- * (inside BELZ_TEST_TMP), never `~/.belz` or any other exported BELZ_HOME.
+ * (inside WI_IMPL_TEST_TMP), never `~/.wi-impl` or any other exported WI_IMPL_HOME.
  */
 export function assertSafeBelzHome(): string {
-  const real = resolve(join(homedir(), ".belz"));
-  const testTmp = process.env.BELZ_TEST_TMP;
+  const real = resolve(join(homedir(), ".wi-impl"));
+  const testTmp = process.env.WI_IMPL_TEST_TMP;
   if (
-    !process.env.BELZ_HOME ||
+    !process.env.WI_IMPL_HOME ||
     resolve(BELZ_CONFIG_DIR) === real ||
     !testTmp ||
     !isInside(BELZ_CONFIG_DIR, testTmp)
   ) {
     throw new Error(
-      "core/testing: BELZ_HOME must point at a throwaway dir (is the bun test preload " +
+      "core/testing: WI_IMPL_HOME must point at a throwaway dir (is the bun test preload " +
         "packages/core/tests/preload-belz-home.ts wired in bunfig.toml?)"
     );
   }

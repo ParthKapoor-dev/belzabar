@@ -1,5 +1,5 @@
 // `--help` anywhere must show help instead of running the command.
-// Spawns the dev CLI in an isolated HOME/cwd so no real ~/.belz or .env is read.
+// Spawns the dev CLI in an isolated HOME/cwd so no real ~/.wi-impl or .env is read.
 import { afterAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
@@ -9,16 +9,16 @@ const CLI = join(import.meta.dir, "..", "bin", "cli.ts");
 const home = mkdtempSync(join(tmpdir(), "belz-help-test-"));
 afterAll(() => rmSync(home, { recursive: true, force: true }));
 // belz has no built-in envs: give the spawned CLI two to pick from.
-mkdirSync(join(home, ".belz"), { recursive: true });
+mkdirSync(join(home, ".wi-impl"), { recursive: true });
 writeFileSync(
-  join(home, ".belz", "config.json"),
+  join(home, ".wi-impl", "config.json"),
   JSON.stringify({ environments: { dev: { url: "https://dev.example.test" }, qa: { url: "https://qa.example.test" } } }),
 );
 
 async function belz(...args: string[]) {
   const proc = Bun.spawn([process.execPath, CLI, ...args], {
     cwd: home,
-    env: { PATH: process.env.PATH ?? "", HOME: home, BELZ_HOME: join(home, ".belz"), EDITOR: "false", VISUAL: "false" },
+    env: { PATH: process.env.PATH ?? "", HOME: home, WI_IMPL_HOME: join(home, ".wi-impl"), EDITOR: "false", VISUAL: "false" },
     stdout: "pipe",
     stderr: "pipe",
     stdin: "ignore",

@@ -67,16 +67,16 @@ describe("AD pre-flight", () => {
       url: /chain\//,
       response: () => new Response(new ReadableStream({ start(c) { c.enqueue(enc.encode('{"uuid":')); } }), { status: 200, headers: { "content-type": "application/json" } }),
     }]).install();
-    const prev = process.env.BELZ_HTTP_TIMEOUT_MS;
-    process.env.BELZ_HTTP_TIMEOUT_MS = "30";
+    const prev = process.env.WI_IMPL_HTTP_TIMEOUT_MS;
+    process.env.WI_IMPL_HTTP_TIMEOUT_MS = "30";
     try {
       const err = await caughtCliError(resolve(UUID));
       expect(err.code).toBe("HTTP_TIMEOUT");
       expect(err.message).toContain("Retry when");
       expect(err.details).toMatchObject({ preflightEnv: "acme-dev" });
     } finally {
-      if (prev === undefined) delete process.env.BELZ_HTTP_TIMEOUT_MS;
-      else process.env.BELZ_HTTP_TIMEOUT_MS = prev;
+      if (prev === undefined) delete process.env.WI_IMPL_HTTP_TIMEOUT_MS;
+      else process.env.WI_IMPL_HTTP_TIMEOUT_MS = prev;
     }
   });
 

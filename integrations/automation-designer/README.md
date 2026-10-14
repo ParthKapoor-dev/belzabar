@@ -63,11 +63,11 @@ all of them.
 
 | Setting | Effect |
 |---|---|
-| `environments.<env>.sqlDefaultDb` in `~/.belz/config.json` | Default database for `ad sql` on that env. |
-| `BELZ_SQL_DEFAULT_DB` | Default database for `ad sql` on every env (after the config key). |
-| `"lint": {"resolverTables": {"<table>": "<fn>"}}` in `~/.belz/config.json` | Enables lint rule Q3 (tables that must be read through a resolver function). |
+| `environments.<env>.sqlDefaultDb` in `~/.wi-impl/config.json` | Default database for `ad sql` on that env. |
+| `WI_IMPL_SQL_DEFAULT_DB` | Default database for `ad sql` on every env (after the config key). |
+| `"lint": {"resolverTables": {"<table>": "<fn>"}}` in `~/.wi-impl/config.json` | Enables lint rule Q3 (tables that must be read through a resolver function). |
 
-Caches live under `~/.belz/cache/` (see [`lib/README.md`](lib/README.md#caching)).
+Caches live under `~/.wi-impl/cache/` (see [`lib/README.md`](lib/README.md#caching)).
 
 ## Testing
 

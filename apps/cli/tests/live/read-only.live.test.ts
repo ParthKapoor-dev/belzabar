@@ -1,7 +1,7 @@
-// Opt-in live smoke (read-only) against the env named by BELZ_LIVE:
-//   BELZ_LIVE=<env> [BELZ_LIVE_METHOD=<published uuid>] [BELZ_LIVE_CATEGORY=… BELZ_LIVE_CATEGORY_ID=…] \
+// Opt-in live smoke (read-only) against the env named by WI_IMPL_LIVE:
+//   WI_IMPL_LIVE=<env> [WI_IMPL_LIVE_METHOD=<published uuid>] [WI_IMPL_LIVE_CATEGORY=… WI_IMPL_LIVE_CATEGORY_ID=…] \
 //     bun test apps/cli/tests/live
-// Skipped otherwise. Uses a tmp copy of ~/.belz (see core/testing live.ts).
+// Skipped otherwise. Uses a tmp copy of ~/.wi-impl (see core/testing live.ts).
 import { expect, test } from "bun:test";
 import { EnvelopeSchema, LIVE_ENV, describeLive, liveMethod, spawnLive } from "@belzabar/core/testing";
 
@@ -28,7 +28,7 @@ describeLive("read-only smoke", () => {
   });
 
   // Smoke-matrix regressions that need the real server.
-  // A long-lived published method with a large history (BELZ_LIVE_METHOD); tests that need it skip without it.
+  // A long-lived published method with a large history (WI_IMPL_LIVE_METHOD); tests that need it skip without it.
   const MID = liveMethod();
 
   test.skipIf(!MID)("a >64 KB --llm envelope arrives whole through a pipe", async () => {
@@ -42,8 +42,8 @@ describeLive("read-only smoke", () => {
     expect(r.envelope?.meta.env).toBe(LIVE_ENV);
   }, 70_000);
 
-  const CATEGORY = process.env.BELZ_LIVE_CATEGORY?.trim();
-  const CATEGORY_ID = Number(process.env.BELZ_LIVE_CATEGORY_ID);
+  const CATEGORY = process.env.WI_IMPL_LIVE_CATEGORY?.trim();
+  const CATEGORY_ID = Number(process.env.WI_IMPL_LIVE_CATEGORY_ID);
   test.skipIf(!CATEGORY || !CATEGORY_ID)("the configured live category has the configured chain-category id", async () => {
     const r = await spawnLive(["ad", "categories", "--llm"], { timeoutMs: 60_000 });
     const rows = (r.envelope?.data as { categories: Array<{ id: number; name: string }> }).categories;

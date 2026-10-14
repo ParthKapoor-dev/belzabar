@@ -13,26 +13,26 @@
 #   --install-dir <dir>    Where the binary goes (default ~/.local/bin).
 #   --env-file <path>      Non-interactive credentials for the first setup.
 #   --no-setup             Skip the first-run `belz onboard` (scripts, CI, coding agents; also
-#                          BELZ_NO_SETUP=1). Run `belz onboard` / `belz setup` later.
-#   --from-source          Clone the repo into $BELZ_SRC_DIR (default ~/.belz/src) and build it
+#                          WI_IMPL_NO_SETUP=1). Run `belz onboard` / `belz setup` later.
+#   --from-source          Clone the repo into $WI_IMPL_SRC_DIR (default ~/.wi-impl/src) and build it
 #                          with bun instead (developers; updates via `belz update` + git).
 #
-# Credentials, sessions and caches in ~/.belz/ are never touched.
+# Credentials, sessions and caches in ~/.wi-impl/ are never touched.
 
 set -euo pipefail
 
 REPO="ParthKapoor-dev/belzabar"
-RELEASES="${BELZ_UPDATE_BASE_URL:-https://github.com/${REPO}/releases}"
+RELEASES="${WI_IMPL_UPDATE_BASE_URL:-https://github.com/${REPO}/releases}"
 RELEASES="${RELEASES%/}"
-REPO_URL="${BELZ_REPO_URL:-https://github.com/${REPO}.git}"
-SRC_DIR="${BELZ_SRC_DIR:-${HOME}/.belz/src}"
-BELZ_DIR="${BELZ_HOME:-${HOME}/.belz}"
+REPO_URL="${WI_IMPL_REPO_URL:-https://github.com/${REPO}.git}"
+SRC_DIR="${WI_IMPL_SRC_DIR:-${HOME}/.wi-impl/src}"
+WI_IMPL_DIR="${WI_IMPL_HOME:-${HOME}/.wi-impl}"
 
 VERSION=""
 INSTALL_DIR="${HOME}/.local/bin"
 ENV_FILE=""
 FROM_SOURCE=0
-NO_SETUP="${BELZ_NO_SETUP:-0}"
+NO_SETUP="${WI_IMPL_NO_SETUP:-0}"
 FORWARD=()
 
 # ── Pretty logging ────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ ok "Checksum verified"
 
 # Decide "first install" before recording the install creates config.json.
 FIRST_RUN=0
-[[ -f "$BELZ_DIR/config.json" ]] || FIRST_RUN=1
+[[ -f "$WI_IMPL_DIR/config.json" ]] || FIRST_RUN=1
 
 mkdir -p "$INSTALL_DIR"
 chmod 755 "$TMP/$ASSET"
@@ -135,11 +135,11 @@ mv -f "$TMP/$ASSET" "$INSTALL_DIR/belz.new"
 mv -f "$INSTALL_DIR/belz.new" "$INSTALL_DIR/belz"
 # An explicit --version is pinned (config.json "update.pin") so auto-update keeps it; a latest
 # install clears any pin. The installer's own runs never start an update check.
-BELZ_RECORD_INSTALL=binary BELZ_RECORD_PIN="$VERSION" "$INSTALL_DIR/belz" \
-  || warn "Could not record the install in $BELZ_DIR/config.json (auto-update stays off)."
-export BELZ_NO_UPDATE=1
+WI_IMPL_RECORD_INSTALL=binary WI_IMPL_RECORD_PIN="$VERSION" "$INSTALL_DIR/belz" \
+  || warn "Could not record the install in $WI_IMPL_DIR/config.json (auto-update stays off)."
+export WI_IMPL_NO_UPDATE=1
 ok "Installed $("$INSTALL_DIR/belz" --version) to $INSTALL_DIR/belz"
-[[ -n "$VERSION" ]] && warn "Pinned to v$VERSION: auto-update is off until you remove \"update.pin\" from $BELZ_DIR/config.json."
+[[ -n "$VERSION" ]] && warn "Pinned to v$VERSION: auto-update is off until you remove \"update.pin\" from $WI_IMPL_DIR/config.json."
 
 if ! echo ":${PATH}:" | grep -q ":${INSTALL_DIR}:"; then
   warn "$INSTALL_DIR is not on your PATH. Add to your shell profile:"

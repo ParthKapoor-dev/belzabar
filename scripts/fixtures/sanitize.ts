@@ -26,7 +26,7 @@ import { readFileSync } from "fs";
 //      - structured change-log notes ("Developer: X", "Reviewer: Y", "Dev: X",
 //        "Started by user X") → "person-<code>".
 //  10. project / tenant / person terms (never committed: the list is a local
-//      JSON file named by BELZ_SCRUB_TERMS, see loadScrubTerms) → their
+//      JSON file named by WI_IMPL_SCRUB_TERMS, see loadScrubTerms) → their
 //      placeholders, case-preserving (INITECH → ACME, Initech → Acme);
 //  11. real hostnames (URL hosts and `www.` hosts, plus bare hosts with 3+
 //      labels) on public TLDs that are not generic infrastructure
@@ -134,10 +134,10 @@ export type ScrubTerm = [pattern: RegExp, replacement: string];
 
 /**
  * Load the local project-term list: a JSON file `{ "terms": [[regexSource, replacement], …] }`
- * named by BELZ_SCRUB_TERMS (patterns are applied with flags `gi`, in order). The list names
+ * named by WI_IMPL_SCRUB_TERMS (patterns are applied with flags `gi`, in order). The list names
  * real projects and people, so it lives outside the repo; without it only the generic rules run.
  */
-export function loadScrubTerms(path: string | undefined = process.env.BELZ_SCRUB_TERMS): ScrubTerm[] {
+export function loadScrubTerms(path: string | undefined = process.env.WI_IMPL_SCRUB_TERMS): ScrubTerm[] {
   if (!path) return [];
   const parsed = JSON.parse(readFileSync(path, "utf8")) as { terms?: Array<[string, string]> };
   return (parsed.terms ?? []).map(([source, replacement]) => [new RegExp(source, "gi"), replacement]);

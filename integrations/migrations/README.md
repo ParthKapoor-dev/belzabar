@@ -42,20 +42,20 @@ Flags and examples: each command's `help.txt` (`commands/<cmd>/help.txt`) or `be
 
 ## Configuration
 
-`Config.getJenkins()` reads `~/.belz/config.json` → `jenkins`, falling back to trusted
+`Config.getJenkins()` reads `~/.wi-impl/config.json` → `jenkins`, falling back to trusted
 environment variables (the config file wins):
 
 | Key | Env fallback | Notes |
 |---|---|---|
-| `baseUrl` | `BELZ_JENKINS_URL` | Jenkins root URL |
-| `user` | `BELZ_JENKINS_USER` | |
-| `password` (+ `passwordEncoding`) | `BELZ_JENKINS_PASSWORD` | API token or password |
-| `migrationJob` | `BELZ_JENKINS_JOB` | Required, no default; may be a folder path (`a/b`) |
+| `baseUrl` | `WI_IMPL_JENKINS_URL` | Jenkins root URL |
+| `user` | `WI_IMPL_JENKINS_USER` | |
+| `password` (+ `passwordEncoding`) | `WI_IMPL_JENKINS_PASSWORD` | API token or password |
+| `migrationJob` | `WI_IMPL_JENKINS_JOB` | Required, no default; may be a folder path (`a/b`) |
 | `profileEnvs` | — | Optional map of profile segment → belz env, e.g. `{ "devx": "dev" }` |
 
 A missing URL, user, password or job fails `MIGRATE_JENKINS_CONFIG_MISSING`.
 
-Runtime file: `~/.belz/migrations/jenkins-profiles.json` (profile cache).
+Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
 
 ## Key behaviour of `migrate run`
 
@@ -101,4 +101,4 @@ Runtime file: `~/.belz/migrations/jenkins-profiles.json` (profile cache).
 bun test integrations/migrations      # from the repo root; or `bun test` in this folder
 ```
 
-`bunfig.toml` preloads a temporary `BELZ_HOME`. See [`tests/README.md`](tests/README.md).
+`bunfig.toml` preloads a temporary `WI_IMPL_HOME`. See [`tests/README.md`](tests/README.md).

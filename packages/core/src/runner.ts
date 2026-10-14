@@ -242,15 +242,15 @@ interface GlobalContext {
   /** `--env` was given explicitly. */
   envExplicit: boolean;
   verboseTokens: VerboseToken[];
-  /** BELZ_VERBOSE as it was before the global flags were applied. */
+  /** WI_IMPL_VERBOSE as it was before the global flags were applied. */
   verboseEnvBefore: string | undefined;
-  /** No usable default env: the default (BELZ_ENV / config.json `defaultEnv`) is not configured, or none is selected. */
+  /** No usable default env: the default (WI_IMPL_ENV / config.json `defaultEnv`) is not configured, or none is selected. */
   defaultEnvError: { code: string; message: string } | null;
   startedAt: number;
 }
 
 /**
- * Select the default env for a run without `--env`: BELZ_ENV > config.json
+ * Select the default env for a run without `--env`: WI_IMPL_ENV > config.json
  * `defaultEnv` > the only configured env (core/config owns the precedence).
  * Returns an error when the default names an env that is not configured
  * (INVALID_ENV) or when nothing selects an env (ENV_NOT_SELECTED).
@@ -262,7 +262,7 @@ function applyDefaultEnv(): { code: string; message: string } | null {
     return { code: e.code, message: e.message };
   }
   const source =
-    Config.envSource === "BELZ_ENV" ? "BELZ_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "default";
+    Config.envSource === "WI_IMPL_ENV" ? "WI_IMPL_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "default";
   const name = Config.activeEnv.name;
   return Config.getAllEnvs()[name] ? null : unknownDefault(name, source);
 }
@@ -286,15 +286,15 @@ async function chooseWriteEnv(defaultName: string, writes: boolean): Promise<str
 }
 
 /** `meta.envSource`: where the env came from. `default` = config.json `defaultEnv` or the only configured env. */
-type MetaEnvSource = "flag" | "BELZ_ENV" | "default";
+type MetaEnvSource = "flag" | "WI_IMPL_ENV" | "default";
 
 function metaEnvSource(envExplicit: boolean): MetaEnvSource {
   if (envExplicit) return "flag";
-  return Config.envSource === "BELZ_ENV" ? "BELZ_ENV" : "default";
+  return Config.envSource === "WI_IMPL_ENV" ? "WI_IMPL_ENV" : "default";
 }
 
 function envSourceLabel(): string {
-  return Config.envSource === "BELZ_ENV" ? "from BELZ_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "the only configured env";
+  return Config.envSource === "WI_IMPL_ENV" ? "from WI_IMPL_ENV" : Config.envSource === "config" ? "config.json defaultEnv" : "the only configured env";
 }
 
 function unknownDefault(name: string, source: string): { code: string; message: string } {
@@ -320,8 +320,8 @@ export function resolveGlobalFlags(argv: string[]): {
 } {
   const startedAt = Date.now();
   const parsed = parseGlobalFlags(argv, inAgentSession() ? "llm" : "human");
-  const verboseEnvBefore = process.env.BELZ_VERBOSE;
-  if (parsed.verbose) process.env.BELZ_VERBOSE = "1";
+  const verboseEnvBefore = process.env.WI_IMPL_VERBOSE;
+  if (parsed.verbose) process.env.WI_IMPL_VERBOSE = "1";
   setOutputMode(parsed.outputMode);
 
   let envError = parsed.error;
@@ -595,8 +595,8 @@ export async function dispatchCommand(
       commandArgs = reinsert(commandArgs, mine.map(t => ({ index: t.index - base - 1, token: t.token })));
       // Only tokens the command did not claim switch on runner debug logging.
       if (mine.length === globals.verboseTokens.length) {
-        if (globals.verboseEnvBefore === undefined) delete process.env.BELZ_VERBOSE;
-        else process.env.BELZ_VERBOSE = globals.verboseEnvBefore;
+        if (globals.verboseEnvBefore === undefined) delete process.env.WI_IMPL_VERBOSE;
+        else process.env.WI_IMPL_VERBOSE = globals.verboseEnvBefore;
       }
     }
   }

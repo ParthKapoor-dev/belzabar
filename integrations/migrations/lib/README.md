@@ -21,7 +21,7 @@ Everything `belz migrate` does besides argument wiring. Exposed as the package r
 The job's `PROFILE_NAME` choice parameter is a flat list split by `--- <client> ---` divider
 entries. `groupProfiles` turns it into `{ client, profiles }` groups; nothing about clients or
 profiles is hard-coded. `discoverProfiles` caches the groups at
-`~/.belz/migrations/jenkins-profiles.json` for 24 h (`--refresh` bypasses it); a job without
+`~/.wi-impl/migrations/jenkins-profiles.json` for 24 h (`--refresh` bypasses it); a job without
 that parameter fails `MIGRATE_JENKINS_NO_PROFILE_PARAM`.
 
 A profile named `<a>_<b>` maps to a source/target env pair through config

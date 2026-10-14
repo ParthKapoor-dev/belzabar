@@ -1,4 +1,4 @@
-// Promotion ledger — persistent record of release audits under ~/.belz/.
+// Promotion ledger — persistent record of release audits under ~/.wi-impl/.
 //
 // `belz release matrix` writes its computed audit here so it accumulates
 // release-over-release; `belz release freeze` writes a prod snapshot (prod is
@@ -18,7 +18,7 @@ export const PROMOTION_DIR = join(BELZ_CONFIG_DIR, "promotion");
 export const RELEASES_DIR = join(PROMOTION_DIR, "releases");
 export const SNAPSHOTS_DIR = join(PROMOTION_DIR, "prod-snapshots");
 
-/** The ledger isn't secret: world-readable like the other ~/.belz caches. */
+/** The ledger isn't secret: world-readable like the other ~/.wi-impl caches. */
 const LEDGER_MODE = 0o644;
 
 export interface ProdSnapshotItem {

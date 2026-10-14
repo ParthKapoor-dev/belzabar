@@ -2,7 +2,7 @@
 
 `bun test` suites with no network. Command suites drive a real command end to end against
 `fakeFetch` routes and the real fixtures in [`../fixtures`](../README.md). The root `bunfig.toml`
-preload points `BELZ_HOME` at a temp dir, so nothing touches `~/.belz`.
+preload points `WI_IMPL_HOME` at a temp dir, so nothing touches `~/.wi-impl`.
 
 | Area | Files |
 |---|---|

@@ -9,7 +9,7 @@ pointer. Run this right after the release is pushed to production.
 Requires that `belz release matrix` has already been run for this release
 (it writes the release record this command reads).
 
-WRITES LOCAL STATE: ~/.belz/promotion/prod-snapshots/<name>.json (atomic).
+WRITES LOCAL STATE: ~/.wi-impl/promotion/prod-snapshots/<name>.json (atomic).
 An existing snapshot is kept unless --force (SNAPSHOT_EXISTS). Items with no
 stage data (stage not traced, or a trace error) are recorded as "unknown" with
 a warning; if no item has stage data, nothing is written

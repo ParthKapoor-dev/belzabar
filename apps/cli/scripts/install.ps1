@@ -17,7 +17,7 @@ $ErrorActionPreference = 'Stop'
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..\..")
-$BelzConfigDir = Join-Path $env:USERPROFILE ".belz"
+$BelzConfigDir = Join-Path $env:USERPROFILE ".wi-impl"
 
 # Decide "first run" now: step 6 (record-install) creates config.json.
 $FirstRun = -not (Test-Path (Join-Path $BelzConfigDir "config.json"))

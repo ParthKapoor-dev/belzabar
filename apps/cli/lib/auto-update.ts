@@ -1,20 +1,20 @@
 // Background auto-update for binary installs.
 //
-// At most once per 24 h, a belz run spawns a detached copy of itself (BELZ_UPDATE_WORKER=1)
+// At most once per 24 h, a belz run spawns a detached copy of itself (WI_IMPL_UPDATE_WORKER=1)
 // and carries on without waiting. The worker reads the latest release's manifest.json and, when
 // it is newer within the same major version, downloads this platform's binary to
 // `<belz>.next`, checks its sha256, and swaps it in (the old binary is kept as `<belz>.prev` for
 // `belz update --rollback`). A command that is already running keeps executing the old file,
 // so the new version takes effect on the next run, which prints a one-line notice on stderr.
 //
-// Never for: source installs or dev runs, dirty builds, CI, BELZ_NO_UPDATE=1,
+// Never for: source installs or dev runs, dirty builds, CI, WI_IMPL_NO_UPDATE=1,
 // `update.auto: false` or `update.pin` in config.json. It never writes to stdout and never
 // throws into the command that triggered it.
 
 import { spawn } from "child_process";
 import { closeSync, copyFileSync, existsSync, linkSync, openSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
-import { BELZ_CONFIG_DIR, isCompiledEntry, loadConfigFileRaw, recordBelzMeta, trustedBelzEnv, writeConfigFile, type BelzConfigFile } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, installMeta, isCompiledEntry, loadConfigFileRaw, recordBelzMeta, trustedBelzEnv, writeConfigFile, type BelzConfigFile } from "@belzabar/core";
 import { compareVersions, downloadVerifiedAsset, fetchManifest, sameMajor } from "./release";
 
 /** How often a binary install checks for a new release. */
@@ -58,7 +58,7 @@ function writeUpdateState(patch: Partial<UpdateState>): void {
 
 /** "binary" only when the release installer recorded it; anything else is treated as a source install. */
 export function installKind(config: BelzConfigFile): "binary" | "source" {
-  return config.belz?.installKind === "binary" ? "binary" : "source";
+  return installMeta(config)?.installKind === "binary" ? "binary" : "source";
 }
 
 /**
@@ -88,7 +88,7 @@ export function autoUpdateBlocker(
   if (build.dirty) return "built from uncommitted changes";
   if (env.CI) return "running in CI";
   const belzEnv = ctx.env ? ctx.env : trustedBelzEnv();
-  if (belzEnv.BELZ_NO_UPDATE === "1") return "BELZ_NO_UPDATE=1";
+  if (belzEnv.WI_IMPL_NO_UPDATE === "1") return "WI_IMPL_NO_UPDATE=1";
   let config: BelzConfigFile;
   try {
     config = ctx.config ?? loadConfigFileRaw();
@@ -121,7 +121,7 @@ export function autoUpdateTick(build: BuildIdentity, now = Date.now()): void {
     const child = spawn(process.execPath, [], {
       detached: true,
       stdio: "ignore",
-      env: { ...process.env, BELZ_UPDATE_WORKER: "1" },
+      env: { ...process.env, WI_IMPL_UPDATE_WORKER: "1" },
     });
     child.unref();
   } catch {
@@ -167,7 +167,7 @@ export function rollbackBinary(exe: string): void {
   renameSync(hold, prev);
 }
 
-/** The detached worker started by autoUpdateTick (BELZ_UPDATE_WORKER=1). */
+/** The detached worker started by autoUpdateTick (WI_IMPL_UPDATE_WORKER=1). */
 export async function runUpdateWorker(build: BuildIdentity): Promise<void> {
   const exe = process.execPath;
   const lock = `${exe}.update-lock`;
@@ -203,8 +203,8 @@ export async function runUpdateWorker(build: BuildIdentity): Promise<void> {
 }
 
 /**
- * BELZ_RECORD_INSTALL=binary: the release installer records this binary install, then exits.
- * BELZ_RECORD_PIN=x.y.z (an explicit `--version` install) also pins that version, so the
+ * WI_IMPL_RECORD_INSTALL=binary: the release installer records this binary install, then exits.
+ * WI_IMPL_RECORD_PIN=x.y.z (an explicit `--version` install) also pins that version, so the
  * auto-update does not replace the version that was asked for; without it any pin is cleared.
  */
 export function recordBinaryInstall(build: BuildIdentity): void {
@@ -214,7 +214,7 @@ export function recordBinaryInstall(build: BuildIdentity): void {
     version: build.version,
     installedAt: new Date().toISOString(),
   });
-  const pin = trustedBelzEnv().BELZ_RECORD_PIN?.replace(/^v/, "");
+  const pin = trustedBelzEnv().WI_IMPL_RECORD_PIN?.replace(/^v/, "");
   const config = loadConfigFileRaw();
   const update = { ...config.update };
   if (pin) update.pin = pin;

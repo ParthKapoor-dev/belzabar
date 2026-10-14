@@ -27,7 +27,7 @@ beforeAll(async () => {
   );
   if (build.exitCode !== 0) throw new Error(`compile failed: ${build.stderr.toString()}`);
 
-  const belzHome = join(dir, ".belz");
+  const belzHome = join(dir, ".wi-impl");
   mkdirSync(belzHome, { recursive: true });
   const environments: Record<string, { url: string }> = {};
   for (let i = 0; i < ENV_COUNT; i++) {
@@ -43,7 +43,7 @@ describe("compiled binary", () => {
     const cmd = `${shq(bin)} envs --llm | (sleep 0.5; cat)`;
     const proc = Bun.spawn(["sh", "-c", cmd], {
       cwd: dir, // compiled binaries autoload .env from cwd: keep it empty
-      env: { PATH: process.env.PATH ?? "", HOME: dir, BELZ_HOME: join(dir, ".belz") },
+      env: { PATH: process.env.PATH ?? "", HOME: dir, WI_IMPL_HOME: join(dir, ".wi-impl") },
       stdout: "pipe",
       stderr: "pipe",
     });
@@ -58,7 +58,7 @@ describe("compiled binary", () => {
   test("--help-full arrives complete through a slow pipe", async () => {
     const proc = Bun.spawn(["sh", "-c", `${shq(bin)} --help-full | (sleep 0.5; cat)`], {
       cwd: dir,
-      env: { PATH: process.env.PATH ?? "", HOME: dir, BELZ_HOME: join(dir, ".belz") },
+      env: { PATH: process.env.PATH ?? "", HOME: dir, WI_IMPL_HOME: join(dir, ".wi-impl") },
       stdout: "pipe",
       stderr: "pipe",
     });

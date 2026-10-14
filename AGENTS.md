@@ -43,5 +43,5 @@ Read the workspace's `AGENTS.md` and the README of the directory you touch befor
 - **Never commit secrets.** Fixtures are captured only with `scripts/fixtures/capture.ts`
   (read-only, sanitized); the secrets test must stay green.
 - **Never run** `bun run belz:install` / `belz:reinstall`, `belz update`, `belz setup` or
-  `belz onboard` as part of a change, and never write to the real `~/.belz`.
+  `belz onboard` as part of a change, and never write to the real `~/.wi-impl`.
 - **Before committing:** `bun run check` (typecheck, docs:check, dead-code, all tests) is green.

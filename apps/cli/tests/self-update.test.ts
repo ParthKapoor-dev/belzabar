@@ -74,7 +74,7 @@ describe("updateHint (unknown command/flag)", () => {
 
 describe("autoUpdateBlocker", () => {
   const compiled = ["bun", "/$bunfs/root/belz"];
-  const binary: BelzConfigFile = { belz: { installKind: "binary" } };
+  const binary: BelzConfigFile = { install: { installKind: "binary" } };
   const build = { version: "0.2.0", dirty: false };
   const gate = (over: { argv?: string[]; env?: NodeJS.ProcessEnv; config?: BelzConfigFile; dirty?: boolean } = {}) =>
     autoUpdateBlocker({ ...build, dirty: over.dirty ?? false }, {
@@ -90,15 +90,16 @@ describe("autoUpdateBlocker", () => {
     expect(gate({ argv: ["bun", "/repo/apps/cli/bin/cli.ts"] })).toContain("not a compiled");
     expect(gate({ dirty: true })).toContain("uncommitted");
     expect(gate({ env: { CI: "true" } })).toContain("CI");
-    expect(gate({ env: { BELZ_NO_UPDATE: "1" } })).toContain("BELZ_NO_UPDATE");
+    expect(gate({ env: { WI_IMPL_NO_UPDATE: "1" } })).toContain("WI_IMPL_NO_UPDATE");
     expect(gate({ config: { ...binary, update: { auto: false } } })).toContain("update.auto");
     expect(gate({ config: { ...binary, update: { pin: "0.2.0" } } })).toContain("pinned");
-    expect(gate({ config: { belz: { installKind: "source" } } })).toContain("source install");
+    expect(gate({ config: { install: { installKind: "source" } } })).toContain("source install");
     expect(gate({ config: {} })).toContain("source install");
   });
   test("only an explicitly recorded binary install counts as binary", () => {
-    expect(installKind({ belz: { installKind: "binary" } })).toBe("binary");
-    expect(installKind({ belz: { sourceDir: "/x" } })).toBe("source");
+    expect(installKind({ install: { installKind: "binary" } })).toBe("binary");
+    expect(installKind({ install: { sourceDir: "/x" } })).toBe("source");
+    expect(installKind({ belz: { installKind: "binary" } })).toBe("binary"); // written before the rename
     expect(installKind({})).toBe("source");
   });
 });
@@ -109,7 +110,7 @@ describe("fetchManifest + downloadVerifiedAsset (fake release server)", () => {
   let server: ReturnType<typeof Bun.serve>;
   let manifest: ReleaseManifest;
   let tamper = false;
-  const savedBase = process.env.BELZ_UPDATE_BASE_URL;
+  const savedBase = process.env.WI_IMPL_UPDATE_BASE_URL;
 
   beforeAll(() => {
     manifest = {
@@ -131,12 +132,12 @@ describe("fetchManifest + downloadVerifiedAsset (fake release server)", () => {
         return new Response("nope", { status: 404 });
       },
     });
-    process.env.BELZ_UPDATE_BASE_URL = `http://localhost:${server.port}/releases/`;
+    process.env.WI_IMPL_UPDATE_BASE_URL = `http://localhost:${server.port}/releases/`;
   });
   afterAll(() => {
     server.stop(true);
-    if (savedBase === undefined) delete process.env.BELZ_UPDATE_BASE_URL;
-    else process.env.BELZ_UPDATE_BASE_URL = savedBase;
+    if (savedBase === undefined) delete process.env.WI_IMPL_UPDATE_BASE_URL;
+    else process.env.WI_IMPL_UPDATE_BASE_URL = savedBase;
   });
 
   test("manifest URLs: latest and pinned", () => {

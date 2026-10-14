@@ -21,7 +21,7 @@
 | `v1/` | Hand-written single V1 steps for the step parser. Prefer real fixtures. |
 
 Refresh captured fixtures from the repo root with `bun scripts/fixtures/capture.ts <target>`. It
-only issues GETs, only talks to the env named by `BELZ_CAPTURE_ENV`, and sanitizes every body;
+only issues GETs, only talks to the env named by `WI_IMPL_CAPTURE_ENV`, and sanitizes every body;
 `scripts/fixtures/fixtures-secrets.test.ts` fails on anything that looks like a secret.
 
 ## Live suites

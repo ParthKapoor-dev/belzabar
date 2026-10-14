@@ -119,7 +119,7 @@ OPTIONS
   --llm                        Emit structured JSON for agent consumption.
 
 CONFIG
-  Reads Jenkins credentials from ~/.belz/config.json:
+  Reads Jenkins credentials from ~/.wi-impl/config.json:
     {
       "jenkins": {
         "baseUrl": "https://jenkins.example.test",
@@ -130,8 +130,8 @@ CONFIG
         "profileEnvs": { "devacme": "dev", "qaacme": "qa", "stageacme": "stage" }
       }
     }
-  Or env vars: BELZ_JENKINS_URL, BELZ_JENKINS_USER, BELZ_JENKINS_PASSWORD,
-  BELZ_JENKINS_JOB. migrationJob is required (MIGRATE_JENKINS_CONFIG_MISSING);
+  Or env vars: WI_IMPL_JENKINS_URL, WI_IMPL_JENKINS_USER, WI_IMPL_JENKINS_PASSWORD,
+  WI_IMPL_JENKINS_JOB. migrationJob is required (MIGRATE_JENKINS_CONFIG_MISSING);
   profileEnvs is optional.
 
 EXAMPLES

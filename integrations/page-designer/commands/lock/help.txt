@@ -22,7 +22,7 @@ Actions:
                       is dropped; a 5xx keeps it (data.recordKept,
                       data.released null) since the lock may still be yours.
   status [pageId]     List locks acquired with this command in the active
-                      env (local record at ~/.belz/pd-locks/<env>.json).
+                      env (local record at ~/.wi-impl/pd-locks/<env>.json).
                       With a page id, also the server's lock on that page
                       (data.server: locked, byMe, userName, validTill).
 

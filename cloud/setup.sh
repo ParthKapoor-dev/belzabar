@@ -7,34 +7,35 @@
 # IN-SESSION, not in the Setup script field. belz-sandbox wires it up two ways:
 #   • a SessionStart hook (.claude/settings.json) runs it automatically, and
 #   • CLAUDE.md tells the agent to run it first as a fallback.
-# Both run where BELZ_ENV_* / BELZ_SANDBOX_TOKEN are available.
+# Both run where WI_IMPL_ENV_* / WI_IMPL_SANDBOX_TOKEN are available.
 #
 # It (1) installs the prebuilt belz Linux binary from the belz-sandbox release
-# (private repo → no belzabar access), and (2) writes ~/.belz/config.json via
+# (private repo → no belzabar access), and (2) writes ~/.wi-impl/config.json via
 # `belz setup --from-env`. It is idempotent — safe to re-run on every SessionStart.
 #
 # Env it reads (set on the cloud environment's Environment variables field):
-#   BELZ_ENV_<NAME>_URL/_USER/_PASSWORD[/_PROJECT]  — one set per env
-#   Optional: BELZ_JENKINS_*, TEAMWORK_*
-#   BELZ_SANDBOX_REPO   owner/belz-sandbox (else derived from this repo's origin)
-#   BELZ_SANDBOX_TOKEN  token to download the release if gh isn't authenticated
-#   BELZ_RELEASE_TAG    release tag (default: latest)
+#   WI_IMPL_ENV_<NAME>_URL/_USER/_PASSWORD[/_PROJECT]  — one set per env
+#   Optional: WI_IMPL_JENKINS_*, TEAMWORK_*
+#   WI_IMPL_SANDBOX_REPO   owner/belz-sandbox (else derived from this repo's origin)
+#   WI_IMPL_SANDBOX_TOKEN  token to download the release if gh isn't authenticated
+#   WI_IMPL_RELEASE_TAG    release tag (default: latest)
+# (Each is also read under its name before the rename, BELZ_*.)
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Repo: prefer the env var; otherwise derive from this clone's git origin.
-REPO="${BELZ_SANDBOX_REPO:-}"
+REPO="${WI_IMPL_SANDBOX_REPO:-${BELZ_SANDBOX_REPO:-}}"
 if [ -z "$REPO" ]; then
   origin="$(git -C "$HERE" remote get-url origin 2>/dev/null || true)"
   REPO="$(printf '%s' "$origin" | sed -E 's#^(https?://[^/]+/|git@[^:]+:)##; s#\.git$##')"
 fi
-[ -n "$REPO" ] || { echo "cloud-setup: cannot determine belz-sandbox repo (set BELZ_SANDBOX_REPO)"; exit 0; }
+[ -n "$REPO" ] || { echo "cloud-setup: cannot determine belz-sandbox repo (set WI_IMPL_SANDBOX_REPO)"; exit 0; }
 
-TAG="${BELZ_RELEASE_TAG:-latest}"
+TAG="${WI_IMPL_RELEASE_TAG:-${BELZ_RELEASE_TAG:-latest}}"
 ASSET="belz-linux-x64"
 BIN="$HOME/.local/bin/belz"
-TOKEN="${BELZ_SANDBOX_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
+TOKEN="${WI_IMPL_SANDBOX_TOKEN:-${BELZ_SANDBOX_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}}"
 mkdir -p "$HOME/.local/bin"
 
 # 1. Install belz (skip the download if it's already here — SessionStart re-fires).
@@ -54,17 +55,17 @@ if [ ! -x "$BIN" ]; then
   [ -x "$BIN" ] || chmod +x "$BIN" 2>/dev/null || true
 fi
 if [ ! -x "$BIN" ]; then
-  echo "cloud-setup: could not install belz — set BELZ_SANDBOX_TOKEN (read-only on $REPO)." >&2
+  echo "cloud-setup: could not install belz — set WI_IMPL_SANDBOX_TOKEN (read-only on $REPO)." >&2
   exit 0
 fi
 
 ln -sf "$BIN" /usr/local/bin/belz 2>/dev/null || true
 export PATH="$HOME/.local/bin:$PATH"
 
-# 2. Write ~/.belz/config.json from the session's environment variables.
-echo "→ writing ~/.belz/config.json from environment…"
+# 2. Write ~/.wi-impl/config.json from the session's environment variables.
+echo "→ writing ~/.wi-impl/config.json from environment…"
 if "$BIN" setup --from-env --force --llm >/dev/null 2>&1; then
   echo "✓ belz ready. Configured envs:"; "$BIN" envs 2>/dev/null || true
 else
-  echo "⚠ 'belz setup --from-env' wrote no envs — check the BELZ_ENV_* variables." >&2
+  echo "⚠ 'belz setup --from-env' wrote no envs — check the WI_IMPL_ENV_* variables." >&2
 fi

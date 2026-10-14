@@ -19,7 +19,7 @@ Docs: [`README.md`](./README.md) (package, exports, error codes) and the README 
 - Do not "simplify" `prepareIpv4Fetch` into a throw on resolution failure (see `src/http/README.md`).
 - `@belzabar/core/testing` is test-only; runtime code never imports it. Test seams in runtime
   code (`reloadConfig`, `setIpv4ResolverForTesting`) are for tests only.
-- Tests never touch the real `~/.belz`: rely on the preload and `withTempEnvConfig`; no
+- Tests never touch the real `~/.wi-impl`: rely on the preload and `withTempEnvConfig`; no
   `mock.module`.
 - Generic helpers go in `src/`; Expertly-specific code shared by AD and PD goes in `src/platform/`.
 

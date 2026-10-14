@@ -1,8 +1,9 @@
-// Records belz install metadata into ~/.belz/config.json.
+// Records belz install metadata into ~/.wi-impl/config.json.
 //
 // `belz update` needs to know which git checkout belz was built from and where
 // the binary was installed. The install scripts (install.sh / install.ps1) run
-// this after installing the binary. Non-`belz` config sections are preserved.
+// this after installing the binary, into the `install` section (`belz` before the rename,
+// moved here). Other config sections are preserved.
 //
 // Usage: node record-install.mjs <sourceDir> <installDir> <repoUrl> <version>
 
@@ -11,7 +12,7 @@ import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 
 const [sourceDir, installDir, repoUrl, version] = process.argv.slice(2);
-const configPath = join(homedir(), '.belz', 'config.json');
+const configPath = join(homedir(), '.wi-impl', 'config.json');
 
 let config = {};
 try {
@@ -24,12 +25,14 @@ try {
   }
 }
 
-config.belz = {
-  ...config.belz,
-  sourceDir: sourceDir || config.belz?.sourceDir,
-  installDir: installDir || config.belz?.installDir,
-  repoUrl: repoUrl || config.belz?.repoUrl,
-  version: version || config.belz?.version,
+const previous = config.install ?? config.belz;
+delete config.belz;
+config.install = {
+  ...previous,
+  sourceDir: sourceDir || previous?.sourceDir,
+  installDir: installDir || previous?.installDir,
+  repoUrl: repoUrl || previous?.repoUrl,
+  version: version || previous?.version,
   // Built from a checkout: updated by `belz update` with git, never by the release auto-update.
   installKind: 'source',
   installedAt: new Date().toISOString(),

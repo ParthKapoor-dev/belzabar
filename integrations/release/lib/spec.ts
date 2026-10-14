@@ -89,7 +89,7 @@ function findProjectEnv(
  * spineEnv/stageEnv for a spec. Explicit values must be configured envs.
  * Missing ones come from the project: `spec.project`, else the project of an
  * explicit spineEnv/stageEnv, else the project of `fallback` (the active env —
- * `--env`, BELZ_ENV or defaultEnv). A release never defaults to another project's envs.
+ * `--env`, WI_IMPL_ENV or defaultEnv). A release never defaults to another project's envs.
  */
 export function resolveReleaseEnvs(
   spec: Pick<ReleaseSpec, "project" | "spineEnv" | "stageEnv">,

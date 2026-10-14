@@ -93,11 +93,11 @@ Pass flags after `bash -s --`, for example
 
 | Flag (Linux/macOS) | Windows variable | What it does |
 |---|---|---|
-| `--version <x.y.z>` | `BELZ_VERSION` | Install that version and pin it (no auto-update) |
-| `--install-dir <dir>` | `BELZ_INSTALL_DIR` | Install somewhere else |
+| `--version <x.y.z>` | `WI_IMPL_VERSION` | Install that version and pin it (no auto-update) |
+| `--install-dir <dir>` | `WI_IMPL_INSTALL_DIR` | Install somewhere else |
 | `--env-file <file>` | — | Set up credentials from a file instead of prompting |
-| `--no-setup` | `BELZ_NO_SETUP=1` | Skip the first-run setup (CI, scripts, coding agents) |
-| `--from-source` | `BELZ_FROM_SOURCE=1` | Clone the repo and build with bun (developers) |
+| `--no-setup` | `WI_IMPL_NO_SETUP=1` | Skip the first-run setup (CI, scripts, coding agents) |
+| `--from-source` | `WI_IMPL_FROM_SOURCE=1` | Clone the repo and build with bun (developers) |
 
 You can also download a binary by hand from the
 [releases page](https://github.com/ParthKapoor-dev/belzabar/releases): `belz-linux-x64`,
@@ -117,7 +117,7 @@ belz envs         # list your environments and check that login works
 ```
 
 - Run `belz setup` later to add or change an environment (it merges with what you have).
-- Everything is stored in `~/.belz/config.json`, readable only by you. Tokens are refreshed
+- Everything is stored in `~/.wi-impl/config.json`, readable only by you. Tokens are refreshed
   automatically.
 - With several environments, choose one per command with `--env <name>`, or set a default with
   `belz config edit` (`"defaultEnv"`).
@@ -212,7 +212,7 @@ belz rd create --spec report.json --env dev               # a new report from a 
 belz rd copy <id> --from-env dev --env qa --dry-run       # promote a report to another env
 ```
 
-`rd save` backs the report up to `~/.belz/rd/backups/` first and refuses if someone changed it
+`rd save` backs the report up to `~/.wi-impl/rd/backups/` first and refuses if someone changed it
 meanwhile; Report Designer itself keeps no history.
 
 ### Teamwork, migrations and releases
@@ -228,9 +228,9 @@ belz release matrix --help             # tickets × environments promotion matri
 
 ### Using belz from scripts and AI agents
 
-Inside a coding agent's shell (Claude Code sets `CLAUDECODE=1`; other tools set `BELZ_AGENT=1`)
+Inside a coding agent's shell (Claude Code sets `CLAUDECODE=1`; other tools set `WI_IMPL_AGENT=1`)
 every command prints the `--llm` envelope by default; elsewhere add `--llm` (`--human` forces the
-readable view, `BELZ_AGENT=0` turns the detection off). stdout is then exactly one JSON object:
+readable view, `WI_IMPL_AGENT=0` turns the detection off). stdout is then exactly one JSON object:
 
 ```json
 { "ok": true, "command": "ad.show", "data": { … }, "error": null, "meta": { … } }
@@ -254,7 +254,7 @@ belz update --check    # only check
 belz update --rollback # go back to the previous version
 ```
 
-Turn it off with `BELZ_NO_UPDATE=1`, or in `~/.belz/config.json`:
+Turn it off with `WI_IMPL_NO_UPDATE=1`, or in `~/.wi-impl/config.json`:
 `"update": { "auto": false }` (or `"update": { "pin": "0.2.1" }` to stay on one version).
 Major versions are never installed automatically.
 
@@ -264,18 +264,18 @@ Major versions are never installed automatically.
 
 | What | Where |
 |---|---|
-| Environments, logins, settings | `~/.belz/config.json` (`belz setup`, `belz config edit`) |
-| Sessions and caches | `~/.belz/sessions/`, `~/.belz/cache/` (`belz cache prune-local` cleans up) |
-| Move all of it | `BELZ_HOME=<dir>` |
+| Environments, logins, settings | `~/.wi-impl/config.json` (`belz setup`, `belz config edit`) |
+| Sessions and caches | `~/.wi-impl/sessions/`, `~/.wi-impl/cache/` (`belz cache prune-local` cleans up) |
+| Move all of it | `WI_IMPL_HOME=<dir>` |
 
-**Choosing an environment:** `--env <name>`, then `BELZ_ENV`, then `"defaultEnv"`, then the only
+**Choosing an environment:** `--env <name>`, then `WI_IMPL_ENV`, then `"defaultEnv"`, then the only
 configured environment. **Writes name their environment:** with `--env`, or, at a terminal,
 by picking it from a prompt that preselects the default. Agents and scripts must pass `--env`.
 
 **Global flags:** `--env <name>`, `--llm`, `--human`, `-v`/`--verbose`, `--version`, `-h`/`--help`,
 `--help-full`.
 
-belz reads only `BELZ_*` environment variables (plus Claude Code's `CLAUDECODE`) and ignores `.env`
+belz reads only `WI_IMPL_*` environment variables (plus Claude Code's `CLAUDECODE`) and ignores `.env`
 files in the current directory. An unknown command or flag mentions `belz update` when a newer
 release may have it.
 
@@ -285,7 +285,7 @@ release may have it.
 
 ```bash
 rm ~/.local/bin/belz     # the binary
-rm -rf ~/.belz           # your config, sessions and caches (optional)
+rm -rf ~/.wi-impl           # your config, sessions and caches (optional)
 ```
 
 ---
@@ -343,10 +343,10 @@ bun test integrations/automation-designer   # one package
 bun run belz:install                        # build and install your local binary
 ```
 
-- Tests never touch your real `~/.belz` (they use a temporary `BELZ_HOME`).
-- Opt-in live tests (read-only): `BELZ_LIVE=<env> bun test apps/cli/tests/live`.
+- Tests never touch your real `~/.wi-impl` (they use a temporary `WI_IMPL_HOME`).
+- Opt-in live tests (read-only): `WI_IMPL_LIVE=<env> bun test apps/cli/tests/live`.
 - Test fixtures are sanitized and `scripts/fixtures/fixtures-secrets.test.ts` fails on anything
-  that looks like a secret. Never commit `~/.belz/config.json`.
+  that looks like a secret. Never commit `~/.wi-impl/config.json`.
 - Adding a command: see `AGENTS.md`.
 
 ---

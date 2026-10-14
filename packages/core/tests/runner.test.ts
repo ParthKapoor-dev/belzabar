@@ -8,7 +8,7 @@ const HARNESS = join(import.meta.dir, "fixtures", "runner-harness.ts");
 const home = mkdtempSync(join(tmpdir(), "belz-runner-test-"));
 afterAll(() => rmSync(home, { recursive: true, force: true }));
 
-const childEnv = { ...process.env, HOME: home, BELZ_HOME: join(home, ".belz") };
+const childEnv = { ...process.env, HOME: home, WI_IMPL_HOME: join(home, ".wi-impl") };
 
 function shq(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;
@@ -68,15 +68,15 @@ describe("agent sessions default to --llm output", () => {
     try { return JSON.parse(s).error?.code === "UNKNOWN_COMMAND"; } catch { return false; }
   };
 
-  test("CLAUDECODE=1 or BELZ_AGENT=1 → envelope without --llm", async () => {
+  test("CLAUDECODE=1 or WI_IMPL_AGENT=1 → envelope without --llm", async () => {
     expect(isEnvelope((await runHarness(["nope"], { CLAUDECODE: "1" })).stdout)).toBe(true);
-    expect(isEnvelope((await runHarness(["nope"], { BELZ_AGENT: "1" })).stdout)).toBe(true);
+    expect(isEnvelope((await runHarness(["nope"], { WI_IMPL_AGENT: "1" })).stdout)).toBe(true);
   }, 20_000);
 
-  test("no agent, --human, or BELZ_AGENT=0 → human output", async () => {
+  test("no agent, --human, or WI_IMPL_AGENT=0 → human output", async () => {
     expect(isEnvelope((await runHarness(["nope"])).stdout)).toBe(false);
     expect(isEnvelope((await runHarness(["nope", "--human"], { CLAUDECODE: "1" })).stdout)).toBe(false);
-    expect(isEnvelope((await runHarness(["nope"], { CLAUDECODE: "1", BELZ_AGENT: "0" })).stdout)).toBe(false);
+    expect(isEnvelope((await runHarness(["nope"], { CLAUDECODE: "1", WI_IMPL_AGENT: "0" })).stdout)).toBe(false);
   }, 20_000);
 
   test("a CLAUDECODE injected by a cwd .env is ignored", async () => {

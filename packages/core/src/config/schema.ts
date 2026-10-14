@@ -1,4 +1,4 @@
-// zod schema for ~/.belz/config.json, validated at load.
+// zod schema for ~/.wi-impl/config.json, validated at load.
 //
 // Unknown keys are kept (passthrough) so sections owned by other tools or
 // older/newer belz versions survive a read-modify-write.
@@ -23,9 +23,21 @@ const EnvEntrySchema = z
   })
   .passthrough();
 
+const InstallMetaSchema = z
+  .object({
+    sourceDir: z.string().optional(),
+    installDir: z.string().optional(),
+    repoUrl: z.string().optional(),
+    installedAt: z.string().optional(),
+    version: z.string().optional(),
+    /** "binary": installed from a release (auto-updates); "source": built from a git checkout. */
+    installKind: z.enum(["binary", "source"]).optional(),
+  })
+  .passthrough();
+
 const ConfigFileSchema = z
   .object({
-    /** Env used when no `--env` is given and BELZ_ENV is unset. */
+    /** Env used when no `--env` is given and WI_IMPL_ENV is unset. */
     defaultEnv: z.string().min(1).optional(),
     environments: z.record(EnvEntrySchema).optional(),
     teamwork: z
@@ -60,19 +72,9 @@ const ConfigFileSchema = z
       })
       .passthrough()
       .optional(),
-    /** Install metadata — written by the installer / `belz update`. */
-    belz: z
-      .object({
-        sourceDir: z.string().optional(),
-        installDir: z.string().optional(),
-        repoUrl: z.string().optional(),
-        installedAt: z.string().optional(),
-        version: z.string().optional(),
-        /** "binary": installed from a release (auto-updates); "source": built from a git checkout. */
-        installKind: z.enum(["binary", "source"]).optional(),
-      })
-      .passthrough()
-      .optional(),
+    /** Install metadata — written by the installer / `belz update` (`belz` before the rename). */
+    install: InstallMetaSchema.optional(),
+    belz: InstallMetaSchema.optional(),
     /** Self-update of binary installs (apps/cli/lib/auto-update.ts). */
     update: z
       .object({

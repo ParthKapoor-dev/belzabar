@@ -140,7 +140,7 @@ export async function resolveMigrationTargets(opts: {
     if (!envs[derived]) {
       opts.warn?.(
         `Pre-flight id resolution skipped: profile '${opts.profile}' migrates from '${derived}', which is not configured ` +
-          `in ~/.belz/config.json. ${unresolved} Add '${derived}' with 'belz config edit' to enable it.`,
+          `in ~/.wi-impl/config.json. ${unresolved} Add '${derived}' with 'belz config edit' to enable it.`,
       );
       return null;
     }

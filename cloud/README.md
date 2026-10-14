@@ -9,7 +9,7 @@ this private `belzabar` repo.**
 | File | Role |
 |------|------|
 | `publish.sh` | Builds the Linux binary (pinned Bun, frozen lockfile) and pushes it plus the files below to the sandbox repo; run by `.github/workflows/belz-cloud-release.yml` |
-| `setup.sh` | Becomes the sandbox's `cloud-setup.sh`: downloads the binary and writes `~/.belz/config.json` from env vars (`belz setup --from-env`); idempotent |
+| `setup.sh` | Becomes the sandbox's `cloud-setup.sh`: downloads the binary and writes `~/.wi-impl/config.json` from env vars (`belz setup --from-env`); idempotent |
 | `sandbox-CLAUDE.md` | Becomes the sandbox's `CLAUDE.md`: rules for the cloud session |
 | `sandbox-settings.json` | Becomes the sandbox's Claude settings: the SessionStart hook that runs `cloud-setup.sh` |
 
@@ -25,7 +25,7 @@ account can see — it does not have to be belzabar. So we use a tiny throwaway
   CI: cloud/publish.sh  ──pushes──▶  • belz-linux-x64 (Release)  ◀──clones──  setup
   on every push to main             • CLAUDE.md (rules)           script installs
                                     • cloud-setup.sh              belz + writes
-                                                                  ~/.belz/config.json
+                                                                  ~/.wi-impl/config.json
 ```
 
 - **belzabar** — never attached to a cloud session. Its CI builds belz and
@@ -49,8 +49,8 @@ Just create it on GitHub. CI fills it in.
 
 ### 2. Wire belzabar CI to publish to it
 In **belzabar**'s GitHub settings:
-- **Variable** `BELZ_SANDBOX_REPO` = `your-org/belz-sandbox`
-- **Secret** `BELZ_SANDBOX_TOKEN` = a fine-grained PAT with **Contents: read &
+- **Variable** `WI_IMPL_SANDBOX_REPO` = `your-org/belz-sandbox`
+- **Secret** `WI_IMPL_SANDBOX_TOKEN` = a fine-grained PAT with **Contents: read &
   write on belz-sandbox ONLY** (do not grant it belzabar).
 
 `.github/workflows/belz-cloud-release.yml` then runs on every push to `main`
@@ -86,41 +86,41 @@ It builds with the same Bun as CI (1.2.20 — it refuses any other version) and
 ### 4. Environment variables (the only place creds can go)
 There is **no secrets store** in cloud — env vars are visible to anyone who can
 edit the environment. So configure **non-prod only** unless you accept the
-exposure. Use the project-agnostic `BELZ_ENV_<NAME>_*` keys
-(`<NAME>` lowercases with `_`→`-`, e.g. `BELZ_ENV_ACME_QA_URL` → env `acme-qa`).
+exposure. Use the project-agnostic `WI_IMPL_ENV_<NAME>_*` keys
+(`<NAME>` lowercases with `_`→`-`, e.g. `WI_IMPL_ENV_ACME_QA_URL` → env `acme-qa`).
 
 > **Do NOT quote values.** The cloud .env field stores quotes literally
 > (`KEY='v$$'` → the value becomes `'v$$'`, quotes and all). Write bare values:
-> `BELZ_ENV_ACME_DEV_PASSWORD=p@ss$$word`.
+> `WI_IMPL_ENV_ACME_DEV_PASSWORD=p@ss$$word`.
 
 ```dotenv
 # which repo holds the belz release (also derivable from the clone's origin)
-BELZ_SANDBOX_REPO=your-org/belz-sandbox
+WI_IMPL_SANDBOX_REPO=your-org/belz-sandbox
 # set this so the SessionStart hook can download the (private) release binary
-BELZ_SANDBOX_TOKEN=<read-only PAT on belz-sandbox>
+WI_IMPL_SANDBOX_TOKEN=<read-only PAT on belz-sandbox>
 
 # one block per env (there are no built-in envs — URL is always required)
-BELZ_ENV_ACME_DEV_URL=https://acme.dev.example.test
-BELZ_ENV_ACME_DEV_USER=...
-BELZ_ENV_ACME_DEV_PASSWORD=...
-BELZ_ENV_ACME_QA_URL=https://acme.qa.example.test
-BELZ_ENV_ACME_QA_USER=...
-BELZ_ENV_ACME_QA_PASSWORD=...
-BELZ_ENV_ACME_QA_PROJECT=ACME
+WI_IMPL_ENV_ACME_DEV_URL=https://acme.dev.example.test
+WI_IMPL_ENV_ACME_DEV_USER=...
+WI_IMPL_ENV_ACME_DEV_PASSWORD=...
+WI_IMPL_ENV_ACME_QA_URL=https://acme.qa.example.test
+WI_IMPL_ENV_ACME_QA_USER=...
+WI_IMPL_ENV_ACME_QA_PASSWORD=...
+WI_IMPL_ENV_ACME_QA_PROJECT=ACME
 # env used when --env is omitted (else config "defaultEnv"; with one env, that one)
-BELZ_ENV=acme-dev
+WI_IMPL_ENV=acme-dev
 
 # optional (imported into config.json by `belz setup --from-env`)
-BELZ_JENKINS_URL=...
-BELZ_JENKINS_USER=...
-BELZ_JENKINS_PASSWORD=...
-BELZ_JENKINS_JOB=...
+WI_IMPL_JENKINS_URL=...
+WI_IMPL_JENKINS_USER=...
+WI_IMPL_JENKINS_PASSWORD=...
+WI_IMPL_JENKINS_JOB=...
 TEAMWORK_URL=https://<company>.teamwork.com
 TEAMWORK_EMAIL=...
 TEAMWORK_PASSWORD=...
 ```
 
-> **Skip prod.** Don't put `BELZ_ENV_*_PROD_*` (or any production host's)
+> **Skip prod.** Don't put `WI_IMPL_ENV_*_PROD_*` (or any production host's)
 > creds here unless you really want a phone-driven session to be able to touch
 > production. The blast radius of plaintext env vars is the whole point of the
 > warning.

@@ -12,7 +12,7 @@ Flags:
   --help, -h  Show this help message.
 
 Global Flags:
-  --env <name>  Set active environment (default: BELZ_ENV, else defaultEnv, else the only env).
+  --env <name>  Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
   --llm    Emit a JSON envelope.
 
 Data: {uuid, name, sourceVersion, inputs[], variables[], outputs[],

@@ -11,7 +11,7 @@ Spec validation and the local ledger, imported as `@belzabar/release/lib/<file>`
 
 - An explicit `spineEnv` / `stageEnv` must be a configured env (`BAD_SPEC`).
 - A missing one is derived from the project: `spec.project`, else the project of an explicit
-  spine/stage env, else the active env's (`--env`, `BELZ_ENV`, `defaultEnv`). The candidate is the
+  spine/stage env, else the active env's (`--env`, `WI_IMPL_ENV`, `defaultEnv`). The candidate is the
   project's configured env ending in `-dev` (spine) or `-stage` (stage), preferring
   `<project>-dev` / `<project>-stage`; none or several → `BAD_SPEC`.
 - Spine and stage must belong to the same project, because the tracer only walks the spine's
@@ -19,7 +19,7 @@ Spec validation and the local ledger, imported as `@belzabar/release/lib/<file>`
 
 ## Ledger (`ledger.ts`)
 
-Files under `~/.belz/promotion/`, written atomically (tmp + rename via core `writeSecureJson`,
+Files under `~/.wi-impl/promotion/`, written atomically (tmp + rename via core `writeSecureJson`,
 mode 0644):
 
 | Path | Written by |

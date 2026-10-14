@@ -1,9 +1,9 @@
 // Opt-in live WRITE suite for Page Designer, on ONE scratch page you own.
 //
-//   BELZ_LIVE=<env> BELZ_LIVE_WRITE=1 BELZ_LIVE_PD_PAGE=<draftId> bun test apps/cli/tests/live/pd-page.live-write.test.ts
+//   WI_IMPL_LIVE=<env> WI_IMPL_LIVE_WRITE=1 WI_IMPL_LIVE_PD_PAGE=<draftId> bun test apps/cli/tests/live/pd-page.live-write.test.ts
 //   (plus whatever describeLiveWrite requires, e.g. the live category env vars)
 //
-// The page id is never hard-coded: without BELZ_LIVE_PD_PAGE the suite is
+// The page id is never hard-coded: without WI_IMPL_LIVE_PD_PAGE the suite is
 // skipped. Use a dedicated scratch page: the suite saves its draft, takes and
 // releases its lock, publishes it WITHOUT a host (the deployed app is not
 // redeployed) and restores a history version into the draft. afterAll puts the
@@ -21,7 +21,7 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 import { EnvelopeSchema, LIVE_ENV, LIVE_WRITE_PREFIX, describeLiveWrite, registerLiveResource, markLiveResourceCleaned, scratchDir, spawnLive, type SpawnResult } from "@belzabar/core/testing";
 
-const PAGE = process.env.BELZ_LIVE_PD_PAGE ?? "";
+const PAGE = process.env.WI_IMPL_LIVE_PD_PAGE ?? "";
 const T = 180_000;
 const VAR = `${LIVE_WRITE_PREFIX}pd_live_var`;
 const NODE = `${LIVE_WRITE_PREFIX}pd_live_node`;
@@ -38,7 +38,7 @@ function okData<D = Record<string, any>>(r: SpawnResult): D {
 
 const errCode = (r: SpawnResult) => (r.envelope?.error as { code?: string } | null)?.code;
 
-const suite = PAGE ? describeLiveWrite : (name: string, fn: () => void) => describe.skip(`${name} (BELZ_LIVE_PD_PAGE unset)`, fn);
+const suite = PAGE ? describeLiveWrite : (name: string, fn: () => void) => describe.skip(`${name} (WI_IMPL_LIVE_PD_PAGE unset)`, fn);
 
 suite(
   "pd page lifecycle",

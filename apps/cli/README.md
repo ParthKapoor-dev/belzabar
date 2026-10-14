@@ -15,7 +15,7 @@ commands live in `integrations/*`; the framework (runner, args, envelope, http, 
 | [`lib/`](./lib/README.md) | Releases and self-update: targets, manifest, verified download, background auto-update, swap and rollback |
 | [`scripts/`](./scripts/README.md) | Install, reinstall and update helper scripts; the release build |
 | [`tests/`](./tests/README.md) | Cross-package CLI tests (registry, args docs, envelope contract, install scripts, live suites) |
-| `bunfig.toml` | Test preload (`BELZ_HOME` → tmp) |
+| `bunfig.toml` | Test preload (`WI_IMPL_HOME` → tmp) |
 | `package.json` | `build` (compile `bin/cli.ts` to `./belz`), `link`; depends on core and every integration |
 
 The compiled binary (`belz`, with `belz.map`) is written here and gitignored.
@@ -38,7 +38,7 @@ their envelopes carry no `meta.env` and they run without a selected env.
 bun run belz:build                       # repo root: compile bin/cli.ts into this directory (gitignored binary)
 bun apps/cli/bin/cli.ts ad show --help   # dev mode, no compile step
 bun run belz:install                     # scripts/install.sh: build, install, first-run setup
-bun run belz:reinstall                   # scripts/reinstall.sh: wipe ~/.belz and the binary first
+bun run belz:reinstall                   # scripts/reinstall.sh: wipe ~/.wi-impl and the binary first
 ```
 
 The repo-root one-liners (`install.sh`, `install.ps1`) and `belz update` call the scripts in
@@ -52,7 +52,7 @@ The repo-root one-liners (`install.sh`, `install.ps1`) and `belz update` call th
 
 ## Configuration
 
-Reads `~/.belz/config.json` and `BELZ_*` variables through core; see the
+Reads `~/.wi-impl/config.json` and `WI_IMPL_*` variables through core; see the
 [root README](../../README.md#configure) and
 [`packages/core/src/config/`](../../packages/core/src/config/README.md).
 

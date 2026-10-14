@@ -59,7 +59,7 @@ describe("pathCandidates", () => {
   });
 
   test("skips single names, placeholders, urls, absolute and home paths", () => {
-    expect(code("registry.ts lib/ <env>/x.json a/*.ts ~/.belz/config.json /rest/api https://x.y/z a/{b,c}")).toEqual([]);
+    expect(code("registry.ts lib/ <env>/x.json a/*.ts ~/.wi-impl/config.json /rest/api https://x.y/z a/{b,c}")).toEqual([]);
   });
 });
 

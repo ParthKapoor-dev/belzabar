@@ -3,7 +3,7 @@ Usage: belz rd save <id> --spec <file> --env <env> [flags]
 Replace a report's definition with a spec file: export it, edit the file, save
 it back. Report Designer keeps no history and last write wins, so belz:
   1. shows what changes (title, datasource, columns, filters, summaries);
-  2. saves the current definition to ~/.belz/rd/backups/<env>/ first (save that
+  2. saves the current definition to ~/.wi-impl/rd/backups/<env>/ first (save that
      file back to undo);
   3. refuses (RD_CONFLICT) if the report changed since it was read;
   4. reads the result back and compares it with the spec (RD_VERIFY_FAILED).

@@ -7,9 +7,10 @@
 #   • syncs the cloud rules + setup script into belz-sandbox
 #
 # Required configuration:
-#   secret  BELZ_SANDBOX_TOKEN  — fine-grained PAT with Contents: read & write
+#   secret  WI_IMPL_SANDBOX_TOKEN  — fine-grained PAT with Contents: read & write
 #                                 on the belz-sandbox repo ONLY (NOT belzabar).
-#   variable BELZ_SANDBOX_REPO  — e.g. "your-org/belz-sandbox".
+#   variable WI_IMPL_SANDBOX_REPO  — e.g. "your-org/belz-sandbox".
+#   (Both are also read under their names before the rename, BELZ_SANDBOX_*.)
 #
 # Why a separate repo + scoped token: GitHub has no "releases-only" scope, so a
 # token that could read a release on belzabar could also clone belzabar's
@@ -38,9 +39,9 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # No-op until you opt in by setting the BELZ_SANDBOX_REPO repo variable, so
+    # No-op until you opt in by setting the WI_IMPL_SANDBOX_REPO repo variable, so
     # this never fails CI on belzabar for an unconfigured optional feature.
-    if: vars.BELZ_SANDBOX_REPO != ''
+    if: (vars.WI_IMPL_SANDBOX_REPO || vars.BELZ_SANDBOX_REPO) != ''
     steps:
       - uses: actions/checkout@v4
 
@@ -52,6 +53,6 @@ jobs:
 
       - name: Publish cloud bundle to belz-sandbox
         env:
-          GH_TOKEN: ${{ secrets.BELZ_SANDBOX_TOKEN }}
-          SANDBOX_REPO: ${{ vars.BELZ_SANDBOX_REPO }}
+          GH_TOKEN: ${{ secrets.WI_IMPL_SANDBOX_TOKEN || secrets.BELZ_SANDBOX_TOKEN }}
+          SANDBOX_REPO: ${{ vars.WI_IMPL_SANDBOX_REPO || vars.BELZ_SANDBOX_REPO }}
         run: bash cloud/publish.sh

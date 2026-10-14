@@ -18,7 +18,7 @@ command.
 | Path | Contents |
 |------|----------|
 | [`src/`](./src/README.md) | The framework: runner, command contract, config, http, cache, ui, … |
-| [`tests/`](./tests/README.md) | Unit tests for every module, plus the `BELZ_HOME` test preload |
+| [`tests/`](./tests/README.md) | Unit tests for every module, plus the `WI_IMPL_HOME` test preload |
 | `bunfig.toml` | `bun test` preload (`tests/preload-belz-home.ts`) |
 | `package.json` | Exports above; runtime deps `@clack/prompts`, `cli-table3`, `zod` |
 
@@ -31,7 +31,7 @@ command.
   (`src/testing/envelope-schema.ts`). Agents and scripts parse it, so it is a public contract.
 - **Error codes.** `UPPER_SNAKE` codes are public too; the ones core raises are listed below.
   Integrations add their own prefixed codes.
-- **Env selection.** `--env` > `BELZ_ENV` > config.json `defaultEnv` > the only configured env;
+- **Env selection.** `--env` > `WI_IMPL_ENV` > config.json `defaultEnv` > the only configured env;
   otherwise env-aware commands fail with `ENV_NOT_SELECTED`. Remote writes need an explicit
   `--env` (`ENV_REQUIRED_FOR_WRITE`), except that a person at a terminal picks the env from a
   prompt instead. Details in [`src/config/`](./src/config/README.md) and
@@ -50,14 +50,14 @@ command.
 
 ## Configuration it reads
 
-`~/.belz/config.json` (or `$BELZ_HOME/config.json`) and `BELZ_*` environment variables only;
+`~/.wi-impl/config.json` (or `$WI_IMPL_HOME/config.json`) and `WI_IMPL_*` environment variables only;
 see [`src/config/README.md`](./src/config/README.md). Runtime files live under the same home:
 `sessions/<env>.json`, `cache/…`.
 
 ## Testing
 
 `bun test packages/core` (or `bun run check` from the repo root). The preload always points
-`BELZ_HOME` at a throwaway dir. Helpers for other packages' tests are in
+`WI_IMPL_HOME` at a throwaway dir. Helpers for other packages' tests are in
 [`src/testing/`](./src/testing/README.md).
 
 Up: [repo README](../../README.md).

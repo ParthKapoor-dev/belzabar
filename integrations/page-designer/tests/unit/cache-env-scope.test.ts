@@ -1,6 +1,6 @@
 // The PD page cache and lock file are env-scoped.
-// BELZ_HOME is a tmp dir set by the bunfig.toml test preload; beforeAll refuses
-// to run otherwise so nothing can touch the real ~/.belz. No network: pdApi
+// WI_IMPL_HOME is a tmp dir set by the bunfig.toml test preload; beforeAll refuses
+// to run otherwise so nothing can touch the real ~/.wi-impl. No network: pdApi
 // lock calls are stubbed on the façade object.
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, rmSync } from "fs";
@@ -19,7 +19,7 @@ const origLock: Record<string, unknown> = {};
 beforeAll(async () => {
   core = await import("@belzabar/core");
   root = core.BELZ_CONFIG_DIR;
-  if (!process.env.BELZ_HOME || root !== process.env.BELZ_HOME || !root.startsWith(tmpdir())) {
+  if (!process.env.WI_IMPL_HOME || root !== process.env.WI_IMPL_HOME || !root.startsWith(tmpdir())) {
     throw new Error(`refusing to run: BELZ_CONFIG_DIR=${root} is not a test tmp dir (bunfig preload missing?)`);
   }
   const { withTempEnvConfig } = await import("@belzabar/core/testing");

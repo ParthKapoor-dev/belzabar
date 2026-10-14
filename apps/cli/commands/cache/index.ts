@@ -79,7 +79,7 @@ interface InvalidateData {
 
 /** One stale-artifact candidate (or, once `--yes` runs, a removed one). */
 export interface CacheItem {
-  /** Relative to `~/.belz/cache` (or `BELZ_HOME`/cache). */
+  /** Relative to `~/.wi-impl/cache` (or `WI_IMPL_HOME`/cache). */
   path: string;
   bytes: number;
   ageMs: number;

@@ -6,7 +6,7 @@
 //   status [pageId]    List locks this belz user acquired manually (local record);
 //                      with a page id, also the server's lock on it.
 //
-// Acquired locks are recorded in ~/.belz/pd-locks/<env>.json (atomic, 0600).
+// Acquired locks are recorded in ~/.wi-impl/pd-locks/<env>.json (atomic, 0600).
 // `withLock` (every save/publish/restore) still acquires the server lock for a
 // recorded page (the record can be stale); the server answers a
 // re-acquire of your own lock with HTTP 400, which belz recognises through

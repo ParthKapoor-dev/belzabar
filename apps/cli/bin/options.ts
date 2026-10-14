@@ -107,7 +107,7 @@ export function buildHelpFull(opts: HelpFullOptions = {}): string | null {
   const sections = opts.namespace ? all.filter((s) => s.key === opts.namespace) : all;
   if (sections.length === 0) return null;
   const lines = [
-    "NOTE FOR LLM AGENTS: inside an agent session (CLAUDECODE=1 or BELZ_AGENT=1) every command",
+    "NOTE FOR LLM AGENTS: inside an agent session (CLAUDECODE=1 or WI_IMPL_AGENT=1) every command",
     "  prints the --llm JSON envelope by default; elsewhere add --llm (--human forces text).",
     "  stdout carries only the JSON envelope; stderr carries human notices (the",
     "  `[belz ad write] {…}` audit line of a write, the default-env notice, progress).",

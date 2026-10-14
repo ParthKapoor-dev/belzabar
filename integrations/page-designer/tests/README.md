@@ -7,8 +7,8 @@ command-level tests of every read and write path over an in-memory PD server. No
 bun test integrations/page-designer      # from the repo root
 ```
 
-`bunfig.toml` preloads `packages/core/tests/preload-belz-home.ts`, which points `BELZ_HOME` at
-a temp dir so caches and lock files never touch `~/.belz`.
+`bunfig.toml` preloads `packages/core/tests/preload-belz-home.ts`, which points `WI_IMPL_HOME` at
+a temp dir so caches and lock files never touch `~/.wi-impl`.
 
 ## In this directory
 
@@ -34,7 +34,7 @@ restores a version on a real scratch page, then puts the original config back, r
 checks `snapshot --compare`. Only point it at a dedicated scratch page:
 
 ```bash
-BELZ_LIVE=<env> BELZ_LIVE_WRITE=1 BELZ_LIVE_PD_PAGE=<draftId> bun test apps/cli/tests/live/pd-page.live-write.test.ts
+WI_IMPL_LIVE=<env> WI_IMPL_LIVE_WRITE=1 WI_IMPL_LIVE_PD_PAGE=<draftId> bun test apps/cli/tests/live/pd-page.live-write.test.ts
 ```
 
 Up: [`../README.md`](../README.md).

@@ -12,26 +12,28 @@ import {
   keepSecret,
   loadConfigFileRaw,
   reloadConfig,
+  resolveConfigDir,
   trustedBelzEnv,
   hardenBelzHome,
   withoutDotenvInjected,
+  withLegacyNames,
   writeConfigFile,
   writeSecureJson,
 } from "../src/config";
 import { CliError } from "../src/command";
-import { getSourceDir } from "../src/belz-meta";
+import { getSourceDir, recordBelzMeta } from "../src/belz-meta";
 import { withTempEnvConfig, type TempEnvConfig } from "../src/testing/env-config";
 import { scratchDir } from "../src/testing/scratch";
 import { spawnCli } from "../src/testing/spawn-cli";
 import { errorCode as codeOf, thrownCliError as errOf } from "../src/testing/errors";
 
 let cfg: TempEnvConfig | null = null;
-const savedEnv = process.env.BELZ_ENV;
+const savedEnv = process.env.WI_IMPL_ENV;
 afterEach(() => {
   cfg?.restore();
   cfg = null;
-  if (savedEnv === undefined) delete process.env.BELZ_ENV;
-  else process.env.BELZ_ENV = savedEnv;
+  if (savedEnv === undefined) delete process.env.WI_IMPL_ENV;
+  else process.env.WI_IMPL_ENV = savedEnv;
   reloadConfig();
 });
 
@@ -197,7 +199,7 @@ describe("permission repair", () => {
 
   test("a spawned belz repairs an old install's loose permissions on startup", async () => {
     const home = looseHome();
-    const r = await spawnCli(["envs", "--llm"], { env: { BELZ_HOME: home }, timeoutMs: 30_000 });
+    const r = await spawnCli(["envs", "--llm"], { env: { WI_IMPL_HOME: home }, timeoutMs: 30_000 });
     expect((r.envelope as any)?.ok).toBe(true);
     expect(mode(home)).toBe(0o700);
     expect(mode(join(home, "sessions", "t-dev.json"))).toBe(0o600);
@@ -232,11 +234,11 @@ describe("default env", () => {
     expect(Config.envSource).toBe("flag");
   });
 
-  test("BELZ_ENV beats config defaultEnv", () => {
-    process.env.BELZ_ENV = "t-a";
+  test("WI_IMPL_ENV beats config defaultEnv", () => {
+    process.env.WI_IMPL_ENV = "t-a";
     cfg = withTempEnvConfig({ envs: { "t-a": { url: "https://a.test" }, "t-b": { url: "https://b.test" } }, defaultEnv: "t-b" });
     expect(Config.activeEnv.name).toBe("t-a");
-    expect(Config.envSource).toBe("BELZ_ENV");
+    expect(Config.envSource).toBe("WI_IMPL_ENV");
   });
 
   test("no built-in env: several envs without a default → nothing active, ENV_NOT_SELECTED on use", () => {
@@ -285,42 +287,59 @@ describe("default env", () => {
 });
 
 describe("dotenv guard", () => {
-  test("trustedBelzEnv: BELZ_* only; values injected from a cwd .env are ignored", () => {
+  test("trustedBelzEnv: WI_IMPL_* only; values injected from a cwd .env are ignored", () => {
     const dir = scratchDir("dotenv-");
-    writeFileSync(join(dir, ".env"), "BELZ_ENV=orb-qa\nBELZ_JENKINS_URL='https://evil.test'\nNSM_QA_URL=https://x\n");
+    writeFileSync(join(dir, ".env"), "WI_IMPL_ENV=orb-qa\nWI_IMPL_JENKINS_URL='https://evil.test'\nNSM_QA_URL=https://x\n");
     const env = {
-      BELZ_ENV: "orb-qa", // same as .env → injected
-      BELZ_JENKINS_URL: "https://evil.test", // same (quotes stripped) → injected
-      BELZ_HTTP_TIMEOUT_MS: "5000", // not in .env → trusted
-      ORB_QA_URL: "https://x", // not BELZ_* → never read
+      WI_IMPL_ENV: "orb-qa", // same as .env → injected
+      WI_IMPL_JENKINS_URL: "https://evil.test", // same (quotes stripped) → injected
+      WI_IMPL_HTTP_TIMEOUT_MS: "5000", // not in .env → trusted
+      ORB_QA_URL: "https://x", // not WI_IMPL_* → never read
     };
-    expect(trustedBelzEnv(env, dir)).toEqual({ BELZ_HTTP_TIMEOUT_MS: "5000" });
+    expect(trustedBelzEnv(env, dir)).toEqual({ WI_IMPL_HTTP_TIMEOUT_MS: "5000" });
     // an explicitly exported value that differs from the file wins
-    expect(trustedBelzEnv({ BELZ_ENV: "acme-dev" }, dir)).toEqual({ BELZ_ENV: "acme-dev" });
+    expect(trustedBelzEnv({ WI_IMPL_ENV: "acme-dev" }, dir)).toEqual({ WI_IMPL_ENV: "acme-dev" });
   });
 
-  test("withoutDotenvInjected drops any cwd-.env value (not just BELZ_*), reports the keys", () => {
+  test("legacy BELZ_* names count as WI_IMPL_* unless the new name is set; a .env-injected one is ignored", () => {
+    const dir = scratchDir("dotenv-legacy-");
+    writeFileSync(join(dir, ".env"), "BELZ_JENKINS_URL=https://evil.test\n");
+    const env = {
+      BELZ_ENV: "acme-dev", // legacy only → WI_IMPL_ENV
+      BELZ_HTTP_TIMEOUT_MS: "1", // new name set too → the new one wins
+      WI_IMPL_HTTP_TIMEOUT_MS: "5000",
+      BELZ_JENKINS_URL: "https://evil.test", // injected by the cwd .env → dropped
+    };
+    expect(trustedBelzEnv(env, dir)).toEqual({ WI_IMPL_ENV: "acme-dev", WI_IMPL_HTTP_TIMEOUT_MS: "5000" });
+    expect(withLegacyNames({ BELZ_ENV_T_QA_URL: "https://q.test", TEAMWORK_URL: "t" })).toEqual({
+      BELZ_ENV_T_QA_URL: "https://q.test",
+      WI_IMPL_ENV_T_QA_URL: "https://q.test",
+      TEAMWORK_URL: "t",
+    });
+  });
+
+  test("withoutDotenvInjected drops any cwd-.env value (not just WI_IMPL_*), reports the keys", () => {
     const dir = scratchDir("dotenv-any-");
-    writeFileSync(join(dir, ".env"), "ORB_DEV_PASSWORD=evil\nBELZ_SRC_DIR=/tmp/evil\n");
-    const r = withoutDotenvInjected({ ORB_DEV_PASSWORD: "evil", BELZ_SRC_DIR: "/tmp/evil", ORB_QA_USER: "me" }, dir);
+    writeFileSync(join(dir, ".env"), "ORB_DEV_PASSWORD=evil\nWI_IMPL_SRC_DIR=/tmp/evil\n");
+    const r = withoutDotenvInjected({ ORB_DEV_PASSWORD: "evil", WI_IMPL_SRC_DIR: "/tmp/evil", ORB_QA_USER: "me" }, dir);
     expect(r.values).toEqual({ ORB_QA_USER: "me" });
-    expect(r.dropped).toEqual(["BELZ_SRC_DIR", "ORB_DEV_PASSWORD"]);
+    expect(r.dropped).toEqual(["ORB_DEV_PASSWORD", "WI_IMPL_SRC_DIR"]);
   });
 
-  test("a cwd .env BELZ_SRC_DIR does not pick the source dir for `belz update`", () => {
+  test("a cwd .env WI_IMPL_SRC_DIR does not pick the source dir for `belz update`", () => {
     const dir = scratchDir("dotenv-src-");
-    writeFileSync(join(dir, ".env"), "BELZ_SRC_DIR=/tmp/evil-src\n");
-    const saved = process.env.BELZ_SRC_DIR;
+    writeFileSync(join(dir, ".env"), "WI_IMPL_SRC_DIR=/tmp/evil-src\n");
+    const saved = process.env.WI_IMPL_SRC_DIR;
     const cwd = process.cwd();
-    process.env.BELZ_SRC_DIR = "/tmp/evil-src";
+    process.env.WI_IMPL_SRC_DIR = "/tmp/evil-src";
     process.chdir(dir);
     try {
       cfg = withTempEnvConfig({ envs: {} });
       expect(getSourceDir()).not.toBe("/tmp/evil-src");
     } finally {
       process.chdir(cwd);
-      if (saved === undefined) delete process.env.BELZ_SRC_DIR;
-      else process.env.BELZ_SRC_DIR = saved;
+      if (saved === undefined) delete process.env.WI_IMPL_SRC_DIR;
+      else process.env.WI_IMPL_SRC_DIR = saved;
     }
   });
 
@@ -340,23 +359,47 @@ describe("dotenv guard", () => {
     writeFileSync(
       join(cwd, ".env"),
       [
-        "BELZ_ENV_T_OTHER_URL=https://dotenv-injected.invalid",
-        "BELZ_ENV=t-real",
-        `BELZ_HOME=${join(cwd, "evil-home")}`,
+        "WI_IMPL_ENV_T_OTHER_URL=https://dotenv-injected.invalid",
+        "WI_IMPL_ENV=t-real",
+        `WI_IMPL_HOME=${join(cwd, "evil-home")}`,
         "API_USER=evil",
       ].join("\n"),
     );
-    const r = await spawnCli(["envs", "--llm"], { cwd, env: { BELZ_HOME: home }, timeoutMs: 30_000 });
+    const r = await spawnCli(["envs", "--llm"], { cwd, env: { WI_IMPL_HOME: home }, timeoutMs: 30_000 });
     const env = r.envelope as any;
     expect(env?.ok).toBe(true);
     const byName = Object.fromEntries(env.data.envs.map((e: any) => [e.name, e]));
     expect(byName["t-other"].baseUrl).toBe("https://other.test");
     expect(byName["t-real"].baseUrl).toBe("https://real.test");
-    // the .env's BELZ_ENV is ignored: two envs, no default → none active
+    // the .env's WI_IMPL_ENV is ignored: two envs, no default → none active
     expect(env.data.active).toBeNull();
   }, 30_000);
 });
 
 test("BELZ_CONFIG_DIR is the test's throwaway home", () => {
-  expect(BELZ_CONFIG_DIR).toBe(process.env.BELZ_HOME!);
+  expect(BELZ_CONFIG_DIR).toBe(process.env.WI_IMPL_HOME!);
+});
+
+describe("data dir and install section after the rename", () => {
+  test("WI_IMPL_HOME wins; else ~/.wi-impl; the legacy ~/.belz only while it is the one that exists", () => {
+    const root = scratchDir("home-");
+    const home = join(root, ".wi-impl");
+    const legacy = join(root, ".belz");
+    expect(resolveConfigDir("/override", home, legacy)).toBe("/override");
+    expect(resolveConfigDir(undefined, home, legacy)).toBe(home); // neither exists: a fresh install
+    mkdirSync(legacy);
+    expect(resolveConfigDir(undefined, home, legacy)).toBe(legacy); // not moved yet
+    mkdirSync(home);
+    expect(resolveConfigDir(undefined, home, legacy)).toBe(home); // moved (or both): never the legacy one
+  });
+
+  test("recordBelzMeta moves a legacy `belz` section to `install`, keeping its fields", () => {
+    cfg = withTempEnvConfig({ envs: {} });
+    writeConfigFile({ ...loadConfigFileRaw(), belz: { sourceDir: "/s", installKind: "binary" } });
+    expect(getSourceDir()).toBe("/s");
+    recordBelzMeta({ version: "0.3.0" });
+    const raw = loadConfigFileRaw();
+    expect(raw.belz).toBeUndefined();
+    expect(raw.install).toEqual({ sourceDir: "/s", installKind: "binary", version: "0.3.0" });
+  });
 });

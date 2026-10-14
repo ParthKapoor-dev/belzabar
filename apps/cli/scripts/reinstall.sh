@@ -2,7 +2,7 @@
 # reinstall.sh — Wipe all belz data and run a clean fresh install
 #
 # ⚠️  WARNING: This permanently deletes:
-#     • ~/.belz/        (all credentials, sessions, and cache)
+#     • ~/.wi-impl/        (all credentials, sessions, and cache)
 #     • The existing belz binary
 #
 # Use this only when you want a completely clean slate.
@@ -14,7 +14,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-BELZ_CONFIG_DIR="${HOME}/.belz"
+BELZ_CONFIG_DIR="${HOME}/.wi-impl"
 INSTALL_DIR="${HOME}/.local/bin"
 ENV_FILE=""
 SKIP_CONFIRM=false

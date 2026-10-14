@@ -82,7 +82,7 @@ export function resolveSqlDatabase(
     if (options.envDefaultSource === "config") {
       // An explicit per-env default that does not exist is a config error, not a silent fallback.
       throw new CliError(
-        `Configured sqlDefaultDb '${options.envDefault}' not found in this environment. Fix environments.<env>.sqlDefaultDb in ~/.belz/config.json or pass --db.`,
+        `Configured sqlDefaultDb '${options.envDefault}' not found in this environment. Fix environments.<env>.sqlDefaultDb in ~/.wi-impl/config.json or pass --db.`,
         {
           code: "SQL_DEFAULT_DB_NOT_FOUND",
           details: { envDefault: options.envDefault, available: databases.map((db) => ({ id: db.id, nickname: db.nickname })) },
@@ -104,7 +104,7 @@ export function resolveSqlDatabase(
 
   throw new CliError(
     `No default SQL database for this environment. Pass --db <nickname|id> (see 'belz ad sql dbs'), or set ` +
-      `environments.<env>.sqlDefaultDb in ~/.belz/config.json (or BELZ_SQL_DEFAULT_DB).` +
+      `environments.<env>.sqlDefaultDb in ~/.wi-impl/config.json (or WI_IMPL_SQL_DEFAULT_DB).` +
       (options.fallbackNickname ? ` Fallback '${options.fallbackNickname}' is unavailable.` : ""),
     {
       code: "SQL_DEFAULT_DB_NOT_FOUND",

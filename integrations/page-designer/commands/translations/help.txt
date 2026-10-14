@@ -31,7 +31,7 @@ Flags:
   --status <PUBLISHED|DRAFT>  Dependency status to query (default: PUBLISHED).
   --force                     Bypass the config cache when resolving <input>.
   --llm                       Emit the JSON envelope.
-  --env <name>                Environment to resolve + query (default: BELZ_ENV, else defaultEnv, else the only env).
+  --env <name>                Environment to resolve + query (default: WI_IMPL_ENV, else defaultEnv, else the only env).
   --help, -h                  Show this help message.
 
 Examples:

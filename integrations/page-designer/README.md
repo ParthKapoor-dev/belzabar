@@ -12,7 +12,7 @@ Inspect, lint, snapshot, edit and publish Page Designer (PD) pages and component
 | [`commands/`](./commands/README.md) | One folder per command (`index.ts`, `help.txt`, `desc.txt`) |
 | [`lib/`](./lib/README.md) | Everything the commands share: API client, parser, serializer, validator, write pipeline |
 | [`tests/`](./tests/README.md) | Unit and command-level tests, real and wire fixtures |
-| `package.json`, `tsconfig.json`, `bunfig.toml` | Workspace manifest; the test preload points `BELZ_HOME` at a temp dir |
+| `package.json`, `tsconfig.json`, `bunfig.toml` | Workspace manifest; the test preload points `WI_IMPL_HOME` at a temp dir |
 
 ## Public exports
 
@@ -60,14 +60,14 @@ belz pd publish <pageId> --env dev --yes
   `--force-validation` (write despite validator errors; listed in `bypassedErrors`) and
   `--allow-published` (`save`/`publish` only: a PUBLISHED page with no linked draft). On read
   commands `--force` means "bypass the cache".
-- **Cache.** Page configs are cached per env under `~/.belz/cache/pages/<env>/` (5 min soft,
+- **Cache.** Page configs are cached per env under `~/.wi-impl/cache/pages/<env>/` (5 min soft,
   1 h hard TTL); `find` keeps a 7-day index. `lint`, `snapshot` and every write read fresh.
 
 ## Configuration
 
 Uses the active `belz` environment and its saved session (`@belzabar/core` config); nothing
-PD-specific. Runtime files: the page cache above, `~/.belz/pd-locks/<env>.json` (locks taken with
-`belz pd lock acquire`) and `~/.belz/cache/pd-ad-refs/` (the index `ad callers --pd` reads).
+PD-specific. Runtime files: the page cache above, `~/.wi-impl/pd-locks/<env>.json` (locks taken with
+`belz pd lock acquire`) and `~/.wi-impl/cache/pd-ad-refs/` (the index `ad callers --pd` reads).
 
 ## Testing
 

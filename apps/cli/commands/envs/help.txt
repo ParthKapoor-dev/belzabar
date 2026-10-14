@@ -11,7 +11,7 @@ Flags:
 
 Global Flags:
   --env <name>        Mark this environment as active in the listing.
-                      (default: BELZ_ENV, else config defaultEnv, else the
+                      (default: WI_IMPL_ENV, else config defaultEnv, else the
                       only configured env; otherwise none is active)
   --llm               Output structured JSON envelope for scripting/LLM use.
 

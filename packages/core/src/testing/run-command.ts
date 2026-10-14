@@ -84,7 +84,7 @@ async function captured(run: () => Promise<RunOutcome>): Promise<RunResult> {
     exit: process.exit,
     outputMode: getOutputMode(),
     env: Config.activeEnv.name,
-    verbose: process.env.BELZ_VERBOSE,
+    verbose: process.env.WI_IMPL_VERBOSE,
   };
 
   const toOut = (...a: unknown[]) => { out.push(format(...a) + "\n"); };
@@ -121,8 +121,8 @@ async function captured(run: () => Promise<RunOutcome>): Promise<RunResult> {
     process.exit = saved.exit;
     setOutputMode(saved.outputMode);
     try { Config.setActiveEnv(saved.env); } catch { /* env table reloaded */ }
-    if (saved.verbose === undefined) delete process.env.BELZ_VERBOSE;
-    else process.env.BELZ_VERBOSE = saved.verbose;
+    if (saved.verbose === undefined) delete process.env.WI_IMPL_VERBOSE;
+    else process.env.WI_IMPL_VERBOSE = saved.verbose;
   }
 
   const envelope =

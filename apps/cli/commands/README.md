@@ -30,11 +30,11 @@ needs beyond it.
   `.env` are ignored and listed in `meta.warnings`. Interactive setup refuses `--llm`.
 - **onboard** returns `failWithData("ONBOARD_INCOMPLETE")` when a step failed (so `install.sh`'s
   `if ! belz onboard` sees it) and re-throws `USER_ABORT` from a step (exit 130).
-- **update** (`planUpdate`) only fast-forwards the recorded `belz.sourceDir`. With something to
+- **update** (`planUpdate`) only fast-forwards the recorded `install.sourceDir`. With something to
   pull it refuses a dirty tree (`DIRTY_TREE`: tracked or staged changes; untracked files do not
   count) or unpushed commits (`LOCAL_COMMITS`); it never resets. `--force` rebuilds even when up
   to date. The installer gets `--install-dir` / `-InstallDir` from the recorded
-  `belz.installDir` (`installerCommand`). On Windows, `apps/cli/scripts/install.ps1` stages the new
+  `install.installDir` (`installerCommand`). On Windows, `apps/cli/scripts/install.ps1` stages the new
   binary and `apps/cli/scripts/swap-binary.ps1` swaps it in after the running process exits.
 
 ## Adding a top-level command

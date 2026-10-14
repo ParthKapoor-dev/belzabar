@@ -257,13 +257,13 @@ describe("interpretRestoreResponse", () => {
 });
 
 describe("logIntent", () => {
-  test("reports the active env, not BELZ_ENV", () => {
+  test("reports the active env, not WI_IMPL_ENV", () => {
     using _cfg = withTempEnvConfig({
       envs: { "t-dev": { url: "https://t.test" }, "t-qa": { url: "https://q.test" } },
       activeEnv: "t-qa",
     });
-    const prev = process.env.BELZ_ENV;
-    process.env.BELZ_ENV = "t-dev";
+    const prev = process.env.WI_IMPL_ENV;
+    process.env.WI_IMPL_ENV = "t-dev";
     const writes: string[] = [];
     const spy = spyOn(process.stderr, "write").mockImplementation((chunk: any) => {
       writes.push(String(chunk));
@@ -273,8 +273,8 @@ describe("logIntent", () => {
       logIntent("POST", "x");
     } finally {
       spy.mockRestore();
-      if (prev === undefined) delete process.env.BELZ_ENV;
-      else process.env.BELZ_ENV = prev;
+      if (prev === undefined) delete process.env.WI_IMPL_ENV;
+      else process.env.WI_IMPL_ENV = prev;
     }
     expect(writes.join("")).toContain('"env":"t-qa"');
   });

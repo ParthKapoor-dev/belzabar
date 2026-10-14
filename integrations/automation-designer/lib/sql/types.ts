@@ -52,7 +52,7 @@ export interface SqlSelectOperation {
 export interface SqlDbResolutionOptions {
   requested?: string;
   envDefault?: string;
-  /** Where envDefault came from: config `environments.<env>.sqlDefaultDb` or BELZ_SQL_DEFAULT_DB. */
+  /** Where envDefault came from: config `environments.<env>.sqlDefaultDb` or WI_IMPL_SQL_DEFAULT_DB. */
   envDefaultSource?: "config" | "env";
   /** Optional last-resort nickname (none is built in). */
   fallbackNickname?: string;

@@ -3,7 +3,7 @@
 // belz is a compiled binary built from a git checkout. To self-update
 // (`belz update`) and to install OS services, belz needs to know where that
 // checkout lives and where its own binary was installed. That metadata is
-// written to ~/.belz/config.json (the `belz` section) by the installer and by
+// written to ~/.wi-impl/config.json (the `install` section; `belz` before the rename) by the installer and by
 // `belz update`, and read back here.
 
 import { join } from "path";
@@ -15,7 +15,7 @@ const isWindows = process.platform === "win32";
 /** Default source-checkout location when nothing is recorded. */
 function defaultSourceDir(): string {
   // Via trustedBelzEnv: a cwd `.env` must not choose which install.sh `belz update` runs.
-  return trustedBelzEnv().BELZ_SRC_DIR || join(homedir(), ".belz", "src");
+  return trustedBelzEnv().WI_IMPL_SRC_DIR || join(homedir(), ".wi-impl", "src");
 }
 
 /** Default binary-install directory when nothing is recorded. */
@@ -27,19 +27,27 @@ function defaultInstallDir(): string {
   return join(homedir(), ".local", "bin");
 }
 
+type InstallMeta = NonNullable<BelzConfigFile["install"]>;
+
+/** The install section of `config`: `install`, or the legacy `belz` until it is next written. */
+export function installMeta(config: BelzConfigFile): InstallMeta | undefined {
+  return config.install ?? config.belz;
+}
+
 /** Absolute path to the git checkout belz was built from. */
 export function getSourceDir(): string {
-  return loadConfigFileRaw().belz?.sourceDir ?? defaultSourceDir();
+  return installMeta(loadConfigFileRaw())?.sourceDir ?? defaultSourceDir();
 }
 
 /** Absolute directory containing the installed belz binary. */
 export function getInstallDir(): string {
-  return loadConfigFileRaw().belz?.installDir ?? defaultInstallDir();
+  return installMeta(loadConfigFileRaw())?.installDir ?? defaultInstallDir();
 }
 
-/** Merge a partial update into the `belz` section of config.json. */
-export function recordBelzMeta(partial: Partial<NonNullable<BelzConfigFile["belz"]>>): void {
+/** Merge a partial update into the `install` section of config.json (moving a legacy `belz` one). */
+export function recordBelzMeta(partial: Partial<InstallMeta>): void {
   const config = loadConfigFileRaw();
-  config.belz = { ...config.belz, ...partial };
-  writeConfigFile(config);
+  const install = { ...installMeta(config), ...partial };
+  delete config.belz;
+  writeConfigFile({ ...config, install });
 }

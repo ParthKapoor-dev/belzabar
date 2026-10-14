@@ -21,15 +21,15 @@ import {
 import type { TeamworkSession } from "./types";
 
 /**
- * The Teamwork site root from config `teamwork.baseUrl` / BELZ_TEAMWORK_URL.
+ * The Teamwork site root from config `teamwork.baseUrl` / WI_IMPL_TEAMWORK_URL.
  * There is no default: every team runs its own Teamwork site.
  */
 export function teamworkBase(): string {
   const { baseUrl } = Config.getTeamwork();
   if (!baseUrl) {
     throw new CliError(
-      'Teamwork site URL is not configured. Set "baseUrl" under "teamwork" in ~/.belz/config.json ' +
-        "(e.g. https://<company>.teamwork.com), or export BELZ_TEAMWORK_URL.",
+      'Teamwork site URL is not configured. Set "baseUrl" under "teamwork" in ~/.wi-impl/config.json ' +
+        "(e.g. https://<company>.teamwork.com), or export WI_IMPL_TEAMWORK_URL.",
       { code: "TW_CONFIG_MISSING", details: { missing: ["baseUrl"] } },
     );
   }
@@ -70,7 +70,7 @@ async function doLogin(): Promise<TeamworkSession> {
   const { email, password } = Config.getTeamwork();
   if (!email || !password) {
     throw new CliError(
-      "Missing Teamwork credentials. Add them with 'belz config edit' (Teamwork), or set BELZ_TEAMWORK_EMAIL / BELZ_TEAMWORK_PASSWORD.",
+      "Missing Teamwork credentials. Add them with 'belz config edit' (Teamwork), or set WI_IMPL_TEAMWORK_EMAIL / WI_IMPL_TEAMWORK_PASSWORD.",
       { code: "TW_AUTH_MISSING_CREDENTIALS" },
     );
   }

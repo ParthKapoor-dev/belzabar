@@ -92,7 +92,7 @@ jobs:
       - name: "${{ matrix.asset }} --version"
         shell: bash
         env:
-          BELZ_HOME: ${{ runner.temp }}/belz-home
+          WI_IMPL_HOME: ${{ runner.temp }}/belz-home
         run: |
           chmod +x "bin/${{ matrix.asset }}" || true
           if [ "${{ matrix.rosetta }}" = "true" ]; then
@@ -115,7 +115,7 @@ jobs:
           path: bin
       - name: belz-linux-arm64 --version
         env:
-          BELZ_HOME: ${{ runner.temp }}/belz-home
+          WI_IMPL_HOME: ${{ runner.temp }}/belz-home
         run: |
           chmod +x bin/belz-linux-arm64
           out="$(bin/belz-linux-arm64 --version)"

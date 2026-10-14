@@ -67,7 +67,7 @@ export function finishOnboard(steps: OnboardStep[]) {
 export const args = defineArgs({ command: "belz onboard" });
 
 const command: CommandModule<Record<string, never>, OnboardData> = {
-  /** Writes ~/.belz/config.json (via setup). */
+  /** Writes ~/.wi-impl/config.json (via setup). */
   writesLocal: true,
   parseArgs(argv) {
     args.parse(argv);

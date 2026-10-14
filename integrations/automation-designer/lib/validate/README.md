@@ -35,7 +35,7 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
   fire on working methods.
 - Lint rules (`Q2`–`Q4`, `Q6`, `AD-LINT-001`…) never run on save or publish. `Q3` is
   project-specific and config-driven: `"lint": {"resolverTables": {"<table>": "<resolverFn>"}}`
-  in `~/.belz/config.json` (read by `commands/lint`); with none configured it never fires.
+  in `~/.wi-impl/config.json` (read by `commands/lint`); with none configured it never fires.
 - `Q6` (uuid compared as text): a column named `id`, `*_id` or `*uuid` cast to
   `text`/`varchar` and compared (`=`, `<>`, `IN (…)`, either side) to a bound value (`'#{x}'`,
   `#{x}`, `:param`). Postgres `'…'::uuid` accepts upper case, braces and undashed spellings;
