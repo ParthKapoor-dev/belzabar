@@ -1,7 +1,7 @@
-// belz pd translations — validate a published page/component's translation
+// wi-impl pd translations — validate a published page/component's translation
 // phrases via the page-dependencies API. Built for post-release validation.
 //
-//   belz pd translations <input> [--status PUBLISHED|DRAFT] [--expect-draft <id>]
+//   wi-impl pd translations <input> [--status PUBLISHED|DRAFT] [--expect-draft <id>]
 //
 // Resolves <input> to its draft + published ids, fetches page-dependencies for
 // the published id, and checks: every *__translated_phrases entry key is
@@ -39,7 +39,7 @@ interface TranslationsData {
 }
 
 export const args = defineArgs({
-  command: "belz pd translations",
+  command: "wi-impl pd translations",
   positionals: [PD_INPUT_POSITIONAL],
   flags: {
     ...PD_DEP_STATUS_FLAG,

@@ -61,7 +61,7 @@ function tighten(path: string, mode: number): boolean {
 }
 
 /**
- * One-time permission repair for the belz home. The 0600/0700 modes
+ * One-time permission repair for the wi-impl home. The 0600/0700 modes
  * only applied to files written after atomic private writes landed, and `mkdir`'s mode only on
  * create, so older installs kept a 0755 `~/.wi-impl` with 0644 session files
  * holding live JWTs. Tightens: the home and `sessions/`, `cache/` to 0700;

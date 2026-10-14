@@ -1,4 +1,4 @@
-belz ad show-code <uuid>  :->  Dump decoded custom-code source for every CUSTOM_CODE step
-belz ad show-code <uuid> --step <N>  :->  Only the step at orderIndex N (alias --service-detail)
-belz ad show-code <uuid> --out <file>  :->  Write the source to a file instead of stdout
-belz ad show-code <uuid> --v2  :->  Parse the method via the V2 API
+wi-impl ad show-code <uuid>  :->  Dump decoded custom-code source for every CUSTOM_CODE step
+wi-impl ad show-code <uuid> --step <N>  :->  Only the step at orderIndex N (alias --service-detail)
+wi-impl ad show-code <uuid> --out <file>  :->  Write the source to a file instead of stdout
+wi-impl ad show-code <uuid> --v2  :->  Parse the method via the V2 API

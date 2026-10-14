@@ -1,5 +1,5 @@
-// `belz setup` merges instead of replacing and stores explicit
-// password encodings; `belz config token` re-logs in when the
+// `wi-impl setup` merges instead of replacing and stores explicit
+// password encodings; `wi-impl config token` re-logs in when the
 // JWT has expired or --refresh is given.
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync, statSync, writeFileSync } from "fs";
@@ -38,7 +38,7 @@ function seedExisting() {
   reloadConfig();
 }
 
-describe("belz setup", () => {
+describe("wi-impl setup", () => {
   test("--env-file merges into existing envs; encodings are explicit; file is 0600", async () => {
     seedExisting();
     const file = envFile([
@@ -81,7 +81,7 @@ describe("belz setup", () => {
   });
 });
 
-describe("belz config get", () => {
+describe("wi-impl config get", () => {
   test("never prints the token; reports presence and expiry", async () => {
     const exp = Math.floor(Date.now() / 1000) + 3600;
     cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test", token: jwt(exp) } } });
@@ -96,7 +96,7 @@ describe("belz config get", () => {
   });
 });
 
-describe("belz config token", () => {
+describe("wi-impl config token", () => {
   const future = Math.floor(Date.now() / 1000) + 3600;
   const past = Math.floor(Date.now() / 1000) - 60;
 
@@ -124,7 +124,7 @@ describe("belz config token", () => {
   });
 });
 
-describe("belz setup: dotenv handling", () => {
+describe("wi-impl setup: dotenv handling", () => {
   test("--env-file strips inline comments on unquoted values (core parseDotEnv)", async () => {
     seedExisting();
     const file = envFile([

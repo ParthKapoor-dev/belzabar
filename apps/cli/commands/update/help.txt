@@ -1,23 +1,23 @@
-Usage: belz update [flags]
+Usage: wi-impl update [flags]
 
-Update belz to the latest version.
+Update wi-impl to the latest version.
 
-belz has two kinds of install, recorded as "belz.installKind" in
+wi-impl has two kinds of install, recorded as "wi-impl.installKind" in
 ~/.wi-impl/config.json:
 
 Binary install (the release installer, install.sh / install.ps1):
-  `belz update` reads the latest release's manifest.json, downloads this
+  `wi-impl update` reads the latest release's manifest.json, downloads this
   platform's binary, checks its sha256, and swaps it in. The old binary is
-  kept next to it as <belz>.prev, so `belz update --rollback` can restore it.
+  kept next to it as <wi-impl>.prev, so `wi-impl update --rollback` can restore it.
   With "update.pin" set in config.json, it installs exactly that version.
   Binary installs also check for a new release in the background, at most
   once every 24 hours, and install it the same way; the new version takes
   effect on the next run. Turn that off with WI_IMPL_NO_UPDATE=1 or
   "update": { "auto": false } in config.json. It never crosses a major
-  version: a new major waits for `belz update`.
+  version: a new major waits for `wi-impl update`.
 
 Source install (a git checkout, e.g. `bun run belz:install`):
-  `belz update` fetches the checkout's tracking branch, fast-forwards it, and
+  `wi-impl update` fetches the checkout's tracking branch, fast-forwards it, and
   re-runs the install script, installing to the recorded install dir
   ("install.installDir"). The checkout is "install.sourceDir" (default
   ~/.wi-impl/src). It never discards local work: with something to pull and
@@ -28,14 +28,14 @@ Flags:
   --check       Report whether an update is available, without changing anything.
   -f, --force   Reinstall even when already up to date. Never resets or
                 discards anything in a source checkout.
-  --rollback    Binary install: put back the previous binary (<belz>.prev).
+  --rollback    Binary install: put back the previous binary (<wi-impl>.prev).
   --help, -h    Show this help message.
 
 Examples:
-  belz update --check     See if a newer version exists
-  belz update             Install the latest version
-  belz update --force     Reinstall the current version
-  belz update --rollback  Go back to the binary you had before the last update
+  wi-impl update --check     See if a newer version exists
+  wi-impl update             Install the latest version
+  wi-impl update --force     Reinstall the current version
+  wi-impl update --rollback  Go back to the binary you had before the last update
 
 Notes:
   - A failed download, a checksum mismatch or a broken build never replaces

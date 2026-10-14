@@ -1,4 +1,4 @@
-// `belz migrate run` argument parsing: unknown flags and profile ↔ env consistency.
+// `wi-impl migrate run` argument parsing: unknown flags and profile ↔ env consistency.
 import { afterEach, beforeEach, describe, test, expect } from "bun:test";
 import { caughtCliError as codeOf, withTempEnvConfig, type TempEnvConfig } from "@belzabar/core/testing";
 import {
@@ -11,7 +11,7 @@ import logsCmd from "../../commands/logs/index";
 import profilesCmd from "../../commands/profiles/index";
 import runCmd from "../../commands/run/index";
 
-/** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */
+/** Profile segment → env mapping (config `jenkins.profileEnvs`); wi-impl has no built-in one. */
 const PROFILE_ENVS = { devacme: "acme-dev", qaacme: "acme-qa", stageacme: "acme-stage", qagm: "gm-qa", stagegm: "gm-stage", qabravo: "orb-qa", stgbravo: "orb-stage" };
 
 // Every test sees the mapping (parseMigrateRunArgs reads it from config).

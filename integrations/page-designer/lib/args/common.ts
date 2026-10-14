@@ -1,7 +1,7 @@
 // Flags shared by PD commands, as core `defineArgs` spec fragments.
 //
 //   export const args = defineArgs({
-//     command: "belz pd save",
+//     command: "wi-impl pd save",
 //     positionals: [{ name: "page-id", required: true }],
 //     flags: { ...PD_WRITE_OVERRIDE_FLAGS, ...PD_YES_FLAG, ...PD_DRY_RUN_FLAG, overlay: { type: "string" } },
 //   });

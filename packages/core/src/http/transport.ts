@@ -1,4 +1,4 @@
-// The one transport every belz HTTP call goes through (AD/PD via apiFetch,
+// The one transport every wi-impl HTTP call goes through (AD/PD via apiFetch,
 // Teamwork, Jenkins):
 //   - IPv4 pinning (dns.ts) with pin eviction + one hostname retry when the
 //     pinned IP fails to connect. The retry happens only for
@@ -208,7 +208,7 @@ function bodyTimeoutError(timeoutMs: number, label: string, method: string): Cli
 }
 
 /**
- * fetch() with the belz transport policy. Resolves with any HTTP status (use
+ * fetch() with the wi-impl transport policy. Resolves with any HTTP status (use
  * errors.ts to map non-OK responses); rejects only with CliError
  * (HTTP_TIMEOUT / HTTP_NETWORK_ERROR / HTTP_ABORTED).
  */

@@ -9,7 +9,7 @@ import type { ValidationIssue, ValidationSeverity } from "../types/common";
 
 interface PdRuleInfo {
   severity: ValidationSeverity;
-  /** figma-to-pd lint-pd-config.py code, pd-review section, or "belz". */
+  /** figma-to-pd lint-pd-config.py code, pd-review section, or "wi-impl". */
   source: string;
   description: string;
   /**
@@ -21,7 +21,7 @@ interface PdRuleInfo {
 
 export const PD_RULES = {
   // ── structural errors ───────────────────────────────────────────────────
-  INVALID_JSON: { severity: "error", source: "belz", description: "configuration is not valid JSON" },
+  INVALID_JSON: { severity: "error", source: "wi-impl", description: "configuration is not valid JSON" },
   ROOT_LAYOUT_MALFORMED: { severity: "error", source: "figma L1", description: "root is not a div; page root lacks unSelectable:true; component root lacks isSymbol:true" },
   ORPHAN_BINDING: { severity: "error", source: "pd-review 3a", description: "{%var%} whose root variable is not defined (warn inside editor-generated form configs)", escalate: true },
   FORM_FIELD_PROPS: { severity: "error", source: "page-designer", description: "exp-form-field with props instead of field (blank page)" },

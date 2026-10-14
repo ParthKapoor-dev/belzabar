@@ -3,7 +3,7 @@
 Documentation: [`README.md`](README.md) (package, config, write safety),
 [`lib/README.md`](lib/README.md), [`commands/README.md`](commands/README.md),
 [`tests/README.md`](tests/README.md). Flag reference: each command's `help.txt` /
-`belz --help-full`.
+`wi-impl --help-full`.
 
 ## Standing instructions
 

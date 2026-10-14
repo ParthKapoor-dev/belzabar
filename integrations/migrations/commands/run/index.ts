@@ -56,7 +56,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       ({ client } = await resolveClientForProfile(auth, profile));
       if (!client) {
         throw new CliError(
-          `Profile '${profile}' not found in any Jenkins client group. Pass --client explicitly or check 'belz migrate profiles'.`,
+          `Profile '${profile}' not found in any Jenkins client group. Pass --client explicitly or check 'wi-impl migrate profiles'.`,
           { code: "MIGRATE_PROFILE_NOT_FOUND", details: { profile } }
         );
       }
@@ -197,7 +197,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         resolvedSourceEnv: preflight?.sourceEnv,
       };
 
-      // The build wrote the TARGET env: drop belz's cached copies there so the
+      // The build wrote the TARGET env: drop wi-impl's cached copies there so the
       // next `ad show` / `pd show --env <target>` reads fresh. Best effort, and
       // only once the build is over (a followed, non-dry run).
       const targetEnv = args.targetEnv ?? envPairFromProfile(profile)?.targetEnv;
@@ -355,7 +355,7 @@ function withBuildRef(
   const code = cli?.code ?? "MIGRATE_RUN_INTERRUPTED";
   const message = e instanceof Error ? e.message : String(e);
   const where = ref.buildNumber !== undefined
-    ? `build #${ref.buildNumber} (${ref.buildUrl}); check it with 'belz migrate status ${ref.buildNumber}'`
+    ? `build #${ref.buildNumber} (${ref.buildUrl}); check it with 'wi-impl migrate status ${ref.buildNumber}'`
     : ref.queueUrl ? `queue item ${ref.queueUrl}; find the build on ${ref.jobUrl}` : `a build on ${ref.jobUrl}`;
   // The build finished: a failed or strict-refused result is not a lost build.
   const finished = code === "MIGRATE_RUN_FAILED" || code === "MIGRATE_NOTHING_MIGRATED" || code === "MIGRATE_PARTIALLY_MIGRATED";

@@ -1,17 +1,17 @@
-belz ad test-case list <uuid>  :->  List a method's saved test cases (also create, update, delete, bulk, run-suite: see --help)
-belz ad test-case create <uuid> --name <n> --input <k=v> --assert <out=v> --env <env> [--yes]  :->  Create one UI-encoded test case from flags; verified by reading the suite back
-belz ad test-case create <uuid> --file <case.json> --env <env> [--yes]  :->  Create one test case from a case file or UI body (refuses an existing name); verified on read-back
-belz ad test-case create <uuid> --name <n> --description <d>  :->  Set the test case description
-belz ad test-case update <uuid> <testCaseId> --file <case.json> --env <env> [--yes]  :->  Replace a case's inputs/assertions (name/description cannot change via the API); verified
-belz ad test-case update <uuid> <testCaseId> --input <k=v> --assert <out=v> --env <env>  :->  Change single inputs / replace the assertions of an existing case
-belz ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case
-belz ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Create an array of test cases (one POST each; verified)
-belz ad test-case run-suite <uuid> --env <env> [--yes]  :->  Trigger the server's suite run (async, e-mail report only; not observable via test-report)
-belz ad test-case run-suite <uuid> --wait --env <env> [--yes]  :->  Run every active case now (one /chain/test each), evaluate assertions, return per-case PASS/FAIL/ERROR; exit 1 unless all pass
-belz ad test-case delete-suite <testSuiteId> --env <env> [--yes]  :->  Delete a test suite
-belz ad test-case export <uuid> --dir <root>  :->  Write the suite as git-friendly files: <root>/<Category>/<method>/{method.json,cases/*.json}; read-only
-belz ad test-case export <uuid> --dir <root> --prune  :->  Also delete case files whose case is no longer on the server
-belz ad test-case sync <methodDir> --env <env>  :->  Dry run (--env required: it picks method.json uuids[env]): plan create/update/drift/extra of the case files against the suite (method.json uuids[env])
-belz ad test-case sync <methodDir> --uuid <uuid> --env <env>  :->  Sync to this chain instead of method.json's uuid for the env
-belz ad test-case sync <methodDir> --apply --env <env> [--yes]  :->  Apply the plan and verify every case on read-back
-belz ad test-case sync <methodDir> --apply --prune --env <env>  :->  Also delete server cases that have no file
+wi-impl ad test-case list <uuid>  :->  List a method's saved test cases (also create, update, delete, bulk, run-suite: see --help)
+wi-impl ad test-case create <uuid> --name <n> --input <k=v> --assert <out=v> --env <env> [--yes]  :->  Create one UI-encoded test case from flags; verified by reading the suite back
+wi-impl ad test-case create <uuid> --file <case.json> --env <env> [--yes]  :->  Create one test case from a case file or UI body (refuses an existing name); verified on read-back
+wi-impl ad test-case create <uuid> --name <n> --description <d>  :->  Set the test case description
+wi-impl ad test-case update <uuid> <testCaseId> --file <case.json> --env <env> [--yes]  :->  Replace a case's inputs/assertions (name/description cannot change via the API); verified
+wi-impl ad test-case update <uuid> <testCaseId> --input <k=v> --assert <out=v> --env <env>  :->  Change single inputs / replace the assertions of an existing case
+wi-impl ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case
+wi-impl ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Create an array of test cases (one POST each; verified)
+wi-impl ad test-case run-suite <uuid> --env <env> [--yes]  :->  Trigger the server's suite run (async, e-mail report only; not observable via test-report)
+wi-impl ad test-case run-suite <uuid> --wait --env <env> [--yes]  :->  Run every active case now (one /chain/test each), evaluate assertions, return per-case PASS/FAIL/ERROR; exit 1 unless all pass
+wi-impl ad test-case delete-suite <testSuiteId> --env <env> [--yes]  :->  Delete a test suite
+wi-impl ad test-case export <uuid> --dir <root>  :->  Write the suite as git-friendly files: <root>/<Category>/<method>/{method.json,cases/*.json}; read-only
+wi-impl ad test-case export <uuid> --dir <root> --prune  :->  Also delete case files whose case is no longer on the server
+wi-impl ad test-case sync <methodDir> --env <env>  :->  Dry run (--env required: it picks method.json uuids[env]): plan create/update/drift/extra of the case files against the suite (method.json uuids[env])
+wi-impl ad test-case sync <methodDir> --uuid <uuid> --env <env>  :->  Sync to this chain instead of method.json's uuid for the env
+wi-impl ad test-case sync <methodDir> --apply --env <env> [--yes]  :->  Apply the plan and verify every case on read-back
+wi-impl ad test-case sync <methodDir> --apply --prune --env <env>  :->  Also delete server cases that have no file

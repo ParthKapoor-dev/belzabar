@@ -14,7 +14,7 @@ it works is in the READMEs; read the one for the directory you are touching:
 - Commands reach the server only through `pdApi` and import types from `lib/types/common.ts`.
 - Every write goes `resolveWriteTarget` → `withLock` → fresh fetch → plan → `validateEdit` →
   PUT → read-back verify. Never write a PUBLISHED row, never pair drafts by name (only
-  `referenceId`), never send `/pages/revert/<publishedId>`, never release a lock belz did not
+  `referenceId`), never send `/pages/revert/<publishedId>`, never release a lock wi-impl did not
   take.
 - A partial save must provably reproduce the planned config (`planSave` replay check) and use
   only verified key shapes; anything else is a full save. Do not widen `isVerifiedKeyShape`

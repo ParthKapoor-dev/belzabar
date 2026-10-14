@@ -1,10 +1,10 @@
-Usage: belz ad publish <UUID> --note "<what changed>" --env <env> [flags]
+Usage: wi-impl ad publish <UUID> --note "<what changed>" --env <env> [flags]
 
 Publish a draft: promotes the current draft contents to the published version
 of the same method. Returns the published UUID and a version-sync summary.
 
 The draft is validated first (the server publishes broken methods with 200).
-A change note is MANDATORY: belz records it against the draft chain's
+A change note is MANDATORY: wi-impl records it against the draft chain's
 changelog right AFTER a successful publish (retried up to 3 times), so a
 failed publish never leaves an orphan note.
 
@@ -34,18 +34,18 @@ Safety:
     validated → AD_VERSION_CONFLICT, nothing is published.
   - The change note is POSTed AFTER the publish call. If it still fails after
     retries the publish stands: the envelope is ok with noteRecorded:false,
-    noteError, and a warning with the `belz ad changelog` command to re-record.
+    noteError, and a warning with the `wi-impl ad changelog` command to re-record.
     A note POST that may have reached the server (connection reset or timeout
-    after sending) is not re-sent: belz looks for it in the changelog, and
-    otherwise says to check `belz ad changelog` before re-recording.
+    after sending) is not re-sent: wi-impl looks for it in the changelog, and
+    otherwise says to check `wi-impl ad changelog` before re-recording.
   - After publishing, the compiled cache of the draft and published uuids is
     evicted on both cache routes (data.compiledCache).
   - Re-fetches both draft and published and reports inSync (logic
     fingerprints equal), noteRecorded, changelogId and validation warnings.
 
 Examples:
-  belz ad publish 4a1b2c3d... --note "Fix null check in step 3" --env <env>
-  belz ad publish 4a1b2c3d... --note "Fix null check in step 3" --env <env> --yes --llm
-  belz ad publish 4a1b2c3d... --note "Hotfix" --env <env> --allow-preexisting
+  wi-impl ad publish 4a1b2c3d... --note "Fix null check in step 3" --env <env>
+  wi-impl ad publish 4a1b2c3d... --note "Fix null check in step 3" --env <env> --yes --llm
+  wi-impl ad publish 4a1b2c3d... --note "Hotfix" --env <env> --allow-preexisting
 
-See also: belz ad changelog — record/list change notes without publishing.
+See also: wi-impl ad changelog — record/list change notes without publishing.

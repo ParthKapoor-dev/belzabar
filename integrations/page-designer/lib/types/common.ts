@@ -228,7 +228,7 @@ export interface ValidationIssue {
 }
 
 // ============================================================================
-// Overlay (the primary edit surface for `belz pd save`)
+// Overlay (the primary edit surface for `wi-impl pd save`)
 // ============================================================================
 
 interface VariableOverlay {

@@ -119,7 +119,7 @@ function matchTexts(m: MethodFinderMethod, texts: StepText[], re: RegExp, kinds:
 
 /**
  * Search `methods` (index records, read through the per-version cache) plus `uuids` (read
- * fresh by uuid). `dirty`: methods belz changed since the index was built (re-read).
+ * fresh by uuid). `dirty`: methods wi-impl changed since the index was built (re-read).
  */
 export async function grepMethods(
   opts: {

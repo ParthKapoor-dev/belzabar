@@ -1,5 +1,5 @@
 // Opt-in live WRITE suite: the full AD method lifecycle on the WI_IMPL_LIVE env, in
-// the WI_IMPL_LIVE_CATEGORY category only, names `belz_tst_life_*` / `belz_tst_del_*`.
+// the WI_IMPL_LIVE_CATEGORY category only, names `wi_impl_tst_life_*` / `wi_impl_tst_del_*`.
 //
 //   WI_IMPL_LIVE=<env> WI_IMPL_LIVE_WRITE=1 WI_IMPL_LIVE_CATEGORY=<name> WI_IMPL_LIVE_CATEGORY_ID=<id> \
 //     bun test apps/cli/tests/live
@@ -61,7 +61,7 @@ function errCode(r: SpawnResult): string | undefined {
   return (r.envelope?.error as { code?: string } | null)?.code;
 }
 
-async function belz(argv: string[], timeoutMs = T - 10_000): Promise<SpawnResult> {
+async function cli(argv: string[], timeoutMs = T - 10_000): Promise<SpawnResult> {
   return spawnLive([...argv, "--llm"], { timeoutMs });
 }
 
@@ -96,7 +96,7 @@ describeLiveWrite("ad lifecycle", () => {
       JSON.stringify({
         name: NAME,
         category: category().name,
-        summary: "belz live lifecycle suite",
+        summary: "wi-impl live lifecycle suite",
         inputs: ["name"],
         outputs: ["greetingOut"],
         steps: [
@@ -104,10 +104,10 @@ describeLiveWrite("ad lifecycle", () => {
         ],
       })
     );
-    const dry = okData<{ dryRun: boolean; valid: boolean }>(await belz(["ad", "create", "--spec", spec, "--dry-run"]));
+    const dry = okData<{ dryRun: boolean; valid: boolean }>(await cli(["ad", "create", "--spec", spec, "--dry-run"]));
     expect(dry).toMatchObject({ dryRun: true, valid: true });
 
-    const r = await belz(["ad", "create", "--spec", spec, "--yes"]);
+    const r = await cli(["ad", "create", "--spec", spec, "--yes"]);
     const uuid = (r.envelope?.data as { uuid?: string } | undefined)?.uuid;
     if (uuid) track(uuid, "draft");
     const d = okData<{ uuid: string; name: string; state: string; category: { chainCategoryId: number }; stepCount: number }>(r);
@@ -117,16 +117,16 @@ describeLiveWrite("ad lifecycle", () => {
 
   test("create refuses a duplicate name", async () => {
     expect(draft).not.toBe("");
-    const r = await belz(["ad", "create", "--spec", join(dir, "spec.json"), "--yes"]);
+    const r = await cli(["ad", "create", "--spec", join(dir, "spec.json"), "--yes"]);
     const uuid = (r.envelope?.data as { uuid?: string } | undefined)?.uuid;
     if (uuid) track(uuid, "unexpected duplicate draft");
     expect(errCode(r)).toBe("AD_METHOD_EXISTS");
   }, T);
 
   test("validate and lint pass on the new draft", async () => {
-    const v = okData<{ errors: unknown[] }>(await belz(["ad", "validate", draft, "--online"]));
+    const v = okData<{ errors: unknown[] }>(await cli(["ad", "validate", draft, "--online"]));
     expect(v.errors).toEqual([]);
-    const l = await belz(["ad", "lint", draft]);
+    const l = await cli(["ad", "lint", draft]);
     expect(l.exitCode).toBe(0);
     expect(l.envelope?.ok).toBe(true);
   }, T);
@@ -136,7 +136,7 @@ describeLiveWrite("ad lifecycle", () => {
     writeFileSync(
       overlay,
       JSON.stringify({
-        summary: "belz live lifecycle suite (saved)",
+        summary: "wi-impl live lifecycle suite (saved)",
         ops: [
           { op: "set-output", key: "shoutOut" },
           {
@@ -147,12 +147,12 @@ describeLiveWrite("ad lifecycle", () => {
         ],
       })
     );
-    const dry = okData<{ valid: boolean }>(await belz(["ad", "save", overlay, "--uuid", draft, "--dry-run"]));
+    const dry = okData<{ valid: boolean }>(await cli(["ad", "save", overlay, "--uuid", draft, "--dry-run"]));
     expect(dry.valid).toBe(true);
-    const s = okData<{ draftUuid: string; applied: unknown[] }>(await belz(["ad", "save", overlay, "--uuid", draft, "--yes"]));
+    const s = okData<{ draftUuid: string; applied: unknown[] }>(await cli(["ad", "save", overlay, "--uuid", draft, "--yes"]));
     expect(s.draftUuid).toBe(draft);
     expect(s.applied.length).toBeGreaterThan(0);
-    const show = okData<{ steps: unknown[] }>(await belz(["ad", "show", draft]));
+    const show = okData<{ steps: unknown[] }>(await cli(["ad", "show", draft]));
     expect(show.steps.length).toBe(2);
   }, T);
 
@@ -160,12 +160,12 @@ describeLiveWrite("ad lifecycle", () => {
     const inputs = join(dir, "in.json");
     writeFileSync(inputs, JSON.stringify({ name: "World" }));
     const t = okData<{ outputs: Record<string, unknown>; expectations: { failed: number } }>(
-      await belz(["ad", "test", draft, "--inputs", inputs, "--expect", "greetingOut=Hello World", "--expect", "shoutOut=Hello World!"])
+      await cli(["ad", "test", draft, "--inputs", inputs, "--expect", "greetingOut=Hello World", "--expect", "shoutOut=Hello World!"])
     );
     expect(t.outputs).toMatchObject({ greetingOut: "Hello World", shoutOut: "Hello World!" });
     expect(t.expectations.failed).toBe(0);
 
-    const bad = await belz(["ad", "test", draft, "--inputs", inputs, "--expect", "greetingOut=Hello Mars"]);
+    const bad = await cli(["ad", "test", draft, "--inputs", inputs, "--expect", "greetingOut=Hello Mars"]);
     expect(bad.exitCode).toBe(1);
     expect(errCode(bad)).toBe("AD_TEST_EXPECTATION_FAILED");
   }, T);
@@ -173,35 +173,35 @@ describeLiveWrite("ad lifecycle", () => {
   test("test-case create → export → sync (in sync) → test --case", async () => {
     const caseName = `${NAME}.greet.ok.1`;
     const c = okData<{ testCase?: { id?: string }; id?: string }>(
-      await belz(["ad", "test-case", "create", draft, "--name", caseName, "--input", "name=World", "--assert", "greetingOut=Hello World", "--yes"])
+      await cli(["ad", "test-case", "create", draft, "--name", caseName, "--input", "name=World", "--assert", "greetingOut=Hello World", "--yes"])
     );
     testCaseId = String(c.testCase?.id ?? c.id ?? "");
 
-    const list = okData<{ total: number; testCases: { id: string; name: string }[] }>(await belz(["ad", "test-case", "list", draft]));
+    const list = okData<{ total: number; testCases: { id: string; name: string }[] }>(await cli(["ad", "test-case", "list", draft]));
     const found = list.testCases.find(tc => tc.name === caseName);
     expect(found).toBeDefined();
     testCaseId = testCaseId || String(found!.id);
 
     const root = join(dir, "export");
-    okData(await belz(["ad", "test-case", "export", draft, "--dir", root]));
+    okData(await cli(["ad", "test-case", "export", draft, "--dir", root]));
     const methodDir = join(root, category().name, NAME);
     const caseFiles = readdirSync(join(methodDir, "cases"));
     expect(caseFiles.length).toBe(1);
     const caseFile = JSON.parse(readFileSync(join(methodDir, "cases", caseFiles[0]!), "utf8"));
     expect(caseFile).toMatchObject({ name: caseName, inputs: { name: "World" } });
 
-    const plan = okData<{ create?: unknown[]; update?: unknown[] }>(await belz(["ad", "test-case", "sync", methodDir]));
+    const plan = okData<{ create?: unknown[]; update?: unknown[] }>(await cli(["ad", "test-case", "sync", methodDir]));
     expect(plan.create ?? []).toEqual([]);
     expect(plan.update ?? []).toEqual([]);
 
     const run = okData<{ expectations: { total: number; failed: number } }>(
-      await belz(["ad", "test", draft, "--case", join(methodDir, "cases", caseFiles[0]!)])
+      await cli(["ad", "test", draft, "--case", join(methodDir, "cases", caseFiles[0]!)])
     );
     expect(run.expectations).toMatchObject({ total: 1, failed: 0 });
   }, T);
 
   test("publish promotes the draft and records the note", async () => {
-    const r = await belz(["ad", "publish", draft, "--note", `belz live suite ${STAMP}`, "--yes"]);
+    const r = await cli(["ad", "publish", draft, "--note", `wi-impl live suite ${STAMP}`, "--yes"]);
     const d = r.envelope?.data as { publishedUuid?: string; noteRecorded?: boolean } | undefined;
     if (d?.publishedUuid) track(d.publishedUuid, "PUBLISHED");
     okData(r);
@@ -212,77 +212,77 @@ describeLiveWrite("ad lifecycle", () => {
 
   test("test --compare-published: identical outputs", async () => {
     const d = okData<{ compare: { identical: boolean } }>(
-      await belz(["ad", "test", draft, "--inputs", join(dir, "in.json"), "--compare-published", "--yes"])
+      await cli(["ad", "test", draft, "--inputs", join(dir, "in.json"), "--compare-published", "--yes"])
     );
     expect(d.compare.identical).toBe(true);
   }, T);
 
   test("state: draft ↔ published linked and in sync", async () => {
-    const d = okData<{ draftUuid: string; publishedUuid: string; inSync: boolean }>(await belz(["ad", "state", draft]));
+    const d = okData<{ draftUuid: string; publishedUuid: string; inSync: boolean }>(await cli(["ad", "state", draft]));
     expect(d).toMatchObject({ draftUuid: draft, publishedUuid: published, inSync: true });
   }, T);
 
   test("draft edit → run draft vs published → history restore back in sync", async () => {
-    const hist = okData<{ versions: { version: number }[] }>(await belz(["ad", "history", "list", draft]));
+    const hist = okData<{ versions: { version: number }[] }>(await cli(["ad", "history", "list", draft]));
     const before = Math.max(...hist.versions.map(v => Number(v.version)));
 
     const overlay = join(dir, "overlay-howdy.json");
     writeFileSync(overlay, JSON.stringify({ ops: [{ op: "update-step", step: 1, set: { inputs: { Input: "Howdy #{name}" } } }] }));
-    okData(await belz(["ad", "save", overlay, "--uuid", draft, "--yes"]));
-    expect(okData<{ inSync: boolean }>(await belz(["ad", "state", draft])).inSync).toBe(false);
+    okData(await cli(["ad", "save", overlay, "--uuid", draft, "--yes"]));
+    expect(okData<{ inSync: boolean }>(await cli(["ad", "state", draft])).inSync).toBe(false);
 
     // The execute endpoint runs the uuid's own saved body: a draft uuid runs the draft.
     const payload = JSON.stringify({ name: "World" });
-    const rd = okData<{ response: { greetingOut?: string }; publishedUuid: string }>(await belz(["ad", "run", draft, payload]));
+    const rd = okData<{ response: { greetingOut?: string }; publishedUuid: string }>(await cli(["ad", "run", draft, payload]));
     expect(rd.response.greetingOut).toBe("Howdy World");
     expect(rd.publishedUuid).toBe(published);
-    const rp = okData<{ response: { greetingOut?: string } }>(await belz(["ad", "run", published, payload]));
+    const rp = okData<{ response: { greetingOut?: string } }>(await cli(["ad", "run", published, payload]));
     expect(rp.response.greetingOut).toBe("Hello World");
 
-    const restored = okData<{ success: boolean }>(await belz(["ad", "history", "restore", draft, "--version", String(before), "--yes"]));
+    const restored = okData<{ success: boolean }>(await cli(["ad", "history", "restore", draft, "--version", String(before), "--yes"]));
     expect(restored.success).toBe(true);
-    expect(okData<{ inSync: boolean }>(await belz(["ad", "state", draft])).inSync).toBe(true);
+    expect(okData<{ inSync: boolean }>(await cli(["ad", "state", draft])).inSync).toBe(true);
   }, T);
 
   test("history list/show on the draft", async () => {
-    const l = okData<{ versions?: { version: number }[] } & Record<string, unknown>>(await belz(["ad", "history", "list", draft]));
+    const l = okData<{ versions?: { version: number }[] } & Record<string, unknown>>(await cli(["ad", "history", "list", draft]));
     const versions = (l.versions ?? []) as { version: number }[];
     expect(versions.length).toBeGreaterThan(0);
     const v = Math.max(...versions.map(x => Number(x.version)));
-    const s = okData<{ steps?: unknown[] }>(await belz(["ad", "history", "show", draft, "--version", String(v)]));
+    const s = okData<{ steps?: unknown[] }>(await cli(["ad", "history", "show", draft, "--version", String(v)]));
     expect(Array.isArray(s.steps)).toBe(true);
   }, T);
 
   test("changelog lists the publish note", async () => {
-    const d = okData<{ entries?: { note: string }[] } | { note: string }[]>(await belz(["ad", "changelog", draft]));
-    expect(JSON.stringify(d)).toContain(`belz live suite ${STAMP}`);
+    const d = okData<{ entries?: { note: string }[] } | { note: string }[]>(await cli(["ad", "changelog", draft]));
+    expect(JSON.stringify(d)).toContain(`wi-impl live suite ${STAMP}`);
   }, T);
 
   test("delete refuses a published method and a draft with a published copy", async () => {
-    expect(errCode(await belz(["ad", "delete", published, "--yes"]))).toBe("AD_DELETE_PUBLISHED");
-    expect(errCode(await belz(["ad", "delete", draft, "--yes"]))).toBe("AD_DELETE_HAS_PUBLISHED");
+    expect(errCode(await cli(["ad", "delete", published, "--yes"]))).toBe("AD_DELETE_PUBLISHED");
+    expect(errCode(await cli(["ad", "delete", draft, "--yes"]))).toBe("AD_DELETE_HAS_PUBLISHED");
   }, T);
 
   test("test-case delete removes the case", async () => {
     expect(testCaseId).not.toBe("");
-    okData(await belz(["ad", "test-case", "delete", testCaseId, "--yes"]));
-    const list = okData<{ testCases: { id: string }[] }>(await belz(["ad", "test-case", "list", draft]));
+    okData(await cli(["ad", "test-case", "delete", testCaseId, "--yes"]));
+    const list = okData<{ testCases: { id: string }[] }>(await cli(["ad", "test-case", "list", draft]));
     expect(list.testCases.some(tc => String(tc.id) === testCaseId)).toBe(false);
   }, T);
 
   test("create (V2 subset spec) + delete a never-published draft, verified", async () => {
     const spec = join(dir, "spec-del.json");
-    writeFileSync(spec, JSON.stringify({ name: NAME_DEL, summary: "belz live delete probe", inputs: [], outputs: [], variables: [], steps: [] }));
-    const r = await belz(["ad", "create", "--spec", spec, "--category", String(category().id), "--yes"]);
+    writeFileSync(spec, JSON.stringify({ name: NAME_DEL, summary: "wi-impl live delete probe", inputs: [], outputs: [], variables: [], steps: [] }));
+    const r = await cli(["ad", "create", "--spec", spec, "--category", String(category().id), "--yes"]);
     const uuid = (r.envelope?.data as { uuid?: string } | undefined)?.uuid;
     if (uuid) track(uuid, "draft", NAME_DEL);
     const d = okData<{ uuid: string; state: string }>(r);
     expect(d.state).toBe("DRAFT");
-    const del = okData<{ deleted: boolean; verified: boolean }>(await belz(["ad", "delete", d.uuid, "--yes"]));
+    const del = okData<{ deleted: boolean; verified: boolean }>(await cli(["ad", "delete", d.uuid, "--yes"]));
     expect(del).toMatchObject({ deleted: true, verified: true });
     cleaned.add(d.uuid);
-    markLiveResourceCleaned(d.uuid, "yes — belz ad delete (verified V2 METHOD_NOT_FOUND)");
-    const gone = await belz(["ad", "show", d.uuid, "--v2"]);
+    markLiveResourceCleaned(d.uuid, "yes — wi-impl ad delete (verified V2 METHOD_NOT_FOUND)");
+    const gone = await cli(["ad", "show", d.uuid, "--v2"]);
     expect(errCode(gone)).toBe("METHOD_NOT_FOUND");
   }, T);
 });

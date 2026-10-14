@@ -1,6 +1,6 @@
-Usage: belz config <subcommand> [flags]
+Usage: wi-impl config <subcommand> [flags]
 
-Manage belz credentials and environment configuration.
+Manage wi-impl credentials and environment configuration.
 
 Subcommands:
   get             Show URL, user, password status, and whether a session token is cached (never the token).
@@ -16,13 +16,13 @@ Flags:
 Global Flags:
   --env <name>    Set active environment (default: WI_IMPL_ENV, else config defaultEnv,
                   else the only configured env).
-                  Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                  Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm           Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz config get
-  belz config get --env qa
-  belz config token
-  belz config token --env qa --llm
-  belz config token --refresh
-  belz config edit
+  wi-impl config get
+  wi-impl config get --env qa
+  wi-impl config token
+  wi-impl config token --env qa --llm
+  wi-impl config token --refresh
+  wi-impl config edit

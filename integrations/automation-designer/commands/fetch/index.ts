@@ -32,7 +32,7 @@ interface FetchMethodData {
 }
 
 export const args = defineArgs({
-  command: "belz ad fetch",
+  command: "wi-impl ad fetch",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: { ...AD_V2_FLAG, raw: { type: "boolean" } },
 });

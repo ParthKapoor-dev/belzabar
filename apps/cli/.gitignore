@@ -5,7 +5,7 @@ node_modules
 out
 dist
 *.tgz
-belz
+wi-impl
 
 # code coverage
 coverage

@@ -1,4 +1,4 @@
-// belz pd analyze <id...> [--compliance <file>]
+// wi-impl pd analyze <id...> [--compliance <file>]
 //
 // Recursive dependency + AD-method analysis of one or more pages/components.
 // Roots are given explicitly, every referenced component is followed, and the
@@ -42,7 +42,7 @@ interface AnalyzeData {
 }
 
 export const args = defineArgs({
-  command: "belz pd analyze",
+  command: "wi-impl pd analyze",
   positionals: [
     {
       name: "input",

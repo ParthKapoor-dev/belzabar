@@ -27,7 +27,7 @@ interface NamespaceDefinition {
   envAware?: boolean;
 }
 
-/** Build identity, printed by `belz --version`. */
+/** Build identity, printed by `wi-impl --version`. */
 interface BuildInfo {
   version: string;
   /** Short git SHA the binary was built from ("unknown" outside a checkout). */
@@ -50,19 +50,19 @@ export interface NamespacedCliOptions {
   /** Enables `--version` (as the first argument). */
   build?: BuildInfo;
   /**
-   * `belz --help-full`: the full command reference. Honoured only as the
+   * `wi-impl --help-full`: the full command reference. Honoured only as the
    * first argument after the global flags (never after a command name or
-   * `--`); in `--llm` mode it is a `belz.help` envelope with `data.text`.
+   * `--`); in `--llm` mode it is a `wi-impl.help` envelope with `data.text`.
    */
   /**
-   * `belz --help-full [<namespace>] [--index]`: the whole reference, one
+   * `wi-impl --help-full [<namespace>] [--index]`: the whole reference, one
    * namespace's part, or a one-line-per-command index. Returns null for an
    * unknown namespace.
    */
   helpFull?: (opts?: HelpFullOptions) => string | null;
   /**
    * Extra sentence for an UNKNOWN_COMMAND / UNKNOWN_SUBCOMMAND / UNKNOWN_FLAG error (the CLI
-   * suggests `belz update` when a newer release may know it). Null adds nothing.
+   * suggests `wi-impl update` when a newer release may know it). Null adds nothing.
    */
   unknownHint?: () => string | null;
 }
@@ -91,7 +91,7 @@ function withUnknownHint(outcome: RunOutcome, hint: NamespacedCliOptions["unknow
 //
 // Bun (1.2.x) silently drops `console.log` output beyond the pipe buffer (64 KiB)
 // once `process.stdout` has been touched, and `process.exit()` discards anything
-// still queued. Both truncate `--llm` JSON when piped (`belz … --llm | jq`).
+// still queued. Both truncate `--llm` JSON when piped (`wi-impl … --llm | jq`).
 // Fix: when a stream is not a TTY, route console output through
 // `stream.write()` (which queues instead of dropping) and, before exiting, await
 // the callback of the last write so the queue has fully drained.
@@ -435,18 +435,18 @@ export function hasHelpFlag(args: string[]): boolean {
 
 // ── Envelope naming ─────────────────────────────────────────────────────────
 
-/** `belz ad` → `belz`. */
+/** `wi-impl ad` → `wi-impl`. */
 function rootName(binaryName: string): string {
   return binaryName.split(" ")[0] || binaryName;
 }
 
-/** Schema namespace for a dispatch level: `belz ad` → `ad`, `belz` → `belz`. */
+/** Schema namespace for a dispatch level: `wi-impl ad` → `ad`, `wi-impl` → `wi-impl`. */
 function schemaNamespace(binaryName: string): string {
   const parts = binaryName.split(" ").filter(Boolean);
   return parts.length > 1 ? parts.slice(1).join("-") : (parts[0] ?? binaryName);
 }
 
-/** Envelope for runner-level outcomes (help, unknown command, bad global flags): `belz.help` / `belz.runner`. */
+/** Envelope for runner-level outcomes (help, unknown command, bad global flags): `wi-impl.help` / `wi-impl.runner`. */
 function runnerEnvelope(
   binaryName: string,
   kind: "help" | "runner" | "version",
@@ -690,7 +690,7 @@ export async function runNamespacedCli(
   await finishOutcome(withUnknownHint(await dispatchNamespaced(argv.slice(2), options), options.unknownHint));
 }
 
-/** `belz 0.1.0 (abc1234)` */
+/** `wi-impl 0.1.0 (abc1234)` */
 export interface HelpFullOptions {
   /** Only this namespace (`ad`, `pd`, … or `top` for top-level commands). */
   namespace?: string;
@@ -715,7 +715,7 @@ export async function dispatchNamespaced(
   const { args, outputMode, envError, envName, globals } = resolveGlobalFlags(argv);
   const startedAt = globals.startedAt;
 
-  vlog("belz start", {
+  vlog("wi-impl start", {
     argv: args,
     env: envName ?? Config.activeEnv.name,
     mode: outputMode,

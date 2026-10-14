@@ -9,7 +9,7 @@
 //     results:null} before, during and after that run (it is not per chain);
 //   - the suite's executionStatus was PASS before the run and stayed PASS with
 //     a failing assertion, and no case carries a status of its own.
-// So the platform exposes no chain-scoped completion or per-case result; belz
+// So the platform exposes no chain-scoped completion or per-case result; wi-impl
 // produces both itself, the same way `ad test --case` does.
 
 import { evaluateExpectations, expectationFromAssertion, isStructured, type Expectation, type ExpectationResult } from "./expect";
@@ -27,7 +27,7 @@ interface CaseRunResult {
   execution: "SUCCESS" | "FAILED" | null;
   outputs: Record<string, unknown>;
   assertions: { total: number; passed: number; failed: number; results: ExpectationResult[] };
-  /** Assertions belz cannot evaluate locally (not `#{out} op literal`). */
+  /** Assertions wi-impl cannot evaluate locally (not `#{out} op literal`). */
   unevaluated: string[];
   failedStep?: FailedStep | null;
   error?: string;

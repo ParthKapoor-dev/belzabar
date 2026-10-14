@@ -27,7 +27,7 @@ interface ExportData {
 }
 
 export const args = defineArgs({
-  command: "belz ad export",
+  command: "wi-impl ad export",
   positionals: [{ name: "method-id", required: true, missingCode: "MISSING_METHOD_ID", missingMessage: "Missing method id (numeric) or UUID argument." }],
   flags: { out: { type: "string" }, full: { type: "boolean" } },
 });

@@ -1,13 +1,13 @@
-Usage: belz pd snapshot <INPUT> [--out <file> | --compare <file>]
+Usage: wi-impl pd snapshot <INPUT> [--out <file> | --compare <file>]
 
 A normalized, stable, diff-friendly JSON snapshot of a page or component, to
 keep in git as a test baseline — and a semantic comparison of a stored
 snapshot with the live page. The page is always read fresh.
 
-Intended use (e.g. a unit-test repo): commit `belz pd snapshot <page> --out
+Intended use (e.g. a unit-test repo): commit `wi-impl pd snapshot <page> --out
 snapshots/<page>.json` next to the tests, re-run it after a reviewed change
 (the git diff shows exactly what changed), and gate CI or a release with
-`belz pd snapshot <page> --compare snapshots/<page>.json --env <env>` — exit
+`wi-impl pd snapshot <page> --compare snapshots/<page>.json --env <env>` — exit
 0 when the live page matches, exit 1 with the semantic diff when not.
 
 Normalization (same page → same bytes):
@@ -43,6 +43,6 @@ Global Flags:
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz pd snapshot "Student Application" --out snapshots/student-application.json --env acme-dev
-  belz pd snapshot 4cba8f39eb92d136694dadc4e7f2a811 --compare snapshots/student-application.json --env acme-dev
-  belz pd snapshot check_permission --compare snapshots/check_permission.json --env acme-qa --llm | jq '.data.compare.changes'
+  wi-impl pd snapshot "Student Application" --out snapshots/student-application.json --env acme-dev
+  wi-impl pd snapshot 4cba8f39eb92d136694dadc4e7f2a811 --compare snapshots/student-application.json --env acme-dev
+  wi-impl pd snapshot check_permission --compare snapshots/check_permission.json --env acme-qa --llm | jq '.data.compare.changes'

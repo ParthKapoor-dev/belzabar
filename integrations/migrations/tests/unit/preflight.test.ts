@@ -13,7 +13,7 @@ const runCmd = { ...runCmdModule, envAware: false };
 // An explicit --client is checked against the profile's Jenkins group.
 const JOB_PARAMS = { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${import.meta.dir}/../fixtures/real/job-parameters.json`) };
 
-/** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */
+/** Profile segment → env mapping (config `jenkins.profileEnvs`); wi-impl has no built-in one. */
 const PROFILE_ENVS = { devacme: "acme-dev", qaacme: "acme-qa", stageacme: "acme-stage", qagm: "gm-qa", stagegm: "gm-stage", qabravo: "orb-qa", stgbravo: "orb-stage" };
 
 let cfg: TempEnvConfig | null = null;
@@ -90,7 +90,7 @@ describe("migrate pre-flight", () => {
     );
     expect(String(err.code)).not.toStartWith("MIGRATE_");
     expect(err.message).toContain("Pre-flight id resolution on 'acme-dev' failed, so no build was triggered");
-    expect(err.message).toContain("belz config edit");
+    expect(err.message).toContain("wi-impl config edit");
     expect(err.details).toMatchObject({ preflightEnv: "acme-dev" });
   });
 

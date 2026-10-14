@@ -9,9 +9,9 @@ import { ENVELOPE_VERSION } from "../envelope";
  *
  * - `schema`   `<namespace>.<command>`, derived by the runner from routing:
  *              `ad.show`, `pd.lint`, `tw.task`, `migrate.status`,
- *              `release.matrix`, top-level `belz.envs` / `belz.config`.
- *              Runner-level outcomes: `belz.help`, `belz.runner` (unknown
- *              command, bad global flags), `belz.version`.
+ *              `release.matrix`, top-level `wi-impl.envs` / `wi-impl.config`.
+ *              Runner-level outcomes: `wi-impl.help`, `wi-impl.runner` (unknown
+ *              command, bad global flags), `wi-impl.version`.
  * - `version`  always `"2.0"`.
  * - `ok`       false whenever the operation failed or found a failure-shaped
  *              result (then `error` is set; `data` may still carry the result).

@@ -1,11 +1,11 @@
-belz ad sql run "<query>"  :->  Run ONE read-only SQL statement and return the rows (nothing is saved; writes: sql update/insert/modify)
-belz ad sql dbs  :->  List available SQL database configurations and auth types (and the default-DB resolution)
-belz ad sql run "<query>" --db <name|id>  :->  Execute SELECT against a specific database
-belz ad sql explain "<query>"  :->  Query plan (EXPLAIN) of one read statement; the statement must pass the read-only gate; plan = lines
-belz ad sql explain "<query>" --analyze [--buffers]  :->  EXPLAIN ANALYZE: executes the (read-only) statement; adds timing {planningMs, executionMs}
-belz ad sql explain "<query>" --format json  :->  Plan as parsed JSON (EXPLAIN FORMAT JSON)
-belz ad sql update "<query>" --db <name|id> --env <env> [--yes]  :->  Execute UPDATE or DELETE; returns rows affected (confirm or --yes)
-belz ad sql insert "<query> RETURNING <col>" --db <name|id> --env <env> [--yes]  :->  Execute INSERT (confirm or --yes); returns rows affected, and with RETURNING the generated values
-belz ad sql modify "<query>" --db <name|id> --env <env> [--yes]  :->  Execute DDL (ALTER TABLE, CREATE INDEX, etc.; confirm or --yes)
-belz ad sql tui --env <env>  :->  Start an interactive SQL session (prompts for DB and mode: read|insert|update|modify; a write command)
-belz ad sql tui --db <name|id> --mode <read|insert|update|modify> --env <env>  :->  Start TUI with pre-selected DB and mode
+wi-impl ad sql run "<query>"  :->  Run ONE read-only SQL statement and return the rows (nothing is saved; writes: sql update/insert/modify)
+wi-impl ad sql dbs  :->  List available SQL database configurations and auth types (and the default-DB resolution)
+wi-impl ad sql run "<query>" --db <name|id>  :->  Execute SELECT against a specific database
+wi-impl ad sql explain "<query>"  :->  Query plan (EXPLAIN) of one read statement; the statement must pass the read-only gate; plan = lines
+wi-impl ad sql explain "<query>" --analyze [--buffers]  :->  EXPLAIN ANALYZE: executes the (read-only) statement; adds timing {planningMs, executionMs}
+wi-impl ad sql explain "<query>" --format json  :->  Plan as parsed JSON (EXPLAIN FORMAT JSON)
+wi-impl ad sql update "<query>" --db <name|id> --env <env> [--yes]  :->  Execute UPDATE or DELETE; returns rows affected (confirm or --yes)
+wi-impl ad sql insert "<query> RETURNING <col>" --db <name|id> --env <env> [--yes]  :->  Execute INSERT (confirm or --yes); returns rows affected, and with RETURNING the generated values
+wi-impl ad sql modify "<query>" --db <name|id> --env <env> [--yes]  :->  Execute DDL (ALTER TABLE, CREATE INDEX, etc.; confirm or --yes)
+wi-impl ad sql tui --env <env>  :->  Start an interactive SQL session (prompts for DB and mode: read|insert|update|modify; a write command)
+wi-impl ad sql tui --db <name|id> --mode <read|insert|update|modify> --env <env>  :->  Start TUI with pre-selected DB and mode

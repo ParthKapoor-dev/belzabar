@@ -1,15 +1,15 @@
-Usage: belz onboard
+Usage: wi-impl onboard
 
-Guided first-run setup for belz. Walks through:
+Guided first-run setup for wi-impl. Walks through:
 
-  1. Credentials  — environment usernames/passwords (via `belz setup`)
+  1. Credentials  — environment usernames/passwords (via `wi-impl setup`)
 
-Each step is confirmed before it runs and is safe to skip. `belz onboard` is
+Each step is confirmed before it runs and is safe to skip. `wi-impl onboard` is
 idempotent — re-run it any time; steps that are already done are detected and
 offered for skipping.
 
 This command is interactive and takes no flags. For non-interactive /
-scripted setup, run the underlying command directly (see `belz setup --help`).
+scripted setup, run the underlying command directly (see `wi-impl setup --help`).
 
 Examples:
-  belz onboard            Run the guided setup
+  wi-impl onboard            Run the guided setup

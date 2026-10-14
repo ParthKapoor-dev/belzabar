@@ -31,7 +31,7 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
   line/column normalised away). A different broken value at the same path is new; an unrelated
   edit elsewhere in the same SQL or code body keeps old findings pre-existing.
 - Rule names: codes inherited from the team's own validator (`M1`, `CI1`, `LP3`, …) keep their
-  meaning; belz-only rules are `AD-<FAMILY>-nnn`. `CI1` and `DUP1` are warnings because they
+  meaning; wi-impl-only rules are `AD-<FAMILY>-nnn`. `CI1` and `DUP1` are warnings because they
   fire on working methods.
 - Lint rules (`Q2`–`Q4`, `Q6`, `AD-LINT-001`…) never run on save or publish. `Q3` is
   project-specific and config-driven: `"lint": {"resolverTables": {"<table>": "<resolverFn>"}}`

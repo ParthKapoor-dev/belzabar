@@ -36,7 +36,7 @@ export function parsePath(key: string): PathSegment[] {
  *     `my key`, `2col`, `(click)` (an event-binding prop);
  *   - bracketed binding props as one literal key: `[innerHTML]`, `[(value)]`,
  *     `[student-id]`, and `name[non-digit]` (`foo[bar]`) — the same way
- *     belz's `parsePath` reads them.
+ *     wi-impl's `parsePath` reads them.
  * NOT sendable: a key whose property name itself contains a `.` (Angular
  * `[attr.title]`, `[class.x]`): the server splits it, the half-bracketed
  * segments answer HTTP 500 and nothing is stored. Those edits are full saves.

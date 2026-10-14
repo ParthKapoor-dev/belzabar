@@ -66,7 +66,7 @@ function chainIdOf(method: HydratedMethod): number {
 }
 
 export const args = defineArgs({
-  command: "belz ad changelog",
+  command: "wi-impl ad changelog",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
   flags: { ...AD_NOTE_FLAG, ...AD_YES_FLAG, fields: { type: "string" } },
 });

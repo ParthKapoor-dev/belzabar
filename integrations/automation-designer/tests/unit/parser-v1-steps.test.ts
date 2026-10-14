@@ -4,7 +4,7 @@ import type { V1ServiceStep } from "../../lib/types/v1-wire";
 import type { ServiceResolver } from "../../lib/parser/steps/classify";
 
 // The hand-written fixtures carry one environment's numeric apiIds. Ids are
-// env-local and belz has no built-in tables, so the test supplies the
+// env-local and wi-impl has no built-in tables, so the test supplies the
 // resolver (online, lib/hydrator.ts builds it from the definition cache).
 const API_IDS: Record<number, [string, string]> = {
   48: ["Database.SQL", "data.read"],

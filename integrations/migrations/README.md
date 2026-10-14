@@ -1,6 +1,6 @@
 # @belzabar/migrations
 
-`belz migrate …` — list, trigger and inspect builds of a Jenkins migration job that moves
+`wi-impl migrate …` — list, trigger and inspect builds of a Jenkins migration job that moves
 Automation Designer (AD) methods and Page Designer (PD) pages between environments.
 Migrations run through Jenkins only; the Jenkins REST client lives in [`lib/jenkins/`](lib/jenkins/README.md).
 
@@ -14,7 +14,7 @@ Migrations run through Jenkins only; the Jenkins REST client lives in [`lib/jenk
 
 | Directory | Contents |
 |---|---|
-| [`commands/`](commands/README.md) | One folder per `belz migrate` command |
+| [`commands/`](commands/README.md) | One folder per `wi-impl migrate` command |
 | [`lib/`](lib/README.md) | Arg specs, profile discovery, pre-flight, console parsing, artifacts, Jenkins client |
 | [`tests/`](tests/README.md) | Unit tests over a faked transport and sanitized Jenkins captures |
 
@@ -33,12 +33,12 @@ read-only Jenkins captures.
 
 | Command | Kind | What it does |
 |---|---|---|
-| `belz migrate profiles` | read | Profile choices of the job, grouped by client; cached 24 h |
-| `belz migrate run` | **write** | Confirms, triggers a build, follows its console, parses the report |
-| `belz migrate status` | read | Build status, result and parameters |
-| `belz migrate logs` | read | ANSI-stripped console of a build |
+| `wi-impl migrate profiles` | read | Profile choices of the job, grouped by client; cached 24 h |
+| `wi-impl migrate run` | **write** | Confirms, triggers a build, follows its console, parses the report |
+| `wi-impl migrate status` | read | Build status, result and parameters |
+| `wi-impl migrate logs` | read | ANSI-stripped console of a build |
 
-Flags and examples: each command's `help.txt` (`commands/<cmd>/help.txt`) or `belz --help-full`.
+Flags and examples: each command's `help.txt` (`commands/<cmd>/help.txt`) or `wi-impl --help-full`.
 
 ## Configuration
 
@@ -51,7 +51,7 @@ environment variables (the config file wins):
 | `user` | `WI_IMPL_JENKINS_USER` | |
 | `password` (+ `passwordEncoding`) | `WI_IMPL_JENKINS_PASSWORD` | API token or password |
 | `migrationJob` | `WI_IMPL_JENKINS_JOB` | Required, no default; may be a folder path (`a/b`) |
-| `profileEnvs` | — | Optional map of profile segment → belz env, e.g. `{ "devx": "dev" }` |
+| `profileEnvs` | — | Optional map of profile segment → wi-impl env, e.g. `{ "devx": "dev" }` |
 
 A missing URL, user, password or job fails `MIGRATE_JENKINS_CONFIG_MISSING`.
 
@@ -66,7 +66,7 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   (`MIGRATE_INVALID_FLAG_VALUE`) and stray positionals (`MIGRATE_UNEXPECTED_ARG`) fail before
   anything runs; so do `--module` + `--module-custom` (`MIGRATE_MODULE_CONFLICT`) and report or
   status modules without `--migration-id` (`MIGRATE_MIGRATION_ID_REQUIRED`).
-- **Profiles and envs.** A profile is `<source segment>_<target segment>`. Segments map to belz
+- **Profiles and envs.** A profile is `<source segment>_<target segment>`. Segments map to wi-impl
   envs only through `jenkins.profileEnvs` (keys case-insensitive); there is no built-in mapping.
   `--source-env`/`--target-env` must agree with the profile (`MIGRATE_ENV_PROFILE_MISMATCH`);
   for an unmapped profile both must be given (`MIGRATE_ENV_PROFILE_UNVERIFIED`). An env pair
@@ -82,7 +82,7 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   pre-flight is a warning in `meta.warnings`. See [`lib/README.md`](lib/README.md).
 - **After the trigger** every failure keeps its code and adds `details.buildTriggered: true`
   plus `jobUrl` / `queueUrl` / `buildNumber` / `buildUrl` when known; unless the build itself
-  failed (`MIGRATE_RUN_FAILED`) the message says not to re-run and names `belz migrate status <n>`.
+  failed (`MIGRATE_RUN_FAILED`) the message says not to re-run and names `wi-impl migrate status <n>`.
 - **Outcome.** A SUCCESS build can migrate nothing: the script skips a method whose version is
   the same on source and target. For a followed, non-dry build of ids `data.outcome` is
   `MIGRATED`, `PARTIAL` or `NOTHING_MIGRATED` (`migrationOutcome` in `lib/report.ts`), each
@@ -90,7 +90,7 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   `ok`; `--strict` fails `MIGRATE_NOTHING_MIGRATED` / `MIGRATE_PARTIALLY_MIGRATED` (without the
   do-not-re-run hint: the build finished).
 - **Target cache.** After a followed, non-dry `AD_Method` or `PD` build whose target env is known
-  (`--target-env` or `jenkins.profileEnvs`), belz drops its cached copies of the ids on that env
+  (`--target-env` or `jenkins.profileEnvs`), wi-impl drops its cached copies of the ids on that env
   (core `invalidateEntityCache`: the method or page cache, plus a dirty mark in the AD method
   index) and reports `data.cacheInvalidated {env, ids}`. Best effort; it never fails the run.
 - `--dry-run` only sends `DRY_RUN=true`: it is still a real Jenkins build.

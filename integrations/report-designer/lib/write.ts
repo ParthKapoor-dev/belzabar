@@ -1,7 +1,7 @@
 // The write pipeline shared by `rd create`, `rd save` and `rd copy`.
 //
 // Report Designer has no history and no optimistic locking (last write wins),
-// so belz keeps its own backup of a report before replacing its definition,
+// so wi-impl keeps its own backup of a report before replacing its definition,
 // refuses to write when the definition changed since it was read, and reads
 // the result back to verify it.
 
@@ -13,7 +13,7 @@ import { logIntent } from "./confirm";
 import type { ResolvedDataSource } from "./datasource";
 import { readReport, specChanges, toConfiguration, type ReportSpec, type SavedReport } from "./definition";
 
-/** `~/.wi-impl/rd/backups/<env>/<id>-<timestamp>.json`; never pruned by `belz cache`. */
+/** `~/.wi-impl/rd/backups/<env>/<id>-<timestamp>.json`; never pruned by `wi-impl cache`. */
 export const RD_BACKUP_DIR = join(BELZ_CONFIG_DIR, "rd", "backups");
 
 /** Write the report's current spec (restorable with `rd save <id> --spec <file>`); returns the path. */
@@ -61,7 +61,7 @@ async function writeSpec(
   opts: { expectFingerprint?: string; titleChanged: boolean },
 ): Promise<WriteResult> {
   if (opts.expectFingerprint !== undefined && (await definitionFingerprint(id)) !== opts.expectFingerprint) {
-    throw new CliError(`Report ${id} changed on the server since belz read it; nothing was written. Re-run to review the new state.`, {
+    throw new CliError(`Report ${id} changed on the server since wi-impl read it; nothing was written. Re-run to review the new state.`, {
       code: "RD_CONFLICT",
       details: { id },
     });
@@ -89,7 +89,7 @@ export async function createReport(spec: ReportSpec, ds: ResolvedDataSource): Pr
     return await writeSpec(id, spec, ds, { titleChanged: true });
   } catch (err) {
     if (err instanceof CliError) {
-      throw new CliError(`Report ${id} was created but its definition was not saved: ${err.message} Retry with 'belz rd save ${id} --spec <file>'.`, {
+      throw new CliError(`Report ${id} was created but its definition was not saved: ${err.message} Retry with 'wi-impl rd save ${id} --spec <file>'.`, {
         code: err.code,
         details: { createdId: id, ...(typeof err.details === "object" && err.details ? err.details : {}) },
       });

@@ -1,4 +1,4 @@
-// belz ad grep <regex> (--category a,b | --all | --method <uuid>...) [--in sql,code,spel]
+// wi-impl ad grep <regex> (--category a,b | --all | --method <uuid>...) [--in sql,code,spel]
 //
 // Search the text of method steps: SQL, custom code, SpEL conditions, echo expressions and
 // input values. Read-only. Body reading and caching are shared with `ad callers`
@@ -36,7 +36,7 @@ interface GrepData {
 }
 
 export const args = defineArgs({
-  command: "belz ad grep",
+  command: "wi-impl ad grep",
   positionals: [{ name: "pattern", required: true, missingCode: "MISSING_PATTERN", missingMessage: "Missing <pattern> argument." }],
   flags: {
     category: { type: "string" },

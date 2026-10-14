@@ -40,7 +40,7 @@ export async function fetchCrumb(auth: JenkinsAuth): Promise<Crumb | null> {
   if (res.status === 404) return null;
   if (!res.ok) {
     const body = await readBodySummary(res, 200);
-    const hint = res.status === 401 || res.status === 403 ? " Check the Jenkins user/API token ('belz config edit')." : "";
+    const hint = res.status === 401 || res.status === 403 ? " Check the Jenkins user/API token ('wi-impl config edit')." : "";
     throw new CliError(`Failed to fetch Jenkins CSRF crumb (HTTP ${res.status}).${hint}${body ? ` ${body}` : ""}`, {
       code: "MIGRATE_JENKINS_CRUMB_FAILED",
       details: { status: res.status, body },

@@ -11,7 +11,9 @@ import { CliError, isObj, readJsonInput, str, type Obj } from "@belzabar/core";
 import { getReportBasic, getReportDefinition, getReportDetailed } from "./api";
 import { describeDataSource, type DataSourceRef } from "./datasource";
 
-export const SPEC_FORMAT = "belz.rd.report/1";
+export const SPEC_FORMAT = "wi-impl.rd.report/1";
+/** The format id files exported before the rename carry; still read. */
+const LEGACY_SPEC_FORMAT = "belz.rd.report/1";
 export const DEFAULT_SUMMARY_POSITION = { label: "Show summaries at top", value: "top" } as const;
 /** Fields only the executing DETAILED read returns. */
 const EXACT_ONLY_FIELDS = ["summaryPosition", "filterConfig"] as const;
@@ -147,7 +149,7 @@ export function savedConfiguration(report: SavedReport): string {
 export function parseSpec(value: unknown): ReportSpec {
   const problems: string[] = [];
   if (!isObj(value)) throw new CliError("A report spec must be a JSON object.", { code: "RD_SPEC_INVALID", details: { problems: ["not an object"] } });
-  if (value.format !== undefined && value.format !== SPEC_FORMAT) problems.push(`format must be "${SPEC_FORMAT}"`);
+  if (value.format !== undefined && value.format !== SPEC_FORMAT && value.format !== LEGACY_SPEC_FORMAT) problems.push(`format must be "${SPEC_FORMAT}"`);
   if (!str(value.title)?.trim()) problems.push("title: a non-empty string is required");
   if (value.description !== undefined && typeof value.description !== "string") problems.push("description: must be a string");
   const ds = value.dataSource;

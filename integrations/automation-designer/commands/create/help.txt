@@ -1,9 +1,9 @@
-Usage: belz ad create --spec <FILE> [--category <CATEGORY>] --env <env> [flags]
+Usage: wi-impl ad create --spec <FILE> [--category <CATEGORY>] --env <env> [flags]
 
 Create a new DRAFT method from a spec through the V2 route
 (POST /chain/v2 without a uuid). Returns the new uuid.
 
-Compact spec (belz expands it to the full V2 body with UI defaults):
+Compact spec (wi-impl expands it to the full V2 body with UI defaults):
   {
     "name": "orders.list", "category": "Sandbox",
     "summary": "…", "description": "…",
@@ -30,14 +30,14 @@ Compact spec (belz expands it to the full V2 body with UI defaults):
   threads), account (db_service: an id or nickname; it may be omitted only
   when the service has exactly one account on the env — e.g. one env has
   several, and then AD_SPEC_INVALID lists them as id=nickname; see
-  `belz ad child-info db_service select` lists them), description,
+  `wi-impl ad child-info db_service select` lists them), description,
   language, async. `sql` alone picks db_service data.read/add/update/delete
   from the verb. Service input/output keys, accounts and services are checked
   online against the callee contract (unknown ones are refused: the server
   would drop them). Custom-code outputs get elementToRetrieve when there are
-  several. See `belz ad save --help` for the same format in structural edits.
+  several. See `wi-impl ad save --help` for the same format in structural edits.
 
-A V2 method body (e.g. the V2 `data.raw` of `belz ad fetch`) or a subset of it
+A V2 method body (e.g. the V2 `data.raw` of `wi-impl ad fetch`) or a subset of it
 works too: server-owned keys (uuid, ids, metadata state/version/service,
 changelogs, permissions…) are dropped and listed in `dropped`; step ids and
 method-level uuids are minted by the server. Raw and compact steps can mix.
@@ -65,10 +65,10 @@ Global Flags:
                         back to the default env (ENV_REQUIRED_FOR_WRITE).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
-Platform trap: a new draft stores no input testValues (belz cannot set them),
+Platform trap: a new draft stores no input testValues (wi-impl cannot set them),
 so the AD designer's Test dialog reports "Mandatory fields are not filled" for
 its required inputs until they are entered there; the create warns and names
-them. 'belz ad test' takes the values as inputs instead.
+them. 'wi-impl ad test' takes the values as inputs instead.
 
 Errors: MISSING_CATEGORY, AD_SPEC_UNKNOWN_KEY, AD_SPEC_INVALID,
 AD_SPEC_NOT_APPLIED (key/service/account the server would drop or reject;
@@ -83,6 +83,6 @@ chainCategoryUuid, name}, stepCount, dropped[], validation{skipped, warnings,
 layersRun}}.
 
 Examples:
-  belz ad create --spec method.json --dry-run --env <env> --llm
-  belz ad create --category Sandbox --spec method.json --env <env>
-  belz ad create --category 42 --spec method.json --env <env> --yes --llm
+  wi-impl ad create --spec method.json --dry-run --env <env> --llm
+  wi-impl ad create --category Sandbox --spec method.json --env <env>
+  wi-impl ad create --category 42 --spec method.json --env <env> --yes --llm

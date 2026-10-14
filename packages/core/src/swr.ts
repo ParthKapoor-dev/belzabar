@@ -28,7 +28,7 @@ export function isCompiledEntry(entry: string | undefined): boolean {
  * - Dev (`bun bin/cli.ts ad show X`): argv = [bun, script, ...args] → run
  *   `argv[0]` with `[script, ...args]`.
  * - Compiled binary: argv = ["bun", "/$bunfs/root/belz", ...args] — "bun" is
- *   not the real executable, so run `execPath` (the belz binary) with `args`.
+ *   not the real executable, so run `execPath` (the wi-impl binary) with `args`.
  *
  * Side-effectful flags (`--open`/`-o`) are stripped so the refresh never opens
  * a browser a second time.
@@ -90,7 +90,7 @@ function markRefreshing(cacheDir: string, key: string): void {
 }
 
 /**
- * Best-effort stale-while-revalidate refresh. Re-invokes the current `belz`
+ * Best-effort stale-while-revalidate refresh. Re-invokes the current `wi-impl`
  * command with `--force` as a detached background process so it outlives this
  * short-lived CLI process and rewrites the cache for the next invocation.
  *

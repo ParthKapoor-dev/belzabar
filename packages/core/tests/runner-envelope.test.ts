@@ -47,7 +47,7 @@ function cli(extra: Partial<NamespacedCliOptions> = {}): NamespacedCliOptions {
   return {
     name: "t",
     description: "t",
-    binaryName: "belz",
+    binaryName: "wi-impl",
     namespaces: {
       ad: { name: "AD", description: "ad", commands: { show: probe, save: { ...probe, writes: true } } },
       tw: { name: "TW", description: "tw", commands: { task: probe }, envAware: false },
@@ -68,9 +68,9 @@ describe("envelope naming and version", () => {
       [["ad", "show", "x"], "ad.show"],
       [["tw", "task", "1"], "tw.task"],
       [["migrate", "status"], "migrate.status"],
-      [["config", "get"], "belz.config"],
-      [["envs"], "belz.envs"],
-      [["cache"], "belz.cache"],
+      [["config", "get"], "wi-impl.config"],
+      [["envs"], "wi-impl.envs"],
+      [["cache"], "wi-impl.cache"],
     ] as const) {
       const r = await runCliInProcess(opts, [...argv]);
       expect(r.envelope?.schema).toBe(schema);
@@ -79,16 +79,16 @@ describe("envelope naming and version", () => {
     }
   });
 
-  test("runner-level envelopes: belz.help / belz.runner / belz.version, with durationMs, no env", async () => {
+  test("runner-level envelopes: wi-impl.help / wi-impl.runner / wi-impl.version, with durationMs, no env", async () => {
     for (const [argv, schema, okv] of [
-      [[], "belz.help", true],
-      [["ad"], "belz.help", true],
-      [["ad", "show", "--help"], "belz.help", true],
-      [["nope"], "belz.runner", false],
-      [["ad", "nope"], "belz.runner", false],
-      [["envs", "--env", "no-such"], "belz.runner", false],
-      [["envs", "--env"], "belz.runner", false],
-      [["--version"], "belz.version", true],
+      [[], "wi-impl.help", true],
+      [["ad"], "wi-impl.help", true],
+      [["ad", "show", "--help"], "wi-impl.help", true],
+      [["nope"], "wi-impl.runner", false],
+      [["ad", "nope"], "wi-impl.runner", false],
+      [["envs", "--env", "no-such"], "wi-impl.runner", false],
+      [["envs", "--env"], "wi-impl.runner", false],
+      [["--version"], "wi-impl.version", true],
     ] as const) {
       const r = await runCliInProcess(cli(), [...argv]);
       expect(r.envelope?.schema).toBe(schema);
@@ -235,7 +235,7 @@ describe("help is plain text off a TTY, even with FORCE_COLOR", () => {
     Object.defineProperty(process.stdout, "isTTY", { value: false, configurable: true });
     try {
       const opts = cli({ helpFull: () => "\x1b[1mFULL\x1b[22m" });
-      opts.namespaces.ad!.helpResolver = async () => "\x1b[31mUsage: belz ad show\x1b[39m";
+      opts.namespaces.ad!.helpResolver = async () => "\x1b[31mUsage: wi-impl ad show\x1b[39m";
       for (const argv of [["--help"], ["ad", "--help"], ["ad", "show", "--help"], ["--help-full"]]) {
         const r = await runCliInProcess(opts, argv, { llm: false });
         expect(r.stdout.length).toBeGreaterThan(0);
@@ -273,9 +273,9 @@ describe("printErr", () => {
 describe("--version", () => {
   test("human and --llm", async () => {
     const h = await runCliInProcess(cli(), ["--version"], { llm: false });
-    expect(h.stdout.trim()).toBe("belz 9.9.9 (abc1234)");
+    expect(h.stdout.trim()).toBe("wi-impl 9.9.9 (abc1234)");
     const l = await runCliInProcess(cli(), ["--version"]);
-    expect(l.envelope?.data).toMatchObject({ name: "belz", version: "9.9.9", sha: "abc1234" });
+    expect(l.envelope?.data).toMatchObject({ name: "wi-impl", version: "9.9.9", sha: "abc1234" });
   });
 
   test("a command's own --version flag is not intercepted", async () => {

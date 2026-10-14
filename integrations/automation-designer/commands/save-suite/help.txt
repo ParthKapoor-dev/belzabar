@@ -1,7 +1,7 @@
-Usage: belz ad save-suite <UUID> --name <NAME> [flags]
+Usage: wi-impl ad save-suite <UUID> --name <NAME> [flags]
 
 Capture and save a regression test suite for a method.
-Stores input values for repeated use with 'belz ad run-suites'. The suite
+Stores input values for repeated use with 'wi-impl ad run-suites'. The suite
 records the env it was saved on; run-suites refuses to replay it elsewhere.
 The method is fetched first to check the uuid. The suite is written to
 suites/<NAME>.spec.json under the current directory, so NAME may contain only
@@ -18,9 +18,9 @@ Flags:
 
 Global Flags:
   --env <name>        Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                      Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                      Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad save-suite 123e4567-e89b-12d3-a456-426614174000 --name smoke-test-login
-  belz ad save-suite 123e4567-e89b-12d3-a456-426614174000 --name smoke-test-login --inputs ./inputs.json
+  wi-impl ad save-suite 123e4567-e89b-12d3-a456-426614174000 --name smoke-test-login
+  wi-impl ad save-suite 123e4567-e89b-12d3-a456-426614174000 --name smoke-test-login --inputs ./inputs.json

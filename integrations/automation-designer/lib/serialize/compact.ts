@@ -1,5 +1,5 @@
 // Compact authoring format → V2 wire (`ad create --spec`, structural
-// `ad save` ops). An agent writes a few lines per step; belz fills the V2
+// `ad save` ops). An agent writes a few lines per step; wi-impl fills the V2
 // boilerplate the AD UI would write.
 //
 // Compact step (every key optional except what the kind needs):
@@ -747,7 +747,7 @@ export function expandCompactStep(given: unknown, catalog: ServiceCatalog, where
   }
   const contract = catalog.contracts.get(service);
   if (contract === null) {
-    p.drop(`${where}.service`, `${service} does not resolve to an automation API (404 on save); check with \`belz ad services --search\``);
+    p.drop(`${where}.service`, `${service} does not resolve to an automation API (404 on save); check with \`wi-impl ad services --search\``);
     return null;
   }
   const isSql = sm.service === DB_SERVICE;

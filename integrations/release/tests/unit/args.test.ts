@@ -8,7 +8,7 @@ import freeze from "../../commands/freeze/index";
 import { errorCode as code, rejectionCode } from "@belzabar/core/testing";
 
 const ctx = { outputMode: "llm" } as any;
-const dir = mkdtempSync(join(tmpdir(), "belz-release-args-"));
+const dir = mkdtempSync(join(tmpdir(), "wi-impl-release-args-"));
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 function spec(body: unknown): string {

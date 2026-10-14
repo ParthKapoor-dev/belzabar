@@ -1,3 +1,3 @@
-belz pd translations <input>  :->  Validate a published page/component's translation phrases (PASS/FAIL/N/A)
-belz pd translations <input> --expect-draft <id>  :->  Override the expected main draft id
-belz pd translations <input> --status DRAFT  :->  Check the DRAFT dependency graph instead
+wi-impl pd translations <input>  :->  Validate a published page/component's translation phrases (PASS/FAIL/N/A)
+wi-impl pd translations <input> --expect-draft <id>  :->  Override the expected main draft id
+wi-impl pd translations <input> --status DRAFT  :->  Check the DRAFT dependency graph instead

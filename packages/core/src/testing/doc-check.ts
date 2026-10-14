@@ -1,5 +1,5 @@
 // Check a command's help.txt / desc.txt against its args spec, so the docs the
-// agents read (`belz … --help`, `belz --help-full`) never drift from the parser.
+// agents read (`wi-impl … --help`, `wi-impl --help-full`) never drift from the parser.
 
 import { acceptedFlags, specsOf } from "../args/parse";
 import { GLOBAL_FLAGS, type AnyArgsDef } from "../args/spec";
@@ -12,7 +12,7 @@ export function flagsMentioned(text: string): string[] {
 }
 
 interface DocCheckInput {
-  /** `belz ad show` / `belz envs`. */
+  /** `wi-impl ad show` / `wi-impl envs`. */
   invocation: string;
   def: AnyArgsDef;
   help: string;

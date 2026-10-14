@@ -1,4 +1,4 @@
-Usage: belz ad find [LIST|PICK|QUERY] [flags]
+Usage: wi-impl ad find [LIST|PICK|QUERY] [flags]
 
 Find Automation Designer methods and categories from a cached local index.
 With no query (or `LIST`), lists all categories with method counts; add
@@ -37,20 +37,20 @@ Flags:
 
 Global Flags:
   --env <name>        Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                      Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                      Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad find list
-  belz ad find --category Sandbox --env acme-dev --llm
-  belz ad find pick _lookupDCIN --open
-  belz ad find "documents helper" --limit 30
-  belz ad find --describe fetch value from json path --category Helpers --llm
-  belz ad find _lookupDCIN --refresh --llm
+  wi-impl ad find list
+  wi-impl ad find --category Sandbox --env acme-dev --llm
+  wi-impl ad find pick _lookupDCIN --open
+  wi-impl ad find "documents helper" --limit 30
+  wi-impl ad find --describe fetch value from json path --category Helpers --llm
+  wi-impl ad find _lookupDCIN --refresh --llm
 
 Errors: AD_INDEX_FETCH_FAILED (the category listing failed while building the
 index; details {path, status}).
 
-Notes: the index is cached (7 days). Methods belz wrote are marked, and a
+Notes: the index is cached (7 days). Methods wi-impl wrote are marked, and a
 method whose V2 read answers METHOD_NOT_FOUND (deleted) drops out of the
 cached index at once; --refresh rebuilds everything.

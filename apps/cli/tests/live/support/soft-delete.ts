@@ -1,12 +1,12 @@
-// Live-suite cleanup helper: soft-delete belz_tst_ methods in the live
-// category on the live env, including PUBLISHED copies (which `belz ad delete` refuses by
+// Live-suite cleanup helper: soft-delete wi_impl_tst_ (or pre-rename belz_tst_) methods in the live
+// category on the live env, including PUBLISHED copies (which `wi-impl ad delete` refuses by
 // design). Spawned by the write suite's afterAll with WI_IMPL_HOME = the seeded
 // live home; never imported by the CLI.
 //
 //   bun soft-delete.ts <uuid>...   → one JSON line: [{uuid, result, name?}]
 //
 // Guards (fail closed): env WI_IMPL_LIVE only, the V2 body must name a
-// `belz_tst_` method in chain category WI_IMPL_LIVE_CATEGORY_ID. A uuid whose V2
+// `wi_impl_tst_` / `belz_tst_` method in chain category WI_IMPL_LIVE_CATEGORY_ID. A uuid whose V2
 // read is already METHOD_NOT_FOUND counts as gone.
 import { CliError, Config } from "@belzabar/core";
 import * as v2 from "@belzabar/ad/lib/api/v2";
@@ -31,7 +31,7 @@ async function softDelete(uuid: string): Promise<Result> {
   }
   const name = String((body as { name?: unknown }).name ?? "");
   const service = (body as { metadata?: { service?: { id?: unknown } } }).metadata?.service;
-  if (!name.startsWith("belz_tst_") || Number(service?.id) !== LIVE_CHAIN_CATEGORY) {
+  if (!/^(wi_impl|belz)_tst_/.test(name) || Number(service?.id) !== LIVE_CHAIN_CATEGORY) {
     return { uuid, result: "refused", name, detail: `category ${String(service?.id)}` };
   }
   try {

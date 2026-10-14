@@ -38,7 +38,7 @@ export async function teamworkFetch(path: string, options: RequestInit = {}): Pr
         ...options,
         headers: {
           Accept: "application/json",
-          "User-Agent": "Bun/1.0 (Belzabar CLI)",
+          "User-Agent": "Bun/1.0 (wi-impl)",
           ...((options.headers as Record<string, string>) ?? {}),
           Cookie: `tw-auth=${twAuth}`,
         },

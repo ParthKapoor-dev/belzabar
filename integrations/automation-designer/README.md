@@ -1,20 +1,20 @@
 # @belzabar/ad — Automation Designer
 
-The `belz ad` commands and the library behind them: read, search, edit, validate, save,
+The `wi-impl ad` commands and the library behind them: read, search, edit, validate, save,
 publish, test and trace Automation Designer methods, and run SQL through the platform.
 
 Automation Designer keeps backend logic as versioned **methods** ("chains") of steps. A method
 has a DRAFT chain and, once published, a PUBLISHED chain; the two have separate uuids and
-independent version counters. belz edits only drafts.
+independent version counters. wi-impl edits only drafts.
 
 ## Role in the monorepo
 
-The package has no entry point of its own. `apps/cli` compiles it into `belz` through
+The package has no entry point of its own. `apps/cli` compiles it into `wi-impl` through
 [`registry.ts`](registry.ts); other workspaces import the library:
 
 | Export | Used by |
 |---|---|
-| `@belzabar/ad/registry` | `apps/cli` (routing and `belz --help-full`) |
+| `@belzabar/ad/registry` | `apps/cli` (routing and `wi-impl --help-full`) |
 | `@belzabar/ad/lib/*` | `release` (`lib/trace`), the CLI live tests (`lib/api/v2`, `lib/save/api`) |
 
 It depends on `@belzabar/core` and on `@belzabar/pd` (`ad callers --pd` scans PD pages).
@@ -31,16 +31,16 @@ It depends on `@belzabar/core` and on `@belzabar/pd` (`ad callers --pd` scans PD
 ## Typical loop
 
 ```bash
-belz ad find "order list"                        # locate a method (cached index)
-belz ad show <uuid> --compact                    # read it, one line per step
-belz ad lint <uuid>                              # review it
-belz ad save edit.json --uuid <uuid> --dry-run --env <env>  # plan + validate; writes nothing
-belz ad save edit.json --uuid <uuid> --env <env>
-belz ad test <uuid> --env <env> --inputs in.json --expect out=42
-belz ad publish <uuid> --note "why" --env <env>
+wi-impl ad find "order list"                        # locate a method (cached index)
+wi-impl ad show <uuid> --compact                    # read it, one line per step
+wi-impl ad lint <uuid>                              # review it
+wi-impl ad save edit.json --uuid <uuid> --dry-run --env <env>  # plan + validate; writes nothing
+wi-impl ad save edit.json --uuid <uuid> --env <env>
+wi-impl ad test <uuid> --env <env> --inputs in.json --expect out=42
+wi-impl ad publish <uuid> --note "why" --env <env>
 ```
 
-Every command's reference is its `help.txt`: `belz ad <cmd> --help`, or `belz --help-full` for
+Every command's reference is its `help.txt`: `wi-impl ad <cmd> --help`, or `wi-impl --help-full` for
 all of them.
 
 ## Behaviour common to every command

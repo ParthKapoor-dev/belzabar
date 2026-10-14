@@ -1,6 +1,6 @@
-// belz pd diff — compare the same page/component across two environments.
+// wi-impl pd diff — compare the same page/component across two environments.
 //
-//   belz pd diff <input> --from <envA> --to <envB>
+//   wi-impl pd diff <input> --from <envA> --to <envB>
 //
 // <input> is a page id / name / app-url / pd-url. It is resolved INDEPENDENTLY
 // in each environment (entity ids are env-local, so the input is resolved per
@@ -71,7 +71,7 @@ async function resolveAndParse(env: string, input: string): Promise<{ side: Side
 }
 
 export const args = defineArgs({
-  command: "belz pd diff",
+  command: "wi-impl pd diff",
   positionals: [PD_INPUT_POSITIONAL],
   flags: {
     from: { type: "string", required: true, missingCode: "MISSING_ENV_RANGE", missingMessage: "--from <envA> and --to <envB> are both required." },

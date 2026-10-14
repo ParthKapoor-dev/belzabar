@@ -11,8 +11,8 @@ import {
 } from "@belzabar/core";
 import setupCommand from "../setup/index";
 
-// belz onboard — the guided first-run flow. It chains the focused commands
-// (currently `belz setup`) behind confirm prompts, so it is safe to
+// wi-impl onboard — the guided first-run flow. It chains the focused commands
+// (currently `wi-impl setup`) behind confirm prompts, so it is safe to
 // re-run: every step detects what is already done and offers to skip it.
 
 type StepStatus = "done" | "skipped" | "failed";
@@ -48,7 +48,7 @@ export async function runStep(
 
 /**
  * The command result: ok only when no step failed. A failed step used to be
- * reported with exit 0, so install.sh's `if ! belz onboard` treated a broken
+ * reported with exit 0, so install.sh's `if ! wi-impl onboard` treated a broken
  * setup as success.
  */
 export function finishOnboard(steps: OnboardStep[]) {
@@ -64,7 +64,7 @@ export function finishOnboard(steps: OnboardStep[]) {
   return ok<OnboardData>({ steps });
 }
 
-export const args = defineArgs({ command: "belz onboard" });
+export const args = defineArgs({ command: "wi-impl onboard" });
 
 const command: CommandModule<Record<string, never>, OnboardData> = {
   /** Writes ~/.wi-impl/config.json (via setup). */
@@ -77,13 +77,13 @@ const command: CommandModule<Record<string, never>, OnboardData> = {
   async execute(_args, context: CommandContext) {
     if (context.outputMode === "llm") {
       throw new CliError(
-        "`belz onboard` is interactive. Use `belz setup --env-file` for non-interactive setup.",
+        "`wi-impl onboard` is interactive. Use `wi-impl setup --env-file` for non-interactive setup.",
         { code: "INTERACTIVE_NOT_SUPPORTED" }
       );
     }
 
     lifecycle.note(
-      "Welcome to belz",
+      "Welcome to wi-impl",
       "This will walk through environment credentials.\n" +
         "It is safe to re-run any time — completed steps can be skipped."
     );
@@ -124,7 +124,7 @@ const command: CommandModule<Record<string, never>, OnboardData> = {
     }
     if (data.steps.some((s) => s.status === "failed")) {
       ui.text("");
-      ui.text("Some steps failed — re-run `belz onboard` or the individual command to retry.");
+      ui.text("Some steps failed — re-run `wi-impl onboard` or the individual command to retry.");
     }
   },
 };

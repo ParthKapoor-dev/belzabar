@@ -27,10 +27,10 @@ interface SaveData {
 }
 
 export const args = defineArgs({
-  command: "belz rd save",
+  command: "wi-impl rd save",
   positionals: [REPORT_ID_POSITIONAL],
   flags: {
-    spec: { type: "string", required: true, missingCode: "MISSING_SPEC", missingMessage: "Pass --spec <file> (edit the output of `belz rd export`)." },
+    spec: { type: "string", required: true, missingCode: "MISSING_SPEC", missingMessage: "Pass --spec <file> (edit the output of `wi-impl rd export`)." },
     yes: { type: "boolean", alias: ["-y"] },
     "dry-run": { type: "boolean" },
   },

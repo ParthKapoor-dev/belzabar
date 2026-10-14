@@ -6,7 +6,7 @@ confirmation gate every AD write uses. `--env` and `--llm` belong to the runner,
 | File | Contents |
 |---|---|
 | `common.ts` | `AD_V2_FLAG` (`--v2`, only on commands that read a method) with `apiVersionOf`; `AD_YES_FLAG` (`--yes`, `-y`); `AD_NOTE_FLAG` (`--note`). |
-| `confirm.ts` | `requireConfirmation`: fails `AD_CONFIRMATION_REQUIRED` in `--llm` mode without `--yes`, otherwise prompts. `logIntent`: the `[belz ad write]` stderr line naming the target env. |
+| `confirm.ts` | `requireConfirmation`: fails `AD_CONFIRMATION_REQUIRED` in `--llm` mode without `--yes`, otherwise prompts. `logIntent`: the `[wi-impl ad write]` stderr line naming the target env. |
 
 The validator flags shared by `save`, `publish` and `create` (`--no-validate`, `--strict`,
 `--dry-run-compile`) live in [`../save/flags.ts`](../save/flags.ts).

@@ -59,7 +59,7 @@ async function resolvePayload(payloadArg?: string): Promise<unknown> {
 }
 
 export const args = defineArgs({
-  command: "belz ad run",
+  command: "wi-impl ad run",
   positionals: [
     { name: "published-id", required: true, missingCode: "MISSING_PUBLISHED_ID", missingMessage: "Missing Published ID." },
     { name: "payload" },

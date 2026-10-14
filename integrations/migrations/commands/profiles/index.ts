@@ -3,7 +3,7 @@ import { assertJenkinsAuth, discoverProfiles, matchClient, normalizeClient } fro
 import type { MigrateProfilesArgs, MigrateProfilesData } from "../../lib";
 
 export const args = defineArgs({
-  command: "belz migrate profiles",
+  command: "wi-impl migrate profiles",
   flags: {
     refresh: { type: "boolean" },
     client: { type: "string" },

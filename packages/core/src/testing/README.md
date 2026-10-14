@@ -60,7 +60,7 @@ hard-coded:
 
 `spawnLive` refuses any `--env` other than `WI_IMPL_LIVE` and runs with a tmp `WI_IMPL_HOME` holding a
 copy of config.json and that env's session, so the real home is only read. Write suites name
-objects with `LIVE_WRITE_PREFIX` (`belz_tst_`), stay in the category, call
+objects with `LIVE_WRITE_PREFIX` (`wi_impl_tst_`), stay in the category, call
 `registerLiveResource` for everything they create and clean up in `afterAll`
 (`markLiveResourceCleaned` rewrites the ledger row).
 

@@ -47,7 +47,7 @@ export function stepOutputRows(steps: ParsedStep[], declared: { outputs: string[
 }
 
 export const args = defineArgs({
-  command: "belz ad outputs",
+  command: "wi-impl ad outputs",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {},
 });

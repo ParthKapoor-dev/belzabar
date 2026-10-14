@@ -76,7 +76,7 @@ describe("ad find --category", () => {
   });
 });
 
-describe("a method belz created is in the cached index at once", () => {
+describe("a method wi-impl created is in the cached index at once", () => {
   test("addMethodToIndex (called by ad create) → find --category lists it", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch(routes()).install();

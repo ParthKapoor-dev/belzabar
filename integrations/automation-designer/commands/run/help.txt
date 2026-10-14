@@ -1,10 +1,10 @@
-Usage: belz ad run <PUBLISHED_ID> [PAYLOAD] [flags]
+Usage: wi-impl ad run <PUBLISHED_ID> [PAYLOAD] [flags]
 
 Execute a published Automation Designer method. This has real side effects,
 so an explicit --env is required.
 
 A uuid runs its OWN saved body: a DRAFT uuid runs the draft (unpublished
-changes included), not its published copy. belz warns and reports
+changes included), not its published copy. wi-impl warns and reports
 inputState/publishedUuid; pass the published uuid to run what is published.
 
 Arguments:
@@ -22,7 +22,7 @@ Flags:
 
 Global Flags:
   --env <name>        Set active environment. Required explicitly: this
-                      really executes the chain. Any env from `belz envs`.
+                      really executes the chain. Any env from `wi-impl envs`.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Notes:
@@ -34,7 +34,7 @@ Notes:
     stays open for as long as the method runs.
 
 Examples:
-  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 --env <env>
-  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}' --env <env>
-  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --env <env> --raw --llm
-  belz ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"q":"hello"}' --env <env> --stream
+  wi-impl ad run 40ba5566efa95b033ef7af8f7f30ee09 --env <env>
+  wi-impl ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}' --env <env>
+  wi-impl ad run 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --env <env> --raw --llm
+  wi-impl ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"q":"hello"}' --env <env> --stream

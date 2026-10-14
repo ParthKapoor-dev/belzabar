@@ -1,4 +1,4 @@
-Usage: belz ad services [SERVICE] [flags]
+Usage: wi-impl ad services [SERVICE] [flags]
 
 List all services from /rest/api/automation/services (the core service catalog
 used to build step identifiers). Both internal and external services are
@@ -10,7 +10,7 @@ With a SERVICE, lists that service's methods instead (GET
 ("Svc/method") and `ad child-info` take; `label` when it differs (db_service
 labels such as data.read are accepted too); `apiUuid` = automationAPIId.
 Only published methods are listed; for every method of a user category
-(drafts too) use `belz ad find` with a category.
+(drafts too) use `wi-impl ad find` with a category.
 
 Arguments:
   [SERVICE]             A service name (e.g. Helpers.String, db_service). Data:
@@ -34,12 +34,12 @@ Flags:
 
 Global Flags:
   --env <name>          Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                        Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                        Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad services --search "json path" --llm
-  belz ad services --internal --fields name,uuid
-  belz ad services --search redis --limit 3
-  belz ad services Helpers.String --env acme-dev --llm
-  belz ad services Helpers.Legacy --search sort --llm
+  wi-impl ad services --search "json path" --llm
+  wi-impl ad services --internal --fields name,uuid
+  wi-impl ad services --search redis --limit 3
+  wi-impl ad services Helpers.String --env acme-dev --llm
+  wi-impl ad services Helpers.Legacy --search sort --llm

@@ -12,7 +12,7 @@ interface TestReportData {
 }
 
 export const args = defineArgs({
-  command: "belz ad test-report",
+  command: "wi-impl ad test-report",
   flags: {},
 });
 
@@ -22,7 +22,7 @@ export const args = defineArgs({
 // never "0 tests ran / all passed".
 export const NO_REPORT_NOTE =
   "No suite run is reported. This route is not scoped to a method and does not track `ad test-case run-suite` " +
-  "(the server e-mails that report). Use `belz ad test-case run-suite <uuid> --wait` for per-case results.";
+  "(the server e-mails that report). Use `wi-impl ad test-case run-suite <uuid> --wait` for per-case results.";
 
 const nonEmpty = (v: unknown): boolean =>
   Array.isArray(v) ? v.length > 0 : v !== null && typeof v === "object" ? Object.keys(v).length > 0 : false;

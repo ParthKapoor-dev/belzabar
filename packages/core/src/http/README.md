@@ -1,6 +1,6 @@
 # core/src/http
 
-The one HTTP stack for everything belz talks to: the Expertly platform (AD/PD), Teamwork and
+The one HTTP stack for everything wi-impl talks to: the Expertly platform (AD/PD), Teamwork and
 Jenkins. Timeouts, retries, sessions, error mapping and redaction live here so integrations
 never hand-roll them.
 

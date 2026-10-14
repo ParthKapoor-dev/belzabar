@@ -1,7 +1,7 @@
-belz ad create --spec <file> --category <name|id|uuid> --env <env>  :->  Create a new DRAFT method from a compact spec (steps by service/code/sql, inputs k=v, outputs, when/exit/loop; expanded against callee contracts) or a V2 body/subset; defaults filled, validated, verified on re-read; refuses core categories; returns the uuid
-belz ad create --spec <file> --env <env>  :->  Category taken from spec.category
-belz ad create --spec <file> --env <env> --dry-run  :->  Expand + validate only, create nothing (--env still required: it reads the target env): the V2 body, valid, validator errors/warnings
-belz ad create --spec <file> --category <name|id|uuid> --env <env> --yes --llm  :->  Non-interactive create (--yes is required in --llm mode)
-belz ad create --spec <file> --category <name|id|uuid> --env <env> --strict  :->  Validator warnings block the create too
-belz ad create --spec <file> --category <name|id|uuid> --env <env> --dry-run-compile  :->  Also run the online validator checks (server compile dry run)
-belz ad create --spec <file> --category <name|id|uuid> --env <env> --no-validate  :->  Skip the validator (logged loudly; not recommended)
+wi-impl ad create --spec <file> --category <name|id|uuid> --env <env>  :->  Create a new DRAFT method from a compact spec (steps by service/code/sql, inputs k=v, outputs, when/exit/loop; expanded against callee contracts) or a V2 body/subset; defaults filled, validated, verified on re-read; refuses core categories; returns the uuid
+wi-impl ad create --spec <file> --env <env>  :->  Category taken from spec.category
+wi-impl ad create --spec <file> --env <env> --dry-run  :->  Expand + validate only, create nothing (--env still required: it reads the target env): the V2 body, valid, validator errors/warnings
+wi-impl ad create --spec <file> --category <name|id|uuid> --env <env> --yes --llm  :->  Non-interactive create (--yes is required in --llm mode)
+wi-impl ad create --spec <file> --category <name|id|uuid> --env <env> --strict  :->  Validator warnings block the create too
+wi-impl ad create --spec <file> --category <name|id|uuid> --env <env> --dry-run-compile  :->  Also run the online validator checks (server compile dry run)
+wi-impl ad create --spec <file> --category <name|id|uuid> --env <env> --no-validate  :->  Skip the validator (logged loudly; not recommended)

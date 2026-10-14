@@ -103,7 +103,7 @@ export function resolveSqlDatabase(
   }
 
   throw new CliError(
-    `No default SQL database for this environment. Pass --db <nickname|id> (see 'belz ad sql dbs'), or set ` +
+    `No default SQL database for this environment. Pass --db <nickname|id> (see 'wi-impl ad sql dbs'), or set ` +
       `environments.<env>.sqlDefaultDb in ~/.wi-impl/config.json (or WI_IMPL_SQL_DEFAULT_DB).` +
       (options.fallbackNickname ? ` Fallback '${options.fallbackNickname}' is unavailable.` : ""),
     {

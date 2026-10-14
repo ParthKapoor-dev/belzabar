@@ -18,7 +18,7 @@ interface ArchiveData {
 }
 
 export const args = defineArgs({
-  command: "belz rd archive",
+  command: "wi-impl rd archive",
   positionals: [REPORT_ID_POSITIONAL],
   flags: {
     restore: { type: "boolean" },

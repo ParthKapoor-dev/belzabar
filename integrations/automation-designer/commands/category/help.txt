@@ -1,4 +1,4 @@
-Usage: belz ad category create <name> --env <env> [flags]
+Usage: wi-impl ad category create <name> --env <env> [flags]
 
 Create a new AD category (service). Only the create sub-action is supported
 today.
@@ -16,5 +16,5 @@ Global Flags:
   --env <name>          Target environment. Required: category create is a write.
 
 Examples:
-  belz ad category create belz_tst_cat --env <env>
-  belz ad category create belz_tst_cat --description "scratch" --private --env <env> --yes --llm
+  wi-impl ad category create wi_impl_tst_cat --env <env>
+  wi-impl ad category create wi_impl_tst_cat --description "scratch" --private --env <env> --yes --llm

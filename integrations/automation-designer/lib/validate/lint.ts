@@ -1,4 +1,4 @@
-// `belz ad lint` rules: review heuristics that
+// `wi-impl ad lint` rules: review heuristics that
 // the pre-save validator (L1–L4) does not enforce. Every rule here is ADVISORY
 // (warn): they look for patterns that usually mean a slow, fragile or
 // reimplemented step, and can be wrong on a given method.

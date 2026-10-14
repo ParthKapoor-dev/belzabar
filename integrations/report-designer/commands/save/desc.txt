@@ -1,2 +1,2 @@
-belz rd save <id> --spec <file> --env <env> --yes  :->  Replace the definition (backup first, conflict check, read-back verify); undo by saving the backup
-belz rd save <id> --spec <file> --env <env> --dry-run  :->  List the changes the spec makes; write nothing
+wi-impl rd save <id> --spec <file> --env <env> --yes  :->  Replace the definition (backup first, conflict check, read-back verify); undo by saving the backup
+wi-impl rd save <id> --spec <file> --env <env> --dry-run  :->  List the changes the spec makes; write nothing

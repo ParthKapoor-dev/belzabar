@@ -1,4 +1,4 @@
-belz update  :->  Update belz: a binary install downloads, verifies and swaps in the latest release (or the pinned one); a source install fast-forwards its checkout and rebuilds
-belz update --check  :->  Check whether an update is available
-belz update --force  :->  Reinstall even when up to date (-f); never resets or discards local source changes
-belz update --rollback  :->  Binary install: restore the previous binary kept from the last update
+wi-impl update  :->  Update belz: a binary install downloads, verifies and swaps in the latest release (or the pinned one); a source install fast-forwards its checkout and rebuilds
+wi-impl update --check  :->  Check whether an update is available
+wi-impl update --force  :->  Reinstall even when up to date (-f); never resets or discards local source changes
+wi-impl update --rollback  :->  Binary install: restore the previous binary kept from the last update

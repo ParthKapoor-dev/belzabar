@@ -1,4 +1,4 @@
-Usage: belz setup [flags]
+Usage: wi-impl setup [flags]
 
 Interactive first-time setup. Walks you through adding environments (name,
 base URL, credentials) and optional Teamwork creds, then writes
@@ -33,10 +33,10 @@ NON-INTERACTIVE KEYS (--env-file / --from-env)
   "passwordEncoding": "plain" in ~/.wi-impl/config.json (mode 600). Envs you
   don't list are kept; add --replace --force to drop them.
 
-Note: 'belz setup' refuses to run interactively with --llm or on a non-TTY.
+Note: 'wi-impl setup' refuses to run interactively with --llm or on a non-TTY.
 Use --env-file or --from-env to populate config non-interactively.
 
 Examples:
-  belz setup
-  belz setup --env-file ./secrets.env --force
-  belz setup --from-env --force          # CI / cloud session
+  wi-impl setup
+  wi-impl setup --env-file ./secrets.env --force
+  wi-impl setup --from-env --force          # CI / cloud session

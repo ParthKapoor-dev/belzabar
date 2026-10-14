@@ -92,7 +92,7 @@ type TestCaseData =
   | RunSuiteWaitData
   | { action: "delete" | "run-suite" | "delete-suite"; response: unknown; hint?: string };
 
-/** `run-suite --wait`: every active case run now through /chain/test, assertions evaluated by belz. */
+/** `run-suite --wait`: every active case run now through /chain/test, assertions evaluated by wi-impl. */
 interface RunSuiteWaitData extends SuiteRunSummary {
   action: "run-suite";
   mode: "wait";
@@ -145,9 +145,9 @@ export const args = defineSubcommands(
     },
   },
   {
-    command: "belz ad test-case",
+    command: "wi-impl ad test-case",
     codes: { MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "INVALID_ACTION" },
-    missingMessage: "Usage: belz ad test-case <list|create|update|delete|bulk|run-suite|delete-suite|export|sync> ...",
+    missingMessage: "Usage: wi-impl ad test-case <list|create|update|delete|bulk|run-suite|delete-suite|export|sync> ...",
   },
 );
 
@@ -527,7 +527,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       return;
     }
     if (data.action === "run-suite" && "mode" in data) {
-      ui.section(`Test suite ${data.chainUuid} (run now by belz)`);
+      ui.section(`Test suite ${data.chainUuid} (run now by wi-impl)`);
       for (const c of data.cases) {
         const why =
           c.status === "ERROR"

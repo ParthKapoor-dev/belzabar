@@ -1,6 +1,6 @@
 # core/src/config
 
-belz configuration: `~/.wi-impl/config.json` (or `$WI_IMPL_HOME/config.json`) plus a small set of
+wi-impl configuration: `~/.wi-impl/config.json` (or `$WI_IMPL_HOME/config.json`) plus a small set of
 trusted `WI_IMPL_*` environment variables. `Config` is the process-wide view of the active
 environment and its credentials.
 
@@ -33,14 +33,14 @@ environment and its credentials.
   `CONFIG_INVALID` naming the path.
 - `passwordEncoding` is `"plain"` or `"base64"`; absent means legacy base64, decoded strictly.
   New writes are plain (the file is 0600). Never guess an encoding.
-- The `install` section is install metadata written by the installer and `belz update`;
+- The `install` section is install metadata written by the installer and `wi-impl update`;
   `install.installKind` is `"binary"` (release install, self-updating) or `"source"` (git checkout).
   Releases before the rename wrote it as `belz`: it is read from there and moved to `install` on
   the next write (`installMeta`, `recordBelzMeta`).
 - `update` (optional): `auto: false` turns off the daily background update check of a binary
-  install; `pin: "x.y.z"` keeps it on that version (`belz update` installs exactly it). See
+  install; `pin: "x.y.z"` keeps it on that version (`wi-impl update` installs exactly it). See
   [`apps/cli/lib/README.md`](../../../../apps/cli/lib/README.md).
-- When config loads, `hardenBelzHome` tightens an existing belz home to 0700 dirs and 0600
+- When config loads, `hardenBelzHome` tightens an existing wi-impl home to 0700 dirs and 0600
   files (no-op on Windows, never throws).
 
 ## Env selection
@@ -59,7 +59,7 @@ throw) and `captureActiveEnv()` (a restore function for code that switches sever
 
 ## Environment variables
 
-`trustedBelzEnv()` is the only way belz reads the process env. Bun auto-loads `.env*` files from
+`trustedBelzEnv()` is the only way wi-impl reads the process env. Bun auto-loads `.env*` files from
 the current directory, even in the compiled binary, so a `WI_IMPL_*` value identical to one in a
 cwd `.env*` file is treated as injected and ignored. Each variable is also read under its name
 before the rename (`BELZ_HOME` for `WI_IMPL_HOME`, and so on) when the new name is not set
@@ -73,13 +73,13 @@ before the rename (`BELZ_HOME` for `WI_IMPL_HOME`, and so on) when the new name 
 | `WI_IMPL_HTTP_TIMEOUT_MS` / `WI_IMPL_HTTP_WRITE_TIMEOUT_MS` | HTTP timeouts (see [`../http/`](../http/README.md)) |
 | `WI_IMPL_JENKINS_{URL,USER,PASSWORD,JOB}` | Fallbacks for fields missing from the `jenkins` section |
 | `WI_IMPL_TEAMWORK_{URL,EMAIL,PASSWORD}` | Fallbacks for fields missing from the `teamwork` section (password plain) |
-| `WI_IMPL_SRC_DIR` | Fallback source checkout for `belz update` |
+| `WI_IMPL_SRC_DIR` | Fallback source checkout for `wi-impl update` |
 | `WI_IMPL_NO_UPDATE` | `1` turns off the background auto-update of a binary install |
 | `WI_IMPL_UPDATE_BASE_URL` | Replaces the GitHub Releases URL that updates and the installers download from (a mirror; the tests' local server) |
-| `WI_IMPL_UPDATE_WORKER`, `WI_IMPL_RECORD_INSTALL`, `WI_IMPL_RECORD_PIN` | Internal modes of the binary (the background update check; the release installer recording the install and the pin of an explicit `--version`), set by belz and its installers |
+| `WI_IMPL_UPDATE_WORKER`, `WI_IMPL_RECORD_INSTALL`, `WI_IMPL_RECORD_PIN` | Internal modes of the binary (the background update check; the release installer recording the install and the pin of an explicit `--version`), set by wi-impl and its installers |
 | `WI_IMPL_VERBOSE` | Set to `1` by `-v`; enables `vlog` (read directly, not through `trustedBelzEnv`) |
 
-Unprefixed keys (e.g. `TEAMWORK_*`) are read only by `belz setup --from-env`, through
+Unprefixed keys (e.g. `TEAMWORK_*`) are read only by `wi-impl setup --from-env`, through
 `withoutDotenvInjected()`, which reports the keys it dropped.
 
 Tests: `packages/core/tests/config.test.ts`. Up: [src](../README.md).

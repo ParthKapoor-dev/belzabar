@@ -1,4 +1,4 @@
-// `belz update` never discards local work and installs to the recorded dir.
+// `wi-impl update` never discards local work and installs to the recorded dir.
 import { afterAll, describe, expect, test } from "bun:test";
 import { spawnSync } from "child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
@@ -35,7 +35,7 @@ describe("planUpdate", () => {
 
 describe("worktreeDirty (NEW-4)", () => {
   test("untracked files do not count; tracked edits and staged changes do", () => {
-    const dir = mkdtempSync(join(tmpdir(), "belz-update-dirty-"));
+    const dir = mkdtempSync(join(tmpdir(), "wi-impl-update-dirty-"));
     try {
       const g = (...a: string[]) => spawnSync("git", ["-C", dir, "-c", "user.email=t@t", "-c", "user.name=t", ...a], { encoding: "utf8" });
       g("init", "-q");
@@ -69,7 +69,7 @@ describe("installerCommand", () => {
   });
 });
 
-describe("belz update on a real checkout", () => {
+describe("wi-impl update on a real checkout", () => {
   const g = (cwd: string, ...a: string[]) => {
     const r = spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.com", "-c", "commit.gpgsign=false", ...a], {
       cwd,

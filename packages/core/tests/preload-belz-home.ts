@@ -13,14 +13,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
-// Always override: an exported WI_IMPL_HOME may be the developer's real belz
+// Always override: an exported WI_IMPL_HOME may be the developer's real wi-impl
 // home (e.g. WI_IMPL_HOME=/data/belz), and tests write config/sessions/caches
 // into it. Tests that need a specific home set it per spawn.
 {
-  const root = mkdtempSync(join(tmpdir(), "belz-home-test-"));
+  const root = mkdtempSync(join(tmpdir(), "wi-impl-home-test-"));
   const home = join(root, "home");
   mkdirSync(home, { recursive: true });
-  // belz has no built-in env: seed one neutral env so commands run in-process
+  // wi-impl has no built-in env: seed one neutral env so commands run in-process
   // have a default (the only configured env). Tests that need other envs use
   // core/testing withTempEnvConfig, which replaces and restores this file.
   writeFileSync(

@@ -2,19 +2,19 @@
 //
 // withLock(pageId, fn) acquires the server lock, runs fn, then invalidates the
 // local page cache and releases the lock (finally). A 409 on acquire surfaces
-// as PD_LOCKED with the server's owner info; belz never force-releases.
+// as PD_LOCKED with the server's owner info; wi-impl never force-releases.
 //
 // Re-entrant: a nested withLock in this process neither acquires nor
-// releases. A page recorded by `belz pd lock acquire`
+// releases. A page recorded by `wi-impl pd lock acquire`
 // (~/.wi-impl/pd-locks/<env>.json) is NOT trusted blindly: the record
 // may be stale (expired, released in the UI, taken by someone else), so the
 // server lock is still acquired, and it is not released afterwards, so a save
 // inside a manual lock does not drop the operator's lock.
 // Re-acquiring a lock the signed-in user already holds is an HTTP 400 on the
 // wire (verified live); `acquireLock` then reads the page's
-// `pageLockDetails.lockedByCurrentUser` and reports `heldByMe`. belz writes
+// `pageLockDetails.lockedByCurrentUser` and reports `heldByMe`. wi-impl writes
 // inside such a lock and never releases it (it is the operator's manual lock,
-// another belz run's, or the user's own open PD editor). A lock held by
+// another wi-impl run's, or the user's own open PD editor). A lock held by
 // anyone else is PD_LOCKED (with the stale-record hint when a manual record
 // exists).
 //
@@ -27,7 +27,7 @@ import { BELZ_CONFIG_DIR, CliError, Config, writeSecureJson } from "@belzabar/co
 import { pdApi } from "./api/index";
 import { invalidatePageCache } from "./cache";
 
-// -------- local record of manually-held locks (`belz pd lock`) ------------
+// -------- local record of manually-held locks (`wi-impl pd lock`) ------------
 
 interface LockFile {
   locks: Record<string, { acquiredAt: number }>;
@@ -59,7 +59,7 @@ export async function saveLockFile(file: string, data: LockFile): Promise<void> 
   writeSecureJson(file, data, { pretty: true });
 }
 
-/** True when `belz pd lock acquire` recorded this page in the active env. */
+/** True when `wi-impl pd lock acquire` recorded this page in the active env. */
 async function isManuallyLocked(pageId: string): Promise<boolean> {
   const { data } = await loadLockFile();
   return Object.prototype.hasOwnProperty.call(data.locks, pageId);
@@ -80,8 +80,8 @@ export async function withLock<T>(pageId: string, fn: () => Promise<T>): Promise
   } catch (err) {
     if (manual && err instanceof CliError && err.code === "PD_LOCKED") {
       throw new CliError(
-        `${err.message} \`belz pd lock acquire\` recorded it for you, but that record is stale ` +
-          `(the lock expired or was released, and someone else took it). Run \`belz pd lock release ${pageId}\` to drop the record.`,
+        `${err.message} \`wi-impl pd lock acquire\` recorded it for you, but that record is stale ` +
+          `(the lock expired or was released, and someone else took it). Run \`wi-impl pd lock release ${pageId}\` to drop the record.`,
         { code: "PD_LOCKED", details: { ...(err.details as Record<string, unknown> | undefined), staleLocalRecord: true } },
       );
     }
@@ -90,7 +90,7 @@ export async function withLock<T>(pageId: string, fn: () => Promise<T>): Promise
   heldInProcess.add(key);
   if (!outcome.acquired && !manual) {
     process.stderr.write(
-      `ℹ  withLock: you already hold the lock on ${pageId} (another belz run, or the page is open in your PD editor); ` +
+      `ℹ  withLock: you already hold the lock on ${pageId} (another wi-impl run, or the page is open in your PD editor); ` +
         `writing inside it and leaving it held.\n`,
     );
   }

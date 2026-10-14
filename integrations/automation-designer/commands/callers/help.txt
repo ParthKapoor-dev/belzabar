@@ -1,4 +1,4 @@
-Usage: belz ad callers <UUID> [flags]
+Usage: wi-impl ad callers <UUID> [flags]
 
 List the AD methods (and with --pd the PD pages / components) that call a
 method — the backward-compatibility check before changing its contract.
@@ -12,7 +12,7 @@ for the target's own category, the --category list, or every category with
 A draft and its published copy are both reported when both call it.
 
 The index is rebuilt when it is more than 24 h old (or partial and more than
-15 min old). Methods belz itself saved, created, published, restored or
+15 min old). Methods wi-impl itself saved, created, published, restored or
 deleted since the index was built are re-read. Methods created or edited in
 the AD UI since then are missed until --refresh; `coverage.complete` is true
 only for a fresh, complete index with nothing left unresolved, and
@@ -33,13 +33,13 @@ Flags:
 
 Global Flags:
   --env <name>          Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                        Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                        Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8
-  belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --category Schools --pd --llm
-  belz ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --all --refresh
+  wi-impl ad callers 48e5d8bec3f5d7b5d689914d3b36aed8
+  wi-impl ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --category Schools --pd --llm
+  wi-impl ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --all --refresh
 
 Errors: CATEGORY_NOT_FOUND (--category names a category the index lacks),
 AD_INDEX_FETCH_FAILED (the category listing failed while building the index),

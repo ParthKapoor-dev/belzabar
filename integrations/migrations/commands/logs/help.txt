@@ -1,4 +1,4 @@
-Usage: belz migrate logs <buildNumber> [flags]
+Usage: wi-impl migrate logs <buildNumber> [flags]
 
 Print the full console output of a Jenkins migration build.
 
@@ -13,5 +13,5 @@ FLAGS
   --help, -h          Show this help message.
 
 EXAMPLES
-  belz migrate logs 743
-  belz migrate logs 743 --llm
+  wi-impl migrate logs 743
+  wi-impl migrate logs 743 --llm

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Automation Designer commands and lib (`belz ad`).",
+  "description": "Automation Designer commands and lib (`wi-impl ad`).",
   "exports": {
     "./registry": "./registry.ts",
     "./lib/*": "./lib/*.ts"

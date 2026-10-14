@@ -115,7 +115,7 @@ function parseUuids(rest: string[]): string[] {
 
 /**
  * Refuse anything that is not a uuid (32 hex chars, or the dashed 8-4-4-4-12 form): `invalidate` is the default
- * subcommand, so a mistyped subcommand (`belz cache prune`) used to be POSTed
+ * subcommand, so a mistyped subcommand (`wi-impl cache prune`) used to be POSTed
  * as the uuid "prune" and reported as a successful invalidation.
  */
 export function assertCacheUuids(uuids: string[]): void {
@@ -375,7 +375,7 @@ export const args = defineSubcommands(
       },
     },
   },
-  { command: "belz cache", default: "invalidate" },
+  { command: "wi-impl cache", default: "invalidate" },
 );
 
 const command: CommandModule<CacheArgs, CacheData> = {

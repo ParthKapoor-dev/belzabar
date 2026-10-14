@@ -5,11 +5,11 @@ import {
 } from "@belzabar/core";
 import { loadRelease, saveProdSnapshot, type ProdSnapshot, type ProdSnapshotItem } from "../../lib/ledger";
 
-// `belz release freeze <name>` — record a prod snapshot for a release.
+// `wi-impl release freeze <name>` — record a prod snapshot for a release.
 //
 // Production is not queryable, so prod state is captured indirectly: when a
 // release is pushed, each item's then-current STAGE position is frozen into
-// the ledger as the prod pointer. Run `belz release matrix` first (it writes
+// the ledger as the prod pointer. Run `wi-impl release matrix` first (it writes
 // the release record); run `freeze` right after the prod push.
 //
 // An item whose stage cell is absent or a trace error is a MISS, recorded as
@@ -23,9 +23,9 @@ interface FreezeArgs {
 }
 
 export const args = defineArgs({
-  command: "belz release freeze",
+  command: "wi-impl release freeze",
   positionals: [
-    { name: "name", required: true, missingCode: "MISSING_NAME", missingMessage: "Usage: belz release freeze <release-name> [--force]" },
+    { name: "name", required: true, missingCode: "MISSING_NAME", missingMessage: "Usage: wi-impl release freeze <release-name> [--force]" },
   ],
   flags: {
     force: { type: "boolean" },
@@ -41,7 +41,7 @@ function execute(args: FreezeArgs, context: CommandContext): CommandResult<ProdS
   const release = loadRelease(args.name);
   if (!release) {
     throw new CliError(
-      `No saved release '${args.name}'. Run 'belz release matrix <release.json>' first.`,
+      `No saved release '${args.name}'. Run 'wi-impl release matrix <release.json>' first.`,
       { code: "RELEASE_NOT_FOUND" },
     );
   }
@@ -76,7 +76,7 @@ function execute(args: FreezeArgs, context: CommandContext): CommandResult<ProdS
   if (warnings.length === items.length) {
     throw new CliError(
       `No item of release '${release.name}' has ${stageEnv} data, so there is nothing to freeze. ` +
-        `Re-run 'belz release matrix' once ${stageEnv} is reachable.`,
+        `Re-run 'wi-impl release matrix' once ${stageEnv} is reachable.`,
       { code: "FREEZE_NO_STAGE_DATA", details: { release: release.name, stageEnv, missing: warnings.length } },
     );
   }

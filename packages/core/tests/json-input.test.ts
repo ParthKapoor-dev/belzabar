@@ -4,7 +4,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { CliError, readJsonInput, readJsonInputSync, type JsonInputErrors } from "../src";
 
-const dir = mkdtempSync(join(tmpdir(), "belz-json-input-"));
+const dir = mkdtempSync(join(tmpdir(), "wi-impl-json-input-"));
 const good = join(dir, "good.json");
 const bad = join(dir, "bad.json");
 writeFileSync(good, '{"a":1}');

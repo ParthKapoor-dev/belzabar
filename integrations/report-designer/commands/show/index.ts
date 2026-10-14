@@ -22,7 +22,7 @@ interface ShowData extends ReportMeta {
 }
 
 export const args = defineArgs({
-  command: "belz rd show",
+  command: "wi-impl rd show",
   positionals: [REPORT_ID_POSITIONAL],
   flags: { exact: { type: "boolean" } },
 });

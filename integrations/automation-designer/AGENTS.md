@@ -17,7 +17,7 @@ READMEs; read the one for the directory you touch before editing it.
 | `--expect`, test cases, suites | [`lib/test-cases/README.md`](lib/test-cases/README.md) |
 | SQL | [`lib/sql/README.md`](lib/sql/README.md) |
 | Tests and fixtures | [`tests/README.md`](tests/README.md), [`tests/unit/README.md`](tests/unit/README.md) |
-| A command's flags and output | its `help.txt` (`belz ad <cmd> --help`) |
+| A command's flags and output | its `help.txt` (`wi-impl ad <cmd> --help`) |
 
 ## Standing instructions
 
@@ -26,7 +26,7 @@ READMEs; read the one for the directory you touch before editing it.
   [`commands/README.md`](commands/README.md).
 - A change to a lib file's role, a contract, a cache or a directory updates that directory's
   README in the same commit. Keep READMEs accurate against the code; `bun run docs:check`
-  verifies the paths and `belz` commands they mention.
+  verifies the paths and `wi-impl` commands they mention.
 - Keep `--llm` envelopes and error codes stable: agents parse them.
 - Every bug fix gets a regression test (fakeFetch plus real fixtures; see
   [`tests/unit/README.md`](tests/unit/README.md)). `bun run check` must pass before committing.

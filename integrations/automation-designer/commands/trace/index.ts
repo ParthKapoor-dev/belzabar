@@ -3,8 +3,8 @@ import { traceMethod, type TraceData } from "../../lib/trace";
 
 export type { TraceData } from "../../lib/trace";
 
-// `belz ad trace <uuid>` — locate an AD method across every environment.
-// The tracing logic lives in lib/trace.ts (shared with `belz release matrix`).
+// `wi-impl ad trace <uuid>` — locate an AD method across every environment.
+// The tracing logic lives in lib/trace.ts (shared with `wi-impl release matrix`).
 
 interface TraceArgs {
   uuid: string;
@@ -14,9 +14,9 @@ interface TraceArgs {
 }
 
 export const args = defineArgs({
-  command: "belz ad trace",
+  command: "wi-impl ad trace",
   positionals: [
-    { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Usage: belz ad trace <uuid> [--spine <env>] [--envs a,b]" },
+    { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Usage: wi-impl ad trace <uuid> [--spine <env>] [--envs a,b]" },
   ],
   flags: {
     spine: { type: "string" },

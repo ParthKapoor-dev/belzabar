@@ -20,7 +20,7 @@ Source of `@belzabar/core`. `index.ts` re-exports every runtime module below;
 | `registry.ts` | `CommandRegistry` (name → module + help.txt + desc.txt), `registryNames` (sorted), `registryModules`, `registryHelpResolver` |
 | `envelope.ts` | `ENVELOPE_VERSION` (`"2.0"`) |
 | `ui.ts` | `renderHuman` / `renderLLM`, `lifecycle` (intro/outro/spinner/notice), `prompts`, output mode, `printErr` |
-| `confirm.ts` | `confirmWrite` (the one write gate) and `logWriteIntent` (the `[belz <ns> write] {...}` stderr audit line) |
+| `confirm.ts` | `confirmWrite` (the one write gate) and `logWriteIntent` (the `[wi-impl <ns> write] {...}` stderr audit line) |
 | `cache.ts` | `Cache<T>`: env-scoped JSON file cache with soft/hard TTL; shared lifetimes |
 | `swr.ts` | Stale-while-revalidate: refresh locks and the detached `--force` re-run |
 | `finder-index.ts` | `finderIndexStore(name)`: the per-env on-disk index behind the AD and PD finders |
@@ -28,7 +28,7 @@ Source of `@belzabar/core`. `index.ts` re-exports every runtime module below;
 | `search.ts` | Fuzzy scoring for the finders: `scoreText`, `normalizeSearchText`, `tokenize`, `containsWordStart`, `levenshtein`, `dedupeBy` |
 | `json-input.ts` | `readJsonInput` / `readJsonInputSync`: user JSON files with the caller's error codes |
 | `verbose.ts` | `vlog` / `vtime`: redacted stderr debug lines when `WI_IMPL_VERBOSE=1` (`-v`) |
-| `belz-meta.ts` | Install metadata (source checkout, install dir) recorded in config.json and read by `belz update` |
+| `belz-meta.ts` | Install metadata (source checkout, install dir) recorded in config.json and read by `wi-impl update` |
 | `open.ts` | `openUrlInBrowser` |
 | `types.ts` | `Environment`, `AuthSession`, `ApiOptions` |
 
@@ -52,7 +52,7 @@ writesLocal?, ownsFlags? }`, with its argv spec exported as `args` next to it.
 `@belzabar/core/testing` drives them in-process.
 
 ```
-belz <token> [args]
+wi-impl <token> [args]
   ├─ token is a namespace  → its commands map, or a passthrough module that self-routes (config)
   ├─ token is a top-level command → dispatch directly
   └─ --help / no args / --help-full / --version → runner output
@@ -68,11 +68,11 @@ belz <token> [args]
   binary print the same thing. Print outcomes are ANSI-stripped off a TTY or under `NO_COLOR`,
   even with `FORCE_COLOR`.
 - **`--help-full [<namespace>] [--index]`** is handled only as the first token after the global
-  flags; with `--llm` it is a `belz.help` envelope `{data: {text}}`.
-- **Unknown commands and flags.** `options.unknownHint()` (the CLI's "newer belz may have it:
-  `belz update`" sentence) is appended to `UNKNOWN_COMMAND` / `UNKNOWN_SUBCOMMAND` /
+  flags; with `--llm` it is a `wi-impl.help` envelope `{data: {text}}`.
+- **Unknown commands and flags.** `options.unknownHint()` (the CLI's "newer wi-impl may have it:
+  `wi-impl update`" sentence) is appended to `UNKNOWN_COMMAND` / `UNKNOWN_SUBCOMMAND` /
   `UNKNOWN_FLAG` errors, and printed under the human command list.
-- **`--version`** prints `options.build` (`{version, sha, dirty, builtAt}`); `belz.version`
+- **`--version`** prints `options.build` (`{version, sha, dirty, builtAt}`); `wi-impl.version`
   envelope with `--llm`.
 - **Env guard.** Without `--env` the default env is used (see [`config/`](./config/README.md)).
   Unknown default → `INVALID_ENV`; no default with several (or zero) envs →
@@ -93,8 +93,8 @@ belz <token> [args]
 `EnvelopeSchema` (`testing/envelope-schema.ts`, strict zod) is the `--llm` wire contract:
 `{schema, version, ok, command, data, error, meta}`.
 
-- `schema` is `<namespace>.<command>` from routing (`ad.show`, `belz.envs`); runner-level
-  outcomes use `belz.help`, `belz.runner`, `belz.version`. `version` is always `"2.0"`.
+- `schema` is `<namespace>.<command>` from routing (`ad.show`, `wi-impl.envs`); runner-level
+  outcomes use `wi-impl.help`, `wi-impl.runner`, `wi-impl.version`. `version` is always `"2.0"`.
 - `ok` ⇔ `error: null` ⇔ exit 0.
 - `error` is `{code (UPPER_SNAKE), message (no "Error:" prefix), details?}`; `details` is always
   an object (`normalizeDetails`: JSON strings parsed, other strings `{text}`, arrays `{items}`,

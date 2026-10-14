@@ -1,4 +1,4 @@
-Usage: belz envs [flags]
+Usage: wi-impl envs [flags]
 
 List all configured environments (name, project, base URL) and show which
 one is active. Local only: no network call, and the envelope carries no
@@ -16,6 +16,6 @@ Global Flags:
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz envs
-  belz envs --env qa
-  belz ad show <uuid> --env qa
+  wi-impl envs
+  wi-impl envs --env qa
+  wi-impl ad show <uuid> --env qa

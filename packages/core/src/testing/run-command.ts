@@ -137,7 +137,7 @@ export function runCommand(
   opts: RunCommandOptions = {}
 ): Promise<RunResult> {
   const name = opts.commandName ?? "cmd";
-  const binaryName = opts.binaryName ?? "belz";
+  const binaryName = opts.binaryName ?? "wi-impl";
   return exclusive(() =>
     captured(async () => {
       const { args, outputMode, envError, globals } = resolveGlobalFlags(withGlobalArgs(argv, opts));

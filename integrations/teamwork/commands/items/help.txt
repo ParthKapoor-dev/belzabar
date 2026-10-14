@@ -1,4 +1,4 @@
-Usage: belz tw items <TASK_ID|URL> [flags]
+Usage: wi-impl tw items <TASK_ID|URL> [flags]
 
 Scan a Teamwork ticket — its description, all comments, and every subtask's
 comments — for the AD chains, PD pages/symbols, and SQL changes it delivers.
@@ -28,11 +28,11 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz tw items 26917411
-  belz tw items https://<company>.teamwork.com/app/tasks/26917411
-  belz tw items 26917411 --llm
+  wi-impl tw items 26917411
+  wi-impl tw items https://<company>.teamwork.com/app/tasks/26917411
+  wi-impl tw items 26917411 --llm
 
 Notes:
   - PD page URLs yield DRAFT ids; resolve to published deployables with
-    'belz pd show' before adding to release-items.txt.
+    'wi-impl pd show' before adding to release-items.txt.
   - SQL extraction is heuristic — always verify the captured statements.

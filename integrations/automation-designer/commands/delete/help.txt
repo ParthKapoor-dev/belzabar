@@ -1,4 +1,4 @@
-Usage: belz ad delete <UUID> --env <env> [flags]
+Usage: wi-impl ad delete <UUID> --env <env> [flags]
 
 Soft-delete an unpublished DRAFT method (DELETE /chain/v2/{uuid}). The
 platform keeps the record (V1 still returns it); it no longer reads on V2 and
@@ -25,5 +25,5 @@ Data: {uuid, name, deleted, verified} — verified = the V2 re-read no longer
 finds the method. Local and compiled caches are evicted.
 
 Examples:
-  belz ad delete 4a1b2c3d... --env <env>
-  belz ad delete 4a1b2c3d... --env <env> --yes --llm
+  wi-impl ad delete 4a1b2c3d... --env <env>
+  wi-impl ad delete 4a1b2c3d... --env <env> --yes --llm

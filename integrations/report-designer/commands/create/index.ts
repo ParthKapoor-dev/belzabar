@@ -26,9 +26,9 @@ interface CreateData {
 }
 
 export const args = defineArgs({
-  command: "belz rd create",
+  command: "wi-impl rd create",
   flags: {
-    spec: { type: "string", required: true, missingCode: "MISSING_SPEC", missingMessage: "Pass --spec <file> (a spec written by `belz rd export`, or your own)." },
+    spec: { type: "string", required: true, missingCode: "MISSING_SPEC", missingMessage: "Pass --spec <file> (a spec written by `wi-impl rd export`, or your own)." },
     yes: { type: "boolean", alias: ["-y"] },
     "dry-run": { type: "boolean" },
   },

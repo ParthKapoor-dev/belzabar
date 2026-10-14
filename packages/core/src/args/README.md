@@ -1,6 +1,6 @@
 # core/src/args
 
-Declarative argument parsing for every belz command. A command describes its positionals and
+Declarative argument parsing for every wi-impl command. A command describes its positionals and
 flags once; `parse(argv)` returns typed values or throws a `CliError` with a stable code, and
 the spec stays inspectable so tests can check `help.txt` / `desc.txt` against it.
 
@@ -16,7 +16,7 @@ the spec stays inspectable so tests can check `help.txt` / `desc.txt` against it
 
 ```ts
 export const args = defineArgs({
-  command: "belz ad show",
+  command: "wi-impl ad show",
   positionals: [{ name: "uuid", required: true }],
   flags: {
     step: { type: "number", integer: true, min: 1 },

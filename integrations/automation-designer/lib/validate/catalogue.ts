@@ -1,6 +1,6 @@
 // Rule catalogue: every code the validator can emit, with its default
 // severity and layer. Codes from the team's `validate.py` (M1, IK1, CI1, LP3…)
-// keep their names and meaning; belz-only rules are `AD-<FAMILY>-nnn`.
+// keep their names and meaning; wi-impl-only rules are `AD-<FAMILY>-nnn`.
 //
 // Doc contradictions resolved here (agents-repo-research §6b):
 //   - a single ternary is fine; SP1 warns only on ≥2 (nested) ternaries;

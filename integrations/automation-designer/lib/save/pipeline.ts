@@ -190,7 +190,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     if (!compiledCache.ok) {
       input.warn(
         `Compiled-cache eviction failed on every route (${compiledCache.routes.map((r) => `${r.path} ${r.status ?? r.error}`).join("; ")}); ` +
-          `tests may run the previous body. Retry with: belz cache ${draftUuid} --env ${input.env} --yes`,
+          `tests may run the previous body. Retry with: wi-impl cache ${draftUuid} --env ${input.env} --yes`,
       );
     }
   }
@@ -223,7 +223,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
 /**
  * Re-GET the draft and refuse (AD_VERSION_CONFLICT) when anything but the
  * change log / test suite moved since `seen` was read — the server ignores
- * `metadata.version`, so belz checks it (save, and publish after its
+ * `metadata.version`, so wi-impl checks it (save, and publish after its
  * confirmation, which can wait indefinitely).
  */
 export async function assertDraftUnchanged(draftUuid: string, seen: V2MethodResponse, outcome: string): Promise<V2MethodResponse> {
@@ -257,7 +257,7 @@ const PADDED_KEYS = new Set(["uuid", "id", "automationAPIId", "automationApiId"]
  * equal `expected` (the body sent) everywhere, except server bookkeeping and,
  * under a `touched` path (a new/updated step or field; "" = the whole body),
  * fields the server fills in (ids, uuids, types) and uuid padding. A value
- * belz sent that reads back different or missing is `notLanded`; any other
+ * wi-impl sent that reads back different or missing is `notLanded`; any other
  * difference is `unexpected`. Throws AD_SAVE_VERIFY_FAILED.
  */
 export function verifyStructural(uuid: string, expected: unknown, after: unknown, touched: string[], removals: Removal[] = []): void {
@@ -295,7 +295,7 @@ export function verifyStructural(uuid: string, expected: unknown, after: unknown
       ]
         .filter(Boolean)
         .join("; ") +
-      `. Inspect with: belz ad show ${uuid} --full`,
+      `. Inspect with: wi-impl ad show ${uuid} --full`,
     {
       code: "AD_SAVE_VERIFY_FAILED",
       details: { uuid, version: versionName(after as V2MethodResponse), notLanded: notLanded.slice(0, 100), unexpected: unexpected.slice(0, 100) },
@@ -384,7 +384,7 @@ function verifySaved(uuid: string, before: V2MethodResponse, after: V2MethodResp
       ]
         .filter(Boolean)
         .join("; ") +
-      `. Inspect with: belz ad show ${uuid} --full`,
+      `. Inspect with: wi-impl ad show ${uuid} --full`,
     {
       code: "AD_SAVE_VERIFY_FAILED",
       details: { uuid, version: versionName(after), notLanded, unexpected: unexpected.slice(0, 100) },

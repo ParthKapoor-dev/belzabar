@@ -1,4 +1,4 @@
-// Secret redaction for anything belz logs, caches, or puts into error details.
+// Secret redaction for anything wi-impl logs, caches, or puts into error details.
 //
 // The AD debug-mode test endpoint echoes the request headers back in its
 // response (Authorization: Bearer <jwt>, Expertly-Auth-Token), Jenkins error

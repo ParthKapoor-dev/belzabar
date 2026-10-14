@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Jenkins-backed migration commands and lib (`belz migrate`).",
+  "description": "Jenkins-backed migration commands and lib (`wi-impl migrate`).",
   "exports": {
     "./registry": "./registry.ts",
     ".": "./lib/index.ts",

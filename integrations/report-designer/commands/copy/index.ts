@@ -33,7 +33,7 @@ interface CopyData {
 }
 
 export const args = defineArgs({
-  command: "belz rd copy",
+  command: "wi-impl rd copy",
   positionals: [REPORT_ID_POSITIONAL],
   flags: {
     "from-env": { type: "string", required: true, missingCode: "MISSING_FROM_ENV", missingMessage: "Pass --from-env <env>: the env the report is copied from (--env is the target)." },
@@ -65,7 +65,7 @@ const command: CommandModule<CopyArgs, CopyData> = {
   async execute({ id, fromEnv, into, title, exact, yes, dryRun }, context) {
     const target = context.env.name;
     if (fromEnv === target) {
-      throw new CliError(`--from-env and --env are both ${target}; to duplicate a report on one env, export it and use 'belz rd create'.`, {
+      throw new CliError(`--from-env and --env are both ${target}; to duplicate a report on one env, export it and use 'wi-impl rd create'.`, {
         code: "RD_SAME_ENV",
         details: { env: target },
       });
@@ -86,7 +86,7 @@ const command: CommandModule<CopyArgs, CopyData> = {
     } catch (err) {
       if (err instanceof CliError && err.code.startsWith("RD_DATASOURCE")) {
         const head = err.code === "RD_DATASOURCE_NOT_FOUND" ? `No published method '${spec.dataSource.method}' in category '${spec.dataSource.category}' on ${target}.` : err.message;
-        throw new CliError(`${head} Migrate the AD method to ${target} first (belz migrate run --module AD_Method …), then copy again.`, {
+        throw new CliError(`${head} Migrate the AD method to ${target} first (wi-impl migrate run --module AD_Method …), then copy again.`, {
           code: err.code,
           details: err.details,
         });

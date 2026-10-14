@@ -1,6 +1,6 @@
 # `lib/`: shared Page Designer code
 
-Everything the `belz pd` commands share. Other packages may import any module as
+Everything the `wi-impl pd` commands share. Other packages may import any module as
 `@belzabar/pd/lib/<path>`.
 
 ## In this directory
@@ -13,9 +13,9 @@ Everything the `belz pd` commands share. Other packages may import any module as
 | [`serialize/`](./serialize/README.md) | Overlay → edited config → partial ops or full save |
 | [`types/`](./types/README.md) | In-memory types (`common.ts`) and wire shapes (`wire.ts`) |
 | [`validator/`](./validator/README.md) | Rule catalogue, rules, diff-aware edit gate, recursive symbol check |
-| `ad-refs.ts` | Slim index of every `/chain/execute/<uuid>` call in PAGE drafts and components (cached 1 h); read by `belz ad callers --pd` |
+| `ad-refs.ts` | Slim index of every `/chain/execute/<uuid>` call in PAGE drafts and components (cached 1 h); read by `wi-impl ad callers --pd` |
 | `analyzer.ts` | Recursive walk (`analyze`, `find-ad-methods -r`, `show -r`): components used, AD ids, `--compliance` |
-| `cache.ts` | Env-scoped page-config cache (`~/.wi-impl/cache/pages/<env>/<id>.json`, core `PAGE_CACHE_DIR`) with stale-while-revalidate; `belz migrate run` evicts its target env's entries |
+| `cache.ts` | Env-scoped page-config cache (`~/.wi-impl/cache/pages/<env>/<id>.json`, core `PAGE_CACHE_DIR`) with stale-while-revalidate; `wi-impl migrate run` evicts its target env's entries |
 | `draft-guard.ts` | Draft/published pairing through `referenceId` |
 | `edit.ts` | Write-pipeline helpers: `resolveWriteTarget`, `fetchFresh`, `fetchPublishedBaseline`, `gateValidation`, `versionDrift`, `requireConfirmation`, `logIntent`, `readJsonFile` |
 | `extract.ts` | Read views over a page: `show` sections, `findNodes`, `adIdsOf`, `childComponentNames` |
@@ -45,7 +45,7 @@ Used by `save` and `preflight` in full, and by `publish` / `history restore` for
 2. `withLock(id)` (`lock.ts`). Re-entrant within one process. The server answers a re-acquire of
    the caller's own lock with HTTP 400; `acquireLock` then reads `pageLockDetails` and, when
    `lockedByCurrentUser`, writes inside that lock and never releases it (manual lock, another
-   belz run, or the user's own editor). Anyone else's lock → `PD_LOCKED` with
+   wi-impl run, or the user's own editor). Anyone else's lock → `PD_LOCKED` with
    `details.holder`. The page cache is invalidated after every write.
 3. `fetchFresh` inside the lock; `versionDrift` reports a concurrent change since the snapshot.
 4. `planSave` applies the overlay to a clone of the raw config

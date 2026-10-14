@@ -1,4 +1,4 @@
-Usage: belz ad fetch <UUID|URL> [flags]
+Usage: wi-impl ad fetch <UUID|URL> [flags]
 
 Fetch an Automation Designer method by UUID or URL, cache it, and hydrate all service definitions.
 
@@ -13,7 +13,7 @@ Flags:
 
 Global Flags:
   --env <name>        Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                      Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                      Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Errors: METHOD_NOT_FOUND for an unknown uuid, and for a soft-deleted method
@@ -21,6 +21,6 @@ Errors: METHOD_NOT_FOUND for an unknown uuid, and for a soft-deleted method
 read also reads V2, and a cached copy of a method since seen deleted is refused.
 
 Examples:
-  belz ad fetch 426f97096b0221bb830d954c45ac9f84
-  belz ad fetch https://dev.example.test/automation-designer/Sandbox/426f97096b0221bb830d954c45ac9f84
-  belz ad fetch 426f97096b0221bb830d954c45ac9f84 --raw --env acme-qa --llm
+  wi-impl ad fetch 426f97096b0221bb830d954c45ac9f84
+  wi-impl ad fetch https://dev.example.test/automation-designer/Sandbox/426f97096b0221bb830d954c45ac9f84
+  wi-impl ad fetch 426f97096b0221bb830d954c45ac9f84 --raw --env acme-qa --llm

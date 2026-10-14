@@ -34,7 +34,7 @@ export class CacheManager {
   }
 
   /**
-   * Drop a cached method after belz wrote it (save/publish/delete/restore).
+   * Drop a cached method after wi-impl wrote it (save/publish/delete/restore).
    * Also marks its method-index entry stale so `ad callers` re-reads it.
    * Never throws.
    */

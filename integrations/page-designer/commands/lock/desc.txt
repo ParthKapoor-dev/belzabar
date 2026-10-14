@@ -1,3 +1,3 @@
-belz pd lock acquire <pageId>  :->  Acquire the PD edit lock on a page (ok if you already hold it; writes then reuse it and leave it held)
-belz pd lock release <pageId>  :->  Release the PD edit lock on a page (ok:false if the server released nothing)
-belz pd lock status [pageId]  :->  List locks acquired with belz in the active env; with an id, also who holds that page's server lock
+wi-impl pd lock acquire <pageId>  :->  Acquire the PD edit lock on a page (ok if you already hold it; writes then reuse it and leave it held)
+wi-impl pd lock release <pageId>  :->  Release the PD edit lock on a page (ok:false if the server released nothing)
+wi-impl pd lock status [pageId]  :->  List locks acquired with wi-impl in the active env; with an id, also who holds that page's server lock

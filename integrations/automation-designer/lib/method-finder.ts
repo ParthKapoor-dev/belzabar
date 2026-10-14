@@ -20,7 +20,7 @@ const TEXT_CAP = 400;
 const indexStore = finderIndexStore<MethodFinderIndex>(METHOD_FINDER_INDEX);
 
 /**
- * Methods belz itself wrote since the index was built: uuid → when
+ * Methods wi-impl itself wrote since the index was built: uuid → when
  * it was marked (core `markMethodIndexDirty`). Kept beside the index (not in
  * it) so a mark never rewrites the multi-MB index nor resets its age.
  */
@@ -34,7 +34,7 @@ const dirtyKey = methodIndexDirtyKey;
 const goneKey = (env: string) => `gone-${env}`;
 
 /**
- * Record that a method no longer exists (belz deleted it, or a V2 read answered
+ * Record that a method no longer exists (wi-impl deleted it, or a V2 read answered
  * METHOD_NOT_FOUND — soft-deleted methods do). `find` and `callers` drop gone
  * uuids from a cached index, so a deletion shows without `--refresh` (CLI
  * trial). A fresh index build clears the marks. Never throws.
@@ -88,7 +88,7 @@ async function withoutGone(index: MethodFinderIndex): Promise<MethodFinderIndex>
 }
 
 /**
- * Add a method belz just created to the cached index (if there is one), so
+ * Add a method wi-impl just created to the cached index (if there is one), so
  * `find` lists it without a rebuild. Never throws.
  */
 export async function addMethodToIndex(
@@ -128,7 +128,7 @@ export async function dropMethodIndex(env: string): Promise<void> {
   await indexStore.drop(env);
 }
 
-/** Uuids belz marked after `index` was listed (lower-case uuid → mark time). */
+/** Uuids wi-impl marked after `index` was listed (lower-case uuid → mark time). */
 export async function loadDirtyMethods(index: MethodFinderIndex): Promise<Map<string, number>> {
   const since = index.buildStartedAt ?? index.generatedAt;
   const marks = (await dirtyCache.load(dirtyKey(index.env))) ?? {};
@@ -180,7 +180,7 @@ export interface MethodFinderIndex {
   /** Absent = schema 1. */
   schemaVersion?: number;
   env: string;
-  /** When the listing started; belz writes marked after it are re-read (absent in older caches). */
+  /** When the listing started; wi-impl writes marked after it are re-read (absent in older caches). */
   buildStartedAt?: number;
   generatedAt: number;
   /** True when some category listings failed (`skippedCategories`): methods are missing. */

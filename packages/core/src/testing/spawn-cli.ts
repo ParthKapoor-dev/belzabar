@@ -57,7 +57,7 @@ export interface SpawnCliOptions {
   env?: Record<string, string | undefined>;
   /** Working dir. Default: a scratch dir, so bun never autoloads a repo `.env`. */
   cwd?: string;
-  /** Run this executable (e.g. a compiled belz) instead of `bun cli.ts`. */
+  /** Run this executable (e.g. a compiled wi-impl) instead of `bun cli.ts`. */
   bin?: string;
   stdin?: string;
   timeoutMs?: number;

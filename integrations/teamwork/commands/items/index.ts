@@ -5,15 +5,15 @@ import { extractTicketItems, type ItemsData } from "../../lib/items";
 
 export type { ItemsData } from "../../lib/items";
 
-// `belz tw items` — the release "linker". The extraction lives in lib/items.ts
-// (shared with `belz release matrix`); this file only parses args and presents.
+// `wi-impl tw items` — the release "linker". The extraction lives in lib/items.ts
+// (shared with `wi-impl release matrix`); this file only parses args and presents.
 
 interface ItemsArgs {
   taskId: number;
 }
 
 export const args = defineArgs({
-  command: "belz tw items",
+  command: "wi-impl tw items",
   positionals: [TASK_ID_POSITIONAL],
 });
 

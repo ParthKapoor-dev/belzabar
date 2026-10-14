@@ -47,7 +47,7 @@ interface CreateDryRunData {
 }
 
 export const args = defineArgs({
-  command: "belz ad create",
+  command: "wi-impl ad create",
   flags: {
     ...AD_YES_FLAG,
     ...VALIDATION_FLAGS,

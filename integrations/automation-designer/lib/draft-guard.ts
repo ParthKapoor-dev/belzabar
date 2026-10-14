@@ -123,7 +123,7 @@ export async function resolveDraftTarget(
       publishedUuid: initial.uuid,
       message:
         `Method ${initial.uuid} is PUBLISHED and has no linked draft. ` +
-        `Create a draft in the AD UI (open the method, click "Save as Draft") before saving from belz.`,
+        `Create a draft in the AD UI (open the method, click "Save as Draft") before saving from wi-impl.`,
     };
   }
 
@@ -137,7 +137,7 @@ export async function resolveDraftTarget(
       publishedUuid: initial.uuid,
       message:
         `Method ${initial.uuid} is PUBLISHED; its referenceId ${referenceId} resolved to state=${linked.state} ` +
-        `instead of DRAFT. Refusing to save. Re-fetch the method in belz and check state manually.`,
+        `instead of DRAFT. Refusing to save. Re-fetch the method in wi-impl and check state manually.`,
     };
   }
 

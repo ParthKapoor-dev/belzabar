@@ -5,7 +5,7 @@ import { join } from "path";
 import { hasHelpFlag, parseGlobalFlags } from "../src/runner";
 
 const HARNESS = join(import.meta.dir, "fixtures", "runner-harness.ts");
-const home = mkdtempSync(join(tmpdir(), "belz-runner-test-"));
+const home = mkdtempSync(join(tmpdir(), "wi-impl-runner-test-"));
 afterAll(() => rmSync(home, { recursive: true, force: true }));
 
 const childEnv = { ...process.env, HOME: home, WI_IMPL_HOME: join(home, ".wi-impl") };

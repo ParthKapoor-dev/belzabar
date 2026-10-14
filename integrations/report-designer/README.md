@@ -1,6 +1,6 @@
 # @belzabar/rd
 
-`belz rd …` — Report Designer: find and read reports without running them, run or download
+`wi-impl rd …` — Report Designer: find and read reports without running them, run or download
 them, export a report as a portable spec and create or save reports from one, copy reports
 between envs, archive them, list datasources, and find the reports an AD method feeds.
 
@@ -13,7 +13,7 @@ step, no version history (every save and run bumps a counter; last write wins) a
 migration module.
 
 The definition refers to its datasource by env-local ids: the published method's numeric chain
-id and its category's uuid. belz names it portably as `{category, method}` and resolves the
+id and its category's uuid. wi-impl names it portably as `{category, method}` and resolves the
 ids on the env it talks to ([`lib/datasource.ts`](lib/datasource.ts)).
 
 ## Role in the monorepo
@@ -24,7 +24,7 @@ ids on the env it talks to ([`lib/datasource.ts`](lib/datasource.ts)).
 
 | Directory | Contents |
 |---|---|
-| [`commands/`](commands/README.md) | One folder per `belz rd` command |
+| [`commands/`](commands/README.md) | One folder per `wi-impl rd` command |
 | [`lib/`](lib/README.md) | Wire client, datasource resolution, definitions and specs |
 | [`tests/`](tests/README.md) | Unit tests over a fake RD server |
 
@@ -34,17 +34,17 @@ Exports: `@belzabar/rd/registry` and `@belzabar/rd/lib/<file>`.
 
 | Command | Kind | What it does |
 |---|---|---|
-| `belz rd find [<query>]` | read | Reports whose title matches (`--sort`, `--limit`, `--archived`) |
-| `belz rd show <id>` | read | Definition: datasource, columns, saved filters, summaries |
-| `belz rd export <id> --out <file>` | read (local write) | The portable spec |
-| `belz rd datasources [--category <name>]` | read | Datasource categories, or a category's published methods |
-| `belz rd uses <method-uuid>` | read | Reports whose datasource is that AD method |
-| `belz rd run <id> --env <env>` | **runs** | Rows of the report as saved (`--limit`, `--offset`, `--count`) |
-| `belz rd download <id> --env <env>` | **runs** | CSV / xlsx / PDF export, polled until ready and saved |
-| `belz rd create --spec <file> --env <env>` | **write** | New report from a spec (`--dry-run` resolves only) |
-| `belz rd save <id> --spec <file> --env <env>` | **write** | Replace a report's definition (`--dry-run` lists the changes) |
-| `belz rd archive <id> --env <env>` | **write** | Archive (`--restore`: unarchive) |
-| `belz rd copy <id> --from-env <src> --env <target>` | **write** (target) | Copy to another env: new report, or `--into <id>` |
+| `wi-impl rd find [<query>]` | read | Reports whose title matches (`--sort`, `--limit`, `--archived`) |
+| `wi-impl rd show <id>` | read | Definition: datasource, columns, saved filters, summaries |
+| `wi-impl rd export <id> --out <file>` | read (local write) | The portable spec |
+| `wi-impl rd datasources [--category <name>]` | read | Datasource categories, or a category's published methods |
+| `wi-impl rd uses <method-uuid>` | read | Reports whose datasource is that AD method |
+| `wi-impl rd run <id> --env <env>` | **runs** | Rows of the report as saved (`--limit`, `--offset`, `--count`) |
+| `wi-impl rd download <id> --env <env>` | **runs** | CSV / xlsx / PDF export, polled until ready and saved |
+| `wi-impl rd create --spec <file> --env <env>` | **write** | New report from a spec (`--dry-run` resolves only) |
+| `wi-impl rd save <id> --spec <file> --env <env>` | **write** | Replace a report's definition (`--dry-run` lists the changes) |
+| `wi-impl rd archive <id> --env <env>` | **write** | Archive (`--restore`: unarchive) |
+| `wi-impl rd copy <id> --from-env <src> --env <target>` | **write** (target) | Copy to another env: new report, or `--into <id>` |
 
 **Runs** execute the datasource method on the server (and move the report's execution time
 and version counter), so they declare `writes` and need an explicit `--env`; nothing in the
@@ -55,7 +55,7 @@ returns those two only from a call that **runs the report**, so `--exact` counts
 (`--env` required). Without it they are reported in `unread` and a saved spec uses the defaults
 (summaries at top, `filterConfig` 0).
 
-Flags and examples: each `commands/<cmd>/help.txt` or `belz --help-full rd`.
+Flags and examples: each `commands/<cmd>/help.txt` or `wi-impl --help-full rd`.
 
 ## Copying between envs
 
@@ -63,14 +63,14 @@ Jenkins migrations have no report module, so `rd copy` is how a report moves fro
 another. It reads the report on `--from-env` (without running it, unless `--exact`), maps the
 datasource by category + method name to `--env`'s own chain id and category uuid, and creates a
 new report there, or with `--into <id>` overwrites one through the same pipeline as `rd save`.
-The datasource method must already be published on the target (`belz migrate run --module
+The datasource method must already be published on the target (`wi-impl migrate run --module
 AD_Method …`); otherwise it stops with `RD_DATASOURCE_NOT_FOUND` before writing. Nothing is
 written on the source env.
 
 ## Write safety
 
 Writes need `--env` and a confirmation (`--yes` in `--llm` mode; `RD_CONFIRMATION_REQUIRED`,
-`RD_USER_ABORT`), and log a `[belz rd write]` line on stderr. Because Report Designer keeps no
+`RD_USER_ABORT`), and log a `[wi-impl rd write]` line on stderr. Because Report Designer keeps no
 history and the last write wins, `rd save`:
 
 1. resolves the spec's datasource on the target env;
@@ -86,11 +86,12 @@ command.
 
 ## The spec file
 
-`rd export` writes it, `rd create` and `rd save` take it (`"format": "belz.rd.report/1"`):
+`rd export` writes it, `rd create` and `rd save` take it (`"format": "wi-impl.rd.report/1"`; files exported
+before the rename say `"belz.rd.report/1"` and are read the same):
 
 ```json
 {
-  "format": "belz.rd.report/1",
+  "format": "wi-impl.rd.report/1",
   "title": "Orders by day",
   "description": "Daily totals",
   "dataSource": { "category": "Reports", "method": "orders_by_day" },
@@ -114,7 +115,7 @@ Columns, filters and summaries are kept exactly as Report Designer stores them (
 | `RD_DATASOURCE_CATEGORY_NOT_FOUND` / `RD_DATASOURCE_NOT_FOUND` / `RD_DATASOURCE_AMBIGUOUS` | The spec's datasource does not resolve on the target env (the method must be published there) |
 | `RD_SPEC_UNREADABLE` / `RD_SPEC_INVALID` / `MISSING_SPEC` | The spec file is missing or malformed (`details.problems`) |
 | `RD_SAME_ENV` / `MISSING_FROM_ENV` | `copy`: source and target are the same env, or no `--from-env` |
-| `RD_CONFLICT` | `save`: the report changed on the server after belz read it; nothing written |
+| `RD_CONFLICT` | `save`: the report changed on the server after wi-impl read it; nothing written |
 | `RD_VERIFY_FAILED` | The definition or status read back differs from what was written |
 | `RD_NO_DATASOURCE` | `run` / `download` on a report that has no datasource saved yet |
 | `RD_EXPORT_TIMEOUT` / `RD_DOWNLOAD_FAILED` | The export did not finish within `--wait`, or the file could not be fetched |

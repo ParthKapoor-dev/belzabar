@@ -111,7 +111,7 @@ function buildConfigFromValues(input: Record<string, string>): {
 }
 
 export const args = defineArgs({
-  command: "belz setup",
+  command: "wi-impl setup",
   flags: {
     "env-file": { type: "string" },
     "from-env": { type: "boolean" },

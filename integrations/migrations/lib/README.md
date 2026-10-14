@@ -1,6 +1,6 @@
 # migrations/lib
 
-Everything `belz migrate` does besides argument wiring. Exposed as the package root
+Everything `wi-impl migrate` does besides argument wiring. Exposed as the package root
 (`@belzabar/migrations` → `index.ts`) and as `@belzabar/migrations/lib/<file>`.
 
 | File | Contents |

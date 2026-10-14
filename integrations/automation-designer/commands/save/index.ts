@@ -21,7 +21,7 @@ interface SaveArgs {
 }
 
 export const args = defineArgs({
-  command: "belz ad save",
+  command: "wi-impl ad save",
   positionals: [{ name: "file" }],
   flags: {
     ...AD_YES_FLAG,
@@ -30,7 +30,7 @@ export const args = defineArgs({
       type: "string",
       required: true,
       missingCode: "MISSING_UUID",
-      missingMessage: "--uuid <draftUuid> is required (to create a method use `belz ad create`).",
+      missingMessage: "--uuid <draftUuid> is required (to create a method use `wi-impl ad create`).",
     },
     "sql-file": { type: "string", repeatable: true, description: "N=path: replace step N's SQL with the file" },
     "code-file": { type: "string", repeatable: true, description: "N=path: replace step N's custom code with the file" },

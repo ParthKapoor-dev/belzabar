@@ -91,7 +91,7 @@ type FindData =
   | FindPickData;
 
 export const args = defineArgs({
-  command: "belz pd find",
+  command: "wi-impl pd find",
   positionals: [{ name: "query", variadic: true }],
   flags: {
     refresh: { type: "boolean" },
@@ -113,7 +113,7 @@ const command: CommandModule<FindArgs, FindData> = {
 
     if (positional[0] === "list") {
       if (positional.length > 1) {
-        throw new CliError("`belz pd find list` does not take a query.", {
+        throw new CliError("`wi-impl pd find list` does not take a query.", {
           code: "LIST_DOES_NOT_ACCEPT_QUERY",
         });
       }
@@ -135,7 +135,7 @@ const command: CommandModule<FindArgs, FindData> = {
 
   async execute({ mode, query, type, refresh, limit, open, full }, context) {
     if (open && mode !== "pick") {
-      throw new CliError("--open is only supported with `belz pd find pick`.", {
+      throw new CliError("--open is only supported with `wi-impl pd find pick`.", {
         code: "OPEN_REQUIRES_PICK",
       });
     }
@@ -324,7 +324,7 @@ const command: CommandModule<FindArgs, FindData> = {
       if (data.totalMatches > data.matches.length) {
         ui.text(`Showing ${data.matches.length} of ${data.totalMatches} matches (raise --limit for more).`);
       }
-      ui.text("Tip: run 'belz pd show <id>' for full details.");
+      ui.text("Tip: run 'wi-impl pd show <id>' for full details.");
     }
   },
 };
@@ -387,7 +387,7 @@ function runFzfPicker(
       if (missingBinary) {
         reject(
           new CliError(
-            "fzf is not installed. Install fzf or use `belz pd find <query>` for non-interactive search.",
+            "fzf is not installed. Install fzf or use `wi-impl pd find <query>` for non-interactive search.",
             { code: "FZF_NOT_INSTALLED" }
           )
         );

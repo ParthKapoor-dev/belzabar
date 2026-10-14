@@ -17,7 +17,7 @@ interface SearchData {
 }
 
 export const args = defineArgs({
-  command: "belz tw search",
+  command: "wi-impl tw search",
   positionals: [
     { name: "query", variadic: true }, // required: checked below (keeps the MISSING_QUERY code)
   ],
@@ -33,7 +33,7 @@ export function parseArgs(argv: string[], _context?: CommandContext): SearchArgs
   const { positionals, flags } = args.parse(argv);
   const query = positionals.query.join(" ").trim();
   if (!query) {
-    throw new CliError("Missing search query. Usage: belz tw search <query> [--project <id>] [--limit N] [--all]", {
+    throw new CliError("Missing search query. Usage: wi-impl tw search <query> [--project <id>] [--limit N] [--all]", {
       code: "MISSING_QUERY",
     });
   }

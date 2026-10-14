@@ -1,4 +1,4 @@
-// Client-side read-only gate for `belz ad sql run` (and the TUI read mode).
+// Client-side read-only gate for `wi-impl ad sql run` (and the TUI read mode).
 //
 // The server runs `sql run` queries through executeQuery with autocommit, so
 // DML/DDL there really commits — and is then reported as a *failure*
@@ -258,7 +258,7 @@ export function assertReadOnlySql(sql: string, command = "sql run"): void {
   if (verdict.ok) return;
   throw new CliError(
     `'${command}' only accepts a single read statement (SELECT / WITH … SELECT / VALUES / EXPLAIN [ANALYZE] of a read): ` +
-      `${verdict.reason}. Use 'belz ad sql update' (UPDATE/DELETE), 'sql insert' (INSERT) or 'sql modify' (DDL) ` +
+      `${verdict.reason}. Use 'wi-impl ad sql update' (UPDATE/DELETE), 'sql insert' (INSERT) or 'sql modify' (DDL) ` +
       `for writes. If a column name collides with a keyword, double-quote it.`,
     { code: "SQL_NOT_READ_ONLY", details: { reason: verdict.reason } },
   );

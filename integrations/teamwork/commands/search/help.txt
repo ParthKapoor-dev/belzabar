@@ -1,4 +1,4 @@
-Usage: belz tw search <QUERY> [flags]
+Usage: wi-impl tw search <QUERY> [flags]
 
 Search Teamwork tasks by keyword. Read-only. Matches across the tasks you can
 see; returns id, name, status, project, and tasklist for each hit.
@@ -18,6 +18,6 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz tw search "LT-260 vehicle sold"
-  belz tw search aging --project 123456 --limit 10
-  belz tw search "title transfer" --all --llm
+  wi-impl tw search "LT-260 vehicle sold"
+  wi-impl tw search aging --project 123456 --limit 10
+  wi-impl tw search "title transfer" --all --llm

@@ -1,4 +1,4 @@
-Usage: belz ad diff [<uuid>] [flags]
+Usage: wi-impl ad diff [<uuid>] [flags]
 
 Open two versions of an AD method side-by-side in an editor for visual diffing.
 Defaults to Zed (run in its two-file diff mode). Two modes:
@@ -7,7 +7,7 @@ Defaults to Zed (run in its two-file diff mode). Two modes:
     Compares two versions of the same method on the current env. Uses
     Expertly.Automation.Method.History.get to fetch each version from the
     chain the uuid names (draft uuid -> draft history, published uuid ->
-    published history; the version numbers match `belz ad history list`).
+    published history; the version numbers match `wi-impl ad history list`).
 
   Cross-env mode  (--cross-env, or just by passing --from-env/--to-env)
     Compares the current state of the same UUID across two envs, fetched
@@ -64,24 +64,24 @@ Notes:
     an empty diff.
 
 Examples:
-  belz ad diff
+  wi-impl ad diff
     # full interactive: pick method → pick FROM v → pick TO v → opens Zed
 
-  belz ad diff 4e55820ce5357ce4c1a4aa378f241f36 --from 3 --to 5
+  wi-impl ad diff 4e55820ce5357ce4c1a4aa378f241f36 --from 3 --to 5
     # history diff, no pickers
 
-  belz ad diff 4e55820ce5357ce4c1a4aa378f241f36 --cross-env \
+  wi-impl ad diff 4e55820ce5357ce4c1a4aa378f241f36 --cross-env \
       --from-env acme-dev --to-env acme-uat
     # cross-env diff
 
-  belz ad diff 4e55820… --from 4 --to 5 --raw
+  wi-impl ad diff 4e55820… --from 4 --to 5 --raw
     # keep all server metadata in the diff
 
-  belz ad diff 4e55820… --cross-env --from-env acme-dev --to-env acme-uat \
+  wi-impl ad diff 4e55820… --cross-env --from-env acme-dev --to-env acme-uat \
       --no-editor --llm
     # headless: no editor spawned; read data.left.path / data.right.path
     # from the envelope and diff the two JSON files yourself
 
-  belz ad diff 4e55820… --from 4 --to 5 --editor code
+  wi-impl ad diff 4e55820… --from 4 --to 5 --editor code
     # use VS Code instead (note: VS Code uses `-d a b`, not zed's diff flag — this
     # is a future enhancement; for now stick with zed)

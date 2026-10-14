@@ -191,7 +191,7 @@ function queryPositional(action: string, example: string) {
       name: "query",
       required: true,
       missingCode: "MISSING_SQL_QUERY",
-      missingMessage: `Missing SQL query argument. Usage: belz ad sql ${action} "${example}"`,
+      missingMessage: `Missing SQL query argument. Usage: wi-impl ad sql ${action} "${example}"`,
     },
   ] as const;
 }
@@ -237,7 +237,7 @@ export const args = defineSubcommands(
     },
   },
   {
-    command: "belz ad sql",
+    command: "wi-impl ad sql",
     codes: SQL_CODES,
     missingMessage: "Missing SQL subcommand. Use one of: run, explain, dbs, tui, update, insert, modify.",
   },

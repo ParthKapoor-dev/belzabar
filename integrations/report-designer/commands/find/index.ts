@@ -28,7 +28,7 @@ interface FindData {
 }
 
 export const args = defineArgs({
-  command: "belz rd find",
+  command: "wi-impl rd find",
   positionals: [{ name: "query", variadic: true }],
   flags: {
     limit: { type: "number", integer: true, min: 1, max: 1000, default: 50 },

@@ -1,10 +1,10 @@
-Usage: belz pd lock <action> [pageId]
+Usage: wi-impl pd lock <action> [pageId]
 
 Manage PD edit locks. Every write (`save`, `publish`, `history restore`)
 already acquires and releases the lock itself — this command is for holding
 the lock across several operations. For a page recorded here, those writes
 still re-acquire the server lock but do NOT release it afterwards. The server
-answers a re-acquire of a lock you already hold with HTTP 400; belz reads the
+answers a re-acquire of a lock you already hold with HTTP 400; wi-impl reads the
 page's lock details (lockedByCurrentUser) and writes inside your lock. A lock
 held by anyone else fails with PD_LOCKED naming the holder
 (details.holder: userName, userId, validTill), and with
@@ -12,7 +12,7 @@ details.staleLocalRecord when this command had recorded the page.
 
 Actions:
   acquire <pageId>    PUT /pages/lock/<pageId>?pageLockAction=ACQUIRED.
-                      A lock you already hold (another belz run, or the page
+                      A lock you already hold (another wi-impl run, or the page
                       open in your PD editor) is ok with data.alreadyHeld.
                       PD_LOCKED if another user holds it.
   release <pageId>    PUT /pages/lock/<pageId>?pageLockAction=RELEASED.
@@ -31,10 +31,10 @@ Global Flags:
   --llm               Output structured JSON envelope.
 
 Examples:
-  belz pd lock acquire 4f126300499e4d83cd07a35b4d9af9e7
-  belz pd lock release 4f126300499e4d83cd07a35b4d9af9e7
-  belz pd lock status
-  belz pd lock status 4f126300499e4d83cd07a35b4d9af9e7 --env <name>
+  wi-impl pd lock acquire 4f126300499e4d83cd07a35b4d9af9e7
+  wi-impl pd lock release 4f126300499e4d83cd07a35b4d9af9e7
+  wi-impl pd lock status
+  wi-impl pd lock status 4f126300499e4d83cd07a35b4d9af9e7 --env <name>
 
 Notes:
   • Both acquire and release send pageLockAction as a query parameter (a

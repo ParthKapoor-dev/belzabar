@@ -29,9 +29,9 @@ export const args = defineSubcommands(
     },
   },
   {
-    command: "belz ad category",
+    command: "wi-impl ad category",
     codes: { UNKNOWN_SUBCOMMAND: "INVALID_ACTION", MISSING_SUBCOMMAND: "INVALID_ACTION" },
-    missingMessage: "Usage: belz ad category create <name> [--description <d>] [--private] [--yes]",
+    missingMessage: "Usage: wi-impl ad category create <name> [--description <d>] [--private] [--yes]",
   },
 );
 

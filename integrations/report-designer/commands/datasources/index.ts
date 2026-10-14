@@ -11,7 +11,7 @@ type DatasourcesData =
   | { kind: "datasources"; category: string; categoryUuid: string; total: number; datasources: Array<{ id: string; method: string; description: string | null }> };
 
 export const args = defineArgs({
-  command: "belz rd datasources",
+  command: "wi-impl rd datasources",
   flags: {
     category: { type: "string" },
     search: { type: "string" },

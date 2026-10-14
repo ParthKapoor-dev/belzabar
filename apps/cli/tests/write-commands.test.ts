@@ -87,7 +87,7 @@ const ctx: CommandContext = {
   env: { name: "t-dev", baseUrl: "https://t-dev.test" } as CommandContext["env"],
   envExplicit: true,
   verbose: false,
-  binaryName: "belz",
+  binaryName: "wi-impl",
   commandName: "",
   warn: () => {},
 };

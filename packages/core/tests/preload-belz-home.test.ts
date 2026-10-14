@@ -1,5 +1,5 @@
 // The preload must replace an exported WI_IMPL_HOME (it may be the
-// developer's real belz home), and core/testing refuses any home outside the
+// developer's real wi-impl home), and core/testing refuses any home outside the
 // run's WI_IMPL_TEST_TMP.
 import { describe, expect, test } from "bun:test";
 import { writeFileSync } from "fs";

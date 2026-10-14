@@ -1,4 +1,4 @@
-// Raw GETs of the two Expertly entities belz resolves by id: an AD chain
+// Raw GETs of the two Expertly entities wi-impl resolves by id: an AD chain
 // (method) and a PD page/component. One place owns the wire rule "not found is
 // a 404 OR a 2xx with an empty / `null` body" (the chain GET answers an unknown
 // uuid with 200 + empty body); each caller maps the outcome to its own codes.

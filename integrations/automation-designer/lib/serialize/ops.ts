@@ -1,7 +1,7 @@
 // Structural `ad save` ops: add / remove / move / update steps and
 // upsert / remove method inputs, outputs and variables, on top of the live V2
 // body. Steps are always named by their position in the FETCHED draft (the
-// numbers `belz ad show` prints), whatever other ops do, so an agent can write
+// numbers `wi-impl ad show` prints), whatever other ops do, so an agent can write
 // every op from one read. New steps and moves are placed with `after: N` /
 // `before: N` (anchors are fetched positions; `after: 0` = first; no anchor =
 // append). Several steps placed after the same anchor keep op order.

@@ -1,8 +1,8 @@
-Usage: belz rd create --spec <file> --env <env> [flags]
+Usage: wi-impl rd create --spec <file> --env <env> [flags]
 
-Create a new report from a spec file (as written by `belz rd export`). The
+Create a new report from a spec file (as written by `wi-impl rd export`). The
 spec's datasource {category, method} must be a published AD method on the
-target env; belz resolves it to that env's ids. The report is created, titled,
+target env; wi-impl resolves it to that env's ids. The report is created, titled,
 given its definition, then read back and compared with the spec.
 
 Flags:
@@ -17,5 +17,5 @@ A warning lists existing reports with the same title. summaryPosition and
 filterConfig default to "summaries at top" and 0 when the spec has none.
 
 Examples:
-  belz rd create --spec report.json --env dev --dry-run
-  belz rd create --spec report.json --env dev --yes
+  wi-impl rd create --spec report.json --env dev --dry-run
+  wi-impl rd create --spec report.json --env dev --yes

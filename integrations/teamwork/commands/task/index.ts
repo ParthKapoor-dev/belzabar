@@ -15,7 +15,7 @@ interface GetTaskData {
 }
 
 export const args = defineArgs({
-  command: "belz tw task",
+  command: "wi-impl tw task",
   positionals: [TASK_ID_POSITIONAL],
 });
 

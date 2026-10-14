@@ -1,4 +1,4 @@
-Usage: belz pd history <action> <pageId> [flags]
+Usage: wi-impl pd history <action> <pageId> [flags]
 
 Browse and restore previous versions of a PD page. Backed by the server-
 side history service at /rest/api/pagedesigner/pages/history.
@@ -24,7 +24,7 @@ Flags:
   --to <B>              Second version id (for diff).
   --limit <N>           Cap "list" rows (default 50; list only).
   --yes, -y             Confirm the restore (required with --llm or without a
-                        terminal; otherwise belz asks).
+                        terminal; otherwise wi-impl asks).
   --force-validation    Restore despite validator errors the version introduces.
   --help, -h            Show this help message.
 
@@ -37,17 +37,17 @@ Notes:
   • Version ids are global. show / diff / restore refuse a version that does
     not belong to <pageId> or its linked sibling (PD_VERSION_PAGE_MISMATCH).
   • History is recorded on the PUBLISHED page: a draft id usually lists 0
-    versions — list the published id (`belz pd show <draftId>` names it).
+    versions — list the published id (`wi-impl pd show <draftId>` names it).
   • list returns metadata only — use show for full config.
   • diff compares structure, not line-by-line JSON.
   • restore rewrites the DRAFT only (verified live); a page with no linked
-    draft is refused (PD_PUBLISHED_NO_DRAFT). belz never reverts the
+    draft is refused (PD_PUBLISHED_NO_DRAFT). wi-impl never reverts the
     PUBLISHED row: the server would overwrite the live page without a
     publish or history entry, and flip that row to DRAFT.
 
 Examples:
-  belz pd history list 4bde22f76091a82364fda322eeeda597
-  belz pd history show 4bde22f76091a82364fda322eeeda597 --version 378840
-  belz pd history diff 4bde22f76091a82364fda322eeeda597 --from 375333 --to 378840
-  belz pd history restore 4bde22f76091a82364fda322eeeda597 --version 375333 --yes
-  belz pd history list 4bde22f76091a82364fda322eeeda597 --limit 10 --llm | jq '.data.versions'
+  wi-impl pd history list 4bde22f76091a82364fda322eeeda597
+  wi-impl pd history show 4bde22f76091a82364fda322eeeda597 --version 378840
+  wi-impl pd history diff 4bde22f76091a82364fda322eeeda597 --from 375333 --to 378840
+  wi-impl pd history restore 4bde22f76091a82364fda322eeeda597 --version 375333 --yes
+  wi-impl pd history list 4bde22f76091a82364fda322eeeda597 --limit 10 --llm | jq '.data.versions'

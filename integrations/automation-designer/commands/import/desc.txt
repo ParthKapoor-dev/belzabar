@@ -1,3 +1,3 @@
-belz ad import <file> --env <env>  :->  Import method(s) from an exported JSON file (write; confirms first). Refuses empty/invalid files, PUBLISHED records or targets, and V2 validator errors
-belz ad import <file> --env <env> --yes  :->  Import without the confirmation prompt (required with --llm)
-belz ad import <file> --env <env> --no-validate  :->  Skip the validator on V2 records (logged loudly)
+wi-impl ad import <file> --env <env>  :->  Import method(s) from an exported JSON file (write; confirms first). Refuses empty/invalid files, PUBLISHED records or targets, and V2 validator errors
+wi-impl ad import <file> --env <env> --yes  :->  Import without the confirmation prompt (required with --llm)
+wi-impl ad import <file> --env <env> --no-validate  :->  Skip the validator on V2 records (logged loudly)

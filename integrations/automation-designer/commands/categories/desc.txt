@@ -1,5 +1,5 @@
-belz ad categories  :->  List all AD categories (~140 rows on a typical env; to find one, use --search instead) (user- and system-generated; compact rows id, uuid, name, type, systemId)
-belz ad categories --user  :->  Only USER_GENERATED categories
-belz ad categories --system  :->  Only SYSTEM_GENERATED categories (exclusive with --user)
-belz ad categories --fields <a,b|all>  :->  Pick row fields, or all for the full rows (chainCategoryId/Uuid, systemUuid, label)
-belz ad categories --search <text>  :->  Only categories whose name/label contains the text (or whose id/uuid it is); list their methods with `ad find` (category listing)
+wi-impl ad categories  :->  List all AD categories (~140 rows on a typical env; to find one, use --search instead) (user- and system-generated; compact rows id, uuid, name, type, systemId)
+wi-impl ad categories --user  :->  Only USER_GENERATED categories
+wi-impl ad categories --system  :->  Only SYSTEM_GENERATED categories (exclusive with --user)
+wi-impl ad categories --fields <a,b|all>  :->  Pick row fields, or all for the full rows (chainCategoryId/Uuid, systemUuid, label)
+wi-impl ad categories --search <text>  :->  Only categories whose name/label contains the text (or whose id/uuid it is); list their methods with `ad find` (category listing)

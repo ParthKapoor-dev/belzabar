@@ -1,4 +1,4 @@
-// belz CLI theme — palette, glyphs, line helpers, and the wordmark.
+// wi-impl CLI theme — palette, glyphs, line helpers, and the wordmark.
 //
 // The single place CLI styling is defined; commands and the runner consume
 // `ui` / `term` / `symbols`, never raw ANSI.
@@ -7,10 +7,10 @@ import { term, symbols } from "./terminal";
 
 export { term, symbols };
 
-/** belz wordmark — printed by the bare `belz` command, help, and intros. */
+/** wi-impl wordmark — printed by the bare `wi-impl` command, help, and intros. */
 export const wordmark: string =
-  `${term.accent("▌")} ${term.bold(term.fg("belz"))}\n` +
-  `${term.accent("▌")} ${term.faint("belzabar developer toolkit")}`;
+  `${term.accent("▌")} ${term.bold(term.fg("wi-impl"))}\n` +
+  `${term.accent("▌")} ${term.faint("implementation toolkit for Automation, Page and Report Designer")}`;
 
 /**
  * Themed line helpers — one consistent symbol + colour vocabulary for every

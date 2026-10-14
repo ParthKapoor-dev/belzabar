@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// The belz entry point — run directly in dev (`bun bin/cli.ts …`) and compiled
+// The wi-impl entry point — run directly in dev (`bun bin/cli.ts …`) and compiled
 // into the release binary. Commands and help text come from the static
 // registries (see bin/options.ts), so both modes behave identically.
 import { flushAndExit, installStdioGuard, runNamespacedCli, trustedBelzEnv } from "@belzabar/core";

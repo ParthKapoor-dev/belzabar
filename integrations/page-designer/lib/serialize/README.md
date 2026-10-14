@@ -29,7 +29,7 @@ configuration PUT. Pure: no network.
 ```
 
 Types: `Overlay` in [`../types/common.ts`](../types/common.ts). Variables are addressed by
-`name`, HTTP calls by `callId`, nodes by `id` (or `_elementId`). `belz pd show <input> --find
+`name`, HTTP calls by `callId`, nodes by `id` (or `_elementId`). `wi-impl pd show <input> --find
 <text>` prints node ids and key paths. `nodes` runs after `elements.operations` (whose keys refer
 to the unedited tree).
 

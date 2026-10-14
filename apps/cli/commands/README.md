@@ -1,19 +1,19 @@
 # apps/cli/commands
 
-The top-level commands (`belz <cmd>`). Each folder holds `index.ts` (exports `args` and the
-default `CommandModule`), `help.txt` (`belz <cmd> --help`) and `desc.txt` (its lines in
-`belz --help-full`); the help text is the user reference, this file covers what a maintainer
+The top-level commands (`wi-impl <cmd>`). Each folder holds `index.ts` (exports `args` and the
+default `CommandModule`), `help.txt` (`wi-impl <cmd> --help`) and `desc.txt` (its lines in
+`wi-impl --help-full`); the help text is the user reference, this file covers what a maintainer
 needs beyond it.
 
 | Path | Command |
 |------|---------|
 | `registry.ts` | Static, sorted registry of the folders below (help/desc imported as text so the binary embeds them) |
-| `cache/` | `belz cache`: invalidate server-side cache entries; `prune-local` for stale local cache files |
-| `config/` | `belz config get \| token \| edit` (passthrough: routes its own subcommands; spec in `args.ts`, shared summary in `summary.ts`, also used by `setup`) |
-| `envs/` | `belz envs`: list configured environments and the active one |
-| `onboard/` | `belz onboard`: guided first run (the credentials step) |
-| `setup/` | `belz setup`: write or merge environments into config.json |
-| `update/` | `belz update`: fast-forward the source checkout, rebuild, reinstall |
+| `cache/` | `wi-impl cache`: invalidate server-side cache entries; `prune-local` for stale local cache files |
+| `config/` | `wi-impl config get \| token \| edit` (passthrough: routes its own subcommands; spec in `args.ts`, shared summary in `summary.ts`, also used by `setup`) |
+| `envs/` | `wi-impl envs`: list configured environments and the active one |
+| `onboard/` | `wi-impl onboard`: guided first run (the credentials step) |
+| `setup/` | `wi-impl setup`: write or merge environments into config.json |
+| `update/` | `wi-impl update`: fast-forward the source checkout, rebuild, reinstall |
 
 ## Behaviour notes
 
@@ -29,7 +29,7 @@ needs beyond it.
   values); `--from-env` reads `withoutDotenvInjected()`, so values Bun auto-loaded from a cwd
   `.env` are ignored and listed in `meta.warnings`. Interactive setup refuses `--llm`.
 - **onboard** returns `failWithData("ONBOARD_INCOMPLETE")` when a step failed (so `install.sh`'s
-  `if ! belz onboard` sees it) and re-throws `USER_ABORT` from a step (exit 130).
+  `if ! wi-impl onboard` sees it) and re-throws `USER_ABORT` from a step (exit 130).
 - **update** (`planUpdate`) only fast-forwards the recorded `install.sourceDir`. With something to
   pull it refuses a dirty tree (`DIRTY_TREE`: tracked or staged changes; untracked files do not
   count) or unpushed commits (`LOCAL_COMMITS`); it never resets. `--force` rebuilds even when up

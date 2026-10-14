@@ -1,6 +1,6 @@
 // Static registries: every `commands/<name>/` folder must be registered,
 // with non-empty help.txt + desc.txt, and registries stay sorted so the
-// hand-maintained files and `belz --help-full` are deterministic.
+// hand-maintained files and `wi-impl --help-full` are deterministic.
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "fs";
 import { join } from "path";

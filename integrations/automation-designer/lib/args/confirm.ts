@@ -16,7 +16,7 @@ export async function requireConfirmation(opts: ConfirmOpts): Promise<void> {
   });
 }
 
-/** `[belz ad write] {...}` on stderr, naming the env the write actually targets. */
+/** `[wi-impl ad write] {...}` on stderr, naming the env the write actually targets. */
 export function logIntent(method: string, path: string, meta: Record<string, unknown> = {}): void {
   logWriteIntent("ad", { method, path }, meta, { withEnv: true });
 }

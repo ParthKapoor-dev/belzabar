@@ -1,1 +1,1 @@
-belz ad outputs <uuid>  :->  A method's contract: inputs, variables, outputs, plus what each step writes (read-only)
+wi-impl ad outputs <uuid>  :->  A method's contract: inputs, variables, outputs, plus what each step writes (read-only)

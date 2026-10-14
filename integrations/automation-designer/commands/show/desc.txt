@@ -1,16 +1,16 @@
-belz ad show <uuid|url>  :->  A method's steps, inputs, outputs and metadata (--compact: one line per step; --story: plain English)
-belz ad show <uuid|url> --compact  :->  One line per step: kind/service, condition, loop, decoded SQL/code (abbreviated), inputs, outputs -> variables
-belz ad show <uuid|url> --compact --sql --code  :->  Compact view plus the full decoded SQL / code bodies (`blocks`)
-belz ad show <uuid|url> --compact --step <N>  :->  Compact line and full body of one step
-belz ad show <uuid|url> --story  :->  Plain-English approval template (inputs, outputs, steps tables, decoded code) as Markdown
-belz ad show <file.json> --story  :->  Same for a local V2/V1 method body before create/save (nothing fetched)
-belz ad show <uuid|url> --inputs  :->  Show input argument definitions
-belz ad show <uuid|url> --services  :->  Show service step names and IDs
-belz ad show <uuid|url> --service-detail <N>  :->  Show detailed info (incl. SQL/code body) for the step with orderIndex N (alias --step <N>)
-belz ad show <uuid|url> --outputs --variables  :->  Show outputs and variables
-belz ad show <uuid|url> --sql --code  :->  Include decoded SQL / custom-code bodies in the step details
-belz ad show <uuid|url> --open  :->  Open the editable draft in the browser (-o)
-belz ad show <uuid|url> --full  :->  Show all details including per-service logic, mappings and bodies
-belz ad show <uuid|url> --force  :->  Bypass cache and fetch a fresh method definition
-belz ad show <uuid|url> --raw  :->  Include the wire body once (`raw`)
-belz ad show <uuid|url> --v2  :->  Fetch through the V2 API
+wi-impl ad show <uuid|url>  :->  A method's steps, inputs, outputs and metadata (--compact: one line per step; --story: plain English)
+wi-impl ad show <uuid|url> --compact  :->  One line per step: kind/service, condition, loop, decoded SQL/code (abbreviated), inputs, outputs -> variables
+wi-impl ad show <uuid|url> --compact --sql --code  :->  Compact view plus the full decoded SQL / code bodies (`blocks`)
+wi-impl ad show <uuid|url> --compact --step <N>  :->  Compact line and full body of one step
+wi-impl ad show <uuid|url> --story  :->  Plain-English approval template (inputs, outputs, steps tables, decoded code) as Markdown
+wi-impl ad show <file.json> --story  :->  Same for a local V2/V1 method body before create/save (nothing fetched)
+wi-impl ad show <uuid|url> --inputs  :->  Show input argument definitions
+wi-impl ad show <uuid|url> --services  :->  Show service step names and IDs
+wi-impl ad show <uuid|url> --service-detail <N>  :->  Show detailed info (incl. SQL/code body) for the step with orderIndex N (alias --step <N>)
+wi-impl ad show <uuid|url> --outputs --variables  :->  Show outputs and variables
+wi-impl ad show <uuid|url> --sql --code  :->  Include decoded SQL / custom-code bodies in the step details
+wi-impl ad show <uuid|url> --open  :->  Open the editable draft in the browser (-o)
+wi-impl ad show <uuid|url> --full  :->  Show all details including per-service logic, mappings and bodies
+wi-impl ad show <uuid|url> --force  :->  Bypass cache and fetch a fresh method definition
+wi-impl ad show <uuid|url> --raw  :->  Include the wire body once (`raw`)
+wi-impl ad show <uuid|url> --v2  :->  Fetch through the V2 API

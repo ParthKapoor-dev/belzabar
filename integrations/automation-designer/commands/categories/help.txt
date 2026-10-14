@@ -1,4 +1,4 @@
-Usage: belz ad categories [flags]
+Usage: wi-impl ad categories [flags]
 
 List all AD categories (services) — both user-generated and system-generated.
 ID is the chain-category id (what methods, `ad find` and `ad export-category`
@@ -18,14 +18,14 @@ Flags:
 
 Global Flags:
   --env <name>        Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                      Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                      Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm               Output structured JSON envelope for scripting/LLM use.
 
-To list the methods in a category, use `belz ad find` with a category (see
-`belz ad find --help`).
+To list the methods in a category, use `wi-impl ad find` with a category (see
+`wi-impl ad find --help`).
 
 Examples:
-  belz ad categories --user
-  belz ad categories --search sandbox --env acme-dev --llm
-  belz ad categories --fields name,systemUuid --llm
-  belz ad categories --llm | jq '.data.categories[] | select(.type == "SYSTEM_GENERATED")'
+  wi-impl ad categories --user
+  wi-impl ad categories --search sandbox --env acme-dev --llm
+  wi-impl ad categories --fields name,systemUuid --llm
+  wi-impl ad categories --llm | jq '.data.categories[] | select(.type == "SYSTEM_GENERATED")'

@@ -1,4 +1,4 @@
-// One task-id validator for every `belz tw` command and `belz release matrix`.
+// One task-id validator for every `wi-impl tw` command and `wi-impl release matrix`.
 //
 // Accepts a bare positive integer or a Teamwork task URL (`…/tasks/<id>`);
 // anything else (`123abc`, `-5`) is INVALID_TASK_ID before any request.

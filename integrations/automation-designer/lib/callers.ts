@@ -146,7 +146,7 @@ export function stepRefsOf(body: unknown): StepRef[] {
 }
 
 /**
- * Refs-cache key: the index's `updatedOn`, or — for a method belz changed
+ * Refs-cache key: the index's `updatedOn`, or — for a method wi-impl changed
  * after the index was built — the mark time, so the edit is re-read.
  */
 export function refsKey(m: MethodFinderMethod, dirty?: Map<string, number>): string {
@@ -210,7 +210,7 @@ interface CallersScope {
   /** Lower-case category names whose opaque steps are resolved via V2 reads; null = all. */
   deep: Set<string> | null;
   /**
-   * Methods belz wrote after the index was built (`loadDirtyMethods`): their
+   * Methods wi-impl wrote after the index was built (`loadDirtyMethods`): their
    * index entry may be stale, so they are always re-read; marked uuids the
    * index lacks (created since) are read too; deleted ones drop out.
    */
@@ -227,7 +227,7 @@ export interface AdCallersResult {
     /** Methods outside the deep scope with opaque steps: callers may hide there. */
     unscannedMethods: number;
     unscannedCategories?: string[];
-    /** Methods belz changed since the index was built, re-read from their bodies. */
+    /** Methods wi-impl changed since the index was built, re-read from their bodies. */
     rereadMethods?: number;
     /** V2 reads that failed (method skipped). */
     errors?: string[];
@@ -293,7 +293,7 @@ export async function findAdCallers(
     const id = m.uuid.toLowerCase();
     listed.add(id);
     if (self.has(id)) continue;
-    // Changed by belz since the listing: the indexed calls may be wrong either way.
+    // Changed by wi-impl since the listing: the indexed calls may be wrong either way.
     if (dirty.has(id)) toRead.push(m);
     else if (indexCallsTarget(m, target)) candidates.add(m);
     else if ((m.opaqueSteps ?? 0) > 0) {
@@ -306,7 +306,7 @@ export async function findAdCallers(
   const refsByUuid = new Map<string, StepRef[]>();
   const deleted = new Set<string>();
 
-  // Created by belz since the listing: not in the index at all.
+  // Created by wi-impl since the listing: not in the index at all.
   const unlisted = [...dirty.keys()].filter((id) => !listed.has(id) && !self.has(id));
   await pool(unlisted, async (id) => {
     try {
@@ -327,7 +327,7 @@ export async function findAdCallers(
     try {
       refsByUuid.set(m.uuid, await readBodyCached(m, key, refsCache, stepRefsOf, opts.retryFailed));
     } catch (e) {
-      if (dirty.has(m.uuid.toLowerCase()) && isNotFound(e)) deleted.add(m.uuid); // deleted by belz
+      if (dirty.has(m.uuid.toLowerCase()) && isNotFound(e)) deleted.add(m.uuid); // deleted by wi-impl
       else errors.push(`${m.categoryName}/${m.methodName} (${m.uuid}): ${e instanceof Error ? e.message : String(e)}`);
     }
     done++;

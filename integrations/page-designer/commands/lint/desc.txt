@@ -1,4 +1,4 @@
-belz pd lint <input>  :->  Static check of a page/component config, no data loaded (platform + pd-review + figma rules); errors in full, warnings grouped by code; exit 1 on any error
-belz pd lint <input> --recursive  :->  Also lint every symbol the page uses and the page <-> symbol inputs/events/nesting
-belz pd lint <input> --full  :->  List every issue individually instead of grouping warnings
-belz pd lint <input> --summary  :->  Warning counts per code only (no per-occurrence refs); errors in full
+wi-impl pd lint <input>  :->  Static check of a page/component config, no data loaded (platform + pd-review + figma rules); errors in full, warnings grouped by code; exit 1 on any error
+wi-impl pd lint <input> --recursive  :->  Also lint every symbol the page uses and the page <-> symbol inputs/events/nesting
+wi-impl pd lint <input> --full  :->  List every issue individually instead of grouping warnings
+wi-impl pd lint <input> --summary  :->  Warning counts per code only (no per-occurrence refs); errors in full

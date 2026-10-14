@@ -1,10 +1,10 @@
 // Background auto-update for binary installs.
 //
-// At most once per 24 h, a belz run spawns a detached copy of itself (WI_IMPL_UPDATE_WORKER=1)
+// At most once per 24 h, a wi-impl run spawns a detached copy of itself (WI_IMPL_UPDATE_WORKER=1)
 // and carries on without waiting. The worker reads the latest release's manifest.json and, when
 // it is newer within the same major version, downloads this platform's binary to
-// `<belz>.next`, checks its sha256, and swaps it in (the old binary is kept as `<belz>.prev` for
-// `belz update --rollback`). A command that is already running keeps executing the old file,
+// `<wi-impl>.next`, checks its sha256, and swaps it in (the old binary is kept as `<wi-impl>.prev` for
+// `wi-impl update --rollback`). A command that is already running keeps executing the old file,
 // so the new version takes effect on the next run, which prints a one-line notice on stderr.
 //
 // Never for: source installs or dev runs, dirty builds, CI, WI_IMPL_NO_UPDATE=1,
@@ -64,17 +64,17 @@ export function installKind(config: BelzConfigFile): "binary" | "source" {
 /**
  * The sentence added to an unknown command/flag error: name the newer release when the last
  * check found one, say nothing when a check within 24 h found this version current, and
- * otherwise point at `belz update --check`.
+ * otherwise point at `wi-impl update --check`.
  */
 export function updateHint(build: BuildIdentity, now = Date.now()): string | null {
   const state = readUpdateState();
   const latest = state.latestVersion;
   if (latest && compareVersions(latest, build.version) > 0) {
-    return `belz ${latest} is available (this is ${build.version}) and may have it: run \`belz update\`.`;
+    return `wi-impl ${latest} is available (this is ${build.version}) and may have it: run \`wi-impl update\`.`;
   }
   const fresh = state.lastCheckAt !== undefined && now - state.lastCheckAt < CHECK_INTERVAL_MS;
   if (fresh && latest) return null;
-  return "If it is new, check for a newer belz with `belz update --check`.";
+  return "If it is new, check for a newer wi-impl with `wi-impl update --check`.";
 }
 
 /** Why this run must not auto-update, or null when it may. */
@@ -97,7 +97,7 @@ export function autoUpdateBlocker(
   }
   if (config.update?.auto === false) return "update.auto is false in config.json";
   if (config.update?.pin) return `pinned to ${config.update.pin} in config.json`;
-  if (installKind(config) !== "binary") return "source install (update with `belz update`)";
+  if (installKind(config) !== "binary") return "source install (update with `wi-impl update`)";
   return null;
 }
 
@@ -112,7 +112,7 @@ export function autoUpdateTick(build: BuildIdentity, now = Date.now()): void {
     const u = state.updated;
     if (u && !u.noticeShown && u.to === build.version) {
       const llm = process.argv.includes("--llm");
-      if (!llm && process.stderr.isTTY) process.stderr.write(`belz updated ${u.from} → ${u.to}\n`);
+      if (!llm && process.stderr.isTTY) process.stderr.write(`wi-impl updated ${u.from} → ${u.to}\n`);
       writeUpdateState({ updated: { ...u, noticeShown: true } });
     }
     if (autoUpdateBlocker(build) !== null) return;
@@ -149,7 +149,7 @@ export function swapInBinary(exe: string, next: string): void {
   } catch {
     copyFileSync(exe, prev);
   }
-  renameSync(next, exe); // atomic; a running belz keeps the old inode
+  renameSync(next, exe); // atomic; a running wi-impl keeps the old inode
 }
 
 /** Swap `exe` and `<exe>.prev` back. Throws when there is no previous binary. */

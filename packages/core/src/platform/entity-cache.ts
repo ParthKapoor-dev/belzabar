@@ -14,7 +14,7 @@ export const METHOD_CACHE_DIR = join(BELZ_CONFIG_DIR, "cache", "methods");
 export const PAGE_CACHE_DIR = join(BELZ_CONFIG_DIR, "cache", "pages");
 /** Finder-index name of the AD method index (`finderIndexStore`). */
 export const METHOD_FINDER_INDEX = "method-finder";
-/** Key of an env's "belz changed these methods" marks, kept beside the method index. */
+/** Key of an env's "wi-impl changed these methods" marks, kept beside the method index. */
 export const methodIndexDirtyKey = (env: string): string => `dirty-${env}`;
 
 const methodIndexMarks = new Cache<Record<string, number>>({

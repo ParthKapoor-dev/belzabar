@@ -14,7 +14,7 @@
 // spawnLive refuses any --env other than WI_IMPL_LIVE. Live CLI runs use a tmp
 // WI_IMPL_HOME seeded with a *copy* of the real config.json and that env's
 // session, so the real ~/.wi-impl is only read, never written.
-// Write suites: the WI_IMPL_LIVE_CATEGORY only, `belz_tst_` prefix, clean up in
+// Write suites: the WI_IMPL_LIVE_CATEGORY only, `wi_impl_tst_` prefix, clean up in
 // afterAll, and call registerLiveResource() for everything created.
 
 import { afterAll, describe } from "bun:test";
@@ -27,7 +27,7 @@ import { repoRoot, spawnCli, type SpawnCliOptions, type SpawnResult } from "./sp
 
 /** The env under test (WI_IMPL_LIVE); "" when live tests are off. */
 export const LIVE_ENV = process.env.WI_IMPL_LIVE?.trim() ?? "";
-export const LIVE_WRITE_PREFIX = "belz_tst_";
+export const LIVE_WRITE_PREFIX = "wi_impl_tst_";
 
 /** The one AD category write suites may touch (WI_IMPL_LIVE_CATEGORY / WI_IMPL_LIVE_CATEGORY_ID). */
 export function liveCategory(): { name: string; id: number } {

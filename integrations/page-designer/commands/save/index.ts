@@ -1,4 +1,4 @@
-// belz pd save <pageId> (--overlay <file> | --config <file>)
+// wi-impl pd save <pageId> (--overlay <file> | --config <file>)
 //              [--dry-run] [--force-validation] [--allow-published] [--yes]
 //
 // The single safe-edit entry point. Flow:
@@ -79,7 +79,7 @@ interface SaveData {
 }
 
 export const args = defineArgs({
-  command: "belz pd save",
+  command: "wi-impl pd save",
   positionals: [{ name: "page-id", required: true, missingCode: "MISSING_INPUT", missingMessage: "Missing <pageId>." }],
   flags: {
     overlay: { type: "string" },
@@ -252,7 +252,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
         return failWithData(
           "PD_SAVE_VERIFY_FAILED",
           `Saved ${targetId} (versionId ${saved.newVersionId ?? "?"}), but the read-back does not match the planned config ` +
-            `at ${verify.differingPaths?.length ?? 0} path(s). Inspect with \`belz pd show ${targetId} --force\`.`,
+            `at ${verify.differingPaths?.length ?? 0} path(s). Inspect with \`wi-impl pd show ${targetId} --force\`.`,
           data,
           { details: { pageId: targetId, strategy: p.plan.strategy, newVersionId: saved.newVersionId, differingPaths: verify.differingPaths ?? [] } },
         );
@@ -280,7 +280,7 @@ const command: CommandModule<SaveArgs, SaveData> = {
     );
 
     if (data.switchedFromPublished) {
-      ui.info(`Input was a PUBLISHED page; belz wrote to the linked draft (${data.draftId}).`);
+      ui.info(`Input was a PUBLISHED page; wi-impl wrote to the linked draft (${data.draftId}).`);
     }
 
     ui.section("Diff");

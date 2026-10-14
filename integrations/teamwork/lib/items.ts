@@ -1,7 +1,7 @@
 // Ticket → release items. Pulls a ticket (and its subtask comments), parses
 // every comment for AD/PD/SQL references, and returns a deduped item set with
 // provenance plus a recommended set drawn from the latest dev-note block.
-// Used by `belz tw items` and `belz release matrix`.
+// Used by `wi-impl tw items` and `wi-impl release matrix`.
 
 import { fetchTask, fetchComments } from "./api";
 import { teamworkTaskUrl } from "./auth";
@@ -163,7 +163,7 @@ export async function extractTicketItems(taskId: number): Promise<ItemsData> {
   const draftOnly = sortedPd.filter((p) => p.kinds.length === 1 && p.kinds[0] === "draft");
   if (draftOnly.length > 0) {
     warnings.push(
-      `${draftOnly.length} PD reference(s) seen only as draft page URLs — resolve to published IDs via 'belz pd show'.`,
+      `${draftOnly.length} PD reference(s) seen only as draft page URLs — resolve to published IDs via 'wi-impl pd show'.`,
     );
   }
   if (sortedAd.length === 0 && sortedPd.length === 0) {

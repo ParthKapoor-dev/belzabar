@@ -1,6 +1,6 @@
-belz config get  :->  Show URL, user, password status, and cached-session status (never the token) for the active environment
-belz config get --env qa  :->  Show config for a specific environment
-belz config token  :->  Print the raw Bearer token to stdout (for scripting or clipboard copy)
-belz config token --env qa  :->  Print the token for a specific environment
-belz config token --refresh  :->  Force a fresh login, then print the token
-belz config edit  :->  Interactively add, edit, or remove credentials, or set the default environment, in ~/.wi-impl/config.json
+wi-impl config get  :->  Show URL, user, password status, and cached-session status (never the token) for the active environment
+wi-impl config get --env qa  :->  Show config for a specific environment
+wi-impl config token  :->  Print the raw Bearer token to stdout (for scripting or clipboard copy)
+wi-impl config token --env qa  :->  Print the token for a specific environment
+wi-impl config token --refresh  :->  Force a fresh login, then print the token
+wi-impl config edit  :->  Interactively add, edit, or remove credentials, or set the default environment, in ~/.wi-impl/config.json

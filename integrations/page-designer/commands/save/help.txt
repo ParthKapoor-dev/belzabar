@@ -1,4 +1,4 @@
-Usage: belz pd save <pageId> (--overlay <file> | --config <file>) [flags]
+Usage: wi-impl pd save <pageId> (--overlay <file> | --config <file>) [flags]
 
 Safe-edit entry point. Applies a validated edit to a PD page draft.
 
@@ -26,7 +26,7 @@ Flow:
 Flags:
   --overlay <file>      Targeted JSON overlay (see OVERLAY SHAPE). Preferred.
   --config <file>       Raw full inner-configuration JSON object (escape
-                        hatch). belz stringifies it and sends it with
+                        hatch). wi-impl stringifies it and sends it with
                         partialUpdate=false.
   --dry-run             Run the full flow but skip the lock and the PUT.
   --force-validation    Proceed despite validator ERRORS (they are listed in
@@ -34,7 +34,7 @@ Flags:
   --allow-published     Allow writing directly to a PUBLISHED page that has
                         no linked draft.
   --yes, -y             Confirm the write (required with --llm or without a
-                        terminal; otherwise belz asks).
+                        terminal; otherwise wi-impl asks).
   --help, -h            Show this help message.
 
 OVERLAY SHAPE:
@@ -75,7 +75,7 @@ OVERLAY SHAPE:
   exist), and an unknown top-level section is refused; otherwise the save
   is refused with PD_OVERLAY_INVALID.
 
-  NODES (by id — no children[i] paths; find ids with `belz pd show <page>`
+  NODES (by id — no children[i] paths; find ids with `wi-impl pd show <page>`
   and its find option): a node is matched by `id`, else `_elementId`; an
   ambiguous id is refused. update MERGES props / field / attrs / events into
   the node (`null` deletes a key; an events entry replaces that event's
@@ -102,7 +102,7 @@ STRATEGY:
   (nothing else is rewritten).
 
 Examples:
-  belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./ed.json --dry-run
-  belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./ed.json --yes
-  belz pd save 4f126300499e4d83cd07a35b4d9af9e7 --config ./full.json --yes
-  belz pd save <id> --overlay ./ed.json --force-validation --yes --llm | jq '.data.bypassedErrors'
+  wi-impl pd save 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./ed.json --dry-run
+  wi-impl pd save 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./ed.json --yes
+  wi-impl pd save 4f126300499e4d83cd07a35b4d9af9e7 --config ./full.json --yes
+  wi-impl pd save <id> --overlay ./ed.json --force-validation --yes --llm | jq '.data.bypassedErrors'

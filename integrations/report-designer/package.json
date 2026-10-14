@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Report Designer commands and lib (`belz rd`).",
+  "description": "Report Designer commands and lib (`wi-impl rd`).",
   "exports": {
     "./registry": "./registry.ts",
     "./lib/*": "./lib/*.ts"

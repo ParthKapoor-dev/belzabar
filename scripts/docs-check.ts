@@ -12,7 +12,7 @@
 //      Placeholders (`<uuid>`, `*`, `{a,b}`, `…`) make a token unverifiable: skipped.
 //      A path without an extension also matches `<path>.ts` or `<path>/index.ts`.
 //      `@belzabar/<pkg>` imports must name a real workspace package.
-//   2. Commands. Every `belz <ns> <cmd> [<sub>]` inside code (spans or fenced
+//   2. Commands. Every `wi-impl <ns> <cmd> [<sub>]` inside code (spans or fenced
 //      blocks) must be a registered command; a subcommand word is checked when the
 //      command declares `defineSubcommands` without a default.
 //
@@ -35,9 +35,9 @@ import { existsSync, readdirSync, readFileSync, statSync } from "fs";
 import { dirname, join, relative, resolve } from "path";
 
 interface CommandIndex {
-  /** Top-level commands (`belz <cmd>`) → their subcommand info. */
+  /** Top-level commands (`wi-impl <cmd>`) → their subcommand info. */
   top: Map<string, SubInfo>;
-  /** Namespaces (`belz <ns> <cmd>`) → command → subcommand info. */
+  /** Namespaces (`wi-impl <ns> <cmd>`) → command → subcommand info. */
   namespaces: Map<string, Map<string, SubInfo>>;
 }
 
@@ -148,31 +148,31 @@ function checkPath(root: string, docDir: string, token: string, packages: Map<st
   return bases.some((b) => existsWithFallback(join(b, token))) ? null : `missing path ${token}`;
 }
 
-/** `belz …` invocations inside a code snippet, as word lists (stopping at a flag/placeholder). */
+/** `wi-impl …` invocations inside a code snippet, as word lists (stopping at a flag/placeholder). */
 export function commandCandidates(text: string): string[][] {
   const out: string[][] = [];
-  for (const m of text.matchAll(/(?<![\w.:\[-])belz((?:[ \t]+[a-z][\w-]*)+)/g)) {
+  for (const m of text.matchAll(/(?<![\w.:\[-])wi-impl((?:[ \t]+[a-z][\w-]*)+)/g)) {
     out.push(m[1]!.trim().split(/[ \t]+/));
   }
   return out;
 }
 
-/** Null when `words` (after `belz`) name a registered command, else the problem. */
+/** Null when `words` (after `wi-impl`) name a registered command, else the problem. */
 export function checkCommand(index: CommandIndex, words: string[]): string | null {
   const [first, second, third] = words;
   if (!first) return null;
-  const inv = `belz ${words.slice(0, 3).join(" ")}`;
+  const inv = `wi-impl ${words.slice(0, 3).join(" ")}`;
   const checkSub = (info: SubInfo, sub: string | undefined, label: string) =>
     info && sub && !info.strict.has(sub) ? `unknown subcommand in \`${inv}\` (${label} has: ${[...info.strict].sort().join(", ")})` : null;
 
   const ns = index.namespaces.get(first);
   if (ns) {
     if (!second) return null;
-    if (!ns.has(second)) return `unknown command \`belz ${first} ${second}\``;
+    if (!ns.has(second)) return `unknown command \`wi-impl ${first} ${second}\``;
     return checkSub(ns.get(second)!, third, `${first} ${second}`);
   }
   if (index.top.has(first)) return checkSub(index.top.get(first)!, second, first);
-  return `unknown command \`belz ${first}\``;
+  return `unknown command \`wi-impl ${first}\``;
 }
 
 /** Check the given docs. Paths are repo-relative. */

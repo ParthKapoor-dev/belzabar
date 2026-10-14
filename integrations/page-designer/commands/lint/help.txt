@@ -1,4 +1,4 @@
-Usage: belz pd lint <INPUT> [flags]
+Usage: wi-impl pd lint <INPUT> [flags]
 
 Lint a Page Designer page or component (a static check of its config; no data is
 loaded and nothing is rendered) against known failure patterns:
@@ -10,7 +10,7 @@ PD_VALIDATION_FAILED, report in `data`) when any ERROR fires.
 
 Output: errors are listed in full (data.issues); warnings are grouped by code
 with one short ref per occurrence — a variable name, a callId, a node id
-(data.warnings: {CODE: {count, refs}}); `belz pd show` locates a ref (its
+(data.warnings: {CODE: {count, refs}}); `wi-impl pd show` locates a ref (its
 find option returns the node's key path). --full lists every issue instead.
 
 Arguments:
@@ -105,7 +105,7 @@ Global Flags:
   --help, -h          Show this help message.
 
 Examples:
-  belz pd lint 48b75e11e166e6b19e5796d59a936228
-  belz pd lint n_s_staff_email_correspondence --recursive
-  belz pd lint https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
-  belz pd lint 48b75e11e166e6b19e5796d59a936228 --llm | jq '.data.warnings'
+  wi-impl pd lint 48b75e11e166e6b19e5796d59a936228
+  wi-impl pd lint n_s_staff_email_correspondence --recursive
+  wi-impl pd lint https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
+  wi-impl pd lint 48b75e11e166e6b19e5796d59a936228 --llm | jq '.data.warnings'

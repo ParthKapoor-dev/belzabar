@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Release promotion tracking commands (`belz release`).",
+  "description": "Release promotion tracking commands (`wi-impl release`).",
   "exports": {
     "./registry": "./registry.ts",
     "./lib/*": "./lib/*.ts"

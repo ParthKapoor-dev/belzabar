@@ -11,7 +11,7 @@ let prevTmp: string | undefined;
 let root: string;
 beforeAll(() => {
   prevTmp = process.env.TMPDIR;
-  root = scratchDir("belz-ad-diff-test-");
+  root = scratchDir("wi-impl-ad-diff-test-");
   process.env.TMPDIR = root;
 });
 afterAll(() => {
@@ -75,19 +75,19 @@ describe("ad diff editor", () => {
   test("an editor binary that cannot start → editor:null plus a warning, no crash", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     stubHistory();
-    const r = await runCommand(diffCommand, [UUID, "--from", "1", "--to", "2", "--editor", "belz-no-such-editor-zzz"], { env: "t-dev" });
+    const r = await runCommand(diffCommand, [UUID, "--from", "1", "--to", "2", "--editor", "wi-impl-no-such-editor-zzz"], { env: "t-dev" });
     expect(r.envelope?.ok).toBe(true);
     expect((r.envelope?.data as { editor: string | null }).editor).toBeNull();
-    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toMatch(/Could not start editor 'belz-no-such-editor-zzz'/);
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toMatch(/Could not start editor 'wi-impl-no-such-editor-zzz'/);
   });
 
   test("spawnEditor resolves null when the process starts", async () => {
     expect(await spawnEditor("true", "a", "b")).toBeNull();
-    expect(await spawnEditor("belz-no-such-editor-zzz", "a", "b")).toEqual(expect.any(String));
+    expect(await spawnEditor("wi-impl-no-such-editor-zzz", "a", "b")).toEqual(expect.any(String));
   });
 });
 
-// cross-env diff is in-process (no `belz` subprocess) and compares the
+// cross-env diff is in-process (no `wi-impl` subprocess) and compares the
 // semantic view, so a code-only change is visible and env-local ids are not.
 describe("ad diff cross-env", () => {
   const method = (env: string, code: string, automationId: number) =>

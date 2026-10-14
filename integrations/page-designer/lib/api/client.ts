@@ -1,4 +1,4 @@
-// Raw HTTP wrappers for every PD endpoint belz touches.
+// Raw HTTP wrappers for every PD endpoint wi-impl touches.
 //
 // One function per endpoint. No parsing, no business logic — this file only
 // talks JSON with the server. Callers are expected to be the pdApi façade in
@@ -236,7 +236,7 @@ export async function historyGet(versionId: number | string): Promise<RawPageRes
  * configuration into that draft row, bumps its versionId and answers with the
  * draft `{id, versionId, configuration, status, …}`; the PUBLISHED row and the
  * history are untouched. (Given the PUBLISHED id instead, it rewrites the live
- * row directly, with no publish and no history entry — belz never does that.
+ * row directly, with no publish and no history entry — wi-impl never does that.
  * The old `PUT /pages/revert/<vid>` form is a 400.)
  */
 export async function historyRestore(draftId: string, versionId: number): Promise<RawPageResponse | null> {
@@ -339,7 +339,7 @@ export async function publishPage(
   opts: { landingPage?: boolean; hostIds?: string[] } = {},
 ): Promise<unknown> {
   // The server reads publish parameters from the QUERY STRING, not the body.
-  // Sending hostIds in a JSON body (as belz used to) means the server sees no
+  // Sending hostIds in a JSON body (as wi-impl used to) means the server sees no
   // host: it updates the PUBLISHED sibling record but never DEPLOYS the page
   // to a host, so the live app keeps serving the previously-deployed config.
   // The PD designer's "Publish and Deploy" sends ?landingPage=&hostIds= as
@@ -362,7 +362,7 @@ export async function publishPage(
 // Wire behaviour (verified live 2026-09-29, tests/fixtures/wire/lock.json):
 //   - ACQUIRED on a free page → 200 `true`.
 //   - ACQUIRED on a page the signed-in user already holds (a manual
-//     `belz pd lock acquire`, another belz run, or the user's own open PD
+//     `wi-impl pd lock acquire`, another wi-impl run, or the user's own open PD
 //     editor tab) → HTTP 400 with a database duplicate-key message — NOT 409.
 //   - A locked page's GET carries `pageLockDetails` {status, userName,
 //     createdBy, validTill, lockedByCurrentUser}; that, not the error body,

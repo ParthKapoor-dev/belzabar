@@ -11,7 +11,7 @@
 //
 // Dry-run compile (`L4-compile`, opt-in): the V2 body is converted to a V1
 // inline-test payload with every step gated by an always-false entry condition
-// (#{'belz' eq 'dry-run'}), loops removed and runAsync off, then POSTed to
+// (#{'wi-impl' eq 'dry-run'}), loops removed and runAsync off, then POSTed to
 // /rest/api/automation/chain/test (debug mode). The server compiles the whole
 // chain first (binding/compile errors → "Error while compiling automation")
 // and then skips every step. Nothing executes; the response is checked for
@@ -60,7 +60,7 @@ const URI_BY_LABEL: Record<string, string> = {
   "data.schema.modify": "modify",
 };
 
-export const DRY_RUN_GATE = "#{'belz' eq 'dry-run'}";
+export const DRY_RUN_GATE = "#{'wi-impl' eq 'dry-run'}";
 
 class LookupError extends Error {}
 
@@ -162,7 +162,7 @@ async function runOnlineHere(body: unknown, opts: OnlineOptions): Promise<{ find
         findings.push(
           apiId
             ? { rule: "AD-SVC-002", message: `${svc}/${m} does not resolve to an automation API; the server uses automationAPIId instead (a bogus id fails the save with 500).`, path: at("methodName"), step: ref }
-            : { rule: "AD-SVC-001", message: `${svc}/${m} does not resolve to an automation API.`, path: at("methodName"), step: ref, fix: "Check the names with `belz ad services --search` / `belz ad child-info`.", evidence: "404 Automation API not found with serviceName - … methodName - …" },
+            : { rule: "AD-SVC-001", message: `${svc}/${m} does not resolve to an automation API.`, path: at("methodName"), step: ref, fix: "Check the names with `wi-impl ad services --search` / `wi-impl ad child-info`.", evidence: "404 Automation API not found with serviceName - … methodName - …" },
         );
         continue;
       }
@@ -214,7 +214,7 @@ function checkInputKeys(s: Record<string, unknown>, i: number, ref: ReturnType<t
       if (u && uuids.has(u)) {
         findings.push({ rule: "AD-SVC-004", message: `Input key "${key}" is not in the callee contract${ci ? ` (did you mean "${ci}"?)` : ""}; its uuid matches, so the server repairs the key.`, path: jsonPath([...path, "key"]), step: ref, fix: ci ? `Use "${ci}".` : undefined });
       } else {
-        findings.push({ rule: "AD-SVC-003", message: `Input key "${key}" is not in the callee contract (${known.join(", ") || "no inputs"})${ci ? `; keys are case-sensitive, did you mean "${ci}"?` : ""} and no uuid matches: the input is silently dropped.`, path: jsonPath([...path, "key"]), step: ref, fix: ci ? `Use "${ci}".` : "Use a key the service declares (belz ad child-info).", evidence: "v2_step_input_key_unknown_no_uuid: input dropped, output empty" });
+        findings.push({ rule: "AD-SVC-003", message: `Input key "${key}" is not in the callee contract (${known.join(", ") || "no inputs"})${ci ? `; keys are case-sensitive, did you mean "${ci}"?` : ""} and no uuid matches: the input is silently dropped.`, path: jsonPath([...path, "key"]), step: ref, fix: ci ? `Use "${ci}".` : "Use a key the service declares (wi-impl ad child-info).", evidence: "v2_step_input_key_unknown_no_uuid: input dropped, output empty" });
       }
     });
   };
@@ -341,11 +341,11 @@ async function dryRunCompile(body: Record<string, unknown>, contracts: Map<numbe
   const msg = isObj(json) ? str(json.errorMessage) ?? str(json.message) : undefined;
   if (!res.ok) {
     if (msg && /compil/i.test(msg)) {
-      return [{ rule: "AD-COMPILE-001", message: `The server could not compile the method: ${msg}.`, path: "", fix: "Check bound services, input uuids and account ids (belz ad validate --online).", evidence: `${res.status} ${msg}` }];
+      return [{ rule: "AD-COMPILE-001", message: `The server could not compile the method: ${msg}.`, path: "", fix: "Check bound services, input uuids and account ids (wi-impl ad validate --online).", evidence: `${res.status} ${msg}` }];
     }
     // any other non-2xx (500 "automationAPI is null" for a bogus apiId, a bad account,
     // 400 "Invalid state", …) is the server refusing this body — blocking, not a lookup warning.
-    return [{ rule: "AD-COMPILE-002", message: `Dry-run compile was refused with ${res.status}${msg ? `: ${msg}` : ""}; the save would fail or the method would not run.`, path: "", fix: "Check bound services (automationAPIId), accounts and input uuids (belz ad validate --online).", evidence: `${res.status}${msg ? ` ${msg}` : ""}` }];
+    return [{ rule: "AD-COMPILE-002", message: `Dry-run compile was refused with ${res.status}${msg ? `: ${msg}` : ""}; the save would fail or the method would not run.`, path: "", fix: "Check bound services (automationAPIId), accounts and input uuids (wi-impl ad validate --online).", evidence: `${res.status}${msg ? ` ${msg}` : ""}` }];
   }
   const ran = dryRunExecutedSteps(json);
   return ran.map((orderIndex) => ({

@@ -1,4 +1,4 @@
-// `belz cache` must send {"uuids":[…]} to BOTH invalidate routes and refuse an
+// `wi-impl cache` must send {"uuids":[…]} to BOTH invalidate routes and refuse an
 // org-wide flush unless --all --yes is passed. No network: the fetcher is mocked.
 import { describe, expect, test } from "bun:test";
 import { errorCode } from "@belzabar/core/testing";

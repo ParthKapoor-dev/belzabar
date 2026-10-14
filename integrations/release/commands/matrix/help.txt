@@ -1,4 +1,4 @@
-Usage: belz release matrix <release.json> [flags]
+Usage: wi-impl release matrix <release.json> [flags]
 
 Audit a production release. Given a spec of included and excluded tickets, it
 links each ticket to its AD/PD items (via `tw items`), traces every AD item
@@ -55,5 +55,5 @@ Notes:
     release can take a few minutes.
 
 Examples:
-  belz release matrix ./may-12.json
-  belz release matrix ./release.json --env acme-dev --llm
+  wi-impl release matrix ./may-12.json
+  wi-impl release matrix ./release.json --env acme-dev --llm

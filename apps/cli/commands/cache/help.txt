@@ -1,6 +1,6 @@
-Usage: belz cache --env <name> [flags] <uuid...>
-       belz cache --env <name> --all --yes [--type <TYPE>]
-       belz cache prune-local [--yes]
+Usage: wi-impl cache --env <name> [flags] <uuid...>
+       wi-impl cache --env <name> --all --yes [--type <TYPE>]
+       wi-impl cache prune-local [--yes]
 
 Invalidate server-side cache entries on an environment, or clean up stale
 local cache artifacts under ~/.wi-impl/cache.
@@ -45,19 +45,19 @@ Global Flags:
 
 Examples:
   # Invalidate three automation cache entries on acme-dev
-  belz cache --env acme-dev 44014c3707d6b6d8ae848839a1c8d1e7 47425344e088690ff89aa8f1e092c867 4a1d686b87f93b1519f2b61393d4ed7a
+  wi-impl cache --env acme-dev 44014c3707d6b6d8ae848839a1c8d1e7 47425344e088690ff89aa8f1e092c867 4a1d686b87f93b1519f2b61393d4ed7a
 
   # Two entries on acme-qa
-  belz cache --env acme-qa <uuid> <uuid>
+  wi-impl cache --env acme-qa <uuid> <uuid>
 
   # Wipe the entire AUTOMATION cache on acme-uat (org-wide; use with care)
-  belz cache --env acme-uat --all --yes
+  wi-impl cache --env acme-uat --all --yes
 
   # Invalidate by a non-default type
-  belz cache --env acme-dev --type PAGE <uuid>
+  wi-impl cache --env acme-dev --type PAGE <uuid>
 
   # See what local cache cleanup would remove (dry run)
-  belz cache prune-local
+  wi-impl cache prune-local
 
   # Actually delete stale local cache artifacts
-  belz cache prune-local --yes
+  wi-impl cache prune-local --yes

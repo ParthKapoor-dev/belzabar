@@ -1,5 +1,5 @@
-belz pd publish <pageId> --yes  :->  Validate + publish a PD draft to its PUBLISHED sibling (does NOT deploy)
-belz pd publish <pageId> --host <id> [--host <id>] --yes  :->  Publish AND deploy to the given host(s)
-belz pd publish <pageId> --landing --yes  :->  Publish as the site's landing page
-belz pd publish <pageId> --force-validation --yes  :->  Publish despite validator errors on the draft
-belz pd publish <pageId> --allow-published --yes  :->  Publish a PUBLISHED page that has no linked draft
+wi-impl pd publish <pageId> --yes  :->  Validate + publish a PD draft to its PUBLISHED sibling (does NOT deploy)
+wi-impl pd publish <pageId> --host <id> [--host <id>] --yes  :->  Publish AND deploy to the given host(s)
+wi-impl pd publish <pageId> --landing --yes  :->  Publish as the site's landing page
+wi-impl pd publish <pageId> --force-validation --yes  :->  Publish despite validator errors on the draft
+wi-impl pd publish <pageId> --allow-published --yes  :->  Publish a PUBLISHED page that has no linked draft

@@ -28,7 +28,7 @@ export async function apiFetch(path: string, options: ApiOptions = {}): Promise<
   if (wantsExpertlyToken) headers.delete("Expertly-Auth-Token");
 
   if (!headers.has("Accept")) headers.set("Accept", "application/json, text/plain, */*");
-  if (!headers.has("User-Agent")) headers.set("User-Agent", "Bun/1.0 (Belzabar CLI)");
+  if (!headers.has("User-Agent")) headers.set("User-Agent", "Bun/1.0 (wi-impl)");
   if (!headers.has("Content-Type") && method !== "GET" && method !== "HEAD" && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }

@@ -1,4 +1,4 @@
-Usage: belz pd show <INPUT> [flags]
+Usage: wi-impl pd show <INPUT> [flags]
 
 Display the structure and metadata of a Page Designer page or component.
 The config is fetched and cached automatically. Cached data older than 5
@@ -68,21 +68,21 @@ Global Flags:
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz pd show 48b75e11e166e6b19e5796d59a936228
-  belz pd show https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
-  belz pd show n_s_staff_email_correspondence
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --vars
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --vars --fields name,spec
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --find "Save and Exit"
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --find exp-layout-dialog --llm
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --http
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --components
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --var-detail showLoader
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --http-detail 1
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --full
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --force --llm
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --tree
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --node __node_id_submit_btn
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --var-graph
-  belz pd show 48b75e11e166e6b19e5796d59a936228 --open
-  belz pd show AHS_DMV_Profile_Detail -o
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228
+  wi-impl pd show https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
+  wi-impl pd show n_s_staff_email_correspondence
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --vars
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --vars --fields name,spec
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --find "Save and Exit"
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --find exp-layout-dialog --llm
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --http
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --components
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --var-detail showLoader
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --http-detail 1
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --full
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --force --llm
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --tree
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --node __node_id_submit_btn
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --var-graph
+  wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --open
+  wi-impl pd show AHS_DMV_Profile_Detail -o

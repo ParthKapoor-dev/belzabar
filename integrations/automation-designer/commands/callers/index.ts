@@ -1,4 +1,4 @@
-// belz ad callers <uuid|url> [--category a,b | --all] [--pd] [--refresh]
+// wi-impl ad callers <uuid|url> [--category a,b | --all] [--pd] [--refresh]
 //
 // Reverse index: which AD methods — and with --pd which PD pages /
 // components — call the given method. Read-only. Scope and caching are
@@ -38,8 +38,8 @@ interface CallersData {
     skippedCategories?: string[];
     /**
      * True only for a fresh, complete index with every candidate resolved. A
-     * cached index misses methods created or edited outside belz since it was
-     * built (belz's own writes are re-read).
+     * cached index misses methods created or edited outside wi-impl since it was
+     * built (wi-impl's own writes are re-read).
      */
     complete: boolean;
   };
@@ -49,7 +49,7 @@ interface CallersData {
 export const CALLERS_INDEX_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 export const args = defineArgs({
-  command: "belz ad callers",
+  command: "wi-impl ad callers",
   positionals: [
     { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." },
   ],
@@ -84,8 +84,8 @@ const command: CommandModule<CallersArgs, CallersData> = {
     const ageMinutes = Math.round((Date.now() - index.generatedAt) / 60000);
     if (source === "cache") {
       context.warn(
-        `Using the cached method index (${ageMinutes} min old): methods created or edited outside belz since then are missed ` +
-          "(belz's own writes are re-read). Use --refresh to rebuild it.",
+        `Using the cached method index (${ageMinutes} min old): methods created or edited outside wi-impl since then are missed ` +
+          "(wi-impl's own writes are re-read). Use --refresh to rebuild it.",
       );
     }
     const skipped = (index.skippedCategories ?? []).map((c) => c.categoryName);

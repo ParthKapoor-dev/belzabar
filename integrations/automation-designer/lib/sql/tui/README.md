@@ -1,6 +1,6 @@
 # lib/sql/tui — the interactive SQL session
 
-`belz ad sql tui`: a psql-like REPL over the executors in [`../executor.ts`](../executor.ts).
+`wi-impl ad sql tui`: a psql-like REPL over the executors in [`../executor.ts`](../executor.ts).
 Human use only (`--llm` fails `SQL_TUI_UNSUPPORTED_IN_LLM`). It can switch into write modes,
 so the command is a write and needs an explicit `--env`.
 

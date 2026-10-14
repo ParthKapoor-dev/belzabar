@@ -92,7 +92,7 @@ function violations(c: Case, r: RunResult): string[] {
   if (r.envelope.ok !== (r.exitCode === 0)) out.push(`ok=${r.envelope.ok} but exitCode=${r.exitCode}`);
   if (c.kind === "help" && !(r.envelope.ok && r.exitCode === 0)) out.push("--help did not succeed");
   if ((c.kind === "help" || c.kind === "runner") && r.envelope.meta.env !== undefined) out.push("runner-level envelope carries meta.env");
-  if (c.kind === "help" && r.envelope.schema !== "belz.help") out.push(`help schema ${r.envelope.schema}`);
+  if (c.kind === "help" && r.envelope.schema !== "wi-impl.help") out.push(`help schema ${r.envelope.schema}`);
   return out;
 }
 
@@ -113,7 +113,7 @@ beforeAll(() => {
     jenkins: { baseUrl: "https://jenkins.contract.test", user: "u", password: btoa("x") },
   });
   prevCwd = process.cwd();
-  cwd = mkdtempSync(join(tmpdir(), "belz-contract-cwd-"));
+  cwd = mkdtempSync(join(tmpdir(), "wi-impl-contract-cwd-"));
   process.chdir(cwd);
   const blocked = (name: string) => () => {
     throw new Error(`envelope-contract: ${name} is blocked in contract tests`);
@@ -136,7 +136,7 @@ afterAll(() => {
 describe("--llm envelope contract", () => {
   for (const c of buildCases()) {
     const key = c.argv.join(" ");
-    const name = `belz ${key} --llm`.replace(/\s+/g, " ");
+    const name = `wi-impl ${key} --llm`.replace(/\s+/g, " ");
     if (KNOWN_VIOLATIONS[key]) {
       test.todo(`${name}  [known: ${KNOWN_VIOLATIONS[key]}]`, () => {});
       continue;

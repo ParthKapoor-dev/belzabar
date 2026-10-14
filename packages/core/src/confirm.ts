@@ -60,7 +60,7 @@ export async function confirmWrite(opts: ConfirmWriteOptions): Promise<void> {
 }
 
 /**
- * One stderr audit line per remote write: `[belz <ns> write] {"ts",...fields,"env"?,...meta}`.
+ * One stderr audit line per remote write: `[wi-impl <ns> write] {"ts",...fields,"env"?,...meta}`.
  * `withEnv` adds the env the write really targets (`--env`, else the default env).
  */
 export function logWriteIntent(
@@ -77,5 +77,5 @@ export function logWriteIntent(
       record.env = "unknown";
     }
   }
-  process.stderr.write(`[belz ${ns} write] ${JSON.stringify({ ...record, ...meta })}\n`);
+  process.stderr.write(`[wi-impl ${ns} write] ${JSON.stringify({ ...record, ...meta })}\n`);
 }

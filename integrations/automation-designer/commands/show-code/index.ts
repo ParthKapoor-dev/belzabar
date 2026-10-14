@@ -26,7 +26,7 @@ interface ShowCodeData {
 }
 
 export const args = defineArgs({
-  command: "belz ad show-code",
+  command: "wi-impl ad show-code",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {
     ...AD_V2_FLAG,
@@ -62,7 +62,7 @@ const command: CommandModule<ShowCodeArgs, ShowCodeData> = {
     }
     if (codeSteps.length === 0) {
       throw new CliError(
-        `Method has no CUSTOM_CODE steps. Use 'belz ad show <uuid>' to see step kinds.`,
+        `Method has no CUSTOM_CODE steps. Use 'wi-impl ad show <uuid>' to see step kinds.`,
         { code: "NO_CUSTOM_CODE" },
       );
     }

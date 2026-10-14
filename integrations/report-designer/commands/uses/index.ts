@@ -13,7 +13,7 @@ interface UsesData {
 }
 
 export const args = defineArgs({
-  command: "belz rd uses",
+  command: "wi-impl rd uses",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument (an AD method uuid or URL)." }],
 });
 

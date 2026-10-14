@@ -1,4 +1,4 @@
-// belz ad validate <uuid|file> — read-only run of the pre-save validator
+// wi-impl ad validate <uuid|file> — read-only run of the pre-save validator
 // (lib/validate) over a method's V2 body: a saved method (fetched by uuid) or a
 // local V2 JSON file (the body you are about to save).
 //
@@ -36,7 +36,7 @@ export interface ValidateData {
 }
 
 export const args = defineArgs({
-  command: "belz ad validate",
+  command: "wi-impl ad validate",
   positionals: [{ name: "target", required: true, missingCode: "MISSING_TARGET", missingMessage: "Missing <uuid|file> argument." }],
   flags: {
     online: { type: "boolean", description: "Also check each step against its service contract on --env (L4)" },

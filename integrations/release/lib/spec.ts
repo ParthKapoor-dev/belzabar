@@ -1,4 +1,4 @@
-// Release spec (`belz release matrix <release.json>`): validated up front with
+// Release spec (`wi-impl release matrix <release.json>`): validated up front with
 // zod and its spine/stage envs resolved from the project, so a bad spec is
 // BAD_SPEC before any Teamwork or AD request.
 

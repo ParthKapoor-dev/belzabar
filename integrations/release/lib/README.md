@@ -24,8 +24,8 @@ mode 0644):
 
 | Path | Written by |
 |---|---|
-| `releases/<slug>.json` | `belz release matrix` (replaced on every run) |
-| `prod-snapshots/<slug>.json` | `belz release freeze` (replaced only with `--force`, else `SNAPSHOT_EXISTS`) |
+| `releases/<slug>.json` | `wi-impl release matrix` (replaced on every run) |
+| `prod-snapshots/<slug>.json` | `wi-impl release freeze` (replaced only with `--force`, else `SNAPSHOT_EXISTS`) |
 
 - `<slug>` = `releaseSlug(name)`: lowercase, other characters collapsed to `-`; a name without
   letters or digits is `INVALID_RELEASE_NAME`.

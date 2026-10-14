@@ -1,4 +1,4 @@
-// Build identity for `belz --version`. Imported with `{ type: "macro" }` from
+// Build identity for `wi-impl --version`. Imported with `{ type: "macro" }` from
 // bin/options.ts, so Bun evaluates it at bundle time: the compiled binary embeds
 // the SHA it was built from, and dev runs (`bun bin/cli.ts`) compute it on load.
 import { readFileSync } from "fs";

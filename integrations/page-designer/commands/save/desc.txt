@@ -1,5 +1,5 @@
-belz pd save <pageId> --overlay <file> --yes  :->  Apply a validated JSON overlay to a page draft (locked, re-fetched inside the lock, read back); nodes.update/insert/remove address layout nodes by id
-belz pd save <pageId> --config <file> --yes  :->  Replace the full inner configuration (escape hatch)
-belz pd save <pageId> --overlay <file> --dry-run  :->  Plan + validate the edit without locking or writing
-belz pd save <pageId> --overlay <file> --force-validation --yes  :->  Save despite validator errors the edit introduces
-belz pd save <pageId> --overlay <file> --allow-published --yes  :->  Write to a PUBLISHED page that has no linked draft
+wi-impl pd save <pageId> --overlay <file> --yes  :->  Apply a validated JSON overlay to a page draft (locked, re-fetched inside the lock, read back); nodes.update/insert/remove address layout nodes by id
+wi-impl pd save <pageId> --config <file> --yes  :->  Replace the full inner configuration (escape hatch)
+wi-impl pd save <pageId> --overlay <file> --dry-run  :->  Plan + validate the edit without locking or writing
+wi-impl pd save <pageId> --overlay <file> --force-validation --yes  :->  Save despite validator errors the edit introduces
+wi-impl pd save <pageId> --overlay <file> --allow-published --yes  :->  Write to a PUBLISHED page that has no linked draft

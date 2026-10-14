@@ -1,4 +1,4 @@
-<h1 align="center">belz</h1>
+<h1 align="center">wi-impl</h1>
 
 <p align="center">
   <b>One command-line tool for the Expertly low-code platform.</b><br>
@@ -21,7 +21,7 @@ curl -fsSL https://github.com/ParthKapoor-dev/belzabar/releases/latest/download/
 
 ## Contents
 
-- [Why belz?](#why-belz)
+- [Why wi-impl?](#why-wi-impl)
 - [Installation](#installation)
 - [Setup](#setup)
 - [Quick start](#quick-start)
@@ -30,7 +30,7 @@ curl -fsSL https://github.com/ParthKapoor-dev/belzabar/releases/latest/download/
   - [Testing and SQL](#testing-and-sql)
   - [Page Designer pages](#page-designer-pages)
   - [Teamwork, migrations and releases](#teamwork-migrations-and-releases)
-  - [Using belz from scripts and AI agents](#using-belz-from-scripts-and-ai-agents)
+  - [Using wi-impl from scripts and AI agents](#using-wi-impl-from-scripts-and-ai-agents)
 - [Updating](#updating)
 - [Configuration reference](#configuration-reference)
 - [Uninstall](#uninstall)
@@ -40,10 +40,10 @@ curl -fsSL https://github.com/ParthKapoor-dev/belzabar/releases/latest/download/
 
 ---
 
-## Why belz?
+## Why wi-impl?
 
 Working on Expertly usually means clicking through the designer UI or hand-crafting REST calls
-with encoded payloads. belz does that platform work for you:
+with encoded payloads. wi-impl does that platform work for you:
 
 - **One tool for everything** — AD methods, PD pages, Report Designer reports, the database, Teamwork tickets, Jenkins
   migrations and release checks.
@@ -73,13 +73,13 @@ That's it. The installer:
 
 1. downloads the right binary for your OS and CPU,
 2. checks it against the release's `SHA256SUMS` (nothing is installed on a mismatch),
-3. puts it at `~/.local/bin/belz` (Windows: `%LOCALAPPDATA%\belz\bin\belz.exe`, added to your PATH),
+3. puts it at `~/.local/bin/belz` (Windows: `%LOCALAPPDATA%\wi-impl\bin\belz.exe`, added to your PATH),
 4. starts the guided setup on a first install.
 
 No bun, node or git needed. Check it worked:
 
 ```bash
-belz --version
+wi-impl --version
 ```
 
 > If your shell says `belz: command not found`, add `~/.local/bin` to your PATH:
@@ -109,33 +109,33 @@ You can also download a binary by hand from the
 
 ## Setup
 
-belz has no built-in environments. You add each one (a name, its base URL and your login) once:
+wi-impl has no built-in environments. You add each one (a name, its base URL and your login) once:
 
 ```bash
-belz onboard      # guided first run
-belz envs         # list your environments and check that login works
+wi-impl onboard      # guided first run
+wi-impl envs         # list your environments and check that login works
 ```
 
-- Run `belz setup` later to add or change an environment (it merges with what you have).
+- Run `wi-impl setup` later to add or change an environment (it merges with what you have).
 - Everything is stored in `~/.wi-impl/config.json`, readable only by you. Tokens are refreshed
   automatically.
 - With several environments, choose one per command with `--env <name>`, or set a default with
-  `belz config edit` (`"defaultEnv"`).
+  `wi-impl config edit` (`"defaultEnv"`).
 
 ---
 
 ## Quick start
 
 ```bash
-belz ad find "invoice"                 # find methods by name
-belz ad show <uuid> --compact          # read one, one line per step
-belz ad test <uuid> --env dev --inputs '{"id": 1}'   # run it
-belz pd show <page> --tree             # look at a page
-belz tw task <id>                      # read a ticket
-belz --help-full                       # every command, one line each
+wi-impl ad find "invoice"                 # find methods by name
+wi-impl ad show <uuid> --compact          # read one, one line per step
+wi-impl ad test <uuid> --env dev --inputs '{"id": 1}'   # run it
+wi-impl pd show <page> --tree             # look at a page
+wi-impl tw task <id>                      # read a ticket
+wi-impl --help-full                       # every command, one line each
 ```
 
-Every command documents itself: `belz <module> <command> --help`.
+Every command documents itself: `wi-impl <module> <command> --help`.
 
 ---
 
@@ -149,67 +149,67 @@ Commands are grouped into modules: `ad` (Automation Designer), `pd` (Page Design
 **Find and read**
 
 ```bash
-belz ad find "<words>"                 # search by name, alias or uuid
-belz ad find --describe "<words>"      # "does a method for X already exist?"
-belz ad show <uuid> --compact          # one line per step: conditions, loops, SQL, code, I/O
-belz ad show <uuid> --story            # plain-English summary for reviews
-belz ad state <uuid>                   # is the draft in sync with the published version?
-belz ad callers <uuid>                 # who calls this method (--pd adds PD pages)
-belz ad grep "<regex>" --all           # search the SQL / code / expressions of every method
-belz ad history list <uuid>            # versions; `history diff` compares two
+wi-impl ad find "<words>"                 # search by name, alias or uuid
+wi-impl ad find --describe "<words>"      # "does a method for X already exist?"
+wi-impl ad show <uuid> --compact          # one line per step: conditions, loops, SQL, code, I/O
+wi-impl ad show <uuid> --story            # plain-English summary for reviews
+wi-impl ad state <uuid>                   # is the draft in sync with the published version?
+wi-impl ad callers <uuid>                 # who calls this method (--pd adds PD pages)
+wi-impl ad grep "<regex>" --all           # search the SQL / code / expressions of every method
+wi-impl ad history list <uuid>            # versions; `history diff` compares two
 ```
 
 **Change, check and publish**
 
-Changes are small JSON *overlays* applied to the method's draft; belz fills in the platform
-boilerplate. `belz ad save --help` lists every overlay key.
+Changes are small JSON *overlays* applied to the method's draft; wi-impl fills in the platform
+boilerplate. `wi-impl ad save --help` lists every overlay key.
 
 ```bash
-belz ad validate <uuid>                                    # check a method
-belz ad lint <uuid>                                        # validator + SQL and anti-pattern review
-belz ad save edit.json --uuid <uuid> --dry-run             # preview: plan + validate, write nothing
-belz ad save edit.json --uuid <uuid> --env dev             # save to the draft
-belz ad save --uuid <uuid> --sql-file 3=step3.sql --env dev   # replace one step's SQL
-belz ad publish <uuid> --note "fix totals" --env dev       # publish the draft
-belz ad create --spec method.json --category <name> --env dev # a new method
+wi-impl ad validate <uuid>                                    # check a method
+wi-impl ad lint <uuid>                                        # validator + SQL and anti-pattern review
+wi-impl ad save edit.json --uuid <uuid> --dry-run             # preview: plan + validate, write nothing
+wi-impl ad save edit.json --uuid <uuid> --env dev             # save to the draft
+wi-impl ad save --uuid <uuid> --sql-file 3=step3.sql --env dev   # replace one step's SQL
+wi-impl ad publish <uuid> --note "fix totals" --env dev       # publish the draft
+wi-impl ad create --spec method.json --category <name> --env dev # a new method
 ```
 
 ### Testing and SQL
 
 ```bash
-belz ad test <uuid> --env dev --inputs inputs.json --expect total=42
-belz ad test <uuid> --env dev --inputs inputs.json --compare-published   # draft vs published
-belz ad test-case create <uuid> --name smoke --input id=1 --assert status=OK --env dev
-belz ad test-case export <uuid> --dir ./tests                # save cases as files
-belz ad sql run "select 1"                                   # read-only SQL
-belz ad sql explain "select …" --analyze                     # query plan
+wi-impl ad test <uuid> --env dev --inputs inputs.json --expect total=42
+wi-impl ad test <uuid> --env dev --inputs inputs.json --compare-published   # draft vs published
+wi-impl ad test-case create <uuid> --name smoke --input id=1 --assert status=OK --env dev
+wi-impl ad test-case export <uuid> --dir ./tests                # save cases as files
+wi-impl ad sql run "select 1"                                   # read-only SQL
+wi-impl ad sql explain "select …" --analyze                     # query plan
 ```
 
-`belz ad test` really runs the method on the server, so it needs `--env`.
+`wi-impl ad test` really runs the method on the server, so it needs `--env`.
 
 ### Page Designer pages
 
 ```bash
-belz pd show <page>                    # by URL, id or exact name; --tree, --vars, --http
-belz pd show <page> --find "<text>"    # find a node on the page
-belz pd lint <page> --recursive    # check a page and its sub-pages
-belz pd find-ad-methods <page>         # which AD methods the page calls
-belz pd preflight <pageId> --overlay edit.json   # preview an edit
-belz pd save <pageId> --overlay edit.json --env dev
+wi-impl pd show <page>                    # by URL, id or exact name; --tree, --vars, --http
+wi-impl pd show <page> --find "<text>"    # find a node on the page
+wi-impl pd lint <page> --recursive    # check a page and its sub-pages
+wi-impl pd find-ad-methods <page>         # which AD methods the page calls
+wi-impl pd preflight <pageId> --overlay edit.json   # preview an edit
+wi-impl pd save <pageId> --overlay edit.json --env dev
 ```
 
 ### Report Designer reports
 
 ```bash
-belz rd find "<words>"                 # reports by title
-belz rd show <id>                      # definition: datasource, columns, filters (does not run it)
-belz rd export <id> --out report.json  # portable spec (datasource by category + method name)
-belz rd datasources --category <name>  # published AD methods a report can use
-belz rd uses <method-uuid>             # reports fed by an AD method
-belz rd run <id> --env dev             # rows, as saved (runs the datasource method)
-belz rd save <id> --spec report.json --env dev --dry-run   # changes; drop --dry-run to save
-belz rd create --spec report.json --env dev               # a new report from a spec
-belz rd copy <id> --from-env dev --env qa --dry-run       # promote a report to another env
+wi-impl rd find "<words>"                 # reports by title
+wi-impl rd show <id>                      # definition: datasource, columns, filters (does not run it)
+wi-impl rd export <id> --out report.json  # portable spec (datasource by category + method name)
+wi-impl rd datasources --category <name>  # published AD methods a report can use
+wi-impl rd uses <method-uuid>             # reports fed by an AD method
+wi-impl rd run <id> --env dev             # rows, as saved (runs the datasource method)
+wi-impl rd save <id> --spec report.json --env dev --dry-run   # changes; drop --dry-run to save
+wi-impl rd create --spec report.json --env dev               # a new report from a spec
+wi-impl rd copy <id> --from-env dev --env qa --dry-run       # promote a report to another env
 ```
 
 `rd save` backs the report up to `~/.wi-impl/rd/backups/` first and refuses if someone changed it
@@ -218,15 +218,15 @@ meanwhile; Report Designer itself keeps no history.
 ### Teamwork, migrations and releases
 
 ```bash
-belz tw task <id>                      # a ticket (id or URL)
-belz tw comments <id>
-belz tw search "<query>"
-belz migrate profiles                  # where you can migrate to
-belz migrate run --profile <profile> --module AD_Method --ids "<uuid>" --yes
-belz release matrix --help             # tickets × environments promotion matrix
+wi-impl tw task <id>                      # a ticket (id or URL)
+wi-impl tw comments <id>
+wi-impl tw search "<query>"
+wi-impl migrate profiles                  # where you can migrate to
+wi-impl migrate run --profile <profile> --module AD_Method --ids "<uuid>" --yes
+wi-impl release matrix --help             # tickets × environments promotion matrix
 ```
 
-### Using belz from scripts and AI agents
+### Using wi-impl from scripts and AI agents
 
 Inside a coding agent's shell (Claude Code sets `CLAUDECODE=1`; other tools set `WI_IMPL_AGENT=1`)
 every command prints the `--llm` envelope by default; elsewhere add `--llm` (`--human` forces the
@@ -237,21 +237,21 @@ readable view, `WI_IMPL_AGENT=0` turns the detection off). stdout is then exactl
 ```
 
 On failure `ok` is `false` and `error.code` says what went wrong (for example
-`ENV_REQUIRED_FOR_WRITE` or `AD_VERSION_CONFLICT`). In `--llm` mode belz never prompts, so writes
-also need `--yes`. When installing belz for an agent, use `--no-setup` and let a person run
-`belz onboard` once.
+`ENV_REQUIRED_FOR_WRITE` or `AD_VERSION_CONFLICT`). In `--llm` mode wi-impl never prompts, so writes
+also need `--yes`. When installing wi-impl for an agent, use `--no-setup` and let a person run
+`wi-impl onboard` once.
 
 ---
 
 ## Updating
 
-You don't have to do anything. At most once a day belz checks for a newer release in the
+You don't have to do anything. At most once a day wi-impl checks for a newer release in the
 background, downloads and verifies it, and your next run uses it.
 
 ```bash
-belz update            # update now
-belz update --check    # only check
-belz update --rollback # go back to the previous version
+wi-impl update            # update now
+wi-impl update --check    # only check
+wi-impl update --rollback # go back to the previous version
 ```
 
 Turn it off with `WI_IMPL_NO_UPDATE=1`, or in `~/.wi-impl/config.json`:
@@ -264,8 +264,8 @@ Major versions are never installed automatically.
 
 | What | Where |
 |---|---|
-| Environments, logins, settings | `~/.wi-impl/config.json` (`belz setup`, `belz config edit`) |
-| Sessions and caches | `~/.wi-impl/sessions/`, `~/.wi-impl/cache/` (`belz cache prune-local` cleans up) |
+| Environments, logins, settings | `~/.wi-impl/config.json` (`wi-impl setup`, `wi-impl config edit`) |
+| Sessions and caches | `~/.wi-impl/sessions/`, `~/.wi-impl/cache/` (`wi-impl cache prune-local` cleans up) |
 | Move all of it | `WI_IMPL_HOME=<dir>` |
 
 **Choosing an environment:** `--env <name>`, then `WI_IMPL_ENV`, then `"defaultEnv"`, then the only
@@ -275,8 +275,8 @@ by picking it from a prompt that preselects the default. Agents and scripts must
 **Global flags:** `--env <name>`, `--llm`, `--human`, `-v`/`--verbose`, `--version`, `-h`/`--help`,
 `--help-full`.
 
-belz reads only `WI_IMPL_*` environment variables (plus Claude Code's `CLAUDECODE`) and ignores `.env`
-files in the current directory. An unknown command or flag mentions `belz update` when a newer
+wi-impl reads only `WI_IMPL_*` environment variables (plus Claude Code's `CLAUDECODE`) and ignores `.env`
+files in the current directory. An unknown command or flag mentions `wi-impl update` when a newer
 release may have it.
 
 ---
@@ -297,15 +297,15 @@ README.md.
 
 ```
 belzabar/
-├── apps/cli/                       the `belz` binary: entry point, top-level commands, self-update
+├── apps/cli/                       the `wi-impl` binary: entry point, top-level commands, self-update
 ├── packages/core/                  shared framework: args, runner + --llm envelope, config, http, cache, ui
 ├── integrations/
-│   ├── automation-designer/        belz ad …
-│   ├── page-designer/              belz pd …
-│   ├── report-designer/            belz rd …
-│   ├── teamwork/                   belz tw …
-│   ├── migrations/                 belz migrate …
-│   └── release/                    belz release …
+│   ├── automation-designer/        wi-impl ad …
+│   ├── page-designer/              wi-impl pd …
+│   ├── report-designer/            wi-impl rd …
+│   ├── teamwork/                   wi-impl tw …
+│   ├── migrations/                 wi-impl migrate …
+│   └── release/                    wi-impl release …
 ├── scripts/                        docs check, dead-code check, release script, fixture capture
 ├── cloud/                          setup for Claude Code cloud sessions
 ├── install.sh, install.ps1         the one-line installers
@@ -316,18 +316,18 @@ belzabar/
 |------|---------|------|
 | [`apps/cli/`](./apps/cli/README.md) | `belzabar.cli` | The binary; `cache`, `config`, `envs`, `onboard`, `setup`, `update` |
 | [`packages/core/`](./packages/core/README.md) | `@belzabar/core` | Shared CLI framework |
-| [`integrations/automation-designer/`](./integrations/automation-designer/README.md) | `@belzabar/ad` | `belz ad …` |
-| [`integrations/page-designer/`](./integrations/page-designer/README.md) | `@belzabar/pd` | `belz pd …` |
-| [`integrations/report-designer/`](./integrations/report-designer/README.md) | `@belzabar/rd` | `belz rd …` |
-| [`integrations/teamwork/`](./integrations/teamwork/README.md) | `@belzabar/teamwork` | `belz tw …` |
-| [`integrations/migrations/`](./integrations/migrations/README.md) | `@belzabar/migrations` | `belz migrate …` |
-| [`integrations/release/`](./integrations/release/README.md) | `@belzabar/release` | `belz release …` |
+| [`integrations/automation-designer/`](./integrations/automation-designer/README.md) | `@belzabar/ad` | `wi-impl ad …` |
+| [`integrations/page-designer/`](./integrations/page-designer/README.md) | `@belzabar/pd` | `wi-impl pd …` |
+| [`integrations/report-designer/`](./integrations/report-designer/README.md) | `@belzabar/rd` | `wi-impl rd …` |
+| [`integrations/teamwork/`](./integrations/teamwork/README.md) | `@belzabar/teamwork` | `wi-impl tw …` |
+| [`integrations/migrations/`](./integrations/migrations/README.md) | `@belzabar/migrations` | `wi-impl migrate …` |
+| [`integrations/release/`](./integrations/release/README.md) | `@belzabar/release` | `wi-impl release …` |
 | [`scripts/`](./scripts/README.md) | — | Repo-wide checks and the release script |
 | [`cloud/`](./cloud/README.md) | — | Cloud-session bootstrap |
 
 Each integration exports a sorted command registry (`./registry`) and its libraries (`./lib/*`);
-`apps/cli/bin/options.ts` wires them into `belz`. Packages import each other by package name,
-never by relative paths. The command reference is `belz --help-full`; agent working rules are in
+`apps/cli/bin/options.ts` wires them into `wi-impl`. Packages import each other by package name,
+never by relative paths. The command reference is `wi-impl --help-full`; agent working rules are in
 `AGENTS.md`.
 
 ---
@@ -361,5 +361,5 @@ bun run release patch              # or minor | major | x.y.z
 Run from a clean `main` that matches `origin/main`. The script bumps the version, commits, tags
 `vX.Y.Z` and pushes. The tag starts `.github/workflows/release.yml`, which runs `bun run check`,
 builds the five binaries, smoke-tests each on its own OS and CPU, and publishes a GitHub Release
-with `SHA256SUMS`, `manifest.json` and the installers. Every installed belz picks it up within a
+with `SHA256SUMS`, `manifest.json` and the installers. Every installed wi-impl picks it up within a
 day. Details: [`apps/cli/lib/README.md`](./apps/cli/lib/README.md).

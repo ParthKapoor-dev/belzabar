@@ -1,4 +1,4 @@
-Usage: belz ad export <method-id-or-uuid> [flags]
+Usage: wi-impl ad export <method-id-or-uuid> [flags]
 
 Export a single method via /rest/api/automation/chain/export/{id}. A uuid
 (any spelling, or an AD URL) is resolved to the numeric chain id first.
@@ -10,5 +10,5 @@ Flags:
   --llm           Emit a JSON envelope with {id, uuid, writtenTo, bytes, methods, preview}
 
 Examples:
-  belz ad export 98765 --out /tmp/method.json
-  belz ad export 4bf56e008eabe4010508af439a15ecfb --llm
+  wi-impl ad export 98765 --out /tmp/method.json
+  wi-impl ad export 4bf56e008eabe4010508af439a15ecfb --llm

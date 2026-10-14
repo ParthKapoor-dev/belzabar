@@ -27,7 +27,7 @@ interface TestExecutionResponse {
 }
 
 export const args = defineArgs({
-  command: "belz ad run-suites",
+  command: "wi-impl ad run-suites",
   flags: {
     "legacy-env": {
       type: "string",
@@ -156,7 +156,7 @@ const command: CommandModule<RunSuitesArgs, RunSuitesData> = {
 
     if (legacy > 0) {
       context.warn(
-        `${legacy} suite(s) carry no env (saved before suites recorded one)${legacyEnv === context.env.name ? ` and ran as ${legacyEnv} suites (--legacy-env)` : " and were not run"}; re-save them with \`belz ad save-suite\` to pin the env.`,
+        `${legacy} suite(s) carry no env (saved before suites recorded one)${legacyEnv === context.env.name ? ` and ran as ${legacyEnv} suites (--legacy-env)` : " and were not run"}; re-save them with \`wi-impl ad save-suite\` to pin the env.`,
       );
     }
     const summary: RunSuitesData = { total: files.length, passed, failed, suites };

@@ -20,7 +20,7 @@ Over every README.md and AGENTS.md (skipping `node_modules`, `fixtures/` dirs an
 1. **Paths.** Code spans, link targets and fenced-block tokens that look like repo paths must
    exist (resolved against the doc's directory, then the repo root); `@belzabar/<pkg>` must be a
    real workspace package. Placeholders (`<uuid>`, `*`, `…`) are skipped.
-2. **Commands.** Every `belz <ns> <cmd> [<sub>]` in code must be a registered command (and
+2. **Commands.** Every `wi-impl <ns> <cmd> [<sub>]` in code must be a registered command (and
    subcommand, where the command declares `defineSubcommands` without a default).
 
 A line containing `docs-check:ignore` is skipped by checks 1 and 2.

@@ -1,4 +1,4 @@
-Usage: belz ad sql <subcommand> [args] [flags]
+Usage: wi-impl ad sql <subcommand> [args] [flags]
 
 Run SQL queries via Automation Designer database services.
 
@@ -72,18 +72,18 @@ TUI meta commands:
 
 Global Flags:
   --env <name>        Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                      use `belz envs` to list all available envs.
+                      use `wi-impl envs` to list all available envs.
                       update/insert/modify/tui are writes: --env must be explicit.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad sql dbs
-  belz ad sql run "select * from users limit 1"
-  belz ad sql run "select * from users limit 1" --db QA_DB
-  belz ad sql explain "select * from users where email = 'x'" --analyze --db QA_DB
-  belz ad sql update "UPDATE users SET status = 'active' WHERE id = 1" --db WRITE_DB --env <env>
-  belz ad sql insert "INSERT INTO users (name) VALUES ('test') RETURNING id" --db WRITE_DB --env <env> --yes
-  belz ad sql modify "CREATE INDEX IF NOT EXISTS idx_name ON users(name)" --db WRITE_DB --env <env>
-  belz ad sql tui --env <env>
-  belz ad sql tui --mode insert --db WRITE_DB --env <env>
-  WI_IMPL_SQL_DEFAULT_DB=QA_DB belz ad sql run "select now()"
+  wi-impl ad sql dbs
+  wi-impl ad sql run "select * from users limit 1"
+  wi-impl ad sql run "select * from users limit 1" --db QA_DB
+  wi-impl ad sql explain "select * from users where email = 'x'" --analyze --db QA_DB
+  wi-impl ad sql update "UPDATE users SET status = 'active' WHERE id = 1" --db WRITE_DB --env <env>
+  wi-impl ad sql insert "INSERT INTO users (name) VALUES ('test') RETURNING id" --db WRITE_DB --env <env> --yes
+  wi-impl ad sql modify "CREATE INDEX IF NOT EXISTS idx_name ON users(name)" --db WRITE_DB --env <env>
+  wi-impl ad sql tui --env <env>
+  wi-impl ad sql tui --mode insert --db WRITE_DB --env <env>
+  WI_IMPL_SQL_DEFAULT_DB=QA_DB wi-impl ad sql run "select now()"

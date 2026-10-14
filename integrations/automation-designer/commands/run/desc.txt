@@ -1,5 +1,5 @@
-belz ad run <published-id> --env <env>  :->  Call a method the way the app does and return its response (real side effects: needs --env)
-belz ad run <published-id> '<json>' --env <env>  :->  Execute with an inline JSON payload string
-belz ad run <published-id> <file.json> --env <env>  :->  Execute with payload read from a JSON file
-belz ad run <published-id> '<json>' --env <env> --raw  :->  Include raw execution payload in output
-belz ad run <published-id> '<json>' --env <env> --stream  :->  Opt into a streaming method (application/stream+json; no timeout)
+wi-impl ad run <published-id> --env <env>  :->  Call a method the way the app does and return its response (real side effects: needs --env)
+wi-impl ad run <published-id> '<json>' --env <env>  :->  Execute with an inline JSON payload string
+wi-impl ad run <published-id> <file.json> --env <env>  :->  Execute with payload read from a JSON file
+wi-impl ad run <published-id> '<json>' --env <env> --raw  :->  Include raw execution payload in output
+wi-impl ad run <published-id> '<json>' --env <env> --stream  :->  Opt into a streaming method (application/stream+json; no timeout)

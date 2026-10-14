@@ -1,4 +1,4 @@
-Usage: belz ad test-case <action> [args] [flags]
+Usage: wi-impl ad test-case <action> [args] [flags]
 
 Manage persistent test cases attached to an AD method's test suite. Every
 write is read back from the suite and compared with what was sent
@@ -6,7 +6,7 @@ write is read back from the suite and compared with what was sent
 
 Actions:
   list <uuid>                             List test cases: the same structured result
-                                          as belz ad test-cases ({testSuiteId, testCases, total})
+                                          as wi-impl ad test-cases ({testSuiteId, testCases, total})
   create <uuid> --name <n> [--description <d>] [--input k=v]... [--assert out=v]...
   create <uuid> --file <case.json> [--assert out=v]...
                                           Create one test case (UI encoding; refuses a
@@ -63,7 +63,7 @@ separate git repo and sync to any env):
     "inputs": { "name": "World" },
     "assertions": [ { "output": "greetingOut", "op": "eq", "expected": "Hello World" } ]
   }
-  Assertions belz cannot parse stay verbatim as {"expression": "..."}. Inputs whose
+  Assertions wi-impl cannot parse stay verbatim as {"expression": "..."}. Inputs whose
   stored wrapper carries more than {"value"} keep it in "inputExtras".
 
 Sync plan: create (only in files), update (inputs/assertions differ: PUT),
@@ -82,7 +82,7 @@ assertions{total, passed, failed, results}, unevaluated, failedStep?, error?}]}.
 Assertions that are not `#{out} op literal` are listed in `unevaluated`.
 
 Examples:
-  belz ad test-case create 4a1b... --name greet.ok.1 --input name=World --assert "greetingOut=Hello World" --env <env> --yes
-  belz ad test-case run-suite 4a1b... --wait --env <env> --yes --llm
-  belz ad test-case export 4a1b... --dir ./unit-tests/ad --env <env>
-  belz ad test-case sync ./unit-tests/ad/Sandbox/greet --env <env> --apply --yes --llm
+  wi-impl ad test-case create 4a1b... --name greet.ok.1 --input name=World --assert "greetingOut=Hello World" --env <env> --yes
+  wi-impl ad test-case run-suite 4a1b... --wait --env <env> --yes --llm
+  wi-impl ad test-case export 4a1b... --dir ./unit-tests/ad --env <env>
+  wi-impl ad test-case sync ./unit-tests/ad/Sandbox/greet --env <env> --apply --yes --llm

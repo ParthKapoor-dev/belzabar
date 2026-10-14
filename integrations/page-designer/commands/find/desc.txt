@@ -1,8 +1,8 @@
-belz pd find <query>  :->  Search pages and components by name, route, or ID
-belz pd find list  :->  List all pages as compact rows (add --components for components, --limit N to cap)
-belz pd find list --full  :->  Same with full rows (url, updatedAt) and cache metadata
-belz pd find pick  :->  Open interactive fzf picker to select a page or component
-belz pd find pick <query> --open  :->  Open selected item's PD designer URL in browser
-belz pd find <query> --type page|component  :->  Restrict results to one entity type
-belz pd find --refresh  :->  Rebuild the 7-day search index from API
-belz pd find <query> --limit <N>  :->  Return at most N results (default 20, max 1000; totalMatches counts all)
+wi-impl pd find <query>  :->  Search pages and components by name, route, or ID
+wi-impl pd find list  :->  List all pages as compact rows (add --components for components, --limit N to cap)
+wi-impl pd find list --full  :->  Same with full rows (url, updatedAt) and cache metadata
+wi-impl pd find pick  :->  Open interactive fzf picker to select a page or component
+wi-impl pd find pick <query> --open  :->  Open selected item's PD designer URL in browser
+wi-impl pd find <query> --type page|component  :->  Restrict results to one entity type
+wi-impl pd find --refresh  :->  Rebuild the 7-day search index from API
+wi-impl pd find <query> --limit <N>  :->  Return at most N results (default 20, max 1000; totalMatches counts all)

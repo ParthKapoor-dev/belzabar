@@ -1,8 +1,8 @@
-Usage: belz ad save [FILE] --uuid <UUID> --env <env> [flags]
+Usage: wi-impl ad save [FILE] --uuid <UUID> --env <env> [flags]
 
 Save a JSON overlay onto a method's DRAFT through the V2 route
 (GET /chain/v2 → overlay → POST /chain/v2). A PUBLISHED uuid is switched to
-its linked draft (draft guard). You write only the change; belz fills the V2
+its linked draft (draft guard). You write only the change; wi-impl fills the V2
 boilerplate (uuids, contract ids, encodings, UI defaults).
 
 Arguments:
@@ -24,7 +24,7 @@ Arguments:
                              type?, required?, description?, default?}   (upsert)
                             {"op":"remove-input"|"remove-variable"|"remove-output", "key":K}
                         Step numbers N/M are ALWAYS positions in the fetched draft
-                        (as `belz ad show` prints them), whatever other ops do.
+                        (as `wi-impl ad show` prints them), whatever other ops do.
                         after:0 = first; no anchor = append.
                         STEP (compact; the same format `ad create` takes):
                           service "Svc/method" | code "<js>" | sql "<SQL>"
@@ -62,19 +62,19 @@ Arguments:
                         Step output keys cannot be indexed or pathed
                         (flatData[0].col, flatData[].col): the server keeps
                         only the contract key or drops the output (verified
-                        live), so belz refuses them. Bind the whole output and
+                        live), so wi-impl refuses them. Bind the whole output and
                         reduce it in the next step:
                           {"sql": "…", "outputs": {"rows": "flatData[]"}},
                           {"service": "Helpers.Legacy/echo",
                            "inputs": {"Input": "#{rows[0].col}"},
                            "outputs": [{"key": "response", "as": "col"}]}
                         Stored input testValues (what the AD designer's Test
-                        dialog pre-fills) are stripped by EVERY save, and belz
+                        dialog pre-fills) are stripped by EVERY save, and wi-impl
                         cannot set them: afterwards the dialog reports
                         "Mandatory fields are not filled" until they are
-                        re-entered there. belz reads them first (V1) and warns
+                        re-entered there. wi-impl reads them first (V1) and warns
                         (data.testValuesDropped; --dry-run: testValuesAtRisk).
-                        'belz ad test' takes the values as inputs.
+                        'wi-impl ad test' takes the values as inputs.
 
 Flags:
   --uuid <UUID>         Target draft uuid (or its PUBLISHED uuid, or an AD URL). (required)
@@ -117,6 +117,6 @@ version, applied[], unchanged[], validation{skipped, warnings, layersRun},
 compiledCache{ok, uuids, routes[]}, testValuesDropped[]?}.
 
 Examples:
-  belz ad save overlay.json --uuid 4a1b2c3d... --env <env> --dry-run --llm
-  belz ad save --uuid 4a1b2c3d... --sql-file 3=query.sql --env <env> --yes --llm
-  belz ad save overlay.json --uuid 4a1b2c3d... --env <env> --code-file 2=step2.js --strict
+  wi-impl ad save overlay.json --uuid 4a1b2c3d... --env <env> --dry-run --llm
+  wi-impl ad save --uuid 4a1b2c3d... --sql-file 3=query.sql --env <env> --yes --llm
+  wi-impl ad save overlay.json --uuid 4a1b2c3d... --env <env> --code-file 2=step2.js --strict

@@ -32,7 +32,7 @@ interface ImportData {
 }
 
 export const args = defineArgs({
-  command: "belz ad import",
+  command: "wi-impl ad import",
   positionals: [{ name: "file", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing <file> argument." }],
   flags: {
     ...AD_YES_FLAG,
@@ -66,7 +66,7 @@ const command: CommandModule<ImportArgs, ImportData> = {
     const records = extractMethodRecords(payload);
     if (records.length === 0) {
       throw new CliError(
-        `No methods recognised in ${filePath} (expected the output of \`belz ad export\` / \`export-category\`). Nothing was sent.`,
+        `No methods recognised in ${filePath} (expected the output of \`wi-impl ad export\` / \`export-category\`). Nothing was sent.`,
         { code: "AD_IMPORT_EMPTY", details: { path: filePath } },
       );
     }
@@ -206,7 +206,7 @@ export function extractMethodRecords(payload: unknown): Array<{ name: string; re
 }
 
 /**
- * One name per method in an import file. Understands belz's own export
+ * One name per method in an import file. Understands wi-impl's own export
  * shapes: `ad export` → `{chainDefinition, testSuite}`,
  * `ad export-category` → `{chainDefinitions: [{chainDefinition, testSuite}]}`,
  * an `--llm` envelope around either (`data.preview`), plus plain method

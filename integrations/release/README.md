@@ -1,6 +1,6 @@
 # @belzabar/release
 
-`belz release …` — release promotion tracking. It answers the question a release audit
+`wi-impl release …` — release promotion tracking. It answers the question a release audit
 otherwise answers by hand: which change of which Automation Designer (AD) item has reached which
 environment, and which ticket owns it.
 
@@ -8,7 +8,7 @@ environment, and which ticket owns it.
 
 - Composes other integrations' libs, never their commands:
   `extractTicketItems` / `parseTaskId` from `@belzabar/teamwork/lib/*` (the logic behind
-  `belz tw items`) and `traceMethod` from `@belzabar/ad/lib/trace` (behind `belz ad trace`).
+  `wi-impl tw items`) and `traceMethod` from `@belzabar/ad/lib/trace` (behind `wi-impl ad trace`).
 - `apps/cli` mounts [`registry.ts`](registry.ts) as the `release` namespace.
 - `release` is **not env-aware** (`NOT_ENV_AWARE_NAMESPACES` in `apps/cli/bin/options.ts`):
   envelopes carry no `meta.env`; the envs come from the spec. `--env` only picks the project
@@ -27,10 +27,10 @@ Exports: `@belzabar/release/registry` and `@belzabar/release/lib/<file>`.
 
 | Command | What it does |
 |---|---|
-| `belz release matrix <release.json>` | Links tickets to AD items, traces each item across envs, reports collisions and leaks, saves the audit |
-| `belz release freeze <release-name> [--force]` | Snapshots each item's stage position from a saved audit as the prod pointer |
+| `wi-impl release matrix <release.json>` | Links tickets to AD items, traces each item across envs, reports collisions and leaks, saves the audit |
+| `wi-impl release freeze <release-name> [--force]` | Snapshots each item's stage position from a saved audit as the prod pointer |
 
-Flags and examples: `commands/<cmd>/help.txt` or `belz --help-full`.
+Flags and examples: `commands/<cmd>/help.txt` or `wi-impl --help-full`.
 
 ## Release spec
 

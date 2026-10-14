@@ -1,12 +1,12 @@
-Usage: belz pd page-deps <input> [flags]
+Usage: wi-impl pd page-deps <input> [flags]
 
 Fetch the page-dependencies graph for a published page or component. This is
 the unvalidated wrapper around GET /rest/api/pagedesigner/pages/page-dependencies
-— use `belz pd translations` for the release-check verdict.
+— use `wi-impl pd translations` for the release-check verdict.
 
 The raw `dependencyJSON` holds every entity's full page row (configuration
 included) and its translated/original phrase arrays: megabytes for a real
-page. By default belz returns a summary instead — data.entities has one row
+page. By default wi-impl returns a summary instead — data.entities has one row
 per entity (key, name, id, status, isComponent, referenceId, configBytes,
 translatedPhrases, originalPhrases; the queried entity first) and data.counts
 the totals. --full adds the raw data.dependencyJSON / data.dependencyKeys.
@@ -19,7 +19,7 @@ then queried. It accepts:
   • an app page URL          https://.../pages/<path>
 
 Entity ids are environment-local. Pass an id that exists in --env, or pass a
-name and let belz resolve it there.
+name and let wi-impl resolve it there.
 
 Flags:
   --status <PUBLISHED|DRAFT>  Dependency status to query (default: PUBLISHED).
@@ -30,6 +30,6 @@ Flags:
   --help, -h                  Show this help message.
 
 Examples:
-  belz pd page-deps 40d89f5f4b65e79c0856953d668ce67a --env acme-prod
-  belz pd page-deps n_s_public_portal_login --env acme-prod --llm
-  belz pd page-deps n_s_public_portal_login --full --llm | jq '.data.dependencyJSON | keys'
+  wi-impl pd page-deps 40d89f5f4b65e79c0856953d668ce67a --env acme-prod
+  wi-impl pd page-deps n_s_public_portal_login --env acme-prod --llm
+  wi-impl pd page-deps n_s_public_portal_login --full --llm | jq '.data.dependencyJSON | keys'

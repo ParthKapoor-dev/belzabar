@@ -11,5 +11,5 @@ Each rule is a pure `Rule` (`(page, ctx) → ValidationIssue[]`, type in
 | `lint.ts` | `LINT_RULES` | Review-checklist and design-import lint (structure, bindings, HTTP, accessibility, tables, CSS); every one fires on real pages, so all are warnings |
 
 Codes keep an external short name (`V1`, `T1`–`T6`, `C5`, `R1`, `H1`, `F1`, `U1`) where the rule
-means the same as the design-import checker; belz-only rules use `UPPER_SNAKE` names. The
+means the same as the design-import checker; wi-impl-only rules use `UPPER_SNAKE` names. The
 catalogue's `source` records the origin. How to add a rule: [`../README.md`](../README.md#adding-a-rule).

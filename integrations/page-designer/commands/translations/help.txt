@@ -1,4 +1,4 @@
-Usage: belz pd translations <input> [flags]
+Usage: wi-impl pd translations <input> [flags]
 
 Validate the translation phrases of a published page or component, using the
 page-dependencies API. Built for post-release deployment validation.
@@ -35,6 +35,6 @@ Flags:
   --help, -h                  Show this help message.
 
 Examples:
-  belz pd translations 40d89f5f4b65e79c0856953d668ce67a --env acme-prod
-  belz pd translations n_s_public_portal_login --env acme-prod --llm
-  belz pd translations "LT 262 Details" --env acme-prod --expect-draft 49b18fee5127213b8a60bf8c2ca93cc5
+  wi-impl pd translations 40d89f5f4b65e79c0856953d668ce67a --env acme-prod
+  wi-impl pd translations n_s_public_portal_login --env acme-prod --llm
+  wi-impl pd translations "LT 262 Details" --env acme-prod --expect-draft 49b18fee5127213b8a60bf8c2ca93cc5

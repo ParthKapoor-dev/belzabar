@@ -1,2 +1,2 @@
-belz rd show <id>  :->  A report's definition without running it: datasource (category / method / chain id), columns, saved filters, summaries
-belz rd show <id> --exact --env <env>  :->  Also read summaryPosition and filterConfig (runs the report once)
+wi-impl rd show <id>  :->  A report's definition without running it: datasource (category / method / chain id), columns, saved filters, summaries
+wi-impl rd show <id> --exact --env <env>  :->  Also read summaryPosition and filterConfig (runs the report once)

@@ -95,7 +95,7 @@ describe("schema validation", () => {
     expect(Config.configError?.message).toContain("environments.t-dev.password");
     const e = errOf(() => Config.cleanBaseUrl);
     expect(e.code).toBe("CONFIG_INVALID");
-    // listing envs still works (so `belz envs` / `belz config edit` can run)
+    // listing envs still works (so `wi-impl envs` / `wi-impl config edit` can run)
     expect(() => Config.getAllEnvs()).not.toThrow();
   });
 
@@ -122,7 +122,7 @@ describe("schema validation", () => {
     expect(back.defaultEnv).toBe("a");
   });
 
-  test("the real-world shape (base64 passwords, project, belz, jenkins, teamwork) validates unchanged", () => {
+  test("the real-world shape (base64 passwords, project, wi-impl, jenkins, teamwork) validates unchanged", () => {
     rawConfig({
       environments: {
         dev: { url: "https://dev.test", user: "u", password: btoa("p") },
@@ -171,7 +171,7 @@ describe("atomic 0600 writes", () => {
 
 describe("permission repair", () => {
   function looseHome(): string {
-    const home = join(scratchDir("perm-"), "belz");
+    const home = join(scratchDir("perm-"), "wi-impl");
     mkdirSync(join(home, "sessions"), { recursive: true });
     mkdirSync(join(home, "cache", "definitions", "t-dev"), { recursive: true });
     writeFileSync(join(home, "config.json"), "{}");
@@ -197,7 +197,7 @@ describe("permission repair", () => {
     expect(hardenBelzHome(join(home, "missing"))).toEqual([]); // never throws
   });
 
-  test("a spawned belz repairs an old install's loose permissions on startup", async () => {
+  test("a spawned wi-impl repairs an old install's loose permissions on startup", async () => {
     const home = looseHome();
     const r = await spawnCli(["envs", "--llm"], { env: { WI_IMPL_HOME: home }, timeoutMs: 30_000 });
     expect((r.envelope as any)?.ok).toBe(true);
@@ -326,7 +326,7 @@ describe("dotenv guard", () => {
     expect(r.dropped).toEqual(["ORB_DEV_PASSWORD", "WI_IMPL_SRC_DIR"]);
   });
 
-  test("a cwd .env WI_IMPL_SRC_DIR does not pick the source dir for `belz update`", () => {
+  test("a cwd .env WI_IMPL_SRC_DIR does not pick the source dir for `wi-impl update`", () => {
     const dir = scratchDir("dotenv-src-");
     writeFileSync(join(dir, ".env"), "WI_IMPL_SRC_DIR=/tmp/evil-src\n");
     const saved = process.env.WI_IMPL_SRC_DIR;
@@ -343,7 +343,7 @@ describe("dotenv guard", () => {
     }
   });
 
-  test("a .env in cwd does not change `belz envs` (spawned CLI)", async () => {
+  test("a .env in cwd does not change `wi-impl envs` (spawned CLI)", async () => {
     const home = scratchDir("dotenv-home-");
     mkdirSync(home, { recursive: true });
     writeFileSync(

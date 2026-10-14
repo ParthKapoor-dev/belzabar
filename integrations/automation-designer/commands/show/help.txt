@@ -1,4 +1,4 @@
-Usage: belz ad show <UUID|URL|FILE> [flags]
+Usage: wi-impl ad show <UUID|URL|FILE> [flags]
 
 Display the structure and metadata of an Automation Designer method.
 The method definition is fetched and cached automatically. Cached data older
@@ -54,7 +54,7 @@ Flags:
 
 Global Flags:
   --env <name>            Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                          Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                          Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm                   Output structured JSON envelope for scripting/LLM use.
 
 Errors: METHOD_NOT_FOUND for an unknown uuid, and for a soft-deleted method
@@ -62,10 +62,10 @@ Errors: METHOD_NOT_FOUND for an unknown uuid, and for a soft-deleted method
 read also reads V2, and a cached copy of a method since seen deleted is refused.
 
 Examples:
-  belz ad show 1234-5678 --compact --llm
-  belz ad show 1234-5678 --compact --sql
-  belz ad show ./new-method.json --story
-  belz ad show 1234-5678 --services
-  belz ad show 1234-5678 --service-detail 2
-  belz ad show 1234-5678 --raw --llm
-  belz ad show 1234-5678 --open
+  wi-impl ad show 1234-5678 --compact --llm
+  wi-impl ad show 1234-5678 --compact --sql
+  wi-impl ad show ./new-method.json --story
+  wi-impl ad show 1234-5678 --services
+  wi-impl ad show 1234-5678 --service-detail 2
+  wi-impl ad show 1234-5678 --raw --llm
+  wi-impl ad show 1234-5678 --open

@@ -229,7 +229,7 @@ export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: Pl
   if (drift.length > 0) {
     throw new CliError(
       `Refusing to save: the overlay changed fields it did not target: ${drift.slice(0, 20).join(", ")}. ` +
-        "This is a belz bug; the draft was not modified.",
+        "This is a wi-impl bug; the draft was not modified.",
       { code: "AD_SERIALIZER_DRIFT", details: { paths: drift } },
     );
   }

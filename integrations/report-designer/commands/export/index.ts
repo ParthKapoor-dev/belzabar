@@ -20,7 +20,7 @@ interface ExportData {
 }
 
 export const args = defineArgs({
-  command: "belz rd export",
+  command: "wi-impl rd export",
   positionals: [REPORT_ID_POSITIONAL],
   flags: {
     out: { type: "string", alias: ["-o"] },

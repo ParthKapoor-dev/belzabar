@@ -1,9 +1,9 @@
-Usage: belz pd preflight <pageId> [--overlay <file>]
+Usage: wi-impl pd preflight <pageId> [--overlay <file>]
 
-Read-only dry-run. Resolves the page `belz pd save` would write (a
+Read-only dry-run. Resolves the page `wi-impl pd save` would write (a
 PUBLISHED id with a linked draft checks that draft; data.targetId), optionally
 applies an overlay,
-runs the validator, and reports what would change and how `belz pd save`
+runs the validator, and reports what would change and how `wi-impl pd save`
 would write it (partial operations or a full save). Makes NO network writes.
 
 With --overlay the validator is diff-aware, exactly like `save`: issues the
@@ -15,7 +15,7 @@ Arguments:
                       followed to its linked draft, exactly like save.
 
 Flags:
-  --overlay <file>    Apply a JSON overlay before validation. See `belz pd
+  --overlay <file>    Apply a JSON overlay before validation. See `wi-impl pd
                       save` help for the overlay shape.
   --help, -h          Show this help message.
 
@@ -29,7 +29,7 @@ Exit code:
     PD_PREFLIGHT_FAILED and the full report in `data`.
 
 Examples:
-  belz pd preflight 4f126300499e4d83cd07a35b4d9af9e7
-  belz pd preflight 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./edits.json
-  belz pd preflight 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./edits.json --llm \
+  wi-impl pd preflight 4f126300499e4d83cd07a35b4d9af9e7
+  wi-impl pd preflight 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./edits.json
+  wi-impl pd preflight 4f126300499e4d83cd07a35b4d9af9e7 --overlay ./edits.json --llm \
     | jq '.data.validation.issues'

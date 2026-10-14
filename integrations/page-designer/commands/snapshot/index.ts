@@ -1,4 +1,4 @@
-// belz pd snapshot <input> [--out <file>] | --compare <file>
+// wi-impl pd snapshot <input> [--out <file>] | --compare <file>
 //
 // A normalized, stable, diff-friendly JSON of a page/component (see
 // lib/snapshot.ts for the normalization) to keep as a test baseline, and a
@@ -43,7 +43,7 @@ interface SnapshotData {
 }
 
 export const args = defineArgs({
-  command: "belz pd snapshot",
+  command: "wi-impl pd snapshot",
   positionals: [PD_INPUT_POSITIONAL],
   flags: {
     out: { type: "string" },
@@ -73,7 +73,7 @@ const command: CommandModule<SnapshotArgs, SnapshotData> = {
     if (compare) {
       const stored = await readJsonFile(compare, "INVALID_SNAPSHOT", "Snapshot");
       if (!isSnapshot(stored)) {
-        throw new CliError(`${compare} is not a belz pd snapshot (belzSnapshot: 1).`, { code: "INVALID_SNAPSHOT", details: { path: compare } });
+        throw new CliError(`${compare} is not a wi-impl pd snapshot (belzSnapshot: 1).`, { code: "INVALID_SNAPSHOT", details: { path: compare } });
       }
       const cmp = compareSnapshots(stored, live);
       const data: SnapshotData = { source, compare: { file: compare, ...cmp } };

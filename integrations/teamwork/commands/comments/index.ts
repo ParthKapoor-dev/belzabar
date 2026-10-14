@@ -15,7 +15,7 @@ interface GetCommentsData {
 }
 
 export const args = defineArgs({
-  command: "belz tw comments",
+  command: "wi-impl tw comments",
   positionals: [TASK_ID_POSITIONAL],
 });
 

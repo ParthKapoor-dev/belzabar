@@ -174,7 +174,7 @@ function ruleDynamicColsInitial(page: HydratedPage): ValidationIssue[] {
 /**
  * INVALID_JSON — the stringified `configuration` does not parse to an object.
  * The parser records it as a parse warning (and yields an empty page); lift it
- * into an error so no save can proceed on a config belz could not read.
+ * into an error so no save can proceed on a config wi-impl could not read.
  */
 function ruleInvalidJson(page: HydratedPage): ValidationIssue[] {
   return page.parseWarnings

@@ -1,4 +1,4 @@
-// ad export takes a uuid, ad import recognises belz's export
+// ad export takes a uuid, ad import recognises wi-impl's export
 // shapes, ad child-info reports not-found.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { mkdtempSync, readFileSync, writeFileSync } from "fs";

@@ -22,7 +22,7 @@ interface DeleteData {
 }
 
 export const args = defineArgs({
-  command: "belz ad delete",
+  command: "wi-impl ad delete",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
   flags: { ...AD_YES_FLAG },
 });
@@ -42,7 +42,7 @@ const command: CommandModule<DeleteArgs, DeleteData> = {
     if (m.state !== "DRAFT") {
       throw new CliError(
         m.state === "PUBLISHED"
-          ? `Method ${uuid} is PUBLISHED; belz never deletes published methods.`
+          ? `Method ${uuid} is PUBLISHED; wi-impl never deletes published methods.`
           : `Method ${uuid} has no recognisable draft/published state; refusing to delete (fail closed).`,
         { code: m.state === "PUBLISHED" ? "AD_DELETE_PUBLISHED" : "AD_DRAFT_GUARD_STATE_UNKNOWN", details: { uuid, state: m.state } },
       );

@@ -175,7 +175,7 @@ describe("PD references", () => {
   });
 });
 
-// the index goes stale when belz writes a method, and a
+// the index goes stale when wi-impl writes a method, and a
 // partial index (a category listing failed) must not claim full coverage.
 describe("stale and partial method index", () => {
   const target: CallTarget = {
@@ -187,7 +187,7 @@ describe("stale and partial method index", () => {
     ({ schemaVersion: 2, env: "t-dev", generatedAt: Date.now(), categories: [], skippedCategories: [], categoryCount: 1, methodCount: methods.length, methods }) as unknown as MethodFinderIndex;
   const stale = { uuid: CHAINING, referenceId: "", aliasName: "chaining method", methodName: "chaining method", state: "DRAFT", version: 1, categoryUuid: "c", categoryName: "Far", createdOn: 0, updatedOn: 1, url: "", calls: [] };
 
-  test("a method belz changed since the build is re-read even outside the deep scope", async () => {
+  test("a method wi-impl changed since the build is re-read even outside the deep scope", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch({ "GET /rest/api/automation/chain/v2/*": v2Route }).install();
     const index = baseIndex([stale]);
@@ -206,7 +206,7 @@ describe("stale and partial method index", () => {
     expect(res.coverage.errors).toBeUndefined();
   });
 
-  test("CacheManager.invalidate (every belz write) marks the index entry; a later build clears it", async () => {
+  test("CacheManager.invalidate (every wi-impl write) marks the index entry; a later build clears it", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch(routes()).install();
     const { CacheManager } = await import("../../lib/cache");
@@ -240,14 +240,14 @@ describe("stale and partial method index", () => {
     }
   });
 
-  test("a fresh complete scan is complete; a cached one says edits outside belz are missed", async () => {
+  test("a fresh complete scan is complete; a cached one says edits outside wi-impl are missed", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch(routes({ "GET /rest/api/automation/chain/v2/*": v2Route })).install();
     const fresh = (await runCommand(callersCommand, [CHAIN_FAILURE, "--refresh"], { env: "t-dev" })).envelope;
     expect((fresh?.data as any).coverage).toMatchObject({ indexSource: "fresh" });
     const cached = (await runCommand(callersCommand, [CHAIN_FAILURE], { env: "t-dev" })).envelope;
     expect((cached?.data as any).coverage).toMatchObject({ indexSource: "cache", complete: false });
-    expect(((cached?.meta?.warnings ?? []) as string[]).join("\n")).toMatch(/created or edited outside belz/);
+    expect(((cached?.meta?.warnings ?? []) as string[]).join("\n")).toMatch(/created or edited outside wi-impl/);
   });
 
   test("callers rebuilds an index older than 24 h (find keeps 7 days)", async () => {

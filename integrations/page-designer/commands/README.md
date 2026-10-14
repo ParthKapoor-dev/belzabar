@@ -1,4 +1,4 @@
-# `commands/`: the `belz pd` commands
+# `commands/`: the `wi-impl pd` commands
 
 One folder per command. Each command's `help.txt` is its full reference (flags, output,
 notes); this page only indexes them and states the conventions they share.
@@ -24,12 +24,12 @@ notes); this page only indexes them and states the conventions they share.
 
 ## A command folder
 
-- `index.ts`: `export const args = defineArgs({ command: "belz pd <name>", … })` and a default
+- `index.ts`: `export const args = defineArgs({ command: "wi-impl pd <name>", … })` and a default
   `CommandModule` whose `parseArgs` calls `args.parse(argv)`. Write commands set `writes`
   (`true`, or a function of the parsed args as in `history` and `lock`). The runner derives the
   envelope schema (`pd.<name>`); commands do not set it.
 - `help.txt`: Usage, description, Arguments, Flags, Global Flags, Examples, Notes.
-- `desc.txt`: one line per invocation variant, `belz pd <name> …  :->  what it does`.
+- `desc.txt`: one line per invocation variant, `wi-impl pd <name> …  :->  what it does`.
 
 ## Conventions
 

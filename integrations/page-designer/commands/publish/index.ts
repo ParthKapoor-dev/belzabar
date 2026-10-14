@@ -1,4 +1,4 @@
-// belz pd publish <pageId> [--landing] [--host <id>...] [--yes]
+// wi-impl pd publish <pageId> [--landing] [--host <id>...] [--yes]
 //              [--force-validation] [--allow-published]
 //
 // POST /pages/<draftId>/publish?landingPage=&hostIds=. The draft is resolved
@@ -52,7 +52,7 @@ interface PublishData {
 }
 
 export const args = defineArgs({
-  command: "belz pd publish",
+  command: "wi-impl pd publish",
   positionals: [{ name: "page-id", required: true, missingCode: "MISSING_INPUT", missingMessage: "Missing <pageId>." }],
   flags: {
     landing: { type: "boolean" },
@@ -165,7 +165,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
       ],
     );
     ui.info(
-      "Published version is read from the publish response. Note: `belz pd show " +
+      "Published version is read from the publish response. Note: `wi-impl pd show " +
         "<publishedId>` shows the last DEPLOYED version until a publish with --host.",
     );
   },

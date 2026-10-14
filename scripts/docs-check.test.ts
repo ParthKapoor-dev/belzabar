@@ -38,11 +38,11 @@ const INDEX = buildIndex(
 
 describe("extractSnippets", () => {
   test("code spans, fenced lines and link targets, with line numbers", () => {
-    const md = ["Use `a/b.ts` and [x](c/d.md).", "```bash", "belz ad show 1", "```", "`x` docs-check:ignore `y/z`"].join("\n");
+    const md = ["Use `a/b.ts` and [x](c/d.md).", "```bash", "wi-impl ad show 1", "```", "`x` docs-check:ignore `y/z`"].join("\n");
     expect(extractSnippets(md)).toEqual([
       { text: "a/b.ts", line: 1, kind: "code" },
       { text: "c/d.md", line: 1, kind: "link" },
-      { text: "belz ad show 1", line: 3, kind: "code" },
+      { text: "wi-impl ad show 1", line: 3, kind: "code" },
     ]);
   });
 
@@ -64,9 +64,9 @@ describe("pathCandidates", () => {
 });
 
 describe("commandCandidates / checkCommand", () => {
-  test("extracts words after belz up to a flag or placeholder", () => {
-    expect(commandCandidates("belz ad show <uuid> --llm && belz cache prune-local --yes")).toEqual([["ad", "show"], ["cache", "prune-local"]]);
-    expect(commandCandidates("bun run belz:install; ./belz --help-full; [belz pd write] saved")).toEqual([]);
+  test("extracts words after wi-impl up to a flag or placeholder", () => {
+    expect(commandCandidates("wi-impl ad show <uuid> --llm && wi-impl cache prune-local --yes")).toEqual([["ad", "show"], ["cache", "prune-local"]]);
+    expect(commandCandidates("bun run belz:install; ./belz --help-full; [wi-impl pd write] saved")).toEqual([]);
   });
 
   test("registered commands pass", () => {
@@ -76,8 +76,8 @@ describe("commandCandidates / checkCommand", () => {
   });
 
   test("unknown namespaces, commands and strict subcommands fail", () => {
-    expect(checkCommand(INDEX, ["frobnicate"])).toContain("unknown command `belz frobnicate`");
-    expect(checkCommand(INDEX, ["pd", "write"])).toContain("unknown command `belz pd write`");
+    expect(checkCommand(INDEX, ["frobnicate"])).toContain("unknown command `wi-impl frobnicate`");
+    expect(checkCommand(INDEX, ["pd", "write"])).toContain("unknown command `wi-impl pd write`");
     expect(checkCommand(INDEX, ["ad", "sql", "drop"])).toContain("unknown subcommand");
     expect(checkCommand(INDEX, ["cache", "clear"])).toContain("unknown subcommand");
   });
@@ -101,11 +101,11 @@ describe("checkDocs on a temp repo", () => {
         "`lib/save/missing.ts`", // 2: missing (doc-relative)
         "`integrations/pd/x.ts`", // 3: missing (root-relative)
         "`@belzabar/ad/lib/trace` `@belzabar/nope`", // 4: unknown package
-        "`belz ad show <uuid>` `belz frobnicate`", // 5: unknown command
+        "`wi-impl ad show <uuid>` `wi-impl frobnicate`", // 5: unknown command
         "[ok](../ad/lib/save/verify.ts) [bad](../ad/lib/gone.ts)", // 6: missing link
       ].join("\n"),
     );
-    writeFileSync(join(root, "README.md"), "```\nbelz pd write x\n```\n");
+    writeFileSync(join(root, "README.md"), "```\nwi-impl pd write x\n```\n");
   });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
@@ -116,11 +116,11 @@ describe("checkDocs on a temp repo", () => {
   test("reports each stale path, package and command with file:line", () => {
     const problems = checkDocs(root, findDocs(root), INDEX, workspacePackages(root));
     expect(problems.map((p) => `${p.file}:${p.line}: ${p.message}`)).toEqual([
-      "README.md:2: unknown command `belz pd write`",
+      "README.md:2: unknown command `wi-impl pd write`",
       "integrations/ad/AGENTS.md:2: missing path lib/save/missing.ts",
       "integrations/ad/AGENTS.md:3: missing path integrations/pd/x.ts",
       "integrations/ad/AGENTS.md:4: unknown package @belzabar/nope",
-      "integrations/ad/AGENTS.md:5: unknown command `belz frobnicate`",
+      "integrations/ad/AGENTS.md:5: unknown command `wi-impl frobnicate`",
       "integrations/ad/AGENTS.md:6: missing path ../ad/lib/gone.ts",
     ]);
   });

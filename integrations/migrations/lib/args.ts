@@ -18,7 +18,7 @@ export function matchClient(value: string, known: readonly string[]): JenkinsCli
   return known.find((c) => c.toLowerCase() === wanted);
 }
 
-/** Migration profile segment → belz env, from config `jenkins.profileEnvs` (lowercase keys). */
+/** Migration profile segment → wi-impl env, from config `jenkins.profileEnvs` (lowercase keys). */
 function profileSegmentEnvs(): Record<string, string> {
   return Config.getJenkins().profileEnvs;
 }
@@ -89,13 +89,13 @@ function deriveProfileFromEnvPair(sourceEnv: string, targetEnv: string): string 
 /** The `<build-number>` spec shared by `migrate status` and `migrate logs`. */
 export function buildNumberArgs(command: "status" | "logs") {
   return defineArgs({
-    command: `belz migrate ${command}`,
+    command: `wi-impl migrate ${command}`,
     positionals: [
       {
         name: "build-number",
         required: true,
         missingCode: "MIGRATE_BUILD_NUMBER_REQUIRED",
-        missingMessage: `belz migrate ${command} requires a build number.`,
+        missingMessage: `wi-impl migrate ${command} requires a build number.`,
       },
     ],
   });
@@ -120,7 +120,7 @@ export function parseBuildNumber(input: string): number {
 const YES_NO = ["Y", "N"] as const;
 
 export const RUN_ARGS = defineArgs({
-  command: "belz migrate run",
+  command: "wi-impl migrate run",
   flags: {
     module: { type: "string", alias: ["--module-name"] },
     "module-custom": { type: "string" },
@@ -154,8 +154,8 @@ export const RUN_ARGS = defineArgs({
 // -------- run: profile ↔ env consistency ------------------------------------
 //
 // Jenkins migrates whatever the PROFILE says; --source-env only picks where
-// belz pre-resolves ids. They must agree, or ids get resolved on one env while
-// Jenkins migrates another. Profile segment → belz env comes from config
+// wi-impl pre-resolves ids. They must agree, or ids get resolved on one env while
+// Jenkins migrates another. Profile segment → wi-impl env comes from config
 // `jenkins.profileEnvs` (profiles are `<source segment>_<target segment>`).
 
 /** Derive {sourceEnv, targetEnv} from a profile like `devacme_qaacme`; null when a segment is unmapped. */

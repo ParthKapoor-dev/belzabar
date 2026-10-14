@@ -1,15 +1,15 @@
-// belz pd lock <action> <pageId>
+// wi-impl pd lock <action> <pageId>
 //
 // Actions:
 //   acquire <pageId>   PUT /pages/lock/<pageId>?pageLockAction=ACQUIRED
 //   release <pageId>   PUT /pages/lock/<pageId>?pageLockAction=RELEASED
-//   status [pageId]    List locks this belz user acquired manually (local record);
+//   status [pageId]    List locks this wi-impl user acquired manually (local record);
 //                      with a page id, also the server's lock on it.
 //
 // Acquired locks are recorded in ~/.wi-impl/pd-locks/<env>.json (atomic, 0600).
 // `withLock` (every save/publish/restore) still acquires the server lock for a
 // recorded page (the record can be stale); the server answers a
-// re-acquire of your own lock with HTTP 400, which belz recognises through
+// re-acquire of your own lock with HTTP 400, which wi-impl recognises through
 // the page's `pageLockDetails.lockedByCurrentUser` and writes inside the
 // lock without releasing it. `acquire` on a lock you already
 // hold is ok with `alreadyHeld: true`. A release answers 200 `true` (released)
@@ -76,7 +76,7 @@ export const args = defineSubcommands(
     status: { positionals: [{ name: "page-id" }] },
   },
   {
-    command: "belz pd lock",
+    command: "wi-impl pd lock",
     codes: { MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "UNKNOWN_ACTION" },
   },
 );
@@ -147,7 +147,7 @@ const command: CommandModule<LockArgs, LockData> = {
     const data = envelope.data as LockData;
     if (data.action === "acquire") {
       ui.success(`${data.alreadyHeld ? "You already hold the lock" : "Acquired lock"} on ${data.pageId} (env=${data.env}).`);
-      ui.info("Remember to `belz pd lock release <id>` when done — stale locks block other editors.");
+      ui.info("Remember to `wi-impl pd lock release <id>` when done — stale locks block other editors.");
       return;
     }
     if (data.action === "release") {
@@ -163,7 +163,7 @@ const command: CommandModule<LockArgs, LockData> = {
       );
     }
     if (data.locks.length === 0) {
-      ui.text("No locks held by belz in this environment.");
+      ui.text("No locks held by wi-impl in this environment.");
       return;
     }
     ui.table(

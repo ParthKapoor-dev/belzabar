@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-// `bun run release <patch|minor|major|x.y.z> [--dry-run]` — cut a belz release.
+// `bun run release <patch|minor|major|x.y.z> [--dry-run]` — cut a wi-impl release.
 //
 // Checks you are on a clean `main` that matches origin/main, bumps apps/cli/package.json,
 // commits "chore(release): vX.Y.Z", tags vX.Y.Z and pushes both. The tag starts
@@ -50,12 +50,12 @@ git("fetch", "--quiet", "origin", "main", "--tags");
 if (git("rev-parse", "HEAD") !== git("rev-parse", "origin/main")) die("main is not at origin/main; pull or push first");
 if (git("tag", "--list", tag) !== "") die(`tag ${tag} already exists`);
 
-console.log(`belz ${current} → ${next} (${tag})`);
+console.log(`wi-impl ${current} → ${next} (${tag})`);
 if (dryRun) process.exit(0);
 
 writeFileSync(PKG, pkgText.replace(`"version": "${current}"`, `"version": "${next}"`));
 git("add", PKG);
 git("commit", "-m", `chore(release): ${tag}`);
-git("tag", "-a", tag, "-m", `belz ${tag}`);
+git("tag", "-a", tag, "-m", `wi-impl ${tag}`);
 git("push", "origin", "main", tag);
 console.log(`pushed ${tag}; the release workflow builds and publishes it.`);

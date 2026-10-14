@@ -11,7 +11,7 @@ import profilesCmdModule from "../../commands/profiles/index";
 const runCmd = { ...runCmdModule, envAware: false };
 const profilesCmd = { ...profilesCmdModule, envAware: false };
 
-/** Profile segment → env mapping (config `jenkins.profileEnvs`); belz has no built-in one. */
+/** Profile segment → env mapping (config `jenkins.profileEnvs`); wi-impl has no built-in one. */
 const PROFILE_ENVS = { devacme: "acme-dev", qaacme: "acme-qa", stageacme: "acme-stage", qagm: "gm-qa", stagegm: "gm-stage", qabravo: "orb-qa", stgbravo: "orb-stage" };
 
 let cfg: TempEnvConfig | null = null;
@@ -82,9 +82,9 @@ describe("AD pre-flight", () => {
 
   test("a real method resolves with its name", async () => {
     acmeDev();
-    ff = fakeFetch([{ url: /chain\//, response: { uuid: UUID, name: "belz.thing" } }]).install();
+    ff = fakeFetch([{ url: /chain\//, response: { uuid: UUID, name: "wi-impl.thing" } }]).install();
     const r = await resolve(UUID);
-    expect(r?.targets[0]).toMatchObject({ resolvedId: UUID, name: "belz.thing" });
+    expect(r?.targets[0]).toMatchObject({ resolvedId: UUID, name: "wi-impl.thing" });
   });
 });
 
@@ -143,7 +143,7 @@ describe("failures after the trigger carry the build reference", () => {
     const err = r.envelope?.error;
     expect(err?.code).toStartWith("MIGRATE_JENKINS");
     expect(err?.message).toContain("do NOT re-run");
-    expect(err?.message).toContain("belz migrate status 42");
+    expect(err?.message).toContain("wi-impl migrate status 42");
     expect(err?.details).toMatchObject({
       buildTriggered: true, buildNumber: 42, buildUrl: `${JOB}/42/`, queueUrl: "https://jk.test/queue/item/7/",
     });

@@ -40,8 +40,8 @@ wire modules directly when they need a raw body or a V1-only route.
 | Step identity | `activeTab.id` + env-local numeric `automationApiId` | `properties.type` + `serviceName`/`methodName` + portable `automationAPIId` uuid |
 | Custom code | `code`, often base64 | `properties.customCode.inlineCode` |
 | State | `automationState` | `metadata.state` |
-| Save | not used by belz | `POST /rest/api/automation/chain/v2` (live body + overlay) |
-| Test | `POST /rest/api/automation/chain/test`, multipart `body=<JSON>`; runs an unsaved body | not used by belz |
+| Save | not used by wi-impl | `POST /rest/api/automation/chain/v2` (live body + overlay) |
+| Test | `POST /rest/api/automation/chain/test`, multipart `body=<JSON>`; runs an unsaved body | not used by wi-impl |
 | Test-case update | `PUT /rest/api/automation/chain/testcases/{chainUuid}/{id}` | — |
 
 Publish, export, import, categories and services have a single route.
@@ -50,7 +50,7 @@ Publish, export, import, categories and services have a single route.
 
 - A save must send the whole live V2 GET body with only the target leaves changed; a thin
   body is refused with `400 Invalid state`. The server ignores `metadata.version` (no
-  optimistic locking), so belz re-reads before posting.
+  optimistic locking), so wi-impl re-reads before posting.
 - After a save the runtime may keep running the previously compiled chain until both
   cache-invalidation routes are called ([`../save/compiled-cache.ts`](../save/compiled-cache.ts)).
 - The server's test-suite run is not observable per chain and does not evaluate

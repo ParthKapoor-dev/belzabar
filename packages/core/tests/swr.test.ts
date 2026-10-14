@@ -4,7 +4,7 @@ import { tmpdir } from "os";
 import { join } from "path";
 import { buildRefreshCommand, shouldRefresh } from "../src/swr";
 
-const tmp = mkdtempSync(join(tmpdir(), "belz-swr-test-"));
+const tmp = mkdtempSync(join(tmpdir(), "wi-impl-swr-test-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 describe("buildRefreshCommand", () => {

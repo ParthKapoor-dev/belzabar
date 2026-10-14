@@ -1,4 +1,4 @@
-// Pins belz's PD write contract to live wire evidence (captured 2026-09-29 on a
+// Pins wi-impl's PD write contract to live wire evidence (captured 2026-09-29 on a
 // scratch page, sanitized, in tests/fixtures/wire/): the partial-op key shapes
 // the server accepts, the lock answers, and the revert form. If the server changes, re-capture and these fail loudly.
 import { afterEach, describe, expect, test } from "bun:test";
@@ -43,7 +43,7 @@ describe("partial-op key shapes (live evidence)", () => {
   for (const c of keys.cases) {
     test(`${c.what}: ${c.op.key} → HTTP ${c.status}`, () => {
       if (c.status === 500) {
-        // A dotted prop name: the server splits it and fails; belz must never send it.
+        // A dotted prop name: the server splits it and fails; wi-impl must never send it.
         expect(isVerifiedKeyShape(c.op.key)).toBe(false);
         expect(applyWireOps({ layout: { children: [{ props: {} }] } }, [c.op as never])).toBeNull();
         return;
@@ -52,7 +52,7 @@ describe("partial-op key shapes (live evidence)", () => {
       const replayed = replayOperations(scaffold(c), [c.op]);
       const fake = applyWireOps(scaffold(c), [c.op as never]) as { layout: { children: Array<Record<string, unknown>> } };
       if (c.storedUnder.container === null) {
-        // Missing parent: the server answers 200 and stores nothing; belz's replay
+        // Missing parent: the server answers 200 and stores nothing; wi-impl's replay
         // refuses (null), so planSave never sends such an op as a partial save.
         expect(replayed).toBeNull();
         expect(fake).toEqual(scaffold(c) as never);
@@ -66,7 +66,7 @@ describe("partial-op key shapes (live evidence)", () => {
         const node = (cfg as { layout: { children: Array<Record<string, unknown>> } }).layout.children[i]!;
         return c.storedUnder.prop === null ? node[map] : (node[map] as Record<string, unknown>)[c.storedUnder.prop];
       };
-      // belz's in-memory reading of the key == what the server stored == the fake server.
+      // wi-impl's in-memory reading of the key == what the server stored == the fake server.
       expect(pick(replayed)).toEqual(serverValue);
       expect(pick(fake)).toEqual(serverValue);
     });

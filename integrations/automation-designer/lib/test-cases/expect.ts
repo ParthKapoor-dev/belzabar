@@ -61,7 +61,7 @@ function invalid(source: string, why: string, code = "INVALID_EXPECTATION"): Cli
   // so it must not suggest `out.path` (the hint contradicted the error).
   const hint =
     code === "INVALID_ASSERTION"
-      ? "Use out=value, out!=value, out~=value, out>n, out<n on a whole output (to look inside a JSON output, use `belz ad test --expect out.path[0]=value`, which is checked locally)."
+      ? "Use out=value, out!=value, out~=value, out>n, out<n on a whole output (to look inside a JSON output, use `wi-impl ad test --expect out.path[0]=value`, which is checked locally)."
       : "Use out=value, out!=value, out~=value, out>n, out<n (out.path[0]=value for JSON outputs).";
   const label = code === "INVALID_ASSERTION" ? "assertion" : "expectation";
   return new CliError(`Invalid ${label} '${source}': ${why}. ${hint}`, { code });
@@ -227,7 +227,7 @@ interface StructuredAssertion {
   expected: string | number | boolean | null;
 }
 
-/** An assertion belz cannot read back structurally: kept verbatim. */
+/** An assertion wi-impl cannot read back structurally: kept verbatim. */
 interface RawAssertion {
   expression: string | null;
   mode?: string;

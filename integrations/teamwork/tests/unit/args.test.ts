@@ -1,4 +1,4 @@
-// Strict argument parsing for every `belz tw` command.
+// Strict argument parsing for every `wi-impl tw` command.
 import { describe, expect, test } from "bun:test";
 import { parseTaskId } from "../../lib/task-id";
 import * as task from "../../commands/task/index";

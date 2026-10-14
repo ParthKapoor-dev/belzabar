@@ -1,6 +1,6 @@
-Usage: belz pd find [query] [flags]
-       belz pd find list [--components]
-       belz pd find pick [query] [flags]
+Usage: wi-impl pd find [query] [flags]
+       wi-impl pd find list [--components]
+       wi-impl pd find pick [query] [flags]
 
 Search for pages and components in the Page Designer.
 The index is cached locally for 7 days; use --refresh to rebuild.
@@ -29,12 +29,12 @@ Global Flags:
   --env <name>        Set active environment.
 
 Examples:
-  belz pd find notice
-  belz pd find notice --type page
-  belz pd find list
-  belz pd find list --components
-  belz pd find list --limit 50
-  belz pd find list --full --llm
-  belz pd find pick
-  belz pd find pick LT-260 --open
-  belz pd find --refresh
+  wi-impl pd find notice
+  wi-impl pd find notice --type page
+  wi-impl pd find list
+  wi-impl pd find list --components
+  wi-impl pd find list --limit 50
+  wi-impl pd find list --full --llm
+  wi-impl pd find pick
+  wi-impl pd find pick LT-260 --open
+  wi-impl pd find --refresh

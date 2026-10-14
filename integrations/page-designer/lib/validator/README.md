@@ -41,7 +41,7 @@ and variable consistency, and the mechanical parts of a PD review checklist. Use
 
 ## Not checkable statically
 
-Runtime or data-dependent failures belz cannot gate: a radio `exp-form-field` without
+Runtime or data-dependent failures wi-impl cannot gate: a radio `exp-form-field` without
 `[options]` data (renders 0 height), a select `labelKey`/`valueKey` that does not match the API
 response, and Angular Material tab-switch console errors (harmless).
 

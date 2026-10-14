@@ -264,7 +264,7 @@ describe("ad save — methods with test cases (testSuite)", () => {
   // Live acme-dev 2026-09-29: a V2 POST carrying testSuite makes the server rebuild the
   // suite (new assertion ids, createdOn/updatedOn, chainVersionId); without it the suite
   // is kept and only its updatedOn moves. Either way the re-read suite differs from the
-  // body belz sent, which used to fail every save with AD_SAVE_VERIFY_FAILED.
+  // body wi-impl sent, which used to fail every save with AD_SAVE_VERIFY_FAILED.
   function wireSuiteServer() {
     const s = v2Store(U, base(), {
       onPost: (body: any) => {

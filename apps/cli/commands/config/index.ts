@@ -60,7 +60,7 @@ type EditChoice = "edit" | "add" | "remove" | "default" | "teamwork" | "jenkins"
 async function runEditTui(): Promise<ConfigEditData> {
   const cfg = loadConfigFileRaw();
 
-  lifecycle.intro("Belzabar Config Editor");
+  lifecycle.intro("wi-impl config editor");
 
   const choice = await prompts.select<EditChoice>({
     message: "What would you like to do?",
@@ -325,8 +325,8 @@ const command: CommandModule<ConfigArgs, ConfigData> = {
       const tokenLabel = !d.tokenPresent
         ? "(no cached session)"
         : d.tokenExpired
-        ? `cached (expired${d.tokenExpiresAt ? ` ${d.tokenExpiresAt}` : ""}) — 'belz config token' re-logs in`
-        : `cached${d.tokenExpiresAt ? ` (expires ${d.tokenExpiresAt})` : ""} — print it with 'belz config token'`;
+        ? `cached (expired${d.tokenExpiresAt ? ` ${d.tokenExpiresAt}` : ""}) — 'wi-impl config token' re-logs in`
+        : `cached${d.tokenExpiresAt ? ` (expires ${d.tokenExpiresAt})` : ""} — print it with 'wi-impl config token'`;
 
       ui.text(`Config: ${d.env}`);
       ui.table(

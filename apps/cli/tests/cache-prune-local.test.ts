@@ -1,4 +1,4 @@
-// `belz cache prune-local` — local-only cleanup of stale cache artifacts left
+// `wi-impl cache prune-local` — local-only cleanup of stale cache artifacts left
 // from before caches became env-scoped (see packages/core/src/cache.ts) plus
 // abandoned `.refresh/*.lock` files (packages/core/src/swr.ts). No network,
 // not environment-specific (writesLocal, not writes).
@@ -126,12 +126,12 @@ describe("pruneLocalCache", () => {
   });
 });
 
-describe("belz cache prune-local (command wiring)", () => {
+describe("wi-impl cache prune-local (command wiring)", () => {
   // Unique namespace name so this suite never collides with real cache
   // namespaces (methods/pages/definitions/…) that other tests populate in
   // the same shared WI_IMPL_HOME.
   const cacheDir = join(BELZ_CONFIG_DIR, "cache");
-  const NS = "belz-test-prune-ns";
+  const NS = "wi-impl-test-prune-ns";
   const flatFile = join(cacheDir, NS, "sentinel.json");
 
   afterAll(() => {

@@ -1,6 +1,6 @@
 # lib — the Automation Designer library
 
-Everything the `belz ad` commands share. Other workspaces import it as
+Everything the `wi-impl ad` commands share. Other workspaces import it as
 `@belzabar/ad/lib/<path>` (for example `release` uses `trace.ts`).
 
 ## Subdirectories
@@ -65,9 +65,9 @@ All caches are core `Cache` instances under `~/.wi-impl/cache/`, env-scoped.
 
 | Cache | Location | TTL | Evicted by |
 |---|---|---|---|
-| Methods | `methods/<env>/<uuid>.json` | 5 min soft (stale-while-revalidate), 1 h hard | save, publish, delete, history restore, and `belz migrate run` for its target env (core `invalidateEntityCache`); `show --force` bypasses. A V1 parse with unresolved services is never cached. |
+| Methods | `methods/<env>/<uuid>.json` | 5 min soft (stale-while-revalidate), 1 h hard | save, publish, delete, history restore, and `wi-impl migrate run` for its target env (core `invalidateEntityCache`); `show --force` bypasses. A V1 parse with unresolved services is never cached. |
 | Service definitions | `definitions/<env>/<automationId>.json` | 1 h | — |
-| Method index | `method-finder/index-v1-<env>.json`, `dirty-<env>.json`, `gone-<env>.json` | 7 days (`callers` rebuilds after 24 h; a partial index after 15 min) | `find --refresh`, `callers --refresh`, `ad import`. belz writes (and `migrate run` on its target env) mark a uuid dirty through core `markMethodIndexDirty` (`callers` re-reads it); `create` adds the new draft; a V2 `METHOD_NOT_FOUND` marks it gone. |
+| Method index | `method-finder/index-v1-<env>.json`, `dirty-<env>.json`, `gone-<env>.json` | 7 days (`callers` rebuilds after 24 h; a partial index after 15 min) | `find --refresh`, `callers --refresh`, `ad import`. wi-impl writes (and `migrate run` on its target env) mark a uuid dirty through core `markMethodIndexDirty` (`callers` re-reads it); `create` adds the new draft; a V2 `METHOD_NOT_FOUND` marks it gone. |
 | Caller refs | `callers/` (30 days, keyed by uuid and `updatedOn`), `callers-errors/` (1 day) | — | `callers --refresh` |
 | Grep step texts | `grep/` (30 days, keyed by uuid and `updatedOn`; failures share `callers-errors/`) | — | `grep --refresh` retries failures |
 | Published history bodies | `history-versions/<env>/` | 30 days (immutable) | — |

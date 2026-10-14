@@ -156,10 +156,10 @@ export const args = defineSubcommands(
     restore: { positionals: UUID_ARG, flags: { ...AD_YES_FLAG, version: VERSION_FLAG } },
   },
   {
-    command: "belz ad history",
+    command: "wi-impl ad history",
     codes: { UNKNOWN_SUBCOMMAND: "INVALID_ACTION", MISSING_SUBCOMMAND: "INVALID_ACTION" },
     missingMessage:
-      "Usage: belz ad history <list|show|diff|restore> <uuid> [flags]\n\n" +
+      "Usage: wi-impl ad history <list|show|diff|restore> <uuid> [flags]\n\n" +
       "  list <uuid>                     List all saved versions\n" +
       "  show <uuid> --version N         Fetch + parse a specific version\n" +
       "  diff <uuid> --from N --to M     Compare two versions side by side\n" +
@@ -481,8 +481,8 @@ async function executeRestore(
     // published uuid is not the draft's N. Refuse instead of guessing.
     throw new CliError(
       `${args.uuid} is the PUBLISHED chain; its history versions differ from the draft's. ` +
-        `Restore works on the draft: pick a version from 'belz ad history list ${guard.draft.uuid}' ` +
-        `and run 'belz ad history restore ${guard.draft.uuid} --version <N>'.`,
+        `Restore works on the draft: pick a version from 'wi-impl ad history list ${guard.draft.uuid}' ` +
+        `and run 'wi-impl ad history restore ${guard.draft.uuid} --version <N>'.`,
       { code: "HISTORY_RESTORE_NEEDS_DRAFT", details: { publishedUuid: args.uuid, draftUuid: guard.draft.uuid } },
     );
   }
@@ -531,7 +531,7 @@ async function executeRestore(
   }
   if (!compiledCache.ok) {
     context.warn(
-      `Compiled-cache eviction failed on every route; tests may run the previous body. Retry with: belz cache ${draft.uuid} --env ${context.env.name} --yes`,
+      `Compiled-cache eviction failed on every route; tests may run the previous body. Retry with: wi-impl cache ${draft.uuid} --env ${context.env.name} --yes`,
     );
   }
 
@@ -591,7 +591,7 @@ async function executeRestore(
     return failWithData(
       "RESTORE_UNCONFIRMED",
       contentMatches === false
-        ? `Restore of "${methodName}" to version ${args.version} answered ${platformResponse === true ? "true" : "with an unrecognised response"}, but the draft does not carry version ${args.version}'s content. Check the method (belz ad history diff) before retrying.`
+        ? `Restore of "${methodName}" to version ${args.version} answered ${platformResponse === true ? "true" : "with an unrecognised response"}, but the draft does not carry version ${args.version}'s content. Check the method (wi-impl ad history diff) before retrying.`
         : `Restore of "${methodName}" to version ${args.version} could not be verified (the draft could not be re-read). Check the method before retrying.`,
       data,
     );

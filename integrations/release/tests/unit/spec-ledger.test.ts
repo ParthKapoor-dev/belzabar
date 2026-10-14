@@ -16,7 +16,7 @@ import { resolveReleaseEnvs, validateReleaseSpec } from "../../lib/spec";
 import { saveTeamworkSession } from "@belzabar/teamwork/lib/auth";
 
 const FIX = join(import.meta.dir, "../../../teamwork/tests/fixtures/real");
-const dir = mkdtempSync(join(tmpdir(), "belz-release-spec-"));
+const dir = mkdtempSync(join(tmpdir(), "wi-impl-release-spec-"));
 
 let cfg: TempEnvConfig | null = null;
 let ff: FakeFetch | null = null;
@@ -33,7 +33,7 @@ function ctx(): CommandContext & { warnings: string[] } {
   const warnings: string[] = [];
   return {
     outputMode: "llm", env: Config.activeEnv, envExplicit: false, verbose: false,
-    binaryName: "belz", commandName: "x", warn: (m: string) => warnings.push(m), warnings,
+    binaryName: "wi-impl", commandName: "x", warn: (m: string) => warnings.push(m), warnings,
   };
 }
 

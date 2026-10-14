@@ -199,7 +199,7 @@ export function checkStructure(body: unknown, report: Report): boolean {
         ? "This looks like a V1 body (services[] / jsonDefinition); the validator and save route take the V2 body (steps[])."
         : "The method has no steps array.",
       path: "steps",
-      fix: v1 ? "Fetch the method with `belz ad fetch <uuid> --v2` and edit that body." : "Add a steps array.",
+      fix: v1 ? "Fetch the method with `wi-impl ad fetch <uuid> --v2` and edit that body." : "Add a steps array.",
     });
     return false;
   }
@@ -281,7 +281,7 @@ function checkMethodFields(body: Record<string, unknown>, report: Report): void 
       rule: "AD-META-001",
       message: "metadata.state is PUBLISHED; only drafts can be saved.",
       path: "metadata.state",
-      fix: "Save the draft (resolve it with `belz ad state <uuid>`).",
+      fix: "Save the draft (resolve it with `wi-impl ad state <uuid>`).",
       evidence: "400 Draft referenceId is mandatory for the Published method",
     });
   }

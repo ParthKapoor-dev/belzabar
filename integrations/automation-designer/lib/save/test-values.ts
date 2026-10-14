@@ -1,7 +1,7 @@
 // Stored input testValues: the AD designer's Test dialog pre-fills its form
 // from `jsonDefinition.inputs[].testValue` (V1 only; the V2 body has no such
 // key) and reports "Mandatory fields are not filled" when a required input has
-// none. Every V2 save drops them (verified live), and belz cannot set them, so
+// none. Every V2 save drops them (verified live), and wi-impl cannot set them, so
 // `save` and `create` say so instead of losing them silently.
 
 import * as v1 from "../api/v1";
@@ -33,15 +33,15 @@ export function testValueDropWarning(codes: string[], tense: "dropped" | "will b
   return (
     `testValue ${tense} for input(s) [${codes.join(", ")}] by the save (platform: every V2 save strips them). ` +
     `The AD designer's Test dialog reports "Mandatory fields are not filled" until they are re-entered there; ` +
-    `'belz ad test --input k=v' runs the method from the CLI without them.`
+    `'wi-impl ad test --input k=v' runs the method from the CLI without them.`
   );
 }
 
 /** The note for a new draft: it stores no testValues, so required inputs trip the designer's Test dialog. */
 export function createTestValueNote(requiredInputs: string[]): string {
   return (
-    `The new draft stores no testValues (belz cannot set them): the AD designer's Test dialog reports ` +
+    `The new draft stores no testValues (wi-impl cannot set them): the AD designer's Test dialog reports ` +
     `"Mandatory fields are not filled" for required input(s) [${requiredInputs.join(", ")}] until they are entered there; ` +
-    `'belz ad test --input k=v' runs the method from the CLI.`
+    `'wi-impl ad test --input k=v' runs the method from the CLI.`
   );
 }

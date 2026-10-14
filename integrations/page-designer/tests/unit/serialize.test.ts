@@ -279,7 +279,7 @@ describe("planSave strategy", () => {
     expect(plan.strategy).toBe("partial");
   });
 
-  test("a raw elements op on a dotted prop name ([attr.title]) is refused — like the server, belz splits it on the dot", () => {
+  test("a raw elements op on a dotted prop name ([attr.title]) is refused — like the server, wi-impl splits it on the dot", () => {
     const key = "layout.props.[attr.title]";
     expect(() => planSave(page, { elements: { operations: [{ key, value: "v", operation: "CREATE", dataType: "STRING" }] } })).toThrow(
       /does not resolve/,

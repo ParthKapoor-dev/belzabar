@@ -1,3 +1,3 @@
-belz release freeze <name>        :->  Record a prod snapshot from a release's stage state (writes the local ledger)
-belz release freeze <name> --force  :->  Replace an existing prod snapshot
-belz release freeze <name> --llm  :->  Output as structured JSON envelope
+wi-impl release freeze <name>        :->  Record a prod snapshot from a release's stage state (writes the local ledger)
+wi-impl release freeze <name> --force  :->  Replace an existing prod snapshot
+wi-impl release freeze <name> --llm  :->  Output as structured JSON envelope

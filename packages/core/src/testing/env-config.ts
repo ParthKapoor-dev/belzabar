@@ -50,7 +50,7 @@ function isInside(dir: string, root: string): boolean {
 }
 
 /**
- * The belz home tests may write to: it must be the preload's throwaway dir
+ * The wi-impl home tests may write to: it must be the preload's throwaway dir
  * (inside WI_IMPL_TEST_TMP), never `~/.wi-impl` or any other exported WI_IMPL_HOME.
  */
 export function assertSafeBelzHome(): string {

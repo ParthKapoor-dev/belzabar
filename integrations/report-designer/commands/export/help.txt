@@ -1,7 +1,7 @@
-Usage: belz rd export <id> [flags]
+Usage: wi-impl rd export <id> [flags]
 
 Write a report's definition as a portable spec file, the input of
-`belz rd create` and `belz rd save`. The datasource is named
+`wi-impl rd create` and `wi-impl rd save`. The datasource is named
 by AD category and method name instead of this env's numeric ids, so the spec
 means the same on any env where that method is published. Read-only on the
 server.
@@ -17,12 +17,12 @@ Flags:
                       (summaries at top, filterConfig 0).
   --help, -h          Show this help message.
 
-Spec format ("format": "belz.rd.report/1"):
+Spec format ("format": "wi-impl.rd.report/1"):
   title, description?, dataSource {category, method}, columns[], filters[],
   summaries[], summaryPosition?, filterConfig?, isFilterRequired?
 Columns and filters are kept exactly as Report Designer stores them; a filter
 points at its column by columnId.
 
 Examples:
-  belz rd export 0123456789abcdef0123456789abcdef --out report.json
-  belz rd export 0123456789abcdef0123456789abcdef --exact --env dev -o report.json
+  wi-impl rd export 0123456789abcdef0123456789abcdef --out report.json
+  wi-impl rd export 0123456789abcdef0123456789abcdef --exact --env dev -o report.json

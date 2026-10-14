@@ -1,3 +1,3 @@
-belz rd datasources  :->  List datasource categories (AD categories)
-belz rd datasources --category <name>  :->  Published AD methods a report can use in that category (chain id, method, description)
-belz rd datasources --search <text>  :->  Narrow either list by name
+wi-impl rd datasources  :->  List datasource categories (AD categories)
+wi-impl rd datasources --category <name>  :->  Published AD methods a report can use in that category (chain id, method, description)
+wi-impl rd datasources --search <text>  :->  Narrow either list by name

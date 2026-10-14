@@ -1,4 +1,4 @@
-// belz pd find-ad-methods <input> [--component] [--recursive]
+// wi-impl pd find-ad-methods <input> [--component] [--recursive]
 //
 // AD method ids a page/component's HTTP calls execute. <input> is resolved
 // like `pd show` (id, exact name, URL). --recursive follows every referenced
@@ -32,7 +32,7 @@ interface FindAdMethodsData {
 }
 
 export const args = defineArgs({
-  command: "belz pd find-ad-methods",
+  command: "wi-impl pd find-ad-methods",
   positionals: [
     { name: "id", required: true, missingCode: "MISSING_TARGET_ID", missingMessage: "Missing Page ID or Component ID argument." },
   ],

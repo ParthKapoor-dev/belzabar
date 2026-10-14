@@ -1,4 +1,4 @@
-belz ad fetch <uuid|url>  :->  Fetch a method by UUID or AD URL; caches and hydrates service definitions
-belz ad fetch <uuid|url> --raw  :->  Include the raw API response (wire body) as data.raw alongside the fetch result
-belz ad fetch <uuid|url> --env acme-qa  :->  Fetch from a specific environment
-belz ad fetch <uuid|url> --v2  :->  Fetch through the V2 API
+wi-impl ad fetch <uuid|url>  :->  Fetch a method by UUID or AD URL; caches and hydrates service definitions
+wi-impl ad fetch <uuid|url> --raw  :->  Include the raw API response (wire body) as data.raw alongside the fetch result
+wi-impl ad fetch <uuid|url> --env acme-qa  :->  Fetch from a specific environment
+wi-impl ad fetch <uuid|url> --v2  :->  Fetch through the V2 API

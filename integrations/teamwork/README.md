@@ -1,7 +1,7 @@
 # @belzabar/teamwork
 
-`belz tw …` — read Teamwork tickets, comments and release items, search tasks, and post a
-confirmed comment. The lib also backs `belz release matrix` (ticket → item linking).
+`wi-impl tw …` — read Teamwork tickets, comments and release items, search tasks, and post a
+confirmed comment. The lib also backs `wi-impl release matrix` (ticket → item linking).
 
 ## Role in the monorepo
 
@@ -15,7 +15,7 @@ confirmed comment. The lib also backs `belz release matrix` (ticket → item lin
 
 | Directory | Contents |
 |---|---|
-| [`commands/`](commands/README.md) | One folder per `belz tw` command |
+| [`commands/`](commands/README.md) | One folder per `wi-impl tw` command |
 | [`lib/`](lib/README.md) | HTTP adapter, cookie auth, item extraction, task-id parsing, types |
 | [`tests/`](tests/README.md) | Unit tests over a faked transport and sanitized Teamwork captures |
 
@@ -25,14 +25,14 @@ Exports: `@belzabar/teamwork/registry` and `@belzabar/teamwork/lib/<file>`. Ther
 
 | Command | Kind | What it does |
 |---|---|---|
-| `belz tw task <taskId\|url>` | read | Task, assignees, tags, status and every subtask |
-| `belz tw comments <taskId\|url>` | read | Every comment of a task |
-| `belz tw items <taskId\|url>` | read | AD / PD / SQL items referenced by the ticket and its subtasks' comments |
-| `belz tw search <query>` | read | Task search (`--project`, `--limit` 1–500, `--all` for completed tasks) |
-| `belz tw add-comment <taskId\|url>` | **write** | Posts `--body` / `--body-file` (`--html` for HTML) after confirmation |
+| `wi-impl tw task <taskId\|url>` | read | Task, assignees, tags, status and every subtask |
+| `wi-impl tw comments <taskId\|url>` | read | Every comment of a task |
+| `wi-impl tw items <taskId\|url>` | read | AD / PD / SQL items referenced by the ticket and its subtasks' comments |
+| `wi-impl tw search <query>` | read | Task search (`--project`, `--limit` 1–500, `--all` for completed tasks) |
+| `wi-impl tw add-comment <taskId\|url>` | **write** | Posts `--body` / `--body-file` (`--html` for HTML) after confirmation |
 
 A task is a positive number or a Teamwork task URL (`…/tasks/<id>`); anything else is
-`INVALID_TASK_ID`. Flags and examples: each `commands/<cmd>/help.txt` or `belz --help-full`.
+`INVALID_TASK_ID`. Flags and examples: each `commands/<cmd>/help.txt` or `wi-impl --help-full`.
 
 ## Configuration
 

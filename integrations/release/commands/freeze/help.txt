@@ -1,4 +1,4 @@
-Usage: belz release freeze <RELEASE_NAME> [flags]
+Usage: wi-impl release freeze <RELEASE_NAME> [flags]
 
 Record a production snapshot for a release.
 
@@ -6,7 +6,7 @@ Production cannot be queried directly, so its state is captured indirectly:
 each item's current STAGE position is frozen into the ledger as the prod
 pointer. Run this right after the release is pushed to production.
 
-Requires that `belz release matrix` has already been run for this release
+Requires that `wi-impl release matrix` has already been run for this release
 (it writes the release record this command reads).
 
 WRITES LOCAL STATE: ~/.wi-impl/promotion/prod-snapshots/<name>.json (atomic).
@@ -17,7 +17,7 @@ a warning; if no item has stage data, nothing is written
 
 Arguments:
   <RELEASE_NAME>        Name of a release previously audited with
-                        `belz release matrix` (the `name` field of its spec).
+                        `wi-impl release matrix` (the `name` field of its spec).
 
 Flags:
   --force               Replace an existing prod snapshot for this release.
@@ -27,5 +27,5 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz release freeze may-12-release
-  belz release freeze may-12-release --force
+  wi-impl release freeze may-12-release
+  wi-impl release freeze may-12-release --force

@@ -1,2 +1,2 @@
-belz envs  :->  List all configured environments and show which is currently active
-belz envs --env qa  :->  List environments with qa marked as the active one
+wi-impl envs  :->  List all configured environments and show which is currently active
+wi-impl envs --env qa  :->  List environments with qa marked as the active one

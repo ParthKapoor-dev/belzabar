@@ -1,14 +1,14 @@
 # AGENTS.md — CLI (`apps/cli`)
 
 Docs: [`README.md`](./README.md) (routing, build, install) and the READMEs in `bin/`,
-`commands/`, `scripts/`, `tests/`. The command reference is `belz --help-full`.
+`commands/`, `scripts/`, `tests/`. The command reference is `wi-impl --help-full`.
 
 ## Rules
 
-- Never run `bun run belz:install`, `belz:reinstall`, `belz update`, `belz setup` or
-  `belz onboard` as part of a change; they touch the real `~/.wi-impl` and binary. Tests use
+- Never run `bun run belz:install`, `belz:reinstall`, `wi-impl update`, `wi-impl setup` or
+  `wi-impl onboard` as part of a change; they touch the real `~/.wi-impl` and binary. Tests use
   scratch homes.
-- `belz --help-full` must stay deterministic: no env-, clock-, locale- or build-dependent text.
+- `wi-impl --help-full` must stay deterministic: no env-, clock-, locale- or build-dependent text.
 - Scripts that write `~/.wi-impl/config.json` write atomically with mode 0600 and never overwrite
   a config they cannot parse.
 
@@ -24,7 +24,7 @@ Docs: [`README.md`](./README.md) (routing, build, install) and the READMEs in `b
 - **New namespace:** new integration package (package.json, tsconfig, `registry.ts`); add it to
   this package's dependencies and to `NAMESPACES` + `REGISTRIES` in `bin/options.ts`.
 
-desc.txt is one line per invocation, `belz <…>  :->  <what it does>`. `tests/args-docs.test.ts`
+desc.txt is one line per invocation, `wi-impl <…>  :->  <what it does>`. `tests/args-docs.test.ts`
 fails when help.txt or desc.txt drift from the args spec; `tests/registry.test.ts` fails when
 folders and registries disagree. No README.md inside a command folder: `help.txt` is its doc.
 

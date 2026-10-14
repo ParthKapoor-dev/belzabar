@@ -1,4 +1,4 @@
-// `belz ad validate <uuid|file>`: read-only runner over lib/validate.
+// `wi-impl ad validate <uuid|file>`: read-only runner over lib/validate.
 
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtempSync, writeFileSync } from "fs";
@@ -16,7 +16,7 @@ afterEach(() => {
   ff = cfg = undefined;
 });
 
-const dir = mkdtempSync(join(tmpdir(), "belz-validate-"));
+const dir = mkdtempSync(join(tmpdir(), "wi-impl-validate-"));
 const file = (name: string, body: unknown) => {
   const p = join(dir, name);
   writeFileSync(p, JSON.stringify(body));

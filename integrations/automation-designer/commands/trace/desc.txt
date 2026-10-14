@@ -1,3 +1,3 @@
-belz ad trace <uuid>  :->  Locate an AD method on every env of the active env's project, relative to the active env's published history (spine)
-belz ad trace <uuid> --spine <env>  :->  Use another environment's history as the spine (default: the active env)
-belz ad trace <uuid> --envs <a,b>  :->  Locate the method only on these envs (the spine env is always included)
+wi-impl ad trace <uuid>  :->  Locate an AD method on every env of the active env's project, relative to the active env's published history (spine)
+wi-impl ad trace <uuid> --spine <env>  :->  Use another environment's history as the spine (default: the active env)
+wi-impl ad trace <uuid> --envs <a,b>  :->  Locate the method only on these envs (the spine env is always included)

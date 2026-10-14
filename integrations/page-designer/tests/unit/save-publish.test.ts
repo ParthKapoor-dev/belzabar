@@ -17,7 +17,7 @@ const PUB = "p0000000000000000000000000000001";
 const LONE_PUB = "p0000000000000000000000000000002";
 
 let pd: FakePd;
-const dir = scratchDir("belz-pd-save-");
+const dir = scratchDir("wi-impl-pd-save-");
 let n = 0;
 function overlayFile(overlay: unknown): string {
   const p = join(dir, `overlay-${++n}.json`);
@@ -149,7 +149,7 @@ describe("pd save", () => {
     expect(r.envelope?.data).toMatchObject({ strategy: "full", fullSaveReason: "unverified partial-op key shape: layout.children[0].props.[attr.title]", verify: { status: "match" } });
   });
 
-  test("the fake server follows the wire, not belz's replay (dotted names 500, missing parents are dropped)", async () => {
+  test("the fake server follows the wire, not wi-impl's replay (dotted names 500, missing parents are dropped)", async () => {
     const { applyWireOps } = await import("./helpers/fake-pd");
     const op = (key: string) => ({ key, value: "x", operation: "UPDATE", dataType: "STRING" });
     expect(applyWireOps(cleanInner(), [op("layout.children[0].props.[attr.title]")])).toBeNull();

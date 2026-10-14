@@ -1,8 +1,8 @@
-# commands — the `belz ad` commands
+# commands — the `wi-impl ad` commands
 
 One folder per command: `index.ts` (the exported `args` spec and the `CommandModule`),
-`help.txt` (the full reference, printed by `belz ad <cmd> --help`) and `desc.txt` (one line per
-invocation variant, collected into `belz --help-full`). The folders are listed in
+`help.txt` (the full reference, printed by `wi-impl ad <cmd> --help`) and `desc.txt` (one line per
+invocation variant, collected into `wi-impl --help-full`). The folders are listed in
 [`../registry.ts`](../registry.ts). The help.txt of each command is its documentation; this page
 is only the map.
 
@@ -32,7 +32,7 @@ asks for confirmation (in `--llm` mode it needs `--yes` instead).
 ## help.txt template
 
 ```
-Usage: belz ad <cmd> <REQUIRED_ARG> [OPTIONAL_ARG] [flags]
+Usage: wi-impl ad <cmd> <REQUIRED_ARG> [OPTIONAL_ARG] [flags]
 
 One-sentence description of what the command does.
 
@@ -51,8 +51,8 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad <cmd> <example1>
-  belz ad <cmd> <example2> --flag
+  wi-impl ad <cmd> <example1>
+  wi-impl ad <cmd> <example2> --flag
 ```
 
 - Required positionals are uppercase in `<>`; optional ones in `[]`.
@@ -60,7 +60,7 @@ Examples:
   that applies. `--help, -h` is the last Flags entry.
 - Always include Global Flags; write commands say that `--env` is required.
 - Extra sections (Notes, Errors, Data, Rules) go before Examples. Give 2–3 real examples.
-- `desc.txt`: one line per invocation variant, `belz ad <cmd> <args> --flag  :->  what it does`.
+- `desc.txt`: one line per invocation variant, `wi-impl ad <cmd> <args> --flag  :->  what it does`.
 
 `apps/cli/tests/args-docs.test.ts` fails when help.txt or desc.txt mention a flag the spec does
 not have, or miss one it does. `apps/cli/tests/registry.test.ts` fails when the folders and

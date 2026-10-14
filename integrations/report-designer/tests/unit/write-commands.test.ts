@@ -17,7 +17,7 @@ afterEach(() => rd.restore());
 function specFile(over: Record<string, unknown> = {}): string {
   const path = join(scratchDir("rd-spec"), "spec.json");
   const spec = {
-    format: "belz.rd.report/1",
+    format: "wi-impl.rd.report/1",
     title: "Orders by day",
     description: "Daily totals",
     dataSource: { category: CATEGORY.name, method: DS.label },

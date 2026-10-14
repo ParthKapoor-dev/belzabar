@@ -1,4 +1,4 @@
-// belz pd lint <input> [--recursive] [--full] [--summary] — run every
+// wi-impl pd lint <input> [--recursive] [--full] [--summary] — run every
 // validator rule over a page/component (and, with --recursive, every symbol it
 // uses). Any ERROR makes the envelope ok:false (PD_VALIDATION_FAILED, exit 1)
 // with the full report still in `data`, so scripts can chain on the exit code.
@@ -55,7 +55,7 @@ interface ValidateData extends EntityReport {
 }
 
 export const args = defineArgs({
-  command: "belz pd lint",
+  command: "wi-impl pd lint",
   positionals: [PD_INPUT_POSITIONAL],
   flags: {
     recursive: { type: "boolean", alias: ["-r"] },

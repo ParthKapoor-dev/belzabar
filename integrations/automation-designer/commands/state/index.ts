@@ -35,7 +35,7 @@ interface StateData {
 }
 
 export const args = defineArgs({
-  command: "belz ad state",
+  command: "wi-impl ad state",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {},
 });

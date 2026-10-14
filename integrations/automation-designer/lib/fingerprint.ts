@@ -1,6 +1,6 @@
 // Cross-environment fingerprinting for AD methods.
 //
-// `belz ad trace` locates a method on the dev version-history "spine" and on
+// `wi-impl ad trace` locates a method on the dev version-history "spine" and on
 // every other environment. The fingerprint must be both:
 //   - sensitive to real logic changes (CUSTOM_CODE / SQL / SPEL bodies), and
 //   - INSENSITIVE to env-local identifiers.

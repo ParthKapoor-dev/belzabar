@@ -1,12 +1,12 @@
-// Which process env vars belz trusts.
+// Which process env vars wi-impl trusts.
 //
 // Bun auto-loads `.env*` files from the current directory into process.env —
 // in dev mode AND in the compiled binary (Bun 1.2.x has no build flag to turn
 // that off). A stray `.env` in whatever directory the user happens to run
-// `belz` from must not be able to redirect an environment URL or inject
+// `wi-impl` from must not be able to redirect an environment URL or inject
 // credentials. So:
-//   1. belz only reads its own `WI_IMPL_*` variables (the legacy per-project /
-//      TEAMWORK_* / API_* variables are gone; `belz setup --from-env` still
+//   1. wi-impl only reads its own `WI_IMPL_*` variables (the legacy per-project /
+//      TEAMWORK_* / API_* variables are gone; `wi-impl setup --from-env` still
 //      imports them explicitly into config.json), and
 //   2. a WI_IMPL_* value that is identical to one in a cwd `.env*` file Bun would
 //      have loaded is treated as dotenv-injected and ignored.
@@ -66,7 +66,7 @@ function dotenvValues(cwd: string): Record<string, string> {
 /**
  * Every non-empty process env var except those a cwd `.env*` file injected
  * (same key, same value). `dropped` names the ignored keys. Used by
- * `belz setup --from-env`, which imports TEAMWORK_* keys too
+ * `wi-impl setup --from-env`, which imports TEAMWORK_* keys too
  * and must not persist a hostile cwd `.env` into config.json.
  */
 export function withoutDotenvInjected(
@@ -104,7 +104,7 @@ export function withLegacyNames(values: Record<string, string>): Record<string, 
 }
 
 /**
- * The WI_IMPL_* env vars belz honours (legacy BELZ_* names included): explicitly exported ones
+ * The WI_IMPL_* env vars wi-impl honours (legacy BELZ_* names included): explicitly exported ones
  * only. A value that equals what a cwd `.env*` file defines for the same key is dropped.
  */
 export function trustedBelzEnv(env: NodeJS.ProcessEnv = process.env, cwd = process.cwd()): Record<string, string> {
@@ -115,7 +115,7 @@ export function trustedBelzEnv(env: NodeJS.ProcessEnv = process.env, cwd = proce
 }
 
 /**
- * True when belz runs inside a coding agent's shell, where the default output is the `--llm`
+ * True when wi-impl runs inside a coding agent's shell, where the default output is the `--llm`
  * envelope: `WI_IMPL_AGENT=1`, or Claude Code's `CLAUDECODE=1` (the one non-WI_IMPL_ variable read,
  * and only when a cwd `.env*` did not inject it). `WI_IMPL_AGENT=0` turns the detection off.
  */

@@ -3,7 +3,7 @@
 Documentation: [`README.md`](README.md) (package, spec, `matrix` / `freeze` flow, limitations),
 [`lib/README.md`](lib/README.md) (env resolution, ledger), [`commands/README.md`](commands/README.md),
 [`tests/README.md`](tests/README.md). Flag reference: each command's `help.txt` /
-`belz --help-full`.
+`wi-impl --help-full`.
 
 ## Standing instructions
 

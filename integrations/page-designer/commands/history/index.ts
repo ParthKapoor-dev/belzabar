@@ -1,4 +1,4 @@
-// belz pd history — version history for PD pages.
+// wi-impl pd history — version history for PD pages.
 //
 // Subcommands:
 //   list <pageId> [--limit N]              → table of {versionId, status, partial, updatedAt, user}
@@ -17,9 +17,9 @@
 // Restore (verified live 2026-09-29): `PUT
 // /pages/revert/<draftId>?versionId=<vid>` copies the version's configuration
 // into the DRAFT row (new draft versionId) and leaves the PUBLISHED row and
-// the history alone — so restore is a draft edit, made live by `belz pd
+// the history alone — so restore is a draft edit, made live by `wi-impl pd
 // publish`. (The endpoint given the PUBLISHED id rewrites the live row with no
-// publish and no history entry; belz never sends that. The old
+// publish and no history entry; wi-impl never sends that. The old
 // `/pages/revert/<vid>` form was a 400, so restore never worked before.)
 // Flow: ownership check → the draft of the version's page (none →
 // PD_PUBLISHED_NO_DRAFT) → diff-aware validation of the version against the
@@ -128,7 +128,7 @@ interface HistoryRestoreData {
   versionDrift: { from: number | null; to: number | null } | null;
   validation: { errorCount: number; warnCount: number };
   bypassedErrors: ValidationIssue[];
-  /** The PUBLISHED page is untouched; `belz pd publish <draftId>` makes the restore live. */
+  /** The PUBLISHED page is untouched; `wi-impl pd publish <draftId>` makes the restore live. */
   published: false;
 }
 
@@ -177,7 +177,7 @@ export const args = defineSubcommands(
     },
   },
   {
-    command: "belz pd history",
+    command: "wi-impl pd history",
     codes: { MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "UNKNOWN_ACTION" },
   },
 );
@@ -206,7 +206,7 @@ async function fetchOwnedVersion(pageId: string, vid: number): Promise<RawPageRe
   if (owner !== pageId && sibling !== pageId) {
     throw new CliError(
       `Version ${vid} belongs to page ${owner || "?"} (${String(raw.name ?? "")}), not ${pageId}. ` +
-        `List this page's versions with \`belz pd history list ${pageId}\`.`,
+        `List this page's versions with \`wi-impl pd history list ${pageId}\`.`,
       { code: "PD_VERSION_PAGE_MISMATCH", details: { versionId: vid, pageId, ownerId: owner || null } },
     );
   }
@@ -263,7 +263,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
         const ref = typeof raw?.referenceId === "string" ? raw.referenceId.trim() : "";
         if (raw && String(raw.status).toUpperCase() === "DRAFT" && ref && ref !== args.pageId) {
           data.publishedId = ref;
-          data.hint = `History is recorded on the published page: belz pd history list ${ref}`;
+          data.hint = `History is recorded on the published page: wi-impl pd history list ${ref}`;
           context.warn(`${args.pageId} is a DRAFT; its history is on the published page ${ref}.`);
         }
       }
@@ -394,12 +394,12 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       return failWithData(
         "PD_RESTORE_VERIFY_FAILED",
         `Reverted draft ${draftId} to version ${vid}, but the read-back does not hold that version's config ` +
-          `(${verify.differingPaths?.length ?? 0} differing path(s)). Inspect with \`belz pd show ${draftId} --force\`.`,
+          `(${verify.differingPaths?.length ?? 0} differing path(s)). Inspect with \`wi-impl pd show ${draftId} --force\`.`,
         data,
         { details: { draftId, versionId: vid, differingPaths: verify.differingPaths ?? [] } },
       );
     }
-    warn(`ℹ Draft ${draftId} now holds version ${vid}; the published page is unchanged — \`belz pd publish ${draftId}\` makes it live.`);
+    warn(`ℹ Draft ${draftId} now holds version ${vid}; the published page is unchanged — \`wi-impl pd publish ${draftId}\` makes it live.`);
     return ok<HistoryRestoreData>(data);
   },
 
@@ -494,7 +494,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
     // restore
     ui.success(`Restored draft ${data.draftId} to version ${data.restoredVersionId}.`);
     ui.kv("Draft version", `${data.oldVersionId ?? "?"} → ${data.newVersionId ?? "?"}`);
-    ui.info(`The published page is unchanged. Publish with \`belz pd publish ${data.draftId}\`.`);
+    ui.info(`The published page is unchanged. Publish with \`wi-impl pd publish ${data.draftId}\`.`);
   },
 };
 

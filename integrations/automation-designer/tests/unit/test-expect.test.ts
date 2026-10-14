@@ -98,7 +98,7 @@ describe("assertions ↔ SpEL (UI encoding)", () => {
       msg = (e as Error).message;
     }
     expect(msg).toContain("Invalid assertion");
-    expect(msg).toContain("belz ad test --expect");
+    expect(msg).toContain("wi-impl ad test --expect");
     expect(msg).not.toMatch(/\(out\.path\[0\]=value for JSON outputs\)/);
   });
 

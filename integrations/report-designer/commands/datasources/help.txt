@@ -1,4 +1,4 @@
-Usage: belz rd datasources [flags]
+Usage: wi-impl rd datasources [flags]
 
 List what a report can use as its datasource. A datasource is a PUBLISHED AD
 method; Report Designer groups them by AD category. Read-only: nothing is run.
@@ -11,9 +11,9 @@ Flags:
   --help, -h          Show this help message.
 
 A method missing here is not published (or not in that category): publish it
-with `belz ad publish` before a report can use it.
+with `wi-impl ad publish` before a report can use it.
 
 Examples:
-  belz rd datasources --search test
-  belz rd datasources --category Reports
-  belz rd datasources --category Reports --search invoice
+  wi-impl rd datasources --search test
+  wi-impl rd datasources --category Reports
+  wi-impl rd datasources --category Reports --search invoice

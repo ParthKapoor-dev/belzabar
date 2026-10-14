@@ -1,4 +1,4 @@
-Usage: belz pd publish <pageId> [--landing] [--host <id> ...] [--yes]
+Usage: wi-impl pd publish <pageId> [--landing] [--host <id> ...] [--yes]
 
 Publish a PD draft page to its deployable sibling. Wraps POST
 /pages/<draftId>/publish?landingPage=&hostIds= in an acquire/release lock
@@ -19,7 +19,7 @@ config. Pass --host to publish AND deploy (mirrors the designer's
 "Publish and Deploy").
 
 Arguments:
-  <pageId>              PD draft page id. If a PUBLISHED id is given, belz
+  <pageId>              PD draft page id. If a PUBLISHED id is given, wi-impl
                         follows its referenceId to the linked draft and
                         publishes that (with a notice).
 
@@ -31,7 +31,7 @@ Flags:
   --force-validation    Publish despite validator ERRORS the draft introduces.
   --allow-published     Publish a PUBLISHED page that has no linked draft.
   --yes, -y             Confirm the publish (required with --llm or without a
-                        terminal; otherwise belz asks).
+                        terminal; otherwise wi-impl asks).
   --help, -h            Show this help message.
 
 Global Flags:
@@ -39,6 +39,6 @@ Global Flags:
   --llm                 Output structured JSON envelope.
 
 Examples:
-  belz pd publish 4f126300499e4d83cd07a35b4d9af9e7 --yes
-  belz pd publish 4f126300499e4d83cd07a35b4d9af9e7 --landing --yes
-  belz pd publish <id> --host 1 --host 2 --yes --llm
+  wi-impl pd publish 4f126300499e4d83cd07a35b4d9af9e7 --yes
+  wi-impl pd publish 4f126300499e4d83cd07a35b4d9af9e7 --landing --yes
+  wi-impl pd publish <id> --host 1 --host 2 --yes --llm

@@ -8,9 +8,9 @@
 interface RegisteredCommand {
   /** Namespace import of `commands/<name>/index.ts` (default export = the CommandModule). */
   module: unknown;
-  /** Contents of `commands/<name>/help.txt` (`belz … <name> --help`). */
+  /** Contents of `commands/<name>/help.txt` (`wi-impl … <name> --help`). */
   help: string;
-  /** Contents of `commands/<name>/desc.txt` (one block of `belz --help-full`). */
+  /** Contents of `commands/<name>/desc.txt` (one block of `wi-impl --help-full`). */
   desc: string;
 }
 

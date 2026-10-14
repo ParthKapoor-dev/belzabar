@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Page Designer commands and lib (`belz pd`).",
+  "description": "Page Designer commands and lib (`wi-impl pd`).",
   "exports": {
     "./registry": "./registry.ts",
     "./lib/*": "./lib/*.ts"

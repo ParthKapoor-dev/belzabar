@@ -1,6 +1,6 @@
-# apps/cli — the `belz` binary
+# apps/cli — the `wi-impl` binary
 
-Package `belzabar.cli`. Builds the `belz` binary: the entry point, the wiring of every
+Package `belzabar.cli`. Builds the `wi-impl` binary: the entry point, the wiring of every
 integration's command registry, the top-level commands (`cache`, `config`, `envs`, `onboard`,
 `setup`, `update`) and the install scripts. The `ad`, `pd`, `rd`, `tw`, `migrate` and `release`
 commands live in `integrations/*`; the framework (runner, args, envelope, http, cache, ui) is
@@ -18,15 +18,15 @@ commands live in `integrations/*`; the framework (runner, args, envelope, http, 
 | `bunfig.toml` | Test preload (`WI_IMPL_HOME` → tmp) |
 | `package.json` | `build` (compile `bin/cli.ts` to `./belz`), `link`; depends on core and every integration |
 
-The compiled binary (`belz`, with `belz.map`) is written here and gitignored.
+The compiled binary (`wi-impl`, with `belz.map`) is written here and gitignored.
 
 ## Routing
 
 ```
-belz ad | pd | rd | tw | migrate | release <cmd>  → namespace commands (one registry each)
-belz config <sub>                            → passthrough module (routes its own subcommands)
-belz cache | envs | onboard | setup | update → top-level commands
-belz --version | --help | --help-full        → runner
+wi-impl ad | pd | rd | tw | migrate | release <cmd>  → namespace commands (one registry each)
+wi-impl config <sub>                            → passthrough module (routes its own subcommands)
+wi-impl cache | envs | onboard | setup | update → top-level commands
+wi-impl --version | --help | --help-full        → runner
 ```
 
 `tw`, `migrate`, `release`, `config`, `envs`, `setup`, `onboard` and `update` are not env-aware:
@@ -41,7 +41,7 @@ bun run belz:install                     # scripts/install.sh: build, install, f
 bun run belz:reinstall                   # scripts/reinstall.sh: wipe ~/.wi-impl and the binary first
 ```
 
-The repo-root one-liners (`install.sh`, `install.ps1`) and `belz update` call the scripts in
+The repo-root one-liners (`install.sh`, `install.ps1`) and `wi-impl update` call the scripts in
 [`scripts/`](./scripts/README.md).
 
 ## Testing

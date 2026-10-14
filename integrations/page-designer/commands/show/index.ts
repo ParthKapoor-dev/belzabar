@@ -387,7 +387,7 @@ function truncate(value: unknown, maxLen = 80): string {
 // --- Command ---
 
 export const args = defineArgs({
-  command: "belz pd show",
+  command: "wi-impl pd show",
   positionals: [
     {
       name: "input",
@@ -713,7 +713,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
           ["Id", "Component", "Label", "Path"],
           data.find.matches.map((m) => [m.id, m.component, m.label ?? "", m.path]),
         );
-        ui.info('Edit by id: {"nodes":{"update":[{"id":"<id>","props":{…}}]}} in `belz pd save --overlay`.');
+        ui.info('Edit by id: {"nodes":{"update":[{"id":"<id>","props":{…}}]}} in `wi-impl pd save --overlay`.');
       }
     }
 

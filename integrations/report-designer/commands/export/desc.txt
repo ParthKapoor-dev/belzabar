@@ -1,2 +1,2 @@
-belz rd export <id> --out <file>  :->  Write the report as a portable spec (datasource by category + method name)
-belz rd export <id> --exact --env <env> --out <file>  :->  Include summaryPosition and filterConfig (runs the report once)
+wi-impl rd export <id> --out <file>  :->  Write the report as a portable spec (datasource by category + method name)
+wi-impl rd export <id> --exact --env <env> --out <file>  :->  Include summaryPosition and filterConfig (runs the report once)

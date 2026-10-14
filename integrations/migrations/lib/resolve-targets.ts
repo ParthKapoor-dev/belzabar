@@ -1,4 +1,4 @@
-// Pre-flight id resolution for `belz migrate run`.
+// Pre-flight id resolution for `wi-impl migrate run`.
 //
 // Migration ids are environment-local — the same PD page/component can carry a
 // different id in dev vs qa, and a DRAFT id is NOT migratable (the migration
@@ -140,7 +140,7 @@ export async function resolveMigrationTargets(opts: {
     if (!envs[derived]) {
       opts.warn?.(
         `Pre-flight id resolution skipped: profile '${opts.profile}' migrates from '${derived}', which is not configured ` +
-          `in ~/.wi-impl/config.json. ${unresolved} Add '${derived}' with 'belz config edit' to enable it.`,
+          `in ~/.wi-impl/config.json. ${unresolved} Add '${derived}' with 'wi-impl config edit' to enable it.`,
       );
       return null;
     }
@@ -171,7 +171,7 @@ export async function resolveMigrationTargets(opts: {
       const transport = e.code === "HTTP_TIMEOUT" || e.code === "HTTP_NETWORK_ERROR";
       throw new CliError(
         `Pre-flight id resolution on '${sourceEnv}' failed, so no build was triggered: ${e.message} ` +
-          (transport ? `Retry when '${sourceEnv}' responds.` : `Fix the '${sourceEnv}' credentials ('belz config edit') and retry.`),
+          (transport ? `Retry when '${sourceEnv}' responds.` : `Fix the '${sourceEnv}' credentials ('wi-impl config edit') and retry.`),
         {
           code: e.code,
           exitCode: e.exitCode,

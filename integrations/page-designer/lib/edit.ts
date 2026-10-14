@@ -139,7 +139,7 @@ export function gateValidation(
     const shown = warnings.filter((w) => !w.preExisting);
     for (const w of shown.slice(0, WARNING_PRINT_CAP)) warn(`⚠ ${w.code}: ${w.message}`);
     if (shown.length > WARNING_PRINT_CAP) {
-      warn(`⚠ … and ${shown.length - WARNING_PRINT_CAP} more validator warning(s) (see data.validation / \`belz pd lint\`).`);
+      warn(`⚠ … and ${shown.length - WARNING_PRINT_CAP} more validator warning(s) (see data.validation / \`wi-impl pd lint\`).`);
     }
   }
   return { errors, warnings, bypassedErrors: forceValidation ? errors : [] };

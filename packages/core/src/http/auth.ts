@@ -94,7 +94,7 @@ async function doLogin(envName: string): Promise<AuthSession> {
   const password = Config.password;
   if (!loginId || !password) {
     throw new CliError(
-      `Missing credentials for environment '${envName}'. Run 'belz setup' or 'belz config edit' to add them.`,
+      `Missing credentials for environment '${envName}'. Run 'wi-impl setup' or 'wi-impl config edit' to add them.`,
       { code: "AUTH_MISSING_CREDENTIALS", details: { env: envName } },
     );
   }
@@ -110,7 +110,7 @@ async function doLogin(envName: string): Promise<AuthSession> {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json, text/plain, */*",
-        "User-Agent": "Bun/1.0 (Belzabar CLI)",
+        "User-Agent": "Bun/1.0 (wi-impl)",
       },
       body: JSON.stringify({ loginId, password }),
       // Login is a POST but has no server-side work to "complete": use the read

@@ -1,4 +1,4 @@
-belz pd history list <pageId> [--limit N]  :->  List every saved version of a page (metadata only; history lives on the published id)
-belz pd history show <pageId> --version <vid>  :->  Parse + validate one historical version of this page
-belz pd history diff <pageId> --from <A> --to <B>  :->  Structural diff between two versions of this page
-belz pd history restore <pageId> --version <vid> --yes  :->  Copy that version into the page's DRAFT (published page untouched; locked, validated, read back); publish to make it live
+wi-impl pd history list <pageId> [--limit N]  :->  List every saved version of a page (metadata only; history lives on the published id)
+wi-impl pd history show <pageId> --version <vid>  :->  Parse + validate one historical version of this page
+wi-impl pd history diff <pageId> --from <A> --to <B>  :->  Structural diff between two versions of this page
+wi-impl pd history restore <pageId> --version <vid> --yes  :->  Copy that version into the page's DRAFT (published page untouched; locked, validated, read back); publish to make it live

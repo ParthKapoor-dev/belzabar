@@ -25,7 +25,7 @@
     "uuid": "4bdea25c480a8e9dbc1cae830cb89b68",
     "automationApiId": "4237d8830f9d0e9f62d99d495d08c240    ",
     "name": "belz_tst_s4b_hist1",
-    "summary": "belz stage-4b probe — safe to delete",
+    "summary": "wi-impl stage-4b probe — safe to delete",
     "description": "",
     "metadata": {
       "version": {

@@ -1,2 +1,2 @@
-belz rd download <id> --env <env>  :->  Export the report as saved to <title>.csv (executes its datasource method; waits for the file)
-belz rd download <id> --env <env> --format csv|xlsx|pdf --out <file> --wait <seconds>  :->  Choose the format, file and how long to wait
+wi-impl rd download <id> --env <env>  :->  Export the report as saved to <title>.csv (executes its datasource method; waits for the file)
+wi-impl rd download <id> --env <env> --format csv|xlsx|pdf --out <file> --wait <seconds>  :->  Choose the format, file and how long to wait

@@ -1,7 +1,7 @@
 // Promotion ledger — persistent record of release audits under ~/.wi-impl/.
 //
-// `belz release matrix` writes its computed audit here so it accumulates
-// release-over-release; `belz release freeze` writes a prod snapshot (prod is
+// `wi-impl release matrix` writes its computed audit here so it accumulates
+// release-over-release; `wi-impl release freeze` writes a prod snapshot (prod is
 // not queryable, so its state is captured from stage at release-push time).
 //
 // Writes are atomic (tmp + rename via core writeSecureJson); an
@@ -92,7 +92,7 @@ function snapshotPath(name: string): string {
 
 function corrupt(path: string, why: string): CliError {
   return new CliError(
-    `Ledger file ${path} is corrupt (${why}). Re-run 'belz release matrix' to rebuild it, or delete the file.`,
+    `Ledger file ${path} is corrupt (${why}). Re-run 'wi-impl release matrix' to rebuild it, or delete the file.`,
     { code: "LEDGER_CORRUPT", details: { path, why } },
   );
 }
@@ -143,7 +143,7 @@ export function assertReleaseSlotFree(name: string): void {
   }
 }
 
-/** Persist a `belz release matrix` result (atomic). Returns the file path written. */
+/** Persist a `wi-impl release matrix` result (atomic). Returns the file path written. */
 export function saveRelease(name: string, data: unknown): string {
   assertReleaseSlotFree(name);
   const path = releasePath(name);

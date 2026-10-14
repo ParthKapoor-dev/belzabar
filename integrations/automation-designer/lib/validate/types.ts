@@ -8,7 +8,7 @@
 export type Severity = "error" | "warn";
 
 export interface StepRef {
-  /** 1-based, like the AD UI and `belz ad show`. */
+  /** 1-based, like the AD UI and `wi-impl ad show`. */
   orderIndex: number;
   /** CUSTOM_CODE | SQL | SPEL_ECHO | REDIS_* | EXISTING_SERVICE | UNKNOWN */
   kind: string;

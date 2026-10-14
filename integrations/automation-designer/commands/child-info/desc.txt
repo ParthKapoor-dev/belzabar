@@ -1,3 +1,3 @@
-belz ad child-info <category> <method-name>  :->  Inputs and outputs of a method a step calls, by its category + name as written in the step (no uuid)
-belz ad child-info <category> <method-name> --shape  :->  Compact contract: input key paths/types/enums/defaults, output keys, API ids, auth accounts (id nickname scope)
-belz ad child-info <category> <method-name> --shape --all  :->  Same, including inputs/outputs hidden in the UI
+wi-impl ad child-info <category> <method-name>  :->  Inputs and outputs of a method a step calls, by its category + name as written in the step (no uuid)
+wi-impl ad child-info <category> <method-name> --shape  :->  Compact contract: input key paths/types/enums/defaults, output keys, API ids, auth accounts (id nickname scope)
+wi-impl ad child-info <category> <method-name> --shape --all  :->  Same, including inputs/outputs hidden in the UI

@@ -1,11 +1,11 @@
-Usage: belz pd find-ad-methods <INPUT> [flags]
+Usage: wi-impl pd find-ad-methods <INPUT> [flags]
 
 List all Automation Designer method IDs referenced in a page or component
 (the AD methods its HTTP calls execute).
 
 Arguments:
   <INPUT>             Page/component id, exact page or component name, or a
-                      PD / app URL (resolved like `belz pd show`).
+                      PD / app URL (resolved like `wi-impl pd show`).
 
 Flags:
   --component         Treat a name <INPUT> as a component name only.
@@ -22,6 +22,6 @@ Global Flags:
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz pd find-ad-methods 49fa2576239ec5791c6ead4cf9408ce2
-  belz pd find-ad-methods n_s_staff_email_correspondence --component
-  belz pd find-ad-methods 49fa2576239ec5791c6ead4cf9408ce2 --recursive --llm
+  wi-impl pd find-ad-methods 49fa2576239ec5791c6ead4cf9408ce2
+  wi-impl pd find-ad-methods n_s_staff_email_correspondence --component
+  wi-impl pd find-ad-methods 49fa2576239ec5791c6ead4cf9408ce2 --recursive --llm

@@ -25,7 +25,7 @@ interface DownloadData {
 }
 
 export const args = defineArgs({
-  command: "belz rd download",
+  command: "wi-impl rd download",
   positionals: [REPORT_ID_POSITIONAL],
   flags: {
     format: { type: "enum", values: Object.keys(EXPORT_FORMATS) as Format[], default: "csv" },

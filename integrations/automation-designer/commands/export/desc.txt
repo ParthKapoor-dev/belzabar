@@ -1,3 +1,3 @@
-belz ad export <method-id-or-uuid>  :->  Export a single method as JSON (body in `preview`)
-belz ad export <method-id-or-uuid> --out <file>  :->  Write the export to a file; the output lists only id, bytes and method names
-belz ad export <method-id-or-uuid> --out <file> --full  :->  Write the file and also return the body
+wi-impl ad export <method-id-or-uuid>  :->  Export a single method as JSON (body in `preview`)
+wi-impl ad export <method-id-or-uuid> --out <file>  :->  Write the export to a file; the output lists only id, bytes and method names
+wi-impl ad export <method-id-or-uuid> --out <file> --full  :->  Write the file and also return the body

@@ -1,6 +1,6 @@
 // On-disk layout for exported test cases — built to live in its own
 // git repository (the team's unit-test repo), so nothing in it is tied to
-// belz or to one environment's ids:
+// wi-impl or to one environment's ids:
 //
 //   <root>/<Category>/<method>/
 //     method.json           {name, category, uuids: {<env>: <chainUuid>}, inputs: {key: type}, outputs: [key]}

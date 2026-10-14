@@ -1,4 +1,4 @@
-// Top-level commands (`belz <cmd>`, plus the `config` passthrough) command registry.
+// Top-level commands (`wi-impl <cmd>`, plus the `config` passthrough) command registry.
 //
 // Hand-maintained and kept sorted. Every `commands/<name>/` folder must be listed here
 // (enforced by apps/cli/tests/registry.test.ts). help.txt / desc.txt are imported as text so

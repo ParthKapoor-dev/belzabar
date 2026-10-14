@@ -12,7 +12,7 @@
 //     changed through the API, and a deleted case's name cannot be reused.
 //   - `POST /chain/testcases/bulk/{chainUuid}` takes `inputs` as a
 //     {fieldCode: string} map (string values only, no defaultValue); the
-//     documented array-of-UI-bodies is rejected with 400. belz creates cases
+//     documented array-of-UI-bodies is rejected with 400. wi-impl creates cases
 //     one by one instead.
 //   - The suite GET omits `active:false` (and deleted) cases.
 

@@ -1,2 +1,2 @@
-belz ad delete <uuid> --env <env>  :->  Soft-delete a never-published DRAFT method (refuses published methods and drafts with a published version)
-belz ad delete <uuid> --env <env> --yes --llm  :->  Non-interactive delete (--yes is required in --llm mode)
+wi-impl ad delete <uuid> --env <env>  :->  Soft-delete a never-published DRAFT method (refuses published methods and drafts with a published version)
+wi-impl ad delete <uuid> --env <env> --yes --llm  :->  Non-interactive delete (--yes is required in --llm mode)

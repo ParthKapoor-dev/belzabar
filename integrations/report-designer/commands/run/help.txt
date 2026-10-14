@@ -1,4 +1,4 @@
-Usage: belz rd run <id> --env <env> [flags]
+Usage: wi-impl rd run <id> --env <env> [flags]
 
 Run a report as saved (its datasource method and saved filters) and return the
 rows. This EXECUTES the datasource method on the server, so it needs --env.
@@ -15,8 +15,8 @@ Flags:
   --help, -h          Show this help message.
 
 Rows come back as objects keyed by column name; values are strings, as the
-server returns them. For a file, use `belz rd download`.
+server returns them. For a file, use `wi-impl rd download`.
 
 Examples:
-  belz rd run 0123456789abcdef0123456789abcdef --env dev
-  belz rd run 0123456789abcdef0123456789abcdef --env dev --limit 100 --offset 100 --count
+  wi-impl rd run 0123456789abcdef0123456789abcdef --env dev
+  wi-impl rd run 0123456789abcdef0123456789abcdef --env dev --limit 100 --offset 100 --count

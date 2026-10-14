@@ -1,4 +1,4 @@
-Usage: belz migrate status <buildNumber> [flags]
+Usage: wi-impl migrate status <buildNumber> [flags]
 
 Check a Jenkins migration build's status, result, and parameters.
 
@@ -10,5 +10,5 @@ FLAGS
   --help, -h          Show this help message.
 
 EXAMPLES
-  belz migrate status 743
-  belz migrate status 743 --llm
+  wi-impl migrate status 743
+  wi-impl migrate status 743 --llm

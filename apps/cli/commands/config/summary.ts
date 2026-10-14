@@ -1,4 +1,4 @@
-// The human summary of a config.json shown by `belz config` and `belz setup`.
+// The human summary of a config.json shown by `wi-impl config` and `wi-impl setup`.
 // Passwords are never printed, only whether one is set.
 
 import { term, type BelzConfigFile } from "@belzabar/core";
@@ -40,7 +40,7 @@ export function configSummary(cfg: BelzConfigFile): string {
     lines.push(`  URL:      ${jk.baseUrl ?? term.dim("(not set)")}`);
     lines.push(`  User:     ${jk.user ?? term.dim("(not set)")}`);
     lines.push(`  Password: ${jk.password ? term.success("set") : term.danger("unset")}`);
-    lines.push(`  Job:      ${jk.migrationJob ?? term.danger("(not set — required by 'belz migrate')")}`);
+    lines.push(`  Job:      ${jk.migrationJob ?? term.danger("(not set — required by 'wi-impl migrate')")}`);
   } else {
     lines.push(`  ${term.dim("Not configured.")}`);
   }

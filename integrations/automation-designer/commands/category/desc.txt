@@ -1,2 +1,2 @@
-belz ad category create <name> --env <env> [--yes]  :->  Create a new AD category (service), PUBLIC access
-belz ad category create <name> --env <env> --description <d> --private  :->  Create a PRIVATE category with a description
+wi-impl ad category create <name> --env <env> [--yes]  :->  Create a new AD category (service), PUBLIC access
+wi-impl ad category create <name> --env <env> --description <d> --private  :->  Create a PRIVATE category with a description

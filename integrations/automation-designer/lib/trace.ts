@@ -7,7 +7,7 @@
 // the foundation of release collision/leak detection.
 //
 // AD chain UUIDs are stable across environments, so a single UUID resolves
-// everywhere. Used by `belz ad trace` and `belz release matrix`.
+// everywhere. Used by `wi-impl ad trace` and `wi-impl release matrix`.
 //
 // NOTE: traceMethod switches the global active env while it runs (restored in
 // `finally`), so calls must not run concurrently.

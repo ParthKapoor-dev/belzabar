@@ -8,7 +8,7 @@ The Report Designer client and definitions, imported as `@belzabar/rd/lib/<file>
 | `datasource.ts` | `{category, method}` ↔ env-local `dataSourceId` / `dataSourceCategoryUuid` (`resolveDataSource`, `describeDataSource`), per-env memo (`forgetDataSources` after a miss) |
 | `definition.ts` | `readReport` (side-effect free unless `exact`), the spec (`parseSpec`, `readSpecFile`, `SPEC_FORMAT`), `toConfiguration`, `savedConfiguration` (the report's own ids, for runs), `specChanges` |
 | `write.ts` | The write pipeline (PATCH / PUT / read-back): `createReport`, `planSave` / `applySave` (diff, backup to `RD_BACKUP_DIR`, conflict check, write) |
-| `confirm.ts` | `requireConfirmation` (`RD_CONFIRMATION_REQUIRED` / `RD_USER_ABORT`), `logIntent` (`[belz rd write]`) |
+| `confirm.ts` | `requireConfirmation` (`RD_CONFIRMATION_REQUIRED` / `RD_USER_ABORT`), `logIntent` (`[wi-impl rd write]`) |
 | `report-id.ts` | `parseReportId` (id, dashed id or URL), `REPORT_ID_POSITIONAL` |
 | `view.ts` | Compact column / filter / summary views for presenters |
 

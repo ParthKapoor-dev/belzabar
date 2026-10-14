@@ -1,8 +1,8 @@
-belz ad services  :->  Built-in platform services a step can call (Helpers.*, db_service…); `services <name>` lists its methods
-belz ad services --search <q>  :->  Fuzzy-rank services by name / label / alias / description (top 20, with score)
-belz ad services --internal  :->  Only services with internalService=true
-belz ad services --limit <N>  :->  Return at most N rows
-belz ad services --fields <a,b|all>  :->  Pick row fields, or all for full untrimmed rows
-belz ad services <service>  :->  List a service's methods (the names compact steps and child-info take, label, apiUuid) so step names are never guessed
-belz ad services <service> --search <q>  :->  Rank that service's methods by name/label
-belz ad services <service> --all  :->  Also its hidden, inactive and deprecated methods
+wi-impl ad services  :->  Built-in platform services a step can call (Helpers.*, db_service…); `services <name>` lists its methods
+wi-impl ad services --search <q>  :->  Fuzzy-rank services by name / label / alias / description (top 20, with score)
+wi-impl ad services --internal  :->  Only services with internalService=true
+wi-impl ad services --limit <N>  :->  Return at most N rows
+wi-impl ad services --fields <a,b|all>  :->  Pick row fields, or all for full untrimmed rows
+wi-impl ad services <service>  :->  List a service's methods (the names compact steps and child-info take, label, apiUuid) so step names are never guessed
+wi-impl ad services <service> --search <q>  :->  Rank that service's methods by name/label
+wi-impl ad services <service> --all  :->  Also its hidden, inactive and deprecated methods

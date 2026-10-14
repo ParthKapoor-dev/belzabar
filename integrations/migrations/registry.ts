@@ -1,4 +1,4 @@
-// Migrations (`belz migrate`) command registry.
+// Migrations (`wi-impl migrate`) command registry.
 //
 // Hand-maintained and kept sorted. Every `commands/<name>/` folder must be listed here
 // (enforced by apps/cli/tests/registry.test.ts). help.txt / desc.txt are imported as text so

@@ -57,7 +57,7 @@ interface DiffData {
 }
 
 export const args = defineArgs({
-  command: "belz ad diff",
+  command: "wi-impl ad diff",
   positionals: [{ name: "uuid" }],
   flags: {
     "cross-env": { type: "boolean" },
@@ -191,7 +191,7 @@ async function executeHistoryDiff(
   const leftParsed = parseVersionBody(leftFull);
   const rightParsed = parseVersionBody(rightFull);
 
-  const dir = await mkdtemp(join(tmpdir(), "belz-ad-diff-"));
+  const dir = await mkdtemp(join(tmpdir(), "wi-impl-ad-diff-"));
   const leftPath = join(dir, `${shortUuid(args.uuid)}-v${from}.json`);
   const rightPath = join(dir, `${shortUuid(args.uuid)}-v${to}.json`);
 
@@ -249,7 +249,7 @@ async function executeCrossEnvDiff(
   const left = await fetchOnEnv(args.uuid, fromEnv);
   const right = await fetchOnEnv(args.uuid, toEnv);
 
-  const dir = await mkdtemp(join(tmpdir(), "belz-ad-diff-"));
+  const dir = await mkdtemp(join(tmpdir(), "wi-impl-ad-diff-"));
   const leftPath = join(dir, `${shortUuid(args.uuid)}-${fromEnv}.json`);
   const rightPath = join(dir, `${shortUuid(args.uuid)}-${toEnv}.json`);
 
@@ -308,7 +308,7 @@ async function pickMethodInteractive(
 ): Promise<string | undefined> {
   const { index, source } = await loadOrBuildMethodFinderIndex({ refresh: false });
   if (source === "cache") {
-    context.warn("Using cached method index. Run `belz ad find --refresh` to rebuild.");
+    context.warn("Using cached method index. Run `wi-impl ad find --refresh` to rebuild.");
   }
   if (index.methods.length === 0) {
     throw new CliError("Method index is empty.", { code: "NO_METHODS" });

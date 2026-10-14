@@ -1,7 +1,7 @@
 // zod schema for ~/.wi-impl/config.json, validated at load.
 //
 // Unknown keys are kept (passthrough) so sections owned by other tools or
-// older/newer belz versions survive a read-modify-write.
+// older/newer wi-impl versions survive a read-modify-write.
 
 import { z } from "zod";
 import { CliError } from "../command";
@@ -18,7 +18,7 @@ const EnvEntrySchema = z
     ...secretFields,
     /** Project this env belongs to (e.g. "ACME"). Defaults to the env-name prefix. */
     project: z.string().optional(),
-    /** `belz ad sql`: default database (nickname or id) for this env when --db is not given. */
+    /** `wi-impl ad sql`: default database (nickname or id) for this env when --db is not given. */
     sqlDefaultDb: z.string().min(1).optional(),
   })
   .passthrough();
@@ -56,7 +56,7 @@ const ConfigFileSchema = z
         ...secretFields, // raw password or API token
         migrationJob: z.string().optional(),
         /**
-         * Migration profile segment → belz env name, e.g. `{ "devacme": "acme-dev" }`
+         * Migration profile segment → wi-impl env name, e.g. `{ "devacme": "acme-dev" }`
          * so profile `devacme_qaacme` migrates acme-dev → acme-qa. Optional: without
          * it `migrate run` cannot derive envs from a profile.
          */
@@ -64,7 +64,7 @@ const ConfigFileSchema = z
       })
       .passthrough()
       .optional(),
-    /** `belz ad lint` project rules. */
+    /** `wi-impl ad lint` project rules. */
     lint: z
       .object({
         /** Q3: table name → resolver function that must be used to read it. */
@@ -72,7 +72,7 @@ const ConfigFileSchema = z
       })
       .passthrough()
       .optional(),
-    /** Install metadata — written by the installer / `belz update` (`belz` before the rename). */
+    /** Install metadata — written by the installer / `wi-impl update` (`belz` before the rename). */
     install: InstallMetaSchema.optional(),
     belz: InstallMetaSchema.optional(),
     /** Self-update of binary installs (apps/cli/lib/auto-update.ts). */
@@ -80,7 +80,7 @@ const ConfigFileSchema = z
       .object({
         /** false turns the daily background update check off. */
         auto: z.boolean().optional(),
-        /** Stay on this version: no auto-update, `belz update` installs exactly it. */
+        /** Stay on this version: no auto-update, `wi-impl update` installs exactly it. */
         pin: z.string().regex(/^v?\d+\.\d+\.\d+$/, "a major.minor.patch version").optional(),
       })
       .passthrough()
@@ -102,7 +102,7 @@ export function validateConfigFile(raw: unknown, file: string): { config: BelzCo
   const issues = parsed.error.issues.map((i) => ({ path: formatPath(i.path), message: i.message }));
   const first = issues[0]!;
   const error = new CliError(
-    `Invalid config ${file}: ${first.path}: ${first.message}${issues.length > 1 ? ` (+${issues.length - 1} more)` : ""}. Fix it with 'belz config edit'.`,
+    `Invalid config ${file}: ${first.path}: ${first.message}${issues.length > 1 ? ` (+${issues.length - 1} more)` : ""}. Fix it with 'wi-impl config edit'.`,
     { code: "CONFIG_INVALID", details: { file, issues } },
   );
   return { config: {}, error };

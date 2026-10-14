@@ -18,8 +18,8 @@ function shq(s: string): string {
 }
 
 beforeAll(async () => {
-  dir = mkdtempSync(join(tmpdir(), "belz-compiled-"));
-  bin = join(dir, "belz");
+  dir = mkdtempSync(join(tmpdir(), "wi-impl-compiled-"));
+  bin = join(dir, "wi-impl");
   // cwd = the tmp dir: bun renames its temp output into place, which fails across filesystems.
   const build = Bun.spawnSync(
     [process.execPath, "build", "--compile", "--minify", cliBuildEntry(), "--outfile", bin],

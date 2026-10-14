@@ -20,7 +20,7 @@ import {
 
 const dirs: string[] = [];
 const tmp = () => {
-  const d = mkdtempSync(join(tmpdir(), "belz-selfupd-"));
+  const d = mkdtempSync(join(tmpdir(), "wi-impl-selfupd-"));
   dirs.push(d);
   return d;
 };
@@ -56,7 +56,7 @@ describe("updateHint (unknown command/flag)", () => {
 
   test("names a newer release the last check found", () => {
     withState({ lastCheckAt: now - 1000, latestVersion: "0.2.4" });
-    expect(updateHint(build, now)).toContain("belz 0.2.4 is available");
+    expect(updateHint(build, now)).toContain("wi-impl 0.2.4 is available");
   });
 
   test("says nothing when a recent check found this version current", () => {
@@ -64,11 +64,11 @@ describe("updateHint (unknown command/flag)", () => {
     expect(updateHint(build, now)).toBeNull();
   });
 
-  test("points at `belz update --check` when nothing recent is known", () => {
+  test("points at `wi-impl update --check` when nothing recent is known", () => {
     withState({});
-    expect(updateHint(build, now)).toContain("belz update --check");
+    expect(updateHint(build, now)).toContain("wi-impl update --check");
     withState({ lastCheckAt: now - 2 * 24 * 3600 * 1000, latestVersion: "0.2.3" });
-    expect(updateHint(build, now)).toContain("belz update --check");
+    expect(updateHint(build, now)).toContain("wi-impl update --check");
   });
 });
 
@@ -173,7 +173,7 @@ describe("fetchManifest + downloadVerifiedAsset (fake release server)", () => {
 describe("swapInBinary / rollbackBinary", () => {
   test("swap keeps the old binary as .prev; rollback swaps them back", () => {
     const dir = tmp();
-    const exe = join(dir, "belz");
+    const exe = join(dir, "wi-impl");
     writeFileSync(exe, "old");
     writeFileSync(`${exe}.next`, "new");
     swapInBinary(exe, `${exe}.next`);
@@ -186,7 +186,7 @@ describe("swapInBinary / rollbackBinary", () => {
   });
   test("rollback without a previous binary throws and changes nothing", () => {
     const dir = tmp();
-    const exe = join(dir, "belz");
+    const exe = join(dir, "wi-impl");
     writeFileSync(exe, "only");
     expect(() => rollbackBinary(exe)).toThrow("no previous binary");
     expect(readFileSync(exe, "utf8")).toBe("only");

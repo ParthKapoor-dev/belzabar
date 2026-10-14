@@ -17,7 +17,7 @@ const context: CommandContext = {
   },
   envExplicit: false,
   verbose: false,
-  binaryName: "belz",
+  binaryName: "wi-impl",
   commandName: "find",
   warn: () => {},
 };

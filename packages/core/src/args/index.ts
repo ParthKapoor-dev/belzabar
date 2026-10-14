@@ -1,7 +1,7 @@
-// core/args — declarative argument parsing for every belz command.
+// core/args — declarative argument parsing for every wi-impl command.
 //
 //   export const args = defineArgs({
-//     command: "belz ad show",
+//     command: "wi-impl ad show",
 //     positionals: [{ name: "uuid", required: true }],
 //     flags: {
 //       step: { type: "number", integer: true, min: 1, alias: ["--service-detail"] },

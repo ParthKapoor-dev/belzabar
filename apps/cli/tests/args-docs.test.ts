@@ -1,8 +1,8 @@
 // Every command declares its arguments with core `defineArgs` / `defineSubcommands`
 // (exported from its index.ts as `args`), and its help.txt / desc.txt agree with
 // that spec: every declared flag is documented, every documented flag exists,
-// help.txt starts with `Usage: belz …`, and every desc.txt line reads
-// `belz <ns> <cmd> …  :->  …` (it is what `belz --help-full` prints).
+// help.txt starts with `Usage: wi-impl …`, and every desc.txt line reads
+// `wi-impl <ns> <cmd> …  :->  …` (it is what `wi-impl --help-full` prints).
 import { describe, expect, test } from "bun:test";
 import { type AnyArgsDef } from "@belzabar/core";
 import { checkCommandDocs } from "@belzabar/core/testing";
@@ -19,13 +19,13 @@ const NAMESPACE: Record<string, string> = {
 };
 
 /** Commands whose migration is waiting on another agent's commit (delete entries as they land). */
-const PENDING = new Set<string>(["belz setup"]);
+const PENDING = new Set<string>(["wi-impl setup"]);
 
 describe("args spec ↔ help.txt / desc.txt", () => {
   for (const [owner, registry] of Object.entries(REGISTRIES)) {
     const ns = NAMESPACE[owner];
     for (const [name, entry] of Object.entries(registry)) {
-      const invocation = ns ? `belz ${ns} ${name}` : `belz ${name}`;
+      const invocation = ns ? `wi-impl ${ns} ${name}` : `wi-impl ${name}`;
       if (PENDING.has(invocation) && !(entry.module as { args?: unknown }).args) {
         test.todo(`${invocation} (pending)`, () => {});
         continue;

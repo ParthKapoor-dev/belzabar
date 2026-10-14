@@ -125,7 +125,7 @@ describe("compareSnapshots (semantic)", () => {
 
 describe("pd snapshot command", () => {
   let pd: FakePd;
-  const dir = scratchDir("belz-pd-snapshot-");
+  const dir = scratchDir("wi-impl-pd-snapshot-");
   const run = (argv: string[]) => runCommand(snapshot, argv, { env: ENV });
   beforeEach(() => {
     rmSync(join(BELZ_CONFIG_DIR, "cache", "pages", ENV), { recursive: true, force: true });

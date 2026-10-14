@@ -183,7 +183,7 @@ export const args = defineSubcommands(
     pick: { positionals: [{ name: "query", variadic: true }], flags: FIND_FLAGS },
     search: { positionals: [{ name: "query", variadic: true }], flags: FIND_FLAGS },
   },
-  { command: "belz ad find", default: "search" },
+  { command: "wi-impl ad find", default: "search" },
 );
 
 const command: CommandModule<FindArgs, FindData> = {
@@ -192,7 +192,7 @@ const command: CommandModule<FindArgs, FindData> = {
     const { refresh, raw, open, limit, describe, category } = parsed.flags;
     const query = parsed.subcommand === "list" ? "" : parsed.positionals.query.join(" ").trim();
     if (describe && (parsed.subcommand !== "search" || !query)) {
-      throw new CliError("--describe needs search words: `belz ad find --describe <text>`.", { code: "MISSING_QUERY" });
+      throw new CliError("--describe needs search words: `wi-impl ad find --describe <text>`.", { code: "MISSING_QUERY" });
     }
     const mode: FindArgs["mode"] =
       parsed.subcommand === "pick" ? "pick" : describe ? "describe" : query ? "search" : "browse";
@@ -203,14 +203,14 @@ const command: CommandModule<FindArgs, FindData> = {
   async execute({ mode, query, refresh, limit, open, raw, category, fields }, context) {
     const sel: FieldSelection = fields ?? { mode: "default" };
     if (open && mode !== "pick") {
-      throw new CliError("--open is only supported with `belz ad find pick`.", {
+      throw new CliError("--open is only supported with `wi-impl ad find pick`.", {
         code: "OPEN_REQUIRES_PICK",
       });
     }
 
     // fzf needs a terminal; fail cleanly before any work when there is none.
     if (mode === "pick" && context.outputMode !== "llm" && !(process.stdin.isTTY && process.stderr.isTTY)) {
-      throw new CliError("Interactive picker needs a terminal (stdin/stderr are not a TTY). Use `belz ad find <query>`.", {
+      throw new CliError("Interactive picker needs a terminal (stdin/stderr are not a TTY). Use `wi-impl ad find <query>`.", {
         code: "INTERACTIVE_NOT_SUPPORTED",
       });
     }
@@ -384,7 +384,7 @@ const command: CommandModule<FindArgs, FindData> = {
       if (data.opened) {
         ui.success("Opened selected method in browser.");
       }
-      ui.text(`Tip: run 'belz ad show ${data.selected.uuid}' for full details.`);
+      ui.text(`Tip: run 'wi-impl ad show ${data.selected.uuid}' for full details.`);
       return;
     }
 
@@ -403,7 +403,7 @@ const command: CommandModule<FindArgs, FindData> = {
       for (const r of data.methods) for (const k of Object.keys(r)) if (!mcols.includes(k)) mcols.push(k);
       if (data.methods.length) ui.table(["#", ...mcols], data.methods.map((r, i) => [i + 1, ...mcols.map((c) => cell(r[c]))]));
     }
-    if (data.mode !== "browse" || data.methods) ui.text("Tip: run 'belz ad show <uuid> --compact' to inspect a matched method.");
+    if (data.mode !== "browse" || data.methods) ui.text("Tip: run 'wi-impl ad show <uuid> --compact' to inspect a matched method.");
   },
 };
 
@@ -477,7 +477,7 @@ function runFzfPicker(methods: MethodFinderMethod[], query?: string): Promise<Me
       if (missingBinary) {
         reject(
           new CliError(
-            "fzf is not installed. Install fzf or use `belz ad find <query>` for non-interactive search.",
+            "fzf is not installed. Install fzf or use `wi-impl ad find <query>` for non-interactive search.",
             { code: "FZF_NOT_INSTALLED" }
           )
         );

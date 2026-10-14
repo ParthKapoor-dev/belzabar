@@ -4,7 +4,7 @@
 // On a dev env `/rest/api/cache/invalidate` alone did NOT evict it; only both
 // routes together did. On micro-AD tenants the
 // monolith route answers 200 without owning the cache. So: POST to every route,
-// succeed if ANY answers 2xx, report each. Mirrors `belz cache` and the team's
+// succeed if ANY answers 2xx, report each. Mirrors `wi-impl cache` and the team's
 // save-and-test.py.
 //
 // Never called with an empty `uuids` list: the server reads that as "flush the

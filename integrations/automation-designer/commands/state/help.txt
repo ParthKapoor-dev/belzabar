@@ -1,4 +1,4 @@
-Usage: belz ad state <uuid> [flags]
+Usage: wi-impl ad state <uuid> [flags]
 
 Print draft/published linkage, versions, and whether the draft has unpublished changes.
 
@@ -21,4 +21,4 @@ Notes:
     the envelope `ok` field surfaces the distinction.
 
 Example:
-  belz ad state 4a1b2c3d... --llm | jq '.data'
+  wi-impl ad state 4a1b2c3d... --llm | jq '.data'

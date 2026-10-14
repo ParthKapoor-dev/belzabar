@@ -1,4 +1,4 @@
-// belz configuration: ~/.wi-impl/config.json (+ explicit WI_IMPL_* env vars).
+// wi-impl configuration: ~/.wi-impl/config.json (+ explicit WI_IMPL_* env vars).
 //
 //   config/schema.ts    zod schema, validated at load (CONFIG_INVALID with a path)
 //   config/secrets.ts   decodeSecret/encodeSecret — explicit passwordEncoding
@@ -31,7 +31,7 @@ export { trustedBelzEnv, parseDotEnv, withoutDotenvInjected, withLegacyNames, in
 const LEGACY_CONFIG_DIR = join(homedir(), ".belz");
 
 /**
- * Root of all belz runtime data. `WI_IMPL_HOME` overrides `~/.wi-impl` (used by tests
+ * Root of all wi-impl runtime data. `WI_IMPL_HOME` overrides `~/.wi-impl` (used by tests
  * so they never touch the real directory). While only the legacy `~/.wi-impl` exists (not yet
  * moved: a run from source never moves it), that is read instead. Read once at import time.
  */
@@ -53,7 +53,7 @@ interface JenkinsConfig {
   user: string;
   password: string;
   migrationJob: string;
-  /** Migration profile segment (lowercase) → belz env name; {} when not configured. */
+  /** Migration profile segment (lowercase) → wi-impl env name; {} when not configured. */
   profileEnvs: Record<string, string>;
 }
 
@@ -187,7 +187,7 @@ export function reloadConfig(): void {
 export function noEnvSelectedError(): CliError {
   const names = Object.keys(environments);
   const message = names.length === 0
-    ? `No environments configured. Add one with 'belz config' (or 'belz setup'), then pass --env <name>.`
+    ? `No environments configured. Add one with 'wi-impl config' (or 'wi-impl setup'), then pass --env <name>.`
     : `No environment selected. Pass --env <name>, set WI_IMPL_ENV, or set "defaultEnv" in ${CONFIG_FILE_PATH}. ` +
       `Configured: ${names.join(", ")}`;
   return new CliError(message, { code: "ENV_NOT_SELECTED", details: { available: names } });
@@ -209,7 +209,7 @@ function usableEnv(): Environment {
   const env = environments[activeEnvName];
   if (!env) throw unknownEnvError(activeEnvName, envSource);
   if (env.problem) {
-    throw new CliError(`Invalid config: environment '${env.name}' ${env.problem}. Fix it with 'belz config edit'.`, {
+    throw new CliError(`Invalid config: environment '${env.name}' ${env.problem}. Fix it with 'wi-impl config edit'.`, {
       code: "CONFIG_INVALID",
       details: { path: `environments.${env.name}.url`, env: env.name },
     });

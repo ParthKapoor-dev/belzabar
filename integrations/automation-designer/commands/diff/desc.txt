@@ -1,6 +1,6 @@
-belz ad diff  :->  Fully interactive: pick a method, then two versions, and open them side-by-side in Zed
-belz ad diff <uuid> --from <N> --to <M>  :->  Diff two history versions of a method on the current env
-belz ad diff <uuid> --cross-env --from-env <X> --to-env <Y>  :->  Diff the same method across two envs (in-process; semantic view incl. decoded code/SQL/SpEL; reports changed + differences)
-belz ad diff <uuid> --from <N> --to <M> --no-editor  :->  Headless: write both sides to temp files and return their paths
-belz ad diff <uuid> --from <N> --to <M> --raw  :->  Write the full parsed method to the files instead of the semantic view
-belz ad diff <uuid> --from <N> --to <M> --editor <cmd>  :->  Use another editor binary (invoked with zed's two-file diff flag)
+wi-impl ad diff  :->  Fully interactive: pick a method, then two versions, and open them side-by-side in Zed
+wi-impl ad diff <uuid> --from <N> --to <M>  :->  Diff two history versions of a method on the current env
+wi-impl ad diff <uuid> --cross-env --from-env <X> --to-env <Y>  :->  Diff the same method across two envs (in-process; semantic view incl. decoded code/SQL/SpEL; reports changed + differences)
+wi-impl ad diff <uuid> --from <N> --to <M> --no-editor  :->  Headless: write both sides to temp files and return their paths
+wi-impl ad diff <uuid> --from <N> --to <M> --raw  :->  Write the full parsed method to the files instead of the semantic view
+wi-impl ad diff <uuid> --from <N> --to <M> --editor <cmd>  :->  Use another editor binary (invoked with zed's two-file diff flag)

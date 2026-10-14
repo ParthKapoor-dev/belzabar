@@ -1,1 +1,1 @@
-belz onboard  :->  Guided first-run setup (credentials); interactive only
+wi-impl onboard  :->  Guided first-run setup (credentials); interactive only

@@ -9,7 +9,7 @@ interface TestCasesArgs {
 type TestCasesData = TestSuiteSummary;
 
 export const args = defineArgs({
-  command: "belz ad test-cases",
+  command: "wi-impl ad test-cases",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {},
 });

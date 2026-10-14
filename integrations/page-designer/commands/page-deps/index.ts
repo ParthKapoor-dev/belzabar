@@ -1,6 +1,6 @@
-// belz pd page-deps — raw page-dependencies API wrapper.
+// wi-impl pd page-deps — raw page-dependencies API wrapper.
 //
-//   belz pd page-deps <input> [--status PUBLISHED|DRAFT]
+//   wi-impl pd page-deps <input> [--status PUBLISHED|DRAFT]
 //
 // Resolves <input> (id / name / URL) to its published id and queries
 // /rest/api/pagedesigner/pages/page-dependencies. The raw `dependencyJSON`
@@ -8,7 +8,7 @@
 // translated/original phrase arrays — 6 MB for "Student Application" — so the
 // default output is a summary: one row per entity (name, ids, status,
 // config bytes, phrase counts). `--full` returns the raw `dependencyJSON`.
-// No validation — see `belz pd translations` for the release-check verdict.
+// No validation — see `wi-impl pd translations` for the release-check verdict.
 
 import { asObj, CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { PD_DEP_STATUS_FLAG, PD_FORCE_FLAG, PD_INPUT_POSITIONAL } from "../../lib/args/common";
@@ -83,7 +83,7 @@ export function summarizeDependencies(dependencyJSON: Record<string, unknown>, r
 }
 
 export const args = defineArgs({
-  command: "belz pd page-deps",
+  command: "wi-impl pd page-deps",
   positionals: [PD_INPUT_POSITIONAL],
   flags: { ...PD_DEP_STATUS_FLAG, ...PD_FORCE_FLAG, full: { type: "boolean" } },
 });

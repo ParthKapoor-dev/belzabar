@@ -1,4 +1,4 @@
-Usage: belz rd uses <uuid>
+Usage: wi-impl rd uses <uuid>
 
 List the reports whose datasource is this AD method: what a change to the
 method can break in Report Designer. Read-only.
@@ -9,7 +9,7 @@ Arguments:
 Flags:
   --help, -h          Show this help message.
 
-`belz ad callers <uuid>` covers the methods (and pages) that call it; this covers reports.
+`wi-impl ad callers <uuid>` covers the methods (and pages) that call it; this covers reports.
 
 Examples:
-  belz rd uses 0123456789abcdef0123456789abcdef
+  wi-impl rd uses 0123456789abcdef0123456789abcdef

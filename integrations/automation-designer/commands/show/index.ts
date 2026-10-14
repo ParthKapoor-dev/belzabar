@@ -384,7 +384,7 @@ function looksLikeFile(input: string): boolean {
 }
 
 export const args = defineArgs({
-  command: "belz ad show",
+  command: "wi-impl ad show",
   positionals: [
     { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." },
   ],

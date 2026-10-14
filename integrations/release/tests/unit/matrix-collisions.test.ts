@@ -12,7 +12,7 @@ import matrix, { classifyLeak, type MatrixData } from "../../commands/matrix/ind
 import { PROMOTION_DIR, RELEASES_DIR } from "../../lib/ledger";
 import { resolveReleaseEnvs } from "../../lib/spec";
 
-const dir = mkdtempSync(join(tmpdir(), "belz-release-matrix-"));
+const dir = mkdtempSync(join(tmpdir(), "wi-impl-release-matrix-"));
 const ENVS = {
   "acme-dev": { url: "https://acme-dev.test" },
   "acme-stage": { url: "https://acme-stage.test" },
@@ -34,7 +34,7 @@ afterEach(() => {
 function ctx(): CommandContext {
   return {
     outputMode: "llm", env: Config.activeEnv, envExplicit: false, verbose: false,
-    binaryName: "belz", commandName: "x", warn: () => {},
+    binaryName: "wi-impl", commandName: "x", warn: () => {},
   };
 }
 

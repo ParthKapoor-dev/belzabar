@@ -174,7 +174,7 @@ describe("runCommand", () => {
 
   test("--help is handled by the runner", async () => {
     const r = await runCommand(good, ["--help"], { helpResolver: async () => "HELP TEXT" });
-    expect(r.envelope?.schema).toBe("belz.help");
+    expect(r.envelope?.schema).toBe("wi-impl.help");
     expect((r.envelope?.data as any).help).toBe("HELP TEXT");
   });
 
@@ -219,9 +219,9 @@ describe("EnvelopeSchema", () => {
   });
   test("rejects unstable names, versions, details and prefixes", () => {
     const bad = (patch: Record<string, unknown>) => EnvelopeSchema.safeParse({ ...base, ok: true, data: 1, error: null, ...patch }).success;
-    expect(bad({ schema: "belz ad.runner" })).toBe(false);
+    expect(bad({ schema: "wi-impl ad.runner" })).toBe(false);
     expect(bad({ schema: "result" })).toBe(false);
-    expect(bad({ schema: "belz.migrate.status" })).toBe(false);
+    expect(bad({ schema: "wi-impl.migrate.status" })).toBe(false);
     expect(bad({ version: "1.0" })).toBe(false);
     expect(bad({ meta: {} })).toBe(false); // durationMs required
     const err = (e: Record<string, unknown>) =>
@@ -275,7 +275,7 @@ describe("error and fixture helpers", () => {
     const { mkdtempSync, writeFileSync } = await import("fs");
     const { join } = await import("path");
     const { tmpdir } = await import("os");
-    const dir = mkdtempSync(join(tmpdir(), "belz-fixtures-"));
+    const dir = mkdtempSync(join(tmpdir(), "wi-impl-fixtures-"));
     writeFileSync(join(dir, "a.v2.json"), '{"n":1}');
     expect(jsonFixtures(dir)<{ n: number }>("a.v2.json").n).toBe(1);
     expect(jsonFixtures(dir, ".v2.json")<{ n: number }>("a")).toEqual({ n: 1 });

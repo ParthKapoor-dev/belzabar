@@ -1,4 +1,4 @@
-# lib/sql — `belz ad sql`
+# lib/sql — `wi-impl ad sql`
 
 Runs SQL through Automation Designer's `db_service`. There is no direct DB connection: each
 statement is written into a copy of the `db_service` operation's own chain (the template),
@@ -30,7 +30,7 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
   `SQL_NO_EXECUTABLE_CATEGORY`.
 - `update`, `insert`, `modify` and `tui` are writes: explicit `--env`, confirmation or `--yes`.
 
-New SQL modes are added as subcommands of `belz ad sql` (`defineSubcommands` in
+New SQL modes are added as subcommands of `wi-impl ad sql` (`defineSubcommands` in
 `commands/sql/index.ts`).
 
 Tests: `sql-*.test.ts` in [`../../tests/unit`](../../tests/unit/README.md).

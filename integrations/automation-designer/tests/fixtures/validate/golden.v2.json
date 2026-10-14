@@ -2,7 +2,7 @@
   "uuid": "4d9cefcccbcebc924b3984556b1c0e66",
   "automationApiId": "4aa317b62393f167173b94146229a31c    ",
   "name": "belz_tst_val_baseline",
-  "summary": "belz validator research baseline",
+  "summary": "wi-impl validator research baseline",
   "description": "belz_tst_val_ baseline for ad-validation research; safe to delete",
   "metadata": {
     "version": {

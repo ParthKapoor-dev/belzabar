@@ -1,4 +1,4 @@
-Usage: belz rd save <id> --spec <file> --env <env> [flags]
+Usage: wi-impl rd save <id> --spec <file> --env <env> [flags]
 
 Replace a report's definition with a spec file: export it, edit the file, save
 it back. Report Designer keeps no history and last write wins, so belz:
@@ -23,6 +23,6 @@ does not run it, so it does not list changes to those two. A spec equal to the
 saved definition writes nothing.
 
 Examples:
-  belz rd export 0123456789abcdef0123456789abcdef -o r.json
-  belz rd save 0123456789abcdef0123456789abcdef --spec r.json --env dev --dry-run
-  belz rd save 0123456789abcdef0123456789abcdef --spec r.json --env dev --yes
+  wi-impl rd export 0123456789abcdef0123456789abcdef -o r.json
+  wi-impl rd save 0123456789abcdef0123456789abcdef --spec r.json --env dev --dry-run
+  wi-impl rd save 0123456789abcdef0123456789abcdef --spec r.json --env dev --yes

@@ -69,7 +69,7 @@ describe("rd export", () => {
     const r = await runCommand(exportCmd, [REPORT_ID, "--out", out], { env: RD_ENV });
     expect(data<any>(r).path).toBe(out);
     const spec = JSON.parse(readFileSync(out, "utf8"));
-    expect(spec).toMatchObject({ format: "belz.rd.report/1", title: "Orders by day", description: "Daily totals", dataSource: { category: CATEGORY.name, method: DS.label } });
+    expect(spec).toMatchObject({ format: "wi-impl.rd.report/1", title: "Orders by day", description: "Daily totals", dataSource: { category: CATEGORY.name, method: DS.label } });
     expect(spec.columns).toEqual(COLUMNS);
     expect(JSON.stringify(spec)).not.toContain(CATEGORY.uuid);
     expect(spec.dataSourceId).toBeUndefined();

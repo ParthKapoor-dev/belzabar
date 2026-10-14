@@ -1,4 +1,4 @@
-// `belz setup` argument parsing (core defineArgs). Parse only — setup is never run here.
+// `wi-impl setup` argument parsing (core defineArgs). Parse only — setup is never run here.
 import { describe, expect, test } from "bun:test";
 import setup from "../commands/setup/index";
 import { errorCode as code } from "@belzabar/core/testing";

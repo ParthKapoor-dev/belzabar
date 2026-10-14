@@ -1,4 +1,4 @@
-Usage: belz ad show-code <uuid> [flags]
+Usage: wi-impl ad show-code <uuid> [flags]
 
 Dump decoded custom-code step source from an AD method.
 
@@ -10,7 +10,7 @@ Flags:
   --llm          Emit a JSON envelope with {uuid, snippets[], sourceVersion}
 
 Examples:
-  belz ad show-code 4a1b2c3d...
-  belz ad show-code 4a1b2c3d... --step 2
-  belz ad show-code 4a1b2c3d... --out /tmp/code.js
-  belz ad show-code 4a1b2c3d... --llm | jq '.data.snippets[0].source'
+  wi-impl ad show-code 4a1b2c3d...
+  wi-impl ad show-code 4a1b2c3d... --step 2
+  wi-impl ad show-code 4a1b2c3d... --out /tmp/code.js
+  wi-impl ad show-code 4a1b2c3d... --llm | jq '.data.snippets[0].source'

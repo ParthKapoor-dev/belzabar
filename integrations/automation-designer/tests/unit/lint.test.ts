@@ -1,4 +1,4 @@
-// `belz ad lint` — lib/validate/lint.ts review rules (positive + negative
+// `wi-impl ad lint` — lib/validate/lint.ts review rules (positive + negative
 // per rule, on the research golden method), calibration over the 36 real
 // acme-dev bodies, and the command (grouping, exit code) via fakeFetch.
 import { afterEach, describe, expect, spyOn, test } from "bun:test";

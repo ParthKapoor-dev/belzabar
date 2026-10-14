@@ -20,13 +20,13 @@ async function run(entry: string, args: string[]) {
 }
 
 describe("bin/cli.ts", () => {
-  test("--version prints version + git SHA; --llm gives a belz.version envelope", async () => {
+  test("--version prints version + git SHA; --llm gives a wi-impl.version envelope", async () => {
     const h = await run(cliEntry(), ["--version"]);
     expect(h.exitCode).toBe(0);
-    expect(h.stdout.trim()).toMatch(/^belz \d+\.\d+\.\d+ \(([0-9a-f]{7,}|unknown)(-dirty)?, built \d{4}-\d{2}-\d{2}\)$/);
+    expect(h.stdout.trim()).toMatch(/^wi-impl \d+\.\d+\.\d+ \(([0-9a-f]{7,}|unknown)(-dirty)?, built \d{4}-\d{2}-\d{2}\)$/);
     const l = await run(cliEntry(), ["--version", "--llm"]);
     const env = JSON.parse(l.stdout);
-    expect(env.schema).toBe("belz.version");
+    expect(env.schema).toBe("wi-impl.version");
     expect(env.data.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(typeof env.data.sha).toBe("string");
   }, 30_000);

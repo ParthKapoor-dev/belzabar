@@ -70,7 +70,7 @@ async function doLogin(): Promise<TeamworkSession> {
   const { email, password } = Config.getTeamwork();
   if (!email || !password) {
     throw new CliError(
-      "Missing Teamwork credentials. Add them with 'belz config edit' (Teamwork), or set WI_IMPL_TEAMWORK_EMAIL / WI_IMPL_TEAMWORK_PASSWORD.",
+      "Missing Teamwork credentials. Add them with 'wi-impl config edit' (Teamwork), or set WI_IMPL_TEAMWORK_EMAIL / WI_IMPL_TEAMWORK_PASSWORD.",
       { code: "TW_AUTH_MISSING_CREDENTIALS" },
     );
   }
@@ -81,7 +81,7 @@ async function doLogin(): Promise<TeamworkSession> {
     headers: {
       "Content-Type": "application/json;charset=utf-8",
       Accept: "application/json, text/plain, */*",
-      "User-Agent": "Bun/1.0 (Belzabar CLI)",
+      "User-Agent": "Bun/1.0 (wi-impl)",
     },
     body: JSON.stringify({ email, password, rememberMe: true }),
   });

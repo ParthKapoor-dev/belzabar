@@ -4,7 +4,7 @@ import { describe, expect, test } from "bun:test";
 import { CliError } from "@belzabar/core";
 import { finishOnboard, runStep } from "../commands/onboard/index";
 
-describe("belz onboard", () => {
+describe("wi-impl onboard", () => {
   test("runStep records an ordinary failure", async () => {
     const step = await runStep("Credentials", async () => {
       throw new CliError("setup failed", { code: "SETUP_FAILED" });

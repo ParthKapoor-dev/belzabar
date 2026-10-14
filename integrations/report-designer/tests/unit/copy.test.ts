@@ -62,7 +62,7 @@ describe("rd copy", () => {
     rd.install([{ method: "GET", url: new RegExp(`//${RD_ENV_2}\\..*datasources\\?`), response: [] }]);
     const r = await runCommand(copy, [REPORT_ID, ...FROM, "--yes"], { env: RD_ENV_2 });
     expect(r.envelope?.error?.code).toBe("RD_DATASOURCE_NOT_FOUND");
-    expect(r.envelope?.error?.message).toContain("belz migrate run");
+    expect(r.envelope?.error?.message).toContain("wi-impl migrate run");
     expect(rd.ff.requests.some((q) => q.method !== "GET")).toBe(false);
   });
 

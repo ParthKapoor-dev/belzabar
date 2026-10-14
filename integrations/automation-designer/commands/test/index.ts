@@ -47,7 +47,7 @@ interface ExpectationBlock {
   passed: number;
   failed: number;
   results: ExpectationResult[];
-  /** Case-file assertions belz cannot evaluate locally (not `#{out} op literal`). */
+  /** Case-file assertions wi-impl cannot evaluate locally (not `#{out} op literal`). */
   unevaluated?: string[];
 }
 
@@ -95,7 +95,7 @@ interface TestMethodData {
 }
 
 export const args = defineArgs({
-  command: "belz ad test",
+  command: "wi-impl ad test",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {
     ...AD_YES_FLAG,

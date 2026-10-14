@@ -58,7 +58,7 @@ type UpdateData = BinaryUpdateData | SourceUpdateData;
 function git(sourceDir: string, args: string[]): { ok: boolean; out: string; err: string } {
   const r = spawnSync("git", ["-C", sourceDir, ...args], { encoding: "utf8" });
   if (r.error && (r.error as NodeJS.ErrnoException).code === "ENOENT") {
-    throw new CliError("`git` was not found on PATH — it is required for `belz update`.", {
+    throw new CliError("`git` was not found on PATH — it is required for `wi-impl update`.", {
       code: "GIT_NOT_FOUND",
     });
   }
@@ -102,7 +102,7 @@ export type UpdatePlan =
   | { action: "refuse"; code: "DIRTY_TREE" | "LOCAL_COMMITS"; reason: string };
 
 /**
- * What `belz update` does for a checkout state. It never discards
+ * What `wi-impl update` does for a checkout state. It never discards
  * work: the checkout only moves by fast-forward, and a tree with uncommitted
  * changes or local commits is refused when there is something to pull.
  * `--force` only means "rebuild even when already up to date" — it no longer
@@ -141,7 +141,7 @@ export function installerCommand(
 // ── command ─────────────────────────────────────────────────────────────────────
 
 export const args = defineArgs({
-  command: "belz update",
+  command: "wi-impl update",
   flags: {
     check: { type: "boolean" },
     force: { type: "boolean", alias: ["-f"] },
@@ -150,10 +150,10 @@ export const args = defineArgs({
   exclusive: [["rollback", "check"], ["rollback", "force"]],
 });
 
-/** `belz update` for a binary install: download the release binary, verify it, swap it in. */
+/** `wi-impl update` for a binary install: download the release binary, verify it, swap it in. */
 async function updateBinary(args: UpdateArgs): Promise<BinaryUpdateData> {
   if (!isCompiledEntry(process.argv[1])) {
-    throw new CliError("This belz runs from source; only a compiled binary can update itself from a release.", {
+    throw new CliError("This wi-impl runs from source; only a compiled binary can update itself from a release.", {
       code: "UPDATE_NOT_COMPILED",
     });
   }
@@ -194,7 +194,7 @@ async function updateBinary(args: UpdateArgs): Promise<BinaryUpdateData> {
     await downloadVerifiedAsset(manifest, next);
     swapInBinary(binary, next);
   } catch (e) {
-    spin.error("Update failed; your belz binary is unchanged.");
+    spin.error("Update failed; your wi-impl binary is unchanged.");
     throw e;
   } finally {
     rmSync(next, { force: true });
@@ -205,7 +205,7 @@ async function updateBinary(args: UpdateArgs): Promise<BinaryUpdateData> {
 }
 
 const command: CommandModule<UpdateArgs, UpdateData> = {
-  /** Rebuilds and reinstalls the local belz binary. */
+  /** Rebuilds and reinstalls the local wi-impl binary. */
   writesLocal: true,
   parseArgs(argv) {
     const { flags } = args.parse(argv);
@@ -222,8 +222,8 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     const sourceDir = getSourceDir();
     if (!existsSync(join(sourceDir, ".git"))) {
       throw new CliError(
-        `belz source checkout not found at ${sourceDir}.\n` +
-          `Set "install.sourceDir" in ~/.wi-impl/config.json to your belz git checkout, or reinstall.`,
+        `wi-impl source checkout not found at ${sourceDir}.\n` +
+          `Set "install.sourceDir" in ~/.wi-impl/config.json to your wi-impl git checkout, or reinstall.`,
         { code: "SOURCE_NOT_FOUND" }
       );
     }
@@ -261,8 +261,8 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     if (plan.action === "refuse") {
       spin.error("Source checkout has local work.");
       throw new CliError(
-        `Not updating the belz source checkout at ${sourceDir}: ${plan.reason}.\n` +
-          `belz update never discards local work. Commit/push or stash it, or reset the checkout yourself ` +
+        `Not updating the wi-impl source checkout at ${sourceDir}: ${plan.reason}.\n` +
+          `wi-impl update never discards local work. Commit/push or stash it, or reset the checkout yourself ` +
           `(git -C ${sourceDir} reset --hard ${upstream}), then re-run.`,
         { code: plan.code, details: { sourceDir, branch, ahead, behind, dirty } },
       );
@@ -288,13 +288,13 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     const installer = installerCommand(join(sourceDir, "apps", "cli", "scripts"), installDir);
 
     lifecycle.note(
-      "Rebuilding belz",
+      "Rebuilding wi-impl",
       "Recompiling the binary — this can take a minute."
     );
     const build = spawnSync(installer.cmd, installer.args, { cwd: sourceDir, stdio: "inherit" });
     if (build.status !== 0) {
       throw new CliError(
-        `Rebuild failed (exit ${String(build.status)}). Your existing belz binary is unchanged.`,
+        `Rebuild failed (exit ${String(build.status)}). Your existing wi-impl binary is unchanged.`,
         { code: "BUILD_FAILED" }
       );
     }
@@ -315,33 +315,33 @@ const command: CommandModule<UpdateArgs, UpdateData> = {
     if (!envelope.ok) return;
     const all = envelope.data as UpdateData;
     if (all.mode === "binary") {
-      if (all.status === "rolled-back") ui.success(`Rolled back to the previous belz binary (was v${all.fromVersion}).`);
-      else if (all.status === "up-to-date") ui.success(`belz v${all.fromVersion} is up to date${all.pinned ? " (pinned)" : ""}.`);
+      if (all.status === "rolled-back") ui.success(`Rolled back to the previous wi-impl binary (was v${all.fromVersion}).`);
+      else if (all.status === "up-to-date") ui.success(`wi-impl v${all.fromVersion} is up to date${all.pinned ? " (pinned)" : ""}.`);
       else if (all.status === "check-only") {
         ui.warn(`An update is available: v${all.fromVersion} → v${all.toVersion}.`);
-        ui.text("Run `belz update` to install it.");
-      } else ui.success(`belz updated: v${all.fromVersion} → v${all.toVersion}. It takes effect on your next belz run.`);
+        ui.text("Run `wi-impl update` to install it.");
+      } else ui.success(`wi-impl updated: v${all.fromVersion} → v${all.toVersion}. It takes effect on your next wi-impl run.`);
       return;
     }
     const data = all;
 
     if (data.status === "up-to-date") {
-      ui.success(`belz is already up to date (${data.fromSha} on ${data.branch}).`);
+      ui.success(`wi-impl is already up to date (${data.fromSha} on ${data.branch}).`);
       return;
     }
 
     if (data.status === "check-only") {
       ui.warn(`An update is available: ${data.fromSha} → ${data.toSha} (${data.branch}).`);
       if (data.dirty) {
-        ui.text("Note: the source checkout has uncommitted changes — commit or stash them first; `belz update` never discards them.");
+        ui.text("Note: the source checkout has uncommitted changes — commit or stash them first; `wi-impl update` never discards them.");
       }
-      ui.text("Run `belz update` to install it.");
+      ui.text("Run `wi-impl update` to install it.");
       return;
     }
 
-    if (data.status === "rebuilt") ui.success(`belz rebuilt at ${data.fromSha} (${data.branch}).`);
-    else ui.success(`belz updated: ${data.fromSha} → ${data.toSha} (${data.branch}).`);
-    ui.text("The new binary takes effect on your next `belz` invocation.");
+    if (data.status === "rebuilt") ui.success(`wi-impl rebuilt at ${data.fromSha} (${data.branch}).`);
+    else ui.success(`wi-impl updated: ${data.fromSha} → ${data.toSha} (${data.branch}).`);
+    ui.text("The new binary takes effect on your next `wi-impl` invocation.");
   },
 };
 

@@ -1,1 +1,1 @@
-belz ad state <uuid>  :->  Read-only: draft and published versions and whether the draft has unpublished changes (no body)
+wi-impl ad state <uuid>  :->  Read-only: draft and published versions and whether the draft has unpublished changes (no body)

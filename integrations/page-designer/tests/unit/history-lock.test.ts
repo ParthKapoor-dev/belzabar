@@ -15,7 +15,7 @@ const PUB = "p0000000000000000000000000000001";
 const OTHER_PUB = "p0000000000000000000000000000009";
 
 let pd: FakePd;
-const dir = scratchDir("belz-pd-hist-");
+const dir = scratchDir("wi-impl-pd-hist-");
 
 beforeEach(() => {
   rmSync(join(BELZ_CONFIG_DIR, "pd-locks"), { recursive: true, force: true });
@@ -35,7 +35,7 @@ describe("pd history", () => {
   test("list on a DRAFT with no versions points at the published page (smoke doc mismatch)", async () => {
     const d = await run(history, ["list", DRAFT]);
     expect(d.envelope?.data).toMatchObject({ totalVersions: 0, publishedId: PUB });
-    expect(String((d.envelope?.data as { hint?: string }).hint)).toContain(`belz pd history list ${PUB}`);
+    expect(String((d.envelope?.data as { hint?: string }).hint)).toContain(`wi-impl pd history list ${PUB}`);
     const p = await run(history, ["list", PUB]);
     expect(p.envelope?.data).toMatchObject({ totalVersions: 1 });
     expect((p.envelope?.data as { publishedId?: string }).publishedId).toBeUndefined();
@@ -85,7 +85,7 @@ describe("pd history", () => {
     expect(log.slice(log.indexOf(`PUT /pages/lock/${DRAFT}?pageLockAction=ACQUIRED`) + 1, log.indexOf(`PUT /pages/revert/${DRAFT}?versionId=100`))).toContain(`GET /pages/${DRAFT}`);
     expect(innerOf(pd.pages.get(DRAFT)!).variables!.userDefined![0]!.initialValue).toBe("old");
     expect(pd.pages.get(PUB)!.configuration).toBe(pubBefore);
-    expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes(`belz pd publish ${DRAFT}`))).toBe(true);
+    expect(((r.envelope?.meta.warnings ?? []) as string[]).some((w) => w.includes(`wi-impl pd publish ${DRAFT}`))).toBe(true);
   });
 
   test("--allow-published is not a restore flag", async () => {
@@ -152,7 +152,7 @@ describe("pd lock", () => {
     pd.locks.set(DRAFT, "user-0002"); // someone else took it since
     const r = await run(save, [DRAFT, "--overlay", overlay(), "--yes"]);
     expect(r.envelope?.error).toMatchObject({ code: "PD_LOCKED", details: { staleLocalRecord: true, holder: { userName: "user-0002" } } });
-    expect(String(r.envelope?.error?.message)).toContain(`belz pd lock release ${DRAFT}`);
+    expect(String(r.envelope?.error?.message)).toContain(`wi-impl pd lock release ${DRAFT}`);
     expect(pd.log().filter((l) => /^PUT \/pages\/\w+$/.test(l))).toEqual([]);
   });
 

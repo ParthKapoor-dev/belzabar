@@ -1,4 +1,4 @@
-Usage: belz pd analyze <INPUT...> [flags]
+Usage: wi-impl pd analyze <INPUT...> [flags]
 
 Recursively analyze one or more pages/components: every component the layout
 references (followed recursively, resolved by name in the active env) and
@@ -30,6 +30,6 @@ Notes:
   cached config was used.
 
 Examples:
-  belz pd analyze 49fa2576239ec5791c6ead4cf9408ce2
-  belz pd analyze 49fa2576239ec5791c6ead4cf9408ce2 4de7b4e1d21334bf2d8884b4086d38db
-  belz pd analyze 49fa2576239ec5791c6ead4cf9408ce2 --compliance ./master_ids.txt --llm
+  wi-impl pd analyze 49fa2576239ec5791c6ead4cf9408ce2
+  wi-impl pd analyze 49fa2576239ec5791c6ead4cf9408ce2 4de7b4e1d21334bf2d8884b4086d38db
+  wi-impl pd analyze 49fa2576239ec5791c6ead4cf9408ce2 --compliance ./master_ids.txt --llm

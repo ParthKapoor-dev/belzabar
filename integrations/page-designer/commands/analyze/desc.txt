@@ -1,3 +1,3 @@
-belz pd analyze <input...>  :->  Recursively analyze pages/components: component dependency tree and every AD method ID
-belz pd analyze <input...> --compliance <file>  :->  Also check the discovered AD ids against a master id list file
-belz pd analyze <input...> --force  :->  Same, re-reading every config instead of the local cache
+wi-impl pd analyze <input...>  :->  Recursively analyze pages/components: component dependency tree and every AD method ID
+wi-impl pd analyze <input...> --compliance <file>  :->  Also check the discovered AD ids against a master id list file
+wi-impl pd analyze <input...> --force  :->  Same, re-reading every config instead of the local cache

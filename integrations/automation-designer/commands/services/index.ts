@@ -89,7 +89,7 @@ export const SERVICE_FIELDS = ["name", "id", "uuid", "systemUuid", "label", "typ
 const DEFAULT_FIELDS = ["name", "id", "type", "internalService", "label", "aliasNames", "description", "score"];
 
 export const args = defineArgs({
-  command: "belz ad services",
+  command: "wi-impl ad services",
   positionals: [{ name: "service" }],
   flags: {
     all: { type: "boolean" },
@@ -143,7 +143,7 @@ const command: CommandModule<ServicesArgs, ServicesData | ServiceMethodsData> = 
       let methods = serviceMethodRows(await adApi.listServiceMethods(service), all);
       if (methods.length === 0) {
         context.warn(
-          `No ${all ? "" : "visible "}methods for service '${service}': an unknown service name (see \`belz ad services --search\`), or a user category whose methods are not published (see \`belz ad find\` with a category).`,
+          `No ${all ? "" : "visible "}methods for service '${service}': an unknown service name (see \`wi-impl ad services --search\`), or a user category whose methods are not published (see \`wi-impl ad find\` with a category).`,
         );
       }
       if (search) {
@@ -222,7 +222,7 @@ const command: CommandModule<ServicesArgs, ServicesData | ServiceMethodsData> = 
       ui.section(`${d.service} methods (${d.methods.length}${d.methods.length < d.total ? ` of ${d.total}` : ""})`);
       if (d.methods.length === 0) ui.text("(none)");
       else ui.table(["method", "label", "apiUuid", "flags"], d.methods.map((m) => [m.method, m.label ?? "", m.apiUuid ?? "", [m.state, m.hidden && "hidden", m.inactive && "inactive", m.deprecated && "deprecated"].filter(Boolean).join(" ")]));
-      ui.text(`Tip: belz ad child-info ${d.service} <method> --shape  (inputs/outputs to wire a step)`);
+      ui.text(`Tip: wi-impl ad child-info ${d.service} <method> --shape  (inputs/outputs to wire a step)`);
       return;
     }
     const data = envelope.data as ServicesData;

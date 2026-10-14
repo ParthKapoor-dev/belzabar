@@ -1,5 +1,5 @@
 // The AD references in PD pages and components: every httpRequest that runs
-// `/chain/execute/<uuid>`, as a slim index (cached 1 h). `belz ad callers --pd`
+// `/chain/execute/<uuid>`, as a slim index (cached 1 h). `wi-impl ad callers --pd`
 // matches a method against it.
 
 import { join } from "path";

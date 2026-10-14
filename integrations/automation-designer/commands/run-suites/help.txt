@@ -1,17 +1,17 @@
-Usage: belz ad run-suites [flags]
+Usage: wi-impl ad run-suites [flags]
 
 Execute all saved regression test suites found in the 'suites/' directory.
 Each suite is verified for HTTP 200 and a non-failed execution result.
 Suites really execute (SQL/HTTP steps run), so an explicit --env is required.
-The test body is the same one `belz ad test` posts; a failed request reports
+The test body is the same one `wi-impl ad test` posts; a failed request reports
 the server's message. A suite file that is not valid JSON fails on its own
 (reason INVALID_JSON) and the rest still run. A suite saved on another env
 (its `env` field, written by save-suite) is not run (reason ENV_MISMATCH).
 A legacy suite without `env` names a uuid of an unknown env, so it is not run
 either (reason ENV_MISSING) unless --legacy-env names the env it was saved
 for and that equals --env. Re-save such suites with save-suite to pin the env.
-Output values are not asserted: use `belz ad test` expectations or the server-side
-test cases (`belz ad test-case`) for that.
+Output values are not asserted: use `wi-impl ad test` expectations or the server-side
+test cases (`wi-impl ad test-case`) for that.
 
 Flags:
   --legacy-env <env>  Run suites that carry no env as <env> suites; only when
@@ -20,10 +20,10 @@ Flags:
 
 Global Flags:
   --env <name>        Set active environment. Required explicitly: this
-                      really executes the chain. Any env from `belz envs`.
+                      really executes the chain. Any env from `wi-impl envs`.
   --llm               Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad run-suites --env <env>
-  belz ad run-suites --env <env> --llm
-  belz ad run-suites --env acme-dev --legacy-env acme-dev
+  wi-impl ad run-suites --env <env>
+  wi-impl ad run-suites --env <env> --llm
+  wi-impl ad run-suites --env acme-dev --legacy-env acme-dev

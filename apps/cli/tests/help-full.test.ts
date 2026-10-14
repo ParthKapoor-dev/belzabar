@@ -1,4 +1,4 @@
-// `belz --help-full` is the runtime agents' command reference, so it must be
+// `wi-impl --help-full` is the runtime agents' command reference, so it must be
 // byte-for-byte deterministic: fixed section order, sorted commands, and no
 // content that depends on the environment, the clock, the locale or the build.
 
@@ -21,7 +21,7 @@ function runHelpFull(env: Record<string, string>, cwd: string, args: string[] = 
   return { out: proc.stdout.toString(), code: proc.exitCode ?? -1 };
 }
 
-describe("belz --help-full", () => {
+describe("wi-impl --help-full", () => {
   test("is byte-identical across runs with different env, locale, timezone and cwd", () => {
     const a = runHelpFull({ WI_IMPL_HOME: mkdtempSync(join(tmpdir(), "hf-a-")), TZ: "UTC", LANG: "C" }, tmpdir());
     const b = runHelpFull(
@@ -52,13 +52,13 @@ describe("belz --help-full", () => {
     }
   });
 
-  test("--help-full --llm is one belz.help envelope carrying the text", () => {
+  test("--help-full --llm is one wi-impl.help envelope carrying the text", () => {
     const home = mkdtempSync(join(tmpdir(), "hf-llm-"));
     for (const args of [["--help-full", "--llm"], ["--llm", "--help-full"]]) {
       const r = runHelpFull({ WI_IMPL_HOME: home }, tmpdir(), args);
       expect(r.code).toBe(0);
       const env = EnvelopeSchema.parse(JSON.parse(r.out));
-      expect(env.schema).toBe("belz.help");
+      expect(env.schema).toBe("wi-impl.help");
       expect(env.ok).toBe(true);
       expect((env.data as { text: string }).text).toBe(buildHelpFull()!);
     }
@@ -72,12 +72,12 @@ describe("belz --help-full", () => {
   test("--help-full <module> prints one section; --index one line per command", () => {
     const full = buildHelpFull()!;
     const ad = buildHelpFull({ namespace: "ad" })!;
-    expect(ad).toContain("belz ad <cmd>");
-    expect(ad).not.toContain("belz pd <cmd>");
+    expect(ad).toContain("wi-impl ad <cmd>");
+    expect(ad).not.toContain("wi-impl pd <cmd>");
     expect(ad.length).toBeLessThan(full.length);
     const index = buildHelpFull({ index: true })!;
     expect(index.length).toBeLessThan(full.length / 3);
-    for (const name of Object.keys(REGISTRIES["integrations/automation-designer"]!)) expect(index).toContain(`belz ad ${name}  :->  `);
+    for (const name of Object.keys(REGISTRIES["integrations/automation-designer"]!)) expect(index).toContain(`wi-impl ad ${name}  :->  `);
     expect(buildHelpFull({ namespace: "nope" })).toBeNull();
     const home = mkdtempSync(join(tmpdir(), "hf-ns-"));
     const r = runHelpFull({ WI_IMPL_HOME: home }, tmpdir(), ["--help-full", "pd", "--index"]);

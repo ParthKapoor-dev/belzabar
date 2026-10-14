@@ -9,7 +9,7 @@ import { parseTaskId } from "@belzabar/teamwork/lib/task-id";
 import { assertReleaseSlotFree, saveRelease } from "../../lib/ledger";
 import { loadReleaseSpec, resolveReleaseEnvs, type ReleaseSpec } from "../../lib/spec";
 
-// `belz release matrix <release.json>` — the release collision/leak detector.
+// `wi-impl release matrix <release.json>` — the release collision/leak detector.
 //
 // Given a release spec (included + excluded ticket lists), it runs the linker
 // (`tw items`) for every ticket and the tracer (`ad trace`) for every AD item,
@@ -93,14 +93,14 @@ export interface MatrixData {
 }
 
 export const args = defineArgs({
-  command: "belz release matrix",
+  command: "wi-impl release matrix",
   positionals: [
     {
       name: "spec",
       required: true,
       missingCode: "MISSING_SPEC",
       missingMessage:
-        "Usage: belz release matrix <release.json>\n\n" +
+        "Usage: wi-impl release matrix <release.json>\n\n" +
         'release.json: { "name": "...", "included": [ids], "excluded"?: [ids], "project"?, "spineEnv"?, "stageEnv"? }',
     },
   ],

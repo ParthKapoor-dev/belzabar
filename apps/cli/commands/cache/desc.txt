@@ -1,5 +1,5 @@
-belz cache --env <name> <uuid>...  :->  Invalidate specific cache entries on that environment (POSTs both invalidate routes, body {"uuids":[...]}; --env is required)
-belz cache --env <name> --type PAGE <uuid>  :->  Invalidate non-AUTOMATION cache entries by UUID
-belz cache --env <name> --all --yes [--type <TYPE>]  :->  Flush the ENTIRE cache of a type org-wide (refused without both flags)
-belz cache prune-local  :->  Dry run: list stale local cache artifacts (pre-env-scoping flat files, abandoned refresh locks) that would be removed
-belz cache prune-local --yes  :->  Delete stale local cache artifacts (local filesystem only, no network, no environment)
+wi-impl cache --env <name> <uuid>...  :->  Invalidate specific cache entries on that environment (POSTs both invalidate routes, body {"uuids":[...]}; --env is required)
+wi-impl cache --env <name> --type PAGE <uuid>  :->  Invalidate non-AUTOMATION cache entries by UUID
+wi-impl cache --env <name> --all --yes [--type <TYPE>]  :->  Flush the ENTIRE cache of a type org-wide (refused without both flags)
+wi-impl cache prune-local  :->  Dry run: list stale local cache artifacts (pre-env-scoping flat files, abandoned refresh locks) that would be removed
+wi-impl cache prune-local --yes  :->  Delete stale local cache artifacts (local filesystem only, no network, no environment)

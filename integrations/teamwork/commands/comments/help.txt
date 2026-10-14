@@ -1,4 +1,4 @@
-Usage: belz tw comments <TASK_ID|URL> [flags]
+Usage: wi-impl tw comments <TASK_ID|URL> [flags]
 
 Fetch all comments for a Teamwork task, ordered chronologically.
 
@@ -12,6 +12,6 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz tw comments 26917411
-  belz tw comments https://<company>.teamwork.com/app/tasks/26917411
-  belz tw comments 26917411 --llm
+  wi-impl tw comments 26917411
+  wi-impl tw comments https://<company>.teamwork.com/app/tasks/26917411
+  wi-impl tw comments 26917411 --llm

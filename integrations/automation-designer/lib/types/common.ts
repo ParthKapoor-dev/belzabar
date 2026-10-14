@@ -51,7 +51,7 @@ export interface MethodField {
   required?: boolean;
   description?: string;
   defaultValue?: string;
-  /** V1 inputs carry this; V2 does not. belz uses it on the V1 test path. */
+  /** V1 inputs carry this; V2 does not. wi-impl uses it on the V1 test path. */
   testValue?: unknown;
   secured?: boolean;
   /** V1 internal-variable flag: excluded from the method's input contract. */

@@ -1,4 +1,4 @@
-Usage: belz rd show <id> [flags]
+Usage: wi-impl rd show <id> [flags]
 
 Show a report's saved definition: title, status, datasource (AD category and
 published method), columns, saved filters and summaries. Read-only: the report
@@ -14,8 +14,8 @@ Flags:
   --help, -h          Show this help message.
 
 A warning means the datasource is missing or no longer published: the report
-will fail when run. Use `belz rd export <id>` for the full definition as a file.
+will fail when run. Use `wi-impl rd export <id>` for the full definition as a file.
 
 Examples:
-  belz rd show 0123456789abcdef0123456789abcdef
-  belz rd show 0123456789abcdef0123456789abcdef --exact --env dev
+  wi-impl rd show 0123456789abcdef0123456789abcdef
+  wi-impl rd show 0123456789abcdef0123456789abcdef --exact --env dev

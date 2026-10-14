@@ -1,2 +1,2 @@
-belz rd run <id> --env <env>  :->  Run the report as saved (executes its datasource method); rows as objects keyed by column name
-belz rd run <id> --env <env> --limit <n> --offset <n> --count  :->  Page through rows (≤5000) and add the total row count
+wi-impl rd run <id> --env <env>  :->  Run the report as saved (executes its datasource method); rows as objects keyed by column name
+wi-impl rd run <id> --env <env> --limit <n> --offset <n> --count  :->  Page through rows (≤5000) and add the total row count

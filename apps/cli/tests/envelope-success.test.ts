@@ -161,7 +161,7 @@ beforeAll(() => {
     jenkins: { baseUrl: JENKINS, user: "u", password: btoa("x"), migrationJob: "Deployments/Database/db-migration" },
   });
   prevCwd = process.cwd();
-  cwd = mkdtempSync(join(tmpdir(), "belz-success-cwd-"));
+  cwd = mkdtempSync(join(tmpdir(), "wi-impl-success-cwd-"));
   process.chdir(cwd);
   const blocked = (name: string) => () => {
     throw new Error(`envelope-success: ${name} is blocked`);
@@ -182,7 +182,7 @@ afterAll(() => {
 describe("--llm success envelopes over real fixtures", () => {
   for (const c of CASES) {
     const key = c.argv.join(" ");
-    const name = `belz ${key} --llm`;
+    const name = `wi-impl ${key} --llm`;
     if (KNOWN_VIOLATIONS[key]) {
       test.todo(`${name}  [known: ${KNOWN_VIOLATIONS[key]}]`, () => {});
       continue;
@@ -204,7 +204,7 @@ describe("--llm success envelopes over real fixtures", () => {
           if (!env.ok) problems.push(`ok:false ${env.error?.code}: ${env.error?.message}`);
           if (r.exitCode !== 0) problems.push(`exit ${r.exitCode}`);
         }
-        const [ns, cmd] = c.argv[0] === "envs" || c.argv[0] === "config" ? ["belz", c.argv[0]] : [c.argv[0], c.argv[1]];
+        const [ns, cmd] = c.argv[0] === "envs" || c.argv[0] === "config" ? ["wi-impl", c.argv[0]] : [c.argv[0], c.argv[1]];
         if (env.schema !== `${ns}.${cmd}`) problems.push(`schema ${env.schema} != ${ns}.${cmd}`);
         if (c.envAware && env.meta.env !== ENV) problems.push(`meta.env ${String(env.meta.env)} != ${ENV}`);
         if (!c.envAware && env.meta.env !== undefined) problems.push(`meta.env present on a non-env-aware command`);

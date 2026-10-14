@@ -1,1 +1,1 @@
-belz rd uses <uuid>  :->  Reports whose datasource is this AD method (draft or published uuid): id and title
+wi-impl rd uses <uuid>  :->  Reports whose datasource is this AD method (draft or published uuid): id and title

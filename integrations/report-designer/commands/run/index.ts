@@ -23,7 +23,7 @@ interface RunData {
 }
 
 export const args = defineArgs({
-  command: "belz rd run",
+  command: "wi-impl rd run",
   positionals: [REPORT_ID_POSITIONAL],
   flags: {
     limit: { type: "number", integer: true, min: 1, max: 5000, default: 20 },

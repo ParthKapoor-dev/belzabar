@@ -134,7 +134,7 @@ describe("node-id overlay ops (real Student Application, 546 KB)", () => {
 
 describe("commands over the fake PD server", () => {
   let pd: FakePd;
-  const dir = scratchDir("belz-pd-nodes-");
+  const dir = scratchDir("wi-impl-pd-nodes-");
   beforeEach(() => {
     rmSync(join(BELZ_CONFIG_DIR, "cache", "pages", ENV), { recursive: true, force: true });
     rmSync(join(BELZ_CONFIG_DIR, "cache", "page-finder"), { recursive: true, force: true });

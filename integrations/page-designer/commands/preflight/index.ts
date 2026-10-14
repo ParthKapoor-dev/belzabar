@@ -1,4 +1,4 @@
-// belz pd preflight <pageId> [--overlay <file>]
+// wi-impl pd preflight <pageId> [--overlay <file>]
 //
 // Read-only dry-run. Resolves the page `save` would write (the same
 // draft guard — a PUBLISHED id with a linked draft checks that draft),
@@ -8,7 +8,7 @@
 //
 // When the validator reports errors the envelope is ok:false
 // (PD_PREFLIGHT_FAILED, exit 1) with the full result in `data`, so agent
-// scripts can chain: `belz pd preflight … && belz pd save …`.
+// scripts can chain: `wi-impl pd preflight … && wi-impl pd save …`.
 
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import { readJsonFile, resolveWriteTarget, type WriteTarget } from "../../lib/edit";
@@ -48,7 +48,7 @@ interface PreflightData {
 }
 
 export const args = defineArgs({
-  command: "belz pd preflight",
+  command: "wi-impl pd preflight",
   positionals: [{ name: "page-id", required: true, missingCode: "MISSING_INPUT", missingMessage: "Missing <pageId>." }],
   flags: {
     overlay: { type: "string" },
@@ -81,7 +81,7 @@ const command: CommandModule<PreflightArgs, PreflightData> = {
       if (!(err instanceof CliError) || err.code !== "PD_PUBLISHED_NO_DRAFT") throw err;
       // Read-only: check the PUBLISHED page itself, but say save would need the override.
       target = await resolveWriteTarget(pageId, { ...noOverrides, allowPublished: true }, () => {}, "checking");
-      warn(`ℹ ${pageId} is a PUBLISHED page with no linked draft; \`belz pd save\` would need --allow-published.`);
+      warn(`ℹ ${pageId} is a PUBLISHED page with no linked draft; \`wi-impl pd save\` would need --allow-published.`);
     }
     const before = target.snapshot;
 

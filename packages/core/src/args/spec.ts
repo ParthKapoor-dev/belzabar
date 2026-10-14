@@ -79,7 +79,7 @@ interface PositionalSpec {
 }
 
 export interface ArgsSpec {
-  /** For error messages: `belz ad show`. */
+  /** For error messages: `wi-impl ad show`. */
   command?: string;
   positionals?: readonly PositionalSpec[];
   flags?: FlagsSpec;

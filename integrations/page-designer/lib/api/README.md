@@ -1,7 +1,7 @@
 # `lib/api/`: the PD HTTP layer
 
 `pdApi` is the only way commands and lib code talk to the Page Designer server. It also records
-the wire contract belz relies on, verified live against a scratch page (evidence in
+the wire contract wi-impl relies on, verified live against a scratch page (evidence in
 [`../../tests/fixtures/wire/`](../../tests/fixtures/wire), pinned by
 `tests/unit/wire-evidence.test.ts`).
 
@@ -72,7 +72,7 @@ history entry and flips it to `status: DRAFT`. No API is known that flips it bac
   `releaseLock` never throws for a refusal; a 5xx is `released: null`.
 - `pageLockDetails` = `{status, userName, createdBy, validTill, lockedByCurrentUser}`. A lock
   lasts about 24 h; the PD editor acquires one when a page is opened. The server does not
-  require the lock for a write; belz takes it to detect concurrent editors.
+  require the lock for a write; wi-impl takes it to detect concurrent editors.
 - The PD editor preview does not show API saves on a browser reload; use its own refresh button.
 
 ## Config shape

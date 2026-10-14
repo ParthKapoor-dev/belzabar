@@ -1,4 +1,4 @@
-belz pd page-deps <input>  :->  Page-dependencies summary for a published page/component: one row per entity (ids, status, config size, phrase counts)
-belz pd page-deps <input> --full  :->  Same plus the raw dependencyJSON (every entity's full config + phrases; megabytes)
-belz pd page-deps <input> --status DRAFT  :->  Query the DRAFT dependency graph instead of PUBLISHED
-belz pd page-deps <input> --force  :->  Bypass the config cache when resolving <input>
+wi-impl pd page-deps <input>  :->  Page-dependencies summary for a published page/component: one row per entity (ids, status, config size, phrase counts)
+wi-impl pd page-deps <input> --full  :->  Same plus the raw dependencyJSON (every entity's full config + phrases; megabytes)
+wi-impl pd page-deps <input> --status DRAFT  :->  Query the DRAFT dependency graph instead of PUBLISHED
+wi-impl pd page-deps <input> --force  :->  Bypass the config cache when resolving <input>

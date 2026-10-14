@@ -1,4 +1,4 @@
-Usage: belz ad history <action> <uuid> [flags]
+Usage: wi-impl ad history <action> <uuid> [flags]
 
 Browse and restore previous versions of an AD method. Calls the published
 Expertly.Automation.Method.History service methods via the execute endpoint.
@@ -34,7 +34,7 @@ Notes:
     the confirmation gate, and only accepts a DRAFT uuid (a published uuid is
     refused with the draft uuid to use). It calls the
     Expertly.Automation.Method.History.restore internal service, which saves
-    the old body as a NEW draft version; belz re-fetches the draft and reports
+    the old body as a NEW draft version; wi-impl re-fetches the draft and reports
     resultingVersion and contentMatches. Whatever the platform answers, the
     restore fails (RESTORE_UNCONFIRMED) unless the re-fetched draft verifiably
     carries the target version's content. Content is compared on the
@@ -47,8 +47,8 @@ Notes:
     versions exist.
 
 Examples:
-  belz ad history list 4e3f3f8d5f8a8160e879ae012989f6f9
-  belz ad history show 4e3f3f8d... --version 3
-  belz ad history diff 4e3f3f8d... --from 1 --to 5
-  belz ad history show 4e3f3f8d... --version 1 --full --llm | jq '.data.method.parsedSteps'
-  belz ad history restore 4e3f3f8d... --version 3 --env <env> --yes
+  wi-impl ad history list 4e3f3f8d5f8a8160e879ae012989f6f9
+  wi-impl ad history show 4e3f3f8d... --version 3
+  wi-impl ad history diff 4e3f3f8d... --from 1 --to 5
+  wi-impl ad history show 4e3f3f8d... --version 1 --full --llm | jq '.data.method.parsedSteps'
+  wi-impl ad history restore 4e3f3f8d... --version 3 --env <env> --yes

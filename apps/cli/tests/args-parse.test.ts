@@ -21,7 +21,7 @@ describe("config", () => {
   test("errors", () => {
     expect(code(() => parseConfigArgs([]))).toBe("MISSING_SUBCOMMAND");
     expect(code(() => parseConfigArgs(["tokn"]))).toBe("UNKNOWN_SUBCOMMAND");
-    expect(() => parseConfigArgs(["envs"])).toThrow(/belz envs/);
+    expect(() => parseConfigArgs(["envs"])).toThrow(/wi-impl envs/);
     expect(code(() => parseConfigArgs(["get", "--refresh"]))).toBe("UNKNOWN_FLAG");
     expect(code(() => parseConfigArgs(["token", "extra"]))).toBe("UNEXPECTED_ARGUMENT");
   });

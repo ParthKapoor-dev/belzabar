@@ -21,7 +21,7 @@ import { CliError, isObj, type Obj } from "@belzabar/core";
 import type { Category } from "../categories";
 import { emptyCatalog, expandCompactStep, expandField, isRawV2Step, Problems, type FieldKind, type ServiceCatalog } from "../serialize/compact";
 
-/** core/shared categories are never written from belz. */
+/** core/shared categories are never written from wi-impl. */
 const PROTECTED_CATEGORY = /^(helpers|database|cache|email|expertly)(\.|$)/i;
 const PROTECTED_NAMES = new Set(["web socket", "websocket"]);
 
@@ -187,7 +187,7 @@ function expandFields(spec: Obj): { inputs: Obj[]; outputs: Obj[]; variables: Ob
 
 function throwProblems(p: Problems): void {
   if (p.unknown.length > 0) {
-    throw new CliError(`Unknown spec key(s): ${p.unknown.join(", ")}. See \`belz ad create --help\` for the compact keys.`, {
+    throw new CliError(`Unknown spec key(s): ${p.unknown.join(", ")}. See \`wi-impl ad create --help\` for the compact keys.`, {
       code: "AD_SPEC_UNKNOWN_KEY",
       details: { unknown: p.unknown },
     });
@@ -206,7 +206,7 @@ function expandSteps(steps: unknown[], catalog: ServiceCatalog): Obj[] {
   const p = new Problems();
   const out = steps.map((s, i) => (isRawV2Step(s) ? step(s, i) : (expandCompactStep(s, catalog, `steps[${i}]`, p) as Obj | null)));
   if (p.unknown.length > 0) {
-    throw new CliError(`Unknown spec key(s): ${p.unknown.join(", ")}. See \`belz ad create --help\` for the compact step keys.`, {
+    throw new CliError(`Unknown spec key(s): ${p.unknown.join(", ")}. See \`wi-impl ad create --help\` for the compact step keys.`, {
       code: "AD_SPEC_UNKNOWN_KEY",
       details: { unknown: p.unknown },
     });

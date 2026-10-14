@@ -45,7 +45,7 @@ interface PublishData {
 }
 
 export const args = defineArgs({
-  command: "belz ad publish",
+  command: "wi-impl ad publish",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid> argument." }],
   flags: {
     ...AD_YES_FLAG,
@@ -140,7 +140,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
     if (!compiledCache.ok) {
       context.warn(
         `Compiled-cache eviction failed on every route; the published method may run the previous body. ` +
-          `Retry with: belz cache ${publishedUuid} --env ${context.env.name} --yes`,
+          `Retry with: wi-impl cache ${publishedUuid} --env ${context.env.name} --yes`,
       );
     }
 
@@ -149,7 +149,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
     if (!noteResult.recorded) {
       context.warn(
         `Published, but the change note was NOT recorded (${noteResult.error}). Record it with: ` +
-          `belz ad changelog ${draft.uuid} --note "<text>" --env ${context.env.name} --yes`,
+          `wi-impl ad changelog ${draft.uuid} --note "<text>" --env ${context.env.name} --yes`,
       );
     }
 
@@ -233,7 +233,7 @@ async function recordNoteWithRetry(
         return {
           recorded: false,
           id: null,
-          error: `${lastError} The note may have been recorded anyway; check \`belz ad changelog\` before recording it again.`,
+          error: `${lastError} The note may have been recorded anyway; check \`wi-impl ad changelog\` before recording it again.`,
         };
       }
       if (attempt < NOTE_ATTEMPTS) await Bun.sleep(noteRetryDelayMs * attempt);

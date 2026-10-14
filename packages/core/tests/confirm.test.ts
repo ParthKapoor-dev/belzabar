@@ -27,7 +27,7 @@ describe("logWriteIntent", () => {
   let spy: ReturnType<typeof spyOn> | undefined;
   afterEach(() => spy?.mockRestore());
 
-  test("one [belz <ns> write] line; fields, then env, then meta", () => {
+  test("one [wi-impl <ns> write] line; fields, then env, then meta", () => {
     const lines: string[] = [];
     spy = spyOn(process.stderr, "write").mockImplementation(((s: string) => {
       lines.push(String(s));
@@ -36,9 +36,9 @@ describe("logWriteIntent", () => {
     logWriteIntent("ad", { method: "POST", path: "/p" }, { n: 1 }, { withEnv: true });
     logWriteIntent("tw", { method: "POST", path: "/q" });
     expect(lines).toHaveLength(2);
-    expect(lines[0]).toStartWith("[belz ad write] ");
-    const rec = JSON.parse(lines[0]!.slice("[belz ad write] ".length));
+    expect(lines[0]).toStartWith("[wi-impl ad write] ");
+    const rec = JSON.parse(lines[0]!.slice("[wi-impl ad write] ".length));
     expect(Object.keys(rec)).toEqual(["ts", "method", "path", "env", "n"]);
-    expect(JSON.parse(lines[1]!.slice("[belz tw write] ".length))).not.toHaveProperty("env");
+    expect(JSON.parse(lines[1]!.slice("[wi-impl tw write] ".length))).not.toHaveProperty("env");
   });
 });

@@ -1,5 +1,5 @@
-belz ad validate <uuid|file>  :->  Validate a method's V2 body (fetched by uuid, or a local V2 JSON file) with the offline rules L1-L3; read-only
-belz ad validate <uuid|file> --online  :->  Also check each step's input keys, service and account against the live service contract (L4)
-belz ad validate <uuid|file> --dry-run-compile  :->  Also compile the method on the server with every step switched off (implies --online; nothing executes)
-belz ad validate <uuid|file> --strict  :->  Treat warnings as errors
-belz ad validate <spec.json> [--category <name|id|uuid>]  :->  Validate a compact create spec: expanded against --env first (as create's dry run), then validated
+wi-impl ad validate <uuid|file>  :->  Validate a method's V2 body (fetched by uuid, or a local V2 JSON file) with the offline rules L1-L3; read-only
+wi-impl ad validate <uuid|file> --online  :->  Also check each step's input keys, service and account against the live service contract (L4)
+wi-impl ad validate <uuid|file> --dry-run-compile  :->  Also compile the method on the server with every step switched off (implies --online; nothing executes)
+wi-impl ad validate <uuid|file> --strict  :->  Treat warnings as errors
+wi-impl ad validate <spec.json> [--category <name|id|uuid>]  :->  Validate a compact create spec: expanded against --env first (as create's dry run), then validated

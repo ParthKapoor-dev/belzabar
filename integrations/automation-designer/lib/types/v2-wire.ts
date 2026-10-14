@@ -62,7 +62,7 @@ export interface V2StepProperties {
    * Real wire: `{type, value, counter, executeParallel,
    * numberOfConcurrentThread}` (+ `rangeStartInclusive`/`rangeEndExclusive`
    * for LOOP_EXECUTION_ON_RANGE, `expandedExpression` for _ON_CONDITION).
-   * `enabled`/`source` are an older belz guess, still read for compatibility.
+   * `enabled`/`source` are an older wi-impl guess, still read for compatibility.
    */
   repeatStepExecution?: {
     type?: string | null;

@@ -1,14 +1,14 @@
-# Page Designer (`@belzabar/pd`, `belz pd`)
+# Page Designer (`@belzabar/pd`, `wi-impl pd`)
 
 Inspect, lint, snapshot, edit and publish Page Designer (PD) pages and components
 (symbols). A workspace package with no binary of its own: `apps/cli` wires its registry into
-`belz pd <cmd>`.
+`wi-impl pd <cmd>`.
 
 ## In this directory
 
 | Path | What it is |
 |---|---|
-| [`registry.ts`](./registry.ts) | Sorted, hand-maintained map of every `belz pd` command |
+| [`registry.ts`](./registry.ts) | Sorted, hand-maintained map of every `wi-impl pd` command |
 | [`commands/`](./commands/README.md) | One folder per command (`index.ts`, `help.txt`, `desc.txt`) |
 | [`lib/`](./lib/README.md) | Everything the commands share: API client, parser, serializer, validator, write pipeline |
 | [`tests/`](./tests/README.md) | Unit and command-level tests, real and wire fixtures |
@@ -17,11 +17,11 @@ Inspect, lint, snapshot, edit and publish Page Designer (PD) pages and component
 ## Public exports
 
 - `@belzabar/pd/registry`: the command registry, imported by `apps/cli`.
-- `@belzabar/pd/lib/*`: any lib module. `belz ad callers --pd` uses `lib/ad-refs.ts`.
+- `@belzabar/pd/lib/*`: any lib module. `wi-impl ad callers --pd` uses `lib/ad-refs.ts`.
 
 ## Commands
 
-`belz --help-full` lists every invocation; each command's `help.txt` is its full reference.
+`wi-impl --help-full` lists every invocation; each command's `help.txt` is its full reference.
 
 | Group | Commands |
 |---|---|
@@ -34,12 +34,12 @@ Inspect, lint, snapshot, edit and publish Page Designer (PD) pages and component
 then page; several matches → `PD_NAME_AMBIGUOUS`).
 
 ```bash
-belz pd show <input> --find "Save"                      # node ids + key paths, for overlays
-belz pd lint <input> --recursive                    # page + every symbol it uses
-belz pd snapshot <input> --compare snapshots/page.json  # exit 1 when the live page differs
-belz pd preflight <pageId> --overlay edit.json          # plan + validate, never writes
-belz pd save <pageId> --overlay edit.json --env dev --yes
-belz pd publish <pageId> --env dev --yes
+wi-impl pd show <input> --find "Save"                      # node ids + key paths, for overlays
+wi-impl pd lint <input> --recursive                    # page + every symbol it uses
+wi-impl pd snapshot <input> --compare snapshots/page.json  # exit 1 when the live page differs
+wi-impl pd preflight <pageId> --overlay edit.json          # plan + validate, never writes
+wi-impl pd save <pageId> --overlay edit.json --env dev --yes
+wi-impl pd publish <pageId> --env dev --yes
 ```
 
 ## Contracts
@@ -65,9 +65,9 @@ belz pd publish <pageId> --env dev --yes
 
 ## Configuration
 
-Uses the active `belz` environment and its saved session (`@belzabar/core` config); nothing
+Uses the active `wi-impl` environment and its saved session (`@belzabar/core` config); nothing
 PD-specific. Runtime files: the page cache above, `~/.wi-impl/pd-locks/<env>.json` (locks taken with
-`belz pd lock acquire`) and `~/.wi-impl/cache/pd-ad-refs/` (the index `ad callers --pd` reads).
+`wi-impl pd lock acquire`) and `~/.wi-impl/cache/pd-ad-refs/` (the index `ad callers --pd` reads).
 
 ## Testing
 
@@ -81,7 +81,7 @@ Details, fixtures and the opt-in live write suite: [`tests/`](./tests/README.md)
 
 1. `pd diff` across envs reports HTTP calls as changed when their env-local AD ids differ.
 2. App-URL resolution needs a registered deployment domain; the validator is static only.
-3. The 409 body for a lock held by another user has never been captured; belz names the holder
+3. The 409 body for a lock held by another user has never been captured; wi-impl names the holder
    from the page's `pageLockDetails` instead.
 4. No API is known that sets a row back to PUBLISHED; reverting a PUBLISHED id would flip it to
-   DRAFT, so belz never does it, and a sibling left `DELETED` counts as absent.
+   DRAFT, so wi-impl never does it, and a sibling left `DELETED` counts as absent.

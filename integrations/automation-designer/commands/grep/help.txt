@@ -1,4 +1,4 @@
-Usage: belz ad grep <PATTERN> (--category <a,b> | --all | --method <UUID>...) [flags]
+Usage: wi-impl ad grep <PATTERN> (--category <a,b> | --all | --method <UUID>...) [flags]
 
 Search the step text of AD methods with a regular expression: the SQL of
 db_service steps and the source of custom-code steps (both decoded from
@@ -10,9 +10,9 @@ state, the step (number and description), where in the step (sql, code,
 condition, exitIf, expression, input <key>), the line number and the line.
 
 Methods come from the cached method index (rebuilt when more than 24 h old,
-as for `belz ad callers`); bodies are read once per method version and
+as for `wi-impl ad callers`); bodies are read once per method version and
 cached, so a repeated or interrupted sweep only reads what changed. Methods
-belz itself changed since the index was built are re-read; methods created
+wi-impl itself changed since the index was built are re-read; methods created
 in the AD UI since then are missed until --refresh.
 
 Arguments:
@@ -34,7 +34,7 @@ Flags:
 
 Global Flags:
   --env <name>          Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                        Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                        Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Data: {pattern, in[], total, matches[{method, category, state, uuid, step,
@@ -43,9 +43,9 @@ stepDescription?, kind (sql|code|spel), field, line, excerpt}], coverage
 skippedCategories?}}. `excerpt` is the trimmed line, cut at 200 characters.
 
 Examples:
-  belz ad grep 'delete\s+from\s+orders' --category Orders,Billing -i
-  belz ad grep levelId --all --in sql --llm
-  belz ad grep '#\{userId\}' --method 4a1b2c3d... --in spel
+  wi-impl ad grep 'delete\s+from\s+orders' --category Orders,Billing -i
+  wi-impl ad grep levelId --all --in sql --llm
+  wi-impl ad grep '#\{userId\}' --method 4a1b2c3d... --in spel
 
 Errors: MISSING_PATTERN, INVALID_PATTERN (the regex does not compile),
 CONFLICTING_FLAGS / MISSING_FLAG (give exactly one of --category, --all,

@@ -34,7 +34,7 @@ export function decodeSecret(value: string | undefined | null, encoding: SecretE
   const compact = value.replace(/\s+/g, "");
   if (compact.length % 4 !== 0 || !BASE64_RE.test(compact)) {
     throw new CliError(
-      `Invalid config: ${path} is not valid base64. Store it as plain text with "${lastSegment(path)}Encoding": "plain", or re-enter it with 'belz config edit'.`,
+      `Invalid config: ${path} is not valid base64. Store it as plain text with "${lastSegment(path)}Encoding": "plain", or re-enter it with 'wi-impl config edit'.`,
       { code: "CONFIG_INVALID", details: { path } },
     );
   }

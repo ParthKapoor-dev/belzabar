@@ -112,7 +112,7 @@ export async function resolveDataSource(ref: DataSourceRef): Promise<ResolvedDat
     forgetDataSources();
     throw new CliError(
       `No published method '${ref.method}' in category '${category.name}' on ${env}. A report datasource must be a published ` +
-        "AD method: publish it there (belz ad publish) or migrate it to this env first.",
+        "AD method: publish it there (wi-impl ad publish) or migrate it to this env first.",
       { code: "RD_DATASOURCE_NOT_FOUND", details: { env, category: category.name, method: ref.method } },
     );
   }

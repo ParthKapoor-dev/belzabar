@@ -1,4 +1,4 @@
-Usage: belz migrate profiles [--refresh] [--client <name>] [flags]
+Usage: wi-impl migrate profiles [--refresh] [--client <name>] [flags]
 
 List available Jenkins migration profiles.
 
@@ -19,6 +19,6 @@ FLAGS
   --help, -h          Show this help message.
 
 EXAMPLES
-  belz migrate profiles
-  belz migrate profiles --refresh
-  belz migrate profiles --client ACME --llm
+  wi-impl migrate profiles
+  wi-impl migrate profiles --refresh
+  wi-impl migrate profiles --client ACME --llm

@@ -19,7 +19,7 @@ interface SaveSuiteData {
 }
 
 export const args = defineArgs({
-  command: "belz ad save-suite",
+  command: "wi-impl ad save-suite",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
   flags: {
     name: { type: "string", required: true, missingCode: "MISSING_SUITE_NAME", missingMessage: "--name argument is required." },

@@ -21,9 +21,9 @@ interface AddCommentData {
 }
 
 export const args = defineArgs({
-  command: "belz tw add-comment",
+  command: "wi-impl tw add-comment",
   positionals: [
-    { ...TASK_ID_POSITIONAL, missingMessage: 'Missing <taskId|url>. Usage: belz tw add-comment <taskId|url> --body "<text>"' },
+    { ...TASK_ID_POSITIONAL, missingMessage: 'Missing <taskId|url>. Usage: wi-impl tw add-comment <taskId|url> --body "<text>"' },
   ],
   flags: {
     // `--body --yes` is MISSING_VALUE, never a comment reading "--yes".

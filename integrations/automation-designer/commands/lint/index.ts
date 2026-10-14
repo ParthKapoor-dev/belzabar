@@ -1,4 +1,4 @@
-// belz ad lint <uuid|file> — read-only review of a method's V2 body:
+// wi-impl ad lint <uuid|file> — read-only review of a method's V2 body:
 // the pre-save validator (lib/validate L1–L3, + L4 with --online) plus the
 // advisory review rules of lib/validate/lint.ts (SQL Q2–Q4, common AD
 // anti-patterns, platform prose rules; descriptions with --docs).
@@ -51,7 +51,7 @@ export interface LintData {
 }
 
 export const args = defineArgs({
-  command: "belz ad lint",
+  command: "wi-impl ad lint",
   positionals: [{ name: "target", required: true, missingCode: "MISSING_TARGET", missingMessage: "Missing <uuid|file> argument." }],
   flags: {
     online: { type: "boolean", description: "Also check each step against its service contract on --env (L4)" },

@@ -20,7 +20,7 @@ interface ExportCategoryData {
 }
 
 export const args = defineArgs({
-  command: "belz ad export-category",
+  command: "wi-impl ad export-category",
   positionals: [{ name: "category", required: true, missingCode: "MISSING_CATEGORY_ID", missingMessage: "Missing category (name, uuid or id) argument." }],
   flags: { out: { type: "string" }, full: { type: "boolean" } },
 });

@@ -31,7 +31,7 @@ const DEFAULT_FIELDS = ["id", "uuid", "name", "type", "systemId"];
 const UNFILTERED_HINT_AT = 25;
 
 export const args = defineArgs({
-  command: "belz ad categories",
+  command: "wi-impl ad categories",
   flags: {
     user: { type: "boolean" },
     system: { type: "boolean" },

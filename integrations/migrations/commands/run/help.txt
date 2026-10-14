@@ -1,10 +1,10 @@
-Usage: belz migrate run --profile <profile> --module <type> --ids "<csv>" [options]
+Usage: wi-impl migrate run --profile <profile> --module <type> --ids "<csv>" [options]
 
 Trigger a migration build on Jenkins, follow its console, and parse the report.
 
 USAGE
-  belz migrate run --profile <profile> --module <type> --ids "<csv>" [options]
-  belz migrate run --source-env qa --target-env stage --module AD_Method --ids "<csv>"
+  wi-impl migrate run --profile <profile> --module <type> --ids "<csv>" [options]
+  wi-impl migrate run --source-env qa --target-env stage --module AD_Method --ids "<csv>"
 
 REQUIRED
   --module <type>              One of: AD_Method, PD, AD_COMPARISON_REPORT,
@@ -25,16 +25,16 @@ REQUIRED
   --ids-file <path>            File containing IDs (comma/space/newline-separated).
 
 MIGRATION IDS
-  Pass either a draft or published id. Before triggering the build, belz
+  Pass either a draft or published id. Before triggering the build, wi-impl
   resolves every id against the SOURCE environment and automatically swaps a
   PD draft for its published sibling (showing the name of each entity being
-  migrated) — the migration service itself only accepts published ids, so belz
+  migrated) — the migration service itself only accepts published ids, so wi-impl
   does that translation for you. Resolution needs --source-env (or a profile
   whose segments are mapped in jenkins.profileEnvs) plus configured credentials
-  for that env. If an id is a draft with no published version, belz aborts
+  for that env. If an id is a draft with no published version, wi-impl aborts
   before the build so nothing is wasted. When resolution can't run (the
   profile's source env isn't in your config, or the profile's envs can't be
-  derived), belz WARNS (meta.warnings) and sends the ids as given.
+  derived), wi-impl WARNS (meta.warnings) and sends the ids as given.
 
 SAFETY
   - Every run is a real Jenkins build (a --dry-run too), so it is confirmed
@@ -46,7 +46,7 @@ SAFETY
     stray positionals and values on switches (e.g. --dry-run=true).
   - --source-env / --target-env must match the --profile's envs (e.g.
     devacme_qaacme = dev → qa via jenkins.profileEnvs); a contradiction aborts with
-    MIGRATE_ENV_PROFILE_MISMATCH. For a profile whose envs belz can't derive,
+    MIGRATE_ENV_PROFILE_MISMATCH. For a profile whose envs wi-impl can't derive,
     pass both env flags or neither (MIGRATE_ENV_PROFILE_UNVERIFIED).
   - --module and --module-custom cannot be combined (MIGRATE_MODULE_CONFLICT).
   - *_COMPARISON_REPORT / *_MIGRATION_STATUS need --migration-id
@@ -68,7 +68,7 @@ SAFETY
     A declined prompt is MIGRATE_USER_ABORT.
   - Any failure AFTER the build was triggered (queue, console stream,
     timeout) keeps its code and carries details.buildTriggered=true plus
-    buildNumber / buildUrl / queueUrl: check it with 'belz migrate status <n>'
+    buildNumber / buildUrl / queueUrl: check it with 'wi-impl migrate status <n>'
     and do NOT re-run (a failed build is MIGRATE_RUN_FAILED; anything else
     after the trigger without its own code is MIGRATE_RUN_INTERRUPTED).
 
@@ -88,14 +88,14 @@ OUTCOME
 
 TARGET CACHE
   After a followed, non-dry AD_Method or PD build whose target env is known
-  (--target-env, or the profile via jenkins.profileEnvs), belz drops its
+  (--target-env, or the profile via jenkins.profileEnvs), wi-impl drops its
   cached copies of the migrated ids on the target env, so the next
-  'belz ad show' / 'belz pd show' there reads fresh (data.cacheInvalidated).
+  'wi-impl ad show' / 'wi-impl pd show' there reads fresh (data.cacheInvalidated).
 
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by
                                default). Names are the Jenkins job's client
-                               groups (see 'belz migrate profiles'),
+                               groups (see 'wi-impl migrate profiles'),
                                case-insensitive.
   --migration-id <uuid>        Required for COMPARISON_REPORT / MIGRATION_STATUS.
   --async Y|N                  Run asynchronously. Default: N.
@@ -136,13 +136,13 @@ CONFIG
 
 EXAMPLES
   # Dry run, qa → stage via jenkins.profileEnvs (still triggers a Jenkins build, DRY_RUN=true)
-  belz migrate run --source-env qa --target-env stage \\
+  wi-impl migrate run --source-env qa --target-env stage \\
     --module AD_Method --ids "<uuid>" --dry-run --yes
 
   # Real run, explicit profile
-  belz migrate run --profile devacme_qaacme --module AD_Method \\
+  wi-impl migrate run --profile devacme_qaacme --module AD_Method \\
     --ids-file ./ids.txt --async Y --out /tmp/m1
 
   # Explicit client
-  belz migrate run --profile qaacme_stageacme --module AD_Method \\
+  wi-impl migrate run --profile qaacme_stageacme --module AD_Method \\
     --ids "<uuid>" --client ACME --yes --llm

@@ -1,9 +1,9 @@
-Usage: belz ad import <FILE> --env <env> [flags]
+Usage: wi-impl ad import <FILE> --env <env> [flags]
 
-Import one or more method definitions (the output of `belz ad export` /
+Import one or more method definitions (the output of `wi-impl ad export` /
 `export-category`, or an --llm envelope around it) via
 POST /rest/api/automation/chain/import. The file is posted verbatim after
-belz has checked every method record in it.
+wi-impl has checked every method record in it.
 
 Arguments:
   <FILE>                Export JSON file. (required)
@@ -38,5 +38,5 @@ Prerequisites (from the AD API docs):
   4. Helper method configurations must exist.
 
 Examples:
-  belz ad import methods.json --env <env>
-  belz ad import methods.json --env <env> --yes --llm
+  wi-impl ad import methods.json --env <env>
+  wi-impl ad import methods.json --env <env> --yes --llm

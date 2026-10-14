@@ -77,7 +77,7 @@ const REDIS_KINDS: Record<string, "REDIS_GET" | "REDIS_SET" | "REDIS_REMOVE"> = 
   remove: "REDIS_REMOVE",
 };
 
-/** Map a service identity to the step family belz can decode/edit. */
+/** Map a service identity to the step family wi-impl can decode/edit. */
 export function classifyService(id: ServiceIdentity | null | undefined): StepFamily {
   if (!id) return { kind: "EXISTING_SERVICE" };
   const systems = [id.system, id.systemLabel].filter((s): s is string => !!s).map((s) => s.trim().toLowerCase());

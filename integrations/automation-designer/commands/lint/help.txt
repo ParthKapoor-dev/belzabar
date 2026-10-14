@@ -1,4 +1,4 @@
-Usage: belz ad lint <UUID|FILE> [flags]
+Usage: wi-impl ad lint <UUID|FILE> [flags]
 
 Review a method's V2 body (read-only): the pre-save validator plus the
 advisory review rules, grouped by step, one line per finding.
@@ -22,11 +22,11 @@ Flags:
 
 Global Flags:
   --env <name>          Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
-                        Any env from `belz envs` (configured in ~/.wi-impl/config.json).
+                        Any env from `wi-impl envs` (configured in ~/.wi-impl/config.json).
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Rules:
-  Validator (L1-L3, errors block saves): see `belz ad validate`; includes SQL
+  Validator (L1-L3, errors block saves): see `wi-impl ad validate`; includes SQL
   Q1 (bare ? jsonb operator), Q5 (autoformat damage), AD-SQL-004 (#{} spliced
   into SQL), SP1 (nested ternary), CI1, AS1, ...
   Lint (advisory warnings, lib/validate/lint.ts):
@@ -53,7 +53,7 @@ Rules:
     AD-LINT-012  Report Designer datasource SQL ending in a newline/space
     AD-LINT-013  Report Designer datasource input key with upper case
                  (011-013 only for methods with a reportColumns/reportData
-                 output; see `belz rd uses <uuid>` for the reports using it)
+                 output; see `wi-impl rd uses <uuid>` for the reports using it)
 
 Notes:
   - Errors exit 1 with AD_LINT_FAILED. Data: {clean, counts, byRule, groups:
@@ -61,7 +61,7 @@ Notes:
   - A PUBLISHED record is audited without AD-META-001.
 
 Examples:
-  belz ad lint 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --env acme-dev
-  belz ad lint ./method.v2.json --docs --llm
-  belz ad lint ./greet.spec.json --online --env acme-dev --llm
-  belz ad lint 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --online --strict --env acme-dev
+  wi-impl ad lint 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --env acme-dev
+  wi-impl ad lint ./method.v2.json --docs --llm
+  wi-impl ad lint ./greet.spec.json --online --env acme-dev --llm
+  wi-impl ad lint 4a1b2c3d4e5f60718293a4b5c6d7e8f9 --online --strict --env acme-dev

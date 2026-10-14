@@ -5,7 +5,7 @@ import { CliError } from "../src/command";
 import { thrownCliError as err } from "../src/testing/errors";
 
 const show = defineArgs({
-  command: "belz ad show",
+  command: "wi-impl ad show",
   positionals: [{ name: "uuid", required: true }],
   flags: {
     step: { type: "number", integer: true, min: 1, alias: ["--service-detail"] },
@@ -147,7 +147,7 @@ describe("defineSubcommands", () => {
       restore: { positionals: [{ name: "uuid", required: true }], flags: { version: { type: "number", required: true } } },
       search: { positionals: [{ name: "query", variadic: true }] },
     },
-    { command: "belz ad history", aliases: { ls: "list" } },
+    { command: "wi-impl ad history", aliases: { ls: "list" } },
   );
 
   test("routes on argv[0]", () => {
@@ -162,7 +162,7 @@ describe("defineSubcommands", () => {
     const e = err(() => history.parse(["restor", "u"]));
     expect(e.code).toBe("UNKNOWN_SUBCOMMAND");
     expect(e.message).toContain("Did you mean 'restore'");
-    expect(err(() => history.parse(["list", "u", "--version", "1"])).message).toContain("belz ad history list");
+    expect(err(() => history.parse(["list", "u", "--version", "1"])).message).toContain("wi-impl ad history list");
   });
 
   test("default subcommand parses the whole argv", () => {
@@ -189,19 +189,19 @@ describe("doc check", () => {
   });
 
   test("in sync", () => {
-    const help = "Usage: belz ad show <uuid> [flags]\n  --full\n  --step, --service-detail <N>\n  --llm\n";
-    const desc = "belz ad show <uuid>  :->  Show it\nbelz ad show <uuid> --full  :->  Everything\n";
-    expect(checkCommandDocs({ invocation: "belz ad show", def, help, desc })).toEqual([]);
+    const help = "Usage: wi-impl ad show <uuid> [flags]\n  --full\n  --step, --service-detail <N>\n  --llm\n";
+    const desc = "wi-impl ad show <uuid>  :->  Show it\nwi-impl ad show <uuid> --full  :->  Everything\n";
+    expect(checkCommandDocs({ invocation: "wi-impl ad show", def, help, desc })).toEqual([]);
   });
 
   test("drift is reported", () => {
-    const help = "belz ad show <uuid>\n  --full\n  --bogus\n";
+    const help = "wi-impl ad show <uuid>\n  --full\n  --bogus\n";
     const desc = "  show <uuid>   Show it\n";
-    const problems = checkCommandDocs({ invocation: "belz ad show", def, help, desc });
+    const problems = checkCommandDocs({ invocation: "wi-impl ad show", def, help, desc });
     expect(problems.some(p => p.includes("does not document --step"))).toBe(true);
     expect(problems.some(p => p.includes("--service-detail"))).toBe(true);
     expect(problems.some(p => p.includes("mentions --bogus"))).toBe(true);
-    expect(problems.some(p => p.includes("must start with 'Usage: belz ad show'"))).toBe(true);
+    expect(problems.some(p => p.includes("must start with 'Usage: wi-impl ad show'"))).toBe(true);
     expect(problems.some(p => p.startsWith("desc.txt line"))).toBe(true);
   });
 
@@ -213,7 +213,7 @@ describe("doc check", () => {
 
 describe("dash values and duplicates", () => {
   const spec = defineArgs({
-    command: "belz tw comment",
+    command: "wi-impl tw comment",
     flags: { body: { type: "string" }, limit: { type: "number" }, tag: { type: "string", repeatable: true } },
   });
 

@@ -397,7 +397,7 @@ function checkSql(c: StepCtx): void {
   const svc = `${str(c.s.serviceName) ?? ""}/${str(c.s.methodName) ?? ""}`;
   const acct = isObj(c.s.accountConfiguration) ? c.s.accountConfiguration.id : undefined;
   if (acct === null || acct === undefined || acct === "") {
-    c.report({ rule: "AD-SQL-002", message: `SQL step (${svc}) has no accountConfiguration.id.`, path: c.at("accountConfiguration"), step: c.ref, fix: "Copy accountConfiguration {id, name} from a working SQL step (see `belz ad sql` databases).", evidence: "v2_sql_no_account: runtime 'Failed to execute automation!'" });
+    c.report({ rule: "AD-SQL-002", message: `SQL step (${svc}) has no accountConfiguration.id.`, path: c.at("accountConfiguration"), step: c.ref, fix: "Copy accountConfiguration {id, name} from a working SQL step (see `wi-impl ad sql` databases).", evidence: "v2_sql_no_account: runtime 'Failed to execute automation!'" });
   }
   const q = findSqlInput(c.s);
   const raw = q && typeof q.inp.value === "string" ? q.inp.value : "";

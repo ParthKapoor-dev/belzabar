@@ -14,7 +14,7 @@ Docs: [`README.md`](./README.md) (package, exports, error codes) and the README 
   `envelope-success.test.ts` check every command against it.
 - **Runner code never calls a bare `process.exit()` after output**; use `flushAndExit`, or
   piped output past 64 KiB is lost.
-- **Read the process env only through `trustedBelzEnv()`** (a cwd `.env` must not steer belz).
+- **Read the process env only through `trustedBelzEnv()`** (a cwd `.env` must not steer wi-impl).
 - **Anything logged, cached or put in `error.details` goes through `redactSecrets`.**
 - Do not "simplify" `prepareIpv4Fetch` into a throw on resolution failure (see `src/http/README.md`).
 - `@belzabar/core/testing` is test-only; runtime code never imports it. Test seams in runtime

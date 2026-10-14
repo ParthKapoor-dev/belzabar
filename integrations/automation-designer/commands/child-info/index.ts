@@ -19,7 +19,7 @@ interface ChildInfoData {
 type ChildInfoPayload = ChildInfoData | ({ view: "shape" } & ApiShape);
 
 export const args = defineArgs({
-  command: "belz ad child-info",
+  command: "wi-impl ad child-info",
   positionals: [
     { name: "category", required: true, missingCode: "MISSING_CATEGORY", missingMessage: "Missing <category> argument." },
     { name: "method-name", required: true, missingCode: "MISSING_METHOD_NAME", missingMessage: "Missing <method-name> argument." },

@@ -1,4 +1,4 @@
-Usage: belz ad trace <UUID> [flags]
+Usage: wi-impl ad trace <UUID> [flags]
 
 Locate an AD method on every environment relative to its dev version history.
 
@@ -34,9 +34,9 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Examples:
-  belz ad trace 4bbac4b95962448669dcaf518567e752
-  belz ad trace 4bbac4b95962448669dcaf518567e752 --env acme-dev
-  belz ad trace 4bbac4b95962448669dcaf518567e752 --spine acme-dev --envs acme-qa,acme-uat --llm
+  wi-impl ad trace 4bbac4b95962448669dcaf518567e752
+  wi-impl ad trace 4bbac4b95962448669dcaf518567e752 --env acme-dev
+  wi-impl ad trace 4bbac4b95962448669dcaf518567e752 --spine acme-dev --envs acme-qa,acme-uat --llm
 
 Status values per environment:
   latest               env content matches the newest spine entry

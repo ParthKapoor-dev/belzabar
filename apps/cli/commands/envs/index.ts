@@ -14,7 +14,7 @@ interface EnvsData {
   envs: EnvRow[];
 }
 
-export const args = defineArgs({ command: "belz envs" });
+export const args = defineArgs({ command: "wi-impl envs" });
 
 const command: CommandModule<undefined, EnvsData> = {
   parseArgs: (argv) => {

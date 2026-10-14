@@ -1,8 +1,8 @@
 # AGENTS.md — Belzabar repository
 
-You maintain this monorepo. What belz is, how to install and configure it, the workflows and the
+You maintain this monorepo. What wi-impl is, how to install and configure it, the workflows and the
 repository map are in [`README.md`](./README.md); code docs are the README.md in each
-directory. `belz --help-full` is the only command reference: never invent flags.
+directory. `wi-impl --help-full` is the only command reference: never invent flags.
 
 ## Map
 
@@ -27,9 +27,9 @@ Read the workspace's `AGENTS.md` and the README of the directory you touch befor
   - Every workspace root and every source, test and script directory has a README.md.
   - Command folders (`commands/<name>/`) have no README.md: their `help.txt` is the doc, and
     `desc.txt` (one line per invocation, `<full invocation>  :->  <what it does>`) feeds
-    `belz --help-full`. Update both whenever a command's flags change.
+    `wi-impl --help-full`. Update both whenever a command's flags change.
   - Fixture directories are documented by their `manifest.json`, not a README.
-  - `bun run docs:check` enforces the README rule, verifies every path and `belz` command in the
+  - `bun run docs:check` enforces the README rule, verifies every path and `wi-impl` command in the
     docs, and keeps AGENTS.md files short.
 - **Commands.** Implement `CommandModule` from `@belzabar/core`; declare arguments with
   `defineArgs` / `defineSubcommands` and export them as `args` (never hand-roll argv parsing);
@@ -42,6 +42,6 @@ Read the workspace's `AGENTS.md` and the README of the directory you touch befor
   code, comments, tests or docs; use placeholders (`example.test`, `dev`, `qa`).
 - **Never commit secrets.** Fixtures are captured only with `scripts/fixtures/capture.ts`
   (read-only, sanitized); the secrets test must stay green.
-- **Never run** `bun run belz:install` / `belz:reinstall`, `belz update`, `belz setup` or
-  `belz onboard` as part of a change, and never write to the real `~/.wi-impl`.
+- **Never run** `bun run belz:install` / `belz:reinstall`, `wi-impl update`, `wi-impl setup` or
+  `wi-impl onboard` as part of a change, and never write to the real `~/.wi-impl`.
 - **Before committing:** `bun run check` (typecheck, docs:check, dead-code, all tests) is green.

@@ -3,7 +3,7 @@
 // `validate-pd-config.py` rules that hold on real editor output.
 //
 // Codes: figma-to-pd codes are kept where the rule means the same thing (V1,
-// V4, T1–T6, C5, R1, H1, F1, U1); belz-only rules use UPPER_SNAKE names. Rules
+// V4, T1–T6, C5, R1, H1, F1, U1); wi-impl-only rules use UPPER_SNAKE names. Rules
 // that already existed under another name keep it (L1 = ROOT_LAYOUT_MALFORMED,
 // V3 = ARRAY_INITIAL_VALUE, R2 = BUTTON_DYNAMIC_CLASSNAME, …); the catalogue
 // (lib/validator/catalogue.ts) records the mapping and the severities.

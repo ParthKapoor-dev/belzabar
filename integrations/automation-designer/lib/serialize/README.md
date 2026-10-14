@@ -29,7 +29,7 @@ Accepted keys: `name`, `summary`, `description`, `inputs[{code, testValue}]`,
 ## Structural ops (`ops.ts`)
 
 Ops apply in order. Step numbers are **always positions in the fetched draft** (the numbers
-`belz ad show` prints), whatever earlier ops did, so every op can be written from one read.
+`wi-impl ad show` prints), whatever earlier ops did, so every op can be written from one read.
 
 ```json
 {"op":"add-step", "after":2, "step":{"sql":"SELECT 1"}}

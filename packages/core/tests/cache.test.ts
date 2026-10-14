@@ -6,7 +6,7 @@ import { Cache, normalizeCacheKey } from "../src/cache";
 import { Config } from "../src/config";
 import { withTempEnvConfig } from "../src/testing";
 
-const tmp = mkdtempSync(join(tmpdir(), "belz-cache-test-"));
+const tmp = mkdtempSync(join(tmpdir(), "wi-impl-cache-test-"));
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 function makeCache(name: string, extra: Partial<ConstructorParameters<typeof Cache>[0]> = {}) {

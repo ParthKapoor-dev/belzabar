@@ -1,6 +1,6 @@
 # @belzabar/core
 
-The shared CLI framework behind `belz`: argument parsing, the namespaced runner and its `--llm`
+The shared CLI framework behind `wi-impl`: argument parsing, the namespaced runner and its `--llm`
 envelope, config and credentials, the HTTP stack, caches, terminal UI, and the test helpers.
 Every `integrations/*` package and `apps/cli` build on it; nothing here knows about a specific
 command.
