@@ -23,7 +23,7 @@ import {
   type Expectation,
   type ExpectationResult,
 } from "../../lib/test-cases/expect";
-import { parseCaseInput } from "../../lib/test-cases/case-file";
+import { parseCaseInput, runnableInputs } from "../../lib/test-cases/case-file";
 import { caseFailure, readCases, resolveCaseInputs, runCases, type CaseResult, type CasesSummary } from "../../lib/test-cases/cases-table";
 import type { HydratedMethod } from "../../lib/types/common";
 
@@ -140,7 +140,7 @@ async function loadCase(path: string): Promise<{ values: Record<string, unknown>
     if (isStructured(a)) expectations.push(expectationFromAssertion(a));
     else unevaluated.push(a.expression ?? "(no expression)");
   }
-  return { values: c.inputs, expectations, unevaluated };
+  return { values: runnableInputs(c), expectations, unevaluated };
 }
 
 function requireInputs(method: HydratedMethod, values: Record<string, unknown>, source: string): void {
@@ -285,6 +285,16 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
       const where = run.failedStep ? ` at step ${run.failedStep.index}: ${run.failedStep.parsedError.summary}` : "";
       return failWithData("AD_TEST_FAILED", `The method execution FAILED${where}.`, data);
     }
+    // a case whose assertions were not all evaluated is not a pass
+    if (data.expectations?.unevaluated?.length) {
+      const u = data.expectations.unevaluated;
+      return failWithData(
+        "AD_TEST_NOT_CHECKED",
+        `${u.length} assertion(s) could not be evaluated locally, so the case is not checked: ${u.join("; ")}. ` +
+          "Write them as {output, op, expected} (a path and .size() are allowed) to have them checked.",
+        data,
+      );
+    }
     return ok(data);
   },
   presentHuman(envelope, ui) {
@@ -360,7 +370,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
         if (r.pass) ui.success(`PASS  ${r.expectation}`);
         else ui.error(`FAIL  ${r.expectation}  — ${r.reason}`);
       }
-      for (const u of x.unevaluated ?? []) ui.info(`SKIP  ${u} (not evaluated locally)`);
+      for (const u of x.unevaluated ?? []) ui.warn(`NOT CHECKED  ${u} (wi-impl cannot evaluate it locally)`);
       ui.text(`${x.passed}/${x.total} passed`);
     }
 

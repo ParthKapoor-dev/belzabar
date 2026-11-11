@@ -379,11 +379,14 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           logIntent("POST", `/rest/api/automation/chain/test (x${suite.cases.length})`, { chainUuid: uuid, wait: true });
           const summary = await runSuiteCases(method, suite);
           const data: RunSuiteWaitData = { action: "run-suite", mode: "wait", chainUuid: uuid, testSuiteId: suite.testSuiteId, ...summary };
-          if (summary.failed + summary.errored > 0) {
+          if (summary.passed < summary.total) {
             const bad = summary.cases.filter((c) => c.status !== "PASS");
+            // only unevaluated assertions left: a separate code, so "not checked" never reads as a pass or a regression
+            const code = summary.failed + summary.errored > 0 ? "AD_TESTCASE_SUITE_FAILED" : "AD_TESTCASE_NOT_CHECKED";
+            const unchecked = summary.notChecked > 0 ? ` (NOT_CHECKED: some assertions could not be evaluated locally; see each case's unevaluated list)` : "";
             return failWithData(
-              "AD_TESTCASE_SUITE_FAILED",
-              `${bad.length} of ${summary.total} test case(s) did not pass: ${bad.map((c) => `${c.name} ${c.status}`).join(", ")}`,
+              code,
+              `${bad.length} of ${summary.total} test case(s) did not pass: ${bad.map((c) => `${c.name} ${c.status}`).join(", ")}${unchecked}`,
               data,
             );
           }
@@ -535,12 +538,14 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
             : c.status === "FAIL"
               ? ` — ${c.assertions.results.filter((r) => !r.pass).map((r) => `${r.expectation} (${r.reason})`).join("; ")}`
               : "";
-        const line = `${c.status.padEnd(5)} ${c.name} (${c.assertions.passed}/${c.assertions.total} assertions)${why}`;
+        const line = `${c.status.padEnd(11)} ${c.name} (${c.assertions.passed}/${c.assertions.total} assertions)${why}`;
         if (c.status === "PASS") ui.success(line);
+        else if (c.status === "NOT_CHECKED") ui.warn(line);
         else ui.error(line);
-        for (const u of c.unevaluated) ui.info(`      SKIP ${u} (not evaluated locally)`);
+        for (const u of c.unevaluated) ui.info(`      NOT CHECKED ${u} (wi-impl cannot evaluate it locally)`);
+        for (const w of c.warnings ?? []) ui.warn(`      ${w}`);
       }
-      ui.text(`${data.passed} passed, ${data.failed} failed, ${data.errored} errored of ${data.total}`);
+      ui.text(`${data.passed} passed, ${data.failed} failed, ${data.errored} errored, ${data.notChecked} not checked of ${data.total}`);
       return;
     }
     ui.success(`test-case ${data.action} complete`);

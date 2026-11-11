@@ -110,7 +110,8 @@ describe("case file ↔ wire", () => {
       name: "belz_tst_s7c_t1.greet.quote.1",
       description: "quote in name",
       inputs: { name: "O'Brien" },
-      assertions: [{ output: "greetingOut", op: "contains", expected: "O'Brien" }],
+      // the infix `contains` earlier versions stored scores ERROR on the server: it reads back raw
+      assertions: [{ expression: "#{greetingOut} contains 'O''Brien'" }],
     });
     for (const f of files) expect(JSON.stringify(f)).not.toMatch(/"id"|createdOn|testSuiteId/);
   });

@@ -23,8 +23,12 @@ Related: [`../test-run.ts`](../test-run.ts) runs one inline test and returns the
   Every test output arrives as text, so `"42"` equals `42`.
 - Any failure exits 1 with `AD_TEST_EXPECTATION_FAILED`.
 
-Stored assertions are the UI's advance-mode SpEL (`#{out} eq 'v'`), which only knows eq, neq,
-gt, lt and contains, and no paths.
+Stored assertions are advance-mode SpEL in the forms the server evaluates (checked on its own
+test route): `#{lhs} eq|ne|gt|lt v` and `#{lhs.toString()}.contains('v') eq true`, where `lhs`
+is an output with an optional path and `.size()`. The `neq` and infix `contains` forms wi-impl
+wrote before score ERROR on the server; they read back raw and `legacyAssertionProblem` names
+them. `run-suite` reports a case NOT_CHECKED (never PASS) when an assertion cannot be evaluated
+locally, and runs inputs stored as `{}` ("no value") as null (`runnableInputs`).
 
 ## Case files and the export layout
 

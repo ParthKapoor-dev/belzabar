@@ -19,7 +19,7 @@
 import { CliError, isObj, type Obj } from "@belzabar/core";
 import { adApi } from "../api/index";
 import { caseFromWire, caseToWire, diffCases, type CaseFile } from "./case-file";
-import { isStructured } from "./expect";
+import { assertionOutput, isStructured } from "./expect";
 import type { HydratedMethod } from "../types/common";
 
 interface ServerCase {
@@ -59,7 +59,7 @@ export function checkCaseContract(c: CaseFile, method: Pick<HydratedMethod, "inp
   const out: ContractProblem[] = [];
   for (const k of Object.keys(c.inputs)) if (!inputs.has(k)) out.push({ case: c.name, kind: "unknown-input", key: k });
   for (const [k, f] of inputs) if (f.required && !(k in c.inputs)) out.push({ case: c.name, kind: "missing-required-input", key: k });
-  for (const a of c.assertions) if (isStructured(a) && !outputs.has(a.output)) out.push({ case: c.name, kind: "unknown-output", key: a.output });
+  for (const a of c.assertions) if (isStructured(a) && !outputs.has(assertionOutput(a))) out.push({ case: c.name, kind: "unknown-output", key: assertionOutput(a) });
   return out;
 }
 

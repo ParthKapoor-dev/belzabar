@@ -85,7 +85,9 @@ describe("ad test --expect", () => {
       }),
     );
     const r = await runCommand(testCommand, [DRAFT, "--case", file], { env: ENV });
-    expect(r.envelope?.ok).toBe(true);
+    // an assertion wi-impl cannot evaluate leaves the case NOT CHECKED: never ok:true
+    expect(r.envelope?.ok).toBe(false);
+    expect(r.envelope?.error?.code).toBe("AD_TEST_NOT_CHECKED");
     const req = ad.ff.requests.find((q) => q.url.endsWith("/chain/test"))!;
     const body = JSON.parse(JSON.parse(req.body!).find(([k]: [string]) => k === "body")[1]);
     expect(JSON.parse(body.jsonDefinition).inputs.find((i: any) => i.fieldCode === "name").testValue).toBe("World");

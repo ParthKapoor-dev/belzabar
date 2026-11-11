@@ -18,7 +18,10 @@ Flags:
   --case <FILE>         Take the inputs AND the expectations from a test-case file
                         (`wi-impl ad test-case export` format, or a UI test-case body):
                         every `{output, op, expected}` assertion is checked locally.
-                        Cannot be combined with --inputs.
+                        Any other assertion (raw SpEL) cannot be checked here: the
+                        run then exits 1 with AD_TEST_NOT_CHECKED, never ok:true.
+                        Inputs stored as `{}` ("no value") run as null, as in the AD
+                        screen. Cannot be combined with --inputs.
   --cases <FILE>        Run the method once per case in FILE: a JSON array, or JSONL
                         (one object per line), of {name?, inputs?, expect?[]} where
                         expect uses the --expect syntax. --input and --expect apply
@@ -30,7 +33,11 @@ Flags:
                         Cannot be combined with --inputs, --case or
                         --compare-published.
   --expect <OUT=VALUE>  Check a method output after the run (repeatable). Operators:
-                        = != ~= (contains) > < >= <=; `out.a[0]=x` looks inside JSON.
+                        = != ~= (contains) > < >= <=; `out.a[0]=x` looks inside JSON,
+                        `out.size()=3` checks a list's (text's) size. ~= on a list
+                        matches text inside any item. An empty or null output has
+                        no value on the wire: it is reported as null and equals
+                        `out=` and `out=null`.
                         The value is JSON when it parses, else text; quote it
                         ('42') to compare as a string. Any failure exits 1 with
                         AD_TEST_EXPECTATION_FAILED.

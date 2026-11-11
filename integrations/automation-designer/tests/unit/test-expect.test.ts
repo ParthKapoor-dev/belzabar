@@ -8,6 +8,7 @@ import {
   assertionToWire,
   evaluateExpectation,
   expectationFromAssertion,
+  legacyAssertionProblem,
   parseExpectation,
 } from "../../lib/test-cases/expect";
 
@@ -83,31 +84,37 @@ describe("assertions ↔ SpEL (UI encoding)", () => {
     expect(assertionToWire(a)).toEqual({ mode: "advance", conditionExpression: "#{greetingOut} eq 'O''Brien'", conditions: null });
     expect(assertionExpression(assertionFromExpectation(parseExpectation("n>5")))).toBe("#{n} gt 5");
     expect(assertionExpression(assertionFromExpectation(parseExpectation("n='5'")))).toBe("#{n} eq '5'");
-    expect(assertionExpression(assertionFromExpectation(parseExpectation("b!=false")))).toBe("#{b} neq false");
+    // the forms the server evaluates (`neq` and infix `contains` score ERROR there)
+    expect(assertionExpression(assertionFromExpectation(parseExpectation("b!=false")))).toBe("#{b} ne false");
+    expect(assertionExpression(assertionFromExpectation(parseExpectation("rows~=O'Neil")))).toBe("#{rows.toString()}.contains('O''Neil') eq true");
+    expect(assertionExpression(assertionFromExpectation(parseExpectation("rows.size()=3")))).toBe("#{rows.size()} eq 3");
+    expect(assertionExpression(assertionFromExpectation(parseExpectation("rows[0].label=alpha")))).toBe("#{rows[0].label} eq 'alpha'");
   });
 
   test("UI-unsupported shapes are refused", () => {
-    for (const bad of ["a.b=1", "n>=1", "o={\"a\":1}"]) {
+    for (const bad of ["a.b-c=1", "n>=1", "o={\"a\":1}"]) {
       expect(() => assertionFromExpectation(parseExpectation(bad))).toThrow(expect.objectContaining({ code: "INVALID_ASSERTION" }));
     }
     // the hint must not suggest the out.path form the error just refused
     let msg = "";
     try {
-      assertionFromExpectation(parseExpectation("a.b=1"));
+      assertionFromExpectation(parseExpectation("a.b-c=1"));
     } catch (e) {
       msg = (e as Error).message;
     }
     expect(msg).toContain("Invalid assertion");
-    expect(msg).toContain("wi-impl ad test --expect");
-    expect(msg).not.toMatch(/\(out\.path\[0\]=value for JSON outputs\)/);
+    expect(msg).toContain("out.size()=n");
   });
 
   test("read back: structured when parseable, raw otherwise", () => {
-    expect(assertionFromWire({ mode: "advance", conditionExpression: "#{greetingOut} contains 'O''Brien'" })).toEqual({
+    expect(assertionFromWire({ mode: "advance", conditionExpression: "#{greetingOut.toString()}.contains('O''Brien') eq true" })).toEqual({
       output: "greetingOut",
       op: "contains",
       expected: "O'Brien",
     });
+    expect(assertionFromWire({ mode: "advance", conditionExpression: "#{n} ne 5" })).toEqual({ output: "n", op: "neq", expected: 5 });
+    expect(assertionFromWire({ mode: "advance", conditionExpression: "#{rows.size()} eq 19" })).toEqual({ output: "rows.size()", op: "eq", expected: 19 });
+    expect(assertionFromWire({ mode: "advance", conditionExpression: "#{rows[0].c} eq 'x'" })).toEqual({ output: "rows[0].c", op: "eq", expected: "x" });
     expect(assertionFromWire({ mode: "advance", conditionExpression: "#{n} gt -1.5" })).toEqual({ output: "n", op: "gt", expected: -1.5 });
     expect(assertionFromWire({ mode: "advance", conditionExpression: "#{a} eq #{b}" })).toEqual({ expression: "#{a} eq #{b}" });
     expect(assertionFromWire({ mode: "basic", conditionExpression: "#{a} eq 'x'", conditions: '[{"x":1}]' })).toEqual({
@@ -122,5 +129,46 @@ describe("assertions ↔ SpEL (UI encoding)", () => {
     expect(evaluateExpectation({ greetingOut: "Hello World" }, e).pass).toBe(true);
     const q = expectationFromAssertion({ output: "n", op: "eq", expected: "42" });
     expect(evaluateExpectation({ n: 42 }, q).pass).toBe(true);
+  });
+});
+
+describe("feedback fixes: list contains, .size(), empty outputs, legacy stored forms", () => {
+  const rows = [{ label: "alpha O'Neil" }, { label: "beta" }];
+  test("~= on a list matches text inside an item (was: only an item equal to the text)", () => {
+    expect(run({ rows }, "rows~=O'Neil").pass).toBe(true);
+    expect(run({ rows: ["1397726,O'Neil,121 Brookwood Dr"] }, "rows~=Brookwood").pass).toBe(true);
+    expect(run({ rows }, "rows~=gamma").pass).toBe(false);
+  });
+
+  test(".size() on a list, on JSON text and after a path", () => {
+    expect(run({ rows }, "rows.size()=2").pass).toBe(true);
+    expect(run({ rows: JSON.stringify(rows) }, "rows.size()>1").pass).toBe(true);
+    expect(run({ rows }, "rows[0].label.size()=12").pass).toBe(true);
+    const bad = run({ n: 5 }, "n.size()=1");
+    expect(bad.pass).toBe(false);
+    expect(bad.reason).toContain("no size");
+  });
+
+  test("a stored path / .size() assertion evaluates locally", () => {
+    const a = assertionFromExpectation(parseExpectation("rows.size()=2"));
+    expect(evaluateExpectation({ rows }, expectationFromAssertion(a)).pass).toBe(true);
+    const b = assertionFromExpectation(parseExpectation("rows[1].label=beta"));
+    expect(evaluateExpectation({ rows }, expectationFromAssertion(b)).pass).toBe(true);
+    const c = assertionFromWire({ conditionExpression: "#{rows.toString()}.contains('O''Neil') eq true" });
+    expect(evaluateExpectation({ rows }, expectationFromAssertion(c as Parameters<typeof expectationFromAssertion>[0])).pass).toBe(true);
+  });
+
+  test("an empty or null output (no testResult on the wire, read as null) equals '' and null", () => {
+    expect(run({ reason: null }, "reason=").pass).toBe(true);
+    expect(run({ reason: null }, "reason=''").pass).toBe(true);
+    expect(run({ reason: null }, "reason=null").pass).toBe(true);
+    expect(run({ reason: null }, "reason=x").pass).toBe(false);
+  });
+
+  test("the neq / infix contains forms earlier versions stored are flagged", () => {
+    expect(legacyAssertionProblem(assertionFromWire({ conditionExpression: "#{count} neq 5" }))).toContain("`ne`");
+    expect(legacyAssertionProblem(assertionFromWire({ conditionExpression: "#{rows} contains 'enrp'" }))).toContain(".contains('v') eq true");
+    expect(legacyAssertionProblem(assertionFromWire({ conditionExpression: "#{count} ne 5" }))).toBeNull();
+    expect(legacyAssertionProblem(assertionFromWire({ conditionExpression: "#{a} eq #{b}" }))).toBeNull();
   });
 });

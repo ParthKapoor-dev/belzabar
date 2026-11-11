@@ -17,7 +17,7 @@
 //     assertions: [{output, op, expected} | {expression, mode?, conditions?}] }
 
 import { CliError, isObj, type Obj } from "@belzabar/core";
-import { assertionFromWire, assertionToWire, isStructured, type CaseAssertion } from "./expect";
+import { assertionFromExpectation, assertionFromWire, assertionToWire, assertOp, isStructured, parseExpectation, type CaseAssertion } from "./expect";
 
 interface InputExtra {
   /** Stored defaultValue, when it differs from the value. */
@@ -110,6 +110,31 @@ export function caseToWire(c: CaseFile): Obj {
   return { name: c.name, description: c.description, inputs, assertions: c.assertions.map(assertionToWire) };
 }
 
+/**
+ * The inputs a case runs with, the way the AD screen runs it: an input stored
+ * without a `{"value": …}` wrapper (the platform's `{}` for "no value", which a
+ * save writes into every case that did not set it) or with a null value is
+ * sent as null, never as the text "{}".
+ */
+export function runnableInputs(c: CaseFile): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(c.inputs)) out[k] = c.inputExtras?.[k]?.raw && isNoValue(v) ? null : v;
+  return out;
+}
+
+/** A raw stored value that means "no value": null, empty, or a JSON object with no `value` key (`{}`). */
+function isNoValue(v: unknown): boolean {
+  if (v === null || v === undefined) return true;
+  if (typeof v !== "string") return false;
+  if (!v.trim()) return true;
+  try {
+    const parsed: unknown = JSON.parse(v);
+    return isObj(parsed) && !Object.prototype.hasOwnProperty.call(parsed, "value");
+  } catch {
+    return false;
+  }
+}
+
 /** Canonical JSON (stable key order) for comparing two case files. */
 function canon(v: unknown): string {
   return JSON.stringify(sortKeys(v));
@@ -121,7 +146,9 @@ export function diffCases(a: CaseFile, b: CaseFile): Array<"name" | "description
   if (a.name !== b.name) out.push("name");
   if ((a.description ?? "") !== (b.description ?? "")) out.push("description");
   if (canon([a.inputs, a.inputExtras ?? {}]) !== canon([b.inputs, b.inputExtras ?? {}])) out.push("inputs");
-  if (canon(a.assertions) !== canon(b.assertions)) out.push("assertions");
+  // the server may return a case's assertions in another order: compare them as a set
+  const set = (x: CaseFile) => x.assertions.map(canon).sort();
+  if (canon(set(a)) !== canon(set(b))) out.push("assertions");
   return out;
 }
 
@@ -164,11 +191,17 @@ export function parseCaseInput(json: unknown, source: string): CaseFile {
   for (const [i, a] of ((json.assertions as unknown[]) ?? []).entries()) {
     if (!isObj(a)) throw bad(`assertions[${i}] must be an object`);
     if (typeof a.output === "string") {
-      const op = a.op ?? "eq";
-      if (!["eq", "neq", "gt", "lt", "contains"].includes(String(op))) throw bad(`assertions[${i}].op must be eq, neq, gt, lt or contains`);
+      const op = assertOp(a.op ?? "eq");
+      if (!op) throw bad(`assertions[${i}].op must be eq, neq (or ne), gt, lt or contains`);
       const e = a.expected;
       if (e !== null && !["string", "number", "boolean"].includes(typeof e)) throw bad(`assertions[${i}].expected must be a string, number, boolean or null`);
-      assertions.push({ output: a.output, op: op as "eq", expected: e as string });
+      // the left-hand side may carry a path and .size() (`out[0].col`, `out.size()`)
+      try {
+        assertionFromExpectation(parseExpectation(`${a.output}=x`));
+      } catch (err) {
+        throw bad(`assertions[${i}].output: ${(err as Error).message}`);
+      }
+      assertions.push({ output: a.output, op, expected: e as string });
     } else if (typeof a.expression === "string" || typeof a.conditionExpression === "string") {
       assertions.push(assertionFromWire({ mode: a.mode, conditionExpression: a.expression ?? a.conditionExpression, conditions: a.conditions }));
     } else {

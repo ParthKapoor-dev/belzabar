@@ -89,7 +89,8 @@ export function outputsMap(result: Record<string, unknown>): Record<string, unkn
     if (!o || typeof o !== "object") continue;
     const row = o as Record<string, unknown>;
     const code = typeof row.code === "string" ? row.code : typeof row.outputCode === "string" ? row.outputCode : null;
-    if (code) map[code] = parseOutput(row.testResult);
+    // the test route sends no testResult for an empty or null output: keep the key, as null
+    if (code) map[code] = row.testResult === undefined ? null : parseOutput(row.testResult);
   }
   return map;
 }

@@ -3,16 +3,20 @@
 //   out=val     equal            out!=val   not equal
 //   out~=val    contains         out>val  out<val  out>=val  out<=val   numeric
 //   out.a[0].b=val               path into an output that holds JSON
+//   out.size()=3  out[0].size()>1  the size of a list / text / object
 //
 // The right-hand side is JSON when it parses (42, true, null, {"a":1}),
 // else a plain string; quote it ('42' or "42") to force a string. Equality is
 // forgiving about the wire: every test output arrives as text, so "42" equals
 // 42 and a JSON string equals the parsed value.
 //
-// Test-case assertions are stored as advance-mode SpEL
-// (`#{out} eq 'value'`, the AD UI encoding — api-endpoints.md §8.5), so the
-// same syntax converts to and from an assertion (eq/neq/gt/lt/contains only,
-// no path: those are the operators the UI understands).
+// Test-case assertions are stored as advance-mode SpEL, in the forms the
+// server evaluates (live 2026-10-21, the AD screen's own test route):
+//   =  → #{lhs} eq v     != → #{lhs} ne v     > / < → gt / lt
+//   ~= → #{lhs.toString()}.contains('v') eq true
+// `neq` and an infix `#{x} contains 'v'` (what wi-impl stored before) score
+// ERROR on the server: they read back as raw expressions with a warning.
+// `lhs` is an output, optionally with a path (`out[0].col`) and `.size()`.
 
 import { CliError } from "@belzabar/core";
 
@@ -30,6 +34,8 @@ export interface Expectation {
   text: string;
   /** The value was quoted: compare as a string. */
   quoted: boolean;
+  /** `.size()` after the path: compare the size of the value. */
+  size?: boolean;
 }
 
 export interface ExpectationResult {
@@ -54,15 +60,15 @@ const OPS: Array<[string, ExpectOp]> = [
 
 const OP_SYMBOL: Record<ExpectOp, string> = { eq: "=", neq: "!=", contains: "~=", gt: ">", lt: "<", ge: ">=", le: "<=" };
 
-const LHS_RE = /^\s*([A-Za-z_][A-Za-z0-9_]*)((?:\.[A-Za-z0-9_$-]+|\[\d+\])*)\s*/;
+const LHS_RE = /^\s*([A-Za-z_][A-Za-z0-9_]*)((?:\.(?!size\(\))[A-Za-z0-9_$-]+|\[\d+\])*)(\.size\(\))?\s*/;
 
 function invalid(source: string, why: string, code = "INVALID_EXPECTATION"): CliError {
   // A persisted assertion (`test-case --assert`) is the UI's SpEL: whole outputs only,
   // so it must not suggest `out.path` (the hint contradicted the error).
   const hint =
     code === "INVALID_ASSERTION"
-      ? "Use out=value, out!=value, out~=value, out>n, out<n on a whole output (to look inside a JSON output, use `wi-impl ad test --expect out.path[0]=value`, which is checked locally)."
-      : "Use out=value, out!=value, out~=value, out>n, out<n (out.path[0]=value for JSON outputs).";
+      ? "Use out=value, out!=value, out~=value, out>n, out<n; out[0].col=value and out.size()=n look inside an output."
+      : "Use out=value, out!=value, out~=value, out>n, out<n (out.path[0]=value for JSON outputs, out.size()=n for a size).";
   const label = code === "INVALID_ASSERTION" ? "assertion" : "expectation";
   return new CliError(`Invalid ${label} '${source}': ${why}. ${hint}`, { code });
 }
@@ -97,17 +103,23 @@ export function parseExpectation(source: string): Expectation {
   if ((op === "gt" || op === "lt" || op === "ge" || op === "le") && !Number.isFinite(Number(lit.text))) {
     throw invalid(source, `${sym} needs a number`);
   }
-  return { source, output: m[1]!, path, op, expected: lit.value, text: lit.text, quoted: lit.quoted };
+  const e: Expectation = { source, output: m[1]!, path, op, expected: lit.value, text: lit.text, quoted: lit.quoted };
+  if (m[3]) e.size = true;
+  return e;
 }
 
 function pathText(path: Array<string | number>): string {
   return path.map((p) => (typeof p === "number" ? `[${p}]` : `.${p}`)).join("");
 }
 
-function formatExpectation(e: Pick<Expectation, "output" | "path" | "op" | "expected">): string {
-  const path = pathText(e.path);
+function formatExpectation(e: Pick<Expectation, "output" | "path" | "op" | "expected" | "size">): string {
   const rhs = typeof e.expected === "string" ? e.expected : JSON.stringify(e.expected);
-  return `${e.output}${path}${OP_SYMBOL[e.op]}${rhs}`;
+  return `${lhsText(e)}${OP_SYMBOL[e.op]}${rhs}`;
+}
+
+/** `out`, `out[0].col`, `out.size()`: the left-hand side as typed. */
+function lhsText(e: Pick<Expectation, "output" | "path" | "size">): string {
+  return `${e.output}${pathText(e.path)}${e.size ? ".size()" : ""}`;
 }
 
 // ── evaluation ────────────────────────────────────────────────────────────
@@ -143,6 +155,8 @@ function isScalar(v: unknown): boolean {
 
 /** Wire-tolerant equality: exact, text form, or the JSON a string output holds. */
 function looseEqual(actual: unknown, e: Pick<Expectation, "expected" | "text" | "quoted">): boolean {
+  // the test route leaves an empty or null output without a value (wi-impl reads it as null)
+  if (actual === null && e.text === "") return true;
   if (e.quoted) return isScalar(actual) && actual !== null && String(actual) === e.text;
   if (deepEqual(actual, e.expected)) return true;
   if (actual === undefined) return false;
@@ -165,10 +179,20 @@ function descend(value: unknown, path: Array<string | number>): { found: boolean
 
 function contains(actual: unknown, e: Expectation): boolean {
   const v = tryJson(actual);
-  if (Array.isArray(v)) return v.some((x) => looseEqual(x, e));
+  // text inside any item, as the stored `#{x.toString()}.contains('v')` does
+  if (Array.isArray(v)) return v.some((x) => looseEqual(x, e) || (typeof x === "string" ? x : JSON.stringify(x) ?? "").includes(e.text));
   if (typeof actual === "string") return actual.includes(e.text);
   if (v && typeof v === "object") return Object.prototype.hasOwnProperty.call(v, e.text) || JSON.stringify(v).includes(e.text);
   return actual !== undefined && actual !== null && String(actual).includes(e.text);
+}
+
+/** Size of a list, text or object (JSON text is parsed first); undefined for anything else. */
+function sizeOf(value: unknown): number | undefined {
+  const v = tryJson(value);
+  if (Array.isArray(v)) return v.length;
+  if (typeof v === "string") return v.length;
+  if (v && typeof v === "object") return Object.keys(v).length;
+  return undefined;
 }
 
 /** Evaluate one expectation against a test run's method outputs (`{code: value}`). */
@@ -182,7 +206,10 @@ export function evaluateExpectation(outputs: Record<string, unknown>, e: Expecta
   if (!hit.found) {
     return { ...base, actual: undefined, pass: false, reason: `path ${pathText(e.path)} not found in '${e.output}'` };
   }
-  const actual = hit.value;
+  const actual = e.size ? sizeOf(hit.value) : hit.value;
+  if (e.size && actual === undefined) {
+    return { ...base, actual: hit.value, pass: false, reason: `${lhsText(e)}: the value has no size` };
+  }
   let pass: boolean;
   let reason: string | undefined;
   switch (e.op) {
@@ -219,8 +246,10 @@ export function evaluateExpectations(outputs: Record<string, unknown>, list: Exp
 
 const ASSERT_OPS = ["eq", "neq", "gt", "lt", "contains"] as const;
 type AssertOp = (typeof ASSERT_OPS)[number];
+/** Case-file op names: `ne` is accepted for `neq`. */
+const OP_ALIASES: Record<string, AssertOp> = { ne: "neq" };
 
-/** A test-case assertion in the git-friendly case-file form. */
+/** A test-case assertion in the git-friendly case-file form. `output` is the left-hand side: `out`, `out[0].col`, `out.size()`. */
 interface StructuredAssertion {
   output: string;
   op: AssertOp;
@@ -240,16 +269,32 @@ export function isStructured(a: CaseAssertion): a is StructuredAssertion {
   return typeof (a as StructuredAssertion).output === "string";
 }
 
-/** `--assert out=value` → a structured assertion (UI operators, no path, scalar value). */
+/** A case-file op (`eq`, `neq` or `ne`, `gt`, `lt`, `contains`), or null when unknown. */
+export function assertOp(op: unknown): AssertOp | null {
+  const s = String(op);
+  return (ASSERT_OPS as readonly string[]).includes(s) ? (s as AssertOp) : (OP_ALIASES[s] ?? null);
+}
+
+// A left-hand side the server's SpEL takes as written: identifiers, [n] indexes, an optional .size().
+const LHS_SRC = String.raw`[A-Za-z_][A-Za-z0-9_]*(?:\.(?!size\(\))[A-Za-z_][A-Za-z0-9_]*|\[\d+\])*(?:\.size\(\))?`;
+const LHS_ONLY_RE = new RegExp(`^${LHS_SRC}$`);
+
+/** The output an assertion's left-hand side reads (`out[0].col` → `out`). */
+export function assertionOutput(a: StructuredAssertion): string {
+  return /^[A-Za-z_][A-Za-z0-9_]*/.exec(a.output)?.[0] ?? a.output;
+}
+
+/** `--assert out=value` → a structured assertion (UI operators, scalar value; a path and .size() are allowed). */
 export function assertionFromExpectation(e: Expectation): StructuredAssertion {
   const code = "INVALID_ASSERTION";
-  if (e.path.length > 0) throw invalid(e.source, "assertions compare a whole output (no .path)", code);
   if (!(ASSERT_OPS as readonly string[]).includes(e.op)) {
-    throw invalid(e.source, `the AD UI only evaluates ${ASSERT_OPS.join(", ")} (=, !=, >, <, ~=)`, code);
+    throw invalid(e.source, `stored assertions take ${ASSERT_OPS.join(", ")} (=, !=, >, <, ~=)`, code);
   }
+  const lhs = lhsText(e);
+  if (!LHS_ONLY_RE.test(lhs)) throw invalid(e.source, "a stored path takes identifiers and [n] indexes only", code);
   const v = e.expected;
   if (v !== null && typeof v === "object") throw invalid(e.source, "assertion values must be a string, number, boolean or null", code);
-  return { output: e.output, op: e.op as AssertOp, expected: v as StructuredAssertion["expected"] };
+  return { output: lhs, op: e.op as AssertOp, expected: v as StructuredAssertion["expected"] };
 }
 
 /** SpEL literal: strings single-quoted ('' escapes), numbers/booleans/null bare. */
@@ -260,7 +305,8 @@ function spelLiteral(v: StructuredAssertion["expected"]): string {
 }
 
 export function assertionExpression(a: StructuredAssertion): string {
-  return `#{${a.output}} ${a.op} ${spelLiteral(a.expected)}`;
+  if (a.op === "contains") return `#{${a.output}.toString()}.contains(${spelLiteral(String(a.expected))}) eq true`;
+  return `#{${a.output}} ${a.op === "neq" ? "ne" : a.op} ${spelLiteral(a.expected)}`;
 }
 
 /** The UI wire shape of one assertion. */
@@ -271,13 +317,19 @@ export function assertionToWire(a: CaseAssertion): Record<string, unknown> {
   return out;
 }
 
-const ASSERT_RE = /^\s*#\{\s*([A-Za-z_][A-Za-z0-9_]*)\s*\}\s+(eq|neq|gt|lt|contains)\s+(.+?)\s*$/;
+const ASSERT_RE = new RegExp(String.raw`^\s*#\{\s*(${LHS_SRC})\s*\}\s+(eq|ne|gt|lt)\s+(.+?)\s*$`);
+const CONTAINS_RE = new RegExp(String.raw`^\s*#\{\s*(${LHS_SRC})\.toString\(\)\s*\}\.contains\('((?:[^']|'')*)'\)\s+eq\s+true\s*$`);
+// What wi-impl stored for != and ~= up to 0.3.0: the server scores both ERROR.
+const LEGACY_RE = /^\s*#\{[^}]*\}\s+(neq|contains)\s+/;
 
-/** Read a stored assertion back: structured when it is `#{out} op literal`, else raw. */
+/** Read a stored assertion back: structured when it is one of the forms above, else raw. */
 export function assertionFromWire(w: Record<string, unknown>): CaseAssertion {
   const expr = typeof w.conditionExpression === "string" ? w.conditionExpression : null;
   const mode = typeof w.mode === "string" ? w.mode : undefined;
-  const m = expr && (mode === undefined || mode === "advance") && !w.conditions ? ASSERT_RE.exec(expr) : null;
+  const plain = expr !== null && (mode === undefined || mode === "advance") && !w.conditions;
+  const c = plain ? CONTAINS_RE.exec(expr) : null;
+  if (c) return { output: c[1]!, op: "contains", expected: c[2]!.replace(/''/g, "'") };
+  const m = plain ? ASSERT_RE.exec(expr) : null;
   if (m) {
     const lit = m[3]!;
     let expected: StructuredAssertion["expected"] | undefined;
@@ -286,7 +338,7 @@ export function assertionFromWire(w: Record<string, unknown>): CaseAssertion {
     else if (lit === "null") expected = null;
     else if (lit === "true" || lit === "false") expected = lit === "true";
     else if (/^-?\d+(\.\d+)?$/.test(lit)) expected = Number(lit);
-    if (expected !== undefined) return { output: m[1]!, op: m[2] as AssertOp, expected };
+    if (expected !== undefined) return { output: m[1]!, op: m[2] === "ne" ? "neq" : (m[2] as AssertOp), expected };
   }
   const raw: RawAssertion = { expression: expr };
   if (mode !== undefined && mode !== "advance") raw.mode = mode;
@@ -294,16 +346,31 @@ export function assertionFromWire(w: Record<string, unknown>): CaseAssertion {
   return raw;
 }
 
+/**
+ * Why a stored assertion cannot pass on the server, or null: the `neq` and
+ * infix `contains` forms earlier wi-impl versions wrote score ERROR there.
+ */
+export function legacyAssertionProblem(a: CaseAssertion): string | null {
+  if (isStructured(a) || !a.expression) return null;
+  const m = LEGACY_RE.exec(a.expression);
+  if (!m) return null;
+  const fix = m[1] === "neq" ? "`ne`" : "`#{out.toString()}.contains('v') eq true`";
+  return `'${a.expression}' uses ${m[1] === "neq" ? "`neq`" : "an infix `contains`"}, which the server scores ERROR (the working form is ${fix}); write it as {output, op, expected} and re-save the case`;
+}
+
 /** A structured assertion as an expectation, so `ad test --case` can evaluate it locally. */
 export function expectationFromAssertion(a: StructuredAssertion): Expectation {
-  const text = a.expected === null ? "null" : String(a.expected);
-  return {
-    source: formatExpectation({ output: a.output, path: [], op: a.op, expected: a.expected }),
-    output: a.output,
-    path: [],
+  const lhs = parseExpectation(`${a.output}=x`);
+  const e: Expectation = {
+    source: "",
+    output: lhs.output,
+    path: lhs.path,
     op: a.op,
     expected: a.expected,
-    text,
+    text: a.expected === null ? "null" : String(a.expected),
     quoted: typeof a.expected === "string",
   };
+  if (lhs.size) e.size = true;
+  e.source = formatExpectation(e);
+  return e;
 }

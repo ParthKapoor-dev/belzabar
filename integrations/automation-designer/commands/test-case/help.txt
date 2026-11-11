@@ -20,7 +20,7 @@ Actions:
                                           only, not observable from the CLI)
   run-suite <uuid> --wait [--yes]         Run every active case now (one /chain/test run
                                           each), evaluate its assertions, and return a
-                                          per-case PASS/FAIL/ERROR summary
+                                          per-case PASS/FAIL/ERROR/NOT_CHECKED summary
   delete-suite <testSuiteId> [--yes]      Delete a test suite
   export <uuid> --dir <root> [--prune]    Write the suite to <root>/<Category>/<method>/
                                           (method.json + cases/<name>.json); read-only
@@ -37,11 +37,18 @@ Flags:
                         other types parse as JSON when they can.
   --assert <out=v>      Assertion (repeatable): out=v, out!=v, out>v, out<v, out~=v
                         (contains). v is JSON when it parses; quote it ('42') for a
-                        string. Stored as advance-mode SpEL `#{out} eq 'v'`.
+                        string. The left side may be `out[0].col` or `out.size()`.
+                        Stored as the SpEL the server evaluates: `#{out} eq 'v'`,
+                        `#{out} ne v`, `#{out.toString()}.contains('v') eq true`.
+                        (`neq` and an infix `contains`, stored by wi-impl before
+                        0.3.1, score ERROR on the server: they read back as raw
+                        expressions with a warning; re-save the case to fix them.)
   --dir <path>          Export root (export).
   --uuid <uuid>         Chain to sync to (sync). Default: method.json uuids[<env>].
   --wait                run-suite: run the cases now and wait for every result
-                        (exit 1 AD_TESTCASE_SUITE_FAILED unless all pass;
+                        (exit 1 unless all pass: AD_TESTCASE_SUITE_FAILED when a case
+                        failed or errored, AD_TESTCASE_NOT_CHECKED when the only
+                        problem is assertions wi-impl could not evaluate;
                         AD_TESTCASE_NONE when the suite has no active case).
   --apply               Perform the sync (without it sync only prints the plan).
   --prune               export: delete case files no longer on the server;
@@ -63,6 +70,8 @@ separate git repo and sync to any env):
     "inputs": { "name": "World" },
     "assertions": [ { "output": "greetingOut", "op": "eq", "expected": "Hello World" } ]
   }
+  "op" is eq, neq (or ne), gt, lt or contains; "output" may carry a path and
+  .size() ("rows[0].label", "rows.size()").
   Assertions wi-impl cannot parse stay verbatim as {"expression": "..."}. Inputs whose
   stored wrapper carries more than {"value"} keep it in "inputExtras".
 
@@ -77,9 +86,12 @@ run-suite without --wait (live): /testsuite/execute returns at once
 ("you will receive an email"); `ad test-report` is not per chain and stays all
 zeros; the suite's executionStatus stays PASS even when an assertion fails, and
 no case carries a result. Use --wait to see results: data {mode:"wait", total,
-passed, failed, errored, cases[{id, name, status, execution, outputs,
-assertions{total, passed, failed, results}, unevaluated, failedStep?, error?}]}.
-Assertions that are not `#{out} op literal` are listed in `unevaluated`.
+passed, failed, errored, notChecked, cases[{id, name, status, execution, outputs,
+assertions{total, passed, failed, results}, unevaluated, warnings?, failedStep?,
+error?}]}. Assertions wi-impl cannot evaluate (raw SpEL other than the stored
+forms above) are listed in `unevaluated`, and the case is NOT_CHECKED, never
+PASS. Inputs stored as `{}` ("no value", which every method save writes into
+cases that did not set an input) run as null, the way the AD screen runs them.
 
 Examples:
   wi-impl ad test-case create 4a1b... --name greet.ok.1 --input name=World --assert "greetingOut=Hello World" --env <env> --yes
