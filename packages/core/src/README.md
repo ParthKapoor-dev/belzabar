@@ -60,7 +60,7 @@ wi-impl <token> [args]
 
 - **Global flags** (`parseGlobalFlags`): `--llm`, `--human`, `-v/--verbose`, `-e/--env <n>`, `--env=<n>`.
   Without `--llm`/`--human` the output mode is `llm` inside an agent session (`inAgentSession`:
-  `WI_IMPL_AGENT=1` or `CLAUDECODE=1`), else `human`; both flags → `INVALID_ARGS`. Parsing stops at `--`. Duplicate or conflicting `--env` → `INVALID_ARGS`. A `-v` after the
+  `WI_IMPL_AGENT=1` or `CLAUDECODE=1`), else `human`; both flags → `INVALID_ARGS`. A command whose output is the value itself (`humanByDefault`, e.g. `config token`) keeps `human` unless `--llm` is explicit. Parsing stops at `--`. Duplicate or conflicting `--env` → `INVALID_ARGS`. A `-v` after the
   command name goes to the command when it declares `--verbose` (or `ownsFlags`); otherwise it
   turns on debug logging.
 - **Help.** `-h`/`--help` anywhere before `--` shows the command's help instead of running it

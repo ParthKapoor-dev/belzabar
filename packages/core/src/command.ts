@@ -92,6 +92,12 @@ export interface CommandModule<TArgs = unknown, TData = unknown> {
    */
   writesLocal?: boolean;
   /**
+   * The command's human output is the value itself, for a pipe (`config token`
+   * prints the raw token). It then ignores the agent-session `--llm` default:
+   * only an explicit `--llm` gives the envelope.
+   */
+  humanByDefault?: boolean | ((args: TArgs) => boolean);
+  /**
    * Global-flag tokens this command declares for itself (currently only
    * `-v`/`--verbose` can be claimed). When such a token appears after the
    * command name, it is passed to `parseArgs` instead of switching on runner

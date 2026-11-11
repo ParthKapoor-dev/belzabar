@@ -160,6 +160,8 @@ interface GlobalFlags {
   /** argv with the global flags removed (everything from `--` onward is kept verbatim). */
   args: string[];
   outputMode: "human" | "llm";
+  /** `--llm` or `--human` was given (otherwise `outputMode` is the default). */
+  outputModeExplicit: boolean;
   verbose: boolean;
   /** Every `-v/--verbose` removed, with its position — handed back to commands that own the flag. */
   verboseTokens: VerboseToken[];
@@ -234,13 +236,23 @@ export function parseGlobalFlags(argv: string[], defaultMode: "human" | "llm" = 
   }
 
   const outputMode = explicitMode ?? defaultMode;
-  return { args, outputMode, verbose: verboseTokens.length > 0, verboseTokens, envName, error };
+  return {
+    args,
+    outputMode,
+    outputModeExplicit: explicitMode !== null,
+    verbose: verboseTokens.length > 0,
+    verboseTokens,
+    envName,
+    error,
+  };
 }
 
 /** Process-wide global state for one invocation, threaded into dispatch. */
 interface GlobalContext {
   /** `--env` was given explicitly. */
   envExplicit: boolean;
+  /** `--llm` / `--human` was given explicitly. */
+  outputModeExplicit: boolean;
   verboseTokens: VerboseToken[];
   /** WI_IMPL_VERBOSE as it was before the global flags were applied. */
   verboseEnvBefore: string | undefined;
@@ -343,6 +355,7 @@ export function resolveGlobalFlags(argv: string[]): {
     envError,
     globals: {
       envExplicit: parsed.envName !== null,
+      outputModeExplicit: parsed.outputModeExplicit,
       verboseTokens: parsed.verboseTokens,
       verboseEnvBefore,
       defaultEnvError,
@@ -498,6 +511,11 @@ function reinsert(args: string[], tokens: VerboseToken[]): string[] {
   return out;
 }
 
+/** A command-module flag that is a boolean or a function of the parsed args. */
+function flagFor(v: boolean | ((a: any) => boolean) | undefined, parsedArgs: unknown): boolean {
+  return typeof v === "function" ? v(parsedArgs) : v === true;
+}
+
 interface DispatchOptions {
   globals?: GlobalContext;
   /** Index of `args[0]` (the command name) within the globally-parsed argv (for re-inserting owned flags). */
@@ -633,10 +651,17 @@ export async function dispatchCommand(
       ? await command.parseArgs(commandArgs, commandContext)
       : commandArgs;
 
+    // A command whose output is meant for a pipe (`config token`) ignores the
+    // agent-session llm default: only an explicit --llm gives it the envelope.
+    if (outputMode === "llm" && !globals?.outputModeExplicit && flagFor(command.humanByDefault, parsedArgs)) {
+      outputMode = "human";
+      commandContext.outputMode = "human";
+      setOutputMode("human");
+    }
+
     // Only env-aware commands take their target from --env; others (migrate run:
     // profile → envs) name their target through their own arguments.
-    const flag = (v: boolean | ((a: unknown) => boolean) | undefined) =>
-      typeof v === "function" ? v(parsedArgs) : v === true;
+    const flag = (v: boolean | ((a: unknown) => boolean) | undefined) => flagFor(v, parsedArgs);
     const writes = envAware && flag(command.writes as never);
     const previewsWrite = envAware && !writes && flag(command.requiresEnv as never);
     if ((writes || previewsWrite) && !envExplicit) {

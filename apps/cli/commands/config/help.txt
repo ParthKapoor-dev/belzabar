@@ -4,7 +4,8 @@ Manage wi-impl credentials and environment configuration.
 
 Subcommands:
   get             Show URL, user, password status, and whether a session token is cached (never the token).
-  token           Print the raw Bearer token to stdout (for scripting/clipboard).
+  token           Print the raw Bearer token to stdout (for scripting/clipboard), also
+                  inside an agent session; only an explicit --llm gives the JSON envelope.
                   Re-logs in when there is no session or the token has expired.
     --refresh     Force a fresh login before printing the token.
   edit            Interactively add, edit, or remove credentials in ~/.wi-impl/config.json,

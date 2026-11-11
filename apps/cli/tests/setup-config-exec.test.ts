@@ -122,6 +122,25 @@ describe("wi-impl config token", () => {
     const r = await runCommand(config, ["token", "--refresh"], { env: "t-dev" });
     expect((r.envelope?.data as any)?.token).toBe("new-token");
   });
+
+  test("in an agent session it prints the raw token unless --llm is given (I3)", async () => {
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test", token: jwt(future) } } });
+    ff = fakeFetch([]).install();
+    const saved = process.env.WI_IMPL_AGENT;
+    process.env.WI_IMPL_AGENT = "1";
+    try {
+      const raw = await runCommand(config, ["token"], { env: "t-dev", llm: false });
+      expect(raw.stdout).toBe(jwt(future) + "\n");
+      const llm = await runCommand(config, ["token"], { env: "t-dev" });
+      expect(JSON.parse(llm.stdout).data.token).toBe(jwt(future));
+      // Other subcommands keep the agent-session envelope.
+      const get = await runCommand(config, ["get"], { env: "t-dev", llm: false });
+      expect(JSON.parse(get.stdout).data.action).toBe("get");
+    } finally {
+      if (saved === undefined) delete process.env.WI_IMPL_AGENT;
+      else process.env.WI_IMPL_AGENT = saved;
+    }
+  });
 });
 
 describe("wi-impl setup: dotenv handling", () => {

@@ -258,6 +258,9 @@ function tokenExpiresAt(token: string | undefined): string | null {
 }
 
 const command: CommandModule<ConfigArgs, ConfigData> = {
+  // `TOKEN=$(wi-impl config token)` must get the raw token in an agent session too.
+  humanByDefault: (args) => args.action === "token",
+
   parseArgs(argv) {
     return parseConfigArgs(argv);
   },
