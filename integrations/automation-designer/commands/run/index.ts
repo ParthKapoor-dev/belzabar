@@ -1,4 +1,4 @@
-import { apiFetch, CliError, type CommandModule, defineArgs, ensureApiOk, ok } from "@belzabar/core";
+import { apiFetch, CliError, type CommandModule, defineArgs, ensureApiOk, ok, redactSecrets, redactString } from "@belzabar/core";
 import { readStream } from "../../lib/stream-parser";
 import { adApi } from "../../lib/api/index";
 import { AD_LONG_OP_TIMEOUT_MS } from "../../lib/api/v1";
@@ -56,6 +56,16 @@ async function resolvePayload(payloadArg?: string): Promise<unknown> {
       code: "INVALID_PAYLOAD",
     });
   }
+}
+
+/**
+ * Same redaction as `ad test`: credentials in the output (a file link's live
+ * `?token=…`, echoed auth headers, JWTs) become [REDACTED], so a saved
+ * baseline never holds a working login. Only header keys are blanked: a
+ * method's own `token` / `password` output fields are data.
+ */
+function redact<T>(value: T): T {
+  return redactSecrets(value, { keys: "headers" });
 }
 
 export const args = defineArgs({
@@ -131,19 +141,20 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
     if (isStream) {
       const result = await readStream(response, (line) => {
         if (context.outputMode === "human") {
-          process.stderr.write(`  ⟩ ${line}\n`);
+          process.stderr.write(`  ⟩ ${redactString(line)}\n`);
         }
       });
+      const final = redact(result.final);
       const data: RunMethodData = {
         publishedId,
         inputState,
         ...(publishedUuid !== undefined ? { publishedUuid } : {}),
         path,
         payloadType,
-        response: result.final,
+        response: final,
         responseFormat: "stream",
-        streamChunks: result.chunks,
-        finalResponse: result.final,
+        streamChunks: result.chunks.map(redactString),
+        finalResponse: final,
       };
       if (raw) data.raw = { payload };
       return ok(data);
@@ -158,7 +169,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
         ...(publishedUuid !== undefined ? { publishedUuid } : {}),
         path,
         payloadType,
-        response: json,
+        response: redact(json),
         responseFormat: "json",
       };
       if (raw) data.raw = { payload };
@@ -170,7 +181,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
         ...(publishedUuid !== undefined ? { publishedUuid } : {}),
         path,
         payloadType,
-        response: text,
+        response: redactString(text),
         responseFormat: "text",
       };
       if (raw) data.raw = { payload };

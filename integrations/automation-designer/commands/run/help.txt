@@ -28,6 +28,9 @@ Global Flags:
 Notes:
   - Posts the payload to /rest/api/automation/chain/execute/<id>?encrypted=true
     with the raw session token (no Bearer prefix).
+  - The output is redacted like `ad test`: credentials (a file link's
+    ?token=…, Bearer/auth headers, JWTs) read [REDACTED], so a saved run
+    never holds a working login.
   - A non-2xx answer fails EXECUTION_FAILED; details = {path, status, body}
     (the body parsed and redacted).
   - Without --stream the call times out after 10 minutes; with --stream it

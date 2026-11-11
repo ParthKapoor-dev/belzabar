@@ -276,4 +276,23 @@ describe("ad run", () => {
     expect(d.inputState).toBe("PUBLISHED");
     expect(d.publishedUuid).toBeUndefined();
   });
+
+  test("the output is redacted like ad test: a file link's ?token= and echoed auth headers (I1)", async () => {
+    const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.c2lnbmF0dXJlc2ln";
+    wire(okTestResponse, rawBody(), () => ({
+      response: {
+        downloadUrl: `https://example.test/rest/api/files/ab12?token=${jwt}`,
+        headers: { Authorization: `Bearer ${jwt}` },
+        token: "a-data-field",
+      },
+      executionStatus: { failed: false },
+    }));
+    const r = await runCommand(runCommandModule, [UUID, "{}"], { env: "t-s4b-run" });
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.stdout).not.toContain(jwt);
+    const resp = (r.envelope?.data as any).response.response;
+    expect(resp.downloadUrl).toBe("https://example.test/rest/api/files/ab12?token=[REDACTED]");
+    expect(resp.headers.Authorization).toBe("[REDACTED]");
+    expect(resp.token).toBe("a-data-field"); // a method's own data field is kept
+  });
 });
