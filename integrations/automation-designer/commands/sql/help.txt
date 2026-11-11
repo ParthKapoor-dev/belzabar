@@ -12,11 +12,15 @@ Subcommands:
   explain <QUERY>     Show the query plan of ONE read statement (pass it without
                       EXPLAIN). The statement must pass the same read-only gate as
                       run: --analyze really executes it, so DML is always refused.
-  update <QUERY>      Execute a SQL write (UPDATE/DELETE) query.
+  update <QUERY>      Execute a SQL write (UPDATE/DELETE; WITH … UPDATE/DELETE) query.
   insert <QUERY>      Execute a SQL INSERT query. Add `RETURNING <key column>` to get
                       the generated key(s) back in generatedValues (one row, or
                       several: generatedKeys lists every returned key row).
-  modify <QUERY>      Execute a DDL schema change (ALTER TABLE, CREATE INDEX, etc.).
+  modify <QUERY>      Execute a DDL schema change (ALTER / CREATE / DROP / TRUNCATE /
+                      COMMENT / GRANT / REVOKE / REINDEX / REFRESH / CLUSTER).
+                      update/insert/modify check the statement before sending it: an
+                      empty or comment-only one is SQL_EMPTY_STATEMENT, one of another
+                      kind (e.g. modify "UPDATE …") is SQL_WRONG_STATEMENT.
   tui                 Start an interactive SQL session (can run writes: --env required).
                       Human use only: with --llm it fails SQL_TUI_UNSUPPORTED_IN_LLM.
 

@@ -62,8 +62,10 @@ interface ReadOnlyVerdict {
  * dollar-quoted bodies. Unterminated literals/comments swallow the rest of
  * the input (and are reported by `checkReadOnlySql`).
  */
-export function stripSqlLiterals(sql: string): { text: string; unterminated: boolean } {
+export function stripSqlLiterals(sql: string): { text: string; unterminated: boolean; semicolons: number[] } {
   let out = "";
+  /** Offsets in `sql` of the statement-separating `;` (outside literals and comments). */
+  const semicolons: number[] = [];
   let i = 0;
   const n = sql.length;
   while (i < n) {
@@ -90,7 +92,7 @@ export function stripSqlLiterals(sql: string): { text: string; unterminated: boo
           i += 2;
         } else i++;
       }
-      if (depth > 0) return { text: out, unterminated: true };
+      if (depth > 0) return { text: out, unterminated: true, semicolons };
       out += " ";
       continue;
     }
@@ -115,7 +117,7 @@ export function stripSqlLiterals(sql: string): { text: string; unterminated: boo
         }
         i++;
       }
-      if (!closed) return { text: out, unterminated: true };
+      if (!closed) return { text: out, unterminated: true, semicolons };
       out += "''";
       continue;
     }
@@ -135,7 +137,7 @@ export function stripSqlLiterals(sql: string): { text: string; unterminated: boo
         }
         i++;
       }
-      if (!closed) return { text: out, unterminated: true };
+      if (!closed) return { text: out, unterminated: true, semicolons };
       out += " qident ";
       continue;
     }
@@ -145,16 +147,17 @@ export function stripSqlLiterals(sql: string): { text: string; unterminated: boo
       if (m) {
         const tag = m[0];
         const end = sql.indexOf(tag, i + tag.length);
-        if (end === -1) return { text: out, unterminated: true };
+        if (end === -1) return { text: out, unterminated: true, semicolons };
         i = end + tag.length;
         out += "''";
         continue;
       }
     }
+    if (c === ";") semicolons.push(i);
     out += c;
     i++;
   }
-  return { text: out, unterminated: false };
+  return { text: out, unterminated: false, semicolons };
 }
 
 export function checkReadOnlySql(sql: string): ReadOnlyVerdict {
@@ -261,5 +264,51 @@ export function assertReadOnlySql(sql: string, command = "sql run"): void {
       `${verdict.reason}. Use 'wi-impl ad sql update' (UPDATE/DELETE), 'sql insert' (INSERT) or 'sql modify' (DDL) ` +
       `for writes. If a column name collides with a keyword, double-quote it.`,
     { code: "SQL_NOT_READ_ONLY", details: { reason: verdict.reason } },
+  );
+}
+
+/** The statements each write subcommand accepts (first word, after comments). */
+const WRITE_VERBS = {
+  update: { verbs: ["update", "delete"], label: "UPDATE / DELETE", other: "Use 'sql insert' for INSERT, 'sql modify' for DDL" },
+  insert: { verbs: ["insert"], label: "INSERT", other: "Use 'sql update' for UPDATE/DELETE, 'sql modify' for DDL" },
+  modify: {
+    verbs: ["alter", "create", "drop", "truncate", "comment", "grant", "revoke", "reindex", "refresh", "cluster"],
+    label: "DDL (ALTER / CREATE / DROP / TRUNCATE / COMMENT / GRANT / REVOKE / REINDEX / REFRESH / CLUSTER)",
+    other: "Use 'sql update' for UPDATE/DELETE, 'sql insert' for INSERT",
+  },
+} as const;
+
+type SqlWriteKind = keyof typeof WRITE_VERBS;
+
+/** Why `sql` is not one statement of the kind `kind` accepts (undefined = it is). `WITH … UPDATE` counts as UPDATE. */
+export function checkWriteSql(sql: string, kind: SqlWriteKind): string | undefined {
+  const { text, unterminated } = stripSqlLiterals(sql);
+  const normalized = text.trim().replace(/[;\s]+$/, "").trim();
+  if (unterminated) return "unterminated string, identifier or comment";
+  if (normalized.length === 0) return "empty statement (only whitespace or comments)";
+  if (normalized.includes(";")) return "multiple statements in one";
+  const words = normalized.toLowerCase().match(/[a-z_][a-z0-9_$]*/g) ?? [];
+  const spec = WRITE_VERBS[kind];
+  const verbs: readonly string[] = spec.verbs;
+  const first = words[0] ?? "";
+  if (verbs.includes(first)) return undefined;
+  if (first === "with" && kind !== "modify" && words.some((w) => verbs.includes(w))) return undefined;
+  return `starts with '${first || normalized.slice(0, 20)}', not ${spec.label}`;
+}
+
+/**
+ * Refuse, before anything is sent, a write statement that is empty, only a
+ * comment, or of the wrong kind for its subcommand (the server would run an
+ * empty statement and report success). SQL_EMPTY_STATEMENT / SQL_WRONG_STATEMENT.
+ */
+export function assertWriteSql(sql: string, kind: SqlWriteKind): void {
+  const reason = checkWriteSql(sql, kind);
+  if (!reason) return;
+  const empty = reason.startsWith("empty");
+  throw new CliError(
+    empty
+      ? `'sql ${kind}' got an empty statement (only whitespace or comments): nothing to run. Check the quoting of the SQL argument.`
+      : `'sql ${kind}' only runs ${WRITE_VERBS[kind].label}: the statement ${reason}. ${WRITE_VERBS[kind].other}.`,
+    { code: empty ? "SQL_EMPTY_STATEMENT" : "SQL_WRONG_STATEMENT", details: { reason, kind } },
   );
 }

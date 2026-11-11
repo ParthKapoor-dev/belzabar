@@ -109,11 +109,12 @@ describe("sql run parseArgs gate", () => {
   });
 
   test("write subcommands parse --yes", () => {
-    for (const action of ["update", "insert", "modify"]) {
-      const parsed = sqlCommand.parseArgs?.([action, "x", "--yes"], {} as any) as any;
+    const statements = { update: "update t set a = 1", insert: "insert into t values (1)", modify: "alter table t add column b int" };
+    for (const [action, sql] of Object.entries(statements)) {
+      const parsed = sqlCommand.parseArgs?.([action, sql, "--yes"], {} as any) as any;
       expect(parsed.yes).toBe(true);
-      expect(parsed.query).toBe("x");
-      const noYes = sqlCommand.parseArgs?.([action, "x"], {} as any) as any;
+      expect(parsed.query).toBe(sql);
+      const noYes = sqlCommand.parseArgs?.([action, sql], {} as any) as any;
       expect(noYes.yes).toBe(false);
     }
   });

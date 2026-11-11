@@ -14,7 +14,7 @@ import {
   sqlDefaultDb,
 } from "../../lib/sql/executor";
 import { normalizeSqlDatabases } from "../../lib/sql/selector";
-import { assertReadOnlySql, buildExplainSql, checkReadOnlySql } from "../../lib/sql/read-only";
+import { assertReadOnlySql, assertWriteSql, buildExplainSql, checkReadOnlySql } from "../../lib/sql/read-only";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { runSqlTuiSession } from "../../lib/sql/tui/session";
 import type { SqlTuiArgs } from "../../lib/sql/tui/types";
@@ -343,6 +343,8 @@ const command: CommandModule<SqlArgs, SqlData> = {
       case "update":
       case "insert":
       case "modify":
+        // refuse an empty, comment-only or wrong-kind statement before any network call.
+        assertWriteSql(parsed.positionals.query, parsed.subcommand);
         return {
           action: parsed.subcommand,
           query: parsed.positionals.query,

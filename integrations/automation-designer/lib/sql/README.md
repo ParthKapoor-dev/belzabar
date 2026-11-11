@@ -9,7 +9,7 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
 | `api.ts` | `db_service` lookups: the DB auth list, the read / update / insert / modify operation contracts, and `fetchExecutableCategory` (a PUBLIC chain category to stamp on the posted chain; cached per process). |
 | `executor.ts` | `sqlDefaultDb`, `resolveSqlDbContext`, `load*Context` (operation + template chain) and `executeSqlReadQuery` / `executeSqlUpdate` / `executeSqlInsert` / `executeSqlModify`. |
 | `payload.ts` | `buildSqlReadPayload`: the template chain with the DB account and query written into its SQL slot. |
-| `read-only.ts` | The client-side read gate (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`). |
+| `read-only.ts` | The client-side gates: read (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`) and write (`checkWriteSql`, `assertWriteSql`). |
 | `selector.ts` | `normalizeSqlDatabases`, `resolveSqlDatabase` (by id or nickname, then the default). |
 | `result.ts` | Parsers for the test response of each mode (rows, rows affected, generated keys, errors). |
 | `types.ts` | The wire and result types above. |
@@ -25,6 +25,10 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
   and literals) and refuse the rest with `SQL_NOT_READ_ONLY`. Any `#{` is refused outright:
   the server evaluates SpEL, even inside literals, and splices the result into the SQL.
   `EXPLAIN` is judged by its inner statement, so `EXPLAIN ANALYZE DELETE …` is refused.
+- **Write gate.** `update` takes UPDATE / DELETE (also after WITH), `insert` INSERT, `modify`
+  DDL. An empty or comment-only statement (the server runs it and reports success) is
+  `SQL_EMPTY_STATEMENT`; another kind is `SQL_WRONG_STATEMENT`. Checked at parse time and again
+  in the executors (the TUI calls them directly).
 - `insert … RETURNING <col>` returns the generated values.
 - Without a PUBLIC chain category on the env the posted chain cannot run:
   `SQL_NO_EXECUTABLE_CATEGORY`.
