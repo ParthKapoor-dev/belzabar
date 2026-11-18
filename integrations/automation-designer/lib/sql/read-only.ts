@@ -7,11 +7,13 @@
 //
 //   SELECT … | WITH … SELECT … | VALUES … | TABLE … | SHOW …
 //   EXPLAIN [ANALYZE] [VERBOSE] <read> | EXPLAIN (option [value], …) <read>
+//   EXPLAIN [VERBOSE] <INSERT/UPDATE/DELETE/MERGE> (plain EXPLAIN: never executed)
 //
-// EXPLAIN is judged by its inner statement: the inner statement must
-// pass this same gate. That matters because EXPLAIN ANALYZE really executes
-// it — `EXPLAIN ANALYZE DELETE …` deletes — so ANALYZE is only allowed in
-// EXPLAIN's own option position, never inside the statement.
+// EXPLAIN is judged by its inner statement. With ANALYZE the inner statement
+// must pass this same gate, because EXPLAIN ANALYZE really executes it —
+// `EXPLAIN ANALYZE DELETE …` deletes — so ANALYZE is only allowed in EXPLAIN's
+// own option position, never inside the statement. Plain EXPLAIN only plans,
+// so it may also take INSERT / UPDATE / DELETE / MERGE (a safe syntax check).
 //
 // Comments and string / quoted-identifier / dollar-quoted literals are
 // stripped first so neither can hide or fake a keyword. The check is
@@ -183,7 +185,8 @@ export function checkReadOnlySql(sql: string): ReadOnlyVerdict {
   if (/^explain\b/i.test(normalized)) {
     const ex = splitExplain(normalized);
     if ("reason" in ex) return { ok: false, reason: ex.reason, normalized };
-    const inner = checkStatement(ex.inner);
+    // plain EXPLAIN (no ANALYZE) only plans: a DML statement is never executed.
+    const inner = ex.analyze ? checkStatement(ex.inner) : checkExplainableStatement(ex.inner);
     if (inner) return { ok: false, reason: `EXPLAIN${ex.analyze ? " ANALYZE" : ""} of a statement that ${inner}`, normalized };
     return { ok: true, normalized };
   }
@@ -201,6 +204,16 @@ function checkStatement(normalized: string): string | undefined {
   const bad = words.find((w) => WRITE_WORDS.has(w));
   if (bad) return `contains '${bad.toUpperCase()}' (a write or executing clause)`;
   return undefined;
+}
+
+/** Statements plain EXPLAIN (no ANALYZE) may plan: reads, and DML, which it does not execute. */
+const PLAIN_EXPLAIN_STARTS = new Set([...READ_STARTS, "insert", "update", "delete", "merge"]);
+
+/** Why a statement cannot follow a plain EXPLAIN (undefined = it can). */
+function checkExplainableStatement(normalized: string): string | undefined {
+  const first = normalized.toLowerCase().match(/[a-z_][a-z0-9_$]*/)?.[0];
+  if (first && PLAIN_EXPLAIN_STARTS.has(first)) return undefined;
+  return `starts with '${first ?? normalized.slice(0, 20)}', not SELECT/WITH/VALUES/TABLE/SHOW/INSERT/UPDATE/DELETE/MERGE`;
 }
 
 const EXPLAIN_OPTIONS = new Set([
@@ -260,7 +273,7 @@ export function assertReadOnlySql(sql: string, command = "sql run"): void {
   const verdict = checkReadOnlySql(sql);
   if (verdict.ok) return;
   throw new CliError(
-    `'${command}' only accepts a single read statement (SELECT / WITH … SELECT / VALUES / EXPLAIN [ANALYZE] of a read): ` +
+    `'${command}' only accepts a single read statement (SELECT / WITH … SELECT / VALUES / EXPLAIN [ANALYZE] of a read, plain EXPLAIN of a write): ` +
       `${verdict.reason}. Use 'wi-impl ad sql update' (UPDATE/DELETE), 'sql insert' (INSERT) or 'sql modify' (DDL) ` +
       `for writes. If a column name collides with a keyword, double-quote it.`,
     { code: "SQL_NOT_READ_ONLY", details: { reason: verdict.reason } },

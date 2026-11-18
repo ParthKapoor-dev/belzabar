@@ -34,7 +34,7 @@ describe("sql explain parseArgs", () => {
 
   test("the statement must pass the read-only gate (ANALYZE executes it)", () => {
     expect(code(() => parse(["explain", "delete from t", "--analyze"]))).toBe("SQL_NOT_READ_ONLY");
-    expect(code(() => parse(["explain", "with u as (update t set a = 1 returning *) select * from u"]))).toBe("SQL_NOT_READ_ONLY");
+    expect(code(() => parse(["explain", "with u as (update t set a = 1 returning *) select * from u", "--analyze"]))).toBe("SQL_NOT_READ_ONLY");
     expect(code(() => parse(["explain", "select 1; drop table t"]))).toBe("SQL_NOT_READ_ONLY");
   });
 
@@ -46,6 +46,13 @@ describe("sql explain parseArgs", () => {
 
   test("explain is a read (not a write)", () => {
     expect((sqlCommand.writes as (a: any) => boolean)({ action: "explain" })).toBe(false);
+  });
+
+  test("plain EXPLAIN (no ANALYZE) of a write only plans it: allowed (E8)", () => {
+    expect(parse(["explain", "update t set a = 1 where id = 2"]).query).toBe("EXPLAIN update t set a = 1 where id = 2");
+    expect(parse(["explain", "delete from t", "--format", "json"]).query).toBe("EXPLAIN (FORMAT JSON) delete from t");
+    expect(parse(["run", "EXPLAIN UPDATE t SET a = 1"]).action).toBe("run");
+    expect(code(() => parse(["explain", "drop table t"]))).toBe("SQL_NOT_READ_ONLY");
   });
 
   test("sql run also accepts EXPLAIN ANALYZE of a read, never of a write", () => {

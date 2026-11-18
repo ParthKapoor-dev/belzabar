@@ -24,7 +24,8 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
   `run` and `explain` therefore accept exactly one read statement (after stripping comments
   and literals) and refuse the rest with `SQL_NOT_READ_ONLY`. Any `#{` is refused outright:
   the server evaluates SpEL, even inside literals, and splices the result into the SQL.
-  `EXPLAIN` is judged by its inner statement, so `EXPLAIN ANALYZE DELETE …` is refused.
+  `EXPLAIN` is judged by its inner statement, so `EXPLAIN ANALYZE DELETE …` is refused; plain
+  `EXPLAIN` (no ANALYZE) only plans, so it also takes INSERT / UPDATE / DELETE / MERGE.
 - **Write gate.** `update` takes UPDATE / DELETE (also after WITH), `insert` INSERT, `modify`
   DDL. An empty or comment-only statement (the server runs it and reports success) is
   `SQL_EMPTY_STATEMENT`; another kind is `SQL_WRONG_STATEMENT`. Checked at parse time and again

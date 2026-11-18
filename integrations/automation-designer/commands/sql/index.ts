@@ -323,15 +323,16 @@ const command: CommandModule<SqlArgs, SqlData> = {
         assertReadOnlySql(parsed.positionals.query);
         return { action: "run", query: parsed.positionals.query, db: parsed.flags.db, raw: parsed.flags.raw };
       case "explain": {
-        // the explained statement must pass the read-only gate — ANALYZE really executes it.
+        // with --analyze the statement must pass the read-only gate (ANALYZE really executes it);
+        // plain EXPLAIN only plans, so a write is checked on the built EXPLAIN below.
         const statement = parsed.positionals.query;
         if (/^explain\b/i.test(checkReadOnlySql(statement).normalized)) {
           throw new CliError("Pass the statement without EXPLAIN; use --analyze / --buffers / --format for the options.", {
             code: "SQL_EXPLAIN_NESTED",
           });
         }
-        assertReadOnlySql(statement, "sql explain");
         const f = parsed.flags;
+        if (f.analyze) assertReadOnlySql(statement, "sql explain");
         if (f.buffers && !f.analyze) {
           throw new CliError("--buffers needs --analyze (buffer counts come from executing the statement).", { code: "SQL_EXPLAIN_BUFFERS_NEEDS_ANALYZE" });
         }
