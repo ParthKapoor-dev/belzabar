@@ -162,7 +162,7 @@ async function runOnlineHere(body: unknown, opts: OnlineOptions): Promise<{ find
         findings.push(
           apiId
             ? { rule: "AD-SVC-002", message: `${svc}/${m} does not resolve to an automation API; the server uses automationAPIId instead (a bogus id fails the save with 500).`, path: at("methodName"), step: ref }
-            : { rule: "AD-SVC-001", message: `${svc}/${m} does not resolve to an automation API.`, path: at("methodName"), step: ref, fix: "Check the names with `wi-impl ad services --search` / `wi-impl ad child-info`.", evidence: "404 Automation API not found with serviceName - … methodName - …" },
+            : { rule: "AD-SVC-001", message: `${svc}/${m} does not resolve to an automation API.`, path: at("methodName"), step: ref, fix: "Check the names with `wi-impl ad services --search` / `wi-impl ad child-info`. A method never published has no automation API until its first publish: publish the callee first.", evidence: "404 Automation API not found with serviceName - … methodName - …" },
         );
         continue;
       }

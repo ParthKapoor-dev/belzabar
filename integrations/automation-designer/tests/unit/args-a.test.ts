@@ -108,7 +108,7 @@ describe("other writes", () => {
 describe("find / diff", () => {
   test("find list rejects a query; limit is bounded", () => {
     expect(code(() => parse(find, ["list", "x"]))).toBe("LIST_DOES_NOT_ACCEPT_QUERY");
-    expect(code(() => parse(find, ["x", "--limit", "500"]))).toBe("INVALID_VALUE");
+    expect(code(() => parse(find, ["x", "--limit", "10001"]))).toBe("INVALID_VALUE");
   });
 
   test("diff: --from-env implies cross-env; --raw disables clean", () => {

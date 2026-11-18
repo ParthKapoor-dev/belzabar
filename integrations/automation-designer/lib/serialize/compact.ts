@@ -747,7 +747,7 @@ export function expandCompactStep(given: unknown, catalog: ServiceCatalog, where
   }
   const contract = catalog.contracts.get(service);
   if (contract === null) {
-    p.drop(`${where}.service`, `${service} does not resolve to an automation API (404 on save); check with \`wi-impl ad services --search\``);
+    p.drop(`${where}.service`, `${service} does not resolve to an automation API (404 on save); check with \`wi-impl ad services --search\`. A method that was never published has no automation API until its first publish: publish the callee first (\`wi-impl ad find --exact <name>\` shows its apiUuid once it has one)`);
     return null;
   }
   const isSql = sm.service === DB_SERVICE;

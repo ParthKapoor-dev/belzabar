@@ -5,7 +5,14 @@ With no query (or `LIST`), lists all categories with method counts; add
 `--category <name|id|uuid>` to list the METHODS in that category.
 Rows are compact (name, alias, category, state, uuid, referenceId, apiUuid =
 the automationAPIId other methods' steps use, summary, score); empty fields
-are omitted.
+are omitted. Search rows always keep `type` (method / category), --fields too.
+`apiUuidNote` says when an apiUuid is not usable: a never-published draft
+("never published: no API id callers can use until first publish"; its own
+apiUuid does not resolve for callers) or one missing from the index. Rows that show `version` add
+`versionAgeMinutes` (the index age; 0 for a row re-read now). Rows of methods
+wi-impl wrote (save, publish, delete…) after the index was built are re-read
+(one V1 GET each), so their version / state / referenceId / apiUuid are
+current without --refresh.
 
 Arguments:
   [LIST|PICK|QUERY]   LIST shows category counts.
@@ -17,19 +24,26 @@ Flags:
                       category) for the QUERY words — "is there already a
                       method that does X?". Rows add `matched` words. Needs
                       index schema 2 (an older cached index is rebuilt once).
+  --exact <name…>     Exact name (or alias) → uuids, for one or more names
+                      (one per argument, or comma-separated): data.results[]
+                      {name, found, methods[{name, category, draftUuid,
+                      publishedUuid, apiUuid | apiUuidNote, draftVersion,
+                      publishedVersion, versionAgeMinutes}]}. Not fuzzy.
   --category <ref>    Only categories whose name starts with <ref>, or whose
                       chain-category id / uuid is <ref> (e.g. Helpers, 42).
-                      Without a query: lists that category's methods
-                      (data.methods, totalMethods; capped at --limit). Also
-                      scopes --raw, --describe and pick.
+                      Without a query: lists ALL that category's methods
+                      (data.methods, totalMethods; capped only by an
+                      explicit --limit); --fields then takes method fields.
+                      Also scopes --raw, --describe, --exact and pick.
   --fields <a,b|all>  Pick row fields: type,name,alias,category,state,uuid,
                       referenceId,apiUuid,summary,description,version,
                       categoryUuid,createdOn,updatedOn,url,score,matched
                       (categories: name,id,uuid,systemUuid,label,aliases,
                       methods); `all` = every field.
   --refresh           Rebuild method index from API before searching (progress on stderr).
-  --limit <N>         Maximum matches (and --raw index rows) to return, 1-200;
-                      totalMatches still counts every match. (default: 20)
+  --limit <N>         Maximum matches (and --raw index rows) to return,
+                      1-10000; totalMatches still counts every match.
+                      (default: 20; a --category method listing is uncapped)
   --open              Open selected method URL in browser. (pick mode only)
   --raw               Include the raw cached index (only --category's part when
                       given), capped at --limit methods/categories.
@@ -46,6 +60,8 @@ Examples:
   wi-impl ad find pick _lookupDCIN --open
   wi-impl ad find "documents helper" --limit 30
   wi-impl ad find --describe fetch value from json path --category Helpers --llm
+  wi-impl ad find --exact orders.list orders.get --env dev --llm
+  wi-impl ad find --category Sandbox --fields uuid,name,state --llm
   wi-impl ad find _lookupDCIN --refresh --llm
 
 Errors: AD_INDEX_FETCH_FAILED (the category listing failed while building the

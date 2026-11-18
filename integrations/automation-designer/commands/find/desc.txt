@@ -5,7 +5,9 @@ wi-impl ad find pick  :->  Open an interactive fzf picker to quickly select a me
 wi-impl ad find pick <query>  :->  Open fzf picker with an initial query prefilled
 wi-impl ad find pick <query> --open  :->  Open the selected method URL in browser after picker selection
 wi-impl ad find --describe <words>  :->  Search method summaries/descriptions for the words ("does a method for X exist?")
-wi-impl ad find --category <name|id|uuid>  :->  List the methods in a category (name prefix, chain-category id or uuid): data.methods + totalMethods, capped at --limit
+wi-impl ad find --category <name|id|uuid>  :->  List every method in a category (name prefix, chain-category id or uuid): data.methods + totalMethods (--limit caps it)
+wi-impl ad find --category <name|id|uuid> --fields <a,b>  :->  List a category's methods with chosen fields (uuid,name,state,version,…)
+wi-impl ad find --exact <name> [<name>…]  :->  Exact method name → draftUuid, publishedUuid and apiUuid, for several names
 wi-impl ad find <query> --category <name|id|uuid>  :->  Only search categories whose name starts with it (or whose id/uuid it is)
 wi-impl ad find <query> --fields <a,b|all>  :->  Pick row fields, or all for every index field
 wi-impl ad find <query> --limit <N>  :->  Return only the top N ranked matches (totalMatches = all matches)
