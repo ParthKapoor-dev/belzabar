@@ -6,7 +6,7 @@ import { join } from "path";
 import { runCommand, scratchDir } from "@belzabar/core/testing";
 import download from "../../commands/download/index";
 import run from "../../commands/run/index";
-import { CATEGORY, DS, fakeRdEnv, RD_ENV, REPORT_ID, storedReport } from "./fake-rd";
+import { CATEGORY, COLUMNS, DOWNLOAD_NAME, DS, fakeRdEnv, RD_ENV, REPORT_ID, storedReport } from "./fake-rd";
 
 const rd = fakeRdEnv();
 afterEach(() => rd.restore());
@@ -71,6 +71,61 @@ describe("rd download", () => {
     expect(rd.ff.requests.find((q) => q.url.includes("/content?"))!.url).toContain("format=CSV");
     const poll = rd.ff.requests.find((q) => q.url.includes("/reports/download/"))!;
     expect(poll.headers["content-type"]).toBe("application/json");
+  });
+
+  test("sends the report's downloadFilename and reports the file name the server gave", async () => {
+    rd.install();
+    const out = join(scratchDir("rd-dl"), "r.csv");
+    const r = await runCommand(download, [REPORT_ID, "--out", out], { env: RD_ENV });
+    expect(JSON.parse(rd.lastRun!).downloadFilename).toBe(DOWNLOAD_NAME);
+    expect(r.envelope?.data).toMatchObject({ path: out, fileName: `${DOWNLOAD_NAME}.csv` });
+  });
+
+  test("a title with a long dash downloads: the name sent is ISO-8859-1 (G7)", async () => {
+    const { downloadFilename: _, ...cfg } = storedReport().configuration;
+    rd.reports.set(REPORT_ID, storedReport({ title: "Orders \u2013 by day \u201cnew\u201d caf\u00e9 \u0151", configuration: cfg }));
+    rd.install();
+    const out = join(scratchDir("rd-dl"), "r.csv");
+    const r = await runCommand(download, [REPORT_ID, "--out", out], { env: RD_ENV });
+    expect(r.envelope?.error ?? null).toBeNull();
+    expect(JSON.parse(rd.lastRun!).downloadFilename).toBe("Orders - by day 'new' caf\u00e9 o");
+    expect(r.envelope?.data).toMatchObject({ fileName: "Orders - by day 'new' caf\u00e9 o.csv" });
+  });
+
+  test("a refused file passes the store's error text through (G7)", async () => {
+    rd.install([
+      {
+        method: "GET",
+        url: /\/rest\/api\/reports\/download\/req1$/,
+        response: () => ({ fileURL: `https://files.example.test/dl/r.csv?response-content-disposition=${encodeURIComponent('attachment;filename="a \u2013 b.csv"')}` }),
+      },
+    ]);
+    const r = await runCommand(download, [REPORT_ID, "--out", join(scratchDir("rd-dl"), "r.csv")], { env: RD_ENV });
+    expect(r.envelope?.error?.code).toBe("RD_DOWNLOAD_FAILED");
+    expect(r.envelope?.error?.message).toBe("Downloading the export failed: HTTP 400: Header value cannot be represented using ISO-8859-1.");
+  });
+
+  test("a FAILED export stops at once and names the columns the datasource did not return (G6)", async () => {
+    const extra = { id: "333", data: [], name: "Region", type: "STRING", label: "Region", width: 150, starred: false, filterable: false, reportable: true };
+    rd.reports.set(REPORT_ID, storedReport({ configuration: { ...storedReport().configuration, columns: [...COLUMNS, extra] } }));
+    rd.install();
+    rd.exportState = "FAILED";
+    const started = Date.now();
+    const r = await runCommand(download, [REPORT_ID, "--wait", "60"], { env: RD_ENV });
+    expect(Date.now() - started).toBeLessThan(5000);
+    expect(r.envelope?.error?.code).toBe("RD_EXPORT_FAILED");
+    expect(r.envelope?.error?.message).toContain("state FAILED");
+    expect(r.envelope?.error?.message).toContain("Report columns not returned by the datasource: Region");
+    expect(r.envelope?.error?.details).toMatchObject({ state: "FAILED", missingColumns: ["Region"] });
+    expect(rd.ff.requests.filter((q) => q.url.includes("/reports/download/"))).toHaveLength(1);
+  });
+
+  test("a FAILED export with every column returned says only that", async () => {
+    rd.install();
+    rd.exportState = "FAILED";
+    const r = await runCommand(download, [REPORT_ID], { env: RD_ENV });
+    expect(r.envelope?.error?.code).toBe("RD_EXPORT_FAILED");
+    expect(r.envelope?.error?.details).toMatchObject({ missingColumns: [] });
   });
 
   test("xlsx maps to the server's XL format", async () => {

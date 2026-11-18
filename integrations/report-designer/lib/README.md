@@ -26,7 +26,7 @@ All verified against a live env; the RD web app uses the same calls.
 | `patchReport` | `PATCH /rest/api/v2/reports/{id}[?execute=true]` `{title?, description?, reportStatus?}` | updates metadata; the saved configuration is kept |
 | `saveConfiguration` | `PUT /rest/api/v2/reports/{id}` `{configuration}` | replaces the definition |
 | `runReport` / `countRows` | `POST /rest/api/v2/reports/{id}` / `…/count/{id}` `{configuration}` | **runs the datasource** |
-| `requestExport` / `pollExport` | `POST …/{id}/content?format=CSV\|XL\|PDF`, then `GET /rest/api/reports/download/{requestId}` (needs a JSON Content-Type) | **runs the datasource** |
+| `requestExport` / `pollExport` | `POST …/{id}/content?format=CSV\|XL\|PDF`, then `GET /rest/api/reports/download/{requestId}` (needs a JSON Content-Type): `{status: "PROCESSING"}`, then `{fileURL}` or `{status: "FAILED"}` (no reason given). The file is a presigned store URL named after the configuration's `downloadFilename` (else the title); the store answers 400 when that name is not ISO-8859-1 | **runs the datasource** |
 | `listDatasourceCategories` / `listDatasources` | `GET …/datasources/category`, `GET …/datasources?apiInfoLevel=BASIC&categoryUuid=` | none |
 | `dependentReports` | `GET /rest/api/automate/dependent/report?methodId=` (draft or published uuid) | none |
 | `getChainById` | `GET /rest/api/automation/chain/{chainId}` (an AD route: name, category, state) | none |

@@ -123,7 +123,8 @@ Columns, filters and summaries are kept exactly as Report Designer stores them (
 | `RD_CONFLICT` | `save`: the report changed on the server after wi-impl read it; nothing written |
 | `RD_VERIFY_FAILED` | The definition or status read back differs from what was written |
 | `RD_NO_DATASOURCE` | `run` / `download` on a report that has no datasource saved yet |
-| `RD_EXPORT_TIMEOUT` / `RD_DOWNLOAD_FAILED` | The export did not finish within `--wait`, or the file could not be fetched |
+| `RD_EXPORT_FAILED` | `download`: the server reports the export failed; the message names report columns the datasource did not return (`details.missingColumns`, from a one-row run) |
+| `RD_EXPORT_TIMEOUT` / `RD_DOWNLOAD_FAILED` | The export did not finish within `--wait` (the message gives the server's state), or the file could not be fetched (with the file store's error text) |
 | `RD_WRITE_FILE_FAILED` | The local file could not be written |
 | `RD_BAD_RESPONSE` | The server answered with an unexpected shape |
 | `RD_HTTP_<status>` | Any other server error (message = the server's `errorMessage`) |

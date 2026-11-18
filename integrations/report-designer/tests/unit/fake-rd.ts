@@ -90,11 +90,15 @@ export interface FakeRdEnv {
   lastRun: string | null;
   /** How many export polls answer PROCESSING before the file is ready. */
   exportPolls: number;
+  /** Set to "FAILED": the export polls answer that state and never give a file. */
+  exportState: string | null;
   install(extra?: Parameters<typeof fakeFetch>[0]): FakeFetch;
   restore(): void;
 }
 
 const v2 = "/rest/api/v2/reports";
+/** What the datasource returns, by column id. */
+const ROWS: Record<string, string[]> = { "111": ["2026-01-01", "2026-01-02"], "222": ["5", "7"] };
 
 function basic(r: StoredReport): Obj {
   return {
@@ -149,6 +153,7 @@ export function fakeRdEnv(opts: { envs?: string[] } = {}): FakeRdEnv {
     nextId: "fedcba9876543210fedcba9876543210",
     lastRun: null,
     exportPolls: 0,
+    exportState: null,
     get ff() {
       if (!ff) throw new Error("fakeRdEnv: install() has not run");
       return ff;
@@ -206,9 +211,29 @@ export function fakeRdEnv(opts: { envs?: string[] } = {}): FakeRdEnv {
         {
           method: "GET",
           url: /\/rest\/api\/reports\/download\/req1$/,
-          response: () => (self.exportPolls-- > 0 ? { status: "PROCESSING" } : { next: "false", isEmail: "false", fileURL: "https://files.example.test/dl/r.csv?sig=1" }),
+          response: () => {
+            if (self.exportState) return { next: "false", isEmail: "false", requestId: "req1", status: self.exportState };
+            if (self.exportPolls-- > 0) return { next: "false", isEmail: "false", requestId: "req1", status: "PROCESSING" };
+            // The file is named after the configuration's downloadFilename (else the title), as live.
+            const sent = JSON.parse(self.lastRun ?? "{}");
+            const name = `${String(sent.downloadFilename ?? sent.name ?? "report")}.csv`;
+            const disposition = encodeURIComponent(`attachment;filename="${name}"`);
+            return { next: "false", isEmail: "false", fileURL: `https://files.example.test/dl/r.csv?response-content-disposition=${disposition}&sig=1` };
+          },
         },
-        { method: "GET", url: "https://files.example.test/dl/r.csv?sig=1", response: respond({ status: 200, text: "Day,Total\n2026-01-01,5\n" }) },
+        {
+          method: "GET",
+          url: /^https:\/\/files\.example\.test\/dl\/r\.csv\?/,
+          response: (req: RecordedRequest) => {
+            // The store refuses a disposition header it cannot send in ISO-8859-1.
+            const disposition = new URL(req.url).searchParams.get("response-content-disposition") ?? "";
+            if ([...disposition].some((c) => c.codePointAt(0)! > 0xff)) {
+              const xml = '<?xml version="1.0"?><Error><Code>InvalidArgument</Code><Message>Header value cannot be represented using ISO-8859-1.</Message></Error>';
+              return respond({ status: 400, text: xml });
+            }
+            return respond({ status: 200, text: "Day,Total\n2026-01-01,5\n" });
+          },
+        },
         {
           method: "POST",
           url: /\/rest\/api\/v2\/reports\/[0-9a-f]{32}\?/,
@@ -223,13 +248,8 @@ export function fakeRdEnv(opts: { envs?: string[] } = {}): FakeRdEnv {
               ...basic(r),
               reportStatus: "ADHOC",
               resultantRows: 2,
-              data: {
-                columns: [
-                  { ...COLUMNS[0], data: ["2026-01-01", "2026-01-02"] },
-                  { ...COLUMNS[1], data: ["5", "7"] },
-                ],
-                summaryData: [],
-              },
+              // A column the datasource does not return comes back empty, as live.
+              data: { columns: (cfg.columns as Obj[]).map((c) => ({ ...c, data: ROWS[String(c.id)] ?? [] })), summaryData: [] },
             };
           },
         },
@@ -286,6 +306,7 @@ export function fakeRdEnv(opts: { envs?: string[] } = {}): FakeRdEnv {
       self.reports = new Map([[REPORT_ID, storedReport()]]);
       self.lastRun = null;
       self.exportPolls = 0;
+      self.exportState = null;
     },
   };
   return self;

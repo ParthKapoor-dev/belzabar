@@ -14,8 +14,15 @@ Flags:
   --wait <seconds>    Give up waiting after this long, 10-3600 (default: 300).
   --help, -h          Show this help message.
 
+The export file is named like the Report Designer screen names it: the
+report's downloadFilename (else its title), sent with characters outside
+ISO-8859-1 replaced (a long dash becomes "-"), since the file store refuses
+them. data.fileName is the name the server gave the file.
+
 When an export takes long, the server emails it to the account instead; the
-result then says "emailed" and no file is written.
+result then says "emailed" and no file is written. When the server reports the
+export FAILED, wi-impl stops at once (RD_EXPORT_FAILED) and runs one row to
+name the report columns the datasource did not return.
 
 Examples:
   wi-impl rd download 0123456789abcdef0123456789abcdef --env dev
