@@ -325,3 +325,73 @@ export function assertWriteSql(sql: string, kind: SqlWriteKind): void {
     { code: empty ? "SQL_EMPTY_STATEMENT" : "SQL_WRONG_STATEMENT", details: { reason, kind } },
   );
 }
+
+// The server runs run/explain/update/insert statements through Spring's
+// NamedParameterJdbcTemplate with no parameters. Its parser (which skips only
+// '…' / "…" literals and comments, not dollar quotes) treats a lone `?` and a
+// `:name` (`:` followed by anything but a separator, e.g. the `:6` of
+// `arr[1:6]`) as bind parameters, and the statement then fails with "given 1
+// parameters but expected 0" / "No value registered for key '6'". `??` reaches
+// the database as `?` (proven live); `[1: 6]` and `[1\:6]` are not parameters.
+const SPRING_PARAM_SEPARATORS = new Set([..."\"':&,;()|=+-*%/\\<>^]"]);
+
+/** The first bind-parameter marker the server would see (`?` or `:name`), or undefined. */
+export function findParameterMarker(sql: string): { marker: string; index: number } | undefined {
+  const n = sql.length;
+  let i = 0;
+  while (i < n) {
+    const c = sql[i]!;
+    const next = sql[i + 1];
+    if (c === "'" || c === '"') {
+      const end = sql.indexOf(c, i + 1);
+      i = end === -1 ? n : end + 1;
+      continue;
+    }
+    if (c === "-" && next === "-") {
+      const end = sql.indexOf("\n", i);
+      i = end === -1 ? n : end + 1;
+      continue;
+    }
+    if (c === "/" && next === "*") {
+      const end = sql.indexOf("*/", i + 2);
+      i = end === -1 ? n : end + 2;
+      continue;
+    }
+    if (c === "\\" && next === ":") {
+      i += 2; // an escaped colon (`arr[1\:6]`) is not a parameter
+      continue;
+    }
+    if (c === "?") {
+      if (next === "?") {
+        i += 2;
+        continue;
+      }
+      return { marker: "?", index: i };
+    }
+    if (c === ":") {
+      if (next === ":") {
+        i += 2;
+        continue;
+      }
+      let j = i + 1;
+      while (j < n && !SPRING_PARAM_SEPARATORS.has(sql[j]!) && !/\s/.test(sql[j]!)) j++;
+      if (j - i > 1) return { marker: sql.slice(i, j), index: i };
+    }
+    i++;
+  }
+  return undefined;
+}
+
+/** Refuse (SQL_PARAMETER_MARKER) a statement the server would read bind parameters from. */
+export function assertNoParameterMarkers(sql: string, command: string): void {
+  const found = findParameterMarker(sql);
+  if (!found) return;
+  const around = sql.slice(Math.max(0, found.index - 20), found.index + found.marker.length + 20).replace(/\s+/g, " ");
+  const what = found.marker === "?" ? "a lone '?'" : `'${found.marker}'`;
+  throw new CliError(
+    `'${command}': the statement has ${what} (…${around}…), which the server reads as a bind parameter, and none are sent. ` +
+      `Write the jsonb operators doubled: '??', '??|', '??&' (or use jsonb_exists(col, 'key') / col->'key' IS NOT NULL); ` +
+      `write an array slice with a space after the colon: arr[1: 6].`,
+    { code: "SQL_PARAMETER_MARKER", details: { marker: found.marker, offset: found.index } },
+  );
+}

@@ -27,6 +27,13 @@ Subcommands:
   tui                 Start an interactive SQL session (can run writes: --env required).
                       Human use only: with --llm it fails SQL_TUI_UNSUPPORTED_IN_LLM.
 
+Bind parameters:
+  The server reads a lone '?' and a ':name' (also the ':6' of arr[1:6]) in
+  run/explain/update/insert as bind parameters and fails, so they are refused
+  before sending (SQL_PARAMETER_MARKER). Write the jsonb operators doubled
+  ('??', '??|', '??&'; or jsonb_exists(col, 'key') / col->'key' IS NOT NULL) and
+  a slice with a space after the colon: arr[1: 6]. '::' casts are fine.
+
 Flags (dbs):
   --raw               Include raw API response.
 

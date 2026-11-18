@@ -14,7 +14,7 @@ import {
   sqlDefaultDb,
 } from "../../lib/sql/executor";
 import { normalizeSqlDatabases } from "../../lib/sql/selector";
-import { assertReadOnlySql, assertWriteSql, buildExplainSql, checkReadOnlySql } from "../../lib/sql/read-only";
+import { assertNoParameterMarkers, assertReadOnlySql, assertWriteSql, buildExplainSql, checkReadOnlySql } from "../../lib/sql/read-only";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { runSqlTuiSession } from "../../lib/sql/tui/session";
 import type { SqlTuiArgs } from "../../lib/sql/tui/types";
@@ -321,6 +321,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
       case "run":
         // refuse anything but a single read statement before any network call.
         assertReadOnlySql(parsed.positionals.query);
+        assertNoParameterMarkers(parsed.positionals.query, "sql run");
         return { action: "run", query: parsed.positionals.query, db: parsed.flags.db, raw: parsed.flags.raw };
       case "explain": {
         // with --analyze the statement must pass the read-only gate (ANALYZE really executes it);
@@ -339,6 +340,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         const explain = { statement, analyze: f.analyze, buffers: f.buffers, format: f.format as "text" | "json" };
         const query = buildExplainSql(statement, explain);
         assertReadOnlySql(query, "sql explain");
+        assertNoParameterMarkers(query, "sql explain");
         return { action: "explain", query, explain, db: f.db, raw: f.raw };
       }
       case "update":
@@ -346,6 +348,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
       case "modify":
         // refuse an empty, comment-only or wrong-kind statement before any network call.
         assertWriteSql(parsed.positionals.query, parsed.subcommand);
+        if (parsed.subcommand !== "modify") assertNoParameterMarkers(parsed.positionals.query, `sql ${parsed.subcommand}`);
         return {
           action: parsed.subcommand,
           query: parsed.positionals.query,

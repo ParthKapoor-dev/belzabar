@@ -9,7 +9,7 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
 | `api.ts` | `db_service` lookups: the DB auth list, the read / update / insert / modify operation contracts, and `fetchExecutableCategory` (a PUBLIC chain category to stamp on the posted chain; cached per process). |
 | `executor.ts` | `sqlDefaultDb`, `resolveSqlDbContext`, `load*Context` (operation + template chain) and `executeSqlReadQuery` / `executeSqlUpdate` / `executeSqlInsert` / `executeSqlModify`. |
 | `payload.ts` | `buildSqlReadPayload`: the template chain with the DB account and query written into its SQL slot. |
-| `read-only.ts` | The client-side gates: read (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`) and write (`checkWriteSql`, `assertWriteSql`). |
+| `read-only.ts` | The client-side gates: read (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`), write (`checkWriteSql`, `assertWriteSql`) and bind parameters (`findParameterMarker`, `assertNoParameterMarkers`). |
 | `selector.ts` | `normalizeSqlDatabases`, `resolveSqlDatabase` (by id or nickname, then the default). |
 | `result.ts` | Parsers for the test response of each mode (rows, rows affected, generated keys, errors). |
 | `types.ts` | The wire and result types above. |
@@ -30,6 +30,11 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
   DDL. An empty or comment-only statement (the server runs it and reports success) is
   `SQL_EMPTY_STATEMENT`; another kind is `SQL_WRONG_STATEMENT`. Checked at parse time and again
   in the executors (the TUI calls them directly).
+- **Bind-parameter gate.** The server runs run / explain / update / insert statements through
+  Spring's named-parameter template with no parameters, so a lone `?` or a `:name` (the `:6`
+  of `arr[1:6]`) fails there. `findParameterMarker` mimics that parser and
+  `assertNoParameterMarkers` refuses them first (`SQL_PARAMETER_MARKER`); `??` (reaches the DB
+  as `?`), `arr[1: 6]` and `arr[1\:6]` pass (proven live).
 - `insert … RETURNING <col>` returns the generated values.
 - Without a PUBLIC chain category on the env the posted chain cannot run:
   `SQL_NO_EXECUTABLE_CATEGORY`.

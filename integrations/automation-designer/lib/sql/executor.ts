@@ -1,5 +1,5 @@
 import { CliError, Config, loadConfigFileRaw, readJsonOrNull, trustedBelzEnv } from "@belzabar/core";
-import { assertReadOnlySql, assertWriteSql } from "./read-only";
+import { assertNoParameterMarkers, assertReadOnlySql, assertWriteSql } from "./read-only";
 import { ErrorParser } from "../error-parser";
 import { fetchRawMethod, testMethodMultipart } from "../api/v1";
 import { describeTestFailure } from "../payload-builder";
@@ -167,6 +167,7 @@ export async function loadSqlUpdateContext(): Promise<SqlExecutionContext> {
 export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<ExecuteSqlUpdateResult> {
   // an empty, comment-only or wrong-kind statement would "succeed" without doing anything.
   assertWriteSql(options.query, "update");
+  assertNoParameterMarkers(options.query, "sql update");
   const fallbackCategory = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
@@ -301,6 +302,7 @@ function failedServiceMessage(executionResult: any): string {
 export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<ExecuteSqlInsertResult> {
   // an empty, comment-only or wrong-kind statement would "succeed" without doing anything.
   assertWriteSql(options.query, "insert");
+  assertNoParameterMarkers(options.query, "sql insert");
   const fallbackCategory = await fetchExecutableCategory();
   let payload = buildSqlReadPayload({
     template: options.context.template,
@@ -466,6 +468,7 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
 export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promise<ExecuteSqlReadResult> {
   // the read endpoint autocommits, so a write here really happens.
   assertReadOnlySql(options.query);
+  assertNoParameterMarkers(options.query, "sql run");
   const fallbackCategory = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
