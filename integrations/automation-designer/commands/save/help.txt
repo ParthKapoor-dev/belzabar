@@ -167,6 +167,11 @@ Pipeline and error codes:
   1. draft guard (AD_DRAFT_GUARD_*), fresh V2 GET of the draft
   2. overlay: AD_OVERLAY_UNKNOWN_KEY / AD_OVERLAY_INVALID / AD_OVERLAY_NOT_APPLIED;
      untouched steps and fields must stay byte-identical (AD_SERIALIZER_DRIFT)
+     to the draft as read. One server effect is not drift: a step that calls a
+     method has its output mappings read with the callee's current output
+     uuids, and every publish of the callee mints new ones. So after a callee
+     was republished, any save stores the new uuids for that step (same keys
+     and names; `ad history diff` shows them changed). Nothing to do.
   3. validator L1–L3 (L4 with --dry-run-compile): AD_VALIDATION_FAILED with
      details {errors, warnings, blocking, layersRun, preexistingCount}
   4. confirmation (AD_CONFIRMATION_REQUIRED in --llm without --yes)

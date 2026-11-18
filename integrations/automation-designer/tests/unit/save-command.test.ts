@@ -423,3 +423,8 @@ describe("ad save — scope (C24)", () => {
     expect((await run({ scope: { value: "INTERNAL_SELECTED_SERVICES", services: ["No Such Category"] } })).envelope?.error?.code).toBe("CATEGORY_NOT_FOUND");
   });
 });
+
+test("C25: the help explains call-step output uuids renewed by a callee publish", () => {
+  const help = readFileSync(join(import.meta.dir, "../../commands/save/help.txt"), "utf8");
+  expect(help).toContain("uuids, and every publish of the callee mints new ones");
+});
