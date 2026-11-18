@@ -32,6 +32,32 @@ describe("rd show", () => {
     expect(rd.ff.requests.some((q) => q.url.includes("DETAILED"))).toBe(false);
   });
 
+  test("columns carry sort, width and starred; sharing lists users and groups per level (G3, G4)", async () => {
+    const sorted = { ...COLUMNS[1], sortBy: "DESC", width: 120, starred: true };
+    rd.reports.set(
+      REPORT_ID,
+      storedReport({
+        configuration: { ...storedReport().configuration, columns: [COLUMNS[0], sorted] },
+        contributors: {
+          view: { contributors: [], groupContributors: [{ id: 3, name: "Analysts", description: "", membershipInherited: true, aclType: "VIEW", titleGT: "Analysts" }] },
+          edit: { contributors: [{ id: 239, email: "jo@example.test", firstName: "Jo", lastName: "Doe", fullName: "Jo Doe", aclType: "EDIT" }], groupContributors: [] },
+        },
+      }),
+    );
+    rd.install();
+    const d = data<any>(await runCommand(show, [REPORT_ID], { env: RD_ENV }));
+    expect(d.columns[0]).toMatchObject({ name: "Day", sortBy: null, width: 150, starred: false });
+    expect(d.columns[1]).toMatchObject({ name: "Total", sortBy: "DESC", width: 120, starred: true });
+    expect(d.sharing).toEqual({
+      view: { users: [], groups: [{ id: 3, name: "Analysts" }] },
+      edit: { users: [{ id: 239, name: "Jo Doe", email: "jo@example.test" }], groups: [] },
+    });
+    const e = data<any>(await runCommand(exportCmd, [REPORT_ID], { env: RD_ENV }));
+    expect(e.sharing).toEqual(d.sharing);
+    expect(e.spec.contributors).toBeUndefined();
+    expect(rd.reports.get(REPORT_ID)!.executions).toBe(0);
+  });
+
   test("--exact reads the display settings (runs once) and needs --env", async () => {
     rd.install();
     const noEnv = await runCommand(show, [REPORT_ID, "--exact"]);

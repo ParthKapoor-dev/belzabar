@@ -23,7 +23,8 @@ Spec format ("format": "wi-impl.rd.report/1"):
   downloadFilename? (the export file name, e.g. "Orders_<timestamp:MM_dd_yyyy>";
   left out of a saved spec = keep the report's own, "" = none)
 Columns and filters are kept exactly as Report Designer stores them; a filter
-points at its column by columnId.
+points at its column by columnId. Sharing (users and groups, env-local) is not
+in the spec; it is in the output's data.sharing, and a save leaves it as is.
 
 Examples:
   wi-impl rd export 0123456789abcdef0123456789abcdef --out report.json

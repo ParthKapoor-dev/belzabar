@@ -11,6 +11,7 @@
 import { CliError, isObj, readJsonInput, str, type Obj } from "@belzabar/core";
 import { getReportBasic, getReportDefinition, getReportDetailed } from "./api";
 import { describeDataSource, type DataSourceRef } from "./datasource";
+import { sharingView, type SharingView } from "./view";
 
 export const SPEC_FORMAT = "wi-impl.rd.report/1";
 /** The format id files exported before the rename carry; still read. */
@@ -55,6 +56,8 @@ export interface SavedReport {
   unread: string[];
   /** The stored configuration as read (`exact` only): the base a save merges onto. */
   configuration: Obj | null;
+  /** Users and groups it is shared with (not part of the spec: a save does not change sharing). */
+  sharing: SharingView;
 }
 
 const arr = (v: unknown): Obj[] => (Array.isArray(v) ? v.filter(isObj) : []);
@@ -107,6 +110,7 @@ export async function readReport(id: string, opts: { exact?: boolean } = {}): Pr
     dataSource: { id: dsId, categoryUuid: dsCat, category: names.category, method },
     unread: opts.exact ? [] : [...EXACT_ONLY_FIELDS],
     configuration: opts.exact ? saved : null,
+    sharing: sharingView(def.contributors),
   };
 }
 

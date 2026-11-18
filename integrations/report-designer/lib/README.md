@@ -10,7 +10,7 @@ The Report Designer client and definitions, imported as `@belzabar/rd/lib/<file>
 | `write.ts` | The write pipeline (PATCH / PUT / read-back): `createReport`, `planSave` / `applySave` (diff, backup to `RD_BACKUP_DIR`, conflict check, write) |
 | `confirm.ts` | `requireConfirmation` (`RD_CONFIRMATION_REQUIRED` / `RD_USER_ABORT`), `logIntent` (`[wi-impl rd write]`) |
 | `report-id.ts` | `parseReportId` (id, dashed id or URL), `REPORT_ID_POSITIONAL` |
-| `view.ts` | Compact column / filter / summary views for presenters |
+| `view.ts` | Compact column / filter / summary / sharing views for presenters |
 
 ## Routes (`api.ts`)
 
@@ -36,8 +36,10 @@ method) and `DELETE …/{id}`.
 
 ## Reading a report (`definition.ts`)
 
-`readReport` combines the v3 definition (it includes `downloadFilename` when set) and the BASIC
-record, so it never runs anything. The
+`readReport` combines the v3 definition (it includes `downloadFilename` when set, and the
+sharing as `contributors`) and the BASIC record, so it never runs anything. Sharing is reported
+(`SavedReport.sharing`) but not part of the spec: a configuration PUT ignores it (only a PATCH
+with `contributors` changes it, which wi-impl does not do). The
 two display settings only the DETAILED read returns (`summaryPosition`, `filterConfig`) are
 listed in `unread` unless `exact` is set. The method name falls back to the record's
 `dataSourceName` when the chain id is no longer listed (e.g. the method was unpublished).

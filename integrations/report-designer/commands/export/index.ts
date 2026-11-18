@@ -3,6 +3,7 @@ import { resolve } from "path";
 import { CliError, type CommandModule, defineArgs, ok } from "@belzabar/core";
 import { readReport, type ReportSpec } from "../../lib/definition";
 import { parseReportId, REPORT_ID_POSITIONAL } from "../../lib/report-id";
+import type { SharingView } from "../../lib/view";
 
 interface ExportArgs {
   id: string;
@@ -17,6 +18,8 @@ interface ExportData {
   unread: string[];
   /** Absolute path written (--out). */
   path: string | null;
+  /** Who it is shared with: env-local users and groups, so not in the spec. */
+  sharing: SharingView;
 }
 
 export const args = defineArgs({
@@ -49,7 +52,7 @@ const command: CommandModule<ExportArgs, ExportData> = {
         throw new CliError(`Cannot write ${path}: ${(err as Error).message}`, { code: "RD_WRITE_FILE_FAILED", details: { path } });
       }
     }
-    return ok<ExportData>({ id, spec: r.spec, unread: r.unread, path });
+    return ok<ExportData>({ id, spec: r.spec, unread: r.unread, path, sharing: r.sharing });
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;

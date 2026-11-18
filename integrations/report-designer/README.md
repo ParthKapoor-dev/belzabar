@@ -35,7 +35,7 @@ Exports: `@belzabar/rd/registry` and `@belzabar/rd/lib/<file>`.
 | Command | Kind | What it does |
 |---|---|---|
 | `wi-impl rd find [<query>]` | read | Reports whose title matches (`--sort`, `--limit`, `--archived`) |
-| `wi-impl rd show <id>` | read | Definition: datasource, columns, saved filters, summaries |
+| `wi-impl rd show <id>` | read | Definition: datasource, sharing, columns (sort, width), saved filters, summaries |
 | `wi-impl rd export <id> --out <file>` | read (local write) | The portable spec |
 | `wi-impl rd datasources [--category <name>]` | read | Datasource categories, or a category's published methods |
 | `wi-impl rd uses <method-uuid>` | read | Reports whose datasource is that AD method |

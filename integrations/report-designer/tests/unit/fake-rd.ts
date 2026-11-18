@@ -51,6 +51,8 @@ export interface StoredReport {
   status: string;
   configuration: Obj;
   executions: number;
+  /** Sharing as the v3 read returns it (empty by default). */
+  contributors?: Obj;
 }
 
 export function storedReport(over: Partial<StoredReport> = {}): StoredReport {
@@ -127,7 +129,7 @@ function v3(r: StoredReport): Obj {
     summaries: c.summaries,
     dataSourceId: c.dataSourceId,
     dataSourceCategoryUuid: c.dataSourceCategoryUuid,
-    contributors: { view: { contributors: [], groupContributors: [] }, edit: { contributors: [], groupContributors: [] } },
+    contributors: r.contributors ?? { view: { contributors: [], groupContributors: [] }, edit: { contributors: [], groupContributors: [] } },
     createdBy: 2,
     filterRequired: c.isFilterRequired,
     ...(c.downloadFilename !== undefined ? { downloadFilename: c.downloadFilename } : {}),

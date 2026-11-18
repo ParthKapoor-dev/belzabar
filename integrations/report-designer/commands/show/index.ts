@@ -1,7 +1,7 @@
 import { type CommandModule, defineArgs, ok } from "@belzabar/core";
 import { readReport, type ReportMeta, type SavedReport } from "../../lib/definition";
 import { parseReportId, REPORT_ID_POSITIONAL } from "../../lib/report-id";
-import { columnViews, filterViews, summaryViews, type ColumnView, type FilterView } from "../../lib/view";
+import { columnViews, filterViews, summaryViews, type ColumnView, type FilterView, type SharingView } from "../../lib/view";
 
 interface ShowArgs {
   id: string;
@@ -19,6 +19,8 @@ interface ShowData extends ReportMeta {
   filterConfig: number | null;
   /** The export file name pattern; null = the server names the file after the title. */
   downloadFilename: string | null;
+  /** Users and groups who can view / edit it, besides the owner. */
+  sharing: SharingView;
   /** Settings not read (they need --exact, which runs the report). */
   unread: string[];
 }
@@ -53,6 +55,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
       summaryPosition: r.spec.summaryPosition ?? null,
       filterConfig: r.spec.filterConfig ?? null,
       downloadFilename: r.spec.downloadFilename ?? null,
+      sharing: r.sharing,
       unread: r.unread,
     });
   },
@@ -67,10 +70,24 @@ const command: CommandModule<ShowArgs, ShowData> = {
     ui.kv("Updated", d.updatedAt ?? "-");
     ui.kv("Last run", d.lastExecutedAt ?? "-");
     if (d.downloadFilename) ui.kv("Download name", d.downloadFilename);
+    for (const level of ["view", "edit"] as const) {
+      const s = d.sharing[level];
+      const who = [...s.groups.map((g) => `${g.name} (group)`), ...s.users.map((u) => (u.email ? `${u.name} <${u.email}>` : u.name))];
+      ui.kv(level === "view" ? "Can view" : "Can edit", who.length > 0 ? who.join(", ") : "-");
+    }
     ui.section(`Columns (${d.columns.length})`);
     ui.table(
-      ["Name", "Label", "Type", "Filterable", "Shown"],
-      d.columns.map((c) => [c.name, c.label === c.name ? "" : c.label, c.type, c.filterable ? "yes" : "", c.reportable ? "yes" : "no"]),
+      ["Name", "Label", "Type", "Filterable", "Shown", "Sort", "Width", "Starred"],
+      d.columns.map((c) => [
+        c.name,
+        c.label === c.name ? "" : c.label,
+        c.type,
+        c.filterable ? "yes" : "",
+        c.reportable ? "yes" : "no",
+        c.sortBy ?? "",
+        c.width === null ? "" : String(c.width),
+        c.starred ? "yes" : "",
+      ]),
     );
     if (d.filters.length > 0) {
       ui.section(`Saved filters (${d.filters.length})`);
