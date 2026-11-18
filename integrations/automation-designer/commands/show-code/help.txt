@@ -9,6 +9,12 @@ Flags:
   --v2           Parse the method via the V2 API (falls back to V1 if unsupported)
   --llm          Emit a JSON envelope with {uuid, snippets[], sourceVersion}
 
+Errors: NO_CUSTOM_CODE when the method has no custom-code step. The message
+says why: a method with no steps is a built-in service (no source anywhere;
+details.builtIn true); otherwise it lists the steps (details.steps), and a
+called method's code is read on the callee. STEP_NOT_FOUND for --step N
+that is not a custom-code step.
+
 Examples:
   wi-impl ad show-code 4a1b2c3d...
   wi-impl ad show-code 4a1b2c3d... --step 2

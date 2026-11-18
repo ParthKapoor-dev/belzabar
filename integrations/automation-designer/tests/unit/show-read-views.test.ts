@@ -5,6 +5,7 @@ import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, readFileSync } from "fs";
 import { fakeFetch, respond, runCommand, withTempEnvConfig, type RecordedRequest } from "@belzabar/core/testing";
 import showCommand from "../../commands/show/index";
+import showCodeCommand from "../../commands/show-code/index";
 import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { categoryResolverFor } from "../../lib/method-finder";
@@ -281,5 +282,20 @@ describe("D2: a cached copy is checked against the server's version", () => {
     const r = await runCommand(showCommand, [UUID, "--step", "1"], { env: "t-dev" });
     expect((r.envelope?.data as any).source).toBe("fresh");
     expect(ff.requests.slice(before).some((q) => q.url.includes(`/chain/${UUID}`))).toBe(true);
+  });
+});
+
+describe("D7: show-code says why there is no code", () => {
+  test("a stepless method is a built-in service; otherwise the steps are listed", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
+    const builtIn = parsed({ steps: [] });
+    spies.push(spyOn(adApi, "fetchMethod").mockResolvedValueOnce(builtIn).mockResolvedValueOnce(parsed()));
+    const a = await runCommand(showCodeCommand, [builtIn.uuid], { env: "t-dev" });
+    expect(a.envelope?.ok).toBe(false);
+    expect(a.envelope?.error).toMatchObject({ code: "NO_CUSTOM_CODE", details: { builtIn: true } });
+    expect(a.envelope?.error?.message).toContain("built-in service method");
+    const b = await runCommand(showCodeCommand, [builtIn.uuid], { env: "t-dev" });
+    expect(b.envelope?.error?.details).toMatchObject({ builtIn: false, steps: ["1 SPEL_ECHO Helpers.Legacy.echo", "2 EXISTING_SERVICE Schools - Utilities.array.to.string"] });
+    expect(b.envelope?.error?.message).toContain("no custom-code steps");
   });
 });
