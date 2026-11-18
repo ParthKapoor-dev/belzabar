@@ -62,6 +62,24 @@ export interface FailedStep {
   parsedError: ParsedError;
   /** HTTP status the step failed with (its exit code: 403, 422, …), when the server gives one. */
   statusCode?: number;
+  /** What wi-impl knows about a failure the platform gave no reason for. */
+  hint?: string;
+}
+
+const GENERIC_FAILURE = /something went wrong|failed to execute automation/i;
+
+/**
+ * The platform's reasonless "Something went wrong. Failed to execute automation!": seen on the test
+ * route at a database step (a plain select) while the same run through `ad run` worked, failing for
+ * every case in the morning and passing in the afternoon. It could not be reproduced on demand.
+ */
+function genericFailureHint(err: ParsedError, step: ParsedStep | undefined): string | undefined {
+  if (!GENERIC_FAILURE.test(`${err.summary}\n${err.detail}`)) return undefined;
+  const db = step?.kind === "SQL" ? ` (a database step${step.account?.name ? ` on account ${step.account.name}` : ""})` : "";
+  return (
+    `The platform gave no reason${db}. This error has been seen on ad test's route while the same run through ad run worked, ` +
+    "and passing again later (an account or connection problem on the server, not the method): retry, or run it with ad run."
+  );
 }
 
 export interface TestRun {
@@ -231,15 +249,19 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
   const runMs = timing.totalMs ?? timing.executionMs;
   const failedIdx = services.findIndex((s) => s.executionStatus?.failed);
   const failedSvc = failedIdx >= 0 ? services[failedIdx]! : null;
-  const failedStep: FailedStep | null = failedSvc
-    ? {
-        index: stepFor(failedSvc, failedIdx).step,
-        automationId: failedSvc.automationId,
-        description: stepFor(failedSvc, failedIdx).description,
-        parsedError: ErrorParser.parse(failedSvc.executionStatus),
-        ...(typeof failedSvc.executionStatus?.statusCode === "number" ? { statusCode: failedSvc.executionStatus.statusCode } : {}),
-      }
-    : null;
+  let failedStep: FailedStep | null = null;
+  if (failedSvc) {
+    const meta = stepFor(failedSvc, failedIdx);
+    failedStep = {
+      index: meta.step,
+      automationId: failedSvc.automationId,
+      description: meta.description,
+      parsedError: ErrorParser.parse(failedSvc.executionStatus),
+      ...(typeof failedSvc.executionStatus?.statusCode === "number" ? { statusCode: failedSvc.executionStatus.statusCode } : {}),
+    };
+    const hint = genericFailureHint(failedStep.parsedError, meta.hit);
+    if (hint) failedStep.hint = hint;
+  }
 
   const trace: ServiceTraceRow[] = services.map((svc, idx) => {
     const meta = stepFor(svc, idx);

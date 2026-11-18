@@ -172,6 +172,20 @@ describe("ad test", () => {
     expect(d.serviceResults[0].sql).toBe("SELECT 'C'");
   });
 
+  test("the platform's reasonless 'Something went wrong' gets a hint (B9)", async () => {
+    const message = "Something went wrong. Failed to execute automation!";
+    wire(() => ({
+      executionStatus: { executed: false, failed: true, statusCode: 500, message },
+      services: [{ automationId: 38528, executionStatus: { executed: false, failed: true, statusCode: 500, message } }],
+      outputs: [],
+    }));
+    const r = await runCommand(testCommand, [UUID, "--inputs", '{"cityCode":"C","displayName":"D"}'], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.code).toBe("AD_TEST_FAILED");
+    expect(r.envelope?.error?.message).toContain("The platform gave no reason (a database step");
+    expect(r.envelope?.error?.message).toContain("run it with ad run");
+    expect((r.envelope?.data as any).failedStep.hint).toContain("passing again later");
+  });
+
   test("is a write: requires an explicit --env", () => {
     expect((testCommand as any).writes).toBe(true);
     expect((runSuitesCommand as any).writes).toBe(true);

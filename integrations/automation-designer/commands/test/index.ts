@@ -425,7 +425,8 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     if (!run.success) {
       const http = run.statusCode != null ? ` (HTTP ${run.statusCode})` : "";
       const where = run.failedStep ? ` at step ${run.failedStep.index}${http}: ${run.failedStep.parsedError.summary}` : http;
-      return failWithData("AD_TEST_FAILED", `The method execution FAILED${where}.`, data);
+      const hint = run.failedStep?.hint ? ` ${run.failedStep.hint}` : "";
+      return failWithData("AD_TEST_FAILED", `The method execution FAILED${where}.${hint}`, data);
     }
     // a case whose assertions were not all evaluated is not a pass
     if (data.expectations?.unevaluated?.length) {
