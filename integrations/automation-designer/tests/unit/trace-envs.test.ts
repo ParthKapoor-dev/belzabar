@@ -3,8 +3,8 @@
 // published chain (the published history is what history.get reads
 // without includeDraft).
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
-import { Config } from "@belzabar/core";
-import { runCommand, withTempEnvConfig } from "@belzabar/core/testing";
+import { CliError, Config } from "@belzabar/core";
+import { fakeFetch, respond, runCommand, withTempEnvConfig } from "@belzabar/core/testing";
 import traceCommand from "../../commands/trace/index";
 import { adApi } from "../../lib/api/index";
 import { traceEnvFamily } from "../../lib/trace";
@@ -89,5 +89,55 @@ describe("trace caches published history bodies", () => {
     const second = await runCommand(traceCommand, [PUB], { env: "alpha-x" });
     expect((second.envelope?.data as any).environments.map((e: any) => e.status)).toEqual(["latest", "latest"]);
     expect(get.mock.calls.length).toBe(2);
+  });
+});
+
+// D19: an empty history is not "missing", and a down spine env hides nothing else.
+describe("trace: empty history and a down spine env", () => {
+  const head = (uuid: string) => [{ methodVersion: 3, methodVersionID: `d19-${uuid}`, methodID: uuid, isPublished: true, isDeactivated: false, addedBy: 1, addedWhen: "2026-11-10 10:00:56.688" }];
+  const body = () => ({ methodVersion: 3, methodVersionID: "x", methodID: PUB, isPublished: true, isDeactivated: false, addedBy: 1, addedWhen: "2026-01-01", jsonDefinition: { name: "m", inputs: [], services: [] } }) as any;
+
+  test("a published method whose history is empty is present-no-history; a truly absent one is missing", async () => {
+    using _cfg = withTempEnvConfig({ envs: { ...ENVS, "alpha-z": { url: "https://sz.test" } } });
+    using _ff = fakeFetch({ "GET /rest/api/automation/chain/*": respond({ json: { uuid: PUB, updatedOn: 1790533744369 } }) }).install();
+    spies.push(
+      spyOn(adApi, "fetchMethod").mockImplementation(async (_u: string, v: string) => {
+        if (v === "v2" && Config.activeEnv.name === "alpha-z") throw new CliError("Method not found", { code: "METHOD_NOT_FOUND" });
+        return { uuid: PUB, state: "PUBLISHED", version: 7, name: "m", category: { name: "C" }, parsedSteps: [], inputs: [] } as any;
+      }),
+      spyOn(adApi, "historyListAll").mockImplementation(async (uuid: string) => (Config.activeEnv.name === "alpha-x" ? head(uuid) : [])),
+      spyOn(adApi, "historyGet").mockImplementation(async () => body()),
+    );
+    const d = (await runCommand(traceCommand, [PUB, "--envs", "alpha-y,alpha-z"], { env: "alpha-x" })).envelope?.data as any;
+    const by = Object.fromEntries(d.environments.map((e: any) => [e.env, e]));
+    expect(by["alpha-x"]).toMatchObject({ status: "latest", changedAt: "2026-11-10T10:00:56.688Z" });
+    // its current body matches the spine head, so it is placed there; the note says why
+    expect(by["alpha-y"]).toMatchObject({ ok: true, status: "latest", version: 7, changedAt: new Date(1790533744369).toISOString() });
+    expect(by["alpha-y"].note).toContain("no history");
+    expect(by["alpha-z"]).toMatchObject({ status: "missing", note: "not on this env" });
+  });
+
+  test("a spine env answering 503 is unreachable; the other envs still report (unpositioned)", async () => {
+    using _cfg = withTempEnvConfig({ envs: ENVS });
+    const down = () => {
+      if (Config.activeEnv.name === "alpha-x") throw new CliError("Service Unavailable", { code: "AD_API_ERROR", details: { status: 503 } });
+    };
+    spies.push(
+      spyOn(adApi, "fetchMethod").mockImplementation(async () => {
+        down();
+        return { uuid: PUB, state: "PUBLISHED", name: "m", category: { name: "C" } } as any;
+      }),
+      spyOn(adApi, "historyListAll").mockImplementation(async (uuid: string) => {
+        down();
+        return head(uuid);
+      }),
+      spyOn(adApi, "historyGet").mockImplementation(async () => body()),
+    );
+    const r = await runCommand(traceCommand, [PUB], { env: "alpha-x" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.environments.map((e: any) => [e.env, e.status])).toEqual([["alpha-x", "unreachable"], ["alpha-y", "unpositioned"]]);
+    expect(d.environments[1]).toMatchObject({ ok: true, version: 3 });
+    expect(d.warnings.join("\n")).toContain("unreachable");
   });
 });

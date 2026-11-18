@@ -17,7 +17,8 @@ import { BELZ_CONFIG_DIR, Cache, CliError, Config } from "@belzabar/core";
 import { adApi } from "./api/index";
 import type { MethodVersionFull } from "./api/v1";
 import { fingerprintMethod, parseVersionBody } from "./fingerprint";
-import { historyTimeIso } from "./history";
+import { historyTimeIso, lastUpdatedOf } from "./history";
+import type { HydratedMethod } from "./types/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
 
 interface TraceOptions {
@@ -84,7 +85,12 @@ interface EnvRow {
   /** Index into the spine, or -1 when the env content matches no spine entry. */
   spinePos: number;
   spineVersion: number | null;
-  status: "latest" | "behind" | "ahead-or-diverged" | "missing" | "error";
+  /**
+   * unreachable: the env (or its history service) did not answer; unpositioned: found,
+   * but the spine env is unreachable; present-no-history: published, but the platform
+   * has no history for it on this env (its live body matched no spine entry).
+   */
+  status: "latest" | "behind" | "ahead-or-diverged" | "missing" | "error" | "unreachable" | "unpositioned" | "present-no-history";
   note?: string;
 }
 
@@ -118,6 +124,62 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
   return out;
 }
 
+/** The env did not answer: a timeout, a network failure or a 5xx (e.g. a stopped server's 503). */
+function isUnreachable(e: unknown): boolean {
+  if (!(e instanceof CliError)) return !(e instanceof Error) || /fetch|network|ECONN|socket|timed out/i.test(e.message);
+  const status = (e.details as { status?: unknown } | undefined)?.status;
+  return ["HTTP_TIMEOUT", "HTTP_NETWORK_ERROR", "NETWORK_ERROR", "ENV_UNAVAILABLE"].includes(e.code) || (typeof status === "number" && status >= 500);
+}
+
+function errorText(e: unknown): string {
+  return e instanceof CliError ? `${e.code}: ${e.message}` : e instanceof Error ? e.message : String(e);
+}
+
+/**
+ * An env whose history lists no published version: read the method itself. A published
+ * method there is present (its history is just empty), placed on the spine by its live
+ * V2 body when that matches; METHOD_NOT_FOUND is really missing.
+ */
+async function rowWithoutHistory(
+  env: string,
+  uuid: string,
+  place: (hash: string) => Pick<EnvRow, "spinePos" | "spineVersion" | "status">,
+): Promise<EnvRow> {
+  let live: HydratedMethod;
+  let v1Only = false;
+  try {
+    live = await adApi.fetchMethod(uuid, "v2");
+  } catch (e) {
+    if (e instanceof CliError && e.code === "METHOD_NOT_FOUND") {
+      return { env, ok: true, version: null, changedAt: null, hash: null, spinePos: -1, spineVersion: null, status: "missing", note: "not on this env" };
+    }
+    if (isUnreachable(e)) throw e;
+    // Some old bodies fail the server's V2 conversion (400): V1 still says whether it is
+    // published, but its fingerprint is not comparable with the spine's.
+    live = await adApi.fetchMethod(uuid, "v1");
+    v1Only = true;
+  }
+  if (live.state !== "PUBLISHED") {
+    return { env, ok: true, version: null, changedAt: null, hash: null, spinePos: -1, spineVersion: null, status: "missing", note: "no published version on this env" };
+  }
+  const hash = v1Only ? null : fingerprintMethod(live);
+  const placed = hash ? place(hash) : { spinePos: -1, spineVersion: null, status: "present-no-history" as const };
+  const status = placed.status === "ahead-or-diverged" ? "present-no-history" : placed.status;
+  return {
+    env,
+    ok: true,
+    version: typeof live.version === "number" ? live.version : null,
+    changedAt: await lastUpdatedOf(uuid),
+    hash,
+    ...placed,
+    status,
+    note:
+      status === "present-no-history"
+        ? "published, but the platform has no history for it on this env; its position is unknown"
+        : "published, but the platform has no history for it on this env (placed by its current body)",
+  };
+}
+
 export async function traceMethod(args: TraceOptions): Promise<TraceData> {
   const configured = Config.getAllEnvs();
   const allEnvNames = Object.keys(configured);
@@ -141,9 +203,27 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
 
   try {
     // ── 1. Build the spine from the dev (spineEnv) version history. ──
-    Config.setActiveEnv(args.spineEnv);
+    // A spine env that is down does not hide the other envs (D19): it is
+    // reported `unreachable`, and the method is identified on the next env.
     const inputUuid = resolveMethodRef(args.uuid);
-    const input = await adApi.fetchMethod(inputUuid, "v1");
+    let spineDown: string | null = null;
+    let input: HydratedMethod | null = null;
+    let lastError: unknown;
+    for (const envName of allEnvs) {
+      Config.setActiveEnv(envName);
+      try {
+        input = await adApi.fetchMethod(inputUuid, "v1");
+        break;
+      } catch (e) {
+        if (envName === args.spineEnv) {
+          if (!isUnreachable(e)) throw e;
+          spineDown = errorText(e);
+          warnings.push(`The spine env ${args.spineEnv} is unreachable (${spineDown}); the other envs are located without a spine position.`);
+        }
+        lastError = e;
+      }
+    }
+    if (!input) throw lastError;
     // The spine is the PUBLISHED timeline, and history.get without
     // includeDraft reads the published chain: list the same chain.
     let uuid = inputUuid;
@@ -163,27 +243,37 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
     // Published timeline only — drafts are dev-only in-progress edits, never
     // promotable. includeDraft must match between spine and env rows below:
     // the flag changes the body historyGet returns for a given version.
-    const versionList = (await adApi.historyListAll(uuid, { includeDraft: false }))
-      .filter((v) => v.isPublished);
-    versionList.sort((a, b) => a.methodVersion - b.methodVersion);
+    let spine: SpineEntry[] = [];
+    if (!spineDown) {
+      Config.setActiveEnv(args.spineEnv);
+      try {
+        const versionList = (await adApi.historyListAll(uuid, { includeDraft: false }))
+          .filter((v) => v.isPublished);
+        versionList.sort((a, b) => a.methodVersion - b.methodVersion);
 
-    const spine: SpineEntry[] = await mapLimit(versionList, 6, async (v) => {
-      const full = await publishedVersionBody(args.spineEnv, v.methodVersionID, { category, methodName, version: v.methodVersion });
-      const parsed = parseVersionBody(full);
-      return {
-        index: 0, // assigned below
-        version: v.methodVersion,
-        methodVersionID: v.methodVersionID,
-        isPublished: v.isPublished,
-        addedBy: v.addedBy,
-        addedWhen: historyTimeIso(v.addedWhen), // ISO UTC (the platform text has no zone)
-        stepCount: parsed.parsedSteps.length,
-        hash: fingerprintMethod(parsed),
-      };
-    });
+        spine = await mapLimit(versionList, 6, async (v) => {
+          const full = await publishedVersionBody(args.spineEnv, v.methodVersionID, { category, methodName, version: v.methodVersion });
+          const parsed = parseVersionBody(full);
+          return {
+            index: 0, // assigned below
+            version: v.methodVersion,
+            methodVersionID: v.methodVersionID,
+            isPublished: v.isPublished,
+            addedBy: v.addedBy,
+            addedWhen: historyTimeIso(v.addedWhen), // ISO UTC (the platform text has no zone)
+            stepCount: parsed.parsedSteps.length,
+            hash: fingerprintMethod(parsed),
+          };
+        });
+      } catch (e) {
+        if (!isUnreachable(e)) throw e;
+        spineDown = errorText(e);
+        warnings.push(`The spine env ${args.spineEnv}'s history is unreachable (${spineDown}); the other envs are located without a spine position.`);
+      }
+    }
     spine.forEach((s, i) => (s.index = i));
 
-    if (spine.length === 0) {
+    if (spine.length === 0 && !spineDown) {
       warnings.push(`No version history on ${args.spineEnv} — cannot build a spine; environment positions are unknown.`);
     }
 
@@ -195,16 +285,33 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
       hashIndex.set(s.hash, arr);
     }
     const lastIndex = spine.length - 1;
+    const place = (hash: string): Pick<EnvRow, "spinePos" | "spineVersion" | "status"> => {
+      if (spineDown) return { spinePos: -1, spineVersion: null, status: "unpositioned" };
+      const positions = hashIndex.get(hash) ?? [];
+      const spinePos = positions.length ? positions[positions.length - 1]! : -1;
+      return {
+        spinePos,
+        spineVersion: spinePos >= 0 ? spine[spinePos]!.version : null,
+        status: spinePos === -1 ? "ahead-or-diverged" : spinePos === lastIndex ? "latest" : "behind",
+      };
+    };
 
     // ── 2. Fingerprint every environment's latest-published version. ──
     // Env rows go through the SAME history path as the spine (historyGet +
     // parseVersionBody). parseV1 and parseV2 populate the semantic fields
     // differently enough that mixing a live V1 response with a V2 history
     // spine yields false "diverged" — so both sides must use one path.
-    // An env whose history service is unavailable is reported as `error`
-    // rather than guessed at.
+    // An env with no published history is checked on the method itself: the
+    // platform's history can be empty for a published method (D19).
     const environments: EnvRow[] = [];
     for (const envName of allEnvs) {
+      if (envName === args.spineEnv && spineDown) {
+        environments.push({
+          env: envName, ok: false, version: null, changedAt: null, hash: null,
+          spinePos: -1, spineVersion: null, status: "unreachable", note: spineDown,
+        });
+        continue;
+      }
       try {
         Config.setActiveEnv(envName);
         const list = await adApi.historyListAll(uuid, { includeDraft: false });
@@ -214,40 +321,28 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
         const head = published[published.length - 1] ?? null;
 
         if (!head) {
-          environments.push({
-            env: envName, ok: true, version: null, changedAt: null, hash: null,
-            spinePos: -1, spineVersion: null, status: "missing",
-            note: "no published version on this env",
-          });
+          environments.push(await rowWithoutHistory(envName, uuid, place));
           continue;
         }
 
         const full = await publishedVersionBody(envName, head.methodVersionID, { category, methodName, version: head.methodVersion });
         const hash = fingerprintMethod(parseVersionBody(full));
-        const positions = hashIndex.get(hash) ?? [];
-        const spinePos = positions.length ? positions[positions.length - 1]! : -1;
-
-        let status: EnvRow["status"];
-        if (spinePos === -1) status = "ahead-or-diverged";
-        else if (spinePos === lastIndex) status = "latest";
-        else status = "behind";
-
+        const placed = place(hash);
         environments.push({
           env: envName, ok: true,
           version: head.methodVersion,
-          changedAt: head.addedWhen,
+          changedAt: historyTimeIso(head.addedWhen),
           hash,
-          spinePos,
-          spineVersion: spinePos >= 0 ? spine[spinePos]!.version : null,
-          status,
+          ...placed,
+          ...(placed.status === "unpositioned" ? { note: "spine env unreachable: position unknown" } : {}),
         });
       } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        const missing = /404|not found/i.test(msg);
+        const msg = errorText(e);
+        const missing = (e instanceof CliError && e.code === "METHOD_NOT_FOUND") || /404|not found/i.test(msg);
         environments.push({
           env: envName, ok: false, version: null, changedAt: null, hash: null,
           spinePos: -1, spineVersion: null,
-          status: missing ? "missing" : "error",
+          status: missing ? "missing" : isUnreachable(e) ? "unreachable" : "error",
           note: msg,
         });
       }

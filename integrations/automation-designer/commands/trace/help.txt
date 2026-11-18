@@ -42,5 +42,17 @@ Status values per environment:
   latest               env content matches the newest spine entry
   behind               env content matches an older spine entry
   ahead-or-diverged    env content matches no spine entry
-  missing              method has no published version on that env
-  error                env could not be queried (auth/network)
+  missing              method is not on that env, or has no published version
+                       there (checked on the method itself, not only its history)
+  present-no-history   published on that env, but the platform has no history
+                       for it there and its current body matches no spine entry
+                       (an env whose current body does match is placed as
+                       latest / behind, with a note)
+  unreachable          the env (or its history service) did not answer: timeout,
+                       network error or 5xx. A down spine env is reported so and
+                       the other envs are still located
+  unpositioned         found on the env, but the spine env is unreachable, so
+                       its position is unknown
+  error                env could not be queried (e.g. auth)
+
+changedAt and spine addedWhen are ISO-8601 UTC.
