@@ -64,6 +64,12 @@ describe("changelog: plain-text entries", () => {
     );
   });
 
+  test("D29: `<word>` placeholders and comparisons are text, not tags", () => {
+    expect(htmlToText("returns {<settingName>: value}")).toBe("returns {<settingName>: value}");
+    expect(htmlToText("<p>sets {<key>: <value>} when a < b and c > d</p>")).toBe("sets {<key>: <value>} when a < b and c > d");
+    expect(htmlToText('<span style="x">keep <id> and <b>bold</b></span><br/>next')).toBe("keep <id> and bold / next");
+  });
+
   test("default rows: id, when, author, note (no user object / HTML); --fields all = raw entries", () => {
     const rows = entryRows(entries, undefined);
     expect(Object.keys(rows[0]!).sort()).toEqual(["author", "id", "note", "when"]);
