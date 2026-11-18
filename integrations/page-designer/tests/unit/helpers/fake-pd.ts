@@ -39,6 +39,8 @@ export interface FakePd {
   getOverride?: (id: string) => RawPageResponse | undefined;
   /** Hook that may rewrite the stored inner config after a PUT (simulate a server that stores something else). */
   onSave?: (inner: Record<string, unknown>) => void;
+  /** Hook that may rewrite the history version a publish records (simulate a publish that stores something else). */
+  onPublish?: (inner: Record<string, unknown>) => void;
   searchRows: Array<Record<string, unknown>>;
   /** Status the name search answers with (default 200). */
   searchStatus: number;
@@ -186,6 +188,14 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
       const pubId = typeof draft.referenceId === "string" ? draft.referenceId : `${draft.id}-pub`;
       const pub = { ...draft, id: pubId, status: "PUBLISHED" as const, referenceId: draft.id, versionId: 900 };
       pages.set(pubId, pub);
+      // Wire: the publish adds a history version on the published row at once.
+      const version = { ...pub };
+      if (state.onPublish) {
+        const inner = innerOf(version) as Record<string, unknown>;
+        state.onPublish(inner);
+        version.configuration = JSON.stringify(inner);
+      }
+      versions.set(900, version);
       return json(pub);
     }
     if (path === "/pages/history" && req.method === "GET") {

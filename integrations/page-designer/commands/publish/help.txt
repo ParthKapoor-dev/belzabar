@@ -12,6 +12,15 @@ The draft is re-fetched and re-validated inside the lock, so what is
 published is what was validated (data.versionDrift reports a concurrent
 change).
 
+Read-back: after the publish, the new published version is read from the
+history (GET /pages/version/<vid>, which holds it at once even when the
+page GET still serves the last deployed version) and compared with the
+draft that was published, as normalized snapshots. data.readBack =
+{status: match | mismatch | unavailable, versionId, compare (on a
+mismatch)}; mismatch → ok:false PD_PUBLISH_VERIFY_FAILED (exit 1; the
+publish did happen). `wi-impl pd history show` can write that version to
+a file.
+
 IMPORTANT: passing --host is what makes the page go LIVE. Without --host the
 draft is published to its PUBLISHED sibling record, but the page is NOT
 deployed to any host — the live app keeps serving the previously-deployed

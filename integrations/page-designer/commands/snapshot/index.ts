@@ -9,14 +9,11 @@
 //   --compare <file>  diff the stored snapshot → live; ok:false
 //                     PD_SNAPSHOT_DIFFERS (exit 1, diff in data) on any change
 
-import { createHash } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
 import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
 import { PD_INPUT_POSITIONAL } from "../../lib/args/common";
 import { readJsonFile } from "../../lib/edit";
 import { resolveInput } from "../../lib/resolver";
-import { compareSnapshots, isSnapshot, serializeSnapshot, snapshotOf, type PageSnapshot, type SnapshotComparison } from "../../lib/snapshot";
+import { compareSnapshots, isSnapshot, snapshotOf, writeSnapshot, type PageSnapshot, type SnapshotComparison } from "../../lib/snapshot";
 
 interface SnapshotArgs {
   input: string;
@@ -83,20 +80,7 @@ const command: CommandModule<SnapshotArgs, SnapshotData> = {
       return ok(data);
     }
 
-    if (out) {
-      const text = serializeSnapshot(live);
-      const path = resolve(out);
-      try {
-        await mkdir(dirname(path), { recursive: true });
-        await writeFile(path, text, "utf8");
-      } catch (err) {
-        throw new CliError(`Cannot write ${path}: ${String(err)}`, { code: "PD_FILE_UNWRITABLE", details: { path } });
-      }
-      return ok({
-        source,
-        written: { path, bytes: Buffer.byteLength(text, "utf8"), sha256: createHash("sha256").update(text).digest("hex") },
-      });
-    }
+    if (out) return ok({ source, written: await writeSnapshot(out, live) });
 
     return ok({ source, snapshot: live });
   },

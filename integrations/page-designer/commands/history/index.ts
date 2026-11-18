@@ -36,6 +36,7 @@ import { gateValidation, logIntent, requireConfirmation, versionDrift } from "..
 import { parsePage } from "../../lib/parser/index";
 import { partitionBySeverity, validateEdit, validateHydrated } from "../../lib/validator/index";
 import { withLock } from "../../lib/lock";
+import { snapshotOf, writeSnapshot } from "../../lib/snapshot";
 import { countNodes, detailLines, diffDetails, diffPages, differingPaths, type ChangeDetail, type SetDiff } from "../../lib/page-diff";
 import type { RawHistoryEntry, RawPageResponse, ValidationIssue } from "../../lib/types/common";
 
@@ -45,6 +46,8 @@ interface HistoryArgs {
   action: Action;
   pageId: string;
   version?: number;
+  /** show --out: write the version's full config as a pd snapshot file. */
+  out?: string | null;
   from?: number;
   to?: number;
   limit: number;
@@ -89,6 +92,8 @@ interface HistoryShowData {
   validationIssues: ValidationIssue[];
   errorCount: number;
   warnCount: number;
+  /** --out: the version written as a pd snapshot (compare with `pd snapshot <page> --compare <file>`). */
+  written?: { path: string; bytes: number; sha256: string };
 }
 
 interface HistoryDiffData {
@@ -161,7 +166,7 @@ const VERSION = {
 export const args = defineSubcommands(
   {
     list: { positionals: [PAGE_ID], flags: { limit: { type: "number", integer: true, min: 1, default: 50 } } },
-    show: { positionals: [PAGE_ID], flags: { ...VERSION } },
+    show: { positionals: [PAGE_ID], flags: { ...VERSION, out: { type: "string" } } },
     diff: {
       positionals: [PAGE_ID],
       flags: {
@@ -241,6 +246,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       limit: r.subcommand === "list" ? r.flags.limit : 50,
     };
     if (r.subcommand === "show" || r.subcommand === "restore") out.version = r.flags.version;
+    if (r.subcommand === "show") out.out = r.flags.out ?? null;
     if (r.subcommand === "diff") {
       out.from = r.flags.from;
       out.to = r.flags.to;
@@ -294,6 +300,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
         validationIssues: issues,
         errorCount: errors.length,
         warnCount: warnings.length,
+        ...(args.out ? { written: await writeSnapshot(args.out, snapshotOf(raw)) } : {}),
       });
     }
 
@@ -450,6 +457,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
           ["Warnings", data.warnCount],
         ],
       );
+      if (data.written) ui.success(`Version written: ${data.written.path} (${data.written.bytes} bytes)`);
       if (data.parseWarnings.length > 0) {
         ui.section("Parse Warnings");
         for (const w of data.parseWarnings) ui.text(`⚠ ${w}`);

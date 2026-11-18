@@ -62,6 +62,8 @@ Used by `save` and `preflight` in full, and by `publish` / `history restore` for
    PUT's own answer (the full stored page) decides. `mismatch` fails with
    `PD_SAVE_VERIFY_FAILED` (`details.differingPaths`); `stale-read` only warns. A write whose
    answer stalls keeps `HTTP_TIMEOUT` (`mayHaveCompleted`): re-read before retrying.
+   `publish` reads the new version back from the history (`/pages/version/<vid>`) and compares
+   its snapshot with the published draft's (`readBack`; `mismatch` → `PD_PUBLISH_VERIFY_FAILED`).
 
 Before the lock, the command plans and validates once on the guard's snapshot so it fails fast,
 then asks for confirmation and writes one JSON intent line to stderr (`logIntent`).
@@ -73,7 +75,7 @@ config. Drops ids, versions, status, timestamps, owners, `hostIds`, `themes`, ev
 and empty editor metadata; sorts object keys (arrays keep their order); turns multi-line strings
 into `{"$lines": [...]}` (CRLF → LF). `--compare` rebuilds a page (`pageFromSnapshot`) and
 reports the `page-diff.ts` edit summary plus `nodesMoved`, `childrenReordered` and
-`entityChanged`.
+`entityChanged`. `writeSnapshot` writes the file for `snapshot --out` and `history show --out`.
 
 ## Diff engine (`page-diff.ts`)
 

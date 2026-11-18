@@ -18,11 +18,14 @@
 //   - multi-line strings (code, styles, templates) become {"$lines": [...]}
 //     so a one-line code change is a one-line git diff; CRLF → LF.
 
+import { createHash } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { parsePage } from "./parser/index";
 import { editSummary, stableStringify, type EditSummary } from "./page-diff";
 import type { HydratedPage, RawPageResponse } from "./types/common";
-import { isObj } from "@belzabar/core";
+import { CliError, isObj } from "@belzabar/core";
 
 const SNAPSHOT_VERSION = 1;
 
@@ -98,6 +101,19 @@ export function snapshotOf(raw: RawPageResponse): PageSnapshot {
 /** The snapshot as file text: 2-space JSON (keys already sorted) + newline. */
 export function serializeSnapshot(s: PageSnapshot): string {
   return `${JSON.stringify(s, null, 2)}\n`;
+}
+
+/** Write a snapshot file (directories created): {path, bytes, sha256}; PD_FILE_UNWRITABLE on failure. */
+export async function writeSnapshot(out: string, s: PageSnapshot): Promise<{ path: string; bytes: number; sha256: string }> {
+  const text = serializeSnapshot(s);
+  const path = resolve(out);
+  try {
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, text, "utf8");
+  } catch (err) {
+    throw new CliError(`Cannot write ${path}: ${String(err)}`, { code: "PD_FILE_UNWRITABLE", details: { path } });
+  }
+  return { path, bytes: Buffer.byteLength(text, "utf8"), sha256: createHash("sha256").update(text).digest("hex") };
 }
 
 /** A HydratedPage rebuilt from a snapshot (for the diff engine). */

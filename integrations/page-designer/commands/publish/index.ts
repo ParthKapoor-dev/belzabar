@@ -14,7 +14,8 @@
 // fast, before --yes) and again on a FRESH fetch inside the lock, so what is
 // POSTed is what was validated (data.versionDrift reports a change).
 
-import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, failWithData, ok, type CommandModule } from "@belzabar/core";
+import { compareSnapshots, snapshotOf, type SnapshotComparison } from "../../lib/snapshot";
 import {
   PD_WRITE_OVERRIDE_FLAGS,
   PD_YES_FLAG,
@@ -54,6 +55,26 @@ interface PublishData {
   /** The draft changed between the first read and the in-lock fetch. */
   versionDrift: { from: number | null; to: number | null } | null;
   bypassedErrors: ValidationIssue[];
+  /**
+   * The new published version read back (`/pages/version/<vid>`) and compared
+   * with the draft that was published: match, mismatch (PD_PUBLISH_VERIFY_FAILED)
+   * or unavailable (no version id / version not readable; a warning).
+   */
+  readBack: { status: "match" | "mismatch" | "unavailable"; versionId: number | null; compare?: SnapshotComparison };
+}
+
+async function readBackPublished(
+  versionId: number | null,
+  draftRaw: RawPageResponse,
+  warn: (m: string) => void,
+): Promise<PublishData["readBack"]> {
+  const version = versionId === null ? null : await pdApi.historyGet(versionId).catch(() => null);
+  if (!version) {
+    warn(`⚠ Could not read the published version back${versionId === null ? " (the publish answer had no versionId)" : ` (version ${versionId})`}.`);
+    return { status: "unavailable", versionId };
+  }
+  const compare = compareSnapshots(snapshotOf(draftRaw), snapshotOf(version));
+  return compare.identical ? { status: "match", versionId } : { status: "mismatch", versionId, compare };
 }
 
 export const args = defineArgs({
@@ -130,14 +151,14 @@ const command: CommandModule<PublishArgs, PublishData> = {
 
     // The POST /pages/<draftId>/publish response body IS the freshly-published
     // page — it carries the authoritative post-publish versionId.
-    const { publishResponse, gate, issues, drift } = await withLock(targetId, async () => {
+    const { publishResponse, gate, issues, drift, fresh } = await withLock(targetId, async () => {
       // Validate what will actually be published — a fresh read inside the lock.
       const fresh = await fetchFresh(targetId);
       const drift = versionDrift(before, fresh, warn);
       const issues = check(fresh);
       const gate = gateValidation(issues, args.overrides.forceValidation, warn, drift !== null);
       const publishResponse = await pdApi.publishPage(targetId, { landingPage: args.landing, hostIds });
-      return { publishResponse, gate, issues, drift };
+      return { publishResponse, gate, issues, drift, fresh };
     });
 
     // Verify from that response — NOT by re-reading GET /pages/<publishedId>.
@@ -157,7 +178,13 @@ const command: CommandModule<PublishArgs, PublishData> = {
     const publishedId = typeof published.id === "string" ? published.id : target.publishedId;
     await invalidatePageCache([publishedId, target.publishedId]);
 
-    return ok<PublishData>({
+    // Read the new published VERSION back (the history body holds it at once,
+    // the published GET may not) and compare it with the draft that was
+    // published, as normalized snapshots (verified live: a published version
+    // and its unchanged draft snapshot identically).
+    const readBack = await readBackPublished(postPublishVersionId, fresh.raw as RawPageResponse, warn);
+
+    const data: PublishData = {
       pageId: args.pageId,
       draftId: targetId,
       publishedId,
@@ -175,7 +202,18 @@ const command: CommandModule<PublishArgs, PublishData> = {
       },
       versionDrift: drift,
       bypassedErrors: gate.bypassedErrors,
-    });
+      readBack,
+    };
+    if (readBack.status === "mismatch") {
+      return failWithData(
+        "PD_PUBLISH_VERIFY_FAILED",
+        `Published ${targetId}, but version ${postPublishVersionId} does not hold the draft that was published. ` +
+          `Inspect with \`wi-impl pd history show ${publishedId ?? targetId} --version ${postPublishVersionId} --out <file>\`.`,
+        data,
+        { details: { draftId: targetId, versionId: postPublishVersionId } },
+      );
+    }
+    return ok<PublishData>(data);
   },
 
   presentHuman(envelope, ui) {
@@ -191,6 +229,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Host IDs", data.hostIds.length > 0 ? data.hostIds.join(", ") : "none"],
         ["Draft version (before)", data.preVersionId ?? "N/A"],
         ["Published version (after)", data.postPublishVersionId ?? "N/A"],
+        ["Read back", data.readBack.status === "match" ? "matches the draft" : data.readBack.status],
       ],
     );
     ui.info(

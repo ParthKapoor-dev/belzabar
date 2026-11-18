@@ -47,7 +47,7 @@ wi-impl pd publish <pageId> --env dev --yes
 - **Envelope.** `--llm` returns the core envelope; the runner names the schema `pd.<cmd>`.
   Report-style failures keep the report in `data` (`failWithData`, exit 1):
   `PD_VALIDATION_FAILED`, `PD_PREFLIGHT_FAILED`, `PD_SNAPSHOT_DIFFERS`, `PD_LOCK_RELEASE_FAILED`,
-  `PD_SAVE_VERIFY_FAILED`, `PD_TRANSLATIONS_FAILED`, `PD_COMPLIANCE_FAILED` /
+  `PD_SAVE_VERIFY_FAILED`, `PD_PUBLISH_VERIFY_FAILED`, `PD_TRANSLATIONS_FAILED`, `PD_COMPLIANCE_FAILED` /
   `PD_COMPLIANCE_INCOMPLETE`. A write refused by the validator gate is a `CliError`
   `PD_VALIDATION_FAILED` with the errors in `details.issues`.
 - **Error codes** all start with `PD_` (grep `"PD_` in `lib/` and `commands/`). HTTP failures
