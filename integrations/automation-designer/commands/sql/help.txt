@@ -16,6 +16,13 @@ Subcommands:
                       Plain EXPLAIN also takes INSERT/UPDATE/DELETE/MERGE: it only
                       plans them. With --analyze the statement is really executed, so
                       it must pass the same read-only gate as run (DML is refused).
+  tables              List the tables and views (schema, name, type), system schemas
+                      left out. --schema <S> for one schema, --like <PART> to filter
+                      names (ILIKE; without '%' it means "contains").
+  describe <TABLE>    The columns of one table or view (<table> or <schema>.<table>):
+                      name, type, nullable, default, primaryKey. A name that does not
+                      exist is SQL_TABLE_NOT_FOUND with the similar names; one in
+                      several schemas is SQL_TABLE_AMBIGUOUS (pass schema.table).
   update <QUERY>      Execute a SQL write (UPDATE/DELETE; WITH … UPDATE/DELETE) query;
                       returns rowsAffected.
   insert <QUERY>      Execute a SQL INSERT query. Add `RETURNING <key column>` to get
@@ -85,6 +92,14 @@ Flags (explain):
   --db <NAME|ID>      Database nickname or ID (same default resolution as run).
   --raw               Include raw operation metadata and execution response.
 
+Flags (tables):
+  --schema <S>        Only this schema (it may be a system schema).
+  --like <PART>       Only names matching (ILIKE; no '%' = contains).
+  --db <NAME|ID>      Database nickname or ID (same default resolution as run).
+
+Flags (describe):
+  --db <NAME|ID>      Database nickname or ID (same default resolution as run).
+
 Flags (update):
   --file <PATH>       Read the SQL from a file ('-' = stdin) instead of the argument.
   --db <NAME|ID>      Database nickname or ID.
@@ -133,6 +148,8 @@ Examples:
   wi-impl ad sql update --file fix.sql --db WRITE_DB --env <env> --yes
   wi-impl ad sql explain "select * from users where email = 'x'" --analyze --db QA_DB
   wi-impl ad sql explain "UPDATE users SET status = 'x' WHERE id = 1" --db QA_DB
+  wi-impl ad sql tables --like user --db QA_DB
+  wi-impl ad sql describe public.users --db QA_DB
   wi-impl ad sql update "UPDATE users SET status = 'active' WHERE id = 1" --db WRITE_DB --env <env>
   wi-impl ad sql insert "INSERT INTO users (name) VALUES ('test') RETURNING id" --db WRITE_DB --env <env> --yes
   wi-impl ad sql modify "CREATE INDEX IF NOT EXISTS idx_name ON users(name)" --db WRITE_DB --env <env>

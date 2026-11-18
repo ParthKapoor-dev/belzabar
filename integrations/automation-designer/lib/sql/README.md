@@ -11,6 +11,7 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
 | `payload.ts` | `buildSqlReadPayload`: the template chain with the DB account and query written into its SQL slot. |
 | `read-only.ts` | The client-side gates: read (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`), write (`checkWriteSql`, `assertWriteSql`), `splitSqlStatements` and bind parameters (`findParameterMarker`, `assertNoParameterMarkers`). |
 | `source.ts` | `readSqlSource`: the SQL from the argument, `--file <path>` or stdin (`-`). |
+| `schema.ts` | `sql tables` / `sql describe`: the information_schema queries (names as quoted literals), `parseTableName`, and the row readers. |
 | `selector.ts` | `normalizeSqlDatabases`, `resolveSqlDatabase` (by id or nickname, then the default). |
 | `result.ts` | Parsers for the test response of each mode (rows, rows affected, generated keys), and `describeSqlFailure` / `sqlDatabaseMessage` for a failed statement. |
 | `types.ts` | The wire and result types above. |

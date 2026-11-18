@@ -17,13 +17,23 @@ import {
 import { normalizeSqlDatabases } from "../../lib/sql/selector";
 import { assertNoParameterMarkers, assertReadOnlySql, assertWriteSql, buildExplainSql, checkReadOnlySql, splitSqlStatements } from "../../lib/sql/read-only";
 import { readSqlSource } from "../../lib/sql/source";
+import {
+  buildDescribeQuery,
+  buildSimilarTablesQuery,
+  buildTablesQuery,
+  parseTableName,
+  readColumns,
+  readTables,
+  type SqlColumn,
+  type SqlTableRef,
+} from "../../lib/sql/schema";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { runSqlTuiSession } from "../../lib/sql/tui/session";
 import type { SqlTuiArgs } from "../../lib/sql/tui/types";
 import type { NormalizedSqlDatabase, SqlDbSelectedBy } from "../../lib/sql/types";
 
 interface SqlArgs {
-  action: "run" | "dbs" | "tui" | "update" | "insert" | "modify" | "explain";
+  action: "run" | "dbs" | "tui" | "update" | "insert" | "modify" | "explain" | "tables" | "describe";
   query?: string;
   /** Several `;`-separated statements (from --file, stdin or the argument): run in order, one result each. */
   statements?: string[];
@@ -32,6 +42,8 @@ interface SqlArgs {
   raw: boolean;
   yes?: boolean;
   tui?: SqlTuiArgs;
+  /** `tables`: --schema / --like; `describe`: the table (and its schema, from `schema.table`). */
+  schema?: { schema?: string; like?: string; table?: string };
 }
 
 interface SqlDbsData {
@@ -191,7 +203,24 @@ interface SqlBatchData {
   results: SqlBatchResult[];
 }
 
-type SqlData = SqlDbsData | SqlRunData | SqlExplainData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData | SqlBatchData;
+interface SqlTablesData {
+  action: "tables";
+  database: NormalizedSqlDatabase;
+  selectedBy: SqlDbSelectedBy;
+  count: number;
+  tables: SqlTableRef[];
+}
+
+interface SqlDescribeData {
+  action: "describe";
+  database: NormalizedSqlDatabase;
+  selectedBy: SqlDbSelectedBy;
+  schema: string;
+  table: string;
+  columns: SqlColumn[];
+}
+
+type SqlData = SqlTablesData | SqlDescribeData | SqlDbsData | SqlRunData | SqlExplainData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData | SqlBatchData;
 
 /** SQL writes follow the AD write contract (confirm, or --yes; --yes mandatory in --llm). */
 async function confirmSqlWrite(
@@ -246,6 +275,13 @@ function gateEach(statements: string[], gate: (sql: string) => void): void {
 export const args = defineSubcommands(
   {
     dbs: { flags: { ...RAW_FLAG } },
+    tables: { flags: { ...DB_FLAG, schema: { type: "string" }, like: { type: "string" } } },
+    describe: {
+      positionals: [
+        { name: "table", required: true, missingCode: "MISSING_SQL_TABLE", missingMessage: "Missing table name. Usage: wi-impl ad sql describe <table|schema.table>" },
+      ],
+      flags: { ...DB_FLAG },
+    },
     run: {
       positionals: QUERY_POSITIONAL,
       flags: { ...DB_FLAG, ...RAW_FLAG, ...FILE_FLAG },
@@ -287,7 +323,7 @@ export const args = defineSubcommands(
   {
     command: "wi-impl ad sql",
     codes: SQL_CODES,
-    missingMessage: "Missing SQL subcommand. Use one of: run, explain, dbs, tui, update, insert, modify.",
+    missingMessage: "Missing SQL subcommand. Use one of: run, explain, tables, describe, dbs, tui, update, insert, modify.",
   },
 );
 
@@ -355,6 +391,41 @@ export function readPlan(rows: unknown[], format: "text" | "json"): { plan: stri
     if (m) timing[m[1] === "Planning" ? "planningMs" : "executionMs"] = Number(m[2]);
   }
   return Object.keys(timing).length > 0 ? { plan: lines, timing } : { plan: lines };
+}
+
+/** `sql tables` / `sql describe`: information_schema reads through the read operation. */
+async function describeSchema(args: SqlArgs, envDefault: ReturnType<typeof sqlDefaultDb>): Promise<CommandResult<SqlData>> {
+  const [dbContext, executionContext] = await Promise.all([resolveSqlDbContext({ requestedDb: args.db, envDefault }), loadSqlExecutionContext()]);
+  const database = dbContext.resolution.selected;
+  const selectedBy = dbContext.resolution.selectedBy;
+  const read = async (query: string) => (await executeSqlReadQuery({ query, database, context: executionContext })).rows;
+  const opts = args.schema ?? {};
+
+  if (args.action === "tables") {
+    const tables = readTables(await read(buildTablesQuery(opts)));
+    return ok({ action: "tables", database, selectedBy, count: tables.length, tables });
+  }
+
+  const table = opts.table!;
+  const bySchema = readColumns(await read(buildDescribeQuery(table, opts.schema)));
+  const where = opts.schema ? `${opts.schema}.${table}` : table;
+  if (bySchema.size === 0) {
+    const similar = readTables(await read(buildSimilarTablesQuery(table))).map((t) => `${t.schema}.${t.name}`);
+    throw new CliError(
+      `No table or view '${where}' on '${database.nickname}'.` +
+        (similar.length > 0 ? ` Similar: ${similar.join(", ")}.` : " 'wi-impl ad sql tables --like <part>' lists the names."),
+      { code: "SQL_TABLE_NOT_FOUND", details: { table, ...(opts.schema ? { schema: opts.schema } : {}), similar } },
+    );
+  }
+  if (bySchema.size > 1) {
+    const schemas = [...bySchema.keys()];
+    throw new CliError(`'${table}' exists in several schemas (${schemas.join(", ")}): pass <schema>.${table}.`, {
+      code: "SQL_TABLE_AMBIGUOUS",
+      details: { table, schemas },
+    });
+  }
+  const [schema, columns] = [...bySchema][0]!;
+  return ok({ action: "describe", database, selectedBy, schema, table, columns });
 }
 
 const BATCH = {
@@ -454,6 +525,10 @@ const command: CommandModule<SqlArgs, SqlData> = {
     const parsed = args.parse(argv);
 
     switch (parsed.subcommand) {
+      case "tables":
+        return { action: "tables", raw: false, db: parsed.flags.db, schema: { schema: parsed.flags.schema, like: parsed.flags.like } };
+      case "describe":
+        return { action: "describe", raw: false, db: parsed.flags.db, schema: parseTableName(parsed.positionals.table) };
       case "dbs":
         return { action: "dbs", raw: parsed.flags.raw };
       case "run": {
@@ -513,6 +588,10 @@ const command: CommandModule<SqlArgs, SqlData> = {
 
     if (args.statements && (args.action === "run" || args.action === "update" || args.action === "insert" || args.action === "modify")) {
       return runSqlBatch(args.action, args.statements, args, envDefault, context.outputMode);
+    }
+
+    if (args.action === "tables" || args.action === "describe") {
+      return describeSchema(args, envDefault);
     }
 
     if (args.action === "dbs") {
@@ -730,6 +809,21 @@ const command: CommandModule<SqlArgs, SqlData> = {
       return;
     }
     if (!envelope.ok) return;
+
+    if (data.action === "tables") {
+      ui.success(`${data.count} tables and views on '${data.database.nickname}'.`);
+      ui.table(["Schema", "Name", "Type"], data.tables.map((t) => [t.schema, t.name, t.type ?? ""]));
+      return;
+    }
+
+    if (data.action === "describe") {
+      ui.success(`${data.schema}.${data.table} on '${data.database.nickname}': ${data.columns.length} columns.`);
+      ui.table(
+        ["Column", "Type", "Nullable", "Default", "PK"],
+        data.columns.map((c) => [c.name, c.type, c.nullable ? "yes" : "no", c.default ?? "", c.primaryKey ? "yes" : ""]),
+      );
+      return;
+    }
 
     if (data.action === "dbs") {
       ui.success(`Found ${data.databases.length} SQL database configurations.`);

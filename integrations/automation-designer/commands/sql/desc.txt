@@ -1,5 +1,7 @@
 wi-impl ad sql run "<query>"  :->  Run ONE read-only SQL statement and return the rows (nothing is saved; writes: sql update/insert/modify)
 wi-impl ad sql run --file <path.sql>  :->  Run the read statements in a file ('-' or --file - = stdin; no argument-length limit); several ';'-separated statements run in one call, one result each (data.results)
+wi-impl ad sql tables [--schema <s>] [--like <part>] --db <name|id>  :->  List tables and views {schema, name, type} (system schemas left out; --like filters names, ILIKE)
+wi-impl ad sql describe <table|schema.table> --db <name|id>  :->  Columns of one table: name, type, nullable, default, primaryKey; an unknown name lists the similar ones (SQL_TABLE_NOT_FOUND)
 wi-impl ad sql dbs  :->  List available SQL database configurations and auth types (and the default-DB resolution)
 wi-impl ad sql run "<query>" --db <name|id>  :->  Execute SELECT against a specific database
 wi-impl ad sql explain "<query>"  :->  Query plan (EXPLAIN) of one statement: a read, or an INSERT/UPDATE/DELETE/MERGE (plain EXPLAIN never executes it); plan = lines

@@ -26,7 +26,7 @@ asks for confirmation (in `--llm` mode it needs `--yes` instead).
 | `save`, `create`, `delete`, `publish`, `changelog` | **W** the write pipeline ([`../lib/save/README.md`](../lib/save/README.md)); `changelog` lists notes and writes one with `--note`. |
 | `test`, `run`, `run-suites`, `save-suite` | **W** execute a method (inline test, live execute, local suites); `save-suite` writes a local suite file. |
 | `test-case`, `test-cases`, `test-report` | Persisted test cases (`list`, `export` and `sync` without `--apply` are reads; the rest **W**); the suite summary; the global suite report. |
-| `sql dbs\|run\|explain` | Read-only SQL. |
+| `sql dbs\|run\|explain\|tables\|describe` | Read-only SQL. |
 | `sql update\|insert\|modify\|tui` | **W** SQL writes. |
 
 ## help.txt template
