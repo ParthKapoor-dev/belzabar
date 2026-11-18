@@ -15,7 +15,7 @@ interface SpelBlock {
   body: string;
 }
 
-type SpelIssueKind = "unclosed" | "nested" | "hashVar" | "braceLiteral" | "syntax";
+type SpelIssueKind = "unclosed" | "nested" | "hashVar" | "braceLiteral" | "syntax" | "braceInString";
 
 export interface SpelIssue {
   kind: SpelIssueKind;
@@ -36,7 +36,10 @@ export function hasSpel(text: unknown): text is string {
 /**
  * Find every top-level `#{…}` block. Braces are counted (a map literal inside
  * a block does not close it) and quoted text is skipped, so `#{'}'}` is one
- * block. A `#{` inside an open block is reported as nesting (not supported).
+ * block, as the author meant it. The platform does not skip quotes: it ends
+ * the block at the first `}`, even inside a string, so that case is reported
+ * (`braceInString`). A `#{` inside an open block is reported as nesting (not
+ * supported).
  */
 export function scanSpel(text: string): SpelScan {
   const blocks: SpelBlock[] = [];
@@ -68,6 +71,7 @@ export function scanSpel(text: string): SpelScan {
     const block: SpelBlock = { start: open, end: j, body };
     blocks.push(block);
     const whole = text.slice(open, j);
+    if (closeBraceInString(body)) issues.push({ kind: "braceInString", text: whole });
     if (nested) issues.push({ kind: "nested", text: whole });
     else {
       const t = body.trim();
@@ -81,6 +85,23 @@ export function scanSpel(text: string): SpelScan {
     i = j;
   }
   return { blocks, issues };
+}
+
+/**
+ * True when a quoted literal in a block body contains `}`. Live (a dev env):
+ * `#{'a}b'.length()}` fails with "Cannot find terminating ' for string", and
+ * `#{v.matches('^\{.*\}$')}` as a condition is silently skipped; a lone `{`
+ * in a string (`#{'a{b'.length()}` = 3) works.
+ */
+function closeBraceInString(body: string): boolean {
+  let quote: string | null = null;
+  for (const c of body) {
+    if (quote) {
+      if (c === quote) quote = null;
+      else if (c === "}") return true;
+    } else if (c === "'" || c === '"') quote = c;
+  }
+  return false;
 }
 
 const TRAILING_OPERATOR_RE =

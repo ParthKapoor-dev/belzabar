@@ -54,6 +54,7 @@ const SPEL_ISSUE_RULE: Record<SpelIssue["kind"], string> = {
   hashVar: "AD-SPEL-003",
   braceLiteral: "AD-SPEL-004",
   syntax: "AD-SPEL-005",
+  braceInString: "AD-SPEL-007",
 };
 
 function reportSpelIssues(text: string, path: string, where: string, ref: StepRef, report: Report): void {
@@ -64,13 +65,21 @@ function reportSpelIssues(text: string, path: string, where: string, ref: StepRe
       issue.kind === "nested" ? "a nested #{ #{…} }" :
       issue.kind === "hashVar" ? "#{#var} (write #{var})" :
       issue.kind === "braceLiteral" ? "an inline {…} literal right after #{" :
+      issue.kind === "braceInString" ? "a } inside a string literal (the platform ends the #{…} at the first })" :
       `a SpEL syntax error (${issue.detail})`;
     report({
       rule,
       message: `${where} has ${what}: ${JSON.stringify(issue.text)}.`,
       path,
       step: ref,
-      evidence: issue.kind === "unclosed" ? "the literal text becomes the value (v2_spel_unclosed)" : "the step fails and the literal propagates to later steps (v2_spel_*)",
+      ...(issue.kind === "braceInString"
+        ? {
+            fix: "Build the brace with T(Character).toString(125) for } (and toString(123) for {), e.g. '^' + T(Character).toString(123) + '.*' + T(Character).toString(125) + '$'.",
+            evidence: "live: an input fails 'Cannot find terminating ' for string'; a condition is silently skipped",
+          }
+        : {
+            evidence: issue.kind === "unclosed" ? "the literal text becomes the value (v2_spel_unclosed)" : "the step fails and the literal propagates to later steps (v2_spel_*)",
+          }),
     });
   }
 }

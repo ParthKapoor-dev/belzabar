@@ -94,6 +94,9 @@ const L2: Row[] = [
   { rule: "AD-SPEL-005", severity: "error", why: "entry condition syntax (v2_entry_cond_syntax)", bad: () => caseBody("v2_entry_cond_syntax"), good: () => entry("#{name} eq 'x'") },
   { rule: "AD-SPEL-005", severity: "error", why: "unbalanced parentheses", bad: () => echo("#{name.substring(0, 1}"), good: () => echo("#{name.substring(0, 1)}") },
   { rule: "AD-SPEL-006", severity: "warn", why: "defaultValue SpEL (v2_default_value_spel)", bad: () => caseBody("v2_default_value_spel"), good: golden },
+  // C8, live: the platform ends #{…} at the first }, even inside a string; a lone { in a string works.
+  { rule: "AD-SPEL-007", severity: "error", why: "} in a string in a condition (silently skipped)", bad: () => entry("#{name.matches('^\\{\\s*\"[^\"]+\"\\s*:.+\\}$')}"), good: () => entry("#{name.startsWith('{')}") },
+  { rule: "AD-SPEL-007", severity: "error", why: "regex quantifier {8} in an input (step fails)", bad: () => echo("#{name.matches('[0-9]{8}')}"), good: () => echo("#{name.matches('[0-9]' + T(Character).toString(123) + '8' + T(Character).toString(125))}") },
   // conditions
   { rule: "AD-COND-001", severity: "error", why: "no #{} (v2_entry_cond_plain_text: silently skipped)", bad: () => caseBody("v2_entry_cond_plain_text"), good: () => entry("#{name} eq 'Tester'") },
   { rule: "AD-COND-002", severity: "warn", why: "basic rows say eq, expression says ne (v1_condition_basic_mismatch)", bad: () => entry("#{name} ne 'Tester'", [row("name", "eq")]), good: () => entry("#{name} eq 'Tester'", [row("name", "eq")]) },

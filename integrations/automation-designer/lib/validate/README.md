@@ -38,6 +38,11 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
   escaped splice); `AD-SCHEMA-003` skips an EXISTING_SERVICE step's io uuids (copied from the
   service definition, e.g. db_service's non-hex `…6a00e5g`); `CR1` / `AD-REF-001` know the
   engine's `serviceSuccess<n>_<i>` / `serviceFail<n>_<i>` step flags.
+- `AD-SPEL-007`: the platform ends a `#{…}` block at the first `}`, even inside a string
+  literal (live: an input fails "Cannot find terminating '", a condition such as
+  `#{v.matches('^\{.*\}$')}` is silently skipped). `spel.ts` still scans the block as the
+  author meant it and reports the `}`; a lone `{` in a string works and is not flagged. Fix:
+  `T(Character).toString(125)` (and `123` for `{`).
 - Lint rules (`Q2`–`Q4`, `Q6`, `AD-LINT-001`…) never run on save or publish. `Q3` is
   project-specific and config-driven: `"lint": {"resolverTables": {"<table>": "<resolverFn>"}}`
   in `~/.wi-impl/config.json` (read by `commands/lint`); with none configured it never fires.

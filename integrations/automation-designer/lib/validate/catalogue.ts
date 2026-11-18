@@ -79,6 +79,7 @@ export const RULES = {
   "AD-SPEL-004": { severity: "error", layer: "L2", description: "Inline list/map literal #{ {…} } breaks the #{} delimiter" },
   "AD-SPEL-005": { severity: "error", layer: "L2", description: "SpEL syntax error: empty, unbalanced, or dangling operator (step fails / is skipped)" },
   "AD-SPEL-006": { severity: "warn", layer: "L2", description: "defaultValue contains #{…}; defaults are stored literally, never evaluated" },
+  "AD-SPEL-007": { severity: "error", layer: "L2", description: "A } inside a string literal in #{…}: the platform ends the block at the first } (an input fails, a condition is silently skipped); build it with T(Character).toString(125)" },
   "AD-COND-001": { severity: "error", layer: "L2", description: "Condition expression has no #{…}; it compares constants and the step is silently skipped" },
   "AD-COND-002": { severity: "warn", layer: "L2", description: "Basic-mode condition rows disagree with the expression (the runtime uses the expression, the UI shows the rows)" },
   AS1: { severity: "error", layer: "L3", description: "runAsync step writes a method output; the response does not wait for async steps" },
