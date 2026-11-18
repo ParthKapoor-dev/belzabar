@@ -46,6 +46,15 @@ export const PD_DEP_STATUS_FLAG = {
   status: { type: "enum", values: ["PUBLISHED", "DRAFT"], default: "PUBLISHED" },
 } as const satisfies FlagsSpec;
 
+/**
+ * `--version draft|published` on read commands: which copy of the page to
+ * read (the resolved row's `referenceId` sibling when it is the other one).
+ * Without it the input decides: a name resolves to the DRAFT.
+ */
+export const PD_VERSION_FLAG = {
+  version: { type: "enum", values: ["draft", "published"] },
+} as const satisfies FlagsSpec;
+
 /** Positional `<input>`: a page/component id, name, or URL. */
 export const PD_INPUT_POSITIONAL = {
   name: "input",

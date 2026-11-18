@@ -1,4 +1,4 @@
-Usage: wi-impl pd diff <input> --from <envA> --to <envB> [flags]
+Usage: wi-impl pd diff <input> --from <envA> --to <envB> [--version draft|published] [flags]
 
 Compare the same page or component across two environments and report the
 structural differences: variables (added/removed/changed type or value),
@@ -8,19 +8,41 @@ kind), styles, and any other top-level config key.
 
 <input> may be a page/component id, an exact page or component name, an app
 URL, or a PD URL. It is resolved INDEPENDENTLY in each environment, because
-entity ids are env-local — pass a name or URL when the ids differ.
+entity ids are env-local: an id that is missing on one side is resolved
+there by its NAME from the other side (that side's byNameFrom).
+
+Which copy: a name resolves to the DRAFT on each side. data.resolvedAs is
+DRAFT or PUBLISHED when both sides read that copy, else MIXED; each side
+has its own resolvedAs. Pass --version published to compare what is live
+(the published row serves the last DEPLOYED version).
+
+Reading the result:
+  diff.<group>.added     only in --to   (data.direction.added)
+  diff.<group>.removed   only in --from (data.direction.removed)
+  diff.<group>.changed   on both sides, different
+  changes[]              for every changed item: {kind, name, paths: [{path,
+                         from, to}]}; from = the --from value, to = the --to
+                         value; an absent from/to = the key is missing on
+                         that side; multi-line code gives the first differing
+                         line (`line`). Values over 300 chars are cut; more
+                         than 10 differing paths → truncated: true.
 
 Flags:
-  --from <env>   Environment to treat as the baseline (e.g. acme-dev)
-  --to <env>     Environment to compare against (e.g. acme-stage)
+  --from <env>   Environment to treat as the baseline (e.g. dev)
+  --to <env>     Environment to compare against (e.g. qa)
+  --version <draft|published>
+                 Read that copy on both sides (follows each row's
+                 referenceId; PD_VERSION_NOT_FOUND when a side has none).
   --llm          Emit a JSON envelope
 
 Examples:
-  wi-impl pd diff "Vehicle Search" --from acme-dev --to acme-stage
-  wi-impl pd diff 49fa2576239ec5791c6ead4cf9408ce2 --from acme-stage --to acme-uat --llm
+  wi-impl pd diff "Vehicle Search" --from dev --to qa
+  wi-impl pd diff check_permission --from dev --to qa --version published
+  wi-impl pd diff 49fa2576239ec5791c6ead4cf9408ce2 --from qa --to uat --llm
 
 Notes:
   - Both environments must have valid credentials configured in
     ~/.wi-impl/config.json; a login failure on either side aborts the diff.
   - The diff engine is shared with `wi-impl pd history diff`, so the structural
     comparison is identical — only the two sides differ (envs vs versions).
+  - HTTP calls whose env-local AD ids differ are reported as changed.

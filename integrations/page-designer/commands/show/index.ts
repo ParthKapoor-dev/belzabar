@@ -1,5 +1,5 @@
 import { CliError, type CommandModule, Config, defineArgs, isObj, ok, openUrlInBrowser, pickFields, strOrNull, triggerDetachedRefresh } from "@belzabar/core";
-import { PD_FORCE_FLAG } from "../../lib/args/common";
+import { PD_FORCE_FLAG, PD_VERSION_FLAG } from "../../lib/args/common";
 import { analyzeItem, cacheDeps, collectAllAdIds, formatTreeLines, type AnalyzeError } from "../../lib/analyzer";
 import {
   adIdsOf,
@@ -16,7 +16,7 @@ import {
   type VarDetail,
 } from "../../lib/extract";
 import { findNode, parsePage, walkParsed } from "../../lib/parser/index";
-import { resolveInput, type InputKind } from "../../lib/resolver";
+import { noteResolution, resolveInput, type InputKind, type PdCopy, type ResolvedEntity } from "../../lib/resolver";
 import { pdCacheDir } from "../../lib/cache";
 import type { HydratedPage, ParsedNode, NodeKind, RawPageResponse } from "../../lib/types/common";
 
@@ -41,6 +41,7 @@ interface ShowArgs {
     open: boolean;               // --open / -o open the editable draft URL in the browser
     find: string | null;         // --find <text|id|component>
     fields: string[] | null;     // --fields a,b,… (vars / http rows); ["all"] = every field
+    version: PdCopy | null;      // --version draft|published
   };
 }
 
@@ -320,6 +321,12 @@ interface ShowSummary {
 }
 
 interface ShowData {
+  /** Which copy was read: DRAFT or PUBLISHED (a name resolves to the DRAFT unless --version). */
+  resolvedAs: string;
+  /** --version followed referenceId from this id. */
+  switchedFrom?: string;
+  /** The id was not on this env: resolved by its name from another env. */
+  byNameFrom?: ResolvedEntity["byNameFrom"];
   source: "cache" | "stale" | "fresh";
   summary: ShowSummary;
   vars?: { userDefined: Row[]; derived: Row[] };
@@ -413,6 +420,7 @@ export const args = defineArgs({
     open: { type: "boolean", alias: ["-o"] },
     find: { type: "string" },
     fields: { type: "string" },
+    ...PD_VERSION_FLAG,
   },
 });
 
@@ -435,13 +443,19 @@ const command: CommandModule<ShowArgs, ShowData> = {
       open: f.open,
       find: f.find ?? null,
       fields: parseFields(f.fields),
+      version: f.version ?? null,
     };
     return { input: positionals.input, flags };
   },
 
   async execute({ input, flags }, context) {
-    const resolved = await resolveInput(input, flags.force);
+    // With an explicit --env, an id from the default env is resolved here by its name.
+    const resolved = await resolveInput(input, flags.force, {
+      version: flags.version,
+      nameFromEnv: Config.envWasExplicit ? Config.defaultEnvName : null,
+    });
     const { entityType, resolvedId, response, inputKind, source } = resolved;
+    noteResolution(resolved, flags.version, (m) => context.warn(m));
     const configStr = response.configuration;
     if (typeof configStr !== "string") {
       // Previously crashed later with a raw TypeError (Buffer.byteLength(undefined)).
@@ -494,6 +508,9 @@ const command: CommandModule<ShowArgs, ShowData> = {
       versionId: rawMetadata.versionId,
     };
     const data: ShowData = {
+      resolvedAs: resolved.resolvedAs,
+      ...(resolved.switchedFrom ? { switchedFrom: resolved.switchedFrom } : {}),
+      ...(resolved.byNameFrom ? { byNameFrom: resolved.byNameFrom } : {}),
       source,
       summary: sectionMode ? identity : {
         ...identity,
@@ -641,6 +658,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
     ui.table(
       ["Property", "Value"],
       [
+        ["Resolved As", data.resolvedAs],
         ["Name", s.name],
         ["Entity Type", s.entityType],
         ["Status", s.status ?? "UNKNOWN"],

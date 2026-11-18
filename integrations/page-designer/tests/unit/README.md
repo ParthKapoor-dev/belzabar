@@ -12,8 +12,8 @@ through core `runCommand` against the in-memory server in [`helpers/`](./helpers
 | Real pages | `real-pages` (every fixture parses; server-side entity type; lossless full save) |
 | Serializer | `serialize` (applyOverlay, raw indices, partial-op coverage, full save), `nodes-find` (`show --find` and node-id ops on the largest real page) |
 | Validator | `validator` (existing + invariant rules), `validator-lint` (lint rules, one positive and one negative case each; catalogue ↔ help sync), `validator-real` (0-error calibration, diff-aware gate), `validate-summary` |
-| Diff, snapshot | `page-diff`, `snapshot` |
-| Read paths | `read-paths` (input resolution, recursive analysis, finder, diff), `show-missing-config`, `draft-guard` (referenceId pairing, translation entity ids) |
+| Diff, snapshot | `page-diff` (incl. `diffDetails`), `snapshot` |
+| Read paths | `read-paths` (input resolution, recursive analysis, finder, diff), `resolve-copies` (`--version`, `resolvedAs`, an id resolved by name on another env, `pd diff` details; two fake envs), `show-missing-config`, `draft-guard` (referenceId pairing, translation entity ids) |
 | Write paths | `save-publish` (save, publish, preflight), `history-lock` (history ownership and restore, the lock command) |
 | Wire contract | `wire-evidence` (key shapes, lock answers, revert form vs `../fixtures/wire/`), `api-errors` (error body summaries) |
 | Infrastructure | `args` (defineArgs specs), `cache-env-scope` (page cache and lock file are env-scoped) |

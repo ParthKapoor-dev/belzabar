@@ -1,4 +1,5 @@
-wi-impl pd show <input>  :->  A page or component by id, exact name or URL: name, ids, variable/HTTP/component counts
+wi-impl pd show <input>  :->  A page or component by id, exact name or URL: name, ids, variable/HTTP/component counts; resolvedAs says DRAFT or PUBLISHED (a name → the DRAFT)
+wi-impl pd show <input> --version <draft|published>  :->  Read that copy of the page (follows its referenceId sibling)
 wi-impl pd show <input> --vars  :->  List all user-defined and derived variables (compact rows: name, type, short initialValue; derived: from, sideEffect)
 wi-impl pd show <input> --vars --fields <a,b,…|all>  :->  Pick the --vars/--http row fields (e.g. name,spec) or all
 wi-impl pd show <input> --find <text|id|component>  :->  Find layout nodes: id, component, label, key path, parentId/index (for node-id overlay ops)

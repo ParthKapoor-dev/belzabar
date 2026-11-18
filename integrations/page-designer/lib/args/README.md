@@ -11,6 +11,7 @@ take `--yes`); `--env` and `--llm` belong to the runner.
 | `PD_YES_FLAG` | `--yes` / `-y`: skip the confirmation prompt | write commands |
 | `PD_DRY_RUN_FLAG` | `--dry-run`: run everything but the write | `save` |
 | `PD_DEP_STATUS_FLAG` | `--status PUBLISHED\|DRAFT` (default PUBLISHED) | `page-deps`, `translations` |
+| `PD_VERSION_FLAG` | `--version draft\|published`: which copy to read (follows `referenceId`) | `show`, `diff` |
 | `PD_INPUT_POSITIONAL` | `<input>`, `MISSING_INPUT` when absent | commands taking a page/component |
 
 `WriteOverrides` is the parsed shape of the override flags. Changing a fragment changes every

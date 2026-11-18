@@ -6,8 +6,14 @@
 // name resolves to the one DRAFT component with that exact name, else the one
 // DRAFT page with that name; several matches are PD_NAME_AMBIGUOUS —
 // names are not unique.
+//
+// `version` picks the copy: when the resolved row is not the one asked for,
+// its `referenceId` sibling is read (never paired by name). Every result says
+// which copy was read (`resolvedAs`). Ids are env-local: with `nameFromEnv`,
+// an id missing on the active env is looked up there and its NAME is
+// resolved on the active env instead.
 
-import { CliError } from "@belzabar/core";
+import { CliError, Config, strOrNull } from "@belzabar/core";
 import { pdApi } from "./api/index";
 import { isComponentRow } from "./api/client";
 import { cachedFetchPageConfigSwr, type ConfigSource, type SwrConfigResult } from "./cache";
@@ -18,13 +24,31 @@ import { isHex32 } from "@belzabar/core/platform";
 
 export type InputKind = "app-url" | "pd-url" | "id" | "name";
 
+/** Which copy of a page to read: the draft or the published row. */
+export type PdCopy = "draft" | "published";
+
+export interface ResolveOptions {
+  /** Read this copy, following `referenceId` when the input resolves to the other one. */
+  version?: PdCopy | null;
+  /** Env to look an id up in (for its name) when the id is not on the active env. */
+  nameFromEnv?: string | null;
+}
+
 export interface ResolvedEntity {
   entityType: "PAGE" | "COMPONENT";
   resolvedId: string;
   response: RawPageResponse;
   inputKind: InputKind;
   source: ConfigSource;
+  /** Status of the row that was read: DRAFT or PUBLISHED (DELETED for a soft-deleted id). */
+  resolvedAs: string;
+  /** Set when `version` followed `referenceId`: the id the input resolved to first. */
+  switchedFrom?: string;
+  /** Set when an id missing on the active env was resolved by its name from `nameFromEnv`. */
+  byNameFrom?: { env: string; id: string; name: string };
 }
+
+const statusOf = (raw: RawPageResponse): string => (typeof raw.status === "string" ? raw.status.toUpperCase() : "UNKNOWN");
 
 export interface DetectedInput {
   kind: InputKind;
@@ -93,9 +117,36 @@ export async function resolveNameToId(name: string, preferComponent = false): Pr
   return id;
 }
 
-export async function resolveInput(input: string, force = false): Promise<ResolvedEntity> {
+/**
+ * stderr notes on how an input resolved: an id found by its name from another
+ * env, a --version switch, and a NAME read as the DRAFT while a published copy
+ * exists (the silent case that let a draft be compared as if it were live).
+ */
+export function noteResolution(r: ResolvedEntity, version: PdCopy | null | undefined, warn: (m: string) => void, where = ""): void {
+  const at = where ? ` on ${where}` : "";
+  if (r.byNameFrom) {
+    warn(`ℹ ${r.byNameFrom.id} is not on${at || " this env"}; resolved its name "${r.byNameFrom.name}" (from ${r.byNameFrom.env}) → ${r.resolvedId}.`);
+  }
+  if (r.switchedFrom) warn(`ℹ --version ${version}: read ${r.resolvedId} (${r.resolvedAs}), the linked copy of ${r.switchedFrom}${at}.`);
+  if (!version && r.inputKind === "name" && r.resolvedAs === "DRAFT" && strOrNull(r.response.referenceId)) {
+    warn(`ℹ "${typeof r.response.name === "string" ? r.response.name : r.resolvedId}" resolved to its DRAFT${at}; pass --version published to read the published copy.`);
+  }
+}
+
+/** The name of `id` on `env` (null when it is not there or `env` cannot be read). */
+async function nameOnEnv(env: string, id: string): Promise<{ name: string; component: boolean } | null> {
+  try {
+    const raw = await Config.withEnv(env, () => pdApi.fetchPage(id));
+    return raw && typeof raw.name === "string" && raw.name ? { name: raw.name, component: inferEntityType(raw) === "COMPONENT" } : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveInput(input: string, force = false, opts: ResolveOptions = {}): Promise<ResolvedEntity> {
   const detected = detectInputKind(input);
   let resolvedId: string;
+  let byNameFrom: ResolvedEntity["byNameFrom"];
 
   switch (detected.kind) {
     case "app-url": {
@@ -123,19 +174,63 @@ export async function resolveInput(input: string, force = false): Promise<Resolv
 
   // One fetch: pages and components share GET /pages/{id} (the old second
   // "component" fetch of the same URL is gone).
-  const result: SwrConfigResult = await cachedFetchPageConfigSwr(resolvedId, force);
+  let result: SwrConfigResult = await cachedFetchPageConfigSwr(resolvedId, force);
+  if (!result.data && detected.kind === "id" && opts.nameFromEnv && opts.nameFromEnv !== Config.activeEnv.name) {
+    // Ids are env-local: find the id's name where it came from, resolve that name here.
+    const there = await nameOnEnv(opts.nameFromEnv, input);
+    if (there) {
+      resolvedId = await resolveNameToId(there.name, there.component).catch((err: unknown) => {
+        if (!(err instanceof CliError) || err.code !== "COMPONENT_NOT_FOUND") throw err;
+        throw new CliError(
+          `No page or component found for ID: ${input} on ${Config.activeEnv.name}, and its name "${there.name}" (on ${opts.nameFromEnv}) is not there either.`,
+          { code: "NOT_FOUND", details: { id: input, name: there.name, nameFromEnv: opts.nameFromEnv } },
+        );
+      });
+      byNameFrom = { env: opts.nameFromEnv, id: input, name: there.name };
+      result = await cachedFetchPageConfigSwr(resolvedId, force);
+    }
+  }
   if (!result.data) {
     throw new CliError(
-      detected.kind === "id" ? `No page or component found for ID: ${input}` : `Page or component ${resolvedId} not found.`,
+      detected.kind === "id"
+        ? `No page or component found for ID: ${input} on ${Config.activeEnv.name}. Ids are env-local: pass the page or component name to resolve it on this env.`
+        : `Page or component ${resolvedId} not found.`,
       { code: detected.kind === "id" ? "NOT_FOUND" : "PD_FETCH_FAILED" },
     );
   }
 
+  let response = result.data;
+  let source = result.source;
+  let switchedFrom: string | undefined;
+  const want = opts.version === "published" ? "PUBLISHED" : opts.version === "draft" ? "DRAFT" : null;
+  if (want && statusOf(response) !== want) {
+    // The other copy is the row's referenceId sibling, and it must not link elsewhere.
+    const ref = strOrNull(response.referenceId);
+    const sibling = ref && ref !== resolvedId ? await cachedFetchPageConfigSwr(ref, force) : null;
+    const sib = sibling?.data ?? null;
+    const backRef = sib ? strOrNull(sib.referenceId) : null;
+    if (!sib || statusOf(sib) !== want || (backRef !== null && backRef !== resolvedId)) {
+      const name = typeof response.name === "string" && response.name ? response.name : resolvedId;
+      throw new CliError(
+        `${name} (${resolvedId}, ${statusOf(response)}) has no ${want} copy` +
+          (sib ? ` (its linked row ${ref} is ${statusOf(sib)})` : "") + ".",
+        { code: "PD_VERSION_NOT_FOUND", details: { resolvedId, status: statusOf(response), referenceId: ref, wanted: want } },
+      );
+    }
+    switchedFrom = resolvedId;
+    resolvedId = ref!;
+    response = sib;
+    source = sibling!.source;
+  }
+
   return {
-    entityType: inferEntityType(result.data),
+    entityType: inferEntityType(response),
     resolvedId,
-    response: result.data,
+    response,
     inputKind: detected.kind,
-    source: result.source,
+    source,
+    resolvedAs: statusOf(response),
+    ...(switchedFrom ? { switchedFrom } : {}),
+    ...(byNameFrom ? { byNameFrom } : {}),
   };
 }

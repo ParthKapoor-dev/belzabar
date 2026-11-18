@@ -36,7 +36,7 @@ import { gateValidation, logIntent, requireConfirmation, versionDrift } from "..
 import { parsePage } from "../../lib/parser/index";
 import { partitionBySeverity, validateEdit, validateHydrated } from "../../lib/validator/index";
 import { withLock } from "../../lib/lock";
-import { countNodes, diffPages, differingPaths, type SetDiff } from "../../lib/page-diff";
+import { countNodes, detailLines, diffDetails, diffPages, differingPaths, type ChangeDetail, type SetDiff } from "../../lib/page-diff";
 import type { RawHistoryEntry, RawPageResponse, ValidationIssue } from "../../lib/types/common";
 
 type Action = "list" | "show" | "diff" | "restore";
@@ -109,6 +109,8 @@ interface HistoryDiffData {
   childrenReordered: string[];
   stylesChanged: boolean;
   otherChanged: string[];
+  /** What differs inside each changed item: paths with the `from` (A) and `to` (B) values. */
+  changes: ChangeDetail[];
 }
 
 interface HistoryRestoreData {
@@ -322,6 +324,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
         childrenReordered: diff.childrenReordered,
         stylesChanged: diff.styles.changed,
         otherChanged: diff.otherChanged,
+        changes: diffDetails(a, b, diff),
       });
     }
 
@@ -488,6 +491,10 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       if (data.nodesMoved.length > 0) ui.kv("Nodes moved", data.nodesMoved.join(", "));
       if (data.childrenReordered.length > 0) ui.kv("Children reordered under", data.childrenReordered.join(", "));
       if (data.otherChanged.length > 0) ui.kv("Other config changed", data.otherChanged.join(", "));
+      if (data.changes.length > 0) {
+        ui.section(`What differs (${data.from} → ${data.to})`);
+        for (const line of detailLines(data.changes)) ui.text(line);
+      }
       return;
     }
 

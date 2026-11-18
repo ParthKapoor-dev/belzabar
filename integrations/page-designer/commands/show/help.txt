@@ -16,6 +16,18 @@ Arguments:
                         n_s_staff_email_correspondence, "Add Student"
                         (several matches → PD_NAME_AMBIGUOUS; pass an id)
 
+Which copy: a NAME resolves to the DRAFT (a notice says so when a published
+copy exists); an id or URL reads that row. data.resolvedAs (first key) says
+which copy was read: DRAFT or PUBLISHED. --version draft|published reads
+that copy instead (the row's referenceId sibling; PD_VERSION_NOT_FOUND when
+there is none or it is DELETED). The published row serves the last DEPLOYED
+version: after a publish that did not deploy, read the new one with
+`wi-impl pd history show <publishedId> --version <vid>`.
+
+Ids are env-local. With --env, an id that is not on that env but is on your
+default env is resolved by its NAME on --env (data.byNameFrom, plus a
+notice); otherwise pass the name.
+
 Output is compact (for agents): with any section flag the summary is just
 the identity (name, ids, status, versionId); rows omit empty fields.
 
@@ -56,6 +68,9 @@ Flags:
   --recursive, -r     Include the recursive component dependency tree and all
                       AD method IDs (every referenced component is followed;
                       unresolvable ones are listed in recursive.errors).
+  --version <draft|published>
+                      Read that copy of the page (default: what the input
+                      names; a name → the DRAFT).
   --force             Bypass cache and fetch fresh config.
   --raw               Include raw configuration string and source API fields.
   --open, -o          Open the editable draft URL in your default browser
@@ -71,6 +86,7 @@ Examples:
   wi-impl pd show 48b75e11e166e6b19e5796d59a936228
   wi-impl pd show https://dev.example.test/ui-designer/page/48b75e11e166e6b19e5796d59a936228
   wi-impl pd show n_s_staff_email_correspondence
+  wi-impl pd show n_s_staff_email_correspondence --version published --env qa
   wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --vars
   wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --vars --fields name,spec
   wi-impl pd show 48b75e11e166e6b19e5796d59a936228 --find "Save and Exit"

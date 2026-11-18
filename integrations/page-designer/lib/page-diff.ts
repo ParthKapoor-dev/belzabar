@@ -12,9 +12,11 @@
 //                parents whose common children were reordered
 //   - styles:    changed + line counts
 //   - everything else in the config (inputs, events, helpText, __version, …)
+// `diffDetails` then says what differs inside each changed item: the
+// differing leaf paths with the value on each side (`pd diff`, `history diff`).
 
 import { isDeepStrictEqual } from "node:util";
-import { walkParsed } from "./parser/index";
+import { findNode, walkParsed } from "./parser/index";
 import type { HydratedPage, ParsedNode } from "./types/common";
 
 export interface SetDiff {
@@ -312,6 +314,153 @@ export function editSummaryLines(s: EditSummary): string[] {
   add("↕", "children reordered under", s.childrenReordered);
   if (s.stylesChanged) lines.push("~ styles changed");
   add("~", "config", s.otherChanged);
+  return lines;
+}
+
+// -------- what changed inside each changed item ------------------------------
+
+/** One differing leaf: the value on each side (a missing `from` / `to` = absent on that side). */
+interface PathChange {
+  path: string;
+  /** Multi-line text (code, templates): the 1-based first line that differs; from/to are that line. */
+  line?: number;
+  from?: unknown;
+  to?: unknown;
+}
+
+export interface ChangeDetail {
+  kind: "variable" | "derived" | "http" | "node" | "config" | "styles";
+  /** Variable name, callId, node id or config key. */
+  name: string;
+  paths: PathChange[];
+  /** More differing leaves than listed. */
+  truncated?: boolean;
+}
+
+const VALUE_CAP = 300;
+const PATHS_PER_ITEM = 10;
+
+/** A value short enough to print: long strings and JSON are cut at VALUE_CAP. */
+function brief(v: unknown): unknown {
+  if (v === undefined || v === null || typeof v === "number" || typeof v === "boolean") return v;
+  const s = typeof v === "string" ? v : JSON.stringify(v);
+  if (s.length <= VALUE_CAP) return v;
+  return `${s.slice(0, VALUE_CAP)}… (${s.length} chars)`;
+}
+
+function leafChange(path: string, a: unknown, b: unknown): PathChange {
+  if (typeof a === "string" && typeof b === "string" && (a.includes("\n") || b.includes("\n"))) {
+    const la = a.replace(/\r\n?/g, "\n").split("\n");
+    const lb = b.replace(/\r\n?/g, "\n").split("\n");
+    let i = 0;
+    while (i < la.length && i < lb.length && la[i] === lb[i]) i++;
+    const out: PathChange = { path, line: i + 1 };
+    if (i < la.length) out.from = brief(la[i]);
+    if (i < lb.length) out.to = brief(lb[i]);
+    return out;
+  }
+  const out: PathChange = { path };
+  if (a !== undefined) out.from = brief(a);
+  if (b !== undefined) out.to = brief(b);
+  return out;
+}
+
+/** Leaf-most differing paths of two JSON values with both sides' values, capped at `cap`. */
+export function pathChanges(a: unknown, b: unknown, cap = PATHS_PER_ITEM, path = "", out: PathChange[] = []): PathChange[] {
+  if (out.length > cap || isDeepStrictEqual(a, b)) return out;
+  const objA = !!a && typeof a === "object";
+  const objB = !!b && typeof b === "object";
+  if (!objA || !objB || Array.isArray(a) !== Array.isArray(b)) {
+    out.push(leafChange(path || "(root)", a, b));
+    return out;
+  }
+  const ra = a as Record<string, unknown>;
+  const rb = b as Record<string, unknown>;
+  for (const k of new Set([...Object.keys(ra), ...Object.keys(rb)])) {
+    pathChanges(ra[k], rb[k], cap, Array.isArray(a) ? `${path}[${k}]` : path ? `${path}.${k}` : k, out);
+    if (out.length > cap) break;
+  }
+  return out;
+}
+
+function detail(kind: ChangeDetail["kind"], name: string, a: unknown, b: unknown): ChangeDetail {
+  const paths = pathChanges(a, b);
+  return paths.length > PATHS_PER_ITEM
+    ? { kind, name, paths: paths.slice(0, PATHS_PER_ITEM), truncated: true }
+    : { kind, name, paths };
+}
+
+/** name → raw entry, keyed like `byName` (a repeated name is `name#2`). */
+function rawByName(items: Array<{ name: string; raw: unknown }>): Map<string, unknown> {
+  const m = new Map<string, unknown>();
+  const seen = new Map<string, number>();
+  for (const it of items) {
+    const n = (seen.get(it.name) ?? 0) + 1;
+    seen.set(it.name, n);
+    m.set(n === 1 ? it.name : `${it.name}#${n}`, it.raw);
+  }
+  return m;
+}
+
+function ownFields(node: ParsedNode | null): unknown {
+  const raw = (node?.raw && typeof node.raw === "object" ? node.raw : {}) as Record<string, unknown>;
+  const { children: _c, ...own } = raw;
+  return own;
+}
+
+/**
+ * What differs inside every CHANGED item of `d` (variables, derived, HTTP
+ * calls, nodes, other config keys, styles): the differing paths with the value
+ * on each side (`from` = `a`, `to` = `b`). Added / removed items are already
+ * named in `d`.
+ */
+export function diffDetails(a: HydratedPage, b: HydratedPage, d: PageDiff): ChangeDetail[] {
+  const out: ChangeDetail[] = [];
+  const va = rawVariableEntries(a);
+  const vb = rawVariableEntries(b);
+  const plainA = rawByName(va.plain);
+  const plainB = rawByName(vb.plain);
+  for (const n of d.variables.changed) out.push(detail("variable", n, plainA.get(n), plainB.get(n)));
+  const derA = rawByName(va.derived);
+  const derB = rawByName(vb.derived);
+  for (const n of d.derived.changed) out.push(detail("derived", n, derA.get(n), derB.get(n)));
+  const http = (p: HydratedPage) => new Map(p.httpRequests.map((h) => [h.callId ?? `idx:${h.index}`, h.raw] as const));
+  const ha = http(a);
+  const hb = http(b);
+  for (const n of d.httpRequests.changed) out.push(detail("http", n, ha.get(n), hb.get(n)));
+  for (const n of d.nodesChanged) out.push(detail("node", n, ownFields(findNode(a.layout, n)), ownFields(findNode(b.layout, n))));
+  const ra = (a.rawConfiguration ?? {}) as Record<string, unknown>;
+  const rb = (b.rawConfiguration ?? {}) as Record<string, unknown>;
+  for (const k of d.otherChanged) {
+    if (k === "variables.generated") {
+      out.push(detail("config", k, (ra.variables as { generated?: unknown } | undefined)?.generated, (rb.variables as { generated?: unknown } | undefined)?.generated));
+    } else out.push(detail("config", k, ra[k], rb[k]));
+  }
+  if (d.styles.changed) {
+    const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
+    const sa = new Set(lines(a.styles));
+    const sb = new Set(lines(b.styles));
+    const onlyA = [...sa].filter((l) => !sb.has(l));
+    const onlyB = [...sb].filter((l) => !sa.has(l));
+    out.push({
+      kind: "styles",
+      name: "styles",
+      paths: [{ path: "styles", from: onlyA.slice(0, PATHS_PER_ITEM).map(brief), to: onlyB.slice(0, PATHS_PER_ITEM).map(brief) }],
+      ...(onlyA.length > PATHS_PER_ITEM || onlyB.length > PATHS_PER_ITEM ? { truncated: true } : {}),
+    });
+  }
+  return out;
+}
+
+/** Human lines for diffDetails: `~ kind name: path  from → to`. */
+export function detailLines(changes: ChangeDetail[]): string[] {
+  const show = (v: unknown) => (v === undefined ? "(absent)" : typeof v === "string" ? JSON.stringify(v) : JSON.stringify(v));
+  const lines: string[] = [];
+  for (const c of changes) {
+    lines.push(`~ ${c.kind} ${c.name}`);
+    for (const p of c.paths) lines.push(`    ${p.path}${p.line ? ` (line ${p.line})` : ""}: ${show(p.from)} → ${show(p.to)}`);
+    if (c.truncated) lines.push("    …more differences");
+  }
   return lines;
 }
 

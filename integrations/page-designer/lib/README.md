@@ -23,7 +23,7 @@ Everything the `wi-impl pd` commands share. Other packages may import any module
 | `page-dependencies.ts` | Entity resolution + phrase-key checks for `page-deps` / `translations` |
 | `page-diff.ts` | The one diff engine: `diffPages`, `editSummary`, `differingPaths` |
 | `page-finder.ts` | The `find` index (7 days) and fuzzy search; `collapsePairs` hides a PUBLISHED row whose draft is listed |
-| `resolver.ts`, `url-parser.ts` | `<input>` (URL, id, name) → fetched page; the entity type comes from the server |
+| `resolver.ts`, `url-parser.ts` | `<input>` (URL, id, name) → fetched page; the entity type comes from the server. `version` reads the draft or published copy (via `referenceId`), `resolvedAs` says which was read; `nameFromEnv` resolves an id missing on this env by its name from another |
 | `snapshot.ts` | Normalized snapshots and `--compare` |
 
 ## Read path
@@ -79,7 +79,8 @@ reports the `page-diff.ts` edit summary plus `nodesMoved`, `childrenReordered` a
 Shared by `diff`, `history diff`, the save/preflight edit summary and `snapshot --compare`.
 Compares whole raw variable entries (duplicate names keyed `name#2`), derived entries, HTTP
 calls by `callId`, and node own-fields (children excluded), plus moved nodes and reordered
-children.
+children. `diffDetails` lists, for each changed item, the differing leaf paths with both values
+(multi-line code: the first differing line; values cut at 300 chars, 10 paths per item).
 
 ## Config facts (verified on real pages)
 

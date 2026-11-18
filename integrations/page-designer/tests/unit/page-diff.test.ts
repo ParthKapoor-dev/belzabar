@@ -5,7 +5,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { parsePage } from "../../lib/parser/index";
 import { withConfiguration } from "../../lib/serialize/index";
-import { diffPages, editSummary, isIdentical } from "../../lib/page-diff";
+import { diffDetails, diffPages, editSummary, isIdentical, pathChanges } from "../../lib/page-diff";
 import type { RawPageResponse } from "../../lib/types/wire";
 
 const REAL = `${import.meta.dir}/../fixtures/real`;
@@ -85,5 +85,31 @@ describe("diffPages sees every structural change", () => {
     });
     const d = diffPages(before, after);
     expect(d.variables.added.some((n) => n.endsWith("#2"))).toBe(true);
+  });
+});
+
+describe("diffDetails names what differs inside each changed item (F4)", () => {
+  test("a variable field: path with both values; a key only on one side is absent there", () => {
+    const original = (before.rawConfiguration as Inner).variables.userDefined[0].initialValue;
+    const after = mutate((i) => {
+      i.variables.userDefined[0].initialValue = "changed";
+      i.variables.userDefined[0].extra = 1;
+    });
+    const [c] = diffDetails(before, after, diffPages(before, after));
+    expect(c).toMatchObject({ kind: "variable", name: before.variables[0]!.name });
+    expect(c!.paths).toContainEqual(original === undefined ? { path: "initialValue", to: "changed" } : { path: "initialValue", from: original, to: "changed" });
+    expect(c!.paths).toContainEqual({ path: "extra", to: 1 });
+  });
+
+  test("a node prop and styles; long values are cut, many leaves are truncated", () => {
+    const after = mutate((i) => {
+      i.layout.props = { ...i.layout.props, big: "x".repeat(500) };
+    });
+    const styled = withConfiguration(after, { ...(after.rawConfiguration as object), styles: `${before.styles}\n.new-rule { color: red; }` });
+    const changes = diffDetails(before, styled, diffPages(before, styled));
+    const node = changes.find((c) => c.kind === "node")!;
+    expect(node.paths[0]).toMatchObject({ path: "props.big", to: expect.stringContaining("… (500 chars)") });
+    expect(changes.find((c) => c.kind === "styles")!.paths[0]!.to).toEqual([".new-rule { color: red; }"]);
+    expect(pathChanges(Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`k${i}`, i])), {}).length).toBe(11);
   });
 });

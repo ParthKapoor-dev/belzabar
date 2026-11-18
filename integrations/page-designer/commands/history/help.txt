@@ -39,7 +39,9 @@ Notes:
   • History is recorded on the PUBLISHED page: a draft id usually lists 0
     versions — list the published id (`wi-impl pd show <draftId>` names it).
   • list returns metadata only — use show for full config.
-  • diff compares structure, not line-by-line JSON.
+  • diff compares structure, not line-by-line JSON; data.changes names, per
+    changed item, the differing paths with the A (from) and B (to) values
+    (same shape as `wi-impl pd diff`).
   • restore rewrites the DRAFT only (verified live); a page with no linked
     draft is refused (PD_PUBLISHED_NO_DRAFT). wi-impl never reverts the
     PUBLISHED row: the server would overwrite the live page without a
