@@ -14,8 +14,12 @@ Defaults to Zed (run in its two-file diff mode). Two modes:
     in-process with each env's own session.
 
   Both modes compare a semantic logic view: decoded custom code, SQL and SpEL
-  bodies, step order/kind/description, called services, conditions, input
-  mappings and the input/variable/output contract (no env-local ids). The
+  bodies, step order/kind/description, called services (category spacing
+  ignored), conditions, input mappings and the input/variable/output contract.
+  Internal and env-local numeric ids (step ids, automation ids, account ids,
+  uuids) are not part of the view, so the same logic on two envs compares
+  equal. Use cross-env mode to check a migration instead of diffing two
+  `ad show` outputs yourself. The
   result reports changed + differences (JSON paths); the two views are written
   to temp files for the editor.
 
