@@ -9,6 +9,10 @@ Arguments:
   [FILE]                JSON overlay (optional when --sql-file/--code-file carry
                         the change). Keys (anything else → AD_OVERLAY_UNKNOWN_KEY):
                           name, summary, description
+                            (`description` writes the long method description,
+                            V1 `methodDescription`; `summary` is the short
+                            summary. `ad show` prints them as
+                            summary.methodDescription / summary.summary.)
                           parsedSteps[] {orderIndex, source|sql|expression|description}
                           ops[]   structural ops, applied in order:
                             {"op":"add-step", "after":N | "before":N, "step":{STEP}}

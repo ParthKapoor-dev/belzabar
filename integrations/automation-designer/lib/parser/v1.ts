@@ -53,6 +53,7 @@ export function parseV1Method(raw: V1RawMethodResponse, opts?: ParseOptions): Hy
 
     name,
     summary,
+    storedSummary: typeof inner.summary === "string" ? inner.summary : "",
     description: inner.description ?? inner.methodDescription,
     buttonLabel: inner.buttonLabel,
     internalMethod: inner.internalMethod,

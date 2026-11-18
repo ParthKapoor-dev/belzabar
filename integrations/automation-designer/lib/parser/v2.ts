@@ -42,12 +42,16 @@ export function parseV2Method(raw: V2MethodResponse, opts?: ParseOptions): Hydra
 
     name,
     summary,
+    storedSummary: typeof raw.summary === "string" ? raw.summary : "",
     description: raw.description,
     buttonLabel: raw.buttonLabel,
     internalMethod: raw.internalMethod,
     ...(raw.methodDeprecated === true ? { deprecated: true } : {}),
-    ...(isObj(raw.permissions) && typeof raw.permissions.methodScope === "string" && raw.permissions.methodScope
-      ? { scope: raw.permissions.methodScope }
+    // An unset V2 methodScope (null) is the default: the V1 route reports the
+    // same records as UNRESTRICTED, and `show` must not list the scope for one
+    // method and not another (D30).
+    ...(isObj(raw.permissions)
+      ? { scope: typeof raw.permissions.methodScope === "string" && raw.permissions.methodScope ? raw.permissions.methodScope : "UNRESTRICTED" }
       : {}),
     ...(typeof metadata?.executionTimeLimit?.timeoutInSecond === "number"
       ? { timeoutSeconds: metadata.executionTimeLimit.timeoutInSecond }

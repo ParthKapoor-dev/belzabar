@@ -1,12 +1,13 @@
 wi-impl ad show <uuid|url>  :->  A method's steps, inputs, outputs and metadata (--compact: one line per step; --story: plain English)
 wi-impl ad show <uuid|url> --compact  :->  One line per step: kind/service, condition, loop, decoded SQL/code (abbreviated), inputs, outputs -> variables
 wi-impl ad show <uuid|url> --compact --sql --code  :->  Compact view plus the full decoded SQL / code bodies (`blocks`)
-wi-impl ad show <uuid|url> --compact --step <N>  :->  Compact line and full body of one step
+wi-impl ad show <uuid|url> --compact --step <N>  :->  Compact line (nothing cut) and full body of one step
 wi-impl ad show <uuid|url> --story  :->  Plain-English approval template (inputs, outputs, steps tables, decoded code) as Markdown
 wi-impl ad show <file.json> --story  :->  Same for a local V2/V1 method body before create/save (nothing fetched)
 wi-impl ad show <uuid|url> --inputs  :->  Show input argument definitions
 wi-impl ad show <uuid|url> --services  :->  Show service step names and IDs
-wi-impl ad show <uuid|url> --service-detail <N>  :->  Show detailed info (incl. SQL/code body) for the step with orderIndex N (alias --step <N>)
+wi-impl ad show <uuid|url> --service-detail <N>  :->  Only the step with orderIndex N, read fresh: body (SQL/code) and bound inputs (alias --step <N>)
+wi-impl ad show <uuid|url> --version <N>  :->  Show saved version N of the method (through history); combine with --compact / --story
 wi-impl ad show <uuid|url> --outputs --variables  :->  Show outputs and variables
 wi-impl ad show <uuid|url> --sql --code  :->  Include decoded SQL / custom-code bodies in the step details
 wi-impl ad show <uuid|url> --open  :->  Open the editable draft in the browser (-o)

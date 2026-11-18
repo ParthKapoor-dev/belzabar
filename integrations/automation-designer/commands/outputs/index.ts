@@ -2,6 +2,7 @@ import { type CommandModule, defineArgs, isObj, ok, str, type Obj } from "@belza
 import { fetchViewMethod } from "../../lib/view-fetch";
 import type { ParsedStep } from "../../lib/types/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
+import { mapInputFields, mapVariableFields } from "../show/index";
 
 interface OutputsArgs {
   uuid: string;
@@ -24,8 +25,9 @@ interface OutputsData {
   uuid: string;
   name: string;
   sourceVersion: "v1" | "v2";
-  inputs: Array<{ code: string; type: string; required: boolean; description: string }>;
-  variables: Array<{ code: string; type: string; description: string }>;
+  /** `defaultValue` / `testValue` only when set (D27). */
+  inputs: Array<{ code: string; type: string; required: boolean; description: string; defaultValue?: string; testValue?: string }>;
+  variables: Array<{ code: string; type: string; description: string; defaultValue?: string }>;
   outputs: Array<{ code: string; type: string; displayName: string; description: string }>;
   stepOutputs: StepOutputRow[];
   notes?: string[];
@@ -44,6 +46,10 @@ export function stepOutputRows(steps: ParsedStep[], declared: { outputs: string[
     }
   }
   return rows;
+}
+
+function dropUnset<T extends object>(row: T): T {
+  return Object.fromEntries(Object.entries(row).filter(([, v]) => v !== undefined)) as T;
 }
 
 export const args = defineArgs({
@@ -70,17 +76,9 @@ const command: CommandModule<OutputsArgs, OutputsData> = {
       uuid,
       name: m.name,
       sourceVersion: m.sourceVersion,
-      inputs: m.inputs.map(i => ({
-        code: i.code,
-        type: String(i.type ?? ""),
-        required: !!i.required,
-        description: i.description ?? "",
-      })),
-      variables: m.variables.map(v => ({
-        code: v.code,
-        type: String(v.type ?? ""),
-        description: v.description ?? "",
-      })),
+      // Same rows as `show --inputs` / `--variables`; unset defaults are dropped, not "".
+      inputs: mapInputFields(m.inputs).map(dropUnset),
+      variables: mapVariableFields(m.variables).map(dropUnset),
       outputs: m.outputs.map(o => ({
         code: o.code,
         type: String(o.type ?? ""),
@@ -97,10 +95,10 @@ const command: CommandModule<OutputsArgs, OutputsData> = {
     ui.section(`${data.name} — Contract`);
     ui.section("Inputs");
     if (data.inputs.length === 0) ui.text("(none)");
-    else ui.table(["Field", "Type", "Required", "Description"], data.inputs.map(i => [i.code, i.type, i.required ? "Yes" : "No", i.description]));
+    else ui.table(["Field", "Type", "Required", "Default", "Description"], data.inputs.map(i => [i.code, i.type, i.required ? "Yes" : "No", i.defaultValue ?? "", i.description]));
     ui.section("Variables");
     if (data.variables.length === 0) ui.text("(none)");
-    else ui.table(["Field", "Type", "Description"], data.variables.map(v => [v.code, v.type, v.description]));
+    else ui.table(["Field", "Type", "Default", "Description"], data.variables.map(v => [v.code, v.type, v.defaultValue ?? "", v.description]));
     ui.section("Outputs");
     if (data.outputs.length === 0) ui.text("(none)");
     else ui.table(["Code", "Display Name", "Type", "Description"], data.outputs.map(o => [o.code, o.displayName, o.type, o.description]));

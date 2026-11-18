@@ -250,7 +250,11 @@ export interface HydratedMethod {
 
   // Display
   name: string;
+  /** Display summary: the stored summary, else the description, else "(No description)". */
   summary: string;
+  /** The summary exactly as stored ("" when unset); `summary` falls back to the description. */
+  storedSummary?: string;
+  /** The long method description (V1 `methodDescription`, V2 `description`). */
   description?: string;
   buttonLabel?: string;
   internalMethod?: boolean;

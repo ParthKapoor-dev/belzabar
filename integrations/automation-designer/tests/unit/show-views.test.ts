@@ -80,7 +80,10 @@ describe("ad show default envelope is lean", () => {
     expect(sqlDetail.sql).toBeUndefined(); // --services alone: no SQL body
     const code = data.allStepDetails.find((d: any) => d.kind === "CUSTOM_CODE");
     expect(code.source).toBeUndefined();
-    expect(JSON.stringify(data)).not.toMatch(/:(null|""|\[\]|\{\})[,}]/);
+    // `summary.summary` is the one key kept empty: "" = no summary stored (B124).
+    expect(data.summary.summary).toBe("");
+    expect(data.summary.methodDescription).toBe("Enrollment Stage Type Add");
+    expect(JSON.stringify({ ...data, summary: { ...data.summary, summary: "x" } })).not.toMatch(/:(null|""|\[\]|\{\})[,}]/);
   });
 
   test("--sql / --code include the decoded bodies", async () => {
@@ -228,10 +231,11 @@ describe("ad show --story", () => {
     expect(data.view).toBe("story");
     const md: string = data.markdown;
     expect(md).toStartWith("## configure.enrollment.stage.type.add.old\n");
-    expect(md).toContain("**What it does:** Enrollment Stage Type Add");
+    // B124: the summary and the description by their real names; no summary → never the description.
+    expect(md).toContain("**What it does:** (no summary)\n**Description (methodDescription):** Enrollment Stage Type Add\n");
     expect(md).toContain("**Approach:** mixed (11 steps: 1 custom code, 10 service calls)");
     expect(md).toContain("**Service:** Schools");
-    expect(md).toContain("| Field | Type | Test value | Purpose |");
+    expect(md).toContain("| Field | Type | Default | Test value | Purpose |");
     expect(md).toContain("| # | Type | What it does |");
     const acct = (await v2(SQL_UUID)).parsedSteps[0]!.account?.name;
     expect(md).toContain(`| 1 | db_service/data.read (SQL read) | only when #{code} ne null; gives \`enrollment_stage_type_info\`, \`enrollment_stage_type_count\`; uses account ${acct} |`);

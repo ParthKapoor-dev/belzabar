@@ -25,11 +25,11 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `cache.ts` | `CacheManager`: the parsed-method cache (directory from core `METHOD_CACHE_DIR`); `invalidate` also marks the method-index entry dirty. |
 | `hydrator.ts` | V1 service-definition lookup and cache; `buildServiceResolver` for the V1 parser. |
 | `categories.ts` | One category model joining the two id spaces (chain category and automation system): `fetchCategories`, `findCategory`, `requireChainCategory`. |
-| `method-finder.ts` | The cached method index behind `find` and `callers` (core `finderIndexStore`): build, search, dirty and gone marks, `addMethodToIndex`. |
+| `method-finder.ts` | The cached method index behind `find` and `callers` (core `finderIndexStore`): build, search, dirty and gone marks, `addMethodToIndex`, `categoryResolverFor` / `cachedCategoryResolver` (a category alias → canonical name, from the cached index only). |
 | `callers.ts` | `ad callers`: the reverse index (AD methods; PD pages and components via `@belzabar/pd/lib/ad-refs`), with honest coverage reporting; its body reader (`readBodyCached`, `pool`) is shared with `grep.ts`. |
 | `grep.ts` | `ad grep`: step texts of a V2 body (`stepTextsOf`, SQL and code decoded), line matching; reads bodies through `callers.ts`' `readBodyCached` (per-version cache `cache/grep`). |
 | `view-fetch.ts` | `fetchViewMethod` (fresh V2 read, V1 fallback) for `show --compact` / `--story` and `outputs`; `fetchMethodChecked` (V1 read confirmed on V2, so soft-deleted methods are `METHOD_NOT_FOUND`). |
-| `method-view.ts` | `compactMethod` / `renderCompact` (`show --compact`: `{view:"compact", name, category, state, version, uuid, in, out, vars, steps[], blocks?}`, one line per step) and `storyMarkdown` (`show --story`: `{view:"story", name, uuid, markdown}`). |
+| `method-view.ts` | `compactMethod` / `renderCompact` (`show --compact`: `{view:"compact", name, category, state, version, uuid, summary?, methodDescription?, in, out, vars, defaults?, steps[], callees?, blocks?}`, one line per step) and `storyMarkdown` (`show --story`: `{view:"story", name, uuid, markdown}`). Cuts end `…(+N, use --full)`; conditions are never cut. A `CategoryResolver` (from `method-finder.ts` `cachedCategoryResolver`) gives callees their canonical category. |
 | `compact.ts` | Output trimming for `--llm` payloads: `pruneEmpty`, `oneLine`, `abbreviate`, `htmlToText`. |
 | `api-shape.ts` | `child-info --shape`: the part of a callee contract needed to wire a step, plus its auth accounts. |
 | `history.ts` | `getVersionOf` / `sideOf`: read version N from the chain (draft or published) the uuid names. |
@@ -65,7 +65,7 @@ All caches are core `Cache` instances under `~/.wi-impl/cache/`, env-scoped.
 
 | Cache | Location | TTL | Evicted by |
 |---|---|---|---|
-| Methods | `methods/<env>/<uuid>.json` | 5 min soft (stale-while-revalidate), 1 h hard | save, publish, delete, history restore, and `wi-impl migrate run` for its target env (core `invalidateEntityCache`); `show --force` bypasses. A V1 parse with unresolved services is never cached. |
+| Methods | `methods/<env>/<uuid>.json` | 5 min soft (stale-while-revalidate), 1 h hard | save, publish, delete, history restore, and `wi-impl migrate run` for its target env (core `invalidateEntityCache`); `show --force` / `--step N` bypass. `show` serves a cached copy only after a raw V1 read confirms the server's `version` is the same (else it reads fresh). A V1 parse with unresolved services is never cached. |
 | Service definitions | `definitions/<env>/<automationId>.json` | 1 h | — |
 | Method index | `method-finder/index-v1-<env>.json`, `dirty-<env>.json`, `gone-<env>.json` | 7 days (`callers` rebuilds after 24 h; a partial index after 15 min) | `find --refresh`, `callers --refresh`, `ad import`. wi-impl writes (and `migrate run` on its target env) mark a uuid dirty through core `markMethodIndexDirty` (`callers` re-reads it); `create` adds the new draft; a V2 `METHOD_NOT_FOUND` marks it gone. |
 | Caller refs | `callers/` (30 days, keyed by uuid and `updatedOn`), `callers-errors/` (1 day) | — | `callers --refresh` |

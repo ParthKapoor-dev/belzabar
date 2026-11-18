@@ -1,18 +1,27 @@
 import { existsSync, statSync } from "fs";
-import { CliError, type CommandModule, Config, defineArgs, ok, openUrlInBrowser, readJsonInputSync, triggerDetachedRefresh } from "@belzabar/core";
+import { CliError, type CommandModule, Config, currentCacheEnv, defineArgs, ok, openUrlInBrowser, readJsonInputSync, triggerDetachedRefresh } from "@belzabar/core";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
 import { AD_V2_FLAG, apiVersionOf } from "../../lib/args/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { abbreviate, htmlToText, pruneEmpty } from "../../lib/compact";
 import { parseV1Method, parseV2Method } from "../../lib/parser/index";
+import { adApi } from "../../lib/api/index";
+import { parseVersionBody } from "../../lib/fingerprint";
+import { getVersionOf, sideOf } from "../../lib/history";
+import { cachedCategoryResolver } from "../../lib/method-finder";
 import {
+  canonicalIdentity,
   compactMethod,
+  defaultText,
   flattenStepInputs,
   identityForStep,
+  inputPairs,
   renderCompact,
   stepGates,
+  storedSummaryOf,
   storyMarkdown,
+  type CategoryResolver,
   type CompactMethodView,
   type InputLabeler,
 } from "../../lib/method-view";
@@ -49,6 +58,8 @@ interface ShowMethodFlags {
   open: boolean;
   compact: boolean;
   story: boolean;
+  /** `--version N`: that saved version of this chain, read through history. */
+  version: number | null;
 }
 
 /** `uuid` for a method on the env, or `file` for a local V1/V2 JSON body (e.g. a create spec before save). */
@@ -75,10 +86,33 @@ interface StepSummaryRow {
  * once (`raw`), code / SQL bodies only when asked for (`--code`, `--sql`,
  * `--full`).
  */
+/** A cached read: when it was cached, and the server version it was checked against (D2). */
+interface CacheInfo {
+  savedAt: string;
+  ageMinutes: number;
+  version: number | string;
+  /** The server's current version (a cheap V1 read); absent when that check failed. */
+  serverVersion?: number | string;
+}
+
+/** `--version N`: the history record the view was built from. */
+interface HistoryInfo {
+  version: number;
+  side: "DRAFT" | "PUBLISHED";
+  versionUUID?: string;
+  isPublished?: boolean;
+  addedBy?: number;
+  addedWhen?: string;
+}
+
 interface ShowMethodData {
   view?: undefined;
-  source: "cache" | "stale" | "fresh" | "file";
+  source: "cache" | "stale" | "fresh" | "file" | "history";
   sourceVersion: "v1" | "v2";
+  cache?: CacheInfo;
+  history?: HistoryInfo;
+  /** e.g. a stepless (built-in) method has no source. */
+  note?: string;
   summary: {
     name: string;
     alias?: string;
@@ -88,7 +122,10 @@ interface ShowMethodData {
     uuid: string;
     referenceId?: string | null;
     updated?: string;
+    /** The summary as stored ("" when unset; never the description). */
     summary?: string;
+    /** The long method description (`ad save` key `description`). */
+    methodDescription?: string;
     inputCount: number;
     variableCount: number;
     outputCount: number;
@@ -99,9 +136,10 @@ interface ShowMethodData {
     scope?: string;
     timeoutSeconds?: number;
   };
-  steps: StepSummaryRow[];
-  inputs?: Array<{ code: string; type: string; required: boolean; description: string }>;
-  variables?: Array<{ code: string; type: string; description: string }>;
+  /** Absent with `--step N` (that step only, in `stepDetail`). */
+  steps?: StepSummaryRow[];
+  inputs?: Array<{ code: string; type: string; required: boolean; description: string; defaultValue?: string; testValue?: string }>;
+  variables?: Array<{ code: string; type: string; description: string; defaultValue?: string }>;
   outputs?: Array<{ code: string; type: string; displayName: string; description: string }>;
   stepDetail?: StepDetailView | null;
   allStepDetails?: StepDetailView[];
@@ -109,8 +147,8 @@ interface ShowMethodData {
   raw?: unknown;
 }
 
-/** `source` / `fetchedAt`: the views are always read fresh, or from a local file. */
-type ViewSource = { source: "fresh" | "file"; sourceVersion: "v1" | "v2"; fetchedAt?: string };
+/** `source` / `fetchedAt`: the views are always read fresh, from history (`--version`), or from a local file. */
+type ViewSource = { source: "fresh" | "file" | "history"; sourceVersion: "v1" | "v2"; fetchedAt?: string; history?: HistoryInfo };
 type CompactData = { view: "compact" } & ViewSource & CompactMethodView;
 interface StoryData extends ViewSource {
   view: "story";
@@ -181,12 +219,12 @@ function badgeForKind(kind: ParsedStep["kind"]): string {
   }
 }
 
-function summariseSteps(method: HydratedMethod): StepSummaryRow[] {
+function summariseSteps(method: HydratedMethod, categoryOf?: CategoryResolver): StepSummaryRow[] {
   return method.parsedSteps.map(s => ({
     orderIndex: s.orderIndex,
     kind: s.kind,
     description: s.description ?? "",
-    identity: identityForStep(s),
+    identity: canonicalIdentity(s, categoryOf),
     gates: stepGates(s),
   }));
 }
@@ -213,6 +251,7 @@ async function buildStepDetailView(
   method: HydratedMethod,
   step: ParsedStep,
   bodies: { code: boolean; sql: boolean },
+  categoryOf?: CategoryResolver,
 ): Promise<StepDetailView> {
   const config: StepDetailView["config"] = [];
   if (step.runAsync) config.push({ key: "Async", value: "Yes" });
@@ -251,7 +290,7 @@ async function buildStepDetailView(
     orderIndex: step.orderIndex,
     kind: step.kind,
     description: step.description ?? "",
-    identity: identityForStep(step),
+    identity: canonicalIdentity(step, categoryOf),
     config,
     outputs,
   };
@@ -263,10 +302,9 @@ async function buildStepDetailView(
       ...(step.conditionRows ? { rows: step.conditionRows } : {}),
     };
   }
-  if (step.kind === "EXISTING_SERVICE" || step.kind === "UNKNOWN" || step.kind.startsWith("REDIS_")) {
-    const inputs = flattenStepInputs(step.inputs, labelFor);
-    if (inputs.length > 0) base.inputs = inputs;
-  }
+  // Every kind's bound inputs (D1), minus the body slot shown as sql / source / expression.
+  const inputs = inputPairs(step, labelFor);
+  if (inputs.length > 0) base.inputs = inputs;
   if (step.forceReturnExpression || step.forceReturnRows) {
     base.exitIf = {
       mode: step.forceReturnMode,
@@ -333,20 +371,30 @@ async function buildStepDetailView(
   }
 }
 
-function mapInputFields(fields: MethodField[]): NonNullable<ShowMethodData["inputs"]> {
+function valueText(v: unknown): string | undefined {
+  if (v === undefined || v === null || v === "") return undefined;
+  return typeof v === "string" ? v : JSON.stringify(v);
+}
+
+/** Inputs with their default and (V1) test value, kept apart (D27). */
+export function mapInputFields(fields: MethodField[]): NonNullable<ShowMethodData["inputs"]> {
   return fields.map(f => ({
     code: f.code,
     type: String(f.type ?? ""),
     required: !!f.required,
     description: f.description ?? "",
+    defaultValue: defaultText(f),
+    testValue: valueText(f.testValue),
   }));
 }
 
-function mapVariableFields(fields: MethodField[]): NonNullable<ShowMethodData["variables"]> {
+/** Variables with their default (starting) value (D27). */
+export function mapVariableFields(fields: MethodField[]): NonNullable<ShowMethodData["variables"]> {
   return fields.map(f => ({
     code: f.code,
     type: String(f.type ?? ""),
     description: f.description ?? "",
+    defaultValue: defaultText(f),
   }));
 }
 
@@ -404,8 +452,9 @@ export const args = defineArgs({
     open: { type: "boolean", alias: ["-o"] },
     compact: { type: "boolean" },
     story: { type: "boolean" },
+    version: { type: "number", integer: true, min: 1 },
   },
-  exclusive: [["compact", "story"], ["story", "raw"], ["compact", "raw"]],
+  exclusive: [["compact", "story"], ["story", "raw"], ["compact", "raw"], ["version", "force"]],
 });
 
 /**
@@ -437,16 +486,43 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       open: f.open,
       compact: f.compact,
       story: f.story,
+      version: f.version ?? null,
     };
+    if (flags.version !== null && target.kind === "file") {
+      throw new CliError("--version needs a method uuid, not a file.", { code: "INVALID_ARGUMENT" });
+    }
     return { target, flags, apiVersion: apiVersionOf(f) };
   },
   async execute({ target, flags, apiVersion }, context) {
     let method: HydratedMethod;
     let source: ShowMethodData["source"];
+    let cacheInfo: CacheInfo | undefined;
+    let history: HistoryInfo | undefined;
     if (target.kind === "file") {
       if (flags.open) throw new CliError("--open needs a method uuid, not a file.", { code: "INVALID_ARGUMENT" });
       method = parseMethodFile(target.path);
       source = "file";
+    } else if (flags.version !== null) {
+      // D31: an older version, through the chain's history (the side follows the uuid's state).
+      const current = await fetchMethodChecked(target.uuid, "v1");
+      const full = await getVersionOf(current, current.category?.name ?? "", flags.version);
+      method = {
+        ...parseVersionBody(full),
+        uuid: current.uuid,
+        referenceId: current.referenceId,
+        state: current.state,
+        category: current.category,
+        version: full.methodVersion,
+      };
+      source = "history";
+      history = {
+        version: full.methodVersion,
+        side: sideOf(current),
+        versionUUID: full.methodVersionID || undefined,
+        isPublished: full.isPublished,
+        addedBy: full.addedBy,
+        addedWhen: full.addedWhen,
+      };
     } else if (flags.compact || flags.story) {
       // the agent views read V2, whose input paths (`body.json`) and
       // output keys (`key→fieldCode`) are what `ad save` ops / `create --spec`
@@ -459,26 +535,43 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       let m = cached?.data ?? null;
       source = cached?.stale ? "stale" : "cache";
 
-      // Cache is V1-shaped; if --v2 or force is set, refetch.
-      if (!m || flags.force || apiVersion === "v2" || m.sourceVersion !== apiVersion) {
+      // A cached copy is only served when the server still has its version (D2):
+      // one cheap V1 read (no definition lookups) checks it.
+      if (m && cached && !flags.force && flags.step === null && apiVersion === "v1" && m.sourceVersion === "v1") {
+        await assertNotKnownDeleted(uuid); // a cached copy of a method seen deleted since
+        const ageMinutes = Math.round(Math.max(0, Date.now() - cached.savedAt) / 60000);
+        cacheInfo = { savedAt: new Date(cached.savedAt).toISOString(), ageMinutes, version: m.version };
+        const probe = await adApi.fetchRawMethod(uuid, "v1").catch(() => null);
+        const serverVersion = probe && typeof (probe as { version?: unknown }).version === "number" ? (probe as { version: number }).version : undefined;
+        if (serverVersion !== undefined) cacheInfo.serverVersion = serverVersion;
+        if (serverVersion !== undefined && serverVersion !== m.version) {
+          context.warn(`Cached copy was v${m.version} (${ageMinutes} min old); the server has v${serverVersion} — read fresh.`);
+          m = null;
+          cacheInfo = undefined;
+        } else if (serverVersion === undefined) {
+          context.warn(`Using a cached copy (v${m.version}, ${ageMinutes} min old) whose version could not be checked. Use --force for a fresh read.`);
+        }
+      }
+
+      // Cache is V1-shaped; --v2, --force and --step N read fresh.
+      if (!m || flags.force || flags.step !== null || apiVersion === "v2" || m.sourceVersion !== apiVersion) {
         source = "fresh";
         // V1 serves soft-deleted methods: fetchMethodChecked reads V2 beside it.
         m = await fetchMethodChecked(uuid, apiVersion);
         // A degraded parse (a definition lookup failed) is not cached.
         if (apiVersion === "v1" && !m.unresolvedServices?.length) await CacheManager.save(uuid, m);
-      } else {
-        await assertNotKnownDeleted(uuid); // a cached copy of a method seen deleted since
       }
       method = m;
 
       if (source === "stale") {
         // Serve stale data now; refresh the cache in a detached background process.
-        context.warn("Using stale cached definition — refreshing in background.");
+        context.warn(`Using stale cached definition (v${method.version}) — refreshing in background.`);
         triggerDetachedRefresh(CacheManager.dir, uuid);
       } else if (source === "cache") {
-        context.warn("Using cached method definition. Use --force for refresh.");
+        context.warn(`Using cached method definition (v${method.version}, ${cacheInfo?.ageMinutes ?? "?"} min old). Use --force for refresh.`);
       }
     }
+    const categoryOf = target.kind === "uuid" ? await cachedCategoryResolver(currentCacheEnv()) : undefined;
 
     if (flags.step !== null && !method.parsedSteps.some(s => s.orderIndex === flags.step)) {
       throw new CliError(`Step with index ${flags.step} not found.`, { code: "STEP_NOT_FOUND" });
@@ -502,12 +595,14 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
     }
 
     const viewSource: ViewSource = {
-      source: source === "file" ? "file" : "fresh",
+      source: source === "file" ? "file" : source === "history" ? "history" : "fresh",
       sourceVersion: method.sourceVersion,
       ...(source === "file" ? {} : { fetchedAt: new Date().toISOString() }),
+      ...(history ? { history } : {}),
     };
     if (flags.story) {
-      return ok<ShowData>({ view: "story", ...viewSource, name: method.name, uuid: method.uuid, markdown: storyMarkdown(method) }, { sourceVersion: method.sourceVersion });
+      const markdown = storyMarkdown(method, { full: flags.full, categoryOf });
+      return ok<ShowData>({ view: "story", ...viewSource, name: method.name, uuid: method.uuid, markdown }, { sourceVersion: method.sourceVersion });
     }
 
     if (flags.compact) {
@@ -516,18 +611,25 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
         const l = await v1LabelerFor(method, s);
         if (l) labels.set(s.orderIndex, l);
       }
+      // --step N: that step whole (D1, B77); --full: nothing cut.
+      const whole = flags.full || flags.step !== null;
       const view = compactMethod(method, {
         labels,
         step: flags.step,
-        bodyChars: flags.full ? 0 : 160,
-        valueChars: flags.full ? 0 : 60,
+        bodyChars: whole ? 0 : 160,
+        valueChars: whole ? 0 : 60,
+        descChars: whole ? 0 : 80,
+        categoryOf,
         fullBodies: {
           sql: flags.sql || flags.full || flags.step !== null,
           code: flags.code || flags.full || flags.step !== null,
           spel: flags.full || flags.step !== null,
         },
       });
-      return ok<ShowData>(pruneEmpty<CompactData>({ view: "compact", ...viewSource, ...view }), { sourceVersion: method.sourceVersion });
+      const lean = pruneEmpty<CompactData>({ view: "compact", ...viewSource, ...view });
+      // Asked for → always a list (D5): pruneEmpty drops an empty one.
+      if (view.blocks && !lean.blocks) lean.blocks = [];
+      return ok<ShowData>(lean, { sourceVersion: method.sourceVersion });
     }
 
     const includeInputs = flags.inputs || flags.full;
@@ -535,17 +637,22 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
     const includeVariables = flags.variables || flags.full;
     const includeOutputs = flags.outputs || flags.full;
     const bodies = { code: flags.code || flags.full, sql: flags.sql || flags.full };
+    // A stepless method (a built-in service) has nothing but its contract to show (D5).
+    const stepless = method.parsedSteps.length === 0;
 
     let stepDetail: StepDetailView | null = null;
     if (flags.step !== null) {
       const match = method.parsedSteps.find(s => s.orderIndex === flags.step)!;
-      // A single step's detail always carries its body (the point of asking for it).
-      stepDetail = await buildStepDetailView(method, match, { code: true, sql: true });
+      // A single step's detail always carries its body and bound inputs (the point of asking for it).
+      stepDetail = await buildStepDetailView(method, match, { code: true, sql: true }, categoryOf);
     }
 
     const data: ShowMethodData = {
       source,
       sourceVersion: method.sourceVersion,
+      ...(cacheInfo && source !== "fresh" ? { cache: cacheInfo } : {}),
+      ...(history ? { history } : {}),
+      ...(stepless && target.kind === "uuid" ? { note: "No steps: a built-in service method (no source to show); its contract is `inputs` / `outputs`." } : {}),
       summary: {
         name: method.name,
         alias: method.aliasName,
@@ -555,7 +662,8 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
         uuid: method.uuid,
         referenceId: method.referenceId,
         updated: method.updatedOn ? `${formatDate(method.updatedOn)} by ${method.updatedBy ?? "unknown"}` : undefined,
-        summary: method.summary ?? "",
+        summary: storedSummaryOf(method),
+        methodDescription: method.description,
         inputCount: method.inputs.length,
         variableCount: method.variables.length,
         outputCount: method.outputs.length,
@@ -566,23 +674,27 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
         scope: method.scope,
         timeoutSeconds: method.timeoutSeconds,
       },
-      steps: summariseSteps(method),
+      // --step N answers with that step only (D1).
+      ...(flags.step === null ? { steps: summariseSteps(method, categoryOf) } : {}),
       stepDetail,
     };
 
-    if (includeInputs) data.inputs = mapInputFields(method.inputs);
+    if (includeInputs || stepless) data.inputs = mapInputFields(method.inputs);
     if (includeVariables) data.variables = mapVariableFields(method.variables);
-    if (includeOutputs) data.outputs = mapOutputFields(method.outputs);
+    if (includeOutputs || stepless) data.outputs = mapOutputFields(method.outputs);
 
-    if (includeServices || flags.code || flags.sql) {
+    if (flags.step === null && (includeServices || flags.code || flags.sql)) {
       const details: StepDetailView[] = [];
       for (const step of method.parsedSteps) {
-        details.push(await buildStepDetailView(method, step, bodies));
+        details.push(await buildStepDetailView(method, step, bodies, categoryOf));
       }
       data.allStepDetails = details;
     }
 
     const lean = pruneEmpty(data);
+    // Always present (pruneEmpty drops ""): "" = no summary stored.
+    lean.summary.summary ??= "";
+    if (flags.step === null) lean.steps ??= [];
     // Kept verbatim (never pruned): the wire body, emitted once.
     if (flags.raw) lean.raw = method.raw;
     return ok<ShowData>(lean, { sourceVersion: method.sourceVersion });
@@ -611,12 +723,13 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       [summary.state === "PUBLISHED" ? "Draft ID" : "Published ID", summary.referenceId ?? ""],
       ["Updated", summary.updated ?? "N/A"],
       ["Summary", summary.summary ?? ""],
+      ["Description", summary.methodDescription ?? ""],
       ["Inputs", summary.inputCount],
       ["Variables", summary.variableCount],
       ["Outputs", summary.outputCount],
       ["Steps", summary.stepCount],
       ["API Source", data.sourceVersion.toUpperCase()],
-      ["Cache", data.source === "stale" ? "stale (refreshing…)" : data.source],
+      ["Cache", (data.source === "stale" ? "stale (refreshing…)" : data.source) + (data.cache ? ` (v${data.cache.version}, ${data.cache.ageMinutes} min old${data.cache.serverVersion !== undefined ? `, server v${data.cache.serverVersion}` : ""})` : "")],
     ];
     if (summary.deprecated) rows.push(["Deprecated", "Yes"]);
     if (summary.scope) rows.push(["Scope", summary.scope]);
@@ -629,31 +742,34 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       for (const w of summary.parseWarnings) ui.warn(w);
     }
 
-    // Compact step listing with kind badges.
-    ui.section("Service Chain");
-    if (data.steps.length === 0) {
-      ui.text("No steps defined.");
-    } else {
-      ui.table(
-        ["#", "Kind", "Description", "Identity", "Gates"],
-        stepTableRows(data.steps),
-      );
+    if (data.note) ui.info(data.note);
+    // Compact step listing with kind badges (absent with --step N: that step only).
+    if (data.steps) {
+      ui.section("Service Chain");
+      if (data.steps.length === 0) {
+        ui.text("No steps defined.");
+      } else {
+        ui.table(
+          ["#", "Kind", "Description", "Identity", "Gates"],
+          stepTableRows(data.steps),
+        );
+      }
     }
 
     // Empty lists are pruned from the payload: a missing section = none / not asked for.
     if (data.inputs) {
       ui.section("Inputs");
       ui.table(
-        ["Field", "Type", "Required", "Description"],
-        data.inputs.map(i => [i.code, i.type ?? "", i.required ? "Yes" : "No", i.description ?? ""]),
+        ["Field", "Type", "Required", "Default", "Test value", "Description"],
+        data.inputs.map(i => [i.code, i.type ?? "", i.required ? "Yes" : "No", i.defaultValue ?? "", i.testValue ?? "", i.description ?? ""]),
       );
     }
 
     if (data.variables) {
       ui.section("Variables");
       ui.table(
-        ["Field", "Type", "Description"],
-        data.variables.map(v => [v.code, v.type ?? "", v.description ?? ""]),
+        ["Field", "Type", "Default", "Description"],
+        data.variables.map(v => [v.code, v.type ?? "", v.defaultValue ?? "", v.description ?? ""]),
       );
     }
 

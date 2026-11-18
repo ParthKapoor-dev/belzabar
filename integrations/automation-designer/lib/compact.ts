@@ -33,11 +33,14 @@ export function oneLine(text: string): string {
   return text.replace(/\s+/g, " ").trim();
 }
 
-/** One-line text cut at `max` chars with a `…(+N)` marker. `max <= 0` = no limit. */
-export function abbreviate(text: string, max: number): string {
+/**
+ * One-line text cut at `max` chars with a `…(+N)` marker, or `…(+N, <hint>)`
+ * when a `hint` says how to see the whole text (`use --full`). `max <= 0` = no limit.
+ */
+export function abbreviate(text: string, max: number, hint?: string): string {
   const flat = oneLine(text);
   if (max <= 0 || flat.length <= max) return flat;
-  return `${flat.slice(0, max)}…(+${flat.length - max})`;
+  return `${flat.slice(0, max)}…(+${flat.length - max}${hint ? `, ${hint}` : ""})`;
 }
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", "#39": "'" };

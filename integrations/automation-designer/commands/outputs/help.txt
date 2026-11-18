@@ -15,7 +15,9 @@ Global Flags:
   --env <name>  Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
   --llm    Emit a JSON envelope.
 
-Data: {uuid, name, sourceVersion, inputs[], variables[], outputs[],
+Data: {uuid, name, sourceVersion, inputs[{code, type, required, description,
+defaultValue?, testValue?}], variables[{code, type, description, defaultValue?}]
+(defaults whole: a variable may hold SQL text), outputs[],
 stepOutputs[{step, key (callee output), as (the name the method sees), var?,
 declaredAs: output|variable|input|null}], notes?}. A step output whose `as`
 is not declared on the method (declaredAs null; listed in notes) is not

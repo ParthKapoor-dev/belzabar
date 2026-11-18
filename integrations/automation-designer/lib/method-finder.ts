@@ -123,6 +123,44 @@ export async function addMethodToIndex(
   }
 }
 
+/** `Schools - Utilities` and `Schools-Utilities` compare equal. */
+function categoryKey(s: string): string {
+  return s.trim().toLowerCase().replace(/\s*-\s*/g, "-").replace(/\s+/g, " ");
+}
+
+/**
+ * A step's callee category spelling (name, label, alias, or the same with
+ * spaces around dashes) → the canonical category name and uuid, from the
+ * env's CACHED index only (never builds one). Ambiguous spellings resolve to
+ * nothing. Pure over the given index.
+ */
+export function categoryResolverFor(index: Pick<MethodFinderIndex, "categories">): (service: string) => { name: string; uuid: string } | undefined {
+  const byName = new Map<string, MethodFinderCategory>();
+  const byOther = new Map<string, MethodFinderCategory | null>();
+  for (const c of index.categories) byName.set(c.name, c);
+  const add = (k: string, c: MethodFinderCategory) => {
+    const prev = byOther.get(k);
+    byOther.set(k, prev === undefined || prev?.uuid === c.uuid ? c : null);
+  };
+  for (const c of index.categories) {
+    for (const k of new Set([c.name, c.label, ...c.aliasNames].filter(Boolean))) add(categoryKey(k), c);
+  }
+  return (service) => {
+    const c = byName.get(service) ?? byOther.get(categoryKey(service)) ?? undefined;
+    return c ? { name: c.name, uuid: c.uuid } : undefined;
+  };
+}
+
+/** {@link categoryResolverFor} over the env's cached index; undefined when there is none. Never throws. */
+export async function cachedCategoryResolver(env: string): Promise<((service: string) => { name: string; uuid: string } | undefined) | undefined> {
+  try {
+    const index = await indexStore.load(env);
+    return index ? categoryResolverFor(index) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Drop the env's whole index (a write whose method uuids are unknown, e.g. `ad import`). Never throws. */
 export async function dropMethodIndex(env: string): Promise<void> {
   await indexStore.drop(env);

@@ -40,4 +40,20 @@ describe("ad outputs stepOutputs", () => {
     const first = body.steps.findIndex((s: any) => (s.outputs ?? []).length > 0);
     expect(d.stepOutputs[0]).toMatchObject({ step: first + 1, key: body.steps[first].outputs[0].key, as: body.steps[first].outputs[0].fieldCode });
   });
+
+  test("D27: input and variable defaults are listed (whole), test values apart", async () => {
+    const { uuid, body } = pick();
+    const sql = "insdata AS (INSERT INTO t SELECT 1)";
+    const withDefaults = {
+      ...body,
+      inputs: [...(body.inputs ?? []), { key: "batching", name: "batching", type: "JSON", defaultValue: '{"size":200}' }],
+      variables: [...(body.variables ?? []), { key: "filterClauseFinal", name: "filterClauseFinal", type: "TEXT", defaultValue: sql }],
+    };
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch({ [`GET /rest/api/automation/chain/v2/${uuid}*`]: withDefaults }).install();
+    const d = (await runCommand(outputsCommand, [uuid], { env: "t-dev" })).envelope?.data as any;
+    expect(d.inputs.at(-1)).toEqual({ code: "batching", type: "JSON", required: false, description: "", defaultValue: '{"size":200}' });
+    expect(d.variables.at(-1)).toMatchObject({ code: "filterClauseFinal", defaultValue: sql });
+    expect(d.inputs.slice(0, -1).every((i: any) => !("defaultValue" in i) || i.defaultValue !== undefined)).toBe(true);
+  });
 });
