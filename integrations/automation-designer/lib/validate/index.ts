@@ -133,6 +133,7 @@ function finish(findings: RawFinding[], input: ValidateInput, layersRun: string[
     const f = { ...raw };
     if (before?.has(findingIdentity(raw, input.after, afterAnchors))) {
       f.preexisting = true;
+      f.originalSeverity = raw.severity;
       f.severity = "warn";
     } else {
       if (input.strict) f.severity = "error";

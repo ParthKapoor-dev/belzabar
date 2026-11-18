@@ -6,7 +6,6 @@ import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { fingerprintMethod } from "../../lib/fingerprint";
 import * as v2 from "../../lib/api/v2";
-import { ruleInfo } from "../../lib/validate/index";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
 import { runValidationGate, type ValidationSummary } from "../../lib/save/validation";
 import { invalidateCompiledCache, type CompiledCacheResult } from "../../lib/save/compiled-cache";
@@ -94,8 +93,10 @@ const command: CommandModule<PublishArgs, PublishData> = {
 
     // Publish does no server-side validation (a broken draft publishes with
     // 200 and fails every run): validate the draft body first. Findings also
-    // present in the current published copy are "pre-existing"; they block
-    // too unless --allow-preexisting.
+    // present in the current published copy are "pre-existing": a pre-existing
+    // ERROR blocks too unless --allow-preexisting; a pre-existing warning
+    // never blocks (C7: its rule's catalogue severity may be "error", e.g. CC1
+    // JAVA or CC5 NODEJS_LAMBDA are reported as warnings).
     const draftBody = await v2.fetchRawMethod(draft.uuid);
     const publishedBody = guard.publishedUuid ? await v2.fetchRawMethod(guard.publishedUuid).catch(() => undefined) : undefined;
     const validation = await runValidationGate(
@@ -107,7 +108,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
         action: "publish",
         warn: (msg) => context.warn(msg),
         extraBlocking: (r) =>
-          allowPreexisting ? [] : r.warnings.filter((w) => w.preexisting && ruleInfo(w.rule)?.severity === "error"),
+          allowPreexisting ? [] : r.warnings.filter((w) => w.preexisting && w.originalSeverity === "error"),
       },
     );
 

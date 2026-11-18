@@ -19,6 +19,7 @@ Flags:
   --dry-run-compile     Also run the online checks (server compile dry run).
   --allow-preexisting   Publish even if the current published copy already has
                         the same validator errors (they block by default).
+                        A warning the published copy already has never blocks.
   --help, -h            Show this help message.
 
 Global Flags:
@@ -29,7 +30,8 @@ Safety:
   - A missing --note aborts before any server call (MISSING_CHANGE_NOTE).
   - Validator errors on the draft → AD_VALIDATION_FAILED (details {errors,
     warnings, blocking, layersRun, preexistingCount}); nothing is published.
-    Findings also present in the published copy are marked preexisting.
+    Findings also present in the published copy are marked preexisting
+    (originalSeverity says what they were); only pre-existing errors block.
   - After the confirmation the draft is re-read; if it changed since it was
     validated → AD_VERSION_CONFLICT, nothing is published.
   - The change note is POSTed AFTER the publish call. If it still fails after

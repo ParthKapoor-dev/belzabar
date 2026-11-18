@@ -25,6 +25,12 @@ export interface ValidationFinding {
   fix?: string;
   /** The same finding (rule + path) is already present in `before`. */
   preexisting?: boolean;
+  /**
+   * Set on a pre-existing finding: its own severity before the downgrade to
+   * "warn" (publish blocks on pre-existing ERRORS only; a rule's catalogue
+   * severity is not enough: CC1/CC5/Q5 report some cases as warnings).
+   */
+  originalSeverity?: Severity;
   /** Server error text or observed runtime effect this rule prevents. */
   evidence?: string;
 }

@@ -233,7 +233,7 @@ describe("ad publish — validator gate + compiled cache", () => {
     __setValidatorsForTests({
       offline: (input) => {
         before = input.before;
-        return { errors: [], warnings: [{ ...err, severity: "warn", preexisting: true }], layersRun: ["L1"] };
+        return { errors: [], warnings: [{ ...err, severity: "warn", preexisting: true, originalSeverity: "error" }], layersRun: ["L1"] };
       },
     });
     const f = wire({ published: true });
@@ -244,6 +244,21 @@ describe("ad publish — validator gate + compiled cache", () => {
     const ok = await runCommand(publishCommand, [DRAFT, "--note", "n2", "--yes", "--allow-preexisting"], { env: "t-dev" });
     expect(ok.envelope?.ok).toBe(true);
     expect((ok.envelope!.data as any).validation.warnings).toHaveLength(1);
+  });
+
+  test("C7: a warning the published copy already has never blocks, even when its rule's catalogue severity is error", async () => {
+    // The real validator on both sides: custom code language JAVA is CC1 reported as a warning (CC1 is an error rule).
+    const java = () => {
+      const b = draftV2();
+      b.steps[0].properties.customCode.language = "JAVA";
+      return b;
+    };
+    const f = wire({ published: true, draftV2: java, publishedV2: () => ({ ...java(), uuid: PUB, metadata: { ...draftV2().metadata, state: "PUBLISHED", referenceId: DRAFT } }) });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const cc1 = (r.envelope!.data as any).validation.warnings.filter((w: any) => w.rule === "CC1");
+    expect(cc1.map((w: any) => [w.preexisting, w.originalSeverity])).toEqual([[true, "warn"]]);
+    expect(posts(f)[0]).toBe(`/rest/api/automation/chain/${DRAFT}/publish`);
   });
 
   test("a plain warning does not block; --no-validate skips the validator", async () => {

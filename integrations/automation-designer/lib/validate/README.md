@@ -18,8 +18,10 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
 
 ## Contracts
 
-- A finding is `{rule, severity, message, path, step?, fix?, evidence?, preexisting?}`; `path` is a JSON path into the V2 body
-  (`steps[2].outputs[0].fieldCode`).
+- A finding is `{rule, severity, message, path, step?, fix?, evidence?, preexisting?,
+  originalSeverity?}`; `path` is a JSON path into the V2 body (`steps[2].outputs[0].fieldCode`).
+  `originalSeverity` is set on a pre-existing finding: its severity before the downgrade (some
+  rules report a case as a warning, e.g. `CC1` JAVA), which is what publish blocks on.
 - **Diff-aware.** Given `before` (the fetched draft, or the published copy on publish), a
   finding also present in `before` becomes a warning with `preexisting: true`, so a method that
   already breaks a rule stays saveable and only new violations block. `--strict` promotes only

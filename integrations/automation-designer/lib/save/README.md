@@ -75,8 +75,8 @@ This runs before the verify, so an `AD_SAVE_VERIFY_FAILED` carries `details.test
 
 ## Publish, create, delete
 
-- **publish** (`commands/publish`) validates the draft; findings the published copy already
-  has still block unless `--allow-preexisting`. After confirmation it re-reads the draft
+- **publish** (`commands/publish`) validates the draft; errors the published copy already
+  has still block unless `--allow-preexisting` (a pre-existing warning never blocks). After confirmation it re-reads the draft
   (`assertDraftUnchanged`), publishes, then records the change note (three attempts; a POST
   that may have reached the server is never re-sent, the changelog is checked instead). A
   failed note reports `noteRecorded: false` and the publish stands. Both chains' compiled
