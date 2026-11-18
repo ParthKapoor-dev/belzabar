@@ -33,7 +33,7 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `compact.ts` | Output trimming for `--llm` payloads: `pruneEmpty`, `oneLine`, `abbreviate`, `htmlToText`; `escapeRichText` for description writes. |
 | `api-shape.ts` | `child-info --shape`: the part of a callee contract needed to wire a step, plus its auth accounts. |
 | `history.ts` | `getVersionOf` / `sideOf`: read version N from the chain (draft or published) the uuid names. |
-| `fingerprint.ts` | `fingerprintMethod`: a behaviour hash that ignores env-local ids and bookkeeping; `methodDiffView`, `diffPaths`. |
+| `fingerprint.ts` | `fingerprintMethod`: a logic hash that ignores descriptions, internal ids / links and bookkeeping; `methodDiffView` (the `ad diff` view: no ids), `diffPaths`. |
 | `trace.ts` | `traceMethod`: where a method's dev history has reached on every env (`ad trace`, `release matrix`). |
 | `test-run.ts` | `runInlineTest`: one `/chain/test` run → status and HTTP status, trace (times in ms; a loop step's ns time corrected; async steps `dispatched (async)`), per-step outputs and rendered SQL, server timing, outputs map; `diffOutputs` for `--compare-published`. |
 | `payload-builder.ts` | `buildV1TestPayload`: the one `/chain/test` body (`test`, `run-suites`, test-case runs). |
@@ -55,8 +55,11 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
   to PUBLISHED would silently overwrite production.
 - **Method refs.** Any uuid argument goes through `resolveMethodRef` from
   `@belzabar/core/platform` (any uuid spelling or AD URL → 32 hex, else `INVALID_UUID`).
-- **Fingerprints** compare V2 or history bodies only. Cross-env noise is normalised: numeric
-  `…Id`s and other `…Uuid`s, default `encodedBase64` / `runAsync` / `required` false, db
+- **Fingerprints** compare V2 or history bodies only and cover logic only: descriptions
+  (method summary/description, step and field descriptions) and every internal id, uuid or
+  link (a callee's API output uuids, a method output's step link) are left out; a V1 callee's
+  `automationApiUuid` is the one id kept. Cross-env noise is normalised: numeric
+  `…Id`s, default `encodedBase64` / `runAsync` / `required` false, db
   `account` ids (hashed by name), whitespace in service and category names, a method output
   `fieldCode` equal to its key. `tests/fixtures/cross-env` holds real dev/qa pairs.
 - **`trace`** switches the global active env while it runs (restored afterwards), so calls must

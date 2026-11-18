@@ -8,7 +8,23 @@
 
 import { CliError } from "@belzabar/core";
 import { adApi, type MethodVersionFull } from "./api/index";
+import * as v1 from "./api/v1";
 import type { HydratedMethod } from "./types/common";
+
+/**
+ * When the method was last saved: the V1 chain's `updatedOn` (else `createdOn` for a
+ * never-updated method), as ISO-8601 UTC. The V2 GET carries no update stamp. Best effort:
+ * null when the read fails or the stamp is missing.
+ */
+export async function lastUpdatedOf(uuid: string): Promise<string | null> {
+  try {
+    const raw = await v1.fetchRawMethod(uuid);
+    const ms = Number(raw.updatedOn ?? raw.createdOn);
+    return Number.isFinite(ms) && ms > 0 ? new Date(ms).toISOString() : null;
+  } catch {
+    return null;
+  }
+}
 
 /** Which chain's history a uuid names. */
 export type HistorySide = "DRAFT" | "PUBLISHED";

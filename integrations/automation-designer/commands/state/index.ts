@@ -1,7 +1,8 @@
-import { defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { fingerprintMethod } from "../../lib/fingerprint";
+import { lastUpdatedOf } from "../../lib/history";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import type { HydratedMethod } from "../../lib/types/common";
 
@@ -11,6 +12,7 @@ interface StateArgs {
 
 interface StateData {
   input: { uuid: string };
+  /** false: PUBLISHED with no linked draft, or a side could not be read (`publishedReadFailed`). */
   ok: boolean;
   state: "DRAFT" | "PUBLISHED" | "UNKNOWN" | null;
   draftUuid: string | null;
@@ -25,11 +27,17 @@ interface StateData {
   versions: { draft: number | null; published: number | null };
   /** 12-hex logic fingerprints (lib/fingerprint.ts) of each side. */
   fingerprints: { draft: string | null; published: string | null };
+  /** When each side was last saved (ISO-8601 UTC; V1 `updatedOn`, else `createdOn`); null when unknown. */
+  updatedOn: { draft: string | null; published: string | null };
   /**
    * true: draft logic == published logic; false: the draft has unpublished
    * changes; null: no published side (never published) or it could not be read.
    */
   inSync: boolean | null;
+  /** The method has a published side but reading it failed (e.g. timed out): its version and fingerprint are unknown, not absent. */
+  publishedReadFailed?: true;
+  /** The error code of the failed published read. */
+  publishedReadError?: string;
   switchedFromPublished: boolean;
   /** Who may call each side (`permissions.methodScope`; UNRESTRICTED when unset), read fresh. */
   scopes: { draft: string | null; published: string | null };
@@ -69,6 +77,7 @@ const command: CommandModule<StateArgs, StateData> = {
         publishedVersion,
         versions: { draft: null, published: publishedVersion },
         fingerprints: { draft: null, published: initial.state === "PUBLISHED" ? fingerprintMethod(initial) : null },
+        updatedOn: { draft: null, published: initial.state === "PUBLISHED" ? await lastUpdatedOf(initial.uuid) : null },
         inSync: null,
         switchedFromPublished: false,
         scopes: { draft: null, published: initial.state === "PUBLISHED" ? initial.scope ?? null : null },
@@ -77,17 +86,23 @@ const command: CommandModule<StateArgs, StateData> = {
     }
 
     const draft = guard.draft;
+    const hasPublished = !!guard.publishedUuid && guard.publishedUuid !== draft.uuid;
     let published: HydratedMethod | null = null;
+    let readError: string | undefined;
     let message: string | undefined;
+    // The V2 GET has no update stamp: the V1 chain's is read beside it (best effort).
+    const stamps = Promise.all([lastUpdatedOf(draft.uuid), hasPublished ? lastUpdatedOf(guard.publishedUuid!) : Promise.resolve(null)]);
     if (guard.switchedFromPublished) {
       published = initial; // already fetched
-    } else if (guard.publishedUuid && guard.publishedUuid !== draft.uuid) {
+    } else if (hasPublished) {
       try {
-        published = await adApi.fetchMethod(guard.publishedUuid, apiVersion);
+        published = await adApi.fetchMethod(guard.publishedUuid!, apiVersion);
       } catch (e) {
-        message = `Could not read the published side ${guard.publishedUuid}: ${(e as Error).message}`;
+        readError = e instanceof CliError ? e.code : "AD_API_ERROR";
+        message = `Could not read the published side ${guard.publishedUuid}: ${(e as Error).message} Its version and fingerprint are unknown (not "never published"); retry.`;
       }
     }
+    const [draftUpdated, publishedUpdated] = await stamps;
 
     // sync is a CONTENT question. Compare logic fingerprints.
     const draftFp = fingerprintMethod(draft);
@@ -96,7 +111,7 @@ const command: CommandModule<StateArgs, StateData> = {
 
     return ok<StateData>({
       input: { uuid },
-      ok: true,
+      ok: readError === undefined,
       state: initial.state,
       draftUuid: draft.uuid,
       publishedUuid: guard.publishedUuid,
@@ -104,7 +119,9 @@ const command: CommandModule<StateArgs, StateData> = {
       publishedVersion: versionOf(published),
       versions: { draft: versionOf(draft), published: versionOf(published) },
       fingerprints: { draft: draftFp, published: publishedFp },
+      updatedOn: { draft: draftUpdated, published: publishedUpdated },
       inSync,
+      ...(readError !== undefined ? { publishedReadFailed: true as const, publishedReadError: readError } : {}),
       switchedFromPublished: guard.switchedFromPublished,
       scopes: { draft: draft.scope ?? null, published: published?.scope ?? null },
       ...(message ? { message } : {}),
@@ -121,7 +138,9 @@ const command: CommandModule<StateArgs, StateData> = {
         ["Draft UUID", data.draftUuid ?? "(none)"],
         ["Published UUID", data.publishedUuid ?? "(none)"],
         ["Draft version", data.draftVersion ?? ""],
-        ["Published version", data.publishedVersion ?? ""],
+        ["Published version", data.publishedReadFailed ? "(read failed)" : (data.publishedVersion ?? "")],
+        ["Draft updated", data.updatedOn.draft ?? ""],
+        ["Published updated", data.updatedOn.published ?? ""],
         ["Switched from PUBLISHED", data.switchedFromPublished ? "Yes" : "No"],
         ["Scope (draft / published)", `${data.scopes.draft ?? "-"} / ${data.scopes.published ?? "-"}`],
       ],

@@ -8,9 +8,9 @@ that spine: its latest-published version is fingerprinted and matched to a
 spine entry. This shows which change of a method has reached which env — the
 input to release collision and leak detection.
 
-Fingerprints hash a semantic projection of the logic (step order/kind/
-description, called service names, conditions, decoded code/SQL/SpEL bodies,
-input mappings) and the input contract, never env-local ids.
+Fingerprints hash the logic only (step order/kind,
+called service names, conditions, decoded code/SQL/SpEL bodies,
+input mappings, the contract), never descriptions or internal / env-local ids.
 
 AD chain UUIDs are stable across environments, so one UUID resolves everywhere.
 A DRAFT uuid is mapped to its published chain (warning), since the spine is the

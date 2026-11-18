@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
-import { diffPaths, fingerprintMethod, fingerprintProjection, parseVersionBody, stableStringify } from "../../lib/fingerprint";
+import { diffPaths, fingerprintMethod, fingerprintProjection, methodDiffView, parseVersionBody, stableStringify } from "../../lib/fingerprint";
 import { parseV1Method, parseV2Method } from "../../lib/parser/index";
 import { encodeBase64 } from "../../lib/base64";
 import type { HydratedMethod } from "../../lib/types/common";
@@ -107,7 +107,6 @@ describe("fingerprintMethod over the wire body", () => {
     ["called service", (b) => (b.steps[2].methodName = "data.update")],
     ["step order", (b) => b.steps.splice(0, 2, b.steps[1], b.steps[0])],
     ["step removed", (b) => b.steps.pop()],
-    ["step description", (b) => (b.steps[0].description = "changed")],
     ["method name", (b) => (b.name = "renamed")],
     ["category", (b) => (b.metadata.service.name = "Elsewhere")],
     ["time limit", (b) => (b.metadata.executionTimeLimit = 5)],
@@ -153,13 +152,14 @@ describe("fingerprintMethod over the wire body", () => {
     expect(same).toBe(7);
   });
 
-  test("V1 bodies: ids ignored, the SQL / code body counts", () => {
+  test("V1 bodies: ids and descriptions ignored, the condition counts", () => {
     const raw = readJson("real-v1/41bb1b438875bd8b994196db1f12b7c2.v1.json");
     const fp = fingerprintMethod(parseV1Method(raw));
     const jd = JSON.parse(raw.jsonDefinition);
     jd.services.forEach((s: Body) => (s.automationId = "other"));
-    expect(fingerprintMethod(parseV1Method({ ...raw, jsonDefinition: JSON.stringify(jd) }))).toBe(fp);
     jd.services[0].description = "changed";
+    expect(fingerprintMethod(parseV1Method({ ...raw, jsonDefinition: JSON.stringify(jd) }))).toBe(fp);
+    jd.services[0].conditionExpression = "#{x} eq 1";
     expect(fingerprintMethod(parseV1Method({ ...raw, jsonDefinition: JSON.stringify(jd) }))).not.toBe(fp);
   });
 
@@ -184,12 +184,65 @@ describe("fingerprintMethod over the wire body", () => {
     expect(fp((jd) => (svc(jd, 3).automationApiUuid = svc(jd, 3).automationApiUuid.replace(/-/g, "")))).toBe(base);
   });
 
-  test("a padded uuid (live: V1 automationUuid read back padded after a restore) matches the unpadded one", () => {
+  test("an internal uuid link (live: V1 automationUuid read back padded after a restore) is not hashed at all", () => {
     const withUuid = (v: string) => mutated((b) => (b.steps[0].outputs[0].automationUuid = v));
     const bare = withUuid("4f11484a706062c55fafb7dde8ae3fd2");
     expect(withUuid("4f11484a706062c55fafb7dde8ae3fd2    ")).toBe(bare);
-    expect(withUuid("4F11484A-7060-62C5-5FAF-B7DDE8AE3FD2")).toBe(bare);
-    expect(withUuid("4f11484a706062c55fafb7dde8ae3fd3")).not.toBe(bare);
+    expect(withUuid("4f11484a706062c55fafb7dde8ae3fd3")).toBe(bare);
+    expect(bare).toBe(fpOf(readJson(BASE)));
+  });
+});
+
+// D17 / B128 / B134 / B31: the fingerprint covers logic only.
+describe("fingerprint: logic only", () => {
+  // The base carries a method output and an output-linked step input, so each case only
+  // changes (or adds) the non-logic field.
+  const withLinks = (b: Body) => {
+    b.outputs = [{ uuid: "4a", key: "out", fieldCode: "out", name: "out", type: "TEXT" }];
+    b.steps[0].inputs[0].properties[0].outputRef = { referenceStepIndex: 1, fieldCode: "f", label: "f" };
+  };
+  const base = (() => {
+    const b = readJson(BASE);
+    withLinks(b);
+    return fpOf(b);
+  })();
+  const mutated = (fn: (b: Body) => void) => {
+    const b = readJson(BASE);
+    withLinks(b);
+    fn(b);
+    return fpOf(b);
+  };
+  const NOT_LOGIC: Array<[string, (b: Body) => void]> = [
+    ["method description / summary (B128)", (b) => ((b.description = "edited"), (b.summary = "edited"))],
+    ["step description", (b) => (b.steps[0].description = "changed")],
+    ["input / output descriptions", (b) => ((b.inputs[0].description = "x"), (b.outputs[0].description = "y"))],
+    ["a method output's internal step link (B134)", (b) => (b.outputs[0].referenceUuid = "456d6de2b5d5d5b08489857bb855433c")],
+    [
+      "a callee's API output uuid, which changes when the callee is published (B31)",
+      (b) => (b.steps[0].inputs[0].properties[0].outputRef.apiOutputUuid = "fd4d3307-7178-4df2-bfa1-2a32cb5b3392"),
+    ],
+  ];
+  for (const [what, fn] of NOT_LOGIC) test(`ignores: ${what}`, () => expect(mutated(fn)).toBe(base));
+
+  test("the cross-env diff view (ad diff --cross-env) ignores internal / numeric ids and category spacing (B134)", () => {
+    const view = (fn: (b: Body) => void) => {
+      const b = readJson(BASE);
+      fn(b);
+      return methodDiffView(parseV2Method(b));
+    };
+    const a = view(() => {});
+    const b = view((x) => {
+      x.steps.forEach((s: Body, i: number) => ((s.id = `q${i}`), (s.automationAPIId = "ffffffffffffffffffffffffffffffff")));
+      x.steps[0].accountConfiguration.id = 149;
+      x.steps[3].serviceName = x.steps[3].serviceName.replace("-", " - ");
+      x.inputs[0].uuid = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+    });
+    expect(diffPaths(a, b)).toEqual([]);
+  });
+
+  test("which step output feeds an input still counts", () => {
+    const ref = (i: number) => mutated((b) => (b.steps[0].inputs[0].properties[0].outputRef = { referenceStepIndex: i, fieldCode: "f", apiOutputUuid: `${i}` }));
+    expect(ref(1)).not.toBe(ref(2));
   });
 });
 

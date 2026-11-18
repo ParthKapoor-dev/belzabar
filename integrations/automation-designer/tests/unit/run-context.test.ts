@@ -19,10 +19,10 @@ const ENV = "t-run-context";
 const read = (p: string) => JSON.parse(readFileSync(join(FIX, p), "utf8"));
 const pubV2 = () => read(`draft-published/${PUB}.published.v2.json`);
 const draftV2 = () => read(`draft-published/${DRAFT}.draft.v2.json`);
-/** The draft with a step's description changed: different logic from the published copy. */
+/** The draft with a different time limit: different logic from the published copy (a description is not logic). */
 const changedDraft = () => {
   const d = draftV2();
-  d.steps[0].description = "changed in the draft";
+  d.metadata = { ...d.metadata, executionTimeLimit: { timeoutInSecond: 999 } };
   return d;
 };
 /** A draft with the published copy's logic. */

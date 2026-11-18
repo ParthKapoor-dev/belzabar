@@ -1,25 +1,45 @@
 Usage: wi-impl ad state <uuid> [flags]
 
-Print draft/published linkage, versions, and whether the draft has unpublished changes.
+Print draft/published linkage, versions, last-saved times, and whether the
+draft has unpublished changes.
 
 Flags:
-  --llm    Emit a JSON envelope with {draftUuid, publishedUuid, state, versions,
-           fingerprints, inSync, scopes{draft, published}} (scopes: who may
-           call each side, read fresh; set it with `ad save` key scope)
+  --llm    Emit a JSON envelope with {ok, state, draftUuid, publishedUuid,
+           versions, fingerprints, updatedOn, inSync, scopes{draft, published},
+           publishedReadFailed?, publishedReadError?, switchedFromPublished,
+           message?} (scopes: who may call each side, read fresh; set it with
+           `ad save` key scope)
 
 Notes:
   - Wraps lib/draft-guard.ts:resolveDraftTarget() and is the safe read-only
     way to inspect draft/published state before calling any write command.
-  - inSync compares the behaviour fingerprints (lib/fingerprint.ts: the whole
-    body minus ids, versions, stamps, changelogs and testSuite — so outputs,
-    loops, exits, async, accounts, variables all count) of the draft
-    and the published body, both read on V2 (V1 bodies carry UI noise that
-    differs between the two copies; uuids count normalised, numeric ids not):
-    true = identical, false = the draft has unpublished changes, null = never
-    published. The draft and published version counters are independent, so
-    versions.draft > versions.published does not mean out of sync.
+  - fingerprints cover the method's LOGIC only (lib/fingerprint.ts): steps
+    (order, kind, called service + method by name, inputs and mappings,
+    outputs, SQL / code / SpEL bodies, conditions, exits, loops, async,
+    accounts by name) and the method's name, category, time limit, inputs,
+    variables and outputs. Left out: descriptions (method summary and
+    description, step and field descriptions), versions, stamps, changelogs,
+    the test suite, and every internal id, uuid or link (step ids, a callee's
+    API output uuids, a method output's step link). So a description-only
+    edit, or publishing a method this one calls, leaves it unchanged, and the
+    same logic on two envs gives the same fingerprint.
+  - inSync compares the draft and published fingerprints, both read on V2
+    (V1 bodies carry UI noise that differs between the two copies): true =
+    identical logic, false = the draft has unpublished changes, null = never
+    published, or the published side could not be read. The draft and
+    published version counters are independent, so versions.draft >
+    versions.published does not mean out of sync.
+  - updatedOn {draft, published}: when each side was last saved (ISO-8601
+    UTC, from the V1 chain's updatedOn, else createdOn; null when unknown).
+    Use it to date a change when `wi-impl ad history list` has no versions.
+  - A published side that cannot be read (e.g. timed out) gives ok:false,
+    publishedReadFailed:true and publishedReadError (the error code): its
+    version and fingerprint are unknown, not "never published". Retry.
   - Exit code is 0 even when the method is PUBLISHED without a linked draft;
     the envelope `ok` field surfaces the distinction.
+  - To see WHAT differs for the same method on two envs, use the cross-env
+    mode of `wi-impl ad diff` (it ignores internal and numeric ids; see
+    `wi-impl ad diff --help`).
 
 Example:
   wi-impl ad state 4a1b2c3d... --llm | jq '.data'

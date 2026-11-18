@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { CliError } from "@belzabar/core";
 import { fakeFetch, runCommand, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import stateCommand from "../../commands/state/index";
 
@@ -62,14 +63,14 @@ describe("ad state", () => {
     expect(d.publishedUuid).toBe(PUB);
   });
 
-  test("one GET per side", async () => {
+  test("one V2 GET per side", async () => {
     const f = pair();
+    const v2Gets = () => f.requests.filter((q) => q.method === "GET" && q.url.includes("/chain/v2/"));
     await runCommand(stateCommand, [PUB], { env: "t-dev" });
-    const gets = f.requests.filter((q) => q.method === "GET").map((q) => q.url.split("/").pop()!.split("?")[0]);
-    expect(gets.sort()).toEqual([PUB, DRAFT].sort());
+    expect(v2Gets().map((q) => q.url.split("/").pop()!.split("?")[0]).sort()).toEqual([PUB, DRAFT].sort());
     f.requests.length = 0;
     await runCommand(stateCommand, [DRAFT], { env: "t-dev" });
-    expect(f.requests.filter((q) => q.method === "GET")).toHaveLength(2);
+    expect(v2Gets()).toHaveLength(2);
   });
 
   test("never-published draft -> inSync:null", async () => {
@@ -79,5 +80,37 @@ describe("ad state", () => {
     const d = r.envelope?.data as any;
     expect(d.inSync).toBeNull();
     expect(d.versions).toEqual({ draft: 4, published: null });
+    expect(d.publishedReadFailed).toBeUndefined();
+  });
+
+  // D18: a timed-out published read is not "never published".
+  test("a published read that times out -> ok:false, publishedReadFailed, never a plain null", async () => {
+    const draft = withMeta(draftBody(), { referenceId: PUB });
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
+    ff = fakeFetch({
+      [V2(DRAFT)]: draft,
+      [V2(PUB)]: () => {
+        throw new CliError("Request timed out after 60s", { code: "HTTP_TIMEOUT" });
+      },
+    }).install();
+    const r = await runCommand(stateCommand, [DRAFT], { env: "t-dev" });
+    const d = r.envelope?.data as any;
+    expect(d).toMatchObject({ ok: false, publishedUuid: PUB, publishedVersion: null, inSync: null, publishedReadFailed: true, publishedReadError: "HTTP_TIMEOUT" });
+    expect(d.message).toContain("not \"never published\"");
+  });
+
+  // D32 / B133: when each side was last saved (the V1 chain's stamp; V2 has none).
+  test("updatedOn per side, ISO UTC, from the V1 chain (createdOn when never updated)", async () => {
+    cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
+    const draft = withMeta(draftBody(), { referenceId: PUB });
+    const pub = withMeta({ ...draftBody(), uuid: PUB }, { state: "PUBLISHED", referenceId: DRAFT });
+    ff = fakeFetch({
+      [V2(DRAFT)]: draft,
+      [V2(PUB)]: pub,
+      [`GET /rest/api/automation/chain/${DRAFT}`]: { uuid: DRAFT, updatedOn: Date.UTC(2026, 10, 10, 10, 0, 56, 688), createdOn: 1 },
+      [`GET /rest/api/automation/chain/${PUB}`]: { uuid: PUB, createdOn: Date.UTC(2026, 0, 2) },
+    }).install();
+    const d = (await runCommand(stateCommand, [DRAFT], { env: "t-dev" })).envelope?.data as any;
+    expect(d.updatedOn).toEqual({ draft: "2026-11-10T10:00:56.688Z", published: "2026-01-02T00:00:00.000Z" });
   });
 });

@@ -11,11 +11,14 @@
 // hashing `raw` makes qa look "diverged" from dev. A (orderIndex, kind,
 // description) hash fails the first test — it collapses body edits.
 //
-// So we hash the wire body minus server bookkeeping and env-local ids (see
-// `fingerprintProjection`). Methods without a wire body fall back to
-// a SEMANTIC step projection: step order/kind/description, the called
-// service+method NAMES, condition expressions, the decoded code/SQL/expression
-// bodies, and input mapping VALUES.
+// So we hash the wire body minus server bookkeeping, every internal id / uuid /
+// link (a callee is named by service + method; its API output uuids change when
+// the callee is published, and a method output's step link is env-local), and
+// the descriptions (method summary/description, step and field descriptions):
+// the fingerprint covers logic only (see `fingerprintProjection`). Methods
+// without a wire body fall back to a SEMANTIC step projection: step order/kind,
+// the called service+method NAMES, condition expressions, the decoded
+// code/SQL/expression bodies, and input mapping VALUES.
 
 import { createHash } from "crypto";
 import { isObj } from "@belzabar/core";
@@ -54,7 +57,7 @@ function semanticStep(s: ParsedStep): unknown {
     o: s.orderIndex,
     kind: s.kind,
     desc: s.description ?? "",
-    svc: s.serviceName ?? "",
+    svc: (s.serviceName ?? "").replace(/\s+/g, ""), // "Cat - Sub" and "Cat-Sub" name one category
     mth: s.methodName ?? "",
     cond: s.conditionExpression ?? "",
     inputs: (s.inputs ?? []).map(semanticInput),
@@ -146,6 +149,19 @@ export function isBookkeepingKey(k: string): boolean {
   return BOOKKEEPING_KEYS.has(k) || /(Id|Uuid)s?$/.test(k);
 }
 
+/**
+ * Not logic, dropped from the fingerprint wherever they appear: free text
+ * (a description-only edit must not change it) and deprecation stamps.
+ */
+const NON_LOGIC_KEYS: ReadonlySet<string> = new Set(["description", "summary", "comment", "deprecatedAt", "deprecatedBy"]);
+
+/**
+ * The only id fields the fingerprint keeps (normalised): a V1 step names its
+ * callee by API uuid alone. Every other `…Id(s)` / `…Uuid(s)` is an internal
+ * id or link (V2 names the callee by serviceName + methodName).
+ */
+const CALLEE_ID_KEYS: ReadonlySet<string> = new Set(["automationApiUuid"]);
+
 const NUMERIC_ID = /^\s*\d+\s*$/;
 /** Canonical uuid spelling: space padding, case and dashes differ between copies (live: padded after a restore). */
 function normaliseUuid(v: string): string {
@@ -153,10 +169,9 @@ function normaliseUuid(v: string): string {
 }
 
 /**
- * An `…Id(s)` / `…Uuid(s)` field outside BOOKKEEPING_KEYS, for the fingerprint:
- * env-local NUMERIC ids are dropped (undefined); anything else (a V1
- * automationApiUuid naming the called API, a child-method uuid) is kept,
- * normalised, so re-binding a step to another callee changes the hash.
+ * A callee id field (CALLEE_ID_KEYS), for the fingerprint: env-local NUMERIC
+ * ids are dropped (undefined); a uuid naming the called API is kept,
+ * normalised, so re-binding a V1 step to another callee changes the hash.
  */
 function projectIdField(v: unknown): unknown {
   if (typeof v === "number" || (typeof v === "string" && NUMERIC_ID.test(v))) return undefined;
@@ -218,13 +233,14 @@ function projectWire(value: unknown): unknown {
   const obj = value as Record<string, unknown>;
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (BOOKKEEPING_KEYS.has(k)) continue;
+    if (BOOKKEEPING_KEYS.has(k) || NON_LOGIC_KEYS.has(k)) continue;
     if (k in DEFAULT_VALUES && v === DEFAULT_VALUES[k]) continue;
     // `databaseRead.account`: the env-local numeric account id as a string
     // ("149" in qa, "null" in dev for the same step). The account itself is
     // hashed by name via `accountConfiguration.name`.
     if (k === "account" && (typeof v === "number" || (typeof v === "string" && (NUMERIC_ID.test(v) || v === "null")))) continue;
     if (/(Id|Uuid)s?$/.test(k)) {
+      if (!CALLEE_ID_KEYS.has(k)) continue;
       const pv = projectIdField(v);
       if (pv !== undefined) out[k] = pv;
       continue;
@@ -286,9 +302,11 @@ function withoutDerivedOutputFields(body: Record<string, unknown>): Record<strin
  * Stable 12-hex fingerprint of everything that changes a method's behaviour.
  *
  * With the wire body (every fetched / history-parsed method): the whole body
- * minus bookkeeping (BOOKKEEPING_KEYS, numeric …Ids; other …Uuids normalised) — steps' inputs, outputs, SQL,
+ * minus bookkeeping (BOOKKEEPING_KEYS), every internal id / uuid / link (only a V1
+ * callee's API uuid stays, normalised) and all descriptions — steps' inputs, outputs, SQL,
  * code, service, account (by name), conditions, exit, loop, async, and the
- * method's inputs, outputs, variables and display fields. A draft and its
+ * method's inputs, outputs, variables and names. A description-only edit, or a
+ * callee being published, does not change it. A draft and its
  * published copy of the same content match. Without a body (hand-built
  * methods) it falls back to the hydrated step projection.
  *
@@ -305,7 +323,7 @@ export function fingerprintMethod(m: HydratedMethod): string {
   }
   const steps = [...m.parsedSteps]
     .sort((a, b) => a.orderIndex - b.orderIndex)
-    .map(semanticStep);
+    .map((s) => ({ ...(semanticStep(s) as Record<string, unknown>), desc: undefined })); // logic only: no description
   const inputs = [...m.inputs]
     .map((i) => ({ code: i.code, type: i.type, required: !!i.required }))
     .sort((a, b) => a.code.localeCompare(b.code));
