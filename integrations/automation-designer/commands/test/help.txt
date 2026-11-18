@@ -13,6 +13,14 @@ every callee whose draft has unpublished changes. A step marked async is
 started and really runs (with its side effects) but is not awaited: it is
 warned about, listed in the confirmation, and shown 'dispatched (async)'.
 
+ad test posts to the platform's test route, not the execute route the app
+(and `ad run`) uses, and the two hand some inputs over differently (live):
+JSON text in a JSON-typed input reaches the method as an object here but as
+text through `ad run`; an object value arrives here as a Java Map
+(toString() gives {a=1}) but as a JSON node ({"a":1}) through `ad run`.
+Text inputs holding JSON text are the same on both. ad test warns when an
+input is sent either way; confirm such behaviour with `ad run`.
+
 Arguments:
   <UUID>                The UUID of the method to test (usually the draft).
 

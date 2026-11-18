@@ -26,7 +26,7 @@ import {
 } from "../../lib/test-cases/expect";
 import { parseCaseInput, runnableInputs } from "../../lib/test-cases/case-file";
 import { caseFailure, readCases, resolveCaseInputs, runCases, type CaseResult, type CasesSummary } from "../../lib/test-cases/cases-table";
-import { calleeDrafts, ranVersionOf, runWarnings, asyncSteps, unpublishedDraftOf, type RanVersion } from "../../lib/run-context";
+import { asyncSteps, calleeDrafts, ranVersionOf, runWarnings, testRouteInputWarnings, unpublishedDraftOf, type RanVersion } from "../../lib/run-context";
 import type { HydratedMethod } from "../../lib/types/common";
 
 export { matchStep } from "../../lib/test-run";
@@ -174,6 +174,7 @@ function asyncDetails(method: HydratedMethod): Array<[string, string]> {
 
 async function runCaseTable(a: TestMethodArgs, method: HydratedMethod, context: CommandContext) {
   const cases = resolveCaseInputs(method, await readCases(a.casesFile!), a.inputPairs);
+  for (const w of testRouteInputWarnings(method, cases.map((c) => c.inputs))) context.warn(w);
   await warnRun(method, context);
   await requireConfirmation({
     yes: a.yes,
@@ -248,6 +249,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     } else {
       values = await InputCollector.collect(draft.inputs, a.inputsFile, a.inputPairs);
     }
+    for (const w of testRouteInputWarnings(draft, [values])) context.warn(w);
 
     // with --compare-published both copies run, so only the callees' drafts are worth a warning
     if (published) {

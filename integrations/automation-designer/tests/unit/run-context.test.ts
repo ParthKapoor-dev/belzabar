@@ -8,7 +8,7 @@ import { join } from "path";
 import { runCommand } from "@belzabar/core/testing";
 import testCommand from "../../commands/test/index";
 import runCommandModule from "../../commands/run/index";
-import { calleeDrafts, ranVersionOf, runWarnings, unpublishedDraftOf } from "../../lib/run-context";
+import { calleeDrafts, ranVersionOf, runWarnings, testRouteInputWarnings, unpublishedDraftOf } from "../../lib/run-context";
 import type { HydratedMethod } from "../../lib/types/common";
 import { definitionRoute, fakeAdEnv } from "./helpers/fake-ad";
 
@@ -95,6 +95,39 @@ describe("calleeDrafts", () => {
   test("an in-sync callee or a system service (no chain) gives nothing", async () => {
     wire(syncedDraft(), [childInfo]);
     expect(await calleeDrafts(caller)).toEqual([]);
+  });
+});
+
+describe("testRouteInputWarnings (B2)", () => {
+  const m = {
+    inputs: [
+      { code: "settings", type: "JSON" },
+      { code: "label", type: "TEXT" },
+      { code: "n", type: "INTEGER" },
+    ],
+  } as unknown as HydratedMethod;
+
+  test("JSON text in a non-text input: the test route parses it", () => {
+    const w = testRouteInputWarnings(m, [{ settings: '{"managingEntity":"ALL"}', label: '{"x":1}', n: 3 }]);
+    expect(w).toHaveLength(1);
+    expect(w[0]).toContain("Input settings is JSON text");
+    expect(w[0]).toContain("ad run");
+  });
+
+  test("an object value (any input): a Map on the test route", () => {
+    const w = testRouteInputWarnings(m, [{ label: "x" }, { settings: { managingEntity: "ALL" } }, { label: ["a"] }]);
+    expect(w).toEqual([expect.stringContaining("Input settings, label is an object")]);
+    expect(w[0]).toContain("{a=1}");
+  });
+
+  test("plain values, and JSON text in a text input, warn nothing", () => {
+    expect(testRouteInputWarnings(m, [{ settings: "plain", label: '{"x":1}', n: 3 }])).toEqual([]);
+  });
+
+  test("ad test warns (inline --inputs)", async () => {
+    wire(syncedDraft());
+    const r = await runCommand(testCommand, [PUB, "--inputs", '{"cityCode":{"a":1},"displayName":"D"}'], { env: ENV });
+    expect(((r.envelope?.meta?.warnings as string[] | undefined) ?? []).join("\n")).toContain("Input cityCode is an object");
   });
 });
 

@@ -102,6 +102,51 @@ export function asyncSteps(m: HydratedMethod): number[] {
   return m.parsedSteps.filter((s) => s.runAsync).map((s) => s.orderIndex);
 }
 
+const isJsonText = (v: unknown): boolean => {
+  if (typeof v !== "string") return false;
+  const t = v.trim();
+  if (!(t.startsWith("{") || t.startsWith("["))) return false;
+  try {
+    JSON.parse(t);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Inputs `ad test` hands the method differently from `ad run` (the execute route the app uses),
+ * verified live: JSON text in a non-text input is parsed by the test route (the method sees an
+ * object; `ad run` passes a string), and an object value arrives as a Java Map (`toString()`
+ * gives `{a=1}`; `ad run` passes a JSON node, `{"a":1}`). Text inputs holding JSON text are the same on both.
+ */
+export function testRouteInputWarnings(m: HydratedMethod, rows: Array<Record<string, unknown>>): string[] {
+  const typeOf = new Map(m.inputs.map((i) => [i.code, String(i.type ?? "").toUpperCase()]));
+  const text = new Set<string>();
+  const objects = new Set<string>();
+  for (const values of rows) {
+    for (const [code, v] of Object.entries(values)) {
+      const type = typeOf.get(code) ?? "";
+      if (v !== null && typeof v === "object") objects.add(code);
+      else if (isJsonText(v) && type !== "" && type !== "TEXT" && type !== "STRING") text.add(code);
+    }
+  }
+  const out: string[] = [];
+  if (text.size) {
+    out.push(
+      `Input ${[...text].join(", ")} is JSON text: ad test's route parses it, so the method sees an object, while ad run ` +
+        "(the route the app uses) passes it as text. A branch on the input's type can differ; confirm with ad run.",
+    );
+  }
+  if (objects.size) {
+    out.push(
+      `Input ${[...objects].join(", ")} is an object: ad test's route passes it as a Java Map (toString() gives {a=1}), ` +
+        `ad run as a JSON node ({"a":1}). Code that uses its text form can differ; confirm with ad run.`,
+    );
+  }
+  return out;
+}
+
 /** The warning lines for a run of `m` (what ran, drafts it does not run, async steps). */
 export function runWarnings(m: HydratedMethod, own: DraftDrift | null, callees: CalleeDraft[], opts: { async?: boolean } = {}): string[] {
   const out: string[] = [];
