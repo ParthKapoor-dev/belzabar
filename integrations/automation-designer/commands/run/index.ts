@@ -40,6 +40,16 @@ async function resolvePayload(payloadArg?: string): Promise<unknown> {
     return {};
   }
 
+  // Inline JSON is never a file name: a long one would fail the file lookup (ENAMETOOLONG).
+  const trimmed = payloadArg.trimStart();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      return JSON.parse(payloadArg);
+    } catch (err) {
+      throw new CliError(`Payload argument starts with ${trimmed[0]} but is not valid JSON: ${(err as Error).message}`, { code: "INVALID_PAYLOAD" });
+    }
+  }
+
   const file = Bun.file(payloadArg);
   if (await file.exists()) {
     try {

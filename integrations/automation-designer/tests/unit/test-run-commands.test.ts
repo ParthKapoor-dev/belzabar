@@ -245,6 +245,24 @@ describe("ad run payload file", () => {
     const r = await runCommand(runCommandModule, [UUID, f], { env: "t-s4b-run" });
     expect(r.envelope?.error?.code).toBe("INVALID_PAYLOAD");
   });
+
+  test("a long inline JSON argument is parsed as JSON, never looked up as a file (B15)", async () => {
+    const f = wire(okTestResponse);
+    const big = JSON.stringify({ programsJson: "x".repeat(5000) });
+    const r = await runCommand(runCommandModule, [UUID, big], { env: "t-s4b-run" });
+    expect(r.envelope?.ok).toBe(true);
+    const sent = f.requests.find((q) => q.url.includes("/chain/execute/"))!;
+    expect(JSON.parse(sent.body!).programsJson).toHaveLength(5000);
+    const list = await runCommand(runCommandModule, [UUID, " [1,2]"], { env: "t-s4b-run" });
+    expect((list.envelope?.data as any).payloadType).toBe("array");
+  });
+
+  test("inline text that starts with { but is not JSON is INVALID_PAYLOAD naming the parse error", async () => {
+    wire(okTestResponse);
+    const r = await runCommand(runCommandModule, [UUID, "{" + "a".repeat(5000)], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.code).toBe("INVALID_PAYLOAD");
+    expect(r.envelope?.error?.message).toContain("not valid JSON");
+  });
 });
 
 describe("ad run", () => {

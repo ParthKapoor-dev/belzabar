@@ -10,6 +10,8 @@ inputState/publishedUuid; pass the published uuid to run what is published.
 Arguments:
   <PUBLISHED_ID>      The unique ID of the published method version.
   [PAYLOAD]           JSON string or path to a JSON file. Defaults to '{}' if omitted.
+                      Text starting with { or [ is always read as JSON (any
+                      length), never as a file name.
 
 Flags:
   --raw               Include raw payload in output.
