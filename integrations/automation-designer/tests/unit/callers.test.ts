@@ -100,6 +100,7 @@ describe("ad callers command", () => {
         "GET /rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM": respond({
           json: [await Bun.file(`${PD_FIX}/4b2e06047e30dc8a57b08d163775345f.json`).json()],
         }),
+        "GET /rest/api/pagedesigner/pages?status=PUBLISHED&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ json: [] }),
         "GET /rest/api/pagedesigner/pages?*pageType=COMPONENT*": respond({ json: [await Bun.file(`${PD_FIX}/43488abaf65c8efc95ad880a346f38af.json`).json()] }),
       }),
     ).install();
@@ -154,6 +155,7 @@ describe("PD references", () => {
     using _cfg = withTempEnvConfig(ENVS);
     using ff = fakeFetch({
       "GET /rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ json: [await Bun.file(`${PD_FIX}/4b2e06047e30dc8a57b08d163775345f.json`).json()] }),
+      "GET /rest/api/pagedesigner/pages?status=PUBLISHED&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ json: [] }),
       "GET /rest/api/pagedesigner/pages?*pageType=COMPONENT*": respond({ json: [] }),
     }).install();
     const a = await loadPdRefs(true);
@@ -163,6 +165,42 @@ describe("PD references", () => {
     const b = await loadPdRefs(false);
     expect(b.source).toBe("cache");
     expect(ff.requests.length).toBe(n);
+  });
+
+  // D25: the published page is what users run; it is listed with its own calls.
+  test("published pages are listed beside the drafts, each with its own calls", async () => {
+    const draft = await Bun.file(`${PD_FIX}/4b2e06047e30dc8a57b08d163775345f.json`).json();
+    const published = { ...draft, id: "4f0000000000000000000000000000aa", status: "PUBLISHED" };
+    using _cfg = withTempEnvConfig({ envs: { "t-pd25": { url: "https://t.test" } }, activeEnv: "t-pd25" });
+    using _ff = fakeFetch({
+      "GET /rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ json: [draft] }),
+      "GET /rest/api/pagedesigner/pages?status=PUBLISHED&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ json: [published] }),
+      "GET /rest/api/pagedesigner/pages?*pageType=COMPONENT*": respond({ json: [] }),
+    }).install();
+    const { items } = await loadPdRefs(true);
+    const found = findPdCallers(items, { chainUuids: ["400060c51c1e4d15aac995e452f7df55"] } as CallTarget);
+    expect(found.map((f) => `${f.status}:${f.id}`).sort()).toEqual(["DRAFT:4b2e06047e30dc8a57b08d163775345f", "PUBLISHED:4f0000000000000000000000000000aa"]);
+  });
+
+  // D26: a failed listing keeps the others, or the last complete index.
+  test("a failed listing falls back to the last complete index (stale), else to the listings that worked", async () => {
+    const page = await Bun.file(`${PD_FIX}/4b2e06047e30dc8a57b08d163775345f.json`).json();
+    let up = true;
+    using _cfg = withTempEnvConfig({ envs: { "t-pd26": { url: "https://t.test" } }, activeEnv: "t-pd26" });
+    using _ff = fakeFetch({
+      "GET /rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ json: [page] }),
+      "GET /rest/api/pagedesigner/pages?status=PUBLISHED&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ json: [] }),
+      "GET /rest/api/pagedesigner/pages?*pageType=COMPONENT*": () => (up ? new Response("[]") : new Response("", { status: 504 })),
+    }).install();
+    up = false;
+    const partial = await loadPdRefs(true);
+    expect(partial).toMatchObject({ source: "fresh", items: [expect.objectContaining({ id: page.id })], failed: [expect.objectContaining({ listing: "components" })] });
+    expect((await loadPdRefs(false)).source).not.toBe("cache"); // a partial index is not saved
+    up = true;
+    await loadPdRefs(true);
+    up = false;
+    const stale = await loadPdRefs(true);
+    expect(stale).toMatchObject({ source: "stale", ageMinutes: 0, items: [expect.objectContaining({ id: page.id })], failed: [expect.objectContaining({ listing: "components" })] });
   });
 
   test("the method index is shared with find (schema 2 cache reused)", async () => {
@@ -273,16 +311,78 @@ describe("listing failures have stable codes", () => {
     expect(r.envelope?.error).toMatchObject({ code: "AD_INDEX_FETCH_FAILED", details: { status: 503 } });
   });
 
-  test("--pd: page listing 503 → PD_LIST_FAILED", async () => {
-    using _cfg = withTempEnvConfig(ENVS);
+  // D26: a PD failure never loses the AD callers.
+  test("--pd: one page listing 503 → the AD callers and the other listings, failedListings and a warning", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-pd26a": { url: "https://t.test" } }, activeEnv: "t-pd26a" });
     using _ff = fakeFetch(
       routes({
         "GET /rest/api/pagedesigner/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ status: 503, text: "" }),
+        "GET /rest/api/pagedesigner/pages?status=PUBLISHED&pageType=PAGE&apiInfoLevel=MEDIUM": respond({ json: [] }),
         "GET /rest/api/pagedesigner/pages?*pageType=COMPONENT*": respond({ json: [] }),
       }),
     ).install();
-    const r = await runCommand(callersCommand, [ARRAY_OUTPUT, "--pd", "--refresh"], { env: "t-dev" });
-    expect(r.envelope?.error).toMatchObject({ code: "PD_LIST_FAILED", details: { status: 503 } });
+    const r = await runCommand(callersCommand, [ARRAY_OUTPUT, "--pd", "--refresh"], { env: "t-pd26a" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.callers.map((c: any) => c.name)).toEqual(["chaining method"]);
+    expect(d.pd).toMatchObject({ source: "fresh", failedListings: [{ listing: "draft pages", code: "PD_LIST_FAILED" }] });
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toContain("PD listing failed: draft pages");
+  });
+
+  test("--pd: every listing fails and nothing is cached → pd.source unavailable with the error; AD callers kept", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-pd26b": { url: "https://t.test" } }, activeEnv: "t-pd26b" });
+    using _ff = fakeFetch(routes({ "GET /rest/api/pagedesigner/pages*": respond({ status: 502, text: "" }) })).install();
+    const r = await runCommand(callersCommand, [ARRAY_OUTPUT, "--pd", "--refresh"], { env: "t-pd26b" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.callers).toHaveLength(1);
+    expect(d.pd).toMatchObject({ total: 0, callers: [], source: "unavailable", error: { code: "PD_LIST_FAILED" } });
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toContain("PD callers unavailable");
+  });
+});
+
+// D16: a caller's draft and published copies are paired, and a differing draft is flagged.
+describe("draft / published caller pairs", () => {
+  const target: CallTarget = {
+    uuid: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", name: "array output", category: "Example services", state: "PUBLISHED",
+    apiUuids: ["45fe7e3d5d754cd67926a141c4faafe0"], apiIds: [], chainUuids: [],
+  };
+  const DRAFT = "dddddddddddddddddddddddddddddddd";
+  const PUB = "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+  const rec = (uuid: string, state: string, ref: string, updatedOn = 1) =>
+    ({ uuid, referenceId: ref, aliasName: "c", methodName: "c", state, version: 1, categoryUuid: "c", categoryName: "Cat", createdOn: 0, updatedOn, url: "", calls: ["u:45fe7e3d5d754cd67926a141c4faafe0"] });
+  const index = (methods: object[]) =>
+    ({ schemaVersion: 2, env: "t-dev", generatedAt: Date.now(), categories: [], skippedCategories: [], categoryCount: 1, methodCount: methods.length, methods }) as unknown as MethodFinderIndex;
+
+  async function serve(draftExtraStep: boolean) {
+    const body = await Bun.file(`${FIX}/callers/v2/40b270670686c47215d2b6ab839b276d.json`).json();
+    const draft = draftExtraStep ? { ...body, steps: [{ ...body.steps[0], automationAPIId: "f".repeat(32), serviceName: "Other", methodName: "x" }, ...body.steps] } : body;
+    return fakeFetch({
+      "GET /rest/api/automation/chain/v2/*": (req: RecordedRequest) => new Response(JSON.stringify(req.url.includes(DRAFT) ? draft : body)),
+    }).install();
+  }
+
+  test("identical copies: both rows name the other, draftDiffers false", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = await serve(false);
+    const res = await findAdCallers(index([rec(DRAFT, "DRAFT", PUB), rec(PUB, "PUBLISHED", DRAFT)]), target, { deep: null });
+    expect(res.callers.map((c) => [c.state, c.counterpartUuid, c.draftDiffers, c.steps[0]!.split(" ")[0]])).toEqual([
+      ["DRAFT", PUB, false, "1"],
+      ["PUBLISHED", DRAFT, false, "1"],
+    ]);
+  });
+
+  test("a draft with an added step: different step numbers, draftDiffers true; a non-calling copy is read to compare", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = await serve(true);
+    const res = await findAdCallers(index([rec(DRAFT, "DRAFT", PUB, 2), rec(PUB, "PUBLISHED", DRAFT, 2)]), target, { deep: null });
+    expect(res.callers.map((c) => [c.state, c.draftDiffers, c.steps[0]!.split(" ")[0]])).toEqual([
+      ["DRAFT", true, "2"],
+      ["PUBLISHED", true, "1"],
+    ]);
+    // only the draft is indexed as a caller: its published copy is still read and compared
+    const one = await findAdCallers(index([rec(DRAFT, "DRAFT", PUB, 2), { ...rec(PUB, "PUBLISHED", DRAFT, 2), calls: [] }]), target, { deep: new Set(["none"]) });
+    expect(one.callers.map((c) => [c.state, c.counterpartUuid, c.draftDiffers])).toEqual([["DRAFT", PUB, true]]);
   });
 });
 

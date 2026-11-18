@@ -11,7 +11,11 @@ for the target's own category, the --category list, or every category with
 --all; `coverage.unscannedMethods` counts methods left unresolved elsewhere.
 A body the V2 route refuses (HTTP 400 on some old methods) is read through
 V1 instead, as `wi-impl ad show` does.
-A draft and its published copy are both reported when both call it.
+A draft and its published copy are both reported when both call it, each
+with its own step numbers. A caller row names its other copy
+(`counterpartUuid`) and says whether the two copies' steps differ
+(`draftDiffers`: callees, step descriptions, input keys, outputs or step
+order); both are omitted when the other copy could not be read.
 
 The index is rebuilt when it is more than 24 h old (or partial and more than
 15 min old). Methods wi-impl itself saved, created, published, restored or
@@ -27,9 +31,14 @@ Flags:
   --category <a,b>      Also resolve every step in these categories (names).
   --all                 Resolve every step in every category (slow the first
                         time: one read per method; cached afterwards).
-  --pd                  Also scan PD pages (drafts) and components for
-                        httpRequests executing the method (2 large list reads,
-                        cached 1 h).
+  --pd                  Also scan PD pages (drafts and published pages, each
+                        with its own calls) and components for httpRequests
+                        executing the method (3 large list reads, cached 1 h).
+                        A failed listing never fails the command: the last
+                        complete PD index (kept 7 days) is used (pd.source
+                        stale), else the listings that worked
+                        (pd.failedListings), else pd.source unavailable with
+                        pd.error; a warning says which.
   --refresh             Rebuild the method index (and the PD reference index).
   --help, -h            Show this help message.
 
@@ -44,5 +53,5 @@ Examples:
   wi-impl ad callers 48e5d8bec3f5d7b5d689914d3b36aed8 --all --refresh
 
 Errors: CATEGORY_NOT_FOUND (--category names a category the index lacks),
-AD_INDEX_FETCH_FAILED (the category listing failed while building the index),
-PD_LIST_FAILED (--pd page listing failed); details carry {path, status}.
+AD_INDEX_FETCH_FAILED (the category listing failed while building the index);
+details carry {path, status}. A failed --pd listing is not an error (see --pd).

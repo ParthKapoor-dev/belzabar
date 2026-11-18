@@ -151,9 +151,9 @@ export async function fetchAllPages(): Promise<RawPageListItem[]> {
   return results;
 }
 
-/** PAGE drafts with configuration (the plain page list omits it; apiInfoLevel=MEDIUM includes it). */
-export async function fetchPagesWithConfig(): Promise<RawPageResponse[]> {
-  const path = `${PD_BASE}/pages?status=DRAFT&pageType=PAGE&apiInfoLevel=MEDIUM`;
+/** PAGE drafts (or published pages) with configuration (the plain page list omits it; apiInfoLevel=MEDIUM includes it). */
+export async function fetchPagesWithConfig(status: PdStatus = "DRAFT"): Promise<RawPageResponse[]> {
+  const path = `${PD_BASE}/pages?status=${status}&pageType=PAGE&apiInfoLevel=MEDIUM`;
   const res = await apiFetch(path, {
     method: "GET",
     authMode: "Bearer",

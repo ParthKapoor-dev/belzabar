@@ -13,7 +13,7 @@ Everything the `wi-impl pd` commands share. Other packages may import any module
 | [`serialize/`](./serialize/README.md) | Overlay → edited config → partial ops or full save |
 | [`types/`](./types/README.md) | In-memory types (`common.ts`) and wire shapes (`wire.ts`) |
 | [`validator/`](./validator/README.md) | Rule catalogue, rules, diff-aware edit gate, recursive symbol check |
-| `ad-refs.ts` | Slim index of every `/chain/execute/<uuid>` call in PAGE drafts and components (cached 1 h); read by `wi-impl ad callers --pd` |
+| `ad-refs.ts` | Slim index of every `/chain/execute/<uuid>` call in PAGE drafts, published pages and components (fresh 1 h, kept 7 days as the fallback when a listing fails); read by `wi-impl ad callers --pd` |
 | `analyzer.ts` | Recursive walk (`analyze`, `find-ad-methods -r`, `show -r`): components used, AD ids, `--compliance` |
 | `cache.ts` | Env-scoped page-config cache (`~/.wi-impl/cache/pages/<env>/<id>.json`, core `PAGE_CACHE_DIR`) with stale-while-revalidate; `wi-impl migrate run` evicts its target env's entries |
 | `draft-guard.ts` | Draft/published pairing through `referenceId` |

@@ -30,7 +30,16 @@ interface CallersData {
   target: Pick<CallTarget, "name" | "category" | "state" | "uuid" | "referenceId"> & { apiUuids: string[]; apiIds?: number[] };
   total: number;
   callers: AdCaller[];
-  pd?: { total: number; callers: PdCaller[]; source: "cache" | "fresh" };
+  pd?: {
+    total: number;
+    callers: PdCaller[];
+    /** `stale`: a listing failed, the last complete index was used; `unavailable`: no PD answer at all (see `error`). */
+    source: "cache" | "fresh" | "stale" | "unavailable";
+    ageMinutes?: number;
+    /** PD listings that failed (pages / components from them may be missing). */
+    failedListings?: Array<{ listing: string; code: string; message: string }>;
+    error?: { code: string; message: string };
+  };
   coverage: AdCallersResult["coverage"] & {
     indexAgeMinutes: number;
     indexSource: "cache" | "fresh";
@@ -135,9 +144,30 @@ const command: CommandModule<CallersArgs, CallersData> = {
     };
 
     if (pd) {
-      const refs = await loadPdRefs(refresh);
-      const found = findPdCallers(refs.items, target);
-      data.pd = { total: found.length, callers: found, source: refs.source };
+      // A failed PD listing never loses the AD answer.
+      try {
+        const refs = await loadPdRefs(refresh);
+        const found = findPdCallers(refs.items, target);
+        data.pd = {
+          total: found.length,
+          callers: found,
+          source: refs.source,
+          ...(refs.ageMinutes !== undefined && refs.source !== "fresh" ? { ageMinutes: refs.ageMinutes } : {}),
+          ...(refs.failed ? { failedListings: refs.failed } : {}),
+        };
+        if (refs.failed) {
+          const what = refs.failed.map((f) => `${f.listing} (${f.message})`).join("; ");
+          context.warn(
+            refs.source === "stale"
+              ? `PD listing failed: ${what}; using the PD index from ${refs.ageMinutes} min ago.`
+              : `PD listing failed: ${what}; PD callers from it are missing. Retry with --refresh.`,
+          );
+        }
+      } catch (e) {
+        const err = { code: e instanceof CliError ? e.code : "PD_LIST_FAILED", message: e instanceof Error ? e.message : String(e) };
+        data.pd = { total: 0, callers: [], source: "unavailable", error: err };
+        context.warn(`PD callers unavailable (${err.code}: ${err.message}); the AD callers are still reported. Retry with --pd --refresh.`);
+      }
     }
     return ok(data);
   },
@@ -146,7 +176,10 @@ const command: CommandModule<CallersArgs, CallersData> = {
     const d = envelope.data as CallersData;
     ui.section(`Callers of ${d.target.category}/${d.target.name} [${d.target.state}] ${d.target.uuid}`);
     if (d.callers.length === 0) ui.text(`No AD method calls it (in the scanned scope${d.coverage.complete ? "" : "; coverage is incomplete, see below"}).`);
-    else ui.table(["Category", "Method", "State", "UUID", "Steps"], d.callers.map((c) => [c.category, c.name, c.state, c.uuid, c.steps.join("\n")]));
+    else {
+      const state = (c: AdCaller) => (c.draftDiffers === undefined ? c.state : `${c.state}\n${c.draftDiffers ? "draft differs" : "draft = published"}`);
+      ui.table(["Category", "Method", "State", "UUID", "Steps"], d.callers.map((c) => [c.category, c.name, state(c), c.uuid, c.steps.join("\n")]));
+    }
     const cov = d.coverage;
     ui.text(
       `Scanned ${cov.indexedMethods} indexed methods (index ${cov.indexAgeMinutes} min old); read ${cov.resolvedMethods} bodies; deep scope: ${
@@ -158,7 +191,8 @@ const command: CommandModule<CallersArgs, CallersData> = {
     for (const e of cov.errors ?? []) ui.warn(e);
     if (d.pd) {
       ui.section(`PD pages / components (${d.pd.total}, ${d.pd.source})`);
-      if (d.pd.callers.length === 0) ui.text("None.");
+      if (d.pd.error) ui.warn(`Unavailable: ${d.pd.error.code}: ${d.pd.error.message}`);
+      else if (d.pd.callers.length === 0) ui.text("None.");
       else ui.table(["Type", "Name", "Status", "ID", "HTTP calls"], d.pd.callers.map((p) => [p.type, p.name, p.status, p.id, p.calls.join("\n")]));
     }
   },

@@ -17,9 +17,9 @@
 //     target's own category, `--category a,b`, or all with `--all`. Methods
 //     outside the deep scope that still have opaque steps are counted in
 //     `coverage.unscannedMethods` — they MAY hide callers.
-//   - `--pd`: PD PAGE drafts + components are listed with their configuration
-//     (2 list calls) and every `/chain/execute/<uuid>` httpRequest is matched;
-//     the slim reference index is cached 1 h.
+//   - `--pd`: PD PAGE drafts, published pages and components are listed with
+//     their configuration (3 list calls) and every `/chain/execute/<uuid>`
+//     httpRequest is matched; the slim reference index is cached 1 h.
 
 import { join } from "path";
 import { BELZ_CONFIG_DIR, Cache, CliError, isObj, lifecycle, str, type Obj } from "@belzabar/core";
@@ -254,6 +254,26 @@ export interface AdCaller {
   referenceId?: string;
   /** `N "description" in: k1,k2 -> out1` per calling step. */
   steps: string[];
+  /** The other copy (draft ↔ published) when its body was read too. */
+  counterpartUuid?: string;
+  /**
+   * The draft and published copies' steps differ (callees, descriptions, input keys,
+   * outputs, step numbers), so their calling-step lines may differ; set when both were read.
+   */
+  draftDiffers?: boolean;
+}
+
+/** Pair each caller with its draft/published copy (when both bodies were read) and flag a differing draft. */
+function markCounterparts(callers: AdCaller[], refsByUuid: Map<string, StepRef[]>): void {
+  const byUuid = new Map([...refsByUuid].map(([u, r]) => [u.toLowerCase(), r]));
+  for (const c of callers) {
+    const other = c.referenceId?.toLowerCase();
+    const mine = byUuid.get(c.uuid.toLowerCase());
+    const theirs = other ? byUuid.get(other) : undefined;
+    if (!other || !mine || !theirs) continue;
+    c.counterpartUuid = other;
+    c.draftDiffers = JSON.stringify(mine) !== JSON.stringify(theirs);
+  }
 }
 
 interface CallersScope {
@@ -399,6 +419,22 @@ export async function findAdCallers(
       steps: steps.length ? steps.map(stepLine) : ["(matched by the index; body unreadable)"],
     });
   }
+  const resolvedMethods = refsByUuid.size;
+  // The other copy of a caller was not read when it does not call the target, or when the
+  // listing (one row per method when draft and published agree) does not index it: read it
+  // too (cached when indexed, else fresh) so the pair can be compared.
+  const indexed = new Map(index.methods.map((m) => [m.uuid.toLowerCase(), m]));
+  const counterparts = [...new Set(callers.map((c) => c.referenceId?.toLowerCase()).filter((u): u is string => !!u))]
+    .filter((u) => !self.has(u) && ![...refsByUuid.keys()].some((k) => k.toLowerCase() === u));
+  await pool(counterparts, async (u) => {
+    const m = indexed.get(u);
+    try {
+      refsByUuid.set(u, m ? await readBodyCached(m, refsKey(m, dirty), refsCache, stepRefsOf, opts.retryFailed, stepRefsOfMethod) : await readBody(u, stepRefsOf, stepRefsOfMethod));
+    } catch {
+      /* unreadable: the pair is not marked */
+    }
+  });
+  markCounterparts(callers, refsByUuid);
   callers.sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name) || a.state.localeCompare(b.state));
 
   const unscannedMethods = [...unscanned.values()].reduce((a, b) => a + b, 0);
@@ -407,7 +443,7 @@ export async function findAdCallers(
     coverage: {
       indexedMethods: index.methods.length,
       deepCategories: scope.deep ? [...scope.deep] : "all",
-      resolvedMethods: refsByUuid.size,
+      resolvedMethods,
       unscannedMethods,
       ...(unscannedMethods ? { unscannedCategories: [...unscanned.keys()].sort() } : {}),
       ...(dirty.size ? { rereadMethods: toRead.filter((m) => dirty.has(m.uuid.toLowerCase())).length } : {}),
