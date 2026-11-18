@@ -9,7 +9,8 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
 | `api.ts` | `envUnavailableError` (a 502/503/504 gateway answer is `ENV_UNAVAILABLE`) and the `db_service` lookups: the DB auth list, the read / update / insert / modify operation contracts, and `fetchExecutableCategory` (a PUBLIC chain category to stamp on the posted chain; a lookup that finds none is retried once, and only a found one is cached per process). |
 | `executor.ts` | `sqlDefaultDb`, `resolveSqlDbContext`, `load*Context` (operation + template chain) and `executeSqlReadQuery` / `executeSqlUpdate` / `executeSqlInsert` / `executeSqlModify`. |
 | `payload.ts` | `buildSqlReadPayload`: the template chain with the DB account and query written into its SQL slot. |
-| `read-only.ts` | The client-side gates: read (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`), write (`checkWriteSql`, `assertWriteSql`) and bind parameters (`findParameterMarker`, `assertNoParameterMarkers`). |
+| `read-only.ts` | The client-side gates: read (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`), write (`checkWriteSql`, `assertWriteSql`), `splitSqlStatements` and bind parameters (`findParameterMarker`, `assertNoParameterMarkers`). |
+| `source.ts` | `readSqlSource`: the SQL from the argument, `--file <path>` or stdin (`-`). |
 | `selector.ts` | `normalizeSqlDatabases`, `resolveSqlDatabase` (by id or nickname, then the default). |
 | `result.ts` | Parsers for the test response of each mode (rows, rows affected, generated keys), and `describeSqlFailure` / `sqlDatabaseMessage` for a failed statement. |
 | `types.ts` | The wire and result types above. |
@@ -26,6 +27,11 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
   the server evaluates SpEL, even inside literals, and splices the result into the SQL.
   `EXPLAIN` is judged by its inner statement, so `EXPLAIN ANALYZE DELETE …` is refused; plain
   `EXPLAIN` (no ANALYZE) only plans, so it also takes INSERT / UPDATE / DELETE / MERGE.
+- **Input and batches.** The SQL comes from the argument, `--file` or stdin. It is split into
+  statements at the `;` outside literals and comments (`splitSqlStatements`); every statement
+  passes its gate before anything is sent. Several statements run in one call (the database,
+  operation and template load once, then one POST each) with one result each; reads run 4 at
+  a time, writes in order, stopping at the first failure. Any failure is `SQL_BATCH_FAILED` with every result in `data`.
 - **Write gate.** `update` takes UPDATE / DELETE (also after WITH), `insert` INSERT, `modify`
   DDL. An empty or comment-only statement (the server runs it and reports success) is
   `SQL_EMPTY_STATEMENT`; another kind is `SQL_WRONG_STATEMENT`. Checked at parse time and again

@@ -1,4 +1,4 @@
-import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineSubcommands, failWithData, ok, type CommandModule, type CommandResult } from "@belzabar/core";
 import { AD_YES_FLAG } from "../../lib/args/common";
 import { subcommandHelp } from "../../lib/args/subcommand-help";
 import { fetchSqlDatabases } from "../../lib/sql/api";
@@ -15,7 +15,8 @@ import {
   sqlDefaultDb,
 } from "../../lib/sql/executor";
 import { normalizeSqlDatabases } from "../../lib/sql/selector";
-import { assertNoParameterMarkers, assertReadOnlySql, assertWriteSql, buildExplainSql, checkReadOnlySql } from "../../lib/sql/read-only";
+import { assertNoParameterMarkers, assertReadOnlySql, assertWriteSql, buildExplainSql, checkReadOnlySql, splitSqlStatements } from "../../lib/sql/read-only";
+import { readSqlSource } from "../../lib/sql/source";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { runSqlTuiSession } from "../../lib/sql/tui/session";
 import type { SqlTuiArgs } from "../../lib/sql/tui/types";
@@ -24,6 +25,8 @@ import type { NormalizedSqlDatabase, SqlDbSelectedBy } from "../../lib/sql/types
 interface SqlArgs {
   action: "run" | "dbs" | "tui" | "update" | "insert" | "modify" | "explain";
   query?: string;
+  /** Several `;`-separated statements (from --file, stdin or the argument): run in order, one result each. */
+  statements?: string[];
   explain?: { statement: string; analyze: boolean; buffers: boolean; format: "text" | "json" };
   db?: string;
   raw: boolean;
@@ -161,7 +164,34 @@ interface SqlTuiData {
   };
 }
 
-type SqlData = SqlDbsData | SqlRunData | SqlExplainData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData;
+/** One statement of a batch: its result fields (rows / rowsAffected / …), or its error. */
+interface SqlBatchResult {
+  /** 1-based position in the input. */
+  index: number;
+  query: string;
+  ok: boolean;
+  rows?: unknown[];
+  rowCount?: number;
+  rowsAffected?: number;
+  generatedValues?: string[];
+  executionTime?: { time: number; unit: string };
+  error?: { code: string; message: string; details?: unknown };
+  /** A write batch stops at its first failure: the statements after it are not sent. */
+  notRun?: true;
+}
+
+interface SqlBatchData {
+  action: "run" | "update" | "insert" | "modify";
+  batch: true;
+  database: NormalizedSqlDatabase;
+  selectedBy: SqlDbSelectedBy;
+  statementCount: number;
+  okCount: number;
+  failedCount: number;
+  results: SqlBatchResult[];
+}
+
+type SqlData = SqlDbsData | SqlRunData | SqlExplainData | SqlUpdateData | SqlInsertData | SqlModifyData | SqlTuiData | SqlBatchData;
 
 /** SQL writes follow the AD write contract (confirm, or --yes; --yes mandatory in --llm). */
 async function confirmSqlWrite(
@@ -176,7 +206,8 @@ async function confirmSqlWrite(
     action: `run SQL ${action} against '${database.nickname}'`,
     details: [
       ["Database", `${database.nickname} (${database.id})`],
-      ["Query", args.query ?? ""],
+      ...(args.statements ? [["Statements", String(args.statements.length)] as [string, string]] : []),
+      ["Query", args.query ?? args.statements?.join(";\n") ?? ""],
     ],
   });
   logIntent("POST", "/rest/api/automation/chain/test", { sql: action, db: database.nickname });
@@ -186,28 +217,44 @@ const DB_FLAG = { db: { type: "string" } } as const;
 const RAW_FLAG = { raw: { type: "boolean" } } as const;
 const SQL_CODES = { UNKNOWN_SUBCOMMAND: "INVALID_SQL_SUBCOMMAND", MISSING_SUBCOMMAND: "INVALID_SQL_SUBCOMMAND" } as const;
 
-function queryPositional(action: string, example: string) {
-  return [
-    {
-      name: "query",
-      required: true,
-      missingCode: "MISSING_SQL_QUERY",
-      missingMessage: `Missing SQL query argument. Usage: wi-impl ad sql ${action} "${example}"`,
-    },
-  ] as const;
+// the SQL comes from the argument, `--file <path>` or stdin (`-`): readSqlSource checks there is one.
+const QUERY_POSITIONAL = [{ name: "query" }] as const;
+const FILE_FLAG = { file: { type: "string" } } as const;
+
+/** The statements in `text` (at least one entry, so an empty input reaches the gates). */
+function statementsOf(text: string): string[] {
+  const statements = splitSqlStatements(text);
+  return statements.length > 0 ? statements : [text];
+}
+
+/** Apply a gate to every statement; with several, the error names the statement. */
+function gateEach(statements: string[], gate: (sql: string) => void): void {
+  statements.forEach((sql, i) => {
+    try {
+      gate(sql);
+    } catch (e) {
+      if (!(e instanceof CliError) || statements.length === 1) throw e;
+      const details = e.details && typeof e.details === "object" ? e.details : {};
+      throw new CliError(`Statement ${i + 1} of ${statements.length}: ${e.message}`, {
+        code: e.code,
+        details: { ...details, statement: i + 1 },
+      });
+    }
+  });
 }
 
 export const args = defineSubcommands(
   {
     dbs: { flags: { ...RAW_FLAG } },
     run: {
-      positionals: queryPositional("run", "select * from users limit 1"),
-      flags: { ...DB_FLAG, ...RAW_FLAG },
+      positionals: QUERY_POSITIONAL,
+      flags: { ...DB_FLAG, ...RAW_FLAG, ...FILE_FLAG },
     },
     explain: {
-      positionals: queryPositional("explain", "select * from users where id = 1"),
+      positionals: QUERY_POSITIONAL,
       flags: {
         ...DB_FLAG,
+        ...FILE_FLAG,
         ...RAW_FLAG,
         analyze: { type: "boolean" },
         buffers: { type: "boolean" },
@@ -215,16 +262,16 @@ export const args = defineSubcommands(
       },
     },
     update: {
-      positionals: queryPositional("update", "UPDATE table SET col = val WHERE ..."),
-      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+      positionals: QUERY_POSITIONAL,
+      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG, ...FILE_FLAG },
     },
     insert: {
-      positionals: queryPositional("insert", "INSERT INTO table (col) VALUES ('val')"),
-      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+      positionals: QUERY_POSITIONAL,
+      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG, ...FILE_FLAG },
     },
     modify: {
-      positionals: queryPositional("modify", "ALTER TABLE users ADD COLUMN age INT"),
-      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG },
+      positionals: QUERY_POSITIONAL,
+      flags: { ...DB_FLAG, ...RAW_FLAG, ...AD_YES_FLAG, ...FILE_FLAG },
     },
     tui: {
       flags: {
@@ -310,6 +357,95 @@ export function readPlan(rows: unknown[], format: "text" | "json"): { plan: stri
   return Object.keys(timing).length > 0 ? { plan: lines, timing } : { plan: lines };
 }
 
+const BATCH = {
+  run: { load: loadSqlExecutionContext, execute: executeSqlReadQuery },
+  update: { load: loadSqlUpdateContext, execute: executeSqlUpdate },
+  insert: { load: loadSqlInsertContext, execute: executeSqlInsert },
+  modify: { load: loadSqlModifyContext, execute: executeSqlModify },
+} as const;
+
+/** Read statements of a batch in flight at once. */
+const READ_CONCURRENCY = 4;
+
+/**
+ * Several statements in one call: the database, the operation and the
+ * template load once, then each statement is one POST (a separate process per
+ * statement cost ~3 s each). Reads all run, up to READ_CONCURRENCY at a time;
+ * writes run in order and stop at the first failure. Any failure makes the
+ * envelope SQL_BATCH_FAILED, with every result in `data`.
+ */
+async function runSqlBatch(
+  action: SqlBatchData["action"],
+  statements: string[],
+  args: SqlArgs,
+  envDefault: ReturnType<typeof sqlDefaultDb>,
+  outputMode: "human" | "llm",
+): Promise<CommandResult<SqlData>> {
+  const [dbContext, executionContext] = await Promise.all([
+    resolveSqlDbContext({ requestedDb: args.db, envDefault }),
+    BATCH[action].load(),
+  ]);
+  const database = dbContext.resolution.selected;
+  if (action !== "run") await confirmSqlWrite(args, action, database, outputMode);
+
+  const runOne = async (query: string, index: number): Promise<SqlBatchResult> => {
+    try {
+      const { database: _db, query: _q, ...result } = await BATCH[action].execute({ query, database, context: executionContext, raw: args.raw });
+      return { index, query, ok: true, ...result };
+    } catch (e) {
+      // a stopped env fails every statement the same way: report it once.
+      if (!(e instanceof CliError) || e.code === "ENV_UNAVAILABLE") throw e;
+      const { database: _db, query: _q, ...details } = (e.details && typeof e.details === "object" ? e.details : {}) as Record<string, unknown>;
+      return { index, query, ok: false, error: { code: e.code, message: e.message, ...(Object.keys(details).length ? { details } : {}) } };
+    }
+  };
+
+  const results: SqlBatchResult[] = [];
+  if (action === "run") {
+    // reads are independent: a few in flight at a time, results in input order.
+    let next = 0;
+    const worker = async () => {
+      while (next < statements.length) {
+        const i = next++;
+        results[i] = await runOne(statements[i]!, i + 1);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(READ_CONCURRENCY, statements.length) }, worker));
+  } else {
+    let stopped = false;
+    for (const [i, query] of statements.entries()) {
+      if (stopped) {
+        results.push({ index: i + 1, query, ok: false, notRun: true });
+        continue;
+      }
+      const result = await runOne(query, i + 1);
+      results.push(result);
+      stopped = !result.ok;
+    }
+  }
+
+  const failed = results.filter((r) => !r.ok);
+  const data: SqlBatchData = {
+    action,
+    batch: true,
+    database,
+    selectedBy: dbContext.resolution.selectedBy,
+    statementCount: statements.length,
+    okCount: results.length - failed.length,
+    failedCount: failed.length,
+    results,
+  };
+  if (failed.length === 0) return ok(data);
+  const first = failed.find((r) => r.error)!;
+  const notRun = failed.filter((r) => r.notRun).length;
+  return failWithData(
+    "SQL_BATCH_FAILED",
+    `Statement ${first.index} of ${statements.length} failed: ${first.error!.message}` +
+      (notRun ? ` (${notRun} later statement${notRun === 1 ? "" : "s"} not run)` : ""),
+    data,
+  );
+}
+
 const command: CommandModule<SqlArgs, SqlData> = {
   // `tui` can start in, or switch to, update/insert/modify mode: always a write (explicit --env).
   writes: (a) => a.action === "update" || a.action === "insert" || a.action === "modify" || a.action === "tui",
@@ -320,15 +456,20 @@ const command: CommandModule<SqlArgs, SqlData> = {
     switch (parsed.subcommand) {
       case "dbs":
         return { action: "dbs", raw: parsed.flags.raw };
-      case "run":
-        // refuse anything but a single read statement before any network call.
-        assertReadOnlySql(parsed.positionals.query);
-        assertNoParameterMarkers(parsed.positionals.query, "sql run");
-        return { action: "run", query: parsed.positionals.query, db: parsed.flags.db, raw: parsed.flags.raw };
+      case "run": {
+        // refuse anything but read statements before any network call.
+        const statements = statementsOf(readSqlSource("run", parsed.positionals.query, parsed.flags.file));
+        gateEach(statements, (sql) => {
+          assertReadOnlySql(sql);
+          assertNoParameterMarkers(sql, "sql run");
+        });
+        const target = statements.length === 1 ? { query: statements[0]! } : { statements };
+        return { action: "run", ...target, db: parsed.flags.db, raw: parsed.flags.raw };
+      }
       case "explain": {
         // with --analyze the statement must pass the read-only gate (ANALYZE really executes it);
         // plain EXPLAIN only plans, so a write is checked on the built EXPLAIN below.
-        const statement = parsed.positionals.query;
+        const statement = readSqlSource("explain", parsed.positionals.query, parsed.flags.file);
         if (/^explain\b/i.test(checkReadOnlySql(statement).normalized)) {
           throw new CliError("Pass the statement without EXPLAIN; use --analyze / --buffers / --format for the options.", {
             code: "SQL_EXPLAIN_NESTED",
@@ -347,23 +488,32 @@ const command: CommandModule<SqlArgs, SqlData> = {
       }
       case "update":
       case "insert":
-      case "modify":
+      case "modify": {
         // refuse an empty, comment-only or wrong-kind statement before any network call.
-        assertWriteSql(parsed.positionals.query, parsed.subcommand);
-        if (parsed.subcommand !== "modify") assertNoParameterMarkers(parsed.positionals.query, `sql ${parsed.subcommand}`);
+        const kind = parsed.subcommand;
+        const statements = statementsOf(readSqlSource(kind, parsed.positionals.query, parsed.flags.file));
+        gateEach(statements, (sql) => {
+          assertWriteSql(sql, kind);
+          if (kind !== "modify") assertNoParameterMarkers(sql, `sql ${kind}`);
+        });
         return {
-          action: parsed.subcommand,
-          query: parsed.positionals.query,
+          action: kind,
+          ...(statements.length === 1 ? { query: statements[0]! } : { statements }),
           db: parsed.flags.db,
           raw: parsed.flags.raw,
           yes: parsed.flags.yes,
         };
+      }
       case "tui":
         return { action: "tui", raw: false, db: parsed.flags.db, tui: parseTuiOptions(parsed.flags) };
     }
   },
   async execute(args, context) {
     const envDefault = sqlDefaultDb(context.env.name);
+
+    if (args.statements && (args.action === "run" || args.action === "update" || args.action === "insert" || args.action === "modify")) {
+      return runSqlBatch(args.action, args.statements, args, envDefault, context.outputMode);
+    }
 
     if (args.action === "dbs") {
       const rawDatabases = await fetchSqlDatabases();
@@ -565,9 +715,21 @@ const command: CommandModule<SqlArgs, SqlData> = {
     return ok(sessionSummary);
   },
   presentHuman(envelope, ui) {
-    if (!envelope.ok) return;
-
     const data = envelope.data as SqlData;
+    if (data && "batch" in data) {
+      ui.section(`${data.okCount} of ${data.statementCount} statements ran against '${data.database.nickname}'`);
+      for (const r of data.results) {
+        ui.section(`Statement ${r.index}${r.ok ? "" : r.notRun ? " (not run)" : " (failed)"}`);
+        ui.text(r.query);
+        if (r.error) ui.text(r.error.message);
+        else if (r.rows) {
+          if (r.rows.length === 0) ui.text("(No rows returned)");
+          else ui.object(r.rows);
+        } else if (r.rowsAffected !== undefined) ui.text(`Rows affected: ${r.rowsAffected}`);
+      }
+      return;
+    }
+    if (!envelope.ok) return;
 
     if (data.action === "dbs") {
       ui.success(`Found ${data.databases.length} SQL database configurations.`);

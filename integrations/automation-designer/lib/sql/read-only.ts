@@ -162,6 +162,26 @@ export function stripSqlLiterals(sql: string): { text: string; unterminated: boo
   return { text: out, unterminated: false, semicolons };
 }
 
+/**
+ * Split SQL text into its statements at the `;` outside literals and comments.
+ * Pieces that are only whitespace and comments are dropped, so an empty or
+ * comment-only input gives `[]`. Unterminated input is returned whole (the
+ * gates report it). A body with bare `;` outside dollar quotes (`BEGIN ATOMIC
+ * … END`) is split too: send such a statement on its own with `$$` quoting.
+ */
+export function splitSqlStatements(sql: string): string[] {
+  const { unterminated, semicolons } = stripSqlLiterals(sql);
+  if (unterminated) return [sql.trim()];
+  const pieces: string[] = [];
+  let start = 0;
+  for (const end of [...semicolons, sql.length]) {
+    const piece = sql.slice(start, end).trim();
+    if (piece && stripSqlLiterals(piece).text.trim()) pieces.push(piece);
+    start = end + 1;
+  }
+  return pieces;
+}
+
 export function checkReadOnlySql(sql: string): ReadOnlyVerdict {
   const { text, unterminated } = stripSqlLiterals(sql);
   const normalized = text.trim().replace(/[;\s]+$/, "").trim();

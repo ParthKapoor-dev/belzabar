@@ -228,8 +228,9 @@ export function parseSqlModifyResult(result: any): SqlModifyRunParseResult {
 /**
  * The database's own message from a failed-statement text: the Java exception
  * class names, Spring's `SQL [<comment> <query>]: ` / `bad SQL grammar [<query>];`
- * wrappers and Postgres's `ERROR: ` prefix removed, `Position: N` kept as
- * `(position N)`. Live, a bad column gives
+ * wrappers, Postgres's `ERROR: ` prefix and its `Position: N` removed (the
+ * server prepends a comment to the statement, so N does not point into the
+ * query as sent; `details.error.detail` keeps it). Live, a bad column gives
  * `org.postgresql.util.PSQLException: ERROR: column "x" does not exist\n  Position: 8`.
  */
 export function sqlDatabaseMessage(raw: string): string {
@@ -246,7 +247,7 @@ export function sqlDatabaseMessage(raw: string): string {
     if (next === msg) break;
     msg = next;
   }
-  return msg.replace(/\s*\n\s*Position:\s*(\d+)\s*$/, " (position $1)").trim();
+  return msg.replace(/\s*\n\s*Position:\s*\d+\s*$/, "").trim();
 }
 
 /** The errors the server raises for a `?` / `:name` it read as a bind parameter. */

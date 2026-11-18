@@ -1,9 +1,11 @@
 wi-impl ad sql run "<query>"  :->  Run ONE read-only SQL statement and return the rows (nothing is saved; writes: sql update/insert/modify)
+wi-impl ad sql run --file <path.sql>  :->  Run the read statements in a file ('-' or --file - = stdin; no argument-length limit); several ';'-separated statements run in one call, one result each (data.results)
 wi-impl ad sql dbs  :->  List available SQL database configurations and auth types (and the default-DB resolution)
 wi-impl ad sql run "<query>" --db <name|id>  :->  Execute SELECT against a specific database
 wi-impl ad sql explain "<query>"  :->  Query plan (EXPLAIN) of one statement: a read, or an INSERT/UPDATE/DELETE/MERGE (plain EXPLAIN never executes it); plan = lines
 wi-impl ad sql explain "<query>" --analyze [--buffers]  :->  EXPLAIN ANALYZE: executes the statement, so it must pass the read-only gate; adds timing {planningMs, executionMs}
 wi-impl ad sql explain "<query>" --format json  :->  Plan as parsed JSON (EXPLAIN FORMAT JSON)
+wi-impl ad sql update --file <path.sql> --db <name|id> --env <env> [--yes]  :->  Run the UPDATE/DELETE statements in a file in order, one result each; stops at the first failure (also for insert and modify)
 wi-impl ad sql update "<query>" --db <name|id> --env <env> [--yes]  :->  Execute UPDATE or DELETE (anything else, or an empty statement, is refused before sending); returns rows affected (confirm or --yes)
 wi-impl ad sql insert "<query> RETURNING <col>" --db <name|id> --env <env> [--yes]  :->  Execute INSERT (confirm or --yes); returns rows affected, and with RETURNING the generated values
 wi-impl ad sql modify "<query>" --db <name|id> --env <env> [--yes]  :->  Execute DDL (ALTER, CREATE, DROP, TRUNCATE…; other or empty statements are refused; confirm or --yes)

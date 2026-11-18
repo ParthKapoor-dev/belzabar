@@ -37,8 +37,8 @@ const springWrapped = (query: string) =>
   `org.springframework.dao.InvalidDataAccessApiUsageException: SQL [/* Helpers.CSV:, dev.example.test:x,  */ ${query}]: given 1 parameters but expected 0`;
 
 describe("sqlDatabaseMessage", () => {
-  test("strips the exception class and ERROR:, keeps the position", () => {
-    expect(sqlDatabaseMessage(BAD_COLUMN)).toBe('column "category" does not exist (position 67)');
+  test("strips the exception class and ERROR:, drops the position (offset by the server's comment)", () => {
+    expect(sqlDatabaseMessage(BAD_COLUMN)).toBe('column "category" does not exist');
   });
   test("strips Spring's SQL [<query>] wrapper (the query may contain ]: itself)", () => {
     expect(sqlDatabaseMessage(springWrapped("select a[1]: x from t"))).toBe("given 1 parameters but expected 0");
@@ -98,7 +98,7 @@ describe("executors put the database message in error.message", () => {
     ff = fakeFetch(routes()).install();
     const e = await failureOf(() => executeSqlReadQuery({ query: "select category from t", database: DB, context: CONTEXT }));
     expect(e.code).toBe("SQL_QUERY_FAILED");
-    expect(e.message).toBe('SQL query execution failed: column "category" does not exist (position 67)');
+    expect(e.message).toBe('SQL query execution failed: column "category" does not exist');
     expect((e.details as any).query).toBe("select category from t");
   });
 

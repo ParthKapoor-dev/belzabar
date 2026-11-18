@@ -4,18 +4,20 @@ Run SQL queries via Automation Designer database services.
 
 Subcommands:
   dbs                 List available database auth configurations.
-  run <QUERY>         Execute ONE read statement (SELECT / WITH … SELECT / VALUES /
+  run <QUERY>         Execute read statements (SELECT / WITH … SELECT / VALUES /
                       EXPLAIN [ANALYZE] of a read, or plain EXPLAIN — no ANALYZE — of
                       an INSERT/UPDATE/DELETE/MERGE, which only plans it and is a safe
-                      syntax check). Anything else — DML, DDL, multiple
-                      statements, SELECT INTO, FOR UPDATE, any SpEL '#{…}' (the
-                      server evaluates it into the SQL text) — is refused client-side
-                      (SQL_NOT_READ_ONLY); use update/insert/modify for writes.
+                      syntax check). Anything else — DML, DDL, SELECT INTO, FOR
+                      UPDATE, any SpEL '#{…}' (the server evaluates it into the SQL
+                      text) — is refused client-side (SQL_NOT_READ_ONLY); use
+                      update/insert/modify for writes. Several statements: see Batch.
   explain <QUERY>     Show the query plan of ONE statement (pass it without EXPLAIN).
+                      The statement can come from --file or stdin too.
                       Plain EXPLAIN also takes INSERT/UPDATE/DELETE/MERGE: it only
                       plans them. With --analyze the statement is really executed, so
                       it must pass the same read-only gate as run (DML is refused).
-  update <QUERY>      Execute a SQL write (UPDATE/DELETE; WITH … UPDATE/DELETE) query.
+  update <QUERY>      Execute a SQL write (UPDATE/DELETE; WITH … UPDATE/DELETE) query;
+                      returns rowsAffected.
   insert <QUERY>      Execute a SQL INSERT query. Add `RETURNING <key column>` to get
                       the generated key(s) back in generatedValues (one row, or
                       several: generatedKeys lists every returned key row).
@@ -23,6 +25,23 @@ Subcommands:
                       COMMENT / GRANT / REVOKE / REINDEX / REFRESH / CLUSTER).
   tui                 Start an interactive SQL session (can run writes: --env required).
                       Human use only: with --llm it fails SQL_TUI_UNSUPPORTED_IN_LLM.
+
+Input (run, explain, update, insert, modify):
+  <QUERY> is the SQL as one argument, or '-' to read it from stdin. --file <path>
+  reads it from a file (--file - is stdin too). A file or stdin has no
+  argument-length limit. Pass the argument or --file, not both
+  (SQL_QUERY_AND_FILE); neither is MISSING_SQL_QUERY.
+
+Batch (run, update, insert, modify):
+  Several ';'-separated statements (from any input) run in ONE call: the
+  database and the operation load once, then each statement is sent in order.
+  Every statement passes its gate before anything is sent (the error names it:
+  "Statement 2 of 5: …"). data is {batch: true, statementCount, okCount,
+  failedCount, results: [{index, query, ok, rows/rowCount | rowsAffected |
+  generatedValues, error?}]}. Reads all run (4 at a time; results in input
+  order); writes run in order and stop at the first failure (the rest are
+  notRun: true). Any failure: SQL_BATCH_FAILED, with every
+  result still in data. One statement keeps the single-statement shape.
 
 Write checks (update, insert, modify):
   The statement is checked before it is sent: an empty or comment-only one is
@@ -33,7 +52,7 @@ Write checks (update, insert, modify):
 Errors (run, explain, update, insert, modify):
   A statement the database refuses fails with SQL_QUERY_FAILED (run/explain) or
   SQL_<UPDATE|INSERT|MODIFY>_QUERY_FAILED; error.message holds the database's own
-  message (e.g. 'column "x" does not exist (position 8)'), details.query the query.
+  message (e.g. 'column "x" does not exist'), details.query the query.
   A stopped or restarting environment (HTTP 502/503/504) is ENV_UNAVAILABLE, not a
   database error: run the statement again once the environment is up.
 
@@ -48,6 +67,7 @@ Flags (dbs):
   --raw               Include raw API response.
 
 Flags (run):
+  --file <PATH>       Read the SQL from a file ('-' = stdin) instead of the argument.
   --db <NAME|ID>      Database nickname or ID.
                       Default resolution (every subcommand): --db →
                       environments.<env>.sqlDefaultDb in ~/.wi-impl/config.json →
@@ -57,6 +77,7 @@ Flags (run):
   --raw               Include raw operation metadata and execution response.
 
 Flags (explain):
+  --file <PATH>       Read the statement from a file ('-' = stdin).
   --analyze           EXPLAIN ANALYZE: execute the statement and report real row
                       counts and timings (timing {planningMs, executionMs}).
   --buffers           Add buffer usage (needs --analyze).
@@ -65,16 +86,19 @@ Flags (explain):
   --raw               Include raw operation metadata and execution response.
 
 Flags (update):
+  --file <PATH>       Read the SQL from a file ('-' = stdin) instead of the argument.
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
   --yes, -y           Skip the confirmation prompt (required with --llm).
 
 Flags (insert):
+  --file <PATH>       Read the SQL from a file ('-' = stdin) instead of the argument.
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
   --yes, -y           Skip the confirmation prompt (required with --llm).
 
 Flags (modify):
+  --file <PATH>       Read the SQL from a file ('-' = stdin) instead of the argument.
   --db <NAME|ID>      Database nickname or ID.
   --raw               Include raw operation metadata and execution response.
   --yes, -y           Skip the confirmation prompt (required with --llm).
@@ -104,6 +128,9 @@ Examples:
   wi-impl ad sql dbs
   wi-impl ad sql run "select * from users limit 1"
   wi-impl ad sql run "select * from users limit 1" --db QA_DB
+  wi-impl ad sql run --file checks.sql --db QA_DB
+  cat checks.sql | wi-impl ad sql run - --db QA_DB
+  wi-impl ad sql update --file fix.sql --db WRITE_DB --env <env> --yes
   wi-impl ad sql explain "select * from users where email = 'x'" --analyze --db QA_DB
   wi-impl ad sql explain "UPDATE users SET status = 'x' WHERE id = 1" --db QA_DB
   wi-impl ad sql update "UPDATE users SET status = 'active' WHERE id = 1" --db WRITE_DB --env <env>
