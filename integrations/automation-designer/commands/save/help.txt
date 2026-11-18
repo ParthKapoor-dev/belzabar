@@ -109,7 +109,14 @@ Pipeline and error codes:
   6. POST /chain/v2: AD_SAVE_REJECTED carries the server's message
   7. re-GET verify: every value sent landed and nothing else changed (new
      steps may gain server ids/uuids/types), else AD_SAVE_VERIFY_FAILED with
-     details {notLanded, unexpected}
+     details {notLanded, unexpected, normalised}. A server normalisation is not a change: an input's
+     encodedBase64 flag or a value moving between base64 and plain with the
+     same decoded text (encoding), a db step's account label gaining its name
+     or databaseRead.account becoming the step's account id (account), a
+     condition moving between the basic and advanced form with the same
+     expression (condition-form). Those are listed in
+     data.normalised[{path, kind, from, to}] with a warning, and the save is
+     ok with the new version
   8. compiled cache evicted on both routes, local cache dropped
   9. stored input testValues read before the save (V1 GET) and re-read after
      it; any dropped is a warning plus data.testValuesDropped
@@ -126,7 +133,8 @@ Pipeline and error codes:
 Data: {action, draftUuid, publishedUuid, switchedFromPublished, previousVersion,
 version, applied[], unchanged[], validation{skipped, warnings, layersRun},
 compiledCache{ok, uuids, routes[]}, testValuesDropped[]?,
-testCases{changedByServer[], restored[], failed[{name, id, reason}], kept?}}.
+testCases{changedByServer[], restored[], failed[{name, id, reason}], kept?},
+normalised[{path, kind, from, to}]}.
 
 Examples:
   wi-impl ad save overlay.json --uuid 4a1b2c3d... --env <env> --dry-run --llm

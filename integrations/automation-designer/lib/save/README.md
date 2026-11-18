@@ -16,6 +16,7 @@ the verification.
 | `spec.ts` | A spec file → the body `create` would POST (`readSpecFile`, `expandSpec`, `loadTargetBody`); shared by `create`, `lint` and `validate`. |
 | `sources.ts` | Reads `codeFile` / `sqlFile` references and turns `--sql-file N=path` / `--code-file N=path` into update-step ops. |
 | `test-values.ts` | `storedTestValues` (V1 read of the inputs carrying a stored testValue; null when unreadable), the save's drop warning and the create note. |
+| `normalise.ts` | `normalisedChange` / `splitNormalised`: server rewrites the verify accepts as unchanged (encoding flags, account label, condition form). |
 | `case-guard.ts` | `guardTestCases` / `planCaseRestores`: puts back the test cases a V2 body write rewrote (shared by `ad save` and `ad history restore`). |
 | `services.ts` | `loadServiceCatalog`: callee contracts and db accounts for the compact expander, cached 1 h (the validator's L4 cache). |
 
@@ -34,8 +35,13 @@ the verification.
 6. `POST /chain/v2`. A rejection is `AD_SAVE_REJECTED` with the server's message.
 7. Verify re-GET (`verifySaved`, or `verifyStructural` for ops): every sent value must read
    back, and everything the ops removed must be gone, otherwise
-   `AD_SAVE_VERIFY_FAILED {notLanded, unexpected}`. Server bookkeeping is ignored:
-   `metadata.version`, `metadata.internal`, `changelogs`, `testSuite`.
+   `AD_SAVE_VERIFY_FAILED {notLanded, unexpected, normalised}`. Server bookkeeping is ignored:
+   `metadata.version`, `metadata.internal`, `changelogs`, `testSuite`. Server normalisation
+   (`normalise.ts`) is not a change either. That covers an input's `encodedBase64` flag, a
+   value that only moved between base64 and plain, a db step's account label gaining its name,
+   `databaseRead.account` becoming the step's account id, and a condition moving between the
+   basic and advanced form with the same expression. It is listed in `data.normalised` with a
+   warning, and the save returns `ok` with the new version. `ad create`'s verify does the same.
 8. The compiled cache (both routes) and the local method cache are evicted, even when the
    POST or the verify failed.
 9. Stored input testValues: the V2 body has none, so a V1 GET before the save lists the inputs
@@ -80,7 +86,7 @@ Compiled-cache eviction is never called with an empty uuid list: the server read
 "flush the whole organisation".
 
 Tests: `save-command.test.ts`, `save-structural.test.ts`, `save-v2-overlay.test.ts`,
-`create-delete.test.ts`, `publish-changelog.test.ts`, `save-case-guard.test.ts` in
+`create-delete.test.ts`, `publish-changelog.test.ts`, `save-case-guard.test.ts`, `save-normalise.test.ts` in
 [`../../tests/unit`](../../tests/unit/README.md).
 
 Up: [`../README.md`](../README.md)

@@ -132,6 +132,7 @@ const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
         ["Validation", data.validation.skipped ? "SKIPPED" : `${data.validation.warnings.length} warning(s)`],
         ["Compiled cache", data.compiledCache.ok ? "evicted" : "NOT evicted"],
         ["Test cases", caseSummary(data.testCases)],
+        ["Normalised", data.normalised.length ? `${data.normalised.length} field(s) (${[...new Set(data.normalised.map((n) => n.kind))].join(", ")})` : "-"],
       ],
     );
   },

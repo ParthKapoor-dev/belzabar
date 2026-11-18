@@ -76,11 +76,15 @@ method inputs/outputs/variables get the same checks as `ad save` set-input:
 testValue and a variable's BASE_64 encodingType are refused, unknown keys too),
 CATEGORY_NOT_FOUND, AD_CATEGORY_PROTECTED, AD_VALIDATION_FAILED,
 AD_METHOD_EXISTS (name taken in the category), AD_SAVE_REJECTED (server
-message), AD_SAVE_VERIFY_FAILED (a value sent does not read back).
+message), AD_SAVE_VERIFY_FAILED (a value sent does not read back). Server
+normalisation is not a failure: an encodedBase64 flag, a db step's account
+label or databaseRead.account filled in from the account, a condition's
+basic/advanced form with the same expression. It is listed in data.normalised
+with a warning.
 
 Data: {uuid, name, state, version, category{chainCategoryId,
 chainCategoryUuid, name}, stepCount, dropped[], validation{skipped, warnings,
-layersRun}}.
+layersRun}, normalised[{path, kind, from, to}]}.
 
 Examples:
   wi-impl ad create --spec method.json --dry-run --env <env> --llm

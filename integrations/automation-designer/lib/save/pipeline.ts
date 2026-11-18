@@ -29,6 +29,7 @@ import { postChainV2 } from "./api";
 import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-cache";
 import { storedTestValues, testValueDropWarning } from "./test-values";
 import { guardTestCases, type CaseGuardResult } from "./case-guard";
+import { normalisedChange, normalisedWarning, splitNormalised, type Normalised } from "./normalise";
 import { runValidationGate, type ValidationFinding, type ValidationFlags, type ValidationSummary } from "./validation";
 
 /**
@@ -119,6 +120,8 @@ export interface SaveV2Data {
   testValuesDropped?: string[];
   /** Test cases the server rewrote on the save, and which were restored (lib/save/case-guard.ts). */
   testCases: CaseGuardResult;
+  /** Fields the server rewrote without changing their meaning (encoding flags, account label, condition form). */
+  normalised: Normalised[];
 }
 
 export function versionName(body: V2MethodResponse | null | undefined): string | null {
@@ -203,12 +206,14 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
 
   // The server rewrites the persisted test cases on every V2 save: put them back first.
   const testCases = await guardTestCases({ chainUuid: draftUuid, before: fresh, after, keep: !!input.keepCaseChanges, warn: input.warn });
+  let normalised: Normalised[];
   try {
-    verifyPlan(draftUuid, live, after, plan);
+    normalised = verifyPlan(draftUuid, live, after, plan);
   } catch (err) {
     if (err instanceof CliError && isObj(err.details)) Object.assign(err.details, { testCases });
     throw err;
   }
+  if (normalised.length > 0) input.warn(normalisedWarning(normalised));
 
   let testValuesDropped: string[] = [];
   if (withTestValues.length > 0) {
@@ -230,6 +235,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     compiledCache,
     ...(testValuesDropped.length > 0 ? { testValuesDropped } : {}),
     testCases,
+    normalised,
   };
 }
 
@@ -255,12 +261,12 @@ export async function assertDraftUnchanged(draftUuid: string, seen: V2MethodResp
   return fresh;
 }
 
-function verifyPlan(uuid: string, before: V2MethodResponse, after: V2MethodResponse, plan: V2OverlayPlan): void {
+function verifyPlan(uuid: string, before: V2MethodResponse, after: V2MethodResponse, plan: V2OverlayPlan): Normalised[] {
   if (plan.structural) {
     const removals = structuralRemovals(before, plan.body, plan.structural.order);
-    verifyStructural(uuid, plan.body, after, plan.structural.touched, removals);
+    return verifyStructural(uuid, plan.body, after, plan.structural.touched, removals);
   }
-  else verifySaved(uuid, before, after, plan.targets);
+  return verifySaved(uuid, before, after, plan.targets);
 }
 
 /** uuid-like keys the server pads to 36 characters. */
@@ -272,13 +278,15 @@ const PADDED_KEYS = new Set(["uuid", "id", "automationAPIId", "automationApiId"]
  * under a `touched` path (a new/updated step or field; "" = the whole body),
  * fields the server fills in (ids, uuids, types) and uuid padding. A value
  * wi-impl sent that reads back different or missing is `notLanded`; any other
- * difference is `unexpected`. Throws AD_SAVE_VERIFY_FAILED.
+ * difference is `unexpected`. Server normalisation (./normalise.ts) is
+ * neither: it is returned. Throws AD_SAVE_VERIFY_FAILED.
  */
-export function verifyStructural(uuid: string, expected: unknown, after: unknown, touched: string[], removals: Removal[] = []): void {
+export function verifyStructural(uuid: string, expected: unknown, after: unknown, touched: string[], removals: Removal[] = []): Normalised[] {
   const all = touched.includes("");
   const underTouched = (p: string) => all || touched.some((t) => isUnder(p, t));
   const notLanded: Array<{ path: string; expected: unknown; actual: unknown }> = [];
   const unexpected: string[] = [];
+  const normalised = new Map<string, Normalised>();
   // a value the ops removed is absent from `expected`, so the loop
   // below would take it for a server-filled field. Check removals explicitly.
   for (const r of removals) {
@@ -291,6 +299,11 @@ export function verifyStructural(uuid: string, expected: unknown, after: unknown
   }
   for (const p of diffPaths(expected, after)) {
     if (SERVER_OWNED_ON_SAVE.some((s) => isUnder(p, s))) continue;
+    const n = normalisedChange(expected, after, p);
+    if (n) {
+      normalised.set(n.path, n);
+      continue;
+    }
     const want = getAtPath(expected, p);
     const got = getAtPath(after, p);
     if (underTouched(p)) {
@@ -300,7 +313,7 @@ export function verifyStructural(uuid: string, expected: unknown, after: unknown
       notLanded.push({ path: p, expected: want, actual: got });
     } else unexpected.push(p);
   }
-  if (notLanded.length === 0 && unexpected.length === 0) return;
+  if (notLanded.length === 0 && unexpected.length === 0) return [...normalised.values()];
   throw new CliError(
     `Saved, but the draft read back does not match the request: ` +
       [
@@ -312,7 +325,13 @@ export function verifyStructural(uuid: string, expected: unknown, after: unknown
       `. Inspect with: wi-impl ad show ${uuid} --full`,
     {
       code: "AD_SAVE_VERIFY_FAILED",
-      details: { uuid, version: versionName(after as V2MethodResponse), notLanded: notLanded.slice(0, 100), unexpected: unexpected.slice(0, 100) },
+      details: {
+        uuid,
+        version: versionName(after as V2MethodResponse),
+        notLanded: notLanded.slice(0, 100),
+        unexpected: unexpected.slice(0, 100),
+        normalised: [...normalised.values()].slice(0, 100),
+      },
     },
   );
 }
@@ -380,16 +399,19 @@ export function structuralRemovals(live: unknown, expected: unknown, order: Arra
 
 /**
  * Post-save verify: every target landed with the requested value, and nothing
- * else changed except server-owned bookkeeping. Throws AD_SAVE_VERIFY_FAILED.
+ * else changed except server-owned bookkeeping and normalisation (returned).
+ * Throws AD_SAVE_VERIFY_FAILED.
  */
-function verifySaved(uuid: string, before: V2MethodResponse, after: V2MethodResponse, targets: OverlayTarget[]): void {
+function verifySaved(uuid: string, before: V2MethodResponse, after: V2MethodResponse, targets: OverlayTarget[]): Normalised[] {
   const notLanded = targets
     .filter((t) => !jsonEqual(getAtPath(after, t.path), t.value))
     .map((t) => ({ key: t.key, path: t.path, expected: t.value, actual: getAtPath(after, t.path) }));
-  const unexpected = diffPaths(before, after).filter(
-    (p) => !targets.some((t) => isUnder(p, t.path)) && !SERVER_OWNED_ON_SAVE.some((s) => isUnder(p, s)),
+  const { normalised, real: unexpected } = splitNormalised(
+    before,
+    after,
+    diffPaths(before, after).filter((p) => !targets.some((t) => isUnder(p, t.path)) && !SERVER_OWNED_ON_SAVE.some((s) => isUnder(p, s))),
   );
-  if (notLanded.length === 0 && unexpected.length === 0) return;
+  if (notLanded.length === 0 && unexpected.length === 0) return normalised;
   throw new CliError(
     `Saved, but the draft read back does not match the request: ` +
       [
@@ -401,7 +423,7 @@ function verifySaved(uuid: string, before: V2MethodResponse, after: V2MethodResp
       `. Inspect with: wi-impl ad show ${uuid} --full`,
     {
       code: "AD_SAVE_VERIFY_FAILED",
-      details: { uuid, version: versionName(after), notLanded, unexpected: unexpected.slice(0, 100) },
+      details: { uuid, version: versionName(after), notLanded, unexpected: unexpected.slice(0, 100), normalised: normalised.slice(0, 100) },
     },
   );
 }

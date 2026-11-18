@@ -10,6 +10,7 @@ import { postChainV2 } from "../../lib/save/api";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
 import { expandSpec, readSpecFile } from "../../lib/save/spec";
 import { dryRunValidation, verifyStructural, versionName, type DryRunValidation } from "../../lib/save/pipeline";
+import { normalisedWarning, type Normalised } from "../../lib/save/normalise";
 import { runValidationGate, type ValidationSummary } from "../../lib/save/validation";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 
@@ -33,6 +34,8 @@ interface CreateData {
   /** Spec keys dropped because the server owns them. */
   dropped: string[];
   validation: ValidationSummary;
+  /** Fields the server rewrote without changing their meaning (encoding flags, account label, condition form). */
+  normalised: Normalised[];
 }
 
 interface CreateDryRunData {
@@ -150,7 +153,8 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
       });
     }
     // Every value sent must read back (the server only adds ids, uuids and defaults).
-    verifyStructural(uuid, body, back, [""]);
+    const normalised = verifyStructural(uuid, body, back, [""]);
+    if (normalised.length > 0) context.warn(normalisedWarning(normalised));
 
     // A new draft has no stored testValues, which the designer's Test dialog needs for required inputs.
     const requiredInputs = (back.inputs ?? []).filter((f) => f.required === true && typeof f.key === "string").map((f) => f.key);
@@ -165,6 +169,7 @@ const command: CommandModule<CreateArgs, CreateData | CreateDryRunData> = {
       stepCount: (back.steps ?? []).length,
       dropped,
       validation,
+      normalised,
     });
   },
   presentHuman(envelope, ui) {
