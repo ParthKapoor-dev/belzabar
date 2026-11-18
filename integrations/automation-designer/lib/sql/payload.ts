@@ -252,7 +252,7 @@ function buildFallbackInnerDefinition(operation: any, dbAuthId: number, query: s
 }
 
 export function buildSqlReadPayload(options: BuildSqlPayloadOptions): V1RawMethodResponse {
-  const { template, operation, dbAuthId, query, fallbackCategory } = options;
+  const { template, operation, dbAuthId, query, fallbackCategory, categoryLookupFailure } = options;
 
   const findNestedJsonDefinition = (value: unknown, depth = 0): unknown => {
     if (!value || depth > 3 || typeof value !== "object") {
@@ -314,16 +314,19 @@ export function buildSqlReadPayload(options: BuildSqlPayloadOptions): V1RawMetho
 
   return {
     ...template,
-    category: (template as any).category ?? fallbackCategory ?? noExecutableCategory(),
+    category: (template as any).category ?? fallbackCategory ?? noExecutableCategory(categoryLookupFailure),
     version: (template as any).version ?? 1,
     jsonDefinition: JSON.stringify(innerDefinition),
   };
 }
 
 /** No category from the template or the env: there is no built-in id that is valid everywhere. */
-function noExecutableCategory(): never {
+function noExecutableCategory(lookupFailure: string | undefined): never {
   throw new CliError(
-    "Cannot run the SQL test chain: its template has no category and no PUBLIC chain category was found on this environment.",
-    { code: "SQL_NO_EXECUTABLE_CATEGORY" },
+    "Cannot run the SQL test chain: its template has no category and no PUBLIC chain category was found on this environment" +
+      (lookupFailure
+        ? `: ${lookupFailure}. This has been transient (the same statement ran seconds later): run it again; if it persists, check the env's chain categories.`
+        : "."),
+    { code: "SQL_NO_EXECUTABLE_CATEGORY", ...(lookupFailure ? { details: { lookupFailure } } : {}) },
   );
 }

@@ -78,9 +78,15 @@ export interface SqlRunParseResult {
   success: boolean;
 }
 
-export interface ExecutableCategoryRef {
+interface ExecutableCategoryRef {
   id: number;
   name: string;
+}
+
+/** `fetchExecutableCategory`: the category, or why there is none. */
+export interface ExecutableCategoryLookup {
+  category: ExecutableCategoryRef | null;
+  failure?: string;
 }
 
 export interface BuildSqlPayloadOptions {
@@ -96,6 +102,8 @@ export interface BuildSqlPayloadOptions {
    * env via fetchExecutableCategory(); there is no built-in fallback id.
    */
   fallbackCategory?: ExecutableCategoryRef | null;
+  /** Why the env lookup gave no fallback category (for the SQL_NO_EXECUTABLE_CATEGORY message). */
+  categoryLookupFailure?: string;
 }
 
 export type SqlUpdateOperation = SqlSelectOperation;

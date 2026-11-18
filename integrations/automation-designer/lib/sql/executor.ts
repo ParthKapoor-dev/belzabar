@@ -168,13 +168,14 @@ export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<
   // an empty, comment-only or wrong-kind statement would "succeed" without doing anything.
   assertWriteSql(options.query, "update");
   assertNoParameterMarkers(options.query, "sql update");
-  const fallbackCategory = await fetchExecutableCategory();
+  const { category: fallbackCategory, failure: categoryLookupFailure } = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
     fallbackCategory,
+    categoryLookupFailure,
   });
 
   const formData = new FormData();
@@ -313,13 +314,14 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
   // an empty, comment-only or wrong-kind statement would "succeed" without doing anything.
   assertWriteSql(options.query, "insert");
   assertNoParameterMarkers(options.query, "sql insert");
-  const fallbackCategory = await fetchExecutableCategory();
+  const { category: fallbackCategory, failure: categoryLookupFailure } = await fetchExecutableCategory();
   let payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
     fallbackCategory,
+    categoryLookupFailure,
   });
   const returning = hasReturningClause(options.query);
   if (returning) payload = withGeneratedIdOutput(payload, options.context.operation);
@@ -405,13 +407,14 @@ export async function loadSqlModifyContext(): Promise<SqlExecutionContext> {
 export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<ExecuteSqlModifyResult> {
   // an empty, comment-only or wrong-kind statement would "succeed" without doing anything.
   assertWriteSql(options.query, "modify");
-  const fallbackCategory = await fetchExecutableCategory();
+  const { category: fallbackCategory, failure: categoryLookupFailure } = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
     fallbackCategory,
+    categoryLookupFailure,
   });
 
   const formData = new FormData();
@@ -451,13 +454,14 @@ export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promi
   // the read endpoint autocommits, so a write here really happens.
   assertReadOnlySql(options.query);
   assertNoParameterMarkers(options.query, "sql run");
-  const fallbackCategory = await fetchExecutableCategory();
+  const { category: fallbackCategory, failure: categoryLookupFailure } = await fetchExecutableCategory();
   const payload = buildSqlReadPayload({
     template: options.context.template,
     operation: options.context.operation,
     dbAuthId: options.database.id,
     query: options.query,
     fallbackCategory,
+    categoryLookupFailure,
   });
 
   const formData = new FormData();
