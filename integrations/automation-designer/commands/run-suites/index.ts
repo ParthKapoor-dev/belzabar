@@ -53,7 +53,7 @@ const command: CommandModule<RunSuitesArgs, RunSuitesData> = {
       throw new CliError("No suites directory found.", { code: "SUITES_DIR_MISSING" });
     }
 
-    const files = readdirSync(suitesDir).filter(f => f.endsWith(".spec.json"));
+    const files = readdirSync(suitesDir).filter(f => f.endsWith(".spec.json")).sort(); // readdir order differs between filesystems
     if (files.length === 0) {
       return ok({ total: 0, passed: 0, failed: 0, suites: [] });
     }
