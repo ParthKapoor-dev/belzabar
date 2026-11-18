@@ -1,0 +1,2 @@
+wi-impl file get <link> --env <name> --out <path>  :->  Download a file a method generated (file-preview?hash= or /rest/api/files/ link, or the hash) with the session; writes --out, reports bytes, content type, sha256
+wi-impl file get <link> --env <name> --out <path> --force  :->  Overwrite --out if it exists (else FILE_EXISTS)

@@ -11,6 +11,7 @@ needs beyond it.
 | `cache/` | `wi-impl cache`: invalidate server-side cache entries; `prune-local` for stale local cache files |
 | `config/` | `wi-impl config get \| token \| edit` (passthrough: routes its own subcommands; spec in `args.ts`, shared summary in `summary.ts`, also used by `setup`) |
 | `envs/` | `wi-impl envs`: list configured environments and the active one |
+| `file/` | `wi-impl file get`: download a file a method generated (file-preview or /rest/api/files link) with the session |
 | `onboard/` | `wi-impl onboard`: guided first run (the credentials step) |
 | `setup/` | `wi-impl setup`: write or merge environments into config.json |
 | `update/` | `wi-impl update`: fast-forward the source checkout, rebuild, reinstall |

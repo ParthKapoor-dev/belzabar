@@ -1,0 +1,42 @@
+Usage: wi-impl file get <link> --env <name> --out <path> [--force]
+
+Download a file a method generated, with wi-impl's session on that env.
+
+A method that builds a file (an Excel export, a document) returns a link such
+as https://<env host>/file-preview?hash=<h> or .../rest/api/files/<h>. The
+file route needs a login token, so the link alone cannot be opened, and a
+token in a link must not be copied by hand. 'file get' reads the hash from
+the link (or takes a bare hash), GETs /rest/api/files/<hash> with the env's
+session and writes the bytes to --out. Any query in the link, a token
+included, is ignored.
+
+Subcommands:
+  get <link>          Download the file. <link> is a file-preview or
+                      /rest/api/files link, or the hash itself.
+    --out <path>      Where to write the file (required). Parent folders are
+                      created.
+    --force           Overwrite --out if it exists (else FILE_EXISTS).
+
+Output (data):
+  path, bytes, contentType, filename (the server's Content-Disposition name,
+  if any), sha256, hash, env.
+
+Errors:
+  FILE_REF_INVALID     Not a file link or hash.
+  FILE_ENV_MISMATCH    The link's host is not --env's host (the message names
+                       the configured env that has it).
+  FILE_EXISTS          --out exists and --force was not given.
+  FILE_NOT_FOUND       HTTP 404 for that hash.
+  FILE_DOWNLOAD_FAILED Any other non-2xx answer (details.status).
+
+Global Flags:
+  --env <name>        Environment the link belongs to.
+  --llm               Output structured JSON envelope for scripting/LLM use.
+  -v, --verbose       Verbose request logging.
+
+Examples:
+  # The link from 'wi-impl ad run' / 'ad test' output
+  wi-impl file get "https://acme-dev.example.test/file-preview?hash=ab12cd34%3D%3D" --env acme-dev --out ./export.xlsx
+
+  # A bare hash
+  wi-impl file get ab12cd34== --env acme-dev --out /tmp/export.xlsx --force

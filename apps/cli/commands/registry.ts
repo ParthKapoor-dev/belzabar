@@ -15,6 +15,9 @@ import configDesc from "./config/desc.txt" with { type: "text" };
 import * as envsCmd from "./envs/index";
 import envsHelp from "./envs/help.txt" with { type: "text" };
 import envsDesc from "./envs/desc.txt" with { type: "text" };
+import * as fileCmd from "./file/index";
+import fileHelp from "./file/help.txt" with { type: "text" };
+import fileDesc from "./file/desc.txt" with { type: "text" };
 import * as onboardCmd from "./onboard/index";
 import onboardHelp from "./onboard/help.txt" with { type: "text" };
 import onboardDesc from "./onboard/desc.txt" with { type: "text" };
@@ -29,6 +32,7 @@ export const registry = {
   cache: { module: cacheCmd, help: cacheHelp, desc: cacheDesc },
   config: { module: configCmd, help: configHelp, desc: configDesc },
   envs: { module: envsCmd, help: envsHelp, desc: envsDesc },
+  file: { module: fileCmd, help: fileHelp, desc: fileDesc },
   onboard: { module: onboardCmd, help: onboardHelp, desc: onboardDesc },
   setup: { module: setupCmd, help: setupHelp, desc: setupDesc },
   update: { module: updateCmd, help: updateHelp, desc: updateDesc },

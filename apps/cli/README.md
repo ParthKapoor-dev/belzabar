@@ -25,7 +25,7 @@ The compiled binary (`wi-impl`, with `wi-impl.map`) is written here and gitignor
 ```
 wi-impl ad | pd | rd | tw | migrate | release <cmd>  → namespace commands (one registry each)
 wi-impl config <sub>                            → passthrough module (routes its own subcommands)
-wi-impl cache | envs | onboard | setup | update → top-level commands
+wi-impl cache | envs | file | onboard | setup | update → top-level commands
 wi-impl --version | --help | --help-full        → runner
 ```
 
