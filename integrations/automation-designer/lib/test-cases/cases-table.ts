@@ -18,6 +18,8 @@ export interface CaseResult {
   /** Executed SUCCESS and every expectation passed. */
   pass: boolean;
   status: TestRun["status"] | "ERROR";
+  /** HTTP status of the run (403 for a refusal); null when the run threw or the server gave none. */
+  statusCode: number | null;
   outputs: Record<string, unknown>;
   failedStep: FailedStep | null;
   expectations: ExpectationResult[];
@@ -105,13 +107,14 @@ export async function runCases(method: HydratedMethod, cases: CaseRow[], common:
         name: c.name,
         pass: run.success && expectations.every((r) => r.pass),
         status: run.status,
+        statusCode: run.statusCode,
         outputs: run.outputs,
         failedStep: run.failedStep,
         expectations,
       });
     } catch (err) {
       const code = err instanceof CliError ? err.code : "UNHANDLED_EXCEPTION";
-      results.push({ name: c.name, pass: false, status: "ERROR", outputs: {}, failedStep: null, expectations: [], error: { code, message: (err as Error).message } });
+      results.push({ name: c.name, pass: false, status: "ERROR", statusCode: null, outputs: {}, failedStep: null, expectations: [], error: { code, message: (err as Error).message } });
     }
   }
   const passed = results.filter((r) => r.pass).length;

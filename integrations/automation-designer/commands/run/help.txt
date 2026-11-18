@@ -33,8 +33,13 @@ Notes:
   - The output is redacted like `ad test`: credentials (a file link's
     ?token=…, Bearer/auth headers, JWTs) read [REDACTED], so a saved run
     never holds a working login.
-  - A non-2xx answer fails EXECUTION_FAILED; details = {path, status, body}
-    (the body parsed and redacted).
+  - A non-2xx answer fails EXECUTION_FAILED. The message names the status,
+    the failing step and the method's own message ("Execution failed (403)
+    at step 1: denied"); details = {path, status, body, step?,
+    methodMessage?, bodyFile?}. body is parsed and redacted, JSON text
+    inside it decoded into objects. A body over 16 KB is written whole
+    (redacted) to ~/.wi-impl/logs/errors/ and bodyFile names the file
+    (body is then a summary).
   - Without --stream the call times out after 10 minutes; with --stream it
     stays open for as long as the method runs.
 

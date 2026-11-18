@@ -9,7 +9,8 @@ import { CliError, readJsonOrNull } from "@belzabar/core";
 import { testMethodMultipart } from "./api/v1";
 import { ErrorParser, detectJavaException, type ParsedError } from "./error-parser";
 import { ServiceHydrator } from "./hydrator";
-import { buildV1TestPayload, describeTestFailure, stepAutomationId, v1TestFormData } from "./payload-builder";
+import { executionError } from "./exec-error";
+import { buildV1TestPayload, stepAutomationId, v1TestFormData } from "./payload-builder";
 import type { HydratedMethod, ParsedStep } from "./types/common";
 import type { V1RawMethodResponse } from "./types/v1-wire";
 
@@ -35,11 +36,15 @@ export interface FailedStep {
   automationId: string;
   description: string;
   parsedError: ParsedError;
+  /** HTTP status the step failed with (its exit code: 403, 422, …), when the server gives one. */
+  statusCode?: number;
 }
 
 export interface TestRun {
   success: boolean;
   status: "SUCCESS" | "FAILED";
+  /** HTTP status of the run (`executionStatus.statusCode`): what `ad run` would answer, e.g. 403 for a refusal. */
+  statusCode: number | null;
   /** First method output's raw test result (kept for compatibility). */
   output: unknown;
   parsedOutput: unknown;
@@ -103,19 +108,17 @@ function stepStatus(svc: Svc): "success" | "failed" | "skipped" {
   return "success";
 }
 
+const TEST_PATH = "/rest/api/automation/chain/test";
+
 /** Run a fetched V1 method inline with `values` as its inputs' test values. */
 export async function runInlineTest(hydrated: HydratedMethod, values: Record<string, unknown>): Promise<TestRun> {
   const rawMethod = hydrated.raw as V1RawMethodResponse;
   const payload = await buildV1TestPayload(rawMethod, values);
   const resultRes = await testMethodMultipart(v1TestFormData(payload));
   if (!resultRes.ok) {
-    const failure = await describeTestFailure(resultRes);
-    throw new CliError(`Execution failed: ${failure.message}`, {
-      code: "TEST_EXECUTION_FAILED",
-      details: { status: resultRes.status, body: failure.body },
-    });
+    throw await executionError(resultRes, { code: "TEST_EXECUTION_FAILED", label: "Execution failed", path: TEST_PATH, tag: "ad-test" });
   }
-  const result = (await readJsonOrNull<Record<string, unknown>>(resultRes, { path: "/rest/api/automation/chain/test" })) ?? {};
+  const result = (await readJsonOrNull<Record<string, unknown>>(resultRes, { path: TEST_PATH })) ?? {};
 
   // Java exception body — the backend answers 200 with a thrown exception
   // object when a chain fails to compile.
@@ -148,6 +151,7 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
         automationId: failedSvc.automationId,
         description: stepFor(failedSvc, failedIdx).description,
         parsedError: ErrorParser.parse(failedSvc.executionStatus),
+        ...(typeof failedSvc.executionStatus?.statusCode === "number" ? { statusCode: failedSvc.executionStatus.statusCode } : {}),
       }
     : null;
 
@@ -184,6 +188,7 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
   return {
     success,
     status: success ? "SUCCESS" : "FAILED",
+    statusCode: typeof execStatus?.statusCode === "number" ? execStatus.statusCode : null,
     output,
     parsedOutput: parseOutput(output),
     outputs: outputsMap(result),

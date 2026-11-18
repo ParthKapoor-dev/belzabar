@@ -65,15 +65,20 @@ Global Flags:
 Notes:
   - Exit 1 with AD_TEST_FAILED when the (draft) execution FAILED, with the
     full data (failedStep, trace); AD_TEST_EXPECTATION_FAILED wins when an
-    expectation failed.
+    expectation failed. The message names the step, the HTTP status the
+    run answered (statusCode: 403 for a refusal, as `ad run` would) and the
+    step's own message.
+  - A non-2xx answer from the test route is TEST_EXECUTION_FAILED, with
+    details like `ad run`'s EXECUTION_FAILED (decoded body; a body over
+    16 KB is saved whole under ~/.wi-impl/logs/errors/, details.bodyFile).
   - Posts {category, jsonDefinition, id, uuid, version} to /chain/test with
     testValues set and automationApiId filled on every step (lean chains).
-  - Data: outputs {code: value} (every method output), trace, expectations
-    {total, passed, failed, results[]}, compare {identical, differences[],
-    published{status, outputs}}.
+  - Data: status, statusCode, outputs {code: value} (every method output),
+    trace, expectations {total, passed, failed, results[]}, compare
+    {identical, differences[], published{status, outputs}}.
   - With --cases, data is {uuid, cases[{name, pass, status (SUCCESS, FAILED
-    or ERROR), outputs, failedStep, expectations[], error?{code, message}}],
-    summary{total, passed, failed}}. A case whose run throws (compile error)
+    or ERROR), statusCode, outputs, failedStep, expectations[],
+    error?{code, message}}], summary{total, passed, failed}}. A case whose run throws (compile error)
     is status ERROR; the other cases still run.
   - Trace rows carry the method's own step descriptions and orderIndex.
 

@@ -12,6 +12,12 @@ export interface ParsedError {
   type: "DB" | "CODE" | "UNKNOWN";
 }
 
+/** First line of an error text, at most 300 chars. */
+function summaryLine(text: string): string {
+  const line = text.trim().split("\n")[0]!.trim();
+  return line.length > 300 ? `${line.slice(0, 300)}…` : line;
+}
+
 export class ErrorParser {
   static parse(stepStatus: any): ParsedError {
     if (!stepStatus || !stepStatus.message) {
@@ -51,14 +57,24 @@ export class ErrorParser {
         };
       }
 
+      // custom code: {status, status_message, error: "<anonymous>:8: Error: …\n<stack>"}
+      if (typeof json.error === "string" && json.error.trim()) {
+        return {
+          summary: summaryLine(json.error),
+          detail: json.error,
+          type: "CODE",
+        };
+      }
+
       return {
         summary: "Error (Structured)",
         detail: JSON.stringify(json, null, 2),
         type: "UNKNOWN",
       };
     } catch {
+      // plain text: the method's own message (an exit's "denied", a thrown text)
       return {
-        summary: "Execution Error",
+        summary: typeof rawMessage === "string" && rawMessage.trim() ? summaryLine(rawMessage) : "Execution Error",
         detail: rawMessage,
         type: "UNKNOWN",
       };

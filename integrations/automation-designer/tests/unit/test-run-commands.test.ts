@@ -123,6 +123,21 @@ describe("ad test", () => {
     expect(r.envelope?.error?.message).toContain("Invalid Automation API Id");
   });
 
+  test("a refusal returns its HTTP status and the step's own message (B17, B10)", async () => {
+    // the shape /chain/test answered live for an exit-on-failure step with code 403
+    wire(() => ({
+      executionStatus: { executed: false, failed: true, statusCode: 403, message: "denied by design", failingSteps: [1] },
+      services: [{ automationId: 38528, executionStatus: { executed: false, failed: true, statusCode: 403, message: "denied by design" } }],
+      outputs: [],
+    }));
+    const r = await runCommand(testCommand, [UUID, "--inputs", '{"cityCode":"C","displayName":"D"}'], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.code).toBe("AD_TEST_FAILED");
+    expect(r.envelope?.error?.message).toBe("The method execution FAILED at step 1 (HTTP 403): denied by design.");
+    const d = r.envelope?.data as any;
+    expect(d.statusCode).toBe(403);
+    expect(d.failedStep.statusCode).toBe(403);
+  });
+
   test("is a write: requires an explicit --env", () => {
     expect((testCommand as any).writes).toBe(true);
     expect((runSuitesCommand as any).writes).toBe(true);
@@ -285,6 +300,23 @@ describe("ad run", () => {
     const details = r.envelope?.error?.details as any;
     expect(typeof details).toBe("object");
     expect(details).toMatchObject({ status: 500, body: { errorMessage: "boom" } });
+    expect(r.envelope?.error?.message).toBe("Execution failed (500): boom");
+  });
+
+  test("a refusal names the failing step and the method's own message (B10)", async () => {
+    const body = {
+      executed: false,
+      message: JSON.stringify({ result: { message: "INVALID_INPUTS: settingName must be set" } }),
+      failed: true,
+      statusCode: 400,
+      failingSteps: [2],
+    };
+    wire(okTestResponse, rawBody(), respond({ status: 400, json: JSON.stringify(body) as never }));
+    const r = await runCommand(runCommandModule, [UUID, "{}"], { env: "t-s4b-run" });
+    expect(r.envelope?.error?.message).toBe("Execution failed (400) at step 2: INVALID_INPUTS: settingName must be set");
+    const details = r.envelope?.error?.details as any;
+    expect(details.body.message.result.message).toBe("INVALID_INPUTS: settingName must be set");
+    expect(details.step).toBe(2);
   });
 
   test("a PUBLISHED uuid runs without the warning", async () => {

@@ -79,6 +79,8 @@ interface TestMethodData {
   verbosity: "normal" | "verbose";
   success: boolean;
   status: "SUCCESS" | "FAILED";
+  /** HTTP status of the run (what `ad run` answers: 403 for a refusal); null when the server gives none. */
+  statusCode: number | null;
   output: unknown;
   parsedOutput: unknown;
   /** Every method output: code → value. */
@@ -245,6 +247,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
       verbosity: a.verbose ? "verbose" : "normal",
       success: run.success,
       status: run.status,
+      statusCode: run.statusCode,
       output: run.output,
       parsedOutput: run.parsedOutput,
       outputs: run.outputs,
@@ -282,7 +285,8 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     }
     // a failed execution is a failed command (like `ad run` / `run-suites`), not ok:true.
     if (!run.success) {
-      const where = run.failedStep ? ` at step ${run.failedStep.index}: ${run.failedStep.parsedError.summary}` : "";
+      const http = run.statusCode != null ? ` (HTTP ${run.statusCode})` : "";
+      const where = run.failedStep ? ` at step ${run.failedStep.index}${http}: ${run.failedStep.parsedError.summary}` : http;
       return failWithData("AD_TEST_FAILED", `The method execution FAILED${where}.`, data);
     }
     // a case whose assertions were not all evaluated is not a pass

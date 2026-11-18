@@ -1,4 +1,5 @@
-import { apiFetch, CliError, type CommandModule, defineArgs, ensureApiOk, ok, redactSecrets, redactString } from "@belzabar/core";
+import { apiFetch, CliError, type CommandModule, defineArgs, ok, redactSecrets, redactString } from "@belzabar/core";
+import { executionError } from "../../lib/exec-error";
 import { readStream } from "../../lib/stream-parser";
 import { adApi } from "../../lib/api/index";
 import { AD_LONG_OP_TIMEOUT_MS } from "../../lib/api/v1";
@@ -139,8 +140,9 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       timeoutMs: stream ? "none" : AD_LONG_OP_TIMEOUT_MS,
     });
 
-    // details.body is an object (parsed + redacted body), never a raw string.
-    await ensureApiOk(response, { path, code: "EXECUTION_FAILED", message: (res) => `Execution failed (${res.status})` });
+    // error.message carries the method's own message and failing step; details.body is the
+    // decoded (redacted) body, or, when long, details.bodyFile holds it whole.
+    if (!response.ok) throw await executionError(response, { code: "EXECUTION_FAILED", label: "Execution failed", path, tag: "ad-run" });
 
     const payloadType = Array.isArray(payload) ? "array" : typeof payload;
     // Streaming is strictly opt-in: without --stream the response is always

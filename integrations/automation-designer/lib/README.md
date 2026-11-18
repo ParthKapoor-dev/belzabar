@@ -41,6 +41,7 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `input-collector.ts` | Test input values from prompts, files and `--input k=v`; `resolveInputValues` checks a values object against the method (also used per `--cases` row). |
 | `stream-parser.ts` | `application/stream+json` responses (`run --stream`). |
 | `error-parser.ts` | Java exceptions returned with HTTP 200, and per-step failure status. |
+| `exec-error.ts` | `executionError`: a non-2xx execution answer (`run`, `test`) → CliError whose message is the status, failing step and the method's own message; JSON text in the body decoded; a body over 16 KB saved whole under `~/.wi-impl/logs/errors/` (`details.bodyFile`). |
 | `base64.ts` | `encodeBase64`, `decodeBase64Strict` (plain text is never mis-decoded). |
 
 ## Contracts
