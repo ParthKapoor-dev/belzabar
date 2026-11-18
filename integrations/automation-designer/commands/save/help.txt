@@ -24,6 +24,14 @@ Arguments:
                               `as` name) and keeps every other output; use
                               "replaceOutputs":[…] (same format) to make the
                               step's outputs exactly that list, or removeOutputs.
+                              set.service "Svc/method" points a service step
+                              at another method (e.g. a renamed callee): the
+                              step keeps its id, condition, exit, loop and
+                              account; inputs/outputs whose key the new callee
+                              has are kept (rebound to its contract), the rest
+                              are dropped and listed in applied. Re-map in the
+                              same set (inputs, outputs). Not for custom code,
+                              nor between db_service and another service.
                             {"op":"set-input"|"set-variable"|"set-output", "key":K,
                              type?, required?, description?, default?}   (upsert)
                             {"op":"remove-input"|"remove-variable"|"remove-output", "key":K}

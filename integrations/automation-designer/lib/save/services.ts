@@ -30,7 +30,8 @@ export function servicesOfOps(live: V2MethodResponse, ops: unknown): string[] {
     if (op.op === "update-step" && typeof op.step === "number" && isObj(op.set)) {
       const s = steps[op.step - 1];
       const svc = s ? stepService(s) : null;
-      if (svc && ["inputs", "sql", "account", "outputs"].some((k) => k in (op.set as object))) out.push(svc);
+      if (typeof op.set.service === "string") out.push(op.set.service.trim()); // a new target: its contract binds every field
+      else if (svc && ["inputs", "sql", "account", "outputs"].some((k) => k in (op.set as object))) out.push(svc);
     }
   }
   return out;

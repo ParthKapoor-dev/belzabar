@@ -25,12 +25,14 @@ import {
   expandCompactStep,
   expandField,
   mergeField,
+  splitService,
   Problems,
   STEP_SET_KEYS,
   type FieldKind,
   type ServiceCatalog,
 } from "./compact";
 import { isObj, type Obj } from "@belzabar/core";
+import type { ContractInput } from "../validate/online";
 
 export const OP_NAMES = [
   "add-step",
@@ -200,20 +202,21 @@ export function applyStructuralOps(
       if (removed.has(s)) return p.bad(`${where}.step`, `step ${s} is removed by another op`);
       if (!isObj(raw.set)) return p.bad(`${where}.set`, "must be an object of compact step fields");
       for (const k of Object.keys(raw.set)) {
-        if (k === "service") p.bad(`${where}.set.service`, "a step's service cannot change; remove-step + add-step instead");
-        else if (k === "codeFile" || k === "sqlFile") p.bad(`${where}.set.${k}`, "was not resolved to its file contents");
-        else if (!STEP_SET_KEYS.has(k)) p.unknown.push(`${where}.set.${k}`);
+        if (k === "codeFile" || k === "sqlFile") p.bad(`${where}.set.${k}`, "was not resolved to its file contents");
+        else if (k !== "service" && !STEP_SET_KEYS.has(k)) p.unknown.push(`${where}.set.${k}`);
       }
       const e = entries.find((x) => x.from === s)!;
+      const retargeted = "service" in raw.set ? retarget(e.step, raw.set.service, catalog, `${where}.set.service`, p, stepKind(e.step, s, ctx.parse)) : [];
       const kind = stepKind(e.step, s, ctx.parse);
-      const changed = applyStepFields(e.step, raw.set, {
+      const { service: _svc, ...rest } = raw.set;
+      const changed = [...retargeted, ...applyStepFields(e.step, rest, {
         kind,
         service: stepService(e.step),
         catalog,
         where: `${where}.set`,
         p,
         isNew: false,
-      });
+      })];
       e.touched = true;
       updatedSet.add(s);
       if (changed.length) res.applied.push(`update-step ${s} (${changed.join(", ")})`);
@@ -265,6 +268,69 @@ export function applyStructuralOps(
   return res;
 }
 
+
+/**
+ * Point an existing service step at another method (`update-step` `set.service`,
+ * e.g. after the callee was renamed). The step keeps its id, condition, exit,
+ * loop and account; every input and output whose key the new callee also has
+ * is kept and rebound to the new contract's uuid, the rest are dropped (each
+ * named in the returned labels). Custom code and SQL steps cannot change kind.
+ */
+function retarget(step: V2Step, given: unknown, catalog: ServiceCatalog, where: string, p: Problems, kind: string): string[] {
+  if (typeof given !== "string" || !splitService(given)) {
+    p.bad(where, 'must be "Service/method"');
+    return [];
+  }
+  const target = splitService(given)!;
+  const from = stepService(step);
+  if (kind === "CUSTOM_CODE" || !from) {
+    p.bad(where, "only a service step can change its target; custom code is not a service call");
+    return [];
+  }
+  if ((splitService(from)!.service === "db_service") !== (target.service === "db_service")) {
+    p.bad(where, "a db_service step and another service's step differ in kind; remove-step + add-step instead");
+    return [];
+  }
+  const name = `${target.service}/${target.method}`;
+  const contract = catalog.contracts.get(name);
+  if (contract === undefined) {
+    p.drop(where, `the contract of ${name} was not loaded`);
+    return [];
+  }
+  if (contract === null) {
+    p.drop(where, `${name} does not resolve to an automation API (404 on save); check with \`wi-impl ad services --search\``);
+    return [];
+  }
+  const changed = [`service ${from} → ${name}`];
+  step.serviceName = target.service;
+  step.methodName = target.method;
+  if (contract.uuid) step.automationAPIId = contract.uuid;
+  const rebind = (inputs: unknown, level: ContractInput[], path: string): unknown[] =>
+    (Array.isArray(inputs) ? inputs : []).filter((n) => {
+      if (!isObj(n)) return true;
+      const c = level.find((x) => x.produces === n.key);
+      if (!c) {
+        changed.push(`-input ${path}${String(n.key)}`);
+        return false;
+      }
+      if (c.uuid) n.uuid = c.uuid;
+      if (Array.isArray(n.properties) && n.properties.length > 0) n.properties = rebind(n.properties, c.automationUserInputs ?? [], `${path}${String(n.key)}.`);
+      return true;
+    });
+  step.inputs = rebind(step.inputs, contract.automationUserInputs ?? [], "") as never;
+  const outs = contract.automationAPIOutputs ?? [];
+  step.outputs = ((step.outputs ?? []) as unknown[]).filter((o) => {
+    if (!isObj(o)) return true;
+    const c = outs.find((x) => x.consumes === o.key);
+    if (!c) {
+      changed.push(`-output ${String(o.fieldCode ?? o.key)}`);
+      return false;
+    }
+    if (c.uuid) o.uuid = c.uuid;
+    return true;
+  }) as never;
+  return changed;
+}
 
 function anchorLabel(op: Obj): string {
   if ("before" in op) return ` before ${String(op.before)}`;

@@ -82,7 +82,7 @@ describe("step placement: positions are the fetched draft's", () => {
       [{ op: "move-step", step: 2, after: 2 }], // relative to itself
       [{ op: "move-step", step: 2, after: 1, before: 3 }],
       [{ op: "update-step", step: 2, set: { description: "x" } }, { op: "remove-step", step: 2 }],
-      [{ op: "update-step", step: 4, set: { service: "Helpers.Legacy/echo" } }],
+      [{ op: "update-step", step: 4, set: { service: 42 } }], // not "Service/method" (a new target is allowed: C17)
       [{ op: "update-step", step: 4, set: { codeFile: "x.js" } }], // unresolved file ref
       ["not an op"],
     ]) {
@@ -479,6 +479,42 @@ describe("dry-run preview (C9)", () => {
     expect(order.slice(0, 4)).toEqual([1, "new#1", "new#2", 2]);
     expect(outputsToMethod(p, order)).toEqual([{ step: "new#1", output: "greet" }]);
     expect(previewChanges(live, p)).toContainEqual({ target: "output greet", path: "outputs[0]", before: undefined, after: { key: "greet", fieldCode: "greet", name: "greet", type: "STRING" } });
+  });
+});
+
+describe("update-step set.service points a step at another method (C17)", () => {
+  // step 7: Helpers.Legacy/object.toString, input `object`, output response → similar_code_not_found_str
+  const renamed = { id: 9, uuid: "new-api-uuid", automationUserInputs: [{ uuid: "new-in-uuid", produces: "object" }], automationAPIOutputs: [{ uuid: "new-out-uuid", consumes: "response" }] };
+  const cat = () => {
+    const c = catalog();
+    c.contracts.set("Helpers.Legacy/object.toStringV2", renamed);
+    c.contracts.set("Helpers.Legacy/echo", require(`${ON}/api-echo.json`));
+    return c;
+  };
+  const retarget = (service: string, extra: Record<string, unknown> = {}) =>
+    planV2Overlay(real(U), { ops: [{ op: "update-step", step: 7, set: { service, ...extra } }] }, { catalog: cat() });
+
+  test("matching inputs / outputs are kept and rebound to the new contract; the step keeps its id and condition", () => {
+    const live = real(U);
+    const p = retarget("Helpers.Legacy/object.toStringV2");
+    const s = p.body.steps![6]!;
+    expect([s.serviceName, s.methodName, s.automationAPIId, s.id]).toEqual(["Helpers.Legacy", "object.toStringV2", "new-api-uuid", live.steps![6]!.id]);
+    expect(s.inputs![0]).toMatchObject({ key: "object", uuid: "new-in-uuid", value: "#{similar_code_not_found}" });
+    expect(s.outputs![0]).toMatchObject({ key: "response", fieldCode: "similar_code_not_found_str", uuid: "new-out-uuid" });
+    expect(s.properties!.entryCondition).toEqual(live.steps![6]!.properties!.entryCondition);
+    expect(p.applied).toEqual(["update-step 7 (service Helpers.Legacy/object.toString → Helpers.Legacy/object.toStringV2)"]);
+  });
+
+  test("keys the new callee lacks are dropped and named; inputs can be re-mapped in the same set", () => {
+    const p = retarget("Helpers.Legacy/echo", { inputs: { Input: "#{similar_code_not_found}" } });
+    const s = p.body.steps![6]!;
+    expect(s.inputs!.map((i) => i.key)).toEqual(["Input"]);
+    expect(p.applied[0]).toBe("update-step 7 (service Helpers.Legacy/object.toString → Helpers.Legacy/echo, -input object, inputs.Input)");
+  });
+
+  test("refused: an unknown target, and custom code", () => {
+    expect(code(() => retarget("Nope.Svc/missing"))).toBe("AD_OVERLAY_NOT_APPLIED");
+    expect(code(() => planV2Overlay(real(U), { ops: [{ op: "update-step", step: 2, set: { service: "Helpers.Legacy/echo" } }] }, { catalog: cat() }))).toBe("AD_OVERLAY_INVALID");
   });
 });
 

@@ -47,6 +47,10 @@ Ops apply in order. Step numbers are **always positions in the fetched draft** (
   `remove-output` delete.
 - In `update-step`, `set.outputs` merges by fieldCode and `set.replaceOutputs` replaces the
   list (listed fieldCodes keep their uuid).
+- `update-step` `set.service` retargets a service step (`retarget`). Inputs and outputs whose
+  key the new contract has are kept and rebound to its uuids; the rest are dropped and listed
+  in `applied`. Custom code cannot be retargeted, and a step cannot move between db_service and
+  another service.
 
 ## Compact step format (`compact.ts`)
 
