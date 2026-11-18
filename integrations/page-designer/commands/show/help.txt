@@ -38,21 +38,35 @@ Flags:
                       initialValueBytes — read it with --var-detail);
                       derived: name, from, sideEffect.
   --http              Show all HTTP service calls. Rows: index, label, callId,
-                      adId, triggers, outputs.
+                      adId, triggers, outputs (variables the success handler
+                      writes), errorOutputs (variables the error handler
+                      writes: where a failed call's error lands).
   --fields <a,b,…>    Pick the --vars / --http row fields (full values):
                       vars   name,type,initialValue,from,spec,filterFn,sideEffect
                       http   index,label,callId,adId,serviceUuid,method,
-                             triggers,outputs,inProgressVar,eventMeta
+                             triggers,outputs,errorOutputs,inProgressVar,
+                             eventMeta
                       `--fields all` = every field.
   --find <text|id|component>
-                      Find layout nodes: an exact id / _elementId, else every
-                      node of an exact component name (exp-form-field, button,
-                      a symbol name), else a case-insensitive text match on
-                      labels, ids and string props. Each match has id,
-                      component, kind, label, path (the key path save accepts:
+                      Search the page. Case-insensitive substring unless noted.
+                      find.matches = layout nodes: an exact id / _elementId,
+                      else every node of an exact component name
+                      (exp-form-field, button, a symbol name), else text in a
+                      node's label, id, string props / field / attrs, loop or
+                      event handler code. Each node match has id, component,
+                      kind, label, path (the key path save accepts:
                       elements.operations key = <path>.props.<prop>), parentId
                       and index (for nodes.insert). Prefer editing by id:
                       {"nodes":{"update":[{"id":"<id>","props":{…}}]}}.
+                      find.code = everything outside the layout: variable
+                      initial values, derived variable code (spec, filterFn,
+                      from) and every field of every HTTP call (callId, label,
+                      url, request body, success/error handlers, triggers,
+                      triggerFilter, transform code, service-call meta). Each
+                      code match has where (variable|derived|http), name,
+                      callId (http), field, line (multi-line values) and the
+                      matching text. find.total counts both lists. Not
+                      searched: styles.
   --components        Show the layout tree, one line per node
                       (`<indent>name#id [sym] [ev]`).
   --tree              Show the full layout tree (one line per node) with node-kind badges

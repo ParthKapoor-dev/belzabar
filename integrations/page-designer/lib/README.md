@@ -18,7 +18,7 @@ Everything the `wi-impl pd` commands share. Other packages may import any module
 | `cache.ts` | Env-scoped page-config cache (`~/.wi-impl/cache/pages/<env>/<id>.json`, core `PAGE_CACHE_DIR`) with stale-while-revalidate; `wi-impl migrate run` evicts its target env's entries |
 | `draft-guard.ts` | Draft/published pairing through `referenceId` |
 | `edit.ts` | Write-pipeline helpers: `resolveWriteTarget`, `fetchFresh`, `fetchPublishedBaseline`, `gateValidation`, `versionDrift`, `requireConfirmation`, `logIntent`, `readJsonFile` |
-| `extract.ts` | Read views over a page: `show` sections, `findNodes`, `adIdsOf`, `childComponentNames` |
+| `extract.ts` | Read views over a page: `show` sections, `findNodes` (layout) and `findInCode` (variables, derived code, HTTP calls), `errorVariables`, `adIdsOf`, `childComponentNames` |
 | `lock.ts` | `withLock` and the manual-lock record (`~/.wi-impl/pd-locks/<env>.json`) |
 | `page-dependencies.ts` | Entity resolution + phrase-key checks for `page-deps` / `translations` |
 | `page-diff.ts` | The one diff engine: `diffPages`, `editSummary`, `differingPaths` |

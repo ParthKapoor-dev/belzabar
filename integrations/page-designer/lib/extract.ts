@@ -28,6 +28,31 @@ export function childComponentNames(page: HydratedPage): string[] {
   return [...out];
 }
 
+// -------- HTTP error handler --------------------------------------------------
+
+/** The variable a handler target names: `{%x%}`, `this.x`, `pageContext.x` → `x`. */
+function targetVariable(target: unknown): string | null {
+  if (typeof target !== "string") return null;
+  const t = target.trim();
+  const tpl = t.match(/^\{%\s*([^%]+?)\s*%\}$/);
+  if (tpl) return tpl[1]!;
+  const ref = t.match(/^(?:this|pageContext)\.([\w$]+)$/);
+  return ref ? ref[1]! : null;
+}
+
+/**
+ * Variables an HTTP call writes when it FAILS: its `handler.error` entries
+ * (a target string, or a `[target, expression]` pair like the success handler).
+ */
+export function errorVariables(call: PageHttpRequest): string[] {
+  const out = new Set<string>();
+  for (const e of call.errorHandler) {
+    const v = targetVariable(Array.isArray(e) ? e[0] : e);
+    if (v) out.add(v);
+  }
+  return [...out];
+}
+
 // -------- `show` views -------------------------------------------------------
 
 interface VariableView {
@@ -147,6 +172,7 @@ function bindingLocations(page: HydratedPage, name: string): string[] {
   if (page.httpRequests.some((c) => c.triggers.includes(name))) out.push("http-trigger");
   if (new RegExp(`\\{%\\s*${escaped}(?:[.[\\s][^%]*)?%\\}`).test(text)) out.push("binding");
   if (page.httpRequests.some((c) => c.successMappings.some((m) => m.variable === name))) out.push("http-handler");
+  if (page.httpRequests.some((c) => errorVariables(c).includes(name))) out.push("http-error-handler");
   if (page.httpRequests.some((c) => c.inProgressVar === name)) out.push("http-inProgress");
   return out;
 }
@@ -260,7 +286,8 @@ function strings(obj: unknown): string[] {
 /**
  * Nodes matching `query`: an exact id / _elementId (that node), else an exact
  * component name (every node of it, case-insensitive), else a case-insensitive
- * substring of the node's label, id, or any string prop / field / attr.
+ * substring of the node's label, id, any string prop / field / attr, its loop,
+ * or its event handler code.
  */
 export function findNodes(page: HydratedPage, query: string): FoundNode[] {
   const q = query.trim();
@@ -294,8 +321,88 @@ export function findNodes(page: HydratedPage, query: string): FoundNode[] {
   return rows
     .filter((r) => {
       const n = r.node;
-      const hay = [r.label ?? "", r.id, ...strings(n.props), ...(n.kind === "FORM_FIELD" ? strings(n.field) : []), ...strings((n.raw as { attrs?: unknown })?.attrs)];
+      const hay = [
+        r.label ?? "",
+        r.id,
+        ...strings(n.props),
+        ...(n.kind === "FORM_FIELD" ? strings(n.field) : []),
+        ...strings((n.raw as { attrs?: unknown })?.attrs),
+        n.loop ?? "",
+        ...deepStrings(n.events),
+      ];
       return hay.some((s) => s.toLowerCase().includes(ql));
     })
     .map((r) => clean({ ...r, match: "text" }));
+}
+
+/** Every string inside a JSON value (object values and array items, recursively). */
+function deepStrings(v: unknown, out: string[] = []): string[] {
+  if (typeof v === "string") out.push(v);
+  else if (Array.isArray(v)) for (const x of v) deepStrings(x, out);
+  else if (v && typeof v === "object") for (const x of Object.values(v)) deepStrings(x, out);
+  return out;
+}
+
+// -------- `show --find`: code and request matches ---------------------------------
+
+export interface CodeMatch {
+  /** variable (initialValue), derived (spec, filterFn, from) or http (any field of the call). */
+  where: "variable" | "derived" | "http";
+  /** Variable name, or the HTTP call's `#index label`. */
+  name: string;
+  /** The HTTP call's callId (http matches). */
+  callId?: string;
+  /** The field that matched (`spec`, `request.body`, `meta.serviceCall.callId`, …). */
+  field: string;
+  /** 1-based line within a multi-line value. */
+  line?: number;
+  /** The matching line, trimmed (cut at 160 chars). */
+  text: string;
+}
+
+/** Leaf strings of a value with their dotted paths (`handler.success[0][1]`). */
+function leaves(v: unknown, path: string, out: Array<{ path: string; value: string }> = []): Array<{ path: string; value: string }> {
+  if (typeof v === "string") out.push({ path, value: v });
+  else if (typeof v === "number" || typeof v === "boolean") out.push({ path, value: String(v) });
+  else if (Array.isArray(v)) v.forEach((x, i) => leaves(x, `${path}[${i}]`, out));
+  else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) leaves(x, path ? `${path}.${k}` : k, out);
+  return out;
+}
+
+/** Matches of `ql` (lower-case) in one value: one per matching line. */
+function matchLines(value: string, ql: string): Array<{ line?: number; text: string }> {
+  if (!value.toLowerCase().includes(ql)) return [];
+  const lines = value.split(/\r?\n/);
+  const cut = (s: string) => (s.length > 160 ? `${s.slice(0, 157)}…` : s);
+  if (lines.length === 1) return [{ text: cut(value.trim()) }];
+  return lines.flatMap((l, i) => (l.toLowerCase().includes(ql) ? [{ line: i + 1, text: cut(l.trim()) }] : []));
+}
+
+/**
+ * The non-layout half of `show --find`: a case-insensitive substring search
+ * of variable initial values, derived variable code (spec, filterFn, from)
+ * and every field of every HTTP call (callId, label, url, request body,
+ * handlers, triggers, transform code, service-call meta).
+ */
+export function findInCode(page: HydratedPage, query: string): CodeMatch[] {
+  const ql = query.trim().toLowerCase();
+  if (!ql) return [];
+  const out: CodeMatch[] = [];
+  const push = (base: Omit<CodeMatch, "field" | "line" | "text">, field: string, value: string) => {
+    for (const m of matchLines(value, ql)) out.push({ ...base, field, ...m });
+  };
+  for (const v of page.variables) {
+    if (v.initialValue === null || v.initialValue === undefined) continue;
+    for (const leaf of leaves(v.initialValue, "initialValue")) push({ where: "variable", name: v.name }, leaf.path, leaf.value);
+  }
+  for (const d of page.derived) {
+    if (d.spec) push({ where: "derived", name: d.name }, "spec", d.spec);
+    if (d.filterFn) push({ where: "derived", name: d.name }, "filterFn", d.filterFn);
+    push({ where: "derived", name: d.name }, "from", d.from.join(", "));
+  }
+  for (const c of page.httpRequests) {
+    const base = { where: "http" as const, name: `#${c.index} ${c.label.trim()}`, ...(c.callId ? { callId: c.callId } : {}) };
+    for (const leaf of leaves(c.raw, "")) push(base, leaf.path, leaf.value);
+  }
+  return out;
 }

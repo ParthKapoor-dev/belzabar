@@ -5,11 +5,14 @@ import {
   adIdsOf,
   childComponentNames,
   componentTree,
+  errorVariables,
+  findInCode,
   findNodes,
   httpDetail,
   httpSummary,
   variablesView,
   varDetail,
+  type CodeMatch,
   type ComponentTreeNode,
   type FoundNode,
   type HttpCallDetail,
@@ -52,10 +55,10 @@ interface ShowArgs {
 // fields explicitly (full values), `--fields all` = every field.
 
 const VAR_FIELDS = ["name", "type", "initialValue", "from", "spec", "filterFn", "sideEffect"] as const;
-const HTTP_FIELDS = ["index", "label", "callId", "adId", "serviceUuid", "method", "triggers", "outputs", "inProgressVar", "eventMeta"] as const;
+const HTTP_FIELDS = ["index", "label", "callId", "adId", "serviceUuid", "method", "triggers", "outputs", "errorOutputs", "inProgressVar", "eventMeta"] as const;
 const DEFAULT_VAR_FIELDS = ["name", "type", "initialValue"];
 const DEFAULT_DERIVED_FIELDS = ["name", "from", "sideEffect"];
-const DEFAULT_HTTP_FIELDS = ["index", "label", "callId", "adId", "triggers", "outputs"];
+const DEFAULT_HTTP_FIELDS = ["index", "label", "callId", "adId", "triggers", "outputs", "errorOutputs"];
 /** A default-mode initialValue longer than this (JSON) is replaced by `initialValueBytes`. */
 const SHORT_VALUE = 80;
 
@@ -107,6 +110,8 @@ function httpRows(page: HydratedPage, fields: string[] | null): Row[] {
       method: c.method,
       triggers: c.triggers,
       outputs: c.successMappings.map((m) => m.variable),
+      // The variables its error handler writes (the error body lands there).
+      errorOutputs: errorVariables(c),
       inProgressVar: c.inProgressVar,
       eventMeta: c.hasEventMeta ? (c.eventMetaEmpty ? "empty" : "set") : null,
     };
@@ -198,8 +203,8 @@ interface VarGraphEntry {
   name: string;
   kind: "user-defined" | "derived";
   type: string | null;
-  // Who writes this variable
-  writtenByHttp: Array<{ callLabel: string; callIndex: number }>;
+  // Who writes this variable (`on`: the success, error or in-progress handler)
+  writtenByHttp: Array<{ callLabel: string; callIndex: number; on: "success" | "error" | "inProgress" }>;
   writtenByEvents: Array<{ nodeId: string; event: string }>;
   // Who reads this variable
   readByBindings: Array<{ nodeId: string; tagName: string; prop: string }>;
@@ -247,11 +252,15 @@ function buildVarGraph(page: HydratedPage): VarGraphEntry[] {
   for (const call of page.httpRequests) {
     for (const m of call.successMappings) {
       const entry = varByName.get(m.variable);
-      if (entry) entry.writtenByHttp.push({ callLabel: call.label, callIndex: call.index });
+      if (entry) entry.writtenByHttp.push({ callLabel: call.label, callIndex: call.index, on: "success" });
+    }
+    for (const v of errorVariables(call)) {
+      const entry = varByName.get(v);
+      if (entry) entry.writtenByHttp.push({ callLabel: call.label, callIndex: call.index, on: "error" });
     }
     if (call.inProgressVar) {
       const entry = varByName.get(call.inProgressVar);
-      if (entry) entry.writtenByHttp.push({ callLabel: call.label, callIndex: call.index });
+      if (entry) entry.writtenByHttp.push({ callLabel: call.label, callIndex: call.index, on: "inProgress" });
     }
     for (const trig of call.triggers) {
       const entry = varByName.get(trig);
@@ -333,7 +342,8 @@ interface ShowData {
   http?: Row[];
   /** One line per node: `<indent>name#id [sym] [ev]`. */
   components?: string[];
-  find?: { query: string; total: number; matches: FoundNode[] };
+  /** total = matches (layout nodes) + code (variables, derived code, HTTP calls). */
+  find?: { query: string; total: number; matches: FoundNode[]; code: CodeMatch[] };
   varDetail?: VarDetail | null;
   httpDetail?: HttpCallDetail | null;
   recursive?: {
@@ -532,7 +542,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
     if (includeComponents) data.components = componentLines(componentTree(page.layout));
     if (flags.find) {
       const matches = findNodes(page, flags.find);
-      data.find = { query: flags.find, total: matches.length, matches };
+      const code = findInCode(page, flags.find);
+      data.find = { query: flags.find, total: matches.length + code.length, matches, code };
     }
 
     if (flags.varDetail) {
@@ -724,14 +735,22 @@ const command: CommandModule<ShowArgs, ShowData> = {
 
     // --find
     if (data.find) {
-      ui.section(`Nodes matching "${data.find.query}" (${data.find.total})`);
-      if (data.find.total === 0) ui.text("None.");
+      ui.section(`Nodes matching "${data.find.query}" (${data.find.matches.length})`);
+      if (data.find.matches.length === 0) ui.text("None.");
       else {
         ui.table(
           ["Id", "Component", "Label", "Path"],
           data.find.matches.map((m) => [m.id, m.component, m.label ?? "", m.path]),
         );
         ui.info('Edit by id: {"nodes":{"update":[{"id":"<id>","props":{…}}]}} in `wi-impl pd save --overlay`.');
+      }
+      ui.section(`Variables, derived code and HTTP calls matching "${data.find.query}" (${data.find.code.length})`);
+      if (data.find.code.length === 0) ui.text("None.");
+      else {
+        ui.table(
+          ["Where", "Name", "Field", "Line", "Text"],
+          data.find.code.map((m) => [m.where, m.name, m.field, m.line ?? "", truncate(m.text, 80)]),
+        );
       }
     }
 
@@ -871,7 +890,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
           if (v.type) parts.push(`(${v.type})`);
           ui.text(parts.join(" "));
           if (v.writtenByHttp.length > 0) {
-            ui.text(`  ← written by HTTP: ${v.writtenByHttp.map((w) => `#${w.callIndex} ${w.callLabel}`).join(", ")}`);
+            ui.text(`  ← written by HTTP: ${v.writtenByHttp.map((w) => `#${w.callIndex} ${w.callLabel}${w.on === "success" ? "" : ` (${w.on})`}`).join(", ")}`);
           }
           if (v.writtenByEvents.length > 0) {
             ui.text(`  ← written by events: ${v.writtenByEvents.map((w) => `${w.nodeId}.${w.event}`).join(", ")}`);
