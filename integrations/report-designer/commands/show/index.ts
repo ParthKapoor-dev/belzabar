@@ -17,6 +17,8 @@ interface ShowData extends ReportMeta {
   isFilterRequired: boolean;
   summaryPosition: unknown;
   filterConfig: number | null;
+  /** The export file name pattern; null = the server names the file after the title. */
+  downloadFilename: string | null;
   /** Settings not read (they need --exact, which runs the report). */
   unread: string[];
 }
@@ -50,6 +52,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
       isFilterRequired: r.spec.isFilterRequired ?? false,
       summaryPosition: r.spec.summaryPosition ?? null,
       filterConfig: r.spec.filterConfig ?? null,
+      downloadFilename: r.spec.downloadFilename ?? null,
       unread: r.unread,
     });
   },
@@ -63,6 +66,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
     ui.kv("Datasource", ds.method ? `${ds.category ?? "?"} / ${ds.method} (chain ${ds.id ?? "?"})` : ds.id ? `chain ${ds.id} (not listed)` : "(none)");
     ui.kv("Updated", d.updatedAt ?? "-");
     ui.kv("Last run", d.lastExecutedAt ?? "-");
+    if (d.downloadFilename) ui.kv("Download name", d.downloadFilename);
     ui.section(`Columns (${d.columns.length})`);
     ui.table(
       ["Name", "Label", "Type", "Filterable", "Shown"],

@@ -9,7 +9,7 @@ import archive from "../../commands/archive/index";
 import create from "../../commands/create/index";
 import save from "../../commands/save/index";
 import { RD_BACKUP_DIR } from "../../lib/write";
-import { CATEGORY, COLUMNS, DS, fakeRdEnv, FILTER, RD_ENV, REPORT_ID } from "./fake-rd";
+import { CATEGORY, COLUMNS, DOWNLOAD_NAME, DS, fakeRdEnv, FILTER, RD_ENV, REPORT_ID, storedReport } from "./fake-rd";
 
 const rd = fakeRdEnv();
 afterEach(() => rd.restore());
@@ -96,6 +96,30 @@ describe("rd save", () => {
     expect(backup.dataSource).toEqual({ category: CATEGORY.name, method: DS.label });
     // the title did not change: no PATCH
     expect(writes("PATCH")).toHaveLength(0);
+  });
+
+  test("a spec without downloadFilename (older export) keeps it and every other stored key (G5)", async () => {
+    rd.reports.set(REPORT_ID, storedReport({ configuration: { ...storedReport().configuration, someNewerSetting: { on: true } } }));
+    rd.install();
+    const r = await runCommand(save, [REPORT_ID, "--spec", specFile({ filters: [] }), "--yes"], { env: RD_ENV });
+    expect(r.envelope?.error ?? null).toBeNull();
+    expect(r.envelope?.data).toMatchObject({ changes: ["filters: 1 → 0 (changed)"], mismatches: [] });
+    expect(sentConfig()).toMatchObject({ filters: [], downloadFilename: DOWNLOAD_NAME, reportStatus: "ACTIVE", someNewerSetting: { on: true } });
+    // the backup restores it too
+    const backup = JSON.parse(readFileSync((r.envelope?.data as { backup: string }).backup, "utf8"));
+    expect(backup.downloadFilename).toBe(DOWNLOAD_NAME);
+  });
+
+  test("the spec sets downloadFilename; \"\" removes it; both are listed and verified", async () => {
+    rd.install();
+    const set = await runCommand(save, [REPORT_ID, "--spec", specFile({ downloadFilename: "Daily_<timestamp:yyyy>" }), "--dry-run"], { env: RD_ENV });
+    expect((set.envelope?.data as { changes: string[] }).changes).toEqual([`downloadFilename: "${DOWNLOAD_NAME}" → "Daily_<timestamp:yyyy>"`]);
+    const saved = await runCommand(save, [REPORT_ID, "--spec", specFile({ downloadFilename: "Daily_<timestamp:yyyy>" }), "--yes"], { env: RD_ENV });
+    expect(saved.envelope?.data).toMatchObject({ mismatches: [] });
+    expect(sentConfig().downloadFilename).toBe("Daily_<timestamp:yyyy>");
+    const cleared = await runCommand(save, [REPORT_ID, "--spec", specFile({ downloadFilename: "" }), "--yes"], { env: RD_ENV });
+    expect(cleared.envelope?.data).toMatchObject({ changes: ['downloadFilename: "Daily_<timestamp:yyyy>" → ""'], mismatches: [] });
+    expect("downloadFilename" in sentConfig()).toBe(false);
   });
 
   test("a spec equal to the saved definition writes nothing", async () => {

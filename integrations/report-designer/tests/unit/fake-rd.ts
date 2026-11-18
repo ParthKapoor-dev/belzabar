@@ -43,6 +43,8 @@ export const FILTER: Obj = {
   isOperandInValid: false,
 };
 
+export const DOWNLOAD_NAME = "Orders_<timestamp:MM_dd_yyyy_HH_mm_ss>";
+
 export interface StoredReport {
   id: string;
   title: string;
@@ -69,6 +71,9 @@ export function storedReport(over: Partial<StoredReport> = {}): StoredReport {
       summaryPosition: { label: "Show summaries at bottom", value: "bottom" },
       filterConfig: 1,
       isFilterRequired: false,
+      // Stored but not in older specs: a save must keep them (merge onto the stored configuration).
+      reportStatus: "ACTIVE",
+      downloadFilename: DOWNLOAD_NAME,
     },
     ...over,
   };
@@ -122,6 +127,7 @@ function v3(r: StoredReport): Obj {
     contributors: { view: { contributors: [], groupContributors: [] }, edit: { contributors: [], groupContributors: [] } },
     createdBy: 2,
     filterRequired: c.isFilterRequired,
+    ...(c.downloadFilename !== undefined ? { downloadFilename: c.downloadFilename } : {}),
   };
 }
 

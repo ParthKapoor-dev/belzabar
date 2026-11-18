@@ -1,7 +1,7 @@
 Usage: wi-impl rd show <id> [flags]
 
 Show a report's saved definition: title, status, datasource (AD category and
-published method), columns, saved filters and summaries. Read-only: the report
+published method), download file name, columns, saved filters and summaries. Read-only: the report
 is not run, so its data and execution time are untouched.
 
 Arguments:

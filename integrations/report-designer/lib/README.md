@@ -36,7 +36,8 @@ method) and `DELETE …/{id}`.
 
 ## Reading a report (`definition.ts`)
 
-`readReport` combines the v3 definition and the BASIC record, so it never runs anything. The
+`readReport` combines the v3 definition (it includes `downloadFilename` when set) and the BASIC
+record, so it never runs anything. The
 two display settings only the DETAILED read returns (`summaryPosition`, `filterConfig`) are
 listed in `unread` unless `exact` is set. The method name falls back to the record's
 `dataSourceName` when the chain id is no longer listed (e.g. the method was unpublished).
@@ -61,8 +62,10 @@ right before writing and compares it with the fingerprint taken before the confi
 `specChanges`. Display settings are compared only when both sides know them.
 
 `planSave` reads the report with `exact` (it runs once) unless it is a dry run, so the display
-settings can be compared and kept when the spec leaves them out; `applySave` backs up, writes
-and verifies. `rd save` and `rd copy --into` share them. The memoised datasource lists are
+settings can be compared and kept when the spec leaves them out, and so `toConfiguration` can
+merge the spec onto the stored configuration (`SavedReport.configuration`): keys the spec does
+not name survive a save. `downloadFilename` left out of the spec is taken from the current
+report; `applySave` backs up, writes and verifies. `rd save` and `rd copy --into` share them. The memoised datasource lists are
 per env (keyed by env name), so `rd copy` resolves on the source and the target separately.
 
 ## Extending

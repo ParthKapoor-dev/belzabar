@@ -7,7 +7,7 @@
 
 import { mkdirSync } from "fs";
 import { join } from "path";
-import { BELZ_CONFIG_DIR, CliError, Config, writeSecureJson } from "@belzabar/core";
+import { BELZ_CONFIG_DIR, CliError, Config, writeSecureJson, type Obj } from "@belzabar/core";
 import { createEmptyReport, getReportDefinition, patchReport, saveConfiguration } from "./api";
 import { logIntent } from "./confirm";
 import type { ResolvedDataSource } from "./datasource";
@@ -26,20 +26,24 @@ function backupReport(report: SavedReport): string {
   return path;
 }
 
-/** Fill `summaryPosition` / `filterConfig` the spec leaves out from `current` (when it knows them). */
-function withDisplayFrom(spec: ReportSpec, current: ReportSpec | null): ReportSpec {
-  if (!current) return spec;
+/**
+ * Fill what the spec leaves out from `current`: `downloadFilename` always (the
+ * side-effect-free read has it), `summaryPosition` / `filterConfig` only when
+ * `exact` (only the executing read knows them).
+ */
+function withCurrent(spec: ReportSpec, current: ReportSpec, exact: boolean): ReportSpec {
   return {
     ...spec,
-    ...(spec.summaryPosition === undefined && current.summaryPosition !== undefined ? { summaryPosition: current.summaryPosition } : {}),
-    ...(spec.filterConfig === undefined && current.filterConfig !== undefined ? { filterConfig: current.filterConfig } : {}),
+    ...(spec.downloadFilename === undefined && current.downloadFilename !== undefined ? { downloadFilename: current.downloadFilename } : {}),
+    ...(exact && spec.summaryPosition === undefined && current.summaryPosition !== undefined ? { summaryPosition: current.summaryPosition } : {}),
+    ...(exact && spec.filterConfig === undefined && current.filterConfig !== undefined ? { filterConfig: current.filterConfig } : {}),
   };
 }
 
 /** The parsed definition as a stable string, for "did it change since we read it?". */
 async function definitionFingerprint(id: string): Promise<string> {
   const d = await getReportDefinition(id);
-  return JSON.stringify([d.name, d.description, d.columns, d.filters, d.summaries, d.dataSourceId, d.dataSourceCategoryUuid, d.filterRequired]);
+  return JSON.stringify([d.name, d.description, d.columns, d.filters, d.summaries, d.dataSourceId, d.dataSourceCategoryUuid, d.filterRequired, d.downloadFilename]);
 }
 
 interface WriteResult {
@@ -50,15 +54,16 @@ interface WriteResult {
 }
 
 /**
- * Put `spec` on report `id` (title/description PATCH, then the configuration PUT)
- * and read it back. `expectFingerprint` (from before the confirmation) makes a
- * concurrent change a RD_CONFLICT instead of a silent overwrite.
+ * Put `spec` on report `id` (title/description PATCH, then the configuration PUT,
+ * merged onto `base`, the stored configuration) and read it back.
+ * `expectFingerprint` (from before the confirmation) makes a concurrent change a
+ * RD_CONFLICT instead of a silent overwrite.
  */
 async function writeSpec(
   id: string,
   spec: ReportSpec,
   ds: ResolvedDataSource,
-  opts: { expectFingerprint?: string; titleChanged: boolean },
+  opts: { expectFingerprint?: string; titleChanged: boolean; base?: Obj | null },
 ): Promise<WriteResult> {
   if (opts.expectFingerprint !== undefined && (await definitionFingerprint(id)) !== opts.expectFingerprint) {
     throw new CliError(`Report ${id} changed on the server since wi-impl read it; nothing was written. Re-run to review the new state.`, {
@@ -71,7 +76,7 @@ async function writeSpec(
     await patchReport(id, { title: spec.title, description: spec.description ?? "" });
   }
   logIntent("PUT", `/rest/api/v2/reports/${id}`, { id, dataSourceId: ds.id });
-  await saveConfiguration(id, toConfiguration(spec, ds));
+  await saveConfiguration(id, toConfiguration(spec, ds, opts.base ?? null));
 
   const back = await readReport(id);
   const mismatches = specChanges({ ...spec, summaryPosition: undefined, filterConfig: undefined }, back.spec);
@@ -100,7 +105,7 @@ export async function createReport(spec: ReportSpec, ds: ResolvedDataSource): Pr
 
 interface SavePlan {
   current: SavedReport;
-  /** The spec to write: `wanted` with the display settings it leaves out taken from `current`. */
+  /** The spec to write: `wanted` with the display settings and download name it leaves out taken from `current`. */
   spec: ReportSpec;
   changes: string[];
   /** Taken before any confirmation; `applySave` refuses when the report moved since. */
@@ -110,15 +115,16 @@ interface SavePlan {
 }
 
 /**
- * Read report `id` and diff it with `wanted`. The two display settings are only
- * in the executing read, so a real save runs the report once: to compare them,
- * and to keep the current ones when the spec leaves them out. A dry run does
- * neither.
+ * Read report `id` and diff it with `wanted`. The two display settings and the
+ * full stored configuration are only in the executing read, so a real save runs
+ * the report once: to compare them, to keep the current ones when the spec
+ * leaves them out, and to merge the spec onto everything else stored. A dry run
+ * does none of that.
  */
 export async function planSave(id: string, wanted: ReportSpec, opts: { dryRun: boolean }): Promise<SavePlan> {
   const current = await readReport(id, { exact: !opts.dryRun });
   const fingerprint = await definitionFingerprint(id);
-  const spec = withDisplayFrom(wanted, opts.dryRun ? null : current.spec);
+  const spec = withCurrent(wanted, current.spec, !opts.dryRun);
   return {
     current,
     spec,
@@ -133,6 +139,6 @@ export async function applySave(id: string, plan: SavePlan, ds: ResolvedDataSour
   const backup = backupReport(plan.current);
   const before = plan.current.spec;
   const titleChanged = plan.spec.title !== before.title || (plan.spec.description ?? "") !== (before.description ?? "");
-  const result = await writeSpec(id, plan.spec, ds, { expectFingerprint: plan.fingerprint, titleChanged });
+  const result = await writeSpec(id, plan.spec, ds, { expectFingerprint: plan.fingerprint, titleChanged, base: plan.current.configuration });
   return { backup, mismatches: result.mismatches };
 }

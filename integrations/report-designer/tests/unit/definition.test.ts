@@ -75,6 +75,14 @@ describe("toConfiguration", () => {
     expect(cfg.columns).toEqual(COLUMNS);
     expect(cfg.filters).toEqual([FILTER]);
   });
+  test("merges onto the stored configuration: unnamed keys survive, named ones are replaced", () => {
+    const base = { name: "Old", description: "gone", reportStatus: "ACTIVE", downloadFilename: "Old_<timestamp:yyyy>", filterConfig: 2, extra: [1] };
+    const kept = JSON.parse(toConfiguration(spec, { id: "501", categoryUuid: null }, base));
+    expect(kept).toMatchObject({ name: "Orders by day", reportStatus: "ACTIVE", downloadFilename: "Old_<timestamp:yyyy>", filterConfig: 0, extra: [1] });
+    expect(kept.description).toBeUndefined();
+    expect(JSON.parse(toConfiguration({ ...spec, downloadFilename: "New" }, { id: "501", categoryUuid: null }, base)).downloadFilename).toBe("New");
+    expect("downloadFilename" in JSON.parse(toConfiguration({ ...spec, downloadFilename: "" }, { id: "501", categoryUuid: null }, base))).toBe(false);
+  });
   test("keeps exact display settings when the spec has them", () => {
     const cfg = JSON.parse(toConfiguration({ ...spec, filterConfig: 2, summaryPosition: { value: "bottom" } }, { id: "1", categoryUuid: "c" }));
     expect(cfg.filterConfig).toBe(2);

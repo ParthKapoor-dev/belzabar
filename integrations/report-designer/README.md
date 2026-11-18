@@ -77,7 +77,8 @@ history and the last write wins, `rd save`:
 2. writes the current definition to `~/.wi-impl/rd/backups/<env>/<id>-<time>.json` (a spec: save
    it back to undo);
 3. refuses with `RD_CONFLICT` if the definition changed since it was read;
-4. PATCHes the title / description when they change, PUTs the configuration, reads it back
+4. PATCHes the title / description when they change, PUTs the configuration merged onto the
+   stored one (settings the spec does not name, such as `reportStatus`, are kept), reads it back
    and compares (`RD_VERIFY_FAILED`, with the differences in `data.mismatches`).
 
 `rd create` POSTs an empty report and then runs the same PATCH / PUT / read-back; if a step
@@ -98,9 +99,13 @@ before the rename say `"belz.rd.report/1"` and are read the same):
   "columns": [ { "id": "111", "name": "Day", "label": "Day", "type": "DATE", "filterable": true, "reportable": true } ],
   "filters": [ { "columnId": "111", "operandId": 6, "value": "2026-01-01", "applied": true } ],
   "summaries": [],
-  "isFilterRequired": false
+  "isFilterRequired": false,
+  "downloadFilename": "Orders_<timestamp:MM_dd_yyyy_HH_mm_ss>"
 }
 ```
+
+`downloadFilename` is the export file name pattern. A spec without it keeps the report's own on
+save (specs exported before it was added); `""` removes it.
 
 Columns, filters and summaries are kept exactly as Report Designer stores them (a column's
 `id` is a hash of its name, the same on every env). `parseSpec` lists every problem at once

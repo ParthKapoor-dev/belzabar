@@ -9,7 +9,7 @@ import exportCmd from "../../commands/export/index";
 import find from "../../commands/find/index";
 import show from "../../commands/show/index";
 import uses from "../../commands/uses/index";
-import { CATEGORY, COLUMNS, DS, fakeRdEnv, RD_ENV, REPORT_ID, storedReport } from "./fake-rd";
+import { CATEGORY, COLUMNS, DOWNLOAD_NAME, DS, fakeRdEnv, RD_ENV, REPORT_ID, storedReport } from "./fake-rd";
 
 const rd = fakeRdEnv();
 afterEach(() => rd.restore());
@@ -27,6 +27,7 @@ describe("rd show", () => {
     expect(d.columns.map((c: any) => c.name)).toEqual(["Day", "Total"]);
     expect(d.filters).toEqual([{ column: "Day", operator: "equal to", value: "2026-01-01", applied: true }]);
     expect(d.unread).toEqual(["summaryPosition", "filterConfig"]);
+    expect(d.downloadFilename).toBe(DOWNLOAD_NAME);
     expect(rd.reports.get(REPORT_ID)!.executions).toBe(0);
     expect(rd.ff.requests.some((q) => q.url.includes("DETAILED"))).toBe(false);
   });
@@ -71,6 +72,9 @@ describe("rd export", () => {
     const spec = JSON.parse(readFileSync(out, "utf8"));
     expect(spec).toMatchObject({ format: "wi-impl.rd.report/1", title: "Orders by day", description: "Daily totals", dataSource: { category: CATEGORY.name, method: DS.label } });
     expect(spec.columns).toEqual(COLUMNS);
+    // read without running the report (v3 has it)
+    expect(spec.downloadFilename).toBe(DOWNLOAD_NAME);
+    expect(rd.reports.get(REPORT_ID)!.executions).toBe(0);
     expect(JSON.stringify(spec)).not.toContain(CATEGORY.uuid);
     expect(spec.dataSourceId).toBeUndefined();
   });

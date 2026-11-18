@@ -5,7 +5,8 @@
 // (`configuration`). The side-effect-free reads (v3 definition + BASIC record)
 // return everything except two display settings, `summaryPosition` and
 // `filterConfig`; only the DETAILED read has them, and it runs the report, so
-// it is opt-in (`exact`).
+// it is opt-in (`exact`). A save merges the spec onto that stored configuration,
+// so keys the spec does not name (`reportStatus`, anything newer) survive.
 
 import { CliError, isObj, readJsonInput, str, type Obj } from "@belzabar/core";
 import { getReportBasic, getReportDefinition, getReportDetailed } from "./api";
@@ -30,6 +31,8 @@ export interface ReportSpec {
   summaryPosition?: Obj;
   filterConfig?: number;
   isFilterRequired?: boolean;
+  /** The export file name pattern (`<name>_<timestamp:…>`); left out = keep the report's own, "" = none. */
+  downloadFilename?: string;
 }
 
 export interface ReportMeta {
@@ -50,6 +53,8 @@ export interface SavedReport {
   dataSource: { id: string | null; categoryUuid: string | null; category: string | null; method: string | null };
   /** Spec fields that could not be read without running the report (empty with `exact`). */
   unread: string[];
+  /** The stored configuration as read (`exact` only): the base a save merges onto. */
+  configuration: Obj | null;
 }
 
 const arr = (v: unknown): Obj[] => (Array.isArray(v) ? v.filter(isObj) : []);
@@ -84,6 +89,7 @@ export async function readReport(id: string, opts: { exact?: boolean } = {}): Pr
     ...(opts.exact && isObj(saved.summaryPosition) ? { summaryPosition: saved.summaryPosition } : {}),
     ...(opts.exact && numOrNull(saved.filterConfig) !== null ? { filterConfig: saved.filterConfig as number } : {}),
     isFilterRequired: Boolean(saved.isFilterRequired ?? saved.filterRequired ?? false),
+    ...(typeof saved.downloadFilename === "string" && saved.downloadFilename ? { downloadFilename: saved.downloadFilename } : {}),
   };
 
   return {
@@ -100,6 +106,7 @@ export async function readReport(id: string, opts: { exact?: boolean } = {}): Pr
     spec,
     dataSource: { id: dsId, categoryUuid: dsCat, category: names.category, method },
     unread: opts.exact ? [] : [...EXACT_ONLY_FIELDS],
+    configuration: opts.exact ? saved : null,
   };
 }
 
@@ -116,9 +123,18 @@ function parseConfiguration(value: unknown, id: string): Obj {
   throw new CliError(`Report ${id} has no readable configuration.`, { code: "RD_BAD_RESPONSE", details: { id } });
 }
 
-/** The configuration string the server stores, for `spec` on the env `ds` was resolved on. */
-export function toConfiguration(spec: ReportSpec, ds: { id: string; categoryUuid: string | null }): string {
+/**
+ * The configuration string the server stores, for `spec` on the env `ds` was
+ * resolved on. `base` (the report's stored configuration) keeps every key the
+ * spec does not name; `downloadFilename` is kept unless the spec sets it.
+ */
+export function toConfiguration(spec: ReportSpec, ds: { id: string; categoryUuid: string | null }, base: Obj | null = null): string {
+  const cfg: Obj = { ...(base ?? {}) };
+  delete cfg.description;
+  delete cfg.dataSourceCategoryUuid;
+  if (spec.downloadFilename !== undefined) delete cfg.downloadFilename;
   return JSON.stringify({
+    ...cfg,
     name: spec.title,
     ...(spec.description ? { description: spec.description } : {}),
     dataSourceId: ds.id,
@@ -131,6 +147,7 @@ export function toConfiguration(spec: ReportSpec, ds: { id: string; categoryUuid
     summaryPosition: spec.summaryPosition ?? DEFAULT_SUMMARY_POSITION,
     filterConfig: spec.filterConfig ?? 0,
     isFilterRequired: spec.isFilterRequired ?? false,
+    ...(spec.downloadFilename ? { downloadFilename: spec.downloadFilename } : {}),
   });
 }
 
@@ -142,7 +159,7 @@ export function savedConfiguration(report: SavedReport): string {
       details: { id: report.meta.id },
     });
   }
-  return toConfiguration(report.spec, { id: report.dataSource.id, categoryUuid: report.dataSource.categoryUuid });
+  return toConfiguration(report.spec, { id: report.dataSource.id, categoryUuid: report.dataSource.categoryUuid }, report.configuration);
 }
 
 /** Validate a spec file's content. Every problem is listed in RD_SPEC_INVALID. */
@@ -175,6 +192,7 @@ export function parseSpec(value: unknown): ReportSpec {
   if (value.filterConfig !== undefined && ![0, 1, 2].includes(value.filterConfig as number)) problems.push("filterConfig: must be 0, 1 or 2");
   if (value.summaryPosition !== undefined && !isObj(value.summaryPosition)) problems.push("summaryPosition: must be an object");
   if (value.isFilterRequired !== undefined && typeof value.isFilterRequired !== "boolean") problems.push("isFilterRequired: must be true or false");
+  if (value.downloadFilename !== undefined && typeof value.downloadFilename !== "string") problems.push('downloadFilename: must be a string ("" for none)');
   if (problems.length > 0) {
     throw new CliError(`Invalid report spec: ${problems.join("; ")}.`, { code: "RD_SPEC_INVALID", details: { problems } });
   }
@@ -190,6 +208,7 @@ export function parseSpec(value: unknown): ReportSpec {
     ...(isObj(value.summaryPosition) ? { summaryPosition: value.summaryPosition } : {}),
     ...(typeof value.filterConfig === "number" ? { filterConfig: value.filterConfig } : {}),
     ...(typeof value.isFilterRequired === "boolean" ? { isFilterRequired: value.isFilterRequired } : {}),
+    ...(typeof value.downloadFilename === "string" ? { downloadFilename: value.downloadFilename.trim() } : {}),
   };
 }
 
@@ -213,6 +232,9 @@ export function specChanges(before: ReportSpec, after: ReportSpec): string[] {
   if (JSON.stringify(before.filters) !== JSON.stringify(after.filters)) out.push(`filters: ${before.filters.length} → ${after.filters.length} (changed)`);
   if (JSON.stringify(before.summaries) !== JSON.stringify(after.summaries)) out.push(`summaries: ${before.summaries.length} → ${after.summaries.length} (changed)`);
   if ((before.isFilterRequired ?? false) !== (after.isFilterRequired ?? false)) out.push("isFilterRequired changed");
+  if ((before.downloadFilename ?? "") !== (after.downloadFilename ?? "")) {
+    out.push(`downloadFilename: ${JSON.stringify(before.downloadFilename ?? "")} → ${JSON.stringify(after.downloadFilename ?? "")}`);
+  }
   // Display settings: only when both sides know them (a non-exact read does not).
   for (const k of ["summaryPosition", "filterConfig"] as const) {
     if (before[k] !== undefined && after[k] !== undefined && JSON.stringify(before[k]) !== JSON.stringify(after[k])) out.push(`${k} changed`);
