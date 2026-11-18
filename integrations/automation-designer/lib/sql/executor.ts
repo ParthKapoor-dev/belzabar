@@ -1,12 +1,12 @@
 import { CliError, Config, loadConfigFileRaw, readJsonOrNull, trustedBelzEnv } from "@belzabar/core";
 import { assertNoParameterMarkers, assertReadOnlySql, assertWriteSql } from "./read-only";
-import { ErrorParser } from "../error-parser";
 import { fetchRawMethod, testMethodMultipart } from "../api/v1";
 import { describeTestFailure } from "../payload-builder";
 import type { V1RawMethodResponse } from "../types/v1-wire";
 import { fetchSqlDatabases, fetchSqlSelectOperation, fetchSqlUpdateOperation, fetchSqlInsertOperation, fetchSqlModifyOperation, fetchExecutableCategory } from "./api";
 import { buildSqlReadPayload } from "./payload";
 import {
+  describeSqlFailure,
   insertOutputIds,
   parseMultipleKeysError,
   parseSqlRunResult,
@@ -193,21 +193,7 @@ export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<
   const parsed = parseSqlUpdateResult(executionResult);
 
   if (!parsed.success) {
-    const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
-    const parsedError = failedService?.executionStatus
-      ? ErrorParser.parse(failedService.executionStatus)
-      : null;
-
-    throw new CliError("SQL update execution failed.", {
-      code: "SQL_UPDATE_QUERY_FAILED",
-      details: {
-        database: options.database,
-        query: options.query,
-        statusCode: parsed.statusCode,
-        error: parsedError,
-        executionStatus: executionResult?.executionStatus,
-      },
-    });
+    throw sqlQueryFailed("SQL update execution failed.", "SQL_UPDATE_QUERY_FAILED", executionResult, options, parsed.statusCode);
   }
 
   const data: ExecuteSqlUpdateResult = {
@@ -292,6 +278,30 @@ export function withGeneratedIdOutput(payload: V1RawMethodResponse, operation: u
   return { ...payload, jsonDefinition: JSON.stringify(inner) };
 }
 
+/**
+ * The error for a statement the database refused: its own message in
+ * `error.message` (the label alone when there is none), and the query once.
+ */
+function sqlQueryFailed(
+  label: string,
+  code: string,
+  executionResult: unknown,
+  options: ExecuteSqlReadOptions,
+  statusCode: number | undefined,
+): CliError {
+  const failure = describeSqlFailure(executionResult, options.query);
+  return new CliError(failure.message ? `${label.replace(/\.$/, "")}: ${failure.message}` : label, {
+    code,
+    details: {
+      database: options.database,
+      query: options.query,
+      statusCode,
+      error: failure.error,
+      executionStatus: failure.executionStatus,
+    },
+  });
+}
+
 function failedServiceMessage(executionResult: any): string {
   const failed = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
   const st = failed?.executionStatus ?? executionResult?.executionStatus ?? {};
@@ -343,21 +353,7 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
   }
 
   if (!parsed.success) {
-    const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
-    const parsedError = failedService?.executionStatus
-      ? ErrorParser.parse(failedService.executionStatus)
-      : null;
-
-    throw new CliError("SQL insert execution failed.", {
-      code: "SQL_INSERT_QUERY_FAILED",
-      details: {
-        database: options.database,
-        query: options.query,
-        statusCode: parsed.statusCode,
-        error: parsedError,
-        executionStatus: executionResult?.executionStatus,
-      },
-    });
+    throw sqlQueryFailed("SQL insert execution failed.", "SQL_INSERT_QUERY_FAILED", executionResult, options, parsed.statusCode);
   }
 
   const data: ExecuteSqlInsertResult = {
@@ -434,21 +430,7 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
   const parsed = parseSqlModifyResult(executionResult);
 
   if (!parsed.success) {
-    const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
-    const parsedError = failedService?.executionStatus
-      ? ErrorParser.parse(failedService.executionStatus)
-      : null;
-
-    throw new CliError("SQL schema modification failed.", {
-      code: "SQL_MODIFY_QUERY_FAILED",
-      details: {
-        database: options.database,
-        query: options.query,
-        statusCode: parsed.statusCode,
-        error: parsedError,
-        executionStatus: executionResult?.executionStatus,
-      },
-    });
+    throw sqlQueryFailed("SQL schema modification failed.", "SQL_MODIFY_QUERY_FAILED", executionResult, options, parsed.statusCode);
   }
 
   const data: ExecuteSqlModifyResult = {
@@ -494,21 +476,7 @@ export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promi
   const parsed = parseSqlRunResult(executionResult);
 
   if (!parsed.success) {
-    const failedService = (executionResult?.services || []).find((svc: any) => svc?.executionStatus?.failed);
-    const parsedError = failedService?.executionStatus
-      ? ErrorParser.parse(failedService.executionStatus)
-      : null;
-
-    throw new CliError("SQL query execution failed.", {
-      code: "SQL_QUERY_FAILED",
-      details: {
-        database: options.database,
-        query: options.query,
-        statusCode: parsed.statusCode,
-        error: parsedError,
-        executionStatus: executionResult?.executionStatus,
-      },
-    });
+    throw sqlQueryFailed("SQL query execution failed.", "SQL_QUERY_FAILED", executionResult, options, parsed.statusCode);
   }
 
   const data: ExecuteSqlReadResult = {

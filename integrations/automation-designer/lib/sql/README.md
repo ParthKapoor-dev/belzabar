@@ -11,7 +11,7 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
 | `payload.ts` | `buildSqlReadPayload`: the template chain with the DB account and query written into its SQL slot. |
 | `read-only.ts` | The client-side gates: read (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`), write (`checkWriteSql`, `assertWriteSql`) and bind parameters (`findParameterMarker`, `assertNoParameterMarkers`). |
 | `selector.ts` | `normalizeSqlDatabases`, `resolveSqlDatabase` (by id or nickname, then the default). |
-| `result.ts` | Parsers for the test response of each mode (rows, rows affected, generated keys, errors). |
+| `result.ts` | Parsers for the test response of each mode (rows, rows affected, generated keys), and `describeSqlFailure` / `sqlDatabaseMessage` for a failed statement. |
 | `types.ts` | The wire and result types above. |
 | `tui/` | The interactive session (`sql tui`). See [`tui/README.md`](tui/README.md). |
 
@@ -35,6 +35,11 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
   of `arr[1:6]`) fails there. `findParameterMarker` mimics that parser and
   `assertNoParameterMarkers` refuses them first (`SQL_PARAMETER_MARKER`); `??` (reaches the DB
   as `?`), `arr[1: 6]` and `arr[1\:6]` pass (proven live).
+- **Failures.** A statement the database refuses (`SQL_QUERY_FAILED`, `SQL_UPDATE_QUERY_FAILED`,
+  …) has the database's own message in `error.message` (exception class names, Spring's
+  `SQL [<query>]:` wrapper and `ERROR:` removed). The raw response repeats that message, with
+  the query inside, 4–5 times; the envelope carries the query once (`details.query`; other
+  copies become `<query>`) and `details.executionStatus` without the message copies.
 - `insert … RETURNING <col>` returns the generated values.
 - Without a PUBLIC chain category on the env the posted chain cannot run:
   `SQL_NO_EXECUTABLE_CATEGORY`.

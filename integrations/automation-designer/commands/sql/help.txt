@@ -27,6 +27,11 @@ Subcommands:
   tui                 Start an interactive SQL session (can run writes: --env required).
                       Human use only: with --llm it fails SQL_TUI_UNSUPPORTED_IN_LLM.
 
+Errors:
+  A statement the database refuses fails with SQL_QUERY_FAILED (run/explain) or
+  SQL_<UPDATE|INSERT|MODIFY>_QUERY_FAILED; error.message holds the database's own
+  message (e.g. 'column "x" does not exist (position 8)'), details.query the query.
+
 Bind parameters:
   The server reads a lone '?' and a ':name' (also the ':6' of arr[1:6]) in
   run/explain/update/insert as bind parameters and fails, so they are refused

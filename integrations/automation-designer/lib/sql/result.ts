@@ -1,3 +1,4 @@
+import { ErrorParser, type ParsedError } from "../error-parser";
 import type { SqlRunParseResult, SqlUpdateRunParseResult, SqlInsertRunParseResult, SqlModifyRunParseResult } from "./types";
 
 function parseMaybeJsonArray(value: unknown): unknown[] | null {
@@ -223,3 +224,71 @@ export function parseSqlModifyResult(result: any): SqlModifyRunParseResult {
     success: executionStatus.failed === false,
   };
 }
+
+/**
+ * The database's own message from a failed-statement text: the Java exception
+ * class names, Spring's `SQL [<comment> <query>]: ` / `bad SQL grammar [<query>];`
+ * wrappers and Postgres's `ERROR: ` prefix removed, `Position: N` kept as
+ * `(position N)`. Live, a bad column gives
+ * `org.postgresql.util.PSQLException: ERROR: column "x" does not exist\n  Position: 8`.
+ */
+export function sqlDatabaseMessage(raw: string): string {
+  let msg = raw.trim();
+  const nested = msg.lastIndexOf("nested exception is ");
+  if (nested >= 0) msg = msg.slice(nested + "nested exception is ".length);
+  const wrapped = /(?:bad SQL grammar \[|SQL \[)/.exec(msg);
+  if (wrapped) {
+    const end = Math.max(msg.lastIndexOf("]: "), msg.lastIndexOf("]; "));
+    if (end > wrapped.index) msg = msg.slice(end + 3);
+  }
+  for (;;) {
+    const next = msg.replace(/^(?:[a-z_$][\w$]*\.)+[A-Z][\w$]*(?:Exception|Error)\s*:\s*/, "").replace(/^ERROR:\s+/, "");
+    if (next === msg) break;
+    msg = next;
+  }
+  return msg.replace(/\s*\n\s*Position:\s*(\d+)\s*$/, " (position $1)").trim();
+}
+
+/** The errors the server raises for a `?` / `:name` it read as a bind parameter. */
+const PARAMETER_ERROR = /given \d+ parameters but expected \d+|No value (?:supplied|registered) for (?:the SQL parameter|key)/i;
+
+interface SqlFailure {
+  /** For `error.message`: the database's own message. */
+  message: string;
+  /** For `error.details.error`: the query is not repeated in it (it is `details.query`). */
+  error: ParsedError | null;
+  /** The execution status without its copies of the message. */
+  executionStatus: Record<string, unknown> | undefined;
+}
+
+/**
+ * Describe a failed SQL test execution once. The raw response repeats the
+ * failing message, with the whole query inside it, in the step status, its
+ * `errorMessage`, the top status and its `errorMessage`: a typo in a 37 KB
+ * query made a ~180 KB envelope. Here the message appears once, with any copy
+ * of the query replaced by `<query>`.
+ */
+export function describeSqlFailure(executionResult: any, query: string): SqlFailure {
+  const services = Array.isArray(executionResult?.services) ? executionResult.services : [];
+  const failedService = services.find((svc: any) => svc?.executionStatus?.failed);
+  const status =
+    failedService?.executionStatus ??
+    executionResult?.executionStatus?.failingStepsStatuses?.[0] ??
+    executionResult?.executionStatus;
+  const parsed = status?.message ? ErrorParser.parse(status) : null;
+  const q = query.trim();
+  const error = parsed ? { ...parsed, detail: q ? parsed.detail.split(q).join("<query>") : parsed.detail } : null;
+  let message = error ? (error.type === "DB" ? sqlDatabaseMessage(error.detail) : error.summary) : "";
+  if (PARAMETER_ERROR.test(message)) {
+    message += " (the server read a '?' or ':name' as a bind parameter: write '??' for the jsonb operators and arr[1: 6] for slices)";
+  }
+  const st = executionResult?.executionStatus;
+  const executionStatus =
+    st && typeof st === "object"
+      ? Object.fromEntries(Object.entries(st).filter(([k]) => !REPEATED_STATUS_KEYS.has(k)))
+      : undefined;
+  return { message, error, executionStatus };
+}
+
+/** Status keys that only repeat the failing message (and the query in it), or the call list. */
+const REPEATED_STATUS_KEYS = new Set(["message", "errorMessage", "failingStepsStatuses", "calls"]);
