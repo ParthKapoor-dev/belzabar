@@ -32,6 +32,32 @@ describe("child-info --shape", () => {
     expect(all.hiddenInputs).toBeUndefined();
   });
 
+  test("D35: only contract flags hide an input, and the dropped ones are named with their flag", async () => {
+    const contract = {
+      automationUserInputs: [
+        { produces: "referenceIdsList", dataType: "JSON", showOnUi: true, showOnSDUi: true, hideInput: false, id: 11, orderIndex: 11 },
+        { produces: "internalFlag", dataType: "BOOLEAN", showOnUi: false, id: 12, orderIndex: 12 },
+        { produces: "legacy", dataType: "STRING", showOnUi: true, hideInput: true, id: 13, orderIndex: 13 },
+        // a normal input re-added last with a new id: listed
+        { produces: "referenceIdsQuery", dataType: "STRING", showOnUi: true, showOnSDUi: true, hideInput: false, id: 52667, orderIndex: 16 },
+        { produces: "noFlags", dataType: "STRING", id: 52668 },
+      ],
+      automationAPIOutputs: [
+        { consumes: "jobId", dataType: "STRING" },
+        { consumes: "old", dataType: "STRING", active: false },
+      ],
+    };
+    const shape = apiShape(contract, "Svc", "m");
+    expect(shape.inputs).toEqual(["referenceIdsList JSON", "referenceIdsQuery STRING", "noFlags STRING"]);
+    expect(shape.hiddenInputs).toBe(2);
+    expect(shape.hiddenInputNames).toEqual(["internalFlag (showOnUi:false)", "legacy (hideInput:true)"]);
+    expect(shape.outputs).toEqual(["jobId STRING"]);
+    expect(shape.hiddenOutputNames).toEqual(["old (active:false)"]);
+    const all = apiShape(contract, "Svc", "m", { all: true });
+    expect(all.inputs).toHaveLength(5);
+    expect(all.hiddenInputNames).toBeUndefined();
+  });
+
   test("helper / user method: nested produces paths are not doubled; method uuid exposed", async () => {
     const helper = apiShape(await Bun.file(`${CI}/Helpers.JSON__fetchKeyValue.json`).json(), "Helpers.JSON", "fetchKeyValue");
     expect(helper.inputs).toEqual(["body OBJECT required", "body.json JSON required (inputJSON)", "body.path STRING"]);

@@ -27,8 +27,12 @@ export interface ApiShape {
   deprecated?: boolean;
   /** One line per input: `path TYPE [required] [BASE_64] [enum a|b] [default=x] (label)`. */
   inputs: string[];
-  /** Inputs hidden in the UI (showOnUi:false), omitted unless `all`. */
+  /** Inputs hidden in the UI (showOnUi:false / hideInput:true), omitted unless `all`. */
   hiddenInputs?: number;
+  /** Each omitted input and the contract flag(s) that hid it, e.g. `x (showOnUi:false)` (D35). */
+  hiddenInputNames?: string[];
+  /** Each omitted output and why, e.g. `y (active:false)`. */
+  hiddenOutputNames?: string[];
   /** One line per output: `key TYPE (displayName)`. */
   outputs: string[];
   /** `id nickname (scope)` — only when the service has accounts / needs one. */
@@ -69,16 +73,17 @@ function inputLine(path: string, i: Obj): string {
 export function apiShape(contract: unknown, service: string, method: string, opts: { all?: boolean } = {}): ApiShape {
   const c = isObj(contract) ? contract : {};
   const inputs: string[] = [];
-  let hidden = 0;
+  const hiddenNames: string[] = [];
   const walk = (list: unknown, prefix: string) => {
     for (const raw of Array.isArray(list) ? list : []) {
       if (!isObj(raw)) continue;
       const produces = str(raw.produces) ?? str(raw.label) ?? "?";
       // Some contracts already carry the full dotted path (`array.aElement`).
       const path = prefix && !produces.startsWith(`${prefix}.`) ? `${prefix}.${produces}` : produces;
-      const visible = raw.showOnUi !== false && raw.hideInput !== true;
-      if (!visible && !opts.all) {
-        hidden++;
+      // Only the contract's own flags hide an input; name them when one is dropped.
+      const flags = [raw.showOnUi === false ? "showOnUi:false" : "", raw.hideInput === true ? "hideInput:true" : ""].filter(Boolean);
+      if (flags.length && !opts.all) {
+        hiddenNames.push(`${path} (${flags.join(", ")})`);
         continue;
       }
       inputs.push(inputLine(path, raw));
@@ -87,9 +92,15 @@ export function apiShape(contract: unknown, service: string, method: string, opt
   };
   walk(c.automationUserInputs, "");
 
+  const hiddenOutputs: string[] = [];
   const outputs = (Array.isArray(c.automationAPIOutputs) ? c.automationAPIOutputs : [])
     .filter(isObj)
-    .filter((o) => opts.all || (o.showOnUi !== false && o.active !== false))
+    .filter((o) => {
+      const flags = [o.showOnUi === false ? "showOnUi:false" : "", o.active === false ? "active:false" : ""].filter(Boolean);
+      if (!flags.length || opts.all) return true;
+      hiddenOutputs.push(`${str(o.consumes) ?? "?"} (${flags.join(", ")})`);
+      return false;
+    })
     .map((o) => {
       const key = str(o.consumes) ?? "?";
       const name = str(o.displayName);
@@ -110,7 +121,11 @@ export function apiShape(contract: unknown, service: string, method: string, opt
     inputs,
     outputs,
   };
-  if (hidden) shape.hiddenInputs = hidden;
+  if (hiddenNames.length) {
+    shape.hiddenInputs = hiddenNames.length;
+    shape.hiddenInputNames = hiddenNames;
+  }
+  if (hiddenOutputs.length) shape.hiddenOutputNames = hiddenOutputs;
   return shape;
 }
 

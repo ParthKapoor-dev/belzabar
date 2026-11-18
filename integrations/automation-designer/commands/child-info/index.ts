@@ -65,9 +65,10 @@ const command: CommandModule<ChildInfoArgs, ChildInfoPayload> = {
       if (data.methodUuid) ui.kv("Method uuid", data.methodUuid);
       ui.section("Inputs (V2 step keys)");
       ui.text(data.inputs.length ? data.inputs.map((l) => `  ${l}`).join("\n") : "  (none)");
-      if (data.hiddenInputs) ui.text(`  (+${data.hiddenInputs} hidden inputs — --all to list)`);
+      if (data.hiddenInputs) ui.text(`  (+${data.hiddenInputs} hidden by the contract: ${(data.hiddenInputNames ?? []).join("; ")} — --all to list)`);
       ui.section("Outputs");
       ui.text(data.outputs.length ? data.outputs.map((l) => `  ${l}`).join("\n") : "  (none)");
+      if (data.hiddenOutputNames) ui.text(`  (hidden by the contract: ${data.hiddenOutputNames.join("; ")} — --all to list)`);
       if (data.accounts) {
         ui.section("Accounts");
         ui.text(data.accounts.map((l) => `  ${l}`).join("\n"));

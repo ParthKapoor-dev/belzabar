@@ -19,6 +19,11 @@ Flags:
                         numeric API id, and the service's auth accounts as
                         `id nickname (scope)` (never field values).
   --all                 With --shape: also list inputs/outputs hidden in the UI.
+                        Without it, only inputs whose contract flags hide
+                        them (showOnUi:false, hideInput:true) are left out,
+                        each named with its flag in `hiddenInputNames`
+                        (count in `hiddenInputs`); dropped outputs
+                        (showOnUi:false, active:false) in `hiddenOutputNames`.
   --help, -h            Show this help message.
 
 Global Flags:
