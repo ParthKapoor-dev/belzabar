@@ -37,6 +37,7 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `trace.ts` | `traceMethod`: where a method's dev history has reached on every env (`ad trace`, `release matrix`). |
 | `test-run.ts` | `runInlineTest`: one `/chain/test` run → status and HTTP status, trace (times in ms; a loop step's ns time corrected; async steps `dispatched (async)`), per-step outputs and rendered SQL, server timing, outputs map; `diffOutputs` for `--compare-published`. |
 | `payload-builder.ts` | `buildV1TestPayload`: the one `/chain/test` body (`test`, `run-suites`, test-case runs). |
+| `publish-report.ts` | What `ad publish` changes besides the body: the published test suite (`readSuitesBeforePublish` / `reportPublishedSuite`: the server replaces it with a copy of the draft's, new ids, published-only cases deleted) and the caller steps that pass an input the draft dropped (`removedInputs`, `findRemovedInputCallers`, through `callers.ts`). |
 | `test-suite.ts` | `loadTestSuite`: one summary of a method's suite for `test-cases` and `test-case list` (`full`: each case's inputs and assertions too). |
 | `input-collector.ts` | Test input values from prompts, files and `--input k=v`; `resolveInputValues` checks a values object against the method (also used per `--cases` row). |
 | `stream-parser.ts` | `application/stream+json` responses (`run --stream`). |

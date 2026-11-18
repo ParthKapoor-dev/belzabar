@@ -77,10 +77,12 @@ This runs before the verify, so an `AD_SAVE_VERIFY_FAILED` carries `details.test
 
 - **publish** (`commands/publish`) validates the draft; errors the published copy already
   has still block unless `--allow-preexisting` (a pre-existing warning never blocks). After confirmation it re-reads the draft
-  (`assertDraftUnchanged`), publishes, then records the change note (three attempts; a POST
-  that may have reached the server is never re-sent, the changelog is checked instead). A
-  failed note reports `noteRecorded: false` and the publish stands. Both chains' compiled
-  caches are evicted.
+  (`assertDraftUnchanged`), publishes, then records the change note on the draft and the
+  published chain (three attempts; a POST that may have reached the server is never re-sent,
+  the changelog is checked instead) and reads both back. A missing note reports
+  `noteRecorded: false` and the publish stands. Both chains' compiled caches are evicted.
+  What the publish does to the test suite and to callers of removed inputs is read by
+  [`../publish-report.ts`](../publish-report.ts).
 - **create** builds the body with `buildCreateBody` and POSTs `/chain/v2` without a uuid. It
   refuses core categories (`Helpers.*`, `Database.*`, `Cache.*`, `Email.*`, `Expertly.*`,
   Web Socket, system services: `AD_CATEGORY_PROTECTED`) and taken names

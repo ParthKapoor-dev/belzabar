@@ -6,6 +6,7 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { CliError } from "@belzabar/core";
 import {
   respond,
   runCommand,
@@ -41,10 +42,17 @@ interface Opts {
   /** V2 GET bodies of the draft / published side (default: the history fixture). */
   draftV2?: () => unknown;
   publishedV2?: () => unknown;
+  /** Test suite GET bodies (default: no suite). */
+  suites?: Record<string, () => unknown>;
 }
 
+/** Change notes per chain id, as the server keeps them (one changelog per chain). */
+let chains: Record<string, any[]> = {};
+const chainOf = (req: RecordedRequest) => req.url.match(/changelog\/(\d+)$/)![1]!;
+
 function wire(opts: Opts = {}) {
-  const notes: any[] = [];
+  chains = {};
+  const notesOf = (req: RecordedRequest) => (chains[chainOf(req)] ??= []);
   let published = !!opts.published;
   ad.install([
     {
@@ -80,13 +88,19 @@ function wire(opts: Opts = {}) {
       method: "POST",
       url: /\/chain\/changelog\/\d+$/,
       response: (req: RecordedRequest) => {
+        const notes = notesOf(req);
         if (opts.changelogPost) return opts.changelogPost(req, notes);
         const b = req.json();
-        notes.push({ id: `note-${notes.length + 1}`, comment: b.comment, changelogType: b.changelogType, createdAt: b.createdAt });
+        notes.push({ id: `note-${chainOf(req)}-${notes.length + 1}`, comment: b.comment, changelogType: b.changelogType, createdAt: b.createdAt });
         return { success: true };
       },
     },
-    { method: "GET", url: /\/chain\/changelog\/\d+$/, response: () => notes },
+    { method: "GET", url: /\/chain\/changelog\/\d+$/, response: (req: RecordedRequest) => notesOf(req) },
+    {
+      method: "GET",
+      url: /\/chain\/testsuite\/service-chain\/[0-9a-f]{32}$/,
+      response: (req: RecordedRequest) => opts.suites?.[req.url.slice(-32)]?.() ?? respond({ status: 200, text: "" }),
+    },
   ]);
   return ad.ff;
 }
@@ -97,15 +111,20 @@ const posts = (f: FakeFetch) =>
     .map((r) => r.url.replace("https://t-dev.test", ""));
 
 describe("ad publish", () => {
-  test("publishes first, then records the note; reports noteRecorded + the note id from the list", async () => {
+  test("publishes first, then records the note on the draft AND published chains; reports both ids read back", async () => {
     const f = wire();
     const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
     expect(r.envelope?.ok).toBe(true);
-    expect(posts(f)).toEqual([`/rest/api/automation/chain/${DRAFT}/publish`, `/rest/api/automation/chain/changelog/${DRAFT_ID}`]);
+    expect(posts(f)).toEqual([
+      `/rest/api/automation/chain/${DRAFT}/publish`,
+      `/rest/api/automation/chain/changelog/${DRAFT_ID}`,
+      `/rest/api/automation/chain/changelog/${PUB_ID}`,
+    ]);
     const d = r.envelope?.data as any;
     expect(d.noteRecorded).toBe(true);
-    expect(d.changelogId).toBe("note-1");
+    expect(d.changelogId).toBe(`note-${DRAFT_ID}-1`);
     expect(d.noteChainId).toBe(DRAFT_ID);
+    expect([d.publishedChangelogId, d.publishedNoteChainId]).toEqual([`note-${PUB_ID}-1`, PUB_ID]);
     expect(d.publishedUuid).toBe(PUB);
     expect(d.inSync).toBe(true); // same logic on both sides
   });
@@ -148,7 +167,7 @@ describe("ad publish", () => {
       },
     });
     const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
-    expect(posts(f).filter((p) => p.includes("changelog"))).toHaveLength(1);
+    expect(posts(f).filter((p) => p.endsWith(`changelog/${DRAFT_ID}`))).toHaveLength(1);
     const d = r.envelope?.data as any;
     expect([d.noteRecorded, d.changelogId]).toEqual([true, "note-x"]);
   });
@@ -156,7 +175,7 @@ describe("ad publish", () => {
   test("NEW-1: may-have-completed and not in the list -> one POST, noteRecorded:false, says check before re-recording", async () => {
     const f = wire({ changelogPost: () => { throw new Error("ECONNRESET"); } });
     const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
-    expect(posts(f).filter((p) => p.includes("changelog"))).toHaveLength(1);
+    expect(posts(f).filter((p) => p.includes("changelog"))).toHaveLength(1); // nothing on the published chain either
     const d = r.envelope?.data as any;
     expect(d.noteRecorded).toBe(false);
     expect(d.noteError).toContain("may have been recorded");
@@ -166,6 +185,52 @@ describe("ad publish", () => {
     wire({ changelogPost: () => ({ success: false }) });
     const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
     expect((r.envelope?.data as any).noteRecorded).toBe(false);
+  });
+
+  test("C6: a POST that answers success but never lands is not reported as recorded", async () => {
+    wire({ changelogPost: () => ({ success: true }) }); // accepted, nothing stored
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect([d.noteRecorded, d.changelogId, d.publishedChangelogId]).toEqual([false, null, null]);
+    expect(d.noteError).toContain("not in the draft's changelog when read back");
+    expect(JSON.stringify(r.envelope?.meta)).toContain("NOT recorded");
+  });
+
+  test("C6: on the draft but not on the published copy -> noteRecorded:false, says when it appears there", async () => {
+    wire({
+      changelogPost: (req, notes) => {
+        if (chainOf(req) === String(PUB_ID)) return respond({ status: 503, text: "unavailable" });
+        const b = req.json();
+        notes.push({ id: "on-draft", comment: b.comment, changelogType: b.changelogType, createdAt: b.createdAt });
+        return { success: true };
+      },
+    });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
+    const d = r.envelope?.data as any;
+    expect([d.noteRecorded, d.changelogId, d.publishedChangelogId]).toEqual([false, "on-draft", null]);
+    expect(d.noteError).toContain("not in the published copy's changelog");
+    // already on the draft: the warning does not tell you to record it again
+    expect(JSON.stringify(r.envelope?.meta)).not.toContain("Record it with");
+  });
+
+  test("C6: a note already on the published chain is not posted twice", async () => {
+    const f = wire();
+    chains[String(PUB_ID)] = [{ id: "copied", comment: "ship it", changelogType: "USER_GENERATED", createdAt: Date.now() + 1000 }];
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
+    expect(posts(f).filter((p) => p.endsWith(`changelog/${PUB_ID}`))).toHaveLength(0);
+    expect((r.envelope?.data as any).publishedChangelogId).toBe("copied");
+    expect(chains[String(PUB_ID)]).toHaveLength(1);
+  });
+
+  test("C26: stage lines on stderr; a client timeout on the publish says to check `ad state` before retrying", async () => {
+    wire({ publish: () => { throw new CliError("Request timed out after 300s.", { code: "HTTP_TIMEOUT", details: { mayHaveCompleted: true, retryable: false } }); } });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("HTTP_TIMEOUT");
+    expect(r.envelope?.error?.message).toContain(`wi-impl ad state ${DRAFT} --env t-dev`);
+    expect((r.envelope?.error?.details as any).mayHaveCompleted).toBe(true);
+    expect(r.stderr).toContain("[wi-impl ad publish] validating draft");
+    expect(r.stderr).toContain("[wi-impl ad publish] publishing");
   });
 
   test("unknown uuid -> METHOD_NOT_FOUND before any write", async () => {
@@ -191,7 +256,7 @@ describe("ad changelog --note", () => {
     const d = r.envelope?.data as any;
     expect(d.chainId).toBe(DRAFT_ID);
     expect(d.chainUuid).toBe(DRAFT);
-    expect(d.addedId).toBe("note-1");
+    expect(d.addedId).toBe(`note-${DRAFT_ID}-1`);
     expect(posts(f)).toEqual([`/rest/api/automation/chain/changelog/${DRAFT_ID}`]);
   });
 
@@ -288,6 +353,77 @@ describe("ad publish — validator gate + compiled cache", () => {
     const order = f.requests.map((q) => q.url);
     expect(order.findIndex((u) => u.endsWith("/publish"))).toBeLessThan(order.findIndex((u) => u.endsWith("cache/invalidate")));
     expect((r.envelope!.data as any).compiledCache.ok).toBe(true);
+  });
+});
+
+describe("ad publish — what else the publish changes (A9, C5)", () => {
+  const suite = (id: string, cases: Array<[string, string]>) => () => ({
+    id,
+    testCases: cases.map(([cid, name]) => ({ id: cid, name, description: "", inputs: [], assertions: [], active: true })),
+  });
+
+  test("A9: warns before about published-only cases and reports old/new suite and case ids, copied and removed", async () => {
+    let suitePublished = false;
+    const pubBefore = suite("suite-pub-1", [["p1", "m.a.1"], ["p2", "m.b.1"], ["p3", "m.only-published.1"]]);
+    const pubAfter = suite("suite-pub-2", [["n1", "m.a.1"], ["n2", "m.b.1"]]);
+    const f = wire({
+      published: true,
+      publish: () => ((suitePublished = true), { referenceId: PUB }),
+      suites: {
+        [DRAFT]: suite("suite-draft", [["d1", "m.a.1"], ["d2", "m.b.1"]]),
+        [PUB]: () => (suitePublished ? pubAfter() : pubBefore()),
+      },
+    });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.testSuite).toEqual({
+      previousSuiteId: "suite-pub-1",
+      suiteId: "suite-pub-2",
+      copied: [
+        { name: "m.a.1", draftId: "d1", publishedId: "n1", previousId: "p1" },
+        { name: "m.b.1", draftId: "d2", publishedId: "n2", previousId: "p2" },
+      ],
+      removed: [{ id: "p3", name: "m.only-published.1" }],
+    });
+    const warnings = ((r.envelope?.meta?.warnings ?? []) as string[]).join("\n");
+    expect(warnings).toContain("published suite has 1 test case(s) the draft does not: m.only-published.1 (p3)");
+    expect(warnings).toContain(`wi-impl ad test-case export ${PUB}`);
+    expect(warnings).toContain("deleted 1 published test case(s)");
+    // the warning comes BEFORE the publish: the suites are read first
+    const order = f.requests.map((q) => q.url);
+    expect(order.findIndex((u) => u.includes(`service-chain/${PUB}`))).toBeLessThan(order.findIndex((u) => u.endsWith("/publish")));
+  });
+
+  test("A9: first publish (no published copy) reports the copied cases; an unreadable suite never fails the publish", async () => {
+    wire({ suites: { [DRAFT]: suite("suite-draft", [["d1", "m.a.1"]]), [PUB]: suite("suite-pub", [["n1", "m.a.1"]]) } });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect((r.envelope?.data as any).testSuite).toEqual({ previousSuiteId: null, suiteId: "suite-pub", copied: [{ name: "m.a.1", draftId: "d1", publishedId: "n1" }], removed: [] });
+    wire({ suites: { [DRAFT]: () => respond({ status: 500, text: "boom" }) } });
+    const bad = await runCommand(publishCommand, [DRAFT, "--note", "n2", "--yes"], { env: "t-dev" });
+    expect(bad.envelope?.ok).toBe(true);
+    expect((bad.envelope?.data as any).testSuite).toBeNull();
+    expect((bad.envelope?.data as any).testSuiteError).toBeTruthy();
+  });
+
+  test("C5: an input the draft dropped is reported before the publish; the callers lookup never blocks", async () => {
+    const withInputs = (keys: string[]) => {
+      const b = draftV2();
+      const proto = b.inputs[0] ?? { type: "TEXT", required: false, properties: [], encodingType: "NONE" };
+      b.inputs = keys.map((key) => ({ ...proto, key, name: key }));
+      return b;
+    };
+    wire({
+      published: true,
+      draftV2: () => withInputs(["epId"]),
+      publishedV2: () => ({ ...withInputs(["epId", "items"]), uuid: PUB, metadata: { ...draftV2().metadata, state: "PUBLISHED", referenceId: DRAFT } }),
+    });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.removedInputs.keys).toEqual(["items"]);
+    expect(Array.isArray(d.removedInputs.callers)).toBe(true); // the lookup (index on this fake server or not) never blocks
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toContain("The draft drops input(s) items");
   });
 });
 

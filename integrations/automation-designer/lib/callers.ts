@@ -232,7 +232,7 @@ export async function readBody<T>(uuid: string, extract: (body: unknown) => T, f
   return extract(body);
 }
 
-function stepCallsTarget(step: StepRef, t: CallTarget): boolean {
+export function stepCallsTarget(step: StepRef, t: CallTarget): boolean {
   if (step.api && t.apiUuids.includes(step.api)) return true;
   if (step.apiId !== undefined && t.apiIds.includes(step.apiId)) return true;
   return !!step.service && !!step.method && step.service === t.category && step.method === t.name;

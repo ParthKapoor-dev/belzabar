@@ -1,4 +1,4 @@
-import { CliError, type CommandModule, defineArgs, isObj, ok } from "@belzabar/core";
+import { CliError, type CommandModule, defineArgs, isObj, ok, printErr } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
 import { resolveMethodRef } from "@belzabar/core/platform";
@@ -11,6 +11,15 @@ import { runValidationGate, type ValidationSummary } from "../../lib/save/valida
 import { invalidateCompiledCache, type CompiledCacheResult } from "../../lib/save/compiled-cache";
 import { forgetContract } from "../../lib/validate/online";
 import { assertDraftUnchanged } from "../../lib/save/pipeline";
+import {
+  findRemovedInputCallers,
+  readSuitesBeforePublish,
+  removedInputs,
+  reportPublishedSuite,
+  type PublishedSuiteReport,
+  type RemovedInputCallers,
+  type SuitesBeforePublish,
+} from "../../lib/publish-report";
 
 interface PublishArgs {
   uuid: string;
@@ -31,13 +40,34 @@ interface PublishData {
   inSync: boolean | null;
   switchedFromPublished: boolean;
   changeNote: string;
-  /** Whether the change note was recorded (it is posted AFTER the publish, with retries). */
+  /**
+   * The change note was read back from the changelog of the draft AND of the
+   * published copy (it is posted AFTER the publish, with retries, on both:
+   * the server copies the draft's changelog onto the published copy only
+   * when publishing).
+   */
   noteRecorded: boolean;
-  /** Changelog entry id of the note (null when not recorded or not identifiable). */
+  /** Changelog entry id of the note on the draft chain (null when not found). */
   changelogId: string | null;
-  /** Chain the note was recorded on (the draft's numeric id; the server mirrors it to the published chain). */
+  /** The draft's numeric chain id. */
   noteChainId: number;
+  /** Changelog entry id of the note on the published chain (null when not found). */
+  publishedChangelogId: string | null;
+  /** The published copy's numeric chain id (null when unreadable). */
+  publishedNoteChainId: number | null;
   noteError?: string;
+  /**
+   * What the publish did to the published test suite: the server replaces it
+   * with a copy of the draft's (new suite and case ids; published-only cases
+   * deleted). null when a suite could not be read (`testSuiteError`).
+   */
+  testSuite: PublishedSuiteReport | null;
+  testSuiteError?: string;
+  /**
+   * Inputs the published copy had that the draft dropped. The platform removes
+   * them from every caller step, drafts and published copies alike.
+   */
+  removedInputs?: { keys: string[]; callers: RemovedInputCallers["callers"]; unscannedMethods?: number; error?: string };
   /** Validator result on the draft (pre-existing = also found in the current published copy). */
   validation: ValidationSummary;
   /** Compiled-chain cache eviction for the draft and published uuids (both routes). */
@@ -75,6 +105,9 @@ const command: CommandModule<PublishArgs, PublishData> = {
     };
   },
   async execute({ uuid, yes, note, noValidate, strict, dryRunCompile, allowPreexisting }, context) {
+    // A publish can take minutes: say what it is doing on stderr (also with --llm).
+    const stage = (msg: string) => printErr(`[wi-impl ad publish] ${msg}`);
+    const env = context.env.name;
     const guard = await resolveDraftTarget(resolveMethodRef(uuid), "v1");
     if (!guard.ok) {
       throw new CliError(guard.message, {
@@ -97,6 +130,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
     // ERROR blocks too unless --allow-preexisting; a pre-existing warning
     // never blocks (C7: its rule's catalogue severity may be "error", e.g. CC1
     // JAVA or CC5 NODEJS_LAMBDA are reported as warnings).
+    stage(`validating draft ${draft.uuid}…`);
     const draftBody = await v2.fetchRawMethod(draft.uuid);
     const publishedBody = guard.publishedUuid ? await v2.fetchRawMethod(guard.publishedUuid).catch(() => undefined) : undefined;
     const validation = await runValidationGate(
@@ -104,13 +138,53 @@ const command: CommandModule<PublishArgs, PublishData> = {
       {
         after: draftBody,
         before: publishedBody,
-        env: context.env.name,
+        env,
         action: "publish",
         warn: (msg) => context.warn(msg),
         extraBlocking: (r) =>
           allowPreexisting ? [] : r.warnings.filter((w) => w.preexisting && w.originalSeverity === "error"),
       },
     );
+
+    // C5: inputs the draft dropped are removed from every caller step by the platform.
+    const removedKeys = publishedBody ? removedInputs(draftBody, publishedBody) : [];
+    let removed: PublishData["removedInputs"];
+    if (removedKeys.length) {
+      stage(`finding callers that pass the removed input(s) ${removedKeys.join(", ")}…`);
+      try {
+        const found = await findRemovedInputCallers(draft.uuid, removedKeys);
+        removed = { keys: removedKeys, callers: found.callers, ...(found.unscannedMethods ? { unscannedMethods: found.unscannedMethods } : {}) };
+      } catch (e) {
+        removed = { keys: removedKeys, callers: [], error: e instanceof Error ? e.message : String(e) };
+      }
+      const lines = removed.callers.map((c) => `${c.category}/${c.name} (${c.state} ${c.uuid}) step ${c.step}: ${c.inputs.join(", ")}`);
+      context.warn(
+        `The draft drops input(s) ${removedKeys.join(", ")}; publishing removes them from every caller step, ` +
+          `PUBLISHED callers included, which then stop passing them until republished. ` +
+          (removed.error
+            ? `Callers could not be listed (${removed.error}); check with: wi-impl ad callers ${draft.uuid} --env ${env}`
+            : lines.length
+              ? `Caller steps that pass them: ${lines.join("; ")}.`
+              : `No caller step passes them${removed.unscannedMethods ? ` (${removed.unscannedMethods} methods in other categories not scanned: wi-impl ad callers ${draft.uuid} --all)` : ""}.`),
+      );
+    }
+
+    // A9: the publish replaces the published suite with a copy of the draft's.
+    stage("reading the draft and published test suites…");
+    let suites: SuitesBeforePublish | null = null;
+    let testSuiteError: string | undefined;
+    try {
+      suites = await readSuitesBeforePublish(draft.uuid, guard.publishedUuid ?? undefined);
+    } catch (e) {
+      testSuiteError = e instanceof Error ? e.message : String(e);
+    }
+    if (suites?.publishedOnly.length) {
+      context.warn(
+        `The published suite has ${suites.publishedOnly.length} test case(s) the draft does not: ` +
+          `${suites.publishedOnly.map((c) => `${c.name} (${c.id})`).join(", ")}. Publishing copies the draft's suite over the ` +
+          `published one, so they will be deleted. Back them up first: wi-impl ad test-case export ${guard.publishedUuid} --env ${env} > backup.json`,
+      );
+    }
 
     await requireConfirmation({
       yes,
@@ -123,6 +197,11 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Draft version", String(draft.version)],
         ["Change note", note],
         ["Validation", validation.skipped ? "SKIPPED (--no-validate)" : `${validation.warnings.length} warning(s)`],
+        ...(suites
+          ? [["Test suite", `published suite replaced by the draft's ${suites.draftCases.length} case(s)` +
+              (suites.publishedOnly.length ? `; DELETES ${suites.publishedOnly.length} published-only case(s): ${suites.publishedOnly.map((c) => c.name).join(", ")}` : "")] as [string, string]]
+          : []),
+        ...(removed ? [["Removed inputs", `${removed.keys.join(", ")}: ${removed.callers.length} caller step(s) pass them`] as [string, string]] : []),
       ],
     });
 
@@ -136,8 +215,15 @@ const command: CommandModule<PublishArgs, PublishData> = {
 
     // publish FIRST, then record the note. A failed publish must not
     // leave an orphan note claiming a change that never shipped.
+    stage("publishing (the server can take a minute or two)…");
     logIntent("POST", `/rest/api/automation/chain/${draft.uuid}/publish`, { draftUuid: draft.uuid });
-    const { publishedUuid } = await adApi.publishDraft(draft.uuid);
+    let publishedUuid: string;
+    try {
+      ({ publishedUuid } = await adApi.publishDraft(draft.uuid));
+    } catch (e) {
+      throw publishTimeoutHint(e, draft.uuid, env);
+    }
+    stage("evicting the compiled cache…");
     const compiledCache = await invalidateCompiledCache([draft.uuid, publishedUuid]);
     // Its inputs / outputs may have changed: callers' saves must not check against the cached contract.
     const service = draftBody.metadata?.service?.name;
@@ -145,16 +231,37 @@ const command: CommandModule<PublishArgs, PublishData> = {
     if (!compiledCache.ok) {
       context.warn(
         `Compiled-cache eviction failed on every route; the published method may run the previous body. ` +
-          `Retry with: wi-impl cache ${publishedUuid} --env ${context.env.name} --yes`,
+          `Retry with: wi-impl cache ${publishedUuid} --env ${env} --yes`,
       );
     }
 
-    logIntent("POST", `/rest/api/automation/chain/changelog/${draft.numericId}`, { chainId: draft.numericId });
-    const noteResult = await recordNoteWithRetry(draft.numericId, note);
+    stage("recording the change note…");
+    const noteResult = await recordNote(draft.numericId, draft.uuid, publishedUuid, note);
     if (!noteResult.recorded) {
       context.warn(
-        `Published, but the change note was NOT recorded (${noteResult.error}). Record it with: ` +
-          `wi-impl ad changelog ${draft.uuid} --note "<text>" --env ${context.env.name} --yes`,
+        `Published, but the change note was NOT recorded (${noteResult.error})` +
+          (noteResult.onDraft
+            ? "."
+            : `. Record it with: wi-impl ad changelog ${draft.uuid} --note "<text>" --env ${env} --yes`),
+      );
+    }
+
+    stage("verifying the published copy and its test suite…");
+    let testSuite: PublishedSuiteReport | null = null;
+    if (suites) {
+      try {
+        testSuite = await reportPublishedSuite(suites, publishedUuid);
+      } catch (e) {
+        testSuiteError = e instanceof Error ? e.message : String(e);
+      }
+    }
+    if (testSuite?.removed.length) {
+      context.warn(`The publish deleted ${testSuite.removed.length} published test case(s): ${testSuite.removed.map((c) => `${c.name} (${c.id})`).join(", ")}.`);
+    }
+    if (testSuite && testSuite.previousSuiteId && testSuite.previousSuiteId !== testSuite.suiteId) {
+      context.warn(
+        `The published test suite was replaced (${testSuite.previousSuiteId} → ${testSuite.suiteId}): published case ids changed ` +
+          "(data.testSuite.copied maps previousId → publishedId).",
       );
     }
 
@@ -182,9 +289,14 @@ const command: CommandModule<PublishArgs, PublishData> = {
       noteRecorded: noteResult.recorded,
       changelogId: noteResult.id,
       noteChainId: draft.numericId,
+      publishedChangelogId: noteResult.publishedId,
+      publishedNoteChainId: noteResult.publishedChainId,
       ...(noteResult.error ? { noteError: noteResult.error } : {}),
       validation,
       compiledCache,
+      testSuite,
+      ...(testSuiteError ? { testSuiteError } : {}),
+      ...(removed ? { removedInputs: removed } : {}),
     });
   },
   presentHuman(envelope, ui) {
@@ -200,6 +312,15 @@ const command: CommandModule<PublishArgs, PublishData> = {
         ["Published version", String(data.publishedVersion ?? "(unknown)")],
         ["In sync (logic)", data.inSync === null ? "(unknown)" : data.inSync ? "Yes" : "No"],
         ["Change note", data.noteRecorded ? data.changeNote : `NOT RECORDED: ${data.noteError ?? ""}`],
+        [
+          "Test suite",
+          data.testSuite
+            ? `${data.testSuite.copied.length} case(s) copied from the draft` +
+              (data.testSuite.removed.length ? `; ${data.testSuite.removed.length} removed` : "") +
+              (data.testSuite.previousSuiteId !== data.testSuite.suiteId ? `; suite ${data.testSuite.previousSuiteId ?? "(none)"} → ${data.testSuite.suiteId ?? "(none)"}` : "")
+            : `(unknown${data.testSuiteError ? `: ${data.testSuiteError}` : ""})`,
+        ],
+        ...(data.removedInputs ? [["Removed inputs", `${data.removedInputs.keys.join(", ")} (${data.removedInputs.callers.length} caller step(s) passed them)`]] : []),
       ],
     );
   },
@@ -245,6 +366,81 @@ async function recordNoteWithRetry(
     }
   }
   return { recorded: false, id: null, error: lastError };
+}
+
+/**
+ * The change note, verified (C6). Posted on the draft chain (the record of
+ * the change) and on the published chain: the server copies the draft's
+ * changelog onto the published copy only when publishing (live: a note
+ * recorded after the publish is missing from `ad changelog <published>` until
+ * the next publish, which then replaces the published list with the draft's,
+ * so posting on both never duplicates). Then both are read back.
+ */
+async function recordNote(
+  draftChainId: number,
+  draftUuid: string,
+  publishedUuid: string,
+  note: string,
+): Promise<{ recorded: boolean; onDraft: boolean; id: string | null; publishedId: string | null; publishedChainId: number | null; error?: string }> {
+  const startedAt = Date.now();
+  logIntent("POST", `/rest/api/automation/chain/changelog/${draftChainId}`, { chainId: draftChainId });
+  const draftPost = await recordNoteWithRetry(draftChainId, note);
+  if (!draftPost.recorded) {
+    return { recorded: false, onDraft: false, id: null, publishedId: null, publishedChainId: null, error: draftPost.error };
+  }
+  let publishedChainId: number | null = null;
+  let publishedError: string | undefined;
+  try {
+    const pub = await adApi.fetchMethod(publishedUuid, "v1");
+    publishedChainId = typeof pub.numericId === "number" ? pub.numericId : null;
+  } catch (e) {
+    publishedError = e instanceof Error ? e.message : String(e);
+  }
+  if (publishedChainId !== null) {
+    const already = await adApi.findChangelogNote(publishedChainId, note, startedAt).catch(() => null);
+    if (!already) {
+      logIntent("POST", `/rest/api/automation/chain/changelog/${publishedChainId}`, { chainId: publishedChainId, published: true });
+      const pubPost = await recordNoteWithRetry(publishedChainId, note);
+      if (!pubPost.recorded) publishedError = pubPost.error;
+    }
+  }
+
+  // Read both back; one more read after a pause before calling it missing.
+  const readBack = async (chainId: number | null) => (chainId === null ? null : adApi.findChangelogNote(chainId, note, startedAt).catch(() => null));
+  let id = await readBack(draftChainId);
+  let publishedId = await readBack(publishedChainId);
+  if (!id || (publishedChainId !== null && !publishedId)) {
+    await Bun.sleep(noteRetryDelayMs);
+    id ??= await readBack(draftChainId);
+    publishedId ??= await readBack(publishedChainId);
+  }
+  const problems: string[] = [];
+  if (!id) problems.push(`the note was posted but is not in the draft's changelog when read back; check \`wi-impl ad changelog ${draftUuid}\` before recording it again`);
+  if (!publishedId) {
+    problems.push(
+      `it is not in the published copy's changelog${publishedError ? ` (${publishedError})` : ""}; ` +
+        `\`wi-impl ad changelog ${publishedUuid}\` shows it after the next publish (the server copies the draft's changelog when publishing)`,
+    );
+  }
+  return {
+    recorded: problems.length === 0,
+    onDraft: !!id,
+    id,
+    publishedId,
+    publishedChainId,
+    ...(problems.length ? { error: problems.join("; ") } : {}),
+  };
+}
+
+/** A publish the client gave up on may still complete on the server (C26): say how to check before retrying. */
+function publishTimeoutHint(e: unknown, draftUuid: string, env: string): unknown {
+  const maybeDone = e instanceof CliError && (e.code === "HTTP_TIMEOUT" || (isObj(e.details) && e.details.mayHaveCompleted === true));
+  if (!maybeDone) return e;
+  const check = `wi-impl ad state ${draftUuid} --env ${env}`;
+  return new CliError(
+    `${e.message} The publish may still have completed on the server: run \`${check}\` (inSync, published version) before publishing again.`,
+    { code: e.code, details: { ...(isObj(e.details) ? e.details : {}), check }, exitCode: e.exitCode },
+  );
 }
 
 export default command;

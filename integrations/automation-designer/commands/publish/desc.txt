@@ -1,4 +1,4 @@
-wi-impl ad publish <uuid> --note "<text>" --env <env>  :->  Validate the draft, promote it to its published version (draft-guarded), record the note after the publish, evict the compiled cache
+wi-impl ad publish <uuid> --note "<text>" --env <env>  :->  Validate the draft, promote it to its published version (draft-guarded), record the note on both chains and read it back, evict the compiled cache; warns about published-only test cases and callers of removed inputs, reports the published suite's old/new ids
 wi-impl ad publish <uuid> --note "<text>" --env <env> --yes  :->  Publish without the confirmation prompt (required with --llm)
 wi-impl ad publish <uuid> --note "<text>" --env <env> --allow-preexisting  :->  Publish even though the published copy already has the same validator errors (pre-existing warnings never block)
 wi-impl ad publish <uuid> --note "<text>" --env <env> --strict  :->  New validator warnings block the publish too
