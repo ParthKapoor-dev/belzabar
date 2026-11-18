@@ -26,6 +26,17 @@ export async function lastUpdatedOf(uuid: string): Promise<string | null> {
   }
 }
 
+/**
+ * A history stamp as ISO-8601 UTC. The platform sends `2026-11-10 10:00:56.688` with no zone;
+ * it is UTC (it matches the changelog's ISO `when`). Text it cannot read is returned as is.
+ */
+export function historyTimeIso(text: string): string {
+  const m = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)$/.exec(text.trim());
+  if (!m) return text;
+  const d = new Date(`${m[1]}T${m[2]}Z`);
+  return Number.isNaN(d.getTime()) ? text : d.toISOString();
+}
+
 /** Which chain's history a uuid names. */
 export type HistorySide = "DRAFT" | "PUBLISHED";
 

@@ -1,15 +1,20 @@
-Usage: wi-impl ad history <action> <uuid> [flags]
+Usage: wi-impl ad history [<action>] <uuid> [flags]
 
 Browse and restore previous versions of an AD method. Calls the published
 Expertly.Automation.Method.History service methods via the execute endpoint.
 
 Actions:
-  list <uuid>                         List all saved versions
+  list <uuid>                         List all saved versions (`wi-impl ad history
+                                      <uuid>` alone means list)
   show <uuid> --version N             Fetch + parse a specific version: metadata
                                       plus the compact view (in/out/vars and one
                                       line per step, like the `ad show` compact view)
-  diff <uuid> --from N --to M           Compare two versions side by side (step
-                                      count, kind changes, input changes)
+                                      --sql / --code add the whole bodies as
+                                      `blocks`, the same shape as the `ad show`
+                                      compact view
+  diff <uuid> --from N --to M         Compare two versions side by side (step
+                                      count, kind changes, input changes, and a
+                                      line diff of each changed SQL / code / SpEL body)
   restore <uuid> --version N [--yes]  Revert the DRAFT to a previous version
 
 Flags:
@@ -17,6 +22,8 @@ Flags:
   --from <N>       First version (for diff)
   --to <M>         Second version (for diff)
   --full           show: also return the full parsed method (`method`)
+  --sql            show: whole SQL bodies in `blocks` [{step, kind, text}]
+  --code           show: whole custom-code bodies in `blocks`
   --keep-case-changes
                    restore: keep the test cases the restore brought back
                    (default: the current cases are put back)
@@ -25,10 +32,19 @@ Flags:
 
 Notes:
   - 'list' returns metadata only (no full body). Use 'show' to fetch the
-    full jsonDefinition at a specific version.
-  - 'diff' fetches both versions in parallel and compares step structure,
-    step bodies, and inputs. It does NOT compute a textual diff of the
-    jsonDefinition — it compares parsed step representations.
+    full jsonDefinition at a specific version. Each row's addedWhen is ISO-8601
+    UTC (the platform's zone-less text is UTC; it is kept in addedWhenText).
+    Data also has updatedOn: when the method was last saved (ISO UTC).
+  - A chain with no saved version gives totalVersions 0, historyEmpty: true and
+    a note with updatedOn: the platform keeps history only for saves since it
+    began recording it (older versions cannot be opened). It is not an error.
+  - 'diff' fetches both versions in parallel and compares the steps (in order)
+    on their logic: decoded SQL / code / SpEL, called services, mappings,
+    conditions. Ids and base64-vs-plain encoding do not count, so an untouched
+    step is changed: false. A changed body comes with textDiff: unified-diff
+    hunks ("@@ -a,n +b,m @@", then " " context, "-" removed, "+" added lines);
+    detail stays "SQL changed" / "Source changed" / "Expression changed" /
+    "Step body changed" (something else in the step).
   - The draft and the published chain keep SEPARATE version histories.
     list/show/diff read the history of the chain the uuid names (a draft
     uuid -> draft history, a published uuid -> published history), so the
@@ -57,6 +73,8 @@ Notes:
 
 Examples:
   wi-impl ad history list 4e3f3f8d5f8a8160e879ae012989f6f9
+  wi-impl ad history 4e3f3f8d5f8a8160e879ae012989f6f9
+  wi-impl ad history show 4e3f3f8d... --version 3 --sql --llm
   wi-impl ad history show 4e3f3f8d... --version 3
   wi-impl ad history diff 4e3f3f8d... --from 1 --to 5
   wi-impl ad history show 4e3f3f8d... --version 1 --full --llm | jq '.data.method.parsedSteps'

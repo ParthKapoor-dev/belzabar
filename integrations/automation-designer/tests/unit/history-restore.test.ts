@@ -21,6 +21,26 @@ import historyCommand from "../../commands/history/index";
 import { interpretRestoreResponse } from "../../lib/api/v1";
 import { logIntent } from "../../lib/args/confirm";
 import { fakeAdEnv, historyServiceRoute } from "./helpers/fake-ad";
+import { lineDiff } from "../../lib/text-diff";
+import { historyTimeIso } from "../../lib/history";
+
+describe("lineDiff / historyTimeIso", () => {
+  test("hunks keep 2 lines of context; distant changes are separate hunks; equal text is []", () => {
+    const a = ["select a", "from t", "where x = 1", "and y = 2", "l5", "l6", "l7", "l8", "l9", "order by a"].join("\n");
+    const b = ["select a, b", "from t", "where x = 1", "and y = 2", "l5", "l6", "l7", "l8", "l9", "order by b"].join("\n");
+    expect(lineDiff(a, a)).toEqual([]);
+    expect(lineDiff(a, b)).toEqual([
+      "@@ -1,3 +1,3 @@", "-select a", "+select a, b", " from t", " where x = 1",
+      "@@ -8,3 +8,3 @@", " l8", " l9", "-order by a", "+order by b",
+    ]);
+    expect(lineDiff("x\ny", "x\nnew\ny")).toEqual(["@@ -1,2 +1,3 @@", " x", "+new", " y"]);
+  });
+
+  test("the platform's zone-less history time is UTC", () => {
+    expect(historyTimeIso("2026-11-10 10:00:56.688")).toBe("2026-11-10T10:00:56.688Z");
+    expect(historyTimeIso("not a date")).toBe("not a date");
+  });
+});
 
 const FIX = join(import.meta.dir, "../fixtures/history");
 const load = jsonFixtures(FIX);
@@ -115,6 +135,65 @@ describe("ad history show/list version mapping", () => {
     expect(d.v1StepCount).toBe(1);
     expect(d.steps[0].changed).toBe(true);
     expect(d.steps[0].detail).toBe("Source changed");
+  });
+});
+
+describe("history list / diff / show output (D20, D21, D32, D38)", () => {
+  test("`ad history <uuid>` is `ad history list <uuid>`; junk is still INVALID_ACTION", async () => {
+    wire();
+    const r = await runCommand(historyCommand, [DRAFT], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope?.data as any).action).toBe("list");
+    expect((await runCommand(historyCommand, ["lsit", DRAFT], { env: "t-dev" })).envelope?.error?.code).toBe("INVALID_ACTION");
+  });
+
+  test("list: addedWhen is ISO UTC, the platform text stays in addedWhenText; updatedOn is the method's last save", async () => {
+    wire();
+    const d = (await runCommand(historyCommand, ["list", DRAFT], { env: "t-dev" })).envelope?.data as any;
+    expect(d.versions[0]).toMatchObject({ version: 1, addedWhen: "2026-09-27T18:28:34.874Z", addedWhenText: "2026-09-27 18:28:34.874" });
+    expect(d.updatedOn).toBe(new Date(1790533744369).toISOString());
+    expect(d.historyEmpty).toBeUndefined();
+  });
+
+  test("list with no saved versions: historyEmpty with a note naming the last save", async () => {
+    ad.install([
+      { method: "GET", url: `/rest/api/automation/chain/${DRAFT}`, response: load("chain-v1-draft.json") },
+      historyServiceRoute(),
+      { method: "POST", url: /chain\/execute\/hist-listAll/, response: { response: [] } },
+    ]);
+    const d = (await runCommand(historyCommand, ["list", DRAFT], { env: "t-dev" })).envelope?.data as any;
+    expect(d).toMatchObject({ totalVersions: 0, historyEmpty: true, updatedOn: new Date(1790533744369).toISOString() });
+    expect(d.note).toContain("History empty");
+    expect(d.note).toContain(d.updatedOn);
+  });
+
+  test("diff: the changed code comes as unified hunks in textDiff", async () => {
+    wire();
+    const d = (await runCommand(historyCommand, ["diff", DRAFT, "--from", "1", "--to", "3"], { env: "t-dev" })).envelope?.data as any;
+    const td: string[] = d.steps[0].textDiff;
+    expect(td[0]).toMatch(/^@@ -\d+,\d+ \+\d+,\d+ @@$/);
+    expect(td.some((l) => l.startsWith("+") && l.includes("v3-content"))).toBe(true);
+    expect(td.some((l) => l.startsWith("-"))).toBe(true);
+  });
+
+  test("diff: a step that differs only in ids and base64 encoding is not changed (B86)", async () => {
+    const v3 = load("get-draft-v3.json");
+    const same = structuredClone(v3);
+    same.methodVersion = 1;
+    for (const s of same.jsonDefinition.steps) {
+      s.id = "4fffffffffffffffffffffffffffffff";
+      s.properties.customCode.inlineCode = Buffer.from(s.properties.customCode.inlineCode).toString("base64");
+    }
+    wire({ draftHistV1: same });
+    const d = (await runCommand(historyCommand, ["diff", DRAFT, "--from", "1", "--to", "3"], { env: "t-dev" })).envelope?.data as any;
+    expect(d.steps.map((s: any) => s.changed)).toEqual(d.steps.map(() => false));
+  });
+
+  test("show --code returns the bodies as blocks, the shape of `ad show --compact --code`", async () => {
+    wire();
+    const d = (await runCommand(historyCommand, ["show", DRAFT, "--version", "3", "--code"], { env: "t-dev" })).envelope?.data as any;
+    expect(d.blocks).toEqual([expect.objectContaining({ step: 1, text: 'const g = "v3-content";\nconsole.log(g);' })]);
+    expect(d.addedWhen).toMatch(/Z$/);
   });
 });
 

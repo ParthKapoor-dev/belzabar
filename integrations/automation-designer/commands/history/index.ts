@@ -2,9 +2,11 @@ import { CliError, defineSubcommands, failWithData, ok, type CommandModule, type
 import { adApi } from "../../lib/api/index";
 import { AD_YES_FLAG } from "../../lib/args/common";
 import { requireConfirmation, logIntent } from "../../lib/args/confirm";
-import { diffPaths, fingerprintMethod, fingerprintProjection, parseVersionBody } from "../../lib/fingerprint";
+import { diffPaths, fingerprintMethod, fingerprintProjection, methodDiffView, parseVersionBody, stableStringify } from "../../lib/fingerprint";
 import { resolveDraftTarget } from "../../lib/draft-guard";
-import { getVersionOf, sideOf, type HistorySide } from "../../lib/history";
+import { getVersionOf, historyTimeIso, sideOf, type HistorySide } from "../../lib/history";
+import { lineDiff } from "../../lib/text-diff";
+import type { ParsedStep } from "../../lib/types/common";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import type { HydratedMethod } from "../../lib/types/common";
 import { CacheManager } from "../../lib/cache";
@@ -29,6 +31,9 @@ interface HistoryArgs {
   keepCaseChanges?: boolean;
   /** show: include the full parsed method (`method`). */
   full?: boolean;
+  /** show: whole SQL / code bodies in `blocks`, as `ad show --compact --sql/--code`. */
+  sql?: boolean;
+  code?: boolean;
 }
 
 interface VersionRow {
@@ -37,7 +42,10 @@ interface VersionRow {
   isPublished: boolean;
   isDeactivated: boolean;
   addedBy: number;
+  /** ISO-8601 UTC (the platform's zone-less text is UTC). */
   addedWhen: string;
+  /** The platform's text, as sent (`2026-11-10 10:00:56.688`). */
+  addedWhenText: string;
 }
 
 
@@ -49,6 +57,11 @@ interface HistoryListData {
   category: string;
   totalVersions: number;
   versions: VersionRow[];
+  /** When the method was last saved (ISO-8601 UTC; V1 updatedOn, else createdOn); null when unknown. */
+  updatedOn: string | null;
+  /** true when the platform has no saved version of this chain (not an error: history is not available for it). */
+  historyEmpty?: true;
+  note?: string;
 }
 
 interface HistoryShowData {
@@ -61,7 +74,9 @@ interface HistoryShowData {
   category: string;
   isPublished: boolean;
   addedBy: number;
+  /** ISO-8601 UTC. */
   addedWhen: string;
+  addedWhenText: string;
   stepCount: number;
   inputCount: number;
   /** the version as a compact view (`in`/`out`/`vars` + one line per step, see `ad show --compact`). */
@@ -69,6 +84,8 @@ interface HistoryShowData {
   out?: string;
   vars?: string;
   steps: string[];
+  /** With --sql / --code: whole bodies, as `ad show --compact --sql/--code` returns them. */
+  blocks?: unknown[];
   /** The full parsed method — only with --full. */
   method?: HydratedMethod;
 }
@@ -78,8 +95,11 @@ interface DiffStepRow {
   kind: string;
   v1Desc: string;
   v2Desc: string;
+  /** The step's logic changed (ids, encodings and other bookkeeping do not count). */
   changed: boolean;
   detail?: string;
+  /** Unified-diff hunks of the changed SQL / code / SpEL body (`@@ -a,n +b,m @@`, ` `, `-`, `+` lines). */
+  textDiff?: string[];
 }
 
 /** Width a diff description cell is cut to in human mode. */
@@ -151,7 +171,7 @@ const VERSION_FLAG = {
 export const args = defineSubcommands(
   {
     list: { positionals: UUID_ARG, flags: {} },
-    show: { positionals: UUID_ARG, flags: { version: VERSION_FLAG, full: { type: "boolean" } } },
+    show: { positionals: UUID_ARG, flags: { version: VERSION_FLAG, full: { type: "boolean" }, sql: { type: "boolean" }, code: { type: "boolean" } } },
     diff: {
       positionals: UUID_ARG,
       flags: {
@@ -172,24 +192,42 @@ export const args = defineSubcommands(
     command: "wi-impl ad history",
     codes: { UNKNOWN_SUBCOMMAND: "INVALID_ACTION", MISSING_SUBCOMMAND: "INVALID_ACTION" },
     missingMessage:
-      "Usage: wi-impl ad history <list|show|diff|restore> <uuid> [flags]\n\n" +
-      "  list <uuid>                     List all saved versions\n" +
+      "Usage: wi-impl ad history [list|show|diff|restore] <uuid> [flags]\n\n" +
+      "  <uuid> / list <uuid>            List all saved versions\n" +
       "  show <uuid> --version N         Fetch + parse a specific version\n" +
       "  diff <uuid> --from N --to M     Compare two versions side by side\n" +
       "  restore <uuid> --version N      Revert to a previous version",
   },
 );
 
+/** `ad history <uuid>` means `ad history list <uuid>` (D20): a method ref where the subcommand goes. */
+function isMethodRef(arg: string | undefined): boolean {
+  if (arg === undefined || arg.startsWith("-")) return false;
+  try {
+    resolveMethodRef(arg);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const command: CommandModule<HistoryArgs, HistoryData> = {
   writes: (a) => a.action === "restore",
   parseArgs(argv) {
-    const parsed = args.parse(argv);
+    const parsed = args.parse(isMethodRef(argv[0]) ? ["list", ...argv] : argv);
     const base = { action: parsed.subcommand, uuid: parsed.positionals.uuid };
     switch (parsed.subcommand) {
       case "list":
         return { ...base, yes: false };
       case "show":
-        return { ...base, version: parsed.flags.version, yes: false, ...(parsed.flags.full ? { full: true } : {}) };
+        return {
+          ...base,
+          version: parsed.flags.version,
+          yes: false,
+          ...(parsed.flags.full ? { full: true } : {}),
+          ...(parsed.flags.sql ? { sql: true } : {}),
+          ...(parsed.flags.code ? { code: true } : {}),
+        };
       case "diff":
         return { ...base, v1: parsed.flags.from, v2num: parsed.flags.to, yes: false };
       case "restore":
@@ -225,7 +263,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       case "list": {
         ui.section(`Version History (${data.side.toLowerCase()} chain): ${data.methodName} (${data.totalVersions} versions)`);
         if (data.versions.length === 0) {
-          ui.text("No version history available for this method.");
+          ui.text(data.note ?? "No version history available for this method.");
         } else {
           ui.table(
             ["Version", "Version UUID", "Published", "Deactivated", "By", "When"],
@@ -264,6 +302,10 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
           if (data.out) ui.text(`out: ${data.out}`);
           if (data.vars) ui.text(`vars: ${data.vars}`);
           ui.text(data.steps.join("\n"));
+          for (const b of (data.blocks ?? []) as Array<{ step: number; kind: string; text: string }>) {
+            ui.section(`Step ${b.step} ${b.kind}`);
+            ui.text(b.text);
+          }
         } else {
           const badgeMap: Record<string, string> = {
             CUSTOM_CODE: "CODE", SPEL_ECHO: "SPEL", SQL: "SQL",
@@ -303,6 +345,11 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
             ["#", "Kind", "Changed", "v" + data.v1, "v" + data.v2, "Detail"],
             diffTableRows(data.steps),
           );
+          for (const s of data.steps) {
+            if (!s.textDiff?.length) continue;
+            ui.section(`Step ${s.orderIndex}: ${s.detail ?? "changed"}`);
+            ui.text(s.textDiff.join("\n"));
+          }
         }
         break;
       }
@@ -336,9 +383,13 @@ async function executeList(
     isPublished: v.isPublished,
     isDeactivated: v.isDeactivated,
     addedBy: v.addedBy,
-    addedWhen: v.addedWhen,
+    addedWhen: historyTimeIso(v.addedWhen),
+    addedWhenText: v.addedWhen,
   }));
   rows.sort((a, b) => a.version - b.version);
+  // The V1 read already done for the category carries the last-save stamp.
+  const stamp = current.updatedOn ?? current.createdOn;
+  const updatedOn = typeof stamp === "number" && stamp > 0 ? new Date(stamp).toISOString() : null;
 
   return ok<HistoryListData>({
     action: "list",
@@ -348,6 +399,15 @@ async function executeList(
     category,
     totalVersions: rows.length,
     versions: rows,
+    updatedOn,
+    ...(rows.length === 0
+      ? {
+          historyEmpty: true as const,
+          note:
+            `History empty: the platform has no saved version of this ${sideOf(current).toLowerCase()} chain (it records history only for saves since it began keeping it). ` +
+            `The method was last saved ${updatedOn ?? "at an unknown time"} (updatedOn).`,
+        }
+      : {}),
   });
 }
 
@@ -363,7 +423,7 @@ async function executeShow(
 
   const full = await getVersionOf(current, category, args.version);
   const parsed = parseVersionBody(full);
-  const view = compactMethod(parsed);
+  const view = compactMethod(parsed, args.sql || args.code ? { fullBodies: { sql: !!args.sql, code: !!args.code } } : {});
 
   const data = pruneEmpty<HistoryShowData>({
     action: "show",
@@ -375,18 +435,29 @@ async function executeShow(
     category,
     isPublished: full.isPublished,
     addedBy: full.addedBy,
-    addedWhen: full.addedWhen,
+    addedWhen: historyTimeIso(full.addedWhen),
+    addedWhenText: full.addedWhen,
     stepCount: parsed.parsedSteps.length,
     inputCount: parsed.inputs.length,
     in: view.in,
     out: view.out,
     vars: view.vars,
     steps: view.steps,
+    blocks: view.blocks,
   });
   if (!data.steps) data.steps = [];
+  if ((args.sql || args.code) && !data.blocks) data.blocks = [];
   // The full parse is kept verbatim (not pruned) and only on request.
   if (args.full) data.method = parsed;
   return ok<HistoryShowData>(data);
+}
+
+/** A step's decoded body text (SQL, code, SpEL expression), or null for other kinds. */
+function bodyText(s: ParsedStep): string | null {
+  if (s.kind === "SQL") return s.sql;
+  if (s.kind === "CUSTOM_CODE") return s.source;
+  if (s.kind === "SPEL_ECHO") return s.expression ?? "";
+  return null;
 }
 
 async function executeDiff(
@@ -407,16 +478,23 @@ async function executeDiff(
   const parsedV1 = parseVersionBody(fullV1);
   const parsedV2 = parseVersionBody(fullV2);
 
-  // Build step diff
-  const maxSteps = Math.max(parsedV1.parsedSteps.length, parsedV2.parsedSteps.length);
+  // Step diff on the semantic view (decoded bodies, names, mappings; no ids or encodings), so
+  // a step whose wire JSON only differs in ids / base64 is unchanged (B86).
+  const byOrder = (m: HydratedMethod) => [...m.parsedSteps].sort((a, b) => a.orderIndex - b.orderIndex);
+  const steps1 = byOrder(parsedV1);
+  const steps2 = byOrder(parsedV2);
+  const view1 = methodDiffView(parsedV1).steps as unknown[];
+  const view2 = methodDiffView(parsedV2).steps as unknown[];
+  const maxSteps = Math.max(steps1.length, steps2.length);
   const steps: DiffStepRow[] = [];
   for (let i = 0; i < maxSteps; i++) {
-    const s1 = parsedV1.parsedSteps[i];
-    const s2 = parsedV2.parsedSteps[i];
+    const s1 = steps1[i];
+    const s2 = steps2[i];
     const v1Desc = s1 ? `[${s1.kind}] ${s1.description ?? ""}` : "(absent)";
     const v2Desc = s2 ? `[${s2.kind}] ${s2.description ?? ""}` : "(absent)";
     let changed = false;
     let detail: string | undefined;
+    let textDiff: string[] | undefined;
 
     if (!s1 || !s2) {
       changed = true;
@@ -424,14 +502,14 @@ async function executeDiff(
     } else if (s1.kind !== s2.kind) {
       changed = true;
       detail = `Kind changed: ${s1.kind} → ${s2.kind}`;
-    } else if (JSON.stringify(s1.raw) !== JSON.stringify(s2.raw)) {
+    } else if (stableStringify(view1[i]) !== stableStringify(view2[i])) {
       changed = true;
-      if (s1.kind === "CUSTOM_CODE" && s2.kind === "CUSTOM_CODE") {
-        detail = "Source changed";
-      } else if (s1.kind === "SQL" && s2.kind === "SQL") {
-        detail = "SQL changed";
-      } else if (s1.kind === "SPEL_ECHO" && s2.kind === "SPEL_ECHO") {
-        detail = "Expression changed";
+      const b1 = bodyText(s1);
+      const b2 = bodyText(s2);
+      if (b1 !== null && b2 !== null && b1 !== b2) {
+        textDiff = lineDiff(b1, b2);
+        // detail keeps its fixed values (scripts match them); the lines are in textDiff
+        detail = s1.kind === "SQL" ? "SQL changed" : s1.kind === "CUSTOM_CODE" ? "Source changed" : "Expression changed";
       } else {
         detail = "Step body changed";
       }
@@ -443,7 +521,8 @@ async function executeDiff(
       v1Desc,
       v2Desc,
       changed,
-      detail,
+      ...(detail !== undefined ? { detail } : {}),
+      ...(textDiff ? { textDiff } : {}),
     });
   }
 

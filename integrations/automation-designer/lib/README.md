@@ -32,7 +32,8 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `method-view.ts` | `compactMethod` / `renderCompact` (`show --compact`: `{view:"compact", name, category, state, version, uuid, summary?, methodDescription?, in, out, vars, defaults?, steps[], callees?, blocks?}`, one line per step) and `storyMarkdown` (`show --story`: `{view:"story", name, uuid, markdown}`). Cuts end `…(+N, use --full)`; conditions are never cut. A `CategoryResolver` (from `method-finder.ts` `cachedCategoryResolver`) gives callees their canonical category. |
 | `compact.ts` | Output trimming for `--llm` payloads: `pruneEmpty`, `oneLine`, `abbreviate`, `htmlToText`; `escapeRichText` for description writes. |
 | `api-shape.ts` | `child-info --shape`: the part of a callee contract needed to wire a step, plus its auth accounts. |
-| `history.ts` | `getVersionOf` / `sideOf`: read version N from the chain (draft or published) the uuid names. |
+| `history.ts` | `getVersionOf` / `sideOf`: read version N from the chain (draft or published) the uuid names; `historyTimeIso` (history stamps are zone-less UTC), `lastUpdatedOf` (a method's last save, from the V1 chain). |
+| `text-diff.ts` | `lineDiff`: unified-diff hunks of two texts (`ad history diff` textDiff). |
 | `fingerprint.ts` | `fingerprintMethod`: a logic hash that ignores descriptions, internal ids / links and bookkeeping; `methodDiffView` (the `ad diff` view: no ids), `diffPaths`. |
 | `trace.ts` | `traceMethod`: where a method's dev history has reached on every env (`ad trace`, `release matrix`). |
 | `test-run.ts` | `runInlineTest`: one `/chain/test` run → status and HTTP status, trace (times in ms; a loop step's ns time corrected; async steps `dispatched (async)`), per-step outputs and rendered SQL, server timing, outputs map; `diffOutputs` for `--compare-published`. |

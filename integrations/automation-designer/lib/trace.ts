@@ -17,6 +17,7 @@ import { BELZ_CONFIG_DIR, Cache, CliError, Config } from "@belzabar/core";
 import { adApi } from "./api/index";
 import type { MethodVersionFull } from "./api/v1";
 import { fingerprintMethod, parseVersionBody } from "./fingerprint";
+import { historyTimeIso } from "./history";
 import { resolveMethodRef } from "@belzabar/core/platform";
 
 interface TraceOptions {
@@ -175,7 +176,7 @@ export async function traceMethod(args: TraceOptions): Promise<TraceData> {
         methodVersionID: v.methodVersionID,
         isPublished: v.isPublished,
         addedBy: v.addedBy,
-        addedWhen: v.addedWhen,
+        addedWhen: historyTimeIso(v.addedWhen), // ISO UTC (the platform text has no zone)
         stepCount: parsed.parsedSteps.length,
         hash: fingerprintMethod(parsed),
       };
