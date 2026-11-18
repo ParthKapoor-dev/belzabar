@@ -573,7 +573,10 @@ export function applyStepFields(
   //   outputs         MERGE — upsert by fieldCode (the `as` name); others stay
   //   removeOutputs   drop these fieldCodes
   //   replaceOutputs  REPLACE — the step's outputs become exactly this list
-  //                   (a listed fieldCode keeps its uuid; the rest are removed)
+  //                   (a listed fieldCode keeps its uuid; the rest are removed;
+  //                   a listed output without `var` loses its variable link)
+  //   var: null       unsets a variable link (outputs and replaceOutputs)
+  const replacing = "replaceOutputs" in set;
   if ("replaceOutputs" in set) {
     if ("outputs" in set || "removeOutputs" in set) {
       p.bad(at("replaceOutputs"), "replaceOutputs is the whole new list; do not combine it with outputs / removeOutputs");
@@ -615,7 +618,7 @@ export function applyStepFields(
           const cur = outs[existing]!;
           if (isCc && o.as !== o.key) p.bad(`${at("outputs")}[${i}]`, "custom-code outputs are bound by key");
           cur.key = o.key;
-          if (o.var === null) delete cur.inputReference;
+          if (o.var === null || (o.var === undefined && replacing)) delete cur.inputReference;
           else if (o.var) cur.inputReference = { type: "method_input", reference: o.var };
           if (o.type) cur.type = o.type;
           if (o.elementToRetrieve) cur.elementToRetrieve = o.elementToRetrieve;

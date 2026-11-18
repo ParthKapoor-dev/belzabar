@@ -24,6 +24,9 @@ Arguments:
                               `as` name) and keeps every other output; use
                               "replaceOutputs":[…] (same format) to make the
                               step's outputs exactly that list, or removeOutputs.
+                              Variable links: replaceOutputs also replaces
+                              them (a listed output without var loses its
+                              link); in outputs, "var": null unsets one.
                               set.service "Svc/method" points a service step
                               at another method (e.g. a renamed callee): the
                               step keeps its id, condition, exit, loop and

@@ -518,6 +518,19 @@ describe("update-step set.service points a step at another method (C17)", () => 
   });
 });
 
+describe("variable links on step outputs (C22)", () => {
+  const out = { key: "response", as: "similar_code_not_found_str" };
+  const linked = () => plan(real(U), [{ op: "update-step", step: 7, set: { outputs: [{ ...out, var: "v" }] } }]).body;
+  const ref = (b: V2MethodResponse) => (b.steps![6]!.outputs![0] as Record<string, unknown>).inputReference;
+  test("replaceOutputs without var removes the link; outputs (merge) keeps it; var: null unsets it", () => {
+    expect(ref(linked())).toEqual({ type: "method_input", reference: "v" });
+    expect(ref(plan(linked(), [{ op: "update-step", step: 7, set: { replaceOutputs: [out] } }]).body)).toBeUndefined();
+    // merge without var keeps the link, so it changes nothing
+    expect(code(() => plan(linked(), [{ op: "update-step", step: 7, set: { outputs: [out] } }]))).toBe("AD_OVERLAY_NOT_APPLIED");
+    expect(ref(plan(linked(), [{ op: "update-step", step: 7, set: { outputs: [{ ...out, var: null }] } }]).body)).toBeUndefined();
+  });
+});
+
 describe("descriptions keep <…> text as typed (C20)", () => {
   const typed = "sets {<settingName>: value}, a < b, <b>bold</b>";
   const stored = "sets {&lt;settingName&gt;: value}, a &lt; b, <b>bold</b>";
