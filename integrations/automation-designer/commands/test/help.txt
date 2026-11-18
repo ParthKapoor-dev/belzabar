@@ -4,6 +4,15 @@ Execute an Automation Designer method for testing and inspection.
 This really runs the chain (SQL steps commit, HTTP steps call out), so it
 requires an explicit --env.
 
+The uuid runs its OWN body: a PUBLISHED uuid runs the published copy, even
+after `ad save` changed its draft. data.ranVersion names the copy that ran
+(PUBLISHED v5, DRAFT v6), and a warning says when the published uuid's draft
+has unpublished changes (pass the draft uuid to run them). A step that calls
+another method always runs that method's PUBLISHED copy: a warning names
+every callee whose draft has unpublished changes. A step marked async is
+started and really runs (with its side effects) but is not awaited: it is
+warned about, listed in the confirmation, and shown 'dispatched (async)'.
+
 Arguments:
   <UUID>                The UUID of the method to test (usually the draft).
 
@@ -73,10 +82,11 @@ Notes:
     16 KB is saved whole under ~/.wi-impl/logs/errors/, details.bodyFile).
   - Posts {category, jsonDefinition, id, uuid, version} to /chain/test with
     testValues set and automationApiId filled on every step (lean chains).
-  - Data: status, statusCode, outputs {code: value} (every method output),
+  - Data: ranVersion {uuid, state, version, label}, status, statusCode,
+    outputs {code: value} (every method output),
     trace, expectations {total, passed, failed, results[]}, compare
     {identical, differences[], published{status, outputs}}.
-  - With --cases, data is {uuid, cases[{name, pass, status (SUCCESS, FAILED
+  - With --cases, data is {uuid, ranVersion, cases[{name, pass, status (SUCCESS, FAILED
     or ERROR), statusCode, outputs, failedStep, expectations[],
     error?{code, message}}], summary{total, passed, failed}}. A case whose
     run throws (compile error) is status ERROR; the other cases still run.

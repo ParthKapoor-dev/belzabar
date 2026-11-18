@@ -1,5 +1,5 @@
 import { readFile } from "fs/promises";
-import { CliError, defineArgs, failWithData, ok, type CommandModule, type OutputMode } from "@belzabar/core";
+import { CliError, defineArgs, failWithData, ok, type CommandContext, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
 import { resolveMethodRef } from "@belzabar/core/platform";
@@ -26,6 +26,7 @@ import {
 } from "../../lib/test-cases/expect";
 import { parseCaseInput, runnableInputs } from "../../lib/test-cases/case-file";
 import { caseFailure, readCases, resolveCaseInputs, runCases, type CaseResult, type CasesSummary } from "../../lib/test-cases/cases-table";
+import { calleeDrafts, ranVersionOf, runWarnings, asyncSteps, unpublishedDraftOf, type RanVersion } from "../../lib/run-context";
 import type { HydratedMethod } from "../../lib/types/common";
 
 export { matchStep } from "../../lib/test-run";
@@ -71,12 +72,16 @@ interface CompareBlock {
 /** `--cases`: one row per case. */
 interface TestCasesData {
   uuid: string;
+  /** The copy that ran (a uuid runs its own body): `PUBLISHED v5`. */
+  ranVersion: RanVersion;
   cases: CaseResult[];
   summary: CasesSummary;
 }
 
 interface TestMethodData {
   uuid: string;
+  /** The copy that ran (a uuid runs its own body): `PUBLISHED v5`, `DRAFT v6`. */
+  ranVersion: RanVersion;
   verbosity: "normal" | "verbose";
   success: boolean;
   status: "SUCCESS" | "FAILED";
@@ -155,19 +160,33 @@ function requireInputs(method: HydratedMethod, values: Record<string, unknown>, 
   }
 }
 
-async function runCaseTable(a: TestMethodArgs, method: HydratedMethod, outputMode: OutputMode) {
+/** Say what runs before it runs: the drafts it does not run, its async steps (context warnings). */
+async function warnRun(method: HydratedMethod, context: CommandContext): Promise<void> {
+  const [own, callees] = await Promise.all([unpublishedDraftOf(method), calleeDrafts(method)]);
+  for (const w of runWarnings(method, own, callees, { async: true })) context.warn(w);
+}
+
+/** Confirmation detail rows for a method with async steps. */
+function asyncDetails(method: HydratedMethod): Array<[string, string]> {
+  const steps = asyncSteps(method);
+  return steps.length ? [["Async steps", `${steps.join(", ")} (started, not awaited: they really run)`]] : [];
+}
+
+async function runCaseTable(a: TestMethodArgs, method: HydratedMethod, context: CommandContext) {
   const cases = resolveCaseInputs(method, await readCases(a.casesFile!), a.inputPairs);
+  await warnRun(method, context);
   await requireConfirmation({
     yes: a.yes,
-    outputMode,
+    outputMode: context.outputMode,
     action: `execute the method ${cases.length} time(s), once per case, with real side effects every time`,
     details: [
-      ["Method", `${method.name} (${method.uuid})`],
+      ["Method", `${method.name} (${method.uuid}, ${ranVersionOf(method).label})`],
       ["Cases", String(cases.length)],
+      ...asyncDetails(method),
     ],
   });
   const { results, summary } = await runCases(method, cases, a.expect.map(parseExpectation));
-  const data: TestCasesData = { uuid: method.uuid, cases: results, summary };
+  const data: TestCasesData = { uuid: method.uuid, ranVersion: ranVersionOf(method), cases: results, summary };
   if (summary.failed > 0) {
     const failed = results.filter((r) => !r.pass).map((r) => r.name);
     return failWithData("AD_TEST_CASES_FAILED", `${summary.failed} of ${summary.total} case(s) failed: ${failed.join(", ")}.`, data, { details: { failed } });
@@ -199,7 +218,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     const uuid = resolveMethodRef(a.uuid);
     // V1 fetch: the test body is the fetched definition (test-before-save).
     const given = await adApi.fetchMethod(uuid, "v1");
-    if (a.casesFile) return runCaseTable(a, given, context.outputMode);
+    if (a.casesFile) return runCaseTable(a, given, context);
 
     let draft = given;
     let published: HydratedMethod | null = null;
@@ -230,6 +249,13 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
       values = await InputCollector.collect(draft.inputs, a.inputsFile, a.inputPairs);
     }
 
+    // with --compare-published both copies run, so only the callees' drafts are worth a warning
+    if (published) {
+      for (const w of runWarnings(draft, null, await calleeDrafts(draft), { async: true })) context.warn(w);
+    } else {
+      await warnRun(draft, context);
+    }
+
     if (published && pair) {
       // the published copy runs too, with the same side effects (SQL commits,
       // HTTP calls, e-mails) — through the production body. Confirm it (--yes in --llm).
@@ -240,6 +266,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
         details: [
           ["Draft UUID", pair.draftUuid],
           ["Published UUID", pair.publishedUuid],
+          ...asyncDetails(draft),
         ],
       });
     }
@@ -247,6 +274,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     const run = await runInlineTest(draft, values);
     const data: TestMethodData = {
       uuid,
+      ranVersion: ranVersionOf(draft),
       verbosity: a.verbose ? "verbose" : "normal",
       success: run.success,
       status: run.status,
@@ -320,6 +348,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     }
     const data = raw;
 
+    ui.text(`Ran: ${data.ranVersion.label} (${data.ranVersion.uuid})`);
     if (data.success) {
       ui.success("Method executed successfully.");
     } else {

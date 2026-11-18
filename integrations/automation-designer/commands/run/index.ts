@@ -4,6 +4,7 @@ import { readStream } from "../../lib/stream-parser";
 import { adApi } from "../../lib/api/index";
 import { AD_LONG_OP_TIMEOUT_MS } from "../../lib/api/v1";
 import { resolveMethodRef } from "@belzabar/core/platform";
+import { calleeDrafts, ranVersionOf, runWarnings, unpublishedDraftOf, type RanVersion } from "../../lib/run-context";
 import type { MethodState } from "../../lib/types/common";
 
 interface RunMethodArgs {
@@ -23,6 +24,8 @@ interface RunMethodData {
    * the draft (unpublished changes included), not this copy (verified live).
    */
   publishedUuid?: string | null;
+  /** The copy that ran (the uuid's own body): `PUBLISHED v47`; null if it could not be read. */
+  ranVersion: RanVersion | null;
   path: string;
   payloadType: string;
   response: unknown;
@@ -111,9 +114,14 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
     // included), not the published copy: say so, and name the published copy.
     let inputState: MethodState | null = null;
     let publishedUuid: string | null | undefined;
+    let ranVersion: RanVersion | null = null;
     try {
       const m = await adApi.fetchMethod(publishedId, "v1");
       inputState = m.state;
+      ranVersion = ranVersionOf(m);
+      // a published uuid whose draft moved on, and callees whose drafts do not run here
+      const [own, callees] = await Promise.all([unpublishedDraftOf(m), calleeDrafts(m)]);
+      for (const w of runWarnings(m, own, callees)) context.warn(w);
       if (m.state === "DRAFT") {
         publishedUuid = (m.referenceId ?? "").trim() || null;
         context.warn(
@@ -161,6 +169,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
         publishedId,
         inputState,
         ...(publishedUuid !== undefined ? { publishedUuid } : {}),
+        ranVersion,
         path,
         payloadType,
         response: final,
@@ -179,6 +188,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
         publishedId,
         inputState,
         ...(publishedUuid !== undefined ? { publishedUuid } : {}),
+        ranVersion,
         path,
         payloadType,
         response: redact(json),
@@ -191,6 +201,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
         publishedId,
         inputState,
         ...(publishedUuid !== undefined ? { publishedUuid } : {}),
+        ranVersion,
         path,
         payloadType,
         response: redactString(text),
@@ -203,7 +214,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
     const data = envelope.data as RunMethodData;
-    ui.success(`Method executed: ${data.publishedId}`);
+    ui.success(`Method executed: ${data.publishedId}${data.ranVersion ? ` (${data.ranVersion.label})` : ""}`);
     ui.table(
       ["Property", "Value"],
       [

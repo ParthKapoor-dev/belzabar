@@ -13,7 +13,7 @@ preload points `WI_IMPL_HOME` at a temp dir, so nothing touches `~/.wi-impl`.
 | History and trace | `diff-history`, `history-restore`, `history-uuid-cache`, `fingerprint`, `trace-envs` |
 | Writes | `draft-guard`, `save-command`, `save-case-guard`, `save-normalise`, `save-structural`, `save-v2-overlay`, `author-commands`, `compact-format`, `create-delete`, `publish-changelog` |
 | Validator and lint | `validate-l1`, `validate-rules`, `validate-online`, `validate-team`, `validate-diff`, `validate-command`, `lint` |
-| Tests and test cases | `test-expect`, `test-expect-command`, `test-run-commands`, `exec-error`, `test-case-list`, `test-case-sync`, `test-suite-wait` |
+| Tests and test cases | `test-expect`, `test-expect-command`, `test-run-commands`, `exec-error`, `run-context`, `test-case-list`, `test-case-sync`, `test-suite-wait` |
 | SQL | `sql-payload`, `sql-read-only`, `sql-result`, `sql-selector`, `sql-defaults-insert`, `sql-context-prefetch`, `sql-tui-commands` |
 
 (Each name is `<name>.test.ts`.)
