@@ -80,8 +80,8 @@ export const adApi = {
     return v1.exportMethod(methodId);
   },
 
-  async exportCategory(categoryId: string | number): Promise<unknown> {
-    return v1.exportCategory(categoryId);
+  async exportCategory(categoryId: string | number, opts?: { allowPartial?: boolean }): Promise<unknown> {
+    return v1.exportCategory(categoryId, opts);
   },
 
   async listTestCases(chainUuid: string): Promise<unknown> {

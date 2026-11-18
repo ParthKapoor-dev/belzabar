@@ -130,6 +130,65 @@ describe("export / export-category: --out omits the body unless --full", () => {
   });
 });
 
+// D24: one unexportable method must not lose the whole category export.
+describe("export-category --allow-partial", () => {
+  const CAT = "4423ad307059bc3fc6859804c9bd12e0";
+  function stub(failWhole: boolean) {
+    quiet();
+    const methodBody = load("export/method-606.json");
+    spies.push(
+      spyOn(adApi, "listCategories").mockImplementation(async (o) =>
+        o?.includeSystem ? load("categories/chain-category-system.json") : load("categories/chain-category.json"),
+      ),
+      spyOn(adApi, "exportCategory").mockImplementation(async (_id, opts) => {
+        if (failWhole) {
+          const { CliError } = await import("@belzabar/core");
+          throw new CliError("AD API error 404: No automation exists with id : 52319", { code: "AD_API_ERROR", details: { status: 404 } });
+        }
+        return { chainDefinitions: [methodBody], failedChainIds: opts?.allowPartial ? ["4bad"] : [], allowPartialExport: !!opts?.allowPartial };
+      }),
+      spyOn(adApi, "fetchRawMethod").mockImplementation(async (uuid: string) => ({ id: uuid.startsWith("40b2") ? 999 : 100 }) as any),
+      spyOn(adApi, "exportMethod").mockImplementation(async (id) => {
+        if (id === 999) {
+          const { CliError } = await import("@belzabar/core");
+          throw new CliError("No automation exists with id : 52319", { code: "AD_API_ERROR", details: { status: 404 } });
+        }
+        return methodBody;
+      }),
+    );
+  }
+  const indexRoutes = {
+    "GET /rest/api/automation/services*": { result: [{ id: 40, uuid: CAT, name: "Test-Tester", label: "Test-Tester" }] },
+    [`GET /rest/api/automation/methods?categoryUuid=${CAT}*`]: load("callers/methods-example-services.json"),
+  };
+
+  test("without the flag a failed category export still fails", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    stub(true);
+    const r = await runCommand(exportCategoryCommand, ["Test-Tester"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("AD_API_ERROR");
+  });
+
+  test("a failed category export falls back to one export per method; the failed method is listed", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(indexRoutes).install();
+    stub(true);
+    const r = await runCommand(exportCategoryCommand, ["Test-Tester", "--allow-partial"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d).toMatchObject({ mode: "per-method", partial: true, methodCount: 11 });
+    expect(d.failed).toEqual([{ id: "40b270670686c47215d2b6ab839b276d", name: "chaining method", error: "No automation exists with id : 52319" }]);
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toContain("exporting its methods one by one");
+  });
+
+  test("the server's own failedChainIds are reported", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    stub(false);
+    const d = (await runCommand(exportCategoryCommand, ["Test-Tester", "--allow-partial"], { env: "t-dev" })).envelope?.data as any;
+    expect(d).toMatchObject({ mode: "category", partial: true, failed: [{ id: "4bad" }], methodCount: 1 });
+  });
+});
+
 describe("history show: compact view by default, --full adds the parse", () => {
   const DRAFT = "4bdea25c480a8e9dbc1cae830cb89b68";
   function wire() {

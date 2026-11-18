@@ -1,3 +1,4 @@
 wi-impl ad export-category <category>  :->  Export every method in a category (name, id or uuid) as JSON
 wi-impl ad export-category <category> --out <file>  :->  Export a category to a file (output omits the body)
 wi-impl ad export-category <category> --out <file> --full  :->  Write the file and also return the body
+wi-impl ad export-category <category> --allow-partial  :->  Export what can be exported: report the failed methods instead of failing (falls back to one export per method)

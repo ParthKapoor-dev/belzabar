@@ -5,12 +5,23 @@ Export an entire category (all methods) via
 by name, chain-category id or uuid, or automation-system id or uuid; it is
 resolved to the chain-category id (the one `wi-impl ad categories` shows as ID).
 
+A whole-category export can take minutes: it waits up to 10 minutes (not the
+60 s default). Without --allow-partial, one method the server cannot export
+(e.g. "No automation exists with id : N") fails the whole export.
+
 Flags:
   --out <file>    Write the exported JSON to a file; the envelope then omits
                   the body (`preview`).
   --full          With --out: also include the body in the output.
-  --llm           Emit a JSON envelope with {id, category, methodCount, writtenTo, bytes, preview}
+  --allow-partial Keep what can be exported: asks the server for a partial
+                  export and reports its failedChainIds; if the category export
+                  still fails as a whole, exports each method on its own (one
+                  read + one export per method, from the method index) and lists
+                  the ones that failed. Data adds mode (category | per-method),
+                  partial: true and failed[{id, name?, error?}].
+  --llm           Emit a JSON envelope with {id, category, methodCount, writtenTo, bytes, preview, mode?, partial?, failed?}
 
 Examples:
   wi-impl ad export-category Sandbox --out /tmp/sandbox.json
   wi-impl ad export-category 42 --llm
+  wi-impl ad export-category Sandbox --allow-partial --out /tmp/sandbox.json --llm

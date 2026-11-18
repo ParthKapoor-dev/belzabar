@@ -100,9 +100,10 @@ export async function exportMethod(methodId: string | number): Promise<unknown> 
   return readJson(response, path);
 }
 
-export async function exportCategory(categoryId: string | number): Promise<unknown> {
-  const path = `/rest/api/automation/chain/export/category/${categoryId}`;
-  const response = await apiFetch(path, { method: "GET", authMode: "Bearer" });
+/** A whole-category export reads every method: it gets the long-operation timeout, not the 60 s default. */
+export async function exportCategory(categoryId: string | number, opts: { allowPartial?: boolean } = {}): Promise<unknown> {
+  const path = `/rest/api/automation/chain/export/category/${categoryId}${opts.allowPartial ? "?allowPartialExport=true" : ""}`;
+  const response = await apiFetch(path, { method: "GET", authMode: "Bearer", timeoutMs: AD_LONG_OP_TIMEOUT_MS });
   return readJson(response, path);
 }
 
