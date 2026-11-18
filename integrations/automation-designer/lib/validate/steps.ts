@@ -263,7 +263,14 @@ function checkCustomCode(c: StepCtx): void {
     c.report({ rule: "CC1", severity: "warn", message: `Custom code language ${lang} is accepted by the server but unsupported by the team tooling (use JAVASCRIPT or PYTHON).`, path: at("language"), step: c.ref });
   }
   if (cc.executor === "NODEJS_LAMBDA") {
-    c.report({ rule: "CC5", severity: "warn", message: "Executor NODEJS_LAMBDA is deprecated; use CODE_LAMBDA.", path: at("executor"), step: c.ref });
+    c.report({
+      rule: "CC5",
+      severity: "warn",
+      message: "Executor NODEJS_LAMBDA is deprecated; use CODE_LAMBDA.",
+      path: at("executor"),
+      step: c.ref,
+      fix: `wi-impl ad save with {"ops":[{"op":"update-step","step":${c.ref.orderIndex},"set":{"executor":"CODE_LAMBDA"}}]}`,
+    });
   }
 
   const code = str(cc.inlineCode);

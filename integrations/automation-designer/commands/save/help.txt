@@ -45,6 +45,11 @@ Arguments:
                             only when the service has exactly one account on
                             the env — otherwise AD_OVERLAY_INVALID lists them
                             as id=nickname), description, language, async
+                          executor CODE_LAMBDA | INTERNAL_SERVER  (custom code;
+                            a top-level STEP / set key, not inside customCode).
+                            The CC5 warning "NODEJS_LAMBDA is deprecated" is
+                            fixed by {"op":"update-step","step":N,
+                            "set":{"executor":"CODE_LAMBDA"}}
                         sql alone picks db_service/data.read|add|update|delete
                         from the verb. Input/output keys are checked against the
                         callee contract (online, cached 1 h). A key the
@@ -76,6 +81,17 @@ Arguments:
                           {"service": "Helpers.Legacy/echo",
                            "inputs": {"Input": "#{rows[0].col}"},
                            "outputs": [{"key": "response", "as": "col"}]}
+                        Unset and null outputs: a method output no step writes
+                        normally comes back null, but [] has been seen (e.g.
+                        a draft after its writing steps were removed), so
+                        don't rely on it. To return null on purpose, use
+                        custom code with elementToRetrieve:
+                          {"code": "console.log(JSON.stringify({x: null}))",
+                           "outputs": [{"key": "x", "elementToRetrieve": "x"}]}
+                        (live: x = null). Without elementToRetrieve a lone
+                        custom-code output gets the whole printed object, and
+                        an echo of null or #{null} returns "" (an empty
+                        string), not null.
                         Stored input testValues (what the AD designer's Test
                         dialog pre-fills) are stripped by EVERY save, and wi-impl
                         cannot set them: afterwards the dialog reports
@@ -114,6 +130,10 @@ Global Flags:
                         the dry run reads the target env, so it never falls
                         back to the default env (ENV_REQUIRED_FOR_WRITE).
   --llm                 Output structured JSON envelope for scripting/LLM use.
+                        stdout carries only the JSON envelope; notices (the
+                        "[wi-impl ad write] …" intent line, warnings) go to
+                        stderr. Capture with `> out.json`, not `> out.json 2>&1`,
+                        or the file is not valid JSON.
 
 Pipeline and error codes:
   1. draft guard (AD_DRAFT_GUARD_*), fresh V2 GET of the draft

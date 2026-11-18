@@ -154,6 +154,11 @@ describe("false positives removed (C18, C19, C23)", () => {
   });
 });
 
+test("CC5 (deprecated executor) names the ad save op that fixes it (C10)", () => {
+  const f = found(mutate((m) => { m.steps[1].properties.customCode.executor = "NODEJS_LAMBDA"; })).find((x) => x.rule === "CC5")!;
+  expect(f.fix).toBe('wi-impl ad save with {"ops":[{"op":"update-step","step":2,"set":{"executor":"CODE_LAMBDA"}}]}');
+});
+
 describe.each([["L2", L2], ["L3", L3]] as const)("%s rules", (_layer, rows) => {
   for (const r of rows) {
     test(`${r.rule} ${r.severity}: ${r.why}`, () => {

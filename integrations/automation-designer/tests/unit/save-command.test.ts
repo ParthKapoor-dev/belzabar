@@ -3,7 +3,7 @@
 // POST /chain/v2 → post-save verify → compiled cache on both routes
 // → local cache.
 import { afterEach, describe, expect, test } from "bun:test";
-import { writeFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { respond, runCommand, scratchDir, type FakeFetch, type RecordedRequest } from "@belzabar/core/testing";
 import saveCommand from "../../commands/save/index";
@@ -368,5 +368,20 @@ describe("ad save — validator gate", () => {
     expect(r.envelope?.ok).toBe(true);
     expect(env).toBe("t-dev");
     expect((r.envelope!.data as any).validation.layersRun).toEqual(["L4"]);
+  });
+});
+
+describe("ad save --help documents the traps agents hit", () => {
+  const help = readFileSync(join(import.meta.dir, "../../commands/save/help.txt"), "utf8");
+  test("C10: the executor key and the CC5 fix", () => {
+    expect(help).toContain("executor CODE_LAMBDA | INTERNAL_SERVER");
+    expect(help).toContain(`"set":{"executor":"CODE_LAMBDA"}}`);
+  });
+  test("C11: stdout carries only the JSON envelope", () => {
+    expect(help).toContain("stdout carries only the JSON envelope");
+  });
+  test("C12: unset outputs and how to return null", () => {
+    expect(help).toContain("Unset and null outputs");
+    expect(help).toContain(`"outputs": [{"key": "x", "elementToRetrieve": "x"}]`);
   });
 });
