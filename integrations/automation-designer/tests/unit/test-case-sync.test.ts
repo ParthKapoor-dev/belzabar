@@ -328,6 +328,32 @@ describe("test-case update", () => {
   });
 });
 
+// A14: after a migration a method keeps its uuid and case ids on every env, so a
+// delete must say which env, method and suite it touched.
+describe("test-case delete", () => {
+  const ok1 = () => load("suite.json").testCases.find((c: any) => c.name.endsWith("ok.1"));
+
+  test("data names the env; with --uuid also the method, suite and case", async () => {
+    const server = wire();
+    const mars = load("suite.json").testCases.find((c: any) => c.name.endsWith("mars.2")).id;
+    const plain = await run(["delete", mars, "--yes"]);
+    expect(plain.envelope?.data).toEqual({ action: "delete", env: ENV, testCaseId: mars, response: { deleted: mars } });
+    ad.restore();
+
+    wire(server);
+    const r = await run(["delete", ok1().id, "--uuid", DRAFT, "--yes"]);
+    expect(r.envelope?.data).toMatchObject({ action: "delete", env: ENV, chainUuid: DRAFT, method: "belz_tst_s7c_t1", testSuiteId: load("suite.json").id, name: ok1().name });
+    expect(server.cases.find((c) => c.id === ok1().id)!.active).toBe(false);
+  });
+
+  test("--uuid with a case that is not in that suite deletes nothing", async () => {
+    wire();
+    const r = await run(["delete", "not-there", "--uuid", DRAFT, "--yes"]);
+    expect(r.envelope?.error?.code).toBe("AD_TESTCASE_NOT_FOUND");
+    expect(ad.ff.requests.some((q) => q.method === "DELETE")).toBe(false);
+  });
+});
+
 describe("test-case bulk", () => {
   test("posts one fully encoded case per entry (the bulk route only takes string maps)", async () => {
     wire();

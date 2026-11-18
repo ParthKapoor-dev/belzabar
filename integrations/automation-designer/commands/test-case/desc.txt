@@ -5,7 +5,8 @@ wi-impl ad test-case create <uuid> --file <case.json> --dry-run --env <env>  :->
 wi-impl ad test-case create <uuid> --name <n> --description <d>  :->  Set the test case description
 wi-impl ad test-case update <uuid> <testCaseId> --file <case.json> --env <env> [--yes]  :->  Replace a case's inputs/assertions (name/description cannot change via the API: a missing description keeps it, another one warns); verified
 wi-impl ad test-case update <uuid> <testCaseId> --input <k=v> --assert <out=v> --env <env>  :->  Change single inputs / replace the assertions of an existing case
-wi-impl ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case
+wi-impl ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case (data.env names the env it ran on)
+wi-impl ad test-case delete <testCaseId> --uuid <uuid> --env <env> [--yes]  :->  Delete it only if it is in that method's suite on the env; data names the method, suite and case
 wi-impl ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Create an array of test cases, or the cases of an export backup (one POST each; verified)
 wi-impl ad test-case run-suite <uuid> --env <env> [--yes]  :->  Trigger the server's suite run (async, e-mail report only; not observable via test-report)
 wi-impl ad test-case run-suite <uuid> --wait --env <env> --yes  :->  Run every active case now (one /chain/test each), evaluate assertions, return per-case PASS/FAIL/ERROR; exit 1 unless all pass (--yes required with --llm)

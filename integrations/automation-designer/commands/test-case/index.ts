@@ -132,7 +132,23 @@ type TestCaseData =
   | ExportStdoutData
   | SyncData
   | RunSuiteWaitData
-  | { action: "delete" | "run-suite" | "delete-suite"; response: unknown; hint?: string };
+  | DeleteData
+  | { action: "run-suite" | "delete-suite"; response: unknown; hint?: string };
+
+/**
+ * `delete`: which env it ran on and, with --uuid, which method's suite and case
+ * (a migrated method keeps its uuid and case ids on every env).
+ */
+interface DeleteData {
+  action: "delete";
+  env: string;
+  testCaseId: string;
+  chainUuid?: string;
+  method?: string;
+  testSuiteId?: string | null;
+  name?: string;
+  response: unknown;
+}
 
 /** `run-suite --wait`: every active case run now through /chain/test, assertions evaluated by wi-impl. */
 interface RunSuiteWaitData extends SuiteRunSummary {
@@ -166,7 +182,7 @@ export const args = defineSubcommands(
       flags: { ...CASE_FLAGS, ...AD_YES_FLAG },
       requireOneOf: [["file", "input", "assert"]],
     },
-    delete: { positionals: [TC_ID], flags: { ...AD_YES_FLAG } },
+    delete: { positionals: [TC_ID], flags: { uuid: { type: "string" }, ...AD_YES_FLAG } },
     bulk: {
       positionals: [UUID],
       flags: { file: { type: "string", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing --file argument." }, ...AD_YES_FLAG },
@@ -325,7 +341,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           yes: p.flags.yes,
         };
       case "delete":
-        return { ...base, action: "delete", testCaseId: p.positionals.testCaseId, yes: p.flags.yes };
+        return { ...base, action: "delete", testCaseId: p.positionals.testCaseId, chainUuid: p.flags.uuid, yes: p.flags.yes };
       case "delete-suite":
         return { ...base, action: "delete-suite", testSuiteId: p.positionals.testSuiteId, yes: p.flags.yes };
       case "export":
@@ -430,10 +446,29 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       }
 
       case "delete": {
-        await confirm(`delete test case ${args.testCaseId}`, [["Test case ID", args.testCaseId!]]);
-        logIntent("DELETE", `/rest/api/automation/chain/testcases/${args.testCaseId}`, {});
-        await adApi.deleteTestCase(args.testCaseId!);
-        return ok<TestCaseData>({ action: "delete", response: { deleted: args.testCaseId } });
+        const id = args.testCaseId!;
+        const data: DeleteData = { action: "delete", env: context.env.name, testCaseId: id, response: { deleted: id } };
+        // --uuid: check the case is in that method's suite on this env before deleting it
+        if (args.chainUuid) {
+          const uuid = args.chainUuid;
+          const [method, suite] = await Promise.all([fetchContract(uuid), fetchSuite(uuid)]);
+          const hit = suite.cases.find((c) => c.id === id);
+          if (!hit) {
+            throw new CliError(`Test case ${id} is not in ${method.name}'s suite on ${context.env.name}; nothing deleted.`, {
+              code: "AD_TESTCASE_NOT_FOUND",
+              details: { id, uuid, env: context.env.name, testSuiteId: suite.testSuiteId },
+            });
+          }
+          Object.assign(data, { chainUuid: uuid, method: method.name, testSuiteId: suite.testSuiteId, name: hit.file.name });
+        }
+        await confirm(`delete test case ${id}${data.name ? ` ('${data.name}' of ${data.method})` : ""} on ${context.env.name}`, [
+          ["Env", context.env.name],
+          ["Test case ID", id],
+          ...(data.method ? ([["Method", `${data.method} (${data.chainUuid})`], ["Suite ID", data.testSuiteId ?? "(none)"]] as Array<[string, string]>) : []),
+        ]);
+        logIntent("DELETE", `/rest/api/automation/chain/testcases/${id}`, {});
+        await adApi.deleteTestCase(id);
+        return ok<TestCaseData>(data);
       }
 
       case "bulk": {
@@ -700,6 +735,12 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       }
       const skipped = data.skipped > 0 ? ` (${data.skipped} not selected)` : "";
       ui.text(`${data.passed} passed, ${data.failed} failed, ${data.errored} errored, ${data.notChecked} not checked of ${data.total}${skipped}`);
+      return;
+    }
+    if (data.action === "delete") {
+      const where = data.method ? ` ('${data.name}') from ${data.method}'s suite ${data.testSuiteId ?? ""}` : "";
+      ui.success(`Deleted test case ${data.testCaseId}${where} on ${data.env}`);
+      if (!data.method) ui.info("Pass --uuid <chainUuid> to check which method's suite it belongs to before deleting.");
       return;
     }
     ui.success(`test-case ${data.action} complete`);

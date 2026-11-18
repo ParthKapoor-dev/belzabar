@@ -19,7 +19,14 @@ Actions:
                                           one keeps it, a different one is kept as on
                                           the server with a warning (data.descriptionKept)
                                           and the rest is still updated
-  delete <testCaseId> [--yes]             Delete a test case
+  delete <testCaseId> [--uuid <u>] [--yes]
+                                          Delete a test case. data names the env;
+                                          with --uuid it first checks the case is in
+                                          that method's suite on this env
+                                          (AD_TESTCASE_NOT_FOUND otherwise) and names
+                                          the method, suite and case. A migrated
+                                          method keeps its uuid and case ids on every
+                                          env, so --env alone decides which one
   bulk <uuid> --file <cases.json> [--yes] Create an array of test cases (one POST each);
                                           the file may also be an `export` backup
   run-suite <uuid> [--yes]                Trigger the server's suite run (async: e-mail report
@@ -64,6 +71,7 @@ Flags:
                         expressions with a warning; re-save the case to fix them.)
   --dir <path>          Export root (export). Without it, export prints the suite JSON.
   --uuid <uuid>         Chain to sync to (sync). Default: method.json uuids[<env>].
+                        delete: the method the case must belong to.
   --wait                run-suite: run the cases now and wait for every result
                         (exit 1 unless all pass: AD_TESTCASE_SUITE_FAILED when a case
                         failed or errored, AD_TESTCASE_NOT_CHECKED when the only
