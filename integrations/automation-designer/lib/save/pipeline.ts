@@ -214,6 +214,8 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     throw err;
   }
   if (normalised.length > 0) input.warn(normalisedWarning(normalised));
+  const restarted = versionRestartWarning(draftUuid, previousVersion, versionName(after));
+  if (restarted) input.warn(restarted);
 
   let testValuesDropped: string[] = [];
   if (withTestValues.length > 0) {
@@ -239,7 +241,24 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   };
 }
 
-/** Verify with the check that fits the plan (leaf targets, or the whole body for ops). */
+/**
+ * The first V2 save of an older method (one the platform has not migrated:
+ * `migrationVersion` null or a timestamp) migrates it, and the server restarts
+ * the draft's version numbering and history at 1 (live: 71 → 1, 25 → 1; the
+ * draft's `ad history list` then holds one version, dated at the save). The
+ * save itself landed; only the counter moved backwards.
+ */
+function versionRestartWarning(uuid: string, before: string | null, after: string | null): string | null {
+  const b = Number(before);
+  const a = Number(after);
+  if (!Number.isFinite(a) || !Number.isFinite(b) || before === null || after === null || a > b) return null;
+  return (
+    `The server renumbered the draft: version ${before} → ${after}. The first V2 save of an older method migrates it and ` +
+    `restarts the draft's version numbering and history at 1; the save landed and was verified. Confirm later saves by ` +
+    `data.version or by content (wi-impl ad state ${uuid}), not by the number going up.`
+  );
+}
+
 /**
  * Re-GET the draft and refuse (AD_VERSION_CONFLICT) when anything but the
  * change log / test suite moved since `seen` was read — the server ignores

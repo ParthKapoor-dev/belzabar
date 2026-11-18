@@ -153,6 +153,24 @@ describe("ad save (V2 pipeline)", () => {
     expect(s.posts).toHaveLength(0);
   });
 
+  test("C3: the server restarting the draft's numbering at 1 (migration of an older method) is a warning, not a failure", async () => {
+    wire({
+      onGet: (n, b) => {
+        if (n >= 3) b.metadata.version!.name = "1";
+        return b;
+      },
+    });
+    const r = await run({ summary: "x" });
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope!.data as any).previousVersion).toBe(V0);
+    expect((r.envelope!.data as any).version).toBe("1");
+    expect(((r.envelope!.meta as any)?.warnings ?? []).some((w: string) => w.includes(`renumbered the draft: version ${V0} → 1`))).toBe(true);
+    // a normal save says nothing
+    wire();
+    const plain = await run({ summary: "y" });
+    expect(((plain.envelope!.meta as any)?.warnings ?? []).some((w: string) => w.includes("renumbered"))).toBe(false);
+  });
+
   test("same version but a changed body is a conflict too", async () => {
     const s = wire({
       onGet: (n, b) => {

@@ -50,6 +50,12 @@ the verification.
    save strips them, and the designer's Test dialog then reports "Mandatory fields are not
    filled". Best effort; an unreadable V1 body never blocks the save.
 
+Version numbers: the first V2 save of a method the platform has not migrated yet
+(`migrationVersion` null or a timestamp) migrates it. The server then restarts the draft's
+version numbering and history at 1 (seen live: 71 → 1 and 25 → 1). The save warns when the
+version read back is not higher than the one before. A save is confirmed by the verify, not by
+the counter.
+
 A save never POSTs `testSuite`: a body that carries it makes the server rebuild the suite from
 a possibly stale copy.
 

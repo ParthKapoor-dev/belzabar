@@ -140,6 +140,13 @@ compiledCache{ok, uuids, routes[]}, testValuesDropped[]?,
 testCases{changedByServer[], restored[], failed[{name, id, reason}], kept?},
 normalised[{path, kind, from, to}]}.
 
+Versions: the first V2 save of an older method (one the platform has not
+migrated yet) migrates it, and the server restarts the draft's version
+numbering and history at 1 (e.g. previousVersion 71, version 1; `ad history
+list` then shows one version). The save landed; wi-impl warns. Confirm a save
+by data.version or by content (`wi-impl ad state <uuid>` fingerprints), not
+by the number going up.
+
 Examples:
   wi-impl ad save overlay.json --uuid 4a1b2c3d... --env <env> --dry-run --llm
   wi-impl ad save --uuid 4a1b2c3d... --sql-file 3=query.sql --env <env> --yes --llm
