@@ -51,6 +51,23 @@ const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"'
  */
 const HTML_TAG = /<\/?(?:a|abbr|b|blockquote|br|code|del|div|em|font|h[1-6]|hr|i|img|ins|li|mark|ol|p|pre|s|small|span|strike|strong|sub|sup|table|tbody|td|th|thead|tr|u|ul)\b(?:\s[^<>]*)?\/?>/gi;
 
+/**
+ * Text for a rich-text field (a description): `<` / `>` outside the editor's
+ * HTML tags become `&lt;` / `&gt;`, so `{<settingName>: value}` shows as
+ * typed in the AD UI (which renders the field as HTML and drops unknown tags)
+ * and reads back the same through {@link htmlToText}. Real tags are kept.
+ */
+export function escapeRichText(text: string): string {
+  let out = "";
+  let last = 0;
+  const esc = (s: string) => s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  for (const m of text.matchAll(HTML_TAG)) {
+    out += esc(text.slice(last, m.index)) + m[0];
+    last = m.index! + m[0].length;
+  }
+  return out + esc(text.slice(last));
+}
+
 /** Rich-text (AD UI) → plain text: `<br>` / block ends become " / ", HTML tags dropped (other `<…>` text kept), common entities decoded. */
 export function htmlToText(html: string): string {
   return html

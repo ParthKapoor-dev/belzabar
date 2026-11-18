@@ -45,6 +45,10 @@ Arguments:
                             only when the service has exactly one account on
                             the env — otherwise AD_OVERLAY_INVALID lists them
                             as id=nickname), description, language, async
+                          (descriptions are rich text in the AD UI: `<` and
+                          `>` outside HTML tags are stored as &lt; / &gt;, so
+                          "{<name>: value}" shows as typed; <b>, <br>… stay
+                          tags)
                           executor CODE_LAMBDA | INTERNAL_SERVER  (custom code;
                             a top-level STEP / set key, not inside customCode).
                             The CC5 warning "NODEJS_LAMBDA is deprecated" is

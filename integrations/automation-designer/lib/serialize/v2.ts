@@ -30,6 +30,7 @@ import type { ParseOptions } from "../parser/steps/classify";
 import { diffPaths, getAtPath, isUnder, jsonEqual, pathSegments } from "./diff";
 import { emptyCatalog, encodeSql, findSqlSlot, Problems, type ServiceCatalog } from "./compact";
 import { applyStructuralOps, OP_NAMES } from "./ops";
+import { escapeRichText } from "../compact";
 
 export { encodeSql };
 
@@ -103,7 +104,7 @@ export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: Pl
     const v = o[key];
     if (typeof v !== "string") invalid.push({ key, reason: "must be a string" });
     else if (key === "name" && v.trim().length === 0) invalid.push({ key, reason: "must not be empty" });
-    else edits.push({ key, path: key, value: v });
+    else edits.push({ key, path: key, value: key === "description" ? escapeRichText(v) : v });
   }
 
   // ── inputs[] ──────────────────────────────────────────────────────────
@@ -161,7 +162,7 @@ export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: Pl
           const value = e[f];
           if (typeof value !== "string") continue;
           if (f === "description") {
-            edits.push({ key: label(f), path: `${base}.description`, value });
+            edits.push({ key: label(f), path: `${base}.description`, value: escapeRichText(value) });
             continue;
           }
           if (f === "source") {

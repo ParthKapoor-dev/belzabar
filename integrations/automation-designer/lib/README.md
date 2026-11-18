@@ -30,7 +30,7 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `grep.ts` | `ad grep`: the searchable texts of a method (`stepTextsOf` / `methodTextsOf`: SQL and code decoded, SpEL, call targets, descriptions; test cases read fresh), line matching; reads bodies through `callers.ts`' `readBodyCached` (per-version cache `cache/grep-texts`). |
 | `view-fetch.ts` | `fetchViewMethod` (fresh V2 read, V1 fallback) for `show --compact` / `--story` and `outputs`; `fetchMethodChecked` (V1 read confirmed on V2, so soft-deleted methods are `METHOD_NOT_FOUND`). |
 | `method-view.ts` | `compactMethod` / `renderCompact` (`show --compact`: `{view:"compact", name, category, state, version, uuid, summary?, methodDescription?, in, out, vars, defaults?, steps[], callees?, blocks?}`, one line per step) and `storyMarkdown` (`show --story`: `{view:"story", name, uuid, markdown}`). Cuts end `…(+N, use --full)`; conditions are never cut. A `CategoryResolver` (from `method-finder.ts` `cachedCategoryResolver`) gives callees their canonical category. |
-| `compact.ts` | Output trimming for `--llm` payloads: `pruneEmpty`, `oneLine`, `abbreviate`, `htmlToText`. |
+| `compact.ts` | Output trimming for `--llm` payloads: `pruneEmpty`, `oneLine`, `abbreviate`, `htmlToText`; `escapeRichText` for description writes. |
 | `api-shape.ts` | `child-info --shape`: the part of a callee contract needed to wire a step, plus its auth accounts. |
 | `history.ts` | `getVersionOf` / `sideOf`: read version N from the chain (draft or published) the uuid names. |
 | `fingerprint.ts` | `fingerprintMethod`: a behaviour hash that ignores env-local ids and bookkeeping; `methodDiffView`, `diffPaths`. |

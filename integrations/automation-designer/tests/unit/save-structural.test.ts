@@ -8,6 +8,7 @@ import { planV2Overlay } from "../../lib/serialize/v2";
 import { dbMethodForSql, emptyCatalog, type ServiceCatalog } from "../../lib/serialize/compact";
 import { structuralRemovals, verifyStructural } from "../../lib/save/pipeline";
 import { namedOrder, outputsToMethod, previewChanges } from "../../lib/save/preview";
+import { htmlToText } from "../../lib/compact";
 import { decodeBase64Strict } from "../../lib/base64";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 import { errorCode as code } from "@belzabar/core/testing";
@@ -478,6 +479,25 @@ describe("dry-run preview (C9)", () => {
     expect(order.slice(0, 4)).toEqual([1, "new#1", "new#2", 2]);
     expect(outputsToMethod(p, order)).toEqual([{ step: "new#1", output: "greet" }]);
     expect(previewChanges(live, p)).toContainEqual({ target: "output greet", path: "outputs[0]", before: undefined, after: { key: "greet", fieldCode: "greet", name: "greet", type: "STRING" } });
+  });
+});
+
+describe("descriptions keep <…> text as typed (C20)", () => {
+  const typed = "sets {<settingName>: value}, a < b, <b>bold</b>";
+  const stored = "sets {&lt;settingName&gt;: value}, a &lt; b, <b>bold</b>";
+  test("update-step / add-step description: angle-bracket text escaped, editor tags kept", () => {
+    const p = plan(real(U), [
+      { op: "update-step", step: 1, set: { description: typed } },
+      { op: "add-step", step: { ...echo, description: typed } },
+    ]);
+    expect(p.body.steps![0]!.description).toBe(stored);
+    expect(p.body.steps![p.body.steps!.length - 1]!.description).toBe(stored);
+    expect(htmlToText(stored)).toBe("sets {<settingName>: value}, a < b, bold");
+  });
+  test("parsedSteps description and the method description too", () => {
+    const p = planV2Overlay(real(U), { description: typed, parsedSteps: [{ orderIndex: 2, description: typed }] });
+    expect(p.body.description).toBe(stored);
+    expect(p.body.steps![1]!.description).toBe(stored);
   });
 });
 

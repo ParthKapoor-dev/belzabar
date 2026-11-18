@@ -40,6 +40,7 @@ import type { ApiContract, ContractInput } from "../validate/online";
 import type { V2Step, V2StepInput } from "../types/v2-wire";
 import { decodeBase64Strict, encodeBase64 } from "../base64";
 import { isObj, type Obj } from "@belzabar/core";
+import { escapeRichText } from "../compact";
 
 
 // ── problems ────────────────────────────────────────────────────────────────
@@ -499,7 +500,7 @@ export function applyStepFields(
   if ("description" in set) {
     if (typeof set.description !== "string") p.bad(at("description"), "must be a string");
     else {
-      step.description = set.description;
+      step.description = escapeRichText(set.description);
       changed.push("description");
     }
   }

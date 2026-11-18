@@ -14,7 +14,7 @@ supplies the live body and the callee contracts and does the I/O.
 ## Overlay (`v2.ts`)
 
 Accepted keys: `name`, `summary`, `description`, `inputs[{code, testValue}]`,
-`parsedSteps[{orderIndex, source | sql | expression | description}]` and `ops[]`.
+`parsedSteps[{orderIndex, source | sql | expression | description}]` and `ops[]`. Descriptions are rich text: `<` / `>` outside the editor's HTML tags are escaped, so `{<name>: value}` is kept as typed.
 
 - Unknown keys fail `AD_OVERLAY_UNKNOWN_KEY`; bad value types fail `AD_OVERLAY_INVALID`.
 - Keys that would not land fail `AD_OVERLAY_NOT_APPLIED`: a missing or ambiguous step, a field
@@ -63,7 +63,7 @@ Shared by `ops` and `ad create --spec`. Every key is optional except what the st
 | `when` | Entry condition (SpEL); `null` clears |
 | `exit` / `exitIf` | `{onFailure, code, message}` / `{when, code, message}` |
 | `loop` | `{over}`, `{times}`, `{while}` or `{from, to, by}`, plus `counter`, `parallel`, `threads` |
-| `description`, `async` | Step description, `runAsync` |
+| `description`, `async` | Step description (rich text: `<` / `>` outside HTML tags are stored as `&lt;` / `&gt;`, so `<name>` shows as typed), `runAsync` |
 
 - `codeFile` / `sqlFile` paths are relative to the spec or overlay file and are read by
   [`../save/sources.ts`](../save/sources.ts) before expansion.
