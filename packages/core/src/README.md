@@ -35,7 +35,7 @@ Source of `@belzabar/core`. `index.ts` re-exports every runtime module below;
 ## Commands and results
 
 A command module is `{ parseArgs, execute, presentHuman?, envAware?, writes?, requiresEnv?,
-writesLocal?, ownsFlags? }`, with its argv spec exported as `args` next to it.
+writesLocal?, ownsFlags?, helpFor? }`, with its argv spec exported as `args` next to it.
 
 - `ok(data)` — success.
 - `fail(code, message, {details?, data?})` — failure.
@@ -65,7 +65,8 @@ wi-impl <token> [args]
   turns on debug logging.
 - **Help.** `-h`/`--help` anywhere before `--` shows the command's help instead of running it
   (`hasHelpFlag`). Help text comes from `registryHelpResolver`, so dev mode and the compiled
-  binary print the same thing. Print outcomes are ANSI-stripped off a TTY or under `NO_COLOR`,
+  binary print the same thing; a command's `helpFor(help, args)` may narrow it to the
+  subcommand asked about (`ad sql update --help`). Print outcomes are ANSI-stripped off a TTY or under `NO_COLOR`,
   even with `FORCE_COLOR`.
 - **`--help-full [<namespace>] [--index]`** is handled only as the first token after the global
   flags; with `--llm` it is a `wi-impl.help` envelope `{data: {text}}`.

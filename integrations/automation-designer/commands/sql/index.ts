@@ -1,5 +1,6 @@
 import { CliError, defineSubcommands, ok, type CommandModule } from "@belzabar/core";
 import { AD_YES_FLAG } from "../../lib/args/common";
+import { subcommandHelp } from "../../lib/args/subcommand-help";
 import { fetchSqlDatabases } from "../../lib/sql/api";
 import {
   executeSqlReadQuery,
@@ -312,6 +313,7 @@ export function readPlan(rows: unknown[], format: "text" | "json"): { plan: stri
 const command: CommandModule<SqlArgs, SqlData> = {
   // `tui` can start in, or switch to, update/insert/modify mode: always a write (explicit --env).
   writes: (a) => a.action === "update" || a.action === "insert" || a.action === "modify" || a.action === "tui",
+  helpFor: (help, argv) => subcommandHelp(help, argv, "wi-impl ad sql"),
   parseArgs(argv) {
     const parsed = args.parse(argv);
 

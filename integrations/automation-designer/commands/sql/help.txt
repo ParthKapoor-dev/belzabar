@@ -21,20 +21,23 @@ Subcommands:
                       several: generatedKeys lists every returned key row).
   modify <QUERY>      Execute a DDL schema change (ALTER / CREATE / DROP / TRUNCATE /
                       COMMENT / GRANT / REVOKE / REINDEX / REFRESH / CLUSTER).
-                      update/insert/modify check the statement before sending it: an
-                      empty or comment-only one is SQL_EMPTY_STATEMENT, one of another
-                      kind (e.g. modify "UPDATE …") is SQL_WRONG_STATEMENT.
   tui                 Start an interactive SQL session (can run writes: --env required).
                       Human use only: with --llm it fails SQL_TUI_UNSUPPORTED_IN_LLM.
 
-Errors:
+Write checks (update, insert, modify):
+  The statement is checked before it is sent: an empty or comment-only one is
+  SQL_EMPTY_STATEMENT, one of another kind (e.g. modify "UPDATE …") is
+  SQL_WRONG_STATEMENT. modify refuses a DELETE: 'sql update' runs it and returns
+  rowsAffected.
+
+Errors (run, explain, update, insert, modify):
   A statement the database refuses fails with SQL_QUERY_FAILED (run/explain) or
   SQL_<UPDATE|INSERT|MODIFY>_QUERY_FAILED; error.message holds the database's own
   message (e.g. 'column "x" does not exist (position 8)'), details.query the query.
   A stopped or restarting environment (HTTP 502/503/504) is ENV_UNAVAILABLE, not a
   database error: run the statement again once the environment is up.
 
-Bind parameters:
+Bind parameters (run, explain, update, insert):
   The server reads a lone '?' and a ':name' (also the ':6' of arr[1:6]) in
   run/explain/update/insert as bind parameters and fails, so they are refused
   before sending (SQL_PARAMETER_MARKER). Write the jsonb operators doubled
@@ -84,12 +87,12 @@ Flags (tui):
   --page-size <N>     Rows per page for pagination. (default: 50)
   --no-history        Disable persisted query history for this session.
 
-Flags (all subcommands):
-
-TUI meta commands:
+TUI meta commands (tui):
   \q  \h  \status  \db  \use <db>  \mode [read|insert|update|modify]  \history  \clear  \timing  \format [table|json]  \last  \r
 
-  --help, -h          Show this help message.
+Flags (all subcommands):
+  --help, -h          Show this help message (with a subcommand: only that
+                      subcommand's part, e.g. wi-impl ad sql update --help).
 
 Global Flags:
   --env <name>        Set active environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).

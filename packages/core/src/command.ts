@@ -105,6 +105,12 @@ export interface CommandModule<TArgs = unknown, TData = unknown> {
    * exported `args` spec (core/args `declaresFlag`).
    */
   ownsFlags?: readonly string[];
+  /**
+   * Narrow the command's help text to what `args` (the argv after the command
+   * name) asks about, e.g. one subcommand for `<cmd> <sub> --help`. Return the
+   * text unchanged when there is nothing to narrow.
+   */
+  helpFor?: (help: string, args: string[]) => string;
   parseArgs?: (args: string[], context: CommandContext) => TArgs | Promise<TArgs>;
   execute: (args: TArgs, context: CommandContext) => CommandResult<TData> | Promise<CommandResult<TData>>;
   presentHuman?: (envelope: CommandEnvelope<TData>, ui: HumanPresenterHelpers) => void;

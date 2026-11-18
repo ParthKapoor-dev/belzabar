@@ -589,6 +589,7 @@ export async function dispatchCommand(
     if (helpResolver) {
       helpText = await helpResolver(commandName);
     }
+    if (helpText && command.helpFor) helpText = command.helpFor(helpText, args.slice(1));
     if (outputMode === "llm") {
       return envelopeOutcome(
         outputMode,
