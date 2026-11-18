@@ -1,4 +1,4 @@
-Usage: wi-impl pd publish <pageId> [--landing] [--host <id> ...] [--yes]
+Usage: wi-impl pd publish <pageId> [--landing] [--host <id> ... | --hosts-from-current] [--yes]
 
 Publish a PD draft page to its deployable sibling. Wraps POST
 /pages/<draftId>/publish?landingPage=&hostIds= in an acquire/release lock
@@ -16,7 +16,9 @@ IMPORTANT: passing --host is what makes the page go LIVE. Without --host the
 draft is published to its PUBLISHED sibling record, but the page is NOT
 deployed to any host — the live app keeps serving the previously-deployed
 config. Pass --host to publish AND deploy (mirrors the designer's
-"Publish and Deploy").
+"Publish and Deploy"). Host ids: `wi-impl pd hosts` lists every deployable
+host; `wi-impl pd show <page>` shows the hosts a page is on (summary.hostIds);
+--hosts-from-current deploys to those again.
 
 Arguments:
   <pageId>              PD draft page id. If a PUBLISHED id is given, wi-impl
@@ -28,6 +30,11 @@ Flags:
   --host <id>           Publish AND deploy to a specific host. Repeatable —
                         `--host a --host b` sends ?hostIds=a,b. Omit to publish
                         without deploying.
+  --hosts-from-current  Publish AND deploy to the hosts the page is on now:
+                        the published row's hostIds, else the draft's own
+                        (data.hostIdsSource: published | draft). None →
+                        PD_NO_CURRENT_HOSTS, before anything is written. Not
+                        with --host.
   --force-validation    Publish despite validator ERRORS the draft introduces.
   --allow-published     Publish a PUBLISHED page that has no linked draft.
   --yes, -y             Confirm the publish (required with --llm or without a
@@ -42,3 +49,4 @@ Examples:
   wi-impl pd publish 4f126300499e4d83cd07a35b4d9af9e7 --yes
   wi-impl pd publish 4f126300499e4d83cd07a35b4d9af9e7 --landing --yes
   wi-impl pd publish <id> --host 1 --host 2 --yes --llm
+  wi-impl pd publish <id> --hosts-from-current --yes

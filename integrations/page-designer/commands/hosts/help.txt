@@ -1,0 +1,21 @@
+Usage: wi-impl pd hosts [flags]
+
+List the hosts Page Designer pages can be deployed to (read only; GET
+/rest/api/pagedesigner/deployable/hosts). A host id is what `wi-impl pd
+publish` deploys to (see its help). The hosts a page is deployed to now are
+in `wi-impl pd show <page>` (summary.hostIds); `wi-impl pd publish` can
+reuse them.
+
+Output: data.count and data.hosts[] = {id, domain, nickname, description},
+sorted by id.
+
+Flags:
+  --help, -h            Show this help message.
+
+Global Flags:
+  --env <name>          Environment (default: WI_IMPL_ENV, else defaultEnv, else the only env).
+  --llm                 Output structured JSON envelope.
+
+Examples:
+  wi-impl pd hosts --env dev
+  wi-impl pd hosts --env qa --llm | jq '.data.hosts[] | {id, nickname}'

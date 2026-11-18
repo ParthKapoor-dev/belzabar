@@ -1,0 +1,1 @@
+wi-impl pd hosts  :->  List the deployable hosts (id, domain, nickname): the host ids `pd publish` deploys to

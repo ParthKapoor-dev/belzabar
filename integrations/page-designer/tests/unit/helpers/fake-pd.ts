@@ -44,6 +44,8 @@ export interface FakePd {
   searchStatus: number;
   /** GET /pages/page-dependencies?id=<pubId> → {dependencyJSON: deps[pubId]}. */
   deps: Record<string, Record<string, unknown>>;
+  /** GET /deployable/hosts (wire 2026-11-18: [{id, domain, description, nickname}]). */
+  hosts: Array<Record<string, unknown>>;
   restore(): void;
 }
 
@@ -128,6 +130,10 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
     searchRows: [],
     searchStatus: 200,
     deps: {},
+    hosts: [
+      { id: 99, domain: "staff.example.test", description: "Staff site", nickname: "STF" },
+      { id: 22, domain: "public.example.test", description: "Public site", nickname: "PUB" },
+    ],
     ff: null as unknown as FakeFetch,
     cfg: null as unknown as TempEnvConfig,
     log: () => state.ff.requests.map((r) => `${r.method} ${new URL(r.url).pathname.replace(BASE, "")}${new URL(r.url).search}`),
@@ -230,6 +236,7 @@ export function startFakePd(initial: RawPageResponse[] = []): FakePd {
         return json(saved); // the PUT answers with the full stored page
       }
     }
+    if (path === "/deployable/hosts" && req.method === "GET") return json(state.hosts);
     if (path === "/pages/page-dependencies") {
       const d = state.deps[u.searchParams.get("id") ?? ""];
       return d ? json({ dependencyJSON: d }) : json({ error: "not found" }, 404);

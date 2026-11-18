@@ -25,9 +25,14 @@ describe("pd publish", () => {
       pageId: "abc",
       landing: true,
       hostIds: ["1", "2"],
+      hostsFromCurrent: false,
       yes: true,
       overrides: { forceValidation: false, allowPublished: false },
     });
+  });
+
+  test("--hosts-from-current excludes --host", () => {
+    expect(code(() => publish.parseArgs!(["abc", "--host", "1", "--hosts-from-current", "--yes"], ctx))).toBeTruthy();
   });
 
   test("publish is a write", () => {

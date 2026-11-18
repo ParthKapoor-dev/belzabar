@@ -8,6 +8,7 @@ import {
   errorVariables,
   findInCode,
   findNodes,
+  hostIdsOf,
   httpDetail,
   httpSummary,
   variablesView,
@@ -342,6 +343,8 @@ interface ShowSummary {
   // The overview fields below are only on a bare `pd show` (and --full/--raw):
   // with a section flag the summary is just the identity above.
   inputKind?: InputKind;
+  /** Hosts this row is deployed to (`pd publish --host` ids; `pd hosts` lists them all). */
+  hostIds?: string[];
   editUrl?: string | null;
   configSizeBytes?: number;
   topLevelKeys?: string[];
@@ -552,6 +555,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
       summary: sectionMode ? identity : {
         ...identity,
         inputKind,
+        hostIds: hostIdsOf(response),
         editUrl,
         configSizeBytes: Buffer.byteLength(configStr, "utf-8"),
         topLevelKeys:
@@ -719,6 +723,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
         ["Published ID", s.publishedId ?? "N/A"],
         ["Version ID", s.versionId ?? "N/A"],
         ...(s.configSizeBytes === undefined ? [] : [
+          ["Host IDs", s.hostIds?.length ? s.hostIds.join(", ") : "none"],
           ["Edit URL", s.editUrl ?? "N/A"],
           ["Config Size", `${s.configSizeBytes} bytes`],
           ["Variables", `${s.userDefinedVarCount} user-defined, ${s.derivedVarCount} derived`],

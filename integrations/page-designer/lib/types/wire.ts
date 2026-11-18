@@ -39,6 +39,15 @@ export interface RawPageResponse {
   [key: string]: unknown;
 }
 
+/** One row of GET /deployable/hosts: a host a page can be deployed to. */
+export interface RawDeployableHost {
+  id: number;
+  domain?: string;
+  description?: string;
+  nickname?: string;
+  [key: string]: unknown;
+}
+
 /** `pageLockDetails` of a locked page's GET body. */
 export interface RawPageLockDetails {
   status?: string;

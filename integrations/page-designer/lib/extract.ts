@@ -3,7 +3,7 @@
 
 import { formConfigs, targetVariable } from "./form-config";
 import { walkParsed } from "./parser/nodes";
-import type { HydratedPage, ParsedNode, PageHttpRequest } from "./types/common";
+import type { HydratedPage, ParsedNode, PageHttpRequest, RawPageResponse } from "./types/common";
 
 // -------- AD methods / child components -----------------------------------
 
@@ -27,6 +27,13 @@ export function childComponentNames(page: HydratedPage): string[] {
     });
   }
   return [...out];
+}
+
+/** The hosts a page row is deployed to: its `hostIds` ("22,99" on the wire) as a list. */
+export function hostIdsOf(raw: RawPageResponse | null | undefined): string[] {
+  const v = raw?.hostIds as unknown;
+  const list = Array.isArray(v) ? v.map(String) : typeof v === "string" || typeof v === "number" ? String(v).split(",") : [];
+  return list.map((s) => s.trim()).filter(Boolean);
 }
 
 // -------- HTTP error handler --------------------------------------------------

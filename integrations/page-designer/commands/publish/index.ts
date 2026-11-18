@@ -14,7 +14,7 @@
 // fast, before --yes) and again on a FRESH fetch inside the lock, so what is
 // POSTed is what was validated (data.versionDrift reports a change).
 
-import { defineArgs, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import {
   PD_WRITE_OVERRIDE_FLAGS,
   PD_YES_FLAG,
@@ -22,15 +22,18 @@ import {
 } from "../../lib/args/common";
 import { pdApi } from "../../lib/api/index";
 import { invalidatePageCache } from "../../lib/cache";
+import { hostIdsOf } from "../../lib/extract";
 import { fetchFresh, fetchPublishedBaseline, gateValidation, logIntent, requireConfirmation, resolveWriteTarget, versionDrift } from "../../lib/edit";
 import { withLock } from "../../lib/lock";
 import { validateEdit, validateHydrated } from "../../lib/validator/index";
-import type { HydratedPage, ValidationIssue } from "../../lib/types/common";
+import type { HydratedPage, RawPageResponse, ValidationIssue } from "../../lib/types/common";
 
 interface PublishArgs {
   pageId: string;
   landing: boolean;
   hostIds: string[];
+  /** --hosts-from-current: deploy to the hosts the page is on now. */
+  hostsFromCurrent: boolean;
   yes: boolean;
   overrides: WriteOverrides;
 }
@@ -42,6 +45,8 @@ interface PublishData {
   switchedFromPublished: boolean;
   landing: boolean;
   hostIds: string[];
+  /** Where hostIds came from: --host, or the published / draft row (--hosts-from-current). */
+  hostIdsSource: "flag" | "published" | "draft" | "none";
   preVersionId: number | null;
   postPublishVersionId: number | null;
   /** What validation was relative to: the PUBLISHED version (diff-aware) or nothing (full). */
@@ -59,10 +64,27 @@ export const args = defineArgs({
     // `--host` without a value is MISSING_VALUE (dropping it would publish
     // without deploying).
     host: { type: "string", repeatable: true },
+    "hosts-from-current": { type: "boolean" },
     ...PD_YES_FLAG,
     ...PD_WRITE_OVERRIDE_FLAGS,
   },
+  exclusive: [["host", "hosts-from-current"]],
 });
+
+/**
+ * The hosts the page is deployed to now: the published row's hostIds, else
+ * the draft's own. None → PD_NO_CURRENT_HOSTS (nothing to reuse).
+ */
+async function currentHosts(draft: HydratedPage, publishedId: string | null): Promise<{ hostIds: string[]; source: "published" | "draft" }> {
+  const published = publishedId ? hostIdsOf(await pdApi.fetchPage(publishedId)) : [];
+  if (published.length > 0) return { hostIds: published, source: "published" };
+  const own = hostIdsOf(draft.raw as RawPageResponse);
+  if (own.length > 0) return { hostIds: own, source: "draft" };
+  throw new CliError(
+    `${draft.name} (${draft.id}) has no current hosts to reuse. List the hosts with \`wi-impl pd hosts\` and pass --host <id>.`,
+    { code: "PD_NO_CURRENT_HOSTS", details: { draftId: draft.id, publishedId } },
+  );
+}
 
 const command: CommandModule<PublishArgs, PublishData> = {
   writes: true,
@@ -72,6 +94,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
       pageId: positionals.pageId,
       landing: flags.landing,
       hostIds: flags.host,
+      hostsFromCurrent: flags.hostsFromCurrent,
       yes: flags.yes,
       overrides: { forceValidation: flags.forceValidation, allowPublished: flags.allowPublished },
     };
@@ -93,12 +116,17 @@ const command: CommandModule<PublishArgs, PublishData> = {
     const check = (page: HydratedPage) => (baseline ? validateEdit(baseline, page) : validateHydrated(page));
     gateValidation(check(before), args.overrides.forceValidation, warn);
 
+    const hosts = args.hostsFromCurrent
+      ? await currentHosts(before, target.publishedId)
+      : { hostIds: args.hostIds, source: args.hostIds.length > 0 ? ("flag" as const) : ("none" as const) };
+    const hostIds = hosts.hostIds;
+
     await requireConfirmation(context, args.yes, "publish", [
       ["Page", `${before.name} (${targetId})`],
-      ["Deploy to hosts", args.hostIds.length > 0 ? args.hostIds.join(", ") : "none (publish only)"],
+      ["Deploy to hosts", hostIds.length > 0 ? `${hostIds.join(", ")}${hosts.source === "flag" ? "" : ` (current, from the ${hosts.source} row)`}` : "none (publish only)"],
       ["Landing page", args.landing ? "yes" : "no"],
     ]);
-    logIntent("publish", targetId, { hostIds: args.hostIds, landing: args.landing });
+    logIntent("publish", targetId, { hostIds, landing: args.landing });
 
     // The POST /pages/<draftId>/publish response body IS the freshly-published
     // page — it carries the authoritative post-publish versionId.
@@ -108,7 +136,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
       const drift = versionDrift(before, fresh, warn);
       const issues = check(fresh);
       const gate = gateValidation(issues, args.overrides.forceValidation, warn, drift !== null);
-      const publishResponse = await pdApi.publishPage(targetId, { landingPage: args.landing, hostIds: args.hostIds });
+      const publishResponse = await pdApi.publishPage(targetId, { landingPage: args.landing, hostIds });
       return { publishResponse, gate, issues, drift };
     });
 
@@ -135,7 +163,8 @@ const command: CommandModule<PublishArgs, PublishData> = {
       publishedId,
       switchedFromPublished: target.switchedFromPublished,
       landing: args.landing,
-      hostIds: args.hostIds,
+      hostIds,
+      hostIdsSource: hosts.source,
       preVersionId: before.versionId,
       postPublishVersionId,
       validation: {

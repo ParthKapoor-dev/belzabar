@@ -25,7 +25,7 @@ Inspect, lint, snapshot, edit and publish Page Designer (PD) pages and component
 
 | Group | Commands |
 |---|---|
-| Read | `show`, `find`, `find-ad-methods`, `analyze`, `page-deps`, `translations`, `diff`, `history list/show/diff` |
+| Read | `show`, `find`, `find-ad-methods`, `analyze`, `page-deps`, `translations`, `diff`, `history list/show/diff`, `hosts` |
 | Check | `lint`, `snapshot`, `preflight` |
 | Write | `save`, `publish`, `history restore`, `lock acquire/release` |
 

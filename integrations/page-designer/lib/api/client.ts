@@ -15,6 +15,7 @@ import type {
   RawHistoryEntry,
   RawPageListItem,
   RawPageLockDetails,
+  RawDeployableHost,
   PdStatus,
   PdEntityType,
 } from "../types/wire";
@@ -123,6 +124,19 @@ export async function fetchDeployablePageByAppUrl(
     path: "/deployable/pages",
   });
   return data?.deployedPages?.[0]?.referencePageId ?? null;
+}
+
+/**
+ * The hosts pages can be deployed to (`pd publish --host <id>`): GET
+ * /deployable/hosts → [{id, domain, description, nickname}] (verified live
+ * 2026-11-18).
+ */
+export async function fetchDeployableHosts(): Promise<RawDeployableHost[]> {
+  const context = { method: "GET", path: "/deployable/hosts" };
+  const response = await apiFetch(`${PD_BASE}/deployable/hosts`, { method: "GET", authMode: "Bearer" });
+  await ensureOk(response, context);
+  const data = await readJson<unknown>(response, context);
+  return Array.isArray(data) ? (data as RawDeployableHost[]) : [];
 }
 
 const PAGE_LIST_LIMIT = 2000;

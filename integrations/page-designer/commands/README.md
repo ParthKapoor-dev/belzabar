@@ -12,10 +12,11 @@ notes); this page only indexes them and states the conventions they share.
 | [`find`](./find/help.txt) | no | Fuzzy search over the cached page/component index |
 | [`find-ad-methods`](./find-ad-methods/help.txt) | no | AD method ids a page calls, optionally through its components |
 | [`history`](./history/help.txt) | `restore` | Server version history: list, show, diff, restore into the draft |
+| [`hosts`](./hosts/help.txt) | no | The deployable hosts (`publish --host` ids) |
 | [`lock`](./lock/help.txt) | `acquire`, `release` | Manual lock control, recorded in `~/.wi-impl/pd-locks/<env>.json` |
 | [`page-deps`](./page-deps/help.txt) | no | The page-dependencies graph summary |
 | [`preflight`](./preflight/help.txt) | no | Dry run of `save`: resolve target, plan, validate |
-| [`publish`](./publish/help.txt) | yes | Diff-aware validated, locked publish; `--host` deploys |
+| [`publish`](./publish/help.txt) | yes | Diff-aware validated, locked publish; `--host` / `--hosts-from-current` deploys |
 | [`save`](./save/help.txt) | yes | Validated, locked save of an overlay or full config into the draft |
 | [`show`](./show/help.txt) | no | Overview and sections (vars, http, tree, find, …) |
 | [`snapshot`](./snapshot/help.txt) | no | Normalized snapshot; `--compare` against a saved one |

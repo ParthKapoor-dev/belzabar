@@ -32,6 +32,7 @@ All under `/rest/api/pagedesigner`, Bearer auth through core `apiFetch` (refresh
 | GET | `/pages/{id}` | Full page; `configuration` is stringified JSON; `pageLockDetails` when locked |
 | GET | `/pages?…` (`name`, `status`, `pageType`, `apiInfoLevel`) | Name lookup and the `find` index |
 | GET | `/pages/page-dependencies?…` | `page-deps`, `translations` |
+| GET | `/deployable/hosts` | `pd hosts`: `[{id, domain, description, nickname}]`, the ids `publish` deploys to. A page row's own `hostIds` is a comma string (`"22,99"`) |
 | GET | `/pages/history?pageId={id}` | Version list. Recorded on the PUBLISHED row: a never-published draft has none |
 | GET | `/pages/version/{versionId}` | A version's full body. `id` is the owning (published) row, `referenceId` its draft. Version ids are global, so ownership is checked |
 | PUT | `/pages/{id}` | Save. Full: `{status, partialUpdate: false, configuration}`. Partial: `{status, partialUpdate: true, pageElementOperations}`. `partialUpdate` is required (400 without it). Answers the full stored page |

@@ -21,6 +21,9 @@ import findAdMethodsDesc from "./commands/find-ad-methods/desc.txt" with { type:
 import * as historyCmd from "./commands/history/index";
 import historyHelp from "./commands/history/help.txt" with { type: "text" };
 import historyDesc from "./commands/history/desc.txt" with { type: "text" };
+import * as hostsCmd from "./commands/hosts/index";
+import hostsHelp from "./commands/hosts/help.txt" with { type: "text" };
+import hostsDesc from "./commands/hosts/desc.txt" with { type: "text" };
 import * as lintCmd from "./commands/lint/index";
 import lintHelp from "./commands/lint/help.txt" with { type: "text" };
 import lintDesc from "./commands/lint/desc.txt" with { type: "text" };
@@ -55,6 +58,7 @@ export const registry = {
   find: { module: findCmd, help: findHelp, desc: findDesc },
   "find-ad-methods": { module: findAdMethodsCmd, help: findAdMethodsHelp, desc: findAdMethodsDesc },
   history: { module: historyCmd, help: historyHelp, desc: historyDesc },
+  hosts: { module: hostsCmd, help: hostsHelp, desc: hostsDesc },
   lint: { module: lintCmd, help: lintHelp, desc: lintDesc },
   lock: { module: lockCmd, help: lockHelp, desc: lockDesc },
   "page-deps": { module: pageDepsCmd, help: pageDepsHelp, desc: pageDepsDesc },

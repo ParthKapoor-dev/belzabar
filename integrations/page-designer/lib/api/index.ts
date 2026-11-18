@@ -13,6 +13,7 @@ import type {
   RawHistoryEntry,
   RawPartialUpdateOperation,
   RawPageLockDetails,
+  RawDeployableHost,
   PdStatus,
 } from "../types/wire";
 import type { AcquireOutcome, ReleaseOutcome, SaveResult } from "./client";
@@ -45,6 +46,10 @@ export const pdApi = {
 
   fetchAllComponents(): Promise<RawPageListItem[]> {
     return client.fetchAllComponents();
+  },
+
+  fetchDeployableHosts(): Promise<RawDeployableHost[]> {
+    return client.fetchDeployableHosts();
   },
 
   fetchPageDependencies(

@@ -29,7 +29,9 @@ default env is resolved by its NAME on --env (data.byNameFrom, plus a
 notice); otherwise pass the name.
 
 Output is compact (for agents): with any section flag the summary is just
-the identity (name, ids, status, versionId); rows omit empty fields.
+the identity (name, ids, status, versionId); rows omit empty fields. The
+bare summary also has hostIds: the hosts this row is deployed to (the ids
+`wi-impl pd publish` deploys to; `wi-impl pd hosts` lists them all).
 
 Flags:
   --vars              Show all variables (user-defined + derived; derived vars
