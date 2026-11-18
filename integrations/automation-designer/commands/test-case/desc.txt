@@ -1,8 +1,9 @@
 wi-impl ad test-case list <uuid>  :->  List a method's saved test cases (also create, update, delete, bulk, run-suite: see --help)
 wi-impl ad test-case create <uuid> --name <n> --input <k=v> --assert <out=v> --env <env> [--yes]  :->  Create one UI-encoded test case from flags; verified by reading the suite back
-wi-impl ad test-case create <uuid> --file <case.json> --env <env> [--yes]  :->  Create one test case from a case file or UI body (refuses an existing name); verified on read-back
+wi-impl ad test-case create <uuid> --file <case.json> --env <env> [--yes]  :->  Create one test case from a case file or UI body (refuses an existing name); verified on read-back; data.id is the new id
+wi-impl ad test-case create <uuid> --file <case.json> --dry-run --env <env>  :->  Preview: the body it would POST (the exact stored SpEL); writes nothing
 wi-impl ad test-case create <uuid> --name <n> --description <d>  :->  Set the test case description
-wi-impl ad test-case update <uuid> <testCaseId> --file <case.json> --env <env> [--yes]  :->  Replace a case's inputs/assertions (name/description cannot change via the API); verified
+wi-impl ad test-case update <uuid> <testCaseId> --file <case.json> --env <env> [--yes]  :->  Replace a case's inputs/assertions (name/description cannot change via the API: a missing description keeps it, another one warns); verified
 wi-impl ad test-case update <uuid> <testCaseId> --input <k=v> --assert <out=v> --env <env>  :->  Change single inputs / replace the assertions of an existing case
 wi-impl ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case
 wi-impl ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Create an array of test cases (one POST each; verified)

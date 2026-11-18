@@ -1,11 +1,11 @@
 import { resolve } from "path";
-import { CliError, type CommandModule, defineSubcommands, failWithData, ok, readJsonInput } from "@belzabar/core";
+import { CliError, type CommandModule, defineSubcommands, failWithData, isObj, ok, readJsonInput } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { AD_YES_FLAG } from "../../lib/args/common";
 import { logIntent, requireConfirmation } from "../../lib/args/confirm";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { loadTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
-import { parseCaseInput, type CaseFile } from "../../lib/test-cases/case-file";
+import { caseToWire, parseCaseInput, type CaseFile } from "../../lib/test-cases/case-file";
 import { assertionFromExpectation, parseExpectation } from "../../lib/test-cases/expect";
 import { methodDirFor, readCaseFiles, readMethodMeta, writeMethodDir, type MethodMeta, type WriteResult } from "../../lib/test-cases/files";
 import {
@@ -49,6 +49,7 @@ interface TestCaseArgs extends CaseFlags {
   dir?: string;
   apply?: boolean;
   prune?: boolean;
+  dryRun?: boolean;
   wait?: boolean;
   /** run-suite --wait: run only these case names (`--case`, repeatable) / names containing this text (`--match`). */
   caseNames?: string[];
@@ -59,11 +60,25 @@ interface TestCaseArgs extends CaseFlags {
 interface WriteData {
   action: "create" | "update" | "bulk";
   chainUuid: string;
+  /** create / update: the case written (also in checks[0].id). */
+  id?: string | null;
   /** Every written case read back from the suite and compared with what was sent. */
   verified: boolean;
   checks: CaseCheck[];
   warnings: ContractProblem[];
+  /** update: a description in --file that differs from the server's; the API keeps the old one. */
+  descriptionKept?: { requested: string; current: string };
   response?: unknown;
+}
+
+/** `create --dry-run`: the body that would be POSTed (the exact stored SpEL in assertions[].conditionExpression). */
+interface CreateDryRunData {
+  action: "create";
+  dryRun: true;
+  chainUuid: string;
+  name: string;
+  body: Record<string, unknown>;
+  warnings: ContractProblem[];
 }
 
 interface ExportData {
@@ -91,6 +106,7 @@ interface SyncData {
 type TestCaseData =
   | ({ action: "list" } & TestSuiteSummary)
   | WriteData
+  | CreateDryRunData
   | ExportData
   | SyncData
   | RunSuiteWaitData
@@ -119,7 +135,7 @@ export const args = defineSubcommands(
     list: { positionals: [UUID], flags: {} },
     create: {
       positionals: [UUID],
-      flags: { ...CASE_FLAGS, name: { type: "string" }, description: { type: "string", allowEmpty: true }, ...AD_YES_FLAG },
+      flags: { ...CASE_FLAGS, name: { type: "string" }, description: { type: "string", allowEmpty: true }, "dry-run": { type: "boolean" }, ...AD_YES_FLAG },
       requireOneOf: [["file", "name"]],
       codes: { MISSING_FLAG: "MISSING_FILE", MISSING_SUBCOMMAND: "MISSING_ACTION", UNKNOWN_SUBCOMMAND: "INVALID_ACTION" },
     },
@@ -170,10 +186,17 @@ function readJson(path: string): Promise<unknown> {
   });
 }
 
-/** The case a create/update describes: --file, then --name/--description/--input/--assert on top. */
+/**
+ * The case a create/update describes: --file, then --name/--description/--input/--assert on top.
+ * On update (`base`), a file without "description" keeps the current one.
+ */
 async function buildCase(f: CaseFlags, method: HydratedMethod, base?: CaseFile): Promise<CaseFile> {
   let c: CaseFile = base ? structuredClone(base) : { name: "", description: "", inputs: {}, assertions: [] };
-  if (f.filePath) c = parseCaseInput(await readJson(f.filePath), f.filePath);
+  if (f.filePath) {
+    const json = await readJson(f.filePath);
+    c = parseCaseInput(json, f.filePath);
+    if (base && !(isObj(json) && typeof json.description === "string")) c.description = base.description;
+  }
   if (f.name !== undefined) c.name = f.name;
   if (f.description !== undefined) c.description = f.description;
   const types = new Map(method.inputs.map((i) => [i.code, String(i.type ?? "")]));
@@ -225,8 +248,9 @@ async function fetchContract(uuid: string): Promise<HydratedMethod> {
 }
 
 const command: CommandModule<TestCaseArgs, TestCaseData> = {
-  writes: (a) => !["list", "export", "sync"].includes(a.action) || (a.action === "sync" && !!a.apply),
-  requiresEnv: (a) => a.action === "sync", // the sync plan previews writes on the target env
+  writes: (a) => (!["list", "export", "sync"].includes(a.action) && !a.dryRun) || (a.action === "sync" && !!a.apply),
+  // a sync plan and a create --dry-run preview writes on the target env
+  requiresEnv: (a) => a.action === "sync" || !!a.dryRun,
   parseArgs(argv) {
     const p = args.parse(argv);
     const base = { yes: false };
@@ -244,6 +268,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           description: p.flags.description,
           inputs: some(p.flags.input),
           asserts: some(p.flags.assert),
+          dryRun: p.flags.dryRun || undefined,
           yes: p.flags.yes,
         };
       case "update":
@@ -314,6 +339,9 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
             details: { name: c.name, ids: before.cases.filter((s) => s.file.name === c.name).map((s) => s.id) },
           });
         }
+        if (args.dryRun) {
+          return ok<TestCaseData>({ action: "create", dryRun: true, chainUuid: uuid, name: c.name, body: caseToWire(c), warnings });
+        }
         await confirm(`create test case '${c.name}' on ${method.name}`, [
           ["Method UUID", uuid],
           ["Test case", c.name],
@@ -323,7 +351,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         logIntent("POST", `/rest/api/automation/chain/testcases/${uuid}`, { name: c.name });
         const id = await createCase(uuid, c);
         const check = checkPersisted(c, await fetchSuite(uuid), id);
-        const data: WriteData = { action: "create", chainUuid: uuid, verified: check.verified, checks: [check], warnings };
+        const data: WriteData = { action: "create", chainUuid: uuid, id: check.id, verified: check.verified, checks: [check], warnings };
         if (!check.verified) return failWithData("AD_TESTCASE_VERIFY_FAILED", verifyError([check]).message, data);
         return ok<TestCaseData>(data);
       }
@@ -339,12 +367,22 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         const c = await buildCase(args, method, current.file);
         // PUT replaces inputs + assertions only; the server keeps name/description (live),
         // and a deleted case's name is never released, so they cannot be changed at all.
-        const fixed = (["name", "description"] as const).filter((k) => c[k] !== current.file[k]);
-        if (fixed.length > 0) {
+        // Another name is refused (it names another case); another description is kept
+        // as it is on the server, with a warning, and the rest is still updated.
+        if (c.name !== current.file.name) {
           throw new CliError(
-            `A test case's ${fixed.join(" and ")} cannot be changed through the API (PUT answers 200 and keeps the old value; ` +
-              "DELETE is soft and never releases the name). Keep the current value, or create a case under a new name.",
-            { code: "AD_TESTCASE_FIELD_NOT_UPDATABLE", details: { fields: fixed, id, current: { name: current.file.name, description: current.file.description } } },
+            "A test case's name cannot be changed through the API (PUT answers 200 and keeps the old value; " +
+              "DELETE is soft and never releases the name). Keep the current name, or create a case under a new name.",
+            { code: "AD_TESTCASE_FIELD_NOT_UPDATABLE", details: { fields: ["name"], id, current: { name: current.file.name, description: current.file.description } } },
+          );
+        }
+        let descriptionKept: WriteData["descriptionKept"];
+        if (c.description !== current.file.description) {
+          descriptionKept = { requested: c.description, current: current.file.description };
+          c.description = current.file.description;
+          context.warn(
+            `The description of '${c.name}' was not changed: the API keeps a case's description. ` +
+              "To change it, create the case under a new name (`test-case create`) and delete this one.",
           );
         }
         const warnings = contract([c], method);
@@ -357,7 +395,8 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         logIntent("PUT", `/rest/api/automation/chain/testcases/${uuid}/${id}`, { name: c.name });
         await updateCase(uuid, id, c);
         const check = checkPersisted(c, await fetchSuite(uuid), id);
-        const data: WriteData = { action: "update", chainUuid: uuid, verified: check.verified, checks: [check], warnings };
+        const data: WriteData = { action: "update", chainUuid: uuid, id, verified: check.verified, checks: [check], warnings };
+        if (descriptionKept) data.descriptionKept = descriptionKept;
         if (!check.verified) return failWithData("AD_TESTCASE_VERIFY_FAILED", verifyError([check]).message, data);
         return ok<TestCaseData>(data);
       }
@@ -537,6 +576,12 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           data.testCases.map((c) => [c.id, c.name, c.active ? "Yes" : "No", c.inputCount, c.assertionCount]),
         );
       }
+      return;
+    }
+    if (data.action === "create" && "dryRun" in data) {
+      ui.section(`Dry run: test case '${data.name}' (nothing written)`);
+      ui.object(data.body);
+      for (const w of data.warnings) ui.warn(`${w.case}: ${w.kind} '${w.key}'`);
       return;
     }
     if (data.action === "create" || data.action === "update" || data.action === "bulk") {

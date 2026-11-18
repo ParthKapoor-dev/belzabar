@@ -217,6 +217,27 @@ describe("test-case create --assert (fetch-back verified)", () => {
       assertions: [{ mode: "advance", conditionExpression: "#{greetingOut} eq 'Hello 007'", conditions: null }],
     });
     expect(r.envelope?.data).toMatchObject({ action: "create", verified: true, checks: [{ name: "t.greet.new.1", verified: true, mismatched: [] }] });
+    // A12: the new case's id at the top level
+    expect((r.envelope?.data as any).id).toBe((r.envelope?.data as any).checks[0].id);
+    expect((r.envelope?.data as any).id).toMatch(/^tc\d+$/);
+  });
+
+  // A12: preview the stored SpEL without writing.
+  test("--dry-run returns the body it would POST and writes nothing", async () => {
+    wire();
+    const r = await run(["create", DRAFT, "--name", "t.dry.1", "--input", "name=x", "--assert", "greetingOut!=x", "--assert", "greetingOut~=ell", "--dry-run"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ action: "create", dryRun: true, name: "t.dry.1" });
+    expect((r.envelope?.data as any).body.assertions.map((a: any) => a.conditionExpression)).toEqual([
+      "#{greetingOut} ne 'x'",
+      "#{greetingOut.toString()}.contains('ell') eq true",
+    ]);
+    expect(ad.ff.requests.filter((q) => q.method !== "GET")).toEqual([]);
+    // still refuses an existing name
+    const taken = await run(["create", DRAFT, "--name", "belz_tst_s7c_t1.greet.ok.1", "--dry-run"]);
+    expect(taken.envelope?.error?.code).toBe("AD_TESTCASE_EXISTS");
+    const w = (testCaseCommand as any).writes as (a: any) => boolean;
+    expect(w({ action: "create", dryRun: true })).toBe(false);
   });
 
   test("a store that drops a field fails verification", async () => {
@@ -264,17 +285,46 @@ describe("test-case create --assert (fetch-back verified)", () => {
 });
 
 describe("test-case update", () => {
-  test("PUT replaces inputs/assertions and is verified; description changes are refused", async () => {
-    wire();
-    const id = load("suite.json").testCases.find((c: any) => c.name.endsWith("ok.1")).id;
-    const r = await run(["update", DRAFT, id, "--input", "name=Venus", "--assert", "greetingOut=Hello Venus", "--yes"]);
-    expect(r.envelope?.ok).toBe(true);
-    expect((r.envelope?.data as any).checks[0].verified).toBe(true);
+  const okCase = () => load("suite.json").testCases.find((c: any) => c.name.endsWith("ok.1"));
+  const putBody = () => ad.ff.requests.find((q) => q.method === "PUT")!.json();
 
-    const dir = scratchDir("tc-upd");
-    writeFileSync(join(dir, "c.json"), JSON.stringify({ name: "belz_tst_s7c_t1.greet.ok.1", description: "new text", inputs: { name: "x" } }));
-    const r2 = await run(["update", DRAFT, id, "--file", join(dir, "c.json"), "--yes"]);
-    expect(r2.envelope?.error?.code).toBe("AD_TESTCASE_FIELD_NOT_UPDATABLE");
+  test("PUT replaces inputs/assertions and is verified", async () => {
+    wire();
+    const r = await run(["update", DRAFT, okCase().id, "--input", "name=Venus", "--assert", "greetingOut=Hello Venus", "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ id: okCase().id, checks: [{ verified: true }] });
+  });
+
+  // A11: a file without "description" meant "set it to empty", which was refused.
+  test("--file without a description keeps the current one", async () => {
+    wire();
+    const dir = scratchDir("tc-upd-nodesc");
+    writeFileSync(join(dir, "c.json"), JSON.stringify({ name: okCase().name, inputs: { name: "x" }, assertions: [] }));
+    const r = await run(["update", DRAFT, okCase().id, "--file", join(dir, "c.json"), "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope?.data as any).descriptionKept).toBeUndefined();
+    expect(r.envelope?.meta?.warnings).toBeUndefined();
+    expect(putBody().description).toBe(okCase().description);
+  });
+
+  test("another description: the rest is updated, the description kept with a warning", async () => {
+    const server = wire();
+    const dir = scratchDir("tc-upd-desc");
+    writeFileSync(join(dir, "c.json"), JSON.stringify({ name: okCase().name, description: "new text", inputs: { name: "x" } }));
+    const r = await run(["update", DRAFT, okCase().id, "--file", join(dir, "c.json"), "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ verified: true, descriptionKept: { requested: "new text", current: okCase().description } });
+    expect(String(r.envelope?.meta?.warnings)).toContain("create the case under a new name");
+    expect(server.cases.find((c) => c.id === okCase().id)!.inputs[0]!.value).toBe('{"value": "x"}');
+  });
+
+  test("another name is refused before any write", async () => {
+    wire();
+    const dir = scratchDir("tc-upd-name");
+    writeFileSync(join(dir, "c.json"), JSON.stringify({ name: "other.name", inputs: { name: "x" } }));
+    const r = await run(["update", DRAFT, okCase().id, "--file", join(dir, "c.json"), "--yes"]);
+    expect(r.envelope?.error?.code).toBe("AD_TESTCASE_FIELD_NOT_UPDATABLE");
+    expect(ad.ff.requests.some((q) => q.method === "PUT")).toBe(false);
   });
 });
 

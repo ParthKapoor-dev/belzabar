@@ -8,12 +8,17 @@ Actions:
   list <uuid>                             List test cases: the same structured result
                                           as wi-impl ad test-cases ({testSuiteId, testCases, total})
   create <uuid> --name <n> [--description <d>] [--input k=v]... [--assert out=v]...
-  create <uuid> --file <case.json> [--assert out=v]...
+  create <uuid> --file <case.json> [--assert out=v]... [--dry-run]
                                           Create one test case (UI encoding; refuses a
-                                          name already in the suite: AD_TESTCASE_EXISTS)
+                                          name already in the suite: AD_TESTCASE_EXISTS).
+                                          data.id is the new case's id
   update <uuid> <testCaseId> [--file <f>] [--input k=v]... [--assert out=v]...
-                                          Replace a case's inputs/assertions (name and
-                                          description cannot be changed through the API)
+                                          Replace a case's inputs/assertions. The name
+                                          cannot change (AD_TESTCASE_FIELD_NOT_UPDATABLE);
+                                          neither can the description: a file without
+                                          one keeps it, a different one is kept as on
+                                          the server with a warning (data.descriptionKept)
+                                          and the rest is still updated
   delete <testCaseId> [--yes]             Delete a test case
   bulk <uuid> --file <cases.json> [--yes] Create an array of test cases (one POST each)
   run-suite <uuid> [--yes]                Trigger the server's suite run (async: e-mail report
@@ -36,6 +41,10 @@ Flags:
                         (create, update); an array of them (bulk).
   --name <name>         Test case name (create). Convention: <method>.<scenario>.<outcome>.<n>
   --description <text>  Test case description (create).
+  --dry-run             create: check the case (contract, name not taken) and return
+                        the body it would POST, {dryRun, name, body, warnings}: the
+                        stored SpEL is body.assertions[].conditionExpression. Writes
+                        nothing (it reads the target env, so --env is required).
   --input <k=v>         Input value (repeatable). STRING/TEXT inputs keep the text;
                         other types parse as JSON when they can.
   --assert <out=v>      Assertion (repeatable): out=v, out!=v, out>v, out<v, out~=v
