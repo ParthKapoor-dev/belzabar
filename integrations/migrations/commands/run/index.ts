@@ -1,8 +1,9 @@
 import { CliError, type CommandModule, Config, confirmWrite, isObj, ok } from "@belzabar/core";
-import { invalidateEntityCache } from "@belzabar/core/platform";
 import {
   assertJenkinsAuth,
   buildUrl,
+  cacheCommandHint,
+  clearTargetCache,
   envPairFromProfile,
   resolveClientForProfile,
   getBuild,
@@ -203,8 +204,24 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       const targetEnv = args.targetEnv ?? envPairFromProfile(profile)?.targetEnv;
       const cacheKind = /^AD_Method$/i.test(String(args.migrateType)) ? "AD" : /^PD$/i.test(String(args.migrateType)) ? "PD" : null;
       if (args.follow && !args.dryRun && targetEnv && cacheKind && effectiveIds.length > 0) {
-        const ids = await invalidateEntityCache(cacheKind, targetEnv, effectiveIds).catch(() => []);
-        data.cacheInvalidated = { env: targetEnv, ids };
+        if (showProgress) logProgress(args.quiet, `Clearing the cache of ${effectiveIds.length} id(s) on ${targetEnv}…`);
+        const cleared = await clearTargetCache(cacheKind, targetEnv, effectiveIds, {
+          onRound: (round, of) => {
+            if (showProgress) logProgress(args.quiet, `  server cache round ${round.round}/${of}: ${round.ok ? "sent" : "FAILED"}`);
+          },
+        });
+        data.cacheInvalidated = { env: targetEnv, ids: cleared.local };
+        if (cleared.server) {
+          data.serverCache = cleared.server;
+          const hint = cacheCommandHint(targetEnv, effectiveIds);
+          if ("skipped" in cleared.server) context.warn(`Target server cache NOT cleared (${cleared.server.skipped}). Clear it with: ${hint}`);
+          else if (!cleared.server.verified) {
+            context.warn(
+              `Target server cache: only ${cleared.server.okRounds} of ${cleared.server.rounds.length} clear rounds reached ${targetEnv}; ` +
+                `some servers may still run the old version. Repeat it: ${hint}`,
+            );
+          }
+        }
       }
 
       // A build can finish SUCCESS and change nothing: the script skips a

@@ -1,4 +1,5 @@
 import type { JenkinsClient, MigrateType } from "./constants";
+import type { ServerCacheClear } from "@belzabar/core/platform";
 import type { BuildInfo, TriggerBuildInput } from "./jenkins";
 
 type YesNo = "Y" | "N";
@@ -185,7 +186,17 @@ export interface MigrateRunData {
   unchanged?: string[];
   /** Target-env cache entries dropped after a followed, non-dry AD_Method / PD build. */
   cacheInvalidated?: { env: string; ids: string[] };
+  /** The target server's AD cache clear (repeated rounds) after an AD_Method build. */
+  serverCache?: TargetServerCache;
 }
+
+/**
+ * The target server's cache clear after a migration: the rounds sent
+ * (`verified` when every round reached a route), or why it was skipped.
+ */
+export type TargetServerCache =
+  | ({ env: string } & ServerCacheClear)
+  | { env: string; skipped: string };
 
 export interface MigrateStatusData {
   action: "status";

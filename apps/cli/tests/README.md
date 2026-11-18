@@ -18,7 +18,7 @@ whole command set. Run with `bun test apps/cli` or `bun run check`.
 | `install-scripts.test.ts` | `record-install.mjs` in a scratch HOME (0600/0700, keeps sections, refuses malformed config); installers decide first run before recording |
 | `legacy-names.test.ts` | The one-time move of a pre-rename install: `belz` → `wi-impl` + alias (Linux/macOS symlink, Windows `belz.cmd`), `~/.belz` → `~/.wi-impl` + link, and every skip case |
 | `onboard.test.ts` | A failed step → `ONBOARD_INCOMPLETE` (exit 1); Ctrl-C (`USER_ABORT`) ends the flow |
-| `cache-command.test.ts`, `cache-prune-local.test.ts` | `wi-impl cache` invalidate body and guards; `prune-local` |
+| `cache-command.test.ts`, `cache-prune-local.test.ts` | `wi-impl cache` invalidate body and guards, `--repeat`; `prune-local` |
 | `setup-config-exec.test.ts` | `setup` merges and stores explicit password encodings; `config token` re-logs in on expiry or `--refresh` |
 | `update-paths.test.ts` | `wi-impl update` never discards local work and installs to the recorded dir |
 | `self-update.test.ts` | Release versions and targets, manifest + verified download against a local fake release server (checksum mismatch refused), the auto-update gate, swap and rollback |

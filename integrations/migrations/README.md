@@ -95,7 +95,12 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
 - **Target cache.** After a followed, non-dry `AD_Method` or `PD` build whose target env is known
   (`--target-env` or `jenkins.profileEnvs`), wi-impl drops its cached copies of the ids on that env
   (core `invalidateEntityCache`: the method or page cache, plus a dirty mark in the AD method
-  index) and reports `data.cacheInvalidated {env, ids}`. Best effort; it never fails the run.
+  index) and reports `data.cacheInvalidated {env, ids}`. For `AD_Method` it also clears the
+  target **server's** compiled cache for the ids (`lib/target-cache.ts`): 5 rounds, 1 s apart,
+  because one request reaches one server of a load-balanced env. `data.serverCache` lists the
+  rounds (`okRounds`, `verified`), or `skipped` when the target env is not configured locally; an
+  unverified or skipped clear is a warning with the `wi-impl cache --env <env> --repeat 5 …`
+  command to run. Best effort; it never fails the run.
 - `--dry-run` only sends `DRY_RUN=true`: it is still a real Jenkins build.
 
 ## Testing

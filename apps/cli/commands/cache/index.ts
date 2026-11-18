@@ -2,7 +2,6 @@ import { readdirSync, rmSync, statSync } from "fs";
 import { join, relative } from "path";
 import type { Dirent, Stats } from "fs";
 import {
-  apiFetch,
   BELZ_CONFIG_DIR,
   Config,
   CliError,
@@ -14,20 +13,22 @@ import {
   type HumanPresenterHelpers,
   type CommandModule,
 } from "@belzabar/core";
-import { isEntityId } from "@belzabar/core/platform";
+import {
+  CACHE_INVALIDATE_PATHS,
+  clearServerCache,
+  invalidateOnAllRoutes,
+  isEntityId,
+  type CacheClearRound,
+  type CacheRouteResult,
+} from "@belzabar/core/platform";
 
-/**
- * Both routes are POSTed on every invalidate. On a tenant routed through micro-AD the
- * monolith route answers 200 without evicting the compiled chain; the `/automations/`
- * route owns it there (and 404/500s on a monolith tenant). A 2xx proves the endpoint
- * exists, not that it held the cache — so call both, succeed if ANY returns 2xx, and
- * report each route's result. Mirrors the team's live-verified save-and-test.py.
- */
-export const CACHE_INVALIDATE_PATHS = [
-  "/rest/api/cache/invalidate",
-  "/rest/api/automations/cache/invalidate",
-] as const;
+// The invalidate routes and the repeated clear live in core (`migrate run` uses
+// them too): see packages/core/src/platform/server-cache.ts.
+export { CACHE_INVALIDATE_PATHS, invalidateOnAllRoutes };
+export type RouteResult = CacheRouteResult;
 const DEFAULT_TYPE = "AUTOMATION";
+/** Upper bound on `--repeat` (rounds are 1 s apart). */
+const MAX_REPEAT = 50;
 
 /** Refresh locks TTL out after 30s (see core `swr.ts`); anything older is an abandoned lock. */
 const STALE_LOCK_AGE_MS = 10 * 60 * 1000;
@@ -50,6 +51,8 @@ interface InvalidateArgs {
   type: string;
   yes: boolean;
   all: boolean;
+  /** Invalidate rounds to send (1 s apart); default 1. */
+  repeat: number;
 }
 
 interface PruneLocalArgs {
@@ -59,14 +62,6 @@ interface PruneLocalArgs {
 
 type CacheArgs = InvalidateArgs | PruneLocalArgs;
 
-export interface RouteResult {
-  path: string;
-  ok: boolean;
-  status: number | null;
-  response?: unknown;
-  error?: string;
-}
-
 interface InvalidateData {
   action: "invalidate";
   env: string;
@@ -74,7 +69,16 @@ interface InvalidateData {
   scope: "all" | "uuids";
   uuidCount: number;
   uuids: string[];
+  /** The first round's per-route results. */
   routes: RouteResult[];
+  /** Rounds requested (`--repeat`). */
+  repeat: number;
+  /** Every round, with its per-route results. */
+  rounds: CacheClearRound[];
+  /** Rounds in which at least one route answered 2xx. */
+  okRounds: number;
+  /** Every round reached a route. */
+  verified: boolean;
 }
 
 /** One stale-artifact candidate (or, once `--yes` runs, a removed one). */
@@ -107,7 +111,18 @@ export interface PruneLocalData {
 
 type CacheData = InvalidateData | PruneLocalData;
 
-type Fetcher = (path: string, options: Parameters<typeof apiFetch>[1]) => Promise<Response>;
+/** `--repeat <n>`: a whole number from 1 to MAX_REPEAT (default 1). */
+export function parseRepeat(value: string | undefined): number {
+  if (value === undefined) return 1;
+  const n = /^\d+$/.test(value.trim()) ? Number(value.trim()) : NaN;
+  if (!Number.isSafeInteger(n) || n < 1 || n > MAX_REPEAT) {
+    throw new CliError(`--repeat must be a whole number from 1 to ${MAX_REPEAT}, got '${value}'.`, {
+      code: "INVALID_ARGS",
+      details: { repeat: value },
+    });
+  }
+  return n;
+}
 
 function parseUuids(rest: string[]): string[] {
   return rest.map(u => u.trim()).filter(u => u.length > 0);
@@ -138,42 +153,6 @@ export function assertCacheUuids(uuids: string[]): void {
  */
 export function buildInvalidateBody(uuids: string[], type: string): { uuids: string[]; type: string } {
   return { uuids: [...uuids], type };
-}
-
-async function readBody(response: Response): Promise<unknown> {
-  try {
-    const text = await response.text();
-    if (text.length === 0) return null;
-    try {
-      return JSON.parse(text);
-    } catch {
-      return text.slice(0, 1024);
-    }
-  } catch {
-    return "(response body unreadable)";
-  }
-}
-
-/** POST the body to every invalidate route. Never throws; one route failing is tolerated. */
-export async function invalidateOnAllRoutes(
-  body: { uuids: string[]; type: string },
-  fetcher: Fetcher = apiFetch,
-): Promise<RouteResult[]> {
-  const results: RouteResult[] = [];
-  for (const path of CACHE_INVALIDATE_PATHS) {
-    try {
-      const response = await fetcher(path, {
-        method: "POST",
-        authMode: "Bearer",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      results.push({ path, ok: response.ok, status: response.status, response: await readBody(response) });
-    } catch (err: any) {
-      results.push({ path, ok: false, status: null, error: err?.message ?? String(err) });
-    }
-  }
-  return results;
 }
 
 // ── prune-local: local filesystem cleanup, no network ──────────────────────
@@ -366,6 +345,7 @@ export const args = defineSubcommands(
       flags: {
         type: { type: "string", default: DEFAULT_TYPE },
         all: { type: "boolean" },
+        repeat: { type: "string" },
         yes: { type: "boolean", alias: ["-y"] },
       },
     },
@@ -390,6 +370,7 @@ const command: CommandModule<CacheArgs, CacheData> = {
     }
     const { positionals, flags } = parsed;
     const { type, yes, all } = flags;
+    const repeat = parseRepeat(flags.repeat);
     const uuids = parseUuids(positionals.uuids);
     if (all && uuids.length > 0) {
       throw new CliError("--all cannot be combined with UUIDs.", { code: "INVALID_ARGS" });
@@ -408,7 +389,7 @@ const command: CommandModule<CacheArgs, CacheData> = {
       );
     }
 
-    return { subcommand: "invalidate", uuids, type, yes, all };
+    return { subcommand: "invalidate", uuids, type, yes, all, repeat };
   },
 
   async execute(args, context) {
@@ -434,19 +415,34 @@ const command: CommandModule<CacheArgs, CacheData> = {
         : `Invalidating ${args.uuids.length} '${args.type}' entr${args.uuids.length === 1 ? "y" : "ies"} on ${envName}…`,
     );
 
-    const routes = await invalidateOnAllRoutes(body);
+    const repeat = args.repeat ?? 1;
+    const clear = await clearServerCache(body.uuids, {
+      type: body.type,
+      repeat,
+      all: scope === "all",
+      onRound: (round, of) => {
+        if (of > 1) spin.message(`Round ${round.round}/${of} ${round.ok ? "sent" : "failed"} on ${envName}…`);
+      },
+    });
+    const routes = clear.rounds[0]?.routes ?? [];
 
-    if (!routes.some(r => r.ok)) {
+    if (clear.okRounds === 0) {
       spin.error("Cache invalidate failed on every route.");
       throw new CliError(
         `Cache invalidate failed on all routes: ${routes.map(r => `${r.path} → ${r.status ?? r.error}`).join("; ")}`,
-        { code: "CACHE_API_ERROR", details: { routes } },
+        { code: "CACHE_API_ERROR", details: { routes, rounds: clear.rounds } },
       );
     }
     for (const r of routes.filter(r => !r.ok)) {
       context.warn(`${r.path} did not succeed (${r.status ?? r.error}); another route did.`);
     }
-    spin.stop("Cache invalidate request complete.");
+    if (!clear.verified) {
+      context.warn(
+        `Only ${clear.okRounds} of ${repeat} invalidate rounds reached a route on ${envName}; ` +
+          "some servers may still hold the old entries. Run it again.",
+      );
+    }
+    spin.stop(repeat > 1 ? `Cache invalidate sent ${clear.okRounds}/${repeat} rounds.` : "Cache invalidate request complete.");
 
     return ok<InvalidateData>({
       action: "invalidate",
@@ -456,6 +452,10 @@ const command: CommandModule<CacheArgs, CacheData> = {
       uuidCount: args.uuids.length,
       uuids: args.uuids,
       routes,
+      repeat,
+      rounds: clear.rounds,
+      okRounds: clear.okRounds,
+      verified: clear.verified,
     });
   },
 
@@ -470,7 +470,9 @@ const command: CommandModule<CacheArgs, CacheData> = {
       data.scope === "all"
         ? `entire '${data.type}' cache`
         : `${data.uuidCount} '${data.type}' entr${data.uuidCount === 1 ? "y" : "ies"}`;
-    ui.success(`Invalidated ${target} on ${data.env}.`);
+    const rounds = data.repeat > 1 ? ` (${data.okRounds}/${data.repeat} rounds reached a route)` : "";
+    if (data.verified) ui.success(`Invalidated ${target} on ${data.env}${rounds}.`);
+    else ui.warn(`Invalidated ${target} on ${data.env}${rounds}; some rounds failed.`);
     ui.table(
       ["Property", "Value"],
       [

@@ -86,6 +86,13 @@ describe("cache arg guard", () => {
     ).rejects.toThrow(/Invalid cache UUID/);
   });
 
+  test("--repeat defaults to one round; N is parsed; bad values are INVALID_ARGS (H2)", () => {
+    const UUID = "44014c3707d6b6d8ae848839a1c8d1e7";
+    expect(parse([UUID]).repeat).toBe(1);
+    expect(parse(["--repeat", "6", UUID]).repeat).toBe(6);
+    for (const bad of ["0", "-1", "2.5", "x", "51"]) expect(errorCode(() => parse([`--repeat=${bad}`, UUID]))).toBe("INVALID_ARGS");
+  });
+
   test("execute refuses an empty uuid list even if parseArgs is bypassed", async () => {
     await expect(command.execute({ uuids: [], type: "AUTOMATION", yes: true, all: false } as any, ctx)).rejects.toThrow();
   });

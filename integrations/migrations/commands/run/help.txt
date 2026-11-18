@@ -94,6 +94,11 @@ TARGET CACHE
   (--target-env, or the profile via jenkins.profileEnvs), wi-impl drops its
   cached copies of the migrated ids on the target env, so the next
   'wi-impl ad show' / 'wi-impl pd show' there reads fresh (data.cacheInvalidated).
+  For AD_Method it also clears the target SERVER's compiled cache for the ids,
+  5 rounds 1 s apart (one request reaches one server of a load-balanced env):
+  data.serverCache {env, rounds, okRounds, verified}. It needs the target env
+  in your config; when it is missing, or a round failed, a warning gives the
+  exact 'wi-impl cache' command (5 rounds) to run.
 
 OPTIONS
   --client <name>              Override the client (auto-detected from profile by

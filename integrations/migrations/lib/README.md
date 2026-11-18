@@ -10,6 +10,7 @@ Everything `wi-impl migrate` does besides argument wiring. Exposed as the packag
 | `resolve-targets.ts` | `resolveMigrationTargets` — the pre-flight on the source env |
 | `parser.ts` | `stripAnsi` (also Pipeline `ha:////` markers), `parseJenkinsConsole` (migration id, DB/host lines, `REPORT` JSON, failure hints, same-version skips and other `WARNING:` lines via `parseConsoleWarnings`) |
 | `report.ts` | `summarizeReport` — counts (incl. `UNCHANGED`) and per-entity rows over `methodComparisonResult` / `comparisonResults`; `migrationOutcome` — MIGRATED / PARTIAL / NOTHING_MIGRATED |
+| `target-cache.ts` | `clearTargetCache` — after a build: drop the target env's local entries and (AD) clear its server cache in `TARGET_CACHE_ROUNDS` (5) rounds via core `clearServerCache`; `cacheCommandHint` |
 | `artifacts.ts` | `writeArtifacts` — `--out <dir or file.json>` → `<name>.json` + `<name>.console.log` |
 | `constants.ts` | `KNOWN_MIGRATE_TYPES`, `JenkinsClient` (a string), profile cache path |
 | `types.ts` | Args, data and report shapes |

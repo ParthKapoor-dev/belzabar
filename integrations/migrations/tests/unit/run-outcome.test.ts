@@ -6,8 +6,8 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync } from "fs";
 import { fakeFetch, type FakeFetch, fixture, respond, runCommand, type TempEnvConfig, withTempEnvConfig } from "@belzabar/core/testing";
 import { Cache } from "@belzabar/core";
-import { METHOD_CACHE_DIR } from "@belzabar/core/platform";
-import { migrationOutcome, parseConsoleWarnings, parseJenkinsConsole } from "../../lib";
+import { CACHE_REPEAT_DELAY_MS, METHOD_CACHE_DIR } from "@belzabar/core/platform";
+import { migrationOutcome, parseConsoleWarnings, parseJenkinsConsole, TARGET_CACHE_ROUNDS, targetCacheTiming } from "../../lib";
 import runCmdModule from "../../commands/run/index";
 
 const runCmd = { ...runCmdModule, envAware: false };
@@ -65,14 +65,15 @@ describe("migrate run over a followed build", () => {
   let cfg: TempEnvConfig | null = null;
   let ff: FakeFetch | null = null;
   afterEach(() => {
+    targetCacheTiming.delayMs = CACHE_REPEAT_DELAY_MS;
     ff?.restore();
     ff = null;
     cfg?.restore();
     cfg = null;
   });
 
-  function build(consoleText: string) {
-    cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: { devacme: "acme-dev", qaacme: "acme-qa" } } });
+  function build(consoleText: string, extra: Array<{ method?: string; url: string | RegExp; response: unknown }> = [], envs: Record<string, { url: string }> = {}) {
+    cfg = withTempEnvConfig({ envs, jenkins: { ...JENKINS, profileEnvs: { devacme: "acme-dev", qaacme: "acme-qa" } } });
     ff = fakeFetch([
       { method: "GET", url: /\/api\/json\?tree=property/, response: fixture(`${FIX}/job-parameters.json`) },
       { method: "GET", url: "https://jk.test/crumbIssuer/api/json", response: respond({ status: 404 }) },
@@ -81,6 +82,7 @@ describe("migrate run over a followed build", () => {
       { method: "GET", url: `${JOB}/42/logText/progressiveText?start=0`, response: respond({ text: consoleText, headers: { "X-Text-Size": String(consoleText.length) } }) },
       { method: "GET", url: /\/42\/logText\/progressiveText\?start=[1-9]/, response: respond({ text: "", headers: { "X-Text-Size": String(consoleText.length) } }) },
       { method: "GET", url: `${JOB}/42/api/json`, response: { number: 42, building: false, result: "SUCCESS", duration: 1000, url: `${JOB}/42/` } },
+      ...extra,
     ]).install();
   }
   const argv = ["--profile", "devacme_qaacme", "--client", "ACME", "--module", "AD_Method", "--ids", UUID, "--yes"];
@@ -123,6 +125,27 @@ describe("migrate run over a followed build", () => {
     expect((r.envelope?.data as { cacheInvalidated: unknown }).cacheInvalidated).toEqual({ env: "acme-qa", ids: [UUID] });
     expect(await methods.load(UUID, "acme-qa")).toBeNull();
     expect(await methods.load(UUID, "acme-dev")).toEqual({ source: true });
+  });
+
+  test("the target server's AD cache is cleared in repeated rounds, verified (H2)", async () => {
+    targetCacheTiming.delayMs = 0;
+    build(REAL_CONSOLE, [
+      { method: "POST", url: "https://acme-qa.test/rest/api/cache/invalidate", response: respond({ status: 200, text: "" }) },
+      { method: "POST", url: "https://acme-qa.test/rest/api/automations/cache/invalidate", response: respond({ status: 404, text: "" }) },
+    ], { "acme-qa": { url: "https://acme-qa.test" } });
+    const r = await runCommand(runCmd, argv);
+    const posts = ff!.requests.filter((q) => q.method === "POST" && q.url.includes("cache/invalidate"));
+    expect(posts).toHaveLength(2 * TARGET_CACHE_ROUNDS);
+    expect(JSON.parse(posts[0]!.body ?? "")).toEqual({ uuids: [UUID], type: "AUTOMATION" });
+    expect((r.envelope?.data as any).serverCache).toMatchObject({ env: "acme-qa", okRounds: TARGET_CACHE_ROUNDS, verified: true });
+  });
+
+  test("a target env that is not configured: the server clear is skipped with the command to run", async () => {
+    build(REAL_CONSOLE);
+    const r = await runCommand(runCmd, argv);
+    expect((r.envelope?.data as any).serverCache).toMatchObject({ env: "acme-qa", skipped: expect.stringContaining("not configured") });
+    const warnings = (r.envelope?.meta?.warnings ?? []) as string[];
+    expect(warnings.some((w) => w.includes(`wi-impl cache --env acme-qa --repeat ${TARGET_CACHE_ROUNDS} ${UUID}`))).toBe(true);
   });
 
   test("a dry run leaves the target cache alone", async () => {

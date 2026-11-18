@@ -13,6 +13,13 @@ Server-side invalidate (default subcommand): every call is POSTed to BOTH
 body {"uuids":[...],"type":"<TYPE>"}; it succeeds if any route returns 2xx,
 and each route's result is reported.
 
+An env can run several servers behind one load balancer, and one request
+reaches one of them, so a single clear can leave some servers on the old
+entries. --repeat N sends N rounds, 1 s apart; data.rounds lists each round,
+data.okRounds counts the rounds that reached a route and data.verified is
+true only when every round did (a warning otherwise). A 2xx shows a request
+was accepted, not that every server evicted.
+
 An invalidate with no UUIDs flushes the ENTIRE cache of that type for the whole
 organisation, so it is refused unless both --all and --yes are passed.
 
@@ -34,6 +41,7 @@ Args:
 Flags:
   --type <TYPE>       Cache type to invalidate. (default: AUTOMATION)
   --all               Flush every entry of --type (org-wide). Requires --yes.
+  --repeat <n>        Send the invalidate n times, 1 s apart (1-50; default 1).
   --yes, -y           Confirm an --all flush, or (with prune-local) confirm deletion.
   --help, -h          Show this help message.
 
@@ -49,6 +57,9 @@ Examples:
 
   # Two entries on acme-qa
   wi-impl cache --env acme-qa <uuid> <uuid>
+
+  # Right after a migration: six rounds, so every server of the env gets one
+  wi-impl cache --env acme-qa --repeat 6 <uuid>
 
   # Wipe the entire AUTOMATION cache on acme-uat (org-wide; use with care)
   wi-impl cache --env acme-uat --all --yes

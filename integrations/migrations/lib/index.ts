@@ -7,3 +7,4 @@ export * from "./profiles";
 export * from "./report";
 export * from "./resolve-targets";
 export * from "./types";
+export * from "./target-cache";
