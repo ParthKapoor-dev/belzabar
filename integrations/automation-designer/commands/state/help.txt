@@ -4,7 +4,8 @@ Print draft/published linkage, versions, and whether the draft has unpublished c
 
 Flags:
   --llm    Emit a JSON envelope with {draftUuid, publishedUuid, state, versions,
-           fingerprints, inSync}
+           fingerprints, inSync, scopes{draft, published}} (scopes: who may
+           call each side, read fresh; set it with `ad save` key scope)
 
 Notes:
   - Wraps lib/draft-guard.ts:resolveDraftTarget() and is the safe read-only

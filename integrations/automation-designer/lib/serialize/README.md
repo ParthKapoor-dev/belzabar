@@ -13,9 +13,13 @@ supplies the live body and the callee contracts and does the I/O.
 
 ## Overlay (`v2.ts`)
 
-Accepted keys: `name`, `summary`, `description`, `inputs[{code, testValue}]`,
+Accepted keys: `name`, `summary`, `description`, `scope`, `inputs[{code, testValue}]`,
 `parsedSteps[{orderIndex, source | sql | expression | description}]` and `ops[]`. Descriptions are rich text: `<` / `>` outside the editor's HTML tags are escaped, so `{<name>: value}` is kept as typed.
 
+- `scope` writes `permissions.methodScope` (`METHOD_SCOPES`). For `INTERNAL_SELECTED_SERVICES` it
+  also writes `permissions.allowedCategories`: category uuids, which the save pipeline resolves
+  from names first. Outside SELECTED the stored list is left alone; the server keeps it, ignores
+  it, and drops a `[]` sent for it.
 - Unknown keys fail `AD_OVERLAY_UNKNOWN_KEY`; bad value types fail `AD_OVERLAY_INVALID`.
 - Keys that would not land fail `AD_OVERLAY_NOT_APPLIED`: a missing or ambiguous step, a field
   on a step of another kind, and fields the V2 route accepts with 200 and then drops

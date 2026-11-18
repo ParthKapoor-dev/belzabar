@@ -13,6 +13,14 @@ Arguments:
                             V1 `methodDescription`; `summary` is the short
                             summary. `ad show` prints them as
                             summary.methodDescription / summary.summary.)
+                          scope "UNRESTRICTED" | "INTERNAL_ALL_SERVICE" |
+                                "INTERNAL_SERVICE" |
+                                {"value": "INTERNAL_SELECTED_SERVICES",
+                                 "services": [category name or uuid, …]}
+                            who may call the method (the AD UI's Scope;
+                            permissions.methodScope, the services as
+                            allowedCategories). Read back with `ad show`
+                            (summary.scope) or `ad state` (scopes).
                           parsedSteps[] {orderIndex, source|sql|expression|description}
                           ops[]   structural ops, applied in order:
                             {"op":"add-step", "after":N | "before":N, "step":{STEP}}

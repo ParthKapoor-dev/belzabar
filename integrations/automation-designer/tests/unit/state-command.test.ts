@@ -24,9 +24,10 @@ afterEach(() => {
 });
 
 /** A published sibling of the real draft: same logic, independent version counter. */
-function pair(opts: { draftCode?: string } = {}) {
+function pair(opts: { draftCode?: string; draftScope?: string } = {}) {
   const draft = withMeta(draftBody(), { referenceId: PUB, version: { ...draftBody().metadata.version, name: "12" } });
   if (opts.draftCode) draft.steps[0].properties.customCode.inlineCode = opts.draftCode;
+  if (opts.draftScope) draft.permissions = { ...(draft.permissions ?? {}), methodScope: opts.draftScope };
   const pub = withMeta({ ...draftBody(), uuid: PUB }, { state: "PUBLISHED", referenceId: DRAFT, version: { ...draftBody().metadata.version, uuid: PUB, name: "8" } });
   pub.steps = pub.steps.map((st: any, i: number) => ({ ...st, id: `4${String(i).padStart(31, "0")}` })); // published copies get new step ids
   cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
@@ -44,6 +45,12 @@ describe("ad state", () => {
     expect(d.inSync).toBe(true);
     expect(d.fingerprints.draft).toBe(d.fingerprints.published);
     expect(d.switchedFromPublished).toBe(true);
+  });
+
+  test("C24: each side's scope is reported, read fresh", async () => {
+    pair({ draftScope: "INTERNAL_ALL_SERVICE" });
+    const r = await runCommand(stateCommand, [DRAFT], { env: "t-dev" });
+    expect((r.envelope?.data as any).scopes).toEqual({ draft: "INTERNAL_ALL_SERVICE", published: "UNRESTRICTED" });
   });
 
   test("different draft code -> inSync:false", async () => {

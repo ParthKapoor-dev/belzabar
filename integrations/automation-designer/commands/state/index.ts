@@ -31,6 +31,8 @@ interface StateData {
    */
   inSync: boolean | null;
   switchedFromPublished: boolean;
+  /** Who may call each side (`permissions.methodScope`; UNRESTRICTED when unset), read fresh. */
+  scopes: { draft: string | null; published: string | null };
   message?: string;
 }
 
@@ -69,6 +71,7 @@ const command: CommandModule<StateArgs, StateData> = {
         fingerprints: { draft: null, published: initial.state === "PUBLISHED" ? fingerprintMethod(initial) : null },
         inSync: null,
         switchedFromPublished: false,
+        scopes: { draft: null, published: initial.state === "PUBLISHED" ? initial.scope ?? null : null },
         message: guard.message,
       });
     }
@@ -103,6 +106,7 @@ const command: CommandModule<StateArgs, StateData> = {
       fingerprints: { draft: draftFp, published: publishedFp },
       inSync,
       switchedFromPublished: guard.switchedFromPublished,
+      scopes: { draft: draft.scope ?? null, published: published?.scope ?? null },
       ...(message ? { message } : {}),
     });
   },
@@ -119,6 +123,7 @@ const command: CommandModule<StateArgs, StateData> = {
         ["Draft version", data.draftVersion ?? ""],
         ["Published version", data.publishedVersion ?? ""],
         ["Switched from PUBLISHED", data.switchedFromPublished ? "Yes" : "No"],
+        ["Scope (draft / published)", `${data.scopes.draft ?? "-"} / ${data.scopes.published ?? "-"}`],
       ],
     );
     if (data.message) ui.warn(data.message);

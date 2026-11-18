@@ -10,7 +10,7 @@ import saveCommand from "../../commands/save/index";
 import { __setValidatorsForTests } from "../../lib/save/validation";
 import { CacheManager } from "../../lib/cache";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
-import { compiledCacheRoutes, fakeAdEnv, v2Store, type V2Store } from "./helpers/fake-ad";
+import { categoryRoutes, compiledCacheRoutes, fakeAdEnv, v2Store, type V2Store } from "./helpers/fake-ad";
 
 const DIR = `${import.meta.dir}/../fixtures/real-v2`;
 const U = "41bb1b438875bd8b994196db1f12b7c2"; // DRAFT; 1: SQL read, 2: CC plain
@@ -383,5 +383,43 @@ describe("ad save --help documents the traps agents hit", () => {
   test("C12: unset outputs and how to return null", () => {
     expect(help).toContain("Unset and null outputs");
     expect(help).toContain(`"outputs": [{"key": "x", "elementToRetrieve": "x"}]`);
+  });
+});
+
+describe("ad save — scope (C24)", () => {
+  test("a scope value lands in permissions.methodScope and is verified", async () => {
+    const s = wire();
+    const r = await run({ scope: "INTERNAL_ALL_SERVICE" });
+    expect(r.envelope?.ok).toBe(true);
+    expect((r.envelope!.data as any).applied).toEqual(["scope"]);
+    expect(s.posts[0]!.permissions).toEqual({ permissionSet: [], methodScope: "INTERNAL_ALL_SERVICE", allowedCategories: [] });
+  });
+
+  test("INTERNAL_SELECTED_SERVICES: category names resolve to their uuids (allowedCategories)", async () => {
+    const s = wire();
+    ad.ff.add(categoryRoutes());
+    const r = await run({ scope: { value: "INTERNAL_SELECTED_SERVICES", services: ["Helpers.CSV", "4ba9e1272450a6fd983e8203ab0ca80c"] } });
+    expect(r.envelope?.ok).toBe(true);
+    expect(s.posts[0]!.permissions).toMatchObject({ methodScope: "INTERNAL_SELECTED_SERVICES", allowedCategories: ["49fb7364324217892b6da6bcaaf5d1ac", "4ba9e1272450a6fd983e8203ab0ca80c"] });
+  });
+
+  test("leaving SELECTED does not touch the stored list (the server keeps it and ignores it)", async () => {
+    const s = wire({
+      onGet: (n, b) => {
+        if (n <= 2) b.permissions = { ...(b.permissions as object), methodScope: "INTERNAL_SELECTED_SERVICES", allowedCategories: ["4ba9e1272450a6fd983e8203ab0ca80c"] } as never;
+        return b;
+      },
+    });
+    const r = await run({ scope: "UNRESTRICTED" });
+    expect(r.envelope?.ok).toBe(true);
+    expect(s.posts[0]!.permissions).toMatchObject({ methodScope: "UNRESTRICTED", allowedCategories: ["4ba9e1272450a6fd983e8203ab0ca80c"] });
+  });
+
+  test("refused: an unknown value, SELECTED without services, an unknown category", async () => {
+    wire();
+    expect((await run({ scope: "EVERYONE" })).envelope?.error?.code).toBe("AD_OVERLAY_INVALID");
+    expect((await run({ scope: { value: "INTERNAL_SELECTED_SERVICES" } })).envelope?.error?.code).toBe("AD_OVERLAY_INVALID");
+    ad.ff.add(categoryRoutes());
+    expect((await run({ scope: { value: "INTERNAL_SELECTED_SERVICES", services: ["No Such Category"] } })).envelope?.error?.code).toBe("CATEGORY_NOT_FOUND");
   });
 });

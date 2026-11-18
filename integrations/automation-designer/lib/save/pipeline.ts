@@ -17,6 +17,7 @@
 import { CliError, isObj } from "@belzabar/core";
 import * as v2 from "../api/v2";
 import { resolveDraftTarget } from "../draft-guard";
+import { fetchCategories, requireChainCategory } from "../categories";
 import { CacheManager } from "../cache";
 import { logIntent } from "../args/confirm";
 import { diffPaths, getAtPath, isUnder, jsonEqual } from "../serialize/diff";
@@ -157,6 +158,19 @@ async function planWithContracts(live: V2MethodResponse, overlay: unknown, env: 
   }
 }
 
+/**
+ * `scope.services` may name categories; the body stores their chain-category
+ * uuids (`permissions.allowedCategories`). Unknown names: CATEGORY_NOT_FOUND.
+ */
+async function resolveScopeServices(overlay: unknown): Promise<unknown> {
+  if (!isObj(overlay) || !isObj(overlay.scope) || !Array.isArray(overlay.scope.services)) return overlay;
+  const isUuid = (s: unknown) => typeof s === "string" && /^[0-9a-f]{32}$/i.test(s.trim());
+  if (overlay.scope.services.every((s) => isUuid(s) || typeof s !== "string")) return overlay;
+  const categories = await fetchCategories();
+  const services = overlay.scope.services.map((s) => (typeof s === "string" && !isUuid(s) ? (requireChainCategory(categories, s).chainCategoryUuid ?? s).trim() : s));
+  return { ...overlay, scope: { ...overlay.scope, services } };
+}
+
 /** A refusal that a callee contract decided (unknown input / output key, service, account). */
 function contractRefusal(err: CliError): boolean {
   const list = isObj(err.details) && Array.isArray(err.details.notApplied) ? err.details.notApplied : [];
@@ -178,7 +192,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   const draftUuid = guard.draft.uuid;
   const live = guard.draft.raw as V2MethodResponse;
   const ops = isObj(input.overlay) ? input.overlay.ops : undefined;
-  const plan = await planWithContracts(live, input.overlay, input.env, ops);
+  const plan = await planWithContracts(live, await resolveScopeServices(input.overlay), input.env, ops);
   for (const k of plan.unchanged) input.warn(`Overlay key ${k} is identical to the current draft; nothing to change.`);
 
   const gate = {

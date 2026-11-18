@@ -34,7 +34,12 @@ import { escapeRichText } from "../compact";
 
 export { encodeSql };
 
-const TOP_LEVEL_KEYS = new Set(["name", "summary", "description", "buttonLabel", "internalMethod", "inputs", "parsedSteps", "ops"]);
+const TOP_LEVEL_KEYS = new Set(["name", "summary", "description", "scope", "buttonLabel", "internalMethod", "inputs", "parsedSteps", "ops"]);
+
+/** Who may call the method (`permissions.methodScope`, the AD UI's "Scope"). */
+const METHOD_SCOPES = ["UNRESTRICTED", "INTERNAL_ALL_SERVICE", "INTERNAL_SERVICE", "INTERNAL_SELECTED_SERVICES"] as const;
+const SELECTED = "INTERNAL_SELECTED_SERVICES";
+const CATEGORY_UUID = /^[0-9a-f]{32}$/i;
 const INPUT_KEYS = new Set(["code", "testValue"]);
 const STEP_KEYS = new Set(["orderIndex", "source", "sql", "expression", "description"]);
 
@@ -105,6 +110,27 @@ export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: Pl
     if (typeof v !== "string") invalid.push({ key, reason: "must be a string" });
     else if (key === "name" && v.trim().length === 0) invalid.push({ key, reason: "must not be empty" });
     else edits.push({ key, path: key, value: key === "description" ? escapeRichText(v) : v });
+  }
+
+  // ── scope (permissions.methodScope + allowedCategories) ───────────────
+  if ("scope" in o) {
+    const s = o.scope;
+    const value = typeof s === "string" ? s : isObj(s) ? s.value : undefined;
+    const services = isObj(s) ? s.services : undefined;
+    if (isObj(s)) for (const k of Object.keys(s)) if (k !== "value" && k !== "services") invalid.push({ key: `scope.${k}`, reason: "unknown key (scope takes value, services)" });
+    if (typeof value !== "string" || !(METHOD_SCOPES as readonly string[]).includes(value)) {
+      invalid.push({ key: "scope", reason: `must be one of ${METHOD_SCOPES.join(" | ")} (or {"value": "${SELECTED}", "services": [category, …]})` });
+    } else if (value === SELECTED && (!Array.isArray(services) || services.length === 0 || !services.every((x) => typeof x === "string" && CATEGORY_UUID.test(x.trim())))) {
+      invalid.push({ key: "scope.services", reason: `${SELECTED} needs services: a non-empty list of categories (names are resolved to uuids before planning)` });
+    } else if (value !== SELECTED && services !== undefined && !(Array.isArray(services) && services.length === 0)) {
+      invalid.push({ key: "scope.services", reason: `services apply to ${SELECTED} only` });
+    } else if (!isObj(live.permissions)) {
+      notApplied.push({ key: "scope", reason: "the method body has no permissions object to hold the scope" });
+    } else {
+      edits.push({ key: "scope", path: "permissions.methodScope", value });
+      // Outside SELECTED the server keeps (and ignores) the stored list: a [] sent would not land (live).
+      if (value === SELECTED) edits.push({ key: "scope.services", path: "permissions.allowedCategories", value: (services as string[]).map((x) => x.trim().toLowerCase()) });
+    }
   }
 
   // ── inputs[] ──────────────────────────────────────────────────────────
@@ -270,7 +296,7 @@ export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: Pl
 function throwProblems(p: Problems): void {
   if (p.unknown.length > 0) {
     throw new CliError(
-      `Unknown overlay key(s): ${p.unknown.join(", ")}. Supported: name, summary, description; ` +
+      `Unknown overlay key(s): ${p.unknown.join(", ")}. Supported: name, summary, description, scope; ` +
         `parsedSteps[] {${[...STEP_KEYS].join(", ")}}; ops[] {op: ${OP_NAMES.join(" | ")}}.`,
       { code: "AD_OVERLAY_UNKNOWN_KEY", details: { unknown: p.unknown } },
     );
@@ -375,7 +401,7 @@ function checkKnownKeys(o: Record<string, unknown>): void {
   nested(o.parsedSteps, "parsedSteps", STEP_KEYS);
   if (unknown.length > 0) {
     throw new CliError(
-      `Unknown overlay key(s): ${unknown.join(", ")}. Supported: name, summary, description; ` +
+      `Unknown overlay key(s): ${unknown.join(", ")}. Supported: name, summary, description, scope; ` +
         `parsedSteps[] {${[...STEP_KEYS].join(", ")}}; ops[] {op: ${OP_NAMES.join(" | ")}}.`,
       { code: "AD_OVERLAY_UNKNOWN_KEY", details: { unknown } },
     );
