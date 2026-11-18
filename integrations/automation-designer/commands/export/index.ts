@@ -11,6 +11,8 @@ interface ExportArgs {
 }
 
 interface ExportData {
+  /** The env exported from (D23: the default env is never used silently). */
+  env: string;
   /** Numeric chain id that was exported. */
   id: number;
   uuid: string | null;
@@ -39,7 +41,10 @@ const command: CommandModule<ExportArgs, ExportData> = {
     const ref = /^\d+$/.test(input) ? { id: Number(input) } : { uuid: resolveMethodRef(input) };
     return { ref, outPath: flags.out, full: flags.full };
   },
-  async execute({ ref, outPath, full }) {
+  async execute({ ref, outPath, full }, context) {
+    if (!context.envExplicit) {
+      context.warn(`Using the default env '${context.env.name}' (no --env given); pass --env to choose.`);
+    }
     // the export endpoint only takes the numeric chain id.
     let id: number;
     let uuid: string | null = null;
@@ -63,6 +68,7 @@ const command: CommandModule<ExportArgs, ExportData> = {
       written = outPath;
     }
     return ok<ExportData>({
+      env: context.env.name,
       id,
       uuid,
       ...(written ? { writtenTo: written } : {}),
@@ -75,7 +81,7 @@ const command: CommandModule<ExportArgs, ExportData> = {
     if (!envelope.ok) return;
     const data = envelope.data as ExportData;
     if (data.writtenTo) {
-      ui.success(`Wrote ${data.bytes} bytes to ${data.writtenTo}`);
+      ui.success(`Wrote ${data.bytes} bytes from ${data.env} to ${data.writtenTo}`);
     } else {
       ui.section(`Method export (${data.bytes} bytes)`);
       ui.object(data.preview);

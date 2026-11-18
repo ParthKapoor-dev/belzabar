@@ -43,6 +43,18 @@ describe("ad export", () => {
     expect(raw).not.toHaveBeenCalled();
   });
 
+  test("D23: the default env is named in data and warned about; --env is quiet", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } }, activeEnv: "t-dev" });
+    spies.push(spyOn(adApi, "exportMethod").mockResolvedValue({}));
+    const dflt = await runCommand(exportCommand, ["98765"]);
+    expect(dflt.envelope?.data).toMatchObject({ env: "t-dev", id: 98765 });
+    expect(dflt.envelope?.meta?.warnings).toEqual(["Using the default env 't-dev' (no --env given); pass --env to choose."]);
+    expect(dflt.envelope?.meta).toMatchObject({ envSource: "default" });
+    const named = await runCommand(exportCommand, ["98765"], { env: "t-dev" });
+    expect(named.envelope?.data).toMatchObject({ env: "t-dev" });
+    expect(named.envelope?.meta?.warnings).toBeUndefined();
+  });
+
   test("garbage → INVALID_UUID", async () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     const r = await runCommand(exportCommand, ["abc"], { env: "t-dev" });

@@ -104,7 +104,7 @@ describe("export / export-category: --out omits the body unless --full", () => {
     spies.push(spyOn(adApi, "exportMethod").mockResolvedValue(body));
     const out = join(mkdtempSync(join(tmpdir(), "s7a-exp-")), "m.json");
     const a = (await runCommand(exportCommand, ["20037", "--out", out], { env: "t-dev" })).envelope?.data as any;
-    expect(a).toEqual({ id: 20037, uuid: null, writtenTo: out, bytes: expect.any(Number), methods: ["m1"] });
+    expect(a).toEqual({ env: "t-dev", id: 20037, uuid: null, writtenTo: out, bytes: expect.any(Number), methods: ["m1"] });
     expect(JSON.parse(readFileSync(out, "utf8"))).toEqual(body);
     const b = (await runCommand(exportCommand, ["20037", "--out", out, "--full"], { env: "t-dev" })).envelope?.data as any;
     expect(b.preview).toEqual(body);

@@ -7,7 +7,10 @@ Flags:
   --out <file>    Write the exported JSON to a file; the envelope then carries
                   only {id, uuid, writtenTo, bytes, methods} (no body).
   --full          With --out: also include the body (`preview`) in the output.
-  --llm           Emit a JSON envelope with {id, uuid, writtenTo, bytes, methods, preview}
+  --llm           Emit a JSON envelope with {env, id, uuid, writtenTo, bytes, methods, preview}
+
+Without --env the default env is used, never silently: `data.env` names it,
+and a warning (meta.warnings; stderr in human mode) says it was the default.
 
 Examples:
   wi-impl ad export 98765 --out /tmp/method.json
