@@ -1,10 +1,10 @@
 // Callee contracts + db accounts for the compact expander (lib/serialize/compact).
 // Read-only lookups on the target env, cached like the validator's L4:
-//   GET /rest/api/automation-systems/{svc}/automation-apis/{uri}   (lib/validate/online fetchContract)
+//   GET /rest/api/automation-systems/{svc}/automation-apis/{uri}   (lib/validate/online fetchContractEntry)
 //   GET /rest/api/automation-systems/{svc}/auth                    (db_service accounts: id + nickname)
 
 import { apiFetch, CliError, isObj, readJsonOrNull } from "@belzabar/core";
-import { fetchContract } from "../validate/online";
+import { fetchContractEntry } from "../validate/online";
 import { compactService, emptyCatalog, splitService, type DbAccount, type ServiceCatalog } from "../serialize/compact";
 import { stepService } from "../serialize/ops";
 import type { V2MethodResponse, V2Step } from "../types/v2-wire";
@@ -49,14 +49,21 @@ async function fetchAccounts(service: string): Promise<DbAccount[]> {
     .map((a) => ({ id: a.id as number | string, nickname: typeof a.nickname === "string" ? a.nickname : null }));
 }
 
-/** Load every contract (and db_service accounts) the names need. Unknown APIs map to null. */
-export async function loadServiceCatalog(services: string[]): Promise<ServiceCatalog> {
+/**
+ * Load every contract (and db_service accounts) the names need. Unknown APIs
+ * map to null. Contracts come from the 1 h cache unless `fresh`; the ones that
+ * did are listed in `cachedAt`.
+ */
+export async function loadServiceCatalog(services: string[], opts: { fresh?: boolean } = {}): Promise<ServiceCatalog> {
   const cat = emptyCatalog();
+  cat.cachedAt = new Map();
   for (const name of new Set(services)) {
     const sm = splitService(name);
     if (!sm) continue; // expandCompactStep reports the malformed name
     try {
-      cat.contracts.set(name, await fetchContract(sm.service, sm.method));
+      const { contract, cachedAt } = await fetchContractEntry(sm.service, sm.method, opts.fresh);
+      cat.contracts.set(name, contract);
+      if (cachedAt !== null) cat.cachedAt.set(name, cachedAt);
     } catch (e) {
       throw new CliError(`Could not look up ${name}: ${e instanceof Error ? e.message : String(e)}`, { code: "AD_API_ERROR", details: { service: name } });
     }

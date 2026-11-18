@@ -16,6 +16,7 @@ import publishCommand, { __setNoteRetryDelayForTests, NOTE_ATTEMPTS } from "../.
 import changelogCommand from "../../commands/changelog/index";
 import { findChangelogId } from "../../lib/api/changelog";
 import { __setValidatorsForTests } from "../../lib/save/validation";
+import { fetchContractEntry } from "../../lib/validate/online";
 import { fakeAdEnv } from "./helpers/fake-ad";
 
 const FIX = join(import.meta.dir, "../fixtures/history");
@@ -107,6 +108,17 @@ describe("ad publish", () => {
     expect(d.noteChainId).toBe(DRAFT_ID);
     expect(d.publishedUuid).toBe(PUB);
     expect(d.inSync).toBe(true); // same logic on both sides
+  });
+
+  test("C4: a publish drops the method's own cached callee contract", async () => {
+    wire();
+    const contract = `/rest/api/automation-systems/Test-Tester/automation-apis/belz_tst_s4b_hist1`;
+    ad.ff.add([{ method: "GET", url: contract, response: () => ({ id: 1, uuid: "c", automationUserInputs: [] }) }]);
+    await fetchContractEntry("Test-Tester", "belz_tst_s4b_hist1"); // cached now
+    expect((await fetchContractEntry("Test-Tester", "belz_tst_s4b_hist1")).cachedAt).not.toBeNull();
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "ship it", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    expect((await fetchContractEntry("Test-Tester", "belz_tst_s4b_hist1")).cachedAt).toBeNull();
   });
 
   test("publish failure -> no note posted", async () => {

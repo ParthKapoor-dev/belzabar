@@ -39,7 +39,8 @@ Safety:
     after sending) is not re-sent: wi-impl looks for it in the changelog, and
     otherwise says to check `wi-impl ad changelog` before re-recording.
   - After publishing, the compiled cache of the draft and published uuids is
-    evicted on both cache routes (data.compiledCache).
+    evicted on both cache routes (data.compiledCache), and the method's own
+    cached contract is dropped, so callers' saves see its new inputs at once.
   - Re-fetches both draft and published and reports inSync (logic
     fingerprints equal), noteRecorded, changelogId and validation warnings.
 

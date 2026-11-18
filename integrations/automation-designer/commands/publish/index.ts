@@ -10,6 +10,7 @@ import { ruleInfo } from "../../lib/validate/index";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
 import { runValidationGate, type ValidationSummary } from "../../lib/save/validation";
 import { invalidateCompiledCache, type CompiledCacheResult } from "../../lib/save/compiled-cache";
+import { forgetContract } from "../../lib/validate/online";
 import { assertDraftUnchanged } from "../../lib/save/pipeline";
 
 interface PublishArgs {
@@ -137,6 +138,9 @@ const command: CommandModule<PublishArgs, PublishData> = {
     logIntent("POST", `/rest/api/automation/chain/${draft.uuid}/publish`, { draftUuid: draft.uuid });
     const { publishedUuid } = await adApi.publishDraft(draft.uuid);
     const compiledCache = await invalidateCompiledCache([draft.uuid, publishedUuid]);
+    // Its inputs / outputs may have changed: callers' saves must not check against the cached contract.
+    const service = draftBody.metadata?.service?.name;
+    if (typeof service === "string" && typeof draftBody.name === "string") await forgetContract(service, draftBody.name);
     if (!compiledCache.ok) {
       context.warn(
         `Compiled-cache eviction failed on every route; the published method may run the previous body. ` +

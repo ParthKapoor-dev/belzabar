@@ -18,14 +18,16 @@ the verification.
 | `test-values.ts` | `storedTestValues` (V1 read of the inputs carrying a stored testValue; null when unreadable), the save's drop warning and the create note. |
 | `normalise.ts` | `normalisedChange` / `splitNormalised`: server rewrites the verify accepts as unchanged (encoding flags, account label, condition form). |
 | `case-guard.ts` | `guardTestCases` / `planCaseRestores`: puts back the test cases a V2 body write rewrote (shared by `ad save` and `ad history restore`). |
-| `services.ts` | `loadServiceCatalog`: callee contracts and db accounts for the compact expander, cached 1 h (the validator's L4 cache). |
+| `services.ts` | `loadServiceCatalog`: callee contracts and db accounts for the compact expander, cached 1 h (the validator's L4 cache). `fresh` reads online; the result lists which contracts came from the cache (`cachedAt`). |
 
 ## Save pipeline (`saveOverlayV2`)
 
 1. The draft guard ([`../draft-guard.ts`](../draft-guard.ts)) picks the target; its GET is the
    fresh live body.
 2. The plan: `planV2Overlay` for leaf keys, `applyStructuralOps` for `ops[]`, file flags as
-   update-step ops. Anything outside the targets must stay byte-identical
+   update-step ops. A refusal that a cached callee contract decided (an input, output, service or
+   account it does not know) is planned once more on contracts read online now. Only that answer
+   refuses, and its message says the contracts were re-read. Anything outside the targets must stay byte-identical
    (`AD_SERIALIZER_DRIFT`).
 3. The validation gate. `--dry-run` stops here and returns
    `{valid, validation{errors, warnings}}`; nothing is written.

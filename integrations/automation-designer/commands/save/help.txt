@@ -47,7 +47,11 @@ Arguments:
                             as id=nickname), description, language, async
                         sql alone picks db_service/data.read|add|update|delete
                         from the verb. Input/output keys are checked against the
-                        callee contract (online, cached 1 h).
+                        callee contract (online, cached 1 h). A key the
+                        cached contract lacks is re-checked online before
+                        the save is refused (a callee just published with a
+                        new input works at once); `ad publish` also drops
+                        the method's own cached contract.
                         Refused with AD_OVERLAY_NOT_APPLIED because the server
                         drops them: buttonLabel, internalMethod, testValue, a
                         variable's BASE_64 encoding, input/output keys the callee

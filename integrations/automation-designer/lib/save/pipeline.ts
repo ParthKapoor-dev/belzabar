@@ -124,6 +124,40 @@ export interface SaveV2Data {
   normalised: Normalised[];
 }
 
+/**
+ * Plan the overlay against the callee contracts. They come from a 1 h cache,
+ * which can predate a callee's publish (a new input refused as "not an input
+ * of the callee"), so a refusal planned on cached contracts is re-planned
+ * once on contracts read online now; only that answer can refuse the save.
+ */
+async function planWithContracts(live: V2MethodResponse, overlay: unknown, env: string, ops: unknown): Promise<V2OverlayPlan> {
+  if (ops === undefined) return planV2Overlay(live, overlay, { env });
+  const services = servicesOfOps(live, ops);
+  const catalog = await loadServiceCatalog(services);
+  try {
+    return planV2Overlay(live, overlay, { env, catalog });
+  } catch (err) {
+    const cached = [...(catalog.cachedAt ?? new Map<string, number>())];
+    if (!(err instanceof CliError) || err.code !== "AD_OVERLAY_NOT_APPLIED" || cached.length === 0 || !contractRefusal(err)) throw err;
+    try {
+      return planV2Overlay(live, overlay, { env, catalog: await loadServiceCatalog(services, { fresh: true }) });
+    } catch (again) {
+      if (!(again instanceof CliError) || again.code !== "AD_OVERLAY_NOT_APPLIED") throw again;
+      const ages = cached.map(([s, at]) => `${s} (cached ${Math.max(0, Math.round((Date.now() - at) / 60000))} min ago)`).join(", ");
+      throw new CliError(`${again.message} (Callee contracts re-read online just now; the cached copies were: ${ages}.)`, {
+        code: again.code,
+        details: { ...(isObj(again.details) ? again.details : {}), contractsRereadOnline: cached.map(([s]) => s) },
+      });
+    }
+  }
+}
+
+/** A refusal that a callee contract decided (unknown input / output key, service, account). */
+function contractRefusal(err: CliError): boolean {
+  const list = isObj(err.details) && Array.isArray(err.details.notApplied) ? err.details.notApplied : [];
+  return list.some((n) => isObj(n) && typeof n.reason === "string" && /callee|of the service|resolve to an automation API|not an account/.test(n.reason));
+}
+
 export function versionName(body: V2MethodResponse | null | undefined): string | null {
   const n = body?.metadata?.version?.name;
   return typeof n === "string" || typeof n === "number" ? String(n) : null;
@@ -139,8 +173,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   const draftUuid = guard.draft.uuid;
   const live = guard.draft.raw as V2MethodResponse;
   const ops = isObj(input.overlay) ? input.overlay.ops : undefined;
-  const catalog = ops !== undefined ? await loadServiceCatalog(servicesOfOps(live, ops)) : undefined;
-  const plan = planV2Overlay(live, input.overlay, { env: input.env, catalog });
+  const plan = await planWithContracts(live, input.overlay, input.env, ops);
   for (const k of plan.unchanged) input.warn(`Overlay key ${k} is identical to the current draft; nothing to change.`);
 
   const gate = {

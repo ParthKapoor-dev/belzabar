@@ -82,21 +82,37 @@ async function getJson(path: string): Promise<unknown | null> {
   }
 }
 
-export async function fetchContract(service: string, method: string): Promise<ApiContract | null> {
-  const key = `${service}__${method}`.replace(/[^\w.-]/g, "_");
-  const cached = await contractCache.load(key);
-  if (cached) return cached.found ? cached.contract ?? null : null;
+const contractKey = (service: string, method: string) => `${service}__${method}`.replace(/[^\w.-]/g, "_");
+
+async function fetchContract(service: string, method: string): Promise<ApiContract | null> {
+  return (await fetchContractEntry(service, method)).contract;
+}
+
+/**
+ * A callee contract and where it came from: `cachedAt` is when the 1 h cache
+ * entry was written, or null when it was read online now (`fresh` skips the
+ * cache; the online answer replaces the entry).
+ */
+export async function fetchContractEntry(service: string, method: string, fresh = false): Promise<{ contract: ApiContract | null; cachedAt: number | null }> {
+  const key = contractKey(service, method);
+  const cached = fresh ? null : await contractCache.loadSwr(key);
+  if (cached) return { contract: cached.data.found ? cached.data.contract ?? null : null, cachedAt: cached.savedAt };
   const uris = [method, URI_BY_LABEL[method]].filter((u, i, a): u is string => !!u && a.indexOf(u) === i);
   for (const uri of uris) {
     const body = await getJson(`/rest/api/automation-systems/${encodeURIComponent(service)}/automation-apis/${encodeURIComponent(uri)}`);
     if (isObj(body) && (body.uuid || body.id)) {
       const contract = body as ApiContract;
       await contractCache.save(key, { found: true, contract: slimContract(contract) });
-      return contract;
+      return { contract, cachedAt: null };
     }
   }
   await contractCache.save(key, { found: false });
-  return null;
+  return { contract: null, cachedAt: null };
+}
+
+/** Drop a method's own cached contract (after `ad publish` changed its inputs or outputs). */
+export async function forgetContract(service: string, method: string): Promise<void> {
+  await contractCache.invalidate(contractKey(service, method));
 }
 
 function slimContract(c: ApiContract): ApiContract {

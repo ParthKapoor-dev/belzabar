@@ -77,6 +77,8 @@ export interface ServiceCatalog {
   contracts: Map<string, ApiContract | null>;
   /** service → its auth accounts (db_service). */
   accounts: Map<string, DbAccount[]>;
+  /** `"svc/method"` → when its contract was cached (absent: read online now). */
+  cachedAt?: Map<string, number>;
 }
 
 export const emptyCatalog = (): ServiceCatalog => ({ contracts: new Map(), accounts: new Map() });

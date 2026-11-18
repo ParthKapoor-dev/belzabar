@@ -3,7 +3,7 @@
 //   ad save  — structural ops, --sql-file / --code-file, --dry-run, verify
 //   ad create --spec <compact> — contracts, codeFile/sqlFile, spec.category, --dry-run
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdirSync, writeFileSync } from "fs";
+import { mkdirSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { fixture, runCommand, scratchDir, type RecordedRequest } from "@belzabar/core/testing";
 import saveCommand from "../../commands/save/index";
@@ -318,5 +318,47 @@ describe("ad save — methods with test cases (testSuite)", () => {
     ]);
     const r = await runCommand(saveCommand, [write(dir, "o.json", { summary: "x" }), "--uuid", U, "--yes"], { env: "t-dev" });
     expect(r.envelope?.error ?? null).toBeNull();
+  });
+});
+
+describe("ad save — callee contracts from the 1 h cache (C4)", () => {
+  /** The echo contract as cached before the callee gained `addForSchools`, then as published. */
+  function wireContracts() {
+    const echo = JSON.parse(readFileSync(`${ON}/api-echo.json`, "utf8"));
+    const state = { contract: echo, calls: 0 };
+    const s = v2Store(U, base(), { onPost: serverFill });
+    ad.install([
+      ...s.routes,
+      { method: "GET", url: `${API}/Helpers.Legacy/automation-apis/echo`, response: () => (state.calls++, state.contract) },
+      ...contractRoutes.slice(1),
+      ...compiledCacheRoutes(),
+    ]);
+    return { state, echo, s };
+  }
+  const addEcho = (input: string) => ({ ops: [{ op: "add-step", step: { service: "Helpers.Legacy/echo", inputs: { [input]: "x" }, outputs: [{ key: "response", as: "o" }] } }] });
+
+  test("an input the cached contract lacks is re-checked online before the save is refused", async () => {
+    const dir = setup();
+    const { state, echo, s } = wireContracts();
+    // a dry run caches the contract as it is now: {Input}
+    await runCommand(saveCommand, [write(dir, "d.json", addEcho("Input")), "--uuid", U, "--dry-run"], { env: "t-dev" });
+    const before = state.calls;
+    state.contract = { ...echo, automationUserInputs: [...echo.automationUserInputs, { id: 1, uuid: "new-input-uuid", label: "addForSchools", produces: "addForSchools", automationUserInputs: [] }] };
+    const r = await runCommand(saveCommand, [write(dir, "o.json", addEcho("addForSchools")), "--uuid", U, "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error ?? null).toBeNull();
+    expect(state.calls - before).toBe(1); // the cached copy refused it; one online re-read accepted it
+    expect(s.posts).toHaveLength(1);
+  });
+
+  test("still unknown online: refused, and the error says the contract was re-read online", async () => {
+    const dir = setup();
+    const { state } = wireContracts();
+    await runCommand(saveCommand, [write(dir, "d.json", addEcho("Input")), "--uuid", U, "--dry-run"], { env: "t-dev" });
+    const before = state.calls;
+    const r = await runCommand(saveCommand, [write(dir, "o.json", addEcho("nope")), "--uuid", U, "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.code).toBe("AD_OVERLAY_NOT_APPLIED");
+    expect(r.envelope?.error?.message).toContain("re-read online just now");
+    expect((r.envelope?.error?.details as any).contractsRereadOnline).toEqual(["Helpers.Legacy/echo"]);
+    expect(state.calls - before).toBe(1);
   });
 });

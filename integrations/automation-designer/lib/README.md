@@ -71,6 +71,6 @@ All caches are core `Cache` instances under `~/.wi-impl/cache/`, env-scoped.
 | Caller refs | `callers/` (30 days, keyed by uuid and `updatedOn`), `callers-errors/` (1 day) | — | `callers --refresh` |
 | Grep step texts | `grep/` (30 days, keyed by uuid and `updatedOn`; failures share `callers-errors/`) | — | `grep --refresh` retries failures |
 | Published history bodies | `history-versions/<env>/` | 30 days (immutable) | — |
-| Validator L4 | `api-contracts/`, `service-accounts/` | 1 h | — |
+| Validator L4 | `api-contracts/`, `service-accounts/` | 1 h | `ad publish` drops the published method's own contract; `ad save` re-reads a contract online before it refuses on it |
 
 Up: [`../README.md`](../README.md)
