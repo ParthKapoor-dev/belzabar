@@ -212,7 +212,20 @@ export function parseSpec(value: unknown): ReportSpec {
   };
 }
 
-/** One line per difference between two specs (titles, datasource, columns by id, filters, summaries). */
+/** JSON with object keys sorted, so two values compare equal whatever their key order. */
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_k, v: unknown) =>
+    isObj(v) ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, v[k]])) : v,
+  );
+}
+
+const same = (a: unknown, b: unknown) => canonical(a) === canonical(b);
+
+/**
+ * One line per difference between two specs (titles, datasource, columns by id
+ * and their order, filters, summaries, settings). Values compare by content: the
+ * server hands objects back with their keys in its own order.
+ */
 export function specChanges(before: ReportSpec, after: ReportSpec): string[] {
   const out: string[] = [];
   if (before.title !== after.title) out.push(`title: "${before.title}" → "${after.title}"`);
@@ -224,20 +237,25 @@ export function specChanges(before: ReportSpec, after: ReportSpec): string[] {
   const a = byId(after.columns);
   for (const [id, c] of a) {
     if (!b.has(id)) out.push(`column added: ${String(c.name)}`);
-    else if (JSON.stringify(b.get(id)) !== JSON.stringify(c)) out.push(`column changed: ${String(c.name)}`);
+    else if (!same(b.get(id), c)) out.push(`column changed: ${String(c.name)}`);
   }
   for (const [id, c] of b) if (!a.has(id)) out.push(`column removed: ${String(c.name)}`);
-  const order = (cols: Obj[]) => cols.map((c) => String(c.id)).join(",");
-  if (out.every((l) => !l.startsWith("column")) && order(before.columns) !== order(after.columns)) out.push("columns reordered");
-  if (JSON.stringify(before.filters) !== JSON.stringify(after.filters)) out.push(`filters: ${before.filters.length} → ${after.filters.length} (changed)`);
-  if (JSON.stringify(before.summaries) !== JSON.stringify(after.summaries)) out.push(`summaries: ${before.summaries.length} → ${after.summaries.length} (changed)`);
+  // The order of the columns on both sides (added and removed ones aside).
+  const kept = (cols: Obj[], other: Map<string, Obj>) => cols.filter((c) => other.has(String(c.id)));
+  const was = kept(before.columns, a);
+  const now = kept(after.columns, b);
+  if (was.some((c, i) => String(c.id) !== String(now[i]?.id))) {
+    out.push(`columns reordered: ${now.map((c) => String(c.name)).join(", ")}`);
+  }
+  if (!same(before.filters, after.filters)) out.push(`filters: ${before.filters.length} → ${after.filters.length} (changed)`);
+  if (!same(before.summaries, after.summaries)) out.push(`summaries: ${before.summaries.length} → ${after.summaries.length} (changed)`);
   if ((before.isFilterRequired ?? false) !== (after.isFilterRequired ?? false)) out.push("isFilterRequired changed");
   if ((before.downloadFilename ?? "") !== (after.downloadFilename ?? "")) {
     out.push(`downloadFilename: ${JSON.stringify(before.downloadFilename ?? "")} → ${JSON.stringify(after.downloadFilename ?? "")}`);
   }
   // Display settings: only when both sides know them (a non-exact read does not).
   for (const k of ["summaryPosition", "filterConfig"] as const) {
-    if (before[k] !== undefined && after[k] !== undefined && JSON.stringify(before[k]) !== JSON.stringify(after[k])) out.push(`${k} changed`);
+    if (before[k] !== undefined && after[k] !== undefined && !same(before[k], after[k])) out.push(`${k} changed`);
   }
   return out;
 }

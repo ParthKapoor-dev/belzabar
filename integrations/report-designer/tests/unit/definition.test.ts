@@ -111,6 +111,19 @@ describe("specChanges", () => {
     ]);
   });
   test("a pure reorder is reported", () => {
-    expect(specChanges(base, parseSpec(specObj({ columns: [COLUMNS[1], COLUMNS[0]] })))).toEqual(["columns reordered"]);
+    expect(specChanges(base, parseSpec(specObj({ columns: [COLUMNS[1], COLUMNS[0]] })))).toEqual(["columns reordered: Total, Day"]);
+  });
+  test("a reorder is reported next to other column changes; adding or removing alone is not a reorder (G2)", () => {
+    const sorted = { sortBy: "ASC", ...COLUMNS[0] };
+    const third = { id: "333", name: "Count", type: "NUMBER" };
+    expect(specChanges(base, parseSpec(specObj({ columns: [COLUMNS[1], sorted] })))).toEqual(["column changed: Day", "columns reordered: Total, Day"]);
+    expect(specChanges(base, parseSpec(specObj({ columns: [third, COLUMNS[0], COLUMNS[1]] })))).toEqual(["column added: Count"]);
+    expect(specChanges(base, parseSpec(specObj({ columns: [COLUMNS[0]] })))).toEqual(["column removed: Total"]);
+  });
+  test("key order does not matter; a new key (sortBy) does (G1)", () => {
+    const reKeyed = COLUMNS.map((c) => Object.fromEntries(Object.entries(c).reverse()));
+    const filter = Object.fromEntries(Object.entries(FILTER).reverse());
+    expect(specChanges(base, parseSpec(specObj({ columns: reKeyed, filters: [filter] })))).toEqual([]);
+    expect(specChanges(base, parseSpec(specObj({ columns: [{ ...COLUMNS[0], sortBy: "DESC" }, COLUMNS[1]] })))).toEqual(["column changed: Day"]);
   });
 });

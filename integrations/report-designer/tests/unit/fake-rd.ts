@@ -113,13 +113,16 @@ function basic(r: StoredReport): Obj {
   };
 }
 
+/** The live v3 read hands columns back with their keys in its own order (here: reversed). */
+const reKeyed = (cols: unknown) => (Array.isArray(cols) ? cols.map((col: Obj) => Object.fromEntries(Object.entries(col).reverse())) : cols);
+
 function v3(r: StoredReport): Obj {
   const c = r.configuration;
   return {
     id: r.id,
     name: c.name,
     description: c.description,
-    columns: c.columns,
+    columns: reKeyed(c.columns),
     filters: c.filters,
     summaries: c.summaries,
     dataSourceId: c.dataSourceId,

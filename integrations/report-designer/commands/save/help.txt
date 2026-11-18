@@ -2,12 +2,13 @@ Usage: wi-impl rd save <id> --spec <file> --env <env> [flags]
 
 Replace a report's definition with a spec file: export it, edit the file, save
 it back. Report Designer keeps no history and last write wins, so wi-impl:
-  1. shows what changes (title, datasource, columns, filters, summaries,
-     downloadFilename);
+  1. shows what changes (title, datasource, columns and their order, filters,
+     summaries, downloadFilename);
   2. saves the current definition to ~/.wi-impl/rd/backups/<env>/ first (save that
      file back to undo);
   3. refuses (RD_CONFLICT) if the report changed since it was read;
-  4. reads the result back and compares it with the spec (RD_VERIFY_FAILED).
+  4. reads the result back and compares it with the spec, field by field and
+     column order included (RD_VERIFY_FAILED).
 
 Arguments:
   <id>                Report id (32 hex) or a Report Designer URL.

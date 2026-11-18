@@ -122,6 +122,34 @@ describe("rd save", () => {
     expect("downloadFilename" in sentConfig()).toBe(false);
   });
 
+  test("a sort added in front of a column's keys, plus a reorder, saves and verifies (G1, G2)", async () => {
+    rd.install();
+    const columns = [COLUMNS[1], { sortBy: "ASC", ...COLUMNS[0] }];
+    const r = await runCommand(save, [REPORT_ID, "--spec", specFile({ columns }), "--yes"], { env: RD_ENV });
+    expect(r.envelope?.error ?? null).toBeNull();
+    expect(r.envelope?.data).toMatchObject({ changes: ["column changed: Day", "columns reordered: Total, Day"], mismatches: [] });
+    expect(sentConfig().columns.map((c: { name: string }) => c.name)).toEqual(["Total", "Day"]);
+  });
+
+  test("a reorder the server did not keep fails the read-back (G2)", async () => {
+    rd.install([
+      {
+        method: "PUT",
+        url: /\/rest\/api\/v2\/reports\/[0-9a-f]{32}/,
+        response: (req: RecordedRequest) => {
+          // stores the new filters but keeps the old column order
+          const r = rd.reports.get(REPORT_ID)!;
+          const sent = JSON.parse((req.json() as { configuration: string }).configuration);
+          r.configuration = { ...sent, columns: r.configuration.columns };
+          return {};
+        },
+      },
+    ]);
+    const r = await runCommand(save, [REPORT_ID, "--spec", specFile({ columns: [COLUMNS[1], COLUMNS[0]] }), "--yes"], { env: RD_ENV });
+    expect(r.envelope?.error?.code).toBe("RD_VERIFY_FAILED");
+    expect((r.envelope?.data as { mismatches: string[] }).mismatches).toEqual(["columns reordered: Day, Total"]);
+  });
+
   test("a spec equal to the saved definition writes nothing", async () => {
     rd.install();
     const r = await runCommand(save, [REPORT_ID, "--spec", specFile({ filterConfig: 1, summaryPosition: { label: "Show summaries at bottom", value: "bottom" } }), "--yes"], {

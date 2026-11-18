@@ -59,7 +59,8 @@ Title and description live on the record (PATCH), the rest in the configuration 
 PATCH keeps the saved configuration (verified live). `writeSpec` re-reads the v3 definition
 right before writing and compares it with the fingerprint taken before the confirmation
 (`RD_CONFLICT`), then reads back through `readReport` and lists differences with
-`specChanges`. Display settings are compared only when both sides know them.
+`specChanges`. It compares values by content, not key order (the v3 read returns a column's
+keys in its own order), and reports a column reorder next to any other column change. Display settings are compared only when both sides know them.
 
 `planSave` reads the report with `exact` (it runs once) unless it is a dry run, so the display
 settings can be compared and kept when the spec leaves them out, and so `toConfiguration` can
