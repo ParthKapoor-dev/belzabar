@@ -178,14 +178,16 @@ describe("calibration: 36 real acme-dev V2 bodies", () => {
       "AD-OUT-002:error": 3,
       "AD-REF-001:error": 1, // 422a34a9: #{epStartDate} is never defined
       "AD-REF-002:warn": 1, // 4540d7de: step 4 reads #{docCodeId} it writes itself
-      "AD-SCHEMA-003:warn": 8, // the non-hex output uuid …6a00e5g copied between methods
       "AD-SPEL-001:error": 3, // 43818593: entry conditions with an unclosed #{
       "AD-SQL-004:warn": 37, // #{…} spliced into SQL (common style)
       "CC3:warn": 4, // custom code that never prints
       "CI1:warn": 58, // SpEL with combineInput:false: runs via the API, not from the UI runner (warn)
       "CO1:error": 3, // STRIING
       "CO2:error": 3,
-      "DUP1:warn": 5, // duplicate output names/fieldCodes (3 methods; a warning)
+      // DUP1 5 → 0 (C18): all five were a conditional overwrite of an earlier
+      // step's output (4629ab57 step 12, 4567eb19 step 4, 41bb1b43 step 11).
+      // AD-SCHEMA-003 8 → 0 (C15): every hit was db_service's own rowsImpacted
+      // uuid …6a00e5g, copied from the service definition.
       "M1:error": 5, // method names with spaces ("Copy of …"): refused on create/rename; audit → warn
       "OK1:error": 2, // method outputs with fieldCode but no key
       "Q5:error": 1, // 422a34a9: ’CHOICE_APPLICATION’ curly quotes in SQL

@@ -33,6 +33,11 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
 - Rule names: codes inherited from the team's own validator (`M1`, `CI1`, `LP3`, …) keep their
   meaning; wi-impl-only rules are `AD-<FAMILY>-nnn`. `CI1` and `DUP1` are warnings because they
   fire on working methods.
+- Known platform patterns are not findings: `DUP1` skips a later writer behind an entry
+  condition ("set a default, then overwrite it if X"); `AD-SQL-004` skips `#{QUOTE.SQL:x}` (the
+  escaped splice); `AD-SCHEMA-003` skips an EXISTING_SERVICE step's io uuids (copied from the
+  service definition, e.g. db_service's non-hex `…6a00e5g`); `CR1` / `AD-REF-001` know the
+  engine's `serviceSuccess<n>_<i>` / `serviceFail<n>_<i>` step flags.
 - Lint rules (`Q2`–`Q4`, `Q6`, `AD-LINT-001`…) never run on save or publish. `Q3` is
   project-specific and config-driven: `"lint": {"resolverTables": {"<table>": "<resolverFn>"}}`
   in `~/.wi-impl/config.json` (read by `commands/lint`); with none configured it never fires.

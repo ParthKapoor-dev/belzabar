@@ -425,7 +425,8 @@ function checkSql(c: StepCtx): void {
   } else if (/[–—]/.test(skel)) {
     c.report({ rule: "Q5", severity: "warn", message: "SQL contains an en/em dash outside a string literal (autoformatted '--'?).", path, step: c.ref });
   }
-  if (scanSpel(sql).blocks.length > 0) {
+  // `#{QUOTE.SQL:x}` is the platform's escaped (quoted) splice: not flagged.
+  if (scanSpel(sql).blocks.some((b) => !/^\s*QUOTE\.SQL\s*:/.test(b.body))) {
     c.report({ rule: "AD-SQL-004", message: "#{…} is spliced into the SQL text; values are not escaped or typed.", path, step: c.ref, fix: "Use :name placeholders with body.queryParams [{key, value, type}]." });
   }
 }

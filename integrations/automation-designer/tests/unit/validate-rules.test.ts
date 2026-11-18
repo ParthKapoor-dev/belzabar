@@ -128,6 +128,32 @@ const L3: Row[] = [
   { rule: "AS1", severity: "error", why: "runAsync writes a method output (v2_runasync_output)", bad: () => caseBody("v2_runasync_output"), good: () => mutate((m) => { m.steps[0].properties.runAsync = true; m.steps[0].outputs = []; m.outputs.shift(); }) },
 ];
 
+describe("false positives removed (C18, C19, C23)", () => {
+  test("C23: CR1 knows the engine's serviceFail<n>_<i> / serviceSuccess<n>_<i> flags", () => {
+    expect(hasRule(entry("#{serviceFail3_6}"), "CR1")).toBe(false);
+    expect(hasRule(entry("#{serviceSuccess3_6} eq true and #{serviceFail2} eq true"), "CR1")).toBe(false);
+    expect(hasRule(entry("#{serviceFailed3_6}"), "CR1")).toBe(true);
+  });
+  test("C19: #{QUOTE.SQL:x} is the escaped splice; other blocks in the same SQL still warn", () => {
+    expect(hasRule(sql("select * from t where name = #{QUOTE.SQL:name}"), "AD-SQL-004")).toBe(false);
+    expect(hasRule(sql("select * from t where name = #{QUOTE.SQL:name} and id = '#{name}'"), "AD-SQL-004")).toBe(true);
+  });
+  test("C18: DUP1 skips 'set a default, then overwrite it if X' (the later writer has an entry condition)", () => {
+    const dup = (laterWhen: string | null) =>
+      mutate((m) => {
+        m.steps[2].outputs[0].fieldCode = "greetingOut";
+        m.steps[2].outputs[0].name = "greetingOut";
+        m.steps[2].properties.entryCondition = { expression: laterWhen, expandedExpressions: null };
+      });
+    expect(hasRule(dup("#{name} ne null"), "DUP1")).toBe(false);
+    expect(hasRule(dup(null), "DUP1")).toBe(true);
+    // the EARLIER writer being conditional does not excuse the unconditional overwrite
+    const earlier = dup(null) as any;
+    earlier.steps[0].properties.entryCondition = { expression: "#{name} ne null", expandedExpressions: null };
+    expect(hasRule(earlier, "DUP1")).toBe(true);
+  });
+});
+
 describe.each([["L2", L2], ["L3", L3]] as const)("%s rules", (_layer, rows) => {
   for (const r of rows) {
     test(`${r.rule} ${r.severity}: ${r.why}`, () => {

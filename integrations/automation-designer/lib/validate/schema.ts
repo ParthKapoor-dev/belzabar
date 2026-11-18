@@ -365,6 +365,10 @@ function checkStepStructure(s: unknown, i: number, report: Report): void {
     }
   }
 
+  // An EXISTING_SERVICE step's input/output uuids are copied from the service's
+  // own definition (e.g. db_service's rowsImpacted …3434f6a00e5g, not hex):
+  // nothing the author can change, so AD-SCHEMA-003 skips them.
+  const fromServiceDefinition = type === "EXISTING_SERVICE";
   walkInputs(s.inputs, ["steps", i, "inputs"], (inp, path) => {
     if (!nonBlank(inp.key)) report({ rule: "EI1", message: "Step input has no key.", path: jsonPath([...path, "key"]), step: ref });
     const t = inp.type;
@@ -372,7 +376,7 @@ function checkStepStructure(s: unknown, i: number, report: Report): void {
       report({ rule: "EI2", message: `Step input "${str(inp.key) ?? "?"}" has type "${t}", not a known data type.`, path: jsonPath([...path, "type"]), step: ref });
     }
     const u = nonBlank(inp.uuid);
-    if (u && !isWireUuid(str(inp.uuid)!)) {
+    if (u && !fromServiceDefinition && !isWireUuid(str(inp.uuid)!)) {
       report({ rule: "AD-SCHEMA-003", message: `Step input uuid ${JSON.stringify(inp.uuid)} is not a uuid.`, path: jsonPath([...path, "uuid"]), step: ref });
     }
   });
@@ -405,7 +409,7 @@ function checkStepStructure(s: unknown, i: number, report: Report): void {
       report({ rule: "AD-OUT-002", message: "Step output has no key (the service output it binds).", path: op("key"), step: ref });
     }
     const u = nonBlank(o.uuid);
-    if (u && !isWireUuid(str(o.uuid)!)) {
+    if (u && !fromServiceDefinition && !isWireUuid(str(o.uuid)!)) {
       report({ rule: "AD-SCHEMA-003", message: `Step output uuid ${JSON.stringify(o.uuid)} is not a uuid.`, path: op("uuid"), step: ref });
     }
   });

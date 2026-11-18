@@ -25,7 +25,9 @@ describe("L1 rules", () => {
     { rule: "AD-SCHEMA-001", why: "inputReference '' (v2_var_ref_emptystr, 400)", bad: () => caseBody("v2_var_ref_emptystr"), good: golden },
     { rule: "AD-SCHEMA-002", why: "method output type FOO (v2_output_type_invalid, 500)", bad: () => caseBody("v2_output_type_invalid"), good: golden },
     { rule: "AD-SCHEMA-002", why: "method input type FOO (v2_input_type_invalid, 500)", bad: () => caseBody("v2_input_type_invalid"), good: golden },
-    { rule: "AD-SCHEMA-003", severity: "warn", why: "non-hex io uuid (real …6a00e5g)", bad: () => mutate((m) => { m.steps[0].outputs[0].uuid = "5b11494a-c244-47a9-a063-3434f6a00e5g"; }), good: golden },
+    { rule: "AD-SCHEMA-003", severity: "warn", why: "non-hex custom-code output uuid", bad: () => mutate((m) => { m.steps[1].outputs[0].uuid = "5b11494a-c244-47a9-a063-3434f6a00e5g"; }), good: golden },
+    // C15: an EXISTING_SERVICE step's io uuids come from the service definition (db_service's rowsImpacted …6a00e5g).
+    { rule: "AD-SCHEMA-003", severity: "warn", why: "service-definition io uuid is not flagged", bad: () => mutate((m) => { m.steps[1].outputs[0].uuid = "nope"; }), good: () => mutate((m) => { m.steps[2].outputs[0].uuid = "5b11494a-c244-47a9-a063-3434f6a00e5g"; m.steps[0].inputs[0].uuid = "5b11494a-c244-47a9-a063-3434f6a00e5g"; }) },
     { rule: "AD-META-001", why: "state PUBLISHED in body (v2_state_published_in_body, 400)", bad: () => caseBody("v2_state_published_in_body"), good: golden },
     { rule: "AD-META-002", why: "thin update (v2_thin_update, 400 Invalid state)", bad: () => caseBody("v2_thin_update"), good: golden },
     { rule: "M1", why: "name with a space (v2_method_name_space, 400)", bad: () => caseBody("v2_method_name_space"), good: golden },

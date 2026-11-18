@@ -13,8 +13,11 @@ import { isObj, str as nonBlank } from "@belzabar/core";
 
 /** Roots the platform provides in every SpEL context (LoggedInUser: seen on a dev env). */
 const PLATFORM_ROOTS = new Set(["util", "QUOTE", "ESCAPE", "JSON", "Math", "T", "LoggedInUser"]);
-/** Per-step success flags the engine sets: serviceSuccess<step>[_<sub>] (seen on a dev env). */
-const PLATFORM_ROOT_RE = /^serviceSuccess\d+(?:_\d+)*$/;
+/**
+ * Per-step flags the engine sets: serviceSuccess<n>[_<i>] and, when a step's
+ * abort-on-failure is off, serviceFail<n>[_<i>] (both seen on a dev env).
+ */
+const PLATFORM_ROOT_RE = /^service(?:Success|Fail)\d+(?:_\d+)*$/;
 
 function isPlatformRoot(name: string): boolean {
   return PLATFORM_ROOTS.has(name) || PLATFORM_ROOT_RE.test(name);
@@ -162,12 +165,15 @@ export function checkGraph(body: Record<string, unknown>, report: Report): void 
       }
       const nm = nonBlank(o.name);
       const fc = nonBlank(o.fieldCode);
+      // "Set a default, then overwrite it if X": a later writer behind an
+      // entry condition is an intentional overwrite, not a duplicate.
+      const conditional = !!entry?.includes("#{");
       if (nm) {
-        if (seenNames.has(nm)) report({ rule: "DUP1", message: `Output name "${nm}" is also used by step ${seenNames.get(nm)! + 1}; the UI keeps only one.`, path: at("outputs", j, "name"), step: ref });
+        if (seenNames.has(nm) && !conditional) report({ rule: "DUP1", message: `Output name "${nm}" is also used by step ${seenNames.get(nm)! + 1}; the UI keeps only one.`, path: at("outputs", j, "name"), step: ref });
         else seenNames.set(nm, i);
       }
       if (fc) {
-        if (seenCodes.has(fc)) report({ rule: "DUP1", message: `Output fieldCode "${fc}" is also written by step ${seenCodes.get(fc)! + 1}; last write wins.`, path: at("outputs", j, "fieldCode"), step: ref, evidence: "v2_dup_out_fieldcode: the other method output goes null" });
+        if (seenCodes.has(fc) && !conditional) report({ rule: "DUP1", message: `Output fieldCode "${fc}" is also written by step ${seenCodes.get(fc)! + 1}; last write wins.`, path: at("outputs", j, "fieldCode"), step: ref, evidence: "v2_dup_out_fieldcode: the other method output goes null" });
         else seenCodes.set(fc, i);
       }
       const writesMethodOutput = (fc && methodOutputKeys.has(fc)) || (ir && methodOutputKeys.has(ir));

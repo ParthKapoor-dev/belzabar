@@ -28,7 +28,7 @@ Global Flags:
 Rules:
   Validator (L1-L3, errors block saves): see `wi-impl ad validate`; includes SQL
   Q1 (bare ? jsonb operator), Q5 (autoformat damage), AD-SQL-004 (#{} spliced
-  into SQL), SP1 (nested ternary), CI1, AS1, ...
+  into SQL; #{QUOTE.SQL:x} is the escaped form and is not flagged), SP1 (nested ternary), CI1, AS1, ...
   Lint (advisory warnings, lib/validate/lint.ts):
     Q2           SELECT-list subquery runs once per row (not flagged without
                  an outer FROM, i.e. one row, nor inside EXISTS(…))
