@@ -75,6 +75,15 @@ OVERLAY SHAPE:
   exist), and an unknown top-level section is refused; otherwise the save
   is refused with PD_OVERLAY_INVALID.
 
+  HTTP CALLS: httpRequests.update takes callId, request {url, body, method},
+  handler {success, error, inProgress}, trigger, triggerFilter,
+  responseTransformSpec and meta.serviceCall — a map MERGED into the call's
+  designer record (serviceUuid, serviceId, inputState as an array, label,
+  …; callId cannot change). Switching a call to another AD method needs
+  request.url AND meta.serviceCall.{serviceUuid, serviceId, inputState}
+  (`wi-impl ad find` gives the numeric id: pick its serviceId field). Any
+  other key is refused (PD_OVERLAY_INVALID), never dropped.
+
   NODES (by id — no children[i] paths; find ids with `wi-impl pd show <page>`
   and its find option): a node is matched by `id`, else `_elementId`; an
   ambiguous id is refused. update MERGES props / field / attrs / events into
@@ -89,7 +98,8 @@ OVERLAY SHAPE:
 
 STRATEGY:
   Partial save: variables.update, httpRequests.update (request, handler,
-  trigger, triggerFilter, responseTransformSpec), elements.operations,
+  trigger, triggerFilter, responseTransformSpec, meta.serviceCall keys),
+  elements.operations,
   nodes.update (keys set at the node's path), styles.replace — with raw
   array indices.
   Full save: variables.add/remove, derived.*, httpRequests.add/remove,

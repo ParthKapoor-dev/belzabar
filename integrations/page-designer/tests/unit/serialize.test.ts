@@ -237,6 +237,40 @@ describe("httpRequests.update emits every field", () => {
     expect(replayOperations(inner(page), plan.operations)).toEqual(inner(plan.patched));
   });
 
+  test("F8 (B121): meta.serviceCall is merged and written, never dropped", () => {
+    const overlay: Overlay = {
+      httpRequests: {
+        update: [{
+          callId: "sc-1",
+          request: { url: "/rest/api/automation/chain/execute/new1" },
+          meta: { serviceCall: { serviceUuid: "new1", serviceId: 42, inputState: [{ fieldCode: "a", isBinding: false, value: 1 }] } },
+        }],
+      },
+    };
+    const plan = planSave(page, overlay);
+    expect(plan.strategy).toBe("partial");
+    if (plan.strategy !== "partial") throw new Error("strategy");
+    expect(plan.operations.map((o) => [o.key, o.operation, o.dataType])).toEqual([
+      ["httpRequests.userDefined[1].request.url", "UPDATE", "STRING"],
+      ["httpRequests.userDefined[1].meta.serviceCall.serviceUuid", "CREATE", "STRING"],
+      ["httpRequests.userDefined[1].meta.serviceCall.serviceId", "CREATE", "NUMBER"],
+      ["httpRequests.userDefined[1].meta.serviceCall.inputState", "CREATE", "ARRAY"],
+    ]);
+    // the rest of serviceCall (label, callId) is kept
+    expect((inner(plan.patched).httpRequests!.userDefined![1] as any).meta.serviceCall).toEqual({
+      label: "sc-1", callId: "sc-1", serviceUuid: "new1", serviceId: 42, inputState: [{ fieldCode: "a", isBinding: false, value: 1 }],
+    });
+    expect(replayOperations(inner(page), plan.operations)).toEqual(inner(plan.patched));
+  });
+
+  test("F8: a key wi-impl does not write is PD_OVERLAY_INVALID, not silently dropped", () => {
+    const bad = (u: Record<string, unknown>) => () => planSave(page, { httpRequests: { update: [{ callId: "sc-1", ...u }] } } as Overlay);
+    expect(bad({ headers: {} })).toThrow(expect.objectContaining({ code: "PD_OVERLAY_INVALID", message: expect.stringContaining("headers is not supported") }));
+    expect(bad({ request: { headers: {} } })).toThrow(/request\.headers is not supported/);
+    expect(bad({ meta: { other: {} } })).toThrow(/meta\.other is not supported/);
+    expect(bad({ meta: { serviceCall: { callId: "x" } } })).toThrow(/callId cannot change/);
+  });
+
   test("a call in httpRequests.generated is addressed there", () => {
     const ops = partialOperationsFor(inner(page), { httpRequests: { update: [{ callId: "gen-1", trigger: [] }] } });
     expect(ops?.[0]?.key).toBe("httpRequests.generated[0].trigger");

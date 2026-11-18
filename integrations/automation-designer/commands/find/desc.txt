@@ -10,6 +10,7 @@ wi-impl ad find --category <name|id|uuid> --fields <a,b>  :->  List a category's
 wi-impl ad find --exact <name> [<name>…]  :->  Exact method name → draftUuid, publishedUuid and apiUuid, for several names
 wi-impl ad find <query> --category <name|id|uuid>  :->  Only search categories whose name starts with it (or whose id/uuid it is)
 wi-impl ad find <query> --fields <a,b|all>  :->  Pick row fields, or all for every index field
+wi-impl ad find <query> --fields name,serviceId,serviceUuid  :->  The ids a PD page's HTTP call stores for the method (meta.serviceCall; read from its API contract)
 wi-impl ad find <query> --limit <N>  :->  Return only the top N ranked matches (totalMatches = all matches)
 wi-impl ad find <query> --refresh  :->  Rebuild the index from AD APIs before searching
 wi-impl ad find <query> --raw  :->  Include the raw cached index (capped at --limit rows; scoped by --category) in the command output

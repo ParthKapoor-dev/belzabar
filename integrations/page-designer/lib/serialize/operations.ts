@@ -3,7 +3,8 @@
 //   variables.update     → variables.userDefined[i].{initialValue,type,translateInitialValue}
 //   httpRequests.update  → <bucket>[i].request.{url,body,method},
 //                          .handler.{success,error,inProgress}, .trigger,
-//                          .triggerFilter, .responseTransformSpec
+//                          .triggerFilter, .responseTransformSpec,
+//                          .meta.serviceCall.<key>
 //   elements.operations  → pass-through
 //   nodes.update         → <node path>.{props,field,attrs,events}.<key> (lib/serialize/nodes.ts)
 //   styles.replace       → `styles`
@@ -79,6 +80,10 @@ export function partialOperationsFor(inner: RawConfiguration, overlay: Overlay):
     arr("trigger", upd.trigger);
     str("triggerFilter", upd.triggerFilter);
     str("responseTransformSpec", upd.responseTransformSpec);
+    // meta.serviceCall keys (serviceUuid STRING, serviceId NUMBER, inputState ARRAY, …).
+    for (const [k, v] of Object.entries(upd.meta?.serviceCall ?? {})) {
+      ops.push(op(inner, `${base}.meta.serviceCall.${k}`, v, guessDataType(v)));
+    }
   }
 
   for (const e of overlay.elements?.operations ?? []) {

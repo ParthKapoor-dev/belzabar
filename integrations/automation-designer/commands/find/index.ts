@@ -119,8 +119,11 @@ interface RowContext {
 
 export const METHOD_FIELDS = [
   "type", "name", "alias", "category", "state", "uuid", "referenceId", "apiUuid", "summary", "description",
-  "version", "categoryUuid", "createdOn", "updatedOn", "url", "score", "matched",
+  "version", "categoryUuid", "createdOn", "updatedOn", "url", "score", "matched", "serviceId", "serviceUuid",
 ] as const;
+/** Not in the index: read from the method's API contract, only when picked with --fields. */
+const SERVICE_FIELDS = ["serviceId", "serviceUuid"];
+const NO_SERVICE_ID = "no service chain id for this row (a never-published method has none; pages call the PUBLISHED row's ids)";
 const DEFAULT_METHOD_FIELDS = ["type", "name", "alias", "category", "state", "uuid", "referenceId", "apiUuid", "summary", "score"];
 const DEFAULT_DESCRIBE_FIELDS = ["name", "category", "state", "uuid", "referenceId", "apiUuid", "summary", "matched", "score"];
 export const CATEGORY_FIELDS = ["type", "name", "id", "uuid", "systemUuid", "label", "aliases", "methods", "score"] as const;
@@ -156,6 +159,29 @@ function methodRow(m: MethodFinderMethod & { score?: number; matched?: string[] 
   // D8: the age of the version shown, next to it.
   if ("version" in out && ctx) out.versionAgeMinutes = ctx.refreshed.has(m.uuid.toLowerCase()) ? 0 : ctx.ageMinutes;
   return out;
+}
+
+/**
+ * `--fields serviceId,serviceUuid`: the ids a PD page stores for an HTTP call
+ * to this method (meta.serviceCall.serviceId / serviceUuid). They come from
+ * the method's API contract (`serviceChainId` / `serviceChainUID`), one GET
+ * per row, so only when picked. A method never published has none (a note says so).
+ */
+async function addServiceIds(pairs: Array<[MethodFinderMethod, Row]>, sel: FieldSelection): Promise<void> {
+  if (sel.mode !== "pick" || !sel.fields.some((f) => SERVICE_FIELDS.includes(f))) return;
+  const want = (f: string) => sel.fields.includes(f);
+  // The contract is per category + name: a draft row gets its published method's ids.
+  const one = async ([m, row]: [MethodFinderMethod, Row]) => {
+    try {
+      const c = ((await adApi.fetchChildMethodInfo(m.categoryName, m.methodName)) ?? {}) as Record<string, unknown>;
+      if (want("serviceId") && typeof c.serviceChainId === "number") row.serviceId = c.serviceChainId;
+      if (want("serviceUuid") && typeof c.serviceChainUID === "string") row.serviceUuid = c.serviceChainUID.trim().toLowerCase();
+      if (row.serviceId === undefined && row.serviceUuid === undefined) row.serviceIdNote = NO_SERVICE_ID;
+    } catch (e) {
+      row.serviceIdNote = `API contract not readable: ${e instanceof Error ? e.message : String(e)}`;
+    }
+  };
+  for (let i = 0; i < pairs.length; i += 8) await Promise.all(pairs.slice(i, i + 8).map(one));
 }
 
 function categoryRow(c: MethodFinderCategory & { score?: number }, sel: FieldSelection, typed: boolean): Row {
@@ -407,6 +433,7 @@ const command: CommandModule<FindArgs, FindData> = {
         const listed = limitExplicit ? methods.slice(0, limit) : methods;
         const ctx: RowContext = { ageMinutes: cacheMeta.ageMinutes, refreshed: await freshenWritten(index, listed) };
         data.methods = listed.map((m) => methodRow(m, sel, DEFAULT_METHOD_FIELDS.filter((f) => f !== "type" && f !== "score"), false, ctx));
+        await addServiceIds(listed.map((m, i) => [m, data.methods![i]!]), sel);
         if (categories.length === 0) context.warn(`No category matches '${category}' (name prefix, id or uuid).`);
       }
 
@@ -460,6 +487,7 @@ const command: CommandModule<FindArgs, FindData> = {
         totalMatches: all.length,
         matches: found.map((m) => methodRow(m, sel, DEFAULT_DESCRIBE_FIELDS, false, ctx)),
       };
+      await addServiceIds(found.map((m, i) => [m, data.matches[i]!]), sel);
       return ok(data);
     }
 
@@ -480,6 +508,10 @@ const command: CommandModule<FindArgs, FindData> = {
       totalMatches: allMatches.length,
       matches: matches.map((m) => (m.type === "method" ? methodRow(m, sel, DEFAULT_METHOD_FIELDS, true, ctx) : categoryRow(m, sel, true))),
     };
+    await addServiceIds(
+      matches.flatMap((m, i): Array<[MethodFinderMethod, Row]> => (m.type === "method" ? [[m, data.matches[i] as Row]] : [])),
+      sel,
+    );
 
     if (raw) {
       data.raw = rawIndex(scoped, limit);

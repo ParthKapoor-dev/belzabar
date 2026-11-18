@@ -276,6 +276,12 @@ interface HttpOverlayEntry {
   trigger?: string[];
   triggerFilter?: string;
   responseTransformSpec?: string;
+  /**
+   * The designer's record of the call: keys merged into meta.serviceCall
+   * (serviceUuid, serviceId, inputState, label, …). Switching a call to
+   * another AD method needs it next to request.url.
+   */
+  meta?: { serviceCall?: Record<string, unknown> };
 }
 
 interface HttpOverlay {

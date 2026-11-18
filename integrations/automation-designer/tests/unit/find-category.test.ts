@@ -49,6 +49,24 @@ describe("ad find --category", () => {
     expect((await runCommand(findCommand, [], { env: "t-dev" })).envelope?.data).not.toHaveProperty("methods");
   });
 
+  test("F8: --fields serviceId,serviceUuid reads the ids a PD page stores from the API contract", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch({
+      ...routes(),
+      "GET /rest/api/automation-systems/Example%20services/automation-apis/Blank%20method": respond({
+        json: { id: 4850, serviceChainId: 4693, serviceChainUID: "4BD3EEDB07E1DB50FF59A4709366D025  " },
+      }),
+      "GET /rest/api/automation-systems/*": respond({ json: {} }),
+    }).install();
+    const r = await runCommand(findCommand, ["--category", "Example services", "--fields", "name,serviceId,serviceUuid", "--refresh"], { env: "t-dev" });
+    const methods = (r.envelope?.data as any).methods as Array<Record<string, unknown>>;
+    expect(methods.find((m) => m.name === "Blank method")).toEqual({ name: "Blank method", serviceId: 4693, serviceUuid: "4bd3eedb07e1db50ff59a4709366d025" });
+    expect(methods.find((m) => m.name !== "Blank method")).toMatchObject({ serviceIdNote: expect.stringContaining("no service chain id") });
+    // not picked → no contract reads
+    const plain = await runCommand(findCommand, ["--category", "Example services", "--fields", "name"], { env: "t-dev" });
+    expect(JSON.stringify(plain.envelope?.data)).not.toContain("serviceId");
+  });
+
   test("--raw is scoped by --category", async () => {
     using _cfg = withTempEnvConfig(ENVS);
     using _ff = fakeFetch(routes()).install();

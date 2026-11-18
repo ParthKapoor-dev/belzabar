@@ -22,7 +22,7 @@ configuration PUT. Pure: no network.
 ```json
 { "variables":    { "add": [], "update": [], "remove": [] },
   "derived":      { "add": [], "update": [], "remove": [] },
-  "httpRequests": { "add": [], "update": [{ "callId": "…", "request": {}, "handler": {}, "trigger": [] }], "remove": [] },
+  "httpRequests": { "add": [], "update": [{ "callId": "…", "request": {}, "handler": {}, "trigger": [], "meta": { "serviceCall": {} } }], "remove": [] },
   "elements":     { "operations": [{ "key": "layout.children[0].props.text", "operation": "UPDATE", "value": "…", "dataType": "STRING" }] },
   "nodes":        { "update": [{ "id": "<nodeId>", "props": {} }], "insert": [{ "parentId": "…", "index": 0, "node": {} }], "remove": ["<nodeId>"] },
   "styles":       { "replace": "…css…" } }
@@ -33,6 +33,9 @@ Types: `Overlay` in [`../types/common.ts`](../types/common.ts). Variables are ad
 <text>` prints node ids and key paths. `nodes` runs after `elements.operations` (whose keys refer
 to the unedited tree).
 
+- `httpRequests.update` merges `meta.serviceCall` keys (partial ops per key, typed by value);
+  any key it does not write (`headers`, `request.headers`, `meta.other`, a changed
+  `serviceCall.callId`) is refused by `overlay-shape.ts`, never dropped.
 - `nodes.update` merges `props` / `field` / `attrs` / `events`; a `null` value deletes the key
   and forces a full save.
 - `nodes.insert` generates missing ids deterministically (page, parent and content), so a dry

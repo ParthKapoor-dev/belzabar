@@ -195,6 +195,10 @@ function applyOverlayToConfig(page: HydratedPage, overlay: Overlay): RawConfigur
         if (upd.handler.error !== undefined) entry.handler.error = upd.handler.error;
         if (upd.handler.inProgress !== undefined) entry.handler.inProgress = upd.handler.inProgress;
       }
+      if (upd.meta?.serviceCall) {
+        entry.meta ??= {};
+        entry.meta.serviceCall = { ...(entry.meta.serviceCall ?? {}), ...upd.meta.serviceCall } as typeof entry.meta.serviceCall;
+      }
       if (upd.trigger !== undefined) entry.trigger = upd.trigger;
       if (upd.triggerFilter !== undefined) entry.triggerFilter = upd.triggerFilter;
       if (upd.responseTransformSpec !== undefined) entry.responseTransformSpec = upd.responseTransformSpec;

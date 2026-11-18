@@ -37,9 +37,13 @@ Flags:
                       Also scopes --raw, --describe, --exact and pick.
   --fields <a,b|all>  Pick row fields: type,name,alias,category,state,uuid,
                       referenceId,apiUuid,summary,description,version,
-                      categoryUuid,createdOn,updatedOn,url,score,matched
-                      (categories: name,id,uuid,systemUuid,label,aliases,
-                      methods); `all` = every field.
+                      categoryUuid,createdOn,updatedOn,url,score,matched,
+                      serviceId,serviceUuid (categories: name,id,uuid,
+                      systemUuid,label,aliases,methods); `all` = every index
+                      field. serviceId / serviceUuid are what a PD page's HTTP
+                      call stores (meta.serviceCall); they are read from each
+                      row's API contract (one request per row), only when
+                      picked by name; serviceIdNote says when a row has none.
   --refresh           Rebuild method index from API before searching (progress on stderr).
   --limit <N>         Maximum matches (and --raw index rows) to return,
                       1-10000; totalMatches still counts every match.

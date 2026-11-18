@@ -8,6 +8,7 @@ import { CliError, isObj } from "@belzabar/core";
 import type { Overlay } from "../types/common";
 
 const DATA_TYPES = new Set(["STRING", "NUMBER", "BOOLEAN", "ARRAY", "OBJECT"]);
+const HTTP_UPDATE_KEYS = ["callId", "request", "handler", "trigger", "triggerFilter", "responseTransformSpec", "meta"] as const;
 
 type Rec = Record<string, unknown>;
 
@@ -52,6 +53,9 @@ function overlayShapeProblems(value: unknown): string[] {
   const optArr = (e: Rec, at: string, keys: string[]) => {
     for (const k of keys) if (e[k] !== undefined && !Array.isArray(e[k])) problems.push(`${at}.${k} must be an array`);
   };
+  const only = (e: Rec, at: string, keys: readonly string[]) => {
+    for (const k of Object.keys(e)) if (!keys.includes(k)) problems.push(`${at}.${k} is not supported (expected ${keys.join(", ")})`);
+  };
 
   for (const name of ["variables", "derived"]) {
     const s = section(name);
@@ -65,9 +69,23 @@ function overlayShapeProblems(value: unknown): string[] {
   if (http) {
     list("httpRequests.add", http.add);
     entries("httpRequests.update", http.update, "callId", (e, at) => {
-      optObj(e, at, ["request", "handler"]);
+      optObj(e, at, ["request", "handler", "meta"]);
       optArr(e, at, ["trigger"]);
-      if (isObj(e.handler)) optArr(e.handler, `${at}.handler`, ["success", "error"]);
+      // A key wi-impl does not write is refused, never silently dropped.
+      only(e, at, HTTP_UPDATE_KEYS);
+      if (isObj(e.request)) only(e.request, `${at}.request`, ["url", "body", "method"]);
+      if (isObj(e.handler)) {
+        optArr(e.handler, `${at}.handler`, ["success", "error"]);
+        only(e.handler, `${at}.handler`, ["success", "error", "inProgress"]);
+      }
+      if (isObj(e.meta)) {
+        only(e.meta, `${at}.meta`, ["serviceCall"]);
+        optObj(e.meta, `${at}.meta`, ["serviceCall"]);
+        const sc = e.meta.serviceCall;
+        if (isObj(sc) && sc.callId !== undefined && sc.callId !== e.callId) {
+          problems.push(`${at}.meta.serviceCall.callId cannot change (the call is addressed by callId)`);
+        }
+      }
     });
     strings("httpRequests.remove", http.remove);
   }
