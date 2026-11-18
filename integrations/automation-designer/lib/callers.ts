@@ -28,6 +28,7 @@ import { fetchRawMethod } from "./api/v2";
 import { adApi } from "./api/index";
 import { normalizeUuid } from "@belzabar/core/platform";
 import type { MethodFinderIndex, MethodFinderMethod } from "./method-finder";
+import type { HydratedMethod } from "./types/common";
 
 const lower = (v: unknown): string | undefined => str(v)?.toLowerCase();
 
@@ -102,6 +103,8 @@ export async function resolveCallTarget(uuid: string): Promise<CallTarget> {
 interface StepRef {
   i: number;
   api?: string;
+  /** Env-local numeric automation-API id (V1 fallback only). */
+  apiId?: number;
   service?: string;
   method?: string;
   description?: string;
@@ -111,7 +114,7 @@ interface StepRef {
 
 const TTL_REFS = 30 * 24 * 60 * 60 * 1000; // keyed by uuid@updatedOn: an edit changes the key
 const refsCache = new Cache<StepRef[]>({ dir: join(BELZ_CONFIG_DIR, "cache", "callers"), ttlMs: TTL_REFS });
-/** A body the server refuses (e.g. 400 on a broken V2 conversion) is not retried for a day. */
+/** A body that could not be read on either route is not retried for a day (a V2 400 always is). */
 const refsErrorCache = new Cache<string>({ dir: join(BELZ_CONFIG_DIR, "cache", "callers-errors"), ttlMs: 24 * 60 * 60 * 1000 });
 
 function inputKeys(inputs: unknown, prefix = ""): string[] {
@@ -154,10 +157,30 @@ export function refsKey(m: MethodFinderMethod, dirty?: Map<string, number>): str
   return mark !== undefined ? `${m.uuid}@dirty-${mark}` : `${m.uuid}@${m.updatedOn || 0}`;
 }
 
+/** The V1 parse reduced to step refs (`readBody` fallback when the V2 route refuses a body). */
+function stepRefsOfMethod(method: HydratedMethod): StepRef[] {
+  return method.parsedSteps.map((s, idx): StepRef => {
+    const ref: StepRef = { i: idx + 1 };
+    const api = lower(s.automationApiUuid);
+    if (api) ref.api = api;
+    if (typeof s.automationApiId === "number") ref.apiId = s.automationApiId;
+    if (s.serviceName) ref.service = s.serviceName;
+    if (s.methodName) ref.method = s.methodName;
+    if (s.description) ref.description = s.description;
+    const ins = s.inputs.filter((i) => i.value !== null && i.value !== "").map((i) => i.key ?? i.label ?? i.automationUserInputUuid ?? "?");
+    if (ins.length) ref.inputs = ins;
+    const outs = s.outputs.map((o) => o.code).filter(Boolean);
+    if (outs.length) ref.outputs = outs;
+    return ref;
+  });
+}
+
 /**
- * Read a method's V2 body and reduce it with `extract`, cached under `key` (`refsKey`) in
- * `cache`. A body the server refuses is remembered for a day (`retryFailed` forgets it first).
- * Shared by `ad callers` and `ad grep`.
+ * Read a method's body and reduce it with `extract`, cached under `key` (`refsKey`) in
+ * `cache`. When the V2 route refuses the method (some old bodies fail the server's V2
+ * conversion with a 400), the V1 parse is read instead and reduced with `fallback`, as
+ * `ad show` does. A failure is remembered for a day (`retryFailed` forgets it first), except
+ * a V2 400 (retried on every run). Shared by `ad callers` and `ad grep`.
  */
 export async function readBodyCached<T>(
   m: MethodFinderMethod,
@@ -165,26 +188,53 @@ export async function readBodyCached<T>(
   cache: Cache<T>,
   extract: (body: unknown) => T,
   retryFailed = false,
+  fallback?: (method: HydratedMethod) => T,
 ): Promise<T> {
   if (retryFailed) await refsErrorCache.invalidate(key);
   const cached = await cache.load(key);
   if (cached) return cached;
   const failed = await refsErrorCache.load(key);
   if (failed) throw new Error(`${failed} (cached failure; --refresh retries)`);
-  let body: unknown;
+  let value: T;
   try {
-    body = await fetchRawMethod(m.uuid);
+    value = await readBody(m.uuid, extract, fallback);
   } catch (e) {
-    await refsErrorCache.save(key, e instanceof Error ? e.message : String(e));
+    if (!isV2Refusal(e)) await refsErrorCache.save(key, e instanceof Error ? e.message : String(e));
     throw e;
   }
-  const value = extract(body);
   await cache.save(key, value);
   return value;
 }
 
+/** A 400 from the V2 read: the server could not convert the body (V1 may still serve it). */
+function isV2Refusal(e: unknown): boolean {
+  return e instanceof CliError && isObj(e.details) && e.details.status === 400;
+}
+
+/**
+ * The V2 body reduced by `extract`; when V2 fails for any reason but an unknown uuid, the
+ * V1 parse reduced by `fallback` (the V2 error is rethrown if V1 fails too).
+ */
+export async function readBody<T>(uuid: string, extract: (body: unknown) => T, fallback?: (method: HydratedMethod) => T): Promise<T> {
+  let body: unknown;
+  try {
+    body = await fetchRawMethod(uuid);
+  } catch (e) {
+    if (!fallback || isNotFound(e)) throw e;
+    let method: HydratedMethod;
+    try {
+      method = await adApi.fetchMethod(uuid, "v1");
+    } catch {
+      throw e;
+    }
+    return fallback(method);
+  }
+  return extract(body);
+}
+
 function stepCallsTarget(step: StepRef, t: CallTarget): boolean {
   if (step.api && t.apiUuids.includes(step.api)) return true;
+  if (step.apiId !== undefined && t.apiIds.includes(step.apiId)) return true;
   return !!step.service && !!step.method && step.service === t.category && step.method === t.name;
 }
 
@@ -325,7 +375,7 @@ export async function findAdCallers(
   await pool(work, async (m) => {
     const key = refsKey(m, dirty);
     try {
-      refsByUuid.set(m.uuid, await readBodyCached(m, key, refsCache, stepRefsOf, opts.retryFailed));
+      refsByUuid.set(m.uuid, await readBodyCached(m, key, refsCache, stepRefsOf, opts.retryFailed, stepRefsOfMethod));
     } catch (e) {
       if (dirty.has(m.uuid.toLowerCase()) && isNotFound(e)) deleted.add(m.uuid); // deleted by wi-impl
       else errors.push(`${m.categoryName}/${m.methodName} (${m.uuid}): ${e instanceof Error ? e.message : String(e)}`);

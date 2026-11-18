@@ -3,29 +3,44 @@ Usage: wi-impl ad grep <PATTERN> (--category <a,b> | --all | --method <UUID>...)
 Search the step text of AD methods with a regular expression: the SQL of
 db_service steps and the source of custom-code steps (both decoded from
 base64 when stored so), SpEL entry conditions, exit-if expressions, echo
-expressions, and every step input value. Read-only.
+expressions, every step input value, and the method each call step calls
+(as `Category/method`). With --include, also the method summary and
+description, step descriptions, and the test cases. Read-only.
 
 Each line of a text is matched separately; a match reports the method, its
-state, the step (number and description), where in the step (sql, code,
-condition, exitIf, expression, input <key>), the line number and the line.
+state, the step (number and description; 0 for a method-level text), where
+(sql, code, condition, exitIf, expression, input <key>, call, summary,
+description, test <case> name|description|input <key>|assertion), the line
+number and the line.
 
 Methods come from the cached method index (rebuilt when more than 24 h old,
 as for `wi-impl ad callers`); bodies are read once per method version and
 cached, so a repeated or interrupted sweep only reads what changed. Methods
 wi-impl itself changed since the index was built are re-read; methods created
-in the AD UI since then are missed until --refresh.
+in the AD UI since then are missed until --refresh. A body the V2 route
+refuses (HTTP 400 on some old methods) is read through V1 instead, as
+`wi-impl ad show` does. Test cases (--include tests) are read fresh: one
+extra read per method.
 
 Arguments:
   <PATTERN>             A JavaScript regular expression ('delete\s+from\s+t').
+                        A leading (?i) means -i; other inline flags are not
+                        JavaScript regex.
 
 Flags:
-  --category <a,b>      Search every method in these categories (names).
+  --category <a,b>      Search every method in these categories (names). An
+                        unknown name is warned about (with close names) and
+                        the others are searched; all unknown fails.
   --all                 Search every method in every category (slow the first
                         time: one read per method; cached afterwards).
   --method <UUID>       Search this method (uuid or AD URL; repeatable). Read
                         fresh, without the index.
   --in <KINDS>          Comma list of sql, code, spel (conditions, exit-if,
-                        echo expressions, input values), or all (default).
+                        echo expressions, input values), call (called-method
+                        names), or all (default).
+  --include <EXTRA>     Also search descriptions (method summary and
+                        description, step descriptions) and/or tests (test
+                        case names, descriptions, inputs, assertions).
   --ignore-case, -i     Case-insensitive match.
   --draft               Only drafts.
   --published           Only published methods.
@@ -38,15 +53,20 @@ Global Flags:
   --llm                 Output structured JSON envelope for scripting/LLM use.
 
 Data: {pattern, in[], total, matches[{method, category, state, uuid, step,
-stepDescription?, kind (sql|code|spel), field, line, excerpt}], coverage
-{scope, scanned, unscanned, errors?[], indexAgeMinutes, indexSource,
-skippedCategories?}}. `excerpt` is the trimmed line, cut at 200 characters.
+stepDescription?, kind (sql|code|spel|call|description|test), field, line,
+excerpt}], coverage {scope, scanned, unscanned, errors?[], indexAgeMinutes,
+indexSource, skippedCategories?, unknownCategories?[{name, suggestions[]}]}}.
+`excerpt` is the trimmed line, cut at 200 characters.
 
 Examples:
   wi-impl ad grep 'delete\s+from\s+orders' --category Orders,Billing -i
   wi-impl ad grep levelId --all --in sql --llm
   wi-impl ad grep '#\{userId\}' --method 4a1b2c3d... --in spel
+  wi-impl ad grep updateFailureReason --all --in call
+  wi-impl ad grep 'apiKey' --category Orders --include tests,descriptions
 
 Errors: MISSING_PATTERN, INVALID_PATTERN (the regex does not compile),
 CONFLICTING_FLAGS / MISSING_FLAG (give exactly one of --category, --all,
---method), CATEGORY_NOT_FOUND, METHOD_NOT_FOUND (--method), AD_INDEX_FETCH_FAILED.
+--method), INVALID_VALUE (--in / --include), CATEGORY_NOT_FOUND (every
+--category name unknown; details.suggestions), METHOD_NOT_FOUND (--method),
+AD_INDEX_FETCH_FAILED.

@@ -26,8 +26,8 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `hydrator.ts` | V1 service-definition lookup and cache; `buildServiceResolver` for the V1 parser. |
 | `categories.ts` | One category model joining the two id spaces (chain category and automation system): `fetchCategories`, `findCategory`, `requireChainCategory`. |
 | `method-finder.ts` | The cached method index behind `find` and `callers` (core `finderIndexStore`): build, search, dirty and gone marks, `addMethodToIndex`, `categoryResolverFor` / `cachedCategoryResolver` (a category alias → canonical name, from the cached index only). |
-| `callers.ts` | `ad callers`: the reverse index (AD methods; PD pages and components via `@belzabar/pd/lib/ad-refs`), with honest coverage reporting; its body reader (`readBodyCached`, `pool`) is shared with `grep.ts`. |
-| `grep.ts` | `ad grep`: step texts of a V2 body (`stepTextsOf`, SQL and code decoded), line matching; reads bodies through `callers.ts`' `readBodyCached` (per-version cache `cache/grep`). |
+| `callers.ts` | `ad callers`: the reverse index (AD methods; PD pages and components via `@belzabar/pd/lib/ad-refs`), with honest coverage reporting; its body reader (`readBodyCached`: V2 body, the V1 parse when V2 refuses it; `pool`) is shared with `grep.ts`. |
+| `grep.ts` | `ad grep`: the searchable texts of a method (`stepTextsOf` / `methodTextsOf`: SQL and code decoded, SpEL, call targets, descriptions; test cases read fresh), line matching; reads bodies through `callers.ts`' `readBodyCached` (per-version cache `cache/grep-texts`). |
 | `view-fetch.ts` | `fetchViewMethod` (fresh V2 read, V1 fallback) for `show --compact` / `--story` and `outputs`; `fetchMethodChecked` (V1 read confirmed on V2, so soft-deleted methods are `METHOD_NOT_FOUND`). |
 | `method-view.ts` | `compactMethod` / `renderCompact` (`show --compact`: `{view:"compact", name, category, state, version, uuid, summary?, methodDescription?, in, out, vars, defaults?, steps[], callees?, blocks?}`, one line per step) and `storyMarkdown` (`show --story`: `{view:"story", name, uuid, markdown}`). Cuts end `…(+N, use --full)`; conditions are never cut. A `CategoryResolver` (from `method-finder.ts` `cachedCategoryResolver`) gives callees their canonical category. |
 | `compact.ts` | Output trimming for `--llm` payloads: `pruneEmpty`, `oneLine`, `abbreviate`, `htmlToText`. |
@@ -69,8 +69,8 @@ All caches are core `Cache` instances under `~/.wi-impl/cache/`, env-scoped.
 | Methods | `methods/<env>/<uuid>.json` | 5 min soft (stale-while-revalidate), 1 h hard | save, publish, delete, history restore, and `wi-impl migrate run` for its target env (core `invalidateEntityCache`); `show --force` / `--step N` bypass. `show` serves a cached copy only after a raw V1 read confirms the server's `version` is the same (else it reads fresh). A V1 parse with unresolved services is never cached. |
 | Service definitions | `definitions/<env>/<automationId>.json` | 1 h | — |
 | Method index | `method-finder/index-v1-<env>.json`, `dirty-<env>.json`, `gone-<env>.json` | 7 days (`callers` rebuilds after 24 h; a partial index after 15 min) | `find --refresh`, `callers --refresh`, `ad import`. wi-impl writes (and `migrate run` on its target env) mark a uuid dirty through core `markMethodIndexDirty` (`callers` re-reads it); `create` adds the new draft; a V2 `METHOD_NOT_FOUND` marks it gone. |
-| Caller refs | `callers/` (30 days, keyed by uuid and `updatedOn`), `callers-errors/` (1 day) | — | `callers --refresh` |
-| Grep step texts | `grep/` (30 days, keyed by uuid and `updatedOn`; failures share `callers-errors/`) | — | `grep --refresh` retries failures |
+| Caller refs | `callers/` (30 days, keyed by uuid and `updatedOn`), `callers-errors/` (1 day; a V2 400 is never kept: it falls back to V1) | — | `callers --refresh` |
+| Grep step texts | `grep-texts/` (30 days, keyed by uuid and `updatedOn`; failures share `callers-errors/`) | — | `grep --refresh` retries failures |
 | Published history bodies | `history-versions/<env>/` | 30 days (immutable) | — |
 | Validator L4 | `api-contracts/`, `service-accounts/` | 1 h | `ad publish` drops the published method's own contract; `ad save` re-reads a contract online before it refuses on it |
 

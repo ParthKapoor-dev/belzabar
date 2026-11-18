@@ -9,6 +9,8 @@ automation-API uuid / numeric id). Steps the index only knows by their numeric
 automationId are resolved by reading method bodies (cached per method version)
 for the target's own category, the --category list, or every category with
 --all; `coverage.unscannedMethods` counts methods left unresolved elsewhere.
+A body the V2 route refuses (HTTP 400 on some old methods) is read through
+V1 instead, as `wi-impl ad show` does.
 A draft and its published copy are both reported when both call it.
 
 The index is rebuilt when it is more than 24 h old (or partial and more than

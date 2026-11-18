@@ -1,13 +1,15 @@
-// wi-impl ad grep <regex> (--category a,b | --all | --method <uuid>...) [--in sql,code,spel]
+// wi-impl ad grep <regex> (--category a,b | --all | --method <uuid>...) [--in sql,code,spel,call]
+//   [--include descriptions,tests]
 //
-// Search the text of method steps: SQL, custom code, SpEL conditions, echo expressions and
-// input values. Read-only. Body reading and caching are shared with `ad callers`
-// (lib/callers.ts); extraction and matching live in lib/grep.ts.
+// Search the text of method steps: SQL, custom code, SpEL conditions, echo expressions, input
+// values and called-method names (and on request descriptions and test cases). Read-only. Body
+// reading and caching are shared with `ad callers` (lib/callers.ts); extraction and matching
+// live in lib/grep.ts.
 
-import { CliError, defineArgs, lifecycle, ok, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, levenshtein, lifecycle, normalizeSearchText, ok, type CommandModule } from "@belzabar/core";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { loadDirtyMethods, loadOrBuildMethodFinderIndex, METHOD_FINDER_SCHEMA } from "../../lib/method-finder";
-import { compilePattern, GREP_KINDS, grepMethods, type GrepCoverage, type GrepKind, type GrepMatch } from "../../lib/grep";
+import { compilePattern, GREP_INCLUDES, GREP_KINDS, grepMethods, type GrepCoverage, type GrepInclude, type GrepKind, type GrepMatch } from "../../lib/grep";
 import { CALLERS_INDEX_MAX_AGE_MS } from "../callers/index";
 
 interface GrepArgs {
@@ -32,6 +34,8 @@ interface GrepData {
     indexSource?: "cache" | "fresh";
     /** Categories whose listing failed when the index was built: not searched. */
     skippedCategories?: string[];
+    /** `--category` names the index does not know (not searched), with close names. */
+    unknownCategories?: Array<{ name: string; suggestions: string[] }>;
   };
 }
 
@@ -43,6 +47,7 @@ export const args = defineArgs({
     all: { type: "boolean" },
     method: { type: "string", repeatable: true },
     in: { type: "string" },
+    include: { type: "string" },
     "ignore-case": { type: "boolean", alias: ["-i"] },
     draft: { type: "boolean" },
     published: { type: "boolean" },
@@ -54,6 +59,21 @@ export const args = defineArgs({
 
 function list(v: string | undefined): string[] {
   return (v ?? "").split(",").map((c) => c.trim()).filter(Boolean);
+}
+
+/** Up to three indexed category names close to `name`: a small edit distance, or containing it. */
+function closeCategories(name: string, known: string[]): string[] {
+  const q = normalizeSearchText(name);
+  return known
+    .map((k) => {
+      const n = normalizeSearchText(k);
+      const d = levenshtein(q, n);
+      return { k, d: d <= Math.max(2, Math.floor(n.length / 3)) ? d : n.includes(q) || q.includes(n) ? 100 : Infinity };
+    })
+    .filter((x) => x.d !== Infinity)
+    .sort((a, b) => a.d - b.d || a.k.localeCompare(b.k))
+    .slice(0, 3)
+    .map((x) => x.k);
 }
 
 const command: CommandModule<GrepArgs, GrepData> = {
@@ -68,6 +88,12 @@ const command: CommandModule<GrepArgs, GrepData> = {
     if (bad.length || kinds.length === 0) {
       throw new CliError(`--in takes a comma list of ${GREP_KINDS.join(", ")} (or all); got '${flags.in}'.`, { code: "INVALID_VALUE" });
     }
+    const includes = list(flags.include);
+    const badInclude = includes.filter((k) => !(k in GREP_INCLUDES));
+    if (badInclude.length || (flags.include !== undefined && includes.length === 0)) {
+      throw new CliError(`--include takes a comma list of ${Object.keys(GREP_INCLUDES).join(", ")}; got '${flags.include}'.`, { code: "INVALID_VALUE" });
+    }
+    for (const i of includes) kinds.push(GREP_INCLUDES[i as GrepInclude]);
     compilePattern(positionals.pattern, flags.ignoreCase); // fail before any read
     return {
       pattern: positionals.pattern,
@@ -104,12 +130,17 @@ const command: CommandModule<GrepArgs, GrepData> = {
     const skipped = (index.skippedCategories ?? []).map((c) => c.categoryName);
     if (skipped.length) context.warn(`${skipped.length} categories could not be listed when the index was built; they are not searched. Use --refresh to retry.`);
 
-    const wanted = new Set(a.categories.map((c) => c.toLowerCase()));
-    if (wanted.size) {
-      const known = new Set(index.categories.map((c) => c.name.toLowerCase()));
-      const unknown = a.categories.filter((c) => !known.has(c.toLowerCase()));
-      if (unknown.length) throw new CliError(`Unknown category: ${unknown.join(", ")}.`, { code: "CATEGORY_NOT_FOUND", details: { unknown } });
+    // An unknown name is warned about and the rest are searched; only all-unknown fails.
+    const knownNames = index.categories.map((c) => c.name);
+    const known = new Set(knownNames.map((c) => c.toLowerCase()));
+    const unknown = a.categories.filter((c) => !known.has(c.toLowerCase())).map((name) => ({ name, suggestions: closeCategories(name, knownNames) }));
+    const hint = unknown.map((u) => `${u.name}${u.suggestions.length ? ` (did you mean: ${u.suggestions.join(", ")}?)` : ""}`).join("; ");
+    if (a.categories.length && unknown.length === a.categories.length) {
+      throw new CliError(`Unknown category: ${hint}.`, { code: "CATEGORY_NOT_FOUND", details: { unknown: unknown.map((u) => u.name), suggestions: Object.fromEntries(unknown.map((u) => [u.name, u.suggestions])) } });
     }
+    if (unknown.length) context.warn(`Unknown categories not searched: ${hint}.`);
+    const wanted = new Set(a.categories.filter((c) => known.has(c.toLowerCase())).map((c) => c.toLowerCase()));
+
     const methods = index.methods.filter((m) => (a.all || wanted.has(m.categoryName.toLowerCase())) && (!a.state || m.state === a.state));
     const r = await grepMethods({ methods, dirty: await loadDirtyMethods(index), re, kinds, retryFailed: a.refresh });
     return ok({
@@ -123,6 +154,7 @@ const command: CommandModule<GrepArgs, GrepData> = {
         indexAgeMinutes: ageMinutes,
         indexSource: source,
         ...(skipped.length ? { skippedCategories: skipped } : {}),
+        ...(unknown.length ? { unknownCategories: unknown } : {}),
       },
     });
   },
@@ -133,7 +165,7 @@ const command: CommandModule<GrepArgs, GrepData> = {
     else {
       ui.table(
         ["Method", "State", "Step", "Where", "Line", "Text"],
-        d.matches.map((m) => [`${m.category}/${m.method}\n${m.uuid}`, m.state, m.stepDescription ? `${m.step} ${m.stepDescription}` : m.step, m.field, m.line, m.excerpt]),
+        d.matches.map((m) => [`${m.category}/${m.method}\n${m.uuid}`, m.state, m.step === 0 ? "-" : m.stepDescription ? `${m.step} ${m.stepDescription}` : m.step, m.field, m.line, m.excerpt]),
       );
     }
     const c = d.coverage;

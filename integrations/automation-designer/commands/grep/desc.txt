@@ -1,7 +1,8 @@
-wi-impl ad grep <pattern> --category <a,b>  :->  Regex search over the step text (SQL, custom code, SpEL conditions/expressions, input values) of every method in these categories; read-only
+wi-impl ad grep <pattern> --category <a,b>  :->  Regex search over the step text (SQL, custom code, SpEL conditions/expressions, input values, called-method names) of every method in these categories; unknown names are warned about, the rest searched; read-only
 wi-impl ad grep <pattern> --all  :->  Search every method in every category (one cached read per method version)
 wi-impl ad grep <pattern> --method <uuid>  :->  Search these methods only (repeatable; read fresh)
-wi-impl ad grep <pattern> --category <a,b> --in <sql,code,spel>  :->  Search only these kinds of text (default all)
-wi-impl ad grep <pattern> --category <a,b> --ignore-case  :->  Case-insensitive match (-i)
+wi-impl ad grep <pattern> --category <a,b> --in <sql,code,spel,call>  :->  Search only these kinds of text (default all)
+wi-impl ad grep <pattern> --category <a,b> --include <descriptions,tests>  :->  Also search method/step descriptions and test cases (names, descriptions, inputs, assertions)
+wi-impl ad grep <pattern> --category <a,b> --ignore-case  :->  Case-insensitive match (-i, or a leading (?i) in the pattern)
 wi-impl ad grep <pattern> --category <a,b> --draft  :->  Drafts only (--published: published only)
 wi-impl ad grep <pattern> --category <a,b> --refresh  :->  Rebuild the method index and retry unreadable bodies

@@ -93,3 +93,86 @@ describe("ad grep command", () => {
     expect(await code(["x", "--category", "Nope"])).toBe("CATEGORY_NOT_FOUND");
   });
 });
+
+describe("what grep searches (D12, D13)", () => {
+  const TC = "4252b87e4d77d2a6e8f59325550558ae"; // test-cases fixture: draft.v2.json + suite.json
+  const tcRoutes = {
+    [`GET /rest/api/automation/chain/v2/${TC}*`]: fixture(`${FIX}/test-cases/draft.v2.json`),
+    [`GET /rest/api/automation/chain/testsuite/service-chain/${TC}`]: fixture(`${FIX}/test-cases/suite.json`),
+  };
+
+  test("a call step's target is searched as `call` (Category/method) by default", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes).install();
+    const r = await runCommand(grepCommand, ["array output", "--method", "40b270670686c47215d2b6ab839b276d"], { env: "t-dev" });
+    expect((r.envelope?.data as any).matches).toEqual([
+      expect.objectContaining({ step: 1, kind: "call", field: "call", excerpt: "Example services/array output" }),
+    ]);
+    const sqlOnly = await runCommand(grepCommand, ["array output", "--method", "40b270670686c47215d2b6ab839b276d", "--in", "sql"], { env: "t-dev" });
+    expect((sqlOnly.envelope?.data as any).total).toBe(0);
+  });
+
+  test("--include descriptions searches method and step descriptions; tests searches the test cases", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(tcRoutes).install();
+    const plain = await runCommand(grepCommand, ["probe|Mars", "--method", TC], { env: "t-dev" });
+    expect((plain.envelope?.data as any).total).toBe(0);
+    const r = await runCommand(grepCommand, ["probe|Mars", "--method", TC, "--include", "descriptions,tests"], { env: "t-dev" });
+    const d = r.envelope?.data as any;
+    expect(d.in).toEqual(["sql", "code", "spel", "call", "description", "test"]);
+    const where = d.matches.map((m: any) => `${m.kind}:${m.step}:${m.field}`);
+    expect(where).toContain("description:0:description");
+    expect(where).toContain("test:0:test belz_tst_s7c_t1.greet.mars.2 input name");
+    expect(where).toContain("test:0:test belz_tst_s7c_t1.greet.mars.2 description");
+    expect((await runCommand(grepCommand, ["x", "--method", TC, "--include", "nope"], { env: "t-dev" })).envelope?.error?.code).toBe("INVALID_VALUE");
+  });
+
+  test("a leading (?i) is read as -i; another inline flag fails with a hint naming -i", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes).install();
+    const r = await runCommand(grepCommand, ["(?i)ROW_NUMBER\\(\\)", "--method", SQL_METHOD, "--in", "sql"], { env: "t-dev" });
+    expect((r.envelope?.data as any).total).toBeGreaterThan(0);
+    const bad = await runCommand(grepCommand, ["(?s)x", "--all"], { env: "t-dev" });
+    expect(bad.envelope?.error?.code).toBe("INVALID_PATTERN");
+    expect(bad.envelope?.error?.message).toContain("use -i");
+  });
+});
+
+describe("partial scope (D14) and unreadable V2 bodies (D15)", () => {
+  test("an unknown --category is warned about with close names and the rest are searched", async () => {
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch(routes).install();
+    const r = await runCommand(grepCommand, ["console\\.log", "--category", "Example services,Exampel service", "--in", "code", "--refresh"], { env: "t-dev" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.total).toBeGreaterThan(0);
+    expect(d.coverage.unknownCategories).toEqual([{ name: "Exampel service", suggestions: ["Example services"] }]);
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toContain("Unknown categories not searched: Exampel service (did you mean: Example services?)");
+    const none = await runCommand(grepCommand, ["x", "--category", "Exampel service"], { env: "t-dev" });
+    expect(none.envelope?.error).toMatchObject({ code: "CATEGORY_NOT_FOUND", details: { suggestions: { "Exampel service": ["Example services"] } } });
+  });
+
+  test("a V2 400 falls back to the V1 parse, and the 400 is not cached as a failure", async () => {
+    const V1 = "41bb1b438875bd8b994196db1f12b7c2"; // real-v1 body with every service definition captured
+    let v1Up = false;
+    using _cfg = withTempEnvConfig(ENVS);
+    using _ff = fakeFetch({
+      "GET /rest/api/automation/chain/v2/*": respond({ status: 400, text: "" }),
+      "GET /rest/api/automation/chain/*": () => (v1Up ? new Response(Bun.file(`${FIX}/real-v1/${V1}.v1.json`)) : new Response("", { status: 503 })),
+      "GET /rest/api/automations/*": (req: RecordedRequest) => new Response(Bun.file(`${FIX}/definitions/${new URL(req.url).pathname.split("/").pop()}.json`)),
+    }).install();
+    const { readBodyCached } = await import("../../lib/callers");
+    const { Cache } = await import("@belzabar/core");
+    const { methodTextsOf } = await import("../../lib/grep");
+    const cache = new Cache<unknown[]>({ dir: `${process.env.WI_IMPL_HOME}/cache/grep-fallback-test`, ttlMs: 60_000 });
+    const m = { uuid: V1, methodName: "m", categoryName: "c", state: "DRAFT", updatedOn: 1 } as any;
+    // V1 down too: the V2 400 is reported, and not remembered
+    await expect(readBodyCached(m, `${V1}@1`, cache, stepTextsOf, false, methodTextsOf)).rejects.toMatchObject({ details: { status: 400 } });
+    v1Up = true;
+    const texts = (await readBodyCached(m, `${V1}@1`, cache, stepTextsOf, false, methodTextsOf)) as any[];
+    expect(texts.some((t) => t.kind === "sql")).toBe(true);
+    const r = await runCommand(grepCommand, ["select", "-i", "--method", V1, "--in", "sql"], { env: "t-dev" });
+    expect((r.envelope?.data as any).coverage).toMatchObject({ scanned: 1, unscanned: 0 });
+    expect((r.envelope?.data as any).total).toBeGreaterThan(0);
+  });
+});
