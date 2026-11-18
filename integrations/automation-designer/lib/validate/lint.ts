@@ -206,9 +206,11 @@ function lintSql(
     }
   }
 
-  // Q2: a scalar subquery in the outer SELECT list.
+  // Q2: a scalar subquery in the outer SELECT list. Without an outer FROM the
+  // query returns one row, so the subquery runs once (`select coalesce((select
+  // …), false)`); a subquery inside EXISTS(…) is a single boolean.
   const outer = outerSelectList(lower);
-  if (outer !== undefined && /\(\s*select\b/.test(outer)) {
+  if (outer?.hasFrom && /(?<!\bexists\s*)\(\s*select\b/.test(outer.list)) {
     report({ rule: "Q2", message: "A subquery in the SELECT list runs once per returned row.", path, step: ref, fix: "If it does not depend on the row, compute it once (CTE / CROSS JOIN / :param); else use a join." });
   }
 
@@ -255,8 +257,8 @@ function uuidTextComparison(sql: string): string | undefined {
   return undefined;
 }
 
-/** The outer SELECT list: text between the first top-level SELECT and its FROM (depth 0). */
-function outerSelectList(lower: string): string | undefined {
+/** The outer SELECT list: text between the first top-level SELECT and its FROM (depth 0); `hasFrom` false when there is none. */
+function outerSelectList(lower: string): { list: string; hasFrom: boolean } | undefined {
   const start = /^\s*\(?\s*select\b/.exec(lower);
   if (!start) return undefined;
   let depth = 0;
@@ -264,9 +266,9 @@ function outerSelectList(lower: string): string | undefined {
     const c = lower[i];
     if (c === "(") depth++;
     else if (c === ")") depth--;
-    else if (depth === 0 && /\bfrom\b/.test(lower.slice(i, i + 5)) && /\W/.test(lower[i - 1] ?? " ")) return lower.slice(start[0].length, i);
+    else if (depth === 0 && /\bfrom\b/.test(lower.slice(i, i + 5)) && /\W/.test(lower[i - 1] ?? " ")) return { list: lower.slice(start[0].length, i), hasFrom: true };
   }
-  return lower.slice(start[0].length);
+  return { list: lower.slice(start[0].length), hasFrom: false };
 }
 
 /** `select a, b from t where a = :x and b = :y` → "a, b"; undefined otherwise. */
@@ -326,6 +328,9 @@ function significantDigits(v: string): number {
   return /^\d+$/.test(d) ? d.length : 0;
 }
 
+/** Paging inputs Report Designer itself sends (not filter columns): exempt from AD-LINT-013. */
+const RD_PAGING_INPUTS = new Set(["orderBy", "uniqueKey", "limit", "offset"]);
+
 /** A Report Designer datasource returns `reportColumns` / `reportData` (its RD contract). */
 function isReportDatasource(body: Obj): boolean {
   return arr(body.outputs).some((o) => isObj(o) && ["reportColumns", "reportData"].includes(str(o.key) ?? ""));
@@ -358,7 +363,7 @@ function reportDatasource(body: Obj, steps: unknown[], report: Report): void {
   });
   arr(body.inputs).forEach((f, i) => {
     const key = isObj(f) ? str(f.key) ?? "" : "";
-    if (key !== key.toLowerCase()) {
+    if (key !== key.toLowerCase() && !RD_PAGING_INPUTS.has(key)) {
       report({
         rule: "AD-LINT-013",
         message: `Input "${key}" has upper-case letters; Report Designer filters on column "${key}" are only passed to an input named "${key.toLowerCase()}", so they are ignored.`,

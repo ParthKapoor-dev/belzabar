@@ -30,7 +30,8 @@ Rules:
   Q1 (bare ? jsonb operator), Q5 (autoformat damage), AD-SQL-004 (#{} spliced
   into SQL), SP1 (nested ternary), CI1, AS1, ...
   Lint (advisory warnings, lib/validate/lint.ts):
-    Q2           SELECT-list subquery runs once per row
+    Q2           SELECT-list subquery runs once per row (not flagged without
+                 an outer FROM, i.e. one row, nor inside EXISTS(…))
     Q3           raw read of a table that must go through a resolver function;
                  tables come from config "lint": {"resolverTables":
                  {"<table>": "<resolverFn>"}} (none built in)
@@ -51,7 +52,8 @@ Rules:
     AD-LINT-010  missing descriptions (--docs)
     AD-LINT-011  Report Designer datasource with more than one step
     AD-LINT-012  Report Designer datasource SQL ending in a newline/space
-    AD-LINT-013  Report Designer datasource input key with upper case
+    AD-LINT-013  Report Designer datasource input key with upper case (RD's
+                 own paging inputs orderBy, uniqueKey, limit, offset are exempt)
                  (011-013 only for methods with a reportColumns/reportData
                  output; see `wi-impl rd uses <uuid>` for the reports using it)
 

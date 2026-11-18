@@ -30,6 +30,11 @@ describe("SQL rules", () => {
     expect(rules(withSql("select a, (select max(x) from t2) as m from t1"))).toContain("Q2");
     expect(rules(withSql("select a from t1 where b in (select b from t2)"))).not.toContain("Q2");
     expect(rules(withSql("select s.a from (select a from t1) s"))).not.toContain("Q2");
+    // C13: no outer FROM = one row, so the subquery runs once; EXISTS(…) is one boolean.
+    expect(rules(withSql("select coalesce((select flag from cfg where id = 1), false)"))).not.toContain("Q2");
+    expect(rules(withSql("select exists(select 1 from t2 where t2.a = :a) as found"))).not.toContain("Q2");
+    expect(rules(withSql("select t1.a, exists(select 1 from t2 where t2.a = t1.a) as has from t1"))).not.toContain("Q2");
+    expect(rules(withSql("select t1.a, exists(select 1 from t2) or (select max(x) from t3) > 1 as m from t1"))).toContain("Q2");
   });
 
   test("Q3: no resolver tables configured → no Q3 (nothing project-specific is built in)", () => {
@@ -177,9 +182,12 @@ describe("Report Designer datasource rules (a method with a reportColumns output
     expect(rd(datasource("select 1 as n  "))).toEqual(["AD-LINT-012"]);
   });
   test("AD-LINT-013: an input key with upper case", () => {
-    const f = lintMethodV2(datasource("select 1 as n", ["Label", "orderBy"])).filter((x) => x.rule === "AD-LINT-013");
+    const f = lintMethodV2(datasource("select 1 as n", ["Label", "pageSize"])).filter((x) => x.rule === "AD-LINT-013");
     expect(f.map((x) => x.path)).toEqual(["inputs[0].key", "inputs[1].key"]);
     expect(f[0]!.fix).toBe('Rename the input to "label".');
+  });
+  test("C14: RD's own paging inputs (orderBy, uniqueKey, limit, offset) are not flagged by AD-LINT-013", () => {
+    expect(rd(datasource("select 1 as n", ["orderBy", "uniqueKey", "limit", "offset"]))).toEqual([]);
   });
   test("methods that are not datasources are never checked", () => {
     const b = withSql("select 1 as n\n");
@@ -192,7 +200,9 @@ describe("calibration over the 36 real acme-dev bodies", () => {
   test("lint counts are pinned (docs off): few, specific findings", () => {
     const counts: Record<string, number> = {};
     for (const { body } of realV2()) for (const f of lintMethodV2(body, { resolverTables: RESOLVER_TABLES })) counts[f.rule] = (counts[f.rule] ?? 0) + 1;
-    expect(counts).toEqual({ "AD-LINT-003": 4, Q2: 3, Q3: 2 });
+    // Q2 3 → 1 (C13): 43818593 steps 7 and 9 are `SELECT CASE WHEN EXISTS (…)` and
+    // `SELECT EXISTS (…)` with no outer FROM: one row, the subquery runs once.
+    expect(counts).toEqual({ "AD-LINT-003": 4, Q2: 1, Q3: 2 });
   });
 });
 

@@ -36,6 +36,8 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
 - Lint rules (`Q2`–`Q4`, `Q6`, `AD-LINT-001`…) never run on save or publish. `Q3` is
   project-specific and config-driven: `"lint": {"resolverTables": {"<table>": "<resolverFn>"}}`
   in `~/.wi-impl/config.json` (read by `commands/lint`); with none configured it never fires.
+- `Q2` (SELECT-list subquery) needs an outer `FROM`: without one the query returns one row
+  (`select coalesce((select …), false)`), and a subquery inside `EXISTS(…)` is not flagged.
 - `Q6` (uuid compared as text): a column named `id`, `*_id` or `*uuid` cast to
   `text`/`varchar` and compared (`=`, `<>`, `IN (…)`, either side) to a bound value (`'#{x}'`,
   `#{x}`, `:param`). Postgres `'…'::uuid` accepts upper case, braces and undashed spellings;
@@ -47,7 +49,8 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
   `reportColumns` / `reportData` output (the RD contract): exactly one step, no whitespace
   after the SQL (RD's column discovery parses the SQL text and silently falls back to the raw
   outputs), and lower-case input keys (RD fills a filter into the input named like the column
-  in lower case). Both platform behaviours were observed on a live env; see
+  in lower case; the paging inputs RD itself sends, `orderBy`, `uniqueKey`, `limit` and
+  `offset`, are exempt). Both platform behaviours were observed on a live env; see
   [`../../../report-designer/README.md`](../../../report-designer/README.md).
 
 ## Adding a rule
