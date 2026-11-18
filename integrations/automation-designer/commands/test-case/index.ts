@@ -90,6 +90,16 @@ interface ExportData {
   files: WriteResult;
 }
 
+/** `export` without --dir: the suite itself, printed as JSON (a backup `bulk --file` takes back). */
+interface ExportStdoutData {
+  action: "export";
+  chainUuid: string;
+  env: string;
+  method: MethodMeta;
+  total: number;
+  cases: CaseFile[];
+}
+
 interface SyncData {
   action: "sync";
   chainUuid: string;
@@ -108,6 +118,7 @@ type TestCaseData =
   | WriteData
   | CreateDryRunData
   | ExportData
+  | ExportStdoutData
   | SyncData
   | RunSuiteWaitData
   | { action: "delete" | "run-suite" | "delete-suite"; response: unknown; hint?: string };
@@ -160,7 +171,7 @@ export const args = defineSubcommands(
     export: {
       positionals: [UUID],
       flags: {
-        dir: { type: "string", required: true, missingCode: "MISSING_DIR", missingMessage: "Missing --dir <root>." },
+        dir: { type: "string" },
         prune: { type: "boolean" },
       },
     },
@@ -251,6 +262,8 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
   writes: (a) => (!["list", "export", "sync"].includes(a.action) && !a.dryRun) || (a.action === "sync" && !!a.apply),
   // a sync plan and a create --dry-run preview writes on the target env
   requiresEnv: (a) => a.action === "sync" || !!a.dryRun,
+  // export without --dir prints the suite JSON itself, so `> backup.json` saves it (an explicit --llm keeps the envelope)
+  humanByDefault: (a) => a.action === "export" && a.dir === undefined,
   parseArgs(argv) {
     const p = args.parse(argv);
     const base = { yes: false };
@@ -303,6 +316,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       case "delete-suite":
         return { ...base, action: "delete-suite", testSuiteId: p.positionals.testSuiteId, yes: p.flags.yes };
       case "export":
+        if (p.flags.prune && p.flags.dir === undefined) throw new CliError("--prune needs --dir (it deletes stale case files there).", { code: "INVALID_ARGUMENT" });
         return { ...base, action: "export", chainUuid: p.positionals.uuid, dir: p.flags.dir, prune: p.flags.prune || undefined };
       case "sync":
         return {
@@ -410,8 +424,10 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
 
       case "bulk": {
         const uuid = args.chainUuid!;
-        const body = await readJson(args.filePath!);
-        if (!Array.isArray(body)) throw new CliError(`${args.filePath} must hold an array of test cases.`, { code: "AD_TESTCASE_INVALID" });
+        const json = await readJson(args.filePath!);
+        // an `export` backup (no --dir) holds its cases under "cases"
+        const body = isObj(json) && Array.isArray(json.cases) ? json.cases : json;
+        if (!Array.isArray(body)) throw new CliError(`${args.filePath} must hold an array of test cases (or an \`export\` backup).`, { code: "AD_TESTCASE_INVALID" });
         const cases = body.map((b, i) => parseCaseInput(b, `${args.filePath}[${i}]`));
         const method = await fetchContract(uuid);
         const warnings = contract(cases, method);
@@ -487,17 +503,21 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       case "export": {
         const uuid = args.chainUuid!;
         const [method, suite] = await Promise.all([fetchContract(uuid), fetchSuite(uuid)]);
-        const root = resolve(args.dir!);
         const category = method.category?.name ?? null;
-        const methodDir = methodDirFor(root, category, method.name);
-        const prior = readMethodMeta(methodDir);
         const meta: MethodMeta = {
           name: method.name,
           category,
-          uuids: { ...(prior?.uuids ?? {}), [context.env.name]: uuid },
+          uuids: { [context.env.name]: uuid },
           inputs: Object.fromEntries(method.inputs.filter((i) => !i.hideInput).map((i) => [i.code, String(i.type ?? "")])),
           outputs: method.outputs.map((o) => o.code),
         };
+        if (args.dir === undefined) {
+          const cases = suite.cases.map((c) => c.file);
+          return ok<TestCaseData>({ action: "export", chainUuid: uuid, env: context.env.name, method: meta, total: cases.length, cases });
+        }
+        const root = resolve(args.dir);
+        const methodDir = methodDirFor(root, category, method.name);
+        meta.uuids = { ...(readMethodMeta(methodDir)?.uuids ?? {}), ...meta.uuids };
         const files = writeMethodDir(methodDir, meta, suite.cases.map((c) => c.file), !!args.prune);
         return ok<TestCaseData>({ action: "export", chainUuid: uuid, methodDir, method: meta, total: suite.cases.length, files });
       }
@@ -590,6 +610,10 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         else ui.error(`${data.action}: ${c.name} — read-back differs: ${c.mismatched.join(", ")}`);
       }
       for (const w of data.warnings) ui.warn(`${w.case}: ${w.kind} '${w.key}'`);
+      return;
+    }
+    if (data.action === "export" && "cases" in data) {
+      ui.text(JSON.stringify(data, null, 2));
       return;
     }
     if (data.action === "export") {

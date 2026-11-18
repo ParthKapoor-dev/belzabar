@@ -6,13 +6,14 @@ wi-impl ad test-case create <uuid> --name <n> --description <d>  :->  Set the te
 wi-impl ad test-case update <uuid> <testCaseId> --file <case.json> --env <env> [--yes]  :->  Replace a case's inputs/assertions (name/description cannot change via the API: a missing description keeps it, another one warns); verified
 wi-impl ad test-case update <uuid> <testCaseId> --input <k=v> --assert <out=v> --env <env>  :->  Change single inputs / replace the assertions of an existing case
 wi-impl ad test-case delete <testCaseId> --env <env> [--yes]  :->  Delete a test case
-wi-impl ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Create an array of test cases (one POST each; verified)
+wi-impl ad test-case bulk <uuid> --file <cases.json> --env <env> [--yes]  :->  Create an array of test cases, or the cases of an export backup (one POST each; verified)
 wi-impl ad test-case run-suite <uuid> --env <env> [--yes]  :->  Trigger the server's suite run (async, e-mail report only; not observable via test-report)
 wi-impl ad test-case run-suite <uuid> --wait --env <env> --yes  :->  Run every active case now (one /chain/test each), evaluate assertions, return per-case PASS/FAIL/ERROR; exit 1 unless all pass (--yes required with --llm)
 wi-impl ad test-case run-suite <uuid> --wait --case <name> --match <text> --env <env> --yes  :->  Run only the named cases (repeatable) / the cases whose name contains the text
 wi-impl ad test-case delete-suite <testSuiteId> --env <env> [--yes]  :->  Delete a test suite
 wi-impl ad test-case export <uuid> --dir <root>  :->  Write the suite as git-friendly files: <root>/<Category>/<method>/{method.json,cases/*.json}; read-only
 wi-impl ad test-case export <uuid> --dir <root> --prune  :->  Also delete case files whose case is no longer on the server
+wi-impl ad test-case export <uuid> --env <env>  :->  Print the suite as plain JSON on stdout ({chainUuid, env, method, total, cases}); `> backup.json` is a backup bulk --file restores
 wi-impl ad test-case sync <methodDir> --env <env>  :->  Dry run (--env required: it picks method.json uuids[env]): plan create/update/drift/extra of the case files against the suite (method.json uuids[env])
 wi-impl ad test-case sync <methodDir> --uuid <uuid> --env <env>  :->  Sync to this chain instead of method.json's uuid for the env
 wi-impl ad test-case sync <methodDir> --apply --env <env> [--yes]  :->  Apply the plan and verify every case on read-back

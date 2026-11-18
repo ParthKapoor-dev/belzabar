@@ -38,6 +38,9 @@ locally, and runs inputs stored as `{}` ("no value") as null (`runnableInputs`).
   cases/<case>.json  {name, description, inputs{fieldCode: value}, inputExtras?, assertions[{output, op, expected} | {expression}]}
 ```
 
+`export` without `--dir` prints `{chainUuid, env, method, total, cases}` as plain JSON instead
+(a backup that `bulk --file` takes back).
+
 Case files carry no ids and no env, so one directory syncs to several envs (`sync --env X`
 uses `uuids[X]`). Keys are written in a stable order. `sync` builds a plan and applies it only
 with `--apply`.

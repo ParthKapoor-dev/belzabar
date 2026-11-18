@@ -373,6 +373,37 @@ describe("test-case export / sync", () => {
     expect(ad.ff.requests.every((q) => q.method === "GET")).toBe(true);
   });
 
+  // A13: without --dir, export printed a MISSING_DIR envelope that `> backup.json` saved as the backup.
+  test("export without --dir prints the suite JSON itself; bulk --file takes it back", async () => {
+    wire();
+    const human = await runCommand(testCaseCommand, ["export", DRAFT], { env: ENV, llm: false });
+    expect(human.exitCode).toBe(0);
+    const backup = JSON.parse(human.stdout);
+    expect(backup).toMatchObject({ action: "export", chainUuid: DRAFT, env: ENV, total: 3, method: { name: "belz_tst_s7c_t1", uuids: { [ENV]: DRAFT } } });
+    expect(backup.cases.map((c: any) => c.name)).toContain("belz_tst_s7c_t1.greet.ok.1");
+    expect(ad.ff.requests.every((q) => q.method === "GET")).toBe(true);
+    // an explicit --llm keeps the envelope, with the same data
+    const llm = await run(["export", DRAFT]);
+    expect(llm.envelope?.data).toEqual(backup);
+    expect((testCaseCommand as any).humanByDefault({ action: "export" })).toBe(true);
+    expect((testCaseCommand as any).humanByDefault({ action: "export", dir: "x" })).toBe(false);
+    ad.restore();
+
+    // restore onto a method with no suite
+    const server = wire(fakeServer(null));
+    const f = join(scratchDir("tc-backup"), "backup.json");
+    writeFileSync(f, human.stdout);
+    const restored = await run(["bulk", DRAFT, "--file", f, "--yes"]);
+    expect(restored.envelope?.ok).toBe(true);
+    expect(server.cases.map((c) => c.name).sort()).toEqual(backup.cases.map((c: any) => c.name).sort());
+  });
+
+  test("export --prune without --dir is refused", async () => {
+    wire();
+    const r = await run(["export", DRAFT, "--prune"]);
+    expect(r.envelope?.error?.code).toBe("INVALID_ARGUMENT");
+  });
+
   test("sync: dry run plans, --apply writes and verifies, a second plan is clean", async () => {
     const server = wire();
     const root = scratchDir("tc-sync");
