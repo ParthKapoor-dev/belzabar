@@ -14,12 +14,26 @@ import { buildV1TestPayload, stepAutomationId, v1TestFormData } from "./payload-
 import type { HydratedMethod, ParsedStep } from "./types/common";
 import type { V1RawMethodResponse } from "./types/v1-wire";
 
+/**
+ * A step's status in a test run. An async step is never awaited: the server may report it
+ * "not executed" although it was started, so it is `dispatched (async)` unless it failed.
+ */
+type StepStatus = "success" | "failed" | "skipped" | "dispatched (async)";
+
 export interface ServiceTraceRow {
+  /** The step's orderIndex (as `ad show` numbers it). */
   step: number;
   automationId: string;
   description: string;
-  status: "success" | "failed" | "skipped";
+  status: StepStatus;
+  /** Display form of timeMs (`26ms`), or `-` when the server gave no time (a skipped step). */
   totalTime: string;
+  /** Step time in milliseconds, as a number; null when the server gave none. */
+  timeMs: number | null;
+  /** The step loops: its time covers every iteration (the trace has no iteration count). */
+  loop?: true;
+  /** The step runs async: it is started, not awaited. */
+  async?: true;
   errorSummary?: string;
 }
 
@@ -27,8 +41,18 @@ export interface ServiceResult {
   step: number;
   automationId: string | number;
   description: string;
-  status: "success" | "failed" | "skipped";
+  status: StepStatus;
   outputs: Array<{ code: string; value: unknown }>;
+  /** db_service steps: the SQL the server ran, with every #{…} filled in. */
+  sql?: string;
+  /** Each step input the server rendered: the template and the value it became. */
+  renderedInputs?: Array<{ template: string | null; rendered: unknown }>;
+}
+
+/** Server-side times of the run, in milliseconds (`executionStatus.executionTime` / `totalExecutionTime`). */
+export interface RunTiming {
+  executionMs: number | null;
+  totalMs: number | null;
 }
 
 export interface FailedStep {
@@ -53,6 +77,7 @@ export interface TestRun {
   failedStep: FailedStep | null;
   trace: ServiceTraceRow[];
   serviceResults: ServiceResult[];
+  timing: RunTiming;
   executionResult: Record<string, unknown>;
 }
 
@@ -75,6 +100,11 @@ function parseOutput(testResult: unknown): unknown {
  * the first step with that automationId. Falls back to the row itself.
  */
 export function matchStep(steps: ParsedStep[], svc: Record<string, unknown>, idx: number): { step: number; description: string } {
+  const { step, description } = matchParsedStep(steps, svc, idx);
+  return { step, description };
+}
+
+function matchParsedStep(steps: ParsedStep[], svc: Record<string, unknown>, idx: number): { step: number; description: string; hit?: ParsedStep } {
   const ordered = [...steps].sort((a, b) => a.orderIndex - b.orderIndex);
   const aid = stepAutomationId(svc);
   const sameId = (s: ParsedStep | undefined) => !!s && (!aid || !s.automationId || String(s.automationId).trim() === aid);
@@ -84,6 +114,7 @@ export function matchStep(steps: ParsedStep[], svc: Record<string, unknown>, idx
   return {
     step: hit?.orderIndex ?? idx + 1,
     description: hit?.description || own || "Service",
+    hit,
   };
 }
 
@@ -102,10 +133,62 @@ export function outputsMap(result: Record<string, unknown>): Record<string, unkn
 
 type Svc = Record<string, any>;
 
-function stepStatus(svc: Svc): "success" | "failed" | "skipped" {
+function stepStatus(svc: Svc, step?: ParsedStep): StepStatus {
   if (svc.executionStatus?.failed) return "failed";
+  if (step?.runAsync) return "dispatched (async)";
   if (!svc.executionStatus || svc.executionStatus.executed === false) return "skipped";
   return "success";
+}
+
+const UNIT_MS: Record<string, number> = { milliseconds: 1, ms: 1, seconds: 1000, s: 1000, microseconds: 1e-3, nanoseconds: 1e-6 };
+
+/** An `{time, unit}` as milliseconds; null when absent or not a number. */
+function toMs(et: unknown): number | null {
+  if (!et || typeof et !== "object") return null;
+  const { time, unit } = et as { time?: unknown; unit?: unknown };
+  if (typeof time !== "number" || !Number.isFinite(time)) return null;
+  return time * (UNIT_MS[typeof unit === "string" ? unit : "milliseconds"] ?? 1);
+}
+
+/**
+ * A step's time in ms. A loop step's time comes in nanoseconds labelled "milliseconds"
+ * (live: 4416738 "ms" for a 3-iteration echo loop in a 400 ms run), so a loop step whose time
+ * is longer than the whole run is read as nanoseconds.
+ */
+function stepMs(svc: Svc, step: ParsedStep | undefined, runMs: number | null): number | null {
+  const ms = toMs(svc.executionStatus?.executionTime);
+  if (ms == null) return null;
+  if (step?.repeatStepExecution && runMs != null && ms > runMs) return ms / 1e6;
+  return ms;
+}
+
+function msText(ms: number | null): string {
+  return ms == null ? "-" : `${Number(ms.toFixed(3))}ms`;
+}
+
+type Rendered = { template: string | null; rendered: unknown };
+
+/** Every leaf of a step's input mappings the server rendered (`testResult`). */
+function renderedInputs(svc: Svc): Rendered[] {
+  const out: Rendered[] = [];
+  const walk = (list: unknown) => {
+    if (!Array.isArray(list)) return;
+    for (const m of list as Svc[]) {
+      if (!m || typeof m !== "object") continue;
+      if (m.testResult !== undefined) out.push({ template: typeof m.value === "string" ? m.value : null, rendered: m.testResult });
+      walk(m.mappings);
+    }
+  };
+  walk(svc.mappings);
+  return out;
+}
+
+/** The rendered SQL of a db_service step: the input whose template is the step's SQL (or its only rendered text). */
+function renderedSql(step: ParsedStep | undefined, inputs: Rendered[]): string | undefined {
+  if (step?.kind !== "SQL") return undefined;
+  const texts = inputs.filter((i) => typeof i.rendered === "string");
+  const hit = texts.find((i) => i.template?.trim() === step.sql.trim()) ?? (texts.length === 1 ? texts[0] : undefined);
+  return hit ? (hit.rendered as string) : undefined;
 }
 
 const TEST_PATH = "/rest/api/automation/chain/test";
@@ -142,7 +225,10 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
 
   const services: Svc[] = Array.isArray(result.services) ? (result.services as Svc[]) : [];
   // the test response omits step descriptions and orderIndex — join each row to the method's own steps.
-  const stepFor = (svc: Svc, idx: number) => matchStep(hydrated.parsedSteps, svc, idx);
+  const stepFor = (svc: Svc, idx: number) => matchParsedStep(hydrated.parsedSteps, svc, idx);
+  const execStatus = result.executionStatus as Record<string, unknown> | undefined;
+  const timing: RunTiming = { executionMs: toMs(execStatus?.executionTime), totalMs: toMs(execStatus?.totalExecutionTime) };
+  const runMs = timing.totalMs ?? timing.executionMs;
   const failedIdx = services.findIndex((s) => s.executionStatus?.failed);
   const failedSvc = failedIdx >= 0 ? services[failedIdx]! : null;
   const failedStep: FailedStep | null = failedSvc
@@ -157,33 +243,41 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
 
   const trace: ServiceTraceRow[] = services.map((svc, idx) => {
     const meta = stepFor(svc, idx);
-    const et = svc.executionStatus?.executionTime;
-    return {
+    const timeMs = stepMs(svc, meta.hit, runMs);
+    const row: ServiceTraceRow = {
       step: meta.step,
       automationId: svc.automationId,
       description: meta.description,
-      status: stepStatus(svc),
-      totalTime: !et || et.time == null ? "-" : `${et.time}${et.unit === "milliseconds" ? "ms" : (et.unit ?? "ms")}`,
+      status: stepStatus(svc, meta.hit),
+      totalTime: msText(timeMs),
+      timeMs,
       errorSummary: svc.executionStatus?.failed ? ErrorParser.parse(svc.executionStatus).summary : undefined,
     };
+    if (meta.hit?.repeatStepExecution) row.loop = true;
+    if (meta.hit?.runAsync) row.async = true;
+    return row;
   });
 
   const serviceResults: ServiceResult[] = services.map((svc, idx) => {
     const meta = stepFor(svc, idx);
-    return {
+    const rendered = renderedInputs(svc);
+    const sr: ServiceResult = {
       step: meta.step,
       automationId: svc.automationId,
       description: meta.description,
-      status: stepStatus(svc),
+      status: stepStatus(svc, meta.hit),
       outputs: ((svc.outputs || []) as Svc[])
         .filter((o) => o.testResult !== undefined)
         .map((o) => ({ code: o.code, value: parseOutput(o.testResult) })),
     };
+    const sql = renderedSql(meta.hit, rendered);
+    if (sql !== undefined) sr.sql = sql;
+    if (rendered.length > 0) sr.renderedInputs = rendered;
+    return sr;
   });
 
   const outputsArr = Array.isArray(result.outputs) ? (result.outputs as Svc[]) : [];
   const output = outputsArr[0]?.testResult ?? null;
-  const execStatus = result.executionStatus as Record<string, unknown> | undefined;
   const success = !execStatus?.failed;
   return {
     success,
@@ -195,6 +289,7 @@ export async function runInlineTest(hydrated: HydratedMethod, values: Record<str
     failedStep,
     trace,
     serviceResults,
+    timing,
     executionResult: result,
   };
 }

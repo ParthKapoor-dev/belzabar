@@ -12,6 +12,7 @@ import {
   type FailedStep,
   type OutputDifference,
   type ServiceResult,
+  type RunTiming,
   type ServiceTraceRow,
   type TestRun,
 } from "../../lib/test-run";
@@ -88,6 +89,8 @@ interface TestMethodData {
   failedStep: FailedStep | null;
   trace: ServiceTraceRow[];
   serviceResults: ServiceResult[];
+  /** Server-side run times in ms (executionTime / totalExecutionTime). */
+  timing: RunTiming;
   expectations?: ExpectationBlock;
   compare?: CompareBlock;
   raw?: {
@@ -254,6 +257,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
       failedStep: run.failedStep,
       trace: run.trace,
       serviceResults: run.serviceResults,
+      timing: run.timing,
     };
     if (expectations.length > 0 || unevaluated.length > 0) data.expectations = block(evaluateExpectations(run.outputs, expectations), unevaluated);
 
@@ -340,7 +344,8 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     if (codes.length === 0) ui.text("(No Output)");
     else ui.table(["Output", "Value"], codes.map((c) => [c, JSON.stringify(data.outputs[c])]));
 
-    ui.section("Execution Trace");
+    const t = data.timing;
+    ui.section(`Execution Trace${t.totalMs != null ? ` (server total ${Number(t.totalMs.toFixed(1))}ms)` : ""}`);
     ui.table(
       ["Step", "Automation ID", "Description", "Status", "Total Time", "Error"],
       data.trace.map((step) => [step.step, step.automationId, step.description, step.status, step.totalTime, step.errorSummary ?? ""]),
@@ -349,7 +354,9 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     if (data.verbosity === "verbose") {
       for (const svc of data.serviceResults) {
         ui.section(`Step ${svc.step}: ${svc.description} [${svc.status}]`);
+        if (svc.sql !== undefined) ui.text(`SQL run: ${svc.sql}`);
         if (svc.status === "skipped") ui.text("(skipped — condition not met)");
+        else if (svc.status === "dispatched (async)") ui.text("(started async: it runs on, its outputs are not awaited)");
         else if (svc.outputs.length === 0) ui.text("(no outputs)");
         else ui.table(["Output", "Value"], svc.outputs.map((o) => [o.code, JSON.stringify(o.value)]));
       }

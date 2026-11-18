@@ -35,7 +35,7 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `history.ts` | `getVersionOf` / `sideOf`: read version N from the chain (draft or published) the uuid names. |
 | `fingerprint.ts` | `fingerprintMethod`: a behaviour hash that ignores env-local ids and bookkeeping; `methodDiffView`, `diffPaths`. |
 | `trace.ts` | `traceMethod`: where a method's dev history has reached on every env (`ad trace`, `release matrix`). |
-| `test-run.ts` | `runInlineTest`: one `/chain/test` run → status, trace, outputs map; `diffOutputs` for `--compare-published`. |
+| `test-run.ts` | `runInlineTest`: one `/chain/test` run → status and HTTP status, trace (times in ms; a loop step's ns time corrected; async steps `dispatched (async)`), per-step outputs and rendered SQL, server timing, outputs map; `diffOutputs` for `--compare-published`. |
 | `payload-builder.ts` | `buildV1TestPayload`: the one `/chain/test` body (`test`, `run-suites`, test-case runs). |
 | `test-suite.ts` | `loadTestSuite`: one summary of a method's suite for `test-cases` and `test-case list` (`full`: each case's inputs and assertions too). |
 | `input-collector.ts` | Test input values from prompts, files and `--input k=v`; `resolveInputValues` checks a values object against the method (also used per `--cases` row). |

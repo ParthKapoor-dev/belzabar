@@ -52,7 +52,7 @@ Flags:
                         status decide the exit code.
   --yes, -y             Confirm --compare-published's second (published) execution,
                         or the --cases executions.
-  --verbose, -v         Show detailed execution trace for each step. (A command
+  --verbose, -v         Print each step's outputs and the SQL it ran. (A command
                         flag here: it does not switch on runner debug logging.)
   --raw                 Include raw execution payload in output.
   --help, -h            Show this help message.
@@ -78,9 +78,20 @@ Notes:
     {identical, differences[], published{status, outputs}}.
   - With --cases, data is {uuid, cases[{name, pass, status (SUCCESS, FAILED
     or ERROR), statusCode, outputs, failedStep, expectations[],
-    error?{code, message}}], summary{total, passed, failed}}. A case whose run throws (compile error)
-    is status ERROR; the other cases still run.
-  - Trace rows carry the method's own step descriptions and orderIndex.
+    error?{code, message}}], summary{total, passed, failed}}. A case whose
+    run throws (compile error) is status ERROR; the other cases still run.
+  - data.trace rows: {step (the step's orderIndex, a number, as `ad show`
+    numbers it), automationId, description, status, totalTime ("26ms", "-"
+    when the server gave none), timeMs (number or null), loop?, async?,
+    errorSummary?}. There is no orderIndex key: match on step.
+  - Per-step outputs are in data.serviceResults[{step, status, outputs[{code,
+    value}], sql?, renderedInputs?[{template, rendered}]}]: sql is the SQL a
+    db step really ran, every #{...} filled in (--verbose prints it).
+  - data.timing {executionMs, totalMs}: the server's run times, numbers.
+    A loop step's time covers all its iterations (the server reports no
+    iteration count); it arrives in ns labelled ms, which wi-impl corrects.
+  - Status 'dispatched (async)': an async step was started, not awaited (the
+    server may call it not executed). It really runs, with its side effects.
 
 Examples:
   wi-impl ad test 4a1b2c3d... --env <env> --inputs ./in.json --expect greetingOut='Hello World'

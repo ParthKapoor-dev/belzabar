@@ -5,5 +5,5 @@ wi-impl ad test <uuid> --env <env> --case <file>  :->  Inputs and assertions fro
 wi-impl ad test <uuid> --env <env> --cases <file> --yes  :->  Run once per case in a JSON array / JSONL of {name?, inputs, expect[]} (N real executions; confirms, --yes with --llm); one pass/fail row per case, exit 1 (AD_TEST_CASES_FAILED) if any fails
 wi-impl ad test <uuid> --env <env> --expect <out=value>  :->  Check an output after the run (repeatable; = != ~= > < >= <=, out.path for JSON); exit 1 on a mismatch
 wi-impl ad test <uuid> --env <env> --compare-published --yes  :->  Run the same inputs on the draft AND its published copy (two real executions; confirms, --yes with --llm) and diff every output
-wi-impl ad test <uuid> --env <env> --verbose  :->  Show detailed execution trace for each step (-v)
+wi-impl ad test <uuid> --env <env> --verbose  :->  Print each step's outputs and the SQL a db step really ran (-v)
 wi-impl ad test <uuid> --env <env> --raw  :->  Include raw execution payload in output

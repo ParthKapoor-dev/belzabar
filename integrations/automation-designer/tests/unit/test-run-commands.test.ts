@@ -138,6 +138,40 @@ describe("ad test", () => {
     expect(d.failedStep.statusCode).toBe(403);
   });
 
+  test("trace: times as numbers, server total, loop ns fixed, async dispatched, rendered SQL (B13, B19, B22)", async () => {
+    const body = rawBody();
+    const inner = JSON.parse(body.jsonDefinition);
+    inner.services[0].repeatStepExecution = true;
+    inner.services[1].runAsync = true;
+    body.jsonDefinition = JSON.stringify(inner);
+    // the shapes /chain/test answered live: a loop step's time in ns labelled "milliseconds",
+    // an async step reported not executed, a db step's input rendered in mappings[].testResult
+    wire(
+      () => ({
+        executionStatus: { failed: false, statusCode: 200, executionTime: { time: 396.8, unit: "milliseconds" }, totalExecutionTime: { time: 423.6, unit: "milliseconds" } },
+        services: [
+          {
+            automationId: 38528,
+            executionStatus: { executed: true, failed: false, executionTime: { time: 4416738, unit: "milliseconds" } },
+            mappings: [{ automationUserInputId: 1, mappings: [{ automationUserInputId: 2, value: "SELECT '#{cityCode}'", mappings: [], testResult: "SELECT 'C'" }] }],
+          },
+          { automationId: 38529, executionStatus: { executed: false, failed: false } },
+        ],
+        outputs: [],
+      }),
+      body,
+    );
+    const r = await runCommand(testCommand, [UUID, "--inputs", '{"cityCode":"C","displayName":"D"}'], { env: "t-s4b-run" });
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.timing).toEqual({ executionMs: 396.8, totalMs: 423.6 });
+    expect(d.trace[0]).toMatchObject({ step: 1, status: "success", timeMs: 4.416738, totalTime: "4.417ms", loop: true });
+    expect(d.trace[1]).toMatchObject({ step: 2, status: "dispatched (async)", timeMs: null, totalTime: "-", async: true });
+    expect(d.serviceResults[1].status).toBe("dispatched (async)");
+    expect(d.serviceResults[0].renderedInputs).toEqual([{ template: "SELECT '#{cityCode}'", rendered: "SELECT 'C'" }]);
+    expect(d.serviceResults[0].sql).toBe("SELECT 'C'");
+  });
+
   test("is a write: requires an explicit --env", () => {
     expect((testCommand as any).writes).toBe(true);
     expect((runSuitesCommand as any).writes).toBe(true);
