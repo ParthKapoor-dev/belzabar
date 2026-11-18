@@ -112,6 +112,7 @@ describe("ad save — structural ops", () => {
     const r = await runCommand(saveCommand, [overlay, "--uuid", U, "--dry-run"], { env: "t-dev" });
     expect(r.envelope?.error ?? null).toBeNull();
     expect(r.envelope!.data).toMatchObject({ action: "DRY_RUN", draftUuid: U, valid: true, applied: ["move-step 2 after 3", "remove-step 11"], order: [1, 3, 2, 4, 5, 6, 7, 8, 9, 10] });
+    expect((r.envelope!.data as any).testValuesAtRisk).toEqual([]); // always present (B126)
     // Removing step 5 orphans #{existing_code_list} (read by step 7): reported as data, still nothing written.
     const broken = write(dir, "ov2.json", { ops: [{ op: "remove-step", step: 5 }] });
     const r2 = await runCommand(saveCommand, [broken, "--uuid", U, "--dry-run"], { env: "t-dev" });

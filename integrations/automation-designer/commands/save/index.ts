@@ -7,6 +7,7 @@ import { requireConfirmation } from "../../lib/args/confirm";
 import { saveOverlayV2, type SaveDryRunData, type SaveV2Data } from "../../lib/save/pipeline";
 import { VALIDATION_FLAGS } from "../../lib/save/flags";
 import { addFileFlagOps, resolveOverlaySources } from "../../lib/save/sources";
+import { abbreviate, oneLine } from "../../lib/compact";
 
 interface SaveArgs {
   filePath: string | null;
@@ -112,10 +113,16 @@ const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
         [
           ["Applied", d.applied.join("; ")],
           ["Unchanged", d.unchanged.join(", ") || "-"],
-          ...(d.order ? [["Step order", d.order.map((f) => (f === null ? "new" : String(f))).join(" ")] as [string, string]] : []),
+          ...(d.order ? [["Step order", d.order.map(String).join(" ")] as [string, string]] : []),
+          ...(d.outputsToMethod.length ? [["Returned by the method", d.outputsToMethod.map((o) => `step ${o.step} → ${o.output}`).join(", ")] as [string, string]] : []),
+          ["Stored testValues dropped", d.testValuesAtRisk.join(", ") || "-"],
           ["Validation", d.validation.skipped ? "SKIPPED" : `${d.validation.warnings.length} warning(s)`],
         ],
       );
+      if (d.changes.length > 0) {
+        const cell = (v: unknown) => (v === undefined ? "(absent)" : abbreviate(oneLine(typeof v === "string" ? v : JSON.stringify(v)), 70));
+        ui.table(["Change", "Path", "Before", "After"], d.changes.map((c) => [c.target, c.path, cell(c.before), cell(c.after)]));
+      }
       return;
     }
     const data = envelope.data as SaveV2Data;

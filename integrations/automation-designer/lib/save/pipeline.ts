@@ -30,6 +30,7 @@ import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-ca
 import { storedTestValues, testValueDropWarning } from "./test-values";
 import { guardTestCases, type CaseGuardResult } from "./case-guard";
 import { normalisedChange, normalisedWarning, splitNormalised, type Normalised } from "./normalise";
+import { namedOrder, outputsToMethod, previewChanges, type PlannedChange } from "./preview";
 import { runValidationGate, type ValidationFinding, type ValidationFlags, type ValidationSummary } from "./validation";
 
 /**
@@ -74,13 +75,17 @@ export interface SaveDryRunData {
   version: string | null;
   applied: string[];
   unchanged: string[];
-  /** New step order: fetched position, or null for a new step. Present for structural ops. */
-  order?: Array<number | null>;
+  /** New step order: fetched position, or `new#1`, `new#2`… for new steps. Present for structural ops. */
+  order?: Array<number | string>;
+  /** Every field the save would change, before → after (code and base64 SQL as text). */
+  changes: PlannedChange[];
+  /** Step outputs (of added / edited steps) whose name is a method output: the method returns them. */
+  outputsToMethod: Array<{ step: number | string; output: string }>;
   /** No blocking validator findings: the real save would pass the gate. */
   valid: boolean;
   validation: DryRunValidation;
-  /** Inputs whose stored testValue the real save would drop (V1 read; absent when none or unreadable). */
-  testValuesAtRisk?: string[];
+  /** Inputs whose stored testValue the real save would drop (V1 read; empty when none or unreadable). */
+  testValuesAtRisk: string[];
 }
 
 /** Validator result as a dry run reports it: blocking findings are data, not an error. */
@@ -116,8 +121,8 @@ export interface SaveV2Data {
   unchanged: string[];
   validation: ValidationSummary;
   compiledCache: CompiledCacheResult;
-  /** Inputs whose stored testValue the save dropped (absent when none). */
-  testValuesDropped?: string[];
+  /** Inputs whose stored testValue the save dropped (empty when none). */
+  testValuesDropped: string[];
   /** Test cases the server rewrote on the save, and which were restored (lib/save/case-guard.ts). */
   testCases: CaseGuardResult;
   /** Fields the server rewrote without changing their meaning (encoding flags, account label, condition form). */
@@ -189,16 +194,19 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   if (input.dryRun) {
     const v = await dryRunValidation(() => runValidationGate(input.flags, gate));
     if (withTestValues.length > 0) input.warn(testValueDropWarning(withTestValues, "will be dropped"));
+    const order = plan.structural ? namedOrder(plan.structural.order) : undefined;
     return {
       action: "DRY_RUN",
       draftUuid,
       version: versionName(live),
       applied: plan.applied,
       unchanged: plan.unchanged,
-      ...(plan.structural ? { order: plan.structural.order } : {}),
+      ...(order ? { order } : {}),
+      changes: previewChanges(live, plan),
+      outputsToMethod: outputsToMethod(plan, order),
       valid: v.errors.length === 0,
       validation: v,
-      ...(withTestValues.length > 0 ? { testValuesAtRisk: withTestValues } : {}),
+      testValuesAtRisk: withTestValues,
     };
   }
   const validation = await runValidationGate(input.flags, gate);
@@ -268,7 +276,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     unchanged: plan.unchanged,
     validation,
     compiledCache,
-    ...(testValuesDropped.length > 0 ? { testValuesDropped } : {}),
+    testValuesDropped,
     testCases,
     normalised,
   };

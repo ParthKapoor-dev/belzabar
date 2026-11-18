@@ -89,7 +89,16 @@ Flags:
   --sql-file <N=PATH>   Replace step N's SQL with the file (repeatable).
   --code-file <N=PATH>  Replace step N's custom code with the file (repeatable).
   --dry-run             Plan + validate only; nothing is written. Returns
-                        {applied, order, valid, validation{errors, warnings}}.
+                        {applied, order, changes, outputsToMethod, valid,
+                        validation{errors, warnings}, testValuesAtRisk}:
+                        changes[{target, path, before, after}] is every field
+                        the save would change (code and base64 SQL as text;
+                        before/after absent = the field is added/removed);
+                        order is the new step order by fetched position, new
+                        steps named new#1, new#2…; outputsToMethod[{step,
+                        output}] are step outputs the method returns (their
+                        name is a method output). testValuesAtRisk is always
+                        present ([] when none).
   --keep-case-changes   Leave the test cases as the server rewrote them on the
                         save (see step 10). Default: restore them.
   --yes, -y             Skip the confirmation prompt (required with --llm).
@@ -140,7 +149,7 @@ Pipeline and error codes:
 
 Data: {action, draftUuid, publishedUuid, switchedFromPublished, previousVersion,
 version, applied[], unchanged[], validation{skipped, warnings, layersRun},
-compiledCache{ok, uuids, routes[]}, testValuesDropped[]?,
+compiledCache{ok, uuids, routes[]}, testValuesDropped[] (always; [] when none),
 testCases{changedByServer[], restored[], failed[{name, id, reason}], kept?},
 normalised[{path, kind, from, to}]}.
 

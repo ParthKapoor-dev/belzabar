@@ -291,7 +291,7 @@ describe("ad save — stored input testValues", () => {
   test("no stored testValues: no warning and no second V1 read", async () => {
     wire();
     const r = await run({ summary: "new summary" });
-    expect((r.envelope!.data as any).testValuesDropped).toBeUndefined();
+    expect((r.envelope!.data as any).testValuesDropped).toEqual([]); // always present (B126)
     expect(paths(ad.ff).filter((p) => p === `GET ${V1_GET}`)).toHaveLength(1);
   });
 });

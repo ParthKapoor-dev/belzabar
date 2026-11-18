@@ -7,6 +7,7 @@ import { CliError } from "@belzabar/core";
 import { planV2Overlay } from "../../lib/serialize/v2";
 import { dbMethodForSql, emptyCatalog, type ServiceCatalog } from "../../lib/serialize/compact";
 import { structuralRemovals, verifyStructural } from "../../lib/save/pipeline";
+import { namedOrder, outputsToMethod, previewChanges } from "../../lib/save/preview";
 import { decodeBase64Strict } from "../../lib/base64";
 import type { V2MethodResponse } from "../../lib/types/v2-wire";
 import { errorCode as code } from "@belzabar/core/testing";
@@ -445,6 +446,38 @@ describe("removals must not be mistaken for server-filled fields", () => {
     ]);
     // without the removals the old check passed these as server-filled
     expect(() => verifyStructural("u", expected, after, touched)).not.toThrow();
+  });
+});
+
+describe("dry-run preview (C9)", () => {
+  test("a changed field shows before and after; base64 code as text", () => {
+    const live = real(B64_CC);
+    const p = planV2Overlay(live, { parsedSteps: [{ orderIndex: 12, source: "console.log('new')" }] });
+    const [c] = previewChanges(live, p);
+    expect(c!.target).toBe("parsedSteps[orderIndex=12].source");
+    expect(c!.after).toBe("console.log('new')");
+    expect(c!.before).toBe(decodeBase64Strict(live.steps![11]!.properties!.customCode!.inlineCode as string));
+  });
+
+  test("an update-step lists each changed leaf of the step, before → after", () => {
+    const live = real(U);
+    const p = plan(live, [{ op: "update-step", step: 1, set: { sql: "select 42" } }]);
+    expect(previewChanges(live, p)).toEqual([
+      { target: "step 1", path: "steps[0].inputs[0].properties[0].value", before: "select * from enrollment_stage_type where code = '#{code}';", after: "select 42" },
+    ]);
+  });
+
+  test("new steps are named new#1, new#2 in order; outputs the method returns are named", () => {
+    const live = real(U);
+    const p = plan(live, [
+      { op: "set-output", key: "greet" },
+      { op: "add-step", after: 1, step: echo },
+      { op: "add-step", after: 1, step: { ...echo, outputs: [{ key: "response", as: "other" }] } },
+    ]);
+    const order = namedOrder(p.structural!.order);
+    expect(order.slice(0, 4)).toEqual([1, "new#1", "new#2", 2]);
+    expect(outputsToMethod(p, order)).toEqual([{ step: "new#1", output: "greet" }]);
+    expect(previewChanges(live, p)).toContainEqual({ target: "output greet", path: "outputs[0]", before: undefined, after: { key: "greet", fieldCode: "greet", name: "greet", type: "STRING" } });
   });
 });
 
