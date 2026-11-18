@@ -18,6 +18,7 @@ import {
   type HttpCallDetail,
   type VarDetail,
 } from "../../lib/extract";
+import { formConfigs, formRefs } from "../../lib/form-config";
 import { findNode, parsePage, walkParsed } from "../../lib/parser/index";
 import { noteResolution, resolveInput, type InputKind, type PdCopy, type ResolvedEntity } from "../../lib/resolver";
 import { pdCacheDir } from "../../lib/cache";
@@ -201,13 +202,15 @@ function buildTreeLines(root: ParsedNode): TreeLineEntry[] {
 
 interface VarGraphEntry {
   name: string;
-  kind: "user-defined" | "derived";
+  /** form-config: a form-builder's generated variable (read by its exp-form-builder node). */
+  kind: "user-defined" | "derived" | "form-config";
   type: string | null;
   // Who writes this variable (`on`: the success, error or in-progress handler)
   writtenByHttp: Array<{ callLabel: string; callIndex: number; on: "success" | "error" | "inProgress" }>;
-  writtenByEvents: Array<{ nodeId: string; event: string }>;
+  // `form`: the writer is inside that form-builder config (event `[(value)]` = two-way binding)
+  writtenByEvents: Array<{ nodeId: string; event: string; form?: string }>;
   // Who reads this variable
-  readByBindings: Array<{ nodeId: string; tagName: string; prop: string }>;
+  readByBindings: Array<{ nodeId: string; tagName: string; prop: string; form?: string }>;
   readByHttpTriggers: Array<{ callLabel: string; callIndex: number }>;
   // Who derives from this (if user-defined) or what this derives from (if derived)
   derivedDependents: string[];        // for user-defined: downstream derived names
@@ -303,6 +306,26 @@ function buildVarGraph(page: HydratedPage): VarGraphEntry[] {
     }
   });
 
+  // Form-builder configs: the form variable is read by its builder node; the
+  // handlers and bindings inside it write / read page variables.
+  const forms = formConfigs(page);
+  for (const f of forms) {
+    varByName.set(f.variable, {
+      name: f.variable,
+      kind: "form-config",
+      type: f.type,
+      writtenByHttp: [],
+      writtenByEvents: [],
+      readByBindings: f.builderNodeIds.map((nodeId) => ({ nodeId, tagName: "exp-form-builder", prop: "[formConfig]" })),
+      readByHttpTriggers: [],
+      derivedDependents: [],
+      derivedFrom: [],
+    });
+  }
+  const refs = formRefs(page, forms);
+  for (const w of refs.writes) varByName.get(w.variable)?.writtenByEvents.push({ nodeId: w.nodeId, event: w.via.replace(/^event:/, ""), form: w.form });
+  for (const r of refs.reads) varByName.get(r.variable)?.readByBindings.push({ nodeId: r.nodeId, tagName: "form", prop: r.via, form: r.form });
+
   return Array.from(varByName.values());
 }
 
@@ -369,6 +392,10 @@ interface ShowData {
     loop: string | null;
     childCount: number;
     specific?: Record<string, unknown>; // kind-specific detail
+    /** Config key path of the node (`layout.…`, or inside a form config). */
+    path: string;
+    /** The node is inside this form-builder config variable (not the layout tree). */
+    form?: string;
   };
   varGraph?: VarGraphEntry[];
   parseWarnings?: string[];
@@ -549,7 +576,11 @@ const command: CommandModule<ShowArgs, ShowData> = {
     if (flags.varDetail) {
       data.varDetail = varDetail(page, flags.varDetail);
       if (!data.varDetail) {
-        throw new CliError(`Variable "${flags.varDetail}" not found.`, { code: "VAR_NOT_FOUND" });
+        throw new CliError(
+          `Variable "${flags.varDetail}" not found. A form builder's config is a generated variable: ` +
+            "its name is the exp-form-builder node's [formConfig] prop (see --node <builder id> or --var-graph).",
+          { code: "VAR_NOT_FOUND" },
+        );
       }
     }
 
@@ -593,9 +624,17 @@ const command: CommandModule<ShowArgs, ShowData> = {
       }
 
       if (flags.node) {
-        const match = findNode(page.layout, flags.node);
+        // The layout first, then the node trees inside form-builder configs.
+        let match = findNode(page.layout, flags.node);
+        let inForm: string | undefined;
+        for (const f of match ? [] : formConfigs(page)) {
+          for (const tree of f.trees) {
+            match ??= findNode(tree, flags.node);
+            if (match && !inForm) inForm = f.variable;
+          }
+        }
         if (!match) {
-          throw new CliError(`Node "${flags.node}" not found in layout tree.`, {
+          throw new CliError(`Node "${flags.node}" not found in the layout tree or any form-builder config.`, {
             code: "NODE_NOT_FOUND",
           });
         }
@@ -639,6 +678,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
           loop: match.loop,
           childCount: match.children.length,
           specific,
+          path: match.path,
+          ...(inForm ? { form: inForm } : {}),
         };
       }
 
@@ -767,9 +808,10 @@ const command: CommandModule<ShowArgs, ShowData> = {
       ui.kv("Kind", v.kind);
       if (v.type) ui.kv("Type", v.type);
 
-      if (v.kind === "user-defined") {
+      if (v.kind === "user-defined" || v.kind === "form-config") {
         ui.kv("Initial Value", JSON.stringify(v.initialValue, null, 2));
       }
+      if (v.builderNodeIds?.length) ui.kv("Form builder nodes", v.builderNodeIds.join(", "));
 
       if (v.kind === "derived") {
         ui.kv("Dependencies", (v.from ?? []).join(", "));
@@ -863,6 +905,8 @@ const command: CommandModule<ShowArgs, ShowData> = {
       const n = data.nodeDetail;
       ui.section(`Node Detail: ${n.nodeId} ${kindBadge(n.kind)} ${n.tagName}`);
       ui.kv("Kind", n.kind);
+      if (n.form) ui.kv("In form config", n.form);
+      ui.kv("Path", n.path);
       ui.kv("Summary", n.summary);
       ui.kv("Children", n.childCount);
       if (n.loop) ui.kv("Loop", n.loop);
@@ -893,7 +937,7 @@ const command: CommandModule<ShowArgs, ShowData> = {
             ui.text(`  ← written by HTTP: ${v.writtenByHttp.map((w) => `#${w.callIndex} ${w.callLabel}${w.on === "success" ? "" : ` (${w.on})`}`).join(", ")}`);
           }
           if (v.writtenByEvents.length > 0) {
-            ui.text(`  ← written by events: ${v.writtenByEvents.map((w) => `${w.nodeId}.${w.event}`).join(", ")}`);
+            ui.text(`  ← written by events: ${v.writtenByEvents.map((w) => `${w.nodeId}.${w.event}${w.form ? ` (in ${w.form})` : ""}`).join(", ")}`);
           }
           if (v.readByBindings.length > 0) {
             ui.text(`  → read by ${v.readByBindings.length} binding(s): ${v.readByBindings.slice(0, 3).map((r) => `${r.tagName}#${r.nodeId}.${r.prop}`).join(", ")}${v.readByBindings.length > 3 ? "…" : ""}`);

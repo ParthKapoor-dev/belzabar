@@ -1,6 +1,7 @@
 // Read-side views over a HydratedPage. Used by `show`, `find-ad-methods` and
 // the recursive analyzer.
 
+import { formConfigs, targetVariable } from "./form-config";
 import { walkParsed } from "./parser/nodes";
 import type { HydratedPage, ParsedNode, PageHttpRequest } from "./types/common";
 
@@ -29,16 +30,6 @@ export function childComponentNames(page: HydratedPage): string[] {
 }
 
 // -------- HTTP error handler --------------------------------------------------
-
-/** The variable a handler target names: `{%x%}`, `this.x`, `pageContext.x` → `x`. */
-function targetVariable(target: unknown): string | null {
-  if (typeof target !== "string") return null;
-  const t = target.trim();
-  const tpl = t.match(/^\{%\s*([^%]+?)\s*%\}$/);
-  if (tpl) return tpl[1]!;
-  const ref = t.match(/^(?:this|pageContext)\.([\w$]+)$/);
-  return ref ? ref[1]! : null;
-}
 
 /**
  * Variables an HTTP call writes when it FAILS: its `handler.error` entries
@@ -154,7 +145,8 @@ export function httpDetail(page: HydratedPage, index: number): HttpCallDetail | 
 }
 
 export interface VarDetail {
-  kind: "user-defined" | "derived";
+  /** form-config: a form-builder's generated variable (its initialValue is the whole form). */
+  kind: "user-defined" | "derived" | "form-config";
   name: string;
   type: string | null;
   initialValue: unknown;
@@ -163,6 +155,8 @@ export interface VarDetail {
   filterFn: string | null;
   sideEffect: boolean | null;
   bindingReferences: string[];
+  /** form-config: the exp-form-builder nodes that render it. */
+  builderNodeIds?: string[];
 }
 
 function bindingLocations(page: HydratedPage, name: string): string[] {
@@ -206,6 +200,21 @@ export function varDetail(page: HydratedPage, name: string): VarDetail | null {
       bindingReferences: bindingLocations(page, name),
     };
   }
+  const f = formConfigs(page).find((x) => x.variable === name);
+  if (f) {
+    return {
+      kind: "form-config",
+      name,
+      type: f.type,
+      initialValue: f.initialValue,
+      from: null,
+      spec: null,
+      filterFn: null,
+      sideEffect: null,
+      bindingReferences: f.builderNodeIds.length ? ["form-builder"] : [],
+      builderNodeIds: f.builderNodeIds,
+    };
+  }
   return null;
 }
 
@@ -245,6 +254,8 @@ export interface FoundNode {
   index: number | null;
   /** How the query matched: id | component | text. */
   match: "id" | "component" | "text";
+  /** Set for a node inside a form-builder config: the form's variable. */
+  form?: string;
 }
 
 const stripTags = (s: string) => s.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -286,14 +297,15 @@ function strings(obj: unknown): string[] {
 /**
  * Nodes matching `query`: an exact id / _elementId (that node), else an exact
  * component name (every node of it, case-insensitive), else a case-insensitive
- * substring of the node's label, id, any string prop / field / attr, its loop,
- * or its event handler code.
+ * substring of the node's label, id, any string in its props / field / attrs,
+ * its loop, or its event handler code. Nodes inside form-builder configs
+ * (`form-config.ts`) are searched too and carry `form`.
  */
 export function findNodes(page: HydratedPage, query: string): FoundNode[] {
   const q = query.trim();
   const ql = q.toLowerCase();
   const rows: Array<FoundNode & { node: ParsedNode }> = [];
-  const visit = (n: ParsedNode, parent: ParsedNode | null, index: number | null) => {
+  const visit = (n: ParsedNode, parent: ParsedNode | null, index: number | null, form?: string) => {
     rows.push({
       node: n,
       id: n.nodeId,
@@ -304,10 +316,12 @@ export function findNodes(page: HydratedPage, query: string): FoundNode[] {
       parentId: parent?.nodeId ?? null,
       index,
       match: "text",
+      ...(form ? { form } : {}),
     });
-    n.children.forEach((c, i) => visit(c, n, c.path.endsWith("]") ? i : null));
+    n.children.forEach((c, i) => visit(c, n, c.path.endsWith("]") ? i : null, form));
   };
   visit(page.layout, null, null);
+  for (const f of formConfigs(page)) for (const tree of f.trees) visit(tree, null, null, f.variable);
   const clean = ({ node: _n, ...rest }: FoundNode & { node: ParsedNode }): FoundNode => {
     const out = { ...rest };
     if (out.label === undefined) delete out.label;
@@ -325,7 +339,8 @@ export function findNodes(page: HydratedPage, query: string): FoundNode[] {
         r.label ?? "",
         r.id,
         ...strings(n.props),
-        ...(n.kind === "FORM_FIELD" ? strings(n.field) : []),
+        // Deep: a field's own event handlers live under field.events.
+        ...(n.kind === "FORM_FIELD" ? deepStrings(n.field) : []),
         ...strings((n.raw as { attrs?: unknown })?.attrs),
         n.loop ?? "",
         ...deepStrings(n.events),
@@ -346,8 +361,12 @@ function deepStrings(v: unknown, out: string[] = []): string[] {
 // -------- `show --find`: code and request matches ---------------------------------
 
 export interface CodeMatch {
-  /** variable (initialValue), derived (spec, filterFn, from) or http (any field of the call). */
-  where: "variable" | "derived" | "http";
+  /**
+   * variable (initialValue), derived (spec, filterFn, from), http (any field
+   * of the call) or form (a form-builder config outside its node trees, which
+   * `findNodes` covers).
+   */
+  where: "variable" | "derived" | "http" | "form";
   /** Variable name, or the HTTP call's `#index label`. */
   name: string;
   /** The HTTP call's callId (http matches). */
@@ -403,6 +422,11 @@ export function findInCode(page: HydratedPage, query: string): CodeMatch[] {
   for (const c of page.httpRequests) {
     const base = { where: "http" as const, name: `#${c.index} ${c.label.trim()}`, ...(c.callId ? { callId: c.callId } : {}) };
     for (const leaf of leaves(c.raw, "")) push(base, leaf.path, leaf.value);
+  }
+  for (const f of formConfigs(page)) {
+    for (const leaf of leaves(f.initialValue, "initialValue")) {
+      if (!/\.layoutConfig(?:[.[]|$)/.test(leaf.path)) push({ where: "form", name: f.variable }, leaf.path, leaf.value);
+    }
   }
   return out;
 }

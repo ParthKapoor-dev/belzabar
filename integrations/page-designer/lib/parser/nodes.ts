@@ -309,9 +309,15 @@ interface ParsedLayoutResult {
   duplicateIds: string[];
 }
 
+/**
+ * Parse a layout tree. `rootPath` is the tree's config path: `layout` for the
+ * page itself, else a subtree stored elsewhere (a form builder's
+ * `layoutConfig`), which is never treated as the page root.
+ */
 export function parseLayout(
   rawLayout: RawLayoutNode | undefined | null,
   variables: HydratedPage["variables"],
+  rootPath = "layout",
 ): ParsedLayoutResult {
   const ctx: WalkContext = {
     variables,
@@ -339,7 +345,7 @@ export function parseLayout(
     return { root: empty, warnings: ctx.warnings, duplicateIds: [] };
   }
 
-  const root = walk(rawLayout, ctx, true, "layout");
+  const root = walk(rawLayout, ctx, rootPath === "layout", rootPath);
   const duplicateIds: string[] = [];
   for (const [id, count] of ctx.seenIds.entries()) {
     if (count > 1) duplicateIds.push(id);

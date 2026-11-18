@@ -19,6 +19,7 @@ Everything the `wi-impl pd` commands share. Other packages may import any module
 | `draft-guard.ts` | Draft/published pairing through `referenceId` |
 | `edit.ts` | Write-pipeline helpers: `resolveWriteTarget`, `fetchFresh`, `fetchPublishedBaseline`, `gateValidation`, `versionDrift`, `requireConfirmation`, `logIntent`, `readJsonFile` |
 | `extract.ts` | Read views over a page: `show` sections, `findNodes` (layout) and `findInCode` (variables, derived code, HTTP calls), `errorVariables`, `adIdsOf`, `childComponentNames` |
+| `form-config.ts` | Form-builder configs (a generated variable an `exp-form-builder` binds with `[formConfig]`): `formConfigs` (variable, builder nodes, parsed `layoutConfig` trees), `formRefs` (variables their handlers and bindings write / read), `targetVariable` |
 | `lock.ts` | `withLock` and the manual-lock record (`~/.wi-impl/pd-locks/<env>.json`) |
 | `page-dependencies.ts` | Entity resolution + phrase-key checks for `page-deps` / `translations` |
 | `page-diff.ts` | The one diff engine: `diffPages`, `editSummary`, `differingPaths` |

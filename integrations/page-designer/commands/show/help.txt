@@ -53,7 +53,8 @@ Flags:
                       else every node of an exact component name
                       (exp-form-field, button, a symbol name), else text in a
                       node's label, id, string props / field / attrs, loop or
-                      event handler code. Each node match has id, component,
+                      event handler code. Nodes inside form-builder configs
+                      are searched too (match.form). Each node match has id, component,
                       kind, label, path (the key path save accepts:
                       elements.operations key = <path>.props.<prop>), parentId
                       and index (for nodes.insert). Prefer editing by id:
@@ -62,8 +63,9 @@ Flags:
                       initial values, derived variable code (spec, filterFn,
                       from) and every field of every HTTP call (callId, label,
                       url, request body, success/error handlers, triggers,
-                      triggerFilter, transform code, service-call meta). Each
-                      code match has where (variable|derived|http), name,
+                      triggerFilter, transform code, service-call meta) and
+                      form-builder configs outside their node trees. Each
+                      code match has where (variable|derived|http|form), name,
                       callId (http), field, line (multi-line values) and the
                       matching text. find.total counts both lists. Not
                       searched: styles.
@@ -74,9 +76,22 @@ Flags:
                       known pitfalls inline (USES-PROPS!, DYN-CLASS!, NO-DS).
   --node <id>         Dump kind-specific detail for a single node by id
                       (field vs props, bindings, validations, event wires).
+                      Also finds nodes inside form-builder configs
+                      (nodeDetail.form names the form variable).
   --var-graph         Show the per-variable write/read/derive/trigger map.
                       Flags "dead" variables (no writers AND no readers).
-  --var-detail <name> Show full config for a specific variable or derived.
+                      HTTP writers say on: success|error|inProgress. Writers
+                      and readers inside form-builder configs count (their
+                      entries carry `form`); the form variable itself is a
+                      kind: form-config entry read by its builder node.
+  --var-detail <name> Show full config for a specific variable or derived,
+                      or a form-builder config variable (kind: form-config,
+                      the whole form in initialValue, builderNodeIds).
+
+Form builders: an exp-form-builder node keeps its whole form (fields, their
+node trees, handlers, [(value)] bindings) in a generated variable named by
+its [formConfig] prop, not in the layout tree. --find, --node, --var-graph
+and --var-detail read inside it.
   --http-detail <N>   Show full config for the Nth HTTP call (1-indexed).
   --full              Include all sections + all details (the full summary too).
   --recursive, -r     Include the recursive component dependency tree and all

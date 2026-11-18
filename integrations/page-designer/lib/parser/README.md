@@ -7,7 +7,7 @@ accumulate as `parseWarnings` on the page.
 | File | What it does |
 |---|---|
 | `index.ts` | `parsePage(raw)` (parses the stringified `configuration`, runs the others) and `inferEntityType` |
-| `nodes.ts` | Layout walker → discriminated `ParsedNode` tree; `walkParsed`, `findNode` |
+| `nodes.ts` | Layout walker → discriminated `ParsedNode` tree (`parseLayout`; `rootPath` parses a subtree stored elsewhere, e.g. a form's `layoutConfig`); `walkParsed`, `findNode` |
 | `variables.ts` | User-defined and derived variables from both config formats; `isDerivedEntry` |
 | `http.ts` | HTTP calls from `httpRequests.userDefined` and the legacy flat `http` array, in order, tagged with their bucket; extracts the AD method id from `/chain/execute/<id>` |
 
