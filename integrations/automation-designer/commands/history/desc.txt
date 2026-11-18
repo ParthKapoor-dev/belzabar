@@ -3,3 +3,4 @@ wi-impl ad history show <uuid> --version <N>  :->  Fetch and parse one saved ver
 wi-impl ad history show <uuid> --version <N> --full  :->  Also return the full parsed method at that version
 wi-impl ad history diff <uuid> --from <N> --to <M>  :->  Compare two versions (steps, kinds, inputs)
 wi-impl ad history restore <draftUuid> --version <N> --env <env> [--yes]  :->  Revert the draft to a previous draft version (write; draft-guarded, confirms first, reports resultingVersion)
+wi-impl ad history restore <draftUuid> --version <N> --env <env> --keep-case-changes  :->  Keep the test cases the restore brought back (default: the current cases are put back; data.testCases)

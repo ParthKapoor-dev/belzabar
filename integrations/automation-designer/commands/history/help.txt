@@ -17,6 +17,9 @@ Flags:
   --from <N>       First version (for diff)
   --to <M>         Second version (for diff)
   --full           show: also return the full parsed method (`method`)
+  --keep-case-changes
+                   restore: keep the test cases the restore brought back
+                   (default: the current cases are put back)
   --yes, -y        Skip interactive confirmation (restore; required for --llm mode)
   --llm            Emit a JSON envelope
 
@@ -43,6 +46,12 @@ Notes:
     data.contentDiff lists up to 10 differing paths. The draft's compiled cache is
     evicted (data.compiledCache) and the restored body is validated
     (data.validation; reported, not blocking — it is already saved).
+  - A restore also brings back that version's copy of the test cases, and
+    fills every input a case did not set with {}. Test cases are not
+    versioned with the method, so wi-impl puts back the cases the draft had
+    before the restore. It keeps only the removal of inputs the restored
+    version does not declare. Reported as data.testCases {changedByServer,
+    restored, failed}. --keep-case-changes reports without restoring.
   - Version numbers are integers starting at 1. Use 'list' to see which
     versions exist.
 

@@ -23,7 +23,7 @@ describe("save", () => {
   test("parses file, --uuid, -y", () => {
     expect(parse(saveCmd, ["f.json", "--uuid", "abc", "-y"])).toEqual({
       filePath: "f.json", uuid: "abc", yes: true, noValidate: false, strict: false, dryRunCompile: false,
-      sqlFiles: [], codeFiles: [], dryRun: false,
+      sqlFiles: [], codeFiles: [], dryRun: false, keepCaseChanges: false,
     });
     expect(parse(saveCmd, ["f.json", "--uuid", "abc", "--no-validate", "--strict", "--dry-run-compile"])).toMatchObject({
       noValidate: true, strict: true, dryRunCompile: true,

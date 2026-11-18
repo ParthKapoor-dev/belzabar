@@ -67,7 +67,7 @@ describe("--note", () => {
 describe("history", () => {
   test("restore parses and is a write", () => {
     const a = parse(history, ["restore", "u", "--version", "3", "--yes"]);
-    expect(a).toEqual({ action: "restore", uuid: "u", version: 3, yes: true });
+    expect(a).toEqual({ action: "restore", uuid: "u", version: 3, yes: true, keepCaseChanges: false });
     expect((history as any).writes(a)).toBe(true);
     expect((history as any).writes(parse(history, ["list", "u"]))).toBe(false);
   });

@@ -6,3 +6,4 @@ wi-impl ad save <file> --uuid <uuid> --env <env> --yes --llm  :->  Non-interacti
 wi-impl ad save <file> --uuid <uuid> --env <env> --strict  :->  Validator warnings block the save too
 wi-impl ad save <file> --uuid <uuid> --env <env> --dry-run-compile  :->  Also run the online validator checks (server compile dry run)
 wi-impl ad save <file> --uuid <uuid> --env <env> --no-validate  :->  Skip the validator (logged loudly; not recommended)
+wi-impl ad save <file> --uuid <uuid> --env <env> --keep-case-changes  :->  Leave the test cases as the server rewrote them on the save (default: wi-impl puts them back and reports data.testCases)

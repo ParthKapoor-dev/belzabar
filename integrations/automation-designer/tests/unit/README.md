@@ -11,7 +11,7 @@ preload points `WI_IMPL_HOME` at a temp dir, so nothing touches `~/.wi-impl`.
 | API and parsing | `api-error-detection`, `api-http`, `base64`, `fetch-method-hydration`, `fetch-raw`, `parser-v1-method`, `parser-v1-steps`, `parser-v2-loop`, `parser-v2-smoke`, `real-wire`, `parsed-fields-guard`, `stream-parser` |
 | Read commands | `categories`, `find-category`, `method-finder`, `callers`, `grep`, `services-methods`, `lookup-views`, `outputs-command`, `show-command`, `show-views`, `show-deleted`, `state-command`, `trim-outputs`, `export-import-childinfo`, `cache-env-scope` |
 | History and trace | `diff-history`, `history-restore`, `history-uuid-cache`, `fingerprint`, `trace-envs` |
-| Writes | `draft-guard`, `save-command`, `save-structural`, `save-v2-overlay`, `author-commands`, `compact-format`, `create-delete`, `publish-changelog` |
+| Writes | `draft-guard`, `save-command`, `save-case-guard`, `save-structural`, `save-v2-overlay`, `author-commands`, `compact-format`, `create-delete`, `publish-changelog` |
 | Validator and lint | `validate-l1`, `validate-rules`, `validate-online`, `validate-team`, `validate-diff`, `validate-command`, `lint` |
 | Tests and test cases | `test-expect`, `test-expect-command`, `test-run-commands`, `test-case-list`, `test-case-sync`, `test-suite-wait` |
 | SQL | `sql-payload`, `sql-read-only`, `sql-result`, `sql-selector`, `sql-defaults-insert`, `sql-context-prefetch`, `sql-tui-commands` |

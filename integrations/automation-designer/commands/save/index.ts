@@ -18,6 +18,7 @@ interface SaveArgs {
   noValidate: boolean;
   strict: boolean;
   dryRunCompile: boolean;
+  keepCaseChanges: boolean;
 }
 
 export const args = defineArgs({
@@ -35,6 +36,7 @@ export const args = defineArgs({
     "sql-file": { type: "string", repeatable: true, description: "N=path: replace step N's SQL with the file" },
     "code-file": { type: "string", repeatable: true, description: "N=path: replace step N's custom code with the file" },
     "dry-run": { type: "boolean", description: "Plan and validate only; nothing is written" },
+    "keep-case-changes": { type: "boolean", description: "Leave the test cases as the server rewrote them on the save (default: restore them)" },
   },
 });
 
@@ -59,6 +61,7 @@ const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
       noValidate: flags.noValidate,
       strict: flags.strict,
       dryRunCompile: flags.dryRunCompile,
+      keepCaseChanges: flags.keepCaseChanges,
     };
   },
   async execute(a, context) {
@@ -86,6 +89,7 @@ const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
 
     const data = await saveOverlayV2({
       dryRun: a.dryRun,
+      keepCaseChanges: a.keepCaseChanges,
       uuid: resolveMethodRef(a.uuid),
       overlay,
       env: context.env.name,
@@ -127,9 +131,16 @@ const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
         ["Unchanged", data.unchanged.join(", ") || "-"],
         ["Validation", data.validation.skipped ? "SKIPPED" : `${data.validation.warnings.length} warning(s)`],
         ["Compiled cache", data.compiledCache.ok ? "evicted" : "NOT evicted"],
+        ["Test cases", caseSummary(data.testCases)],
       ],
     );
   },
 };
+
+function caseSummary(t: SaveV2Data["testCases"]): string {
+  if (t.changedByServer.length === 0) return "unchanged";
+  if (t.kept) return `${t.changedByServer.length} changed by the server, kept (--keep-case-changes)`;
+  return `${t.changedByServer.length} changed by the server, ${t.restored.length} restored${t.failed.length ? `, ${t.failed.length} NOT restored` : ""}`;
+}
 
 export default command;

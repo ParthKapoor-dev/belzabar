@@ -16,6 +16,7 @@ the verification.
 | `spec.ts` | A spec file → the body `create` would POST (`readSpecFile`, `expandSpec`, `loadTargetBody`); shared by `create`, `lint` and `validate`. |
 | `sources.ts` | Reads `codeFile` / `sqlFile` references and turns `--sql-file N=path` / `--code-file N=path` into update-step ops. |
 | `test-values.ts` | `storedTestValues` (V1 read of the inputs carrying a stored testValue; null when unreadable), the save's drop warning and the create note. |
+| `case-guard.ts` | `guardTestCases` / `planCaseRestores`: puts back the test cases a V2 body write rewrote (shared by `ad save` and `ad history restore`). |
 | `services.ts` | `loadServiceCatalog`: callee contracts and db accounts for the compact expander, cached 1 h (the validator's L4 cache). |
 
 ## Save pipeline (`saveOverlayV2`)
@@ -46,6 +47,16 @@ the verification.
 A save never POSTs `testSuite`: a body that carries it makes the server rebuild the suite from
 a possibly stale copy.
 
+Test cases (`case-guard.ts`): even without `testSuite` in the body, every V2 save makes the
+server rewrite the persisted cases. It gives each input a case did not set a raw `{}`, and drops
+inputs the method no longer has. A history restore also brings back that version's copy of the
+suite. So the writer takes the cases from the freshness re-read, compares them with the verify
+re-read, and PUTs every changed case back to its snapshot. The only change it keeps is the
+removal of an input the method no longer declares. Each restored case is checked on one more
+V2 read. The result is `data.testCases {changedByServer, restored, failed}`; a failed restore is
+also a warning. `--keep-case-changes` reports the changes without restoring (`kept: true`).
+This runs before the verify, so an `AD_SAVE_VERIFY_FAILED` carries `details.testCases` too.
+
 ## Publish, create, delete
 
 - **publish** (`commands/publish`) validates the draft; findings the published copy already
@@ -69,7 +80,7 @@ Compiled-cache eviction is never called with an empty uuid list: the server read
 "flush the whole organisation".
 
 Tests: `save-command.test.ts`, `save-structural.test.ts`, `save-v2-overlay.test.ts`,
-`create-delete.test.ts`, `publish-changelog.test.ts` in
+`create-delete.test.ts`, `publish-changelog.test.ts`, `save-case-guard.test.ts` in
 [`../../tests/unit`](../../tests/unit/README.md).
 
 Up: [`../README.md`](../README.md)

@@ -38,6 +38,8 @@ interface WireOpts {
   /** V2 chain body served after a restore (default: the real one). */
   draftV2?: any;
   publishedV1?: any;
+  /** Extra routes (e.g. the test-case PUT). */
+  extra?: Array<{ method?: string; url: string | RegExp; response: unknown }>;
   /** History.get body for draft version 1 (default: the real one). */
   draftHistV1?: any;
 }
@@ -68,6 +70,7 @@ function wire(opts: WireOpts = {}) {
       url: /chain\/execute\/hist-restore/,
       response: opts.restore ?? (() => ({ response: true, executionStatus: { executed: true, failed: false, statusCode: 200 } })),
     },
+    ...(opts.extra ?? []),
   ]);
   return ad.ff;
 }
@@ -127,6 +130,47 @@ describe("ad history restore", () => {
     expect(d.resultingVersion).toBe(4); // fixture: the draft after restoring v1
     expect(d.contentMatches).toBe(true); // v4 carries v1's code
     expect(restoreCalls(f)[0]!.json()).toEqual({ serviceName: "Test-Tester", methodName: "belz_tst_s4b_hist1", version: "1", includeDraft: "true" });
+  });
+
+  test("the test cases the restore rewrote are put back (A8); --keep-case-changes keeps them", async () => {
+    const suite = (inputs: Array<{ fieldCode: string; value: string }>) => ({
+      ...load("chain-v2-draft.json"),
+      testSuite: { id: "s1", testCases: [{ id: "c1", name: "case.1", description: "", active: true, inputs, assertions: [] }] },
+    });
+    for (const keep of [false, true]) {
+      // the restore brings back the version's copy of the suite, filled with {}
+      let stored = suite([{ fieldCode: "a", value: '{"value": 1}' }]);
+      const puts: any[] = [];
+      wire({
+        draftV2: () => stored,
+        restore: () => {
+          stored = suite([{ fieldCode: "a", value: '{"value": 9}' }, { fieldCode: "b", value: "{}" }]);
+          return { response: true, executionStatus: { executed: true, failed: false, statusCode: 200 } };
+        },
+        extra: [
+          {
+            method: "PUT",
+            url: /\/chain\/testcases\//,
+            response: (req: RecordedRequest) => {
+              puts.push(req.json());
+              stored = suite(req.json().inputs);
+              return {};
+            },
+          },
+        ],
+      });
+      const r = await runCommand(historyCommand, ["restore", DRAFT, "--version", "1", "--yes", ...(keep ? ["--keep-case-changes"] : [])], { env: "t-dev" });
+      expect(r.envelope?.ok).toBe(true);
+      const t = (r.envelope?.data as any).testCases;
+      expect(t.changedByServer).toEqual(["case.1"]);
+      if (keep) {
+        expect(t).toMatchObject({ restored: [], kept: true });
+        expect(puts).toHaveLength(0);
+      } else {
+        expect(t).toEqual({ changedByServer: ["case.1"], restored: ["case.1"], failed: [] });
+        expect(puts[0].inputs).toEqual([{ fieldCode: "a", value: '{"value":1}', defaultValue: '{"value":1}' }]);
+      }
+    }
   });
 
   test("a PUBLISHED uuid is refused before any write (versions are per chain)", async () => {

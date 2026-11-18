@@ -10,6 +10,8 @@ import type { HydratedMethod } from "../../lib/types/common";
 import { CacheManager } from "../../lib/cache";
 import * as v2api from "../../lib/api/v2";
 import { invalidateCompiledCache, type CompiledCacheResult } from "../../lib/save/compiled-cache";
+import { guardTestCases, type CaseGuardResult } from "../../lib/save/case-guard";
+import type { V2MethodResponse } from "../../lib/types/v2-wire";
 import { validateMethodV2, type ValidationFinding } from "../../lib/validate/index";
 import { compactMethod } from "../../lib/method-view";
 import { abbreviate, htmlToText, pruneEmpty } from "../../lib/compact";
@@ -23,6 +25,8 @@ interface HistoryArgs {
   v1?: number;
   v2num?: number;
   yes: boolean;
+  /** restore: leave the test cases as the restore rewrote them. */
+  keepCaseChanges?: boolean;
   /** show: include the full parsed method (`method`). */
   full?: boolean;
 }
@@ -126,6 +130,8 @@ interface HistoryRestoreData {
   compiledCache: CompiledCacheResult;
   /** Validator findings on the restored body (the restore already happened: reported, not blocking). */
   validation: { errors: ValidationFinding[]; warnings: ValidationFinding[] } | null;
+  /** Test cases the restore rewrote, and which were put back (null when the draft could not be read). */
+  testCases: CaseGuardResult | null;
 }
 
 type HistoryData = HistoryListData | HistoryShowData | HistoryDiffData | HistoryRestoreData;
@@ -153,7 +159,14 @@ export const args = defineSubcommands(
         to: { ...VERSION_FLAG, missingMessage: "--from <N> and --to <M> are required for 'history diff'." },
       },
     },
-    restore: { positionals: UUID_ARG, flags: { ...AD_YES_FLAG, version: VERSION_FLAG } },
+    restore: {
+      positionals: UUID_ARG,
+      flags: {
+        ...AD_YES_FLAG,
+        version: VERSION_FLAG,
+        "keep-case-changes": { type: "boolean", description: "Keep the test cases as the restore rewrote them (default: put the current ones back)" },
+      },
+    },
   },
   {
     command: "wi-impl ad history",
@@ -180,7 +193,7 @@ const command: CommandModule<HistoryArgs, HistoryData> = {
       case "diff":
         return { ...base, v1: parsed.flags.from, v2num: parsed.flags.to, yes: false };
       case "restore":
-        return { ...base, version: parsed.flags.version, yes: parsed.flags.yes };
+        return { ...base, version: parsed.flags.version, yes: parsed.flags.yes, keepCaseChanges: parsed.flags.keepCaseChanges };
     }
   },
 
@@ -508,6 +521,15 @@ async function executeRestore(
     ],
   });
 
+  // The restore also brings back that version's copy of the test cases (live
+  // 2026-11-18), and the save behind it fills unset inputs with {}: snapshot them.
+  let casesBefore: V2MethodResponse | null = null;
+  try {
+    casesBefore = await v2api.fetchRawMethod(draft.uuid);
+  } catch {
+    // unreadable: the cases are not guarded (reported as testCases: null)
+  }
+
   logIntent("POST", "Expertly.Automation.Method.History.restore (via execute)", {
     uuid: draft.uuid,
     category,
@@ -551,10 +573,22 @@ async function executeRestore(
     // leave as null — reported below
   }
 
+  let restoredBody: V2MethodResponse | null = null;
+  try {
+    restoredBody = await v2api.fetchRawMethod(draft.uuid);
+  } catch {
+    // unreadable: no case guard, no validation
+  }
+  const testCases =
+    casesBefore && restoredBody
+      ? await guardTestCases({ chainUuid: draft.uuid, before: casesBefore, after: restoredBody, keep: !!args.keepCaseChanges, warn: (m) => context.warn(m) })
+      : null;
+
   // The restored body skipped the validator: report its findings (not blocking — it is already saved).
   let validation: HistoryRestoreData["validation"] = null;
   try {
-    const r = validateMethodV2({ after: await v2api.fetchRawMethod(draft.uuid) });
+    if (!restoredBody) throw new Error("unreadable");
+    const r = validateMethodV2({ after: restoredBody });
     validation = { errors: r.errors, warnings: r.warnings };
     for (const f of r.errors) context.warn(`Restored body: ${f.rule} ${f.path}: ${f.message}`);
   } catch {
@@ -579,6 +613,7 @@ async function executeRestore(
     ...(contentDiff ? { contentDiff } : {}),
     compiledCache,
     validation,
+    testCases,
   };
   // The platform answers `false` when it did not restore: that is a failed
   // operation, so the envelope must be ok:false (exit 1), not ok:true.

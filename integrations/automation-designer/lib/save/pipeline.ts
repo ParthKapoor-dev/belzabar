@@ -28,6 +28,7 @@ import type { V2MethodResponse } from "../types/v2-wire";
 import { postChainV2 } from "./api";
 import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-cache";
 import { storedTestValues, testValueDropWarning } from "./test-values";
+import { guardTestCases, type CaseGuardResult } from "./case-guard";
 import { runValidationGate, type ValidationFinding, type ValidationFlags, type ValidationSummary } from "./validation";
 
 /**
@@ -62,6 +63,8 @@ interface SaveV2Input {
   confirm: (action: string, details: Array<[string, string]>) => Promise<void>;
   /** Plan + validate only: nothing is written (no confirm, no POST). */
   dryRun?: boolean;
+  /** Leave the test cases as the server rewrote them (default: restore them). */
+  keepCaseChanges?: boolean;
 }
 
 export interface SaveDryRunData {
@@ -114,6 +117,8 @@ export interface SaveV2Data {
   compiledCache: CompiledCacheResult;
   /** Inputs whose stored testValue the save dropped (absent when none). */
   testValuesDropped?: string[];
+  /** Test cases the server rewrote on the save, and which were restored (lib/save/case-guard.ts). */
+  testCases: CaseGuardResult;
 }
 
 export function versionName(body: V2MethodResponse | null | undefined): string | null {
@@ -175,7 +180,8 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   ]);
 
   // Freshness: nothing may have changed since the body the overlay was applied to.
-  await assertDraftUnchanged(draftUuid, live, "Nothing was saved; re-run the save against the current draft.");
+  // Its test suite is the snapshot the cases are restored from.
+  const fresh = await assertDraftUnchanged(draftUuid, live, "Nothing was saved; re-run the save against the current draft.");
 
   logIntent("POST", "/rest/api/automation/chain/v2", { draftUuid, version: previousVersion, changes: plan.applied });
   let compiledCache: CompiledCacheResult = { ok: false, uuids: [], routes: [] };
@@ -195,7 +201,14 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     }
   }
 
-  verifyPlan(draftUuid, live, after, plan);
+  // The server rewrites the persisted test cases on every V2 save: put them back first.
+  const testCases = await guardTestCases({ chainUuid: draftUuid, before: fresh, after, keep: !!input.keepCaseChanges, warn: input.warn });
+  try {
+    verifyPlan(draftUuid, live, after, plan);
+  } catch (err) {
+    if (err instanceof CliError && isObj(err.details)) Object.assign(err.details, { testCases });
+    throw err;
+  }
 
   let testValuesDropped: string[] = [];
   if (withTestValues.length > 0) {
@@ -216,6 +229,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     validation,
     compiledCache,
     ...(testValuesDropped.length > 0 ? { testValuesDropped } : {}),
+    testCases,
   };
 }
 
