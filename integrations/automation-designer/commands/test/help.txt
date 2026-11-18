@@ -45,10 +45,19 @@ Flags:
                         to every case. Every case is a REAL execution (N cases, N
                         sets of side effects), so it confirms first, showing the
                         case count (--yes, required with --llm). Every row's inputs
-                        are checked before anything runs. Prints one row per case;
-                        exit 1 with AD_TEST_CASES_FAILED when any case fails.
-                        Cannot be combined with --inputs, --case or
-                        --compare-published.
+                        are checked before anything runs. A progress line per case
+                        goes to stderr (`case 12/86 PASS name (1.2s)`). A run that
+                        fails with an auth / network / gateway error (e.g. another
+                        session refreshing the same login) is retried once; if it
+                        fails again the row is ERROR with error.tool: true, counted
+                        in summary.toolErrors (a tool error, not the method). Prints
+                        one row per case; exit 1 with AD_TEST_CASES_FAILED when any
+                        case fails. With --compare-published every case also runs
+                        on the published copy, right after its draft run, and its
+                        row gains compare{…}. Cannot be combined with --inputs,
+                        --case or --repeat.
+  --trace               With --cases: each row also carries its trace and timing
+                        (and so does compare.published).
   --expect <OUT=VALUE>  Check a method output after the run (repeatable). Operators:
                         = != ~= (contains) > < >= <=; `out.a[0]=x` looks inside JSON,
                         `out.size()=3` checks a list's (text's) size. ~= on a list
@@ -62,13 +71,33 @@ Flags:
                         ('{}') equals an output holding that JSON. Any failure
                         exits 1 with AD_TEST_EXPECTATION_FAILED.
   --compare-published   Also run the same inputs against the published copy (a draft's
-                        referenceId, or the draft of a published uuid) and diff every
-                        output. This EXECUTES TWICE — both runs have real side effects,
-                        one through the production body — so it asks for confirmation
-                        (--yes, required with --llm). Expectations and the draft run's
-                        status decide the exit code.
+                        referenceId, or the draft of a published uuid) and compare.
+                        This EXECUTES TWICE — the DRAFT first, then the PUBLISHED
+                        copy, both with real side effects, one through the
+                        production body — so it asks for confirmation (--yes,
+                        required with --llm). Nothing is restored in between: a
+                        method that writes leaves both runs' rows, and the
+                        published run sees the draft run's (wi-impl warns when a
+                        db step writes). identical means the same status, HTTP
+                        status, failing step and error, and outputs; when both
+                        runs fail at the same step with the same error their
+                        partial outputs are not compared (outputsCompared:
+                        false). Expectations and the draft run's status decide
+                        the exit code.
+  --ignore <PATH>       With --compare-published: leave a value out of the output
+                        comparison (repeatable). out (the whole output), out.a.b,
+                        out[0].b, out[].b (b in every item), *.key (key at any
+                        depth, every output): e.g. --ignore '*.updatedAt'.
+  --ignore-order        With --compare-published: compare lists as sets (the same
+                        items in another order are equal).
+  --repeat <N>          Run N times (1-100) and report data.repeat {runs, serverMs,
+                        wallMs}, each {min, median, max, values[]} (the server's
+                        total time and the wall time); the rest of data is the
+                        first run's. N real executions: confirms (--yes with
+                        --llm). A progress line per run goes to stderr. Not with
+                        --cases or --compare-published.
   --yes, -y             Confirm --compare-published's second (published) execution,
-                        or the --cases executions.
+                        the --cases executions, or the --repeat runs.
   --verbose, -v         Print each step's outputs and the SQL it ran. (A command
                         flag here: it does not switch on runner debug logging.)
   --raw                 Include raw execution payload in output.
@@ -93,11 +122,20 @@ Notes:
   - Data: ranVersion {uuid, state, version, label}, status, statusCode,
     outputs {code: value} (every method output),
     trace, expectations {total, passed, failed, results[]}, compare
-    {identical, differences[], published{status, outputs}}.
-  - With --cases, data is {uuid, ranVersion, cases[{name, pass, status (SUCCESS, FAILED
-    or ERROR), statusCode, outputs, failedStep, expectations[],
-    error?{code, message}}], summary{total, passed, failed}}. A case whose
-    run throws (compile error) is status ERROR; the other cases still run.
+    {draftUuid, publishedUuid, order ["draft","published"], identical,
+    mismatches[] (status, statusCode, failedStep, outputs), differences[],
+    outputsCompared, ignored?{paths, order}, draft{status, statusCode, timing},
+    published{status, statusCode, outputs, failedStep, trace, timing,
+    expectations?}}, repeat?.
+  - With --cases, data is {uuid, ranVersion, publishedUuid?, cases[{name,
+    pass, status (SUCCESS, FAILED or ERROR), statusCode, outputs, failedStep,
+    expectations[], error?{code, message, tool?}, retried?, trace?, timing?,
+    compare?{identical, mismatches[], differences[], outputsCompared,
+    published{status, statusCode, outputs, failedStep, trace?, timing?,
+    error?}}}], summary{total, passed, failed, toolErrors, identical?,
+    different?}}. failed counts every case that did not pass, toolErrors
+    included. A case whose run throws (compile error) is status ERROR; the
+    other cases still run.
   - data.trace rows: {step (the step's orderIndex, a number, as `ad show`
     numbers it), automationId, description, status, totalTime ("26ms", "-"
     when the server gave none), timeMs (number or null), loop?, async?,
@@ -116,4 +154,6 @@ Examples:
   wi-impl ad test 4a1b2c3d... --env <env> --input name=World --expect 'greeting=Hello, World' --llm
   wi-impl ad test 4a1b2c3d... --env <env> --case ./cases/greet.ok.1.json --compare-published --yes --llm
   wi-impl ad test 4a1b2c3d... --env <env> --cases ./cases.jsonl --yes --llm
+  wi-impl ad test 4a1b2c3d... --env <env> --cases ./cases.jsonl --compare-published --ignore '*.updatedAt' --ignore-order --yes --llm
+  wi-impl ad test 4a1b2c3d... --env <env> --inputs ./in.json --repeat 5 --yes
   wi-impl ad test 4a1b2c3d... --env <env> --inputs ./test-data.json --verbose --raw

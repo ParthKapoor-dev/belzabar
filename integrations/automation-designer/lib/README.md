@@ -36,6 +36,8 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `fingerprint.ts` | `fingerprintMethod`: a logic hash that ignores descriptions, internal ids / links and bookkeeping; `methodDiffView` (the `ad diff` view: no ids), `diffPaths`. |
 | `trace.ts` | `traceMethod`: where a method's dev history has reached on every env (`ad trace`, `release matrix`). |
 | `test-run.ts` | `runInlineTest`: one `/chain/test` run → status and HTTP status, trace (times in ms; a loop step's ns time corrected; async steps `dispatched (async)`), per-step outputs and rendered SQL, server timing, outputs map; `diffOutputs` for `--compare-published`. |
+| `compare-run.ts` | `compareRuns` for `--compare-published`: status, HTTP status, failing step and error, then outputs (`--ignore` paths dropped, `--ignore-order` sorts lists); `parseIgnorePath`. |
+| `repeat.ts` | `repeatStats`: min / median / max of `--repeat` run times. |
 | `payload-builder.ts` | `buildV1TestPayload`: the one `/chain/test` body (`test`, `run-suites`, test-case runs). |
 | `publish-report.ts` | What `ad publish` changes besides the body: the published test suite (`readSuitesBeforePublish` / `reportPublishedSuite`: the server replaces it with a copy of the draft's, new ids, published-only cases deleted) and the caller steps that pass an input the draft dropped (`removedInputs`, `findRemovedInputCallers`, through `callers.ts`). |
 | `test-suite.ts` | `loadTestSuite`: one summary of a method's suite for `test-cases` and `test-case list` (`full`: each case's inputs and assertions too). |

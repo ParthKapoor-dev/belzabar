@@ -102,7 +102,16 @@ export function asyncSteps(m: HydratedMethod): number[] {
   return m.parsedSteps.filter((s) => s.runAsync).map((s) => s.orderIndex);
 }
 
-const isJsonText = (v: unknown): boolean => {
+const WRITE_SQL = /^\s*(insert|update|delete|merge|upsert|create|drop|alter|truncate)\b/i;
+
+/** db steps (orderIndex) that write: an add / update / delete / schema operation, or write SQL. */
+export function writingSteps(m: HydratedMethod): number[] {
+  return m.parsedSteps
+    .filter((s) => s.kind === "SQL" && ((!!s.operation && s.operation !== "read") || WRITE_SQL.test(s.sql ?? "")))
+    .map((s) => s.orderIndex);
+}
+
+const isJsonText =(v: unknown): boolean => {
   if (typeof v !== "string") return false;
   const t = v.trim();
   if (!(t.startsWith("{") || t.startsWith("["))) return false;

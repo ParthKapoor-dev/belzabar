@@ -1,16 +1,15 @@
 import { readFile } from "fs/promises";
-import { CliError, defineArgs, failWithData, ok, type CommandContext, type CommandModule } from "@belzabar/core";
+import { CliError, defineArgs, failWithData, ok, printErr, type CommandContext, type CommandModule } from "@belzabar/core";
 import { InputCollector } from "../../lib/input-collector";
 import { adApi } from "../../lib/api/index";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { AD_YES_FLAG } from "../../lib/args/common";
 import { requireConfirmation } from "../../lib/args/confirm";
+import { compareRuns, parseIgnorePath, type CompareOptions, type RunComparison } from "../../lib/compare-run";
 import {
   counterpart,
-  diffOutputs,
   runInlineTest,
   type FailedStep,
-  type OutputDifference,
   type ServiceResult,
   type RunTiming,
   type ServiceTraceRow,
@@ -26,7 +25,17 @@ import {
 } from "../../lib/test-cases/expect";
 import { parseCaseInput, runnableInputs } from "../../lib/test-cases/case-file";
 import { caseFailure, readCases, resolveCaseInputs, runCases, type CaseResult, type CasesSummary } from "../../lib/test-cases/cases-table";
-import { asyncSteps, calleeDrafts, ranVersionOf, runWarnings, testRouteInputWarnings, unpublishedDraftOf, type RanVersion } from "../../lib/run-context";
+import {
+  asyncSteps,
+  calleeDrafts,
+  ranVersionOf,
+  runWarnings,
+  testRouteInputWarnings,
+  unpublishedDraftOf,
+  writingSteps,
+  type RanVersion,
+} from "../../lib/run-context";
+import { repeatStats, type RepeatStats } from "../../lib/repeat";
 import type { HydratedMethod } from "../../lib/types/common";
 
 export { matchStep } from "../../lib/test-run";
@@ -39,6 +48,10 @@ interface TestMethodArgs {
   casesFile?: string;
   expect: string[];
   comparePublished: boolean;
+  ignore: string[];
+  ignoreOrder: boolean;
+  trace: boolean;
+  repeat: number;
   yes: boolean;
   verbose: boolean;
   raw: boolean;
@@ -53,17 +66,21 @@ interface ExpectationBlock {
   unevaluated?: string[];
 }
 
-interface CompareBlock {
+interface CompareBlock extends RunComparison {
   draftUuid: string;
   publishedUuid: string;
-  /** Same status and the same value for every output. */
-  identical: boolean;
-  differences: OutputDifference[];
-  draft: { status: TestRun["status"] };
+  /** The draft runs first, then the published copy (the database then holds both runs' writes). */
+  order: ["draft", "published"];
+  /** --ignore paths and --ignore-order, as applied. */
+  ignored?: { paths: string[]; order: boolean };
+  draft: { status: TestRun["status"]; statusCode: number | null; timing: RunTiming };
   published: {
     status: TestRun["status"];
+    statusCode: number | null;
     outputs: Record<string, unknown>;
     failedStep: FailedStep | null;
+    trace: ServiceTraceRow[];
+    timing: RunTiming;
     /** The same expectations evaluated on the published run (informational). */
     expectations?: ExpectationBlock;
   };
@@ -74,6 +91,8 @@ interface TestCasesData {
   uuid: string;
   /** The copy that ran (a uuid runs its own body): `PUBLISHED v5`. */
   ranVersion: RanVersion;
+  /** --compare-published: the published copy each case also ran on, after the draft. */
+  publishedUuid?: string;
   cases: CaseResult[];
   summary: CasesSummary;
 }
@@ -98,6 +117,8 @@ interface TestMethodData {
   timing: RunTiming;
   expectations?: ExpectationBlock;
   compare?: CompareBlock;
+  /** --repeat N: every run's times (the rest of data is the first run's). */
+  repeat?: { runs: number; serverMs: RepeatStats | null; wallMs: RepeatStats };
   raw?: {
     executionResult: unknown;
     publishedExecutionResult?: unknown;
@@ -115,12 +136,16 @@ export const args = defineArgs({
     cases: { type: "string" },
     expect: { type: "string", repeatable: true },
     "compare-published": { type: "boolean" },
+    ignore: { type: "string", repeatable: true },
+    "ignore-order": { type: "boolean" },
+    trace: { type: "boolean" },
+    repeat: { type: "number", integer: true, min: 1, max: 100, default: 1 },
     // A command flag, not the runner's debug switch: declared here so
     // the runner hands `--verbose`/`-v` to this command.
     verbose: { type: "boolean", alias: ["-v"] },
     raw: { type: "boolean" },
   },
-  exclusive: [["inputs", "case", "cases"], ["cases", "compare-published"]],
+  exclusive: [["inputs", "case", "cases"], ["cases", "repeat"], ["compare-published", "repeat"]],
 });
 
 function block(results: ExpectationResult[], unevaluated: string[] = []): ExpectationBlock {
@@ -172,25 +197,81 @@ function asyncDetails(method: HydratedMethod): Array<[string, string]> {
   return steps.length ? [["Async steps", `${steps.join(", ")} (started, not awaited: they really run)`]] : [];
 }
 
-async function runCaseTable(a: TestMethodArgs, method: HydratedMethod, context: CommandContext) {
+/** Confirmation detail rows for db steps that write (nothing is restored between runs). */
+function writeDetails(method: HydratedMethod): Array<[string, string]> {
+  const steps = writingSteps(method);
+  return steps.length ? [["Writes data", `step ${steps.join(", ")} (not restored between runs)`]] : [];
+}
+
+/** B5: a method that writes, run more than once, leaves every run's writes; later runs see them. */
+function warnWrites(method: HydratedMethod, context: CommandContext, mode: "cases" | "compare" | "both"): void {
+  const steps = writingSteps(method);
+  if (!steps.length) return;
+  const head = `Step ${steps.join(", ")} write${steps.length > 1 ? "" : "s"} data, and nothing is restored between runs.`;
+  if (mode !== "compare") context.warn(`${head} Every case's writes stay, so later cases see earlier cases' rows.`);
+  if (mode !== "cases") {
+    context.warn(
+      `${head} --compare-published runs the DRAFT first, then the PUBLISHED copy, on the same database: the published run sees ` +
+        "the draft run's rows (a 'duplicate' error or another result there is not a code difference), and both runs' writes stay.",
+    );
+  }
+}
+
+const compareOptions = (a: TestMethodArgs): CompareOptions => ({ ignore: a.ignore.map(parseIgnorePath), ignoreOrder: a.ignoreOrder });
+
+/** The draft and published copies for --compare-published. */
+async function resolvePair(given: HydratedMethod, uuid: string): Promise<{ draft: HydratedMethod; published: HydratedMethod; pair: { draftUuid: string; publishedUuid: string } }> {
+  const pair = counterpart(given);
+  if (!pair) {
+    throw new CliError(
+      `${given.name} (${uuid}) has no ${given.state === "PUBLISHED" ? "draft" : "published"} counterpart to compare with (state ${given.state}, no referenceId).`,
+      { code: "AD_NO_PUBLISHED_COUNTERPART", details: { uuid, state: given.state } },
+    );
+  }
+  const other = await adApi.fetchMethod(given.state === "DRAFT" ? pair.publishedUuid : pair.draftUuid, "v1");
+  return given.state === "DRAFT" ? { draft: given, published: other, pair } : { draft: other, published: given, pair };
+}
+
+/** `case 12/86 PASS name (1.2s)` on stderr, so a long run is visibly alive. */
+function progressLine(i: number, total: number, r: CaseResult, ms: number): string {
+  const verdict = r.pass ? "PASS" : r.error?.tool ? "TOOL ERROR" : r.status === "ERROR" ? "ERROR" : "FAIL";
+  const cmp = r.compare ? (r.compare.identical ? ", published identical" : `, published differs (${r.compare.mismatches.join(", ")})`) : "";
+  return `case ${i + 1}/${total} ${verdict} ${r.name} (${(ms / 1000).toFixed(1)}s${r.retried ? ", retried" : ""}${cmp})`;
+}
+
+async function runCaseTable(a: TestMethodArgs, given: HydratedMethod, uuid: string, context: CommandContext) {
+  const { draft: method, published, pair } = a.comparePublished ? await resolvePair(given, uuid) : { draft: given, published: undefined, pair: undefined };
   const cases = resolveCaseInputs(method, await readCases(a.casesFile!), a.inputPairs);
   for (const w of testRouteInputWarnings(method, cases.map((c) => c.inputs))) context.warn(w);
-  await warnRun(method, context);
+  if (published) for (const w of runWarnings(method, null, await calleeDrafts(method), { async: true })) context.warn(w);
+  else await warnRun(method, context);
+  warnWrites(method, context, published ? "both" : "cases");
+  const runs = published ? cases.length * 2 : cases.length;
   await requireConfirmation({
     yes: a.yes,
     outputMode: context.outputMode,
-    action: `execute the method ${cases.length} time(s), once per case, with real side effects every time`,
+    action: published
+      ? `execute the method ${runs} time(s): each of ${cases.length} case(s) on the draft, then on the PUBLISHED copy, with real side effects every time`
+      : `execute the method ${cases.length} time(s), once per case, with real side effects every time`,
     details: [
       ["Method", `${method.name} (${method.uuid}, ${ranVersionOf(method).label})`],
+      ...(pair ? ([["Published UUID", pair.publishedUuid]] as Array<[string, string]>) : []),
       ["Cases", String(cases.length)],
       ...asyncDetails(method),
+      ...writeDetails(method),
     ],
   });
-  const { results, summary } = await runCases(method, cases, a.expect.map(parseExpectation));
-  const data: TestCasesData = { uuid: method.uuid, ranVersion: ranVersionOf(method), cases: results, summary };
+  const { results, summary } = await runCases(method, cases, {
+    common: a.expect.map(parseExpectation),
+    ...(published ? { published, compare: compareOptions(a) } : {}),
+    trace: a.trace,
+    onCase: (i, total, row, ms) => printErr(progressLine(i, total, row, ms)),
+  });
+  const data: TestCasesData = { uuid: method.uuid, ranVersion: ranVersionOf(method), ...(pair ? { publishedUuid: pair.publishedUuid } : {}), cases: results, summary };
   if (summary.failed > 0) {
     const failed = results.filter((r) => !r.pass).map((r) => r.name);
-    return failWithData("AD_TEST_CASES_FAILED", `${summary.failed} of ${summary.total} case(s) failed: ${failed.join(", ")}.`, data, { details: { failed } });
+    const tool = summary.toolErrors ? `; ${summary.toolErrors} of them are tool errors (auth / network, retried once), not the method` : "";
+    return failWithData("AD_TEST_CASES_FAILED", `${summary.failed} of ${summary.total} case(s) failed${tool}: ${failed.join(", ")}.`, data, { details: { failed } });
   }
   return ok(data);
 }
@@ -200,8 +281,13 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
   writes: true,
   parseArgs(argv) {
     const { positionals, flags } = args.parse(argv);
-    // Fail on a malformed --expect before anything runs.
+    // Fail on a malformed --expect / --ignore before anything runs.
     for (const e of flags.expect) parseExpectation(e);
+    for (const p of flags.ignore) parseIgnorePath(p);
+    if ((flags.ignore.length > 0 || flags.ignoreOrder) && !flags.comparePublished) {
+      throw new CliError("--ignore and --ignore-order shape the draft/published comparison: they need --compare-published.", { code: "MISSING_FLAG" });
+    }
+    if (flags.trace && !flags.cases) throw new CliError("--trace adds each case's trace to --cases rows (a single run always has data.trace).", { code: "MISSING_FLAG" });
     return {
       uuid: positionals.uuid,
       inputsFile: flags.inputs,
@@ -210,6 +296,10 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
       casesFile: flags.cases,
       expect: flags.expect,
       comparePublished: flags.comparePublished,
+      ignore: flags.ignore,
+      ignoreOrder: flags.ignoreOrder,
+      trace: flags.trace,
+      repeat: flags.repeat,
       yes: flags.yes,
       verbose: flags.verbose,
       raw: flags.raw,
@@ -219,23 +309,12 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     const uuid = resolveMethodRef(a.uuid);
     // V1 fetch: the test body is the fetched definition (test-before-save).
     const given = await adApi.fetchMethod(uuid, "v1");
-    if (a.casesFile) return runCaseTable(a, given, context);
+    if (a.casesFile) return runCaseTable(a, given, uuid, context);
 
     let draft = given;
     let published: HydratedMethod | null = null;
     let pair: { draftUuid: string; publishedUuid: string } | null = null;
-    if (a.comparePublished) {
-      pair = counterpart(given);
-      if (!pair) {
-        throw new CliError(
-          `${given.name} (${uuid}) has no ${given.state === "PUBLISHED" ? "draft" : "published"} counterpart to compare with (state ${given.state}, no referenceId).`,
-          { code: "AD_NO_PUBLISHED_COUNTERPART", details: { uuid, state: given.state } },
-        );
-      }
-      const other = await adApi.fetchMethod(given.state === "DRAFT" ? pair.publishedUuid : pair.draftUuid, "v1");
-      draft = given.state === "DRAFT" ? given : other;
-      published = given.state === "DRAFT" ? other : given;
-    }
+    if (a.comparePublished) ({ draft, published, pair } = await resolvePair(given, uuid));
 
     let values: Record<string, unknown>;
     let expectations = a.expect.map(parseExpectation);
@@ -254,6 +333,7 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     // with --compare-published both copies run, so only the callees' drafts are worth a warning
     if (published) {
       for (const w of runWarnings(draft, null, await calleeDrafts(draft), { async: true })) context.warn(w);
+      warnWrites(draft, context, "compare");
     } else {
       await warnRun(draft, context);
     }
@@ -264,16 +344,35 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
       await requireConfirmation({
         yes: a.yes,
         outputMode: context.outputMode,
-        action: "execute the method TWICE (draft and the PUBLISHED copy), with real side effects both times",
+        action: "execute the method TWICE (the draft first, then the PUBLISHED copy), with real side effects both times",
         details: [
           ["Draft UUID", pair.draftUuid],
           ["Published UUID", pair.publishedUuid],
           ...asyncDetails(draft),
+          ...writeDetails(draft),
         ],
       });
     }
+    if (a.repeat > 1) {
+      await requireConfirmation({
+        yes: a.yes,
+        outputMode: context.outputMode,
+        action: `execute the method ${a.repeat} times (--repeat), with real side effects every time`,
+        details: [["Method", `${draft.name} (${draft.uuid}, ${ranVersionOf(draft).label})`], ...asyncDetails(draft), ...writeDetails(draft)],
+      });
+    }
 
+    const started = Date.now();
     const run = await runInlineTest(draft, values);
+    const wall = [Date.now() - started];
+    const server = [run.timing.totalMs];
+    for (let i = 1; i < a.repeat; i++) {
+      const t0 = Date.now();
+      const again = await runInlineTest(draft, values);
+      wall.push(Date.now() - t0);
+      server.push(again.timing.totalMs);
+      printErr(`run ${i + 1}/${a.repeat}: ${again.status}, server ${again.timing.totalMs != null ? `${Math.round(again.timing.totalMs)}ms` : "-"}, wall ${wall[i]}ms`);
+    }
     const data: TestMethodData = {
       uuid,
       ranVersion: ranVersionOf(draft),
@@ -290,17 +389,22 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
       timing: run.timing,
     };
     if (expectations.length > 0 || unevaluated.length > 0) data.expectations = block(evaluateExpectations(run.outputs, expectations), unevaluated);
+    if (a.repeat > 1) {
+      const known = server.filter((x): x is number => x != null);
+      data.repeat = { runs: a.repeat, serverMs: known.length ? repeatStats(known) : null, wallMs: repeatStats(wall) };
+    }
 
     if (published && pair) {
       const pub = await runInlineTest(published, values);
-      const differences = diffOutputs(run.outputs, pub.outputs);
+      const opts = compareOptions(a);
       data.compare = {
         draftUuid: pair.draftUuid,
         publishedUuid: pair.publishedUuid,
-        identical: differences.length === 0 && run.status === pub.status,
-        differences,
-        draft: { status: run.status },
-        published: { status: pub.status, outputs: pub.outputs, failedStep: pub.failedStep },
+        order: ["draft", "published"],
+        ...compareRuns(run, pub, opts),
+        ...(a.ignore.length || a.ignoreOrder ? { ignored: { paths: a.ignore, order: a.ignoreOrder } } : {}),
+        draft: { status: run.status, statusCode: run.statusCode, timing: run.timing },
+        published: { status: pub.status, statusCode: pub.statusCode, outputs: pub.outputs, failedStep: pub.failedStep, trace: pub.trace, timing: pub.timing },
       };
       if (expectations.length > 0) data.compare.published.expectations = block(evaluateExpectations(pub.outputs, expectations));
       if (a.raw) data.raw = { executionResult: run.executionResult, publishedExecutionResult: pub.executionResult };
@@ -339,11 +443,20 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
     const raw = envelope.data as TestMethodData | TestCasesData | null;
     if (!raw) return;
     if ("cases" in raw) {
+      ui.text(`Ran: ${raw.ranVersion.label} (${raw.ranVersion.uuid})${raw.publishedUuid ? `, then the published copy ${raw.publishedUuid}` : ""}`);
+      const comparing = raw.publishedUuid !== undefined;
       ui.table(
-        ["Case", "Result", "Status", "Failure"],
-        raw.cases.map((c) => [c.name, c.pass ? "PASS" : "FAIL", c.status, c.pass ? "" : caseFailure(c)]),
+        ["Case", "Result", "Status", "Failure", ...(comparing ? ["Published"] : [])],
+        raw.cases.map((c) => [
+          c.name,
+          c.pass ? "PASS" : c.error?.tool ? "TOOL ERROR" : "FAIL",
+          c.status,
+          c.pass ? "" : caseFailure(c),
+          ...(comparing ? [c.compare?.identical ? "identical" : `differs: ${c.compare?.mismatches.join(", ") ?? "?"}`] : []),
+        ]),
       );
       const s = raw.summary;
+      if (comparing) ui.text(`Draft vs published: ${s.identical ?? 0} identical, ${s.different ?? 0} different.`);
       // a failure's summary is the error message the runner prints
       if (s.failed === 0) ui.success(`${s.passed}/${s.total} case(s) passed.`);
       return;
@@ -395,14 +508,30 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
 
     if (data.compare) {
       const c = data.compare;
-      ui.section(`Draft vs published (${c.publishedUuid})`);
-      if (c.identical) ui.success(`Identical: status ${c.draft.status}, ${Object.keys(data.outputs).length} output(s) equal.`);
+      ui.section(`Draft vs published (${c.publishedUuid}; the draft ran first)`);
+      const ms = (t: RunTiming) => (t.totalMs != null ? `${Math.round(t.totalMs)}ms` : "-");
+      ui.text(`Server time: draft ${ms(c.draft.timing)}, published ${ms(c.published.timing)}`);
+      if (!c.outputsCompared) ui.text("Both runs failed at the same step with the same error: their partial outputs were not compared.");
+      if (c.identical) ui.success(`Identical: status ${c.draft.status}${c.outputsCompared ? `, ${Object.keys(data.outputs).length} output(s) equal` : ""}.`);
       else {
         if (c.draft.status !== c.published.status) ui.warn(`Status differs: draft ${c.draft.status}, published ${c.published.status}.`);
+        if (c.mismatches.includes("statusCode")) ui.warn(`HTTP status differs: draft ${c.draft.statusCode ?? "-"}, published ${c.published.statusCode ?? "-"}.`);
+        if (c.mismatches.includes("failedStep")) {
+          const f = (x: FailedStep | null) => (x ? `step ${x.index}: ${x.parsedError.summary}` : "none");
+          ui.warn(`Failing step differs: draft ${f(data.failedStep)}, published ${f(c.published.failedStep)}.`);
+        }
         if (c.differences.length > 0) {
           ui.table(["Output", "Draft", "Published"], c.differences.map((d) => [d.output, JSON.stringify(d.draft), JSON.stringify(d.published)]));
         }
       }
+    }
+
+    if (data.repeat) {
+      const r = data.repeat;
+      const line = (x: RepeatStats | null) => (x ? `min ${Math.round(x.min)}ms, median ${Math.round(x.median)}ms, max ${Math.round(x.max)}ms` : "-");
+      ui.section(`Repeat (${r.runs} runs)`);
+      ui.text(`Server time: ${line(r.serverMs)}`);
+      ui.text(`Wall time:   ${line(r.wallMs)}`);
     }
 
     if (data.expectations) {

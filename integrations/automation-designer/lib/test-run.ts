@@ -302,7 +302,7 @@ export interface OutputDifference {
   published: unknown;
 }
 
-function canonical(v: unknown): string {
+export function canonical(v: unknown): string {
   const sort = (x: unknown): unknown =>
     Array.isArray(x)
       ? x.map(sort)

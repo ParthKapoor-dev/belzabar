@@ -115,7 +115,7 @@ describe("other commands", () => {
     });
   });
   test("run takes id + optional payload", () => {
-    expect(parse(runCmd, ["p", "{}", "--stream"])).toEqual({ publishedId: "p", payloadArg: "{}", raw: false, stream: true });
+    expect(parse(runCmd, ["p", "{}", "--stream"])).toEqual({ publishedId: "p", payloadArg: "{}", raw: false, stream: true, repeat: 1, yes: false });
     expect(code(() => parse(runCmd, []))).toBe("MISSING_PUBLISHED_ID");
   });
   test("services --search requires a value", () => {

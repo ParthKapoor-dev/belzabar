@@ -9,7 +9,7 @@ Output expectations for `ad test --expect`, and the persisted test cases behind
 | `case-file.ts` | The UI wire encoding ↔ a git-friendly case file (`caseFromWire`, `caseToWire`, `diffCases`, `serializeCaseFile`, `caseFileName`). |
 | `files.ts` | The on-disk export layout (`methodDirFor`, `readMethodMeta`, `readCaseFiles`, `writeMethodDir`). |
 | `suite.ts` | A method's suite as case files (`fetchSuite`), contract checks against the method's inputs and outputs, verified writes (`createCase`, `updateCase`), and `planSync` / `applySync`. |
-| `cases-table.ts` | `ad test --cases`: parse a JSON-array/JSONL cases file , resolve every row's inputs up front, run one inline test per case (`runCases`). |
+| `cases-table.ts` | `ad test --cases`: parse a JSON-array/JSONL cases file, resolve every row's inputs up front, run one inline test per case (`runCases`): with `--compare-published` each case on the published copy right after, a tool error (auth / network / gateway) retried once and counted apart (`isToolError`), a progress callback per case. |
 | `run-suite.ts` | `runSuiteCases`: `test-case run-suite --wait`, one `/chain/test` run per active case (or per case `--case` / `--match` picks), assertions evaluated locally. |
 
 Related: [`../test-run.ts`](../test-run.ts) runs one inline test and returns the outputs map;

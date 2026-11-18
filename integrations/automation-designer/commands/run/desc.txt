@@ -2,4 +2,5 @@ wi-impl ad run <published-id> --env <env>  :->  Call a method the way the app do
 wi-impl ad run <published-id> '<json>' --env <env>  :->  Execute with an inline JSON payload string
 wi-impl ad run <published-id> <file.json> --env <env>  :->  Execute with payload read from a JSON file
 wi-impl ad run <published-id> '<json>' --env <env> --raw  :->  Include raw execution payload in output
+wi-impl ad run <published-id> '<json>' --env <env> --repeat <n> --yes  :->  Run N times; data.repeat gives min/median/max of the server and wall times
 wi-impl ad run <published-id> '<json>' --env <env> --stream  :->  Opt into a streaming method (application/stream+json; no timeout)

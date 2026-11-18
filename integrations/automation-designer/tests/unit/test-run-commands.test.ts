@@ -353,6 +353,19 @@ describe("ad run", () => {
     expect(details.step).toBe(2);
   });
 
+  test("--repeat N runs N times and reports min / median / max of the server and wall times (B20)", async () => {
+    let n = 0;
+    const f = wire(okTestResponse, rawBody(), () => ({ ok: 1, executionStatus: { failed: false, totalExecutionTime: { time: [1200, 60, 90][n++], unit: "milliseconds" } } }));
+    const r = await runCommand(runCommandModule, [UUID, "{}", "--repeat", "3", "--yes"], { env: "t-s4b-run" });
+    expect(r.envelope?.ok).toBe(true);
+    const rep = (r.envelope?.data as any).repeat;
+    expect(rep.runs).toBe(3);
+    expect(rep.serverMs).toMatchObject({ min: 60, median: 90, max: 1200, values: [1200, 60, 90] });
+    expect(f.requests.filter((q) => q.url.includes("/chain/execute/"))).toHaveLength(3);
+    const llm = await runCommand(runCommandModule, [UUID, "{}", "--repeat", "2"], { env: "t-s4b-run", llm: true });
+    expect(llm.envelope?.error?.code).toBe("AD_CONFIRMATION_REQUIRED");
+  });
+
   test("a PUBLISHED uuid runs without the warning", async () => {
     wire(okTestResponse);
     const r = await runCommand(runCommandModule, [UUID, "{}"], { env: "t-s4b-run" });

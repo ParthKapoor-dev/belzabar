@@ -1,4 +1,7 @@
-import { apiFetch, CliError, type CommandModule, defineArgs, ok, redactSecrets, redactString } from "@belzabar/core";
+import { apiFetch, CliError, type CommandModule, defineArgs, ok, printErr, redactSecrets, redactString } from "@belzabar/core";
+import { AD_YES_FLAG } from "../../lib/args/common";
+import { requireConfirmation } from "../../lib/args/confirm";
+import { repeatStats, type RepeatStats } from "../../lib/repeat";
 import { executionError } from "../../lib/exec-error";
 import { readStream } from "../../lib/stream-parser";
 import { adApi } from "../../lib/api/index";
@@ -12,6 +15,8 @@ interface RunMethodArgs {
   payloadArg?: string;
   raw: boolean;
   stream: boolean;
+  repeat: number;
+  yes: boolean;
 }
 
 interface RunMethodData {
@@ -34,10 +39,27 @@ interface RunMethodData {
   streamChunks?: string[];
   /** Final envelope of a streaming response — present only when streaming. */
   finalResponse?: unknown;
+  /** --repeat N: every run's times (response is the first run's). serverMs: executionStatus.totalExecutionTime. */
+  repeat?: { runs: number; serverMs: RepeatStats | null; wallMs: RepeatStats };
   raw?: {
     payload: unknown;
   };
 }
+
+/** A response's `executionStatus.totalExecutionTime` in ms, when it has one. */
+function serverMs(json: unknown): number | null {
+  const t = (json as { executionStatus?: { totalExecutionTime?: { time?: unknown; unit?: unknown } } } | null)?.executionStatus?.totalExecutionTime;
+  if (!t || typeof t.time !== "number") return null;
+  return t.unit === "seconds" ? t.time * 1000 : t.unit === "nanoseconds" ? t.time / 1e6 : t.time;
+}
+
+const parseJson = (text: string): unknown => {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
 
 async function resolvePayload(payloadArg?: string): Promise<unknown> {
   if (!payloadArg) {
@@ -89,9 +111,12 @@ export const args = defineArgs({
     { name: "payload" },
   ],
   flags: {
+    ...AD_YES_FLAG,
     raw: { type: "boolean" },
     stream: { type: "boolean" },
+    repeat: { type: "number", integer: true, min: 1, max: 100, default: 1 },
   },
+  exclusive: [["stream", "repeat"]],
 });
 
 const command: CommandModule<RunMethodArgs, RunMethodData> = {
@@ -104,9 +129,11 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       payloadArg: positionals.payload,
       raw: flags.raw,
       stream: flags.stream,
+      repeat: flags.repeat,
+      yes: flags.yes,
     };
   },
-  async execute({ publishedId: idArg, payloadArg, raw, stream }, context) {
+  async execute({ publishedId: idArg, payloadArg, raw, stream, repeat, yes }, context) {
     const publishedId = resolveMethodRef(idArg);
     const payload = await resolvePayload(payloadArg);
 
@@ -138,19 +165,32 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
       context.warn("No payload provided. Using empty object '{}'.");
     }
 
-    const path = `/rest/api/automation/chain/execute/${publishedId}?encrypted=true`;
-    const response = await apiFetch(path, {
-      method: "POST",
-      authMode: "Raw",
-      ...(stream ? { headers: { Accept: "application/stream+json" } } : {}),
-      body: JSON.stringify(payload),
-      // Long-running methods; a stream stays open for as long as the method runs.
-      timeoutMs: stream ? "none" : AD_LONG_OP_TIMEOUT_MS,
-    });
+    if (repeat > 1) {
+      await requireConfirmation({
+        yes,
+        outputMode: context.outputMode,
+        action: `execute the method ${repeat} times (--repeat), with real side effects every time`,
+        details: [["Method", `${publishedId}${ranVersion ? ` (${ranVersion.label})` : ""}`]],
+      });
+    }
 
-    // error.message carries the method's own message and failing step; details.body is the
-    // decoded (redacted) body, or, when long, details.bodyFile holds it whole.
-    if (!response.ok) throw await executionError(response, { code: "EXECUTION_FAILED", label: "Execution failed", path, tag: "ad-run" });
+    const path = `/rest/api/automation/chain/execute/${publishedId}?encrypted=true`;
+    const execute = async () => {
+      const res = await apiFetch(path, {
+        method: "POST",
+        authMode: "Raw",
+        ...(stream ? { headers: { Accept: "application/stream+json" } } : {}),
+        body: JSON.stringify(payload),
+        // Long-running methods; a stream stays open for as long as the method runs.
+        timeoutMs: stream ? "none" : AD_LONG_OP_TIMEOUT_MS,
+      });
+      // error.message carries the method's own message and failing step; details.body is the
+      // decoded (redacted) body, or, when long, details.bodyFile holds it whole.
+      if (!res.ok) throw await executionError(res, { code: "EXECUTION_FAILED", label: "Execution failed", path, tag: "ad-run" });
+      return res;
+    };
+    const started = Date.now();
+    const response = await execute();
 
     const payloadType = Array.isArray(payload) ? "array" : typeof payload;
     // Streaming is strictly opt-in: without --stream the response is always
@@ -182,6 +222,20 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
     }
 
     const text = await response.text();
+    let timing: RunMethodData["repeat"];
+    if (repeat > 1) {
+      const wall = [Date.now() - started];
+      const server = [serverMs(parseJson(text))];
+      for (let i = 1; i < repeat; i++) {
+        const t0 = Date.now();
+        const again = await (await execute()).text();
+        wall.push(Date.now() - t0);
+        server.push(serverMs(parseJson(again)));
+        printErr(`run ${i + 1}/${repeat}: server ${server[i] != null ? `${Math.round(server[i]!)}ms` : "-"}, wall ${wall[i]}ms`);
+      }
+      const known = server.filter((x): x is number => x != null);
+      timing = { runs: repeat, serverMs: known.length ? repeatStats(known) : null, wallMs: repeatStats(wall) };
+    }
     try {
       const json = JSON.parse(text);
       const data: RunMethodData = {
@@ -194,6 +248,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
         response: redact(json),
         responseFormat: "json",
       };
+      if (timing) data.repeat = timing;
       if (raw) data.raw = { payload };
       return ok(data);
     } catch {
@@ -207,6 +262,7 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
         response: redactString(text),
         responseFormat: "text",
       };
+      if (timing) data.repeat = timing;
       if (raw) data.raw = { payload };
       return ok(data);
     }
@@ -226,6 +282,13 @@ const command: CommandModule<RunMethodArgs, RunMethodData> = {
     if (data.responseFormat === "stream" && data.streamChunks && data.streamChunks.length > 0) {
       ui.section(`Stream Chunks (${data.streamChunks.length})`);
       for (const chunk of data.streamChunks) ui.text(chunk);
+    }
+    if (data.repeat) {
+      const r = data.repeat;
+      const line = (x: RepeatStats | null) => (x ? `min ${Math.round(x.min)}ms, median ${Math.round(x.median)}ms, max ${Math.round(x.max)}ms` : "-");
+      ui.section(`Repeat (${r.runs} runs)`);
+      ui.text(`Server time: ${line(r.serverMs)}`);
+      ui.text(`Wall time:   ${line(r.wallMs)}`);
     }
     ui.section(data.responseFormat === "stream" ? "Final Response" : "Execution Result");
     ui.object(data.response);

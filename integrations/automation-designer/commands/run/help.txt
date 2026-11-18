@@ -19,6 +19,12 @@ Arguments:
 
 Flags:
   --raw               Include raw payload in output.
+  --repeat <N>        Run N times (1-100) and report data.repeat {runs,
+                      serverMs, wallMs}, each {min, median, max, values[]}
+                      (serverMs from executionStatus.totalExecutionTime); the
+                      response is the first run's. N real executions:
+                      confirms (--yes with --llm). Not with --stream.
+  --yes, -y           Confirm the --repeat runs.
   --stream            Opt into a streaming method: sends
                       Accept: application/stream+json. If the method streams,
                       progressive chunks are shown and the final JSON envelope
@@ -52,3 +58,4 @@ Examples:
   wi-impl ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"type":"LT262A"}' --env <env>
   wi-impl ad run 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --env <env> --raw --llm
   wi-impl ad run 40ba5566efa95b033ef7af8f7f30ee09 '{"q":"hello"}' --env <env> --stream
+  wi-impl ad run 40ba5566efa95b033ef7af8f7f30ee09 ./data/payload.json --env <env> --repeat 5 --yes

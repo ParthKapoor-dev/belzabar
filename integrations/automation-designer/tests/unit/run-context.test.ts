@@ -3,12 +3,12 @@
 // draft/published V2 pair in fixtures/draft-published (4f6331f1… published, 4283bb05… its draft)
 // and the real V1 body in fixtures/real-v1.
 import { afterEach, describe, expect, test } from "bun:test";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
-import { runCommand } from "@belzabar/core/testing";
+import { runCommand, scratchDir } from "@belzabar/core/testing";
 import testCommand from "../../commands/test/index";
 import runCommandModule from "../../commands/run/index";
-import { calleeDrafts, ranVersionOf, runWarnings, testRouteInputWarnings, unpublishedDraftOf } from "../../lib/run-context";
+import { calleeDrafts, ranVersionOf, runWarnings, testRouteInputWarnings, unpublishedDraftOf, writingSteps } from "../../lib/run-context";
 import type { HydratedMethod } from "../../lib/types/common";
 import { definitionRoute, fakeAdEnv } from "./helpers/fake-ad";
 
@@ -128,6 +128,31 @@ describe("testRouteInputWarnings (B2)", () => {
     wire(syncedDraft());
     const r = await runCommand(testCommand, [PUB, "--inputs", '{"cityCode":{"a":1},"displayName":"D"}'], { env: ENV });
     expect(((r.envelope?.meta?.warnings as string[] | undefined) ?? []).join("\n")).toContain("Input cityCode is an object");
+  });
+});
+
+describe("writingSteps and the repeat-run warning (B5)", () => {
+  test("db add / update / delete steps and write SQL are writes; a read is not", () => {
+    const m = {
+      parsedSteps: [
+        { orderIndex: 1, kind: "SQL", operation: "read", sql: "select 1" },
+        { orderIndex: 2, kind: "SQL", operation: "add", sql: "insert into t values (1)" },
+        { orderIndex: 3, kind: "SQL", operation: "read", sql: " UPDATE t set a = 1" },
+        { orderIndex: 4, kind: "SPEL_ECHO" },
+      ],
+    } as unknown as HydratedMethod;
+    expect(writingSteps(m)).toEqual([2, 3]);
+  });
+
+  test("--cases and --compare-published on a method that writes warn and list it in the confirmation", async () => {
+    wire(syncedDraft());
+    const dir = scratchDir("run-context-cases");
+    const file = join(dir, "c.json");
+    writeFileSync(file, JSON.stringify([{ inputs: { cityCode: "C", displayName: "D" } }]));
+    const r = await runCommand(testCommand, [PUB, "--cases", file, "--yes"], { env: ENV });
+    const warnings = ((r.envelope?.meta?.warnings as string[] | undefined) ?? []).join("\n");
+    expect(warnings).toContain("data, and nothing is restored between runs");
+    expect(warnings).toContain("later cases see earlier cases' rows");
   });
 });
 

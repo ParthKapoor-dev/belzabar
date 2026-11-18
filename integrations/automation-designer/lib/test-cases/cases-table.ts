@@ -1,9 +1,13 @@
 // `ad test --cases <file>`: one method run against a table of input cases, each with its own
-// expectations. Every case is one real /chain/test execution (runInlineTest).
+// expectations. Every case is one real /chain/test execution (runInlineTest); with
+// --compare-published a second one on the published copy, right after it. A case whose run
+// fails with an auth / network / gateway error (a parallel session refreshing the login) is
+// retried once and, if it fails again, counted as a tool error, not a method failure.
 import { readFile } from "fs/promises";
 import { CliError } from "@belzabar/core";
 import { resolveInputValues } from "../input-collector";
-import { runInlineTest, type FailedStep, type TestRun } from "../test-run";
+import { compareRuns, type CompareOptions, type RunComparison } from "../compare-run";
+import { runInlineTest, type FailedStep, type RunTiming, type ServiceTraceRow, type TestRun } from "../test-run";
 import type { HydratedMethod } from "../types/common";
 import { evaluateExpectations, parseExpectation, type Expectation, type ExpectationResult } from "./expect";
 
@@ -23,14 +27,41 @@ export interface CaseResult {
   outputs: Record<string, unknown>;
   failedStep: FailedStep | null;
   expectations: ExpectationResult[];
-  /** The run itself threw (compile error, HTTP failure): no outputs. */
-  error?: { code: string; message: string };
+  /** The run itself threw (compile error, HTTP failure): no outputs. `tool`: an auth / network / gateway error, not the method. */
+  error?: { code: string; message: string; tool?: true };
+  /** A tool error made the first attempt fail; this is the second. */
+  retried?: true;
+  /** `--trace` */
+  trace?: ServiceTraceRow[];
+  timing?: RunTiming;
+  /** `--compare-published`: the same case on the published copy. */
+  compare?: CaseCompare;
+}
+
+interface PublishedSide {
+  status: TestRun["status"] | "ERROR";
+  statusCode?: number | null;
+  outputs?: Record<string, unknown>;
+  failedStep?: FailedStep | null;
+  trace?: ServiceTraceRow[];
+  timing?: RunTiming;
+  error?: { code: string; message: string; tool?: true };
+}
+
+interface CaseCompare extends RunComparison {
+  published: PublishedSide;
 }
 
 export interface CasesSummary {
   total: number;
   passed: number;
+  /** Every case that did not pass (toolErrors included). */
   failed: number;
+  /** Cases that ended in an auth / network / gateway error after a retry: the tool, not the method. */
+  toolErrors: number;
+  /** `--compare-published`: cases whose draft and published runs are identical / differ. */
+  identical?: number;
+  different?: number;
 }
 
 type Obj = Record<string, unknown>;
@@ -95,15 +126,56 @@ export function resolveCaseInputs(method: HydratedMethod, cases: CaseRow[], pair
   return cases.map((c) => ({ ...c, inputs: resolveInputValues(method.inputs, c.inputs, pairs, `Case '${c.name}'`) }));
 }
 
-/** Run the cases in order; `common` expectations apply to every case after its own. */
-export async function runCases(method: HydratedMethod, cases: CaseRow[], common: Expectation[]): Promise<{ results: CaseResult[]; summary: CasesSummary }> {
-  const results: CaseResult[] = [];
-  for (const c of cases) {
-    const list = [...c.expect, ...common];
+/** Errors of the tool, not the method: a login refreshed by a parallel session, the network, a gateway. */
+const TOOL_ERROR_CODES = new Set(["AUTH_EXPIRED", "AUTH_FAILED", "AUTH_NO_TOKEN", "HTTP_NETWORK_ERROR", "HTTP_TIMEOUT"]);
+
+function isToolError(err: unknown): boolean {
+  if (!(err instanceof CliError)) return false;
+  if (TOOL_ERROR_CODES.has(err.code)) return true;
+  const status = (err.details as { status?: unknown } | undefined)?.status;
+  return err.code === "TEST_EXECUTION_FAILED" && (status === 502 || status === 503 || status === 504);
+}
+
+type Attempt = { run: TestRun; retried: boolean } | { error: { code: string; message: string; tool?: true }; retried: boolean };
+
+/** One run; a tool error (auth, network, gateway) is retried once. */
+async function attempt(method: HydratedMethod, inputs: Record<string, unknown>): Promise<Attempt> {
+  for (let i = 0; ; i++) {
     try {
-      const run = await runInlineTest(method, c.inputs);
+      return { run: await runInlineTest(method, inputs), retried: i > 0 };
+    } catch (err) {
+      const tool = isToolError(err);
+      if (tool && i === 0) continue;
+      const code = err instanceof CliError ? err.code : "UNHANDLED_EXCEPTION";
+      return { error: { code, message: (err as Error).message, ...(tool ? { tool: true as const } : {}) }, retried: i > 0 };
+    }
+  }
+}
+
+interface CaseRunOptions {
+  /** Expectations applied to every case after its own. */
+  common: Expectation[];
+  /** `--compare-published`: each case also runs on this copy, after the draft. */
+  published?: HydratedMethod;
+  compare?: CompareOptions;
+  /** `--trace`: each row carries its trace and timing. */
+  trace?: boolean;
+  /** Called after each case (progress). */
+  onCase?: (index: number, total: number, row: CaseResult, ms: number) => void;
+}
+
+/** Run the cases in order (each on the draft, then on the published copy when comparing). */
+export async function runCases(method: HydratedMethod, cases: CaseRow[], opts: CaseRunOptions): Promise<{ results: CaseResult[]; summary: CasesSummary }> {
+  const results: CaseResult[] = [];
+  for (const [i, c] of cases.entries()) {
+    const started = Date.now();
+    const list = [...c.expect, ...opts.common];
+    const got = await attempt(method, c.inputs);
+    let row: CaseResult;
+    if ("run" in got) {
+      const run = got.run;
       const expectations = evaluateExpectations(run.outputs, list);
-      results.push({
+      row = {
         name: c.name,
         pass: run.success && expectations.every((r) => r.pass),
         status: run.status,
@@ -111,14 +183,45 @@ export async function runCases(method: HydratedMethod, cases: CaseRow[], common:
         outputs: run.outputs,
         failedStep: run.failedStep,
         expectations,
-      });
-    } catch (err) {
-      const code = err instanceof CliError ? err.code : "UNHANDLED_EXCEPTION";
-      results.push({ name: c.name, pass: false, status: "ERROR", statusCode: null, outputs: {}, failedStep: null, expectations: [], error: { code, message: (err as Error).message } });
+      };
+      if (opts.trace) {
+        row.trace = run.trace;
+        row.timing = run.timing;
+      }
+    } else {
+      row = { name: c.name, pass: false, status: "ERROR", statusCode: null, outputs: {}, failedStep: null, expectations: [], error: got.error };
     }
+    if (got.retried) row.retried = true;
+    if (opts.published) row.compare = await compareCase(got, opts.published, c.inputs, opts);
+    results.push(row);
+    opts.onCase?.(i, cases.length, row, Date.now() - started);
   }
   const passed = results.filter((r) => r.pass).length;
-  return { results, summary: { total: results.length, passed, failed: results.length - passed } };
+  const summary: CasesSummary = {
+    total: results.length,
+    passed,
+    failed: results.length - passed,
+    toolErrors: results.filter((r) => r.error?.tool).length,
+  };
+  if (opts.published) {
+    summary.identical = results.filter((r) => r.compare?.identical).length;
+    summary.different = results.length - summary.identical;
+  }
+  return { results, summary };
+}
+
+async function compareCase(draft: Attempt, published: HydratedMethod, inputs: Record<string, unknown>, opts: CaseRunOptions): Promise<CaseCompare> {
+  const pub = await attempt(published, inputs);
+  if (!("run" in pub)) {
+    return { identical: false, mismatches: ["status"], differences: [], outputsCompared: false, published: { status: "ERROR", error: pub.error } };
+  }
+  const side: PublishedSide = { status: pub.run.status, statusCode: pub.run.statusCode, outputs: pub.run.outputs, failedStep: pub.run.failedStep };
+  if (opts.trace) {
+    side.trace = pub.run.trace;
+    side.timing = pub.run.timing;
+  }
+  if (!("run" in draft)) return { identical: false, mismatches: ["status"], differences: [], outputsCompared: false, published: side };
+  return { ...compareRuns(draft.run, pub.run, opts.compare ?? { ignore: [], ignoreOrder: false }), published: side };
 }
 
 /** One-cell reason a case failed (human table). */

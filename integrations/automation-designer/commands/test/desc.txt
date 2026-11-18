@@ -4,6 +4,11 @@ wi-impl ad test <uuid> --env <env> --input <key=value>  :->  One input value, re
 wi-impl ad test <uuid> --env <env> --case <file>  :->  Inputs and assertions from a test-case file; assertions are checked locally like --expect
 wi-impl ad test <uuid> --env <env> --cases <file> --yes  :->  Run once per case in a JSON array / JSONL of {name?, inputs, expect[]} (N real executions; confirms, --yes with --llm); one pass/fail row per case, exit 1 (AD_TEST_CASES_FAILED) if any fails
 wi-impl ad test <uuid> --env <env> --expect <out=value>  :->  Check an output after the run (repeatable; = != ~= > < >= <=, out.path for JSON); exit 1 on a mismatch
+wi-impl ad test <uuid> --env <env> --cases <file> --compare-published --yes  :->  Run every case on the draft then the published copy; one row per case with compare{identical, mismatches, differences}
+wi-impl ad test <uuid> --env <env> --cases <file> --trace --yes  :->  Each case row also carries its trace and timing
+wi-impl ad test <uuid> --env <env> --compare-published --ignore <path> --yes  :->  Leave a value out of the draft/published output comparison (out, out.a, out[].a, *.key; repeatable)
+wi-impl ad test <uuid> --env <env> --compare-published --ignore-order --yes  :->  Compare lists as sets (same items, any order)
+wi-impl ad test <uuid> --env <env> --repeat <n> --yes  :->  Run N times; data.repeat gives min/median/max of the server and wall times
 wi-impl ad test <uuid> --env <env> --compare-published --yes  :->  Run the same inputs on the draft AND its published copy (two real executions; confirms, --yes with --llm) and diff every output
 wi-impl ad test <uuid> --env <env> --verbose  :->  Print each step's outputs and the SQL a db step really ran (-v)
 wi-impl ad test <uuid> --env <env> --raw  :->  Include raw execution payload in output
