@@ -36,6 +36,12 @@ MIGRATION IDS
   profile's source env isn't in your config, or the profile's envs can't be
   derived), wi-impl WARNS (meta.warnings) and sends the ids as given.
 
+  An AD_Method batch is also checked for members that call each other. The
+  service fails a caller whose callee is new on the target ("dependent ... not
+  found in destination"), so wi-impl warns, naming each call, and suggests
+  waves with callees first (data.batchCalls, data.waves). It does not reorder
+  the batch: run one 'migrate run' per wave when a callee is new.
+
 SAFETY
   - Every run is a real Jenkins build (a --dry-run too), so it is confirmed
     first: a terminal is asked; with --llm or without a terminal --yes is
@@ -96,6 +102,13 @@ OUTCOME
   details.failedEntities [{id, name, kind, reason}]. When the console gives no
   reason, wi-impl triggers the job's PD_MIGRATION_STATUS / AD_MIGRATION_STATUS
   build for the migration id and takes the reason from it (details.statusBuild).
+
+STEP CHECK
+  After a successful AD_Method build wi-impl compares each migrated method's
+  step inputs on the target with the source (both envs configured). A caller
+  can lose step input mappings on the target while the versions say both
+  sides are the same; each difference is a warning, and data.stepCheck lists
+  them (step, callee, inputs missing / changed / only on the target).
 
 BACKGROUND MODE
   When the migration service answers "Migration running in background (HTTP

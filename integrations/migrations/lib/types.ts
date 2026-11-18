@@ -1,5 +1,6 @@
 import type { JenkinsClient, MigrateType } from "./constants";
 import type { ServerCacheClear } from "@belzabar/core/platform";
+import type { BatchCall, StepCheck } from "./chain-steps";
 import type { BuildInfo, TriggerBuildInput } from "./jenkins";
 
 type YesNo = "Y" | "N";
@@ -252,6 +253,11 @@ export interface MigrateRunData {
   failedEntities?: FailedEntity[];
   /** The status build that read the failure reasons. */
   statusBuild?: StatusBuildRef;
+  /** Pre-flight: AD batch members that call each other, and the suggested waves (callees first). */
+  batchCalls?: BatchCall[];
+  waves?: string[][];
+  /** After an AD build: migrated methods whose target step inputs differ from the source. */
+  stepCheck?: StepCheck;
 }
 
 /**

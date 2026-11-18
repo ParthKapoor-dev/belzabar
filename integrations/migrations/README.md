@@ -82,7 +82,11 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   missing ids fail (`MIGRATE_TARGET_NOT_FOUND`), a PD draft id is swapped for its published id
   (or fails `MIGRATE_TARGET_DRAFT_UNPUBLISHED`), AD ids must be non-numeric uuids
   (`MIGRATE_TARGET_ID_INVALID`) that come back unchanged (`MIGRATE_TARGET_ID_MISMATCH`). A skipped
-  pre-flight is a warning in `meta.warnings`. See [`lib/README.md`](lib/README.md).
+  pre-flight is a warning in `meta.warnings`. An `AD_Method` batch of several ids is also checked
+  for members that call each other (V2 bodies: a step's serviceName / methodName or
+  automationAPIId): the service fails a caller whose callee is new on the target, so this is a
+  warning that names the calls and suggests waves, callees first (`data.batchCalls`,
+  `data.waves`). See [`lib/README.md`](lib/README.md).
 - **After the trigger** every failure keeps its code and adds `details.buildTriggered: true`
   plus `jobUrl` / `queueUrl` / `buildNumber` / `buildUrl` when known; unless the build itself
   failed (`MIGRATE_RUN_FAILED`) the message says not to re-run and names `wi-impl migrate status <n>`.
@@ -115,6 +119,10 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   NOTHING_MIGRATED) come from that check; each id that did not land is a warning, and only the ids
   that landed get the target cache clear. When it cannot check (envs unknown or not configured,
   PD), `data.outcome` is `BACKGROUND` with `data.background.skipped`.
+- **Step check.** After a successful `AD_Method` build, each migrated method's step inputs on the
+  target are compared with the source (V2 bodies, both envs configured): a caller can lose step
+  input mappings on the target while the versions match. Differences are warnings and
+  `data.stepCheck.methods [{id, name, differences}]` (`lib/chain-steps.ts`).
 - **Progress** lines (`[migrate] …`) go to stderr in every output mode, `--llm` included; `--quiet`
   turns them off.
 - `--dry-run` only sends `DRY_RUN=true`: it is still a real Jenkins build.

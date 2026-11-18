@@ -7,12 +7,13 @@ Everything `wi-impl migrate` does besides argument wiring. Exposed as the packag
 |---|---|
 | `args.ts` | `RUN_ARGS` + `parseMigrateRunArgs` (module, ids, profile ↔ env checks, env-pair → profile); `envPairFromProfile`; `normalizeClient` / `matchClient`; `buildNumberArgs` / `parseBuildNumber` for `status` and `logs` |
 | `profiles.ts` | `groupProfiles` (divider groups → clients), `discoverProfiles` (24 h cache), `resolveClientForProfile` (one re-fetch on a cache miss) |
-| `resolve-targets.ts` | `resolveMigrationTargets` — the pre-flight on the source env |
+| `resolve-targets.ts` | `resolveMigrationTargets` — the pre-flight on the source env (and the AD batch dependency warning) |
 | `parser.ts` | `stripAnsi` (also Pipeline `ha:////` markers), `parseJenkinsConsole` (migration id, DB/host lines, `REPORT` JSON, failure hints, same-version skips and other `WARNING:` lines via `parseConsoleWarnings`, `FAILED ITEM` lines, the background-mode (HTTP 206) line) |
 | `report.ts` | `summarizeReport` — counts (incl. `UNCHANGED`) and per-entity rows over `methodComparisonResult` / `comparisonResults`; `migrationOutcome` — MIGRATED / PARTIAL / NOTHING_MIGRATED; `failedEntitiesOf` — FAILED entities from `FAILED ITEM` lines and report rows |
 | `target-cache.ts` | `clearTargetCache` — after a build: drop the target env's local entries and (AD) clear its server cache in `TARGET_CACHE_ROUNDS` (5) rounds via core `clearServerCache`; `cacheCommandHint` |
 | `landing.ts` | `checkLanding` — after a background (HTTP 206) AD migration: source published version vs the target's, polled (`landingTiming`: 15 s, 5 min) |
 | `status-build.ts` | `statusModuleFor`, `readFailureReasons` — trigger a `*_MIGRATION_STATUS` build and read its `FAILED ITEM` reasons |
+| `chain-steps.ts` | V2 chain steps: `stepMappingsOf` (callee + inputs per step), `batchCalls` / `migrationWaves` (pre-flight: members that call each other), `compareStepMappings` / `checkTargetSteps` (after a build: target step inputs vs the source) |
 | `artifacts.ts` | `writeArtifacts` — `--out <dir or file.json>` → `<name>.json` + `<name>.console.log` |
 | `constants.ts` | `KNOWN_MIGRATE_TYPES`, `JenkinsClient` (a string), profile cache path |
 | `types.ts` | Args, data and report shapes |

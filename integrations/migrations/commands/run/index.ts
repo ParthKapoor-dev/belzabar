@@ -4,7 +4,9 @@ import {
   buildUrl,
   cacheCommandHint,
   checkLanding,
+  checkTargetSteps,
   clearTargetCache,
+  describeStepDifference,
   failedEntitiesOf,
   readFailureReasons,
   statusModuleFor,
@@ -208,6 +210,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         report: parsed.reportSummary,
         resolvedTargets: preflight?.targets,
         resolvedSourceEnv: preflight?.sourceEnv,
+        ...(preflight?.batchCalls ? { batchCalls: preflight.batchCalls, waves: preflight.waves } : {}),
       };
 
       const pair = envPairFromProfile(profile);
@@ -317,6 +320,24 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
             ? `${label}: skipped, same version${skip.version !== undefined ? ` ${skip.version}` : ""} on source and target. ` +
               "Target PUBLISHED is unchanged, and the target DRAFT may have been overwritten. Bump the source version (publish again) and re-run."
             : `${label}: UNCHANGED on the target (the migration report lists it but did not migrate it).`);
+        }
+      }
+
+      // A caller migrated with a callee can lose step inputs on the target while
+      // the versions match: compare each migrated method's step inputs with the
+      // source. Best effort; differences are warnings.
+      if (realRun && kind === "AD" && success && !data.failedEntities) {
+        const unchangedIds = new Set(data.unchanged ?? []);
+        const checkIds = changedIds.filter((id) => !unchangedIds.has(id.toLowerCase()));
+        if (checkIds.length > 0) {
+          if (showProgress) logProgress(args.quiet, `Comparing step inputs of ${checkIds.length} method(s) on ${targetEnv ?? "the target"} with ${sourceEnv ?? "the source"}…`);
+          data.stepCheck = await checkTargetSteps(checkIds, sourceEnv, targetEnv);
+          for (const m of data.stepCheck.methods) {
+            context.warn(
+              `${labelOf(m.id, m.name)}: the target's steps differ from ${sourceEnv}: ` +
+                `${m.differences.map(describeStepDifference).join(" | ")}. Re-run the migration of this method, or fix the step on ${targetEnv}.`,
+            );
+          }
         }
       }
 

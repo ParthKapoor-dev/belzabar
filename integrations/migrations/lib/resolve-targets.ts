@@ -10,7 +10,8 @@
 // show the operator, so a doomed build (or a silent wrong-entity migration) is
 // caught here instead of 7s into Jenkins.
 
-import { CliError, Config, isObj } from "@belzabar/core";
+import { CliError, Config, isObj, type Obj } from "@belzabar/core";
+import { batchCalls, fetchChainV2, migrationWaves, type BatchCall } from "./chain-steps";
 import { envPairFromProfile } from "./args";
 import type { ResolvedTarget } from "./types";
 import { adChainPath, canonicalUuid, fetchRawEntity, isEntityId, pdPagePath } from "@belzabar/core/platform";
@@ -19,6 +20,9 @@ interface ResolveTargetsResult {
   sourceEnv: string;
   targets: ResolvedTarget[];
   resolvedIds: string[];
+  /** AD batch members that call each other (pre-flight warning), and the suggested waves. */
+  batchCalls?: BatchCall[];
+  waves?: string[][];
 }
 
 const PD_MODULE = /^PD$/i;
@@ -99,6 +103,39 @@ async function resolveAd(id: string, env: string): Promise<ResolvedTarget> {
 }
 
 /**
+ * Batch members that call each other (V2 bodies on the active source env).
+ * The service migrates the batch at once, and a caller whose callee is new on
+ * the target fails "dependent … not found in destination": warn, and suggest
+ * waves with callees first. Best effort: an unreadable body skips the check
+ * with a warning.
+ */
+async function batchDependencies(
+  ids: string[],
+  warn: ((message: string) => void) | undefined,
+): Promise<{ batchCalls: BatchCall[]; waves: string[][] } | null> {
+  const bodies = new Map<string, Obj>();
+  try {
+    for (const id of ids) {
+      const body = await fetchChainV2(id);
+      if (body) bodies.set(id, body);
+    }
+  } catch (e) {
+    warn?.(`Batch dependency check skipped (${e instanceof Error ? e.message : String(e)}).`);
+    return null;
+  }
+  const calls = batchCalls(bodies);
+  if (calls.length === 0) return null;
+  const waves = migrationWaves(ids, calls);
+  const label = (id: string, name?: string) => (name ? `${name} (${id})` : id);
+  warn?.(
+    `Batch members call each other: ${calls.map((c) => `${label(c.caller, c.callerName)} step ${c.step} calls ${label(c.callee, c.calleeName)}`).join("; ")}. ` +
+      "If a callee is new on the target, its caller fails (\"dependent … not found in destination\"). " +
+      `Safer: migrate in waves, callees first: ${waves.map((w, i) => `${i + 1}) ${w.join(",")}`).join("  ")}.`,
+  );
+  return { batchCalls: calls, waves };
+}
+
+/**
  * Resolve every id against the source environment. Returns null when there is
  * nothing to resolve (a COMPARISON_REPORT / MIGRATION_STATUS / custom module),
  * or when the source env can't be used — the profile's source env isn't
@@ -163,7 +200,13 @@ export async function resolveMigrationTargets(opts: {
     for (const id of opts.ids) {
       targets.push(isPd ? await resolvePd(id, sourceEnv) : await resolveAd(id, sourceEnv));
     }
-    return { sourceEnv, targets, resolvedIds: targets.map((t) => t.resolvedId) };
+    const resolvedIds = targets.map((t) => t.resolvedId);
+    const result: ResolveTargetsResult = { sourceEnv, targets, resolvedIds };
+    if (isAd && resolvedIds.length > 1) {
+      const deps = await batchDependencies(resolvedIds, opts.warn);
+      if (deps) Object.assign(result, deps);
+    }
+    return result;
   } catch (e) {
     // A MIGRATE_* error is already specific. Anything else (login failure,
     // expired creds, network) gets told what to do: the build is not triggered.
