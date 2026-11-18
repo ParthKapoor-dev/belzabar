@@ -22,6 +22,7 @@ import {
   verifyError,
   type CaseCheck,
   type ContractProblem,
+  type SuiteSnapshot,
   type SyncItem,
   WRITE_ACTIONS,
 } from "../../lib/test-cases/suite";
@@ -49,6 +50,9 @@ interface TestCaseArgs extends CaseFlags {
   apply?: boolean;
   prune?: boolean;
   wait?: boolean;
+  /** run-suite --wait: run only these case names (`--case`, repeatable) / names containing this text (`--match`). */
+  caseNames?: string[];
+  match?: string;
   yes: boolean;
 }
 
@@ -98,6 +102,8 @@ interface RunSuiteWaitData extends SuiteRunSummary {
   mode: "wait";
   chainUuid: string;
   testSuiteId: string | null;
+  /** Active cases left out by --case / --match. */
+  skipped: number;
 }
 
 const UUID = { name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing <uuid>." } as const;
@@ -127,7 +133,10 @@ export const args = defineSubcommands(
       positionals: [UUID],
       flags: { file: { type: "string", required: true, missingCode: "MISSING_FILE", missingMessage: "Missing --file argument." }, ...AD_YES_FLAG },
     },
-    "run-suite": { positionals: [UUID], flags: { wait: { type: "boolean" }, ...AD_YES_FLAG } },
+    "run-suite": {
+      positionals: [UUID],
+      flags: { wait: { type: "boolean" }, case: { type: "string", repeatable: true }, match: { type: "string" }, ...AD_YES_FLAG },
+    },
     "delete-suite": {
       positionals: [{ name: "test-suite-id", required: true, missingCode: "MISSING_SUITE_ID", missingMessage: "Missing <testSuiteId>." }],
       flags: { ...AD_YES_FLAG },
@@ -193,6 +202,24 @@ const RUN_SUITE_ASYNC_HINT =
   "The server runs the suite in the background and reports only by e-mail: `ad test-report` does not track it and the " +
   "suite's executionStatus ignores assertions. Use `ad test-case run-suite <uuid> --wait` for a per-case pass/fail result.";
 
+/** The active cases `--case` / `--match` pick (all of them when neither is given). */
+function selectCases(suite: SuiteSnapshot, names: string[] | undefined, match: string | undefined, methodName: string): SuiteSnapshot {
+  if (!names && match === undefined) return suite;
+  const available = suite.cases.map((c) => c.file.name);
+  const missing = (names ?? []).filter((n) => !available.includes(n));
+  if (missing.length > 0) {
+    throw new CliError(`No active test case named ${missing.map((n) => `'${n}'`).join(", ")} on ${methodName}.`, {
+      code: "AD_TESTCASE_NOT_FOUND",
+      details: { missing, available },
+    });
+  }
+  const cases = suite.cases.filter((c) => (names?.includes(c.file.name) ?? false) || (match !== undefined && c.file.name.includes(match)));
+  if (cases.length === 0) {
+    throw new CliError(`No active test case of ${methodName} has '${match}' in its name.`, { code: "AD_TESTCASE_NONE", details: { match, available } });
+  }
+  return { ...suite, cases };
+}
+
 async function fetchContract(uuid: string): Promise<HydratedMethod> {
   return adApi.fetchMethod(uuid, "v2");
 }
@@ -234,7 +261,18 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       case "bulk":
         return { ...base, action: "bulk", chainUuid: p.positionals.uuid, filePath: p.flags.file, yes: p.flags.yes };
       case "run-suite":
-        return { ...base, action: "run-suite", chainUuid: p.positionals.uuid, wait: p.flags.wait || undefined, yes: p.flags.yes };
+        if ((p.flags.case.length > 0 || p.flags.match !== undefined) && !p.flags.wait) {
+          throw new CliError("--case and --match need --wait (the server's own suite run always runs every case).", { code: "INVALID_ARGUMENT" });
+        }
+        return {
+          ...base,
+          action: "run-suite",
+          chainUuid: p.positionals.uuid,
+          wait: p.flags.wait || undefined,
+          caseNames: some(p.flags.case),
+          match: p.flags.match,
+          yes: p.flags.yes,
+        };
       case "delete":
         return { ...base, action: "delete", testCaseId: p.positionals.testCaseId, yes: p.flags.yes };
       case "delete-suite":
@@ -367,18 +405,20 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       case "run-suite": {
         if (args.wait) {
           const uuid = args.chainUuid!;
-          const [method, suite] = await Promise.all([adApi.fetchMethod(uuid, "v1"), fetchSuite(uuid)]);
-          if (suite.cases.length === 0) {
+          const [method, full] = await Promise.all([adApi.fetchMethod(uuid, "v1"), fetchSuite(uuid)]);
+          if (full.cases.length === 0) {
             await loadTestSuite(uuid); // METHOD_NOT_FOUND for an unknown / deleted uuid
-            throw new CliError(`${method.name} has no active test cases to run.`, { code: "AD_TESTCASE_NONE", details: { uuid, testSuiteId: suite.testSuiteId } });
+            throw new CliError(`${method.name} has no active test cases to run.`, { code: "AD_TESTCASE_NONE", details: { uuid, testSuiteId: full.testSuiteId } });
           }
+          const suite = selectCases(full, args.caseNames, args.match, method.name);
           await confirm(`run ${suite.cases.length} test case(s) of ${method.name} now, one execution each (real side effects)`, [
             ["Method UUID", uuid],
             ["Test cases", suite.cases.map((c) => c.file.name).join(", ")],
           ]);
           logIntent("POST", `/rest/api/automation/chain/test (x${suite.cases.length})`, { chainUuid: uuid, wait: true });
           const summary = await runSuiteCases(method, suite);
-          const data: RunSuiteWaitData = { action: "run-suite", mode: "wait", chainUuid: uuid, testSuiteId: suite.testSuiteId, ...summary };
+          const skipped = full.cases.length - suite.cases.length;
+          const data: RunSuiteWaitData = { action: "run-suite", mode: "wait", chainUuid: uuid, testSuiteId: suite.testSuiteId, skipped, ...summary };
           if (summary.passed < summary.total) {
             const bad = summary.cases.filter((c) => c.status !== "PASS");
             // only unevaluated assertions left: a separate code, so "not checked" never reads as a pass or a regression
@@ -545,7 +585,8 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         for (const u of c.unevaluated) ui.info(`      NOT CHECKED ${u} (wi-impl cannot evaluate it locally)`);
         for (const w of c.warnings ?? []) ui.warn(`      ${w}`);
       }
-      ui.text(`${data.passed} passed, ${data.failed} failed, ${data.errored} errored, ${data.notChecked} not checked of ${data.total}`);
+      const skipped = data.skipped > 0 ? ` (${data.skipped} not selected)` : "";
+      ui.text(`${data.passed} passed, ${data.failed} failed, ${data.errored} errored, ${data.notChecked} not checked of ${data.total}${skipped}`);
       return;
     }
     ui.success(`test-case ${data.action} complete`);

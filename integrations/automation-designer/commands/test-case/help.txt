@@ -18,9 +18,12 @@ Actions:
   bulk <uuid> --file <cases.json> [--yes] Create an array of test cases (one POST each)
   run-suite <uuid> [--yes]                Trigger the server's suite run (async: e-mail report
                                           only, not observable from the CLI)
-  run-suite <uuid> --wait [--yes]         Run every active case now (one /chain/test run
+  run-suite <uuid> --wait --yes [--case <name>]... [--match <text>]
+                                          Run every active case now (one /chain/test run
                                           each), evaluate its assertions, and return a
-                                          per-case PASS/FAIL/ERROR/NOT_CHECKED summary
+                                          per-case PASS/FAIL/ERROR/NOT_CHECKED summary.
+                                          --yes is required with --llm (it executes the
+                                          method: AD_CONFIRMATION_REQUIRED without it)
   delete-suite <testSuiteId> [--yes]      Delete a test suite
   export <uuid> --dir <root> [--prune]    Write the suite to <root>/<Category>/<method>/
                                           (method.json + cases/<name>.json); read-only
@@ -50,6 +53,11 @@ Flags:
                         failed or errored, AD_TESTCASE_NOT_CHECKED when the only
                         problem is assertions wi-impl could not evaluate;
                         AD_TESTCASE_NONE when the suite has no active case).
+  --case <name>         run-suite --wait: run only this case (repeatable; an unknown
+                        name is AD_TESTCASE_NOT_FOUND before anything runs).
+  --match <text>        run-suite --wait: run only the cases whose name contains the
+                        text (with --case: either matches). data.skipped counts the
+                        active cases left out.
   --apply               Perform the sync (without it sync only prints the plan).
   --prune               export: delete case files no longer on the server;
                         sync: delete server cases that have no file.
@@ -96,5 +104,6 @@ cases that did not set an input) run as null, the way the AD screen runs them.
 Examples:
   wi-impl ad test-case create 4a1b... --name greet.ok.1 --input name=World --assert "greetingOut=Hello World" --env <env> --yes
   wi-impl ad test-case run-suite 4a1b... --wait --env <env> --yes --llm
+  wi-impl ad test-case run-suite 4a1b... --wait --case greet.ok.1 --case greet.mars.2 --env <env> --yes --llm
   wi-impl ad test-case export 4a1b... --dir ./unit-tests/ad --env <env>
   wi-impl ad test-case sync ./unit-tests/ad/Sandbox/greet --env <env> --apply --yes --llm

@@ -113,6 +113,46 @@ describe("ad test-case run-suite --wait", () => {
     expect(by["belz_tst_s7c_t1.greet.quote.1"].status).toBe("NOT_CHECKED");
   });
 
+  // A20: with ERROR cases the per-case results stay in `data` (never moved into error.details).
+  test("every case ERROR → ok:false, the summary and rows still in data", async () => {
+    wire(() => null);
+    const r = await runCommand(testCaseCommand, ["run-suite", DRAFT, "--wait", "--yes"], { env: ENV });
+    expect(r.envelope?.ok).toBe(false);
+    expect(r.envelope?.error?.code).toBe("AD_TESTCASE_SUITE_FAILED");
+    expect(r.envelope?.error?.details).toBeUndefined();
+    expect(r.envelope?.data).toMatchObject({ total: 3, passed: 0, errored: 3, skipped: 0 });
+    expect((r.envelope?.data as any).cases.map((c: any) => c.status)).toEqual(["ERROR", "ERROR", "ERROR"]);
+  });
+
+  // A26: re-run only some cases.
+  test("--case / --match run only the selected cases", async () => {
+    wire((n) => `Hello ${n}`);
+    const r = await runCommand(testCaseCommand, ["run-suite", DRAFT, "--wait", "--case", "belz_tst_s7c_t1.greet.ok.1", "--yes"], { env: ENV });
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ total: 1, passed: 1, skipped: 2 });
+    expect(ad.ff.requests.filter((q) => q.url.endsWith("/chain/test"))).toHaveLength(1);
+    ad.restore();
+
+    wire((n) => `Hello ${n}`);
+    const m = await runCommand(testCaseCommand, ["run-suite", DRAFT, "--wait", "--match", "mars", "--case", "belz_tst_s7c_t1.greet.ok.1", "--yes"], { env: ENV });
+    expect((m.envelope?.data as any).cases.map((c: any) => c.name).sort()).toEqual(["belz_tst_s7c_t1.greet.mars.2", "belz_tst_s7c_t1.greet.ok.1"]);
+    expect(m.envelope?.data).toMatchObject({ total: 2, skipped: 1 });
+  });
+
+  test("--case with an unknown name, a --match with no hit, or without --wait: refused before any run", async () => {
+    for (const [argv, code] of [
+      [["--wait", "--case", "nope"], "AD_TESTCASE_NOT_FOUND"],
+      [["--wait", "--match", "zzz"], "AD_TESTCASE_NONE"],
+      [["--case", "belz_tst_s7c_t1.greet.ok.1"], "INVALID_ARGUMENT"],
+    ] as const) {
+      wire((n) => `Hello ${n}`);
+      const r = await runCommand(testCaseCommand, ["run-suite", DRAFT, ...argv, "--yes"], { env: ENV });
+      expect(r.envelope?.error?.code).toBe(code);
+      expect(ad.ff.requests.some((q) => q.method === "POST")).toBe(false);
+      ad.restore();
+    }
+  });
+
   test("--wait is a write: --llm without --yes is refused before anything runs", async () => {
     wire((n) => `Hello ${n}`);
     const r = await runCommand(testCaseCommand, ["run-suite", DRAFT, "--wait"], { env: ENV });
