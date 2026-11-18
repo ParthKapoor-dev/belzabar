@@ -46,8 +46,11 @@ SAFETY
     stray positionals and values on switches (e.g. --dry-run=true).
   - --source-env / --target-env must match the --profile's envs (e.g.
     devacme_qaacme = dev → qa via jenkins.profileEnvs); a contradiction aborts with
-    MIGRATE_ENV_PROFILE_MISMATCH. For a profile whose envs wi-impl can't derive,
-    pass both env flags or neither (MIGRATE_ENV_PROFILE_UNVERIFIED).
+    MIGRATE_ENV_PROFILE_MISMATCH. A missing env flag is taken from the
+    profile's mapped segment, so --profile alone (or with one env flag) names
+    both envs. For a segment that is not mapped, pass both env flags or neither
+    (MIGRATE_ENV_PROFILE_UNVERIFIED, details.unmappedSegments; the message
+    shows the jenkins.profileEnvs entry to add).
   - --module and --module-custom cannot be combined (MIGRATE_MODULE_CONFLICT).
   - *_COMPARISON_REPORT / *_MIGRATION_STATUS need --migration-id
     (MIGRATE_MIGRATION_ID_REQUIRED).

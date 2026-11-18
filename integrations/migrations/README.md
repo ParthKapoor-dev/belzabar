@@ -69,7 +69,10 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
 - **Profiles and envs.** A profile is `<source segment>_<target segment>`. Segments map to wi-impl
   envs only through `jenkins.profileEnvs` (keys case-insensitive); there is no built-in mapping.
   `--source-env`/`--target-env` must agree with the profile (`MIGRATE_ENV_PROFILE_MISMATCH`);
-  for an unmapped profile both must be given (`MIGRATE_ENV_PROFILE_UNVERIFIED`). An env pair
+  a missing one is taken from the profile's mapped segment, so with a mapped profile one flag
+  (or none) is enough. When an end stays unknown because its segment is unmapped, both flags
+  must be given (`MIGRATE_ENV_PROFILE_UNVERIFIED`, `details.unmappedSegments`, the message shows
+  the `profileEnvs` entry to add). An env pair
   alone derives the profile only when each env maps to exactly one segment
   (`MIGRATE_INVALID_ENV_PAIR`).
 - **Clients** are the job's `--- <client> ---` divider groups in the `PROFILE_NAME` choices,

@@ -158,49 +158,75 @@ export const RUN_ARGS = defineArgs({
 // Jenkins migrates another. Profile segment → wi-impl env comes from config
 // `jenkins.profileEnvs` (profiles are `<source segment>_<target segment>`).
 
+/** The wi-impl env a profile segment maps to in config `jenkins.profileEnvs` (keys lower-case). */
+function segmentEnv(segment: string | undefined): string | undefined {
+  if (!segment) return undefined;
+  const map = profileSegmentEnvs();
+  return Object.hasOwn(map, segment) ? map[segment] : undefined;
+}
+
+function profileSegments(profile: string): [string, string] | null {
+  const parts = profile.trim().toLowerCase().split("_");
+  return parts.length === 2 && parts[0] && parts[1] ? [parts[0], parts[1]] : null;
+}
+
 /** Derive {sourceEnv, targetEnv} from a profile like `devacme_qaacme`; null when a segment is unmapped. */
 export function envPairFromProfile(profile: string): { sourceEnv: string; targetEnv: string } | null {
-  const parts = profile.trim().toLowerCase().split("_");
-  if (parts.length !== 2) return null;
-  const map = profileSegmentEnvs();
-  const sourceEnv = Object.hasOwn(map, parts[0]!) ? map[parts[0]!] : undefined;
-  const targetEnv = Object.hasOwn(map, parts[1]!) ? map[parts[1]!] : undefined;
+  const segments = profileSegments(profile);
+  const sourceEnv = segmentEnv(segments?.[0]);
+  const targetEnv = segmentEnv(segments?.[1]);
   if (!sourceEnv || !targetEnv) return null;
   return { sourceEnv, targetEnv };
 }
 
-function assertProfileEnvConsistent(
+/**
+ * The run's envs: each end is the env flag or, when the flag is missing, the
+ * profile segment's `jenkins.profileEnvs` mapping (with no env flag at all,
+ * both stay unset). A flag that contradicts a
+ * mapped segment is MIGRATE_ENV_PROFILE_MISMATCH. When env flags are given but
+ * an end stays unknown (its segment is unmapped), wi-impl cannot check it:
+ * MIGRATE_ENV_PROFILE_UNVERIFIED, naming the segment to map.
+ */
+function resolveProfileEnvs(
   profile: string,
   sourceEnv: string | undefined,
   targetEnv: string | undefined,
-): void {
-  if (!sourceEnv && !targetEnv) return;
-  const pair = envPairFromProfile(profile);
-  if (!pair) {
-    // Unknown profile family: we cannot check the envs, so both must be given
-    // explicitly (a lone --source-env is too easy to get wrong silently).
-    if (!sourceEnv || !targetEnv) {
-      throw new CliError(
-        `Cannot derive environments from profile '${profile}'. Pass BOTH --source-env and --target-env ` +
-          `matching the profile, or omit both (ids are then sent to Jenkins unresolved).`,
-        { code: "MIGRATE_ENV_PROFILE_UNVERIFIED", details: { profile, sourceEnv, targetEnv } },
-      );
-    }
-    return;
-  }
+): { sourceEnv?: string; targetEnv?: string } {
+  const segments = profileSegments(profile);
+  const mapped = { source: segmentEnv(segments?.[0]), target: segmentEnv(segments?.[1]) };
   const mismatches: string[] = [];
-  if (sourceEnv && sourceEnv !== pair.sourceEnv) mismatches.push(`--source-env ${sourceEnv} (profile says ${pair.sourceEnv})`);
-  if (targetEnv && targetEnv !== pair.targetEnv) mismatches.push(`--target-env ${targetEnv} (profile says ${pair.targetEnv})`);
+  if (sourceEnv && mapped.source && sourceEnv !== mapped.source) mismatches.push(`--source-env ${sourceEnv} (profile says ${mapped.source})`);
+  if (targetEnv && mapped.target && targetEnv !== mapped.target) mismatches.push(`--target-env ${targetEnv} (profile says ${mapped.target})`);
   if (mismatches.length > 0) {
+    const pair = `${mapped.source ?? sourceEnv ?? "?"} → ${mapped.target ?? targetEnv ?? "?"}`;
     throw new CliError(
-      `Profile '${profile}' migrates ${pair.sourceEnv} → ${pair.targetEnv}, but ${mismatches.join(" and ")}. ` +
-        `Fix or drop the env flags.`,
+      `Profile '${profile}' migrates ${pair}, but ${mismatches.join(" and ")}. Fix or drop the env flags.`,
       {
         code: "MIGRATE_ENV_PROFILE_MISMATCH",
-        details: { profile, expected: pair, sourceEnv, targetEnv },
+        details: { profile, expected: { sourceEnv: mapped.source, targetEnv: mapped.target }, sourceEnv, targetEnv },
       },
     );
   }
+  // No env flags: the run derives what it can from the profile later (and a
+  // pre-flight it cannot run is a warning, not an error).
+  if (!sourceEnv && !targetEnv) return {};
+  const resolved = { sourceEnv: sourceEnv ?? mapped.source, targetEnv: targetEnv ?? mapped.target };
+  if (!resolved.sourceEnv || !resolved.targetEnv) {
+    // A lone env flag is too easy to get wrong silently: the other end must be
+    // known too, from a flag or the mapping.
+    const unmapped: string[] = [];
+    if (!resolved.sourceEnv) unmapped.push(segments?.[0] ?? profile);
+    if (!resolved.targetEnv) unmapped.push(segments?.[1] ?? profile);
+    const example = unmapped.map((seg) => `"${seg}": "<env>"`).join(", ");
+    throw new CliError(
+      `Cannot derive the ${!resolved.sourceEnv ? "source" : "target"} env of profile '${profile}': segment ` +
+        `${unmapped.map((s) => `'${s}'`).join(" and ")} is not mapped in jenkins.profileEnvs. Map it once in ` +
+        `~/.wi-impl/config.json ("jenkins": { "profileEnvs": { ${example} } }) and --profile alone names both envs; ` +
+        `or pass BOTH --source-env and --target-env.`,
+      { code: "MIGRATE_ENV_PROFILE_UNVERIFIED", details: { profile, sourceEnv, targetEnv, unmappedSegments: unmapped } },
+    );
+  }
+  return resolved;
 }
 
 export async function parseMigrateRunArgs(argv: string[]): Promise<MigrateRunArgs> {
@@ -235,14 +261,15 @@ export async function parseMigrateRunArgs(argv: string[]): Promise<MigrateRunArg
   }
 
   const resolvedProfile = profile || deriveProfileFromEnvPair(sourceEnv as string, targetEnv as string);
-  if (profile) assertProfileEnvConsistent(profile, sourceEnv, targetEnv);
+  // The profile names both ends: a missing env flag comes from jenkins.profileEnvs.
+  const envs = profile ? resolveProfileEnvs(profile, sourceEnv, targetEnv) : { sourceEnv, targetEnv };
 
   return {
     action: "run",
     client,
     profile: resolvedProfile,
-    sourceEnv,
-    targetEnv,
+    sourceEnv: envs.sourceEnv,
+    targetEnv: envs.targetEnv,
     migrateType,
     ids,
     migrationId,

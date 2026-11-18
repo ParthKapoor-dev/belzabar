@@ -119,6 +119,28 @@ describe("profile ↔ env consistency", () => {
     expect(err.code).toBe("MIGRATE_ENV_PROFILE_UNVERIFIED");
   });
 
+  test("a mapped profile names the missing env: --source-env alone gets the target from the profile (H3)", async () => {
+    const parsed = await parseMigrateRunArgs([...BASE, "--source-env", "acme-dev"]);
+    expect(parsed).toMatchObject({ profile: "devacme_qaacme", sourceEnv: "acme-dev", targetEnv: "acme-qa" });
+    const onlyTarget = await parseMigrateRunArgs([...BASE, "--target-env", "acme-qa"]);
+    expect(onlyTarget).toMatchObject({ sourceEnv: "acme-dev", targetEnv: "acme-qa" });
+  });
+
+  test("half-mapped profile: the mapped end is taken, the flag covers the other (H3)", async () => {
+    const parsed = await parseMigrateRunArgs(["--profile", "devacme_qa9x", "--module", "PD", "--ids", "a", "--target-env", "x-qa9"]);
+    expect(parsed).toMatchObject({ sourceEnv: "acme-dev", targetEnv: "x-qa9" });
+  });
+
+  test("UNVERIFIED names the unmapped segment and how to map it (H3)", async () => {
+    const err = await codeOf(
+      parseMigrateRunArgs(["--profile", "qa1cdelta_qa2cdelta", "--module", "PD", "--ids", "a", "--source-env", "orb-qa"]),
+    );
+    expect(err.code).toBe("MIGRATE_ENV_PROFILE_UNVERIFIED");
+    expect(err.message).toContain("'qa2cdelta' is not mapped in jenkins.profileEnvs");
+    expect(err.message).toContain('"profileEnvs": { "qa2cdelta": "<env>" }');
+    expect((err.details as any).unmappedSegments).toEqual(["qa2cdelta"]);
+  });
+
   test("unknown profile family + both envs explicit is accepted", async () => {
     const parsed = await parseMigrateRunArgs([
       "--profile", "qa1cdelta_qa2cdelta", "--module", "PD", "--ids", "a", "--source-env", "x-qa1", "--target-env", "x-qa2",
