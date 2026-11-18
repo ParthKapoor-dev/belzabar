@@ -303,13 +303,25 @@ function structuralDrift(
     if (!jsonEqual(before[from - 1], body.steps?.[i])) out.push(`steps[${i}] (fetched step ${from})`);
   });
   for (const list of ["inputs", "outputs", "variables"] as const) {
-    const prev = new Map(((edited[list] ?? []) as unknown[]).filter(isObj).map((f) => [f.key, f]));
+    const prev = ((edited[list] ?? []) as unknown[]).filter(isObj);
     ((body[list] ?? []) as unknown[]).forEach((f, i) => {
       if (!isObj(f) || s.touched.includes(`${list}[${i}]`)) return;
-      if (!jsonEqual(prev.get(f.key), f)) out.push(`${list}[${i}]`);
+      if (!jsonEqual(prev.find((p) => sameField(p, f)), f)) out.push(`${list}[${i}]`);
     });
   }
   return out;
+}
+
+/**
+ * The same method input / output / variable: by uuid, else by key, else by
+ * fieldCode. Older methods store outputs without a `key` (only fieldCode and
+ * a display name), so matching by key alone made every keyless output after
+ * the first look changed (AD_SERIALIZER_DRIFT on outputs[0]).
+ */
+function sameField(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  if (typeof a.uuid === "string" && typeof b.uuid === "string") return a.uuid.trim() === b.uuid.trim();
+  if (a.key !== undefined || b.key !== undefined) return a.key === b.key;
+  return a.fieldCode === b.fieldCode;
 }
 
 /**

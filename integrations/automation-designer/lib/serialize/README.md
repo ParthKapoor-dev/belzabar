@@ -23,7 +23,8 @@ Accepted keys: `name`, `summary`, `description`, `inputs[{code, testValue}]`,
   overlay that changes nothing fails the same way.
 - The planned body may differ from the live body only at target paths; anything else fails
   `AD_SERIALIZER_DRIFT`. Metadata, step ids, changelogs and permissions go back verbatim, which
-  the server's state check requires.
+  the server's state check requires. Method inputs, outputs and variables are matched by uuid,
+  else key, else fieldCode: older methods store outputs without a `key`.
 - Custom code keeps its stored encoding; SQL keeps its slot's `encodingType`.
 
 ## Structural ops (`ops.ts`)

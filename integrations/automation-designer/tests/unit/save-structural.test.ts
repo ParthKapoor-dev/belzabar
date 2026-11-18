@@ -448,3 +448,22 @@ describe("removals must not be mistaken for server-filled fields", () => {
   });
 });
 
+describe("method outputs without a key (C2)", () => {
+  // Older methods store outputs as {uuid, referenceUuid, fieldCode, name, type}: no `key`,
+  // and the code (fieldCode) differs from the display name.
+  const keyless = (): V2MethodResponse => {
+    const live = real(U);
+    live.outputs = [
+      { uuid: "4b59a22b0b2622bf2ddaa4f0f9efd7f9    ", fieldCode: "checkBool", name: "check", type: "BOOLEAN" },
+      { uuid: "4ff950a2cb949a415acea5cac00832ea    ", fieldCode: "reasons", name: "reasons", type: "ARRAY" },
+    ] as never;
+    return live;
+  };
+
+  test("a one-step SQL edit is not AD_SERIALIZER_DRIFT on outputs[0]", () => {
+    const p = plan(keyless(), [{ op: "update-step", step: 1, set: { sql: "select 42" } }]);
+    expect(p.applied).toEqual(["update-step 1 (sql)"]);
+    expect(p.body.outputs).toEqual(keyless().outputs);
+  });
+});
+
