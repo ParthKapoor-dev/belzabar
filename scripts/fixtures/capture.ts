@@ -14,7 +14,7 @@
 //   pd-search <name>           list PD rows by name (prints only, writes nothing)
 //   pd-list <PAGE|COMPONENT> [n]  list n DRAFT rows (prints only)
 //   tw <taskId> [pageSize=5]   Teamwork task + all comment pages (small pageSize → multi-page fixture)
-//   jenkins                    job parameters (profiles), latest finished build, console chunk
+//   jenkins [n,n,...]          job parameters (profiles), latest finished build, console chunk; or only the named builds
 //   resanitize <dir>           offline: re-run sanitize() over every *.json (sanitizeText over *.txt) under <dir> (rewrites only changed files)
 //
 // Safety: one env only — WI_IMPL_CAPTURE_ENV (required for captures, never built
@@ -227,7 +227,7 @@ async function teamwork(taskId: number, pageSize = 5) {
 
 // ── Jenkins ─────────────────────────────────────────────────────────────────
 
-async function jenkins() {
+async function jenkins(numbers: number[] = []) {
   const { assertJenkinsAuth, buildHeaders } = await import("@belzabar/migrations");
   const auth = assertJenkinsAuth(Config.getJenkins());
   const host = auth.baseUrl;
@@ -238,6 +238,23 @@ async function jenkins() {
     const res = await fetch(url, { method: "GET", headers: buildHeaders(auth) });
     return { status: res.status, text: await res.text(), headers: res.headers };
   };
+  const captureBuild = async (n: number) => {
+    const buildUrl = `${jobBase}/${n}/api/json`;
+    const b = await get(buildUrl);
+    if (b.status !== 200) throw new Error(`build ${n}: HTTP ${b.status}`);
+    writeFixture(MG_FIX, `build-${n}.json`, JSON.parse(deHost(b.text)), { source: { build: n }, endpoint: deHost(buildUrl), status: b.status });
+    const logUrl = `${jobBase}/${n}/logText/progressiveText?start=0`;
+    const l = await get(logUrl);
+    writeFixture(MG_FIX, `build-${n}-console-0.txt`, deHost(l.text), {
+      source: { build: n, start: 0, "X-Text-Size": l.headers.get("X-Text-Size"), "X-More-Data": l.headers.get("X-More-Data") },
+      endpoint: deHost(logUrl), status: l.status,
+    });
+  };
+  // Named builds only (e.g. a failed or background build a test replays).
+  if (numbers.length > 0) {
+    for (const n of numbers) await captureBuild(n);
+    return;
+  }
   const paramsUrl = `${jobBase}/api/json?tree=property[parameterDefinitions[name,type,description,choices,defaultParameterValue[value]]]`;
   const p = await get(paramsUrl);
   if (p.status !== 200) throw new Error(`params: HTTP ${p.status}`);
@@ -300,7 +317,7 @@ switch (target) {
   case "pd-search": await pdSearch(arg ?? ""); break;
   case "pd-list": await pdList(arg ?? "PAGE", Number(process.argv[4] ?? 40)); break;
   case "tw": await teamwork(Number(arg), Number(process.argv[4] ?? 5)); break;
-  case "jenkins": await jenkins(); break;
+  case "jenkins": await jenkins((arg ?? "").split(",").filter(Boolean).map(Number)); break;
   case "resanitize": resanitize(arg ?? "."); break;
   default:
     console.error("usage: bun scripts/fixtures/capture.ts <ad-v1|ad-v2|ad-defs|ad-categories|ad-notfound|pd ids|pd-search name|tw taskId|jenkins>");

@@ -3,7 +3,11 @@ import {
   assertJenkinsAuth,
   buildUrl,
   cacheCommandHint,
+  checkLanding,
   clearTargetCache,
+  failedEntitiesOf,
+  readFailureReasons,
+  statusModuleFor,
   envPairFromProfile,
   resolveClientForProfile,
   getBuild,
@@ -18,7 +22,7 @@ import {
   triggerBuild,
   writeArtifacts,
 } from "../../lib";
-import type { MigrateRunArgs, MigrateRunData, TriggerBuildInput } from "../../lib";
+import type { BackgroundCheck, MigrateRunArgs, MigrateRunData, TriggerBuildInput } from "../../lib";
 
 export const args = RUN_ARGS;
 
@@ -35,8 +39,9 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
   },
   async execute(args, context) {
     const auth = assertJenkinsAuth(Config.getJenkins());
-    const isHuman = context.outputMode === "human";
-    const showProgress = isHuman && !args.quiet;
+    // Progress goes to stderr in every mode (stdout keeps the envelope): a
+    // build runs for minutes and an agent must see it is alive.
+    const showProgress = !args.quiet;
 
     if (showProgress) logProgress(args.quiet, "Resolving profile + client…");
     const profile = args.profile as string;
@@ -177,11 +182,18 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
       }
 
       const parsed = parseJenkinsConsole(consoleText);
+      // Only a followed, real build of ids has a knowable outcome.
+      const realRun = args.follow && !args.dryRun && effectiveIds.length > 0;
+      const migrateType = String(args.migrateType);
+      const kind = /^AD_Method$/i.test(migrateType) ? "AD" : /^PD$/i.test(migrateType) ? "PD" : null;
+      // Background mode (HTTP 206): the script then fails the build, but the
+      // ids may still land. Jenkins' FAILURE says nothing about them.
+      const background = realRun && parsed.background;
       // --no-follow returns immediately; the build is in flight. Don't treat a
       // pending result as failure — the caller can check later with `migrate status`.
-      const success = args.follow
+      const success = background || (args.follow
         ? finalResult === "SUCCESS" && !parsed.failureDetected
-        : finalResult !== "FAILURE" && finalResult !== "ABORTED";
+        : finalResult !== "FAILURE" && finalResult !== "ABORTED");
 
       const data: MigrateRunData = {
         action: "run",
@@ -198,14 +210,57 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         resolvedSourceEnv: preflight?.sourceEnv,
       };
 
+      const pair = envPairFromProfile(profile);
+      const sourceEnv = preflight?.sourceEnv ?? args.sourceEnv ?? pair?.sourceEnv;
+      const targetEnv = args.targetEnv ?? pair?.targetEnv;
+      const nameOf = (id: string): string | undefined =>
+        parsed.reportSummary?.entities.find((e) => e.id?.toLowerCase() === id.toLowerCase())?.name
+          ?? preflight?.targets.find((t) => t.resolvedId.toLowerCase() === id.toLowerCase())?.name;
+      const labelOf = (id: string, name = nameOf(id)) => (name ? `${name} ${id}` : id);
+
+      // Ids whose target copy changed: every id, or only those that landed.
+      let changedIds = effectiveIds;
+      if (background) {
+        if (showProgress) {
+          logProgress(args.quiet, "Migration went to background (HTTP 206): Jenkins reports FAILURE, but the ids may still land.");
+        }
+        const check: BackgroundCheck = kind === "AD"
+          ? await (async () => {
+            if (showProgress && sourceEnv && targetEnv) logProgress(args.quiet, `Polling ${targetEnv} for the published versions on ${sourceEnv}…`);
+            return checkLanding(effectiveIds, sourceEnv, targetEnv, {
+              onPoll: (landed, total, waitedMs) => {
+                if (showProgress) logProgress(args.quiet, `  landed ${landed}/${total} after ${Math.round(waitedMs / 1000)}s`);
+              },
+            });
+          })()
+          : { sourceEnv, targetEnv, landed: [], notLanded: [...effectiveIds], rows: [], waitedMs: 0, skipped: "landing is checked for AD methods only" };
+        data.background = check;
+        if (check.skipped) {
+          data.outcome = "BACKGROUND";
+          context.warn(
+            `Migration build #${buildNumber} went to background mode (HTTP 206); whether the ids landed was not checked (${check.skipped}). ` +
+              `Compare each id on ${targetEnv ?? "the target"} with the source before re-running.`,
+          );
+        } else {
+          changedIds = check.landed;
+          data.outcome = check.notLanded.length === 0 ? "MIGRATED" : check.landed.length > 0 ? "PARTIAL" : "NOTHING_MIGRATED";
+          data.unchanged = check.notLanded;
+          for (const row of check.rows.filter((r) => !r.landed)) {
+            context.warn(
+              `${labelOf(row.id, row.name)}: not on ${targetEnv} after ${Math.round(check.waitedMs / 1000)}s ` +
+                `(source version ${row.sourceVersion ?? "?"}, target ${row.targetVersion ?? "none"}${row.error ? `; ${row.error}` : ""}). ` +
+                `The background migration may still finish: check with 'wi-impl ad show ${row.id} --env ${targetEnv}' before re-running.`,
+            );
+          }
+        }
+      }
+
       // The build wrote the TARGET env: drop wi-impl's cached copies there so the
-      // next `ad show` / `pd show --env <target>` reads fresh. Best effort, and
-      // only once the build is over (a followed, non-dry run).
-      const targetEnv = args.targetEnv ?? envPairFromProfile(profile)?.targetEnv;
-      const cacheKind = /^AD_Method$/i.test(String(args.migrateType)) ? "AD" : /^PD$/i.test(String(args.migrateType)) ? "PD" : null;
-      if (args.follow && !args.dryRun && targetEnv && cacheKind && effectiveIds.length > 0) {
-        if (showProgress) logProgress(args.quiet, `Clearing the cache of ${effectiveIds.length} id(s) on ${targetEnv}…`);
-        const cleared = await clearTargetCache(cacheKind, targetEnv, effectiveIds, {
+      // next `ad show` / `pd show --env <target>` reads fresh, and clear the
+      // target server's AD cache. Best effort, once the build is over.
+      if (realRun && targetEnv && kind && changedIds.length > 0) {
+        if (showProgress) logProgress(args.quiet, `Clearing the cache of ${changedIds.length} id(s) on ${targetEnv}…`);
+        const cleared = await clearTargetCache(kind, targetEnv, changedIds, {
           onRound: (round, of) => {
             if (showProgress) logProgress(args.quiet, `  server cache round ${round.round}/${of}: ${round.ok ? "sent" : "FAILED"}`);
           },
@@ -213,7 +268,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         data.cacheInvalidated = { env: targetEnv, ids: cleared.local };
         if (cleared.server) {
           data.serverCache = cleared.server;
-          const hint = cacheCommandHint(targetEnv, effectiveIds);
+          const hint = cacheCommandHint(targetEnv, changedIds);
           if ("skipped" in cleared.server) context.warn(`Target server cache NOT cleared (${cleared.server.skipped}). Clear it with: ${hint}`);
           else if (!cleared.server.verified) {
             context.warn(
@@ -224,18 +279,40 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         }
       }
 
+      // A FAILED entity fails the run even when Jenkins says SUCCESS. Its
+      // reason is in the console (`FAILED ITEM`) or, when only the report row
+      // says FAILED, in the service's status: read through a status build.
+      if (realRun && !background) {
+        const failed = failedEntitiesOf(parsed);
+        const missing = failed.filter((f) => !f.reason);
+        const statusModule = statusModuleFor(migrateType);
+        const migrationId = parsed.migrationId ?? parsed.reportSummary?.migrationId;
+        if (missing.length > 0 && statusModule && migrationId) {
+          if (showProgress) logProgress(args.quiet, `${missing.length} entit${missing.length === 1 ? "y" : "ies"} FAILED without a reason: reading it with a ${statusModule} build…`);
+          const { ref, items } = await readFailureReasons(auth, { client: input.client, profile, devopsTag: input.devopsTag }, statusModule, migrationId, missing.map((m) => m.id), {
+            onProgress: (line) => { if (showProgress) logProgress(args.quiet, line); },
+          });
+          data.statusBuild = ref;
+          for (const f of missing) {
+            const item = items.find((i) => i.id === f.id);
+            if (item?.reason) Object.assign(f, { reason: item.reason, kind: f.kind ?? item.kind, reasonFrom: "status-build" as const });
+          }
+          if (ref.error) context.warn(`Could not read the failure reason from a ${statusModule} build: ${ref.error}`);
+        }
+        for (const f of failed) f.name ??= nameOf(f.id);
+        if (failed.length > 0) data.failedEntities = failed;
+      }
+
       // A build can finish SUCCESS and change nothing: the script skips a
       // method whose version is the same on both sides (the report says
-      // UNCHANGED). Only a followed, real build of ids has a knowable outcome.
-      if (success && args.follow && !args.dryRun && effectiveIds.length > 0) {
+      // UNCHANGED).
+      if (success && realRun && !background) {
         const { outcome, unchanged } = migrationOutcome(effectiveIds, parsed);
         data.outcome = outcome;
         data.unchanged = unchanged;
         for (const id of unchanged) {
           const skip = parsed.skipped.find((s) => s.id === id);
-          const name = parsed.reportSummary?.entities.find((e) => e.id?.toLowerCase() === id)?.name
-            ?? preflight?.targets.find((t) => t.resolvedId.toLowerCase() === id)?.name;
-          const label = name ? `${name} ${id}` : id;
+          const label = labelOf(id);
           context.warn(skip
             ? `${label}: skipped, same version${skip.version !== undefined ? ` ${skip.version}` : ""} on source and target. ` +
               "Target PUBLISHED is unchanged, and the target DRAFT may have been overwritten. Bump the source version (publish again) and re-run."
@@ -251,22 +328,49 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         });
       }
 
+      const failedText = (data.failedEntities ?? [])
+        .map((f) => `${labelOf(f.id, f.name)}${f.kind ? ` (${f.kind})` : ""}: ${f.reason ?? "no reason given"}`)
+        .join("; ");
       if (!success) {
-        throw new CliError(`Migration build #${buildNumber} did not complete successfully (result=${finalResult}).`, {
-          code: "MIGRATE_RUN_FAILED",
-          details: {
-            buildUrl: data.buildUrl,
-            result: finalResult,
-            failureHints: parsed.failureHints,
-            report: parsed.reportSummary,
+        throw new CliError(
+          `Migration build #${buildNumber} did not complete successfully (result=${finalResult}).` +
+            (failedText ? ` Failed: ${failedText}` : ""),
+          {
+            code: "MIGRATE_RUN_FAILED",
+            details: {
+              buildUrl: data.buildUrl,
+              result: finalResult,
+              failureHints: parsed.failureHints,
+              report: parsed.reportSummary,
+              ...(data.failedEntities ? { failedEntities: data.failedEntities } : {}),
+              ...(data.statusBuild ? { statusBuild: data.statusBuild } : {}),
+            },
           },
-        });
+        );
+      }
+
+      if (data.failedEntities) {
+        throw new CliError(
+          `Migration build #${buildNumber} finished ${finalResult}, but ${data.failedEntities.length} entit` +
+            `${data.failedEntities.length === 1 ? "y" : "ies"} FAILED: ${failedText}`,
+          {
+            code: "MIGRATE_ENTITY_FAILED",
+            details: {
+              buildUrl: data.buildUrl,
+              result: finalResult,
+              failedEntities: data.failedEntities,
+              ...(data.statusBuild ? { statusBuild: data.statusBuild } : {}),
+              report: parsed.reportSummary,
+            },
+          },
+        );
       }
 
       if (args.strict && data.outcome && data.outcome !== "MIGRATED") {
-        const nothing = data.outcome === "NOTHING_MIGRATED";
+        const nothing = data.outcome === "NOTHING_MIGRATED" || data.outcome === "BACKGROUND";
         throw new CliError(
-          `Migration build #${buildNumber} finished ${finalResult} but ${nothing ? "migrated nothing" : "left some ids unchanged"}` +
+          `Migration build #${buildNumber} finished ${background ? "in background mode" : finalResult} but ` +
+            `${nothing ? "migrated nothing (that wi-impl could confirm)" : "left some ids unchanged"}` +
             ` (--strict): ${data.unchanged?.join(", ") || "no entity COMPLETED"}.`,
           {
             code: nothing ? "MIGRATE_NOTHING_MIGRATED" : "MIGRATE_PARTIALLY_MIGRATED",
@@ -289,7 +393,13 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
     if (!envelope.ok) return;
     const data = envelope.data as MigrateRunData;
     const headline = `Build #${data.buildNumber} ${data.result ?? "completed"} in ${(data.duration / 1000).toFixed(1)}s.`;
-    if (data.outcome === "NOTHING_MIGRATED") ui.warn(`${headline} Nothing was migrated: every entity was skipped or UNCHANGED.`);
+    if (data.background) {
+      const b = data.background;
+      ui.warn(
+        `Build #${data.buildNumber} went to background mode (HTTP 206; Jenkins says ${data.result ?? "nothing"}). ` +
+          (b.skipped ? `Landing not checked: ${b.skipped}.` : `${b.landed.length}/${b.landed.length + b.notLanded.length} id(s) landed on ${b.targetEnv}.`),
+      );
+    } else if (data.outcome === "NOTHING_MIGRATED") ui.warn(`${headline} Nothing was migrated: every entity was skipped or UNCHANGED.`);
     else if (data.outcome === "PARTIAL") ui.warn(`${headline} Partially migrated: ${data.unchanged?.length ?? 0} id(s) unchanged.`);
     else ui.success(headline);
     ui.table(
@@ -323,6 +433,14 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
           t.resolvedId,
           t.swapped ? `draft ${t.inputId} → published` : t.status ?? "",
         ]),
+      );
+    }
+
+    if (data.background && data.background.rows.length > 0) {
+      ui.section(`Landing on ${data.background.targetEnv} (polled ${Math.round(data.background.waitedMs / 1000)}s)`);
+      ui.table(
+        ["Name", "Id", "Source version", "Target version", "Landed"],
+        data.background.rows.map((r) => [r.name ?? "", r.id, String(r.sourceVersion ?? ""), String(r.targetVersion ?? ""), r.landed ? "yes" : `no${r.error ? ` (${r.error})` : ""}`]),
       );
     }
 
@@ -375,7 +493,8 @@ function withBuildRef(
     ? `build #${ref.buildNumber} (${ref.buildUrl}); check it with 'wi-impl migrate status ${ref.buildNumber}'`
     : ref.queueUrl ? `queue item ${ref.queueUrl}; find the build on ${ref.jobUrl}` : `a build on ${ref.jobUrl}`;
   // The build finished: a failed or strict-refused result is not a lost build.
-  const finished = code === "MIGRATE_RUN_FAILED" || code === "MIGRATE_NOTHING_MIGRATED" || code === "MIGRATE_PARTIALLY_MIGRATED";
+  const finished = code === "MIGRATE_RUN_FAILED" || code === "MIGRATE_ENTITY_FAILED" ||
+    code === "MIGRATE_NOTHING_MIGRATED" || code === "MIGRATE_PARTIALLY_MIGRATED";
   const hint = finished ? "" : ` A build WAS triggered — do NOT re-run 'migrate run'; ${where}.`;
   const prior = cli && isObj(cli.details) ? cli.details : {};
   const details: Record<string, unknown> = { ...prior, buildTriggered: true, jobUrl: ref.jobUrl };

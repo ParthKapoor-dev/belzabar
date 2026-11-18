@@ -25,6 +25,81 @@
     "status": 200
   },
   {
+    "file": "build-2446-console-0.txt",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-18T12:00:11.597Z",
+    "bytes": 32713,
+    "source": {
+      "build": 2446,
+      "start": 0,
+      "X-Text-Size": "32840",
+      "X-More-Data": null
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/2446/logText/progressiveText?start=0",
+    "status": 200
+  },
+  {
+    "file": "build-2446.json",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-18T12:00:11.252Z",
+    "bytes": 3387,
+    "source": {
+      "build": 2446
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/2446/api/json",
+    "status": 200
+  },
+  {
+    "file": "build-2447-console-0.txt",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-18T12:00:12.259Z",
+    "bytes": 27902,
+    "source": {
+      "build": 2447,
+      "start": 0,
+      "X-Text-Size": "27992",
+      "X-More-Data": null
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/2447/logText/progressiveText?start=0",
+    "status": 200
+  },
+  {
+    "file": "build-2447.json",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-18T12:00:11.922Z",
+    "bytes": 3440,
+    "source": {
+      "build": 2447
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/2447/api/json",
+    "status": 200
+  },
+  {
+    "file": "build-2789-console-0.txt",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-18T12:00:12.931Z",
+    "bytes": 29164,
+    "source": {
+      "build": 2789,
+      "start": 0,
+      "X-Text-Size": "29271",
+      "X-More-Data": null
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/2789/logText/progressiveText?start=0",
+    "status": 200
+  },
+  {
+    "file": "build-2789.json",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-18T12:00:12.589Z",
+    "bytes": 3648,
+    "source": {
+      "build": 2789
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/2789/api/json",
+    "status": 200
+  },
+  {
     "file": "job-parameters.json",
     "env": "acme-dev",
     "capturedAt": "2026-09-27T17:19:48.039Z",

@@ -1,4 +1,4 @@
-import type { MigrateOutcome, ParsedMigrationOutput, RawReport, ReportEntity, ReportEntityRow, ReportSummary } from "./types";
+import type { FailedEntity, MigrateOutcome, ParsedMigrationOutput, RawReport, ReportEntity, ReportEntityRow, ReportSummary } from "./types";
 
 export function summarizeReport(report: RawReport | undefined): ReportSummary | undefined {
   if (!report || typeof report !== "object") return undefined;
@@ -43,6 +43,22 @@ export function summarizeReport(report: RawReport | undefined): ReportSummary | 
     unchangedCount,
     entities,
   };
+}
+
+/**
+ * Every entity the build FAILED: the console's `FAILED ITEM` lines (with a
+ * reason) plus report rows whose status is FAILED / ERROR (without one).
+ */
+export function failedEntitiesOf(parsed: Pick<ParsedMigrationOutput, "failedItems" | "reportSummary">): FailedEntity[] {
+  const out: FailedEntity[] = parsed.failedItems.map((i) => ({ ...i, reasonFrom: "console" as const }));
+  for (const e of parsed.reportSummary?.entities ?? []) {
+    const id = e.id?.trim().toLowerCase();
+    if (!id || (e.status !== "FAILED" && e.status !== "ERROR")) continue;
+    const known = out.find((f) => f.id === id);
+    if (known) known.name ??= e.name;
+    else out.push({ id, name: e.name, status: e.status });
+  }
+  return out;
 }
 
 /**

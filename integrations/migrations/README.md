@@ -101,6 +101,22 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   rounds (`okRounds`, `verified`), or `skipped` when the target env is not configured locally; an
   unverified or skipped clear is a warning with the `wi-impl cache --env <env> --repeat 5 …`
   command to run. Best effort; it never fails the run.
+- **Failed entities.** A followed, real build fails when any entity FAILED, even when Jenkins
+  says SUCCESS: `MIGRATE_ENTITY_FAILED` (or `MIGRATE_RUN_FAILED` for a failed build), with
+  `details.failedEntities [{id, name, kind, reason, reasonFrom}]`. The reason comes from the
+  console's `FAILED ITEM` line; when only the report row says FAILED, wi-impl triggers the job's
+  `PD_MIGRATION_STATUS` / `AD_MIGRATION_STATUS` build for the migration id and reads it there
+  (`details.statusBuild`; `lib/status-build.ts`).
+- **Background mode.** When the service answers "Migration running in background (HTTP 206)" the
+  script fails the build, but the ids may still land. wi-impl does not report
+  `MIGRATE_RUN_FAILED`: for `AD_Method` it reads each id's published version on the source and
+  polls the target (15 s apart, up to 5 min; `lib/landing.ts`) until it matches.
+  `data.background {landed, notLanded, rows, waitedMs}` and `data.outcome` (MIGRATED / PARTIAL /
+  NOTHING_MIGRATED) come from that check; each id that did not land is a warning, and only the ids
+  that landed get the target cache clear. When it cannot check (envs unknown or not configured,
+  PD), `data.outcome` is `BACKGROUND` with `data.background.skipped`.
+- **Progress** lines (`[migrate] …`) go to stderr in every output mode, `--llm` included; `--quiet`
+  turns them off.
 - `--dry-run` only sends `DRY_RUN=true`: it is still a real Jenkins build.
 
 ## Testing

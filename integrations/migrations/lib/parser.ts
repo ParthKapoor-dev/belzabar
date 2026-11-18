@@ -1,5 +1,5 @@
 import { summarizeReport } from "./report";
-import type { ParsedMigrationOutput, RawReport, SkippedEntity } from "./types";
+import type { FailedItem, ParsedMigrationOutput, RawReport, SkippedEntity } from "./types";
 
 // Jenkins Pipeline step markers: the workflow plugin emits `ha:////<base64>`
 // blobs wrapped in a "conceal" SGR span (ESC[8m … ESC[0m). The base64 payload
@@ -78,6 +78,26 @@ export function parseConsoleWarnings(cleanedOutput: string): { skipped: SkippedE
   return { skipped, warnings };
 }
 
+// The script's per-entity failure line, in a migration build and in a
+// *_MIGRATION_STATUS build: `FAILED ITEM: <id> (<KIND>, <STATUS>) :: <reason>`.
+const FAILED_ITEM = /FAILED ITEM:\s*([0-9a-f]{32}|[0-9a-f-]{36})\s*\(([^,)]*),\s*([^)]*)\)\s*::\s*(.+)$/i;
+// The migration service answered 206: it carries on in the background, and the
+// script then ends with "unexpected status: None" and fails the build.
+const BACKGROUND = /Migration running in background \(HTTP 206\)/i;
+
+/** `FAILED ITEM:` lines of a cleaned console (first reason per id). */
+function parseFailedItems(cleanedOutput: string): FailedItem[] {
+  const items: FailedItem[] = [];
+  for (const raw of cleanedOutput.split(/\r?\n/)) {
+    const m = FAILED_ITEM.exec(raw.trim());
+    if (!m) continue;
+    const id = (m[1] as string).toLowerCase();
+    if (items.some((i) => i.id === id)) continue;
+    items.push({ id, kind: (m[2] as string).trim(), status: (m[3] as string).trim(), reason: (m[4] as string).trim() });
+  }
+  return items;
+}
+
 export function parseJenkinsConsole(raw: string): ParsedMigrationOutput {
   const cleanedOutput = stripAnsi(raw);
 
@@ -123,6 +143,8 @@ export function parseJenkinsConsole(raw: string): ParsedMigrationOutput {
     failureHints,
     skipped,
     warnings,
+    failedItems: parseFailedItems(cleanedOutput),
+    background: BACKGROUND.test(cleanedOutput),
     reportSummary: summarizeReport(reportRaw),
     rawReport: reportRaw,
   };

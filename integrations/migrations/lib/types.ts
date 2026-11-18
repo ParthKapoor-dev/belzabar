@@ -65,12 +65,63 @@ export interface SkippedEntity {
   version?: number;
 }
 
+/** One entity the migration service failed, with its reason. */
+export interface FailedItem {
+  id: string;
+  /** PAGE, COMPONENT, … as the script prints it. */
+  kind?: string;
+  status?: string;
+  reason?: string;
+  name?: string;
+}
+
+/** A failed entity reported by `migrate run` (the reason may come from a status build). */
+export interface FailedEntity extends FailedItem {
+  /** Where the reason came from: the build's console, or the *_MIGRATION_STATUS build. */
+  reasonFrom?: "console" | "status-build";
+}
+
+/** The *_MIGRATION_STATUS build `migrate run` triggered to read failure reasons. */
+export interface StatusBuildRef {
+  module: string;
+  buildNumber?: number;
+  buildUrl?: string;
+  result?: BuildInfo["result"];
+  /** Why the status build gave no reasons (not run, failed). */
+  error?: string;
+}
+
+/** Per id, after a background (HTTP 206) migration: did the source's published version land on the target? */
+export interface LandingRow {
+  id: string;
+  name?: string;
+  sourceVersion?: number;
+  targetVersion?: number;
+  landed: boolean;
+  /** Why the id could not be checked. */
+  error?: string;
+}
+
+export interface BackgroundCheck {
+  sourceEnv?: string;
+  targetEnv?: string;
+  /** Ids whose source version is on the target. */
+  landed: string[];
+  notLanded: string[];
+  rows: LandingRow[];
+  /** How long wi-impl polled the target. */
+  waitedMs: number;
+  /** Why landing could not be checked at all (envs unknown or not configured, PD). */
+  skipped?: string;
+}
+
 /**
  * What a followed, non-dry build actually changed: every requested entity
  * migrated, only some, or none (all skipped / UNCHANGED). The build result
- * alone says SUCCESS for all three.
+ * alone says SUCCESS for all three. BACKGROUND: the migration went to
+ * background mode (HTTP 206) and wi-impl could not check what landed.
  */
-export type MigrateOutcome = "MIGRATED" | "PARTIAL" | "NOTHING_MIGRATED";
+export type MigrateOutcome = "MIGRATED" | "PARTIAL" | "NOTHING_MIGRATED" | "BACKGROUND";
 
 export interface ParsedMigrationOutput {
   cleanedOutput: string;
@@ -89,6 +140,10 @@ export interface ParsedMigrationOutput {
   skipped: SkippedEntity[];
   /** Other `WARNING:` lines of the console, verbatim (run id prefix stripped). */
   warnings: string[];
+  /** `FAILED ITEM: <id> (<kind>, <status>) :: <reason>` lines. */
+  failedItems: FailedItem[];
+  /** The service answered "Migration running in background (HTTP 206)". */
+  background: boolean;
   reportSummary?: ReportSummary;
   rawReport?: RawReport;
 }
@@ -188,6 +243,15 @@ export interface MigrateRunData {
   cacheInvalidated?: { env: string; ids: string[] };
   /** The target server's AD cache clear (repeated rounds) after an AD_Method build. */
   serverCache?: TargetServerCache;
+  /**
+   * The migration went to background mode (HTTP 206; Jenkins then reports
+   * FAILURE). `outcome` comes from polling the target, not from the build.
+   */
+  background?: BackgroundCheck;
+  /** Entities the service FAILED (the run then fails MIGRATE_ENTITY_FAILED / MIGRATE_RUN_FAILED). */
+  failedEntities?: FailedEntity[];
+  /** The status build that read the failure reasons. */
+  statusBuild?: StatusBuildRef;
 }
 
 /**

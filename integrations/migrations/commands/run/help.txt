@@ -68,6 +68,8 @@ SAFETY
     MIGRATE_MODULE_REQUIRED / MIGRATE_INVALID_MODULE, MIGRATE_IDS_REQUIRED /
     MIGRATE_IDS_FILE_NOT_FOUND / MIGRATE_IDS_EMPTY, MIGRATE_INVALID_CLIENT,
     MIGRATE_INVALID_ENV_PAIR, MIGRATE_INVALID_FLAG_VALUE, MIGRATE_UNEXPECTED_ARG.
+  - A FAILED entity is MIGRATE_ENTITY_FAILED (see OUTCOME); it may trigger
+    one *_MIGRATION_STATUS build to read the reason.
     A declined prompt is MIGRATE_USER_ABORT.
   - Any failure AFTER the build was triggered (queue, console stream,
     timeout) keeps its code and carries details.buildTriggered=true plus
@@ -88,6 +90,25 @@ OUTCOME
   bump the source version (publish again) and re-run. data.parsed.skipped and
   data.report.entities (id, name, status, identical) carry the detail.
   The run stays ok (the build succeeded) unless --strict is given.
+
+  FAILED entities fail the run even when Jenkins says SUCCESS:
+  MIGRATE_ENTITY_FAILED (MIGRATE_RUN_FAILED when the build failed too), with
+  details.failedEntities [{id, name, kind, reason}]. When the console gives no
+  reason, wi-impl triggers the job's PD_MIGRATION_STATUS / AD_MIGRATION_STATUS
+  build for the migration id and takes the reason from it (details.statusBuild).
+
+BACKGROUND MODE
+  When the migration service answers "Migration running in background (HTTP
+  206)", Jenkins reports FAILURE but the ids may still land minutes later. The
+  run is not MIGRATE_RUN_FAILED: for AD_Method, wi-impl polls the target env
+  (15 s apart, up to 5 min) until each id's published version matches the
+  source's. data.background lists landed / notLanded ids per row (source and
+  target version); data.outcome is MIGRATED, PARTIAL or NOTHING_MIGRATED from
+  that check, each id that did not land is a warning, and only landed ids get
+  the target cache clear. Both envs must be known (profile mapping or env
+  flags) and configured. Otherwise, and for PD, data.outcome is BACKGROUND:
+  check the target yourself before re-running. Progress lines go to stderr in
+  every mode (--quiet turns them off).
 
 TARGET CACHE
   After a followed, non-dry AD_Method or PD build whose target env is known
