@@ -67,6 +67,29 @@ describe("evaluateExpectation", () => {
     expect(run(out, "arr~=9").pass).toBe(false);
   });
 
+  test("a double-quoted value is a JSON string: quotes, backslashes and line breaks are decoded (B8)", () => {
+    const said = { msg: 'Say "hi"', esc: 'Say \\"hi\\"', path: "C:\\tmp", two: "a\nb" };
+    expect(parseExpectation('msg="Say \\"hi\\""').expected).toBe('Say "hi"');
+    expect(run(said, 'msg="Say \\"hi\\""').pass).toBe(true); // the correct text passes
+    expect(run(said, 'esc="Say \\"hi\\""').pass).toBe(false); // the still-escaped text fails
+    expect(run(said, 'path="C:\\\\tmp"').pass).toBe(true);
+    expect(run(said, 'two="a\\nb"').pass).toBe(true);
+    // single quotes stay as typed
+    expect(run(said, "esc='Say \\\"hi\\\"'").pass).toBe(true);
+  });
+
+  test("a quoted JSON text matches the output wi-impl parsed from that text ('{}' vs {})", () => {
+    // the wire's text '{}' / '[1,2]' is parsed into an object / list before comparing
+    const parsed = { obj: {}, list: [1, 2], o: { a: 1 } };
+    expect(run(parsed, "obj='{}'").pass).toBe(true);
+    expect(run(parsed, 'obj="{}"').pass).toBe(true);
+    expect(run(parsed, "list='[1,2]'").pass).toBe(true);
+    expect(run(parsed, "o='{\"a\":1}'").pass).toBe(true);
+    expect(run(parsed, "o='{\"a\":2}'").pass).toBe(false);
+    expect(run(parsed, "obj='x'").pass).toBe(false);
+    expect(run(parsed, "obj!='{}'").pass).toBe(false);
+  });
+
   test("failures carry a reason", () => {
     const r = run(out, "greetingOut=Hello Mars");
     expect(r).toMatchObject({ pass: false, actual: "Hello World" });

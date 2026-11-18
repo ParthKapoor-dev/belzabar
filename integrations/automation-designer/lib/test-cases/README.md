@@ -19,7 +19,9 @@ Related: [`../test-run.ts`](../test-run.ts) runs one inline test and returns the
 
 - Operators: `out=v`, `out!=v`, `out~=v` (contains), `out>v`, `out<v`, `out>=v`, `out<=v`.
 - `out.a[0].b=v` looks inside an output that holds JSON.
-- The right-hand side is JSON when it parses, otherwise text; quote it to force a string.
+- The right-hand side is JSON when it parses, otherwise text; quote it to force a string. A
+  double-quoted value is a JSON string (`\"`, `\\`, `\n` are decoded); a single-quoted one is
+  taken as typed. A quoted JSON text (`'{}'`) equals an output wi-impl parsed from that text.
   Every test output arrives as text, so `"42"` equals `42`.
 - Any failure exits 1 with `AD_TEST_EXPECTATION_FAILED`.
 

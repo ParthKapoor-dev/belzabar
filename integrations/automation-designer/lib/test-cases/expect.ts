@@ -73,10 +73,24 @@ function invalid(source: string, why: string, code = "INVALID_EXPECTATION"): Cli
   return new CliError(`Invalid ${label} '${source}': ${why}. ${hint}`, { code });
 }
 
-/** Parse the right-hand side: quoted → string; JSON → value; else the text. */
+/**
+ * Parse the right-hand side: quoted → string; JSON → value; else the text.
+ * A double-quoted value is a JSON string, so its escapes are decoded
+ * (`"Say \"hi\""` is `Say "hi"`, `"a\nb"` holds a line break); a single-quoted one is taken as typed.
+ */
 function parseLiteral(raw: string): { value: unknown; text: string; quoted: boolean } {
   const t = raw.trim();
-  if (t.length >= 2 && ((t.startsWith("'") && t.endsWith("'")) || (t.startsWith('"') && t.endsWith('"')))) {
+  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
+    let inner = t.slice(1, -1);
+    try {
+      const decoded = JSON.parse(t);
+      if (typeof decoded === "string") inner = decoded;
+    } catch {
+      /* not a valid JSON string: keep the text between the quotes */
+    }
+    return { value: inner, text: inner, quoted: true };
+  }
+  if (t.length >= 2 && t.startsWith("'") && t.endsWith("'")) {
     const inner = t.slice(1, -1);
     return { value: inner, text: inner, quoted: true };
   }
@@ -157,7 +171,12 @@ function isScalar(v: unknown): boolean {
 function looseEqual(actual: unknown, e: Pick<Expectation, "expected" | "text" | "quoted">): boolean {
   // the test route leaves an empty or null output without a value (wi-impl reads it as null)
   if (actual === null && e.text === "") return true;
-  if (e.quoted) return isScalar(actual) && actual !== null && String(actual) === e.text;
+  if (e.quoted) {
+    if (isScalar(actual)) return actual !== null && String(actual) === e.text;
+    // wi-impl parses an output's JSON text ('{}' on the wire is {} here): compare the quoted text as that JSON
+    const parsed = tryJson(e.text);
+    return parsed !== e.text && deepEqual(actual, parsed);
+  }
   if (deepEqual(actual, e.expected)) return true;
   if (actual === undefined) return false;
   if (isScalar(actual) && actual !== null && String(actual) === e.text) return true;

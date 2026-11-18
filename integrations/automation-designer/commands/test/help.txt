@@ -39,8 +39,11 @@ Flags:
                         no value on the wire: it is reported as null and equals
                         `out=` and `out=null`.
                         The value is JSON when it parses, else text; quote it
-                        ('42') to compare as a string. Any failure exits 1 with
-                        AD_TEST_EXPECTATION_FAILED.
+                        ('42') to compare as a string. "…" is a JSON string, so
+                        \" \\ \n are decoded ('msg="Say \"hi\""' expects
+                        Say "hi"); '…' is taken as typed. A quoted JSON text
+                        ('{}') equals an output holding that JSON. Any failure
+                        exits 1 with AD_TEST_EXPECTATION_FAILED.
   --compare-published   Also run the same inputs against the published copy (a draft's
                         referenceId, or the draft of a published uuid) and diff every
                         output. This EXECUTES TWICE — both runs have real side effects,
