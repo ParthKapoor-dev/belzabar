@@ -432,20 +432,93 @@ describe("test-case export / sync", () => {
     expect((again.envelope?.data as any).counts).toEqual({ unchanged: 3, drift: 1 });
   });
 
-  test("sync --prune deletes server-only cases; a reserved name reports AD_TESTCASE_SYNC_FAILED", async () => {
+  /** A method dir holding only these case files. */
+  function methodDir(tag: string, cases: Array<Record<string, unknown>>): string {
+    const dir = join(scratchDir(tag), "m");
+    mkdirSync(join(dir, "cases"), { recursive: true });
+    writeFileSync(join(dir, "method.json"), JSON.stringify({ name: "belz_tst_s7c_t1", uuids: { [ENV]: DRAFT } }));
+    cases.forEach((c, i) => writeFileSync(join(dir, "cases", `${i}.json`), JSON.stringify(c)));
+    return dir;
+  }
+
+  test("sync --prune deletes server-only cases", async () => {
+    const server = wire();
+    const r = await run(["sync", methodDir("tc-prune-ok", [{ name: "t.new.1", inputs: { name: "r" } }]), "--apply", "--prune", "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(server.cases.filter((c) => c.active).map((c) => c.name)).toEqual(["t.new.1"]);
+  });
+
+  // A19: the deletes ran although a create failed on a name a deleted case holds, leaving the suite short.
+  test("a create that fails (reserved name) → no delete runs; the dry run says reserved names cannot be seen", async () => {
     const server = fakeServer();
     server.cases.push({ id: "gone", name: "t.reserved.1", description: "", inputs: [], assertions: [], active: false });
     wire(server);
-    const dir = join(scratchDir("tc-prune"), "m");
-    mkdirSync(join(dir, "cases"), { recursive: true });
-    writeFileSync(join(dir, "method.json"), JSON.stringify({ name: "belz_tst_s7c_t1", uuids: { [ENV]: DRAFT } }));
-    writeFileSync(join(dir, "cases", "r.json"), JSON.stringify({ name: "t.reserved.1", inputs: { name: "r" } }));
+    const dir = methodDir("tc-prune", [{ name: "t.reserved.1", inputs: { name: "r" } }]);
+    const dry = await run(["sync", dir, "--prune"]);
+    expect((dry.envelope?.data as any).notes[0]).toContain("cannot be seen in advance");
     const r = await run(["sync", dir, "--apply", "--prune", "--yes"]);
     expect(r.envelope?.error?.code).toBe("AD_TESTCASE_SYNC_FAILED");
     const plan = (r.envelope?.data as any).plan;
-    expect(plan.filter((p: any) => p.action === "delete")).toHaveLength(3);
     expect(plan.find((p: any) => p.action === "create").error.code).toBe("AD_TESTCASE_NAME_RESERVED");
-    expect(server.cases.filter((c) => c.active)).toHaveLength(0);
+    const deletes = plan.filter((p: any) => p.action === "delete");
+    expect(deletes).toHaveLength(3);
+    expect(deletes.map((p: any) => p.error.code)).toEqual(["AD_TESTCASE_SYNC_SKIPPED", "AD_TESTCASE_SYNC_SKIPPED", "AD_TESTCASE_SYNC_SKIPPED"]);
+    expect(ad.ff.requests.some((q) => q.method === "DELETE")).toBe(false);
+    expect(server.cases.filter((c) => c.active)).toHaveLength(3);
+  });
+
+  // A17: stale inputs (no longer on the method) blocked restoring cases with sync.
+  test("--drop-unknown-inputs leaves out inputs the method no longer has; the contract error suggests it", async () => {
+    const server = wire();
+    const okName = "belz_tst_s7c_t1.greet.ok.1";
+    const stale = { name: okName, inputs: { name: "Stale", removedInput: "x" }, assertions: [{ output: "greetingOut", op: "eq", expected: "Hello Stale" }] };
+    const dir = methodDir("tc-drop", [stale]);
+    const refused = await run(["sync", dir, "--apply", "--yes"]);
+    expect(refused.envelope?.error?.code).toBe("AD_TESTCASE_CONTRACT");
+    expect(refused.envelope?.error?.message).toContain("--drop-unknown-inputs");
+    const r = await run(["sync", dir, "--apply", "--drop-unknown-inputs", "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ verified: true, droppedInputs: [{ case: okName, key: "removedInput" }], problems: [] });
+    const put = ad.ff.requests.find((q) => q.method === "PUT")!.json();
+    expect(put.inputs.map((i: any) => i.fieldCode)).toEqual(["name"]);
+    expect(server.cases.find((c) => c.name === okName)!.inputs.map((i) => i.fieldCode)).toEqual(["name"]);
+    // the file itself is not changed
+    expect(JSON.parse(readFileSync(join(dir, "cases", "0.json"), "utf8")).inputs.removedInput).toBe("x");
+  });
+
+  // A18: a STRING/TEXT input holding "{}" runs as that text, not as "no value".
+  test("a text input holding \"{}\" is warned about on create, export and sync (raw {} is not)", async () => {
+    wire();
+    const c = await run(["create", DRAFT, "--name", "t.braces.1", "--input", "name={}", "--yes"]);
+    expect(c.envelope?.ok).toBe(true);
+    expect((c.envelope?.data as any).warnings).toEqual([{ case: "t.braces.1", kind: "text-input-braces", key: "name" }]);
+    expect(String(c.envelope?.meta?.warnings)).toContain('not as "no value"');
+    const e = await run(["export", DRAFT]);
+    expect((e.envelope?.data as any).warnings).toEqual([{ case: "t.braces.1", kind: "text-input-braces", key: "name" }]);
+    expect(String(e.envelope?.meta?.warnings)).toContain("t.braces.1: 'name'");
+    const dir = methodDir("tc-braces", [{ name: "t.braces.1", inputs: { name: "{}" } }]);
+    const sync = await run(["sync", dir]);
+    expect((sync.envelope?.data as any).problems).toEqual([{ case: "t.braces.1", kind: "text-input-braces", key: "name" }]);
+    ad.restore();
+
+    // the platform's raw {} ("no value") is not text: no warning
+    const server = fakeServer();
+    server.cases[0]!.inputs = [{ id: "i", fieldCode: "name", value: "{}", defaultValue: "{}" }];
+    wire(server);
+    const raw = await run(["export", DRAFT]);
+    expect((raw.envelope?.data as any).warnings).toEqual([]);
+  });
+
+  // A22: a description-only change was reported as synced.
+  test("a different description is reported as not synced, with a warning", async () => {
+    wire();
+    const ok1 = load("suite.json").testCases.find((x: any) => x.name.endsWith("ok.1"));
+    const file = { ...caseFromWire(ok1), description: "new wording" };
+    const r = await run(["sync", methodDir("tc-desc", [file]), "--apply", "--yes"]);
+    expect(r.envelope?.ok).toBe(true);
+    expect(r.envelope?.data).toMatchObject({ applied: false, counts: { drift: 1 }, descriptionNotApplied: [ok1.name] });
+    expect(String(r.envelope?.meta?.warnings)).toContain("give the case a new name");
+    expect(ad.ff.requests.some((q) => q.method !== "GET")).toBe(false);
   });
 
   test("sync without a uuid for the env fails clearly", async () => {

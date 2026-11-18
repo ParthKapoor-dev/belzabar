@@ -16,8 +16,10 @@ import {
   coerceInputValue,
   contractError,
   createCase,
+  dropUnknownInputs,
   fetchSuite,
   planSync,
+  textBracesWarning,
   updateCase,
   verifyError,
   type CaseCheck,
@@ -50,6 +52,7 @@ interface TestCaseArgs extends CaseFlags {
   apply?: boolean;
   prune?: boolean;
   dryRun?: boolean;
+  dropUnknownInputs?: boolean;
   wait?: boolean;
   /** run-suite --wait: run only these case names (`--case`, repeatable) / names containing this text (`--match`). */
   caseNames?: string[];
@@ -88,6 +91,8 @@ interface ExportData {
   method: MethodMeta;
   total: number;
   files: WriteResult;
+  /** Contract problems of the exported cases (stale inputs, text inputs holding "{}"). */
+  warnings: ContractProblem[];
 }
 
 /** `export` without --dir: the suite itself, printed as JSON (a backup `bulk --file` takes back). */
@@ -98,6 +103,7 @@ interface ExportStdoutData {
   method: MethodMeta;
   total: number;
   cases: CaseFile[];
+  warnings: ContractProblem[];
 }
 
 interface SyncData {
@@ -108,6 +114,11 @@ interface SyncData {
   counts: Record<string, number>;
   plan: SyncItem[];
   problems: ContractProblem[];
+  /** --drop-unknown-inputs: inputs left out because the method no longer declares them. */
+  droppedInputs?: Array<{ case: string; key: string }>;
+  /** Cases whose file description differs from the server's: the API cannot change it, so it is not written. */
+  descriptionNotApplied?: string[];
+  notes?: string[];
   checks?: CaseCheck[];
   verified?: boolean;
 }
@@ -177,7 +188,7 @@ export const args = defineSubcommands(
     },
     sync: {
       positionals: [{ name: "dir", required: true, missingCode: "MISSING_DIR", missingMessage: "Missing <methodDir>." }],
-      flags: { uuid: { type: "string" }, apply: { type: "boolean" }, prune: { type: "boolean" }, ...AD_YES_FLAG },
+      flags: { uuid: { type: "string" }, apply: { type: "boolean" }, prune: { type: "boolean" }, "drop-unknown-inputs": { type: "boolean" }, ...AD_YES_FLAG },
     },
   },
   {
@@ -225,10 +236,12 @@ async function buildCase(f: CaseFlags, method: HydratedMethod, base?: CaseFile):
   return c;
 }
 
-function contract(cases: CaseFile[], method: HydratedMethod): ContractProblem[] {
+function contract(cases: CaseFile[], method: HydratedMethod, warn: (m: string) => void): ContractProblem[] {
   const all = cases.flatMap((c) => checkCaseContract(c, method));
   const blocking = blockingProblems(all);
   if (blocking.length > 0) throw contractError(blocking, method.name);
+  const braces = textBracesWarning(all);
+  if (braces) warn(braces);
   return all;
 }
 
@@ -326,6 +339,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           chainUuid: p.flags.uuid,
           apply: p.flags.apply || undefined,
           prune: p.flags.prune || undefined,
+          dropUnknownInputs: p.flags.dropUnknownInputs || undefined,
           yes: p.flags.yes,
         };
     }
@@ -345,7 +359,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         const uuid = args.chainUuid!;
         const method = await fetchContract(uuid);
         const c = await buildCase(args, method);
-        const warnings = contract([c], method);
+        const warnings = contract([c], method, context.warn);
         const before = await fetchSuite(uuid);
         if (before.cases.some((s) => s.file.name === c.name)) {
           throw new CliError(`A test case named '${c.name}' already exists on ${method.name}; use \`test-case update\` or \`test-case sync\`.`, {
@@ -399,7 +413,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
               "To change it, create the case under a new name (`test-case create`) and delete this one.",
           );
         }
-        const warnings = contract([c], method);
+        const warnings = contract([c], method, context.warn);
         await confirm(`update test case ${id} ('${c.name}')`, [
           ["Method UUID", uuid],
           ["Test case ID", id],
@@ -430,7 +444,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         if (!Array.isArray(body)) throw new CliError(`${args.filePath} must hold an array of test cases (or an \`export\` backup).`, { code: "AD_TESTCASE_INVALID" });
         const cases = body.map((b, i) => parseCaseInput(b, `${args.filePath}[${i}]`));
         const method = await fetchContract(uuid);
-        const warnings = contract(cases, method);
+        const warnings = contract(cases, method, context.warn);
         const before = await fetchSuite(uuid);
         const taken = cases.filter((c) => before.cases.some((s) => s.file.name === c.name)).map((c) => c.name);
         const dupes = cases.filter((c, i) => cases.findIndex((d) => d.name === c.name) !== i).map((c) => c.name);
@@ -511,15 +525,18 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           inputs: Object.fromEntries(method.inputs.filter((i) => !i.hideInput).map((i) => [i.code, String(i.type ?? "")])),
           outputs: method.outputs.map((o) => o.code),
         };
+        const warnings = suite.cases.flatMap((c) => checkCaseContract(c.file, method));
+        const braces = textBracesWarning(warnings);
+        if (braces) context.warn(braces);
         if (args.dir === undefined) {
           const cases = suite.cases.map((c) => c.file);
-          return ok<TestCaseData>({ action: "export", chainUuid: uuid, env: context.env.name, method: meta, total: cases.length, cases });
+          return ok<TestCaseData>({ action: "export", chainUuid: uuid, env: context.env.name, method: meta, total: cases.length, cases, warnings });
         }
         const root = resolve(args.dir);
         const methodDir = methodDirFor(root, category, method.name);
         meta.uuids = { ...(readMethodMeta(methodDir)?.uuids ?? {}), ...meta.uuids };
         const files = writeMethodDir(methodDir, meta, suite.cases.map((c) => c.file), !!args.prune);
-        return ok<TestCaseData>({ action: "export", chainUuid: uuid, methodDir, method: meta, total: suite.cases.length, files });
+        return ok<TestCaseData>({ action: "export", chainUuid: uuid, methodDir, method: meta, total: suite.cases.length, files, warnings });
       }
 
       case "sync": {
@@ -537,16 +554,40 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         if (meta?.name && meta.name !== method.name) {
           context.warn(`method.json names '${meta.name}' but ${uuid} is '${method.name}' on ${context.env.name}.`);
         }
+        const droppedInputs = args.dropUnknownInputs ? dropUnknownInputs(files, method) : undefined;
         const problems = files.flatMap((c) => checkCaseContract(c, method));
         const plan = planSync(files, suite, !!args.prune);
         const counts: Record<string, number> = {};
         for (const it of plan) counts[it.action] = (counts[it.action] ?? 0) + 1;
         const data: SyncData = { action: "sync", chainUuid: uuid, methodDir, applied: false, counts, plan, problems };
+        if (droppedInputs) data.droppedInputs = droppedInputs;
+        const braces = textBracesWarning(problems);
+        if (braces) context.warn(braces);
+        // the API keeps a case's description: say so instead of reporting it as synced
+        const described = plan.filter((p) => p.changes?.includes("description")).map((p) => p.name);
+        if (described.length > 0) {
+          data.descriptionNotApplied = described;
+          context.warn(
+            `The description of ${described.join(", ")} differs from the server's and is not synced: the API cannot change a ` +
+              "case's description. To change one, give the case a new name in its file (sync creates it) and delete the old case (--prune).",
+          );
+        }
         const writes = plan.filter((p) => WRITE_ACTIONS.includes(p.action));
-        if (!args.apply || writes.length === 0) return ok<TestCaseData>(data);
+        if (counts.create && counts.delete) {
+          data.notes = [
+            "A name held by a deleted case cannot be seen in advance (the suite lists only active cases); such a create fails with " +
+              "AD_TESTCASE_NAME_RESERVED. --apply runs the creates and updates first and skips every delete if any of them fails.",
+          ];
+        }
+        const hasUnknown = problems.some((p) => p.kind === "unknown-input");
+        const dropHint = hasUnknown ? " Pass --drop-unknown-inputs to leave out the inputs the method no longer has." : "";
+        if (!args.apply || writes.length === 0) {
+          if (hasUnknown) context.warn(`Some cases have inputs ${method.name} no longer declares; --apply refuses them.${dropHint}`);
+          return ok<TestCaseData>(data);
+        }
 
         const blocking = blockingProblems(problems);
-        if (blocking.length > 0) return failWithData("AD_TESTCASE_CONTRACT", contractError(blocking, method.name).message, data);
+        if (blocking.length > 0) return failWithData("AD_TESTCASE_CONTRACT", contractError(blocking, method.name, dropHint).message, data);
         await confirm(`sync ${writes.length} test case change(s) to ${method.name}`, [
           ["Method UUID", uuid],
           ["Directory", methodDir],
@@ -620,6 +661,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
       ui.success(`Exported ${data.total} test case(s) to ${data.methodDir}`);
       ui.text(`${data.files.written.length} written, ${data.files.unchanged.length} unchanged`);
       for (const s of data.files.stale) ui.warn(`${data.files.removed.includes(s) ? "removed" : "stale (not on the server; --prune removes)"}: ${s}`);
+      for (const w of data.warnings) ui.warn(`${w.case}: ${w.kind} '${w.key}'`);
       return;
     }
     if (data.action === "sync") {
@@ -629,6 +671,8 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         ui.text(`${p.action.padEnd(9)} ${p.name}${extra}`);
       }
       for (const w of data.problems) ui.warn(`${w.case}: ${w.kind} '${w.key}'`);
+      for (const x of data.droppedInputs ?? []) ui.info(`${x.case}: dropped input '${x.key}' (not declared on the method)`);
+      for (const n of data.notes ?? []) ui.info(n);
       ui.text(Object.entries(data.counts).map(([k, v]) => `${k} ${v}`).join(", ") || "no test cases");
       for (const p of data.plan) if (p.error) ui.error(`${p.action} ${p.name}: ${p.error.message}`);
       if (!data.applied && data.plan.some((p) => WRITE_ACTIONS.includes(p.action))) ui.info("Dry run: re-run with --apply to write.");

@@ -17,4 +17,5 @@ wi-impl ad test-case export <uuid> --env <env>  :->  Print the suite as plain JS
 wi-impl ad test-case sync <methodDir> --env <env>  :->  Dry run (--env required: it picks method.json uuids[env]): plan create/update/drift/extra of the case files against the suite (method.json uuids[env])
 wi-impl ad test-case sync <methodDir> --uuid <uuid> --env <env>  :->  Sync to this chain instead of method.json's uuid for the env
 wi-impl ad test-case sync <methodDir> --apply --env <env> [--yes]  :->  Apply the plan and verify every case on read-back
-wi-impl ad test-case sync <methodDir> --apply --prune --env <env>  :->  Also delete server cases that have no file
+wi-impl ad test-case sync <methodDir> --apply --prune --env <env>  :->  Also delete server cases that have no file (skipped when a create/update fails)
+wi-impl ad test-case sync <methodDir> --apply --drop-unknown-inputs --env <env>  :->  Leave out case inputs the method no longer declares (restore old cases onto a changed method)

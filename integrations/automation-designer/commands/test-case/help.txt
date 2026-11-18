@@ -39,7 +39,7 @@ Actions:
                                           `bulk --file backup.json` restores. Plain JSON
                                           even in an agent session; --llm wraps it in
                                           the envelope
-  sync <methodDir> [--uuid <u>] [--apply] [--prune] [--yes]
+  sync <methodDir> [--uuid <u>] [--apply] [--prune] [--drop-unknown-inputs] [--yes]
                                           Diff the case files against the suite (dry run);
                                           --apply creates/updates them
 
@@ -77,6 +77,10 @@ Flags:
   --apply               Perform the sync (without it sync only prints the plan).
   --prune               export: delete case files no longer on the server;
                         sync: delete server cases that have no file.
+  --drop-unknown-inputs sync: leave out the inputs the method no longer declares
+                        (in memory; the files are not changed), listed in
+                        data.droppedInputs. Without it such a case is refused
+                        (AD_TESTCASE_CONTRACT unknown-input) on --apply.
   --yes, -y             Skip the interactive confirmation prompt (write actions)
   --help, -h            Show this help message.
 
@@ -102,9 +106,20 @@ separate git repo and sync to any env):
 Sync plan: create (only in files), update (inputs/assertions differ: PUT),
 drift (only the description differs: reported, the API cannot change it),
 delete (--prune: only on the server), extra (only on the server, left alone),
-conflict (duplicate name on the server). Names are never released: DELETE is
-a soft delete, so a deleted case's name cannot be created again
-(AD_TESTCASE_NAME_RESERVED) — rename the file's case instead.
+conflict (duplicate name on the server). A description that differs (drift,
+or with an update) is never written: data.descriptionNotApplied names those
+cases and a warning says so; to change one, rename the case in its file and
+--prune the old one. Names are never released: DELETE is a soft delete, so a
+deleted case's name cannot be created again (AD_TESTCASE_NAME_RESERVED) —
+rename the file's case instead. The suite lists only active cases, so the dry
+run cannot see such a name (data.notes says so); --apply runs creates and
+updates first and, if any fails, skips every delete (AD_TESTCASE_SYNC_SKIPPED)
+so the suite is not left short.
+
+Warnings (data.warnings / problems, kind text-input-braces): a TEXT/STRING
+input that holds the text "{}" runs as that two-character string, not as
+"no value"; remove the input to leave it unset (create, update, bulk, export,
+sync).
 
 run-suite without --wait (live): /testsuite/execute returns at once
 ("you will receive an email"); `ad test-report` is not per chain and stays all

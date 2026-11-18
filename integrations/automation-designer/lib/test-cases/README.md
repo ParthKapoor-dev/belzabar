@@ -51,7 +51,9 @@ with `--apply`.
   0 cases). The first `POST /chain/testcases/{uuid}` creates the suite.
 - `POST` stores every field. `PUT` replaces only inputs and assertions and silently keeps
   name, description and active.
-- `DELETE` is soft and the name stays reserved (`AD_TESTCASE_NAME_RESERVED`).
+- `DELETE` is soft and the name stays reserved (`AD_TESTCASE_NAME_RESERVED`). No route lists
+  deleted cases (the suite GET ignores `includeInactive`-style parameters), so `applySync`
+  skips every delete once a create or update has failed.
 - The bulk route rejects the documented body shape, so `bulk` creates cases one at a time.
 - Stored input values are JSON text of a `{"value": …}` wrapper and come back re-spaced:
   compare decoded, never bytes.
@@ -59,6 +61,8 @@ with `--apply`.
   `testsuite/report` is not per chain, and the suite status does not reflect failing
   assertions. That is why `run-suite --wait` runs the cases itself, like `ad test --case`.
 
-Every write is contract-checked first and verified by reading the suite back.
+Every write is contract-checked first and verified by reading the suite back. The check also
+reports, without blocking, a TEXT/STRING input holding the text `"{}"` (`text-input-braces`):
+unlike the platform's raw `{}`, it runs as that string.
 
 Up: [`../README.md`](../README.md)
