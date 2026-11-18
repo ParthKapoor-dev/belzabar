@@ -35,6 +35,11 @@ Arguments:
                             {"op":"set-input"|"set-variable"|"set-output", "key":K,
                              type?, required?, description?, default?}   (upsert)
                             {"op":"remove-input"|"remove-variable"|"remove-output", "key":K}
+                              A method output stored without a key (older
+                              methods; every run fails "key is null") is
+                              named by its fieldCode: set-output K repairs it
+                              in place (adds the key, keeps its uuid), and
+                              remove-output K removes it.
                         Step numbers N/M are ALWAYS positions in the fetched draft
                         (as `wi-impl ad show` prints them), whatever other ops do.
                         after:0 = first; no anchor = append.

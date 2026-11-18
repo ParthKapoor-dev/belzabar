@@ -229,9 +229,13 @@ export function applyStructuralOps(
     const arr = ((body as Record<string, unknown>)[list] ??= []) as Obj[];
     const key = typeof raw.key === "string" ? raw.key.trim() : "";
     if (!key) return p.bad(`${where}.key`, "required");
-    const idx = arr.findIndex((f) => isObj(f) && f.key === key);
+    let idx = arr.findIndex((f) => isObj(f) && f.key === key);
+    // An output stored without a key (older methods; every run then fails "key is null")
+    // is named by its fieldCode: set-output repairs it, remove-output removes it.
+    const keyless = idx < 0 && kind === "output" ? arr.findIndex((f) => isObj(f) && (f.key === undefined || f.key === null || f.key === "") && f.fieldCode === key) : -1;
     if (verb === "remove") {
       for (const k of Object.keys(raw)) if (k !== "op" && k !== "key") p.unknown.push(`${where}.${k}`);
+      if (keyless >= 0) idx = keyless;
       if (idx < 0) return p.drop(`${where}.key`, `the method has no ${kind} '${key}'`);
       arr.splice(idx, 1);
       touchedFields[list]!.delete(key);
@@ -240,7 +244,10 @@ export function applyStructuralOps(
     }
     const given: Obj = { ...raw };
     delete given.op;
-    if (idx >= 0) {
+    if (keyless >= 0) {
+      arr[keyless] = mergeField({ ...arr[keyless]!, key }, given, kind, where, p);
+      res.applied.push(`set-output ${key} (repaired: the output had no key)`);
+    } else if (idx >= 0) {
       arr[idx] = mergeField(arr[idx]!, given, kind, where, p);
       res.applied.push(`set-${kind} ${key} (updated)`);
     } else {

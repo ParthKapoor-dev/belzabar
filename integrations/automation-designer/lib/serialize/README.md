@@ -44,7 +44,8 @@ Ops apply in order. Step numbers are **always positions in the fetched draft** (
 - `after: 0` places a step first; no anchor appends. Several steps after one anchor keep op
   order.
 - `set-input` / `set-variable` / `set-output` upsert; `remove-input` / `remove-variable` /
-  `remove-output` delete.
+  `remove-output` delete. A method output stored without a `key` is matched by its fieldCode:
+  `set-output` repairs it in place and `remove-output` removes it.
 - In `update-step`, `set.outputs` merges by fieldCode and `set.replaceOutputs` replaces the
   list (listed fieldCodes keep their uuid).
 - `update-step` `set.service` retargets a service step (`retarget`). Inputs and outputs whose

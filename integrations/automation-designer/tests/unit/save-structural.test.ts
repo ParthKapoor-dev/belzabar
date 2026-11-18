@@ -554,5 +554,11 @@ describe("method outputs without a key (C2)", () => {
     expect(p.applied).toEqual(["update-step 1 (sql)"]);
     expect(p.body.outputs).toEqual(keyless().outputs);
   });
+
+  test("C21: set-output repairs a keyless output matched by fieldCode (no second output); remove-output removes one", () => {
+    const p = plan(keyless(), [{ op: "set-output", key: "checkBool" }, { op: "remove-output", key: "reasons" }]);
+    expect(p.applied).toEqual(["set-output checkBool (repaired: the output had no key)", "remove-output reasons"]);
+    expect(p.body.outputs).toEqual([{ uuid: "4b59a22b0b2622bf2ddaa4f0f9efd7f9    ", key: "checkBool", fieldCode: "checkBool", name: "check", type: "BOOLEAN" }] as never);
+  });
 });
 
