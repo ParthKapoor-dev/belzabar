@@ -3,7 +3,9 @@
 // (tests/fixtures/validate/online, read-only endpoints, see manifest.json).
 
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { Config } from "@belzabar/core";
+import { rmSync } from "fs";
+import { join } from "path";
+import { BELZ_CONFIG_DIR, Config } from "@belzabar/core";
 import { fakeFetch, fixture, respond, withTempEnvConfig, type FakeFetch, type TempEnvConfig } from "@belzabar/core/testing";
 import { validateOnline, type ValidationResult } from "../../lib/validate/index";
 import { buildDryRunPayload, DRY_RUN_GATE, dryRunExecutedSteps, type ApiContract } from "../../lib/validate/online";
@@ -16,6 +18,10 @@ let ff: FakeFetch;
 let testResponse: () => unknown = () => ({ debugResult: { services: [1, 2, 3].map((orderIndex) => ({ orderIndex, executionStatus: { executed: false, failed: false } })) } });
 
 beforeEach(() => {
+  // The L4 caches live in the shared test home and are scoped by env name, so a
+  // file that ran earlier under t-dev (any `ad save` test) may have filled them:
+  // start every test cold so the lookups below really go to fakeFetch.
+  for (const dir of ["api-contracts", "service-accounts"]) rmSync(join(BELZ_CONFIG_DIR, "cache", dir), { recursive: true, force: true });
   cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
   ff = fakeFetch({
     [`GET ${API}/Helpers.Legacy/automation-apis/echo`]: fixture(`${ON}/api-echo.json`),
