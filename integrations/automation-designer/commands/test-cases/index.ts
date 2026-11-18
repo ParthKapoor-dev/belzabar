@@ -4,6 +4,7 @@ import { loadTestSuite, type TestSuiteSummary } from "../../lib/test-suite";
 
 interface TestCasesArgs {
   uuid: string;
+  full: boolean;
 }
 
 type TestCasesData = TestSuiteSummary;
@@ -11,17 +12,17 @@ type TestCasesData = TestSuiteSummary;
 export const args = defineArgs({
   command: "wi-impl ad test-cases",
   positionals: [{ name: "uuid", required: true, missingCode: "MISSING_UUID", missingMessage: "Missing UUID argument." }],
-  flags: {},
+  flags: { full: { type: "boolean" } },
 });
 
 const command: CommandModule<TestCasesArgs, TestCasesData> = {
   parseArgs(argv) {
-    const { positionals } = args.parse(argv);
-    return { uuid: positionals.uuid };
+    const { positionals, flags } = args.parse(argv);
+    return { uuid: positionals.uuid, full: flags.full };
   },
-  async execute({ uuid: uuidArg }) {
+  async execute({ uuid: uuidArg, full }) {
     const uuid = resolveMethodRef(uuidArg);
-    return ok<TestCasesData>(await loadTestSuite(uuid));
+    return ok<TestCasesData>(await loadTestSuite(uuid, { full }));
   },
   presentHuman(envelope, ui) {
     if (!envelope.ok) return;
@@ -42,6 +43,12 @@ const command: CommandModule<TestCasesArgs, TestCasesData> = {
         ["ID", "Name", "Active", "Inputs", "Assertions"],
         data.testCases.map(c => [c.id, c.name, c.active ? "Yes" : "No", c.inputCount, c.assertionCount]),
       );
+    }
+    for (const c of data.testCases) {
+      if (c.inputs === undefined) continue;
+      ui.section(`${c.name} (${c.id})`);
+      if (c.description) ui.text(c.description);
+      ui.object({ inputs: c.inputs, ...(c.inputExtras ? { inputExtras: c.inputExtras } : {}), assertions: c.assertions });
     }
   },
 };

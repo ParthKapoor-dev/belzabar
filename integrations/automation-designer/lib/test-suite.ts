@@ -4,6 +4,7 @@
 
 import { adApi } from "./api/index";
 import * as v2 from "./api/v2";
+import { caseFromWire, type CaseFile } from "./test-cases/case-file";
 
 interface TestCaseRow {
   id: string;
@@ -11,6 +12,11 @@ interface TestCaseRow {
   active: boolean;
   inputCount: number;
   assertionCount: number;
+  /** `full`: the case as a case file (decoded inputs, assertions as {output, op, expected} or {expression}). */
+  description?: string;
+  inputs?: CaseFile["inputs"];
+  inputExtras?: CaseFile["inputExtras"];
+  assertions?: CaseFile["assertions"];
 }
 
 export interface TestSuiteSummary {
@@ -23,7 +29,7 @@ export interface TestSuiteSummary {
 }
 
 /** Summarise a `/chain/testsuite/service-chain/{uuid}` body (suite object, bare array, or null). */
-function summarizeTestSuite(uuid: string, body: unknown): TestSuiteSummary {
+function summarizeTestSuite(uuid: string, body: unknown, full: boolean): TestSuiteSummary {
   const suite: Record<string, unknown> =
     body && typeof body === "object" && !Array.isArray(body)
       ? (body as Record<string, unknown>)
@@ -32,13 +38,22 @@ function summarizeTestSuite(uuid: string, body: unknown): TestSuiteSummary {
   const cases: unknown[] = Array.isArray(suite.testCases) ? suite.testCases : [];
   const testCases: TestCaseRow[] = cases
     .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
-    .map((c) => ({
-      id: typeof c.id === "string" ? c.id : "",
-      name: typeof c.name === "string" ? c.name : "",
-      active: c.active !== false,
-      inputCount: Array.isArray(c.inputs) ? c.inputs.length : 0,
-      assertionCount: Array.isArray(c.assertions) ? c.assertions.length : 0,
-    }));
+    .map((c) => {
+      const row: TestCaseRow = {
+        id: typeof c.id === "string" ? c.id : "",
+        name: typeof c.name === "string" ? c.name : "",
+        active: c.active !== false,
+        inputCount: Array.isArray(c.inputs) ? c.inputs.length : 0,
+        assertionCount: Array.isArray(c.assertions) ? c.assertions.length : 0,
+      };
+      if (!full) return row;
+      const file = caseFromWire(c);
+      row.description = file.description;
+      row.inputs = file.inputs;
+      if (file.inputExtras) row.inputExtras = file.inputExtras;
+      row.assertions = file.assertions;
+      return row;
+    });
 
   return {
     uuid,
@@ -51,13 +66,14 @@ function summarizeTestSuite(uuid: string, body: unknown): TestSuiteSummary {
 }
 
 /**
- * Fetch + summarise a method's suite. The suite route answers an unknown (or
+ * Fetch + summarise a method's suite (`full`: each row also carries the case's
+ * description, inputs and assertions). The suite route answers an unknown (or
  * soft-deleted) uuid exactly like a method without a suite, so when there is
  * no suite the method itself is read on V2: a missing method throws
  * METHOD_NOT_FOUND instead of an ok envelope with 0 cases.
  */
-export async function loadTestSuite(uuid: string): Promise<TestSuiteSummary> {
-  const summary = summarizeTestSuite(uuid, await adApi.listTestCases(uuid));
+export async function loadTestSuite(uuid: string, opts: { full?: boolean } = {}): Promise<TestSuiteSummary> {
+  const summary = summarizeTestSuite(uuid, await adApi.listTestCases(uuid), !!opts.full);
   if (summary.testSuiteId === null && summary.total === 0) await v2.fetchRawMethod(uuid);
   return summary;
 }

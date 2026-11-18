@@ -56,6 +56,39 @@ describe("test-case list == test-cases", () => {
     });
   });
 
+  // A23: reading one case's inputs and checks needed `export --dir` (files on disk).
+  test("test-cases --full gives each case's description, inputs and assertions", async () => {
+    wire({
+      ...SUITE,
+      testCases: [
+        {
+          id: "tc1",
+          name: "happy",
+          description: "the happy path",
+          inputs: [{ fieldCode: "name", value: '{"value": "World"}', defaultValue: '{"value": "World"}' }],
+          assertions: [
+            { mode: "advance", conditionExpression: "#{greetingOut} eq 'Hello World'" },
+            { mode: "advance", conditionExpression: "#{greetingOut.length()} eq 11" },
+          ],
+        },
+      ],
+    });
+    const r = await runCommand(testCasesCommand, [UUID, "--full"], { env: "t-dev" });
+    expect((r.envelope?.data as any).testCases[0]).toEqual({
+      id: "tc1",
+      name: "happy",
+      active: true,
+      inputCount: 1,
+      assertionCount: 2,
+      description: "the happy path",
+      inputs: { name: "World" },
+      assertions: [{ output: "greetingOut", op: "eq", expected: "Hello World" }, { expression: "#{greetingOut.length()} eq 11" }],
+    });
+    // without --full the rows stay counts only
+    const plain = await runCommand(testCasesCommand, [UUID], { env: "t-dev" });
+    expect((plain.envelope?.data as any).testCases[0].inputs).toBeUndefined();
+  });
+
   test("an unknown uuid is METHOD_NOT_FOUND, not an empty ok suite", async () => {
     ad.install({
       [`GET /rest/api/automation/chain/testsuite/service-chain/${UUID}`]: respond({ status: 200, text: "null" }),

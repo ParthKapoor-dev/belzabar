@@ -3,7 +3,11 @@ Usage: wi-impl ad test-cases <uuid> [flags]
 List the persistent test cases attached to a method's test suite.
 
 Flags:
+  --full   Also give each case's description, inputs (decoded, as in a case file;
+           inputExtras when the stored wrapper carries more) and assertions
+           ({output, op, expected}, or {expression} for raw SpEL)
   --llm    Emit a JSON envelope with {testSuiteId, testCases[], total}
 
-Example:
+Examples:
   wi-impl ad test-cases 4a1b2c3d...
+  wi-impl ad test-cases 4a1b2c3d... --full --llm

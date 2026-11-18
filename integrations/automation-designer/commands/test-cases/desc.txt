@@ -1,1 +1,2 @@
 wi-impl ad test-cases <uuid>  :->  List persistent test cases attached to a method
+wi-impl ad test-cases <uuid> --full  :->  Also show each case's description, inputs and assertions (case-file form)
