@@ -3,7 +3,7 @@ import { assertNoParameterMarkers, assertReadOnlySql, assertWriteSql } from "./r
 import { fetchRawMethod, testMethodMultipart } from "../api/v1";
 import { describeTestFailure } from "../payload-builder";
 import type { V1RawMethodResponse } from "../types/v1-wire";
-import { fetchSqlDatabases, fetchSqlSelectOperation, fetchSqlUpdateOperation, fetchSqlInsertOperation, fetchSqlModifyOperation, fetchExecutableCategory } from "./api";
+import { envUnavailableError, fetchSqlDatabases, fetchSqlSelectOperation, fetchSqlUpdateOperation, fetchSqlInsertOperation, fetchSqlModifyOperation, fetchExecutableCategory } from "./api";
 import { buildSqlReadPayload } from "./payload";
 import {
   describeSqlFailure,
@@ -183,6 +183,8 @@ export async function executeSqlUpdate(options: ExecuteSqlReadOptions): Promise<
 
   const response = await testMethodMultipart(formData);
   if (!response.ok) {
+    const down = envUnavailableError(response.status);
+    if (down) throw down;
     const failure = await describeTestFailure(response);
     throw new CliError(`SQL update execution request failed (${failure.message})`, {
       code: "SQL_UPDATE_EXECUTION_FAILED",
@@ -331,6 +333,8 @@ export async function executeSqlInsert(options: ExecuteSqlReadOptions): Promise<
 
   const response = await testMethodMultipart(formData);
   if (!response.ok) {
+    const down = envUnavailableError(response.status);
+    if (down) throw down;
     const failure = await describeTestFailure(response);
     throw new CliError(`SQL insert execution request failed (${failure.message})`, {
       code: "SQL_INSERT_EXECUTION_FAILED",
@@ -422,6 +426,8 @@ export async function executeSqlModify(options: ExecuteSqlReadOptions): Promise<
 
   const response = await testMethodMultipart(formData);
   if (!response.ok) {
+    const down = envUnavailableError(response.status);
+    if (down) throw down;
     const failure = await describeTestFailure(response);
     throw new CliError(`SQL modify execution request failed (${failure.message})`, {
       code: "SQL_MODIFY_EXECUTION_FAILED",
@@ -469,6 +475,8 @@ export async function executeSqlReadQuery(options: ExecuteSqlReadOptions): Promi
 
   const response = await testMethodMultipart(formData);
   if (!response.ok) {
+    const down = envUnavailableError(response.status);
+    if (down) throw down;
     const failure = await describeTestFailure(response);
     throw new CliError(`SQL execution request failed (${failure.message})`, {
       code: "SQL_EXECUTION_FAILED",

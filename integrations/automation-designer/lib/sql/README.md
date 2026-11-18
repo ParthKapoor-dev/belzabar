@@ -6,7 +6,7 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
 
 | Path | Contents |
 |---|---|
-| `api.ts` | `db_service` lookups: the DB auth list, the read / update / insert / modify operation contracts, and `fetchExecutableCategory` (a PUBLIC chain category to stamp on the posted chain; a lookup that finds none is retried once, and only a found one is cached per process). |
+| `api.ts` | `envUnavailableError` (a 502/503/504 gateway answer is `ENV_UNAVAILABLE`) and the `db_service` lookups: the DB auth list, the read / update / insert / modify operation contracts, and `fetchExecutableCategory` (a PUBLIC chain category to stamp on the posted chain; a lookup that finds none is retried once, and only a found one is cached per process). |
 | `executor.ts` | `sqlDefaultDb`, `resolveSqlDbContext`, `load*Context` (operation + template chain) and `executeSqlReadQuery` / `executeSqlUpdate` / `executeSqlInsert` / `executeSqlModify`. |
 | `payload.ts` | `buildSqlReadPayload`: the template chain with the DB account and query written into its SQL slot. |
 | `read-only.ts` | The client-side gates: read (`checkReadOnlySql`, `assertReadOnlySql`, `splitExplain`, `buildExplainSql`), write (`checkWriteSql`, `assertWriteSql`) and bind parameters (`findParameterMarker`, `assertNoParameterMarkers`). |
@@ -45,6 +45,9 @@ which is posted as an inline test (`POST /rest/api/automation/chain/test`).
   `SQL_NO_EXECUTABLE_CATEGORY`. The lookup has failed once on an env where it worked seconds
   later, so it is retried once (after 1.5 s) and the error names the failed lookup
   (`details.lookupFailure`) and says to run the statement again.
+- **Stopped env.** A stopped env answers every request with an HTML 503 page, and the first
+  request is the database list, so it read as `SQL_DATABASES_FETCH_FAILED`. A 502 / 503 / 504
+  from the `db_service` lookups or the statement POST is `ENV_UNAVAILABLE`, naming the env.
 - `update`, `insert`, `modify` and `tui` are writes: explicit `--env`, confirmation or `--yes`.
 
 New SQL modes are added as subcommands of `wi-impl ad sql` (`defineSubcommands` in

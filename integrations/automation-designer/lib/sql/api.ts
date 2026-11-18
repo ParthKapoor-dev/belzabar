@@ -1,5 +1,34 @@
-import { apiFetch, ensureApiOk, expectFound, readJsonOrNull } from "@belzabar/core";
+import { apiFetch, CliError, Config, ensureApiOk, expectFound, readJsonOrNull } from "@belzabar/core";
 import type { ExecutableCategoryLookup, SqlDatabaseAuth, SqlSelectOperation, SqlUpdateOperation, SqlInsertOperation, SqlModifyOperation } from "./types";
+
+/** Gateway answers of a stopped or restarting env (the env's front end is up, the app is not). */
+const ENV_DOWN_STATUSES = new Set([502, 503, 504]);
+
+/**
+ * ENV_UNAVAILABLE for a gateway answer: a stopped env answers every request
+ * with an HTML 503 page, and the first request `ad sql` makes is the database
+ * list, so it read as SQL_DATABASES_FETCH_FAILED: a database problem.
+ */
+export function envUnavailableError(status: number): CliError | undefined {
+  if (!ENV_DOWN_STATUSES.has(status)) return undefined;
+  let env = "";
+  try {
+    env = Config.activeEnv.name;
+  } catch {
+    /* no active env */
+  }
+  return new CliError(
+    `Environment${env ? ` '${env}'` : ""} is unavailable (HTTP ${status}): the server is stopped or restarting. ` +
+      `This is not a database problem; run the statement again once the environment is up.`,
+    { code: "ENV_UNAVAILABLE", details: { status, ...(env ? { env } : {}) } },
+  );
+}
+
+async function ensureSqlApiOk(response: Response, opts: Parameters<typeof ensureApiOk>[1]): Promise<void> {
+  const down = response.ok ? undefined : envUnavailableError(response.status);
+  if (down) throw down;
+  await ensureApiOk(response, opts);
+}
 
 export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
   const response = await apiFetch("/rest/api/automation-systems/db_service/auth", {
@@ -7,7 +36,7 @@ export async function fetchSqlDatabases(): Promise<SqlDatabaseAuth[]> {
     authMode: "Bearer",
   });
 
-  await ensureApiOk(response, { code: "SQL_DATABASES_FETCH_FAILED", message: (res) => `Failed to fetch SQL databases (${res.status})` });
+  await ensureSqlApiOk(response, { code: "SQL_DATABASES_FETCH_FAILED", message: (res) => `Failed to fetch SQL databases (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlDatabaseAuth[]>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
@@ -18,7 +47,7 @@ export async function fetchSqlSelectOperation(): Promise<SqlSelectOperation> {
     authMode: "Bearer",
   });
 
-  await ensureApiOk(response, { code: "SQL_SELECT_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL read operation metadata (${res.status})` });
+  await ensureSqlApiOk(response, { code: "SQL_SELECT_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL read operation metadata (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlSelectOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
@@ -29,7 +58,7 @@ export async function fetchSqlUpdateOperation(): Promise<SqlUpdateOperation> {
     authMode: "Bearer",
   });
 
-  await ensureApiOk(response, { code: "SQL_UPDATE_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL update operation metadata (${res.status})` });
+  await ensureSqlApiOk(response, { code: "SQL_UPDATE_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL update operation metadata (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlUpdateOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
@@ -40,7 +69,7 @@ export async function fetchSqlInsertOperation(): Promise<SqlInsertOperation> {
     authMode: "Bearer",
   });
 
-  await ensureApiOk(response, { code: "SQL_INSERT_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL insert operation metadata (${res.status})` });
+  await ensureSqlApiOk(response, { code: "SQL_INSERT_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL insert operation metadata (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlInsertOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }
@@ -51,7 +80,7 @@ export async function fetchSqlModifyOperation(): Promise<SqlModifyOperation> {
     authMode: "Bearer",
   });
 
-  await ensureApiOk(response, { code: "SQL_MODIFY_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL modify operation metadata (${res.status})` });
+  await ensureSqlApiOk(response, { code: "SQL_MODIFY_METADATA_FETCH_FAILED", message: (res) => `Failed to fetch SQL modify operation metadata (${res.status})` });
 
   return expectFound(await readJsonOrNull<SqlModifyOperation>(response), { notFoundCode: "SQL_EMPTY_RESPONSE", notFoundMessage: "The db_service endpoint answered with an empty body." });
 }

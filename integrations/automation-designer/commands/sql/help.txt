@@ -31,6 +31,8 @@ Errors:
   A statement the database refuses fails with SQL_QUERY_FAILED (run/explain) or
   SQL_<UPDATE|INSERT|MODIFY>_QUERY_FAILED; error.message holds the database's own
   message (e.g. 'column "x" does not exist (position 8)'), details.query the query.
+  A stopped or restarting environment (HTTP 502/503/504) is ENV_UNAVAILABLE, not a
+  database error: run the statement again once the environment is up.
 
 Bind parameters:
   The server reads a lone '?' and a ':name' (also the ':6' of arr[1:6]) in
