@@ -1,6 +1,6 @@
 import type { JenkinsClient, MigrateType } from "./constants";
 import type { ServerCacheClear } from "@belzabar/core/platform";
-import type { BatchCall, StepCheck } from "./chain-steps";
+import type { BatchCall, CalleeCheck, StepCheck } from "./chain-steps";
 import type { BuildInfo, TriggerBuildInput } from "./jenkins";
 
 type YesNo = "Y" | "N";
@@ -143,6 +143,10 @@ export interface ParsedMigrationOutput {
   warnings: string[];
   /** `FAILED ITEM: <id> (<kind>, <status>) :: <reason>` lines. */
   failedItems: FailedItem[];
+  /** The service's `message` when it refused the whole batch (`Migration failed (HTTP n): {…}`). */
+  serviceErrors: string[];
+  /** Called methods (`Category/name`) that message says the target lacks. */
+  missingDependents: string[];
   /** The service answered "Migration running in background (HTTP 206)". */
   background: boolean;
   reportSummary?: ReportSummary;
@@ -218,6 +222,8 @@ export interface ResolvedTarget {
   name: string;
   kind: "PD" | "AD";
   status?: string;
+  /** An AD DRAFT's published sibling (warned about, never swapped). */
+  publishedId?: string;
   swapped: boolean;
 }
 
@@ -256,6 +262,8 @@ export interface MigrateRunData {
   /** Pre-flight: AD batch members that call each other, and the suggested waves (callees first). */
   batchCalls?: BatchCall[];
   waves?: string[][];
+  /** Pre-flight: the methods the AD batch calls, looked up on the target by category/name. */
+  calleeCheck?: CalleeCheck;
   /** After an AD build: migrated methods whose target step inputs differ from the source. */
   stepCheck?: StepCheck;
 }

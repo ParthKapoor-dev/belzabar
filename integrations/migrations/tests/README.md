@@ -6,7 +6,7 @@ transport is faked with `fakeFetch` from `@belzabar/core/testing`.
 | Directory | Contents |
 |---|---|
 | [`unit/`](unit/README.md) | `bun test` files |
-| `fixtures/real/` | Sanitized Jenkins captures (job parameters; builds 1904 (AD, migrated), 2446 (PD, entity FAILED), 2447 (its PD_MIGRATION_STATUS build), 2789 (AD, background mode)) with `manifest.json` |
+| `fixtures/real/` | Sanitized Jenkins captures (job parameters; builds 1904 (AD, migrated), 2446 (PD, entity FAILED), 2447 (its PD_MIGRATION_STATUS build), 2789 (AD, background mode), 2848 (AD, batch refused: a called method missing on the target)) with `manifest.json` |
 
 Run from the repo root with `bun test integrations/migrations`, or `bun test` in the package
 (`../bunfig.toml` preloads a temporary `WI_IMPL_HOME`, so no real `~/.wi-impl` is touched).

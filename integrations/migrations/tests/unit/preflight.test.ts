@@ -94,6 +94,30 @@ describe("migrate pre-flight", () => {
     expect(err.details).toMatchObject({ preflightEnv: "acme-dev" });
   });
 
+  test("K18: an AD draft uuid is warned about (target published unchanged), naming the published uuid; not swapped", async () => {
+    const DRAFT = "438b502717b979a6a8539691d673fc39";
+    const PUBLISHED = "41f705aff6c768c033b4ad9840b69dde";
+    const LONE = "4bf743d021f23cc8510581e88c23b43b";
+    cfg = withTempEnvConfig({ envs: { "acme-dev": { url: "https://acme-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
+    ff = fakeFetch([
+      { url: `https://acme-dev.test/rest/api/automation/chain/${DRAFT}`, response: { uuid: DRAFT, name: "program.sync", state: "DRAFT", automationState: "DRAFT", referenceId: PUBLISHED } },
+      { url: `https://acme-dev.test/rest/api/automation/chain/${PUBLISHED}`, response: { uuid: PUBLISHED, name: "program.sync", automationState: "PUBLISHED", referenceId: DRAFT } },
+      { url: `https://acme-dev.test/rest/api/automation/chain/${LONE}`, response: { uuid: LONE, name: "never.published", automationState: "DRAFT" } },
+      { url: /\/chain\/v2\//, response: { steps: [] } },
+    ]).install();
+    const w = collect();
+    const res = await resolveMigrationTargets({ profile: "devacme_qaacme", migrateType: "AD_Method", ids: [DRAFT, PUBLISHED, LONE], warn: w.warn });
+    expect(res?.resolvedIds).toEqual([DRAFT, PUBLISHED, LONE]);
+    expect(res?.targets[0]).toMatchObject({ status: "DRAFT", publishedId: PUBLISHED, swapped: false });
+    expect(res?.targets[1]).toMatchObject({ status: "PUBLISHED", swapped: false });
+    expect(res?.targets[1]!.publishedId).toBeUndefined();
+    const drafts = w.warnings.filter((m) => m.includes("AD DRAFT"));
+    expect(drafts).toHaveLength(2);
+    expect(drafts[0]).toContain(`program.sync (${DRAFT}) is an AD DRAFT (editor) uuid: the build migrates only the draft`);
+    expect(drafts[0]).toContain(`migrate its published uuid ${PUBLISHED} instead`);
+    expect(drafts[1]).toContain("no published version on 'acme-dev'");
+  });
+
   test("a 404 keeps the specific MIGRATE_TARGET_NOT_FOUND", async () => {
     cfg = withTempEnvConfig({ envs: { "acme-dev": { url: "https://acme-dev.test" } }, jenkins: { profileEnvs: PROFILE_ENVS } });
     ff = fakeFetch([{ url: /chain\/abcdefabcdefabcdefabcdefabcdefab/, response: respond({ status: 404, json: {} }) }]).install();
@@ -146,6 +170,26 @@ describe("migrate run: confirmation gate", () => {
       expect(r.envelope?.error?.code).toBe("MIGRATE_CONFIRMATION_REQUIRED");
       expect((r.envelope?.error?.details as any).details).toMatchObject({ Profile: "devacme_qaacme", Ids: "p1" });
     }
+    expect(ff.requests.some((q) => q.method === "POST")).toBe(false);
+  });
+
+  test("K18: an AD confirmation says the draft is copied too, and carries the pre-flight warnings", async () => {
+    const DRAFT = "438b502717b979a6a8539691d673fc39";
+    cfg = withTempEnvConfig({
+      envs: { "acme-dev": { url: "https://acme-dev.test" } },
+      jenkins: { profileEnvs: PROFILE_ENVS, baseUrl: "https://jk.test", user: "u", password: "p", passwordEncoding: "plain", migrationJob: "A/b" },
+    });
+    ff = fakeFetch([
+      JOB_PARAMS,
+      { url: `https://acme-dev.test/rest/api/automation/chain/${DRAFT}`, response: { uuid: DRAFT, name: "program.sync", automationState: "DRAFT", referenceId: "41f705aff6c768c033b4ad9840b69dde" } },
+      { url: /\/chain\/v2\//, response: { steps: [] } },
+    ]).install();
+    const r = await runCommand(runCmd, ["--profile", "devacme_qaacme", "--module", "AD_Method", "--ids", DRAFT, "--quiet"]);
+    expect(r.envelope?.error?.code).toBe("MIGRATE_CONFIRMATION_REQUIRED");
+    const details = (r.envelope?.error?.details as any).details;
+    expect(details.Copies).toContain("published version AND its draft");
+    expect(details.Warnings).toContain("is an AD DRAFT (editor) uuid");
+    expect(details.Warnings).toContain("Called-method check skipped: target env 'acme-qa' is not configured");
     expect(ff.requests.some((q) => q.method === "POST")).toBe(false);
   });
 });

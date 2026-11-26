@@ -98,6 +98,28 @@ function parseFailedItems(cleanedOutput: string): FailedItem[] {
   return items;
 }
 
+// The service refused the whole batch: `… => Migration failed (HTTP 200): {"response": {"status": "FAILED", "message": …}}`.
+const SERVICE_FAILED = /Migration failed \(HTTP \d+\):/g;
+// Its message when a called method is missing on the target (looked up by category/name).
+const MISSING_DEPENDENTS = /dependent method\(s\) were not found in the destination environment:\s*\[([^\]]*)\]/i;
+
+/** The service's messages for a refused batch, and the called methods it says the target lacks. */
+function parseServiceErrors(cleanedOutput: string): { serviceErrors: string[]; missingDependents: string[] } {
+  const serviceErrors: string[] = [];
+  const missingDependents: string[] = [];
+  for (const m of cleanedOutput.matchAll(SERVICE_FAILED)) {
+    const body = extractJsonAfter(cleanedOutput.slice(m.index), m[0]) as { response?: { message?: unknown }; message?: unknown } | undefined;
+    const message = body?.response?.message ?? body?.message;
+    if (typeof message !== "string" || !message.trim() || serviceErrors.includes(message.trim())) continue;
+    serviceErrors.push(message.trim());
+    const deps = MISSING_DEPENDENTS.exec(message)?.[1];
+    for (const d of (deps ?? "").split(",").map((x) => x.trim()).filter(Boolean)) {
+      if (!missingDependents.includes(d)) missingDependents.push(d);
+    }
+  }
+  return { serviceErrors, missingDependents };
+}
+
 export function parseJenkinsConsole(raw: string): ParsedMigrationOutput {
   const cleanedOutput = stripAnsi(raw);
 
@@ -144,6 +166,7 @@ export function parseJenkinsConsole(raw: string): ParsedMigrationOutput {
     skipped,
     warnings,
     failedItems: parseFailedItems(cleanedOutput),
+    ...parseServiceErrors(cleanedOutput),
     background: BACKGROUND.test(cleanedOutput),
     reportSummary: summarizeReport(reportRaw),
     rawReport: reportRaw,

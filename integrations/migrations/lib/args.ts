@@ -1,5 +1,6 @@
-import { CliError, Config, defineArgs } from "@belzabar/core";
+import { CliError, defineArgs } from "@belzabar/core";
 import { KNOWN_MIGRATE_TYPES, type JenkinsClient, type MigrateType } from "./constants";
+import { knownRouteHint, profileSegmentEnvs, profileSegments, segmentEnv, withRouteHint } from "./routes";
 import type { MigrateRunArgs } from "./types";
 
 /**
@@ -16,11 +17,6 @@ export function normalizeClient(value: string | undefined): JenkinsClient | unde
 export function matchClient(value: string, known: readonly string[]): JenkinsClient | undefined {
   const wanted = value.trim().toLowerCase();
   return known.find((c) => c.toLowerCase() === wanted);
-}
-
-/** Migration profile segment → wi-impl env, from config `jenkins.profileEnvs` (lowercase keys). */
-function profileSegmentEnvs(): Record<string, string> {
-  return Config.getJenkins().profileEnvs;
 }
 
 function normalizeMigrateType(value: string | undefined, custom: string | undefined): MigrateType | string {
@@ -158,18 +154,6 @@ export const RUN_ARGS = defineArgs({
 // Jenkins migrates another. Profile segment → wi-impl env comes from config
 // `jenkins.profileEnvs` (profiles are `<source segment>_<target segment>`).
 
-/** The wi-impl env a profile segment maps to in config `jenkins.profileEnvs` (keys lower-case). */
-function segmentEnv(segment: string | undefined): string | undefined {
-  if (!segment) return undefined;
-  const map = profileSegmentEnvs();
-  return Object.hasOwn(map, segment) ? map[segment] : undefined;
-}
-
-function profileSegments(profile: string): [string, string] | null {
-  const parts = profile.trim().toLowerCase().split("_");
-  return parts.length === 2 && parts[0] && parts[1] ? [parts[0], parts[1]] : null;
-}
-
 /** Derive {sourceEnv, targetEnv} from a profile like `devacme_qaacme`; null when a segment is unmapped. */
 export function envPairFromProfile(profile: string): { sourceEnv: string; targetEnv: string } | null {
   const segments = profileSegments(profile);
@@ -260,7 +244,16 @@ export async function parseMigrateRunArgs(argv: string[]): Promise<MigrateRunArg
     });
   }
 
-  const resolvedProfile = profile || deriveProfileFromEnvPair(sourceEnv as string, targetEnv as string);
+  let resolvedProfile = profile;
+  if (!resolvedProfile) {
+    try {
+      resolvedProfile = deriveProfileFromEnvPair(sourceEnv as string, targetEnv as string);
+    } catch (e) {
+      // Name the routes that do exist (best effort: Jenkins' profile list).
+      if (e instanceof CliError) throw withRouteHint(e, await knownRouteHint({ sourceEnv: sourceEnv as string, targetEnv: targetEnv as string }));
+      throw e;
+    }
+  }
   // The profile names both ends: a missing env flag comes from jenkins.profileEnvs.
   const envs = profile ? resolveProfileEnvs(profile, sourceEnv, targetEnv) : { sourceEnv, targetEnv };
 

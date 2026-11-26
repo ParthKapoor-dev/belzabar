@@ -127,6 +127,75 @@ export function migrationWaves(ids: readonly string[], calls: readonly BatchCall
   return waves;
 }
 
+/** A method the batch calls that the target does not have (by category/name). */
+interface MissingCallee {
+  /** `Category/name`, as the service names it. */
+  callee: string;
+  callers: Array<{ id: string; name?: string; step: number }>;
+  /** The batch member that is this callee (it is new on the target). */
+  inBatch?: string;
+}
+
+export interface CalleeCheck {
+  targetEnv: string;
+  /** Distinct callees looked up. */
+  checked: number;
+  missing: MissingCallee[];
+  /** Callees that could not be looked up, with why. */
+  errors?: Array<{ callee: string; error: string }>;
+}
+
+const automationApiPath = (service: string, method: string): string =>
+  `/rest/api/automation-systems/${encodeURIComponent(service)}/automation-apis/${encodeURIComponent(method)}`;
+
+/**
+ * Pre-flight: every method the batch's steps call must exist on the target by
+ * category/name, or the service refuses the whole batch ("dependent method(s)
+ * … not found in the destination environment"). One GET per distinct callee
+ * on `targetEnv` (unknown → 200 with an empty body); the active env is
+ * restored. Throws only when the env switch itself fails.
+ */
+export async function checkCalleesOnTarget(bodies: ReadonlyMap<string, Obj>, targetEnv: string): Promise<CalleeCheck> {
+  const callees = new Map<string, MissingCallee & { service: string; method: string }>();
+  for (const [id, body] of bodies) {
+    const callerName = s(body.name);
+    for (const st of stepMappingsOf(body)) {
+      if (!st.service || !st.method) continue;
+      const key = `${st.service}/${st.method}`;
+      const entry = callees.get(key) ?? { callee: key, service: st.service, method: st.method, callers: [] };
+      entry.callers.push({ id, ...(callerName ? { name: callerName } : {}), step: st.step });
+      callees.set(key, entry);
+    }
+  }
+  const members = [...bodies].map(([id, body]) => ({ id, ...identityOf(body) }));
+  const missing: MissingCallee[] = [];
+  const errors: Array<{ callee: string; error: string }> = [];
+  const restore = Config.captureActiveEnv();
+  try {
+    Config.setActiveEnv(targetEnv);
+    const all = [...callees.values()];
+    // A few lookups at a time: a batch can call dozens of distinct methods.
+    for (let i = 0; i < all.length; i += 8) {
+      await Promise.all(all.slice(i, i + 8).map(async (c) => {
+        try {
+          const got = await fetchRawEntity<unknown>(automationApiPath(c.service, c.method), {
+            onError: (res) => new CliError(`HTTP ${res.status}`, { code: "MIGRATE_CALLEE_READ_FAILED" }),
+          });
+          if (got.found && isObj(got.body) && Object.keys(got.body).length > 0) return;
+          const member = members.find((m) => m.name === c.method && m.category === c.service);
+          missing.push({ callee: c.callee, callers: c.callers, ...(member ? { inBatch: member.id } : {}) });
+        } catch (e) {
+          errors.push({ callee: c.callee, error: e instanceof Error ? e.message : String(e) });
+        }
+      }));
+    }
+  } finally {
+    restore();
+  }
+  const order = (a: { callee: string }, b: { callee: string }) => a.callee.localeCompare(b.callee);
+  return { targetEnv, checked: callees.size, missing: missing.sort(order), ...(errors.length ? { errors: errors.sort(order) } : {}) };
+}
+
 interface StepDifference {
   step: number;
   callee: string;

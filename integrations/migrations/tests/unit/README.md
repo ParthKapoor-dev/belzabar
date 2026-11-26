@@ -6,10 +6,11 @@
 | `real-jenkins.test.ts` | Client and console parser replayed over the sanitized captures in `../fixtures/real/` |
 | `run-args.test.ts` | `migrate run` flag parsing (unknown flags, did-you-mean), profile ↔ env consistency, `status` / `logs` / `profiles` args |
 | `profiles-cache.test.ts` | Profile cache TTL and the single re-fetch on a cache miss |
-| `preflight.test.ts` | Pre-flight: skip warnings, PD draft → published swap, auth failures, env restore; confirmation gate of a faked end-to-end `run` |
+| `preflight.test.ts` | Pre-flight: skip warnings, PD draft → published swap, AD draft warning (published uuid named, not swapped), auth failures, env restore; confirmation gate of a faked end-to-end `run` (AD: draft copied too, pre-flight warnings) |
 | `run-outcome.test.ts` | Same-version skips (console derived from the build-1904 capture), `data.outcome`, warnings, `--strict`; target-env cache eviction (local, and the repeated server clear) |
-| `chain-steps.test.ts` | V2 step mappings; batch members that call each other and the waves (pre-flight warning); target step inputs lost after a migration |
-| `run-failure.test.ts` | A FAILED entity fails the run, its reason read through a status build (captures 2446/2447); background mode (capture 2789): target polled, landed ids reported and cleared, `BACKGROUND` when it cannot check |
+| `chain-steps.test.ts` | V2 step mappings; batch members that call each other and the waves (pre-flight warning); called methods missing on the target; target step inputs lost after a migration |
+| `run-failure.test.ts` | A FAILED entity fails the run, its reason read through a status build (captures 2446/2447); background mode (capture 2789): target polled, landed ids reported and cleared, `BACKGROUND` when it cannot check; a refused batch (capture 2848) carries the service's reason |
+| `routes.test.ts` | The routes named by `MIGRATE_PROFILE_NOT_FOUND` / `MIGRATE_INVALID_ENV_PAIR` (job-parameters capture): missing pair, two-build path, suggested profile |
 | `run-safety.test.ts` | AD id checks, module / migration-id flags, `--client` vs profile, build reference on every failure after the trigger |
 
 New tests follow the same pattern: `withTempEnvConfig` / `fakeFetch` / `respond` from

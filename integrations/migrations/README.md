@@ -75,6 +75,12 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   the `profileEnvs` entry to add). An env pair
   alone derives the profile only when each env maps to exactly one segment
   (`MIGRATE_INVALID_ENV_PAIR`).
+- **No route.** A profile that is not a Jenkins choice (`MIGRATE_PROFILE_NOT_FOUND`) or an env
+  pair that derives none (`MIGRATE_INVALID_ENV_PAIR`) names the routes the matching client has,
+  e.g. "ACME has dev→qa, qa→stage, …; no dev→stage", a two-build path when one exists, and for an
+  env pair the one profile that fits (`details.routes [{client, routes, profiles}]`, `via`,
+  `suggestedProfile`; `lib/routes.ts`). An env name matches a segment through `profileEnvs` or,
+  unmapped, when every word of it is in the segment (`acme-qa` → `qaacme`).
 - **Clients** are the job's `--- <client> ---` divider groups in the `PROFILE_NAME` choices,
   discovered from Jenkins. An explicit `--client` must be the profile's group
   (`MIGRATE_CLIENT_PROFILE_MISMATCH`); an unlisted profile keeps the explicit client.
@@ -86,7 +92,15 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   for members that call each other (V2 bodies: a step's serviceName / methodName or
   automationAPIId): the service fails a caller whose callee is new on the target, so this is a
   warning that names the calls and suggests waves, callees first (`data.batchCalls`,
-  `data.waves`). See [`lib/README.md`](lib/README.md).
+  `data.waves`). Every method an `AD_Method` / `AD_Service` batch calls is looked up on the
+  target by category/name: the service refuses the whole batch when one is missing ("dependent
+  method(s) … not found in the destination environment"), so each missing callee is a warning
+  (`data.calleeCheck {targetEnv, checked, missing, errors}`; skipped with a warning when the
+  target env is unknown or not configured). An AD **draft** (editor) uuid is a warning: it
+  migrates only the draft and leaves the target's published version unchanged (the report still
+  says COMPLETED); the warning names the published uuid to pass instead (not swapped). The
+  confirmation lists the pre-flight warnings and, for AD, that the build copies the source's
+  draft as well as its published version. See [`lib/README.md`](lib/README.md).
 - **After the trigger** every failure keeps its code and adds `details.buildTriggered: true`
   plus `jobUrl` / `queueUrl` / `buildNumber` / `buildUrl` when known; unless the build itself
   failed (`MIGRATE_RUN_FAILED`) the message says not to re-run and names `wi-impl migrate status <n>`.
@@ -110,7 +124,9 @@ Runtime file: `~/.wi-impl/migrations/jenkins-profiles.json` (profile cache).
   `details.failedEntities [{id, name, kind, reason, reasonFrom}]`. The reason comes from the
   console's `FAILED ITEM` line; when only the report row says FAILED, wi-impl triggers the job's
   `PD_MIGRATION_STATUS` / `AD_MIGRATION_STATUS` build for the migration id and reads it there
-  (`details.statusBuild`; `lib/status-build.ts`).
+  (`details.statusBuild`; `lib/status-build.ts`). When the service refused the whole batch
+  (`Migration failed (HTTP n): {…}`, no per-item line), `MIGRATE_RUN_FAILED` carries its message
+  (`details.serviceErrors`) and the missing called methods (`details.missingDependents`).
 - **Background mode.** When the service answers "Migration running in background (HTTP 206)" the
   script fails the build, but the ids may still land. wi-impl does not report
   `MIGRATE_RUN_FAILED`: for `AD_Method` it reads each id's published version on the source and

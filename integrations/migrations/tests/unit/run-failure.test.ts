@@ -14,6 +14,7 @@ const FIX = `${import.meta.dir}/../fixtures/real`;
 const PD_FAILED = readFileSync(`${FIX}/build-2446-console-0.txt`, "utf8");
 const PD_STATUS = readFileSync(`${FIX}/build-2447-console-0.txt`, "utf8");
 const AD_BACKGROUND = readFileSync(`${FIX}/build-2789-console-0.txt`, "utf8");
+const AD_REFUSED = readFileSync(`${FIX}/build-2848-console-0.txt`, "utf8");
 const PAGE = "4550da74662d96d11bfe83cd19de21ad";
 const MIGRATION_ID = "2e4dd044-c834-4828-a836-34fdbc80ed4a";
 const A = "4bbd77bdfb3ae3d4aadda969b4ec9cf8";
@@ -39,6 +40,16 @@ describe("console parsing", () => {
     expect(failedEntitiesOf(parsed)).toEqual([
       { id: PAGE, kind: "PAGE", status: "FAILED", reason: "Error creating page: missing deps", reasonFrom: "console", name: "check_permission" },
     ]);
+  });
+
+  test("K18: a refused batch (build 2848) carries the service's message and the missing called method", () => {
+    const parsed = parseJenkinsConsole(AD_REFUSED);
+    expect(parsed.serviceErrors).toEqual([
+      "The following dependent method(s) were not found in the destination environment: [Schools/enrollmentProcess.school.limit.validate ]",
+    ]);
+    expect(parsed.missingDependents).toEqual(["Schools/enrollmentProcess.school.limit.validate"]);
+    expect(parsed.failedItems).toEqual([]);
+    expect(parseJenkinsConsole(PD_FAILED).serviceErrors).toEqual([]);
   });
 
   test("background mode is recognised", () => {
@@ -141,6 +152,19 @@ describe("migrate run over faked builds", () => {
     expect(clear.json()).toEqual({ uuids: [A], type: "AUTOMATION" });
     const warnings = (r.envelope?.meta?.warnings ?? []) as string[];
     expect(warnings.some((w) => w.includes(`${B}: not on acme-qa`) && w.includes("source version 5, target 4"))).toBe(true);
+  });
+
+  test("K18: a refused build is MIGRATE_RUN_FAILED with the service's reason and the missing called method", async () => {
+    cfg = withTempEnvConfig({ envs: {}, jenkins: { ...JENKINS, profileEnvs: {} } });
+    ff = fakeFetch([...jenkinsBase([42]), ...buildRoutes(42, AD_REFUSED, "FAILURE")]).install();
+    const r = await runCommand(runCmd, ["--profile", "qaacme_stageacme", "--module", "AD_Method", "--ids", A, "--yes", "--quiet"]);
+    const err = r.envelope?.error;
+    expect(err?.code).toBe("MIGRATE_RUN_FAILED");
+    expect(err?.message).toContain(
+      "The migration service refused the batch: The following dependent method(s) were not found in the destination environment: [Schools/enrollmentProcess.school.limit.validate ]",
+    );
+    expect(err?.message).toContain("Migrate that method to the target first (or pass --migrate-dependents Y)");
+    expect(err?.details).toMatchObject({ buildNumber: 42, missingDependents: ["Schools/enrollmentProcess.school.limit.validate"] });
   });
 
   test("H8: background mode with unknown envs is outcome BACKGROUND, not MIGRATE_RUN_FAILED", async () => {

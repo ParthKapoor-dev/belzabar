@@ -20,7 +20,9 @@ import {
   RUN_ARGS,
   resolveMigrationTargets,
   resolveQueueItem,
+  routeHint,
   streamConsole,
+  withRouteHint,
   triggerBuild,
   writeArtifacts,
 } from "../../lib";
@@ -61,12 +63,14 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         );
       }
     } else {
-      ({ client } = await resolveClientForProfile(auth, profile));
+      const found = await resolveClientForProfile(auth, profile);
+      client = found.client;
       if (!client) {
-        throw new CliError(
+        // Name the routes the profile's client does have (e.g. no dev→stage).
+        throw withRouteHint(new CliError(
           `Profile '${profile}' not found in any Jenkins client group. Pass --client explicitly or check 'wi-impl migrate profiles'.`,
           { code: "MIGRATE_PROFILE_NOT_FOUND", details: { profile } }
-        );
+        ), routeHint(found.resolution.groups, { profile }));
       }
     }
 
@@ -75,14 +79,17 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
     // service 500s on draft ids) — resolve it to its published sibling here,
     // and surface the human-readable name of every entity being migrated.
     if (showProgress) logProgress(args.quiet, "Resolving ids on the source environment…");
+    const preflightWarnings: string[] = [];
     const preflight = await resolveMigrationTargets({
       sourceEnv: args.sourceEnv,
+      targetEnv: args.targetEnv,
       profile,
       migrateType: String(args.migrateType),
       ids: args.ids,
       // A skipped pre-flight is surfaced (envelope meta.warnings), and shown
       // immediately in human mode since the build follows right after.
       warn: (message) => {
+        preflightWarnings.push(message);
         context.warn(message);
         if (showProgress) logProgress(args.quiet, `WARNING: ${message}`);
       },
@@ -113,6 +120,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
     // confirmed: --yes proceeds, a terminal is asked, --llm or a non-TTY
     // without --yes is MIGRATE_CONFIRMATION_REQUIRED.
     const action = `trigger a Jenkins migration build (${auth.job})`;
+    const isAdModule = /^AD_(Method|Service)$/i.test(String(args.migrateType));
     await confirmWrite({
       yes: args.yes === true,
       outputMode: context.outputMode,
@@ -123,6 +131,11 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         ["Module", String(args.migrateType)],
         ["Ids", preflight ? preflight.targets.map((t) => `${t.name} ${t.resolvedId}`).join(", ") : effectiveIds.join(", ")],
         ["Dry run", args.dryRun ? "yes (DRY_RUN=true, still a real build)" : "no"],
+        // What an AD build overwrites on the target, beyond the published version.
+        ...(isAdModule
+          ? [["Copies", "per published uuid, the source's published version AND its draft (the target's draft is overwritten too); per draft uuid, only the draft"] as [string, string]]
+          : []),
+        ...(preflightWarnings.length > 0 ? [["Warnings", preflightWarnings.join(" | ")] as [string, string]] : []),
       ],
       codePrefix: "MIGRATE",
       requiredMessage: `Confirmation required to ${action}. Pass --yes to proceed.`,
@@ -211,6 +224,7 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         resolvedTargets: preflight?.targets,
         resolvedSourceEnv: preflight?.sourceEnv,
         ...(preflight?.batchCalls ? { batchCalls: preflight.batchCalls, waves: preflight.waves } : {}),
+        ...(preflight?.calleeCheck ? { calleeCheck: preflight.calleeCheck } : {}),
       };
 
       const pair = envPairFromProfile(profile);
@@ -353,15 +367,22 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
         .map((f) => `${labelOf(f.id, f.name)}${f.kind ? ` (${f.kind})` : ""}: ${f.reason ?? "no reason given"}`)
         .join("; ");
       if (!success) {
+        // A refused batch has no per-item line: its reason is the service's message.
+        const refused = parsed.serviceErrors.length > 0 ? ` The migration service refused the batch: ${parsed.serviceErrors.join(" | ")}` : "";
+        const dependents = parsed.missingDependents.length > 0
+          ? ` Migrate ${parsed.missingDependents.length === 1 ? "that method" : "those methods"} to ${targetEnv ?? "the target"} first (or pass --migrate-dependents Y), then re-run.`
+          : "";
         throw new CliError(
           `Migration build #${buildNumber} did not complete successfully (result=${finalResult}).` +
-            (failedText ? ` Failed: ${failedText}` : ""),
+            (failedText ? ` Failed: ${failedText}` : "") + refused + dependents,
           {
             code: "MIGRATE_RUN_FAILED",
             details: {
               buildUrl: data.buildUrl,
               result: finalResult,
               failureHints: parsed.failureHints,
+              ...(parsed.serviceErrors.length > 0 ? { serviceErrors: parsed.serviceErrors } : {}),
+              ...(parsed.missingDependents.length > 0 ? { missingDependents: parsed.missingDependents } : {}),
               report: parsed.reportSummary,
               ...(data.failedEntities ? { failedEntities: data.failedEntities } : {}),
               ...(data.statusBuild ? { statusBuild: data.statusBuild } : {}),
@@ -452,7 +473,11 @@ const command: CommandModule<MigrateRunArgs, MigrateRunData> = {
           t.name,
           t.kind,
           t.resolvedId,
-          t.swapped ? `draft ${t.inputId} → published` : t.status ?? "",
+          t.swapped
+            ? `draft ${t.inputId} → published`
+            : t.kind === "AD" && t.status === "DRAFT"
+              ? `DRAFT: migrates the draft only${t.publishedId ? ` (published ${t.publishedId})` : ""}`
+              : t.status ?? "",
         ]),
       );
     }

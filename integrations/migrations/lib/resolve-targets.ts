@@ -11,7 +11,7 @@
 // caught here instead of 7s into Jenkins.
 
 import { CliError, Config, isObj, type Obj } from "@belzabar/core";
-import { batchCalls, fetchChainV2, migrationWaves, type BatchCall } from "./chain-steps";
+import { batchCalls, checkCalleesOnTarget, fetchChainV2, migrationWaves, type BatchCall, type CalleeCheck } from "./chain-steps";
 import { envPairFromProfile } from "./args";
 import type { ResolvedTarget } from "./types";
 import { adChainPath, canonicalUuid, fetchRawEntity, isEntityId, pdPagePath } from "@belzabar/core/platform";
@@ -23,6 +23,8 @@ interface ResolveTargetsResult {
   /** AD batch members that call each other (pre-flight warning), and the suggested waves. */
   batchCalls?: BatchCall[];
   waves?: string[][];
+  /** AD: the methods the batch calls, looked up on the target by category/name. */
+  calleeCheck?: CalleeCheck;
 }
 
 const PD_MODULE = /^PD$/i;
@@ -99,30 +101,51 @@ async function resolveAd(id: string, env: string): Promise<ResolvedTarget> {
     });
   }
   const name = typeof method.name === "string" && method.name ? method.name : "(unnamed)";
-  return { inputId: id, resolvedId: id, name, kind: "AD", swapped: false };
+  const state = String(method.automationState ?? method.state ?? "").toUpperCase();
+  // A draft's referenceId is its published sibling (not swapped: K19).
+  const publishedId = state === "DRAFT" && typeof method.referenceId === "string" && method.referenceId.trim()
+    ? canonicalUuid(method.referenceId)
+    : undefined;
+  return {
+    inputId: id,
+    resolvedId: id,
+    name,
+    kind: "AD",
+    ...(state ? { status: state } : {}),
+    ...(publishedId ? { publishedId } : {}),
+    swapped: false,
+  };
+}
+
+/**
+ * An AD draft (editor) uuid migrates only the draft: the target's PUBLISHED
+ * version stays as it was, while the report says COMPLETED. Warn, naming the
+ * published uuid to pass instead. wi-impl does not swap it.
+ */
+function warnAdDrafts(targets: ResolvedTarget[], env: string, warn: ((message: string) => void) | undefined): void {
+  for (const t of targets) {
+    if (t.kind !== "AD" || t.status !== "DRAFT") continue;
+    warn?.(
+      `${t.name} (${t.inputId}) is an AD DRAFT (editor) uuid: the build migrates only the draft, and the target's ` +
+        `published version stays unchanged (the report still says COMPLETED). ` +
+        (t.publishedId
+          ? `To update the published version, migrate its published uuid ${t.publishedId} instead.`
+          : `It has no published version on '${env}': publish it first to migrate a published version.`),
+    );
+  }
 }
 
 /**
  * Batch members that call each other (V2 bodies on the active source env).
  * The service migrates the batch at once, and a caller whose callee is new on
  * the target fails "dependent … not found in destination": warn, and suggest
- * waves with callees first. Best effort: an unreadable body skips the check
- * with a warning.
+ * waves with callees first.
  */
-async function batchDependencies(
+function batchDependencies(
   ids: string[],
+  bodies: ReadonlyMap<string, Obj>,
   warn: ((message: string) => void) | undefined,
-): Promise<{ batchCalls: BatchCall[]; waves: string[][] } | null> {
-  const bodies = new Map<string, Obj>();
-  try {
-    for (const id of ids) {
-      const body = await fetchChainV2(id);
-      if (body) bodies.set(id, body);
-    }
-  } catch (e) {
-    warn?.(`Batch dependency check skipped (${e instanceof Error ? e.message : String(e)}).`);
-    return null;
-  }
+): { batchCalls: BatchCall[]; waves: string[][] } | null {
   const calls = batchCalls(bodies);
   if (calls.length === 0) return null;
   const waves = migrationWaves(ids, calls);
@@ -135,6 +158,60 @@ async function batchDependencies(
   return { batchCalls: calls, waves };
 }
 
+/** V2 bodies of the batch on the active (source) env; null, with a warning, when one can't be read. */
+async function sourceBodies(ids: string[], warn: ((message: string) => void) | undefined): Promise<Map<string, Obj> | null> {
+  const bodies = new Map<string, Obj>();
+  try {
+    for (const id of ids) {
+      const body = await fetchChainV2(id);
+      if (body) bodies.set(id, body);
+    }
+    return bodies;
+  } catch (e) {
+    warn?.(`Batch dependency and called-method checks skipped (${e instanceof Error ? e.message : String(e)}).`);
+    return null;
+  }
+}
+
+/**
+ * The called-method pre-flight: warn about each callee the target lacks (the
+ * service would refuse the whole batch). Skipped, with a warning, when the
+ * target env is unknown or not configured, or the lookups fail.
+ */
+async function calleesOnTarget(
+  bodies: ReadonlyMap<string, Obj>,
+  targetEnv: string | undefined,
+  warn: ((message: string) => void) | undefined,
+): Promise<CalleeCheck | null> {
+  if (!targetEnv || !Config.getAllEnvs()[targetEnv]) {
+    warn?.(
+      `Called-method check skipped: ${targetEnv ? `target env '${targetEnv}' is not configured` : "the target env is unknown"}. ` +
+        "A method the batch calls that is missing on the target makes the service refuse the whole batch.",
+    );
+    return null;
+  }
+  let check: CalleeCheck;
+  try {
+    check = await checkCalleesOnTarget(bodies, targetEnv);
+  } catch (e) {
+    warn?.(`Called-method check on '${targetEnv}' skipped (${e instanceof Error ? e.message : String(e)}).`);
+    return null;
+  }
+  if (check.missing.length > 0) {
+    const callers = (m: CalleeCheck["missing"][number]) =>
+      m.callers.map((c) => `${c.name ?? c.id} step ${c.step}`).join(", ");
+    warn?.(
+      `Not on '${targetEnv}' (by category/name): ${check.missing.map((m) => `${m.callee} (called by ${callers(m)}${m.inBatch ? "; in this batch" : ""})`).join("; ")}. ` +
+        "The migration service refuses the whole batch (\"dependent method(s) … not found in the destination environment\"): " +
+        "migrate those methods first (a batch member: in an earlier wave), or pass --migrate-dependents Y.",
+    );
+  }
+  if (check.errors) {
+    warn?.(`Called-method check: could not look up ${check.errors.map((e) => `${e.callee} (${e.error})`).join(", ")} on '${targetEnv}'.`);
+  }
+  return check;
+}
+
 /**
  * Resolve every id against the source environment. Returns null when there is
  * nothing to resolve (a COMPARISON_REPORT / MIGRATION_STATUS / custom module),
@@ -145,6 +222,8 @@ async function batchDependencies(
  */
 export async function resolveMigrationTargets(opts: {
   sourceEnv?: string;
+  /** For the AD called-method check; defaults to the profile's target env. */
+  targetEnv?: string;
   profile: string;
   migrateType: string;
   ids: string[];
@@ -202,9 +281,17 @@ export async function resolveMigrationTargets(opts: {
     }
     const resolvedIds = targets.map((t) => t.resolvedId);
     const result: ResolveTargetsResult = { sourceEnv, targets, resolvedIds };
-    if (isAd && resolvedIds.length > 1) {
-      const deps = await batchDependencies(resolvedIds, opts.warn);
-      if (deps) Object.assign(result, deps);
+    if (isAd) {
+      warnAdDrafts(targets, sourceEnv, opts.warn);
+      const bodies = await sourceBodies(resolvedIds, opts.warn);
+      if (bodies && resolvedIds.length > 1) {
+        const deps = batchDependencies(resolvedIds, bodies, opts.warn);
+        if (deps) Object.assign(result, deps);
+      }
+      if (bodies) {
+        const check = await calleesOnTarget(bodies, opts.targetEnv ?? envPairFromProfile(opts.profile)?.targetEnv, opts.warn);
+        if (check) result.calleeCheck = check;
+      }
     }
     return result;
   } catch (e) {

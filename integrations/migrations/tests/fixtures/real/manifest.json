@@ -100,6 +100,31 @@
     "status": 200
   },
   {
+    "file": "build-2848-console-0.txt",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-26T07:30:07.546Z",
+    "bytes": 30184,
+    "source": {
+      "build": 2848,
+      "start": 0,
+      "X-Text-Size": "30243",
+      "X-More-Data": null
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/2848/logText/progressiveText?start=0",
+    "status": 200
+  },
+  {
+    "file": "build-2848.json",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-26T07:30:07.210Z",
+    "bytes": 3517,
+    "source": {
+      "build": 2848
+    },
+    "endpoint": "https://jenkins.example.com/job/Deployments/job/Expertly/job/Database/job/expertly.db-migration/2848/api/json",
+    "status": 200
+  },
+  {
     "file": "job-parameters.json",
     "env": "acme-dev",
     "capturedAt": "2026-09-27T17:19:48.039Z",
