@@ -77,6 +77,15 @@ Safety:
     fingerprints equal), noteRecorded, changelogId, testSuite and validation
     warnings.
 
+Recipe: the validator blocks the publish on a broken step someone else left in
+the draft (not your change). Publish only your change, then put their step back:
+  1. `wi-impl ad history list <draft>`: note the current draft version N.
+  2. `wi-impl ad save` an overlay {"ops":[{"op":"remove-step","step":<theirs>}]}
+     on the draft.
+  3. Publish (this command) with your change note.
+  4. `wi-impl ad history restore <draft>` to version N: the draft gets their
+     step back; the published copy keeps only your change.
+
 Examples:
   wi-impl ad publish 4a1b2c3d... --note "Fix null check in step 3" --env <env>
   wi-impl ad publish 4a1b2c3d... --note "Fix null check in step 3" --env <env> --yes --llm

@@ -71,6 +71,9 @@ Arguments:
                           outputs ["key"] | [{key, as, var, type}] | {"as": "key"}
                             as = the name the method sees; var = write it to a variable
                           when "<SpEL>" | null        entry condition
+                            (stored as an advanced expression: a step whose
+                            condition was built in basic mode, the UI rows,
+                            loses the rows even when the text is the same)
                           exit {onFailure, code, message}
                           exitIf {when, code, message} | null   conditional exit
                           loop {over:"#{list}"} | {times:n} | {while:"<SpEL>"} |
@@ -90,7 +93,9 @@ Arguments:
                             "set":{"executor":"CODE_LAMBDA"}}
                         sql alone picks db_service/data.read|add|update|delete
                         from the main verb (after any WITH CTEs: WITH … UPDATE
-                        is data.update). Input/output keys are checked against the
+                        is data.update). To choose another, name it beside
+                        "sql": "service": "db_service/data.update".
+                        Input/output keys are checked against the
                         callee contract (online, cached 1 h). A key the
                         cached contract lacks is re-checked online before
                         the save is refused (a callee just published with a

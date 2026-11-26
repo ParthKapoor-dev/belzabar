@@ -20,6 +20,9 @@ text through `ad run`; an object value arrives here as a Java Map
 (toString() gives {a=1}) but as a JSON node ({"a":1}) through `ad run`.
 Text inputs holding JSON text are the same on both. ad test warns when an
 input is sent either way; confirm such behaviour with `ad run`.
+A PUBLISHED uuid can also fail on the test route (seen: "Execution Error" at
+step 1) where its draft, with the same inputs, runs: test the draft uuid, and
+run what is published with `ad run <published uuid>`.
 
 Arguments:
   <UUID>                The UUID of the method to test (usually the draft).
