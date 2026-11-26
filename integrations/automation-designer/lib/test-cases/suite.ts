@@ -137,6 +137,20 @@ export function checkPersisted(sent: CaseFile, suite: SuiteSnapshot, id?: string
   return { name: sent.name, id: hit.id, verified: mismatched.length === 0, mismatched };
 }
 
+/** The longest test-case name the server stores (live: 96 characters work, 97 answer a bare HTTP 500). */
+const CASE_NAME_MAX = 96;
+
+/** Refuse, before anything is posted, every case whose name the server would answer with a bare 500. */
+export function checkCaseNameLengths(cases: Array<Pick<CaseFile, "name">>): void {
+  const long = cases.map((c) => ({ name: c.name, length: [...c.name].length })).filter((c) => c.length > CASE_NAME_MAX);
+  if (long.length === 0) return;
+  const list = long.map((c) => `'${c.name}' (${c.length})`).join(", ");
+  throw new CliError(
+    `Test case name too long: ${list}; the server takes at most ${CASE_NAME_MAX} characters (a longer name fails with a bare HTTP 500). Shorten it.`,
+    { code: "AD_TESTCASE_NAME_TOO_LONG", details: { max: CASE_NAME_MAX, names: long } },
+  );
+}
+
 export function verifyError(checks: CaseCheck[], extra: Obj = {}): CliError {
   const bad = checks.filter((c) => !c.verified);
   return new CliError(

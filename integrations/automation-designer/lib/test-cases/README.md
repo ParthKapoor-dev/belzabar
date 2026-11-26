@@ -58,6 +58,9 @@ with `--apply`.
   0 cases). The first `POST /chain/testcases/{uuid}` creates the suite.
 - `POST` stores every field. `PUT` replaces only inputs and assertions and silently keeps
   name, description and active.
+- A case name over 96 characters gets a bare HTTP 500 (live 2026-11-26: 96 works, 97 fails;
+  characters, not bytes). `checkCaseNameLengths` refuses it first on create, update, bulk and
+  sync (`AD_TESTCASE_NAME_TOO_LONG`, naming each case and its length).
 - `DELETE` is soft and the name stays reserved (`AD_TESTCASE_NAME_RESERVED`). No route lists
   deleted cases (the suite GET ignores `includeInactive`-style parameters), so `applySync`
   skips every delete once a create or update has failed.

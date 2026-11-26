@@ -58,6 +58,8 @@ function fakeServer(initial: any = load("suite.json")) {
       url: `/rest/api/automation/chain/testcases/${DRAFT}`,
       response: (req: RecordedRequest) => {
         const body = req.json();
+        // live: a name over 96 characters is a bare 500
+        if ([...body.name].length > 96) return respond({ status: 500, json: { errorMessage: "An error has occurred at server side" } });
         if (cases.some((c) => c.name === body.name)) {
           return respond({ status: 400, json: { errorMessage: "TestCase name should be unique" } });
         }
@@ -385,6 +387,51 @@ describe("test-case bulk", () => {
       `https://t-dev.test/rest/api/automation/chain/testcases/${DRAFT}`,
     ]);
     expect((r.envelope?.data as any).checks.map((c: any) => c.verified)).toEqual([true, true]);
+  });
+});
+
+// K11: a name over 96 characters got a bare HTTP 500 (bulk: the whole batch failed).
+describe("test-case name length", () => {
+  const name = (n: number) => `k11.${"x".repeat(n)}`.slice(0, n);
+  const posts = () => ad.ff.requests.filter((q) => q.method === "POST");
+
+  test("create: 96 characters are posted, 97 are refused before any write", async () => {
+    wire();
+    expect((await run(["create", DRAFT, "--name", name(96), "--input", "name=x", "--yes"])).envelope?.ok).toBe(true);
+    ad.restore();
+    wire();
+    const r = await run(["create", DRAFT, "--name", name(97), "--input", "name=x", "--yes"]);
+    expect(r.envelope?.error?.code).toBe("AD_TESTCASE_NAME_TOO_LONG");
+    expect(r.envelope?.error?.message).toContain("(97)");
+    expect(r.envelope?.error?.message).toContain("at most 96");
+    expect(posts()).toEqual([]);
+  });
+
+  test("bulk names the long case and posts none", async () => {
+    wire();
+    const f = join(scratchDir("tc-bulk-long"), "cases.json");
+    writeFileSync(f, JSON.stringify([{ name: "ok.1", inputs: { name: "A" } }, { name: name(108), inputs: { name: "B" } }]));
+    const r = await run(["bulk", DRAFT, "--file", f, "--yes"]);
+    expect(r.envelope?.error?.code).toBe("AD_TESTCASE_NAME_TOO_LONG");
+    expect(r.envelope?.error?.details).toEqual({ max: 96, names: [{ name: name(108), length: 108 }] });
+    expect(posts()).toEqual([]);
+  });
+
+  test("sync refuses a long name in its files, dry run included", async () => {
+    wire();
+    const dir = join(scratchDir("tc-sync-long"), "m");
+    mkdirSync(join(dir, "cases"), { recursive: true });
+    writeFileSync(join(dir, "method.json"), JSON.stringify({ name: "belz_tst_s7c_t1", uuids: { [ENV]: DRAFT } }));
+    writeFileSync(join(dir, "cases", "0.json"), JSON.stringify({ name: name(100), inputs: { name: "r" } }));
+    for (const argv of [["sync", dir], ["sync", dir, "--apply", "--yes"]]) {
+      expect((await run(argv)).envelope?.error?.code).toBe("AD_TESTCASE_NAME_TOO_LONG");
+    }
+    expect(posts()).toEqual([]);
+  });
+
+  test("characters are counted, not bytes", async () => {
+    wire();
+    expect((await run(["create", DRAFT, "--name", `${name(95)}é`, "--input", "name=x", "--yes"])).envelope?.ok).toBe(true);
   });
 });
 

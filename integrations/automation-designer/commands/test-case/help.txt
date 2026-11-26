@@ -54,6 +54,9 @@ Flags:
   --file <path>         Test case JSON: a case file (see below) or a UI test-case body
                         (create, update); an array of them (bulk).
   --name <name>         Test case name (create). Convention: <method>.<scenario>.<outcome>.<n>
+                        At most 96 characters (the server answers a longer one with
+                        a bare HTTP 500): create, update, bulk and sync refuse it
+                        first with AD_TESTCASE_NAME_TOO_LONG, naming each case.
   --description <text>  Test case description (create).
   --dry-run             create: check the case (contract, name not taken) and return
                         the body it would POST, {dryRun, name, body, warnings}: the

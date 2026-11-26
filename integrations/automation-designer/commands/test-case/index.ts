@@ -12,6 +12,7 @@ import {
   applySync,
   blockingProblems,
   checkCaseContract,
+  checkCaseNameLengths,
   checkPersisted,
   coerceInputValue,
   contractError,
@@ -249,6 +250,7 @@ async function buildCase(f: CaseFlags, method: HydratedMethod, base?: CaseFile):
     c.assertions = f.filePath ? [...c.assertions, ...fromFlags] : fromFlags;
   }
   if (!c.name.trim()) throw new CliError("A test case needs a name (--name or \"name\" in --file).", { code: "AD_TESTCASE_INVALID" });
+  checkCaseNameLengths([c]);
   return c;
 }
 
@@ -478,6 +480,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
         const body = isObj(json) && Array.isArray(json.cases) ? json.cases : json;
         if (!Array.isArray(body)) throw new CliError(`${args.filePath} must hold an array of test cases (or an \`export\` backup).`, { code: "AD_TESTCASE_INVALID" });
         const cases = body.map((b, i) => parseCaseInput(b, `${args.filePath}[${i}]`));
+        checkCaseNameLengths(cases);
         const method = await fetchContract(uuid);
         const warnings = contract(cases, method, context.warn);
         const before = await fetchSuite(uuid);
@@ -585,6 +588,7 @@ const command: CommandModule<TestCaseArgs, TestCaseData> = {
           );
         }
         const files = readCaseFiles(methodDir).map((l) => l.file);
+        checkCaseNameLengths(files);
         const [method, suite] = await Promise.all([fetchContract(uuid), fetchSuite(uuid)]);
         if (meta?.name && meta.name !== method.name) {
           context.warn(`method.json names '${meta.name}' but ${uuid} is '${method.name}' on ${context.env.name}.`);
