@@ -1,1 +1,1 @@
-wi-impl ad state <uuid>  :->  Read-only: draft and published versions, each side's scope, last-saved times (updatedOn) and whether the draft has unpublished changes (logic fingerprints: no descriptions, no internal ids; no body)
+wi-impl ad state <uuid>  :->  Read-only: draft and published versions, each side's scope, last-saved times (updatedOn) and whether the draft has unpublished changes (logic fingerprints: no descriptions, no internal ids; no body; bodyDiffers: stored bodies differ even when the logic matches)

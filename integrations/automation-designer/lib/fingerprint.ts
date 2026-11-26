@@ -332,6 +332,39 @@ export function fingerprintMethod(m: HydratedMethod): string {
 }
 
 /**
+ * Server stamps under `metadata.internal` that differ between a draft and its
+ * published copy of the same stored body (a published copy that came in by
+ * migration keeps its migration number and source; live).
+ */
+const STORAGE_NOISE_KEYS: ReadonlySet<string> = new Set(["migrationVersion", "sourceEnvironment"]);
+
+function projectStored(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(projectStored);
+  if (!value || typeof value !== "object") return value;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (BOOKKEEPING_KEYS.has(k) || STORAGE_NOISE_KEYS.has(k)) continue;
+    out[k] = projectStored(v);
+  }
+  return out;
+}
+
+/**
+ * Stable 12-hex fingerprint of the STORED body (K16): the wire body minus only
+ * bookkeeping (BOOKKEEPING_KEYS: row ids, versions, stamps, state) and the
+ * migration stamps. Unlike `fingerprintMethod` it keeps descriptions, explicit
+ * defaults (`encodedBase64:false`), base64 vs plain text, internal links and
+ * every field a save normalises, so two copies with the same logic but a
+ * different stored body (a re-saved draft of an old body) differ here. A draft
+ * and its unchanged published copy match. null without a wire body.
+ */
+export function storedBodyFingerprint(m: HydratedMethod): string | null {
+  const body = wireBody(m.raw);
+  if (!body) return null;
+  return createHash("sha256").update(stableStringify(projectStored(orderedV1(body)))).digest("hex").slice(0, 12);
+}
+
+/**
  * Env-agnostic, human-readable view of a method for DIFFING: the same
  * semantic step projection the fingerprint hashes (decoded code / SQL / SpEL,
  * service names, conditions, mapping values — no env-local ids), plus the

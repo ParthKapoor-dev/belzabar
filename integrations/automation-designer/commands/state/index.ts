@@ -1,7 +1,7 @@
 import { CliError, defineArgs, ok, type CommandModule } from "@belzabar/core";
 import { adApi } from "../../lib/api/index";
 import { resolveDraftTarget } from "../../lib/draft-guard";
-import { fingerprintMethod } from "../../lib/fingerprint";
+import { fingerprintMethod, storedBodyFingerprint } from "../../lib/fingerprint";
 import { lastUpdatedOf } from "../../lib/history";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import type { HydratedMethod } from "../../lib/types/common";
@@ -34,6 +34,14 @@ interface StateData {
    * changes; null: no published side (never published) or it could not be read.
    */
   inSync: boolean | null;
+  /**
+   * Whether the two STORED bodies differ (storedBodyFingerprint: descriptions,
+   * explicit defaults and fields a save normalises count; ids, versions and
+   * stamps do not). inSync:true + bodyDiffers:true = logic equal, stored body
+   * differs: the draft is still not what is published. null when inSync is null
+   * or a side has no wire body.
+   */
+  bodyDiffers: boolean | null;
   /** The method has a published side but reading it failed (e.g. timed out): its version and fingerprint are unknown, not absent. */
   publishedReadFailed?: true;
   /** The error code of the failed published read. */
@@ -79,6 +87,7 @@ const command: CommandModule<StateArgs, StateData> = {
         fingerprints: { draft: null, published: initial.state === "PUBLISHED" ? fingerprintMethod(initial) : null },
         updatedOn: { draft: null, published: initial.state === "PUBLISHED" ? await lastUpdatedOf(initial.uuid) : null },
         inSync: null,
+        bodyDiffers: null,
         switchedFromPublished: false,
         scopes: { draft: null, published: initial.state === "PUBLISHED" ? initial.scope ?? null : null },
         message: guard.message,
@@ -108,6 +117,10 @@ const command: CommandModule<StateArgs, StateData> = {
     const draftFp = fingerprintMethod(draft);
     const publishedFp = published ? fingerprintMethod(published) : null;
     const inSync = publishedFp === null ? null : draftFp === publishedFp;
+    const draftBodyFp = storedBodyFingerprint(draft);
+    const publishedBodyFp = published ? storedBodyFingerprint(published) : null;
+    const bodyDiffers =
+      inSync === null ? null : inSync === false ? true : draftBodyFp === null || publishedBodyFp === null ? null : draftBodyFp !== publishedBodyFp;
 
     return ok<StateData>({
       input: { uuid },
@@ -121,6 +134,7 @@ const command: CommandModule<StateArgs, StateData> = {
       fingerprints: { draft: draftFp, published: publishedFp },
       updatedOn: { draft: draftUpdated, published: publishedUpdated },
       inSync,
+      bodyDiffers,
       ...(readError !== undefined ? { publishedReadFailed: true as const, publishedReadError: readError } : {}),
       switchedFromPublished: guard.switchedFromPublished,
       scopes: { draft: draft.scope ?? null, published: published?.scope ?? null },
@@ -146,7 +160,11 @@ const command: CommandModule<StateArgs, StateData> = {
       ],
     );
     if (data.message) ui.warn(data.message);
-    if (data.inSync === true) {
+    if (data.inSync === true && data.bodyDiffers === true) {
+      ui.warn(
+        "Draft and published logic are identical (fingerprint match), but the stored bodies differ (descriptions, or fields a save rewrites). The draft is still unpublished; publish to make them the same.",
+      );
+    } else if (data.inSync === true) {
       ui.success("Draft and published logic are identical (fingerprint match).");
     } else if (data.inSync === false) {
       ui.warn(

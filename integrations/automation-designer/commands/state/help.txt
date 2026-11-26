@@ -5,7 +5,8 @@ draft has unpublished changes.
 
 Flags:
   --llm    Emit a JSON envelope with {ok, state, draftUuid, publishedUuid,
-           versions, fingerprints, updatedOn, inSync, scopes{draft, published},
+           versions, fingerprints, updatedOn, inSync, bodyDiffers,
+           scopes{draft, published},
            publishedReadFailed?, publishedReadError?, switchedFromPublished,
            message?} (scopes: who may call each side, read fresh; set it with
            `ad save` key scope)
@@ -29,6 +30,14 @@ Notes:
     published, or the published side could not be read. The draft and
     published version counters are independent, so versions.draft >
     versions.published does not mean out of sync.
+  - bodyDiffers compares the two STORED bodies: only ids, versions and
+    stamps are left out, so descriptions, explicit defaults
+    (encodedBase64:false), base64 vs plain text and the fields a save
+    rewrites (input/output uuids, conditionMode, outputCode, ...) count.
+    inSync:true + bodyDiffers:true = logic equal, stored body differs: the
+    draft is not what is published (an old published body can behave
+    differently from its re-saved draft), so it still needs a publish.
+    true whenever inSync is false; null when inSync is null.
   - updatedOn {draft, published}: when each side was last saved (ISO-8601
     UTC, from the V1 chain's updatedOn, else createdOn; null when unknown).
     Use it to date a change when `wi-impl ad history list` has no versions.

@@ -25,11 +25,14 @@ afterEach(() => {
 });
 
 /** A published sibling of the real draft: same logic, independent version counter. */
-function pair(opts: { draftCode?: string; draftScope?: string } = {}) {
+function pair(opts: { draftCode?: string; draftScope?: string; editDraft?: (d: any) => void } = {}) {
   const draft = withMeta(draftBody(), { referenceId: PUB, version: { ...draftBody().metadata.version, name: "12" } });
   if (opts.draftCode) draft.steps[0].properties.customCode.inlineCode = opts.draftCode;
   if (opts.draftScope) draft.permissions = { ...(draft.permissions ?? {}), methodScope: opts.draftScope };
+  opts.editDraft?.(draft);
   const pub = withMeta({ ...draftBody(), uuid: PUB }, { state: "PUBLISHED", referenceId: DRAFT, version: { ...draftBody().metadata.version, uuid: PUB, name: "8" } });
+  // a migrated published copy keeps its migration stamps: not a body difference
+  pub.metadata.internal = { ...(pub.metadata.internal ?? {}), migrationVersion: 1, sourceEnvironment: "qa", lastPublishedAt: 2 };
   pub.steps = pub.steps.map((st: any, i: number) => ({ ...st, id: `4${String(i).padStart(31, "0")}` })); // published copies get new step ids
   cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test" } }, activeEnv: "t-dev" });
   ff = fakeFetch({ [V2(DRAFT)]: draft, [V2(PUB)]: pub }).install();
@@ -45,7 +48,32 @@ describe("ad state", () => {
     expect(d.versions).toEqual({ draft: 12, published: 8 });
     expect(d.inSync).toBe(true);
     expect(d.fingerprints.draft).toBe(d.fingerprints.published);
+    expect(d.bodyDiffers).toBe(false);
     expect(d.switchedFromPublished).toBe(true);
+  });
+
+  // K16: the logic fingerprint ignores descriptions and save normalisation; the
+  // stored bodies still differ, and state says so.
+  test("logic equal, stored body differs (description, explicit default) -> inSync:true, bodyDiffers:true", async () => {
+    for (const edit of [
+      (d: any) => (d.steps[0].description = "reworded"),
+      (d: any) => (d.description = "reworded"),
+      (d: any) => delete d.steps[0].properties.runAsync, // an explicit default the logic hash drops
+    ]) {
+      pair({ editDraft: edit });
+      const r = await runCommand(stateCommand, [DRAFT], { env: "t-dev" });
+      const d = r.envelope?.data as any;
+      expect(d.inSync).toBe(true);
+      expect(d.bodyDiffers).toBe(true);
+      ff?.restore();
+      cfg?.restore();
+    }
+  });
+
+  test("human output names a body-only difference", async () => {
+    pair({ editDraft: (d: any) => (d.steps[0].description = "reworded") });
+    const r = await runCommand(stateCommand, [DRAFT], { env: "t-dev", llm: false });
+    expect(r.stdout + r.stderr).toContain("stored bodies differ");
   });
 
   test("C24: each side's scope is reported, read fresh", async () => {
@@ -59,6 +87,7 @@ describe("ad state", () => {
     const r = await runCommand(stateCommand, [DRAFT], { env: "t-dev" });
     const d = r.envelope?.data as any;
     expect(d.inSync).toBe(false);
+    expect(d.bodyDiffers).toBe(true);
     expect(d.draftUuid).toBe(DRAFT);
     expect(d.publishedUuid).toBe(PUB);
   });
@@ -79,6 +108,7 @@ describe("ad state", () => {
     const r = await runCommand(stateCommand, [DRAFT], { env: "t-dev" });
     const d = r.envelope?.data as any;
     expect(d.inSync).toBeNull();
+    expect(d.bodyDiffers).toBeNull();
     expect(d.versions).toEqual({ draft: 4, published: null });
     expect(d.publishedReadFailed).toBeUndefined();
   });

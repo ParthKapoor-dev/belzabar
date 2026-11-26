@@ -34,7 +34,7 @@ Everything the `wi-impl ad` commands share. Other workspaces import it as
 | `api-shape.ts` | `child-info --shape`: the part of a callee contract needed to wire a step, plus its auth accounts. |
 | `history.ts` | `getVersionOf` / `sideOf`: read version N from the chain (draft or published) the uuid names; `historyTimeIso` (history stamps are zone-less UTC), `lastUpdatedOf` (a method's last save, from the V1 chain). |
 | `text-diff.ts` | `lineDiff`: unified-diff hunks of two texts (`ad history diff` textDiff). |
-| `fingerprint.ts` | `fingerprintMethod`: a logic hash that ignores descriptions, internal ids / links and bookkeeping; `methodDiffView` (the `ad diff` view: no ids), `diffPaths`. |
+| `fingerprint.ts` | `fingerprintMethod`: a logic hash that ignores descriptions, internal ids / links and bookkeeping; `storedBodyFingerprint`: the stored body minus ids, versions and stamps (`ad state` bodyDiffers); `methodDiffView` (the `ad diff` view: no ids), `diffPaths`. |
 | `trace.ts` | `traceMethod`: where a method's dev history has reached on every env (`ad trace`, `release matrix`). |
 | `test-run.ts` | `runInlineTest`: one `/chain/test` run → status and HTTP status, trace (times in ms; a loop step's ns time corrected; async steps `dispatched (async)`), per-step outputs and rendered SQL, server timing, outputs map; `diffOutputs` for `--compare-published`. |
 | `compare-run.ts` | `compareRuns` for `--compare-published`: status, HTTP status, failing step and error, then outputs (`--ignore` paths dropped, `--ignore-order` sorts lists); `parseIgnorePath`. |
