@@ -161,6 +161,21 @@ describe("case file ↔ wire", () => {
     expect(() => parseCaseInput({ name: "a", input: {} }, "f")).toThrow(/unknown key/);
     expect(() => parseCaseInput({ name: "a", assertions: [{ output: "o", op: "ge", expected: 1 }] }, "f")).toThrow(/op must be/);
   });
+
+  // K12
+  test("parseCaseInput: notContains, and a list or {} with eq / neq; a non-empty object is refused", () => {
+    const c = parseCaseInput(
+      { name: "a", assertions: [{ output: "o", op: "notContains", expected: "x" }, { output: "l", op: "eq", expected: ["a"] }, { output: "m", op: "neq", expected: {} }] },
+      "f",
+    );
+    expect((caseToWire(c).assertions as Array<{ conditionExpression: string }>).map((a) => a.conditionExpression)).toEqual([
+      "#{o.toString()}.contains('x') eq false",
+      `#{l.toString()} eq '["a"]'`,
+      "#{m.toString()} ne '{}'",
+    ]);
+    expect(() => parseCaseInput({ name: "a", assertions: [{ output: "m", op: "eq", expected: { k: 1 } }] }, "f")).toThrow(/Java map/);
+    expect(() => parseCaseInput({ name: "a", assertions: [{ output: "l", op: "contains", expected: [] }] }, "f")).toThrow(/= or != only/);
+  });
 });
 
 describe("planSync", () => {

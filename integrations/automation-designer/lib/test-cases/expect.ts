@@ -1,7 +1,8 @@
 // Output expectations for `ad test --expect` and test-case assertions.
 //
 //   out=val     equal            out!=val   not equal
-//   out~=val    contains         out>val  out<val  out>=val  out<=val   numeric
+//   out~=val    contains         out!~=val  does not contain
+//   out>val  out<val  out>=val  out<=val   numeric
 //   out.a[0].b=val               path into an output that holds JSON
 //   out.size()=3  out[0].size()>1  the size of a list / text / object
 //
@@ -13,14 +14,19 @@
 // Test-case assertions are stored as advance-mode SpEL, in the forms the
 // server evaluates (live 2026-10-21, the AD screen's own test route):
 //   =  → #{lhs} eq v     != → #{lhs} ne v     > / < → gt / lt
-//   ~= → #{lhs.toString()}.contains('v') eq true
+//   ~= → #{lhs.toString()}.contains('v') eq true    !~= → … eq false
+//   = / != with a list or {} → #{lhs.toString()} eq|ne '<compact JSON>'
+// (live 2026-11-26, the AD screen's route: a list output's toString() is its
+// compact JSON, so '["a","b"]' and '[]' score PASS/FAIL correctly, and so does
+// '{}' for an empty object; a non-empty object prints as a Java map,
+// {k=v, …}, so object equality other than {} is refused.)
 // `neq` and an infix `#{x} contains 'v'` (what wi-impl stored before) score
 // ERROR on the server: they read back as raw expressions with a warning.
 // `lhs` is an output, optionally with a path (`out[0].col`) and `.size()`.
 
 import { CliError } from "@belzabar/core";
 
-type ExpectOp = "eq" | "neq" | "contains" | "gt" | "lt" | "ge" | "le";
+type ExpectOp = "eq" | "neq" | "contains" | "notContains" | "gt" | "lt" | "ge" | "le";
 
 export interface Expectation {
   /** The text as given (`greetingOut=Hello`). */
@@ -49,6 +55,7 @@ export interface ExpectationResult {
 }
 
 const OPS: Array<[string, ExpectOp]> = [
+  ["!~=", "notContains"],
   ["!=", "neq"],
   ["~=", "contains"],
   [">=", "ge"],
@@ -58,7 +65,7 @@ const OPS: Array<[string, ExpectOp]> = [
   ["<", "lt"],
 ];
 
-const OP_SYMBOL: Record<ExpectOp, string> = { eq: "=", neq: "!=", contains: "~=", gt: ">", lt: "<", ge: ">=", le: "<=" };
+const OP_SYMBOL: Record<ExpectOp, string> = { eq: "=", neq: "!=", contains: "~=", notContains: "!~=", gt: ">", lt: "<", ge: ">=", le: "<=" };
 
 const LHS_RE = /^\s*([A-Za-z_][A-Za-z0-9_]*)((?:\.(?!size\(\))[A-Za-z0-9_$-]+|\[\d+\])*)(\.size\(\))?\s*/;
 
@@ -67,8 +74,8 @@ function invalid(source: string, why: string, code = "INVALID_EXPECTATION"): Cli
   // so it must not suggest `out.path` (the hint contradicted the error).
   const hint =
     code === "INVALID_ASSERTION"
-      ? "Use out=value, out!=value, out~=value, out>n, out<n; out[0].col=value and out.size()=n look inside an output."
-      : "Use out=value, out!=value, out~=value, out>n, out<n (out.path[0]=value for JSON outputs, out.size()=n for a size).";
+      ? "Use out=value, out!=value, out~=value, out!~=value, out>n, out<n; out[0].col=value and out.size()=n look inside an output."
+      : "Use out=value, out!=value, out~=value, out!~=value, out>n, out<n (out.path[0]=value for JSON outputs, out.size()=n for a size).";
   const label = code === "INVALID_ASSERTION" ? "assertion" : "expectation";
   return new CliError(`Invalid ${label} '${source}': ${why}. ${hint}`, { code });
 }
@@ -170,7 +177,8 @@ function isScalar(v: unknown): boolean {
 /** Wire-tolerant equality: exact, text form, or the JSON a string output holds. */
 function looseEqual(actual: unknown, e: Pick<Expectation, "expected" | "text" | "quoted">): boolean {
   // the test route leaves an empty or null output without a value (wi-impl reads it as null)
-  if (actual === null && e.text === "") return true;
+  // (an empty list or object too: the AD screen's route, which scores stored cases, gives [] / {})
+  if (actual === null && (e.text === "" || (!e.quoted && (e.text === "[]" || e.text === "{}")))) return true;
   if (e.quoted) {
     if (isScalar(actual)) return actual !== null && String(actual) === e.text;
     // wi-impl parses an output's JSON text ('{}' on the wire is {} here): compare the quoted text as that JSON
@@ -241,6 +249,9 @@ export function evaluateExpectation(outputs: Record<string, unknown>, e: Expecta
     case "contains":
       pass = contains(actual, e);
       break;
+    case "notContains":
+      pass = !contains(actual, e);
+      break;
     default: {
       const a = Number(typeof actual === "string" ? actual.trim() : actual);
       const b = Number(e.text);
@@ -263,7 +274,7 @@ export function evaluateExpectations(outputs: Record<string, unknown>, list: Exp
 
 // ── test-case assertions (advance-mode SpEL) ──────────────────────────────
 
-const ASSERT_OPS = ["eq", "neq", "gt", "lt", "contains"] as const;
+const ASSERT_OPS = ["eq", "neq", "gt", "lt", "contains", "notContains"] as const;
 type AssertOp = (typeof ASSERT_OPS)[number];
 /** Case-file op names: `ne` is accepted for `neq`. */
 const OP_ALIASES: Record<string, AssertOp> = { ne: "neq" };
@@ -272,7 +283,8 @@ const OP_ALIASES: Record<string, AssertOp> = { ne: "neq" };
 interface StructuredAssertion {
   output: string;
   op: AssertOp;
-  expected: string | number | boolean | null;
+  /** A scalar; with eq / neq also a list or {} (compared as the server's compact JSON text). */
+  expected: string | number | boolean | null | unknown[] | Record<string, never>;
 }
 
 /** An assertion wi-impl cannot read back structurally: kept verbatim. */
@@ -288,7 +300,7 @@ export function isStructured(a: CaseAssertion): a is StructuredAssertion {
   return typeof (a as StructuredAssertion).output === "string";
 }
 
-/** A case-file op (`eq`, `neq` or `ne`, `gt`, `lt`, `contains`), or null when unknown. */
+/** A case-file op (`eq`, `neq` or `ne`, `gt`, `lt`, `contains`, `notContains`), or null when unknown. */
 export function assertOp(op: unknown): AssertOp | null {
   const s = String(op);
   return (ASSERT_OPS as readonly string[]).includes(s) ? (s as AssertOp) : (OP_ALIASES[s] ?? null);
@@ -311,21 +323,41 @@ export function assertionFromExpectation(e: Expectation): StructuredAssertion {
   }
   const lhs = lhsText(e);
   if (!LHS_ONLY_RE.test(lhs)) throw invalid(e.source, "a stored path takes identifiers and [n] indexes only", code);
-  const v = e.expected;
-  if (v !== null && typeof v === "object") throw invalid(e.source, "assertion values must be a string, number, boolean or null", code);
-  return { output: lhs, op: e.op as AssertOp, expected: v as StructuredAssertion["expected"] };
+  const why = assertionValueProblem(e.op as AssertOp, e.expected);
+  if (why) throw invalid(e.source, why, code);
+  return { output: lhs, op: e.op as AssertOp, expected: e.expected as StructuredAssertion["expected"] };
+}
+
+const isJsonValue = (v: unknown): v is unknown[] | Record<string, never> =>
+  Array.isArray(v) || (v !== null && typeof v === "object" && Object.keys(v).length === 0);
+
+/** Why `expected` cannot be stored with `op`, or null when it can. */
+export function assertionValueProblem(op: AssertOp, v: unknown): string | null {
+  if (v === null || ["string", "number", "boolean"].includes(typeof v)) return null;
+  if (isJsonValue(v)) {
+    return op === "eq" || op === "neq" ? null : "a list or {} compares with = or != only";
+  }
+  return (
+    "assertion values must be a string, number, boolean, null, a list or {} (the server prints a non-empty object " +
+    "as a Java map, so it cannot be compared whole): check its fields instead (out.key=value)"
+  );
 }
 
 /** SpEL literal: strings single-quoted ('' escapes), numbers/booleans/null bare. */
-function spelLiteral(v: StructuredAssertion["expected"]): string {
+function spelLiteral(v: string | number | boolean | null): string {
   if (v === null) return "null";
   if (typeof v === "boolean" || typeof v === "number") return String(v);
   return `'${v.replace(/'/g, "''")}'`;
 }
 
 export function assertionExpression(a: StructuredAssertion): string {
-  if (a.op === "contains") return `#{${a.output}.toString()}.contains(${spelLiteral(String(a.expected))}) eq true`;
-  return `#{${a.output}} ${a.op === "neq" ? "ne" : a.op} ${spelLiteral(a.expected)}`;
+  if (a.op === "contains" || a.op === "notContains") {
+    return `#{${a.output}.toString()}.contains(${spelLiteral(String(a.expected))}) eq ${a.op === "contains"}`;
+  }
+  const op = a.op === "neq" ? "ne" : a.op;
+  // a list's toString() on the server is its compact JSON (an empty object's is {})
+  if (isJsonValue(a.expected)) return `#{${a.output}.toString()} ${op} ${spelLiteral(JSON.stringify(a.expected))}`;
+  return `#{${a.output}} ${op} ${spelLiteral(a.expected)}`;
 }
 
 /** The UI wire shape of one assertion. */
@@ -337,7 +369,8 @@ export function assertionToWire(a: CaseAssertion): Record<string, unknown> {
 }
 
 const ASSERT_RE = new RegExp(String.raw`^\s*#\{\s*(${LHS_SRC})\s*\}\s+(eq|ne|gt|lt)\s+(.+?)\s*$`);
-const CONTAINS_RE = new RegExp(String.raw`^\s*#\{\s*(${LHS_SRC})\.toString\(\)\s*\}\.contains\('((?:[^']|'')*)'\)\s+eq\s+true\s*$`);
+const CONTAINS_RE = new RegExp(String.raw`^\s*#\{\s*(${LHS_SRC})\.toString\(\)\s*\}\.contains\('((?:[^']|'')*)'\)\s+eq\s+(true|false)\s*$`);
+const JSON_EQ_RE = new RegExp(String.raw`^\s*#\{\s*(${LHS_SRC})\.toString\(\)\s*\}\s+(eq|ne)\s+'((?:[^']|'')*)'\s*$`);
 // What wi-impl stored for != and ~= up to 0.3.0: the server scores both ERROR.
 const LEGACY_RE = /^\s*#\{[^}]*\}\s+(neq|contains)\s+/;
 
@@ -347,7 +380,14 @@ export function assertionFromWire(w: Record<string, unknown>): CaseAssertion {
   const mode = typeof w.mode === "string" ? w.mode : undefined;
   const plain = expr !== null && (mode === undefined || mode === "advance") && !w.conditions;
   const c = plain ? CONTAINS_RE.exec(expr) : null;
-  if (c) return { output: c[1]!, op: "contains", expected: c[2]!.replace(/''/g, "'") };
+  if (c) return { output: c[1]!, op: c[3] === "true" ? "contains" : "notContains", expected: c[2]!.replace(/''/g, "'") };
+  const j = plain ? JSON_EQ_RE.exec(expr) : null;
+  if (j) {
+    const text = j[3]!.replace(/''/g, "'");
+    const value = tryJson(text);
+    // only the form assertionExpression writes: the compact JSON of a list or {}
+    if (isJsonValue(value) && JSON.stringify(value) === text) return { output: j[1]!, op: j[2] === "ne" ? "neq" : "eq", expected: value };
+  }
   const m = plain ? ASSERT_RE.exec(expr) : null;
   if (m) {
     const lit = m[3]!;
@@ -386,7 +426,7 @@ export function expectationFromAssertion(a: StructuredAssertion): Expectation {
     path: lhs.path,
     op: a.op,
     expected: a.expected,
-    text: a.expected === null ? "null" : String(a.expected),
+    text: a.expected === null ? "null" : typeof a.expected === "object" ? JSON.stringify(a.expected) : String(a.expected),
     quoted: typeof a.expected === "string",
   };
   if (lhs.size) e.size = true;

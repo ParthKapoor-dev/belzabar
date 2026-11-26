@@ -17,7 +17,7 @@
 //     assertions: [{output, op, expected} | {expression, mode?, conditions?}] }
 
 import { CliError, isObj, type Obj } from "@belzabar/core";
-import { assertionFromExpectation, assertionFromWire, assertionToWire, assertOp, isStructured, parseExpectation, type CaseAssertion } from "./expect";
+import { assertionFromExpectation, assertionFromWire, assertionToWire, assertionValueProblem, assertOp, isStructured, parseExpectation, type CaseAssertion } from "./expect";
 
 interface InputExtra {
   /** Stored defaultValue, when it differs from the value. */
@@ -192,16 +192,17 @@ export function parseCaseInput(json: unknown, source: string): CaseFile {
     if (!isObj(a)) throw bad(`assertions[${i}] must be an object`);
     if (typeof a.output === "string") {
       const op = assertOp(a.op ?? "eq");
-      if (!op) throw bad(`assertions[${i}].op must be eq, neq (or ne), gt, lt or contains`);
+      if (!op) throw bad(`assertions[${i}].op must be eq, neq (or ne), gt, lt, contains or notContains`);
       const e = a.expected;
-      if (e !== null && !["string", "number", "boolean"].includes(typeof e)) throw bad(`assertions[${i}].expected must be a string, number, boolean or null`);
+      const why = assertionValueProblem(op, e);
+      if (why) throw bad(`assertions[${i}].expected: ${why}`);
       // the left-hand side may carry a path and .size() (`out[0].col`, `out.size()`)
       try {
         assertionFromExpectation(parseExpectation(`${a.output}=x`));
       } catch (err) {
         throw bad(`assertions[${i}].output: ${(err as Error).message}`);
       }
-      assertions.push({ output: a.output, op, expected: e as string });
+      assertions.push({ output: a.output, op, expected: e as string | unknown[] });
     } else if (typeof a.expression === "string" || typeof a.conditionExpression === "string") {
       assertions.push(assertionFromWire({ mode: a.mode, conditionExpression: a.expression ?? a.conditionExpression, conditions: a.conditions }));
     } else {

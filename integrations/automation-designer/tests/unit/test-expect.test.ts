@@ -195,3 +195,62 @@ describe("feedback fixes: list contains, .size(), empty outputs, legacy stored f
     expect(legacyAssertionProblem(assertionFromWire({ conditionExpression: "#{a} eq #{b}" }))).toBeNull();
   });
 });
+
+// K12: "does not contain", and list / {} equality, in the forms the server's own
+// test route scored PASS/FAIL correctly (live 2026-11-26).
+describe("does not contain; list and {} equality", () => {
+  const stored = (s: string) => assertionExpression(assertionFromExpectation(parseExpectation(s)));
+
+  test("!~= parses, evaluates and is stored as contains(…) eq false", () => {
+    expect(parseExpectation("out!~=zzz")).toMatchObject({ output: "out", op: "notContains", expected: "zzz" });
+    expect(run({ out: "Hello x" }, "out!~=zzz").pass).toBe(true);
+    expect(run({ out: "Hello x" }, "out!~=Hello").pass).toBe(false);
+    expect(run({ out: ["a", "b"] }, "out!~=q").pass).toBe(true);
+    expect(run({ out: ["a", "b"] }, "out!~=a").pass).toBe(false);
+    expect(stored("out!~=O'Neil")).toBe("#{out.toString()}.contains('O''Neil') eq false");
+    expect(assertionFromWire({ conditionExpression: "#{out.toString()}.contains('O''Neil') eq false" })).toEqual({ output: "out", op: "notContains", expected: "O'Neil" });
+  });
+
+  test("a list or {} is stored as #{out.toString()} eq|ne '<compact JSON>' and reads back structured", () => {
+    expect(stored('list=["a","b"]')).toBe(`#{list.toString()} eq '["a","b"]'`);
+    expect(stored("list!=[]")).toBe("#{list.toString()} ne '[]'");
+    expect(stored("obj={}")).toBe("#{obj.toString()} eq '{}'");
+    expect(stored(`items=[{"label":"O'Neil"}]`)).toBe(`#{items.toString()} eq '[{"label":"O''Neil"}]'`);
+    expect(assertionFromWire({ conditionExpression: `#{items.toString()} eq '[{"label":"O''Neil"}]'` })).toEqual({
+      output: "items",
+      op: "eq",
+      expected: [{ label: "O'Neil" }],
+    });
+    expect(assertionFromWire({ conditionExpression: "#{obj.toString()} ne '{}'" })).toEqual({ output: "obj", op: "neq", expected: {} });
+    // other toString() comparisons stay raw
+    expect(assertionFromWire({ conditionExpression: "#{s.toString()} eq 'abc'" })).toEqual({ expression: "#{s.toString()} eq 'abc'" });
+    expect(assertionFromWire({ conditionExpression: `#{l.toString()} eq '[ "a" ]'` })).toEqual({ expression: `#{l.toString()} eq '[ "a" ]'` });
+  });
+
+  test("stored list / {} assertions evaluate locally like the server", () => {
+    const ev = (outputs: Record<string, unknown>, s: string) =>
+      evaluateExpectation(outputs, expectationFromAssertion(assertionFromExpectation(parseExpectation(s)))).pass;
+    expect(ev({ list: ["a", "b"] }, 'list=["a","b"]')).toBe(true);
+    expect(ev({ list: ["a", "b"] }, 'list=["b","a"]')).toBe(false);
+    expect(ev({ list: '["a","b"]' }, 'list=["a","b"]')).toBe(true);
+    expect(ev({ list: [] }, "list=[]")).toBe(true);
+    expect(ev({ list: ["a"] }, "list!=[]")).toBe(true);
+    expect(ev({ obj: {} }, "obj={}")).toBe(true);
+    expect(ev({ obj: { k: 1 } }, "obj={}")).toBe(false);
+    // the test route leaves an empty list / object without a value (read as null)
+    expect(ev({ list: null }, "list=[]")).toBe(true);
+    expect(ev({ obj: null }, "obj={}")).toBe(true);
+    expect(ev({ list: null }, "list!=[]")).toBe(false);
+    expect(run({ s: null }, "s='[]'").pass).toBe(false);
+  });
+
+  test("a non-empty object, or a list with another operator, is refused", () => {
+    for (const [bad, why] of [
+      ['o={"programs":{}}', "Java map"],
+      ['l~=["a"]', "= or != only"],
+      ["l!~=[]", "= or != only"],
+    ] as const) {
+      expect(() => assertionFromExpectation(parseExpectation(bad))).toThrow(expect.objectContaining({ code: "INVALID_ASSERTION", message: expect.stringContaining(why) }));
+    }
+  });
+});

@@ -3,7 +3,7 @@ wi-impl ad test <uuid> --env <env> --inputs <file|json>  :->  Input values from 
 wi-impl ad test <uuid> --env <env> --input <key=value>  :->  One input value, repeatable, typed by the method's input type (on top of --inputs/--case); with --llm give --input, --inputs or --case
 wi-impl ad test <uuid> --env <env> --case <file>  :->  Inputs and assertions from a test-case file; assertions are checked locally like --expect
 wi-impl ad test <uuid> --env <env> --cases <file> --yes  :->  Run once per case in a JSON array / JSONL of {name?, inputs, expect[]} (N real executions; confirms, --yes with --llm); one pass/fail row per case, exit 1 (AD_TEST_CASES_FAILED) if any fails
-wi-impl ad test <uuid> --env <env> --expect <out=value>  :->  Check an output after the run (repeatable; = != ~= > < >= <=, out.path for JSON); exit 1 on a mismatch
+wi-impl ad test <uuid> --env <env> --expect <out=value>  :->  Check an output after the run (repeatable; = != ~= !~= > < >= <=, out.path for JSON); exit 1 on a mismatch
 wi-impl ad test <uuid> --env <env> --cases <file> --compare-published --yes  :->  Run every case on the draft then the published copy; one row per case with compare{identical, mismatches, differences}
 wi-impl ad test <uuid> --env <env> --cases <file> --trace --yes  :->  Each case row also carries its trace and timing
 wi-impl ad test <uuid> --env <env> --compare-published --ignore <path> --yes  :->  Leave a value out of the draft/published output comparison (out, out.a, out[].a, *.key; repeatable)

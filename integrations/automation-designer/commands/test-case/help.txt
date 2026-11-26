@@ -62,10 +62,17 @@ Flags:
   --input <k=v>         Input value (repeatable). STRING/TEXT inputs keep the text;
                         other types parse as JSON when they can.
   --assert <out=v>      Assertion (repeatable): out=v, out!=v, out>v, out<v, out~=v
-                        (contains). v is JSON when it parses; quote it ('42') for a
-                        string. The left side may be `out[0].col` or `out.size()`.
+                        (contains), out!~=v (does not contain). v is JSON when it
+                        parses; quote it ('42') for a string. The left side may be
+                        `out[0].col` or `out.size()`. A list or {} compares with =
+                        and != (out=["a","b"], out=[], out!=[], out={}): the server
+                        compares the output's compact JSON text, so item order
+                        and number form (1 vs 1.0) must match. A non-empty object
+                        cannot be compared whole (the server prints it as a Java
+                        map): assert its fields (out.key=v).
                         Stored as the SpEL the server evaluates: `#{out} eq 'v'`,
-                        `#{out} ne v`, `#{out.toString()}.contains('v') eq true`.
+                        `#{out} ne v`, `#{out.toString()}.contains('v') eq true`
+                        (eq false for !~=), `#{out.toString()} eq '["a","b"]'`.
                         (`neq` and an infix `contains`, stored by wi-impl before
                         0.3.1, score ERROR on the server: they read back as raw
                         expressions with a warning; re-save the case to fix them.)
@@ -106,8 +113,9 @@ separate git repo and sync to any env):
     "inputs": { "name": "World" },
     "assertions": [ { "output": "greetingOut", "op": "eq", "expected": "Hello World" } ]
   }
-  "op" is eq, neq (or ne), gt, lt or contains; "output" may carry a path and
-  .size() ("rows[0].label", "rows.size()").
+  "op" is eq, neq (or ne), gt, lt, contains or notContains; "output" may carry
+  a path and .size() ("rows[0].label", "rows.size()"). "expected" is a scalar,
+  or with eq / neq a list or {}.
   Assertions wi-impl cannot parse stay verbatim as {"expression": "..."}. Inputs whose
   stored wrapper carries more than {"value"} keep it in "inputExtras".
 

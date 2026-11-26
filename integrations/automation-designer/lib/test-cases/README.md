@@ -17,7 +17,8 @@ Related: [`../test-run.ts`](../test-run.ts) runs one inline test and returns the
 
 ## `--expect`
 
-- Operators: `out=v`, `out!=v`, `out~=v` (contains), `out>v`, `out<v`, `out>=v`, `out<=v`.
+- Operators: `out=v`, `out!=v`, `out~=v` (contains), `out!~=v` (does not contain), `out>v`, `out<v`,
+  `out>=v`, `out<=v`.
 - `out.a[0].b=v` looks inside an output that holds JSON.
 - The right-hand side is JSON when it parses, otherwise text; quote it to force a string. A
   double-quoted value is a JSON string (`\"`, `\\`, `\n` are decoded); a single-quoted one is
@@ -26,8 +27,12 @@ Related: [`../test-run.ts`](../test-run.ts) runs one inline test and returns the
 - Any failure exits 1 with `AD_TEST_EXPECTATION_FAILED`.
 
 Stored assertions are advance-mode SpEL in the forms the server evaluates (checked on its own
-test route): `#{lhs} eq|ne|gt|lt v` and `#{lhs.toString()}.contains('v') eq true`, where `lhs`
-is an output with an optional path and `.size()`. The `neq` and infix `contains` forms wi-impl
+test route): `#{lhs} eq|ne|gt|lt v`, `#{lhs.toString()}.contains('v') eq true|false` (`~=` /
+`!~=`) and, for a list or `{}` with `=` / `!=`, `#{lhs.toString()} eq|ne '<compact JSON>'`, where
+`lhs` is an output with an optional path and `.size()`. On that route a list output's
+`toString()` is its compact JSON and an empty object's is `{}`, but a non-empty object prints as
+a Java map (`{k=v}`), so whole-object equality is refused (`assertionValueProblem`). The `/chain/test`
+route `run-suite --wait` uses gives an empty list or object no value (null), which equals `[]` / `{}`. The `neq` and infix `contains` forms wi-impl
 wrote before score ERROR on the server; they read back raw and `legacyAssertionProblem` names
 them. `run-suite` reports a case NOT_CHECKED (never PASS) when an assertion cannot be evaluated
 locally, and runs inputs stored as `{}` ("no value") as null (`runnableInputs`).

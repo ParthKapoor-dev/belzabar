@@ -59,11 +59,12 @@ Flags:
   --trace               With --cases: each row also carries its trace and timing
                         (and so does compare.published).
   --expect <OUT=VALUE>  Check a method output after the run (repeatable). Operators:
-                        = != ~= (contains) > < >= <=; `out.a[0]=x` looks inside JSON,
+                        = != ~= (contains) !~= (does not contain) > < >= <=;
+                        `out=[…]` / `out={…}` compare JSON; `out.a[0]=x` looks inside JSON,
                         `out.size()=3` checks a list's (text's) size. ~= on a list
                         matches text inside any item. An empty or null output has
                         no value on the wire: it is reported as null and equals
-                        `out=` and `out=null`.
+                        `out=`, `out=null`, `out=[]` and `out={}`.
                         The value is JSON when it parses, else text; quote it
                         ('42') to compare as a string. "…" is a JSON string, so
                         \" \\ \n are decoded ('msg="Say \"hi\""' expects
