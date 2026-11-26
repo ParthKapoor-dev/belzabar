@@ -140,6 +140,7 @@ const command: CommandModule<PublishArgs, PublishData> = {
         before: publishedBody,
         env,
         action: "publish",
+        preexistingFlag: "--allow-preexisting",
         warn: (msg) => context.warn(msg),
         extraBlocking: (r) =>
           allowPreexisting ? [] : r.warnings.filter((w) => w.preexisting && w.originalSeverity === "error"),

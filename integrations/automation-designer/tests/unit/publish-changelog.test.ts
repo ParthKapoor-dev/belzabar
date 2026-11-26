@@ -290,7 +290,18 @@ describe("ad publish — validator gate + compiled cache", () => {
     __setValidatorsForTests({ offline: () => ({ errors: [err], warnings: [], layersRun: ["L1"] }) });
     const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("AD_VALIDATION_FAILED");
+    expect(r.envelope?.error?.message).not.toContain("--allow-preexisting"); // K7: nothing pre-existing
     expect(posts(f)).toEqual([]);
+  });
+
+  test("K7: new and pre-existing errors together: the flag is named for the pre-existing one only", async () => {
+    __setValidatorsForTests({
+      offline: () => ({ errors: [err], warnings: [{ ...err, path: "outputs[1].key", severity: "warn", preexisting: true, originalSeverity: "error" }], layersRun: ["L1"] }),
+    });
+    wire({ published: true });
+    const r = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes"], { env: "t-dev" });
+    expect(r.envelope?.error?.message).toContain("AD-SCHEMA-001 (pre-existing) outputs[1].key: bad");
+    expect(r.envelope?.error?.message).toContain("1 of 2 blocking finding(s) is pre-existing (the published copy has it too): --allow-preexisting lets it through; the others must be fixed.");
   });
 
   test("pre-existing errors (also in the published copy) block unless --allow-preexisting", async () => {
@@ -482,6 +493,8 @@ describe("ad publish — freshness and real draft/published pairs", () => {
       ["AD-SPEL-001", true],
       ["AD-SPEL-001", true],
     ]);
+    // K7: the error names the flag that lets pre-existing findings through.
+    expect(blocked.envelope?.error?.message).toContain("3 of 3 blocking finding(s) are pre-existing (the published copy has them too): --allow-preexisting lets them through.");
     const ok = await runCommand(publishCommand, [DRAFT, "--note", "n", "--yes", "--allow-preexisting"], { env: "t-dev" });
     expect(ok.envelope?.ok).toBe(true);
   });

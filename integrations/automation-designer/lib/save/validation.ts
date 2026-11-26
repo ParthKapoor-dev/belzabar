@@ -44,6 +44,8 @@ interface GateInput {
   action: string;
   /** Extra findings to treat as blocking (e.g. publish's pre-existing errors). */
   extraBlocking?: (r: ValidationResult) => ValidationFinding[];
+  /** The flag that lets pre-existing blocking findings through (publish: `--allow-preexisting`); named in the error. */
+  preexistingFlag?: string;
   warn: (msg: string) => void;
 }
 
@@ -69,12 +71,22 @@ export async function runValidationGate(flags: ValidationFlags, input: GateInput
     const preexistingCount = [...result.errors, ...result.warnings].filter((f) => f.preexisting).length;
     const head = blocking
       .slice(0, 5)
-      .map((f) => `${f.rule} ${f.path}: ${f.message}`)
+      .map((f) => `${f.rule}${f.preexisting ? " (pre-existing)" : ""} ${f.path}: ${f.message}`)
       .join("; ");
-    throw new CliError(
+    // K7: where pre-existing findings block (publish), name the flag that lets them through.
+    const blockingPre = blocking.filter((f) => f.preexisting).length;
+    const hint =
+      blockingPre > 0 && input.preexistingFlag
+        ? `. ${blockingPre} of ${blocking.length} blocking finding(s) ${blockingPre === 1 ? "is" : "are"} pre-existing (the published copy has ${blockingPre === 1 ? "it" : "them"} too): ` +
+          `${input.preexistingFlag} lets ${blockingPre === 1 ? "it" : "them"} through` +
+          (blockingPre < blocking.length ? "; the others must be fixed." : ".")
+        : "";
+    const summary =
       `Validation blocked the ${input.action}: ${blocking.length} blocking finding(s)` +
-        `${flags.strict && result.warnings.length ? " (--strict counts warnings)" : ""}. ${head}` +
-        (blocking.length > 5 ? ` (+${blocking.length - 5} more)` : ""),
+      `${flags.strict && result.warnings.length ? " (--strict counts warnings)" : ""}. ${head}` +
+      (blocking.length > 5 ? ` (+${blocking.length - 5} more)` : "");
+    throw new CliError(
+      hint ? summary.replace(/\.$/, "") + hint : summary,
       {
         code: "AD_VALIDATION_FAILED",
         details: {
