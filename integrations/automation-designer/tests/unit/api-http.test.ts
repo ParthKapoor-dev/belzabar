@@ -18,8 +18,10 @@ afterEach(() => {
 const UUID = "0000000000000000000000000000dead";
 const JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIiwiZXhwIjo5OTk5OTk5OTk5fQ.c2lnbmF0dXJlLXNpZw";
 
-function setup(routes: Parameters<typeof fakeFetch>[0]) {
-  cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t-dev.test", token: JWT } }, activeEnv: "t-dev" });
+// `env`: the History service uuid is cached per env name in-process, and other
+// test files in the same run may have cached one for "t-dev".
+function setup(routes: Parameters<typeof fakeFetch>[0], env = "t-dev") {
+  cfg = withTempEnvConfig({ envs: { [env]: { url: "https://t-dev.test", token: JWT } }, activeEnv: env });
   ff = fakeFetch(routes).install();
 }
 
@@ -79,7 +81,7 @@ describe("test responses are redacted", () => {
 // non-JSON → HTTP_BAD_JSON.
 describe("V1 reads/writes: empty and non-JSON 200 bodies", () => {
   test("empty body → null (suite, report, exports, listings, test-case writes)", async () => {
-    setup([{ url: /\/rest\/api\//, response: respond({ status: 200, text: "" }) }]);
+    setup([{ url: /\/rest\/api\//, response: respond({ status: 200, text: "" }) }], "t-api-http-empty");
     expect(await v1.listTestCases(UUID)).toBeNull();
     expect(await v1.getTestSuiteReport()).toBeNull();
     expect(await v1.exportMethod(1)).toBeNull();
