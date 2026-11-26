@@ -11,7 +11,11 @@ Defaults to Zed (run in its two-file diff mode). Two modes:
 
   Cross-env mode  (--cross-env, or just by passing --from-env/--to-env)
     Compares the current state of the same UUID across two envs, fetched
-    in-process with each env's own session.
+    in-process with each env's own session. Each side is read on V2, the
+    body the server runs: a V1 body can still list a step input whose callee
+    input does not exist on that env (a migrated body naming the source env's
+    callee inputs), which the server drops. V1 only when V2 refuses the body
+    (a warning says so).
 
   Both modes compare a semantic logic view: decoded custom code, SQL and SpEL
   bodies, step order/kind/description, called services (category spacing

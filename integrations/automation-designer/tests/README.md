@@ -14,7 +14,7 @@
 | `categories/`, `services/`, `child-info/` | Category and service listings, callee contracts, db accounts. |
 | `callers/` | Method listings and V2 bodies for the reverse index. |
 | `draft-published/` | Draft and published V2 bodies of the same methods. |
-| `history/`, `cross-env/` | Version history responses; published history bodies of the same logic on two envs. |
+| `history/`, `cross-env/` | Version history responses; published history bodies of the same logic on two envs, and one draft read on V1 and V2 on two envs (the V1 body keeps step inputs the target dropped). |
 | `test-cases/` | A method with a suite: V1/V2 bodies and the suite GET. |
 | `export/`, `not-found/` | An export body; the V1 and V2 answers to an unknown uuid. |
 | `validate/` | The validator golden body, live case patches (`cases.json`) and online captures. |

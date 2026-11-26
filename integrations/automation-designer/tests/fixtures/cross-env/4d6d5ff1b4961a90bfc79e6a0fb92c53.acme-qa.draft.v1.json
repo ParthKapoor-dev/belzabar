@@ -1,0 +1,275 @@
+{
+  "id": 4882,
+  "uuid": "4d6d5ff1b4961a90bfc79e6a0fb92c53",
+  "jsonDefinition": "{\"name\": \"student.owner.get\", \"uuid\": \"4d6d5ff1b4961a90bfc79e6a0fb92c53\", \"scope\": \"UNRESTRICTED\", \"inputs\": [{\"type\": \"TEXT\", \"uuid\": \"483cc91531efb01f5c08aa1734c4a94f    \", \"label\": \"studentId\", \"secured\": false, \"editable\": false, \"required\": true, \"fieldCode\": \"studentId\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"description\": \"student id for get owner details\", \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}, {\"type\": \"BOOLEAN\", \"uuid\": \"4384685d45fcc858b8e8b5fa3302d85d    \", \"label\": \"fetchHouseholds\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"fetchHouseholds\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"description\": \"if fetch house hold true then fetch response for it\", \"inputVarRef\": \"\", \"defaultValue\": false, \"encodingType\": \"NONE\"}, {\"type\": \"BOOLEAN\", \"uuid\": \"489909bbb321ee53cbcea9038ed945f9    \", \"label\": \"fetchAddressAttributes\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"fetchAddressAttributes\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"defaultValue\": false, \"encodingType\": \"NONE\"}, {\"type\": \"JSON\", \"uuid\": \"426cff01a4154ffed9a59cdfa624da1a    \", \"label\": \"addressAttributes\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"addressAttributes\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"encodingType\": \"NONE\"}], \"outputs\": [{\"id\": 10399, \"code\": \"studentGuardianData\", \"type\": \"JSON\", \"uuid\": \"4ec2f79752f0003c21f094db4da42736    \", \"fieldCode\": \"studentGuardianData\", \"sensitive\": false, \"outputCode\": \"studentGuardianData\", \"properties\": [], \"displayName\": \"studentGuardianData\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}, {\"id\": 10400, \"code\": \"households\", \"type\": \"JSON\", \"uuid\": \"4e2d9830099763f18c9190a2b8816596    \", \"fieldCode\": \"households\", \"sensitive\": false, \"outputCode\": \"households\", \"properties\": [], \"displayName\": \"households\", \"rawResponseContainer\": false, \"hiddenAutomationAPIOutputIds\": []}], \"summary\": \"\", \"services\": [{\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"studentGuardian\", \"fieldCode\": \"studentGuardian\", \"sensitive\": false, \"outputCode\": \"flatData[]\", \"properties\": [], \"displayName\": \"studentGuardian\", \"automationId\": 54152, \"automationUuid\": \"4e623133c659b80467c9bf976e99adb8    \", \"internalVarRef\": \"studentGuardianData\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 85, \"automationAPIOutputUuid\": \"fd4d3307-7178-4df2-bfa1-2a32cb5b3392\", \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"U0VMRUNUIGcuaWQgQVMgIm93bmVySWQiLCBuYW1lLCBnLmFjY291bnRfaWQgQVMgImFjY291bnRJZCIsIGcuZ2VuZGVyLCBnLmRhdGVfb2ZfYmlydGggQVMgImRhdGVPZkJpcnRoIiwgZy5wcmVmZXJyZWRfbGFuZyBBUyAicHJlZmVycmVkTGFuZyIsIGcuZW1haWwsIGcucGhvbmUsIGcuYWRkcmVzcywgZy5kZXRhaWxzLCBnLmRhdGFfcGVuZGluZ19yZXZpZXcgQVMgImRhdGFQZW5kaW5nUmV2aWV3IiwgZy5yZXZpZXdfc3RhdHVzIEFTICJyZXZpZXdTdGF0dXMiLCBDT0FMRVNDRShnLmFsdGVybmF0ZV9pZHMtPidleHRlcm5hbCctPj4naWQnLCBnLmFsdGVybmF0ZV9pZHMtPidpbnRlcm5hbCctPj4nY3VzdG9tSWQnLCBnLmlkOjp2YXJjaGFyKSBBUyAiZ3VhcmRpYW5JZCIgRlJPTSBzdHVkZW50X2d1YXJkaWFuIHNnIElOTkVSIEpPSU4gZ3VhcmRpYW4gZyBPTiBzZy5ndWFyZGlhbl9pZCA9IGcuaWQgV0hFUkUgc2cudXNlcl9wZXJtaXNzaW9ucy0+J3JvbGVzJyA/PyAnT1dORVInIEFORCBzZy5zdHVkZW50X2lkPScje3N0dWRlbnRJZH0nIEFORCBzZy5yZWNvcmRfc3RhdHVzID0gJ0FDVElWRScgQU5EIGcucmVjb3JkX3N0YXR1cyA9ICdBQ1RJVkUn\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"BASE_64\", \"securedInput\": false, \"combineInputs\": true, \"encodedBase64\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 153, \"automationUserInputUuid\": \"529f4d30-4692-46b3-b1fb-0fea77c68683\"}, {\"value\": \"OBJECT\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"encodedBase64\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"DROPDOWN\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 13576, \"automationUserInputUuid\": \"476ea71abed20d6853a58dd1f0e06dca    \"}], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": false, \"encodedBase64\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"OBJECT\", \"requiresProcessing\": true, \"skipFileProcessing\": true, \"automationUserInputId\": 152, \"automationUserInputUuid\": \"8d49cef8-1a21-4214-9ebd-20e7174fec0c\"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 1, \"accountName\": \"ZCPS-RDS\", \"description\": \"Using guardian and student_guardian tables, fetch the guardian’s data for studentId, such that guardian is the owner for the student.\", \"automationId\": 54152, \"categoryName\": \"db_service\", \"conditionMode\": \"advance\", \"streamCapable\": false, \"testAccountId\": 2, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"automationAuthId\": 2, \"automationApiUuid\": \"15805db3-0a4f-4f2a-80d8-c433a1ffeced\", \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"forceReturnConditionMode\": \"advance\", \"useServiceAuthenticationStructure\": false}, {\"empty\": false, \"inputs\": [], \"outputs\": [{\"code\": \"householdsList\", \"fieldCode\": \"householdsList\", \"sensitive\": false, \"outputCode\": \"households\", \"properties\": [], \"displayName\": \"householdsList\", \"automationId\": 220560, \"automationUuid\": \"45297b1b29314cfab212880a2b493dc7    \", \"internalVarRef\": \"households\", \"rawResponseContainer\": false, \"automationAPIOutputId\": 10385, \"automationAPIOutputUuid\": \"4e038329f5fafa8c1449920d83f05dc7    \", \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{studentGuardian[0].ownerId}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"encodedBase64\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 16743, \"automationUserInputUuid\": \"459e3cfedc24f40601e888a987842c6f    \"}, {\"value\": \"#{fetchAddressAttributes}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"encodedBase64\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 104753, \"automationUserInputUuid\": \"4d82de03d78ca0463fc28ba49e124d2c    \"}, {\"value\": \"#{addressAttributes}\", \"mappings\": [], \"withPrefix\": false, \"encodingType\": \"NONE\", \"securedInput\": false, \"combineInputs\": true, \"encodedBase64\": false, \"sensitiveInput\": false, \"uiRepresentation\": \"CUSTOM\", \"requiresProcessing\": false, \"skipFileProcessing\": false, \"automationUserInputId\": 104754, \"automationUserInputUuid\": \"4fd6045080f71bb69421ba164f65d807    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\"}, \"condition\": [], \"canExecute\": true, \"forceExist\": false, \"orderIndex\": 2, \"description\": \"If fetchHouseholds=true then\", \"automationId\": 220560, \"categoryName\": \"Schools\", \"conditionMode\": \"advance\", \"streamCapable\": false, \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"executionTime\": {}}, \"automationApiUuid\": \"495f8488b2c082c629a9990262422c41    \", \"conditionExpression\": \"#{fetchHouseholds} eq true and #{studentGuardian.size()} gt 0\", \"forceExitFromFailure\": true, \"forceExitErrorMessage\": \"\", \"javascriptNodeJsLambda\": false, \"forceReturnConditionMode\": \"advance\", \"useServiceAuthenticationStructure\": false}], \"variables\": [{\"type\": \"JSON\", \"label\": \"studentGuardianData\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"studentGuardianData\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"defaultValue\": \"{}\", \"encodingType\": \"NONE\"}, {\"type\": \"JSON\", \"label\": \"households\", \"secured\": false, \"editable\": false, \"required\": false, \"fieldCode\": \"households\", \"hideInput\": false, \"sensitive\": false, \"orderIndex\": -1, \"properties\": [], \"showOnSDUi\": true, \"arrayOfFile\": false, \"inputVarRef\": \"\", \"defaultValue\": \"[]\", \"encodingType\": \"NONE\"}], \"assertions\": [], \"internalMethod\": false, \"securityFields\": [], \"executionStatus\": {\"calls\": [], \"failed\": false, \"executed\": false, \"failingSteps\": [], \"executionTime\": {}, \"totalExecutionTime\": {}, \"failingStepsStatuses\": []}, \"methodDescription\": \"get student owner details\", \"allowedCategoryUuids\": [], \"useServiceAuthenticationStructure\": false}",
+  "version": 7,
+  "name": "student.owner.get",
+  "aliasName": "student.owner.get",
+  "category": {
+    "id": 15,
+    "name": "Schools",
+    "aliasName": [],
+    "originalLabel": "Schools",
+    "description": "",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 24297,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "uuid": "859c8df1-bbde-41d8-890c-3e5dfac5256b",
+            "id": 2,
+            "externalUuid": "7cd0b47c-aa4e-4145-8b0f-414161227d24",
+            "email": "user@example.com",
+            "firstName": "Test",
+            "lastName": "User-oc84",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Test User-oc84",
+            "title": "Automation ZCPS"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "uuid": "859c8df1-bbde-41d8-890c-3e5dfac5256b",
+      "id": 2,
+      "externalUuid": "7cd0b47c-aa4e-4145-8b0f-414161227d24",
+      "email": "user@example.com",
+      "firstName": "Test",
+      "lastName": "User-oc84",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Test User-oc84",
+      "title": "Automation ZCPS",
+      "lastLoginDate": 1795678147698
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4c1eb487ee7f4be7c4bfb246809bce25",
+    "automationSystemUuid": "4e1fe16472f681778299aa17dc8665af    ",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 113638,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Test",
+          "lastName": "User-oc84",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Test User-oc84",
+          "title": "Automation ZCPS"
+        }
+      ]
+    },
+    {
+      "id": 113639,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_USERS_TO_EDIT",
+      "groups": [],
+      "users": [
+        {
+          "id": 6,
+          "email": "user@example.com",
+          "firstName": "Test",
+          "lastName": "User-3f0f",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Test User-3f0f",
+          "title": "user@example.com ekta"
+        },
+        {
+          "id": 12,
+          "email": "user@example.com",
+          "firstName": "Test",
+          "lastName": "User-mjdq",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 5,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Test User-mjdq",
+          "title": "Narender Mann"
+        },
+        {
+          "id": 229,
+          "email": "user@example.com",
+          "firstName": "Test",
+          "lastName": "User-bmbm",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Test User-bmbm",
+          "title": "krunal test"
+        },
+        {
+          "id": 235,
+          "email": "user@example.com",
+          "firstName": "Test",
+          "lastName": "User-3ez3",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Test User-3ez3",
+          "title": "Pankaj Yadav"
+        },
+        {
+          "id": 236,
+          "email": "user@example.com",
+          "firstName": "Test",
+          "lastName": "User-o5xo",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Test User-o5xo",
+          "title": "Reviewer C Reviewer"
+        },
+        {
+          "id": 300,
+          "email": "user@example.com",
+          "firstName": "Test",
+          "lastName": "User-pfz1",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Test User-pfz1",
+          "title": "Sandeep Shukla"
+        },
+        {
+          "id": 301,
+          "email": "user@example.com",
+          "firstName": "Test",
+          "lastName": "User-qcft",
+          "blocked": true,
+          "ssoUser": false,
+          "boss": {
+            "id": 2,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Test User-qcft",
+          "title": "Krunal Fijiwala"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1695202136058,
+  "updatedBy": 2,
+  "updatedOn": 1788258187401,
+  "referenceId": "4997a91d47bc11b3af53be53972b0659",
+  "state": "DRAFT",
+  "migrationVersion": 1,
+  "methodDeprecated": false,
+  "deprecatedBy": 2,
+  "deprecatedAt": 1788258186852,
+  "securityTags": [],
+  "migration": false,
+  "aliasUuid": "4d6d5ff1b4961a90bfc79e6a0fb92c53",
+  "lastPublishedAt": 1795085474233,
+  "lastPublishedBy": 2,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "4e857b758460d94300eaa28a69cc748e",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "automationState": "DRAFT",
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": ""
+}

@@ -9,6 +9,7 @@ import {
 } from "../../lib/api/index";
 import { diffPaths, methodDiffView, parseVersionBody } from "../../lib/fingerprint";
 import { getVersionOf } from "../../lib/history";
+import { fetchViewMethod } from "../../lib/view-fetch";
 import { resolveMethodRef } from "@belzabar/core/platform";
 import { traceEnvFamily } from "../../lib/trace";
 import type { HydratedMethod } from "../../lib/types/common";
@@ -246,8 +247,8 @@ async function executeCrossEnvDiff(
   }
 
   // Sequential: the active env is process-global.
-  const left = await fetchOnEnv(args.uuid, fromEnv);
-  const right = await fetchOnEnv(args.uuid, toEnv);
+  const left = await fetchOnEnv(args.uuid, fromEnv, context.warn);
+  const right = await fetchOnEnv(args.uuid, toEnv, context.warn);
 
   const dir = await mkdtemp(join(tmpdir(), "wi-impl-ad-diff-"));
   const leftPath = join(dir, `${shortUuid(args.uuid)}-${fromEnv}.json`);
@@ -267,12 +268,19 @@ async function executeCrossEnvDiff(
   });
 }
 
-/** Fetch + parse the method on `env` in-process, restoring the active env afterwards. */
-export async function fetchOnEnv(uuid: string, env: string): Promise<HydratedMethod> {
+/**
+ * Fetch + parse the method on `env` in-process, restoring the active env afterwards.
+ * Reads V2 (fresh), as `ad state` does: a V1 jsonDefinition can keep step input
+ * mappings whose callee input no longer resolves on that env (a migrated body
+ * naming the source env's callee-input uuids). The server drops them from V2 and
+ * from runs, but the V1 parse still lists them, so a step that passes one input
+ * compared equal to one that passes three. V1 only when V2 refuses the body.
+ */
+export async function fetchOnEnv(uuid: string, env: string, warn: (m: string) => void = () => {}): Promise<HydratedMethod> {
   const restoreEnv = Config.captureActiveEnv();
   try {
     Config.setActiveEnv(env);
-    return await adApi.fetchMethod(uuid, "v1");
+    return await fetchViewMethod(uuid, (m) => warn(`${env}: ${m}`));
   } catch (e) {
     if (e instanceof CliError) {
       throw new CliError(`${env}: ${e.message}`, { code: e.code, details: { env, ...(e.details as object) } });

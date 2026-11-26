@@ -3,7 +3,8 @@
 // scratch root (removed by the preload's afterAll) so nothing is left in /tmp.
 import { afterAll, afterEach, beforeAll, describe, expect, spyOn, test } from "bun:test";
 import { existsSync, readFileSync } from "fs";
-import { runCommand, scratchDir, withTempEnvConfig } from "@belzabar/core/testing";
+import { join } from "path";
+import { fakeFetch, runCommand, scratchDir, withTempEnvConfig } from "@belzabar/core/testing";
 import diffCommand, { fetchOnEnv, spawnEditor } from "../../commands/diff/index";
 import { adApi } from "../../lib/api/index";
 
@@ -144,5 +145,46 @@ describe("ad diff cross-env", () => {
     using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
     const r = await runCommand(diffCommand, [UUID, "--from-env", "t-dev", "--to-env", "nope", "--no-editor"], { env: "t-dev" });
     expect(r.envelope?.error?.code).toBe("INVALID_ENV");
+  });
+});
+
+// K15: a migrated V1 jsonDefinition kept two input mappings whose callee input
+// does not resolve on the target env (they name the source env's callee-input
+// uuids). V2 (and the runtime) drop them, the V1 parse did not, so the step
+// that passes one input on stage compared equal to qa's three. Real captures.
+describe("ad diff cross-env reads V2 (K15)", () => {
+  const FIX = join(import.meta.dir, "../fixtures/cross-env");
+  const DRAFT = "4d6d5ff1b4961a90bfc79e6a0fb92c53";
+  const body = (env: string, v: string) => JSON.parse(readFileSync(join(FIX, `${DRAFT}.acme-${env}.draft.${v}.json`), "utf8"));
+
+  async function run() {
+    using _cfg = withTempEnvConfig({ envs: { "t-qa": { url: "https://q.test" }, "t-stage": { url: "https://s.test" } } });
+    using _ff = fakeFetch({
+      [`GET https://q.test/rest/api/automation/chain/v2/${DRAFT}?basicInfo=false`]: body("qa", "v2"),
+      [`GET https://s.test/rest/api/automation/chain/v2/${DRAFT}?basicInfo=false`]: body("stage", "v2"),
+      [`GET https://q.test/rest/api/automation/chain/${DRAFT}`]: body("qa", "v1"),
+      [`GET https://s.test/rest/api/automation/chain/${DRAFT}`]: body("stage", "v1"),
+    }).install();
+    return await runCommand(diffCommand, [DRAFT, "--from-env", "t-qa", "--to-env", "t-stage", "--no-editor"], { env: "t-qa" });
+  }
+
+  test("the stored V1 bodies still list all three mappings on both envs", () => {
+    const step2 = (env: string) =>
+      (JSON.parse(body(env, "v1").jsonDefinition).services as any[]).find((s) => s.orderIndex === 2);
+    expect(step2("qa").mappings.length).toBe(3);
+    expect(step2("stage").mappings.length).toBe(3);
+    // the two dangling ones carry no numeric input id on stage
+    expect(step2("stage").mappings.filter((m: any) => m.automationUserInputId == null).length).toBe(2);
+    expect(body("stage", "v2").steps[1].inputs.length).toBe(1);
+  });
+
+  test("the dropped child-step inputs are a difference", async () => {
+    const r = await run();
+    expect(r.envelope?.ok).toBe(true);
+    const d = r.envelope?.data as any;
+    expect(d.changed).toBe(true);
+    expect(d.differences).toContain("$.steps[1].inputs[1]");
+    expect(d.differences).toContain("$.steps[1].inputs[2]");
+    expect(JSON.parse(readFileSync(d.right.path, "utf8")).steps[1].inputs.length).toBe(1);
   });
 });

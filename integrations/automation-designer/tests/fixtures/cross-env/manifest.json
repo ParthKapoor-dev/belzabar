@@ -1,25 +1,5 @@
 [
   {
-    "file": "4bfc83c7fc3da12d7e639ee88a40ff27.acme-dev.history-v3.json",
-    "env": "acme-dev",
-    "capturedAt": "2026-09-29T08:56:36.056Z",
-    "endpoint": "POST chain/execute/<History.get> {serviceName:'Schools-Utilities', methodName:'verification.token.create', version:'3', includeDraft:'false'} (read-only chain execute)",
-    "versions": [
-      1,
-      2,
-      3
-    ]
-  },
-  {
-    "file": "4bfc83c7fc3da12d7e639ee88a40ff27.acme-qa.history-v1.json",
-    "env": "acme-qa",
-    "capturedAt": "2026-09-29T08:56:41.590Z",
-    "endpoint": "POST chain/execute/<History.get> {serviceName:'Schools-Utilities', methodName:'verification.token.create', version:'1', includeDraft:'false'} (read-only chain execute)",
-    "versions": [
-      1
-    ]
-  },
-  {
     "file": "4b0270f001810b5babeb919d9dd48c46.acme-dev.history-v4.json",
     "env": "acme-dev",
     "capturedAt": "2026-09-29T08:56:44.443Z",
@@ -42,5 +22,61 @@
       3,
       4
     ]
+  },
+  {
+    "file": "4bfc83c7fc3da12d7e639ee88a40ff27.acme-dev.history-v3.json",
+    "env": "acme-dev",
+    "capturedAt": "2026-09-29T08:56:36.056Z",
+    "endpoint": "POST chain/execute/<History.get> {serviceName:'Schools-Utilities', methodName:'verification.token.create', version:'3', includeDraft:'false'} (read-only chain execute)",
+    "versions": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "file": "4bfc83c7fc3da12d7e639ee88a40ff27.acme-qa.history-v1.json",
+    "env": "acme-qa",
+    "capturedAt": "2026-09-29T08:56:41.590Z",
+    "endpoint": "POST chain/execute/<History.get> {serviceName:'Schools-Utilities', methodName:'verification.token.create', version:'1', includeDraft:'false'} (read-only chain execute)",
+    "versions": [
+      1
+    ]
+  },
+  {
+    "file": "4d6d5ff1b4961a90bfc79e6a0fb92c53.acme-qa.draft.v1.json",
+    "env": "acme-qa",
+    "capturedAt": "2026-11-26T07:31:06.273Z",
+    "bytes": 16950,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/4d6d5ff1b4961a90bfc79e6a0fb92c53",
+    "status": 200
+  },
+  {
+    "file": "4d6d5ff1b4961a90bfc79e6a0fb92c53.acme-qa.draft.v2.json",
+    "env": "acme-qa",
+    "capturedAt": "2026-11-26T07:31:07.781Z",
+    "bytes": 22818,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4d6d5ff1b4961a90bfc79e6a0fb92c53?basicInfo=false",
+    "status": 200
+  },
+  {
+    "file": "4d6d5ff1b4961a90bfc79e6a0fb92c53.acme-stage.draft.v1.json",
+    "env": "acme-stage",
+    "capturedAt": "2026-11-26T07:31:08.582Z",
+    "bytes": 17247,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/4d6d5ff1b4961a90bfc79e6a0fb92c53",
+    "status": 200
+  },
+  {
+    "file": "4d6d5ff1b4961a90bfc79e6a0fb92c53.acme-stage.draft.v2.json",
+    "env": "acme-stage",
+    "capturedAt": "2026-11-26T07:31:09.518Z",
+    "bytes": 19761,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/4d6d5ff1b4961a90bfc79e6a0fb92c53?basicInfo=false",
+    "status": 200
   }
 ]
