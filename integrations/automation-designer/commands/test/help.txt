@@ -99,7 +99,10 @@ Flags:
                         --cases or --compare-published.
   --yes, -y             Confirm --compare-published's second (published) execution,
                         the --cases executions, or the --repeat runs.
-  --verbose, -v         Print each step's outputs and the SQL it ran. (A command
+  --verbose, -v         Print each step's outputs, the SQL it ran and the inputs
+                        it sent (template and rendered value, e.g. a call step's
+                        child inputs; one value per step: a loop step shows what
+                        the server reports, not each iteration). (A command
                         flag here: it does not switch on runner debug logging.)
   --raw                 Include raw execution payload in output.
   --help, -h            Show this help message.
@@ -147,7 +150,8 @@ Notes:
     errorSummary?}. There is no orderIndex key: match on step.
   - Per-step outputs are in data.serviceResults[{step, status, outputs[{code,
     value}], sql?, renderedInputs?[{template, rendered}]}]: sql is the SQL a
-    db step really ran, every #{...} filled in (--verbose prints it).
+    db step really ran, every #{...} filled in; renderedInputs is what each
+    step sent (--verbose prints both).
   - data.timing {executionMs, totalMs}: the server's run times, numbers.
     A loop step's time covers all its iterations (the server reports no
     iteration count); it arrives in ns labelled ms, which wi-impl corrects.

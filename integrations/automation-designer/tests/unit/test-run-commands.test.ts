@@ -18,6 +18,7 @@ import {
   type RecordedRequest
 } from "@belzabar/core/testing";
 import testCommand, { matchStep } from "../../commands/test/index";
+import * as testNs from "../../commands/test/index";
 import runSuitesCommand from "../../commands/run-suites/index";
 import saveSuiteCommand from "../../commands/save-suite/index";
 import runCommandModule from "../../commands/run/index";
@@ -170,6 +171,31 @@ describe("ad test", () => {
     expect(d.serviceResults[1].status).toBe("dispatched (async)");
     expect(d.serviceResults[0].renderedInputs).toEqual([{ template: "SELECT '#{cityCode}'", rendered: "SELECT 'C'" }]);
     expect(d.serviceResults[0].sql).toBe("SELECT 'C'");
+  });
+
+  // K14: the rendered call inputs were only in the --llm data
+  test("--verbose prints the inputs each step sent (the rendered SQL once)", async () => {
+    wire(() => ({
+      executionStatus: { failed: false, statusCode: 200 },
+      services: [
+        {
+          automationId: 38528,
+          executionStatus: { executed: true, failed: false },
+          mappings: [{ automationUserInputId: 1, mappings: [{ automationUserInputId: 2, value: "SELECT '#{cityCode}'", testResult: "SELECT 'C'" }] }],
+        },
+        {
+          automationId: 38529,
+          executionStatus: { executed: true, failed: false },
+          mappings: [{ automationUserInputId: 3, value: "#{batchLimit}", testResult: { size: 2, afterStudentId: null } }],
+        },
+      ],
+      outputs: [],
+    }));
+    const r = await runCommand(testNs, [UUID, "--verbose", "--inputs", '{"cityCode":"C","displayName":"D"}'], { env: "t-s4b-run", llm: false });
+    expect(r.stdout.toLowerCase()).toContain("input (template)");
+    expect(r.stdout).toContain("#{batchLimit}");
+    expect(r.stdout).toContain('{"size":2,"afterStudentId":null}');
+    expect(r.stdout.split("SELECT 'C'").length - 1).toBe(1);
   });
 
   test("the platform's reasonless 'Something went wrong' gets a hint (B9)", async () => {

@@ -500,6 +500,11 @@ const command: CommandModule<TestMethodArgs, TestMethodData | TestCasesData> = {
       for (const svc of data.serviceResults) {
         ui.section(`Step ${svc.step}: ${svc.description} [${svc.status}]`);
         if (svc.sql !== undefined) ui.text(`SQL run: ${svc.sql}`);
+        // what the step sent (a call step's child inputs); the rendered SQL is printed above
+        const sent = (svc.renderedInputs ?? []).filter((i) => svc.sql === undefined || i.rendered !== svc.sql);
+        if (sent.length > 0) {
+          ui.table(["Input (template)", "Sent"], sent.map((i) => [i.template ?? "", typeof i.rendered === "string" ? i.rendered : JSON.stringify(i.rendered)]));
+        }
         if (svc.status === "skipped") ui.text("(skipped — condition not met)");
         else if (svc.status === "dispatched (async)") ui.text("(started async: it runs on, its outputs are not awaited)");
         else if (svc.outputs.length === 0) ui.text("(no outputs)");

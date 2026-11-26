@@ -10,5 +10,5 @@ wi-impl ad test <uuid> --env <env> --compare-published --ignore <path> --yes  :-
 wi-impl ad test <uuid> --env <env> --compare-published --ignore-order --yes  :->  Compare lists as sets (same items, any order)
 wi-impl ad test <uuid> --env <env> --repeat <n> --yes  :->  Run N times; data.repeat gives min/median/max of the server and wall times
 wi-impl ad test <uuid> --env <env> --compare-published --yes  :->  Run the same inputs on the draft AND its published copy (two real executions; confirms, --yes with --llm) and diff every output
-wi-impl ad test <uuid> --env <env> --verbose  :->  Print each step's outputs and the SQL a db step really ran (-v)
+wi-impl ad test <uuid> --env <env> --verbose  :->  Print each step's outputs, the SQL a db step really ran and the rendered inputs each step sent (-v)
 wi-impl ad test <uuid> --env <env> --raw  :->  Include raw execution payload in output
