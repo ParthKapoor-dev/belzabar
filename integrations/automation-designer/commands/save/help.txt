@@ -67,7 +67,10 @@ Arguments:
                         STEP (compact; the same format `ad create` takes):
                           service "Svc/method" | code "<js>" | sql "<SQL>"
                           codeFile / sqlFile   path, relative to FILE
-                          inputs {"key": value, "body.nested": value}  (null removes)
+                          inputs {"key": value, "body.nested": value}  (null removes;
+                            a value on an ARRAY input such as body.queryParams
+                            drops the value-less child placeholder older steps
+                            keep, as the AD screen does: kept, every run fails)
                           outputs ["key"] | [{key, as, var, type}] | {"as": "key"}
                             as = the name the method sees; var = write it to a variable
                           when "<SpEL>" | null        entry condition

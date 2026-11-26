@@ -170,3 +170,18 @@ describe.each([["L2", L2], ["L3", L3]] as const)("%s rules", (_layer, rows) => {
     });
   }
 });
+
+describe("AD-IN-001: ARRAY input value beside a value-less placeholder (K3)", () => {
+  const withQp = (value: string | undefined, child: Record<string, unknown>) =>
+    mutate((m) => {
+      const qp: Record<string, unknown> = { key: "queryParams", name: "queryParameters", type: "ARRAY", displayWidgetSuggestion: "ARRAY", combineInput: true, properties: [child], encodingType: "NONE" };
+      if (value !== undefined) qp.value = value;
+      m.steps[0].inputs.push(qp);
+    });
+  const placeholder = { key: "test", name: "parameter", type: "OBJECT", properties: [], encodingType: "NONE" };
+  test("warns on a value plus a placeholder", () => expect(has(withQp('[{"key":"a","type":"TEXT","value":"1"}]', placeholder), "AD-IN-001", "warn")).toBe(true));
+  test("silent without a value, or with a valued child", () => {
+    expect(hasRule(withQp(undefined, placeholder), "AD-IN-001")).toBe(false);
+    expect(hasRule(withQp("[]", { ...placeholder, value: "x" }), "AD-IN-001")).toBe(false);
+  });
+});

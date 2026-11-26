@@ -84,11 +84,39 @@ function reportSpelIssues(text: string, path: string, where: string, ref: StepRe
   }
 }
 
+export function isArrayInput(n: unknown): boolean {
+  return isObj(n) && (n.type === "ARRAY" || n.displayWidgetSuggestion === "ARRAY");
+}
+
+/**
+ * A child input the older editor stored under an ARRAY input with no value
+ * (e.g. `{key: "test", name: "parameter", properties: []}`), and no valued
+ * child of its own.
+ */
+export function isValuelessPlaceholder(n: unknown): boolean {
+  if (!isObj(n)) return false;
+  if (n.value !== undefined && n.value !== null && n.value !== "") return false;
+  return !Array.isArray(n.properties) || n.properties.every(isValuelessPlaceholder);
+}
+
 function checkInputs(c: StepCtx): void {
   walkInputs(c.s.inputs, ["steps", c.i, "inputs"], (inp, path) => {
     const key = str(inp.key) ?? "?";
     const value = inp.value;
     const flagged = inp.encodingType === "BASE_64" || inp.encodedBase64 === true;
+    if (typeof value === "string" && value && isArrayInput(inp) && Array.isArray(inp.properties)) {
+      const k = inp.properties.findIndex(isValuelessPlaceholder);
+      if (k >= 0) {
+        c.report({
+          rule: "AD-IN-001",
+          message: `ARRAY input "${key}" has a value and also a value-less child placeholder (${JSON.stringify(str((inp.properties[k] as Record<string, unknown>).key) ?? k)}), left by the older editor; every run fails "getInputMappingDetails() is null".`,
+          path: jsonPath([...path, "properties", k]),
+          step: c.ref,
+          fix: "Set the input's value again with `wi-impl ad save` (update-step set.inputs): the save drops the placeholder, as the AD screen does.",
+          evidence: "live: InputMappingDetails.getInputParts() NPE until the child was removed",
+        });
+      }
+    }
     if (typeof value === "string" && value) {
       const decoded = decodeBase64Strict(value);
       if (flagged && decoded === null) {

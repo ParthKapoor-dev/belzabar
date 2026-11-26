@@ -582,3 +582,28 @@ describe("method outputs without a key (C2)", () => {
   });
 });
 
+
+describe("ARRAY input placeholders (K3)", () => {
+  // Step 1 of U stores body.queryParams as the older editor left it: an ARRAY with a value-less
+  // child {key: "test", name: "parameter"}. Kept beside a value, every run fails.
+  const qp = (b: V2MethodResponse) => (b.steps![0]!.inputs![0]!.properties as Array<Record<string, unknown>>).find((i) => i.key === "queryParams")!;
+  const params = [{ key: "code", type: "TEXT", value: "#{code}" }];
+
+  test("setting the ARRAY's value drops the placeholder, and the verify checks it is gone", () => {
+    const live = real(U);
+    expect(qp(live).properties).toHaveLength(1);
+    const p = plan(live, [{ op: "update-step", step: 1, set: { inputs: { "body.queryParams": params } } }]);
+    expect(qp(p.body)).toMatchObject({ value: JSON.stringify(params), properties: [] });
+    const removals = structuralRemovals(live, p.body, p.structural!.order);
+    expect(removals).toContainEqual({ path: "steps[0].inputs[0].properties[1].properties", key: "test" });
+    // the server keeping the child is caught
+    expect(code(() => verifyStructural("u", p.body, live, p.structural!.touched, removals))).toBe("AD_SAVE_VERIFY_FAILED");
+  });
+
+  test("a child with a value (or a valued grandchild) is not a placeholder", () => {
+    const live = real(U);
+    (qp(live).properties as unknown[]).push({ key: "kept", value: "x", properties: [] }, { key: "outer", properties: [{ key: "inner", value: "y" }] });
+    const p = plan(live, [{ op: "update-step", step: 1, set: { inputs: { "body.queryParams": params } } }]);
+    expect((qp(p.body).properties as Array<{ key: string }>).map((c) => c.key)).toEqual(["kept", "outer"]);
+  });
+});

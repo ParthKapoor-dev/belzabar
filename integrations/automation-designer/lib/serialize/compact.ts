@@ -42,7 +42,7 @@ import type { V2Step, V2StepInput } from "../types/v2-wire";
 import { decodeBase64Strict, encodeBase64 } from "../base64";
 import { isObj, type Obj } from "@belzabar/core";
 import { escapeRichText } from "../compact";
-import { sqlSkeleton } from "../validate/steps";
+import { isArrayInput, isValuelessPlaceholder, sqlSkeleton } from "../validate/steps";
 
 
 // ── problems ────────────────────────────────────────────────────────────────
@@ -403,6 +403,9 @@ function setStepInput(
       const v = stringValue(value);
       node.value = v;
       if (SPEL.test(v) || node.combineInput === undefined) node.combineInput = true;
+      // An ARRAY input given a value loses its value-less child placeholders, as the AD
+      // screen does: a kept one fails every run (getInputMappingDetails() is null, K3).
+      if (isArrayInput(node) && Array.isArray(node.properties)) node.properties = node.properties.filter((c) => !isValuelessPlaceholder(c));
       return true;
     }
     if (!Array.isArray(node.properties)) node.properties = [];

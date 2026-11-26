@@ -79,6 +79,10 @@ Shared by `ops` and `ad create --spec`. Every key is optional except what the st
   [`../save/sources.ts`](../save/sources.ts) before expansion.
 - Input and output keys, services and accounts the callee does not have are refused, because
   the server would drop them. Contracts come from [`../save/services.ts`](../save/services.ts).
+- A value set on an ARRAY step input (`body.queryParams`) drops the input's value-less child
+  placeholders (older steps store `{key: "test", name: "parameter"}` with no value), as the AD
+  screen does: kept beside a value, every run fails "getInputMappingDetails() is null".
+  The validator flags an existing one (`AD-IN-001`).
 - Step output keys cannot be indexed or pathed (`flatData[0].col`); `indexedOutputHint` names
   the pattern that works (bind the list, then read it in an echo step).
 - New custom code is stored plain (unless the source is itself valid base64); new SQL is

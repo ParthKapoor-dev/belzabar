@@ -71,6 +71,7 @@ export const RULES = {
   "AD-SQL-004": { severity: "warn", layer: "L2", description: "#{…} spliced into queryString; use :param + body.queryParams (#{QUOTE.SQL:x} is escaped: not flagged)" },
   Q1: { severity: "error", layer: "L2", description: "Bare '?' (jsonb ?/?|/?&) in platform-executed SQL fails with 'given N parameters but expected 0'; use @> / jsonb_exists" },
   Q5: { severity: "error", layer: "L2", description: "Autoformat damage in SQL: curly quotes or '-»' outside a string literal (error); en/em dash (warn)" },
+  "AD-IN-001": { severity: "warn", layer: "L2", description: "ARRAY step input with a value keeps a value-less child placeholder from the older editor (every run fails 'getInputMappingDetails() is null')" },
   CI1: { severity: "warn", layer: "L2", description: "Step input holds SpEL with combineInput:false ('This Exactly'); runs via API but not from the AD UI" },
   SP1: { severity: "warn", layer: "L2", description: "Step-input SpEL with ≥2 ternaries, >4 chained operators or >200 chars; move branching to an entryCondition" },
   "AD-SPEL-001": { severity: "error", layer: "L2", description: "Unclosed #{ (the literal text becomes the value)" },
