@@ -79,7 +79,8 @@ Arguments:
                             fixed by {"op":"update-step","step":N,
                             "set":{"executor":"CODE_LAMBDA"}}
                         sql alone picks db_service/data.read|add|update|delete
-                        from the verb. Input/output keys are checked against the
+                        from the main verb (after any WITH CTEs: WITH … UPDATE
+                        is data.update). Input/output keys are checked against the
                         callee contract (online, cached 1 h). A key the
                         cached contract lacks is re-checked online before
                         the save is refused (a callee just published with a

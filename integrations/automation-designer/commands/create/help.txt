@@ -32,7 +32,7 @@ Compact spec (wi-impl expands it to the full V2 body with UI defaults):
   several, and then AD_SPEC_INVALID lists them as id=nickname; see
   `wi-impl ad child-info db_service select` lists them), description,
   language, async. `sql` alone picks db_service data.read/add/update/delete
-  from the verb. Service input/output keys, accounts and services are checked
+  from the main verb, after any WITH CTEs (WITH … UPDATE is data.update). Service input/output keys, accounts and services are checked
   online against the callee contract (unknown ones are refused: the server
   would drop them). Custom-code outputs get elementToRetrieve when there are
   several. See `wi-impl ad save --help` for the same format in structural edits.

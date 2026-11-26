@@ -66,7 +66,7 @@ Shared by `ops` and `ad create --spec`. Every key is optional except what the st
 |---|---|
 | `service` | `"Service/method"`, e.g. `"Helpers.Legacy/echo"` |
 | `code` / `codeFile` | Custom code (`language` JAVASCRIPT by default, or PYTHON) |
-| `sql` / `sqlFile` | A `db_service` step; the verb picks `data.read` / `add` / `update` / `delete` |
+| `sql` / `sqlFile` | A `db_service` step; the main verb (after any `WITH` CTEs) picks `data.read` / `add` / `update` / `delete` |
 | `account` | db account id or nickname; may be omitted only when the service has exactly one account on the env |
 | `inputs` | `{"key": value, "body.nested": value}`; keys are the callee contract's input keys |
 | `outputs` | `["key"]`, `[{key, as, var, type, elementToRetrieve}]` or `{as: key}` |

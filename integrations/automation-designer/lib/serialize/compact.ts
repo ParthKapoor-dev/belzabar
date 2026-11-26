@@ -6,9 +6,10 @@
 //   service      "Service/method" (e.g. "Helpers.Legacy/echo", "db_service/data.read")
 //   code         custom-code source (plain text)  → CUSTOM_CODE step
 //   language     JAVASCRIPT (default) | PYTHON     executor CODE_LAMBDA (default)
-//   sql          SQL text → db_service step; the service defaults from the verb
-//                (SELECT/WITH data.read, INSERT data.add, UPDATE data.update,
-//                DELETE data.delete) and the text goes to body.queryString
+//   sql          SQL text → db_service step; the service defaults from the main
+//                verb, after any WITH CTEs (SELECT data.read, INSERT data.add,
+//                UPDATE data.update, DELETE data.delete) and the text goes to
+//                body.queryString
 //   account      db account id or nickname; may be omitted only when the service
 //                has exactly one account (otherwise AD_SPEC_INVALID lists them)
 //   description  step description
@@ -41,6 +42,7 @@ import type { V2Step, V2StepInput } from "../types/v2-wire";
 import { decodeBase64Strict, encodeBase64 } from "../base64";
 import { isObj, type Obj } from "@belzabar/core";
 import { escapeRichText } from "../compact";
+import { sqlSkeleton } from "../validate/steps";
 
 
 // ── problems ────────────────────────────────────────────────────────────────
@@ -92,10 +94,28 @@ export function splitService(s: string): { service: string; method: string } | n
 
 const DB_SERVICE = "db_service";
 
-/** db_service method for a SQL text, from its first verb. */
+/**
+ * The statement's main verb: the first word, or for `WITH …` the first
+ * SELECT / INSERT / UPDATE / DELETE outside the CTE bodies (parenthesis depth
+ * 0), so `WITH x AS (SELECT …) UPDATE …` is an UPDATE.
+ */
+function mainSqlVerb(sql: string): string {
+  const skel = sqlSkeleton(sql).trim().replace(/^\(+/, "");
+  const first = (/^([a-z]+)/i.exec(skel)?.[1] ?? "").toLowerCase();
+  if (first !== "with") return first;
+  let depth = 0;
+  for (const m of skel.matchAll(/[()]|[a-z_][a-z0-9_]*/gi)) {
+    const t = m[0];
+    if (t === "(") depth++;
+    else if (t === ")") depth = Math.max(0, depth - 1);
+    else if (depth === 0 && /^(select|insert|update|delete)$/i.test(t)) return t.toLowerCase();
+  }
+  return "with";
+}
+
+/** db_service method for a SQL text, from its main verb (after any CTEs). */
 export function dbMethodForSql(sql: string): string {
-  const body = sql.replace(/--[^\n]*/g, " ").replace(/\/\*[\s\S]*?\*\//g, " ").trim().replace(/^\(+/, "");
-  const verb = (/^([a-z]+)/i.exec(body)?.[1] ?? "").toLowerCase();
+  const verb = mainSqlVerb(sql);
   if (verb === "select" || verb === "with") return "data.read";
   if (verb === "insert") return "data.add";
   if (verb === "update") return "data.update";

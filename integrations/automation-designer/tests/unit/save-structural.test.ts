@@ -141,6 +141,13 @@ describe("add-step: compact step → V2 wire", () => {
     expect(["SELECT 1", " with x as (select 1) select * from x", "INSERT INTO t VALUES (1)", "update t set a=1", "-- c\nDELETE FROM t", "create table t()"].map(dbMethodForSql)).toEqual([
       "data.read", "data.read", "data.add", "data.update", "data.delete", "schema.modify",
     ]);
+    // K4: the main verb after the CTEs decides, not the leading WITH.
+    expect([
+      "WITH ids AS (SELECT id FROM t WHERE x = '(update)') UPDATE t SET a = 1 WHERE id IN (SELECT id FROM ids)",
+      "-- refresh\nwith recursive r(n) as (select 1 union all select n + 1 from r where n < 3) insert into t (n) select n from r",
+      "WITH a AS (SELECT 1), b AS (SELECT 2) DELETE FROM t USING a",
+      "with x as (select 1 as \"update\") select * from x",
+    ].map(dbMethodForSql)).toEqual(["data.update", "data.add", "data.delete", "data.read"]);
     const p = plan(live, [{ op: "add-step", after: 0, step: { sql: "SELECT '#{code}' AS c", account: "ZCPS-RDS", outputs: { rows: "flatData[]" } } }]);
     const s = p.body.steps![0]!;
     expect(s).toMatchObject({
