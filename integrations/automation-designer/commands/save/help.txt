@@ -121,6 +121,13 @@ Arguments:
                         custom-code output gets the whole printed object, and
                         an echo of null or #{null} returns "" (an empty
                         string), not null.
+                        An echo always returns text, whatever the type of the
+                        output or variable it writes: an INTEGER output gets
+                        "2", and #{count + 1} on it gives "21" (live). The
+                        server does not store a type on a step output (it
+                        reads back without it: AD_SAVE_VERIFY_FAILED).
+                        Convert where it is read (#{T(Integer).parseInt(count)})
+                        or compute the number in custom code.
                         Stored input testValues (what the AD designer's Test
                         dialog pre-fills) are stripped by EVERY save, and wi-impl
                         cannot set them: afterwards the dialog reports

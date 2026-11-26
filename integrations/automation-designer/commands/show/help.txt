@@ -38,6 +38,8 @@ Arguments:
 
 Flags:
   --compact               One line per step: index, kind/service, description,
+                          (kind SPEL is a Helpers.Legacy/echo step: it evaluates
+                          its Input as SpEL and always returns text),
                           entry condition, loop, decoded SQL/code/SpEL (cut at
                           160 chars), key inputs, outputs -> variables, exit
                           rules (exit-on-fail, exit-if), async, account. Add --sql / --code for full bodies (`blocks`,
