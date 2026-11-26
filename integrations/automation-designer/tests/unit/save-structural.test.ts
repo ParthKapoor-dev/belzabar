@@ -631,3 +631,15 @@ describe("ARRAY input placeholders (K3)", () => {
     expect((qp(p.body).properties as Array<{ key: string }>).map((c) => c.key)).toEqual(["kept", "outer"]);
   });
 });
+
+describe("whole-response step outputs (K9)", () => {
+  test("an output without a callee key is refused with why the V2 route cannot store a raw response", () => {
+    try {
+      plan(real(U), [{ op: "update-step", step: 4, set: { outputs: [{ as: "whole" }] } }]);
+      throw new Error("not refused");
+    } catch (e) {
+      expect((e as CliError).code).toBe("AD_OVERLAY_INVALID");
+      expect((e as CliError).message).toContain("rawResponseContainer");
+    }
+  });
+});

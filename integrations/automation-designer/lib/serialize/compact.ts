@@ -250,7 +250,11 @@ function normaliseOutputs(given: unknown, where: string, p: Problems): OutputSpe
     for (const k of Object.keys(o)) if (!COMPACT_OUTPUT_KEYS.has(k)) p.unknown.push(`${w}.${k}`);
     const key = typeof o.key === "string" ? o.key : undefined;
     if (!key) {
-      p.bad(`${w}.key`, "required (the service output key, e.g. response, flatData[])");
+      p.bad(
+        `${w}.key`,
+        "required (the service output key, e.g. response, flatData[]). A call step's whole-response output (rawResponseContainer, " +
+          "shown without a key) cannot be written: the V2 save route ignores the flag and drops an output with no callee key; map the callee's outputs by key instead",
+      );
       return null;
     }
     const as = typeof o.as === "string" ? o.as : fieldCode ?? key;

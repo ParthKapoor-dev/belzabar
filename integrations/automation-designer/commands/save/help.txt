@@ -72,7 +72,10 @@ Arguments:
                             drops the value-less child placeholder older steps
                             keep, as the AD screen does: kept, every run fails)
                           outputs ["key"] | [{key, as, var, type}] | {"as": "key"}
-                            as = the name the method sees; var = write it to a variable
+                            as = the name the method sees; var = write it to a variable.
+                            A whole-response output (rawResponseContainer; shown
+                            with no key) cannot be written: the V2 route ignores
+                            the flag and drops an output without a callee key.
                           when "<SpEL>" | null        entry condition
                             (stored as an advanced expression: a step whose
                             condition was built in basic mode, the UI rows,
