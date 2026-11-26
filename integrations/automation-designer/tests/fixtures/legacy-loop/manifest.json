@@ -1,0 +1,20 @@
+[
+  {
+    "file": "v1.json",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-26T07:34:56.383Z",
+    "bytes": 6350,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/45cc70e9f26ec5140eee86a3e5870281",
+    "status": 200
+  },
+  {
+    "file": "v2.json",
+    "env": "acme-dev",
+    "capturedAt": "2026-11-26T07:34:57.071Z",
+    "bytes": 5800,
+    "source": {},
+    "endpoint": "/rest/api/automation/chain/v2/45cc70e9f26ec5140eee86a3e5870281?basicInfo=false",
+    "status": 200
+  }
+]

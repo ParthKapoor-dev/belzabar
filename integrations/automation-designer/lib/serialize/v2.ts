@@ -28,7 +28,7 @@ import { decodeBase64Strict, encodeBase64 } from "../base64";
 import { parseV2Step } from "../parser/steps/v2";
 import type { ParseOptions } from "../parser/steps/classify";
 import { diffPaths, getAtPath, isUnder, jsonEqual, pathSegments } from "./diff";
-import { emptyCatalog, encodeSql, findSqlSlot, Problems, type ServiceCatalog } from "./compact";
+import { ABSENT_INPUT_NOTE, emptyCatalog, encodeSql, findSqlSlot, Problems, type ServiceCatalog } from "./compact";
 import { applyStructuralOps, OP_NAMES } from "./ops";
 import { escapeRichText } from "../compact";
 
@@ -263,7 +263,9 @@ export function planV2Overlay(live: V2MethodResponse, overlay: unknown, opts: Pl
 
   const noEffect = edits.filter((e) => jsonEqual(getAtPath(live, e.path), e.value));
   if (structural) {
-    if (jsonEqual(live, body)) {
+    // Removing an input the callee no longer has changes nothing in V2, but the save still
+    // drops that input's V1 mapping (K5): such an overlay is not refused as "no change".
+    if (jsonEqual(live, body) && !structural.applied.some((a) => a.includes(ABSENT_INPUT_NOTE))) {
       throw refuseNotApplied([...structural.applied, ...edits.map((e) => e.key)].map((key) => ({ key, reason: "identical to the current draft (no change)" })));
     }
   } else if (noEffect.length === edits.length) {

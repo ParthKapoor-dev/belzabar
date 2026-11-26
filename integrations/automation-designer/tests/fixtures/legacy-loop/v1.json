@@ -1,0 +1,150 @@
+{
+  "id": 1202,
+  "uuid": "45cc70e9f26ec5140eee86a3e5870281",
+  "jsonDefinition": "{\"name\": \"executeQueriesOnListElements\", \"inputs\": [], \"outputs\": [], \"services\": [{\"outputs\": [{\"code\": \"list\", \"displayName\": \"list\", \"automationId\": 4051, \"automationAPIOutputId\": 1430, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"mappings\": [{\"value\": \"[{\\\"data\\\":\\\"AR5xxDR.nlOhzCxTD0a8DKmnIffqfcxA\\\"},{\\\"data\\\":\\\"ATREvPBk24KxMSp1sfKEADaAEveBLTZg\\\"}]\", \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3473, \"automationUserInputUuid\": \"43b639386056be721de5b547d79eaa34    \"}, {\"value\": \"$\", \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 3474, \"automationUserInputUuid\": \"47bcf14d8c61c0bd200fb3b573098a8e    \"}], \"uiRepresentation\": \"OBJECT\", \"automationUserInputId\": 3472, \"automationUserInputUuid\": \"440f578688fb588b7e52bd71809e5389    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 1, \"fatFileType\": null, \"automationId\": 4051, \"conditionMode\": null, \"loopExecutionSource\": null, \"automationUiSelector\": {}}, {\"outputs\": [{\"code\": \"updatedRawsCount\", \"displayName\": \"updatedRawsCount\", \"automationId\": 4037, \"automationAPIOutputId\": 2485, \"hiddenAutomationAPIOutputIds\": []}], \"mappings\": [{\"value\": \"#{data}\", \"combineInputs\": true, \"uiRepresentation\": \"CUSTOM\", \"automationUserInputId\": 5509, \"automationUserInputUuid\": \"4a460186609abc62772a8d6fd9479676    \"}], \"runAsync\": false, \"activeTab\": {\"id\": \"existingService\", \"text\": \"EXISTING SERVICE\", \"active\": true}, \"orderIndex\": 2, \"fatFileType\": null, \"automationId\": 4037, \"conditionMode\": null, \"conditionExpression\": \"\", \"loopExecutionSource\": \"#{list}\", \"automationUiSelector\": {}}], \"buttonLabel\": \"\", \"methodDescription\": \"This method demonstrates steps to iterate over an input json list, as [{\\\"data\\\":\\\"value1\\\"}, {\\\"data\\\":\\\"value2\\\"}] and perform DB operation on its elements\\nA separate method is called over each element that performs the DB query\"}",
+  "version": 6,
+  "name": "executeQueriesOnListElements",
+  "aliasName": "executeQueriesOnListElements",
+  "category": {
+    "id": 21,
+    "name": "Sample methods",
+    "aliasName": [
+      "Sample methods"
+    ],
+    "description": "The methods created under this service tackle few common use cases such as merging of JSONs, uploading a document, downloading a document, performing iterations, etc., and provide steps to perform these operations in an efficient manner.\n\nSome of these methods are based on Expertly Schools use cases.",
+    "authorizationFields": [],
+    "automationAuths": [],
+    "permissions": [
+      {
+        "id": 34,
+        "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+        "groups": [],
+        "users": [
+          {
+            "id": 2,
+            "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+            "email": "user@example.com",
+            "firstName": "Admin",
+            "lastName": "ACME",
+            "ssoUser": false,
+            "boss": {
+              "id": 1,
+              "ssoUser": false,
+              "mfaEnabled": false
+            },
+            "mfaEnabled": false,
+            "fullName": "Admin ACME",
+            "title": "Admin ACME"
+          }
+        ]
+      }
+    ],
+    "owner": {
+      "id": 2,
+      "externalUuid": "cf13e261-61fd-435b-a410-9eb8b9ca7bc0",
+      "email": "user@example.com",
+      "firstName": "Admin",
+      "lastName": "ACME",
+      "ssoUser": false,
+      "boss": {
+        "id": 1,
+        "email": "user@example.com",
+        "firstName": "Super",
+        "lastName": "User",
+        "ssoUser": false,
+        "mfaEnabled": false,
+        "fullName": "Super User",
+        "title": "Super User"
+      },
+      "userTimeZone": {
+        "id": 23,
+        "name": "Asia/Calcutta",
+        "displayName": "(UTC+05:30) New Delhi",
+        "utcOffset": 0,
+        "utcDstOffset": 0
+      },
+      "userLocale": {
+        "id": 1,
+        "name": "en_US",
+        "description": "English (US)",
+        "active": false,
+        "createdAt": null
+      },
+      "joiningDate": 1514764800000,
+      "mfaEnabled": false,
+      "fullName": "Admin ACME",
+      "title": "Admin ACME",
+      "lastLoginDate": 1795678256820
+    },
+    "accessMode": "PUBLIC",
+    "securityTags": [
+      "ALLOW_PORTAL_USER"
+    ],
+    "type": "USER_GENERATED",
+    "uuid": "4da82605d6c51a8f6193be5903fb4066",
+    "automationSystemUuid": "479eb7e12a6fc59b5a268ebe34d10343",
+    "migration": false,
+    "remote": false,
+    "permissionSet": [
+      "VIEW_AUTOMATION_SERVICE",
+      "USE_AUTOMATION_SERVICE_DIRECTLY",
+      "EDIT_AUTOMATION_SERVICE",
+      "OWNER_SERVICE",
+      "USE_AUTOMATION_SERVICE_IN_GUIDE"
+    ],
+    "securityTagsCommaSeparated": "ALLOW_PORTAL_USER",
+    "isAuthenticationStructureInherited": false
+  },
+  "changelog": [],
+  "permissions": [
+    {
+      "id": 12928,
+      "automationChainDefinitionId": null,
+      "permissionType": "ALLOW_ALL_INTERNAL_USERS",
+      "groups": [],
+      "users": [
+        {
+          "id": 2,
+          "email": "user@example.com",
+          "firstName": "Admin",
+          "lastName": "ACME",
+          "ssoUser": false,
+          "boss": {
+            "id": 1,
+            "ssoUser": false,
+            "mfaEnabled": false
+          },
+          "mfaEnabled": false,
+          "fullName": "Admin ACME",
+          "title": "Admin ACME"
+        }
+      ]
+    }
+  ],
+  "createdBy": 2,
+  "createdOn": 1666003921839,
+  "updatedBy": 2,
+  "updatedOn": 1667304481112,
+  "referenceId": "447ccacff1139ac3890bbe5569b8d19c",
+  "state": "DRAFT",
+  "methodDeprecated": false,
+  "securityTags": [],
+  "migration": false,
+  "lastPublishedAt": 1667304488480,
+  "lastPublishedBy": 2,
+  "methodType": "USER_GENERATED",
+  "automationApiUuid": "478e53d8d7392085752ba5b8fd3bf362",
+  "active": false,
+  "scope": "UNRESTRICTED",
+  "allowedCategoryUuids": [],
+  "allowedCategoryNames": [],
+  "automationState": "DRAFT",
+  "permissionSet": [
+    "EDIT_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_IN_GUIDE",
+    "VIEW_AUTOMATION_METHOD",
+    "USE_AUTOMATION_METHOD_DIRECTLY",
+    "OWNER_METHOD"
+  ],
+  "securityTagsCommaSeparated": ""
+}

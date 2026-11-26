@@ -4,7 +4,7 @@
 // none. Every V2 save drops them (verified live), and wi-impl cannot set them, so
 // `save` and `create` say so instead of losing them silently.
 
-import * as v1 from "../api/v1";
+import { readV1Definition } from "../v1-only";
 
 /** A stored value counts when it is present and not null / "". */
 function hasValue(v: unknown): boolean {
@@ -16,16 +16,14 @@ function hasValue(v: unknown): boolean {
  * when the read or its jsonDefinition fails (best effort: never blocks a save).
  */
 export async function storedTestValues(uuid: string): Promise<string[] | null> {
-  try {
-    const raw = await v1.fetchRawMethod(uuid);
-    const def = typeof raw.jsonDefinition === "string" ? JSON.parse(raw.jsonDefinition) : raw.jsonDefinition;
-    const inputs = Array.isArray(def?.inputs) ? (def.inputs as Array<Record<string, unknown>>) : [];
-    return inputs
-      .filter((i) => typeof i.fieldCode === "string" && hasValue(i.testValue))
-      .map((i) => i.fieldCode as string);
-  } catch {
-    return null;
-  }
+  const def = await readV1Definition(uuid);
+  return def ? testValueCodes(def) : null;
+}
+
+/** Input codes of a V1 definition that carry a stored testValue. */
+export function testValueCodes(def: Record<string, unknown>): string[] {
+  const inputs = Array.isArray(def.inputs) ? (def.inputs as Array<Record<string, unknown>>) : [];
+  return inputs.filter((i) => typeof i.fieldCode === "string" && hasValue(i.testValue)).map((i) => i.fieldCode as string);
 }
 
 /** The warning for inputs whose stored testValue a save dropped (or would drop). */

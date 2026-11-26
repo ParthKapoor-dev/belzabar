@@ -59,7 +59,7 @@ export function identityForStep(step: ParsedStep): string {
 
 interface StepFacts {
   when?: string;
-  loop?: { type?: string; over?: string; counter?: string; parallel?: boolean };
+  loop?: { type?: string; over?: string; counter?: string; parallel?: boolean; v1Only?: boolean };
   exitOnFailure?: boolean;
   exitMessage?: string;
   /** HTTP status of the exit. */
@@ -92,6 +92,7 @@ export function stepFacts(step: ParsedStep): StepFacts {
       over: str(step.loopExecutionSource),
       counter: str(cfg.counter),
       parallel: cfg.executeParallel === true || undefined,
+      v1Only: step.legacyLoop || undefined,
     };
   }
   const code = statusCode(step.forceExitStatusCode);
@@ -120,7 +121,7 @@ export function stepGates(step: ParsedStep): string[] {
   const f = stepFacts(step);
   const out: string[] = [];
   if (f.when) out.push(`when ${f.when}`);
-  if (f.loop) out.push(`loop ${f.loop.type ? LOOP_SHORT[f.loop.type] ?? f.loop.type : "loop"}${f.loop.over ? ` ${f.loop.over}` : ""}${f.loop.parallel ? " parallel" : ""}`);
+  if (f.loop) out.push(`loop ${f.loop.type ? LOOP_SHORT[f.loop.type] ?? f.loop.type : "loop"}${f.loop.over ? ` ${f.loop.over}` : ""}${f.loop.parallel ? " parallel" : ""}${f.loop.v1Only ? " (v1 only)" : ""}`);
   if (f.exitIf) out.push(`exit-if ${f.exitIf}${f.exitIfCode ? ` → ${f.exitIfCode}` : ""}`);
   if (f.exitOnFailure) out.push(`exit-on-fail${f.exitCode ? ` ${f.exitCode}` : ""}`);
   if (f.async) out.push("async");
@@ -305,7 +306,7 @@ export function compactStepLine(step: ParsedStep, opts: CompactOptions = {}): st
   if (f.when) parts.push(`when ${f.when}`);
   if (f.loop) {
     const t = f.loop.type ? LOOP_SHORT[f.loop.type] ?? f.loop.type : "loop";
-    parts.push(`loop ${t}${f.loop.over ? ` ${f.loop.over}` : ""}${f.loop.counter ? ` as ${f.loop.counter}` : ""}${f.loop.parallel ? " parallel" : ""}`);
+    parts.push(`loop ${t}${f.loop.over ? ` ${f.loop.over}` : ""}${f.loop.counter ? ` as ${f.loop.counter}` : ""}${f.loop.parallel ? " parallel" : ""}${f.loop.v1Only ? " (v1 only)" : ""}`);
   }
 
   const body = stepBody(step);

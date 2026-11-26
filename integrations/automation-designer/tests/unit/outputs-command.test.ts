@@ -30,7 +30,8 @@ describe("ad outputs stepOutputs", () => {
     const r = await runCommand(outputsCommand, [uuid], { env: "t-dev" });
     const d = r.envelope?.data as any;
     expect(d.sourceVersion).toBe("v2");
-    expect(ff.requests.every((q) => q.url.includes("/chain/v2/"))).toBe(true);
+    // the V2 read, plus the V1 read that looks for loops only V1 holds (K1)
+    expect(ff.requests.every((q) => q.url.includes("/chain/v2/") || q.url.includes(`/chain/${uuid}`))).toBe(true);
     const total = (body.steps as any[]).reduce((n, s) => n + (s.outputs ?? []).length, 0);
     expect(d.stepOutputs).toHaveLength(total);
     const undeclared = d.stepOutputs.filter((x: any) => x.declaredAs === null);

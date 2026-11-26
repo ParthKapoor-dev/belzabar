@@ -6,6 +6,8 @@ import { adApi } from "./api/index";
 import * as v2 from "./api/v2";
 import { isMethodGone } from "./method-finder";
 import type { HydratedMethod } from "./types/common";
+import type { V2Step } from "./types/v2-wire";
+import { applyLegacyLoops, legacyLoopShowWarning } from "./v1-only";
 
 /**
  * V2, fresh (never the V1-shaped cache). Falls back to the V1 parse only when
@@ -14,7 +16,11 @@ import type { HydratedMethod } from "./types/common";
  */
 export async function fetchViewMethod(uuid: string, warn: (m: string) => void): Promise<HydratedMethod> {
   try {
-    return await adApi.fetchMethod(uuid, "v2");
+    const method = await adApi.fetchMethod(uuid, "v2");
+    // K1: a loop the older editor stored only in V1 is invisible on V2; mark it from a V1 read.
+    const loops = await applyLegacyLoops(method, method.parsedSteps.map((s) => s.raw as V2Step));
+    if (loops.length > 0) warn(legacyLoopShowWarning(loops));
+    return method;
   } catch (err) {
     if (err instanceof CliError && err.code === "METHOD_NOT_FOUND") throw err;
     warn(`V2 read failed (${(err as Error).message}); showing the V1 parse, whose input names are UI labels, not save keys.`);

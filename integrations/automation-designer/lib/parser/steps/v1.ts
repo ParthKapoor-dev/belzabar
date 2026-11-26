@@ -14,7 +14,7 @@ import type {
   ConditionRow,
 } from "../../types/common";
 import { decodeBase64Strict } from "../../base64";
-import { findMappingByInputId, walkMappingTree } from "./shared";
+import { EACH_LOOP, findMappingByInputId, legacyLoopSource, walkMappingTree } from "./shared";
 import {
   classifyService,
   resolveStepIdentity,
@@ -83,6 +83,7 @@ interface BaseFields {
   repeatStepExecution?: boolean;
   loopExecutionSource?: string;
   loopConfiguration?: { executeParallel?: boolean; type?: string };
+  legacyLoop?: boolean;
   conditionMode?: "advance" | "basic";
   conditionExpression?: string;
   conditionConfiguration?: unknown;
@@ -112,6 +113,8 @@ function buildBase(raw: V1ServiceStep, orderIndex: number): BaseFields {
     repeatStepExecution: raw.repeatStepExecution,
     loopExecutionSource: raw.loopExecutionSource,
     loopConfiguration: raw.loopConfiguration,
+    // The older editor's loop: the source alone (no repeatStepExecution) still loops (K1).
+    ...(legacyLoopSource(raw as never) ? { repeatStepExecution: true, loopConfiguration: { ...(raw.loopConfiguration ?? {}), type: raw.loopConfiguration?.type ?? EACH_LOOP }, legacyLoop: true } : {}),
     conditionMode: raw.conditionMode,
     conditionExpression: raw.conditionExpression,
     conditionConfiguration: raw.conditionConfiguration,

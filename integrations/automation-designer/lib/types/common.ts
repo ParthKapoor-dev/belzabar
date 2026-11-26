@@ -138,6 +138,12 @@ interface BaseStep {
   streamCapable?: boolean;
   /** The step loops. V1: `repeatStepExecution`; V2: a `properties.repeatStepExecution` object with a type/value. */
   repeatStepExecution?: boolean;
+  /**
+   * The loop is the older editor's form, stored only in the V1 body
+   * (`loopExecutionSource` without `repeatStepExecution`): the V2 route shows no
+   * loop for the step and a V2 save would drop it (lib/v1-only.ts).
+   */
+  legacyLoop?: boolean;
   /** What the loop runs over: V1 `loopExecutionSource`; V2 `value` (or `start..end` for a range). */
   loopExecutionSource?: string;
   /** Loop type (`LOOP_EXECUTION_ON_*`), counter variable, parallelism. */

@@ -34,7 +34,11 @@ the verification.
    (`AD_SERIALIZER_DRIFT`).
    Then the older-body repairs (`output-keys.ts`): a method output stored without a `key` gets
    it from its fieldCode (`outputKeysFilled`, a warning); a V2 save without one breaks every run
-   ("key is null"). The fill is a verified target like the overlay's own.
+   ("key is null"). One V1 read ([`../v1-only.ts`](../v1-only.ts)) then carries the loops the
+   older editor stored only in V1 into the body (`loopsCarried`) and lists the V1 mappings of
+   callee inputs that no longer exist, which the save drops (`droppedMappings`; contracts are
+   read only for steps with more V1 mappings than V2 inputs). Fills and carried loops are
+   verified targets like the overlay's own.
 3. The validation gate, and for a rename the name check (`name-check.ts`). `--dry-run` stops here and returns `{valid, validation{errors,
    warnings}}` plus the preview from `preview.ts`: `changes[{target, path, before, after}]`,
    `order` (new steps named `new#1`, `new#2`…) and `outputsToMethod`. Nothing is written.

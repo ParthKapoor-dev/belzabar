@@ -29,7 +29,19 @@ import type { V2MethodResponse } from "../types/v2-wire";
 import { postChainV2 } from "./api";
 import { findNameConflict, nameConflictMessage, type NameConflict } from "./name-check";
 import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-cache";
-import { storedTestValues, testValueDropWarning } from "./test-values";
+import { storedTestValues, testValueCodes, testValueDropWarning } from "./test-values";
+import { stepService } from "../serialize/ops";
+import {
+  carryLegacyLoops,
+  droppedMappings,
+  droppedMappingsWarning,
+  legacyLoops,
+  loopsCarriedWarning,
+  mappingCandidates,
+  readV1Definition,
+  type DroppedMapping,
+  type LegacyLoop,
+} from "../v1-only";
 import { filledKeysWarning, fillOutputKeys } from "./output-keys";
 import { guardTestCases, type CaseGuardResult } from "./case-guard";
 import { normalisedChange, normalisedWarning, splitNormalised, type Normalised } from "./normalise";
@@ -91,6 +103,10 @@ export interface SaveDryRunData {
   testValuesAtRisk: string[];
   /** Method outputs stored without a key that the save fills from their fieldCode (empty when none). */
   outputKeysFilled: string[];
+  /** Loops stored only in the V1 body (older editor) that the save writes into the V2 body (empty when none). */
+  loopsCarried: LegacyLoop[];
+  /** V1 input mappings of callee inputs that no longer exist: the save drops them (empty when none). */
+  droppedMappings: DroppedMapping[];
   /** A rename onto a name or alias another method of the category holds (the save would be refused). */
   nameConflict?: NameConflict;
 }
@@ -136,6 +152,10 @@ export interface SaveV2Data {
   normalised: Normalised[];
   /** Method outputs stored without a key that the save filled from their fieldCode (empty when none). */
   outputKeysFilled: string[];
+  /** Loops stored only in the V1 body (older editor) that the save wrote into the V2 body (empty when none). */
+  loopsCarried: LegacyLoop[];
+  /** V1 input mappings of callee inputs that no longer exist, dropped by the save (empty when none). */
+  droppedMappings: DroppedMapping[];
 }
 
 /**
@@ -205,6 +225,13 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   // K2: a keyless method output breaks every run after a V2 save; write its key now.
   const keysFilled = fillOutputKeys(plan);
   if (keysFilled.length > 0) input.warn(filledKeysWarning(keysFilled, input.dryRun ? "will be filled" : "filled"));
+  // The V1 body holds what the V2 route neither shows nor keeps (lib/v1-only.ts): stored
+  // testValues, loops of the older editor (carried, K1), mappings of removed callee inputs (K5).
+  const v1def = await readV1Definition(draftUuid);
+  const loopsCarried = carryLegacyLoops(plan, legacyLoops(v1def, live.steps), input.overlay);
+  if (loopsCarried.length > 0) input.warn(loopsCarriedWarning(loopsCarried, input.dryRun ? "will be carried" : "carried"));
+  const dropped = await findDroppedMappings(v1def, live);
+  if (dropped.length > 0) input.warn(droppedMappingsWarning(dropped, input.dryRun ? "will be dropped" : "dropped"));
 
   const gate = {
     after: plan.body,
@@ -215,7 +242,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     warn: input.warn,
   };
   // The V2 save strips stored input testValues; only a V1 read shows them.
-  const withTestValues = (await storedTestValues(draftUuid)) ?? [];
+  const withTestValues = v1def ? testValueCodes(v1def) : [];
   // K8: a rename onto another method's name or alias is refused by the server.
   const nameConflict = await findNameConflict({ live, after: plan.body, self: [draftUuid, guard.publishedUuid], warn: input.warn });
   const nameConflictText = nameConflict ? nameConflictMessage(nameConflict, live.metadata?.service?.name ?? "the category") : "";
@@ -237,6 +264,8 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
       validation: v,
       testValuesAtRisk: withTestValues,
       outputKeysFilled: keysFilled.map((f) => f.key),
+      loopsCarried,
+      droppedMappings: dropped,
       ...(nameConflict ? { nameConflict } : {}),
     };
   }
@@ -312,7 +341,25 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     testCases,
     normalised,
     outputKeysFilled: keysFilled.map((f) => f.key),
+    loopsCarried,
+    droppedMappings: dropped,
   };
+}
+
+/**
+ * K5: V1 mappings of callee inputs that no longer exist (the V2 body already
+ * lacks them, so the save drops them). Contracts are read only for steps with
+ * more V1 mappings than V2 inputs; best effort, never blocks the save.
+ */
+async function findDroppedMappings(def: Record<string, unknown> | null, live: V2MethodResponse): Promise<DroppedMapping[]> {
+  const candidates = mappingCandidates(def, live.steps);
+  if (candidates.length === 0) return [];
+  const services = candidates.map((c) => (live.steps?.[c.step - 1] ? stepService(live.steps[c.step - 1]!) : null)).filter((s): s is string => !!s);
+  const catalog = await loadServiceCatalog(services).catch(() => null);
+  return droppedMappings(candidates, live.steps, (s) => {
+    const name = stepService(s);
+    return name ? catalog?.contracts.get(name) : undefined;
+  });
 }
 
 /**

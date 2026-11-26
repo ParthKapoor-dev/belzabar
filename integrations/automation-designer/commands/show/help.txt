@@ -17,6 +17,12 @@ detail (--service-detail / --full) adds "Exit If", the exit code/message and
 "Account"; the header shows Deprecated / Scope / Timeout when set. Conditions
 and exit conditions are never cut; any other cut text ends `…(+N, use --full)`.
 
+A loop the older editor stored only in the V1 body (loopExecutionSource
+without repeatStepExecution) is shown as `loop each <source> (v1 only)`, in
+every view: the V2 route shows no loop for such a step, so --compact /
+--story read the V1 body too and warn. `ad save` carries the loop into the
+V2 body (data.loopsCarried).
+
 `summary.summary` is the method's summary as stored ("" when none; never the
 description) and `summary.methodDescription` its long description (the
 `ad save` key `description`). --compact has `summary` / `methodDescription`;

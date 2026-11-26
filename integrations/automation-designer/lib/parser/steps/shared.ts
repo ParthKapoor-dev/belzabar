@@ -32,3 +32,13 @@ export function findMappingByInputId<T extends { automationUserInputId?: number;
   }
   return null;
 }
+
+/** The V2 loop type of a V1 "each" loop (over a list). */
+export const EACH_LOOP = "LOOP_EXECUTION_ON_INPUT_OUTPUT";
+
+/** A V1 step's loop source when it is the older editor's form (source only, `repeatStepExecution` unset). */
+export function legacyLoopSource(svc: Record<string, unknown>): string | undefined {
+  const src = typeof svc.loopExecutionSource === "string" ? svc.loopExecutionSource.trim() : "";
+  if (!src || svc.repeatStepExecution === true || svc.repeatStepExecution === false) return undefined;
+  return src;
+}

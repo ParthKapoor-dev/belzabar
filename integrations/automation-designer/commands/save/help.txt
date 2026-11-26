@@ -164,7 +164,7 @@ Flags:
   --dry-run             Plan + validate only; nothing is written. Returns
                         {applied, order, changes, outputsToMethod, valid,
                         validation{errors, warnings}, testValuesAtRisk,
-                        outputKeysFilled}:
+                        outputKeysFilled, loopsCarried, droppedMappings}:
                         changes[{target, path, before, after}] is every field
                         the save would change (code and base64 SQL as text;
                         before/after absent = the field is added/removed);
@@ -205,7 +205,14 @@ Pipeline and error codes:
   2a. older-body repairs, each with a warning and a data key (the dry run
      lists them too): a method output stored without a key gets key := its
      fieldCode (outputKeysFilled[]); without one every run after a V2 save
-     fails "key is null".
+     fails "key is null". A loop the older editor stored only in the V1 body
+     (loopExecutionSource; the V2 route shows none) is written into the V2
+     body as "each" over its source (loopsCarried[{step, over}]), unless an
+     update-step op sets or clears that step's loop. V1 input mappings of
+     callee inputs that no longer exist are listed (droppedMappings[{step,
+     input, value}], input `#<id>` as the step detail prints it): the V2 body
+     already lacks them and the save drops them. Removing one by its old code
+     (inputs {"oldCode": null} or {"#4454": null}) is accepted.
   3. validator L1–L3 (L4 with --dry-run-compile): AD_VALIDATION_FAILED with
      details {errors, warnings, blocking, layersRun, preexistingCount}
   4. confirmation (AD_CONFIRMATION_REQUIRED in --llm without --yes)
@@ -238,7 +245,8 @@ Data: {action, draftUuid, publishedUuid, switchedFromPublished, previousVersion,
 version, applied[], unchanged[], validation{skipped, warnings, layersRun},
 compiledCache{ok, uuids, routes[]}, testValuesDropped[] (always; [] when none),
 testCases{changedByServer[], restored[], failed[{name, id, reason}], kept?},
-normalised[{path, kind, from, to}], outputKeysFilled[]}.
+normalised[{path, kind, from, to}], outputKeysFilled[], loopsCarried[],
+droppedMappings[]}.
 
 Versions: the first V2 save of an older method (one the platform has not
 migrated yet) migrates it, and the server restarts the draft's version

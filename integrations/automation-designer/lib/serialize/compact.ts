@@ -352,6 +352,9 @@ function newInputNode(c: ContractInput | undefined, key: string, leaf: boolean):
   };
 }
 
+/** Label of a removal of an input the callee no longer has (accepted; see setStepInput). */
+export const ABSENT_INPUT_NOTE = "(not an input of the callee: nothing stored in the V2 body; the save drops any V1 mapping of it)";
+
 /**
  * Set `dotted` = value on a step's inputs tree (creating nodes from the
  * callee contract), or remove it (value null). Existing nodes keep their
@@ -364,7 +367,7 @@ function setStepInput(
   contract: ApiContract | null | undefined,
   where: string,
   p: Problems,
-): boolean {
+): boolean | "absent" {
   const segs = dotted.split(".").map((s) => s.trim());
   if (segs.some((s) => !s)) {
     p.bad(where, "empty key segment");
@@ -377,6 +380,9 @@ function setStepInput(
     const leaf = i === segs.length - 1;
     let idx = level.findIndex((n) => n && n.key === seg);
     if (value === null && idx < 0) {
+      // K5: an input the callee no longer has (the old code, or `#<id>` as `ad show --step`
+      // prints it) is not in the V2 body; the save drops any V1 mapping of it anyway.
+      if (contract && !cpath) return "absent";
       p.drop(where, `the step has no input '${dotted}' to remove`);
       return false;
     }
@@ -592,7 +598,9 @@ export function applyStepFields(
       step.inputs ??= [];
       for (const [k, v] of Object.entries(set.inputs)) {
         if (v === undefined) continue;
-        if (setStepInput(step.inputs, k, v, contract, `${at("inputs")}.${k}`, p)) changed.push(`inputs.${k}`);
+        const r = setStepInput(step.inputs, k, v, contract, `${at("inputs")}.${k}`, p);
+        if (r === "absent") changed.push(`-inputs.${k} ${ABSENT_INPUT_NOTE}`);
+        else if (r) changed.push(`inputs.${k}`);
       }
     }
   }

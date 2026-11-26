@@ -17,7 +17,10 @@ Turns a raw V1 or V2 method body into the one version-neutral shape the commands
   in a way that loses unknown fields: presenters and the fingerprint read it.
 - **No behaviour field is dropped.** Entry condition, loop, exit-on-failure, conditional exit
   (`forceReturn*`: V1 `forceReturnConditionExpression`, V2 `exitCondition.conditionalExit`),
-  async, account, and method deprecation / scope / timeout are all on the parse.
+  async, account, and method deprecation / scope / timeout are all on the parse. A V1 step
+  with `loopExecutionSource` but no `repeatStepExecution` (the older editor's form) loops:
+  it parses as an "each" loop with `legacyLoop: true` (the V2 route shows no loop for it;
+  [`../v1-only.ts`](../v1-only.ts)).
   `tests/unit/parsed-fields-guard.test.ts` fails on any fixture wire key that is set but
   neither parsed nor on its documented ignore list; a new key must be modelled or listed.
 - A V1 body needs a service resolver to classify steps (its numeric API ids are env-local).

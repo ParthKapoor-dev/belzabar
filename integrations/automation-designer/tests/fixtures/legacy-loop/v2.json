@@ -1,0 +1,194 @@
+{
+  "uuid": "45cc70e9f26ec5140eee86a3e5870281",
+  "automationApiId": "478e53d8d7392085752ba5b8fd3bf362    ",
+  "name": "executeQueriesOnListElements",
+  "description": "This method demonstrates steps to iterate over an input json list, as [{\"data\":\"value1\"}, {\"data\":\"value2\"}] and perform DB operation on its elements\nA separate method is called over each element that performs the DB query",
+  "metadata": {
+    "version": {
+      "uuid": "45cc70e9f26ec5140eee86a3e5870281",
+      "name": "6",
+      "description": null,
+      "breaking": false
+    },
+    "service": {
+      "id": 21,
+      "uuid": "4da82605d6c51a8f6193be5903fb4066",
+      "name": "Sample methods",
+      "description": "The methods created under this service tackle few common use cases such as merging of JSONs, uploading a document, downloading a document, performing iterations, etc., and provide steps to perform these operations in an efficient manner.\n\nSome of these methods are based on Expertly Schools use cases.",
+      "systemService": false
+    },
+    "categories": null,
+    "executionTimeLimit": null,
+    "internal": {
+      "createdAt": 1666003921839,
+      "lastPublishedAt": 1667304488480,
+      "createdBy": 2,
+      "migrationVersion": null,
+      "lastPublishedBy": 2,
+      "sourceEnvironment": null,
+      "systemMethod": false
+    },
+    "state": "DRAFT",
+    "referenceId": "447ccacff1139ac3890bbe5569b8d19c"
+  },
+  "inputs": [],
+  "outputs": [],
+  "variables": [],
+  "steps": [
+    {
+      "id": "488eb02d8749b20adaf9ad40e83af54a    ",
+      "automationAPIId": "4605d60e0435b82a15308a648810bae8    ",
+      "serviceName": "Helpers.JSON",
+      "methodName": "fetchKeyValue",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4e7e59d30a76a8f49ef1bb1b04664fb3    ",
+          "key": "body",
+          "name": "",
+          "type": "OBJECT",
+          "displayWidgetSuggestion": "OBJECT",
+          "combineInput": false,
+          "properties": [
+            {
+              "uuid": "4bdc5145fcc4884daf0fa9f789d4b2b3    ",
+              "value": "[{\"data\":\"AR5xxDR.nlOhzCxTD0a8DKmnIffqfcxA\"},{\"data\":\"ATREvPBk24KxMSp1sfKEADaAEveBLTZg\"}]",
+              "key": "json",
+              "name": "inputJSON",
+              "type": "JSON",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            },
+            {
+              "uuid": "4453cc3a37a55ac04ae8bb6de03e0735    ",
+              "value": "$",
+              "key": "path",
+              "name": "path",
+              "type": "STRING",
+              "displayWidgetSuggestion": "CUSTOM",
+              "combineInput": false,
+              "properties": [],
+              "encodingType": "NONE"
+            }
+          ],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "41131c1926df663db369b6fef714eba2    ",
+          "key": "response",
+          "fieldCode": "list",
+          "name": "list"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": null,
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    },
+    {
+      "id": "4cade563e9c71c6f303ba9401be542cc    ",
+      "automationAPIId": "4523f85d1b6f0349299c9852c3f5b707    ",
+      "serviceName": "Sample methods",
+      "methodName": "performDbUpdate",
+      "coreMethod": false,
+      "inputs": [
+        {
+          "uuid": "4a460186609abc62772a8d6fd9479676    ",
+          "value": "#{data}",
+          "key": "versionId",
+          "name": "versionId",
+          "type": "STRING",
+          "displayWidgetSuggestion": "CUSTOM",
+          "combineInput": true,
+          "properties": [],
+          "encodingType": "NONE"
+        }
+      ],
+      "outputs": [
+        {
+          "uuid": "4b9320e6f460aa245f93811292e05742    ",
+          "key": "count",
+          "fieldCode": "updatedRawsCount",
+          "name": "updatedRawsCount"
+        }
+      ],
+      "properties": {
+        "runAsync": false,
+        "exitCondition": {
+          "exitOnFailure": {
+            "value": false,
+            "code": null,
+            "message": null
+          },
+          "conditionalExit": {
+            "code": null,
+            "message": null,
+            "expression": null,
+            "expandedExpressions": null
+          }
+        },
+        "entryCondition": {
+          "expression": "",
+          "expandedExpressions": null
+        },
+        "type": "EXISTING_SERVICE",
+        "customCode": {
+          "inlineCode": null,
+          "language": null,
+          "executor": null,
+          "fileName": null,
+          "file": null
+        },
+        "databaseRead": {
+          "query": null,
+          "account": "null"
+        }
+      },
+      "interfaceMigration": false
+    }
+  ],
+  "changelogs": [],
+  "permissions": {
+    "permissionSet": [],
+    "methodScope": null,
+    "allowedCategories": []
+  },
+  "methodDeprecated": false,
+  "migration": false,
+  "interfaceMigration": false,
+  "securityFields": [],
+  "automationState": "DRAFT"
+}
