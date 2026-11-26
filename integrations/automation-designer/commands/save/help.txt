@@ -9,6 +9,16 @@ Arguments:
   [FILE]                JSON overlay (optional when --sql-file/--code-file carry
                         the change). Keys (anything else → AD_OVERLAY_UNKNOWN_KEY):
                           name, summary, description
+                            (a new `name` is checked against every name and
+                            alias in the category, unpublished drafts and
+                            published methods: the server refuses one that
+                            another method holds. An alias is usually the
+                            method's first name and stays after a rename;
+                            nothing changes it. `ad show` flags
+                            summary.aliasDiffers. Taken: AD_METHOD_EXISTS
+                            naming the holder; --dry-run: nameConflict
+                            {name, matched, holder{uuid, state, name, alias}}
+                            and valid:false.)
                             (`description` writes the long method description,
                             V1 `methodDescription`; `summary` is the short
                             summary. `ad show` prints them as

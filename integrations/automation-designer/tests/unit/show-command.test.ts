@@ -101,4 +101,17 @@ describe("ad show command", () => {
     const svc = data.allStepDetails.find((d: any) => d.kind === "EXISTING_SERVICE");
     expect(Array.isArray(svc.inputs)).toBe(true);
   });
+
+  test("K8: an alias other than the name (a renamed method) is flagged; an equal one is not", async () => {
+    using _cfg = withTempEnvConfig({ envs: { "t-dev": { url: "https://t.test" } } });
+    const m = await v2Method();
+    stub({ ...m, aliasName: "old.name" });
+    const r = await runCommand(showCommand, [UUID], { env: "t-dev" });
+    expect((r.envelope?.data as any).summary).toMatchObject({ alias: "old.name", aliasDiffers: true });
+    expect(((r.envelope?.meta?.warnings ?? []) as string[]).join("\n")).toContain(`Alias 'old.name' differs from the name '${m.name}'`);
+    while (spies.length) spies.pop()!.mockRestore();
+    stub({ ...m, aliasName: m.name });
+    const same = await runCommand(showCommand, [UUID], { env: "t-dev" });
+    expect((same.envelope?.data as any).summary.aliasDiffers).toBeUndefined();
+  });
 });

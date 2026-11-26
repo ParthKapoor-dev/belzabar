@@ -108,6 +108,7 @@ const command: CommandModule<SaveArgs, SaveV2Data | SaveDryRunData> = {
       if (d.valid) ui.success(head);
       else ui.warn(head);
       for (const f of d.validation.errors) ui.warn(`${f.rule} ${f.path}: ${f.message}`);
+      if (d.nameConflict) ui.warn(`name: '${d.nameConflict.name}' is the ${d.nameConflict.matched} of ${d.nameConflict.holder.state} ${d.nameConflict.holder.uuid}; the save would be refused.`);
       ui.table(
         ["Property", "Value"],
         [

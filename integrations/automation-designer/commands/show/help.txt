@@ -24,6 +24,10 @@ description) and `summary.methodDescription` its long description (the
 Input and variable default values are shown everywhere the fields are:
 `defaultValue` (and V1 `testValue`, kept apart) with --inputs / --variables,
 `defaults {inputs, variables}` in --compact, a Default column in --story.
+`summary.alias` is the method's alias (usually its first name); after a rename
+it stays the old name, which it still reserves in the category, and
+`summary.aliasDiffers: true` plus a warning say so (no AD screen or route
+changes an alias).
 A method with no steps (a built-in service) shows its inputs and outputs
 without flags, with a `note`.
 

@@ -116,6 +116,8 @@ interface ShowMethodData {
   summary: {
     name: string;
     alias?: string;
+    /** K8: the alias (the old name after a rename) is not the name; it still reserves that name in the category. */
+    aliasDiffers?: boolean;
     category: string;
     state: string;
     version: number | string;
@@ -647,6 +649,12 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       stepDetail = await buildStepDetailView(method, match, { code: true, sql: true }, categoryOf);
     }
 
+    if (aliasDiffers(method.aliasName, method.name)) {
+      context.warn(
+        `Alias '${method.aliasName}' differs from the name '${method.name}' (a rename keeps the old alias). ` +
+          `The alias still reserves that name in the category, and no AD screen or route changes it.`,
+      );
+    }
     const data: ShowMethodData = {
       source,
       sourceVersion: method.sourceVersion,
@@ -656,6 +664,7 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
       summary: {
         name: method.name,
         alias: method.aliasName,
+        aliasDiffers: aliasDiffers(method.aliasName, method.name) || undefined,
         category: categoryName,
         state: method.state,
         version: method.version,
@@ -715,7 +724,7 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
 
     const rows: unknown[][] = [
       ["Method Name", summary.name],
-      ["Alias", summary.alias ?? ""],
+      ["Alias", `${summary.alias ?? ""}${summary.aliasDiffers ? " (differs from the name)" : ""}`],
       ["Category", summary.category],
       ["State", summary.state],
       ["Version", summary.version],
@@ -865,5 +874,10 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
     }
   },
 };
+
+/** A non-empty alias other than the name (the V1 parser falls back to the alias when the name is missing). */
+function aliasDiffers(alias: string | undefined, name: string): boolean {
+  return !!alias && alias !== name;
+}
 
 export default command;

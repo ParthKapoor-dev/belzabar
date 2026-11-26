@@ -27,6 +27,7 @@ import { isBookkeepingKey } from "../fingerprint";
 import { loadServiceCatalog, servicesOfOps } from "./services";
 import type { V2MethodResponse } from "../types/v2-wire";
 import { postChainV2 } from "./api";
+import { findNameConflict, nameConflictMessage, type NameConflict } from "./name-check";
 import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-cache";
 import { storedTestValues, testValueDropWarning } from "./test-values";
 import { guardTestCases, type CaseGuardResult } from "./case-guard";
@@ -87,6 +88,8 @@ export interface SaveDryRunData {
   validation: DryRunValidation;
   /** Inputs whose stored testValue the real save would drop (V1 read; empty when none or unreadable). */
   testValuesAtRisk: string[];
+  /** A rename onto a name or alias another method of the category holds (the save would be refused). */
+  nameConflict?: NameConflict;
 }
 
 /** Validator result as a dry run reports it: blocking findings are data, not an error. */
@@ -205,7 +208,11 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   };
   // The V2 save strips stored input testValues; only a V1 read shows them.
   const withTestValues = (await storedTestValues(draftUuid)) ?? [];
+  // K8: a rename onto another method's name or alias is refused by the server.
+  const nameConflict = await findNameConflict({ live, after: plan.body, self: [draftUuid, guard.publishedUuid], warn: input.warn });
+  const nameConflictText = nameConflict ? nameConflictMessage(nameConflict, live.metadata?.service?.name ?? "the category") : "";
   if (input.dryRun) {
+    if (nameConflict) input.warn(nameConflictText);
     const v = await dryRunValidation(() => runValidationGate(input.flags, gate));
     if (withTestValues.length > 0) input.warn(testValueDropWarning(withTestValues, "will be dropped"));
     const order = plan.structural ? namedOrder(plan.structural.order) : undefined;
@@ -218,11 +225,13 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
       ...(order ? { order } : {}),
       changes: previewChanges(live, plan),
       outputsToMethod: outputsToMethod(plan, order),
-      valid: v.errors.length === 0,
+      valid: v.errors.length === 0 && !nameConflict,
       validation: v,
       testValuesAtRisk: withTestValues,
+      ...(nameConflict ? { nameConflict } : {}),
     };
   }
+  if (nameConflict) throw new CliError(`${nameConflictText} Nothing was saved.`, { code: "AD_METHOD_EXISTS", details: nameConflict });
   const validation = await runValidationGate(input.flags, gate);
 
   const previousVersion = versionName(live);

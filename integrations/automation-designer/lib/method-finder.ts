@@ -559,7 +559,8 @@ async function fetchAllCategories(): Promise<MethodFinderCategory[]> {
   return dedupeBy(categories, c => c.uuid);
 }
 
-async function fetchMethodsForCategory(category: MethodFinderCategory): Promise<{
+/** One category's method listing: every unpublished draft and every published method (a draft with a published copy appears as that copy). */
+export async function fetchMethodsForCategory(category: Pick<MethodFinderCategory, "uuid" | "name">): Promise<{
   methods: MethodFinderMethod[];
   status: number | null;
   error: string | null;

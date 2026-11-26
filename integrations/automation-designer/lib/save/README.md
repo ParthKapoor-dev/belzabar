@@ -8,7 +8,7 @@ the verification.
 | File | Contents |
 |---|---|
 | `pipeline.ts` | `saveOverlayV2` (the whole `ad save` flow), `assertDraftUnchanged` (freshness check, shared with publish), `verifyStructural` / `structuralRemovals` (post-write verify for ops and create), `dryRunValidation`. |
-| `validation.ts` | `runValidationGate`: runs [`../validate/`](../validate/README.md), blocks on errors (and new warnings with `--strict`), fails `AD_VALIDATION_FAILED {errors, warnings, layersRun, preexistingCount}`. `--no-validate` skips it with a loud warning. |
+| `validation.ts` | `runValidationGate`: runs [`../validate/`](../validate/README.md), blocks on errors (and new warnings with `--strict`), fails `AD_VALIDATION_FAILED {errors, warnings, layersRun, preexistingCount}`; when a caller makes pre-existing findings block (publish) the message names its override flag (`preexistingFlag`). `--no-validate` skips it with a loud warning. |
 | `flags.ts` | `VALIDATION_FLAGS`: `--no-validate`, `--strict`, `--dry-run-compile`. |
 | `api.ts` | `postChainV2` (create without a uuid / update with the live body) and `deleteChainV2`. Error bodies are summarised and redacted. |
 | `compiled-cache.ts` | `invalidateCompiledCache`: POSTs every route in `COMPILED_CACHE_ROUTES`, succeeds if any answers 2xx, reports each. |
@@ -17,6 +17,7 @@ the verification.
 | `sources.ts` | Reads `codeFile` / `sqlFile` references and turns `--sql-file N=path` / `--code-file N=path` into update-step ops. |
 | `test-values.ts` | `storedTestValues` (V1 read of the inputs carrying a stored testValue; null when unreadable), the save's drop warning and the create note. |
 | `preview.ts` | The dry run's preview: `previewChanges` (before/after of every changed field), `namedOrder`, `outputsToMethod`. |
+| `name-check.ts` | `findNameConflict`: a rename onto a name or alias another method of the category holds (the category listing: unpublished drafts and published methods; exact match, as the server). `ad save` refuses it before the POST (`AD_METHOD_EXISTS`); `--dry-run` returns `nameConflict` and `valid: false`. |
 | `normalise.ts` | `normalisedChange` / `splitNormalised`: server rewrites the verify accepts as unchanged (encoding flags, account label, condition form). |
 | `case-guard.ts` | `guardTestCases` / `planCaseRestores`: puts back the test cases a V2 body write rewrote (shared by `ad save` and `ad history restore`). |
 | `services.ts` | `loadServiceCatalog`: callee contracts and db accounts for the compact expander, cached 1 h (the validator's L4 cache). `fresh` reads online; the result lists which contracts came from the cache (`cachedAt`). |
@@ -30,7 +31,7 @@ the verification.
    account it does not know) is planned once more on contracts read online now. Only that answer
    refuses, and its message says the contracts were re-read. Anything outside the targets must stay byte-identical
    (`AD_SERIALIZER_DRIFT`).
-3. The validation gate. `--dry-run` stops here and returns `{valid, validation{errors,
+3. The validation gate, and for a rename the name check (`name-check.ts`). `--dry-run` stops here and returns `{valid, validation{errors,
    warnings}}` plus the preview from `preview.ts`: `changes[{target, path, before, after}]`,
    `order` (new steps named `new#1`, `new#2`…) and `outputsToMethod`. Nothing is written.
 4. Confirmation (`--yes` in `--llm` mode).
