@@ -30,6 +30,7 @@ import { postChainV2 } from "./api";
 import { findNameConflict, nameConflictMessage, type NameConflict } from "./name-check";
 import { invalidateCompiledCache, type CompiledCacheResult } from "./compiled-cache";
 import { storedTestValues, testValueDropWarning } from "./test-values";
+import { filledKeysWarning, fillOutputKeys } from "./output-keys";
 import { guardTestCases, type CaseGuardResult } from "./case-guard";
 import { normalisedChange, normalisedWarning, splitNormalised, type Normalised } from "./normalise";
 import { namedOrder, outputsToMethod, previewChanges, type PlannedChange } from "./preview";
@@ -88,6 +89,8 @@ export interface SaveDryRunData {
   validation: DryRunValidation;
   /** Inputs whose stored testValue the real save would drop (V1 read; empty when none or unreadable). */
   testValuesAtRisk: string[];
+  /** Method outputs stored without a key that the save fills from their fieldCode (empty when none). */
+  outputKeysFilled: string[];
   /** A rename onto a name or alias another method of the category holds (the save would be refused). */
   nameConflict?: NameConflict;
 }
@@ -131,6 +134,8 @@ export interface SaveV2Data {
   testCases: CaseGuardResult;
   /** Fields the server rewrote without changing their meaning (encoding flags, account label, condition form). */
   normalised: Normalised[];
+  /** Method outputs stored without a key that the save filled from their fieldCode (empty when none). */
+  outputKeysFilled: string[];
 }
 
 /**
@@ -197,6 +202,9 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
   const ops = isObj(input.overlay) ? input.overlay.ops : undefined;
   const plan = await planWithContracts(live, await resolveScopeServices(input.overlay), input.env, ops);
   for (const k of plan.unchanged) input.warn(`Overlay key ${k} is identical to the current draft; nothing to change.`);
+  // K2: a keyless method output breaks every run after a V2 save; write its key now.
+  const keysFilled = fillOutputKeys(plan);
+  if (keysFilled.length > 0) input.warn(filledKeysWarning(keysFilled, input.dryRun ? "will be filled" : "filled"));
 
   const gate = {
     after: plan.body,
@@ -228,6 +236,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
       valid: v.errors.length === 0 && !nameConflict,
       validation: v,
       testValuesAtRisk: withTestValues,
+      outputKeysFilled: keysFilled.map((f) => f.key),
       ...(nameConflict ? { nameConflict } : {}),
     };
   }
@@ -302,6 +311,7 @@ export async function saveOverlayV2(input: SaveV2Input): Promise<SaveV2Data | Sa
     testValuesDropped,
     testCases,
     normalised,
+    outputKeysFilled: keysFilled.map((f) => f.key),
   };
 }
 

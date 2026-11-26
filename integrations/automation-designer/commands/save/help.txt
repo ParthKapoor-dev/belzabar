@@ -160,15 +160,16 @@ Flags:
   --code-file <N=PATH>  Replace step N's custom code with the file (repeatable).
   --dry-run             Plan + validate only; nothing is written. Returns
                         {applied, order, changes, outputsToMethod, valid,
-                        validation{errors, warnings}, testValuesAtRisk}:
+                        validation{errors, warnings}, testValuesAtRisk,
+                        outputKeysFilled}:
                         changes[{target, path, before, after}] is every field
                         the save would change (code and base64 SQL as text;
                         before/after absent = the field is added/removed);
                         order is the new step order by fetched position, new
                         steps named new#1, new#2…; outputsToMethod[{step,
                         output}] are step outputs the method returns (their
-                        name is a method output). testValuesAtRisk is always
-                        present ([] when none).
+                        name is a method output). testValuesAtRisk and the
+                        repairs of step 2a are always present ([] when none).
   --keep-case-changes   Leave the test cases as the server rewrote them on the
                         save (see step 10). Default: restore them.
   --yes, -y             Skip the confirmation prompt (required with --llm).
@@ -198,6 +199,10 @@ Pipeline and error codes:
      uuids, and every publish of the callee mints new ones. So after a callee
      was republished, any save stores the new uuids for that step (same keys
      and names; `ad history diff` shows them changed). Nothing to do.
+  2a. older-body repairs, each with a warning and a data key (the dry run
+     lists them too): a method output stored without a key gets key := its
+     fieldCode (outputKeysFilled[]); without one every run after a V2 save
+     fails "key is null".
   3. validator L1–L3 (L4 with --dry-run-compile): AD_VALIDATION_FAILED with
      details {errors, warnings, blocking, layersRun, preexistingCount}
   4. confirmation (AD_CONFIRMATION_REQUIRED in --llm without --yes)
@@ -230,7 +235,7 @@ Data: {action, draftUuid, publishedUuid, switchedFromPublished, previousVersion,
 version, applied[], unchanged[], validation{skipped, warnings, layersRun},
 compiledCache{ok, uuids, routes[]}, testValuesDropped[] (always; [] when none),
 testCases{changedByServer[], restored[], failed[{name, id, reason}], kept?},
-normalised[{path, kind, from, to}]}.
+normalised[{path, kind, from, to}], outputKeysFilled[]}.
 
 Versions: the first V2 save of an older method (one the platform has not
 migrated yet) migrates it, and the server restarts the draft's version

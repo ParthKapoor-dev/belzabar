@@ -18,6 +18,7 @@ the verification.
 | `test-values.ts` | `storedTestValues` (V1 read of the inputs carrying a stored testValue; null when unreadable), the save's drop warning and the create note. |
 | `preview.ts` | The dry run's preview: `previewChanges` (before/after of every changed field), `namedOrder`, `outputsToMethod`. |
 | `name-check.ts` | `findNameConflict`: a rename onto a name or alias another method of the category holds (the category listing: unpublished drafts and published methods; exact match, as the server). `ad save` refuses it before the POST (`AD_METHOD_EXISTS`); `--dry-run` returns `nameConflict` and `valid: false`. |
+| `output-keys.ts` | `fillOutputKeys`: writes a keyless method output's `key` from its fieldCode before the save (and adds it to the verify). |
 | `normalise.ts` | `normalisedChange` / `splitNormalised`: server rewrites the verify accepts as unchanged (encoding flags, account label, condition form). |
 | `case-guard.ts` | `guardTestCases` / `planCaseRestores`: puts back the test cases a V2 body write rewrote (shared by `ad save` and `ad history restore`). |
 | `services.ts` | `loadServiceCatalog`: callee contracts and db accounts for the compact expander, cached 1 h (the validator's L4 cache). `fresh` reads online; the result lists which contracts came from the cache (`cachedAt`). |
@@ -31,6 +32,9 @@ the verification.
    account it does not know) is planned once more on contracts read online now. Only that answer
    refuses, and its message says the contracts were re-read. Anything outside the targets must stay byte-identical
    (`AD_SERIALIZER_DRIFT`).
+   Then the older-body repairs (`output-keys.ts`): a method output stored without a `key` gets
+   it from its fieldCode (`outputKeysFilled`, a warning); a V2 save without one breaks every run
+   ("key is null"). The fill is a verified target like the overlay's own.
 3. The validation gate, and for a rename the name check (`name-check.ts`). `--dry-run` stops here and returns `{valid, validation{errors,
    warnings}}` plus the preview from `preview.ts`: `changes[{target, path, before, after}]`,
    `order` (new steps named `new#1`, `new#2`…) and `outputsToMethod`. Nothing is written.

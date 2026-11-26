@@ -322,7 +322,7 @@ function checkMethodFields(body: Record<string, unknown>, report: Report): void 
         rule: "OK1",
         message: `Method output ${JSON.stringify(o.name ?? o.fieldCode ?? i)} has no key; method outputs are keyed by 'key', not 'fieldCode'.`,
         path: jsonPath(["outputs", i, "key"]),
-        fix: "Set key to the step output fieldCode or variable it returns.",
+        fix: `Any \`wi-impl ad save\` fills it from the fieldCode; to repair only this, save {"ops": [{"op": "set-output", "key": ${JSON.stringify(o.fieldCode ?? o.name ?? "<fieldCode>")}}]}.`,
         evidence: 'save 200, then every run 500 NPE "key" is null',
       });
     } else if (!KEY_RE.test(k)) {

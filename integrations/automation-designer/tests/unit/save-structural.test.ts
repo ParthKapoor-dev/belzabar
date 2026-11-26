@@ -7,6 +7,8 @@ import { CliError } from "@belzabar/core";
 import { planV2Overlay } from "../../lib/serialize/v2";
 import { dbMethodForSql, emptyCatalog, type ServiceCatalog } from "../../lib/serialize/compact";
 import { structuralRemovals, verifyStructural } from "../../lib/save/pipeline";
+import { fillOutputKeys } from "../../lib/save/output-keys";
+import { validateMethodV2 } from "../../lib/validate/index";
 import { namedOrder, outputsToMethod, previewChanges } from "../../lib/save/preview";
 import { htmlToText } from "../../lib/compact";
 import { decodeBase64Strict } from "../../lib/base64";
@@ -579,6 +581,28 @@ describe("method outputs without a key (C2)", () => {
     const p = plan(keyless(), [{ op: "set-output", key: "checkBool" }, { op: "remove-output", key: "reasons" }]);
     expect(p.applied).toEqual(["set-output checkBool (repaired: the output had no key)", "remove-output reasons"]);
     expect(p.body.outputs).toEqual([{ uuid: "4b59a22b0b2622bf2ddaa4f0f9efd7f9    ", key: "checkBool", fieldCode: "checkBool", name: "check", type: "BOOLEAN" }] as never);
+  });
+
+  test("K2: any save fills a keyless output's key from its fieldCode, and the verify checks it", () => {
+    const live = keyless();
+    const p = plan(live, [{ op: "update-step", step: 1, set: { sql: "select 42" } }]);
+    expect(fillOutputKeys(p)).toEqual([{ index: 0, key: "checkBool" }, { index: 1, key: "reasons" }]);
+    expect((p.body.outputs as Array<{ key: string }>).map((o) => o.key)).toEqual(["checkBool", "reasons"]);
+    expect(p.structural!.touched).toEqual(expect.arrayContaining(["outputs[0].key", "outputs[1].key"]));
+    // a server that dropped the key again is caught; one that kept it passes
+    expect(code(() => verifyStructural("u", p.body, { ...p.body, outputs: live.outputs }, p.structural!.touched))).toBe("AD_SAVE_VERIFY_FAILED");
+    expect(verifyStructural("u", p.body, structuredClone(p.body), p.structural!.touched)).toEqual([]);
+    // the validator no longer sees OK1 on the body the save posts
+    expect(validateMethodV2({ after: p.body }).errors.some((f) => f.rule === "OK1")).toBe(false);
+  });
+
+  test("K2: a leaf overlay (no ops) carries the fill as a verified target; a keyed or invalid code is left alone", () => {
+    const live = real("497efe671e2af124d8aa9b1f96f663a8"); // real body: its only output has no key
+    (live.outputs as unknown[]).push({ fieldCode: "bad code", name: "x" }, { key: "kept", fieldCode: "other" });
+    const p = planV2Overlay(live, { description: "touch" });
+    expect(fillOutputKeys(p)).toEqual([{ index: 0, key: "programTypeCode" }]);
+    expect(p.targets.map((t) => t.path)).toEqual(["description", "outputs[0].key"]);
+    expect((p.body.outputs as Array<{ key?: string }>).map((o) => o.key)).toEqual(["programTypeCode", undefined, "kept"]);
   });
 });
 
