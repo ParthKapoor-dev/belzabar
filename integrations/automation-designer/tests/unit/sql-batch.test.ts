@@ -205,5 +205,35 @@ describe("execute: one call, one result per statement", () => {
       [false, undefined, true],
     ]);
     expect(posts()).toBe(2);
+    // K17: each sent write says when it was sent; the not-run one does not
+    expect(data.results[0].executedAt).toMatch(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/);
+    expect(data.results[1].executedAt).toBeDefined();
+    expect(data.results[2].executedAt).toBeUndefined();
+  });
+
+  // K17: no transaction time comes back, so the client stamps the send.
+  test("single update / insert / modify: executedAt (ISO UTC, between before and after the call); reads have none", async () => {
+    for (const [op, argv, response] of [
+      ["update", ["update", "update t set a = 1", "--db", "testing_db", "--yes"], countResponse(2)],
+      ["insert", ["insert", "insert into t values (1)", "--db", "testing_db", "--yes"], countResponse(1)],
+      ["modify", ["modify", "create table t (a int)", "--db", "testing_db", "--yes"], countResponse(0)],
+    ] as const) {
+      install(op, [response]);
+      const before = Date.now();
+      const r = await runCommand(sqlCommand, [...argv], { commandName: "sql", env: "dev" });
+      const after = Date.now();
+      expect(r.envelope?.ok).toBe(true);
+      const at = (r.envelope!.data as any).executedAt as string;
+      expect(at).toMatch(/Z$/);
+      expect(Date.parse(at)).toBeGreaterThanOrEqual(before);
+      expect(Date.parse(at)).toBeLessThanOrEqual(after);
+      ff?.restore();
+      cfg?.restore();
+      ff = cfg = null;
+      resetExecutableCategoryCache();
+    }
+    install("select", [rowsResponse([{ n: 1 }])]);
+    const read = await runCommand(sqlCommand, ["run", "select 1", "--db", "testing_db"], { commandName: "sql", env: "dev" });
+    expect((read.envelope!.data as any).executedAt).toBeUndefined();
   });
 });

@@ -6,7 +6,7 @@ wi-impl ad show <uuid|url> --story  :->  Plain-English approval template (inputs
 wi-impl ad show <file.json> --story  :->  Same for a local V2/V1 method body before create/save (nothing fetched)
 wi-impl ad show <uuid|url> --inputs  :->  Show input argument definitions
 wi-impl ad show <uuid|url> --services  :->  Show service step names and IDs
-wi-impl ad show <uuid|url> --service-detail <N>  :->  Only the step with orderIndex N, read fresh: body (SQL/code) and bound inputs (alias --step <N>)
+wi-impl ad show <uuid|url> --service-detail <N>  :->  Only the step with orderIndex N, read fresh: body (SQL/code), bound inputs and, for a call step, the stored callee reference (alias --step <N>)
 wi-impl ad show <uuid|url> --version <N>  :->  Show saved version N of the method (through history); combine with --compact / --story
 wi-impl ad show <uuid|url> --outputs --variables  :->  Show outputs and variables
 wi-impl ad show <uuid|url> --sql --code  :->  Include decoded SQL / custom-code bodies in the step details

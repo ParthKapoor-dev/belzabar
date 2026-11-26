@@ -86,6 +86,15 @@ describe("cache arg guard", () => {
     ).rejects.toThrow(/Invalid cache UUID/);
   });
 
+  // K17: a zsh "$IDS" list arrives as ONE argument.
+  test("one argument holding several uuids (spaces, commas, newlines) is split", () => {
+    const [a, b, c] = ["44014c3707d6b6d8ae848839a1c8d1e7", "47425344e088690ff89aa8f1e092c867", "4a1d686b87f93b1519f2b61393d4ed7a"];
+    expect(parse([`${a} ${b} ${c}`]).uuids).toEqual([a, b, c]);
+    expect(parse([`${a},${b}, ${c}`]).uuids).toEqual([a, b, c]);
+    expect(parse([`${a}\n${b}`, c]).uuids).toEqual([a, b, c]);
+    expect(errorCode(() => parse([`${a} nope`]))).toBe("INVALID_UUID");
+  });
+
   test("--repeat defaults to one round; N is parsed; bad values are INVALID_ARGS (H2)", () => {
     const UUID = "44014c3707d6b6d8ae848839a1c8d1e7";
     expect(parse([UUID]).repeat).toBe(1);

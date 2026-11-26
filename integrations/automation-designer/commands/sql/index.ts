@@ -111,6 +111,11 @@ interface SqlUpdateData {
   selectedBy: SqlDbSelectedBy;
   query: string;
   success: true;
+  /**
+   * When the statement was sent (ISO-8601 UTC, this machine's clock; K17): to
+   * find the rows it touched by their updated_at / created_at stamps.
+   */
+  executedAt: string;
   statusCode?: number;
   rowsAffected: number;
   executionTime?: {
@@ -130,6 +135,11 @@ interface SqlInsertData {
   selectedBy: SqlDbSelectedBy;
   query: string;
   success: true;
+  /**
+   * When the statement was sent (ISO-8601 UTC, this machine's clock; K17): to
+   * find the rows it touched by their updated_at / created_at stamps.
+   */
+  executedAt: string;
   statusCode?: number;
   rowsAffected: number;
   /** Generated key values — needs `RETURNING <key column>` in the query. */
@@ -153,6 +163,11 @@ interface SqlModifyData {
   selectedBy: SqlDbSelectedBy;
   query: string;
   success: true;
+  /**
+   * When the statement was sent (ISO-8601 UTC, this machine's clock; K17): to
+   * find the rows it touched by their updated_at / created_at stamps.
+   */
+  executedAt: string;
   statusCode?: number;
   executionTime?: {
     time: number;
@@ -188,6 +203,8 @@ interface SqlBatchResult {
   generatedValues?: string[];
   executionTime?: { time: number; unit: string };
   error?: { code: string; message: string; details?: unknown };
+  /** Write batches: when this statement was sent (ISO-8601 UTC, this machine's clock). */
+  executedAt?: string;
   /** A write batch stops at its first failure: the statements after it are not sent. */
   notRun?: true;
 }
@@ -460,14 +477,15 @@ async function runSqlBatch(
   if (action !== "run") await confirmSqlWrite(args, action, database, outputMode);
 
   const runOne = async (query: string, index: number): Promise<SqlBatchResult> => {
+    const sent = action === "run" ? {} : { executedAt: new Date().toISOString() };
     try {
       const { database: _db, query: _q, ...result } = await BATCH[action].execute({ query, database, context: executionContext, raw: args.raw });
-      return { index, query, ok: true, ...result };
+      return { index, query, ok: true, ...sent, ...result };
     } catch (e) {
       // a stopped env fails every statement the same way: report it once.
       if (!(e instanceof CliError) || e.code === "ENV_UNAVAILABLE") throw e;
       const { database: _db, query: _q, ...details } = (e.details && typeof e.details === "object" ? e.details : {}) as Record<string, unknown>;
-      return { index, query, ok: false, error: { code: e.code, message: e.message, ...(Object.keys(details).length ? { details } : {}) } };
+      return { index, query, ok: false, ...sent, error: { code: e.code, message: e.message, ...(Object.keys(details).length ? { details } : {}) } };
     }
   };
 
@@ -688,6 +706,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
 
       await confirmSqlWrite(args, "update", dbContext.resolution.selected, context.outputMode);
 
+      const executedAt = new Date().toISOString();
       const result = await executeSqlUpdate({
         query: args.query as string,
         database: dbContext.resolution.selected,
@@ -701,6 +720,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         selectedBy: dbContext.resolution.selectedBy,
         query: result.query,
         success: true,
+        executedAt,
         statusCode: result.statusCode,
         rowsAffected: result.rowsAffected,
         executionTime: result.executionTime,
@@ -721,6 +741,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
 
       await confirmSqlWrite(args, "insert", dbContext.resolution.selected, context.outputMode);
 
+      const executedAt = new Date().toISOString();
       const result = await executeSqlInsert({
         query: args.query as string,
         database: dbContext.resolution.selected,
@@ -734,6 +755,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         selectedBy: dbContext.resolution.selectedBy,
         query: result.query,
         success: true,
+        executedAt,
         statusCode: result.statusCode,
         rowsAffected: result.rowsAffected,
         generatedValues: result.generatedValues,
@@ -756,6 +778,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
 
       await confirmSqlWrite(args, "modify", dbContext.resolution.selected, context.outputMode);
 
+      const executedAt = new Date().toISOString();
       const result = await executeSqlModify({
         query: args.query as string,
         database: dbContext.resolution.selected,
@@ -769,6 +792,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         selectedBy: dbContext.resolution.selectedBy,
         query: result.query,
         success: true,
+        executedAt,
         statusCode: result.statusCode,
         executionTime: result.executionTime,
         raw: result.raw,
@@ -888,6 +912,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         [
           ["Database", `${data.database.nickname} (${data.database.id})`],
           ["Selected By", data.selectedBy],
+          ["Executed At (UTC)", data.executedAt],
           ["Status Code", data.statusCode ?? ""],
           ["Rows Affected", data.rowsAffected],
           ["Execution Time", data.executionTime ? `${data.executionTime.time} ${data.executionTime.unit}` : ""],
@@ -909,6 +934,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         [
           ["Database", `${data.database.nickname} (${data.database.id})`],
           ["Selected By", data.selectedBy],
+          ["Executed At (UTC)", data.executedAt],
           ["Status Code", data.statusCode ?? ""],
           ["Rows Affected", data.rowsAffected],
           ["Execution Time", data.executionTime ? `${data.executionTime.time} ${data.executionTime.unit}` : ""],
@@ -937,6 +963,7 @@ const command: CommandModule<SqlArgs, SqlData> = {
         [
           ["Database", `${data.database.nickname} (${data.database.id})`],
           ["Selected By", data.selectedBy],
+          ["Executed At (UTC)", data.executedAt],
           ["Status Code", data.statusCode ?? ""],
           ["Execution Time", data.executionTime ? `${data.executionTime.time} ${data.executionTime.unit}` : ""],
           ["Query", data.query],

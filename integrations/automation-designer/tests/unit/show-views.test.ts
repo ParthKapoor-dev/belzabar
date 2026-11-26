@@ -3,7 +3,7 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import { readdirSync } from "fs";
 import { runCommand, withTempEnvConfig } from "@belzabar/core/testing";
-import showCommand, { parseMethodFile, stepTableRows } from "../../commands/show/index";
+import showCommand, { calleeReference, parseMethodFile, stepTableRows } from "../../commands/show/index";
 import { adApi } from "../../lib/api/index";
 import { CacheManager } from "../../lib/cache";
 import { ServiceHydrator } from "../../lib/hydrator";
@@ -338,5 +338,36 @@ describe("default show and step detail surface every gate", () => {
     changed.steps[idx].properties.exitCondition.conditionalExit.expression = "#{x} eq 1";
     const m2 = parseV2Method(changed, { env: "acme-dev" });
     expect(diffPaths(methodDiffView(m), methodDiffView(m2))).toEqual([`$.steps[${idx}].exitIf.expr`]);
+  });
+});
+
+// K17: a call step's detail says how the step points at its callee, as stored.
+describe("--service-detail on a call step: the stored callee reference", () => {
+  const CROSS = "4d6d5ff1b4961a90bfc79e6a0fb92c53";
+  const detail = async (m: HydratedMethod, step: number) => ((await show(m, ["--service-detail", String(step)])).envelope?.data as any).stepDetail;
+
+  test("V2: the API uuid and the names the read fills in", async () => {
+    const d = await detail(await v2(SQL_UUID), 4);
+    expect(d.callee).toEqual({
+      route: "v2",
+      apiUuid: "4f6ac5d3c985da1607508598329bef51",
+      serviceName: "Schools-Utilities",
+      methodName: "find.initials.from.string",
+      methodNameStored: true,
+    });
+  });
+
+  test("V1 with the API uuid stored; and an older V1 body with only the step's automation record", async () => {
+    const raw = (await Bun.file(`${FIX}/cross-env/${CROSS}.acme-qa.draft.v1.json`).json()) as V1RawMethodResponse;
+    const d = await detail(parseV1Method(raw), 2);
+    expect(d.callee).toMatchObject({ route: "v1", apiUuid: "495f8488b2c082c629a9990262422c41", methodNameStored: false });
+    expect(d.callee.methodName).toBeUndefined();
+    const old = parseV1Method((await Bun.file(`${FIX}/real-v1/${SQL_UUID}.v1.json`).json()) as V1RawMethodResponse);
+    expect((await detail(old, 4)).callee).toEqual({ route: "v1", automationId: 988, methodNameStored: false });
+  });
+
+  test("a numeric automationApiId is reported as apiNumericId", () => {
+    const step = { orderIndex: 1, kind: "EXISTING_SERVICE", inputs: [], outputs: [], raw: { automationApiId: 5053, automationId: 190258 } } as any;
+    expect(calleeReference(step, "v1")).toEqual({ route: "v1", apiNumericId: 5053, automationId: 190258, methodNameStored: false });
   });
 });

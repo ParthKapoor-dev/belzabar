@@ -124,8 +124,9 @@ export function parseRepeat(value: string | undefined): number {
   return n;
 }
 
+/** One argument may hold several uuids (`"a b c"`, `a,b,c`: a quoted shell list). */
 function parseUuids(rest: string[]): string[] {
-  return rest.map(u => u.trim()).filter(u => u.length > 0);
+  return rest.flatMap(u => u.split(/[\s,]+/)).filter(u => u.length > 0);
 }
 
 /**

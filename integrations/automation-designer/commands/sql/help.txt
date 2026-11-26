@@ -30,6 +30,10 @@ Subcommands:
                       several: generatedKeys lists every returned key row).
   modify <QUERY>      Execute a DDL schema change (ALTER / CREATE / DROP / TRUNCATE /
                       COMMENT / GRANT / REVOKE / REINDEX / REFRESH / CLUSTER).
+                      update, insert and modify also return executedAt: when
+                      the statement was sent (ISO-8601 UTC, this machine's
+                      clock), to find the rows it touched by their
+                      updated_at / created_at stamps (allow for clock skew).
   tui                 Start an interactive SQL session (can run writes: --env required).
                       Human use only: with --llm it fails SQL_TUI_UNSUPPORTED_IN_LLM.
 
@@ -45,7 +49,7 @@ Batch (run, update, insert, modify):
   Every statement passes its gate before anything is sent (the error names it:
   "Statement 2 of 5: …"). data is {batch: true, statementCount, okCount,
   failedCount, results: [{index, query, ok, rows/rowCount | rowsAffected |
-  generatedValues, error?}]}. Reads all run (4 at a time; results in input
+  generatedValues, executedAt (writes), error?}]}. Reads all run (4 at a time; results in input
   order); writes run in order and stop at the first failure (the rest are
   notRun: true). Any failure: SQL_BATCH_FAILED, with every
   result still in data. One statement keeps the single-statement shape.

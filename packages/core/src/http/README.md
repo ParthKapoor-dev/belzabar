@@ -45,6 +45,8 @@ Sessions live in `sessions/<env>.json` (0600). Login uses the read timeout. Erro
   (`details.phase: "body"`). The timeout is raced, so it fires even if fetch ignores the abort.
 - A timed-out non-GET carries `details.mayHaveCompleted: true, retryable: false`, says the
   operation may still complete on the server, and is **never** retried.
+- A timed-out read (and a timed-out login) adds `WARMING_UP_HINT`: an env that was just started
+  or restarted may still be warming up, so retry in a minute.
 - Network failure → `HTTP_NETWORK_ERROR` (`details: {method, connectPhase, mayHaveCompleted,
   retryable}`). A failure on the pinned IP evicts the pin and retries once by hostname only
   when nothing was sent (connect phase) or the method is a read.

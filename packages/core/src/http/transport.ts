@@ -253,6 +253,14 @@ export async function httpRequest(url: string, init: HttpInit = {}): Promise<Res
 }
 
 /**
+ * Appended to a read / login timeout: the first requests an env answers after
+ * it was stopped (and answered 503) or restarted are often slow enough to time
+ * out, and a retry a minute later works.
+ */
+export const WARMING_UP_HINT =
+  "If the environment was just started or restarted (e.g. it answered 503 a moment ago), it may still be warming up: retry in a minute.";
+
+/**
  * HTTP_TIMEOUT. For a non-GET the server received the request and may still
  * finish it (commit a draft test's SQL, publish, save): say so, and flag it in
  * details so nothing retries it blindly.
@@ -263,7 +271,7 @@ function timeoutError(timeoutMs: number, label: string, method: string): CliErro
   const message = mayHaveCompleted
     ? `Request timed out after ${secs}s: ${label}. The operation may still complete on the server — ` +
       `check its result before retrying (raise the limit with WI_IMPL_HTTP_WRITE_TIMEOUT_MS).`
-    : `Request timed out after ${secs}s: ${label} (raise the limit with WI_IMPL_HTTP_TIMEOUT_MS).`;
+    : `Request timed out after ${secs}s: ${label} (raise the limit with WI_IMPL_HTTP_TIMEOUT_MS). ${WARMING_UP_HINT}`;
   return new CliError(message, {
     code: "HTTP_TIMEOUT",
     details: { timeoutMs, method, mayHaveCompleted, retryable: !mayHaveCompleted },

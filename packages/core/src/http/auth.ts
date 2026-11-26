@@ -14,7 +14,7 @@ import { CliError } from "../command";
 import type { AuthSession } from "../types";
 import { vlog } from "../verbose";
 import { lifecycle } from "../ui";
-import { defaultTimeoutMs, httpRequest, singleFlight } from "./transport";
+import { defaultTimeoutMs, httpRequest, singleFlight, WARMING_UP_HINT } from "./transport";
 import { readBodySummary } from "./errors";
 
 const SESSION_DIR = join(BELZ_CONFIG_DIR, "sessions");
@@ -122,7 +122,7 @@ async function doLogin(envName: string): Promise<AuthSession> {
     if (err instanceof CliError && err.code === "HTTP_TIMEOUT") {
       const timeoutMs = defaultTimeoutMs("GET");
       throw new CliError(
-        `Login to ${envName} timed out after ${Math.round(timeoutMs / 1000)}s (raise the limit with WI_IMPL_HTTP_TIMEOUT_MS).`,
+        `Login to ${envName} timed out after ${Math.round(timeoutMs / 1000)}s (raise the limit with WI_IMPL_HTTP_TIMEOUT_MS). ${WARMING_UP_HINT}`,
         { code: "HTTP_TIMEOUT", details: { env: envName, timeoutMs, mayHaveCompleted: false, retryable: true } },
       );
     }

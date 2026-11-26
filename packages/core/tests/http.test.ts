@@ -89,6 +89,8 @@ describe("transport", () => {
     expect(err.code).toBe("HTTP_TIMEOUT");
     expect((err.details as any).mayHaveCompleted).toBe(false);
     expect(err.message).not.toContain("may still complete");
+    // K17: the first reads after a stopped env comes back can time out
+    expect(err.message).toContain("may still be warming up");
   });
 
   test("non-GET timeout: never retried, says it may still complete server-side", async () => {

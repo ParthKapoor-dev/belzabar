@@ -68,7 +68,16 @@ Flags:
   --service-detail <N>    Only the step with orderIndex N (1-based, as listed
   --step <N>              by --services), read fresh: `stepDetail` with its
                           body (SQL / source / expression) and bound inputs;
-                          no `steps` list. Aliases.
+                          no `steps` list. Aliases. A call step adds
+                          `callee`: how the step points at its callee, as
+                          the read body stores it {route, apiUuid?,
+                          apiNumericId?, automationId?, categoryName?,
+                          serviceName?, methodName?, methodNameStored}. The
+                          V1 body (the default read) points by id: the
+                          callee's numeric API id and/or API uuid, or (older
+                          bodies) only the step's automation record, never
+                          the callee's method name; --v2 shows the API uuid
+                          and the current names. Use it to judge a rename.
   --version <N>           Show saved version N of this chain (draft or
                           published history, by the uuid's side) instead of
                           the current one; works with every view. `source:

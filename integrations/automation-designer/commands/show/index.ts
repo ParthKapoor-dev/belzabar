@@ -192,7 +192,56 @@ interface StepDetailView {
   exitIf?: { mode?: string; expression?: string; rows?: ConditionRow[]; statusCode?: number | string; message?: string };
   exitOnFailure?: { statusCode?: number | string; message?: string };
   account?: { id?: number | string; name?: string };
+  /** A call step's callee reference exactly as the read body stores it (K17). */
+  callee?: CalleeReference;
   reason?: string;
+}
+
+/**
+ * How a call step points at its callee, from the step's wire JSON (only the
+ * keys present). V1 (the stored jsonDefinition): `automationApiId` (the
+ * callee API's env-local numeric id), on some bodies `automationApiUuid` (the
+ * API uuid, the same on every env) and `categoryName`, and no method name.
+ * Older V1 bodies hold only `automationId`: the step's env-local automation
+ * record, whose definition (`GET /automations/{id}`) names the API. V2:
+ * `automationAPIId` (the API uuid) plus the `serviceName` / `methodName` the
+ * read fills in.
+ */
+export interface CalleeReference {
+  route: "v1" | "v2";
+  apiUuid?: string;
+  /** V1 numeric `automationApiId` (env-local). */
+  apiNumericId?: number;
+  /** V1 `automationId`: the step's automation record (env-local). */
+  automationId?: number;
+  categoryName?: string;
+  serviceName?: string;
+  methodName?: string;
+  /** Whether the read body names the callee's method (V2 only). */
+  methodNameStored: boolean;
+}
+
+export function calleeReference(step: ParsedStep, route: "v1" | "v2"): CalleeReference | undefined {
+  const raw = step.raw;
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+  const r = raw as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : undefined);
+  const ref: CalleeReference = { route, methodNameStored: false };
+  if (route === "v1") {
+    ref.apiUuid = str(r.automationApiUuid);
+    const n = typeof r.automationApiId === "number" ? r.automationApiId : Number(str(r.automationApiId) ?? NaN);
+    if (Number.isFinite(n)) ref.apiNumericId = n;
+    const a = typeof r.automationId === "number" ? r.automationId : Number(str(r.automationId) ?? NaN);
+    if (Number.isFinite(a)) ref.automationId = a;
+    ref.categoryName = str(r.categoryName);
+  } else {
+    ref.apiUuid = str(r.automationAPIId);
+    ref.serviceName = str(r.serviceName);
+    ref.methodName = str(r.methodName);
+  }
+  ref.methodNameStored = ref.methodName !== undefined;
+  for (const k of Object.keys(ref) as Array<keyof CalleeReference>) if (ref[k] === undefined) delete ref[k];
+  return ref.apiUuid || ref.apiNumericId != null || ref.automationId != null || ref.serviceName ? ref : undefined;
 }
 
 function formatDate(ts: number | undefined): string {
@@ -363,6 +412,8 @@ async function buildStepDetailView(
       return base;
     }
     case "EXISTING_SERVICE": {
+      const callee = calleeReference(step, method.sourceVersion);
+      if (callee) base.callee = callee;
       return base;
     }
     case "UNKNOWN": {
@@ -793,6 +844,17 @@ const command: CommandModule<ShowMethodArgs, ShowData> = {
     const presentDetail = (detail: StepDetailView, title: string) => {
       ui.section(title);
       if (detail.identity) ui.kv("Identity", detail.identity);
+      if (detail.callee) {
+        const c = detail.callee;
+        const parts = [
+          c.apiUuid ? `API uuid ${c.apiUuid}` : "",
+          c.apiNumericId != null ? `numeric API id ${c.apiNumericId}` : "",
+          c.automationId != null ? `automation record ${c.automationId}` : "",
+          c.categoryName ? `category ${c.categoryName}` : "",
+          c.serviceName || c.methodName ? `name ${c.serviceName ?? ""}.${c.methodName ?? ""}` : "",
+        ].filter(Boolean);
+        ui.kv(`Callee (${c.route} body)`, `${parts.join(", ")}${c.methodNameStored ? "" : " (no method name stored)"}`);
+      }
       if (detail.reason) ui.warn(detail.reason);
 
       if (detail.config?.length) {

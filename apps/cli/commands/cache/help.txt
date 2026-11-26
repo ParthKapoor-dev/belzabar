@@ -35,6 +35,8 @@ Subcommands:
 
 Args:
   <uuid...>           One or more cache entry UUIDs (e.g. method/chain UUIDs).
+                      One argument may hold several, separated by spaces or
+                      commas (a quoted list such as "$IDS" works).
                       Each must be 32 hex characters (or dashed UUID form);
                       anything else (e.g. a mistyped subcommand) → INVALID_UUID.
 
