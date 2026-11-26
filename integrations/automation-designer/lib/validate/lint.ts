@@ -16,14 +16,18 @@
 //   truncated, descriptions (opt-in: `docs`);
 //   Report Designer datasources (a method with a reportColumns / reportData
 //   output): exactly one step, no trailing whitespace after the SQL, lower-case
-//   input keys.
+//   input keys;
+//   runtime traps (live): a data.read rowsImpacted without flatData[] is
+//   always 0, a JSON/list value quoted into a TEXT query parameter, Jackson-only
+//   calls on a JSON input (a Map on the test route).
 //
 // Input: the V2 wire body, like lib/validate/index.ts.
 
 import { arr, str, type ValidationFinding } from "./types";
-import { jsonPath, stepKind, stepRef } from "./schema";
+import { jsonPath, stepKind, stepRef, walkInputs } from "./schema";
 import { customCodeSource, escapeRe, findSqlInput, sqlSkeleton } from "./steps";
-import { replaceSpelBlocks, scanSpel, spelRoots } from "./spel";
+import { replaceSpelBlocks, scanSpel, spelRoots, stripStrings } from "./spel";
+import { classifyService } from "../parser/steps/classify";
 import { decodeBase64Strict } from "../base64";
 import { isObj, str as nonBlank, type Obj } from "@belzabar/core";
 
@@ -49,6 +53,9 @@ export const LINT_RULES = {
   "AD-LINT-011": { description: "Report Designer datasource with more than one step: RD marks it corrupted and shows only the raw outputs as columns" },
   "AD-LINT-012": { description: "Report Designer datasource SQL ends with whitespace or a newline: RD's column discovery silently falls back to the raw outputs" },
   "AD-LINT-013": { description: "Report Designer datasource input key with upper-case letters: RD fills filters only into inputs named like the column in lower case" },
+  "AD-LINT-014": { description: "db_service data.read maps rowsImpacted without flatData[]: the count is then always 0 (live); map flatData[] too, or count in SQL" },
+  "AD-LINT-015": { description: "A JSON/list input or variable quoted into a TEXT/STRING queryParams value (\"value\":\"#{x}\"): its own quotes break the parameter JSON and every run fails; use \"type\":\"JSON\" with an unquoted #{x} and :x::jsonb" },
+  "AD-LINT-016": { description: "Jackson-only call (hasNonNull, path, has, asText…) on a JSON input: on the test route the input is a Map, so the block is not evaluated; use property access (x.k, x['k'] != null)" },
 } as const satisfies Record<string, LintRuleInfo>;
 
 /** Every lint finding names a rule of the catalogue above. */
@@ -74,6 +81,19 @@ function resolvedTables(map: Record<string, string> | undefined): Array<{ table:
 }
 
 const NUMERIC_TYPES = new Set(["NUMBER", "INTEGER", "FLOAT", "DOUBLE", "LONG", "DECIMAL"]);
+/** Method field types whose value is a JSON object or list (AD-LINT-015). */
+const JSON_TYPES = new Set(["JSON", "ARRAY", "OBJECT"]);
+/**
+ * Jackson JsonNode methods a java.util.Map lacks (AD-LINT-016). Live on the
+ * test route: `#{payload.hasNonNull('k')}`, `.path('k')` and `.has('k')` come
+ * back as their literal text, while `.get('k')`, `.containsKey('k')`,
+ * `payload.k` and `payload['k']` work.
+ */
+const JACKSON_ONLY = [
+  "hasNonNull", "has", "path", "isNull", "isMissingNode", "asText", "asInt", "asLong", "asDouble", "asBoolean",
+  "textValue", "isTextual", "isNumber", "isArray", "isObject", "fieldNames", "elements", "findValue",
+];
+const JACKSON_CALL = new RegExp(String.raw`(?<![\w.#$@])([A-Za-z_]\w*)(?:\.[A-Za-z_]\w*(?![\w(]|\s*\())*\.(${JACKSON_ONLY.join("|")})\s*\(`, "g");
 
 export function lintMethodV2(body: unknown, opts: LintOptions = {}): ValidationFinding[] {
   if (!isObj(body)) return [];
@@ -84,12 +104,16 @@ export function lintMethodV2(body: unknown, opts: LintOptions = {}): ValidationF
 
   // ── method-level ────────────────────────────────────────────────────────
   const numeric = new Set<string>();
+  const jsonValued = new Set<string>();
+  const jsonInputs = new Set<string>();
   for (const list of ["inputs", "variables"] as const) {
     arr(body[list]).forEach((f, i) => {
       if (!isObj(f)) return;
       const key = str(f.key) ?? "";
       const type = (str(f.type) ?? "").toUpperCase();
       if (NUMERIC_TYPES.has(type)) numeric.add(key);
+      if (JSON_TYPES.has(type)) jsonValued.add(key);
+      if (list === "inputs" && type === "JSON") jsonInputs.add(key);
       if (key === "language") {
         report({ rule: "AD-LINT-004", message: `${list === "inputs" ? "Input" : "Variable"} key 'language' collides with Helpers.Localization.`, path: jsonPath([list, i, "key"]), fix: "Rename it (e.g. languageCode)." });
       }
@@ -125,7 +149,11 @@ export function lintMethodV2(body: unknown, opts: LintOptions = {}): ValidationF
       }
     }
 
-    if (kind === "SQL") lintSql(s, ref, at, placeholderOutputs, report, resolvers);
+    if (kind === "SQL") {
+      lintSql(s, ref, at, placeholderOutputs, report, resolvers);
+      readCountTrap(s, ref, at, report);
+      quotedJsonParams(s, ref, at, jsonValued, report);
+    }
 
     if (kind === "SPEL_ECHO") {
       const value = firstInputValue(s);
@@ -135,6 +163,25 @@ export function lintMethodV2(body: unknown, opts: LintOptions = {}): ValidationF
         for (const w of writes) {
           if (reads.has(w)) {
             report({ rule: "AD-LINT-006", message: `Echo reads #{${w}} and writes ${w} in the same step.`, path: at("outputs"), step: ref, fix: "Write to a new variable, or split read and write into two steps." });
+          }
+        }
+      }
+    }
+
+    // AD-LINT-016: Jackson-only calls on a JSON input.
+    if (jsonInputs.size > 0) {
+      for (const { value, path } of spelValues(s)) {
+        for (const b of scanSpel(value).blocks) {
+          for (const m of (stripStrings(b.body) ?? "").matchAll(JACKSON_CALL)) {
+            if (!jsonInputs.has(m[1]!)) continue;
+            report({
+              rule: "AD-LINT-016",
+              message: `#{${b.body.trim()}} calls ${m[2]}() on the JSON input ${m[1]}; on the test route a JSON input is a Map, which has no ${m[2]}(), so the block is not evaluated (its text flows on).`,
+              path: at(...path),
+              step: ref,
+              fix: `Use property access: #{${m[1]}.k != null ? ${m[1]}.k : null} (or ${m[1]}['k']); test the step on both routes (ad test, ad run).`,
+            });
+            break;
           }
         }
       }
@@ -231,6 +278,60 @@ function lintSql(
       fix: `Compare as uuid: ${q6} = '#{x}'::uuid (or :param::uuid).`,
     });
   }
+}
+
+/** AD-LINT-014: a data.read step maps rowsImpacted but not flatData[] (live: rowsImpacted is then 0 for every SELECT). */
+function readCountTrap(s: Obj, ref: ValidationFinding["step"], at: (...rest: Array<string | number>) => string, report: Report): void {
+  const family = classifyService({ system: str(s.serviceName) ?? "", api: str(s.methodName) ?? "" });
+  if (family.kind !== "SQL" || family.operation !== "read") return;
+  const keys = arr(s.outputs).map((o) => (isObj(o) ? str(o.key) ?? "" : ""));
+  const i = keys.indexOf("rowsImpacted");
+  if (i < 0 || keys.some((k) => k.startsWith("flatData"))) return;
+  report({
+    rule: "AD-LINT-014",
+    message: "A data.read step maps rowsImpacted without flatData[]: the platform counts the rows only when flatData[] is mapped too, so this output is always 0.",
+    path: at("outputs", i, "key"),
+    step: ref,
+    fix: 'Also map flatData[] (e.g. {"rows": "flatData[]"}), or return the count from the SQL (SELECT count(*) …, SELECT EXISTS(…)).',
+  });
+}
+
+/**
+ * AD-LINT-015: a queryParams entry of type TEXT/STRING whose value is exactly
+ * "#{x}" with x a JSON/ARRAY/OBJECT input or variable. The rendered list or
+ * object carries its own quotes, which end the JSON string early (live:
+ * "Cannot construct instance of QueryParam"); the JSON form works.
+ */
+function quotedJsonParams(
+  s: Obj,
+  ref: ValidationFinding["step"],
+  at: (...rest: Array<string | number>) => string,
+  jsonValued: Set<string>,
+  report: Report,
+): void {
+  if (jsonValued.size === 0) return;
+  walkInputs(s.inputs, ["inputs"], (inp, path) => {
+    if (str(inp.key) !== "queryParams" || typeof inp.value !== "string") return;
+    const flagged = inp.encodingType === "BASE_64" || inp.encodedBase64 === true;
+    const text = flagged ? decodeBase64Strict(inp.value) ?? inp.value : inp.value;
+    // One entry per {…} without nested braces once each #{…} is a token.
+    const blocks: string[] = [];
+    const flat = text.replace(/#\{([^{}]*)\}/g, (_m, b: string) => `@@${blocks.push(b) - 1}@@`);
+    for (const entry of flat.match(/\{[^{}]*\}/g) ?? []) {
+      const type = /"type"\s*:\s*"(TEXT|STRING)"/i.exec(entry)?.[1];
+      const value = /"value"\s*:\s*"@@(\d+)@@"/.exec(entry);
+      const name = value ? blocks[Number(value[1])]!.trim() : "";
+      if (!type || !jsonValued.has(name)) continue;
+      const key = /"key"\s*:\s*"([^"]*)"/.exec(entry)?.[1] ?? name;
+      report({
+        rule: "AD-LINT-015",
+        message: `queryParams "${key}" is type ${type.toUpperCase()} with the quoted value "#{${name}}", but ${name} is a JSON/list value: its own quotes break the parameter JSON and every run fails ("Cannot construct instance of QueryParam").`,
+        path: at(...path, "value"),
+        step: ref,
+        fix: `{"key":"${key}","type":"JSON","value":#{${name}}} (unquoted) and :${key}::jsonb in the SQL.`,
+      });
+    }
+  });
 }
 
 // A uuid-looking column (`id`, `*_id`, `*uuid`, optionally qualified) cast to text.

@@ -196,6 +196,57 @@ describe("Report Designer datasource rules (a method with a reportColumns output
   });
 });
 
+describe("K10 runtime traps (seen live)", () => {
+  const withInput = (b: Body, key: string, type: string) => {
+    b.inputs.push({ ...structuredClone(b.inputs[0]), uuid: "4aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", key, name: key, type });
+    return b;
+  };
+
+  test("AD-LINT-014: data.read maps rowsImpacted without flatData[] (always 0)", () => {
+    const b = golden() as Body;
+    b.steps[2].outputs = [{ ...b.steps[2].outputs[0], key: "rowsImpacted", fieldCode: "n", name: "n" }];
+    const f = lintMethodV2(b).find((x) => x.rule === "AD-LINT-014");
+    expect(f?.path).toBe("steps[2].outputs[0].key");
+    // With flatData[] mapped too, the count is right.
+    b.steps[2].outputs.push({ ...golden().steps![2]!.outputs![0]! });
+    expect(rules(b)).not.toContain("AD-LINT-014");
+    // Writes count their rows without flatData[].
+    const w = golden() as Body;
+    w.steps[2].methodName = "data.update";
+    w.steps[2].outputs = [{ ...w.steps[2].outputs[0], key: "rowsImpacted" }];
+    expect(rules(w)).not.toContain("AD-LINT-014");
+  });
+
+  test("AD-LINT-015: a JSON/list value quoted into a TEXT query parameter", () => {
+    const b = withInput(golden() as Body, "ids", "JSON");
+    const qp = b.steps[2].inputs[0].properties[1];
+    qp.value = '[{"key":"schoolId","type":"TEXT","value":"#{name}"},{"key":"ids","type":"TEXT","value":"#{ids}"}]';
+    const f = lintMethodV2(b).filter((x) => x.rule === "AD-LINT-015");
+    expect(f).toHaveLength(1); // name is a STRING input: quoting it is right
+    expect(f[0]!.path).toBe("steps[2].inputs[0].properties[1].value");
+    expect(f[0]!.fix).toBe('{"key":"ids","type":"JSON","value":#{ids}} (unquoted) and :ids::jsonb in the SQL.');
+    // The working form, and a base64-stored copy of the broken one.
+    qp.value = '[{"key":"ids","type":"JSON","value":#{ids}}]';
+    expect(rules(b)).not.toContain("AD-LINT-015");
+    qp.value = Buffer.from('[{"key":"ids","type":"TEXT","value":"#{ids}"}]').toString("base64");
+    qp.encodingType = "BASE_64";
+    expect(rules(b)).toContain("AD-LINT-015");
+  });
+
+  test("AD-LINT-016: Jackson-only calls on a JSON input; Map-safe access and other inputs pass", () => {
+    const b = withInput(golden() as Body, "payload", "JSON");
+    const inp = b.steps[0].inputs[0];
+    for (const v of ["#{payload.hasNonNull('k') ? payload.k : null}", "#{payload.a.path('k')}", "#{payload.has('k')}"]) {
+      inp.value = v;
+      expect(rules(b)).toContain("AD-LINT-016");
+    }
+    for (const v of ["#{payload.k != null ? payload.k : null}", "#{payload['k']}", "#{payload.get('k')}", "#{payload.containsKey('k')}", "#{name.isNull()}", "#{'payload.has(x)'}"]) {
+      inp.value = v;
+      expect(rules(b)).not.toContain("AD-LINT-016");
+    }
+  });
+});
+
 describe("calibration over the 36 real acme-dev bodies", () => {
   test("lint counts are pinned (docs off): few, specific findings", () => {
     const counts: Record<string, number> = {};

@@ -65,6 +65,16 @@ Used by `ad validate`, `ad lint`, and the save / create / publish gate
   `offset`, are exempt). Both platform behaviours were observed on a live env; see
   [`../../../report-designer/README.md`](../../../report-designer/README.md).
 
+- Runtime traps (`AD-LINT-014`–`016`, each seen on a live env): a `data.read` step that maps
+  `rowsImpacted` without `flatData[]` gets 0 for every SELECT (the platform counts the rows only
+  when `flatData[]` is mapped); a `queryParams` entry of type TEXT/STRING whose value is exactly
+  `"#{x}"` with `x` a JSON/ARRAY/OBJECT input or variable fails every run (the rendered value's
+  own quotes end the JSON string; the working form is `"type":"JSON","value":#{x}` with
+  `:x::jsonb`); and a Jackson `JsonNode` call that `java.util.Map` lacks (`hasNonNull`, `path`,
+  `has`, `asText`, `isNull`…) directly on a JSON method input: on the test route the input is a
+  Map, so the block comes back as its literal text, while `x.k`, `x['k']`, `get` and
+  `containsKey` work.
+
 ## Adding a rule
 
 1. Add the code to `catalogue.ts` (or `LINT_RULES` for an advisory rule).

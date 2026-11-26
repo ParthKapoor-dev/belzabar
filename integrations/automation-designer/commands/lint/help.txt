@@ -58,6 +58,14 @@ Rules:
                  own paging inputs orderBy, uniqueKey, limit, offset are exempt)
                  (011-013 only for methods with a reportColumns/reportData
                  output; see `wi-impl rd uses <uuid>` for the reports using it)
+    AD-LINT-014  db_service data.read mapping rowsImpacted without flatData[]:
+                 the count is then always 0 (map flatData[] too, or count in SQL)
+    AD-LINT-015  a JSON/ARRAY/OBJECT input or variable quoted into a TEXT or
+                 STRING queryParams value ("value":"#{ids}"): every run fails;
+                 use {"key":"ids","type":"JSON","value":#{ids}} and :ids::jsonb
+    AD-LINT-016  a Jackson-only call (hasNonNull, path, has, asText, isNull…) on
+                 a JSON input: on the test route the input is a Map and the
+                 block is not evaluated; use x.k / x['k'] != null
 
 Notes:
   - Errors exit 1 with AD_LINT_FAILED. Data: {clean, counts, byRule, groups:

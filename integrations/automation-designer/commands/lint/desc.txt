@@ -1,4 +1,4 @@
-wi-impl ad lint <uuid|file>  :->  Review a method: validator + SQL and anti-pattern warnings, grouped by step; read-only
+wi-impl ad lint <uuid|file>  :->  Review a method: validator + SQL, anti-pattern and runtime-trap warnings (rowsImpacted without flatData[], JSON quoted into a TEXT query param, Jackson calls on a JSON input), grouped by step; read-only
 wi-impl ad lint <uuid|file> --online  :->  Also check steps against their live service contracts (validator L4)
 wi-impl ad lint <uuid|file> --docs  :->  Also report missing descriptions (method, io, steps, exit messages)
 wi-impl ad lint <uuid|file> --strict  :->  Treat warnings as errors
